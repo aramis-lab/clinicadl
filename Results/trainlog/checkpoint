@@ -1,0 +1,6 @@
+model_checkpoint_path: "/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/DL_AD/Results/trainlog/model.ckpt-4427"
+all_model_checkpoint_paths: "/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/DL_AD/Results/trainlog/model.ckpt-4351"
+all_model_checkpoint_paths: "/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/DL_AD/Results/trainlog/model.ckpt-4370"
+all_model_checkpoint_paths: "/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/DL_AD/Results/trainlog/model.ckpt-4389"
+all_model_checkpoint_paths: "/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/DL_AD/Results/trainlog/model.ckpt-4408"
+all_model_checkpoint_paths: "/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/DL_AD/Results/trainlog/model.ckpt-4427"
