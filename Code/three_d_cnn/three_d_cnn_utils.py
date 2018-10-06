@@ -257,3 +257,13 @@ def load_adni_mri(fold_index, n_fold, caps_directory, subjects_visits_tsv, diagn
     print('In total, we have %d CN\n' % int(y_valid.sum()))
 
     return x_train, y_train, x_test, y_test, x_valid, y_valid, size_input
+
+def check_and_clean(d):
+    import os, shutil
+ 
+    if os.path.exists(d):
+        shutil.rmtree(d)
+    os.mkdir(d)
+
+
+

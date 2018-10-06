@@ -65,14 +65,14 @@ def lenet_adopted_3dcnn(l_reshape, num_filters_conv1, num_filters_conv2, num_fil
 
     l1 = fully_connected(l_flatten, num_fc1, activation_fn=relu, scope="l1")
 
-    l_fc1 = dropout(l1, is_training=is_training, scope="dropout")
+    l_fc1 = dropout(l1, is_training=is_training, scope="dropout", keep_prob=0.1)
 
     y = fully_connected(l_fc1, num_classes, activation_fn=softmax, scope="y")
 
     return l_conv1, l_maxpool1, l_conv2, l_maxpool2, l_conv3, l_maxpool3, l_conv4, l_fc1, y
 
 def train_adni_mri(caps_directory, subjects_visits_tsv, diagnoses_tsv, n_fold, batch_size, num_epochs, log_dir,
-                  learning_rate=0.001, num_classes=2, modality='t1'):
+                  learning_rate=0.0001, num_classes=2, modality='t1'):
     """
     This is the main function to run the CD CNN with adni t1 image, including:
         -- prepare the data
@@ -90,6 +90,9 @@ def train_adni_mri(caps_directory, subjects_visits_tsv, diagnoses_tsv, n_fold, b
     :param learning_rate: the learning rate or initial leaning rate if you want to use exponential_decay strategy.
     :return:
     """
+    
+    ### check if the log folder exist
+    check_and_clean(log_dir)    
 
     train_accuracy = np.zeros((n_fold,))
     test_accuracy = np.zeros((n_fold,))
@@ -177,7 +180,7 @@ def train_adni_mri(caps_directory, subjects_visits_tsv, diagnoses_tsv, n_fold, b
         init = tf.global_variables_initializer()
         sess.run(init)
 
-        writer_1 = tf.summary.FileWriter(os.path.join(log_dir, "log_dir"+"_fold"+str(fi), "train"))
+        writer_1 = tf.summary.FileWriter(os.path.join(log_dir, "log_dir"+"_fold"+str(fi), "train"), sess.graph)
         writer_2 = tf.summary.FileWriter(os.path.join(log_dir, "log_dir"+"_fold"+str(fi), "val"))
         writer_3 = tf.summary.FileWriter(os.path.join(log_dir, "log_dir"+"_fold"+str(fi), "test"))
         writer_1.add_graph(sess.graph)
@@ -239,6 +242,7 @@ def train_adni_mri(caps_directory, subjects_visits_tsv, diagnoses_tsv, n_fold, b
                 sess.run(train_step, feed_dict=feed_dict_train)
 
             print('Epoch number {} Training Accuracy: {}'.format(i + 1, np.mean(train_acc)))
+	    print('Epoch number {} Validation Accuracy: {}'.format(i + 1, np.mean(valid_acc)))
 
         # Feed forward all test images into graph and log accuracy
         for iii in range(int(x_test.shape[0] / batch_size)):
@@ -254,19 +258,16 @@ def train_adni_mri(caps_directory, subjects_visits_tsv, diagnoses_tsv, n_fold, b
 
         print("Test Set Accuracy: {}".format(np.mean(test_acc)))
 
-        train_accuracy[fi] = train_acc[-1]
-        test_accuracy[fi] = test_acc[-1]
-        valid_accuracy[fi] = valid_acc[-1]
+        test_accuracy[fi] = np.mean(test_acc)
 
         ### save the model into google proto
         if fi == n_fold-1:
             model_path = _save_model(sess)
         sess.close()
 
-    print '\nMean accuray of training set: %f %%' % (np.mean(train_accuracy)*100)
+    print("\n\n")
+    print("For the k-fold CV, testing accuracies are %s " % str(test_accuracy))
     print '\nMean accuray of testing set: %f %%' % (np.mean(test_accuracy)*100)
-    print '\nMean accuray of validation set: %f %%' % (np.mean(valid_accuracy)*100)
-
 
 
 
