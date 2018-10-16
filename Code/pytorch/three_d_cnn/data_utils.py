@@ -1,9 +1,12 @@
+import torch
 import pandas as pd
 import numpy as np
 import nibabel as nib
 from os import path
+from copy import copy
 from torch.utils.data import Dataset
 from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
+from scipy.ndimage.filters import gaussian_filter
 
 
 class MRIDataset(Dataset):
@@ -20,6 +23,7 @@ class MRIDataset(Dataset):
         self.img_dir = img_dir
         self.data_file = data_file
         self.transform = transform
+        self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1}
 
         # Check the format of the tsv file here
         df = pd.read_csv(self.data_file, sep='\t')
@@ -44,27 +48,49 @@ class MRIDataset(Dataset):
         # Not in BIDS but in CAPS
         image_path = path.join(self.img_dir, img_name, sess_name, 'anat',
                                   img_name + '_' + sess_name + '_T1w.nii.gz')
-        image = nib.load(image_path)
-        samples = []
-        if img_label == 'CN':
-            label = 0
-        elif img_label == 'AD':
-            label = 1
-        elif img_label == 'MCI':
-            label = 2
 
-        AXimageList, n_image_ax = axKeySlice(image)
-        CORimageList, n_image_cor = corKeySlice(image)
-        SAGimageList, n_image_sag = sagKeySlice(image)
+        reading_image = nib.load(image_path)
+        image = reading_image.get_data()
+        label = self.diagnosis_code[img_label]
 
-        for img2DList in (AXimageList, CORimageList, SAGimageList):
-            for image2D in img2DList:
-                if self.transform:
-                    image2D = self.transform(image2D)
-                sample = {'image': image2D, 'label': label}
-                samples.append(sample)
-        random.shuffle(samples)
-        return samples
+        if self.transform:
+            image = self.transform(image)
+        sample = {'image': image, 'label': label}
+
+        return sample
+
+
+class GaussianSmoothing(object):
+
+    def __init__(self, sigma):
+        self.sigma = sigma
+
+    def __call__(self, sample):
+        image = sample['image']
+        np.nan_to_num(image, copy=False)
+        smoothed_image = gaussian_filter(image, sigma=self.sigma)
+        sample['image'] = smoothed_image
+
+        return sample
+
+
+class ToTensor(object):
+    """Convert image type to Tensor and diagnosis to diagnosis code"""
+
+    def __call__(self, sample):
+        image = copy(sample['image'])
+        diagnosis = sample['diagnosis']
+        demographics = sample['demographics']
+        name = sample['name']
+
+        np.nan_to_num(image, copy=False)
+        image = image.astype(float)
+        # Very bad normalization image = image / np.max(image)
+
+        return {'image': torch.from_numpy(image[np.newaxis, :]).float(),
+                'diagnosis': torch.from_numpy(np.array(diagnosis)),
+                'demographics': torch.from_numpy(np.array(demographics)),
+                'name': name}
 
 
 def subject_diagnosis_df(subject_session_df):
@@ -132,7 +158,7 @@ def split_subjects_to_tsv(diagnoses_tsv, n_splits=5, val_size=0.15):
     :return: None
     """
 
-    df = pd.io.parsers.read_csv(diagnoses_tsv, sep='\t')
+    df = pd.read_csv(diagnoses_tsv, sep='\t')
     if 'diagnosis' not in list(df.columns.values):
         raise Exception('Diagnoses file is not in the correct format.')
     # Here we reduce the DataFrame to have only one diagnosis per subject (multiple time points case)
@@ -170,11 +196,11 @@ def split_subjects_to_tsv(diagnoses_tsv, n_splits=5, val_size=0.15):
 
 def load_split(diagnoses_tsv, fold):
     """
-    Loads the
+    Returns the paths of the TSV files for each set
 
     :param diagnoses_tsv: (str) path to the tsv file with diagnoses
     :param fold: (int) the number of the current fold
-    :return: 3 DataFrame
+    :return: 3 Strings
         training_tsv
         test_tsv
         valid_tsv
