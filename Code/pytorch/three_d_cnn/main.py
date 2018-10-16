@@ -1,9 +1,7 @@
 import argparse
 
-import numpy as np
 import torchvision.transforms as transforms
 from tensorboardX import SummaryWriter
-from torch import cuda
 from torch.utils.data import DataLoader
 
 from classification_utils import *
@@ -13,7 +11,7 @@ from model import Hosseini
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D CNN")
 
 parser.add_argument("-id", "--input_dir", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/CAPS_ADNI_T1_SPM',
-                           help="Path to input dir of the MRI, it could be BIDS_dir or preprocessed CAPS_dir.")
+                           help="Path to input dir of the MRI (preprocessed CAPS_dir).")
 parser.add_argument("-dt", "--diagnosis_tsv", default='/network/lustre/iss01/home/junhao.wen/Project/AD-DL/tsv_files/CN_vs_AD_diagnosis.tsv',
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("-ld", "--log_dir", default='/network/lustre/iss01/home/junhao.wen/Project/AD-DL/Results/pytorch',
@@ -51,10 +49,7 @@ def main(options):
     check_and_clean(options.log_dir)
     test_accuracy = np.zeros((options.n_splits,))
 
-    trg_size = (224, 224) ## this is the original input size of alexnet
-    transformations = transforms.Compose([CustomResize(trg_size),
-                                          CustomToTensor()
-                                        ])
+    transformations = transforms.Compose([ToTensor()])
     # Split on subject level
     split_subjects_to_tsv(options.diagnosis_tsv, n_splits=options.n_splits)
 
@@ -64,10 +59,9 @@ def main(options):
 
         training_tsv, test_tsv, valid_tsv = load_split(options.diagnosis_tsv, fold=fi)
 
-
-        data_train = AD_Standard_2DSlicesData(options.input_dir, training_tsv, transformations)
-        data_test = AD_Standard_2DSlicesData(options.input_dir, test_tsv, transformations)
-        data_valid = AD_Standard_2DSlicesData(options.input_dir, valid_tsv, transformations)
+        data_train = MRIDataset(options.input_dir, training_tsv, transformations)
+        data_test = MRIDataset(options.input_dir, test_tsv, transformations)
+        data_valid = MRIDataset(options.input_dir, valid_tsv, transformations)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
@@ -81,25 +75,21 @@ def main(options):
                                  batch_size=options.batch_size,
                                  shuffle=False,
                                  num_workers=0,
-                                 drop_last=True
+                                 drop_last=False
                                  )
 
         valid_loader = DataLoader(data_valid,
-                                 batch_size=options.batch_size,
-                                 shuffle=False,
-                                 num_workers=0,
-                                 drop_last=True
-                                 )
-
-        if options.use_gpu == False:
-            use_cuda = False
-        else:
-            use_cuda = True
+                                  batch_size=options.batch_size,
+                                  shuffle=False,
+                                  num_workers=0,
+                                  drop_last=False
+                                  )
+        use_cuda = options.use_gpu
 
         # Initial the model
-        model = alexnet2D(pretrained=options.transfer_learning)
+        model = Hosseini()
 
-        if use_cuda == True:
+        if use_cuda:
             model.cuda()
         else:
             model.cpu()
@@ -117,12 +107,12 @@ def main(options):
         writer_test = SummaryWriter(log_dir=(os.path.join(options.log_dir, "log_dir" + "_fold" + str(fi), "test")))
 
         for epoch_i in range(options.epochs):
-            print("At %d -th epoch.") % (epoch_i)
+            print("At %d -th epoch." % epoch_i)
             imgs = train(model, train_loader, use_cuda, criterion, optimizer, writer_train, epoch_i)
 
-            ## at then end of each epoch, we validate one time for the model with the validation data
+            # at then end of each epoch, we validate one time for the model with the validation data
             acc_mean_valid = validate(model, valid_loader, use_cuda, criterion, writer_valid, epoch_i)
-            print("Slice level average validation accuracy is %f at the end of epoch %d") % (acc_mean_valid, epoch_i)
+            print("Scan level validation accuracy is %f at the end of epoch %d" % acc_mean_valid, epoch_i)
 
             is_best = acc_mean_valid > best_accuracy
             best_prec1 = max(best_accuracy, acc_mean_valid)
@@ -133,22 +123,22 @@ def main(options):
                 'optimizer': optimizer.state_dict()
             }, is_best, os.path.join(options.log_dir, "log_dir" + "_fold" + str(fi)))
 
-        ### using test data to get the final performance
+        # using test data to get the final performance
         acc_mean_test_subject = test(model, test_loader, use_cuda, writer_test)
         print("Subject level mean test accuracy for fold %d is: %f") % (fi, acc_mean_test_subject)
         test_accuracy[fi] = acc_mean_test_subject
 
-        ## save the graph and image
+        # save the graph and image
         writer_train.add_graph(model, imgs)
 
     print("\n\n")
     print("For the k-fold CV, testing accuracies are %s " % str(test_accuracy))
-    print('\nMean accuray of testing set: %f') % (np.mean(test_accuracy))
+    print('Mean accuracy of testing set: %f' % np.mean(test_accuracy))
 
 
 if __name__ == "__main__":
     ret = parser.parse_known_args()
     options = ret[0]
     if ret[1]:
-        print("unknown arguments: %s") % (parser.parse_known_args()[1])
+        print("unknown arguments: %s" % parser.parse_known_args()[1])
     main(options)
