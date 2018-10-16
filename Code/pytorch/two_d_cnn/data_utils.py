@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from os import path
 from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
 
 
@@ -106,11 +107,11 @@ def split_subjects_to_tsv(diagnoses_tsv, n_splits=5, val_size=0.15):
 
 def load_split(diagnoses_tsv, fold):
     """
-    Loads the
+    Returns the paths of the TSV files for each set
 
     :param diagnoses_tsv: (str) path to the tsv file with diagnoses
     :param fold: (int) the number of the current fold
-    :return: 3 DataFrame
+    :return: 3 Strings
         training_tsv
         test_tsv
         valid_tsv
