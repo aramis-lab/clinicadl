@@ -11,8 +11,6 @@ from sklearn.preprocessing import MinMaxScaler
 import os, shutil
 from skimage.transform import resize
 from os import path
-import pandas as pd
-import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
 
 def train(model, train_loader, use_cuda, criterion, optimizer, writer_train, epoch_i):
@@ -44,7 +42,7 @@ def train(model, train_loader, use_cuda, criterion, optimizer, writer_train, epo
             integer_encoded = labels.data.cpu().numpy()
             # target should be LongTensor in loss function
             ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
-            print 'The group true label is %s' % str(labels)
+            print('The group true label is %s' % str(labels))
             if use_cuda:
                 ground_truth = ground_truth.cuda()
             train_output = model(imgs)
@@ -55,8 +53,8 @@ def train(model, train_loader, use_cuda, criterion, optimizer, writer_train, epo
             correct_cnt += correct_this_batch
             accuracy = float(correct_this_batch) / len(ground_truth)
             acc_batch += accuracy
-            print ("For batch %d slice %d training loss is : %f") % (i, j, loss.item())
-            print ("For batch %d slice %d training accuracy is : %f") % (i, j, accuracy)
+            print("For batch %d slice %d training loss is : %f") % (i, j, loss.item())
+            print("For batch %d slice %d training accuracy is : %f") % (i, j, accuracy)
 
             optimizer.zero_grad()
             loss.backward()
@@ -98,7 +96,7 @@ def validate(model, valid_loader, use_cuda, criterion, writer_valid, epoch_i):
             integer_encoded = labels.data.cpu().numpy()
             # target should be LongTensor in loss function
             ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
-            print 'The group true label is %s' % str(labels)
+            print('The group true label is %s' % str(labels))
             if use_cuda:
                 ground_truth = ground_truth.cuda()
             valid_output = model(imgs)
@@ -151,7 +149,7 @@ def test(model, test_loader, use_cuda, writer_test):
             integer_encoded = labels.data.cpu().numpy()
             # target should be LongTensor in loss function
             ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
-            print 'The group true label is %s' % str(labels)
+            print('The group true label is %s' % str(labels))
             if use_cuda:
                 ground_truth = ground_truth.cuda()
             test_output = model(imgs)
@@ -191,43 +189,6 @@ def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar
     if is_best:
         shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(checkpoint_dir, 'model_best.pth.tar'))
 
-def split_subjects_to_tsv(diagnoses_tsv, n_splits=5, test_size=0.2, fold=0):
-
-    df = pd.io.parsers.read_csv(diagnoses_tsv, sep='\t')
-    if 'diagnosis' not in list(df.columns.values):
-        raise Exception('Diagnoses file is not in the correct format.')
-    diagnoses_list = list(df.diagnosis)
-    unique = list(set(diagnoses_list))
-    y = np.array([unique.index(x) for x in diagnoses_list]) ### Here, AD is 0 and CN is 1
-
-    splits = StratifiedShuffleSplit(n_splits=n_splits, test_size=test_size)
-
-    n_iteration = 0
-    for train_index, test_index in splits.split(np.zeros(len(y)), y):
-
-        # for training
-        df_train = df.iloc[train_index]
-        df_test_valid = df.iloc[test_index]
-        y_test_valid = y[test_index]
-
-        ### split the test data into validation and test
-        skf_2 = StratifiedShuffleSplit(n_splits=2, test_size=0.5)
-        for test_ind, valid_ind in skf_2.split(df_test_valid, y_test_valid):
-            print("SPLIT iteration:", "Test:", test_ind, "Validation", valid_ind)
-
-        df_test = df_test_valid.iloc[test_ind]
-        df_valid = df_test_valid.iloc[valid_ind]
-
-        df_train.to_csv(path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_train.tsv'), sep='\t', index=False)
-        df_test.to_csv(path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_test.tsv'), sep='\t', index=False)
-        df_valid.to_csv(path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_valid.tsv'), sep='\t', index=False)
-        n_iteration += 1
-
-    training_tsv = path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(fold) + '_train.tsv')
-    test_tsv = path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(fold) + '_train.tsv')
-    valid_tsv = path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(fold) + '_test.tsv')
-
-    return training_tsv, test_tsv, valid_tsv
 
 def check_and_clean(d):
 

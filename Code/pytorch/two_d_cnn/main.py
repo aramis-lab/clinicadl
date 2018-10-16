@@ -7,6 +7,7 @@ from torch import cuda
 from torch.utils.data import DataLoader
 
 from classification_utils import *
+from data_utils import *
 from model import alexnet2D
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D CNN")
@@ -54,12 +55,14 @@ def main(options):
     transformations = transforms.Compose([CustomResize(trg_size),
                                           CustomToTensor()
                                         ])
+    # Split on subject level
+    split_subjects_to_tsv(options.diagnosis_tsv, n_splits=options.n_splits)
 
     for fi in range(options.n_splits):
         # Get the data.
         print("Running for the %d fold" % fi)
 
-        training_tsv, test_tsv, valid_tsv = split_subjects_to_tsv(options.diagnosis_tsv, n_splits=options.n_splits, fold=fi)
+        training_tsv, test_tsv, valid_tsv = load_split(options.diagnosis_tsv, fold=fi)
 
 
         data_train = AD_Standard_2DSlicesData(options.input_dir, training_tsv, transformations)
