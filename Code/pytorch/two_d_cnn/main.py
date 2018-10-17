@@ -91,15 +91,12 @@ def main(options):
                                  drop_last=True
                                  )
 
-        if options.use_gpu == False:
-            use_cuda = False
-        else:
-            use_cuda = True
+        use_cuda = options.use_gpu
 
         # Initial the model
         model = alexnet2D(pretrained=options.transfer_learning)
 
-        if use_cuda == True:
+        if use_cuda:
             model.cuda()
         else:
             model.cpu()
@@ -117,7 +114,7 @@ def main(options):
         writer_test = SummaryWriter(log_dir=(os.path.join(options.log_dir, "log_dir" + "_fold" + str(fi), "test")))
 
         for epoch_i in range(options.epochs):
-            print("At %d -th epoch.") % (epoch_i)
+            print("At %d -th epoch." % epoch_i)
             imgs = train(model, train_loader, use_cuda, criterion, optimizer, writer_train, epoch_i)
 
             ## at then end of each epoch, we validate one time for the model with the validation data
