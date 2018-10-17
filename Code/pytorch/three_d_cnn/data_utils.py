@@ -2,8 +2,8 @@ import torch
 import pandas as pd
 import numpy as np
 import nibabel as nib
+import os
 from os import path
-from copy import copy
 from torch.utils.data import Dataset
 from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
 from scipy.ndimage.filters import gaussian_filter
@@ -46,8 +46,9 @@ class MRIDataset(Dataset):
         img_label = label_list[idx]
         sess_name = sess_list[idx]
         # Not in BIDS but in CAPS
-        image_path = path.join(self.img_dir, img_name, sess_name, 'anat',
-                                  img_name + '_' + sess_name + '_T1w.nii.gz')
+        image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
+                               't1', 'spm', 'segmentation', 'normalized_space',
+                               img_name + '_' + sess_name + '_space-Ixi549Space_T1w.nii.gz')
 
         reading_image = nib.load(image_path)
         image = reading_image.get_data()
@@ -77,20 +78,11 @@ class GaussianSmoothing(object):
 class ToTensor(object):
     """Convert image type to Tensor and diagnosis to diagnosis code"""
 
-    def __call__(self, sample):
-        image = copy(sample['image'])
-        diagnosis = sample['diagnosis']
-        demographics = sample['demographics']
-        name = sample['name']
-
+    def __call__(self, image):
         np.nan_to_num(image, copy=False)
         image = image.astype(float)
-        # Very bad normalization image = image / np.max(image)
 
-        return {'image': torch.from_numpy(image[np.newaxis, :]).float(),
-                'diagnosis': torch.from_numpy(np.array(diagnosis)),
-                'demographics': torch.from_numpy(np.array(demographics)),
-                'name': name}
+        return torch.from_numpy(image[np.newaxis, :]).float()
 
 
 def subject_diagnosis_df(subject_session_df):
@@ -168,6 +160,9 @@ def split_subjects_to_tsv(diagnoses_tsv, n_splits=5, val_size=0.15):
     y = np.array([unique.index(x) for x in diagnoses_list])  # There is one label per diagnosis depending on the order
 
     splits = StratifiedKFold(n_splits=n_splits, shuffle=True)
+    sets_dir = path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0])
+    if not path.exists(sets_dir):
+        os.makedirs(sets_dir)
 
     n_iteration = 0
     for train_index, test_index in splits.split(np.zeros(len(y)), y):
@@ -188,9 +183,9 @@ def split_subjects_to_tsv(diagnoses_tsv, n_splits=5, val_size=0.15):
         df_valid = multiple_time_points(df, df_sub_valid)
         df_train = multiple_time_points(df, df_sub_train)
 
-        df_train.to_csv(path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_train.tsv'), sep='\t', index=False)
-        df_test.to_csv(path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_test.tsv'), sep='\t', index=False)
-        df_valid.to_csv(path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_valid.tsv'), sep='\t', index=False)
+        df_train.to_csv(path.join(sets_dir, path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_train.tsv'), sep='\t', index=False)
+        df_test.to_csv(path.join(sets_dir, path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_test.tsv'), sep='\t', index=False)
+        df_valid.to_csv(path.join(sets_dir, path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_valid.tsv'), sep='\t', index=False)
         n_iteration += 1
 
 
@@ -205,10 +200,13 @@ def load_split(diagnoses_tsv, fold):
         test_tsv
         valid_tsv
     """
-    training_tsv = path.join(path.dirname(diagnoses_tsv),
+    sets_dir = path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0])
+
+    training_tsv = path.join(sets_dir,
                              path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(fold) + '_train.tsv')
-    test_tsv = path.join(path.dirname(diagnoses_tsv),
-                         path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(fold) + '_train.tsv')
-    valid_tsv = path.join(path.dirname(diagnoses_tsv),
-                          path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(fold) + '_test.tsv')
+    test_tsv = path.join(sets_dir,
+                         path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(fold) + '_test.tsv')
+    valid_tsv = path.join(sets_dir,
+                          path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(fold) + '_valid.tsv')
+
     return training_tsv, test_tsv, valid_tsv
