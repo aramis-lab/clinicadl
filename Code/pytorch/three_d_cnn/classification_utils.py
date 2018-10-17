@@ -80,7 +80,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
                              'epoch': epoch,
                              'valid_acc': acc_mean_valid},
                             is_best,
-                            os.path.join(options.log_dir, "log_dir" + "_fold" + str(fold)))
+                            os.path.join(options.log_dir, "log_dir" + "fold" + str(fold)))
 
             writer_train.add_scalar('training_accuracy', accuracy / len(data), i + epoch * len(train_loader.dataset))
             writer_train.add_scalar('training_loss', loss / len(data), i + epoch * len(train_loader.dataset))
