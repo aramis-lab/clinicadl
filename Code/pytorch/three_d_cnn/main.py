@@ -1,7 +1,6 @@
 import argparse
 
 import torchvision.transforms as transforms
-from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 
 from classification_utils import *
@@ -54,7 +53,10 @@ parser.add_argument('--evaluation_steps', '-esteps', default=1, type=int,
 def main(options):
 
     check_and_clean(options.log_dir)
-    test_accuracy = np.zeros((options.n_splits,))
+    test_accuracy = np.zeros(options.n_splits)
+    if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
+        raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
+                        (options.evaluation_steps, options.accumulation_steps))
 
     transformations = transforms.Compose([ToTensor()])
     # Split on subject level
@@ -107,17 +109,19 @@ def main(options):
         train(model, train_loader, valid_loader, criterion, optimizer, fi, options)
 
         # Load best model
-        best_model, best_epoch = load_best(model, os.path.join(options.log_dir, "log_dir" + "_fold" + str(fi)))
+        best_model, best_epoch = load_best(model, os.path.join(options.log_dir, "fold" + str(fi)))
 
         # Get test performance
-        writer_test = SummaryWriter(log_dir=(os.path.join(options.log_dir, "log_dir" + "_fold" + str(fi), "test")))
-        acc_mean_test_subject = test(best_model, test_loader, options.gpu, criterion, writer_test, best_epoch)
+        acc_mean_test_subject = test(best_model, test_loader, options.gpu)
         print("Subject level mean test accuracy for fold %d is: %f" % (fi, acc_mean_test_subject))
         test_accuracy[fi] = acc_mean_test_subject
         print()
 
     print("For the k-fold CV, testing accuracies are %s " % str(test_accuracy))
     print('Mean accuracy of testing set: %f' % np.mean(test_accuracy))
+    test_df = pd.DataFrame(test_accuracy, columns=['accuracy'])
+    test_df.index.name = 'fold'
+    test_df.to_csv(path.join(options.log_dir, 'test_accuracies.tsv'), sep='\t')
 
 
 if __name__ == "__main__":

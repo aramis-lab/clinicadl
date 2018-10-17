@@ -5,6 +5,7 @@ import matplotlib.ticker as ticker
 import numpy as np
 import os
 import shutil
+import warnings
 
 
 def train(model, train_loader, valid_loader, criterion, optimizer, fold, options):
@@ -22,7 +23,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
     # Create writers
     from tensorboardX import SummaryWriter
     writer_train = SummaryWriter(log_dir=(os.path.join(options.log_dir, "log_dir" + "_fold" + str(fold), "train")))
-    writer_valid = SummaryWriter(log_dir=(os.path.join(options.log_dir, "log_dir" + "_fold" + str(fold), "valid")))
 
     # Initialize counters
     best_valid_accuracy = 0.0
@@ -32,6 +32,8 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
         total_correct_cnt = 0.0
         print("At %d-th epoch." % epoch)
 
+        model.zero_grad()
+        evaluation_flag = True
         for i, data in enumerate(train_loader):
 
             if options.gpu:
@@ -51,9 +53,11 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
                 optimizer.step()
                 model.zero_grad()
 
+                # Evaluate the model only when no gradients are accumulated
                 if(i+1) % options.evaluation_steps == 0:
+                    evaluation_flag = False
                     print('Iteration %d' % i)
-                    acc_mean_valid = test(model, valid_loader, options.gpu, criterion, writer_valid, epoch)
+                    acc_mean_valid = test(model, valid_loader, options.gpu)
                     print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
                     is_best = acc_mean_valid > best_valid_accuracy
@@ -62,7 +66,22 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
                                      'epoch': epoch,
                                      'valid_acc': acc_mean_valid},
                                     is_best,
-                                    os.path.join(options.log_dir, "log_dir" + "_fold" + str(fold)))
+                                    os.path.join(options.log_dir, "_fold" + str(fold)))
+
+        # If no evaluation has been performed, evaluate once at the end of the epoch
+        if evaluation_flag:
+            warnings.warn('Your evaluation steps are too big compared to the size of the dataset')
+            acc_mean_valid = test(model, valid_loader, options.gpu)
+            print("Scan level validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, i))
+
+            is_best = acc_mean_valid > best_valid_accuracy
+            best_valid_accuracy = max(acc_mean_valid, best_valid_accuracy)
+            save_checkpoint({'model': model.state_dict(),
+                             'epoch': epoch,
+                             'valid_acc': acc_mean_valid},
+                            is_best,
+                            os.path.join(options.log_dir, "log_dir" + "_fold" + str(fold)))
+
             writer_train.add_scalar('training_accuracy', accuracy / len(data), i + epoch * len(train_loader.dataset))
             writer_train.add_scalar('training_loss', loss / len(data), i + epoch * len(train_loader.dataset))
 
@@ -115,7 +134,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
 #     return acc_mean
 
 
-def test(model, dataloader, use_cuda, criterion, writer, epoch, verbose=False, full_return=False):
+def test(model, dataloader, use_cuda, verbose=False, full_return=False):
     """
     Computes the balanced accuracy of the model
 
@@ -138,12 +157,9 @@ def test(model, dataloader, use_cuda, criterion, writer, epoch, verbose=False, f
             inputs, labels = data['image'], data['label']
 
         outputs = model(inputs)
-        loss = criterion(outputs, labels)
         _, predicted = torch.max(outputs.data, 1)
         predicted_list = predicted_list + predicted.tolist()
         truth_list = truth_list + labels.tolist()
-
-        writer.add_scalar('loss', loss / len(data), i + epoch * len(dataloader.dataset))
 
     # Computation of the balanced accuracy
     component = len(np.unique(truth_list))
