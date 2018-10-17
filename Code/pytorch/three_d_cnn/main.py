@@ -100,31 +100,30 @@ def main(options):
         lr = options.learning_rate
         optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), lr)
 
-        best_accuracy = 0.0
+        best_valid_accuracy = 0.0
+        best_epoch = 0
 
         writer_train = SummaryWriter(log_dir=(os.path.join(options.log_dir, "log_dir" + "_fold" + str(fi), "train")))
         writer_valid = SummaryWriter(log_dir=(os.path.join(options.log_dir, "log_dir" + "_fold" + str(fi), "valid")))
         writer_test = SummaryWriter(log_dir=(os.path.join(options.log_dir, "log_dir" + "_fold" + str(fi), "test")))
 
-        for epoch_i in range(options.epochs):
-            print("At %d -th epoch." % epoch_i)
-            imgs = train(model, train_loader, use_cuda, criterion, optimizer, writer_train, epoch_i)
+        for epoch in range(options.epochs):
+            print("At %d -th epoch." % epoch)
+            imgs = train(model, train_loader, use_cuda, criterion, optimizer, writer_train, epoch)
 
             # at then end of each epoch, we validate one time for the model with the validation data
-            acc_mean_valid = validate(model, valid_loader, use_cuda, criterion, writer_valid, epoch_i)
-            print("Scan level validation accuracy is %f at the end of epoch %d" % acc_mean_valid, epoch_i)
+            acc_mean_valid = test(model, valid_loader, use_cuda, criterion, writer_valid, epoch)
+            print("Scan level validation accuracy is %f at the end of epoch %d" % acc_mean_valid, epoch)
 
-            is_best = acc_mean_valid > best_accuracy
-            best_prec1 = max(best_accuracy, acc_mean_valid)
-            save_checkpoint({
-                'epoch': epoch_i + 1,
-                'state_dict': model.state_dict(),
-                'best_predic1': best_prec1,
-                'optimizer': optimizer.state_dict()
-            }, is_best, os.path.join(options.log_dir, "log_dir" + "_fold" + str(fi)))
+            is_best = acc_mean_valid > best_valid_accuracy
+            if is_best:
+                best_valid_accuracy = acc_mean_valid
+                best_epoch = epoch
+            save_checkpoint(model.state_dict(), is_best, os.path.join(options.log_dir, "log_dir" + "_fold" + str(fi)))
 
-        # using test data to get the final performance
-        acc_mean_test_subject = test(model, test_loader, use_cuda, writer_test)
+        # using test data to get the final performance on the best model
+        best_model = load_best(model, os.path.join(options.log_dir, "log_dir" + "_fold" + str(fi)))
+        acc_mean_test_subject = test(best_model, test_loader, use_cuda, criterion, writer_test, best_epoch)
         print("Subject level mean test accuracy for fold %d is: %f") % (fi, acc_mean_test_subject)
         test_accuracy[fi] = acc_mean_test_subject
 
