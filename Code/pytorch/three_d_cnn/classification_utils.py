@@ -7,56 +7,67 @@ import os
 import shutil
 
 
-def train(model, train_loader, use_cuda, criterion, optimizer, writer_train, epoch_i):
+def train(model, train_loader, valid_loader, criterion, optimizer, fold, options):
     """
     This is the function to train the model
     :param model:
     :param train_loader:
-    :param use_cuda:
+    :param valid_loader:
     :param criterion:
     :param optimizer:
-    :param writer_train:
-    :param epoch_i:
+    :param fold:
+    :param options:
     :return:
     """
-    # main training loop
-    total_correct_cnt = 0.0
+    # Create writers
+    from tensorboardX import SummaryWriter
+    writer_train = SummaryWriter(log_dir=(os.path.join(options.log_dir, "log_dir" + "_fold" + str(fold), "train")))
+    writer_valid = SummaryWriter(log_dir=(os.path.join(options.log_dir, "log_dir" + "_fold" + str(fold), "valid")))
+
+    # Initialize counters
+    best_valid_accuracy = 0.0
     model.train()  # set the module to training mode
 
-    for i, data in enumerate(train_loader):
+    for epoch in range(options.epochs):
+        total_correct_cnt = 0.0
+        print("At %d-th epoch." % epoch)
 
-        if use_cuda:
-            imgs, labels = Variable(data['image']).cuda(), Variable(data['label']).cuda()
-        else:
-            imgs, labels = Variable(data['image']), Variable(data['label'])
+        for i, data in enumerate(train_loader):
 
-        # integer_encoded = labels.data.cpu().numpy()
-        # target should be LongTensor in loss function
-        # ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
-        print('The group true label is %s' % str(labels))
-        # if use_cuda:
-        #     ground_truth = ground_truth.cuda()
-        train_output = model(imgs)
-        _, predict = train_output.topk(1)
-        loss = criterion(train_output, labels)
-        batch_correct_cnt = (predict.squeeze(1) == labels).sum().float()
-        total_correct_cnt += batch_correct_cnt
-        accuracy = float(batch_correct_cnt) / len(labels)
-        print("For batch %d training loss is : %f") % (i, loss.item())
-        print("For batch %d training accuracy is : %f") % (i, accuracy)
+            if options.gpu:
+                imgs, labels = Variable(data['image']).cuda(), Variable(data['label']).cuda()
+            else:
+                imgs, labels = Variable(data['image']), Variable(data['label'])
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+            train_output = model(imgs)
+            _, predict = train_output.topk(1)
+            loss = criterion(train_output, labels)
+            batch_correct_cnt = (predict.squeeze(1) == labels).sum().float()
+            total_correct_cnt += batch_correct_cnt
+            accuracy = float(batch_correct_cnt) / len(labels)
+            loss.backward()
 
-        writer_train.add_scalar('training_accuracy', accuracy / len(data), i + epoch_i * len(train_loader.dataset))
-        writer_train.add_scalar('training_loss', loss / len(data), i + epoch_i * len(train_loader.dataset))
-        # add image
-        writer_train.add_image('example_image', imgs.int(), i + epoch_i * len(train_loader.dataset))
+            if (i+1) % options.accumulation_steps == 0:
+                optimizer.step()
+                model.zero_grad()
 
-    print('Total correct labels: %d / %d' % (total_correct_cnt, len(train_loader)))
+                if(i+1) % options.evaluation_steps == 0:
+                    print('Iteration %d' % i)
+                    acc_mean_valid = test(model, valid_loader, options.gpu, criterion, writer_valid, epoch)
+                    print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
-    return imgs
+                    is_best = acc_mean_valid > best_valid_accuracy
+                    best_valid_accuracy = max(acc_mean_valid, best_valid_accuracy)
+                    save_checkpoint({'model': model.state_dict(),
+                                     'epoch': epoch,
+                                     'valid_acc': acc_mean_valid},
+                                    is_best,
+                                    os.path.join(options.log_dir, "log_dir" + "_fold" + str(fold)))
+            writer_train.add_scalar('training_accuracy', accuracy / len(data), i + epoch * len(train_loader.dataset))
+            writer_train.add_scalar('training_loss', loss / len(data), i + epoch * len(train_loader.dataset))
+
+        print('Total correct labels: %d / %d' % (total_correct_cnt, len(train_loader) * train_loader.batch_size))
+        # at then end of each epoch, we validate one time for the model with the validation data
 
 
 # def test(model, valid_loader, use_cuda, criterion, writer_valid, epoch_i):
@@ -104,7 +115,7 @@ def train(model, train_loader, use_cuda, criterion, optimizer, writer_train, epo
 #     return acc_mean
 
 
-def test(model, dataloader, use_cuda, criterion, writer, epoch, verbose=True, full_return=False):
+def test(model, dataloader, use_cuda, criterion, writer, epoch, verbose=False, full_return=False):
     """
     Computes the balanced accuracy of the model
 
@@ -122,9 +133,9 @@ def test(model, dataloader, use_cuda, criterion, writer, epoch, verbose=True, fu
 
     for i, data in enumerate(dataloader):
         if use_cuda:
-            inputs, labels = data['image'].cuda(), data['diagnosis'].cuda()
+            inputs, labels = data['image'].cuda(), data['label'].cuda()
         else:
-            inputs, labels = data['image'], data['diagnosis']
+            inputs, labels = data['image'], data['label']
 
         outputs = model(inputs)
         loss = criterion(outputs, labels)
@@ -193,8 +204,9 @@ def load_best(model, checkpoint_dir):
     from copy import deepcopy
 
     best_model = deepcopy(model)
-    best_model.load_state_dict(torch.load(os.path.join(checkpoint_dir, 'model_best.pth.tar')))
-    return best_model
+    param_dict = torch.load(os.path.join(checkpoint_dir, 'model_best.pth.tar'))
+    best_model.load_state_dict(param_dict['model'])
+    return best_model, param_dict['epoch']
 
 
 def check_and_clean(d):
