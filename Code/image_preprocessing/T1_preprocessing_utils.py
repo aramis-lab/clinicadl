@@ -15,17 +15,14 @@ def get_subid_sesid_datasink(participant_id, session_id, caps_directory):
                                           'preprocessing_dl')
 
     subst_tuple_list = [  # registration
-        (participant_id + '_' + session_id + '_SyN_QuickWarped_cropped.nii.gz',
-         participant_id + '_' + session_id + '_space-MNI_res-1x1x1_crop.nii.gz'),
-        (participant_id + '_' + session_id + '_SyN_QuickWarped.nii.gz',
+        (participant_id + '_' + session_id + '_SyN_QuickWarped_cropped_intensity_norm.nii.gz',
          participant_id + '_' + session_id + '_space-MNI_res-1x1x1.nii.gz')
         ]
 
     regexp_substitutions = [
         # I don't know why it's adding this empty folder, so I remove it:
         # NOTE, . means any characters and * means any number of repetition in python regex
-        (r'/registerted_out_file/_antsRegistrationSyNQuick\d{1,4}/', r'/'),
-        (r'/cropped_file/_cropnifti\d{1,4}/', r'/'),
+        (r'/out_file/_intensitynormalization\d{1,4}/', r'/'),
         # I don't know why it's adding this empty folder, so I remove it:
         (r'trait_added/_datasinker\d{1,4}/', r'')
     ]
@@ -88,7 +85,7 @@ def bids_datagrabber_t1w(input_dir, subject_list, session_list):
 
     return anat_t1
 
-def crop_nifti(input_img, ref_img, sagittal_start, sagittal_end, coronal_start, coronal_end, axial_start, axial_end):
+def crop_nifti(input_img, ref_img):
     """
 
     :param input_img:
@@ -104,33 +101,18 @@ def crop_nifti(input_img, ref_img, sagittal_start, sagittal_end, coronal_start, 
     from nilearn.image import resample_img, crop_img, resample_to_img
     from nibabel.spatialimages import SpatialImage
 
-    # img = nib.load(ref_img)
-    # data = img.get_fdata()
-    # affine = img.affine
-    # header = img.header
-    # basedir = os.getcwd()
-    #
-    # # crop image into certain range with a box
-    # data_new = data[sagittal_start:sagittal_end, coronal_start:coronal_end, axial_start:axial_end]
-    #
-    #
-    #
-    # crop_ref = nib.Nifti1Image(data_new, affine, header=header)
-    #
-    # crop_ref.to_filename('cropped_template.nii.gz')
-
-
     basedir = os.getcwd()
     crop_ref = crop_img(ref_img, rtol=0.5)
-    crop_ref.to_filename(os.path.join(basedir, 'cropped_template.nii.gz'))
+    crop_ref.to_filename(os.path.join(os.path.dirname(ref_img), os.path.basename(ref_img).split('.nii')[0] + '_cropped.nii.gz'))
+    crop_template = os.path.join(os.path.dirname(ref_img), os.path.basename(ref_img).split('.nii')[0] + '_cropped.nii.gz')
 
     ## resample the individual MRI onto the cropped template image
-    crop_img = resample_to_img(input_img, 'cropped_template.nii.gz')
+    crop_img = resample_to_img(input_img, crop_template)
     crop_img.to_filename(os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped.nii.gz'))
 
     output_img = os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped.nii.gz')
 
-    return output_img
+    return output_img, crop_template
 
 def rename_file(subject, session):
     """
@@ -166,5 +148,26 @@ def ants_registration_syn_quick(fix_image, moving_image, participant_id, session
     os.system(cmd)
 
     return image_warped, affine_matrix, warp, inverse_warped, inverse_warp
+
+def ants_histogram_intensity_normalization(crop_template, input_img, image_dimension):
+    """
+        This is a function to do histogram-based intensity normalization
+    :param crop_template:
+    :param input_img:
+    :param image_dimension:
+    :return:
+    """
+
+    import os
+
+    basedir = os.getcwd()
+    output_img = os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_intensity_norm.nii.gz')
+
+
+    cmd = 'ImageMath ' + str(image_dimension) + ' ' + output_img + ' HistogramMatch ' + input_img + ' ' + crop_template
+    os.system(cmd)
+
+    return output_img
+
 
 
