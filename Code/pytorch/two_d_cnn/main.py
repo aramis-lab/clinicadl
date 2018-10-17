@@ -91,7 +91,10 @@ def main(options):
                                  drop_last=True
                                  )
 
-        use_cuda = options.use_gpu
+        if not options.use_gpu:
+            use_cuda = options.use_gpu
+        else:
+            use_cuda = True
 
         # Initial the model
         model = alexnet2D(pretrained=options.transfer_learning)
