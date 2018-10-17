@@ -22,7 +22,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
     """
     # Create writers
     from tensorboardX import SummaryWriter
-    writer_train = SummaryWriter(log_dir=(os.path.join(options.log_dir, "log_dir" + "_fold" + str(fold), "train")))
+    writer_train = SummaryWriter(log_dir=(os.path.join(options.log_dir, "fold" + str(fold), "train")))
 
     # Initialize counters
     best_valid_accuracy = 0.0
@@ -66,7 +66,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
                                      'epoch': epoch,
                                      'valid_acc': acc_mean_valid},
                                     is_best,
-                                    os.path.join(options.log_dir, "_fold" + str(fold)))
+                                    os.path.join(options.log_dir, "fold" + str(fold)))
 
         # If no evaluation has been performed, evaluate once at the end of the epoch
         if evaluation_flag:
