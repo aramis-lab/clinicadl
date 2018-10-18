@@ -6,6 +6,7 @@ import numpy as np
 import os
 import shutil
 import warnings
+from time import time
 
 
 def train(model, train_loader, valid_loader, criterion, optimizer, fold, options):
@@ -146,8 +147,12 @@ def test(model, dataloader, use_cuda, verbose=False, full_return=False):
     """
     model.eval()
 
-    predicted_list = []
-    truth_list = []
+    # Use tensors instead of arrays to avoid bottlenecks
+    predicted_tensor = torch.zeros(len(dataloader.dataset))
+    truth_tensor = torch.zeros(len(dataloader.dataset))
+    if use_cuda:
+        predicted_tensor = predicted_tensor.cuda()
+        truth_tensor = truth_tensor.cuda()
     model = model.eval()
 
     for i, data in enumerate(dataloader):
@@ -158,15 +163,26 @@ def test(model, dataloader, use_cuda, verbose=False, full_return=False):
 
         outputs = model(inputs)
         _, predicted = torch.max(outputs.data, 1)
-        predicted_list = predicted_list + predicted.tolist()
-        truth_list = truth_list + labels.tolist()
+
+        idx = i * dataloader.batch_size
+        idx_end = (i + 1) * dataloader.batch_size
+        predicted_tensor[idx:idx_end:] = predicted
+        truth_tensor[idx:idx_end:] = labels
 
     # Computation of the balanced accuracy
-    component = len(np.unique(truth_list))
+    component = len(np.unique(truth_tensor))
+
+    # Cast to numpy arrays to avoid bottleneck in the next loop
+    if use_cuda:
+        predicted_arr = predicted_tensor.cpu().numpy().astype(int)
+        truth_arr = truth_tensor.cpu().numpy().astype(int)
+    else:
+        predicted_arr = predicted_tensor.numpy()
+        truth_arr = truth_tensor.numpy()
 
     cluster_diagnosis_prop = np.zeros(shape=(component, component))
-    for i, predicted in enumerate(predicted_list):
-        truth = truth_list[i]
+    for i, predicted in enumerate(predicted_arr):
+        truth = truth_arr[i]
         cluster_diagnosis_prop[predicted, truth] += 1
 
     acc = 0
