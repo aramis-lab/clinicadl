@@ -27,7 +27,7 @@ parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
 parser.add_argument("--epochs", default=20, type=int,
                     help="Epochs through the data. (default=20)")
-parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
+parser.add_argument("--learning_rate", "-lr", default=1e-4, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--batch_size", default=1, type=int,
                     help="Batch size for training. (default=1)")
