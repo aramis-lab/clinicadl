@@ -55,7 +55,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
             loss.backward()
 
             writer_train.add_scalar('training_accuracy', accuracy / len(data), i + epoch * len(train_loader.dataset))
-            writer_train.add_scalar('training_loss', loss / len(data), i + epoch * len(train_loader.dataset))
+            writer_train.add_scalar('training_loss', loss.item() / len(data), i + epoch * len(train_loader.dataset))
 
             if (i+1) % options.accumulation_steps == 0:
                 step_flag = False

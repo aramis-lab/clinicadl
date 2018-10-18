@@ -35,13 +35,9 @@ class MRIDataset(Dataset):
         return len(self.df)
 
     def __getitem__(self, idx):
-        img_list = list(self.df['participant_id'])
-        sess_list = list(self.df['session_id'])
-        label_list = list(self.df['diagnosis'])
-
-        img_name = img_list[idx]
-        img_label = label_list[idx]
-        sess_name = sess_list[idx]
+        img_name = self.df.loc[idx, 'participant_id']
+        img_label = self.df.loc[idx, 'diagnosis']
+        sess_name = self.df.loc[idx, 'session_id']
         # Not in BIDS but in CAPS
         image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
                                't1', 'spm', 'segmentation', 'normalized_space',

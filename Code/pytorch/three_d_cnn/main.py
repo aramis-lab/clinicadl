@@ -136,7 +136,7 @@ def main(options):
     test_df = pd.DataFrame(test_accuracy, columns=['accuracy'])
     test_df.index.name = 'fold'
     test_df.to_csv(path.join(options.log_dir, 'test_accuracies.tsv'), sep='\t')
-    text_file = open(path.join(options.fold_dir, 'model_output.txt'), 'w')
+    text_file = open(path.join(options.log_dir, 'model_output.txt'), 'w')
     text_file.write('Time of training: %d s \n' % total_time)
     text_file.write('Mean test accuracy: %.2f %% \n' % np.mean(test_accuracy))
     text_file.write('Standard variation of test accuracy: %.2f %% \n' % np.std(test_accuracy))
