@@ -90,9 +90,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
 
         # Always test the results and save them once at the end of the epoch
         if last_check_point_i != i:
-            print('Last checkpoint at the end of the epoch')
+            print('Last checkpoint at the end of the epoch %d' % epoch)
             acc_mean_valid = test(model, valid_loader, options.gpu)
-            print("Scan level validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, i))
+            print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
             is_best = acc_mean_valid > best_valid_accuracy
             best_valid_accuracy = max(acc_mean_valid, best_valid_accuracy)
@@ -104,51 +104,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
 
         print('Total correct labels: %d / %d' % (total_correct_cnt, len(train_loader) * train_loader.batch_size))
         # at then end of each epoch, we validate one time for the model with the validation data
-
-
-# def test(model, valid_loader, use_cuda, criterion, writer_valid, epoch_i):
-#     """
-#     This is the function to validate the CNN with validation data
-#     :param model:
-#     :param valid_loader:
-#     :param use_cuda:
-#     :param criterion:
-#     :param writer_valid:
-#     :param epoch_i:
-#     :return:
-#     """
-#     acc = 0.0
-#     model.eval()
-#     for i, data in enumerate(valid_loader):
-#         if use_cuda:
-#             imgs, labels = Variable(data['image'], volatile=True).cuda(), Variable().cuda()
-#         else:
-#             imgs, labels = Variable(data['image'], volatile=True), Variable(data['label'],
-#                                                                                     volatile=True)
-#         # integer_encoded = labels.data.cpu().numpy()
-#         # # target should be LongTensor in loss function
-#         # ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
-#         print('The group true label is %s' % str(labels))
-#         # if use_cuda:
-#         #     ground_truth = ground_truth.cuda()
-#         valid_output = model(imgs)
-#         _, predict = valid_output.topk(1)
-#         loss = criterion(valid_output, labels)
-#         correct_this_batch = (predict.squeeze(1) == labels).sum().float()
-#         accuracy = float(correct_this_batch) / len(labels)
-#
-#         print("For batch %d validation loss is : %f") % (i, loss.item())
-#         print("For batch %d validation accuracy is : %f") % (i, accuracy)
-#
-#         writer_valid.add_scalar('validation_accuracy', accuracy / len(data), i + epoch_i * len(valid_loader.dataset))
-#         writer_valid.add_scalar('validation_loss', loss / len(data), i + epoch_i * len(valid_loader.dataset))
-#
-#         acc += accuracy / len(data)
-#
-#     acc_mean = acc / len(valid_loader)
-#     print('Mean accuracy: %f' % acc_mean)
-#
-#     return acc_mean
 
 
 def test(model, dataloader, use_cuda, verbose=False, full_return=False):
