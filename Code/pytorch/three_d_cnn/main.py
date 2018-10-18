@@ -19,36 +19,38 @@ parser.add_argument("log_dir", type=str,
 parser.add_argument("input_dir", type=str,
                     help="Path to input dir of the MRI (preprocessed CAPS_dir).")
 
-# Optional arguments
-parser.add_argument("-t", "--transfer_learning", default=False,
-                    help="If do transfer learning")
-parser.add_argument("--n_splits", default=5, type=int,
-                    help="How many folds for the k-fold cross validation procedure.")
+# Data Management
+parser.add_argument("--batch_size", default=1, type=int,
+                    help="Batch size for training. (default=1)")
+parser.add_argument('--accumulation_steps', '-asteps', default=1, type=int,
+                    help='Accumulates gradients in order to increase the size of the batch')
 parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
+parser.add_argument("--n_splits", default=5, type=int,
+                    help="How many folds for the k-fold cross validation procedure.")
+
+# Training arguments
+parser.add_argument("-t", "--transfer_learning", default=False,
+                    help="If do transfer learning")
 parser.add_argument("--epochs", default=20, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--learning_rate", "-lr", default=1e-4, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--tolerance", "-tol", default=5e-2, type=float,
                     help="Allows to stop when the training data is nearly learnt")
-parser.add_argument("--batch_size", default=1, type=int,
-                    help="Batch size for training. (default=1)")
+
+# Optimizer arguments
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument('--gpu', action='store_true', default=False,
-                    help='Uses gpu instead of cpu if cuda is available')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--weight_decay', '--wd', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
-parser.add_argument("--estop", default=1e-2, type=float,
-                    help="Early stopping criteria on the development set. (default=1e-2)")
-parser.add_argument('--accumulation_steps', '-asteps', default=1, type=int,
-                    help='Accumulates gradients in order to increase the size of the batch')
+
+parser.add_argument('--gpu', action='store_true', default=False,
+                    help='Uses gpu instead of cpu if cuda is available')
 parser.add_argument('--evaluation_steps', '-esteps', default=1, type=int,
                     help='Fix the number of batches to use before validation')
-
 
 # feel free to add more arguments as you need
 
