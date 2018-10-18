@@ -229,4 +229,4 @@ def check_and_clean(d):
 
     if os.path.exists(d):
         shutil.rmtree(d)
-    os.mkdir(d)
+    os.makedirs(d)
