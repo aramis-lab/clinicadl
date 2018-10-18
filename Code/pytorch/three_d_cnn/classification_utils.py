@@ -49,6 +49,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
             accuracy = float(batch_correct_cnt) / len(labels)
             loss.backward()
 
+            writer_train.add_scalar('training_accuracy', accuracy / len(data), i + epoch * len(train_loader.dataset))
+            writer_train.add_scalar('training_loss', loss / len(data), i + epoch * len(train_loader.dataset))
+
             if (i+1) % options.accumulation_steps == 0:
                 optimizer.step()
                 model.zero_grad()
@@ -81,9 +84,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
                              'valid_acc': acc_mean_valid},
                             is_best,
                             os.path.join(options.log_dir, "log_dir" + "fold" + str(fold)))
-
-            writer_train.add_scalar('training_accuracy', accuracy / len(data), i + epoch * len(train_loader.dataset))
-            writer_train.add_scalar('training_loss', loss / len(data), i + epoch * len(train_loader.dataset))
 
         print('Total correct labels: %d / %d' % (total_correct_cnt, len(train_loader) * train_loader.batch_size))
         # at then end of each epoch, we validate one time for the model with the validation data
@@ -139,8 +139,8 @@ def test(model, dataloader, use_cuda, verbose=False, full_return=False):
     Computes the balanced accuracy of the model
 
     :param model: the network (subclass of nn.Module)
-    :param dataloader: a dataloader wrapping a dataset
-    :param gpu: if True a gpu is used
+    :param dataloader: a DataLoader wrapping a dataset
+    :param use_cuda: if True a gpu is used
     :param full_return: if True also returns the sensitivities and specificities for a multiclass problem
     :return: balanced accuracy of the model (float)
     """

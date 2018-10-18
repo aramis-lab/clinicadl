@@ -1,5 +1,6 @@
 import argparse
 
+from time import time
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
@@ -62,6 +63,7 @@ def main(options):
     # Split on subject level
     split_subjects_to_tsv(options.diagnosis_tsv, n_splits=options.n_splits)
 
+    total_time = time()
     for fi in range(options.n_splits):
         # Get the data.
         print("Running for fold %d" % fi)
@@ -106,22 +108,47 @@ def main(options):
         optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
                                                              options.learning_rate)
 
+        training_time = time()
         train(model, train_loader, valid_loader, criterion, optimizer, fi, options)
+        training_time = time() - training_time
 
         # Load best model
         best_model, best_epoch = load_best(model, os.path.join(options.log_dir, "fold" + str(fi)))
 
         # Get test performance
+        acc_mean_train_subject = test(best_model, train_loader, options.gpu)
+        acc_mean_valid_subject = test(best_model, valid_loader, options.gpu)
         acc_mean_test_subject = test(best_model, test_loader, options.gpu)
+        accuracies = (acc_mean_train_subject, acc_mean_valid_subject, acc_mean_test_subject)
+        write_summary(options.log_dir, fi, accuracies, best_epoch, training_time)
         print("Subject level mean test accuracy for fold %d is: %f" % (fi, acc_mean_test_subject))
         test_accuracy[fi] = acc_mean_test_subject
         print()
 
+    total_time = time() - total_time
     print("For the k-fold CV, testing accuracies are %s " % str(test_accuracy))
     print('Mean accuracy of testing set: %f' % np.mean(test_accuracy))
+    print("Total time of computation: %d s" % total_time)
     test_df = pd.DataFrame(test_accuracy, columns=['accuracy'])
     test_df.index.name = 'fold'
     test_df.to_csv(path.join(options.log_dir, 'test_accuracies.tsv'), sep='\t')
+    text_file = open(path.join(options.fold_dir, 'model_output.txt'), 'w')
+    text_file.write('Time of training: %d s \n' % total_time)
+    text_file.write('Mean test accuracy: %.2f %% \n' % np.mean(test_accuracy))
+    text_file.write('Standard variation of test accuracy: %.2f %% \n' % np.std(test_accuracy))
+    text_file.close()
+
+
+def write_summary(log_dir, fold, accuracies, best_epoch, time):
+    fold_dir = path.join(log_dir, "fold" + str(fold))
+    text_file = open(path.join(fold_dir, 'fold_output.txt'), 'w')
+    text_file.write('Fold: %i \n' % fold)
+    text_file.write('Best epoch: %i \n' % best_epoch)
+    text_file.write('Time of training: %d s \n' % time)
+    text_file.write('Accuracy on training set: %.2f %% \n' % accuracies[0])
+    text_file.write('Accuracy on validation set: %.2f %% \n' % accuracies[1])
+    text_file.write('Accuracy on test set: %.2f %% \n' % accuracies[2])
+    text_file.close()
 
 
 if __name__ == "__main__":
