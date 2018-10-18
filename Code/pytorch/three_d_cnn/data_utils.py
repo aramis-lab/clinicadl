@@ -21,26 +21,23 @@ class MRIDataset(Dataset):
 
         """
         self.img_dir = img_dir
-        self.data_file = data_file
         self.transform = transform
         self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1}
 
         # Check the format of the tsv file here
-        df = pd.read_csv(self.data_file, sep='\t')
-        if ('diagnosis' not in list(df.columns.values)) or ('session_id' not in list(df.columns.values)) or \
-           ('participant_id' not in list(df.columns.values)):
+        self.df = pd.read_csv(data_file, sep='\t')
+        if ('diagnosis' not in list(self.df.columns.values)) or ('session_id' not in list(self.df.columns.values)) or \
+           ('participant_id' not in list(self.df.columns.values)):
             raise Exception("the data file is not in the correct format."
                             "Columns should include ['participant_id', 'session_id', 'diagnosis']")
 
     def __len__(self):
-        df = pd.read_csv(self.data_file, sep='\t')
-        return len(df)
+        return len(self.df)
 
     def __getitem__(self, idx):
-        df = pd.read_csv(self.data_file, sep='\t')
-        img_list = list(df['participant_id'])
-        sess_list = list(df['session_id'])
-        label_list = list(df['diagnosis'])
+        img_list = list(self.df['participant_id'])
+        sess_list = list(self.df['session_id'])
+        label_list = list(self.df['diagnosis'])
 
         img_name = img_list[idx]
         img_label = label_list[idx]
