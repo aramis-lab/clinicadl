@@ -27,8 +27,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
 
     # Initialize variables
     best_valid_accuracy = 0.0
-    acc_mean_valid = -1
-    is_best = -1
     model.train()  # set the module to training mode
 
     for epoch in range(options.epochs):
@@ -38,6 +36,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
         model.zero_grad()
         evaluation_flag = True
         step_flag = True
+        last_check_point_i = 0
         for i, data in enumerate(train_loader):
 
             if options.gpu:
@@ -78,14 +77,20 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
                                          'valid_acc': acc_mean_valid},
                                         is_best,
                                         os.path.join(options.log_dir, "fold" + str(fold)))
+                        last_check_point_i = i
 
         # If no step has been performed, raise Exception
         if step_flag:
             raise Exception('The model has not been updated once in the epoch. The accumulation step may be too large.')
 
-        # If no evaluation has been performed, evaluate once at the end of the epoch and warn
-        if evaluation_flag:
-            warnings.warn('Your evaluation steps are too big compared to the size of the dataset')
+        # If no evaluation has been performed, warn the user
+        elif evaluation_flag:
+            warnings.warn('Your evaluation steps are too big compared to the size of the dataset.'
+                          'The model is evaluated only once at the end of the epoch')
+
+        # Always test the results and save them once at the end of the epoch
+        if last_check_point_i != i:
+            print('Last checkpoint at the end of the epoch')
             acc_mean_valid = test(model, valid_loader, options.gpu)
             print("Scan level validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, i))
 
@@ -95,15 +100,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
                              'epoch': epoch,
                              'valid_acc': acc_mean_valid},
                             is_best,
-                            os.path.join(options.log_dir, "log_dir" + "fold" + str(fold)))
-
-        # Always save result at the end of epoch
-        save_checkpoint({'model': model.state_dict(),
-                         'iteration': i,
-                         'epoch': epoch,
-                         'valid_acc': acc_mean_valid},
-                        is_best,
-                        os.path.join(options.log_dir, "fold" + str(fold)))
+                            os.path.join(options.log_dir, "fold" + str(fold)))
 
         print('Total correct labels: %d / %d' % (total_correct_cnt, len(train_loader) * train_loader.batch_size))
         # at then end of each epoch, we validate one time for the model with the validation data
