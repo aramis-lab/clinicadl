@@ -6,7 +6,6 @@ import numpy as np
 import os
 import shutil
 import warnings
-from time import time
 
 
 def train(model, train_loader, valid_loader, criterion, optimizer, fold, options):
@@ -27,9 +26,12 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
 
     # Initialize variables
     best_valid_accuracy = 0.0
+    total_acc = 0.0
+    epoch = 0
+
     model.train()  # set the module to training mode
 
-    for epoch in range(options.epochs):
+    while epoch < options.epochs and total_acc < 1 - options.tolerance:
         total_correct_cnt = 0.0
         print("At %d-th epoch." % epoch)
 
@@ -103,7 +105,8 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
                             os.path.join(options.log_dir, "fold" + str(fold)))
 
         print('Total correct labels: %d / %d' % (total_correct_cnt, len(train_loader) * train_loader.batch_size))
-        # at then end of each epoch, we validate one time for the model with the validation data
+        total_acc = float(total_correct_cnt) / (len(train_loader) * train_loader.batch_size)
+        epoch += 1
 
 
 def test(model, dataloader, use_cuda, verbose=False, full_return=False):

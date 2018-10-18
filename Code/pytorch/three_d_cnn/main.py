@@ -30,6 +30,8 @@ parser.add_argument("--epochs", default=20, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--learning_rate", "-lr", default=1e-4, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
+parser.add_argument("--tolerance", "-tol", default=5e-2, type=float,
+                    help="Allows to stop when the training data is nearly learnt")
 parser.add_argument("--batch_size", default=1, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
