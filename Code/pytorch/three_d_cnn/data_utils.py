@@ -153,7 +153,9 @@ def split_subjects_to_tsv(diagnoses_tsv, n_splits=5, val_size=0.15):
     y = np.array([unique.index(x) for x in diagnoses_list])  # There is one label per diagnosis depending on the order
 
     splits = StratifiedKFold(n_splits=n_splits, shuffle=True)
-    sets_dir = path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0])
+    sets_dir = path.join(path.dirname(diagnoses_tsv),
+                         path.basename(diagnoses_tsv).split('.')[0],
+                         'splits-' + str(n_splits))
     if not path.exists(sets_dir):
         os.makedirs(sets_dir)
 
@@ -176,30 +178,47 @@ def split_subjects_to_tsv(diagnoses_tsv, n_splits=5, val_size=0.15):
         df_valid = multiple_time_points(df, df_sub_valid)
         df_train = multiple_time_points(df, df_sub_train)
 
-        df_train.to_csv(path.join(sets_dir, path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_train.tsv'), sep='\t', index=False)
-        df_test.to_csv(path.join(sets_dir, path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_test.tsv'), sep='\t', index=False)
-        df_valid.to_csv(path.join(sets_dir, path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_valid.tsv'), sep='\t', index=False)
+        df_train.to_csv(path.join(sets_dir, 'val_size-' + str(val_size) + '_iteration-' + str(n_iteration) + '_train.tsv'), sep='\t', index=False)
+        df_test.to_csv(path.join(sets_dir, 'val_size-' + str(val_size) + '_iteration-' + str(n_iteration) + '_test.tsv'), sep='\t', index=False)
+        df_valid.to_csv(path.join(sets_dir, 'val_size-' + str(val_size) + '_iteration-' + str(n_iteration) + '_valid.tsv'), sep='\t', index=False)
         n_iteration += 1
 
 
-def load_split(diagnoses_tsv, fold):
+def load_split(diagnoses_tsv, fold, n_splits=5, val_size=0.15):
     """
     Returns the paths of the TSV files for each set
 
     :param diagnoses_tsv: (str) path to the tsv file with diagnoses
     :param fold: (int) the number of the current fold
+    :param n_splits: (int) the total number of folds
+    :param val_size: (float) the proportion of the training set used for validation
     :return: 3 Strings
         training_tsv
         test_tsv
         valid_tsv
     """
-    sets_dir = path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0])
+    sets_dir = path.join(path.dirname(diagnoses_tsv),
+                         path.basename(diagnoses_tsv).split('.')[0],
+                         'splits-' + str(n_splits))
+
+    if fold >= n_splits:
+        raise Exception("The fold number must not exceed the number of splits.")
 
     training_tsv = path.join(sets_dir,
-                             path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(fold) + '_train.tsv')
+                             'val_size-' + str(val_size) + '_iteration-' + str(fold) + '_train.tsv')
     test_tsv = path.join(sets_dir,
-                         path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(fold) + '_test.tsv')
+                         'val_size-' + str(val_size) + '_iteration-' + str(fold) + '_test.tsv')
     valid_tsv = path.join(sets_dir,
-                          path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(fold) + '_valid.tsv')
+                          'val_size-' + str(val_size) + '_iteration-' + str(fold) + '_valid.tsv')
+
+    if not path.exists(training_tsv) or not path.exists(test_tsv) or not path.exists(valid_tsv):
+        split_subjects_to_tsv(diagnoses_tsv, n_splits, val_size)
+
+        training_tsv = path.join(sets_dir,
+                                 'val_size-' + str(val_size) + '_iteration-' + str(fold) + '_train.tsv')
+        test_tsv = path.join(sets_dir,
+                             'val_size-' + str(val_size) + '_iteration-' + str(fold) + '_test.tsv')
+        valid_tsv = path.join(sets_dir,
+                              'val_size-' + str(val_size) + '_iteration-' + str(fold) + '_valid.tsv')
 
     return training_tsv, test_tsv, valid_tsv

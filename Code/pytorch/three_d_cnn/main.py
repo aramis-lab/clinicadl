@@ -64,8 +64,6 @@ def main(options):
                         (options.evaluation_steps, options.accumulation_steps))
 
     transformations = transforms.Compose([ToTensor()])
-    # Split on subject level
-    split_subjects_to_tsv(options.diagnosis_tsv, n_splits=options.n_splits)
 
     total_time = time()
     for fi in range(options.n_splits):
