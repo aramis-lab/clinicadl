@@ -17,8 +17,6 @@ def preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working
 
     """
 
-    from nipype.interfaces.freesurfer import MNIBiasCorrection, MRIConvert
-    from nipype.interfaces.fsl import BET, FLIRT, ApplyXfm
     from nipype.interfaces import ants
     import nipype.interfaces.io as nio
     import nipype.interfaces.utility as nutil
@@ -90,7 +88,7 @@ def preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working
 
 
     outputnode = npe.Node(nutil.IdentityInterface(
-        fields=['out_file']),
+        fields=['out_file_inn', 'out_file_crop']),
         name='outputnode')
 
     # get the information for datasinker.
@@ -100,8 +98,8 @@ def preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working
     get_identifiers.inputs.caps_directory = caps_directory
 
     ### datasink
-    datasink = npe.MapNode(nio.DataSink(infields=['out_file']), name='datasinker',
-                          iterfield=['out_file', 'base_directory', 'substitutions', 'regexp_substitutions'])
+    datasink = npe.MapNode(nio.DataSink(infields=['out_file_inn', 'out_file_crop']), name='datasinker',
+                          iterfield=['out_file_inn', 'out_file_crop', 'base_directory', 'substitutions', 'regexp_substitutions'])
     datasink.inputs.remove_dest_dir = True
 
 
@@ -141,7 +139,10 @@ def preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working
                 (get_identifiers, datasink, [('regexp_substitutions', 'regexp_substitutions')]),
                 # datasink to save outputs
                 # smoothed dti maps
-                (intensitynorm, datasink, [('output_img', 'out_file')]),
+                (intensitynorm, datasink, [('output_img', 'out_file_inn')]),
+                (intensitynorm, outputnode, [('output_img', 'out_file_inn')]),
+                (cropnifti, datasink, [('output_img', 'out_file_crop')]),
+                (cropnifti, outputnode, [('output_img', 'out_file_crop')]),
                 ])
 
 

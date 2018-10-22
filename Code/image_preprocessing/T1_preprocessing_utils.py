@@ -16,13 +16,16 @@ def get_subid_sesid_datasink(participant_id, session_id, caps_directory):
 
     subst_tuple_list = [  # registration
         (participant_id + '_' + session_id + '_SyN_QuickWarped_cropped_intensity_norm.nii.gz',
-         participant_id + '_' + session_id + '_space-MNI_res-1x1x1.nii.gz')
+         participant_id + '_' + session_id + '_space-MNI_res-1x1x1_intensity_norm.nii.gz'),
+        (participant_id + '_' + session_id + '_SyN_QuickWarped_cropped.nii.gz',
+        participant_id + '_' + session_id + '_space-MNI_res-1x1x1.nii.gz')
         ]
 
     regexp_substitutions = [
         # I don't know why it's adding this empty folder, so I remove it:
         # NOTE, . means any characters and * means any number of repetition in python regex
-        (r'/out_file/_intensitynormalization\d{1,4}/', r'/'),
+        (r'/out_file_crop/_cropnifti\d{1,4}/', r'/'),
+        (r'/out_file_inn/_intensitynormalization\d{1,4}/', r'/'),
         # I don't know why it's adding this empty folder, so I remove it:
         (r'trait_added/_datasinker\d{1,4}/', r'')
     ]
@@ -42,6 +45,7 @@ def bids_datagrabber_t1w(input_dir, subject_list, session_list):
     """
     from bids.grabbids.bids_layout import BIDSLayout
     from clinica.utils.stream import cprint
+    import os
 
     bidslayout = BIDSLayout(input_dir)
     missing_subject_session = []
@@ -83,6 +87,13 @@ def bids_datagrabber_t1w(input_dir, subject_list, session_list):
 
     anat_t1 = [i[0] for i in anat_t1]
 
+    ### check if each anat exist
+    for anat in anat_t1:
+        if os.path.isfile(anat):
+            cprint("GREAT")
+        else:
+            raise Exception('This anat does not exist: %s' % anat)
+
     return anat_t1
 
 def crop_nifti(input_img, ref_img):
@@ -103,8 +114,8 @@ def crop_nifti(input_img, ref_img):
 
     basedir = os.getcwd()
     crop_ref = crop_img(ref_img, rtol=0.5)
-    crop_ref.to_filename(os.path.join(os.path.dirname(ref_img), os.path.basename(ref_img).split('.nii')[0] + '_cropped.nii.gz'))
-    crop_template = os.path.join(os.path.dirname(ref_img), os.path.basename(ref_img).split('.nii')[0] + '_cropped.nii.gz')
+    crop_ref.to_filename(os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped_template.nii.gz'))
+    crop_template = os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped_template.nii.gz')
 
     ## resample the individual MRI onto the cropped template image
     crop_img = resample_to_img(input_img, crop_template)
