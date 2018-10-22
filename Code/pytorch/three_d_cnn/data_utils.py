@@ -222,3 +222,63 @@ def load_split(diagnoses_tsv, fold, n_splits=5, val_size=0.15):
                               'val_size-' + str(val_size) + '_iteration-' + str(fold) + '_valid.tsv')
 
     return training_tsv, test_tsv, valid_tsv
+
+
+def load_pretraining_split(diagnoses_tsv, val_size=0.15):
+
+    sets_dir = path.join(path.dirname(diagnoses_tsv),
+                         path.basename(diagnoses_tsv).split('.')[0],
+                         "pretraining")
+
+    training_tsv = path.join(sets_dir,
+                             'val_size-' + str(val_size) + '_train.tsv')
+    valid_tsv = path.join(sets_dir,
+                          'val_size-' + str(val_size) + '_valid.tsv')
+
+    if not path.exists(training_tsv) or not path.exists(valid_tsv):
+        pretraining_split(diagnoses_tsv, val_size)
+
+        training_tsv = path.join(sets_dir,
+                                 'val_size-' + str(val_size) + '_train.tsv')
+        valid_tsv = path.join(sets_dir,
+                              'val_size-' + str(val_size) + '_valid.tsv')
+
+    return training_tsv, valid_tsv
+
+
+def pretraining_split(diagnoses_tsv, val_size=0.15):
+    """
+    Write the tsv files corresponding to the train/val splits for pretraining
+
+    :param diagnoses_tsv: (str) path to the tsv file with diagnoses
+    :param val_size: (float) proportion of the train set being used for validation
+    :return: None
+    """
+
+    df = pd.read_csv(diagnoses_tsv, sep='\t')
+    if 'diagnosis' not in list(df.columns.values):
+        raise Exception('Diagnoses file is not in the correct format.')
+    # Here we reduce the DataFrame to have only one diagnosis per subject (multiple time points case)
+    diagnosis_df = subject_diagnosis_df(df)
+    diagnoses_list = list(diagnosis_df.diagnosis)
+    unique = list(set(diagnoses_list))
+    y = np.array([unique.index(x) for x in diagnoses_list])  # There is one label per diagnosis depending on the order
+
+    sets_dir = path.join(path.dirname(diagnoses_tsv),
+                         path.basename(diagnoses_tsv).split('.')[0],
+                         "pretraining")
+    if not path.exists(sets_dir):
+        os.makedirs(sets_dir)
+
+    # split the train data into training and validation set
+    splits = StratifiedShuffleSplit(n_splits=1, test_size=val_size)
+    indices = next(splits.split(np.zeros(len(y)), y))
+    train_ind, valid_ind = indices
+
+    df_sub_valid = diagnosis_df.iloc[valid_ind]
+    df_sub_train = diagnosis_df.iloc[train_ind]
+    df_valid = multiple_time_points(df, df_sub_valid)
+    df_train = multiple_time_points(df, df_sub_train)
+
+    df_train.to_csv(path.join(sets_dir, 'val_size-' + str(val_size) + '_train.tsv'), sep='\t', index=False)
+    df_valid.to_csv(path.join(sets_dir, 'val_size-' + str(val_size) + '_valid.tsv'), sep='\t', index=False)

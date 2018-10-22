@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 
 from classification_utils import *
 from data_utils import *
-from model import Hosseini
+from model import *
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D CNN")
 
@@ -29,9 +29,15 @@ parser.add_argument("--shuffle", default=True, type=bool,
 parser.add_argument("--n_splits", default=5, type=int,
                     help="How many folds for the k-fold cross validation procedure.")
 
-# Training arguments
-parser.add_argument("-t", "--transfer_learning", default=False,
+# Pretraining arguments
+parser.add_argument("-t", "--transfer_learning", default=False, action='store_true',
                     help="If do transfer learning")
+parser.add_argument("--transfer_learning_tsv", "-t_tsv", type=str, default=None,
+                    help='If transfer learning, gives the tsv file to use to perform pretraining')
+parser.add_argument("--transfer_learning_epochs", "-t_e", type=int, default=10,
+                    help="Number of epochs for pretraining")
+
+# Training arguments
 parser.add_argument("--epochs", default=20, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--learning_rate", "-lr", default=1e-4, type=float,
@@ -65,12 +71,40 @@ def main(options):
 
     transformations = transforms.Compose([ToTensor()])
 
+    # Pretraining the model
+    if options.transfer_learning:
+        model = Hosseini()
+        criterion = torch.nn.MSELoss()
+        if options.transfer_learning is None:
+            raise Exception("A tsv file with data for pretraining must be given")
+        training_tsv, valid_tsv = load_pretraining_split(options.transfer_learning_tsv)
+
+        data_train = MRIDataset(options.input_dir, training_tsv, transformations)
+        data_valid = MRIDataset(options.input_dir, valid_tsv, transformations)
+
+        # Use argument load to distinguish training and testing
+        train_loader = DataLoader(data_train,
+                                  batch_size=options.batch_size,
+                                  shuffle=options.shuffle,
+                                  num_workers=0,
+                                  drop_last=True
+                                  )
+
+        valid_loader = DataLoader(data_valid,
+                                  batch_size=options.batch_size,
+                                  shuffle=False,
+                                  num_workers=0,
+                                  drop_last=False
+                                  )
+
+        ae_pretraining(model, train_loader, valid_loader, criterion, True, options)
+
     total_time = time()
     for fi in range(options.n_splits):
         # Get the data.
         print("Running for fold %d" % fi)
 
-        training_tsv, test_tsv, valid_tsv = load_split(options.diagnosis_tsv, fold=fi)
+        training_tsv, test_tsv, valid_tsv = load_split(options.diagnosis_tsv, fold=fi, n_splits=options.n_splits)
 
         data_train = MRIDataset(options.input_dir, training_tsv, transformations)
         data_test = MRIDataset(options.input_dir, test_tsv, transformations)
@@ -99,11 +133,9 @@ def main(options):
                                   )
 
         # Initialize the model
-        model = Hosseini()
-        if options.gpu:
-            model.cuda()
-        else:
-            model.cpu()
+        print('Before the creation of the model', torch.cuda.memory_allocated())
+        model = create_model(options)
+        print('After the creation of the model', torch.cuda.memory_allocated())
 
         # Define criterion and optimizer
         criterion = torch.nn.CrossEntropyLoss()
@@ -115,7 +147,7 @@ def main(options):
         training_time = time() - training_time
 
         # Load best model
-        best_model, best_epoch = load_best(model, os.path.join(options.log_dir, "fold" + str(fi)))
+        best_model, best_epoch = load_model(model, os.path.join(options.log_dir, "fold" + str(fi)))
 
         # Get test performance
         acc_mean_train_subject = test(best_model, train_loader, options.gpu)

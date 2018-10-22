@@ -1,5 +1,4 @@
 import torch
-from torch.autograd import Variable
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
@@ -42,9 +41,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
         for i, data in enumerate(train_loader):
 
             if options.gpu:
-                imgs, labels = Variable(data['image']).cuda(), Variable(data['label']).cuda()
+                imgs, labels = data['image'].cuda(), data['label'].cuda()
             else:
-                imgs, labels = Variable(data['image']), Variable(data['label'])
+                imgs, labels = data['image'], data['label']
 
             train_output = model(imgs)
             _, predict = train_output.topk(1)
@@ -67,6 +66,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
                     evaluation_flag = False
                     print('Iteration %d' % i)
                     acc_mean_valid = test(model, valid_loader, options.gpu)
+                    model.train()
                     print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
                     is_best = acc_mean_valid > best_valid_accuracy
@@ -94,6 +94,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
         if last_check_point_i != i:
             print('Last checkpoint at the end of the epoch %d' % epoch)
             acc_mean_valid = test(model, valid_loader, options.gpu)
+            model.train()
             print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
             is_best = acc_mean_valid > best_valid_accuracy
@@ -127,7 +128,6 @@ def test(model, dataloader, use_cuda, verbose=False, full_return=False):
     if use_cuda:
         predicted_tensor = predicted_tensor.cuda()
         truth_tensor = truth_tensor.cuda()
-    model = model.eval()
 
     for i, data in enumerate(dataloader):
         if use_cuda:
@@ -206,11 +206,11 @@ def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar
         shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(checkpoint_dir, 'model_best.pth.tar'))
 
 
-def load_best(model, checkpoint_dir):
+def load_model(model, checkpoint_dir, filename='model_best.pth.tar'):
     from copy import deepcopy
 
     best_model = deepcopy(model)
-    param_dict = torch.load(os.path.join(checkpoint_dir, 'model_best.pth.tar'))
+    param_dict = torch.load(os.path.join(checkpoint_dir, filename))
     best_model.load_state_dict(param_dict['model'])
     return best_model, param_dict['epoch']
 
@@ -220,3 +220,155 @@ def check_and_clean(d):
     if os.path.exists(d):
         shutil.rmtree(d)
     os.makedirs(d)
+
+
+def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
+    # Create writers
+    from model import Decoder
+    from tensorboardX import SummaryWriter
+    from copy import deepcopy
+    import torch.optim as optim
+
+    writer_train = SummaryWriter(log_dir=(os.path.join(options.log_dir, "pretraining")))
+
+    decoder = Decoder(model)
+    decoder.train()
+    optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
+                                                         options.learning_rate)
+
+    if gpu:
+        decoder.cuda()
+
+    # Initialize variables
+    best_loss_valid = np.inf
+    for epoch in range(options.transfer_learning_epochs):
+        print("At %d-th epoch." % epoch)
+
+        decoder.zero_grad()
+        evaluation_flag = True
+        step_flag = True
+        last_check_point_i = 0
+        for i, data in enumerate(train_loader):
+            if gpu:
+                imgs = data['image'].cuda()
+            else:
+                imgs = data['image']
+
+            train_output = decoder(imgs)
+            loss = criterion(train_output, imgs)
+            loss.backward()
+
+            writer_train.add_scalar('training_loss', loss.item() / len(data), i + epoch * len(train_loader.dataset))
+
+            if (i+1) % options.accumulation_steps == 0:
+                step_flag = False
+                optimizer.step()
+                model.zero_grad()
+
+                # Evaluate the decoder only when no gradients are accumulated
+                if (i + 1) % options.evaluation_steps == 0:
+                    evaluation_flag = False
+                    print('Iteration %d' % i)
+                    loss_valid = test_ae(decoder, valid_loader, gpu, criterion)
+                    decoder.train()
+                    print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
+
+                    is_best = loss_valid < best_loss_valid
+                    # Save only if is best to avoid performance deterioration
+                    if is_best:
+                        best_loss_valid = loss_valid
+                        save_checkpoint({'model': decoder.state_dict(),
+                                         'iteration': i,
+                                         'epoch': epoch,
+                                         'loss_valid': loss_valid},
+                                        is_best,
+                                        os.path.join(options.log_dir, "pretraining"))
+                        last_check_point_i = i
+
+        # If no step has been performed, raise Exception
+        if step_flag:
+            raise Exception('The model has not been updated once in the epoch. The accumulation step may be too large.')
+
+        # If no evaluation has been performed, warn the user
+        if evaluation_flag:
+            warnings.warn('Your evaluation steps are too big compared to the size of the dataset.'
+                          'The model is evaluated only once at the end of the epoch')
+
+        # Always test the results and save them once at the end of the epoch
+        if last_check_point_i != i:
+            print('Last checkpoint at the end of the epoch %d' % epoch)
+            loss_valid = test_ae(decoder, valid_loader, gpu, criterion)
+            decoder.train()
+            print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
+
+            is_best = loss_valid < best_loss_valid
+            # Save only if is best to avoid performance deterioration
+            if is_best:
+                best_loss_valid = loss_valid
+                save_checkpoint({'model': decoder.state_dict(),
+                                 'iteration': i,
+                                 'epoch': epoch,
+                                 'loss_valid': loss_valid},
+                                is_best,
+                                os.path.join(options.log_dir, "pretraining"))
+
+    print('End of training', torch.cuda.memory_allocated())
+    # Updating and setting weights of the convolutional layers
+    best_decoder, best_epoch = load_model(decoder, os.path.join(options.log_dir, "pretraining"))
+    print('Loading best_decoder', torch.cuda.memory_allocated())
+    model.features = deepcopy(best_decoder.encoder)
+    save_checkpoint({'model': model.state_dict(),
+                     'epoch': best_epoch},
+                    False,
+                    os.path.join(options.log_dir, "pretraining"),
+                    'model_pretrained.pth.tar')
+    print('Saving best model', torch.cuda.memory_allocated())
+
+
+def test_ae(model, dataloader, use_cuda, criterion):
+    """
+    Computes the loss of the model
+
+    :param model: the network (subclass of nn.Module)
+    :param dataloader: a DataLoader wrapping a dataset
+    :param use_cuda: if True a gpu is used
+    :return: loss of the model (float)
+    """
+    model.eval()
+
+    total_loss = 0
+    for i, data in enumerate(dataloader):
+        if use_cuda:
+            inputs = data['image'].cuda()
+        else:
+            inputs = data['image']
+
+        outputs = model(inputs)
+        loss = criterion(outputs, inputs)
+        total_loss += loss.item()
+
+    return total_loss
+
+
+def memReport():
+    import gc
+
+    cnt_tensor = 0
+    for obj in gc.get_objects():
+        if torch.is_tensor(obj) and (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+            print(type(obj), obj.size(), obj.is_cuda)
+            cnt_tensor += 1
+    print('Count: ', cnt_tensor)
+
+
+def cpuStats():
+    import sys
+    import psutil
+
+    print(sys.version)
+    print(psutil.cpu_percent())
+    print(psutil.virtual_memory())  # physical memory usage
+    pid = os.getpid()
+    py = psutil.Process(pid)
+    memoryUse = py.memory_info()[0] / 2. ** 30  # memory use in GB...I think
+    print('memory GB:', memoryUse)
