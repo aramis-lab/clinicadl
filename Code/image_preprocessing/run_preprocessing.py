@@ -13,4 +13,4 @@ ref_template = '/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlab
 
 
 wf = preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working_directory=working_dir)
-wf.run(plugin='MultiProc', plugin_args={'n_procs': 72})
+wf.run(plugin='MultiProc', plugin_args={'n_procs': 8})

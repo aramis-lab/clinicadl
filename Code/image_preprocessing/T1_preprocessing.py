@@ -88,7 +88,7 @@ def preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working
 
 
     outputnode = npe.Node(nutil.IdentityInterface(
-        fields=['out_file_inn', 'out_file_crop']),
+        fields=['out_file_inn', 'out_file_crop', 'out_file_reg']),
         name='outputnode')
 
     # get the information for datasinker.
@@ -98,8 +98,8 @@ def preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working
     get_identifiers.inputs.caps_directory = caps_directory
 
     ### datasink
-    datasink = npe.MapNode(nio.DataSink(infields=['out_file_inn', 'out_file_crop']), name='datasinker',
-                          iterfield=['out_file_inn', 'out_file_crop', 'base_directory', 'substitutions', 'regexp_substitutions'])
+    datasink = npe.MapNode(nio.DataSink(infields=['out_file_inn', 'out_file_crop', 'out_file_reg']), name='datasinker',
+                          iterfield=['out_file_inn', 'out_file_crop', 'out_file_reg', 'base_directory', 'substitutions', 'regexp_substitutions'])
     datasink.inputs.remove_dest_dir = True
 
 
@@ -143,6 +143,8 @@ def preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working
                 (intensitynorm, outputnode, [('output_img', 'out_file_inn')]),
                 (cropnifti, datasink, [('output_img', 'out_file_crop')]),
                 (cropnifti, outputnode, [('output_img', 'out_file_crop')]),
+                (antsRegistrationSyNQuick, datasink, [('image_warped', 'out_file_reg')]),
+                (antsRegistrationSyNQuick, outputnode, [('image_warped', 'out_file_reg')]),
                 ])
 
 

@@ -18,7 +18,9 @@ def get_subid_sesid_datasink(participant_id, session_id, caps_directory):
         (participant_id + '_' + session_id + '_SyN_QuickWarped_cropped_intensity_norm.nii.gz',
          participant_id + '_' + session_id + '_space-MNI_res-1x1x1_intensity_norm.nii.gz'),
         (participant_id + '_' + session_id + '_SyN_QuickWarped_cropped.nii.gz',
-        participant_id + '_' + session_id + '_space-MNI_res-1x1x1.nii.gz')
+        participant_id + '_' + session_id + '_space-MNI_res-1x1x1.nii.gz'),
+        (participant_id + '_' + session_id + '_SyN_QuickWarped.nii.gz',
+         participant_id + '_' + session_id + '_space-MNI_res-1x1x1_linear_registration.nii.gz')
         ]
 
     regexp_substitutions = [
@@ -26,6 +28,7 @@ def get_subid_sesid_datasink(participant_id, session_id, caps_directory):
         # NOTE, . means any characters and * means any number of repetition in python regex
         (r'/out_file_crop/_cropnifti\d{1,4}/', r'/'),
         (r'/out_file_inn/_intensitynormalization\d{1,4}/', r'/'),
+        (r'/out_file_reg/_antsRegistrationSyNQuick\d{1,4}/', r'/'),
         # I don't know why it's adding this empty folder, so I remove it:
         (r'trait_added/_datasinker\d{1,4}/', r'')
     ]
