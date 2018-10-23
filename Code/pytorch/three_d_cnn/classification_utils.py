@@ -233,7 +233,7 @@ def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
 
     decoder = Decoder(model)
     decoder.train()
-    optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
+    optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
                                                          options.learning_rate)
 
     if gpu:
