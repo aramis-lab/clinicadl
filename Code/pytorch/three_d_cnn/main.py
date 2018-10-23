@@ -71,6 +71,7 @@ def main(options):
 
     transformations = transforms.Compose([ToTensor()])
 
+    total_time = time()
     # Pretraining the model
     if options.transfer_learning:
         model = Hosseini()
@@ -99,7 +100,6 @@ def main(options):
 
         ae_pretraining(model, train_loader, valid_loader, criterion, True, options)
 
-    total_time = time()
     for fi in range(options.n_splits):
         # Get the data.
         print("Running for fold %d" % fi)
