@@ -133,9 +133,7 @@ def main(options):
                                   )
 
         # Initialize the model
-        print('Before the creation of the model', torch.cuda.memory_allocated())
         model = create_model(options)
-        print('After the creation of the model', torch.cuda.memory_allocated())
 
         # Define criterion and optimizer
         criterion = torch.nn.CrossEntropyLoss()

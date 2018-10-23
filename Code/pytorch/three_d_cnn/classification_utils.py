@@ -227,7 +227,6 @@ def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
     from model import Decoder
     from tensorboardX import SummaryWriter
     from copy import deepcopy
-    import torch.optim as optim
 
     writer_train = SummaryWriter(log_dir=(os.path.join(options.log_dir, "pretraining")))
 
@@ -315,14 +314,12 @@ def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
     print('End of training', torch.cuda.memory_allocated())
     # Updating and setting weights of the convolutional layers
     best_decoder, best_epoch = load_model(decoder, os.path.join(options.log_dir, "pretraining"))
-    print('Loading best_decoder', torch.cuda.memory_allocated())
     model.features = deepcopy(best_decoder.encoder)
     save_checkpoint({'model': model.state_dict(),
                      'epoch': best_epoch},
                     False,
                     os.path.join(options.log_dir, "pretraining"),
                     'model_pretrained.pth.tar')
-    print('Saving best model', torch.cuda.memory_allocated())
 
 
 def test_ae(model, dataloader, use_cuda, criterion):
