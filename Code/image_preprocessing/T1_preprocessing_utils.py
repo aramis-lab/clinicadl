@@ -183,5 +183,58 @@ def ants_histogram_intensity_normalization(crop_template, input_img, image_dimen
 
     return output_img
 
+def get_caps_list(caps_directory, tsv):
+    """
+    THis is a function to grab all the cropped files
+    :param caps_directory:
+    :param tsv:
+    :return:
+    """
+    import pandas as pd
+    import os
+
+    caps_intensity_nor_list = []
+    df = pd.read_csv(tsv, sep='\t')
+    if ('diagnosis' != list(df.columns.values)[2]) and ('session_id' != list(df.columns.values)[1]) and (
+                'participant_id' != list(df.columns.values)[0]):
+        raise Exception('the data file is not in the correct format.')
+    img_list = list(df['participant_id'])
+    sess_list = list(df['session_id'])
+
+    for i in range(len(img_list)):
+        img_path = os.path.join(caps_directory, 'subjects', img_list[i], sess_list[i], 't1', 'preprocessing_dl', img_list[i] + '_' + sess_list[i] + '_space-MNI_res-1x1x1_linear_registration.nii.gz')
+        caps_intensity_nor_list.append(img_path)
+
+    return caps_intensity_nor_list
+
+
+def rank_mean(similarity, tsv, caps_directory):
+    """
+     This is a function to rank the difference img for all individuals
+    :param similarity: a list of list containing the similarity value of each MRI
+    :param tsv:
+    :param caps_directory:
+    :return:
+    """
+
+    import pandas as pd
+    import os
+
+    df = pd.read_csv(tsv, sep='\t')
+    if ('diagnosis' != list(df.columns.values)[2]) and ('session_id' != list(df.columns.values)[1]) and (
+                'participant_id' != list(df.columns.values)[0]):
+        raise Exception('the data file is not in the correct format.')
+
+    similarity = [abs(i[0]) for i in similarity]
+
+    similaritys = pd.Series(similarity)
+    df_new = df.copy()
+    df_new['similarity'] = similaritys.values
+    df_new[['similarity']] = df_new[['similarity']].astype(float)
+    # df_new.sort_values('similarity')
+    df_new.to_csv(os.path.join(caps_directory, 'qc_mi.tsv'), sep='\t')
+
+
+
 
 
