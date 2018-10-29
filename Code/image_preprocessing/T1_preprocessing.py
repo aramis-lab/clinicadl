@@ -8,9 +8,9 @@ Created on Mon Nov 06 14:17:41 2017
 def preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working_directory=None):
     """
     This is a preprocessing pipeline including three steps:
-        1) N3 bias correction (using freesurfermri-nu_correct.mni commandline)
-        2) skull-stripping (using fsl bet commandline)
-        3) linear registration to MNI (colin 27 template or IXI from VBM8) (using fsl flirt with dof = 9, affine registration)
+        1) N4 bias correction (Ants)
+        2) linear registration to MNI (MNI icbm152 nlinear sym template) (ANTS)
+        3) cropping the background to save the computational power
     Args:
 
     Returns:
