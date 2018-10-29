@@ -5,6 +5,7 @@ import numpy as np
 import os
 import shutil
 import warnings
+import pandas as pd
 
 
 def train(model, train_loader, valid_loader, criterion, optimizer, fold, options):
@@ -17,11 +18,14 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
     :param optimizer:
     :param fold:
     :param options:
-    :return:
     """
     # Create writers
     from tensorboardX import SummaryWriter
     writer_train = SummaryWriter(log_dir=(os.path.join(options.log_dir, "fold" + str(fold), "train")))
+    filename = os.path.join(options.log_dir, "fold" + str(fold), 'training.tsv')
+    results_df = pd.DataFrame(columns=['epoch', 'iteration', 'acc_train', 'acc_valid'])
+    with open(filename, 'w') as f:
+        results_df.to_csv(f, index=False, sep='\t')
 
     # Initialize variables
     best_valid_accuracy = 0.0
@@ -65,10 +69,16 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
                 if(i+1) % options.evaluation_steps == 0:
                     evaluation_flag = False
                     print('Iteration %d' % i)
+                    acc_mean_train = test(model, train_loader, options.gpu)
                     acc_mean_valid = test(model, valid_loader, options.gpu)
                     model.train()
+                    print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
                     print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
+                    row = np.array([epoch, i, acc_mean_train, acc_mean_valid]).reshape(1, -1)
+                    row_df = pd.DataFrame(row, columns=['epoch', 'iteration', 'acc_train', 'acc_valid'])
+                    with open(filename, 'a') as f:
+                        row_df.to_csv(f, header=False, index=False, sep='\t')
                     is_best = acc_mean_valid > best_valid_accuracy
                     # Save only if is best to avoid performance deterioration
                     if is_best:
@@ -93,10 +103,16 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
         # Always test the results and save them once at the end of the epoch
         if last_check_point_i != i:
             print('Last checkpoint at the end of the epoch %d' % epoch)
+            acc_mean_train = test(model, train_loader, options.gpu)
             acc_mean_valid = test(model, valid_loader, options.gpu)
             model.train()
+            print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
             print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
+            row = np.array([epoch, i, acc_mean_train, acc_mean_valid]).reshape(1, -1)
+            row_df = pd.DataFrame(row, columns=['epoch', 'iteration', 'acc_train', 'acc_valid'])
+            with open(filename, 'a') as f:
+                row_df.to_csv(f, header=False, index=False, sep='\t')
             is_best = acc_mean_valid > best_valid_accuracy
             best_valid_accuracy = max(acc_mean_valid, best_valid_accuracy)
             save_checkpoint({'model': model.state_dict(),
