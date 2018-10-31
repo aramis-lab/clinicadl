@@ -196,8 +196,6 @@ def create_model(options):
 
     if options.transfer_learning:
         model, _ = load_model(model, path.join(options.log_dir, "pretraining"), 'model_pretrained.pth.tar')
-        for p in model.features.parameters():
-            p.requires_grad = False
 
     return model
 
