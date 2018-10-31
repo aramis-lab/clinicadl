@@ -18,6 +18,8 @@ parser.add_argument("log_dir", type=str,
                     help="Path to log dir for tensorboard usage.")
 parser.add_argument("input_dir", type=str,
                     help="Path to input dir of the MRI (preprocessed CAPS_dir).")
+parser.add_argument("model", type=str, choices=["Hosseini", "Esmaeilzadeh"],
+                    help="model selected")
 
 # Data Management
 parser.add_argument("--batch_size", default=1, type=int,

@@ -140,11 +140,54 @@ class Hosseini(nn.Module):
         return x
 
 
+class Esmaeilzadeh(nn.Module):
+    """
+    Classifier for a 2-class classification task
+
+    """
+
+    def __init__(self, dropout=0.0, n_classes=2):
+        super(Esmaeilzadeh, self).__init__()
+
+        self.features = nn.Sequential(
+            # Convolutions
+            nn.Conv3d(1, 32, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3),
+            nn.ReLU(),
+            PadMaxPool3d(3, 3),
+
+            nn.Conv3d(64, 128, 3),
+            nn.ReLU(),
+            PadMaxPool3d(4, 4)
+        )
+        self.classifier = nn.Sequential(
+            # Fully connected layers
+            Flatten(),
+
+            nn.Dropout(p=dropout),
+            nn.Linear(128 * 5 * 6 * 5, 256),
+            nn.ReLU(),
+
+            nn.Linear(256, n_classes)
+        )
+
+        self.flattened_shape = [-1, 128, 5, 6, 5]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
 def create_model(options):
     from classification_utils import load_model
     from os import path
 
-    model = Hosseini()  # TODO Change to allow different models
+    model = eval(options.model)()
 
     if options.gpu:  # TODO Check if version 0.4.1 allows loading a model saved on a different device
         model.cuda()
