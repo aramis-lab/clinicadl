@@ -170,11 +170,10 @@ def split_subjects_to_tsv(diagnoses_tsv, n_splits=5, val_size=0.15):
         indices = next(skf_2.split(np.zeros(len(y_train)), y_train))
         train_ind, valid_ind = indices
 
-        # We use only one session per subject in the test set
-        df_test = diagnosis_df.iloc[test_index]
-
+        df_sub_test = diagnosis_df.iloc[test_index]
         df_sub_valid = diagnosis_df_train.iloc[valid_ind]
         df_sub_train = diagnosis_df_train.iloc[train_ind]
+        df_test = multiple_time_points(df, df_sub_test)
         df_valid = multiple_time_points(df, df_sub_valid)
         df_train = multiple_time_points(df, df_sub_train)
 

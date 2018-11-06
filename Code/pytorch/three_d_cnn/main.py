@@ -8,7 +8,7 @@ from classification_utils import *
 from data_utils import *
 from model import *
 
-parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D CNN")
+parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 
 # Mandatory arguments
 parser.add_argument("diagnosis_tsv", type=str,
@@ -30,6 +30,8 @@ parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="How many folds for the k-fold cross validation procedure.")
+parser.add_argument("--test_sessions", default=["ses-M00"], nargs='+', type=str,
+                    help="Test the accuracy at the end of the model for the sessions selected")
 
 # Pretraining arguments
 parser.add_argument("-t", "--transfer_learning", default=False, action='store_true',
@@ -60,13 +62,11 @@ parser.add_argument('--gpu', action='store_true', default=False,
 parser.add_argument('--evaluation_steps', '-esteps', default=1, type=int,
                     help='Fix the number of batches to use before validation')
 
-# feel free to add more arguments as you need
-
 
 def main(options):
 
     check_and_clean(options.log_dir)
-    test_accuracy = np.zeros(options.n_splits)
+    test_accuracy = np.zeros((options.n_splits, len(options.test_sessions)))
     if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
                         (options.evaluation_steps, options.accumulation_steps))
@@ -112,6 +112,18 @@ def main(options):
         data_test = MRIDataset(options.input_dir, test_tsv, transformations)
         data_valid = MRIDataset(options.input_dir, valid_tsv, transformations)
 
+        # Choose here a selection of sessions for the test
+        test_loader_list = []
+        for session in options.test_sessions:
+            data_test_session = session_restriction(data_test, session)
+            test_loader = DataLoader(data_test_session,
+                                     batch_size=options.batch_size,
+                                     shuffle=False,
+                                     num_workers=0,
+                                     drop_last=False
+                                     )
+            test_loader_list.append(test_loader)
+
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
                                   batch_size=options.batch_size,
@@ -119,13 +131,6 @@ def main(options):
                                   num_workers=0,
                                   drop_last=True
                                   )
-
-        test_loader = DataLoader(data_test,
-                                 batch_size=options.batch_size,
-                                 shuffle=False,
-                                 num_workers=0,
-                                 drop_last=False
-                                 )
 
         valid_loader = DataLoader(data_valid,
                                   batch_size=options.batch_size,
@@ -152,12 +157,13 @@ def main(options):
         # Get test performance
         acc_mean_train_subject = test(best_model, train_loader, options.gpu)
         acc_mean_valid_subject = test(best_model, valid_loader, options.gpu)
-        acc_mean_test_subject = test(best_model, test_loader, options.gpu)
-        accuracies = (acc_mean_train_subject, acc_mean_valid_subject, acc_mean_test_subject)
-        write_summary(options.log_dir, fi, accuracies, best_epoch, training_time)
-        print("Subject level mean test accuracy for fold %d is: %f" % (fi, acc_mean_test_subject))
-        test_accuracy[fi] = acc_mean_test_subject
-        print()
+        for i, test_loader in enumerate(test_loader_list):
+            session = options.test_sessions[i]
+            test_accuracy[fi, i] = test(best_model, test_loader, options.gpu)
+            print("Subject level mean test accuracy for fold %d on session %s is: %f" % (fi, session, test_accuracy[fi, i]))
+            print()
+        accuracies = (acc_mean_train_subject, acc_mean_valid_subject, test_accuracy[fi])
+        write_summary(options.log_dir, fi, accuracies, best_epoch, training_time, options.test_sessions)
 
     total_time = time() - total_time
     print("For the k-fold CV, testing accuracies are %s " % str(test_accuracy))
@@ -173,7 +179,7 @@ def main(options):
     text_file.close()
 
 
-def write_summary(log_dir, fold, accuracies, best_epoch, time):
+def write_summary(log_dir, fold, accuracies, best_epoch, time, test_sessions):
     fold_dir = path.join(log_dir, "fold" + str(fold))
     text_file = open(path.join(fold_dir, 'fold_output.txt'), 'w')
     text_file.write('Fold: %i \n' % fold)
@@ -181,8 +187,28 @@ def write_summary(log_dir, fold, accuracies, best_epoch, time):
     text_file.write('Time of training: %d s \n' % time)
     text_file.write('Accuracy on training set: %.2f %% \n' % accuracies[0])
     text_file.write('Accuracy on validation set: %.2f %% \n' % accuracies[1])
-    text_file.write('Accuracy on test set: %.2f %% \n' % accuracies[2])
+    for i, session in enumerate(test_sessions):
+        text_file.write('Accuracy on test set on sessions %s: %.2f %% \n' % (session, accuracies[2][i]))
     text_file.close()
+
+
+def session_restriction(data_test, session):
+    """
+    Allows to use only some specific sessions in a dataset (used for test)
+
+    :param data_test: (DataFrame) the dataset with all the sessions
+    :param session: (str) the session wanted. Must be 'all' or 'ses-MXX'
+    :return: (DataFrame) the dataset with the wanted sessions
+    """
+    from copy import copy
+
+    output = copy(data_test)
+    if session == "all":
+        return output
+    else:
+        output = output[output.session_id == session]
+        if len(output) == 0:
+            raise Exception("The session %s doesn't exist for any of the subjects in the test data" % session)
 
 
 if __name__ == "__main__":
