@@ -1,7 +1,19 @@
-########################################################################################################################
-##################
-################## UTILS
-##################
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Nov 06 14:17:41 2017
+
+@author: Junhao WEN
+"""
+
+__author__ = "Junhao Wen"
+__copyright__ = "Copyright 2018 The Aramis Lab Team"
+__credits__ = ["Junhao Wen"]
+__license__ = "See LICENSE.txt file"
+__version__ = "0.1.0"
+__maintainer__ = "Junhao Wen"
+__email__ = "junhao.wen89@gmail.com"
+__status__ = "Development"
+
 def get_subid_sesid_datasink(participant_id, session_id, caps_directory):
     """
     This is to extract the base_directory for the DataSink including participant_id and sesion_id in CAPS directory, also the tuple_list for substitution
@@ -232,7 +244,7 @@ def rank_mean(similarity, tsv, caps_directory):
     df_new['similarity'] = similaritys.values
     df_new[['similarity']] = df_new[['similarity']].astype(float)
     # df_new.sort_values('similarity')
-    df_new.to_csv(os.path.join(caps_directory, 'qc_mi.tsv'), sep='\t')
+    df_new.to_csv(os.path.join(caps_directory, 'qc_similarity.tsv'), sep='\t')
 
 
 

@@ -2,12 +2,31 @@ import torch.nn as nn
 import torch.utils.model_zoo as model_zoo
 import math
 
-model_urls_alexnet = {
-    'alexnet': 'https://download.pytorch.org/models/alexnet-owt-4df8aa71.pth',
-}
+__author__ = "Junhao Wen"
+__copyright__ = "Copyright 2018 The Aramis Lab Team"
+__credits__ = ["Junhao Wen"]
+__license__ = "See LICENSE.txt file"
+__version__ = "0.1.0"
+__maintainer__ = "Junhao Wen"
+__email__ = "junhao.wen89@gmail.com"
+__status__ = "Development"
 
 
 class AlexNet2D(nn.Module):
+    """
+    Pytorch implementation of AlexNet.
+
+    To note: It contains 5 convolutional layers and 3 fully connected layers.
+        Relu is applied after very convolutional and fully connected layer.
+        Dropout is applied before the first and the second fully connected year.
+        The image size in the following architecutre chart should be 227 * 227 instead of 224 * 224,
+        as it is pointed out by Andrei Karpathy in his famous CS231n Course.
+        More insterestingly, the input size is 224 * 224 with 2 padding in the pytorch torch vision.
+        The output width and height should be 224 minus 11 plus 4 divide 4 plus 1 equel 55.25,
+        The explanation here is pytorch Conv2d apply floor operator to the above result,
+        and therefore the last one padding is ignored.
+
+    """
 
     def __init__(self, num_classes=1000):
         super(AlexNet2D, self).__init__()
@@ -49,27 +68,24 @@ class AlexNet2D(nn.Module):
 
 
 def alexnet2D(pretrained=False, **kwargs):
-    r"""AlexNet model architecture from the
-    `"One weird trick..." <https://arxiv.org/abs/1404.5997>`_ paper.
+    """Implementation of AlexNet model architecture based on this paper: `"One weird trick..." <https://arxiv.org/abs/1404.5997>`.
 
     Args:
-        pretrained (bool): If True, returns a model pre-trained on ImageNet
+        pretrained (bool): If True, returns a model pretrained on ImageNet
     """
+
+    pytorch_pretrained_alexnet_url = {'alexnet': 'https://download.pytorch.org/models/alexnet-owt-4df8aa71.pth'}
     model = AlexNet2D(**kwargs)
     if pretrained:
-        model.load_state_dict(model_zoo.load_url(model_urls_alexnet['alexnet']))
+        model.load_state_dict(model_zoo.load_url(pytorch_pretrained_alexnet_url['alexnet']))
         for p in model.features.parameters():
             p.requires_grad = False ### download the pre-trained weighted from alexnet
 
         # fine-tune the last convolution layer
         for p in model.features[10].parameters():
             p.requires_grad = True
-
-    model.classifier.add_module('fc_out', nn.Linear(1000,2))
+    ## add a fc layer on top of the pretrained model and a sigmoid classifier
+    model.classifier.add_module('fc_out', nn.Linear(1000, 2)) ## For linear layer, Pytorch used similar H initialization for the weight.
     model.classifier.add_module('sigmoid', nn.LogSoftmax())
-
-    stdv = 1.0 / math.sqrt(1000)
-    for p in model.classifier.fc_out.parameters():
-        p.data.uniform_(-stdv, stdv)
 
     return model
