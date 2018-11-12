@@ -12,6 +12,15 @@ import torch.nn as nn
 import pandas as pd
 from torch.autograd import Variable
 
+__author__ = "Junhao Wen"
+__copyright__ = "Copyright 2018 The Aramis Lab Team"
+__credits__ = ["Junhao Wen"]
+__license__ = "See LICENSE.txt file"
+__version__ = "0.1.0"
+__maintainer__ = "Junhao Wen"
+__email__ = "junhao.wen89@gmail.com"
+__status__ = "Development"
+
 default_data_dir = os.path.dirname(sys.argv[0])
 
 
@@ -29,10 +38,8 @@ def parse_options():
                         help="Load pretrained model (mondatory)")
     parser.add_argument("--net", choices=['r18', 'r34', 'r50', 'r101', 'r152', 'sq101'],
                         help="Network type", default='r18')
-    parser.add_argument('--raw', action="store_true", default=False,
-                        help='Print raw score [0:1]')
-    parser.add_argument('-q', '--quiet', action="store_true", default=False,
-                        help='Quiet mode, set status code to 0 - Pass, 1 - fail')
+    parser.add_argument('--soft_thres', type=float, default=0.975,
+                        help='The threshold of softmax layer to decide the label')
 
     params = parser.parse_args()
 
@@ -53,9 +60,12 @@ if __name__ == '__main__':
         raise Exception('the data file is not in the correct format.')
     img_list = list(df['participant_id'])
     sess_list = list(df['session_id'])
+    label_list = list(df['diagnosis'])
 
+    colmn_name = list(df.columns)
+    colmn_name.extend(['pass_probability', 'qc'])
     ### creat a new df to store the QC results.
-    qc_df = pd.DataFrame(columns=df.columns)
+    qc_df = pd.DataFrame(columns=colmn_name)
 
     for i in range(len(img_list)):
         img_path = os.path.join(params.caps_dir, 'subjects', img_list[i], sess_list[i], 't1', 'preprocessing_dl',
@@ -74,23 +84,20 @@ if __name__ == '__main__':
 
         softmax = nn.Softmax(dim=1)
         outputs = softmax.forward(model(inputs))
-        _, preds = torch.max(outputs.data, 1)
+        # _, preds = torch.max(outputs.data, 1)
 
-        # raw score
-        if params.raw:
-            print(outputs.data[0, 1])
-        elif not params.quiet:
-            if preds.item() == 1:
-                print("Pass!! QC Results for subject: %s_%s" % (img_list[i], sess_list[i]))
-            else:
-                print("Fail!!! QC Results for subject: %s_%s" % (img_list[i], sess_list[i]))
+        pass_prob = outputs.data[0, 1]
+
+        if pass_prob >= params.soft_thres:
+            print("Pass probability is %f !! QC Results for subject: %s_%s" % (pass_prob, img_list[i], sess_list[i]))
+            row = list([img_list[i], sess_list[i], label_list[i], pass_prob.item(), 'Pass'])
         else:
-            exit(0 if preds.item() == 1 else 1)
+            print("Fail probability is %f !! QC Results for subject: %s_%s" % (pass_prob, img_list[i], sess_list[i]))
+            row = list([img_list[i], sess_list[i], label_list[i], pass_prob.item(), 'Fail'])
 
-        row = list([img_list[i], sess_list[i], str(preds.item())])
         row = np.array(row).reshape(1, len(row))
-        row_df = pd.DataFrame(row, columns=df.columns)
+        row_df = pd.DataFrame(row, columns=colmn_name)
         qc_df = qc_df.append(row_df)
 
     qc_df.reset_index(inplace=True, drop=True)
-    qc_df.to_csv(os.path.join(params.caps_dir, 'qc_dl.tsv'), sep='\t')
+    qc_df.to_csv(os.path.join(params.caps_dir, 'qc_dl.tsv'), sep='\t', index=False, encoding='utf-8')
