@@ -18,7 +18,7 @@ parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D CNN")
 
 parser.add_argument("-id", "--caps_directory", default='/teams/ARAMIS/PROJECTS/CLINICA/CLINICA_datasets/temp/CAPS_ADNI_DL',
                            help="Path to the caps of image processing pipeline of DL")
-parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/test.tsv',
+parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/ADNI_AD_vs_CN_T1.tsv',
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
@@ -32,7 +32,7 @@ parser.add_argument("--epochs", default=20, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
-parser.add_argument("--batch_size", default=1, type=int,
+parser.add_argument("--batch_size", default=8, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
@@ -94,6 +94,11 @@ def main(options):
                                  shuffle=False,
                                  num_workers=0,
                                  drop_last=True)
+
+        ## Check if we have problem for the data loader:
+
+        if len(train_loader) and len(test_loader) and len(valid_loader) == 0:
+            raise ValueError("There are problems for data loader, it may come from a wrong path to the tsv, or not enough subject in the tsv files.")
 
 
         # Initial the model

@@ -428,11 +428,11 @@ class mri_to_rgb_transfer(Dataset):
 
         ### get all the slices from the three view, basically, we take 3 slices and create a RBG image so that we can using this for transferring learning.
         ## For axial view
-        axial_image_list = slices_to_rgb(image_path, 2)
+        axial_image_list = slices_to_rgb(image_path, 2, rgb_mode='single_slice')
         ## For coronal view
-        coronal_image_list = slices_to_rgb(image_path, 1)
+        coronal_image_list = slices_to_rgb(image_path, 1, rgb_mode='single_slice')
         ## For saggital view
-        saggital_image_list = slices_to_rgb(image_path, 0)
+        saggital_image_list = slices_to_rgb(image_path, 0, rgb_mode='single_slice')
 
         for img_rgb in (axial_image_list, coronal_image_list, saggital_image_list):
             for img in img_rgb:
@@ -444,9 +444,9 @@ class mri_to_rgb_transfer(Dataset):
         return samples
 
 
-def slices_to_rgb(image_path, view):
+def slices_to_rgb(image_path, view, rgb_mode='single_slice'):
     """
-    This is a function to grab each 3 slices in each view and create a rgb image for transferring learning
+    This is a function to grab each slice in each view and create a rgb image for transferring learning: duplicate the slices into R, G, B channel
     :param image_path:
     :param view:
     :return:
@@ -459,42 +459,73 @@ def slices_to_rgb(image_path, view):
 
 
     image = nib.load(image_path)
-    image_array_orig = np.array(image.get_data())
+    image_array = np.array(image.get_data())
 
-    ## as MRI is float for original sigals, here we cast the float to uint8
-    image_array = image_array_orig.astype('uint8')
+    ## as MRI is float for original sigals, here we cast the float to uint8, range from 0 - 255
+    image_array = (image_array - image_array.min())/(image_array.max() - image_array.min()) * 255
+    image_array = image_array.astype('uint8')
+
     slice_to_rgb_imgs = []
     # slice_list = range(15, image_array.shape[view] - 15) # delete the first 20 slice and last 15 slices
     slice_list = range(70, 71) # for test
 
-    # scalar = MinMaxScaler(feature_range=(0, 255), copy=False)
-    for i in slice_list:
-        ## sagital
-        if view == 0:
-            slice_select_0 = image_array[i - 1, :, :]
-            slice_select_1 = image_array[i, :, :]
-            slice_select_2 = image_array[i + 1, :, :]
+    if rgb_mode == 'three_slices':
 
-        ## coronal
-        if view == 1:
-            slice_select_0 = image_array[:, i - 1, :]
-            slice_select_1 = image_array[:, i, :]
-            slice_select_2 = image_array[:, i + 1, :]
+        for i in slice_list:
+            ## sagital
+            if view == 0:
+                slice_select_0 = image_array[i - 1, :, :]
+                slice_select_1 = image_array[i, :, :]
+                slice_select_2 = image_array[i + 1, :, :]
 
-        ## axial
-        if view == 2:
-            slice_select_0 = image_array[:, :, i - 1]
-            slice_select_1 = image_array[:, :, i]
-            slice_select_2 = image_array[:, :, i + 1]
+            ## coronal
+            if view == 1:
+                slice_select_0 = image_array[:, i - 1, :]
+                slice_select_1 = image_array[:, i, :]
+                slice_select_2 = image_array[:, i + 1, :]
 
-        ## TODO, need to solve how to correctly convert slices into a RGB image without losting the nature of the image.
-        slice_to_rgb_img = np.stack((slice_select_0, slice_select_1, slice_select_2), axis=2)
-        if len(slice_to_rgb_img.shape) > 3 and slice_to_rgb_img.shape[3] == 1:
-            slice_to_rgb_img_resize = np.resize(slice_to_rgb_img,
-                                           (slice_to_rgb_img.shape[0], slice_to_rgb_img.shape[1], slice_to_rgb_img.shape[2]))
-            slice_to_rgb_imgs.append(slice_to_rgb_img_resize)
-        else:
-            slice_to_rgb_imgs.append(slice_to_rgb_img)
+            ## axial
+            if view == 2:
+                slice_select_0 = image_array[:, :, i - 1]
+                slice_select_1 = image_array[:, :, i]
+                slice_select_2 = image_array[:, :, i + 1]
+    elif rgb_mode == 'single_slice':
+
+        for i in slice_list:
+            ## sagital
+            if view == 0:
+                slice_select_0 = image_array[i, :, :]
+                slice_select_1 = image_array[i, :, :]
+                slice_select_2 = image_array[i, :, :]
+
+            ## coronal
+            if view == 1:
+                slice_select_0 = image_array[:, i, :]
+                slice_select_1 = image_array[:, i, :]
+                slice_select_2 = image_array[:, i, :]
+
+            ## axial
+            if view == 2:
+                slice_select_0 = image_array[:, :, i]
+                slice_select_1 = image_array[:, :, i]
+                slice_select_2 = image_array[:, :, i]
+    else:
+        raise ValueError("Not yet implemented with this RGB methods")
+
+    ## TODO, need to solve how to correctly convert slices into a RGB image without losting the nature of the image.
+    # slice_to_rgb_img = np.stack((slice_select_0, slice_select_1, slice_select_2), axis=2)
+
+    slice_to_rgb_img = np.zeros((slice_select_0.shape[0], slice_select_0.shape[1], 3))
+    slice_to_rgb_img[..., 0] = slice_select_0
+    slice_to_rgb_img[..., 1] = slice_select_1
+    slice_to_rgb_img[..., 2] = slice_select_2
+
+    if len(slice_to_rgb_img.shape) > 3 and slice_to_rgb_img.shape[3] == 1:
+        slice_to_rgb_img_resize = np.resize(slice_to_rgb_img,
+                                       (slice_to_rgb_img.shape[0], slice_to_rgb_img.shape[1], slice_to_rgb_img.shape[2]))
+        slice_to_rgb_imgs.append(slice_to_rgb_img_resize)
+    else:
+        slice_to_rgb_imgs.append(slice_to_rgb_img)
 
     return slice_to_rgb_imgs
 

@@ -89,3 +89,5 @@ def alexnet2D(pretrained=False, **kwargs):
     model.classifier.add_module('sigmoid', nn.LogSoftmax())
 
     return model
+
+## TODO implement Lenet-5 from scratch, which is not very deep.
