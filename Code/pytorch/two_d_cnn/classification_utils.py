@@ -22,9 +22,9 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
-def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, train_mode="train"):
+def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, model_mode="train", global_steps=0):
     """
-    This is the function to train, validate or test the model, depending on the train_mode parameter.
+    This is the function to train, validate or test the model, depending on the model_mode parameter.
     :param model:
     :param data_loader:
     :param use_cuda:
@@ -40,7 +40,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, t
     subjects = []
     y_ground = []
     y_hat = []
-    if train_mode == "train":
+    if model_mode == "train":
         model.train() ## set the model to training mode
     else:
         model.eval() ## set the model to evaluation mode
@@ -74,7 +74,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, t
             _, predict = output.topk(1)
             predict_list = predict.data.cpu().numpy().tolist()
             y_hat.extend([item for sublist in predict_list for item in sublist])
-            if train_mode == "train" or train_mode == 'valid':
+            if model_mode == "train" or model_mode == 'valid':
                 loss = loss_func(output, ground_truth)
                 loss_batch += loss
             correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
@@ -83,141 +83,42 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, t
             # as balanced accuracy, will be saved in the tsv file.
             accuracy = float(correct_this_batch) / len(ground_truth)
             acc_batch += accuracy
-            if train_mode == "train":
+            if model_mode == "train":
                 print ("For batch %d slice %d training loss is : %f") % (i, j, loss.item())
                 print ("For batch %d slice %d training accuracy is : %f") % (i, j, accuracy)
-            elif train_mode == "valid":
+            elif model_mode == "valid":
                 print ("For batch %d slice %d validation accuracy is : %f") % (i, j, accuracy)
                 print ("For batch %d slice %d validation loss is : %f") % (i, j, loss.item())
-            elif train_mode == "test":
+            elif model_mode == "test":
                 print ("For batch %d slice %d validate accuracy is : %f") % (i, j, accuracy)
 
             # Unlike tensorflow, in Pytorch, we need to manully zero the graident before each backpropagation step, becase Pytorch accumulates the gradients
             # on subsequent backward passes. The initial designing for this is convenient for training RNNs.
-            if train_mode == "train":
+            if model_mode == "train":
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
-        if train_mode == "train" or "valid":
+        if model_mode == "train":
             writer.add_scalar('slice-level accuracy', acc_batch / num_slice, i + epoch_i * len(data_loader.dataset))
-        else:
-            writer.add_scalar('test_accuracy_subject', acc_batch / num_slice, i)
-        ##for sanity check that we do not do bad things for preparing the data
-        if train_mode == "train":
             writer.add_scalar('loss', loss_batch / num_slice, i + epoch_i * len(data_loader.dataset))
             writer.add_image('example_image', imgs.int(), i + epoch_i * len(data_loader.dataset))
+        elif model_mode == "test":
+            writer.add_scalar('slice-level accuracy', acc_batch / num_slice, i)
+
         ## add all accuracy for each iteration
         acc += acc_batch / num_slice
 
     acc_mean = acc / len(data_loader)
+    if model_mode == "valid":
+        writer.add_scalar('slice-level accuracy', acc_mean, global_steps)
 
-    return imgs, subjects, y_ground, y_hat, acc_mean
+    if model_mode == "train":
+        global_steps = i + epoch_i * len(data_loader.dataset)
+    else:
+        global_steps = 0
 
-# def validate(model, valid_loader, use_cuda, loss_func, writer_valid, epoch_i):
-#     """
-#     This is the function to validate the CNN with validation data
-#     :param model:
-#     :param valid_loader:
-#     :param use_cuda:
-#     :param loss_func:
-#     :param writer:
-#     :param epoch_i:
-#     :return:
-#     """
-#     correct_cnt = 0
-#     acc = 0.0
-#     model.eval()
-#     for i, valid_data in enumerate(valid_loader):
-#         loss_batch = 0.0
-#         acc_batch = 0.0
-#         for j in range(len(valid_data)):
-#             data_dic = valid_data[j]
-#             if use_cuda:
-#                 imgs, labels = Variable(data_dic['image'], volatile=True).cuda(), Variable(data_dic['label'],
-#                                                                                            volatile=True).cuda()
-#             else:
-#                 imgs, labels = Variable(data_dic['image'], volatile=True), Variable(data_dic['label'],
-#                                                                         volatile=True)
-#             integer_encoded = labels.data.cpu().numpy()
-#             ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
-#             print 'The group true label is %s' % str(labels)
-#             if use_cuda:
-#                 ground_truth = ground_truth.cuda()
-#             valid_output = model(imgs)
-#             _, predict = valid_output.topk(1)
-#             loss = loss_func(valid_output, ground_truth)
-#             loss_batch += loss
-#             correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
-#             correct_cnt += correct_this_batch
-#             accuracy = float(correct_this_batch) / len(ground_truth)
-#             acc_batch += accuracy
-#
-#             print ("For batch %d slice %d validation loss is : %f") % (i, j, loss.item())
-#             print ("For batch %d slice %d validation accuracy is : %f") % (i, j, accuracy)
-#
-#         writer_valid.add_scalar('validation_accuracy', acc_batch / len(valid_data), i + epoch_i * len(valid_loader.dataset))
-#         writer_valid.add_scalar('validation_loss', loss_batch / len(valid_data), i + epoch_i * len(valid_loader.dataset))
-#
-#         acc += acc_batch / len(valid_data)
-#
-#     acc_mean = acc / len(valid_loader)
-#
-#     return acc_mean
-#
-# def test(model, test_loader, use_cuda, writer_test):
-#     """
-#     This is the function to test the CNN with testing data
-#     :param model:
-#     :param test_loader:
-#     :param use_cuda:
-#     :param writer:
-#     :return:
-#     """
-#     correct_cnt = 0
-#     model.eval()
-#     for i, test_data in enumerate(test_loader):
-#         vote = []
-#         acc_batch = 0.0
-#
-#         for j in range(len(test_data)):
-#             data_dic = test_data[j]
-#             if use_cuda:
-#                 imgs, labels = Variable(data_dic['image'], volatile=True).cuda(), Variable(data_dic['label'],
-#                                                                                            volatile=True).cuda()
-#             else:
-#                 imgs, labels = Variable(data_dic['image'], volatile=True), Variable(data_dic['label'],
-#                                                                                     volatile=True)
-#
-#             ## fpr slice-level accuracy
-#             integer_encoded = labels.data.cpu().numpy()
-#             # target should be LongTensor in loss function
-#             ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
-#             print 'The group true label is %s' % str(labels)
-#             if use_cuda:
-#                 ground_truth = ground_truth.cuda()
-#             test_output = model(imgs)
-#             _, predict = test_output.topk(1)
-#             vote.append(predict)
-#             correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
-#             accuracy_slice = float(correct_this_batch) / len(ground_truth)
-#             acc_batch += accuracy_slice
-#
-#             print ("For batch %d slice %d test accuracy is : %f") % (i, j, accuracy_slice)
-#
-#         writer_test.add_scalar('test_accuracy_slice', acc_batch / len(test_data), i)
-#
-#         ## for subject-level accuracy
-#         vote = torch.cat(vote, 1)
-#         final_vote, _ = torch.mode(vote, 1) ## This is the majority vote for each subject, based on all the slice-level results
-#         ground_truth = test_data[0]['label']
-#         correct_this_batch_subject = (final_vote.cpu().data == ground_truth).sum()
-#         accuracy_subject = float(correct_this_batch_subject) / len(ground_truth)
-#
-#         print("Subject level for batch %d testing accuracy is : %f") % (i, accuracy_subject)
-#         writer_test.add_scalar('test_accuracy_subject', accuracy_subject, i)
-#
-#     return accuracy_subject
+    return imgs, subjects, y_ground, y_hat, acc_mean, global_steps
 
 def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar'):
     """
@@ -365,7 +266,7 @@ def check_and_clean(d):
       shutil.rmtree(d)
   os.mkdir(d)
 
-class mri_to_rgb_transfer(Dataset):
+class mri_to_slice_level(Dataset):
     """
     This class reads the CAPS of image processing pipeline of DL
 
@@ -374,7 +275,7 @@ class mri_to_rgb_transfer(Dataset):
     Return: a Pytorch Dataset objective
     """
 
-    def __init__(self, caps_directory, tsv, transform=None):
+    def __init__(self, caps_directory, tsv, transform=None, transfer_learning=True):
         """
         Args:
             caps_directory (string): the output folder of image processing pipeline.
@@ -390,6 +291,7 @@ class mri_to_rgb_transfer(Dataset):
         self.caps_directory = caps_directory
         self.tsv = tsv
         self.transform = transform
+        self.transfer_learning = transfer_learning
 
         df = pd.io.parsers.read_csv(tsv, sep='\t')
         if ('diagnosis' != list(df.columns.values)[2]) and ('session_id' != list(df.columns.values)[1]) and (
@@ -426,25 +328,37 @@ class mri_to_rgb_transfer(Dataset):
         else:
             raise ValueError('The label you specified is not correct, please double check it!')
 
-        ### get all the slices from the three view, basically, we take 3 slices and create a RBG image so that we can using this for transferring learning.
-        ## For axial view
-        axial_image_list = slices_to_rgb(image_path, 2, rgb_mode='single_slice')
-        ## For coronal view
-        coronal_image_list = slices_to_rgb(image_path, 1, rgb_mode='single_slice')
-        ## For saggital view
-        saggital_image_list = slices_to_rgb(image_path, 0, rgb_mode='single_slice')
+        if self.transfer_learning == True:
+            ### get all the slices from the three view, basically, we take 3 slices and create a RBG image so that we can using this for transferring learning.
+            ## For axial view
+            axial_image_list = slices_to_rgb(image_path, 2, img_mode='rgb_slice')
+            ## For coronal view
+            coronal_image_list = slices_to_rgb(image_path, 1, img_mode='rgb_slice')
+            ## For saggital view
+            saggital_image_list = slices_to_rgb(image_path, 0, img_mode='rgb_slice')
 
-        for img_rgb in (axial_image_list, coronal_image_list, saggital_image_list):
-            for img in img_rgb:
+            for img_rgb in (axial_image_list, coronal_image_list, saggital_image_list):
+                for img in img_rgb:
+                    if self.transform:
+                        img = self.transform(img)
+                    sample = {'image_id': img_name + '_' + sess_name, 'image': img, 'label': label}
+                    samples.append(sample)
+
+        else:
+            ## For axial view
+            axial_image_list = slices_to_rgb(image_path, 2, img_mode='original_slice')
+            for img in (axial_image_list):
                 if self.transform:
                     img = self.transform(img)
                 sample = {'image_id': img_name + '_' + sess_name, 'image': img, 'label': label}
                 samples.append(sample)
+
         random.shuffle(samples)
+
         return samples
 
 
-def slices_to_rgb(image_path, view, rgb_mode='single_slice'):
+def slices_to_rgb(image_path, view, img_mode='rgb_slice'):
     """
     This is a function to grab each slice in each view and create a rgb image for transferring learning: duplicate the slices into R, G, B channel
     :param image_path:
@@ -460,72 +374,55 @@ def slices_to_rgb(image_path, view, rgb_mode='single_slice'):
 
     image = nib.load(image_path)
     image_array = np.array(image.get_data())
-
-    ## as MRI is float for original sigals, here we cast the float to uint8, range from 0 - 255
-    image_array = (image_array - image_array.min())/(image_array.max() - image_array.min()) * 255
-    image_array = image_array.astype('uint8')
+    if img_mode == 'rgb_slice':
+        image_array = (image_array - image_array.min()) / (image_array.max() - image_array.min()) * 255
 
     slice_to_rgb_imgs = []
     # slice_list = range(15, image_array.shape[view] - 15) # delete the first 20 slice and last 15 slices
     slice_list = range(70, 71) # for test
 
-    if rgb_mode == 'three_slices':
+    if img_mode == 'rgb_slice' or img_mode == "original_slice":
 
         for i in slice_list:
             ## sagital
             if view == 0:
-                slice_select_0 = image_array[i - 1, :, :]
-                slice_select_1 = image_array[i, :, :]
-                slice_select_2 = image_array[i + 1, :, :]
+                slice_select = image_array[i, :, :]
 
             ## coronal
             if view == 1:
-                slice_select_0 = image_array[:, i - 1, :]
-                slice_select_1 = image_array[:, i, :]
-                slice_select_2 = image_array[:, i + 1, :]
+                slice_select = image_array[:, i, :]
 
             ## axial
             if view == 2:
-                slice_select_0 = image_array[:, :, i - 1]
-                slice_select_1 = image_array[:, :, i]
-                slice_select_2 = image_array[:, :, i + 1]
-    elif rgb_mode == 'single_slice':
-
-        for i in slice_list:
-            ## sagital
-            if view == 0:
-                slice_select_0 = image_array[i, :, :]
-                slice_select_1 = image_array[i, :, :]
-                slice_select_2 = image_array[i, :, :]
-
-            ## coronal
-            if view == 1:
-                slice_select_0 = image_array[:, i, :]
-                slice_select_1 = image_array[:, i, :]
-                slice_select_2 = image_array[:, i, :]
-
-            ## axial
-            if view == 2:
-                slice_select_0 = image_array[:, :, i]
-                slice_select_1 = image_array[:, :, i]
-                slice_select_2 = image_array[:, :, i]
+                slice_select = image_array[:, :, i]
     else:
-        raise ValueError("Not yet implemented with this RGB methods")
+        raise ValueError("Not yet implemented")
 
-    ## TODO, need to solve how to correctly convert slices into a RGB image without losting the nature of the image.
-    # slice_to_rgb_img = np.stack((slice_select_0, slice_select_1, slice_select_2), axis=2)
+    if img_mode == 'original_slice':
+        slice_to_rgb_img = np.reshape(slice_select, (slice_select.shape[0], slice_select.shape[1], 1))
+        # slice_to_rgb_img = slice_to_rgb_img.astype('uint8')
 
-    slice_to_rgb_img = np.zeros((slice_select_0.shape[0], slice_select_0.shape[1], 3))
-    slice_to_rgb_img[..., 0] = slice_select_0
-    slice_to_rgb_img[..., 1] = slice_select_1
-    slice_to_rgb_img[..., 2] = slice_select_2
+        if len(slice_to_rgb_img.shape) > 3 and slice_to_rgb_img.shape[3] == 1:
+            slice_to_rgb_img_resize = np.resize(slice_to_rgb_img,
+                                           (slice_to_rgb_img.shape[0], slice_to_rgb_img.shape[1], slice_to_rgb_img.shape[2]))
+            slice_to_rgb_imgs.append(slice_to_rgb_img_resize)
+        else:
+            slice_to_rgb_imgs.append(slice_to_rgb_img)
 
-    if len(slice_to_rgb_img.shape) > 3 and slice_to_rgb_img.shape[3] == 1:
-        slice_to_rgb_img_resize = np.resize(slice_to_rgb_img,
-                                       (slice_to_rgb_img.shape[0], slice_to_rgb_img.shape[1], slice_to_rgb_img.shape[2]))
-        slice_to_rgb_imgs.append(slice_to_rgb_img_resize)
     else:
-        slice_to_rgb_imgs.append(slice_to_rgb_img)
+        slice_to_rgb_img = np.zeros((slice_select.shape[0], slice_select.shape[1], 3))
+        slice_to_rgb_img[..., 0] = slice_select
+        slice_to_rgb_img[..., 1] = slice_select
+        slice_to_rgb_img[..., 2] = slice_select
+        ## make sure the data type to be uint8
+        # slice_to_rgb_img = slice_to_rgb_img.astype('uint8')
+
+        if len(slice_to_rgb_img.shape) > 3 and slice_to_rgb_img.shape[3] == 1:
+            slice_to_rgb_img_resize = np.resize(slice_to_rgb_img,
+                                           (slice_to_rgb_img.shape[0], slice_to_rgb_img.shape[1], slice_to_rgb_img.shape[2]))
+            slice_to_rgb_imgs.append(slice_to_rgb_img_resize)
+        else:
+            slice_to_rgb_imgs.append(slice_to_rgb_img)
 
     return slice_to_rgb_imgs
 
@@ -539,7 +436,7 @@ class CustomResize(object):
 
     def resize_image(self, img_array, trg_size):
         res = resize(img_array, trg_size, mode='reflect', preserve_range=True, anti_aliasing=False)
-
+        # res = res.astype('uint8')
         # type check
         if type(res) != np.ndarray:
             raise "type error!"
@@ -556,7 +453,7 @@ class CustomToTensor(object):
         if isinstance(pic, np.ndarray):
             img = torch.from_numpy(pic.transpose((2, 0, 1)))
 
-            # backward compatibility
+            # Pytorch does not work with int type. Here, it just change the visualization, the value itself does not change.
             return img.float()
 
 def results_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat):

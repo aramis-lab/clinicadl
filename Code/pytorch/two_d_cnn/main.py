@@ -3,7 +3,7 @@ import torchvision.transforms as transforms
 from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 from classification_utils import *
-from model import alexnet2D
+from model import alexnet2D, LenetAdopted2D
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -18,21 +18,21 @@ parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D CNN")
 
 parser.add_argument("-id", "--caps_directory", default='/teams/ARAMIS/PROJECTS/CLINICA/CLINICA_datasets/temp/CAPS_ADNI_DL',
                            help="Path to the caps of image processing pipeline of DL")
-parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/ADNI_AD_vs_CN_T1.tsv',
+parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/test.tsv',
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument("-t", "--transfer_learning", default=True,
+parser.add_argument("-t", "--transfer_learning", default=False,
                            help="If do transfer learning")
 parser.add_argument("--n_splits", default=5,
                     help="How many folds for the k-fold cross validation procedure.")
 parser.add_argument("--shuffle", default=True,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
-parser.add_argument("--epochs", default=20, type=int,
+parser.add_argument("--epochs", default=3, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
-parser.add_argument("--batch_size", default=8, type=int,
+parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
@@ -56,14 +56,19 @@ def main(options):
     if options.force == True:
         check_and_clean(options.output_dir)
 
-    test_accuracy = np.zeros((options.n_splits,))
-    trg_size = (224, 224) ## this is the original input size of alexnet
-    transformations = transforms.Compose([CustomResize(trg_size),
-                                          CustomToTensor()
-                                        ])
-
     # Split the data into 5 fold on subject-level
     split_subjects_to_tsv(options.diagnosis_tsv, n_splits=options.n_splits)
+
+    test_accuracy = np.zeros((options.n_splits,))
+
+    if options.transfer_learning == True:
+        ## Transfer learning with imagenet pretrained AlexNet
+        trg_size = (224, 224) ## this is the original input size of alexnet
+        transformations = transforms.Compose([CustomResize(trg_size),
+                                              CustomToTensor()
+                                            ])
+    else:
+        transformations = CustomToTensor()
 
     for fi in range(options.n_splits):
         # Get the data.
@@ -71,10 +76,14 @@ def main(options):
 
         ## load the tsv file
         training_tsv, test_tsv, valid_tsv = load_split(options.diagnosis_tsv, fi, options.n_splits, val_size=0.15)
-
-        data_train = mri_to_rgb_transfer(options.caps_directory, training_tsv, transformations)
-        data_test = mri_to_rgb_transfer(options.caps_directory, test_tsv, transformations)
-        data_valid = mri_to_rgb_transfer(options.caps_directory, valid_tsv, transformations)
+        if options.transfer_learning == True:
+            data_train = mri_to_slice_level(options.caps_directory, training_tsv, transformations)
+            data_test = mri_to_slice_level(options.caps_directory, test_tsv, transformations)
+            data_valid = mri_to_slice_level(options.caps_directory, valid_tsv, transformations)
+        else:
+            data_train = mri_to_slice_level(options.caps_directory, training_tsv, transformations, transfer_learning=False)
+            data_test = mri_to_slice_level(options.caps_directory, test_tsv, transformations, transfer_learning=False)
+            data_valid = mri_to_slice_level(options.caps_directory, valid_tsv, transformations, transfer_learning=False)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
@@ -97,12 +106,15 @@ def main(options):
 
         ## Check if we have problem for the data loader:
 
-        if len(train_loader) and len(test_loader) and len(valid_loader) == 0:
+        if len(train_loader) == 0 or len(test_loader) == 0 or len(valid_loader) == 0:
             raise ValueError("There are problems for data loader, it may come from a wrong path to the tsv, or not enough subject in the tsv files.")
 
 
         # Initial the model
-        model = alexnet2D(pretrained=options.transfer_learning)
+        if options.transfer_learning == True:
+            model = alexnet2D(pretrained=options.transfer_learning)
+        else:
+            model = LenetAdopted2D()
 
         ## Decide to use gpu or cpu to train the model
         if options.use_gpu == False:
@@ -140,12 +152,12 @@ def main(options):
             print("At %d -th epoch.") % (epoch_i)
 
             # train the model
-            imgs_train, train_subject, y_ground_train, y_hat_train, acc_mean_train = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch_i, train_mode='train')
+            imgs_train, train_subject, y_ground_train, y_hat_train, acc_mean_train, global_steps_train = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch_i, model_mode='train')
             train_subjects.extend(train_subject)
             y_grounds_train.extend(y_ground_train)
             y_hats_train.extend(y_hat_train)
             ## at then end of each epoch, we validate one time for the model with the validation data
-            imgs_valid, valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch_i, train_mode='valid')
+            imgs_valid, valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_steps_valid = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch_i, model_mode='valid', global_steps=global_steps_train)
             print("Slice level average validation accuracy is %f at the end of epoch %d") % (acc_mean_valid, epoch_i)
             valid_subjects.extend(valid_subject)
             y_grounds_valid.extend(y_ground_valid)
@@ -173,7 +185,7 @@ def main(options):
         else:
             print("=> no checkpoint found at '{}'".format(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar")))
 
-        imgs_test, test_subject, y_ground_test, y_hat_test, acc_mean_test = train(model, test_loader, use_cuda, loss, optimizer, writer_test, 0, train_mode='test')
+        imgs_test, test_subject, y_ground_test, y_hat_test, acc_mean_test, global_steps_test = train(model, test_loader, use_cuda, loss, optimizer, writer_test, 0, model_mode='test')
         test_subjects.extend(test_subject)
         y_grounds_test.extend(y_ground_test)
         y_hats_test.extend(y_hat_test)
