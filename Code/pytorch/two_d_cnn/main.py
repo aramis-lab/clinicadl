@@ -121,6 +121,7 @@ def main(options):
             use_cuda = False
             model.cpu()
         else:
+            print("Using GPU")
             use_cuda = True
             model.cuda()
 

@@ -17,7 +17,7 @@ from tensorflow.contrib.learn import DNNClassifier
 import tensorflow as tf
 import numpy as np
 import tempfile
-from Code.two_d_cnn.classification_utils import _variable_with_weight_decay, _variable_on_cpu, _activation_summary
+from Code.tensorflow.two_d_cnn.classification_utils import _variable_with_weight_decay, _variable_on_cpu, _activation_summary
 
 #############################################################################
 ############################ Linear classfiers                             #
