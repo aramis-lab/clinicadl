@@ -12,9 +12,9 @@ FLAGS = tf.app.flags.FLAGS
 # Basic model parameters.
 tf.app.flags.DEFINE_integer('batch_size', 32,
                             """Number of images to process in a batch.""")
-tf.app.flags.DEFINE_string('data_dir', '/network/lustre/iss01/home/junhao.wen/Project/AD-DL/Data/subject_level',
+tf.app.flags.DEFINE_string('data_dir', '/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Data/tensorflow/subject_level',
                            """Path to the ADNI T1 2D png data directory.""")
-tf.app.flags.DEFINE_string('log_dir', '/network/lustre/iss01/home/junhao.wen/Project/AD-DL/Results/Lenet_log',
+tf.app.flags.DEFINE_string('log_dir', '/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL//Results/tensorflow',
                            """Path to log dir for tensorboard usage.""")
 tf.app.flags.DEFINE_integer('image_width', 145,
                             """the png image size, width.""")

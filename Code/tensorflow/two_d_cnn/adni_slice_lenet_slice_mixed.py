@@ -9,10 +9,10 @@ from __future__ import division
 from __future__ import print_function
 
 
-from Code.two_d_cnn.classification_utils import *
-from Code.two_d_cnn.convolutional_neural_network_architetures import lenet_adopted
+from Code.tensorflow.two_d_cnn.classification_utils import *
+from Code.tensorflow.two_d_cnn.convolutional_neural_network_architetures import lenet_adopted
 import tensorflow as tf
-from Code.two_d_cnn.flags_slice_mixed import FLAGS
+from Code.tensorflow.two_d_cnn.flags_slice_mixed import FLAGS
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold

@@ -1,3 +1,6 @@
 participant_id	session_id	diagnosis
-sub-ADNI006S4192	ses-M12	AD
-sub-ADNI009S4612	ses-M24	CN
+sub-ADNI002S0295	ses-M36	CN
+sub-ADNI002S0295	ses-M00	CN
+sub-ADNI002S0619	ses-M06	AD
+sub-ADNI002S0619	ses-M00	AD
+sub-ADNI002S0619	ses-M24	AD

@@ -11,6 +11,7 @@ from os import path
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
+from torchvision.utils import make_grid
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -101,7 +102,8 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
         if model_mode == "train":
             writer.add_scalar('slice-level accuracy', acc_batch / num_slice, i + epoch_i * len(data_loader.dataset))
             writer.add_scalar('loss', loss_batch / num_slice, i + epoch_i * len(data_loader.dataset))
-            writer.add_image('example_image', imgs.int(), i + epoch_i * len(data_loader.dataset))
+            ## There are bug for TensorboardX, which does not support 1 channel image
+            writer.add_image('example_image', imgs, i + epoch_i * len(data_loader.dataset))
         elif model_mode == "test":
             writer.add_scalar('slice-level accuracy', acc_batch / num_slice, i)
 
@@ -374,7 +376,8 @@ def slices_to_rgb(image_path, view, img_mode='rgb_slice'):
     image = nib.load(image_path)
     image_array = np.array(image.get_data())
     if img_mode == 'rgb_slice':
-        image_array = (image_array - image_array.min()) / (image_array.max() - image_array.min()) * 255
+        # image_array = (image_array - image_array.min()) / (image_array.max() - image_array.min()) * 255
+        image_array = (image_array - image_array.min()) / (image_array.max() - image_array.min())
 
     slice_to_rgb_imgs = []
     # slice_list = range(15, image_array.shape[view] - 15) # delete the first 20 slice and last 15 slices
@@ -399,7 +402,6 @@ def slices_to_rgb(image_path, view, img_mode='rgb_slice'):
 
     if img_mode == 'original_slice':
         slice_to_rgb_img = np.reshape(slice_select, (slice_select.shape[0], slice_select.shape[1], 1))
-        # slice_to_rgb_img = slice_to_rgb_img.astype('uint8')
 
         if len(slice_to_rgb_img.shape) > 3 and slice_to_rgb_img.shape[3] == 1:
             slice_to_rgb_img_resize = np.resize(slice_to_rgb_img,
@@ -409,12 +411,12 @@ def slices_to_rgb(image_path, view, img_mode='rgb_slice'):
             slice_to_rgb_imgs.append(slice_to_rgb_img)
 
     else:
-        slice_to_rgb_img = np.zeros((slice_select.shape[0], slice_select.shape[1], 3))
-        slice_to_rgb_img[..., 0] = slice_select
-        slice_to_rgb_img[..., 1] = slice_select
-        slice_to_rgb_img[..., 2] = slice_select
-        ## make sure the data type to be uint8
-        # slice_to_rgb_img = slice_to_rgb_img.astype('uint8')
+        # test = np.zeros((slice_select.shape[0], slice_select.shape[1], 3), dtype=np.float32)
+        # test[..., 0] = slice_select
+        # test[..., 1] = slice_select
+        # test[..., 2] = slice_select
+
+        slice_to_rgb_img = np.stack((slice_select,)*3, axis=-1)
 
         if len(slice_to_rgb_img.shape) > 3 and slice_to_rgb_img.shape[3] == 1:
             slice_to_rgb_img_resize = np.resize(slice_to_rgb_img,
@@ -450,10 +452,11 @@ class CustomToTensor(object):
 
     def __call__(self, pic):
         if isinstance(pic, np.ndarray):
-            img = torch.from_numpy(pic.transpose((2, 0, 1)))
+            img = torch.from_numpy(pic.transpose((2, 0, 1))).float()
 
             # Pytorch does not work with int type. Here, it just change the visualization, the value itself does not change.
-            return img.float()
+            # return img.float()
+            return img
 
 def results_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat):
     """

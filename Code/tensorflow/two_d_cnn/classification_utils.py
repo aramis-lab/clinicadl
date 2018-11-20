@@ -15,7 +15,7 @@ import os
 import numpy as np
 import random
 import matplotlib.pyplot as plt
-from Code.two_d_cnn.machine_learning_architectures import KNearestNeighbor, LinearSVM
+from Code.tensorflow.two_d_cnn.machine_learning_architectures import KNearestNeighbor, LinearSVM
 from random import randrange
 from math import sqrt, ceil
 from scipy.ndimage import uniform_filter
