@@ -48,14 +48,14 @@ def load_nifti_images(image_path):
             slice = input_images[i]
 
         _scale=min(256.0/slice.shape[0],256.0/slice.shape[1])
-        slice=transform.rescale(slice[::-1,:], _scale, mode='constant', clip=False)
+        slice=transform.rescale(slice[::-1,:], _scale, mode='constant', clip=False) ## slice[::-1, :] is to flip the first axis of image
 
         sz=slice.shape
         # pad image
         dummy=np.zeros((256,256),)
         dummy[int((256-sz[0])/2): int((256-sz[0])/2)+sz[0], int((256-sz[1])/2): int((256-sz[1])/2)+sz[1]] = slice
 
-        #rotate and flip the iamge back to the right direction for each view, if the MRI was read by nibabel
+        #rotate and flip the image back to the right direction for each view, if the MRI was read by nibabel
         output_images[i] = np.flip(np.rot90(dummy[16:240, 16:240]), axis=1).copy() ## it seems that this will rotate the image 90 degree with counter-clockwise direction and then flip it horizontally
 
     return [torch.from_numpy(i).float().unsqueeze_(0) for i in output_images]

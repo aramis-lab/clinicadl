@@ -50,7 +50,8 @@ class LenetAdopted2D(nn.Module):
         :return:
         """
         x = self.features(x)
-        x = x.view(x.size(0), 64 * 41 * 51) ## reshape the tensor so that it can be connected with self.classifier()
+        # x = x.view(x.size(0), 64 * 41 * 51) ## reshape the tensor so that it can be connected with self.classifier()
+        x = x.view(x.size(0), -1) ## reshape the tensor so that it can be connected with self.classifier()
         x = self.classifier(x)
         return x
 
