@@ -36,7 +36,7 @@ parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument("--use_gpu", default=False, nargs='+',
+parser.add_argument("--use_gpu", default=True, nargs='+',
                     help="If use gpu or cpu. Empty implies cpu usage.")
 parser.add_argument('--force', default=True,
                     help='If force to rerun the classification, default behavior is to clean the output folder and restart from scratch')

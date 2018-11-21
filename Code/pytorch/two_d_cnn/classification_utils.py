@@ -53,9 +53,9 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
         for j in range(num_slice):
             data_dic = subject_data[j]
             if use_cuda:
-                imgs, labels = Variable(data_dic['image']).cuda(), Variable(data_dic['label']).cuda()
+                imgs, labels = data_dic['image'].cuda(), data_dic['label'].cuda()
             else:
-                imgs, labels = Variable(data_dic['image']), Variable(data_dic['label'])
+                imgs, labels = data_dic['image'], data_dic['label']
 
             ## add the participant_id + session_id
             image_ids = data_dic['image_id']
@@ -67,7 +67,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             y_ground.extend(gound_truth_list)
             ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
 
-            print 'The group true label is %s' % str(labels)
+            print('The group true label is %s') % (str(labels))
             if use_cuda:
                 ground_truth = ground_truth.cuda()
             output = model(imgs)
@@ -75,6 +75,8 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             predict_list = predict.data.cpu().numpy().tolist()
             y_hat.extend([item for sublist in predict_list for item in sublist])
             if model_mode == "train" or model_mode == 'valid':
+                print("output.device: " + str(output.device))
+                print("ground_truth.device: " + str(ground_truth.device))
                 loss = loss_func(output, ground_truth)
                 loss_batch += loss
             correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
@@ -84,13 +86,13 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             accuracy = float(correct_this_batch) / len(ground_truth)
             acc_batch += accuracy
             if model_mode == "train":
-                print ("For batch %d slice %d training loss is : %f") % (i, j, loss.item())
-                print ("For batch %d slice %d training accuracy is : %f") % (i, j, accuracy)
+                print("For batch %d slice %d training loss is : %f") % (i, j, loss.item())
+                print("For batch %d slice %d training accuracy is : %f") % (i, j, accuracy)
             elif model_mode == "valid":
-                print ("For batch %d slice %d validation accuracy is : %f") % (i, j, accuracy)
-                print ("For batch %d slice %d validation loss is : %f") % (i, j, loss.item())
+                print("For batch %d slice %d validation accuracy is : %f") % (i, j, accuracy)
+                print("For batch %d slice %d validation loss is : %f") % (i, j, loss.item())
             elif model_mode == "test":
-                print ("For batch %d slice %d validate accuracy is : %f") % (i, j, accuracy)
+                print("For batch %d slice %d validate accuracy is : %f") % (i, j, accuracy)
 
             # Unlike tensorflow, in Pytorch, we need to manully zero the graident before each backpropagation step, becase Pytorch accumulates the gradients
             # on subsequent backward passes. The initial designing for this is convenient for training RNNs.
@@ -375,9 +377,9 @@ def slices_to_rgb(image_path, view, img_mode='rgb_slice'):
 
     image = nib.load(image_path)
     image_array = np.array(image.get_data())
-    if img_mode == 'rgb_slice':
+    # if img_mode == 'rgb_slice':
         # image_array = (image_array - image_array.min()) / (image_array.max() - image_array.min()) * 255
-        image_array = (image_array - image_array.min()) / (image_array.max() - image_array.min())
+        # image_array = (image_array - image_array.min()) / (image_array.max() - image_array.min())
 
     slice_to_rgb_imgs = []
     # slice_list = range(15, image_array.shape[view] - 15) # delete the first 20 slice and last 15 slices
