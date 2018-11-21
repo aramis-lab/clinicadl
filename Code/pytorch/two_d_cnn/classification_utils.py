@@ -67,7 +67,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             y_ground.extend(gound_truth_list)
             ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
 
-            print('The group true label is %s') % (str(labels))
+            print('The group true label is %s' % (str(labels)))
             if use_cuda:
                 ground_truth = ground_truth.cuda()
             output = model(imgs)
@@ -86,13 +86,13 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             accuracy = float(correct_this_batch) / len(ground_truth)
             acc_batch += accuracy
             if model_mode == "train":
-                print("For batch %d slice %d training loss is : %f") % (i, j, loss.item())
-                print("For batch %d slice %d training accuracy is : %f") % (i, j, accuracy)
+                print("For batch %d slice %d training loss is : %f" % (i, j, loss.item()))
+                print("For batch %d slice %d training accuracy is : %f" % (i, j, accuracy))
             elif model_mode == "valid":
-                print("For batch %d slice %d validation accuracy is : %f") % (i, j, accuracy)
-                print("For batch %d slice %d validation loss is : %f") % (i, j, loss.item())
+                print("For batch %d slice %d validation accuracy is : %f" % (i, j, accuracy))
+                print("For batch %d slice %d validation loss is : %f" % (i, j, loss.item()))
             elif model_mode == "test":
-                print("For batch %d slice %d validate accuracy is : %f") % (i, j, accuracy)
+                print("For batch %d slice %d validate accuracy is : %f" % (i, j, accuracy))
 
             # Unlike tensorflow, in Pytorch, we need to manully zero the graident before each backpropagation step, becase Pytorch accumulates the gradients
             # on subsequent backward passes. The initial designing for this is convenient for training RNNs.

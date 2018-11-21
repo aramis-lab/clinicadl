@@ -150,7 +150,7 @@ def main(options):
         y_hats_test = []
 
         for epoch_i in range(options.epochs):
-            print("At %d -th epoch.") % (epoch_i)
+            print("At %s -th epoch." % str(epoch_i))
 
             # train the model
             imgs_train, train_subject, y_ground_train, y_hat_train, acc_mean_train, global_steps_train = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch_i, model_mode='train')
@@ -190,7 +190,7 @@ def main(options):
         test_subjects.extend(test_subject)
         y_grounds_test.extend(y_ground_test)
         y_hats_test.extend(y_hat_test)
-        print("Slice level mean test accuracy for fold %d is: %f") % (fi, acc_mean_test)
+        print("Slice level mean test accuracy for fold %d is: %f" % (fi, acc_mean_test))
         test_accuracy[fi] = acc_mean_test
 
         ## save the graph and image
@@ -203,12 +203,12 @@ def main(options):
 
     print("\n\n")
     print("For the k-fold CV, testing accuracies are %s " % str(test_accuracy))
-    print('\nMean accuray of testing set: %f') % (np.mean(test_accuracy))
+    print('\nMean accuray of testing set: %f' % (np.mean(test_accuracy)))
 
 
 if __name__ == "__main__":
     ret = parser.parse_known_args()
     options = ret[0]
     if ret[1]:
-        print("unknown arguments: %s") % (parser.parse_known_args()[1])
+        print("unknown arguments: %s" % (parser.parse_known_args()[1]))
     main(options)
