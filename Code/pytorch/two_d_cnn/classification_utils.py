@@ -377,8 +377,8 @@ def slices_to_rgb(image_path, view, img_mode='rgb_slice'):
 
     image = nib.load(image_path)
     image_array = np.array(image.get_data())
-    # if img_mode == 'rgb_slice':
-        # image_array = (image_array - image_array.min()) / (image_array.max() - image_array.min()) * 255
+    if img_mode == 'rgb_slice':
+        image_array = (image_array - image_array.min()) / (image_array.max() - image_array.min()) * 255
         # image_array = (image_array - image_array.min()) / (image_array.max() - image_array.min())
 
     slice_to_rgb_imgs = []
@@ -419,6 +419,7 @@ def slices_to_rgb(image_path, view, img_mode='rgb_slice'):
         # test[..., 2] = slice_select
 
         slice_to_rgb_img = np.stack((slice_select,)*3, axis=-1)
+        ## change the datatype into uint8, but before fitting the image into pytorch, pytorch needs float, that is why the contrast of image has been inversed.
 
         if len(slice_to_rgb_img.shape) > 3 and slice_to_rgb_img.shape[3] == 1:
             slice_to_rgb_img_resize = np.resize(slice_to_rgb_img,
@@ -439,7 +440,7 @@ class CustomResize(object):
 
     def resize_image(self, img_array, trg_size):
         res = resize(img_array, trg_size, mode='reflect', preserve_range=True, anti_aliasing=False)
-        # res = res.astype('uint8')
+        res = res.astype('uint8')
         # type check
         if type(res) != np.ndarray:
             raise "type error!"
