@@ -388,8 +388,8 @@ def slices_to_rgb(image_path, view, img_mode='rgb_slice'):
         # image_array = (image_array - image_array.min()) / (image_array.max() - image_array.min())
 
     slice_to_rgb_imgs = []
-    # slice_list = range(15, image_array.shape[view] - 15) # delete the first 20 slice and last 15 slices
-    slice_list = range(70, 71) # for test
+    slice_list = range(15, image_array.shape[view] - 15) # delete the first 20 slice and last 15 slices
+    # slice_list = range(70, 71) # for test
 
     if img_mode == 'rgb_slice' or img_mode == "original_slice":
 
