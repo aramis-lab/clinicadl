@@ -159,7 +159,7 @@ def main(options):
             y_hats_train.extend(y_hat_train)
             ## at then end of each epoch, we validate one time for the model with the validation data
             imgs_valid, valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_steps_valid = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch_i, model_mode='valid', global_steps=global_steps_train)
-            print("Slice level average validation accuracy is %f at the end of epoch %d") % (acc_mean_valid, epoch_i)
+            print("Slice level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch_i))
             valid_subjects.extend(valid_subject)
             y_grounds_valid.extend(y_ground_valid)
             y_hats_valid.extend(y_hat_valid)
