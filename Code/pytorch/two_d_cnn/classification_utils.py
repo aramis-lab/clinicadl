@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
 from torchvision.utils import make_grid
+import time
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -40,11 +41,13 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
     subjects = []
     y_ground = []
     y_hat = []
+    batch_time = AverageMeter()
+
     if model_mode == "train":
         model.train() ## set the model to training mode
     else:
         model.eval() ## set the model to evaluation mode
-
+    end = time.time()
     for i, subject_data in enumerate(data_loader):
         # for each iteration, the train data contains batch_size * n_slices_in_each_subject images
         loss_batch = 0.0
@@ -100,6 +103,11 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+
+        # measure elapsed time
+        batch_time.update(time.time() - end)
+        end = time.time()
+        print('Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'.format(batch_time=batch_time))
 
         if model_mode == "train":
             writer.add_scalar('slice-level accuracy', acc_batch / num_slice, i + epoch_i * len(data_loader.dataset))
@@ -550,3 +558,20 @@ def evaluate_prediction(y, y_hat):
                }
 
     return results
+
+class AverageMeter(object):
+    """Computes and stores the average and current value"""
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
