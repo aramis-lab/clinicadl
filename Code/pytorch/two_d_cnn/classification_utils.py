@@ -1,7 +1,5 @@
 import torch
 from torch.autograd import Variable
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import nibabel as nib
 from torch.utils.data import Dataset
 import random
@@ -11,7 +9,6 @@ from os import path
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
-from torchvision.utils import make_grid
 import time
 
 __author__ = "Junhao Wen"
