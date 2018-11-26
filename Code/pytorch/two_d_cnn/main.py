@@ -90,19 +90,22 @@ def main(options):
                                   batch_size=options.batch_size,
                                   shuffle=options.shuffle,
                                   num_workers=32,
-                                  drop_last=True)
+                                  drop_last=True,
+                                  pin_memory=True)
 
         test_loader = DataLoader(data_test,
                                  batch_size=options.batch_size,
                                  shuffle=False,
                                  num_workers=32,
-                                 drop_last=True)
+                                 drop_last=True,
+                                 pin_memory=True)
 
         valid_loader = DataLoader(data_valid,
                                  batch_size=options.batch_size,
                                  shuffle=False,
                                  num_workers=32,
-                                 drop_last=True)
+                                 drop_last=True,
+                                 pin_memory=True)
 
         ## Check if we have problem for the data loader:
 
