@@ -50,6 +50,12 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
         loss_batch = 0.0
         acc_batch = 0.0
         num_slice = len(subject_data)
+
+        # measure elapsed time
+        batch_time.update(time.time() - end)
+        end = time.time()
+
+        print('Load batch data time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'.format(batch_time=batch_time))
         for j in range(num_slice):
             data_dic = subject_data[j]
             if use_cuda:
@@ -100,11 +106,6 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-
-        # measure elapsed time
-        batch_time.update(time.time() - end)
-        end = time.time()
-        print('Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'.format(batch_time=batch_time))
 
         if model_mode == "train":
             writer.add_scalar('slice-level accuracy', acc_batch / num_slice, i + epoch_i * len(data_loader.dataset))
