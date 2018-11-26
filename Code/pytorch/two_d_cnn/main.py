@@ -89,19 +89,19 @@ def main(options):
         train_loader = DataLoader(data_train,
                                   batch_size=options.batch_size,
                                   shuffle=options.shuffle,
-                                  num_workers=8,
+                                  num_workers=32,
                                   drop_last=True)
 
         test_loader = DataLoader(data_test,
                                  batch_size=options.batch_size,
                                  shuffle=False,
-                                 num_workers=8,
+                                 num_workers=32,
                                  drop_last=True)
 
         valid_loader = DataLoader(data_valid,
                                  batch_size=options.batch_size,
                                  shuffle=False,
-                                 num_workers=8,
+                                 num_workers=32,
                                  drop_last=True)
 
         ## Check if we have problem for the data loader:
