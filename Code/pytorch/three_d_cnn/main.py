@@ -18,11 +18,11 @@ parser.add_argument("log_dir", type=str,
                     help="Path to log dir for tensorboard usage.")
 parser.add_argument("input_dir", type=str,
                     help="Path to input dir of the MRI (preprocessed CAPS_dir).")
-parser.add_argument("model", type=str, choices=["Hosseini", "Esmaeilzadeh"],
+parser.add_argument("model", type=str, choices=["Hosseini", "Esmaeilzadeh", "Test"],
                     help="model selected")
 
 # Data Management
-parser.add_argument("--batch_size", default=1, type=int,
+parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument('--accumulation_steps', '-asteps', default=1, type=int,
                     help='Accumulates gradients in order to increase the size of the batch')
@@ -32,6 +32,10 @@ parser.add_argument("--n_splits", default=5, type=int,
                     help="How many folds for the k-fold cross validation procedure.")
 parser.add_argument("--test_sessions", default=["ses-M00"], nargs='+', type=str,
                     help="Test the accuracy at the end of the model for the sessions selected")
+parser.add_argument("--visualization", default=None, type=str,
+                    help='the file path to perform a test for autoencoder visualization')
+parser.add_argument("--num_workers", '-w', default=1, type=int,
+                    help='the number of batch being loaded in parallel')
 
 # Pretraining arguments
 parser.add_argument("-t", "--transfer_learning", default=False, action='store_true',
@@ -76,7 +80,7 @@ def main(options):
     total_time = time()
     # Pretraining the model
     if options.transfer_learning:
-        model = Hosseini()
+        model = eval(options.model)()
         criterion = torch.nn.MSELoss()
         if options.transfer_learning is None:
             raise Exception("A tsv file with data for pretraining must be given")
@@ -89,14 +93,14 @@ def main(options):
         train_loader = DataLoader(data_train,
                                   batch_size=options.batch_size,
                                   shuffle=options.shuffle,
-                                  num_workers=0,
+                                  num_workers=options.num_workers,
                                   drop_last=True
                                   )
 
         valid_loader = DataLoader(data_valid,
                                   batch_size=options.batch_size,
                                   shuffle=False,
-                                  num_workers=0,
+                                  num_workers=options.num_workers,
                                   drop_last=False
                                   )
 
@@ -115,11 +119,11 @@ def main(options):
         # Choose here a selection of sessions for the test
         test_loader_list = []
         for session in options.test_sessions:
-            data_test_session = session_restriction(data_test, session)
+            data_test_session = data_test.session_restriction(session)
             test_loader = DataLoader(data_test_session,
                                      batch_size=options.batch_size,
                                      shuffle=False,
-                                     num_workers=0,
+                                     num_workers=options.num_workers,
                                      drop_last=False
                                      )
             test_loader_list.append(test_loader)
@@ -128,14 +132,14 @@ def main(options):
         train_loader = DataLoader(data_train,
                                   batch_size=options.batch_size,
                                   shuffle=options.shuffle,
-                                  num_workers=0,
+                                  num_workers=options.num_workers,
                                   drop_last=True
                                   )
 
         valid_loader = DataLoader(data_valid,
                                   batch_size=options.batch_size,
                                   shuffle=False,
-                                  num_workers=0,
+                                  num_workers=options.num_workers,
                                   drop_last=False
                                   )
 
@@ -169,7 +173,7 @@ def main(options):
     print("For the k-fold CV, testing accuracies are %s " % str(test_accuracy))
     print('Mean accuracy of testing set: %f' % np.mean(test_accuracy))
     print("Total time of computation: %d s" % total_time)
-    test_df = pd.DataFrame(test_accuracy, columns=['accuracy'])
+    test_df = pd.DataFrame(test_accuracy, columns=['accuracy_' + session for session in options.test_sessions])
     test_df.index.name = 'fold'
     test_df.to_csv(path.join(options.log_dir, 'test_accuracies.tsv'), sep='\t')
     text_file = open(path.join(options.log_dir, 'model_output.txt'), 'w')
@@ -190,25 +194,6 @@ def write_summary(log_dir, fold, accuracies, best_epoch, time, test_sessions):
     for i, session in enumerate(test_sessions):
         text_file.write('Accuracy on test set on sessions %s: %.2f %% \n' % (session, accuracies[2][i]))
     text_file.close()
-
-
-def session_restriction(data_test, session):
-    """
-    Allows to use only some specific sessions in a dataset (used for test)
-
-    :param data_test: (DataFrame) the dataset with all the sessions
-    :param session: (str) the session wanted. Must be 'all' or 'ses-MXX'
-    :return: (DataFrame) the dataset with the wanted sessions
-    """
-    from copy import copy
-
-    output = copy(data_test)
-    if session == "all":
-        return output
-    else:
-        output = output[output.session_id == session]
-        if len(output) == 0:
-            raise Exception("The session %s doesn't exist for any of the subjects in the test data" % session)
 
 
 if __name__ == "__main__":

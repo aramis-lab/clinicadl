@@ -22,7 +22,7 @@ class MRIDataset(Dataset):
         """
         self.img_dir = img_dir
         self.transform = transform
-        self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1}
+        self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
 
         # Check the format of the tsv file here
         self.df = pd.read_csv(data_file, sep='\t')
@@ -40,8 +40,8 @@ class MRIDataset(Dataset):
         sess_name = self.df.loc[idx, 'session_id']
         # Not in BIDS but in CAPS
         image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
-                               't1', 'spm', 'segmentation', 'normalized_space',
-                               img_name + '_' + sess_name + '_space-Ixi549Space_T1w.nii.gz')
+                               't1', 'preprocessing_dl',
+                               img_name + '_' + sess_name + '_space-MNI_res-1x1x1_linear_registration.nii.gz')
 
         reading_image = nib.load(image_path)
         image = reading_image.get_data()
@@ -52,6 +52,26 @@ class MRIDataset(Dataset):
         sample = {'image': image, 'label': label}
 
         return sample
+
+    def session_restriction(self, session):
+        """
+            Allows to generate a new MRIDataset using some specific sessions only (mostly used for evaluation of test)
+
+            :param session: (str) the session wanted. Must be 'all' or 'ses-MXX'
+            :return: (DataFrame) the dataset with the wanted sessions
+            """
+        from copy import copy
+
+        data_output = copy(self)
+        if session == "all":
+            return data_output
+        else:
+            df_session = self.df[self.df.session_id == session]
+            df_session.reset_index(drop=True, inplace=True)
+            data_output.df = df_session
+            if len(data_output) == 0:
+                raise Exception("The session %s doesn't exist for any of the subjects in the test data" % session)
+            return data_output
 
 
 class GaussianSmoothing(object):

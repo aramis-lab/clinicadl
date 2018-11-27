@@ -1,4 +1,5 @@
 from modules import *
+import torch.nn as nn
 import torch
 """
 All the architectures are built here
@@ -120,7 +121,7 @@ class Hosseini(nn.Module):
             Flatten(),
 
             nn.Dropout(p=dropout),
-            nn.Linear(8 * 14 * 17 * 14, 2000),
+            nn.Linear(8 * 23 * 27 * 23, 2000),
             nn.ReLU(),
 
             nn.Dropout(p=0.0),
@@ -131,7 +132,108 @@ class Hosseini(nn.Module):
             nn.Linear(500, n_classes)
         )
 
-        self.flattened_shape = [-1, 8, 14, 17, 14]
+        self.flattened_shape = [-1, 8, 23, 27, 23]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
+class Test(nn.Module):
+    """
+    Classifier for a 2-class classification task
+
+    """
+
+    def __init__(self, dropout=0.0, n_classes=2):
+        super(Test, self).__init__()
+
+        self.features = nn.Sequential(
+            # Convolutions
+            nn.Conv3d(1, 8, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 32, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2)
+        )
+        self.classifier = nn.Sequential(
+            # Fully connected layers
+            Flatten(),
+
+            nn.Dropout(p=dropout),
+            nn.Linear(32 * 5 * 6 * 5, 256),
+            nn.ReLU(),
+
+            nn.Dropout(p=0.0),
+            nn.Linear(256, n_classes)
+        )
+
+        self.flattened_shape = [-1, 32, 5, 6, 5]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
+class AlexNet3D(nn.Module):
+    """
+       Classifier for a 2-class classification task
+
+       """
+
+    def __init__(self, dropout=0.0, n_classes=2):
+        super(AlexNet3D, self).__init__()
+
+        self.features = nn.Sequential(
+            # Convolutions
+            nn.Conv3d(1, 16, 11),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 5),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(42, 64, 3),
+            nn.ReLU(),
+
+            nn.Conv3d(64, 64, 3),
+            nn.ReLU(),
+
+            nn.Conv3d(64, 32, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2)
+        )
+        self.classifier = nn.Sequential(
+            # Fully connected layers
+            Flatten(),
+
+            nn.Dropout(p=dropout),
+            nn.Linear(32 * 5 * 6 * 5, 256),
+            nn.ReLU(),
+
+            nn.Linear(256, n_classes)
+        )
+
+        self.flattened_shape = [-1, 32, 5, 6, 5]
 
     def forward(self, x):
         x = self.features(x)

@@ -21,7 +21,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
     """
     # Create writers
     from tensorboardX import SummaryWriter
-    writer_train = SummaryWriter(log_dir=(os.path.join(options.log_dir, "fold" + str(fold), "train")))
+    from time import time
+
+    writer_train = SummaryWriter(log_dir=(os.path.join(options.log_dir, "fold" + str(fold), "train")))  # Replace with a path creation
     filename = os.path.join(options.log_dir, "fold" + str(fold), 'training.tsv')
     results_df = pd.DataFrame(columns=['epoch', 'iteration', 'acc_train', 'acc_valid'])
     with open(filename, 'w') as f:
@@ -42,28 +44,42 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
         evaluation_flag = True
         step_flag = True
         last_check_point_i = 0
+        tend = time()
         for i, data in enumerate(train_loader):
-
+            t0 = time()
+            print('Loading batch:', t0 - tend)
             if options.gpu:
                 imgs, labels = data['image'].cuda(), data['label'].cuda()
             else:
                 imgs, labels = data['image'], data['label']
-
+            t1 = time()
+            print('On GPU: ', t1-t0)
             train_output = model(imgs)
+            t2 = time()
+            print('Forward pass: ', t2-t1)
             _, predict = train_output.topk(1)
             loss = criterion(train_output, labels)
+            t3 = time()
+            print('Loss computation: ', t3-t2)
             batch_correct_cnt = (predict.squeeze(1) == labels).sum().float()
             total_correct_cnt += batch_correct_cnt
             accuracy = float(batch_correct_cnt) / len(labels)
+            t4 = time()
+            print('Accuracy computation: ', t4-t3)
             loss.backward()
+            t5 = time()
+            print('Backward pass: ', t5-t4)
 
-            writer_train.add_scalar('training_accuracy', accuracy / len(data), i + epoch * len(train_loader.dataset))
-            writer_train.add_scalar('training_loss', loss.item() / len(data), i + epoch * len(train_loader.dataset))
+            # writer_train.add_scalar('training_accuracy', accuracy / len(data), i + epoch * len(train_loader.dataset))
+            # writer_train.add_scalar('training_loss', loss.item() / len(data), i + epoch * len(train_loader.dataset))
 
             if (i+1) % options.accumulation_steps == 0:
+                t6 = time()
                 step_flag = False
                 optimizer.step()
                 model.zero_grad()
+                t7 = time()
+                print('Optimizer step:', t7-t6)
 
                 # Evaluate the model only when no gradients are accumulated
                 if(i+1) % options.evaluation_steps == 0:
@@ -90,6 +106,12 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
                                         is_best,
                                         os.path.join(options.log_dir, "fold" + str(fold)))
                         last_check_point_i = i
+
+            if (i + 1) % 10 == 0:
+                print('Batch: ' + str(i))
+
+            tend = time()
+            print('Ending loop:', tend-t5)
 
         # If no step has been performed, raise Exception
         if step_flag:
@@ -239,7 +261,6 @@ def check_and_clean(d):
 
 
 def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
-    # Create writers
     from model import Decoder
     from tensorboardX import SummaryWriter
     from copy import deepcopy
@@ -256,6 +277,7 @@ def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
 
     # Initialize variables
     best_loss_valid = np.inf
+    print("Beginning pretraining")
     for epoch in range(options.transfer_learning_epochs):
         print("At %d-th epoch." % epoch)
 
@@ -300,6 +322,11 @@ def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
                                         os.path.join(options.log_dir, "pretraining"))
                         last_check_point_i = i
 
+                if (i+1) % 2 == 0:
+                    print('Batch: ' + str(i))
+
+            del imgs
+
         # If no step has been performed, raise Exception
         if step_flag:
             raise Exception('The model has not been updated once in the epoch. The accumulation step may be too large.')
@@ -327,7 +354,7 @@ def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
                                 is_best,
                                 os.path.join(options.log_dir, "pretraining"))
 
-    print('End of training', torch.cuda.memory_allocated())
+    # print('End of training', torch.cuda.memory_allocated())
     # Updating and setting weights of the convolutional layers
     best_decoder, best_epoch = load_model(decoder, os.path.join(options.log_dir, "pretraining"))
     model.features = deepcopy(best_decoder.encoder)
@@ -336,6 +363,9 @@ def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
                     False,
                     os.path.join(options.log_dir, "pretraining"),
                     'model_pretrained.pth.tar')
+
+    if options.visualization is not None:
+        visualize_ae(best_decoder, options.visualization, os.path.join(options.log_dir, "pretraining"), gpu)
 
 
 def test_ae(model, dataloader, use_cuda, criterion):
@@ -361,6 +391,25 @@ def test_ae(model, dataloader, use_cuda, criterion):
         total_loss += loss.item()
 
     return total_loss
+
+
+def visualize_ae(decoder, img_path, results_path, gpu):
+    import nibabel as nib
+    from data_utils import ToTensor
+    import os
+
+    data = nib.load(img_path)
+    img = data.get_data()
+    affine = data.get_affine()
+    img_tensor = ToTensor()(img)
+    img_tensor = img_tensor.unsqueeze(0)
+    if gpu:
+        img_tensor = img_tensor.cuda()
+    print(img_tensor.size())
+    output_tensor = decoder(img_tensor)
+    output = nib.Nifti1Image(output_tensor.cpu().detach().numpy(), affine)
+    nib.save(output, os.path.join(results_path, 'output_image.nii'))
+    nib.save(data, os.path.join(results_path, 'input_image.nii'))
 
 
 def memReport():
