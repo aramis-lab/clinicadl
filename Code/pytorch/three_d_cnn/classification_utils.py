@@ -44,42 +44,30 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
         evaluation_flag = True
         step_flag = True
         last_check_point_i = 0
-        tend = time()
         for i, data in enumerate(train_loader):
-            t0 = time()
-            print('Loading batch:', t0 - tend)
+
             if options.gpu:
                 imgs, labels = data['image'].cuda(), data['label'].cuda()
             else:
                 imgs, labels = data['image'], data['label']
-            t1 = time()
-            print('On GPU: ', t1-t0)
+
             train_output = model(imgs)
-            t2 = time()
-            print('Forward pass: ', t2-t1)
             _, predict = train_output.topk(1)
             loss = criterion(train_output, labels)
-            t3 = time()
-            print('Loss computation: ', t3-t2)
             batch_correct_cnt = (predict.squeeze(1) == labels).sum().float()
             total_correct_cnt += batch_correct_cnt
-            accuracy = float(batch_correct_cnt) / len(labels)
-            t4 = time()
-            print('Accuracy computation: ', t4-t3)
+            # accuracy = float(batch_correct_cnt) / len(labels)
             loss.backward()
-            t5 = time()
-            print('Backward pass: ', t5-t4)
 
             # writer_train.add_scalar('training_accuracy', accuracy / len(data), i + epoch * len(train_loader.dataset))
             # writer_train.add_scalar('training_loss', loss.item() / len(data), i + epoch * len(train_loader.dataset))
 
+            del imgs
+
             if (i+1) % options.accumulation_steps == 0:
-                t6 = time()
                 step_flag = False
                 optimizer.step()
                 model.zero_grad()
-                t7 = time()
-                print('Optimizer step:', t7-t6)
 
                 # Evaluate the model only when no gradients are accumulated
                 if(i+1) % options.evaluation_steps == 0:
@@ -110,8 +98,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
             if (i + 1) % 10 == 0:
                 print('Batch: ' + str(i))
 
-            tend = time()
-            print('Ending loop:', tend-t5)
 
         # If no step has been performed, raise Exception
         if step_flag:
@@ -124,6 +110,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
 
         # Always test the results and save them once at the end of the epoch
         if last_check_point_i != i:
+            model.zero_grad()
             print('Last checkpoint at the end of the epoch %d' % epoch)
             acc_mean_train = test(model, train_loader, options.gpu)
             acc_mean_valid = test(model, valid_loader, options.gpu)
@@ -167,20 +154,26 @@ def test(model, dataloader, use_cuda, verbose=False, full_return=False):
         predicted_tensor = predicted_tensor.cuda()
         truth_tensor = truth_tensor.cuda()
 
+    print('Before testing', torch.cuda.memory_allocated())
     for i, data in enumerate(dataloader):
         if use_cuda:
             inputs, labels = data['image'].cuda(), data['label'].cuda()
         else:
             inputs, labels = data['image'], data['label']
 
+        print('Checkpoint 1', torch.cuda.memory_allocated(), torch.cuda.memory_cached())
         outputs = model(inputs)
         _, predicted = torch.max(outputs.data, 1)
+        print('Checkpoint 2', torch.cuda.memory_allocated(), torch.cuda.memory_cached())
 
         idx = i * dataloader.batch_size
         idx_end = (i + 1) * dataloader.batch_size
         predicted_tensor[idx:idx_end:] = predicted
         truth_tensor[idx:idx_end:] = labels
 
+        del inputs, outputs, labels
+
+    print('After testing', torch.cuda.memory_allocated())
     # Computation of the balanced accuracy
     component = len(np.unique(truth_tensor))
 
@@ -196,6 +189,8 @@ def test(model, dataloader, use_cuda, verbose=False, full_return=False):
     for i, predicted in enumerate(predicted_arr):
         truth = truth_arr[i]
         cluster_diagnosis_prop[predicted, truth] += 1
+
+    print("Processing data", torch.cuda.memory_allocated())
 
     acc = 0
     sensitivity = np.zeros(component)
@@ -218,6 +213,7 @@ def test(model, dataloader, use_cuda, verbose=False, full_return=False):
         else:
             specificity[diag_represented] = (1 - np.sum(spe_array[:, diag_represented]) / np.sum(spe_array)) * 100
 
+    print('Postprocessing', torch.cuda.memory_allocated())
     acc = acc * 100 / component
     if verbose:
         print('Accuracy of diagnosis: ' + str(acc))

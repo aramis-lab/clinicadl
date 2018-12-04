@@ -1,7 +1,6 @@
 import torch
 import pandas as pd
 import numpy as np
-import nibabel as nib
 import os
 from os import path
 from torch.utils.data import Dataset
@@ -41,10 +40,9 @@ class MRIDataset(Dataset):
         # Not in BIDS but in CAPS
         image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
                                't1', 'preprocessing_dl',
-                               img_name + '_' + sess_name + '_space-MNI_res-1x1x1_linear_registration.nii.gz')
+                               img_name + '_' + sess_name + '_space-MNI_res-1x1x1_linear_registration.pt')
 
-        reading_image = nib.load(image_path)
-        image = reading_image.get_data()
+        image = torch.load(image_path)
         label = self.diagnosis_code[img_label]
 
         if self.transform:

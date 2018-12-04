@@ -75,7 +75,7 @@ def main(options):
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
                         (options.evaluation_steps, options.accumulation_steps))
 
-    transformations = transforms.Compose([ToTensor()])
+    transformations = None
 
     total_time = time()
     # Pretraining the model
@@ -112,9 +112,9 @@ def main(options):
 
         training_tsv, test_tsv, valid_tsv = load_split(options.diagnosis_tsv, fold=fi, n_splits=options.n_splits)
 
-        data_train = MRIDataset(options.input_dir, training_tsv, transformations)
-        data_test = MRIDataset(options.input_dir, test_tsv, transformations)
-        data_valid = MRIDataset(options.input_dir, valid_tsv, transformations)
+        data_train = MRIDataset(options.input_dir, training_tsv, transform=transformations)
+        data_test = MRIDataset(options.input_dir, test_tsv, transform=transformations)
+        data_valid = MRIDataset(options.input_dir, valid_tsv, transform=transformations)
 
         # Choose here a selection of sessions for the test
         test_loader_list = []
