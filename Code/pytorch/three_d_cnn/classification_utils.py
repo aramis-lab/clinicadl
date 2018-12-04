@@ -154,17 +154,14 @@ def test(model, dataloader, use_cuda, verbose=False, full_return=False):
         predicted_tensor = predicted_tensor.cuda()
         truth_tensor = truth_tensor.cuda()
 
-    print('Before testing', torch.cuda.memory_allocated())
     for i, data in enumerate(dataloader):
         if use_cuda:
             inputs, labels = data['image'].cuda(), data['label'].cuda()
         else:
             inputs, labels = data['image'], data['label']
 
-        print('Checkpoint 1', torch.cuda.memory_allocated(), torch.cuda.memory_cached())
         outputs = model(inputs)
         _, predicted = torch.max(outputs.data, 1)
-        print('Checkpoint 2', torch.cuda.memory_allocated(), torch.cuda.memory_cached())
 
         idx = i * dataloader.batch_size
         idx_end = (i + 1) * dataloader.batch_size
