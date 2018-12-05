@@ -45,6 +45,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
     else:
         model.eval() ## set the model to evaluation mode
     end = time.time()
+    print('The number of subjects in dataset %s' % str(len(data_loader)))
     for i, subject_data in enumerate(data_loader):
         # for each iteration, the train data contains batch_size * n_slices_in_each_subject images
         loss_batch = 0.0
@@ -54,6 +55,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
+        print('The number of slices in one subject is: %s' % str(num_slice))
 
         print('Load batch data time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'.format(batch_time=batch_time))
         for j in range(num_slice):
