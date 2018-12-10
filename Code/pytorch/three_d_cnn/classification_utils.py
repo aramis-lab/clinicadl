@@ -6,9 +6,10 @@ import os
 import shutil
 import warnings
 import pandas as pd
+from time import time
 
 
-def train(model, train_loader, valid_loader, criterion, optimizer, fold, options):
+def train(model, train_loader, valid_loader, criterion, optimizer, run, options):
     """
     This is the function to train the model
     :param model:
@@ -16,15 +17,15 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
     :param valid_loader:
     :param criterion:
     :param optimizer:
-    :param fold:
+    :param run:
     :param options:
     """
     # Create writers
     from tensorboardX import SummaryWriter
     from time import time
 
-    writer_train = SummaryWriter(log_dir=(os.path.join(options.log_dir, "fold" + str(fold), "train")))  # Replace with a path creation
-    filename = os.path.join(options.log_dir, "fold" + str(fold), 'training.tsv')
+    writer_train = SummaryWriter(log_dir=(os.path.join(options.log_dir, "run" + str(run), "train")))  # Replace with a path creation
+    filename = os.path.join(options.log_dir, "run" + str(run), 'training.tsv')
     results_df = pd.DataFrame(columns=['epoch', 'iteration', 'acc_train', 'acc_valid'])
     with open(filename, 'w') as f:
         results_df.to_csv(f, index=False, sep='\t')
@@ -44,13 +45,15 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
         evaluation_flag = True
         step_flag = True
         last_check_point_i = 0
-        for i, data in enumerate(train_loader):
-
+        tend = time()
+        total_time = 0
+        for i, data in enumerate(train_loader, 0):
+            t0 = time()
+            total_time = total_time + t0 - tend
             if options.gpu:
                 imgs, labels = data['image'].cuda(), data['label'].cuda()
             else:
                 imgs, labels = data['image'], data['label']
-
             train_output = model(imgs)
             _, predict = train_output.topk(1)
             loss = criterion(train_output, labels)
@@ -83,21 +86,21 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
                     row_df = pd.DataFrame(row, columns=['epoch', 'iteration', 'acc_train', 'acc_valid'])
                     with open(filename, 'a') as f:
                         row_df.to_csv(f, header=False, index=False, sep='\t')
-                    is_best = acc_mean_valid > best_valid_accuracy
-                    # Save only if is best to avoid performance deterioration
-                    if is_best:
-                        best_valid_accuracy = acc_mean_valid
-                        save_checkpoint({'model': model.state_dict(),
-                                         'iteration': i,
-                                         'epoch': epoch,
-                                         'valid_acc': acc_mean_valid},
-                                        is_best,
-                                        os.path.join(options.log_dir, "fold" + str(fold)))
-                        last_check_point_i = i
+                    # # Do not save on iteration level because of accuracy noise
+                    # is_best = acc_mean_valid > best_valid_accuracy
+                    # # Save only if is best to avoid performance deterioration
+                    # if is_best:
+                    #     best_valid_accuracy = acc_mean_valid
+                    #     save_checkpoint({'model': model.state_dict(),
+                    #                      'iteration': i,
+                    #                      'epoch': epoch,
+                    #                      'valid_acc': acc_mean_valid},
+                    #                     is_best,
+                    #                     os.path.join(options.log_dir, "run" + str(run)))
+                    #     last_check_point_i = i
 
-            if (i + 1) % 10 == 0:
-                print('Batch: ' + str(i))
-
+            tend = time()
+        print('Mean time per batch (train):', total_time / len(train_loader) * train_loader.batch_size)
 
         # If no step has been performed, raise Exception
         if step_flag:
@@ -128,7 +131,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, fold, options
                              'epoch': epoch,
                              'valid_acc': acc_mean_valid},
                             is_best,
-                            os.path.join(options.log_dir, "fold" + str(fold)))
+                            os.path.join(options.log_dir, "run" + str(run)))
 
         print('Total correct labels: %d / %d' % (total_correct_cnt, len(train_loader) * train_loader.batch_size))
         total_acc = float(total_correct_cnt) / (len(train_loader) * train_loader.batch_size)
@@ -154,7 +157,11 @@ def test(model, dataloader, use_cuda, verbose=False, full_return=False):
         predicted_tensor = predicted_tensor.cuda()
         truth_tensor = truth_tensor.cuda()
 
-    for i, data in enumerate(dataloader):
+    total_time = 0
+    tend = time()
+    for i, data in enumerate(dataloader, 0):
+        t0 = time()
+        total_time = total_time + t0 - tend
         if use_cuda:
             inputs, labels = data['image'].cuda(), data['label'].cuda()
         else:
@@ -169,8 +176,9 @@ def test(model, dataloader, use_cuda, verbose=False, full_return=False):
         truth_tensor[idx:idx_end:] = labels
 
         del inputs, outputs, labels
+        tend = time()
+    print('Mean time per batch (test):', total_time / len(dataloader) * dataloader.batch_size)
 
-    print('After testing', torch.cuda.memory_allocated())
     # Computation of the balanced accuracy
     component = len(np.unique(truth_tensor))
 
@@ -187,7 +195,6 @@ def test(model, dataloader, use_cuda, verbose=False, full_return=False):
         truth = truth_arr[i]
         cluster_diagnosis_prop[predicted, truth] += 1
 
-    print("Processing data", torch.cuda.memory_allocated())
 
     acc = 0
     sensitivity = np.zeros(component)
@@ -210,7 +217,6 @@ def test(model, dataloader, use_cuda, verbose=False, full_return=False):
         else:
             specificity[diag_represented] = (1 - np.sum(spe_array[:, diag_represented]) / np.sum(spe_array)) * 100
 
-    print('Postprocessing', torch.cuda.memory_allocated())
     acc = acc * 100 / component
     if verbose:
         print('Accuracy of diagnosis: ' + str(acc))

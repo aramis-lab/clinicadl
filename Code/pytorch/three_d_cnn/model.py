@@ -6,141 +6,6 @@ All the architectures are built here
 """
 
 
-class Hosseini3(nn.Module):
-    """
-        Classifier for a 2-class classification task
-
-        """
-
-    def __init__(self, dropout=0.0, n_classes=2):
-        super(Hosseini3, self).__init__()
-
-        self.features = nn.Sequential(
-            # Convolutions
-            nn.Conv3d(1, 8, 3, stride=2),
-            nn.ReLU(),
-
-            nn.Conv3d(8, 8, 4, stride=2),
-            nn.ReLU(),
-
-            nn.Conv3d(8, 8, 3, stride=2),
-            nn.ReLU(),
-        )
-        self.classifier = nn.Sequential(
-            # Fully connected layers
-            Flatten(),
-
-            nn.Dropout(p=dropout),
-            nn.Linear(8 * 14 * 17 * 14, 2000),
-            nn.ReLU(),
-
-            nn.Dropout(p=0.0),
-            nn.Linear(2000, 500),
-            nn.ReLU(),
-
-            nn.Dropout(p=0.0),
-            nn.Linear(500, n_classes)
-        )
-
-        self.flattened_shape = [-1, 8, 14, 17, 14]
-
-
-class Hosseini2(nn.Module):
-    """
-    Classifier for a 2-class classification task
-
-    """
-
-    def __init__(self, dropout=0.0, n_classes=2):
-        super(Hosseini2, self).__init__()
-
-        self.features = nn.Sequential(
-            # Convolutions
-            nn.Conv3d(1, 8, 4),
-            nn.ReLU(),
-            nn.MaxPool3d(2, 2),
-
-            nn.Conv3d(8, 8, 4),
-            nn.ReLU(),
-            nn.MaxPool3d(2, 2),
-
-            nn.Conv3d(8, 8, 3),
-            nn.ReLU(),
-            nn.MaxPool3d(2, 2)
-        )
-        self.classifier = nn.Sequential(
-            # Fully connected layers
-            Flatten(),
-
-            nn.Dropout(p=dropout),
-            nn.Linear(8 * 14 * 17 * 14, 2000),
-            nn.ReLU(),
-
-            nn.Dropout(p=0.0),
-            nn.Linear(2000, 500),
-            nn.ReLU(),
-
-            nn.Dropout(p=0.0),
-            nn.Linear(500, n_classes)
-        )
-
-        self.flattened_shape = [-1, 8, 13, 16, 13]
-
-    def forward(self, x):
-        x = self.features(x)
-        x = self.classifier(x)
-
-        return x
-
-
-class Hosseini(nn.Module):
-    """
-    Classifier for a 2-class classification task
-
-    """
-
-    def __init__(self, dropout=0.0, n_classes=2):
-        super(Hosseini, self).__init__()
-
-        self.features = nn.Sequential(
-            # Convolutions
-            nn.Conv3d(1, 8, 3),
-            nn.ReLU(),
-            PadMaxPool3d(2, 2),
-
-            nn.Conv3d(8, 8, 3),
-            nn.ReLU(),
-            PadMaxPool3d(2, 2),
-
-            nn.Conv3d(8, 8, 3),
-            nn.ReLU(),
-            PadMaxPool3d(2, 2)
-        )
-        self.classifier = nn.Sequential(
-            # Fully connected layers
-            Flatten(),
-
-            nn.Dropout(p=dropout),
-            nn.Linear(8 * 23 * 27 * 23, 2000),
-            nn.ReLU(),
-
-            nn.Dropout(p=0.0),
-            nn.Linear(2000, 500),
-            nn.ReLU(),
-
-            nn.Dropout(p=0.0),
-            nn.Linear(500, n_classes)
-        )
-
-        self.flattened_shape = [-1, 8, 23, 27, 23]
-
-    def forward(self, x):
-        x = self.features(x)
-        x = self.classifier(x)
-
-        return x
-
-
 class Test(nn.Module):
     """
     Classifier for a 2-class classification task
@@ -155,22 +20,27 @@ class Test(nn.Module):
             nn.Conv3d(1, 8, 3),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
+            nn.BatchNorm3d(8),
 
             nn.Conv3d(8, 16, 3),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
+            nn.BatchNorm3d(16),
 
             nn.Conv3d(16, 32, 3),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
+            nn.BatchNorm3d(32),
 
             nn.Conv3d(32, 64, 3),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
+            nn.BatchNorm3d(64),
 
             nn.Conv3d(64, 32, 3),
             nn.ReLU(),
-            PadMaxPool3d(2, 2)
+            PadMaxPool3d(2, 2),
+            nn.BatchNorm3d(32)
         )
         self.classifier = nn.Sequential(
             # Fully connected layers
@@ -193,93 +63,104 @@ class Test(nn.Module):
         return x
 
 
-class AlexNet3D(nn.Module):
+class Conv_3(nn.Module):
     """
        Classifier for a 2-class classification task
 
        """
 
     def __init__(self, dropout=0.0, n_classes=2):
-        super(AlexNet3D, self).__init__()
+        super(Conv_3, self).__init__()
 
         self.features = nn.Sequential(
             # Convolutions
-            nn.Conv3d(1, 16, 11),
+            nn.Conv3d(1, 16, 3),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
+            nn.BatchNorm3d(16),
 
-            nn.Conv3d(16, 32, 5),
+            nn.Conv3d(16, 32, 3),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
+            nn.BatchNorm3d(32),
 
-            nn.Conv3d(42, 64, 3),
+            nn.Conv3d(32, 32, 3),
             nn.ReLU(),
+            PadMaxPool3d(2, 2),
+            nn.BatchNorm3d(32),
 
-            nn.Conv3d(64, 64, 3),
-            nn.ReLU(),
-
-            nn.Conv3d(64, 32, 3),
-            nn.ReLU(),
-            PadMaxPool3d(2, 2)
         )
         self.classifier = nn.Sequential(
             # Fully connected layers
             Flatten(),
 
             nn.Dropout(p=dropout),
-            nn.Linear(32 * 5 * 6 * 5, 256),
+            nn.Linear(32 * 23 * 27 * 23, 1000),
             nn.ReLU(),
 
-            nn.Linear(256, n_classes)
+            nn.Linear(1000, n_classes)
         )
 
-        self.flattened_shape = [-1, 32, 5, 6, 5]
+        self.flattened_shape = [-1, 32, 23, 27, 23]
 
     def forward(self, x):
+        print(x.shape)
         x = self.features(x)
+        print(x.shape)
         x = self.classifier(x)
 
         return x
 
 
-class Esmaeilzadeh(nn.Module):
+class Conv_4(nn.Module):
     """
-    Classifier for a 2-class classification task
+       Classifier for a 2-class classification task
 
-    """
+       """
 
     def __init__(self, dropout=0.0, n_classes=2):
-        super(Esmaeilzadeh, self).__init__()
+        super(Conv_4, self).__init__()
 
         self.features = nn.Sequential(
             # Convolutions
-            nn.Conv3d(1, 32, 3),
+            nn.Conv3d(1, 16, 3),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
+            nn.BatchNorm3d(16),
+
+            nn.Conv3d(16, 32, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+            nn.BatchNorm3d(32),
+
+            nn.Conv3d(32, 32, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+            nn.BatchNorm3d(32),
 
             nn.Conv3d(32, 64, 3),
             nn.ReLU(),
-            PadMaxPool3d(3, 3),
+            PadMaxPool3d(2, 2),
+            nn.BatchNorm3d(64),
 
-            nn.Conv3d(64, 128, 3),
-            nn.ReLU(),
-            PadMaxPool3d(4, 4)
         )
         self.classifier = nn.Sequential(
             # Fully connected layers
             Flatten(),
 
             nn.Dropout(p=dropout),
-            nn.Linear(128 * 5 * 6 * 5, 256),
+            nn.Linear(32 * 23 * 27 * 23, 1000),
             nn.ReLU(),
 
-            nn.Linear(256, n_classes)
+            nn.Linear(1000, n_classes)
         )
 
-        self.flattened_shape = [-1, 128, 5, 6, 5]
+        self.flattened_shape = [-1, 32, 23, 27, 23]
 
     def forward(self, x):
+        print(x.shape)
         x = self.features(x)
+        print(x.shape)
         x = self.classifier(x)
 
         return x
