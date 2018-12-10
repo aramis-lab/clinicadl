@@ -149,13 +149,13 @@ class Conv_4(nn.Module):
             Flatten(),
 
             nn.Dropout(p=dropout),
-            nn.Linear(32 * 23 * 27 * 23, 1000),
+            nn.Linear(64 * 11 * 13 * 11, 1000),
             nn.ReLU(),
 
             nn.Linear(1000, n_classes)
         )
 
-        self.flattened_shape = [-1, 32, 23, 27, 23]
+        self.flattened_shape = [-1, 11, 13, 11, 23]
 
     def forward(self, x):
         print(x.shape)
