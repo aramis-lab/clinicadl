@@ -47,14 +47,14 @@ class Test(nn.Module):
             Flatten(),
 
             nn.Dropout(p=dropout),
-            nn.Linear(32 * 5 * 6 * 5, 256),
+            nn.Linear(32 * 4 * 5 * 4, 256),
             nn.ReLU(),
 
             nn.Dropout(p=0.0),
             nn.Linear(256, n_classes)
         )
 
-        self.flattened_shape = [-1, 32, 5, 6, 5]
+        self.flattened_shape = [-1, 32, 4, 5, 4]
 
     def forward(self, x):
         x = self.features(x)
@@ -148,13 +148,13 @@ class Conv_3(nn.Module):
             Flatten(),
 
             nn.Dropout(p=dropout),
-            nn.Linear(32 * 23 * 27 * 23, 1000),
+            nn.Linear(32 * 20 * 25 * 21, 1000),
             nn.ReLU(),
 
             nn.Linear(1000, n_classes)
         )
 
-        self.flattened_shape = [-1, 32, 23, 27, 23]
+        self.flattened_shape = [-1, 32, 20, 25, 21]
 
     def forward(self, x):
         x = self.features(x)
@@ -200,13 +200,13 @@ class Conv_4(nn.Module):
             Flatten(),
 
             nn.Dropout(p=dropout),
-            nn.Linear(64 * 11 * 13 * 11, 1000),
+            nn.Linear(64 * 9 * 12 * 10, 1000),
             nn.ReLU(),
 
             nn.Linear(1000, n_classes)
         )
 
-        self.flattened_shape = [-1, 11, 13, 11, 23]
+        self.flattened_shape = [-1, 64, 9, 12, 10]
 
     def forward(self, x):
         x = self.features(x)
@@ -263,7 +263,7 @@ class Conv_5(nn.Module):
             nn.Linear(1000, n_classes)
         )
 
-        self.flattened_shape = [-1, 5, 6, 5, 23]
+        self.flattened_shape = [-1, 4, 5, 4, 23]
 
     def forward(self, x):
         x = self.features(x)
