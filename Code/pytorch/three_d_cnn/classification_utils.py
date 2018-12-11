@@ -26,7 +26,8 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
 
     writer_train = SummaryWriter(log_dir=(os.path.join(options.log_dir, "run" + str(run), "train")))  # Replace with a path creation
     filename = os.path.join(options.log_dir, "run" + str(run), 'training.tsv')
-    results_df = pd.DataFrame(columns=['epoch', 'iteration', 'acc_train', 'acc_valid'])
+    columns = ['epoch', 'iteration', 'acc_train', 'total_loss_train', 'acc_valid', 'total_loss_valid']
+    results_df = pd.DataFrame(columns=columns)
     with open(filename, 'w') as f:
         results_df.to_csv(f, index=False, sep='\t')
 
@@ -75,14 +76,14 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
                 if(i+1) % options.evaluation_steps == 0:
                     evaluation_flag = False
                     print('Iteration %d' % i)
-                    acc_mean_train = test(model, train_loader, options.gpu)
-                    acc_mean_valid = test(model, valid_loader, options.gpu)
+                    acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
+                    acc_mean_valid, total_loss_valid = test(model, valid_loader, options.gpu, criterion)
                     model.train()
                     print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
                     print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
-                    row = np.array([epoch, i, acc_mean_train, acc_mean_valid]).reshape(1, -1)
-                    row_df = pd.DataFrame(row, columns=['epoch', 'iteration', 'acc_train', 'acc_valid'])
+                    row = np.array([epoch, i, acc_mean_train, total_loss_train, acc_mean_valid, total_loss_valid]).reshape(1, -1)
+                    row_df = pd.DataFrame(row, columns=columns)
                     with open(filename, 'a') as f:
                         row_df.to_csv(f, header=False, index=False, sep='\t')
                     # # Do not save on iteration level because of accuracy noise
@@ -114,13 +115,13 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
         if last_check_point_i != i:
             model.zero_grad()
             print('Last checkpoint at the end of the epoch %d' % epoch)
-            acc_mean_train = test(model, train_loader, options.gpu)
-            acc_mean_valid = test(model, valid_loader, options.gpu)
+            acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
+            acc_mean_valid, total_loss_valid = test(model, valid_loader, options.gpu, criterion)
             model.train()
             print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
             print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
-            row = np.array([epoch, i, acc_mean_train, acc_mean_valid]).reshape(1, -1)
+            row = np.array([epoch, i, acc_mean_train, total_loss_train, acc_mean_valid, total_loss_valid]).reshape(1, -1)
             row_df = pd.DataFrame(row, columns=['epoch', 'iteration', 'acc_train', 'acc_valid'])
             with open(filename, 'a') as f:
                 row_df.to_csv(f, header=False, index=False, sep='\t')
@@ -136,7 +137,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
         epoch += 1
 
 
-def test(model, dataloader, use_cuda, verbose=False, full_return=False):
+def test(model, dataloader, use_cuda, criterion, verbose=False, full_return=False):
     """
     Computes the balanced accuracy of the model
 
@@ -144,7 +145,9 @@ def test(model, dataloader, use_cuda, verbose=False, full_return=False):
     :param dataloader: a DataLoader wrapping a dataset
     :param use_cuda: if True a gpu is used
     :param full_return: if True also returns the sensitivities and specificities for a multiclass problem
-    :return: balanced accuracy of the model (float)
+    :return:
+        balanced accuracy of the model (float)
+        total loss on the dataloader
     """
     model.eval()
 
@@ -156,6 +159,7 @@ def test(model, dataloader, use_cuda, verbose=False, full_return=False):
         truth_tensor = truth_tensor.cuda()
 
     total_time = 0
+    total_loss = 0
     tend = time()
     for i, data in enumerate(dataloader, 0):
         t0 = time()
@@ -166,6 +170,8 @@ def test(model, dataloader, use_cuda, verbose=False, full_return=False):
             inputs, labels = data['image'], data['label']
 
         outputs = model(inputs)
+        loss = criterion(outputs, labels)
+        total_loss += loss.item()
         _, predicted = torch.max(outputs.data, 1)
 
         idx = i * dataloader.batch_size
@@ -222,9 +228,9 @@ def test(model, dataloader, use_cuda, verbose=False, full_return=False):
         print('Specificity of diagnoses:', specificity)
 
     if full_return:
-        return acc, sensitivity, specificity
+        return acc, total_loss, sensitivity, specificity
 
-    return acc
+    return acc, total_loss
 
 
 def show_plot(points):
@@ -374,7 +380,7 @@ def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
                     os.path.join(options.log_dir, "pretraining"),
                     'model_pretrained.pth.tar')
 
-    if options.visualization is not None:
+    if options.visualization:
         visualize_ae(best_decoder, train_loader, os.path.join(options.log_dir, "pretraining", "train"), gpu)
         visualize_ae(best_decoder, valid_loader, os.path.join(options.log_dir, "pretraining", "valid"), gpu)
 

@@ -32,8 +32,8 @@ parser.add_argument("--runs", default=1, type=int,
                     help="Number of runs with the same training / validation split.")
 parser.add_argument("--test_sessions", default=["ses-M00"], nargs='+', type=str,
                     help="Test the accuracy at the end of the model for the sessions selected")
-parser.add_argument("--visualization", default=None, type=str,
-                    help='the file path to perform a test for autoencoder visualization')
+parser.add_argument("--visualization", action='store_true', default=False,
+                    help='Chooses if visualization is done on AE pretraining')
 parser.add_argument("--num_workers", '-w', default=1, type=int,
                     help='the number of batch being loaded in parallel')
 
