@@ -63,6 +63,59 @@ class Test(nn.Module):
         return x
 
 
+class Test_nobatch(nn.Module):
+    """
+    Classifier for a 2-class classification task
+
+    """
+
+    def __init__(self, dropout=0.0, n_classes=2):
+        super(Test_nobatch, self).__init__()
+
+        self.features = nn.Sequential(
+            # Convolutions
+            nn.Conv3d(1, 8, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 32, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+        )
+
+        self.classifier = nn.Sequential(
+            # Fully connected layers
+            Flatten(),
+
+            nn.Dropout(p=dropout),
+            nn.Linear(32 * 5 * 6 * 5, 256),
+            nn.ReLU(),
+
+            nn.Dropout(p=0.0),
+            nn.Linear(256, n_classes)
+        )
+
+        self.flattened_shape = [-1, 32, 5, 6, 5]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
 class Conv_3(nn.Module):
     """
        Classifier for a 2-class classification task
@@ -104,9 +157,7 @@ class Conv_3(nn.Module):
         self.flattened_shape = [-1, 32, 23, 27, 23]
 
     def forward(self, x):
-        print(x.shape)
         x = self.features(x)
-        print(x.shape)
         x = self.classifier(x)
 
         return x
@@ -158,9 +209,64 @@ class Conv_4(nn.Module):
         self.flattened_shape = [-1, 11, 13, 11, 23]
 
     def forward(self, x):
-        print(x.shape)
         x = self.features(x)
-        print(x.shape)
+        x = self.classifier(x)
+
+        return x
+
+
+class Conv_5(nn.Module):
+    """
+       Classifier for a 2-class classification task
+
+       """
+
+    def __init__(self, dropout=0.0, n_classes=2):
+        super(Conv_5, self).__init__()
+
+        self.features = nn.Sequential(
+            # Convolutions
+            nn.Conv3d(1, 16, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+            nn.BatchNorm3d(16),
+
+            nn.Conv3d(16, 32, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+            nn.BatchNorm3d(32),
+
+            nn.Conv3d(32, 32, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+            nn.BatchNorm3d(32),
+
+            nn.Conv3d(32, 64, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+            nn.BatchNorm3d(64),
+
+            nn.Conv3d(64, 64, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+            nn.BatchNorm3d(64),
+
+        )
+        self.classifier = nn.Sequential(
+            # Fully connected layers
+            Flatten(),
+
+            nn.Dropout(p=dropout),
+            nn.Linear(64 * 5 * 6 * 5, 1000),
+            nn.ReLU(),
+
+            nn.Linear(1000, n_classes)
+        )
+
+        self.flattened_shape = [-1, 5, 6, 5, 23]
+
+    def forward(self, x):
+        x = self.features(x)
         x = self.classifier(x)
 
         return x

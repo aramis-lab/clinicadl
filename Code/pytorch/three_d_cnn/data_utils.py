@@ -40,7 +40,7 @@ class MRIDataset(Dataset):
         # Not in BIDS but in CAPS
         image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
                                't1', 'preprocessing_dl',
-                               img_name + '_' + sess_name + '_space-MNI_res-1x1x1_linear_registration.pt')
+                               img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
         image = torch.load(image_path)
         label = self.diagnosis_code[img_label]
 

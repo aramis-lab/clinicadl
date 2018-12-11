@@ -18,7 +18,7 @@ parser.add_argument("log_dir", type=str,
                     help="Path to log dir for tensorboard usage.")
 parser.add_argument("input_dir", type=str,
                     help="Path to input dir of the MRI (preprocessed CAPS_dir).")
-parser.add_argument("model", type=str, choices=["Conv_3", "Conv_4", "Test"],
+parser.add_argument("model", type=str, choices=["Conv_3", "Conv_4", "Test", "Test_nobatch"],
                     help="model selected")
 
 # Data Management
@@ -44,6 +44,8 @@ parser.add_argument("--transfer_learning_tsv", "-t_tsv", type=str, default=None,
                     help='If transfer learning, gives the tsv file to use to perform pretraining')
 parser.add_argument("--transfer_learning_epochs", "-t_e", type=int, default=10,
                     help="Number of epochs for pretraining")
+parser.add_argument("--transfer_learning_rate", "-t_lr", type=float, default=1e-4,
+                    help='The learning rate used for AE pretraining')
 
 # Training arguments
 parser.add_argument("--epochs", default=20, type=int,
@@ -132,6 +134,7 @@ def main(options):
                                   )
 
         # Initialize the model
+        print('Initialization of the model')
         model = create_model(options)
 
         # Define criterion and optimizer
@@ -139,6 +142,7 @@ def main(options):
         optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
                                                              options.learning_rate)
 
+        print('Beginning the training task')
         training_time = time()
         train(model, train_loader, valid_loader, criterion, optimizer, run, options)
         training_time = time() - training_time
@@ -149,8 +153,11 @@ def main(options):
         # Get best performance
         acc_mean_train_subject = test(best_model, train_loader, options.gpu)
         acc_mean_valid_subject = test(best_model, valid_loader, options.gpu)
+        valid_accuracies[run] = acc_mean_valid_subject
         accuracies = (acc_mean_train_subject, acc_mean_valid_subject)
         write_summary(options.log_dir, run, accuracies, best_epoch, training_time)
+
+        del best_model
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)

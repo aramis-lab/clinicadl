@@ -32,12 +32,11 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
 
     # Initialize variables
     best_valid_accuracy = 0.0
-    total_acc = 0.0
     epoch = 0
 
     model.train()  # set the module to training mode
 
-    while epoch < options.epochs and total_acc < 1 - options.tolerance:
+    while epoch < options.epochs:
         total_correct_cnt = 0.0
         print("At %d-th epoch." % epoch)
 
@@ -134,7 +133,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
                             os.path.join(options.log_dir, "run" + str(run)))
 
         print('Total correct labels: %d / %d' % (total_correct_cnt, len(train_loader) * train_loader.batch_size))
-        total_acc = float(total_correct_cnt) / (len(train_loader) * train_loader.batch_size)
         epoch += 1
 
 
@@ -265,11 +263,15 @@ def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
     from copy import deepcopy
 
     writer_train = SummaryWriter(log_dir=(os.path.join(options.log_dir, "pretraining")))
+    filename = os.path.join(options.log_dir, 'pretraining.tsv')
+    results_df = pd.DataFrame(columns=['epoch', 'iteration', 'loss_train', 'loss_valid'])
+    with open(filename, 'w') as f:
+        results_df.to_csv(f, index=False, sep='\t')
 
     decoder = Decoder(model)
     decoder.train()
     optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
-                                                         options.learning_rate)
+                                                         options.transfer_learning_rate)
 
     if gpu:
         decoder.cuda()
@@ -294,7 +296,7 @@ def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
             loss = criterion(train_output, imgs)
             loss.backward()
 
-            writer_train.add_scalar('training_loss', loss.item() / len(data), i + epoch * len(train_loader.dataset))
+            # writer_train.add_scalar('training_loss', loss.item() / len(data), i + epoch * len(train_loader.dataset))
 
             if (i+1) % options.accumulation_steps == 0:
                 step_flag = False
@@ -305,24 +307,27 @@ def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
                 if (i + 1) % options.evaluation_steps == 0:
                     evaluation_flag = False
                     print('Iteration %d' % i)
+                    loss_train = test_ae(decoder, train_loader, gpu, criterion)
                     loss_valid = test_ae(decoder, valid_loader, gpu, criterion)
                     decoder.train()
                     print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
 
-                    is_best = loss_valid < best_loss_valid
-                    # Save only if is best to avoid performance deterioration
-                    if is_best:
-                        best_loss_valid = loss_valid
-                        save_checkpoint({'model': decoder.state_dict(),
-                                         'iteration': i,
-                                         'epoch': epoch,
-                                         'loss_valid': loss_valid},
-                                        is_best,
-                                        os.path.join(options.log_dir, "pretraining"))
-                        last_check_point_i = i
+                    row = np.array([epoch, i, loss_train, loss_valid]).reshape(1, -1)
+                    row_df = pd.DataFrame(row, columns=['epoch', 'iteration', 'loss_train', 'loss_valid'])
+                    with open(filename, 'a') as f:
+                        row_df.to_csv(f, header=False, index=False, sep='\t')
 
-                if (i+1) % 2 == 0:
-                    print('Batch: ' + str(i))
+                    # is_best = loss_valid < best_loss_valid
+                    # # Save only if is best to avoid performance deterioration
+                    # if is_best:
+                    #     best_loss_valid = loss_valid
+                    #     save_checkpoint({'model': decoder.state_dict(),
+                    #                      'iteration': i,
+                    #                      'epoch': epoch,
+                    #                      'loss_valid': loss_valid},
+                    #                     is_best,
+                    #                     os.path.join(options.log_dir, "pretraining"))
+                    #     last_check_point_i = i
 
             del imgs
 
@@ -338,9 +343,15 @@ def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
         # Always test the results and save them once at the end of the epoch
         if last_check_point_i != i:
             print('Last checkpoint at the end of the epoch %d' % epoch)
+            loss_train = test_ae(decoder, train_loader, gpu, criterion)
             loss_valid = test_ae(decoder, valid_loader, gpu, criterion)
             decoder.train()
             print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
+
+            row = np.array([epoch, i, loss_train, loss_valid]).reshape(1, -1)
+            row_df = pd.DataFrame(row, columns=['epoch', 'iteration', 'loss_train', 'loss_valid'])
+            with open(filename, 'a') as f:
+                row_df.to_csv(f, header=False, index=False, sep='\t')
 
             is_best = loss_valid < best_loss_valid
             # Save only if is best to avoid performance deterioration
@@ -364,7 +375,8 @@ def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
                     'model_pretrained.pth.tar')
 
     if options.visualization is not None:
-        visualize_ae(best_decoder, options.visualization, os.path.join(options.log_dir, "pretraining"), gpu)
+        visualize_ae(best_decoder, train_loader, os.path.join(options.log_dir, "pretraining", "train"), gpu)
+        visualize_ae(best_decoder, valid_loader, os.path.join(options.log_dir, "pretraining", "valid"), gpu)
 
 
 def test_ae(model, dataloader, use_cuda, criterion):
@@ -379,7 +391,7 @@ def test_ae(model, dataloader, use_cuda, criterion):
     model.eval()
 
     total_loss = 0
-    for i, data in enumerate(dataloader):
+    for i, data in enumerate(dataloader, 0):
         if use_cuda:
             inputs = data['image'].cuda()
         else:
@@ -392,11 +404,18 @@ def test_ae(model, dataloader, use_cuda, criterion):
     return total_loss
 
 
-def visualize_ae(decoder, img_path, results_path, gpu):
+def visualize_ae(decoder, dataloader, results_path, gpu):
     import nibabel as nib
     from data_utils import ToTensor
     import os
+    from os import path
 
+    subject = dataloader.dataset.df.loc[0, 'participant_id']
+    session = dataloader.dataset.df.loc[0, 'session_id']
+
+    img_path = path.join(dataloader.dataset.img_dir, 'subjects', subject, session,
+                         't1', 'preprocessing_dl',
+                         subject + '_' + session + '_space-MNI_res-1x1x1_linear_registration.nii.gz')
     data = nib.load(img_path)
     img = data.get_data()
     affine = data.get_affine()
