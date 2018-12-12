@@ -122,7 +122,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
             print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
             row = np.array([epoch, i, acc_mean_train, total_loss_train, acc_mean_valid, total_loss_valid]).reshape(1, -1)
-            row_df = pd.DataFrame(row, columns=['epoch', 'iteration', 'acc_train', 'acc_valid'])
+            row_df = pd.DataFrame(row, columns=columns)
             with open(filename, 'a') as f:
                 row_df.to_csv(f, header=False, index=False, sep='\t')
             is_best = acc_mean_valid > best_valid_accuracy
