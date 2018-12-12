@@ -291,18 +291,22 @@ def create_model(options):
 
 class Decoder(nn.Module):
 
-    def __init__(self, model):
+    def __init__(self, model=None):
         from copy import deepcopy
         super(Decoder, self).__init__()
 
-        self.encoder = deepcopy(model.features)
-        self.decoder = self.construct_inv_layers(model)
+        if model is not None:
+            self.encoder = deepcopy(model.features)
+            self.decoder = self.construct_inv_layers(model)
 
-        for i, layer in enumerate(self.encoder):
-            if isinstance(layer, PadMaxPool3d):
-                self.encoder[i].set_new_return()
-            elif isinstance(layer, nn.MaxPool3d):
-                self.encoder[i].return_indices = True
+            for i, layer in enumerate(self.encoder):
+                if isinstance(layer, PadMaxPool3d):
+                    self.encoder[i].set_new_return()
+                elif isinstance(layer, nn.MaxPool3d):
+                    self.encoder[i].return_indices = True
+        else:
+            self.encoder = nn.Sequential()
+            self.decoder = nn.Sequential()
 
     def forward(self, x):
 
