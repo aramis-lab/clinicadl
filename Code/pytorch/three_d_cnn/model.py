@@ -332,7 +332,7 @@ class Decoder(nn.Module):
 
     def construct_inv_layers(self, model):
         inv_layers = []
-        for layer in self.encoder:
+        for i, layer in enumerate(self.encoder):
             if isinstance(layer, nn.Conv3d):
                 inv_layers.append(nn.ConvTranspose3d(layer.out_channels, layer.in_channels, layer.kernel_size,
                                                      stride=layer.stride))
@@ -346,6 +346,8 @@ class Decoder(nn.Module):
                 inv_layers.append(Reshape(model.flattened_shape))
             elif isinstance(layer, nn.LeakyReLU):
                 inv_layers.append(nn.LeakyReLU(negative_slope=1 / layer.negative_slope))
+            elif i == len(self.encoder) - 1 and isinstance(layer, nn.BatchNorm3d):
+                pass
             else:
                 inv_layers.append(layer)
         inv_layers.reverse()
