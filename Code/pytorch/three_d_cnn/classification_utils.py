@@ -199,7 +199,6 @@ def test(model, dataloader, use_cuda, criterion, verbose=False, full_return=Fals
         truth = truth_arr[i]
         cluster_diagnosis_prop[predicted, truth] += 1
 
-
     acc = 0
     sensitivity = np.zeros(component)
     specificity = np.zeros(component)
@@ -263,13 +262,13 @@ def check_and_clean(d):
     os.makedirs(d)
 
 
-def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
+def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, results_path, options):
     from model import Decoder
     from tensorboardX import SummaryWriter
     from copy import deepcopy
 
-    writer_train = SummaryWriter(log_dir=(os.path.join(options.log_dir, "pretraining")))
-    filename = os.path.join(options.log_dir, 'pretraining.tsv')
+    writer_train = SummaryWriter(log_dir=(os.path.join(results_path, "training")))
+    filename = os.path.join(results_path, 'training.tsv')
     results_df = pd.DataFrame(columns=['epoch', 'iteration', 'loss_train', 'loss_valid'])
     with open(filename, 'w') as f:
         results_df.to_csv(f, index=False, sep='\t')
@@ -284,7 +283,7 @@ def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
 
     # Initialize variables
     best_loss_valid = np.inf
-    print("Beginning pretraining")
+    print("Beginning training")
     for epoch in range(options.transfer_learning_epochs):
         print("At %d-th epoch." % epoch)
 
@@ -310,7 +309,7 @@ def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
                 model.zero_grad()
 
                 # Evaluate the decoder only when no gradients are accumulated
-                if (i + 1) % options.evaluation_steps == 0:
+                if (i+1) % options.evaluation_steps == 0:
                     evaluation_flag = False
                     print('Iteration %d' % i)
                     loss_train = test_ae(decoder, train_loader, gpu, criterion)
@@ -322,18 +321,6 @@ def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
                     row_df = pd.DataFrame(row, columns=['epoch', 'iteration', 'loss_train', 'loss_valid'])
                     with open(filename, 'a') as f:
                         row_df.to_csv(f, header=False, index=False, sep='\t')
-
-                    # is_best = loss_valid < best_loss_valid
-                    # # Save only if is best to avoid performance deterioration
-                    # if is_best:
-                    #     best_loss_valid = loss_valid
-                    #     save_checkpoint({'model': decoder.state_dict(),
-                    #                      'iteration': i,
-                    #                      'epoch': epoch,
-                    #                      'loss_valid': loss_valid},
-                    #                     is_best,
-                    #                     os.path.join(options.log_dir, "pretraining"))
-                    #     last_check_point_i = i
 
             del imgs
 
@@ -368,21 +355,21 @@ def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, options):
                                  'epoch': epoch,
                                  'loss_valid': loss_valid},
                                 is_best,
-                                os.path.join(options.log_dir, "pretraining"))
+                                os.path.join(results_path, "training"))
 
     # print('End of training', torch.cuda.memory_allocated())
     # Updating and setting weights of the convolutional layers
-    best_decoder, best_epoch = load_model(decoder, os.path.join(options.log_dir, "pretraining"))
+    best_decoder, best_epoch = load_model(decoder, os.path.join(results_path, "training"))
     model.features = deepcopy(best_decoder.encoder)
     save_checkpoint({'model': model.state_dict(),
                      'epoch': best_epoch},
                     False,
-                    os.path.join(options.log_dir, "pretraining"),
+                    os.path.join(results_path, "training"),
                     'model_pretrained.pth.tar')
 
     if options.visualization:
-        visualize_ae(best_decoder, train_loader, os.path.join(options.log_dir, "pretraining", "train"), gpu)
-        visualize_ae(best_decoder, valid_loader, os.path.join(options.log_dir, "pretraining", "valid"), gpu)
+        visualize_ae(best_decoder, train_loader, os.path.join(results_path, "training", "train"), gpu)
+        visualize_ae(best_decoder, valid_loader, os.path.join(results_path, "training", "valid"), gpu)
 
 
 def test_ae(model, dataloader, use_cuda, criterion):
@@ -410,6 +397,72 @@ def test_ae(model, dataloader, use_cuda, criterion):
         del inputs, outputs
 
     return total_loss
+
+
+def greedy_learning(decoder, train_loader, valid_loader, criterion, gpu, results_path, options):
+    from os import path
+
+    level = 0
+    first_layers = None
+    auto_encoder = extract_ae(decoder, level)
+
+    while len(auto_encoder) > 0:
+        level_path = path.join(results_path, 'level-' + str(level))
+        # Create the method to train with first layers
+        ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterion, gpu, level_path, options)
+        best_ae, _ = load_model(auto_encoder, level_path)
+        # Copy the weights of best_ae in decoder encoder and decoder layers
+
+        # Prepare next iteration
+        level += 1
+        first_layers = extract_ae(decoder, level)
+        auto_encoder = extract_ae(decoder, level)
+
+    return decoder
+
+
+def extract_ae(decoder, level):
+    import torch.nn as nn
+    from model import Decoder
+
+    n_conv = 0
+    output_decoder = Decoder()
+    inverse_layers = []
+
+    for i, layer in enumerate(decoder.encoder):
+        if isinstance(layer, nn.Conv3d):
+            n_conv += 1
+
+        if n_conv == level + 1:
+            output_decoder.encoder.add_module(str(len(output_decoder.encoder)), layer)
+            # Do not keep two successive BatchNorm layers
+            if not isinstance(layer, nn.BatchNorm3d):
+                inverse_layers.append(decoder.decoder[len(decoder.decoder) - (i + 1)])
+
+        elif n_conv > level + 1:
+            inverse_layers.reverse()
+            output_decoder.decoder = nn.Sequential(*inverse_layers)
+            break
+
+    return output_decoder
+
+
+def extract_first_layers(decoder, level):
+    import torch.nn as nn
+
+    n_conv = 0
+    first_layers = nn.Sequential()
+
+    for i, layer in enumerate(decoder.encoder):
+        if isinstance(layer, nn.Conv3d):
+            n_conv += 1
+
+        if n_conv < level + 1:
+            first_layers.add_module(str(i), layer)
+        else:
+            break
+
+    return first_layers
 
 
 def visualize_ae(decoder, dataloader, results_path, gpu):

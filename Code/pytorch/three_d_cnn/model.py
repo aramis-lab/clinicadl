@@ -308,6 +308,9 @@ class Decoder(nn.Module):
             self.encoder = nn.Sequential()
             self.decoder = nn.Sequential()
 
+    def __len__(self):
+        return len(self.encoder)
+
     def forward(self, x):
 
         indices_list = []

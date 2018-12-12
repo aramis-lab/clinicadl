@@ -87,7 +87,7 @@ def main(options):
     if options.transfer_learning:
         model = eval(options.model)()
         criterion = torch.nn.MSELoss()
-        if options.transfer_learning is None:
+        if options.transfer_learning_tsv is None:
             raise Exception("A tsv file with data for pretraining must be given")
         training_tsv, valid_tsv = load_split(options.transfer_learning_tsv)
 
