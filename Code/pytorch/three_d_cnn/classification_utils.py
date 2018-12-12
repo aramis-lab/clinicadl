@@ -407,6 +407,8 @@ def test_ae(model, dataloader, use_cuda, criterion):
         loss = criterion(outputs, inputs)
         total_loss += loss.item()
 
+        del inputs, outputs
+
     return total_loss
 
 
