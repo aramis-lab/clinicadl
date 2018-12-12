@@ -416,6 +416,9 @@ def visualize_ae(decoder, dataloader, results_path, gpu):
     import os
     from os import path
 
+    if not path.exists(results_path):
+        os.makedirs(results_path)
+
     subject = dataloader.dataset.df.loc[0, 'participant_id']
     session = dataloader.dataset.df.loc[0, 'session_id']
 
