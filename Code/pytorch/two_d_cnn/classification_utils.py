@@ -131,7 +131,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
     else:
         global_steps = 0
 
-    return imgs, subjects, y_ground, y_hat, acc_mean, global_steps
+    return subjects, y_ground, y_hat, acc_mean, global_steps
 
 def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar'):
     """
