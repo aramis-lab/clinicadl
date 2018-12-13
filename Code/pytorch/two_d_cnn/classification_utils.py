@@ -114,8 +114,8 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
         if model_mode == "train":
             writer.add_scalar('slice-level accuracy', acc_batch / num_slice, i + epoch_i * len(data_loader.dataset))
             writer.add_scalar('loss', loss_batch / num_slice, i + epoch_i * len(data_loader.dataset))
-            ## There are bug for TensorboardX, which does not support 1 channel image
-            writer.add_image('example_image', imgs, i + epoch_i * len(data_loader.dataset))
+            ## just for debug
+            # writer.add_image('example_image', imgs, i + epoch_i * len(data_loader.dataset))
         elif model_mode == "test":
             writer.add_scalar('slice-level accuracy', acc_batch / num_slice, i)
 
