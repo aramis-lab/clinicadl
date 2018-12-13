@@ -70,7 +70,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
             if (i+1) % options.accumulation_steps == 0:
                 step_flag = False
                 optimizer.step()
-                model.zero_grad()
+                optimizer.zero_grad()
 
                 # Evaluate the model only when no gradients are accumulated
                 if(i+1) % options.evaluation_steps == 0:
@@ -262,7 +262,7 @@ def check_and_clean(d):
     os.makedirs(d)
 
 
-def ae_pretraining(model, train_loader, valid_loader, criterion, gpu, results_path, options):
+def ae_finetuning(model, train_loader, valid_loader, criterion, gpu, results_path, options):
     from model import Decoder
     from tensorboardX import SummaryWriter
     from copy import deepcopy
@@ -403,7 +403,7 @@ def greedy_learning(decoder, train_loader, valid_loader, criterion, gpu, results
     from os import path
 
     level = 0
-    first_layers = None
+    first_layers = extract_first_layers(decoder, level)
     auto_encoder = extract_ae(decoder, level)
 
     while len(auto_encoder) > 0:
@@ -411,14 +411,147 @@ def greedy_learning(decoder, train_loader, valid_loader, criterion, gpu, results
         # Create the method to train with first layers
         ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterion, gpu, level_path, options)
         best_ae, _ = load_model(auto_encoder, level_path)
+
         # Copy the weights of best_ae in decoder encoder and decoder layers
+        set_weights(decoder, best_ae, level)
 
         # Prepare next iteration
         level += 1
         first_layers = extract_ae(decoder, level)
         auto_encoder = extract_ae(decoder, level)
 
+    ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_path, options)
+
     return decoder
+
+
+def set_weights(decoder, auto_encoder, level):
+    import torch.nn as nn
+
+    n_conv = 0
+    i_ae = 0
+
+    for i, layer in enumerate(decoder.encoder):
+        if isinstance(layer, nn.Conv3d):
+            n_conv += 1
+
+        if n_conv == level + 1:
+            decoder.encoder[i] = auto_encoder.encoder[i_ae]
+            i_ae += 1
+            # Do BatchNorm layers are not used in decoder
+            if not isinstance(layer, nn.BatchNorm3d):
+                decoder.decoder[len(decoder) - (i+1)] = auto_encoder.decoder[len(auto_encoder) - (i_ae+1)]
+
+    return decoder
+
+
+def ae_training(model, first_layers, train_loader, valid_loader, criterion, gpu, results_path, options):
+    from model import Decoder
+    from copy import deepcopy
+    from os import path
+
+    if not path.exists(results_path):
+        os.makedirs(results_path)
+
+    filename = os.path.join(results_path, 'training.tsv')
+    results_df = pd.DataFrame(columns=['epoch', 'iteration', 'loss_train', 'loss_valid'])
+    with open(filename, 'w') as f:
+        results_df.to_csv(f, index=False, sep='\t')
+
+    decoder = Decoder(model)
+    decoder.train()
+    optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
+                                                         options.transfer_learning_rate)
+
+    if gpu:
+        decoder.cuda()
+
+    # Initialize variables
+    best_loss_valid = np.inf
+    print("Beginning training")
+    for epoch in range(options.transfer_learning_epochs):
+        print("At %d-th epoch." % epoch)
+
+        decoder.zero_grad()
+        evaluation_flag = True
+        step_flag = True
+        last_check_point_i = 0
+        for i, data in enumerate(train_loader):
+            if gpu:
+                imgs = data['image'].cuda()
+            else:
+                imgs = data['image']
+
+            hidden = first_layers(imgs)
+            train_output = decoder(hidden)
+            loss = criterion(train_output, hidden)
+            loss.backward()
+
+            # writer_train.add_scalar('training_loss', loss.item() / len(data), i + epoch * len(train_loader.dataset))
+
+            if (i+1) % options.accumulation_steps == 0:
+                step_flag = False
+                optimizer.step()
+                model.zero_grad()
+
+                # Evaluate the decoder only when no gradients are accumulated
+                if (i+1) % options.evaluation_steps == 0:
+                    evaluation_flag = False
+                    print('Iteration %d' % i)
+                    loss_train = test_ae(decoder, train_loader, gpu, criterion)
+                    loss_valid = test_ae(decoder, valid_loader, gpu, criterion)
+                    decoder.train()
+                    print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
+
+                    row = np.array([epoch, i, loss_train, loss_valid]).reshape(1, -1)
+                    row_df = pd.DataFrame(row, columns=['epoch', 'iteration', 'loss_train', 'loss_valid'])
+                    with open(filename, 'a') as f:
+                        row_df.to_csv(f, header=False, index=False, sep='\t')
+
+            del imgs
+
+        # If no step has been performed, raise Exception
+        if step_flag:
+            raise Exception('The model has not been updated once in the epoch. The accumulation step may be too large.')
+
+        # If no evaluation has been performed, warn the user
+        if evaluation_flag:
+            warnings.warn('Your evaluation steps are too big compared to the size of the dataset.'
+                          'The model is evaluated only once at the end of the epoch')
+
+        # Always test the results and save them once at the end of the epoch
+        if last_check_point_i != i:
+            print('Last checkpoint at the end of the epoch %d' % epoch)
+            loss_train = test_ae(decoder, train_loader, gpu, criterion)
+            loss_valid = test_ae(decoder, valid_loader, gpu, criterion)
+            decoder.train()
+            print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
+
+            row = np.array([epoch, i, loss_train, loss_valid]).reshape(1, -1)
+            row_df = pd.DataFrame(row, columns=['epoch', 'iteration', 'loss_train', 'loss_valid'])
+            with open(filename, 'a') as f:
+                row_df.to_csv(f, header=False, index=False, sep='\t')
+
+            is_best = loss_valid < best_loss_valid
+            # Save only if is best to avoid performance deterioration
+            if is_best:
+                best_loss_valid = loss_valid
+                save_checkpoint({'model': decoder.state_dict(),
+                                 'iteration': i,
+                                 'epoch': epoch,
+                                 'loss_valid': loss_valid},
+                                is_best,
+                                os.path.join(results_path))
+
+    # print('End of training', torch.cuda.memory_allocated())
+    # Updating and setting weights of the convolutional layers
+    best_decoder, best_epoch = load_model(decoder, os.path.join(results_path))
+    model.features = deepcopy(best_decoder.encoder)
+    save_checkpoint({'model': model.state_dict(),
+                     'epoch': best_epoch},
+                    False,
+                    os.path.join(results_path),
+                    'model_pretrained.pth.tar')
 
 
 def extract_ae(decoder, level):
