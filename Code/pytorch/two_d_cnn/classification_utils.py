@@ -45,7 +45,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
     else:
         model.eval() ## set the model to evaluation mode
     end = time.time()
-    print('The number of subjects in dataset %s' % str(len(data_loader)))
+    print('The number of subjects: %s' % str(len(data_loader)))
     for i, subject_data in enumerate(data_loader):
         # for each iteration, the train data contains batch_size * n_slices_in_each_subject images
         loss_batch = 0.0
@@ -202,74 +202,137 @@ def multiple_time_points(df, subset_df):
     mtp_df.reset_index(inplace=True, drop=True)
     return mtp_df
 
+#
+# def split_subjects_to_tsv_old(diagnoses_tsv, n_splits=5, val_size=0.15):
+#     """
+#     Write the tsv files corresponding to the train/val/test splits of all folds
+#
+#     :param diagnoses_tsv: (str) path to the tsv file with diagnoses
+#     :param n_splits: (int) the number of splits wanted in the cross-validation
+#     :param val_size: (float) proportion of the train set being used for validation
+#     :return: None
+#     """
+#
+#     df = pd.io.parsers.read_csv(diagnoses_tsv, sep='\t')
+#     if 'diagnosis' not in list(df.columns.values):
+#         raise Exception('Diagnoses file is not in the correct format.')
+#     # check if we have duplicated row in the tsv, this will cause problem if yes
+#     if df.duplicated().unique().size > 1:
+#         raise ValueError("There are duplicated rows in the tsv files, please double check it!!!")
+#     # Here we reduce the DataFrame to have only one diagnosis per subject (multiple time points case)
+#     diagnosis_df = subject_diagnosis_df(df)
+#
+#     diagnoses_list = list(diagnosis_df.diagnosis)
+#     unique = list(set(diagnoses_list))
+#     y = np.array([unique.index(x) for x in diagnoses_list])  # There is one label per diagnosis depending on the order
+#
+#     splits = StratifiedKFold(n_splits=n_splits, shuffle=True)
+#
+#     n_iteration = 0
+#     for train_index, test_index in splits.split(np.zeros(len(y)), y):
+#
+#         y_train = y[train_index]
+#         diagnosis_df_train = diagnosis_df.loc[train_index]
+#
+#         # split the train data into training and validation set
+#         skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size)
+#         indices = next(skf_2.split(np.zeros(len(y_train)), y_train))
+#         train_ind, valid_ind = indices
+#
+#         df_test = diagnosis_df.iloc[test_index]
+#         df_sub_valid = diagnosis_df_train.iloc[valid_ind]
+#         df_sub_train = diagnosis_df_train.iloc[train_ind]
+#         df_valid = multiple_time_points(df, df_sub_valid)
+#         df_train = multiple_time_points(df, df_sub_train)
+#         df_test = multiple_time_points(df, df_test)
+#
+#         df_train.to_csv(path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_splits-' + str(n_splits) + '_valid_size-' + str(val_size) + '_train.tsv'), sep='\t', index=False)
+#         df_test.to_csv(path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_splits-' + str(n_splits) + '_valid_size-' + str(val_size) + '_test.tsv'), sep='\t', index=False)
+#         df_valid.to_csv(path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_splits-' + str(n_splits) + '_valid_size-' + str(val_size) + '_valid.tsv'), sep='\t', index=False)
+#         n_iteration += 1
 
-def split_subjects_to_tsv(diagnoses_tsv, n_splits=5, val_size=0.15):
+def split_subjects_to_tsv(diagnoses_tsv, val_size=0.15):
     """
     Write the tsv files corresponding to the train/val/test splits of all folds
 
     :param diagnoses_tsv: (str) path to the tsv file with diagnoses
-    :param n_splits: (int) the number of splits wanted in the cross-validation
     :param val_size: (float) proportion of the train set being used for validation
     :return: None
     """
 
-    df = pd.io.parsers.read_csv(diagnoses_tsv, sep='\t')
+    df = pd.read_csv(diagnoses_tsv, sep='\t')
     if 'diagnosis' not in list(df.columns.values):
         raise Exception('Diagnoses file is not in the correct format.')
-    # check if we have duplicated row in the tsv, this will cause problem if yes
-    if df.duplicated().unique().size > 1:
-        raise ValueError("There are duplicated rows in the tsv files, please double check it!!!")
     # Here we reduce the DataFrame to have only one diagnosis per subject (multiple time points case)
     diagnosis_df = subject_diagnosis_df(df)
-
     diagnoses_list = list(diagnosis_df.diagnosis)
     unique = list(set(diagnoses_list))
     y = np.array([unique.index(x) for x in diagnoses_list])  # There is one label per diagnosis depending on the order
 
-    splits = StratifiedKFold(n_splits=n_splits, shuffle=True)
+    sets_dir = path.join(path.dirname(diagnoses_tsv),
+                         path.basename(diagnoses_tsv).split('.')[0],
+                         'val_size-' + str(val_size))
+    if not path.exists(sets_dir):
+        os.makedirs(sets_dir)
 
-    n_iteration = 0
-    for train_index, test_index in splits.split(np.zeros(len(y)), y):
+    # split the train data into training and validation set
+    skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size, random_state=2)
+    indices = next(skf_2.split(np.zeros(len(y)), y))
+    train_ind, valid_ind = indices
 
-        y_train = y[train_index]
-        diagnosis_df_train = diagnosis_df.loc[train_index]
+    df_sub_valid = diagnosis_df.iloc[valid_ind]
+    df_sub_train = diagnosis_df.iloc[train_ind]
+    df_valid = multiple_time_points(df, df_sub_valid)
+    df_train = multiple_time_points(df, df_sub_train)
 
-        # split the train data into training and validation set
-        skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size)
-        indices = next(skf_2.split(np.zeros(len(y_train)), y_train))
-        train_ind, valid_ind = indices
-
-        df_test = diagnosis_df.iloc[test_index]
-        df_sub_valid = diagnosis_df_train.iloc[valid_ind]
-        df_sub_train = diagnosis_df_train.iloc[train_ind]
-        df_valid = multiple_time_points(df, df_sub_valid)
-        df_train = multiple_time_points(df, df_sub_train)
-        df_test = multiple_time_points(df, df_test)
-
-        df_train.to_csv(path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_splits-' + str(n_splits) + '_valid_size-' + str(val_size) + '_train.tsv'), sep='\t', index=False)
-        df_test.to_csv(path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_splits-' + str(n_splits) + '_valid_size-' + str(val_size) + '_test.tsv'), sep='\t', index=False)
-        df_valid.to_csv(path.join(path.dirname(diagnoses_tsv), path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(n_iteration) + '_splits-' + str(n_splits) + '_valid_size-' + str(val_size) + '_valid.tsv'), sep='\t', index=False)
-        n_iteration += 1
+    df_valid.to_csv(path.join(sets_dir, 'valid.tsv'), sep='\t', index=False)
+    df_train.to_csv(path.join(sets_dir, 'train.tsv'), sep='\t', index=False)
 
 
-def load_split(diagnoses_tsv, fold, n_splits, val_size=0.15):
+
+# def load_split_old(diagnoses_tsv, fold, n_splits, val_size=0.15):
+#     """
+#     Loads the
+#
+#     :param diagnoses_tsv: (str) path to the tsv file with diagnoses
+#     :param fold: (int) the number of the current fold
+#     :return: 3 DataFrame
+#         training_tsv
+#         test_tsv
+#         valid_tsv
+#     """
+#     training_tsv = path.join(path.dirname(diagnoses_tsv),
+#                              path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(fold) + '_splits-' + str(n_splits) + '_valid_size-' + str(val_size) + '_train.tsv')
+#     test_tsv = path.join(path.dirname(diagnoses_tsv),
+#                          path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(fold) + '_splits-' + str(n_splits) + '_valid_size-' + str(val_size) + '_test.tsv')
+#     valid_tsv = path.join(path.dirname(diagnoses_tsv),
+#                           path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(fold) + '_splits-' + str(n_splits) + '_valid_size-' + str(val_size) + '_valid.tsv')
+#     return training_tsv, test_tsv, valid_tsv
+
+def load_split(diagnoses_tsv, val_size=0.15):
     """
-    Loads the
+    Returns the paths of the TSV files for each set
 
     :param diagnoses_tsv: (str) path to the tsv file with diagnoses
-    :param fold: (int) the number of the current fold
-    :return: 3 DataFrame
+    :param val_size: (float) the proportion of the training set used for validation
+    :return: 3 Strings
         training_tsv
-        test_tsv
         valid_tsv
     """
-    training_tsv = path.join(path.dirname(diagnoses_tsv),
-                             path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(fold) + '_splits-' + str(n_splits) + '_valid_size-' + str(val_size) + '_train.tsv')
-    test_tsv = path.join(path.dirname(diagnoses_tsv),
-                         path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(fold) + '_splits-' + str(n_splits) + '_valid_size-' + str(val_size) + '_test.tsv')
-    valid_tsv = path.join(path.dirname(diagnoses_tsv),
-                          path.basename(diagnoses_tsv).split('.')[0] + '_iteration-' + str(fold) + '_splits-' + str(n_splits) + '_valid_size-' + str(val_size) + '_valid.tsv')
-    return training_tsv, test_tsv, valid_tsv
+    sets_dir = path.join(path.dirname(diagnoses_tsv),
+                         path.basename(diagnoses_tsv).split('.')[0],
+                         'val_size-' + str(val_size))
+
+    training_tsv = path.join(sets_dir, 'train.tsv')
+    valid_tsv = path.join(sets_dir, 'valid.tsv')
+
+    if not path.exists(training_tsv) or not path.exists(valid_tsv):
+        split_subjects_to_tsv(diagnoses_tsv, val_size)
+
+        training_tsv = path.join(sets_dir, 'train.tsv')
+        valid_tsv = path.join(sets_dir, 'valid.tsv')
+
+    return training_tsv, valid_tsv
 
 def check_and_clean(d):
 
@@ -286,7 +349,7 @@ class mri_to_slice_level(Dataset):
     Return: a Pytorch Dataset objective
     """
 
-    def __init__(self, caps_directory, tsv, transform=None, transfer_learning=True):
+    def __init__(self, caps_directory, tsv, transform=None, transfer_learning=True, mri_plane=0):
         """
         Args:
             caps_directory (string): the output folder of image processing pipeline.
@@ -303,6 +366,8 @@ class mri_to_slice_level(Dataset):
         self.tsv = tsv
         self.transform = transform
         self.transfer_learning = transfer_learning
+        self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
+        self.mri_plane = mri_plane
 
         df = pd.io.parsers.read_csv(tsv, sep='\t')
         if ('diagnosis' != list(df.columns.values)[2]) and ('session_id' != list(df.columns.values)[1]) and (
@@ -324,41 +389,23 @@ class mri_to_slice_level(Dataset):
         img_name = self.participant_list[idx]
         img_label = self.label_list[idx]
         sess_name = self.session_list[idx]
-        image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.nii.gz')
+        image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
         samples = []
-        if img_label == 'CN':
-            label = 0
-        elif img_label == 'AD':
-            label = 1
-        elif img_label == 'MCI':
-            label = 2
-        elif img_label == 'pMCI':
-            label = 3
-        elif img_label == 'sMCI':
-            label = 4
-        else:
-            raise ValueError('The label you specified is not correct, please double check it!')
+        label = self.diagnosis_code[img_label]
 
         if self.transfer_learning == True:
             ### get all the slices from the three view, basically, we take 3 slices and create a RBG image so that we can using this for transferring learning.
-            ## For axial view
-            axial_image_list = slices_to_rgb(image_path, 2, img_mode='rgb_slice')
-            ## For coronal view
-            coronal_image_list = slices_to_rgb(image_path, 1, img_mode='rgb_slice')
-            ## For saggital view
-            saggital_image_list = slices_to_rgb(image_path, 0, img_mode='rgb_slice')
+            images_list = slices_to_rgb(image_path, self.mri_plane, img_mode='rgb_slice')
 
-            for img_rgb in (axial_image_list, coronal_image_list, saggital_image_list):
-                for img in img_rgb:
-                    if self.transform:
-                        img = self.transform(img)
-                    sample = {'image_id': img_name + '_' + sess_name, 'image': img, 'label': label}
-                    samples.append(sample)
+            for img in images_list:
+                if self.transform:
+                    img = self.transform(img)
+                sample = {'image_id': img_name + '_' + sess_name, 'image': img, 'label': label}
+                samples.append(sample)
 
         else:
-            ## For axial view
-            axial_image_list = slices_to_rgb(image_path, 2, img_mode='original_slice')
-            for img in (axial_image_list):
+            images_list = slices_to_rgb(image_path, self.mri_plane, img_mode='original_slice')
+            for img in (images_list):
                 if self.transform:
                     img = self.transform(img)
                 sample = {'image_id': img_name + '_' + sess_name, 'image': img, 'label': label}
@@ -382,9 +429,10 @@ def slices_to_rgb(image_path, view, img_mode='rgb_slice'):
     Saggital_view= "[slice_i, :, :]"
     """
 
+    image_array = torch.load(image_path)
+    ## reshape the tensor, delete the first dimension
+    image_array = image_array.view(image_array.shape[1],image_array.shape[2], image_array.shape[3])
 
-    image = nib.load(image_path)
-    image_array = np.array(image.get_data())
     if img_mode == 'rgb_slice':
         image_array = (image_array - image_array.min()) / (image_array.max() - image_array.min()) * 255
         # image_array = (image_array - image_array.min()) / (image_array.max() - image_array.min())
@@ -401,40 +449,39 @@ def slices_to_rgb(image_path, view, img_mode='rgb_slice'):
                 slice_select = image_array[i, :, :]
 
             ## coronal
-            if view == 1:
+            elif view == 1:
                 slice_select = image_array[:, i, :]
 
             ## axial
-            if view == 2:
+            elif view == 2:
                 slice_select = image_array[:, :, i]
-    else:
-        raise ValueError("Not yet implemented")
 
-    if img_mode == 'original_slice':
-        slice_to_rgb_img = np.reshape(slice_select, (slice_select.shape[0], slice_select.shape[1], 1))
+            if img_mode == 'original_slice':
+                slice_to_rgb_img = np.reshape(slice_select, (slice_select.shape[0], slice_select.shape[1], 1)).numpy()
+                # change tensor to numpy array
 
-        if len(slice_to_rgb_img.shape) > 3 and slice_to_rgb_img.shape[3] == 1:
-            slice_to_rgb_img_resize = np.resize(slice_to_rgb_img,
-                                           (slice_to_rgb_img.shape[0], slice_to_rgb_img.shape[1], slice_to_rgb_img.shape[2]))
-            slice_to_rgb_imgs.append(slice_to_rgb_img_resize)
-        else:
-            slice_to_rgb_imgs.append(slice_to_rgb_img)
+                if len(slice_to_rgb_img.shape) > 3 and slice_to_rgb_img.shape[3] == 1:
+                    slice_to_rgb_img_resize = np.resize(slice_to_rgb_img,
+                                                   (slice_to_rgb_img.shape[0], slice_to_rgb_img.shape[1], slice_to_rgb_img.shape[2]))
+                    slice_to_rgb_imgs.append(slice_to_rgb_img_resize)
+                else:
+                    slice_to_rgb_imgs.append(slice_to_rgb_img)
 
-    else:
-        # test = np.zeros((slice_select.shape[0], slice_select.shape[1], 3), dtype=np.float32)
-        # test[..., 0] = slice_select
-        # test[..., 1] = slice_select
-        # test[..., 2] = slice_select
+            else:
+                # test = np.zeros((slice_select.shape[0], slice_select.shape[1], 3), dtype=np.float32)
+                # test[..., 0] = slice_select
+                # test[..., 1] = slice_select
+                # test[..., 2] = slice_select
 
-        slice_to_rgb_img = np.stack((slice_select,)*3, axis=-1)
-        ## change the datatype into uint8, but before fitting the image into pytorch, pytorch needs float, that is why the contrast of image has been inversed.
+                slice_to_rgb_img = np.stack((slice_select,)*3, axis=-1)
+                ## change the datatype into uint8, but before fitting the image into pytorch, pytorch needs float, that is why the contrast of image has been inversed.
 
-        if len(slice_to_rgb_img.shape) > 3 and slice_to_rgb_img.shape[3] == 1:
-            slice_to_rgb_img_resize = np.resize(slice_to_rgb_img,
-                                           (slice_to_rgb_img.shape[0], slice_to_rgb_img.shape[1], slice_to_rgb_img.shape[2]))
-            slice_to_rgb_imgs.append(slice_to_rgb_img_resize)
-        else:
-            slice_to_rgb_imgs.append(slice_to_rgb_img)
+                if len(slice_to_rgb_img.shape) > 3 and slice_to_rgb_img.shape[3] == 1:
+                    slice_to_rgb_img_resize = np.resize(slice_to_rgb_img,
+                                                   (slice_to_rgb_img.shape[0], slice_to_rgb_img.shape[1], slice_to_rgb_img.shape[2]))
+                    slice_to_rgb_imgs.append(slice_to_rgb_img_resize)
+                else:
+                    slice_to_rgb_imgs.append(slice_to_rgb_img)
 
     return slice_to_rgb_imgs
 

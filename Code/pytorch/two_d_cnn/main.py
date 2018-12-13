@@ -24,8 +24,8 @@ parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junha
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 parser.add_argument("-t", "--transfer_learning", default=True,
                            help="If do transfer learning")
-parser.add_argument("--n_splits", default=5,
-                    help="How many folds for the k-fold cross validation procedure.")
+parser.add_argument("--runs", default=1,
+                    help="How many times to run the training and validation procedures with the same data split strategy, default is 1.")
 parser.add_argument("--shuffle", default=True,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
 parser.add_argument("--epochs", default=3, type=int,
@@ -40,6 +40,8 @@ parser.add_argument("--use_gpu", default=True, nargs='+',
                     help="If use gpu or cpu. Empty implies cpu usage.")
 parser.add_argument('--force', default=True,
                     help='If force to rerun the classification, default behavior is to clean the output folder and restart from scratch')
+parser.add_argument('--mri_plane', default=0,
+                    help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
 
 # parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
 #                     help='momentum')
@@ -56,68 +58,51 @@ def main(options):
     if options.force == True:
         check_and_clean(options.output_dir)
 
-    # Split the data into 5 fold on subject-level
-    split_subjects_to_tsv(options.diagnosis_tsv, n_splits=options.n_splits)
-
-    test_accuracy = np.zeros((options.n_splits,))
-
     if options.transfer_learning == True:
         ## Transfer learning with imagenet pretrained AlexNet
         trg_size = (224, 224) ## this is the original input size of alexnet
         transformations = transforms.Compose([CustomResize(trg_size),
                                               CustomToTensor()
                                             ])
+
     else:
         transformations = CustomToTensor()
+        pass
 
-    for fi in range(options.n_splits):
+    for fi in range(options.runs):
         # Get the data.
-        print("Running for the %d iteration" % fi)
+        print("Running for the %d run" % fi)
 
         ## load the tsv file
-        training_tsv, test_tsv, valid_tsv = load_split(options.diagnosis_tsv, fi, options.n_splits, val_size=0.15)
+        training_tsv, valid_tsv = load_split(options.diagnosis_tsv, val_size=0.15)
+
         if options.transfer_learning == True:
-            data_train = mri_to_slice_level(options.caps_directory, training_tsv, transformations)
-            data_test = mri_to_slice_level(options.caps_directory, test_tsv, transformations)
-            data_valid = mri_to_slice_level(options.caps_directory, valid_tsv, transformations)
+            data_train = mri_to_slice_level(options.caps_directory, training_tsv, transform=transformations, mri_plane=options.mri_plane)
+            data_valid = mri_to_slice_level(options.caps_directory, valid_tsv, transform=transformations, mri_plane=options.mri_plane)
         else:
-            data_train = mri_to_slice_level(options.caps_directory, training_tsv, transformations, transfer_learning=False)
-            data_test = mri_to_slice_level(options.caps_directory, test_tsv, transformations, transfer_learning=False)
-            data_valid = mri_to_slice_level(options.caps_directory, valid_tsv, transformations, transfer_learning=False)
+            data_train = mri_to_slice_level(options.caps_directory, training_tsv, transform=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
+            data_valid = mri_to_slice_level(options.caps_directory, valid_tsv, transform=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
                                   batch_size=options.batch_size,
                                   shuffle=options.shuffle,
-                                  num_workers=32,
+                                  num_workers=0,
                                   drop_last=True,
                                   pin_memory=True)
-
-        test_loader = DataLoader(data_test,
-                                 batch_size=options.batch_size,
-                                 shuffle=False,
-                                 num_workers=32,
-                                 drop_last=True,
-                                 pin_memory=True)
 
         valid_loader = DataLoader(data_valid,
                                  batch_size=options.batch_size,
                                  shuffle=False,
-                                 num_workers=32,
+                                 num_workers=0,
                                  drop_last=True,
                                  pin_memory=True)
-
-        ## Check if we have problem for the data loader:
-
-        if len(train_loader) == 0 or len(test_loader) == 0 or len(valid_loader) == 0:
-            raise ValueError("There are problems for data loader, it may come from a wrong path to the tsv, or not enough subject in the tsv files.")
-
 
         # Initial the model
         if options.transfer_learning == True:
             model = alexnet2D(pretrained=options.transfer_learning)
         else:
-            model = LenetAdopted2D()
+            model = LenetAdopted2D(mri_plane=options.mri_plane)
 
         ## Decide to use gpu or cpu to train the model
         if options.use_gpu == False:
@@ -139,18 +124,14 @@ def main(options):
         best_accuracy = 0.0
         writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "iteration_" + str(fi), "train")))
         writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "iteration_" + str(fi), "valid")))
-        writer_test = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "iteration_" + str(fi), "test")))
 
         ## get the info for training and write them into tsv files.
         train_subjects = []
         valid_subjects = []
-        test_subjects = []
         y_grounds_train = []
         y_grounds_valid = []
-        y_grounds_test = []
         y_hats_train = []
         y_hats_valid = []
-        y_hats_test = []
 
         for epoch_i in range(options.epochs):
             print("At %s -th epoch." % str(epoch_i))
@@ -177,24 +158,24 @@ def main(options):
                 'optimizer': optimizer.state_dict()
             }, is_best, os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi)))
 
-        ### using test data to get the final performance
-        ## take the best_validated model for test
-        if os.path.isfile(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar")):
-            print("=> loading checkpoint '{}'".format(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar")))
-            checkpoint = torch.load(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar"))
-            best_epoch = checkpoint['epoch']
-            model.load_state_dict(checkpoint['state_dict'])
-            optimizer.load_state_dict(checkpoint['optimizer'])
-            print("=> loaded model '{}' for the best perfomrmance at (epoch {})".format(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar"), best_epoch))
-        else:
-            print("=> no checkpoint found at '{}'".format(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar")))
-
-        imgs_test, test_subject, y_ground_test, y_hat_test, acc_mean_test, global_steps_test = train(model, test_loader, use_cuda, loss, optimizer, writer_test, 0, model_mode='test')
-        test_subjects.extend(test_subject)
-        y_grounds_test.extend(y_ground_test)
-        y_hats_test.extend(y_hat_test)
-        print("Slice level mean test accuracy for fold %d is: %f" % (fi, acc_mean_test))
-        test_accuracy[fi] = acc_mean_test
+        # ### using test data to get the final performance
+        # ## take the best_validated model for test
+        # if os.path.isfile(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar")):
+        #     print("=> loading checkpoint '{}'".format(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar")))
+        #     checkpoint = torch.load(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar"))
+        #     best_epoch = checkpoint['epoch']
+        #     model.load_state_dict(checkpoint['state_dict'])
+        #     optimizer.load_state_dict(checkpoint['optimizer'])
+        #     print("=> loaded model '{}' for the best perfomrmance at (epoch {})".format(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar"), best_epoch))
+        # else:
+        #     print("=> no checkpoint found at '{}'".format(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar")))
+        #
+        # imgs_test, test_subject, y_ground_test, y_hat_test, acc_mean_test, global_steps_test = train(model, test_loader, use_cuda, loss, optimizer, writer_test, 0, model_mode='test')
+        # test_subjects.extend(test_subject)
+        # y_grounds_test.extend(y_ground_test)
+        # y_hats_test.extend(y_hat_test)
+        # print("Slice level mean test accuracy for fold %d is: %f" % (fi, acc_mean_test))
+        # test_accuracy[fi] = acc_mean_test
 
         ## save the graph and image
         writer_train.add_graph(model, imgs_train)
@@ -202,11 +183,6 @@ def main(options):
         ### write the information of subjects and performances into tsv files.
         iteration_subjects_df_train, results_train = results_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train)
         iteration_subjects_df_valid, results_valid = results_to_tsvs(options.output_dir, fi, valid_subjects, y_grounds_valid, y_hats_valid)
-        iteration_subjects_df_test, results_test = results_to_tsvs(options.output_dir, fi, test_subjects, y_grounds_test, y_hats_test)
-
-    print("\n\n")
-    print("For the k-fold CV, testing accuracies are %s " % str(test_accuracy))
-    print('\nMean accuray of testing set: %f' % (np.mean(test_accuracy)))
 
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ class LenetAdopted2D(nn.Module):
 
     """
 
-    def __init__(self, num_classes=2):
+    def __init__(self, mri_plane, num_classes=2):
         super(LenetAdopted2D, self).__init__()
         self.features = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=5, stride=1),
@@ -35,13 +35,32 @@ class LenetAdopted2D(nn.Module):
             nn.BatchNorm2d(64),
             nn.MaxPool2d(kernel_size=2, stride=2)
         )
-        self.classifier = nn.Sequential(
-            nn.Linear(64 * 41 * 51, 512),
-            nn.LeakyReLU(inplace=True),
-            nn.Dropout(),
-            nn.Linear(512, num_classes),
-            nn.LogSoftmax()
-        )
+
+        if mri_plane == 0:
+            self.classifier = nn.Sequential(
+                nn.Linear(64 * 56 * 47, 512),
+                nn.LeakyReLU(inplace=True),
+                nn.Dropout(),
+                nn.Linear(512, num_classes),
+                nn.LogSoftmax()
+            )
+        elif mri_plane == 1:
+            self.classifier = nn.Sequential(
+                nn.Linear(64 * 47 * 47, 512),
+                nn.LeakyReLU(inplace=True),
+                nn.Dropout(),
+                nn.Linear(512, num_classes),
+                nn.LogSoftmax()
+            )
+        else:
+            self.classifier = nn.Sequential(
+                nn.Linear(64 * 41 * 56, 512),
+                nn.LeakyReLU(inplace=True),
+                nn.Dropout(),
+                nn.Linear(512, num_classes),
+                nn.LogSoftmax()
+            )
+
 
     def forward(self, x):
         """
