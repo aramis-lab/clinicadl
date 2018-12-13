@@ -18,7 +18,7 @@ parser.add_argument("log_dir", type=str,
                     help="Path to log dir for tensorboard usage.")
 parser.add_argument("input_dir", type=str,
                     help="Path to input dir of the MRI (preprocessed CAPS_dir).")
-parser.add_argument("model", type=str, choices=["Conv_3", "Conv_4", "Test", "Test_nobatch"],
+parser.add_argument("model", type=str, choices=["Conv_3", "Conv_4", "Test", "Test_nobatch", "Rieke", "Test2"],
                     help="model selected")
 
 # Data Management
@@ -109,7 +109,7 @@ def main(options):
                                   drop_last=False
                                   )
 
-        ae_pretraining(model, train_loader, valid_loader, criterion, True, options)
+        greedy_learning(model, train_loader, valid_loader, criterion, True, options)
 
     for run in range(options.runs):
         # Get the data.
@@ -151,8 +151,8 @@ def main(options):
         best_model, best_epoch = load_model(model, os.path.join(options.log_dir, "run" + str(run)))
 
         # Get best performance
-        acc_mean_train_subject = test(best_model, train_loader, options.gpu)
-        acc_mean_valid_subject = test(best_model, valid_loader, options.gpu)
+        acc_mean_train_subject = test(best_model, train_loader, options.gpu, criterion)
+        acc_mean_valid_subject = test(best_model, valid_loader, options.gpu, criterion)
         valid_accuracies[run] = acc_mean_valid_subject
         accuracies = (acc_mean_train_subject, acc_mean_valid_subject)
         write_summary(options.log_dir, run, accuracies, best_epoch, training_time)
