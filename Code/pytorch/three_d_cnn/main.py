@@ -109,7 +109,8 @@ def main(options):
                                   drop_last=False
                                   )
 
-        greedy_learning(model, train_loader, valid_loader, criterion, True, options)
+        pretraining_dir = path.join(options.log_dir, 'pretraining')
+        greedy_learning(model, train_loader, valid_loader, criterion, True, pretraining_dir, options)
 
     for run in range(options.runs):
         # Get the data.

@@ -262,10 +262,8 @@ def check_and_clean(d):
     os.makedirs(d)
 
 
-def ae_finetuning(model, train_loader, valid_loader, criterion, gpu, results_path, options):
-    from model import Decoder
+def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_path, options):
     from tensorboardX import SummaryWriter
-    from copy import deepcopy
 
     writer_train = SummaryWriter(log_dir=(os.path.join(results_path, "training")))
     filename = os.path.join(results_path, 'training.tsv')
@@ -273,7 +271,6 @@ def ae_finetuning(model, train_loader, valid_loader, criterion, gpu, results_pat
     with open(filename, 'w') as f:
         results_df.to_csv(f, index=False, sep='\t')
 
-    decoder = Decoder(model)
     decoder.train()
     optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
                                                          options.transfer_learning_rate)
@@ -306,7 +303,7 @@ def ae_finetuning(model, train_loader, valid_loader, criterion, gpu, results_pat
             if (i+1) % options.accumulation_steps == 0:
                 step_flag = False
                 optimizer.step()
-                model.zero_grad()
+                optimizer.zero_grad()
 
                 # Evaluate the decoder only when no gradients are accumulated
                 if (i+1) % options.evaluation_steps == 0:
@@ -355,21 +352,9 @@ def ae_finetuning(model, train_loader, valid_loader, criterion, gpu, results_pat
                                  'epoch': epoch,
                                  'loss_valid': loss_valid},
                                 is_best,
-                                os.path.join(results_path, "training"))
+                                results_path)
 
     # print('End of training', torch.cuda.memory_allocated())
-    # Updating and setting weights of the convolutional layers
-    best_decoder, best_epoch = load_model(decoder, os.path.join(results_path, "training"))
-    model.features = deepcopy(best_decoder.encoder)
-    save_checkpoint({'model': model.state_dict(),
-                     'epoch': best_epoch},
-                    False,
-                    os.path.join(results_path, "training"),
-                    'model_pretrained.pth.tar')
-
-    if options.visualization:
-        visualize_ae(best_decoder, train_loader, os.path.join(results_path, "training", "train"), gpu)
-        visualize_ae(best_decoder, valid_loader, os.path.join(results_path, "training", "valid"), gpu)
 
 
 def test_ae(model, dataloader, use_cuda, criterion):
@@ -399,14 +384,19 @@ def test_ae(model, dataloader, use_cuda, criterion):
     return total_loss
 
 
-def greedy_learning(decoder, train_loader, valid_loader, criterion, gpu, results_path, options):
+def greedy_learning(model, train_loader, valid_loader, criterion, gpu, results_path, options):
     from os import path
+    from model import Decoder
+    from copy import deepcopy
+
+    decoder = Decoder(model)
 
     level = 0
     first_layers = extract_first_layers(decoder, level)
     auto_encoder = extract_ae(decoder, level)
 
     while len(auto_encoder) > 0:
+        print('Cell learning level %i' % level)
         level_path = path.join(results_path, 'level-' + str(level))
         # Create the method to train with first layers
         ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterion, gpu, level_path, options)
@@ -422,7 +412,20 @@ def greedy_learning(decoder, train_loader, valid_loader, criterion, gpu, results
 
     ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_path, options)
 
-    return decoder
+    # Updating and setting weights of the convolutional layers
+    best_decoder, best_epoch = load_model(decoder, results_path)
+    model.features = deepcopy(best_decoder.encoder)
+    save_checkpoint({'model': model.state_dict(),
+                     'epoch': best_epoch},
+                    False,
+                    os.path.join(results_path),
+                    'model_pretrained.pth.tar')
+
+    if options.visualization:
+        visualize_ae(best_decoder, train_loader, os.path.join(results_path, "train"), gpu)
+        visualize_ae(best_decoder, valid_loader, os.path.join(results_path, "valid"), gpu)
+
+    return model
 
 
 def set_weights(decoder, auto_encoder, level):
@@ -445,7 +448,7 @@ def set_weights(decoder, auto_encoder, level):
     return decoder
 
 
-def ae_training(model, first_layers, train_loader, valid_loader, criterion, gpu, results_path, options):
+def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterion, gpu, results_path, options):
     from model import Decoder
     from copy import deepcopy
     from os import path
@@ -458,13 +461,14 @@ def ae_training(model, first_layers, train_loader, valid_loader, criterion, gpu,
     with open(filename, 'w') as f:
         results_df.to_csv(f, index=False, sep='\t')
 
-    decoder = Decoder(model)
-    decoder.train()
-    optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
+    auto_encoder.train()
+    print(first_layers)
+    print(auto_encoder)
+    optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, auto_encoder.parameters()),
                                                          options.transfer_learning_rate)
 
     if gpu:
-        decoder.cuda()
+        auto_encoder.cuda()
 
     # Initialize variables
     best_loss_valid = np.inf
@@ -472,7 +476,7 @@ def ae_training(model, first_layers, train_loader, valid_loader, criterion, gpu,
     for epoch in range(options.transfer_learning_epochs):
         print("At %d-th epoch." % epoch)
 
-        decoder.zero_grad()
+        auto_encoder.zero_grad()
         evaluation_flag = True
         step_flag = True
         last_check_point_i = 0
@@ -483,7 +487,7 @@ def ae_training(model, first_layers, train_loader, valid_loader, criterion, gpu,
                 imgs = data['image']
 
             hidden = first_layers(imgs)
-            train_output = decoder(hidden)
+            train_output = auto_encoder(hidden)
             loss = criterion(train_output, hidden)
             loss.backward()
 
@@ -492,15 +496,15 @@ def ae_training(model, first_layers, train_loader, valid_loader, criterion, gpu,
             if (i+1) % options.accumulation_steps == 0:
                 step_flag = False
                 optimizer.step()
-                model.zero_grad()
+                optimizer.zero_grad()
 
                 # Evaluate the decoder only when no gradients are accumulated
                 if (i+1) % options.evaluation_steps == 0:
                     evaluation_flag = False
                     print('Iteration %d' % i)
-                    loss_train = test_ae(decoder, train_loader, gpu, criterion)
-                    loss_valid = test_ae(decoder, valid_loader, gpu, criterion)
-                    decoder.train()
+                    loss_train = test_ae(auto_encoder, train_loader, gpu, criterion)
+                    loss_valid = test_ae(auto_encoder, valid_loader, gpu, criterion)
+                    auto_encoder.train()
                     print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
 
                     row = np.array([epoch, i, loss_train, loss_valid]).reshape(1, -1)
@@ -522,9 +526,9 @@ def ae_training(model, first_layers, train_loader, valid_loader, criterion, gpu,
         # Always test the results and save them once at the end of the epoch
         if last_check_point_i != i:
             print('Last checkpoint at the end of the epoch %d' % epoch)
-            loss_train = test_ae(decoder, train_loader, gpu, criterion)
-            loss_valid = test_ae(decoder, valid_loader, gpu, criterion)
-            decoder.train()
+            loss_train = test_ae(auto_encoder, train_loader, gpu, criterion)
+            loss_valid = test_ae(auto_encoder, valid_loader, gpu, criterion)
+            auto_encoder.train()
             print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
 
             row = np.array([epoch, i, loss_train, loss_valid]).reshape(1, -1)
@@ -536,22 +540,12 @@ def ae_training(model, first_layers, train_loader, valid_loader, criterion, gpu,
             # Save only if is best to avoid performance deterioration
             if is_best:
                 best_loss_valid = loss_valid
-                save_checkpoint({'model': decoder.state_dict(),
+                save_checkpoint({'model': auto_encoder.state_dict(),
                                  'iteration': i,
                                  'epoch': epoch,
                                  'loss_valid': loss_valid},
                                 is_best,
-                                os.path.join(results_path))
-
-    # print('End of training', torch.cuda.memory_allocated())
-    # Updating and setting weights of the convolutional layers
-    best_decoder, best_epoch = load_model(decoder, os.path.join(results_path))
-    model.features = deepcopy(best_decoder.encoder)
-    save_checkpoint({'model': model.state_dict(),
-                     'epoch': best_epoch},
-                    False,
-                    os.path.join(results_path),
-                    'model_pretrained.pth.tar')
+                                results_path)
 
 
 def extract_ae(decoder, level):
