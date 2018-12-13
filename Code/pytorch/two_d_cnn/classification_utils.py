@@ -109,7 +109,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
                 loss.backward()
                 optimizer.step()
             # delete the temporal varibles taking the GPU memory
-            del imgs, labels, output
+            del imgs, labels, output, ground_truth
 
         if model_mode == "train":
             writer.add_scalar('slice-level accuracy', acc_batch / num_slice, i + epoch_i * len(data_loader.dataset))
