@@ -52,6 +52,12 @@ class Test2(nn.Module):
 
         self.flattened_shape = [-1, 64, 9, 12, 10]
 
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
 
 class Rieke(nn.Module):
     """
