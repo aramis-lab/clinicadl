@@ -6,6 +6,112 @@ All the architectures are built here
 """
 
 
+class Test2(nn.Module):
+    """
+    Classifier for a multi-class classification task
+    """
+    def __init__(self):
+        super(Test2, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 8, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2)
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+
+            nn.Linear(64 * 9 * 12 * 10, 5000),
+            nn.ReLU(),
+
+            nn.Linear(5000, 1000),
+            nn.ReLU(),
+
+            nn.Linear(1000, 500),
+            nn.ReLU(),
+
+            nn.Linear(500, 100),
+            nn.ReLU(),
+
+            nn.Linear(100, 2)
+
+        )
+
+        self.flattened_shape = [-1, 64, 9, 12, 10]
+
+
+class Rieke(nn.Module):
+    """
+    Classifier for a multi-class classification task
+
+    """
+    def __init__(self, dropout=0.0, n_classes=2):
+        super(Rieke, self).__init__()
+
+        self.features = nn.Sequential(
+            # Convolutions
+            nn.Conv3d(1, 8, 3),
+            nn.BatchNorm3d(8),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3),
+            nn.BatchNorm3d(16),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3),
+            nn.BatchNorm3d(32),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+        )
+
+        self.classifier = nn.Sequential(
+            # Fully connected layers
+            Flatten(),
+
+            nn.Dropout(p=dropout),
+            nn.Linear(64 * 4 * 5 * 4, 128),
+            nn.ReLU(),
+
+            nn.Linear(128, n_classes)
+        )
+
+        self.flattened_shape = [-1, 64, 4, 5, 4]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+    def __len__(self):
+        return len(self.layers)
+
+
 class Test(nn.Module):
     """
     Classifier for a 2-class classification task
