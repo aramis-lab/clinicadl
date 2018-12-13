@@ -38,7 +38,7 @@ class LenetAdopted2D(nn.Module):
 
         if mri_plane == 0:
             self.classifier = nn.Sequential(
-                nn.Linear(64 * 56 * 47, 512),
+                nn.Linear(61 * 54 * 43, 512),
                 nn.LeakyReLU(inplace=True),
                 nn.Dropout(),
                 nn.Linear(512, num_classes),
@@ -46,7 +46,7 @@ class LenetAdopted2D(nn.Module):
             )
         elif mri_plane == 1:
             self.classifier = nn.Sequential(
-                nn.Linear(64 * 47 * 47, 512),
+                nn.Linear(64 * 41 * 43, 512),
                 nn.LeakyReLU(inplace=True),
                 nn.Dropout(),
                 nn.Linear(512, num_classes),
@@ -54,7 +54,7 @@ class LenetAdopted2D(nn.Module):
             )
         else:
             self.classifier = nn.Sequential(
-                nn.Linear(64 * 41 * 56, 512),
+                nn.Linear(64 * 41 * 51, 512),
                 nn.LeakyReLU(inplace=True),
                 nn.Dropout(),
                 nn.Linear(512, num_classes),
@@ -69,7 +69,6 @@ class LenetAdopted2D(nn.Module):
         :return:
         """
         x = self.features(x)
-        # x = x.view(x.size(0), 64 * 41 * 51) ## reshape the tensor so that it can be connected with self.classifier()
         x = x.view(x.size(0), -1) ## reshape the tensor so that it can be connected with self.classifier()
         x = self.classifier(x)
         return x
