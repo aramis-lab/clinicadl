@@ -59,6 +59,42 @@ class Test2(nn.Module):
         return x
 
 
+class Optim(nn.Module):
+    """
+    Classifier for a multi-class classification task
+    """
+    def __init__(self):
+        super(Optim, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 8, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+
+            nn.Linear(16 * 41 * 51 * 44, 100),
+            nn.ReLU(),
+
+            nn.Linear(100, 2)
+
+        )
+
+        self.flattened_shape = [-1, 16, 41, 51, 44]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
 class Rieke(nn.Module):
     """
     Classifier for a multi-class classification task

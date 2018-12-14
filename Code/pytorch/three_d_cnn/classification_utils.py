@@ -274,6 +274,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
     decoder.train()
     optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
                                                          options.transfer_learning_rate)
+    print(decoder)
 
     if gpu:
         decoder.cuda()
@@ -319,7 +320,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
                     with open(filename, 'a') as f:
                         row_df.to_csv(f, header=False, index=False, sep='\t')
 
-            del imgs
+            del imgs, train_output
 
         # If no step has been performed, raise Exception
         if step_flag:
@@ -357,7 +358,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
     # print('End of training', torch.cuda.memory_allocated())
 
 
-def test_ae(model, dataloader, use_cuda, criterion):
+def test_ae(model, dataloader, use_cuda, criterion, first_layers=None):
     """
     Computes the loss of the model
 
@@ -375,11 +376,15 @@ def test_ae(model, dataloader, use_cuda, criterion):
         else:
             inputs = data['image']
 
-        outputs = model(inputs)
-        loss = criterion(outputs, inputs)
+        if first_layers is not None:
+            hidden = first_layers(inputs)
+        else:
+            hidden = inputs
+        outputs = model(hidden)
+        loss = criterion(outputs, hidden)
         total_loss += loss.item()
 
-        del inputs, outputs
+        del inputs, outputs, loss
 
     return total_loss
 
@@ -440,10 +445,10 @@ def set_weights(decoder, auto_encoder, level):
 
         if n_conv == level + 1:
             decoder.encoder[i] = auto_encoder.encoder[i_ae]
-            i_ae += 1
             # Do BatchNorm layers are not used in decoder
             if not isinstance(layer, nn.BatchNorm3d):
                 decoder.decoder[len(decoder) - (i+1)] = auto_encoder.decoder[len(auto_encoder) - (i_ae+1)]
+            i_ae += 1
 
     return decoder
 
@@ -460,6 +465,7 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
         results_df.to_csv(f, index=False, sep='\t')
 
     auto_encoder.train()
+    first_layers.eval()
     print(first_layers)
     print(auto_encoder)
     optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, auto_encoder.parameters()),
@@ -500,8 +506,8 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
                 if (i+1) % options.evaluation_steps == 0:
                     evaluation_flag = False
                     print('Iteration %d' % i)
-                    loss_train = test_ae(auto_encoder, train_loader, gpu, criterion)
-                    loss_valid = test_ae(auto_encoder, valid_loader, gpu, criterion)
+                    loss_train = test_ae(auto_encoder, train_loader, gpu, criterion, first_layers=first_layers)
+                    loss_valid = test_ae(auto_encoder, valid_loader, gpu, criterion, first_layers=first_layers)
                     auto_encoder.train()
                     print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
 
@@ -524,8 +530,8 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
         # Always test the results and save them once at the end of the epoch
         if last_check_point_i != i:
             print('Last checkpoint at the end of the epoch %d' % epoch)
-            loss_train = test_ae(auto_encoder, train_loader, gpu, criterion)
-            loss_valid = test_ae(auto_encoder, valid_loader, gpu, criterion)
+            loss_train = test_ae(auto_encoder, train_loader, gpu, criterion, first_layers=first_layers)
+            loss_valid = test_ae(auto_encoder, valid_loader, gpu, criterion, first_layers=first_layers)
             auto_encoder.train()
             print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
 
@@ -565,15 +571,17 @@ def extract_ae(decoder, level):
                 inverse_layers.append(decoder.decoder[len(decoder.decoder) - (i + 1)])
 
         elif n_conv > level + 1:
-            inverse_layers.reverse()
-            output_decoder.decoder = nn.Sequential(*inverse_layers)
             break
 
+    inverse_layers.reverse()
+    output_decoder.decoder = nn.Sequential(*inverse_layers)
     return output_decoder
 
 
 def extract_first_layers(decoder, level):
     import torch.nn as nn
+    from copy import deepcopy
+    from modules import PadMaxPool3d
 
     n_conv = 0
     first_layers = nn.Sequential()
@@ -583,7 +591,12 @@ def extract_first_layers(decoder, level):
             n_conv += 1
 
         if n_conv < level + 1:
-            first_layers.add_module(str(i), layer)
+            layer_copy = deepcopy(layer)
+            layer_copy.requires_grad = False
+            if isinstance(layer, PadMaxPool3d):
+                layer_copy.set_new_return(False, False)
+
+            first_layers.add_module(str(i), layer_copy)
         else:
             break
 
@@ -614,7 +627,7 @@ def visualize_ae(decoder, dataloader, results_path, gpu):
         img_tensor = img_tensor.cuda()
     print(img_tensor.size())
     output_tensor = decoder(img_tensor)
-    output = nib.Nifti1Image(output_tensor.cpu().detach().numpy(), affine)
+    output = nib.Nifti1Image(output_tensor[0].cpu().detach().numpy(), affine)
     nib.save(output, os.path.join(results_path, 'output_image.nii'))
     nib.save(data, os.path.join(results_path, 'input_image.nii'))
 
