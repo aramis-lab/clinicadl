@@ -152,8 +152,8 @@ def main(options):
         best_model, best_epoch = load_model(model, os.path.join(options.log_dir, "run" + str(run)))
 
         # Get best performance
-        acc_mean_train_subject = test(best_model, train_loader, options.gpu, criterion)
-        acc_mean_valid_subject = test(best_model, valid_loader, options.gpu, criterion)
+        acc_mean_train_subject, _ = test(best_model, train_loader, options.gpu, criterion)
+        acc_mean_valid_subject, _ = test(best_model, valid_loader, options.gpu, criterion)
         valid_accuracies[run] = acc_mean_valid_subject
         accuracies = (acc_mean_train_subject, acc_mean_valid_subject)
         write_summary(options.log_dir, run, accuracies, best_epoch, training_time)

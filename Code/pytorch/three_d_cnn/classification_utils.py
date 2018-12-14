@@ -407,7 +407,7 @@ def greedy_learning(model, train_loader, valid_loader, criterion, gpu, results_p
 
         # Prepare next iteration
         level += 1
-        first_layers = extract_ae(decoder, level)
+        first_layers = extract_first_layers(decoder, level)
         auto_encoder = extract_ae(decoder, level)
 
     ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_path, options)
@@ -449,8 +449,6 @@ def set_weights(decoder, auto_encoder, level):
 
 
 def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterion, gpu, results_path, options):
-    from model import Decoder
-    from copy import deepcopy
     from os import path
 
     if not path.exists(results_path):
