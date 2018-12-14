@@ -86,7 +86,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
                 print("output.device: " + str(output.device))
                 print("ground_truth.device: " + str(ground_truth.device))
                 loss = loss_func(output, ground_truth)
-                loss_batch += loss
+                loss_batch += loss.item()
             correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
             correct_cnt += correct_this_batch
             # To monitor the training process using tensorboard, we only display the training loss and accuracy, the other performance metrics, such
@@ -109,7 +109,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
                 loss.backward()
                 optimizer.step()
             # delete the temporal varibles taking the GPU memory
-            del imgs, labels, output, ground_truth
+            del imgs, labels, output, ground_truth, loss, predict
 
         if model_mode == "train":
             writer.add_scalar('slice-level accuracy', acc_batch / num_slice, i + epoch_i * len(data_loader.dataset))
