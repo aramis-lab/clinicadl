@@ -109,13 +109,15 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
                 loss.backward()
                 optimizer.step()
             # delete the temporal varibles taking the GPU memory
+            if i == 0 and j == 0:
+                example_imgs = imgs
             del imgs, labels, output, ground_truth, loss, predict
 
         if model_mode == "train":
             writer.add_scalar('slice-level accuracy', acc_batch / num_slice, i + epoch_i * len(data_loader.dataset))
             writer.add_scalar('loss', loss_batch / num_slice, i + epoch_i * len(data_loader.dataset))
             ## just for debug
-            # writer.add_image('example_image', imgs, i + epoch_i * len(data_loader.dataset))
+            writer.add_image('example_image', example_imgs)
         elif model_mode == "test":
             writer.add_scalar('slice-level accuracy', acc_batch / num_slice, i)
 
@@ -125,13 +127,14 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
     acc_mean = acc / len(data_loader)
     if model_mode == "valid":
         writer.add_scalar('slice-level accuracy', acc_mean, global_steps)
+        writer.add_scalar('loss', loss_batch / num_slice / i, global_steps)
 
     if model_mode == "train":
         global_steps = i + epoch_i * len(data_loader.dataset)
     else:
         global_steps = 0
 
-    return subjects, y_ground, y_hat, acc_mean, global_steps
+    return example_imgs, subjects, y_ground, y_hat, acc_mean, global_steps
 
 def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar'):
     """

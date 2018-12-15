@@ -93,7 +93,7 @@ def main(options):
 
         valid_loader = DataLoader(data_valid,
                                  batch_size=options.batch_size,
-                                 shuffle=False,
+                                 shuffle=options.shuffle,
                                  num_workers=0,
                                  drop_last=True,
                                  pin_memory=True)
@@ -137,12 +137,12 @@ def main(options):
             print("At %s -th epoch." % str(epoch_i))
 
             # train the model
-            train_subject, y_ground_train, y_hat_train, acc_mean_train, global_steps_train = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch_i, model_mode='train')
+            example_imgs, train_subject, y_ground_train, y_hat_train, acc_mean_train, global_steps_train = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch_i, model_mode='train')
             train_subjects.extend(train_subject)
             y_grounds_train.extend(y_ground_train)
             y_hats_train.extend(y_hat_train)
             ## at then end of each epoch, we validate one time for the model with the validation data
-            valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_steps_valid = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch_i, model_mode='valid', global_steps=global_steps_train)
+            _, valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_steps_valid = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch_i, model_mode='valid', global_steps=global_steps_train)
             print("Slice level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch_i))
             valid_subjects.extend(valid_subject)
             y_grounds_valid.extend(y_ground_valid)
@@ -178,7 +178,7 @@ def main(options):
         # test_accuracy[fi] = acc_mean_test
 
         ## save the graph and image
-        writer_train.add_graph(model)
+        writer_train.add_graph(model, example_imgs)
 
         ### write the information of subjects and performances into tsv files.
         iteration_subjects_df_train, results_train = results_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train)
