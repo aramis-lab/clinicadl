@@ -263,11 +263,14 @@ def check_and_clean(d):
 
 
 def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_path, options):
-    from tensorboardX import SummaryWriter
+    from os import path
 
-    writer_train = SummaryWriter(log_dir=(os.path.join(results_path, "training")))
+    if not path.exists(results_path):
+        os.makedirs(results_path)
     filename = os.path.join(results_path, 'training.tsv')
-    results_df = pd.DataFrame(columns=['epoch', 'iteration', 'loss_train', 'loss_valid'])
+
+    columns = ['epoch', 'iteration', 'loss_train', 'mean_loass_train', 'loss_valid', 'mean_loss_valid']
+    results_df = pd.DataFrame(columns=columns)
     with open(filename, 'w') as f:
         results_df.to_csv(f, index=False, sep='\t')
 
@@ -311,12 +314,13 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
                     evaluation_flag = False
                     print('Iteration %d' % i)
                     loss_train = test_ae(decoder, train_loader, gpu, criterion)
+                    mean_loss_train = loss_train / (len(train_loader) * train_loader.dataset.size)
                     loss_valid = test_ae(decoder, valid_loader, gpu, criterion)
+                    mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.dataset.size)
                     decoder.train()
                     print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
-
-                    row = np.array([epoch, i, loss_train, loss_valid]).reshape(1, -1)
-                    row_df = pd.DataFrame(row, columns=['epoch', 'iteration', 'loss_train', 'loss_valid'])
+                    row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
+                    row_df = pd.DataFrame(row, columns=columns)
                     with open(filename, 'a') as f:
                         row_df.to_csv(f, header=False, index=False, sep='\t')
 
@@ -335,12 +339,14 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
         if last_check_point_i != i:
             print('Last checkpoint at the end of the epoch %d' % epoch)
             loss_train = test_ae(decoder, train_loader, gpu, criterion)
+            mean_loss_train = loss_train / (len(train_loader) * train_loader.dataset.size)
             loss_valid = test_ae(decoder, valid_loader, gpu, criterion)
+            mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.dataset.size)
             decoder.train()
             print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
 
-            row = np.array([epoch, i, loss_train, loss_valid]).reshape(1, -1)
-            row_df = pd.DataFrame(row, columns=['epoch', 'iteration', 'loss_train', 'loss_valid'])
+            row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
+            row_df = pd.DataFrame(row, columns=columns)
             with open(filename, 'a') as f:
                 row_df.to_csv(f, header=False, index=False, sep='\t')
 
@@ -460,7 +466,8 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
         os.makedirs(results_path)
 
     filename = os.path.join(results_path, 'training.tsv')
-    results_df = pd.DataFrame(columns=['epoch', 'iteration', 'loss_train', 'loss_valid'])
+    columns = ['epoch', 'iteration', 'loss_train', 'mean_loass_train', 'loss_valid', 'mean_loss_valid']
+    results_df = pd.DataFrame(columns=columns)
     with open(filename, 'w') as f:
         results_df.to_csv(f, index=False, sep='\t')
 
@@ -507,12 +514,14 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
                     evaluation_flag = False
                     print('Iteration %d' % i)
                     loss_train = test_ae(auto_encoder, train_loader, gpu, criterion, first_layers=first_layers)
+                    mean_loss_train = loss_train / (len(train_loader) * train_loader.dataset.size)
                     loss_valid = test_ae(auto_encoder, valid_loader, gpu, criterion, first_layers=first_layers)
+                    mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.dataset.size)
                     auto_encoder.train()
                     print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
 
-                    row = np.array([epoch, i, loss_train, loss_valid]).reshape(1, -1)
-                    row_df = pd.DataFrame(row, columns=['epoch', 'iteration', 'loss_train', 'loss_valid'])
+                    row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
+                    row_df = pd.DataFrame(row, columns=columns)
                     with open(filename, 'a') as f:
                         row_df.to_csv(f, header=False, index=False, sep='\t')
 
@@ -531,12 +540,14 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
         if last_check_point_i != i:
             print('Last checkpoint at the end of the epoch %d' % epoch)
             loss_train = test_ae(auto_encoder, train_loader, gpu, criterion, first_layers=first_layers)
+            mean_loss_train = loss_train / (len(train_loader) * train_loader.dataset.size)
             loss_valid = test_ae(auto_encoder, valid_loader, gpu, criterion, first_layers=first_layers)
+            mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.dataset.size)
             auto_encoder.train()
             print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
 
-            row = np.array([epoch, i, loss_train, loss_valid]).reshape(1, -1)
-            row_df = pd.DataFrame(row, columns=['epoch', 'iteration', 'loss_train', 'loss_valid'])
+            row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
+            row_df = pd.DataFrame(row, columns=columns)
             with open(filename, 'a') as f:
                 row_df.to_csv(f, header=False, index=False, sep='\t')
 

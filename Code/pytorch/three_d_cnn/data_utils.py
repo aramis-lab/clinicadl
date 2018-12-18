@@ -30,6 +30,8 @@ class MRIDataset(Dataset):
             raise Exception("the data file is not in the correct format."
                             "Columns should include ['participant_id', 'session_id', 'diagnosis']")
 
+        self.size = self[0]['image'].numpy().size
+
     def __len__(self):
         return len(self.df)
 
