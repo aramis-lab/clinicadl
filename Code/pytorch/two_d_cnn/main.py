@@ -22,7 +22,7 @@ parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/ju
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument("-t", "--transfer_learning", default=False,
+parser.add_argument("-t", "--transfer_learning", default=True,
                            help="If do transfer learning")
 parser.add_argument("--runs", default=1,
                     help="How many times to run the training and validation procedures with the same data split strategy, default is 1.")
@@ -40,7 +40,7 @@ parser.add_argument("--use_gpu", default=True, nargs='+',
                     help="If use gpu or cpu. Empty implies cpu usage.")
 parser.add_argument('--force', default=True,
                     help='If force to rerun the classification, default behavior is to clean the output folder and restart from scratch')
-parser.add_argument('--mri_plane', default=2,
+parser.add_argument('--mri_plane', default=0,
                     help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
 
 # parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
@@ -102,7 +102,8 @@ def main(options):
         if options.transfer_learning == True:
             model = alexnet2D(pretrained=options.transfer_learning)
         else:
-            model = LenetAdopted2D(mri_plane=options.mri_plane)
+            # model = LenetAdopted2D(mri_plane=options.mri_plane)
+            model = alexnet2D(mri_plane=options.mri_plane, num_classes=2)
 
         ## Decide to use gpu or cpu to train the model
         if options.use_gpu == False:

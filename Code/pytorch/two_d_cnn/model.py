@@ -73,24 +73,89 @@ class LenetAdopted2D(nn.Module):
         x = self.classifier(x)
         return x
 
-def alexnet2D(pretrained=False, **kwargs):
+
+class AlexNetOneChannel(nn.Module):
+
+    def __init__(self, mri_plane, num_classes=1000):
+        super(AlexNetOneChannel, self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(1, 64, kernel_size=11, stride=4, padding=2),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.Conv2d(64, 192, kernel_size=5, padding=2),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            nn.Conv2d(192, 384, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(384, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2),
+        )
+
+        if mri_plane == 0:
+            self.classifier = nn.Sequential(
+                nn.Dropout(),
+                nn.Linear(256 * 5 * 4, 4096),
+                nn.ReLU(inplace=True),
+                nn.Dropout(),
+                nn.Linear(4096, 4096),
+                nn.ReLU(inplace=True),
+                nn.Linear(4096, num_classes),
+            )
+        elif mri_plane == 1:
+            self.classifier = nn.Sequential(
+                nn.Dropout(),
+                nn.Linear(256 * 4 * 4, 4096),
+                nn.ReLU(inplace=True),
+                nn.Dropout(),
+                nn.Linear(4096, 4096),
+                nn.ReLU(inplace=True),
+                nn.Linear(4096, num_classes),
+            )
+        else:
+            self.classifier = nn.Sequential(
+                nn.Dropout(),
+                nn.Linear(256 * 4 * 5, 4096),
+                nn.ReLU(inplace=True),
+                nn.Dropout(),
+                nn.Linear(4096, 4096),
+                nn.ReLU(inplace=True),
+                nn.Linear(4096, num_classes),
+            )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+        return x
+
+
+def alexnet2D(mri_plane=0, pretrained=False, **kwargs):
     """Implementation of AlexNet model architecture based on this paper: `"One weird trick..." <https://arxiv.org/abs/1404.5997>`.
 
     Args:
         pretrained (bool): If True, returns a model pretrained on ImageNet
     """
 
-    model = alexnet(pretrained)
+    if pretrained == True:
+        model = alexnet(pretrained)
+        for p in model.features.parameters():
+            p.requires_grad = False
 
-    for p in model.features.parameters():
-        p.requires_grad = False
+        # fine-tune the last convolution layer
+        for p in model.features[10].parameters():
+            p.requires_grad = True
+        # fine-tune the last second convolution layer
+        for p in model.features[8].parameters():
+            p.requires_grad = True
 
-    # fine-tune the last convolution layer
-    for p in model.features[10].parameters():
-        p.requires_grad = True
+        ## add a fc layer on top of the pretrained model and a sigmoid classifier
+        model.classifier.add_module('fc_out', nn.Linear(1000, 2)) ## For linear layer, Pytorch used similar H initialization for the weight.
+        model.classifier.add_module('sigmoid', nn.LogSoftmax())
 
-    ## add a fc layer on top of the pretrained model and a sigmoid classifier
-    model.classifier.add_module('fc_out', nn.Linear(1000, 2)) ## For linear layer, Pytorch used similar H initialization for the weight.
-    model.classifier.add_module('sigmoid', nn.LogSoftmax())
+    else:
+        model = AlexNetOneChannel(mri_plane, num_classes=2)
 
     return model
