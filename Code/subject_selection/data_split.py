@@ -45,6 +45,26 @@ def create_split(diagnosis, diagnosis_df, merged_df, n_test,
     return train_df, test_df
 
 
+def create_task_dict(task_list):
+    """
+    Creates a dictionnary of tasks
+    - key is the name of the task (ex: 'AD_vs_CN')
+    - associated content is the list of labels (ex: ['AD', 'CN'])
+
+    :param task_list: task list given by the user
+    :return: dict
+    """
+
+    task_dict = {}
+
+    for task in task_list:
+        list_diag = task.split('_')
+        task_name = '_vs_'.join(list_diag)
+        task_dict[task_name] = list_diag
+
+    return task_dict
+
+
 if __name__ == "__main__":
     import argparse
     import pandas as pd
@@ -66,7 +86,8 @@ if __name__ == "__main__":
                         help="Define the number of subjects to put in test set."
                              "If 0, there is no training set and the whole dataset is considered as a test set.")
     parser.add_argument("--tasks", nargs="+", type=str,
-                        default=['AD_CN'], help="Create lists with specific tasks")
+                        default=None, help="Create lists with specific tasks. Labels must be separated by '_'. "
+                                           "Ex: 'AD_CN'")
     parser.add_argument("--MCI_sub_categories", action="store_true", default=False,
                         help="Manage MCI sub-categories to avoid data leakage")
     parser.add_argument("--t_val_threshold", "-t", default=0.0642,
@@ -226,8 +247,10 @@ if __name__ == "__main__":
         print('Split for diagnosis MCI was found after %i trials' % n_try)
 
         # Write selection of MCI
-        MCI_baseline_train_df.to_csv(path.join(train_path, 'MCI_baseline.tsv'), sep='\t')
-        MCI_baseline_test_df.to_csv(path.join(test_path, 'MCI_baseline.tsv'), sep='\t')
+        MCI_baseline_train_df = MCI_baseline_train_df[['participant_id', 'session_id', 'diagnosis']]
+        MCI_baseline_train_df.to_csv(path.join(train_path, 'MCI_baseline.tsv'), sep='\t', index=False)
+        MCI_baseline_test_df = MCI_baseline_test_df[['participant_id', 'session_id', 'diagnosis']]
+        MCI_baseline_test_df.to_csv(path.join(test_path, 'MCI_baseline.tsv'), sep='\t', index=False)
 
         # Retrieve all sessions for the training set
         MCI_complete_train_df = pd.DataFrame()
@@ -237,3 +260,38 @@ if __name__ == "__main__":
             MCI_complete_train_df = pd.concat([MCI_complete_train_df, subject_df])
 
             MCI_complete_train_df.to_csv(path.join(train_path, 'MCI.tsv'), sep='\t', index=False)
+
+    # Task creation
+    if args.tasks is not None:
+        task_dict = create_task_dict(args.tasks)
+        if path.exists(path.join(args.formatted_data_path, 'lists_by_task')):
+            shutil.rmtree(path.join(args.formatted_data_path, 'lists_by_task'))
+
+        task_test_path = path.join(args.formatted_data_path, 'lists_by_task', 'test')
+        if not path.exists(task_test_path):
+            os.makedirs(task_test_path)
+
+        if args.n_test > 0:
+            task_train_path = path.join(args.formatted_data_path, 'lists_by_task', 'train')
+            if not path.exists(task_train_path):
+                os.makedirs(task_train_path)
+
+        for task in task_dict.keys():
+            task_test_df = pd.DataFrame()
+            for diagnosis in task_dict[task]:
+                diagnosis_df = pd.read_csv(path.join(test_path, diagnosis + '_baseline.tsv'), sep='\t')
+                task_test_df = pd.concat([task_test_df, diagnosis_df])
+
+            task_test_df.to_csv(path.join(task_test_path, task + '_baseline.tsv'), sep='\t', index=False)
+
+            if args.n_test > 0:
+                task_train_df = pd.DataFrame()
+                task_train_complete_df = pd.DataFrame()
+                for diagnosis in task_dict[task]:
+                    diagnosis_df = pd.read_csv(path.join(train_path, diagnosis + '_baseline.tsv'), sep='\t')
+                    task_train_df = pd.concat([task_train_df, diagnosis_df])
+                    diagnosis_df = pd.read_csv(path.join(train_path, diagnosis + '.tsv'), sep='\t')
+                    task_train_complete_df = pd.concat([task_train_complete_df, diagnosis_df])
+
+                task_train_df.to_csv(path.join(task_train_path, task + '_baseline.tsv'), sep='\t', index=False)
+                task_train_complete_df.to_csv(path.join(task_train_path, task + '.tsv'), sep='\t', index=False)
