@@ -26,7 +26,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
 
     writer_train = SummaryWriter(log_dir=(os.path.join(options.log_dir, "run" + str(run), "train")))  # Replace with a path creation
     filename = os.path.join(options.log_dir, "run" + str(run), 'training.tsv')
-    columns = ['epoch', 'iteration', 'acc_train', 'total_loss_train', 'acc_valid', 'total_loss_valid']
+    columns = ['epoch', 'iteration', 'acc_train', 'mean_loss_train', 'acc_valid', 'mean_loss_valid']
     results_df = pd.DataFrame(columns=columns)
     with open(filename, 'w') as f:
         results_df.to_csv(f, index=False, sep='\t')
@@ -59,11 +59,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
             loss = criterion(train_output, labels)
             batch_correct_cnt = (predict.squeeze(1) == labels).sum().float()
             total_correct_cnt += batch_correct_cnt
-            # accuracy = float(batch_correct_cnt) / len(labels)
             loss.backward()
-
-            # writer_train.add_scalar('training_accuracy', accuracy / len(data), i + epoch * len(train_loader.dataset))
-            # writer_train.add_scalar('training_loss', loss.item() / len(data), i + epoch * len(train_loader.dataset))
 
             del imgs
 
@@ -77,27 +73,17 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
                     evaluation_flag = False
                     print('Iteration %d' % i)
                     acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
+                    mean_loss_train = total_loss_train / len(train_loader)
                     acc_mean_valid, total_loss_valid = test(model, valid_loader, options.gpu, criterion)
+                    mean_loss_valid = total_loss_valid / len(valid_loader)
                     model.train()
                     print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
                     print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
-                    row = np.array([epoch, i, acc_mean_train, total_loss_train, acc_mean_valid, total_loss_valid]).reshape(1, -1)
+                    row = np.array([epoch, i, acc_mean_train, mean_loss_train, acc_mean_valid, mean_loss_valid]).reshape(1, -1)
                     row_df = pd.DataFrame(row, columns=columns)
                     with open(filename, 'a') as f:
                         row_df.to_csv(f, header=False, index=False, sep='\t')
-                    # # Do not save on iteration level because of accuracy noise
-                    # is_best = acc_mean_valid > best_valid_accuracy
-                    # # Save only if is best to avoid performance deterioration
-                    # if is_best:
-                    #     best_valid_accuracy = acc_mean_valid
-                    #     save_checkpoint({'model': model.state_dict(),
-                    #                      'iteration': i,
-                    #                      'epoch': epoch,
-                    #                      'valid_acc': acc_mean_valid},
-                    #                     is_best,
-                    #                     os.path.join(options.log_dir, "run" + str(run)))
-                    #     last_check_point_i = i
 
             tend = time()
         print('Mean time per batch (train):', total_time / len(train_loader) * train_loader.batch_size)
@@ -116,12 +102,14 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
             model.zero_grad()
             print('Last checkpoint at the end of the epoch %d' % epoch)
             acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
+            mean_loss_train = total_loss_train / len(train_loader)
             acc_mean_valid, total_loss_valid = test(model, valid_loader, options.gpu, criterion)
+            mean_loss_valid = total_loss_valid / len(valid_loader)
             model.train()
             print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
             print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
-            row = np.array([epoch, i, acc_mean_train, total_loss_train, acc_mean_valid, total_loss_valid]).reshape(1, -1)
+            row = np.array([epoch, i, acc_mean_train, mean_loss_train, acc_mean_valid, mean_loss_valid]).reshape(1, -1)
             row_df = pd.DataFrame(row, columns=columns)
             with open(filename, 'a') as f:
                 row_df.to_csv(f, header=False, index=False, sep='\t')
