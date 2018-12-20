@@ -42,6 +42,8 @@ parser.add_argument('--force', default=True,
                     help='If force to rerun the classification, default behavior is to clean the output folder and restart from scratch')
 parser.add_argument('--mri_plane', default=0,
                     help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
+parser.add_argument("--num_workers", '-w', default=1, type=int,
+                    help='the number of batch being loaded in parallel')
 
 # parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
 #                     help='momentum')
@@ -87,14 +89,14 @@ def main(options):
         train_loader = DataLoader(data_train,
                                   batch_size=options.batch_size,
                                   shuffle=options.shuffle,
-                                  num_workers=0,
+                                  num_workers=options.num_workers,
                                   drop_last=True,
                                   pin_memory=True)
 
         valid_loader = DataLoader(data_valid,
                                  batch_size=options.batch_size,
                                  shuffle=options.shuffle,
-                                 num_workers=0,
+                                 num_workers=options.num_workers,
                                  drop_last=True,
                                  pin_memory=True)
 
