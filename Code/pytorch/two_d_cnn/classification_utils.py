@@ -9,7 +9,6 @@ from os import path
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
-import time
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -38,13 +37,11 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
     subjects = []
     y_ground = []
     y_hat = []
-    batch_time = AverageMeter()
 
     if model_mode == "train":
         model.train() ## set the model to training mode
     else:
         model.eval() ## set the model to evaluation mode
-    end = time.time()
     print('The number of subjects: %s' % str(len(data_loader)))
     for i, subject_data in enumerate(data_loader):
         # for each iteration, the train data contains batch_size * n_slices_in_each_subject images
@@ -52,12 +49,8 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
         acc_batch = 0.0
         num_slice = len(subject_data)
 
-        # measure elapsed time
-        batch_time.update(time.time() - end)
-        end = time.time()
         print('The number of slices in one subject is: %s' % str(num_slice))
 
-        print('Load batch data time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'.format(batch_time=batch_time))
         for j in range(num_slice):
             data_dic = subject_data[j]
             if use_cuda:
@@ -110,7 +103,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
                 optimizer.step()
             # delete the temporal varibles taking the GPU memory
             if i == 0 and j == 0:
-                example_imgs = imgs[0,...]
+                example_imgs = imgs
             del imgs, labels, output, ground_truth, loss, predict
 
         if model_mode == "train":
@@ -395,9 +388,9 @@ class mri_to_slice_level(Dataset):
         img_label = self.label_list[idx]
         sess_name = self.session_list[idx]
         ## image without intensity normalization
-        # image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+        image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
         # image with intensity normalization
-        image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_linear_registration.pt')
+        # image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_linear_registration.pt')
         samples = []
         label = self.diagnosis_code[img_label]
 
@@ -419,7 +412,7 @@ class mri_to_slice_level(Dataset):
                 sample = {'image_id': img_name + '_' + sess_name, 'image': img, 'label': label}
                 samples.append(sample)
 
-        random.shuffle(samples)
+        # random.shuffle(samples)
 
         return samples
 
@@ -613,20 +606,3 @@ def evaluate_prediction(y, y_hat):
                }
 
     return results
-
-class AverageMeter(object):
-    """Computes and stores the average and current value"""
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
