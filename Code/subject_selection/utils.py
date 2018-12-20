@@ -58,6 +58,22 @@ def first_session(subject_df):
         return 'ses-M' + str(first_session)
 
 
+def next_session(subject_df, session_orig):
+        session_list = [int(session[5:]) for _, session in subject_df.index.values]
+        session_list.sort()
+        session_id_list = []
+        for session in session_list:
+            if session < 10:
+                session_id_list.append('ses-M0' + str(session))
+            else:
+                session_id_list.append('ses-M' + str(session))
+        index = session_id_list.index(session_orig)
+        if index < len(session_id_list) - 1:
+            return session_id_list[index + 1]
+        else:
+            raise ValueError('The argument session is the last session')
+
+
 def baseline_df(diagnosis_df, diagnosis):
     all_df = diagnosis_df.set_index(['participant_id', 'session_id'])
     columns = ['participant_id', 'session_id', 'diagnosis']
