@@ -1,5 +1,6 @@
 from utils import *
 from scipy.stats import ttest_ind
+import shutil
 
 sex_dict = {'M': 0, 'F': 1}
 
@@ -68,6 +69,10 @@ if __name__ == "__main__":
                         default=['AD_CN'], help="Create lists with specific tasks")
     parser.add_argument("--MCI_sub_categories", action="store_true", default=False,
                         help="Manage MCI sub-categories to avoid data leakage")
+    parser.add_argument("--t_val_threshold", "-t", default=0.0642,
+                        help="The threshold used for the chi2 test.")
+    parser.add_argument("--p_val_threshold", "-p", default=0.80,
+                        help="The threshold used for the T-test.")
 
     args = parser.parse_args()
 
@@ -77,30 +82,32 @@ if __name__ == "__main__":
     results_path = path.join(args.formatted_data_path, 'lists_by_diagnosis')
 
     train_path = path.join(results_path, 'train')
-    if not path.exists(train_path) and args.n_test > 0:
+    if path.exists(train_path):
+        shutil.rmtree(train_path)
+    if args.n_test > 0:
         os.makedirs(train_path)
 
     test_path = path.join(results_path, 'test')
-    if not path.exists(test_path):
-        os.makedirs(test_path)
+    shutil.rmtree(test_path)
+    os.makedirs(test_path)
 
     diagnosis_df_paths = os.listdir(results_path)
     diagnosis_df_paths = [x for x in diagnosis_df_paths if x.endswith('.tsv')]
     MCI_special_treatment = False
 
-    if args.MCI_sub_categories and 'MCI.tsv' in diagnosis_df_paths:
+    if args.MCI_sub_categories and 'MCI.tsv' in diagnosis_df_paths and args.n_test > 0:
         diagnosis_df_paths.remove('MCI.tsv')
         MCI_special_treatment = True
 
     # The baseline session must be kept before or we are taking all the sessions to mix them
     for diagnosis_df_path in diagnosis_df_paths:
-        print('Data path', path.join(results_path, diagnosis_df_path))
         diagnosis_df = pd.read_csv(path.join(results_path, diagnosis_df_path),
                                    sep='\t')
         diagnosis = diagnosis_df_path.split('.')[0]
         if args.n_test > 0:
             train_df, test_df = create_split(diagnosis, diagnosis_df, merged_df,
-                                             n_test=args.n_test)
+                                             n_test=args.n_test, t_val_chi2_threshold=args.t_val_threshold,
+                                             pval_threshold_ttest=args.p_val_threshold)
             # Save baseline splits
             train_df = train_df[['participant_id', 'session_id', 'diagnosis']]
             train_df.to_csv(path.join(train_path, str(diagnosis) + '_baseline.tsv'), sep='\t', index=False)
@@ -116,4 +123,117 @@ if __name__ == "__main__":
 
             complete_train_df.to_csv(path.join(train_path, str(diagnosis) + '.tsv'), sep='\t', index=False)
 
-    
+        else:
+            diagnosis_baseline_df = baseline_df(diagnosis_df, diagnosis)
+            test_df = diagnosis_baseline_df[['participant_id', 'session_id', 'diagnosis']]
+            test_df.to_csv(path.join(test_path, str(diagnosis) + '_baseline.tsv'), sep='\t', index=False)
+
+    if MCI_special_treatment:
+
+        # Extraction of MCI subjects without intersection with the sMCI / pMCI train
+        diagnosis_df = pd.read_csv(path.join(results_path, 'MCI.tsv'), sep='\t')
+        MCI_df = diagnosis_df.set_index(['participant_id', 'session_id'])
+        supplementary_diagnoses = []
+
+        print('Before subjects removal')
+        sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
+        print('%i subjects, %i scans' % (len(sub_df), len(diagnosis_df)))
+
+        if 'sMCI.tsv' in diagnosis_df_paths:
+            sMCI_baseline_train_df = pd.read_csv(path.join(train_path, 'sMCI_baseline.tsv'), sep='\t')
+            sMCI_baseline_test_df = pd.read_csv(path.join(test_path, 'sMCI_baseline.tsv'), sep='\t')
+            sMCI_baseline_df = pd.concat([sMCI_baseline_train_df, sMCI_baseline_test_df])
+            sMCI_baseline_df.reset_index(drop=True, inplace=True)
+            for idx in sMCI_baseline_df.index.values:
+                subject = sMCI_baseline_df.loc[idx, 'participant_id']
+                MCI_df.drop(subject, inplace=True)
+            supplementary_diagnoses.append('sMCI')
+
+            print('Removed %i subjects' % len(sMCI_baseline_df))
+            sub_df = MCI_df.reset_index().groupby('participant_id')['session_id'].nunique()
+            print('%i subjects, %i scans' % (len(sub_df), len(MCI_df)))
+
+        if 'pMCI.tsv' in diagnosis_df_paths:
+            pMCI_baseline_train_df = pd.read_csv(path.join(train_path, 'pMCI_baseline.tsv'), sep='\t')
+            pMCI_baseline_test_df = pd.read_csv(path.join(test_path, 'pMCI_baseline.tsv'), sep='\t')
+            pMCI_baseline_df = pd.concat([pMCI_baseline_train_df, pMCI_baseline_test_df])
+            pMCI_baseline_df.reset_index(drop=True, inplace=True)
+            for idx in pMCI_baseline_df.index.values:
+                subject = pMCI_baseline_df.loc[idx, 'participant_id']
+                MCI_df.drop(subject, inplace=True)
+            supplementary_diagnoses.append('pMCI')
+
+            print('Removed %i subjects' % len(pMCI_baseline_df))
+            sub_df = MCI_df.reset_index().groupby('participant_id')['session_id'].nunique()
+            print('%i subjects, %i scans' % (len(sub_df), len(MCI_df)))
+
+        if len(supplementary_diagnoses) == 0:
+            raise ValueError('The MCI_sub_categories flag is not needed as there are no intersections with'
+                             'MCI subcategories.')
+
+        # Construction of supplementary train
+        supplementary_train_df = pd.DataFrame()
+        for diagnosis in supplementary_diagnoses:
+            sup_baseline_train_df = pd.read_csv(path.join(train_path, diagnosis + '_baseline.tsv'), sep='\t')
+            supplementary_train_df = pd.concat([supplementary_train_df, sup_baseline_train_df])
+
+        supplementary_train_df.reset_index(drop=True, inplace=True)
+        supplementary_train_df = add_demographics(supplementary_train_df, merged_df, 'MCI')
+
+        # MCI selection
+        diagnosis_df = MCI_df.reset_index()
+        diagnosis_baseline_df = baseline_df(diagnosis_df, 'MCI')
+        baseline_demographics_df = add_demographics(diagnosis_baseline_df, merged_df, 'MCI')
+
+        sex = list(baseline_demographics_df.sex.values)
+        age = list(baseline_demographics_df.age)
+
+        sup_train_sex = list(supplementary_train_df.sex.values)
+        sup_train_age = list(supplementary_train_df.age.values)
+
+        sup_train_sex = [sex_dict[x] for x in sup_train_sex]
+        sup_train_age = [float(x) for x in sup_train_age]
+
+        idx = np.arange(len(diagnosis_baseline_df))
+
+        flag_selection = True
+        n_try = 0
+
+        while flag_selection:
+            idx_test = np.random.choice(idx, size=args.n_test, replace=False)
+            idx_test.sort()
+            idx_train = complementary_list(idx, idx_test)
+
+            # Find the value for different demographical values (age, MMSE, sex)
+            age_test = [float(age[idx]) for idx in idx_test]
+            age_train = [float(age[idx]) for idx in idx_train] + sup_train_age
+
+            sex_test = [sex_dict[sex[idx]] for idx in idx_test]
+            sex_train = [sex_dict[sex[idx]] for idx in idx_train] + sup_train_sex
+
+            t_age, p_age = ttest_ind(age_test, age_train)
+            T_sex = chi2(sex_test, sex_train)
+
+            if T_sex < args.t_val_threshold and p_age > args.p_val_threshold:
+                flag_selection = False
+                MCI_baseline_test_df = baseline_demographics_df.loc[idx_test]
+                train_df = baseline_demographics_df.loc[idx_train]
+                MCI_baseline_train_df = pd.concat([train_df, supplementary_train_df])
+                MCI_baseline_train_df.reset_index(drop=True, inplace=True)
+
+            n_try += 1
+
+        print('Split for diagnosis MCI was found after %i trials' % n_try)
+
+        # Write selection of MCI
+        MCI_baseline_train_df.to_csv(path.join(train_path, 'MCI_baseline.tsv'), sep='\t')
+        MCI_baseline_test_df.to_csv(path.join(test_path, 'MCI_baseline.tsv'), sep='\t')
+
+        # Retrieve all sessions for the training set
+        MCI_complete_train_df = pd.DataFrame()
+        for idx in MCI_baseline_train_df.index.values:
+            subject = MCI_baseline_train_df.loc[idx, 'participant_id']
+            subject_df = diagnosis_df[diagnosis_df.participant_id == subject]
+            MCI_complete_train_df = pd.concat([MCI_complete_train_df, subject_df])
+
+            MCI_complete_train_df.to_csv(path.join(train_path, 'MCI.tsv'), sep='\t', index=False)
