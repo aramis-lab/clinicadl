@@ -394,7 +394,10 @@ class mri_to_slice_level(Dataset):
         img_name = self.participant_list[idx]
         img_label = self.label_list[idx]
         sess_name = self.session_list[idx]
-        image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+        ## image without intensity normalization
+        # image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+        # image with intensity normalization
+        image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_linear_registration.pt')
         samples = []
         label = self.diagnosis_code[img_label]
 

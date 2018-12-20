@@ -22,7 +22,7 @@ parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/ju
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument("-t", "--transfer_learning", default=False,
+parser.add_argument("-t", "--transfer_learning", default=True,
                            help="If do transfer learning")
 parser.add_argument("--runs", default=1,
                     help="How many times to run the training and validation procedures with the same data split strategy, default is 1.")
@@ -95,7 +95,7 @@ def main(options):
 
         valid_loader = DataLoader(data_valid,
                                  batch_size=options.batch_size,
-                                 shuffle=options.shuffle,
+                                 shuffle=False,
                                  num_workers=options.num_workers,
                                  drop_last=True,
                                  pin_memory=True)
