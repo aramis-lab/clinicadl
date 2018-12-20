@@ -22,7 +22,7 @@ parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/ju
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument("-t", "--transfer_learning", default=True,
+parser.add_argument("-t", "--transfer_learning", default=False,
                            help="If do transfer learning")
 parser.add_argument("--runs", default=1,
                     help="How many times to run the training and validation procedures with the same data split strategy, default is 1.")
@@ -118,10 +118,12 @@ def main(options):
 
         # Binary cross-entropy loss
         loss = torch.nn.CrossEntropyLoss()
-        # learning rate for training
+        # inital learning rate for training
         lr = options.learning_rate
         # chosen optimer for back-propogation
         optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), lr)
+        # apply exponential decay for learning rate
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
 
         # parameters used in training
         best_accuracy = 0.0
@@ -150,6 +152,10 @@ def main(options):
             valid_subjects.extend(valid_subject)
             y_grounds_valid.extend(y_ground_valid)
             y_hats_valid.extend(y_hat_valid)
+
+            ## update the learing rate
+            if epoch_i % 1 == 0:
+                scheduler.step()
 
             # save the best model on the validation dataset
             is_best = acc_mean_valid > best_accuracy
@@ -184,8 +190,8 @@ def main(options):
         writer_train.add_graph(model, example_imgs)
 
         ### write the information of subjects and performances into tsv files.
-        iteration_subjects_df_train, results_train = results_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train)
-        iteration_subjects_df_valid, results_valid = results_to_tsvs(options.output_dir, fi, valid_subjects, y_grounds_valid, y_hats_valid)
+        iteration_subjects_df_train, results_train = results_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train, mode='train')
+        iteration_subjects_df_valid, results_valid = results_to_tsvs(options.output_dir, fi, valid_subjects, y_grounds_valid, y_hats_valid, mode='validation')
 
 
 if __name__ == "__main__":
