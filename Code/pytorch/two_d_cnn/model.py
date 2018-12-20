@@ -58,6 +58,9 @@ class LenetAdopted2D(nn.Module):
                 nn.LeakyReLU(inplace=True),
                 nn.Dropout(),
                 nn.Linear(512, num_classes),
+                # the Softmax has been encompassed into the loss function in Pytorch implementation, if you just wanna the label, it does not change anything
+                # for the classification, because you will call argmax on the logits; otherwise, if you want to have a probability, you should always add a softmax
+                # layer
                 nn.LogSoftmax()
             )
 
@@ -75,6 +78,10 @@ class LenetAdopted2D(nn.Module):
 
 
 class AlexNetOneChannel(nn.Module):
+    """
+    In the implementation of torchvision, the softmax layer was encompassed in the loss function 'CrossEntropyLoss' and
+    'NLLLoss'
+    """
 
     def __init__(self, mri_plane, num_classes=1000):
         super(AlexNetOneChannel, self).__init__()

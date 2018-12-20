@@ -110,7 +110,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
                 optimizer.step()
             # delete the temporal varibles taking the GPU memory
             if i == 0 and j == 0:
-                example_imgs = imgs
+                example_imgs = imgs[0,...]
             del imgs, labels, output, ground_truth, loss, predict
 
         if model_mode == "train":
@@ -521,7 +521,7 @@ class CustomToTensor(object):
             # return img.float()
             return img
 
-def results_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat):
+def results_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat, mode='train'):
     """
     This is a function to trace all subject during training, test and validation, and calculate the performances with different metrics into tsv files.
     :param output_dir:
@@ -540,11 +540,11 @@ def results_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat):
                                                 'y': y_truth,
                                                 'y_hat': y_hat,
                                                 'subject': subject_list})
-    iteration_subjects_df.to_csv(os.path.join(iteration_dir, 'subjects.tsv'), index=False, sep='\t', encoding='utf-8')
+    iteration_subjects_df.to_csv(os.path.join(iteration_dir, mode + '_subjects.tsv'), index=False, sep='\t', encoding='utf-8')
 
     results = evaluate_prediction(np.asarray(y_truth), np.asarray(y_hat))
     del results['confusion_matrix']
-    pd.DataFrame(results, index=[0]).to_csv(os.path.join(iteration_dir, 'result.tsv'), index=False, sep='\t', encoding='utf-8')
+    pd.DataFrame(results, index=[0]).to_csv(os.path.join(iteration_dir, mode + '_result.tsv'), index=False, sep='\t', encoding='utf-8')
 
     return iteration_subjects_df, pd.DataFrame(results, index=[0])
 
