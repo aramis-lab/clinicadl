@@ -118,7 +118,7 @@ def main(options):
 
         # Binary cross-entropy loss
         loss = torch.nn.CrossEntropyLoss()
-        # inital learning rate for training
+        # initial learning rate for training
         lr = options.learning_rate
         # chosen optimer for back-propogation
         optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), lr)

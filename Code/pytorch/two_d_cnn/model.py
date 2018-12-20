@@ -151,9 +151,9 @@ def alexnet2D(mri_plane=0, pretrained=False, **kwargs):
         for p in model.features.parameters():
             p.requires_grad = False
 
-        # fine-tune the last convolution layer
-        # for p in model.features[10].parameters():
-        #     p.requires_grad = True
+        ## fine-tune the last convolution layer
+        for p in model.features[10].parameters():
+            p.requires_grad = True
         # # fine-tune the last second convolution layer
         # for p in model.features[8].parameters():
         #     p.requires_grad = True
