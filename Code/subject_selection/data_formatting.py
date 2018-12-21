@@ -3,6 +3,9 @@ Source files can be obtained by running the following commands on a BIDS folder:
  - clinica iotools merge-tsv
  - clinica iotools missing-mods
 To download Clinica follow the instructions at http://www.clinica.run/doc/#installation
+
+NB: Other preprocessing may be needed on the merged file obtained: for example the selection of subjects older than 62
+in the OASIS dataset is not done in this script.
 """
 from utils import *
 
@@ -48,6 +51,13 @@ def cleaning_nan_diagnoses(bids_df):
 
 
 def infer_or_drop_diagnosis(bids_df):
+    """
+    Deduce the diagnosis when missing from previous and following sessions of the subject. If not identical, the session
+    is dropped. Sessions with no diagnosis are also dropped when there are the last sessions of the follow-up.
+
+    :param bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+    :return: cleaned DataFrame
+    """
     bids_copy_df = copy(bids_df)
     found_diag_interpol = 0
 
@@ -100,6 +110,13 @@ def mod_selection(bids_df, missing_mods_dict, mod='t1w'):
 
 
 def stable_selection(bids_df, diagnosis='AD'):
+    """
+    Select only subjects whom diagnosis is identical during the whole follow-up.
+
+    :param bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+    :param diagnosis: (str) diagnosis selected
+    :return: DataFrame containing only the patients a the stable diagnosis
+    """
     # Keep diagnosis at baseline
     bids_df = bids_df[bids_df.diagnosis_bl == diagnosis]
     bids_df = cleaning_nan_diagnoses(bids_df)
@@ -225,6 +242,13 @@ def mci_stability(bids_df, horizon_time=36):
 
 
 def diagnosis_removal(MCI_df, diagnosis_list):
+    """
+    Removes subjects whom last diagnosis is in the list provided (avoid to keep rMCI and pMCI in sMCI lists).
+
+    :param MCI_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+    :param diagnosis_list: list of diagnoses that will be removed
+    :return: cleaned DataFrame
+    """
 
     output_df = copy(MCI_df)
 

@@ -7,6 +7,19 @@ sex_dict = {'M': 0, 'F': 1}
 
 def create_split(diagnosis, diagnosis_df, merged_df, n_test,
                  pval_threshold_ttest=0.80, t_val_chi2_threshold=0.0642):
+    """
+    Split data at the subject-level in training and test set with equivalent age and sex distributions
+
+    :param diagnosis: (str) diagnosis on which the split is done
+    :param diagnosis_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+    :param merged_df: DataFrame with columns including ['age', 'sex'] and containing the same sessions as diagnosis_df
+    :param n_test: (int) Number of subjects to put on the test set
+    :param pval_threshold_ttest: (float) threshold for the t-test on age
+    :param t_val_chi2_threshold:  (float) threshold for the chi2 test on sex
+    :return:
+        train_df (DataFrame) subjects in the train set
+        test_df (DataFrame) subjects in the test set
+    """
 
     diagnosis_baseline_df = baseline_df(diagnosis_df, diagnosis)
     baseline_demographics_df = add_demographics(diagnosis_baseline_df, merged_df, diagnosis)
