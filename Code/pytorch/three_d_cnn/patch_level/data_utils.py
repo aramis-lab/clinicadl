@@ -52,7 +52,7 @@ class MRIDataset(Dataset):
             image = self.transform(image)
 
         ### extract the patch from MRI based on a specific size
-        patches = extract_patches(image)
+        patches = extract_patches(image, 7, 7)
         for patch in patches:
             sample = {'image_id': img_name + '_' + sess_name, 'image': patch, 'label': label}
             samples.append(sample)
@@ -313,48 +313,19 @@ def load_split(diagnoses_tsv, val_size=0.15):
     return training_tsv, valid_tsv
 
 
-def extract_patches(image_tensor, patch_size, stride, threshold):
+def extract_patches(image_tensor, patch_size, stride):
 
-    ## turn torch tensor to numpy array, cuz some operations is not available in pytorch Tensor type.
-    image_array = image_tensor.numpy()
+    ## use pytorch tensor.upfold to crop the patch.
+    patches_tensor = image_tensor.unfold(1, patch_size, stride).unfold(2, patch_size, stride).unfold(3, patch_size, stride)
+    # the dimension of patch_tensor should be [1, patch_num1, patch_num2, patch_num3, patch_size1, patch_size2, patch_size3]
+    # resize it into [num_patch, patch_size1, patch_size2, patch_size3]
 
-    C, H, W = image_array.shape[0], image_array.shape[1], image_array.shape[2]
-
-
-    NON_AX= (0, 1)
-    NON_COR= (0, 2)
-    NON_SAG= (1, 2)
+    patches_tensor = patches_tensor.view(-1, patch_size, patch_size, patch_size)
 
     patches = []
-    mean_ax = np.ndarray.mean(image_array, axis = NON_AX)
-    mean_cor = np.ndarray.mean(image_array, axis = NON_COR)
-    mean_sag = np.ndarray.mean(image_array, axis = NON_SAG)
 
-    first_ax = int(round(list(mean_ax).index(filter(lambda x: x>0, mean_ax)[0])))
-    last_ax = int(round(list(mean_ax).index(filter(lambda x: x>0, mean_ax)[-1])))
-    first_cor = int(round(list(mean_cor).index(filter(lambda x: x>0, mean_cor)[0])))
-    last_cor = int(round(list(mean_cor).index(filter(lambda x: x>0, mean_cor)[-1])))
-    first_sag = int(round(list(mean_sag).index(filter(lambda x: x>0, mean_sag)[0])))
-    last_sag = int(round(list(mean_sag).index(filter(lambda x: x>0, mean_sag)[-1])))
-
-    first_ax = first_ax + 20
-    last_ax = last_ax - 5
-
-    ax_samples = [random.randint(first_ax - 3, last_ax - 3) for r in xrange(10000)]
-    cor_samples = [random.randint(first_cor - 3, last_cor - 3) for r in xrange(10000)]
-    sag_samples = [random.randint(first_sag - 3, last_sag - 3) for r in xrange(10000)]
-
-    for i in range(1000):
-        ax_i = ax_samples[i]
-        cor_i = cor_samples[i]
-        sag_i = sag_samples[i]
-        patch = image_array[ax_i-3:ax_i+4, cor_i-3:cor_i+4, sag_i-3:sag_i+4]
-        while (np.ndarray.sum(patch) == 0):
-            ax_ni = random.randint(first_ax - 3, last_ax - 4)
-            cor_ni = random.randint(first_cor - 3, last_cor - 4)
-            sag_ni = random.randint(first_sag - 3, last_sag - 4)
-            patch = image_array[ax_ni-3:ax_ni+4, cor_ni-3:cor_ni+4, sag_ni-3:sag_ni+4]
-        patch = customToTensor(patch)
+    for i in range(len(patches_tensor.shape[0])):
+        patch = patches_tensor[i, ...]
         patches.append(patch)
     return patches
 

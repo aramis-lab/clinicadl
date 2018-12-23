@@ -3,7 +3,7 @@ import torchvision.transforms as transforms
 from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 from classification_utils import *
-from model import alexnet2D, LenetAdopted2D
+from model import alexnet2D, lenet2D, resnet2D
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -24,6 +24,8 @@ parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junha
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 parser.add_argument("-t", "--transfer_learning", default=True,
                            help="If do transfer learning")
+parser.add_argument("-nt", "--network", default="ResNet2D", choices=["AlexNet2D", "ResNet2D", "Lenet2D"],
+                    help="Deep network type. (default=AlexNet)")
 parser.add_argument("--runs", default=1,
                     help="How many times to run the training and validation procedures with the same data split strategy, default is 1.")
 parser.add_argument("--shuffle", default=True,
@@ -44,11 +46,11 @@ parser.add_argument('--mri_plane', default=0,
                     help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
 parser.add_argument("--num_workers", '-w', default=1, type=int,
                     help='the number of batch being loaded in parallel')
+parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
+                    help='momentum')
+parser.add_argument('--weight_decay', '--wd', default=1e-4, type=float,
+                    metavar='W', help='weight decay (default: 1e-4)')
 
-# parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
-#                     help='momentum')
-# parser.add_argument('--weight_decay', '--wd', default=1e-4, type=float,
-#                     metavar='W', help='weight decay (default: 1e-4)')
 # parser.add_argument("--estop", default=1e-2, type=float,
 #                     help="Early stopping criteria on the development set. (default=1e-2)")
 
@@ -60,16 +62,23 @@ def main(options):
     if options.force == True:
         check_and_clean(options.output_dir)
 
+    # Initial the model
     if options.transfer_learning == True:
-        ## Transfer learning with imagenet pretrained AlexNet
-        trg_size = (224, 224) ## this is the original input size of alexnet
+        if options.network == "AlexNet2D":
+            model = alexnet2D(pretrained=options.transfer_learning)
+            trg_size = (224, 224)  ## this is the original input size of alexnet
+        elif options.network == "ResNet2D":
+            model = resnet2D('resnet152', pretrained=options.transfer_learning)
+            trg_size = (224, 224)  ## this is the original input size of resnet
         transformations = transforms.Compose([CustomResize(trg_size),
                                               CustomToTensor()
-                                            ])
-
+                                              ])
     else:
+        if options.network == "Lenet2D":
+            model = lenet2D(mri_plane=options.mri_plane)
+        elif options.network == "AlexNet2D":
+            model = alexnet2D(mri_plane=options.mri_plane, num_classes=2)
         transformations = CustomToTensor()
-        pass
 
     for fi in range(options.runs):
         # Get the data.
@@ -100,13 +109,6 @@ def main(options):
                                  drop_last=True,
                                  pin_memory=True)
 
-        # Initial the model
-        if options.transfer_learning == True:
-            model = alexnet2D(pretrained=options.transfer_learning)
-        else:
-            # model = LenetAdopted2D(mri_plane=options.mri_plane)
-            model = alexnet2D(mri_plane=options.mri_plane, num_classes=2)
-
         ## Decide to use gpu or cpu to train the model
         if options.use_gpu == False:
             use_cuda = False
@@ -121,7 +123,8 @@ def main(options):
         # initial learning rate for training
         lr = options.learning_rate
         # chosen optimer for back-propogation
-        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), lr)
+        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), lr,
+                                                             weight_decay=options.weight_decay)
         # apply exponential decay for learning rate
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
 
