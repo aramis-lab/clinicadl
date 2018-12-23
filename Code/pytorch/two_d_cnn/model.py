@@ -49,7 +49,7 @@ class lenet2D(nn.Module):
                 nn.LeakyReLU(inplace=True),
                 nn.Dropout(),
                 nn.Linear(512, num_classes),
-                nn.LogSoftmax()
+                nn.Softmax(dim=1)
             )
         elif mri_plane == 1:
             self.classifier = nn.Sequential(
@@ -57,7 +57,7 @@ class lenet2D(nn.Module):
                 nn.LeakyReLU(inplace=True),
                 nn.Dropout(),
                 nn.Linear(512, num_classes),
-                nn.LogSoftmax()
+                nn.Softmax(dim=1)
             )
         else:
             self.classifier = nn.Sequential(
@@ -68,7 +68,7 @@ class lenet2D(nn.Module):
                 # the Softmax has been encompassed into the loss function in Pytorch implementation, if you just wanna the label, it does not change anything
                 # for the classification, because you will call argmax on the logits; otherwise, if you want to have a probability, you should always add a softmax
                 # layer
-                nn.LogSoftmax()
+                nn.Softmax(dim=1)
             )
 
 
@@ -171,7 +171,7 @@ def alexnet2D(mri_plane=0, pretrained=False, **kwargs):
 
         ## add a fc layer on top of the pretrained model and a sigmoid classifier
         model.classifier.add_module('fc_out', nn.Linear(1000, 2)) ## For linear layer, Pytorch used similar H initialization for the weight.
-        model.classifier.add_module('sigmoid', nn.LogSoftmax())
+        model.classifier.add_module('sigmoid', nn.Softmax(dim=1))
 
     else:
         model = alexnetonechannel(mri_plane, num_classes=2)
@@ -351,7 +351,7 @@ def resnet2D(resnet_type, pretrained=False, **kwargs):
 
             ## add a fc layer on top of the pretrained model and a sigmoid classifier
             model.add_module('fc_out', nn.Linear(1000, 2))  ## For linear layer, Pytorch used similar H initialization for the weight.
-            model.add_module('sigmoid', nn.LogSoftmax())
+            model.add_module('sigmoid', nn.Softmax(dim=1))
 
     elif resnet_type == 'resnet101':
         model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
@@ -366,7 +366,7 @@ def resnet2D(resnet_type, pretrained=False, **kwargs):
 
             ## add a fc layer on top of the pretrained model and a sigmoid classifier
             model.add_module('fc_out', nn.Linear(1000, 2))  ## For linear layer, Pytorch used similar H initialization for the weight.
-            model.add_module('sigmoid', nn.LogSoftmax())
+            model.add_module('sigmoid', nn.Softmax(dim=1))
 
     elif resnet_type == 'resnet50':
         model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
@@ -381,7 +381,7 @@ def resnet2D(resnet_type, pretrained=False, **kwargs):
 
             ## add a fc layer on top of the pretrained model and a sigmoid classifier
             model.add_module('fc_out', nn.Linear(1000, 2))  ## For linear layer, Pytorch used similar H initialization for the weight.
-            model.add_module('sigmoid', nn.LogSoftmax())
+            model.add_module('sigmoid', nn.Softmax(dim=1))
 
     elif resnet_type == 'resnet34':
         model = ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
@@ -396,7 +396,7 @@ def resnet2D(resnet_type, pretrained=False, **kwargs):
 
             ## add a fc layer on top of the pretrained model and a sigmoid classifier
             model.add_module('fc_out', nn.Linear(1000, 2))  ## For linear layer, Pytorch used similar H initialization for the weight.
-            model.add_module('sigmoid', nn.LogSoftmax())
+            model.add_module('sigmoid', nn.Softmax(dim=1))
 
     elif resnet_type == 'resnet18':
         model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
@@ -411,6 +411,6 @@ def resnet2D(resnet_type, pretrained=False, **kwargs):
 
             ## add a fc layer on top of the pretrained model and a sigmoid classifier
             model.add_module('fc_out', nn.Linear(1000, 2))  ## For linear layer, Pytorch used similar H initialization for the weight.
-            model.add_module('sigmoid', nn.LogSoftmax())
+            model.add_module('sigmoid', nn.Softmax(dim=1))
 
     return model
