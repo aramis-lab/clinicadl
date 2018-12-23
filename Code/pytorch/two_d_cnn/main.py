@@ -62,27 +62,27 @@ def main(options):
     if options.force == True:
         check_and_clean(options.output_dir)
 
-    # Initial the model
-    if options.transfer_learning == True:
-        if options.network == "AlexNet2D":
-            model = alexnet2D(pretrained=options.transfer_learning)
-            trg_size = (224, 224)  ## this is the original input size of alexnet
-        elif options.network == "ResNet2D":
-            model = resnet2D('resnet152', pretrained=options.transfer_learning)
-            trg_size = (224, 224)  ## this is the original input size of resnet
-        transformations = transforms.Compose([CustomResize(trg_size),
-                                              CustomToTensor()
-                                              ])
-    else:
-        if options.network == "Lenet2D":
-            model = lenet2D(mri_plane=options.mri_plane)
-        elif options.network == "AlexNet2D":
-            model = alexnet2D(mri_plane=options.mri_plane, num_classes=2)
-        transformations = CustomToTensor()
-
     for fi in range(options.runs):
         # Get the data.
         print("Running for the %d run" % fi)
+
+        # Initial the model
+        if options.transfer_learning == True:
+            if options.network == "AlexNet2D":
+                model = alexnet2D(pretrained=options.transfer_learning)
+                trg_size = (224, 224)  ## this is the original input size of alexnet
+            elif options.network == "ResNet2D":
+                model = resnet2D('resnet152', pretrained=options.transfer_learning)
+                trg_size = (224, 224)  ## this is the original input size of resnet
+            transformations = transforms.Compose([CustomResize(trg_size),
+                                                  CustomToTensor()
+                                                  ])
+        else:
+            if options.network == "Lenet2D":
+                model = lenet2D(mri_plane=options.mri_plane)
+            elif options.network == "AlexNet2D":
+                model = alexnet2D(mri_plane=options.mri_plane, num_classes=2)
+            transformations = CustomToTensor()
 
         ## load the tsv file
         training_tsv, valid_tsv = load_split(options.diagnosis_tsv, val_size=0.15)
