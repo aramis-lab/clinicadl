@@ -22,15 +22,17 @@ parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/ju
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument("-t", "--transfer_learning", default=True,
+
+## optional args
+parser.add_argument("--transfer_learning", default=True,
                            help="If do transfer learning")
-parser.add_argument("-nt", "--network", default="ResNet2D", choices=["AlexNet2D", "ResNet2D", "Lenet2D"],
+parser.add_argument("--network", default="ResNet2D", choices=["AlexNet2D", "ResNet2D", "Lenet2D"],
                     help="Deep network type. (default=AlexNet)")
 parser.add_argument("--runs", default=1,
                     help="How many times to run the training and validation procedures with the same data split strategy, default is 1.")
 parser.add_argument("--shuffle", default=True,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
-parser.add_argument("--epochs", default=3, type=int,
+parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
@@ -44,7 +46,7 @@ parser.add_argument('--force', default=True,
                     help='If force to rerun the classification, default behavior is to clean the output folder and restart from scratch')
 parser.add_argument('--mri_plane', default=0,
                     help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
-parser.add_argument("--num_workers", '-w', default=1, type=int,
+parser.add_argument("--num_workers", '-w', default=4, type=int,
                     help='the number of batch being loaded in parallel')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')

@@ -42,7 +42,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
         model.train() ## set the model to training mode
     else:
         model.eval() ## set the model to evaluation mode
-    print('The number of subjects: %s' % str(len(data_loader)))
+    print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
     for i, subject_data in enumerate(data_loader):
         # for each iteration, the train data contains batch_size * n_slices_in_each_subject images
         loss_batch = 0.0
