@@ -74,6 +74,8 @@ def main(options):
             elif options.network == "ResNet2D":
                 model = resnet2D('resnet152', pretrained=options.transfer_learning)
                 trg_size = (224, 224)  ## this is the original input size of resnet
+            else:
+                raise Exception('The model has not been implemented')
             transformations = transforms.Compose([CustomResize(trg_size),
                                                   CustomToTensor()
                                                   ])
@@ -82,6 +84,8 @@ def main(options):
                 model = lenet2D(mri_plane=options.mri_plane)
             elif options.network == "AlexNet2D":
                 model = alexnet2D(mri_plane=options.mri_plane, num_classes=2)
+            else:
+                raise Exception('The model has not been implemented')
             transformations = CustomToTensor()
 
         ## load the tsv file
