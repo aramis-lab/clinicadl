@@ -1,8 +1,6 @@
 import torch
 from torch.autograd import Variable
-import nibabel as nib
 from torch.utils.data import Dataset
-import random
 import os, shutil
 from skimage.transform import resize
 from os import path
