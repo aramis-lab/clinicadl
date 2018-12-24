@@ -275,17 +275,17 @@ class Conv_3(nn.Module):
 
         self.features = nn.Sequential(
             # Convolutions
-            nn.Conv3d(1, 16, 3),
+            nn.Conv3d(1, 16, 3, stride=1),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
             nn.BatchNorm3d(16),
 
-            nn.Conv3d(16, 32, 3),
+            nn.Conv3d(16, 32, 3, stride=1),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
             nn.BatchNorm3d(32),
 
-            nn.Conv3d(32, 32, 3),
+            nn.Conv3d(32, 32, 3, stride=1),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
             nn.BatchNorm3d(32),

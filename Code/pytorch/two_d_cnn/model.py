@@ -165,11 +165,12 @@ def alexnet2D(mri_plane=0, pretrained=False, **kwargs):
         ## fine-tune the last convolution layer
         for p in model.features[10].parameters():
             p.requires_grad = True
-        # # fine-tune the last second convolution layer
-        # for p in model.features[8].parameters():
-        #     p.requires_grad = True
+        # fine-tune the last second convolution layer
+        for p in model.features[8].parameters():
+            p.requires_grad = True
 
         ## add a fc layer on top of the pretrained model and a sigmoid classifier
+        model.classifier.add_module('dropout', nn.Dropout(p=0.8))
         model.classifier.add_module('fc_out', nn.Linear(1000, 2)) ## For linear layer, Pytorch used similar H initialization for the weight.
         model.classifier.add_module('sigmoid', nn.Softmax(dim=1))
 
