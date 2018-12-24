@@ -32,7 +32,7 @@ parser.add_argument("--runs", default=1, type=int,
 #                     help="Test the accuracy at the end of the model for the sessions selected")
 # parser.add_argument("--visualization", action='store_true', default=False,
 #                     help='Chooses if visualization is done on AE pretraining')
-parser.add_argument("--num_workers", '-w', default=1, type=int,
+parser.add_argument("--num_workers", '-w', default=0, type=int,
                     help='the number of batch being loaded in parallel')
 
 # Pretraining arguments
@@ -61,6 +61,8 @@ parser.add_argument('--evaluation_steps', '-esteps', default=1, type=int,
                     help='Fix the number of batches to use before validation')
 parser.add_argument('--num_threads', type=int, default=1,
                     help='Number of threads used.')
+parser.add_argument('--weight_decay', default=1e-4, type=float,
+                    metavar='W', help='weight decay (default: 1e-4)')
 
 
 def main(options):
@@ -78,7 +80,7 @@ def main(options):
     # Pretraining the model
     if options.transfer_learning:
         model = eval(options.model)()
-        criterion = torch.nn.MSELoss()
+        loss = torch.nn.MSELoss()
         if options.transfer_learning_tsv is None:
             raise Exception("A tsv file with data for pretraining must be given")
         training_tsv, valid_tsv = load_split(options.transfer_learning_tsv)
@@ -102,7 +104,7 @@ def main(options):
                                   )
 
         pretraining_dir = path.join(options.output_dir, 'pretraining')
-        greedy_learning(model, train_loader, valid_loader, criterion, True, pretraining_dir, options)
+        greedy_learning(model, train_loader, valid_loader, loss, True, pretraining_dir, options)
 
     for run in range(options.runs):
         # Get the data.
@@ -130,22 +132,27 @@ def main(options):
         print('Initialization of the model')
         model = create_model(options)
 
-        # Define criterion and optimizer
-        criterion = torch.nn.CrossEntropyLoss()
-        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
-                                                             options.learning_rate)
+        # Define loss and optimizer
+        loss = torch.nn.CrossEntropyLoss()
+
+        lr = options.learning_rate
+        # chosen optimer for back-propogation
+        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), lr,
+                                                             weight_decay=options.weight_decay)
+        # apply exponential decay for learning rate
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
 
         print('Beginning the training task')
         training_time = time()
-        train(model, train_loader, valid_loader, criterion, optimizer, run, options)
+        train(model, train_loader, valid_loader, loss, optimizer, run, options)
         training_time = time() - training_time
 
         # Load best model
         best_model, best_epoch = load_model(model, os.path.join(options.output_dir, "run" + str(run)))
 
         # Get best performance
-        acc_mean_train_subject, _ = test(best_model, train_loader, options.gpu, criterion)
-        acc_mean_valid_subject, _ = test(best_model, valid_loader, options.gpu, criterion)
+        acc_mean_train_subject, _ = test(best_model, train_loader, options.gpu, loss)
+        acc_mean_valid_subject, _ = test(best_model, valid_loader, options.gpu, loss)
         valid_accuracies[run] = acc_mean_valid_subject
         accuracies = (acc_mean_train_subject, acc_mean_valid_subject)
         write_summary(options.output_dir, run, accuracies, best_epoch, training_time)

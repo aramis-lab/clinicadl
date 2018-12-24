@@ -31,6 +31,8 @@ def get_subid_sesid_datasink(participant_id, session_id, caps_directory):
          participant_id + '_' + session_id + '_space-MNI_res-1x1x1_intensity_norm.nii.gz'),
         (participant_id + '_' + session_id + '_SyN_QuickWarped_cropped.nii.gz',
         participant_id + '_' + session_id + '_space-MNI_res-1x1x1.nii.gz'),
+        (participant_id + '_' + session_id + '_SyN_QuickWarped_cropped.pt',
+         participant_id + '_' + session_id + '_space-MNI_res-1x1x1.nii.pt'),
         (participant_id + '_' + session_id + '_SyN_QuickWarped.nii.gz',
          participant_id + '_' + session_id + '_space-MNI_res-1x1x1_linear_registration.nii.gz')
         ]
@@ -41,6 +43,7 @@ def get_subid_sesid_datasink(participant_id, session_id, caps_directory):
         (r'/out_file_crop/_cropnifti\d{1,4}/', r'/'),
         (r'/out_file_inn/_intensitynormalization\d{1,4}/', r'/'),
         (r'/out_file_reg/_antsRegistrationSyNQuick\d{1,4}/', r'/'),
+        (r'/out_pt/_cropnifti\d{1,4}/', r'/'),
         # I don't know why it's adding this empty folder, so I remove it:
         (r'trait_added/_datasinker\d{1,4}/', r'')
     ]
@@ -245,6 +248,25 @@ def rank_mean(similarity, tsv, caps_directory):
     df_new[['similarity']] = df_new[['similarity']].astype(float)
     # df_new.sort_values('similarity')
     df_new.to_csv(os.path.join(caps_directory, 'qc_similarity.tsv'), sep='\t')
+
+
+def save_as_pt(input_img):
+    """
+    This function is to transfer nii.gz file into .pt format, in order to train the pytorch model more efficient when loading the data.
+    :param input_img:
+    :return:
+    """
+
+    import torch, os
+    import nibabel as nib
+
+    image_array = nib.load(input_img).get_fdata()
+    image_tensor = torch.from_numpy(image_array).unsqueeze(0)
+    output_file = os.path.join(os.path.dirname(input_img), input_img.split('.nii.gz')[0] + '.pt')
+    # save
+    torch.save(image_tensor, output_file)
+
+    return output_file
 
 
 

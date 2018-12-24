@@ -31,8 +31,6 @@ class MRIDataset(Dataset):
             raise Exception("the data file is not in the correct format."
                             "Columns should include ['participant_id', 'session_id', 'diagnosis']")
 
-        self.size = self[0]['image'].numpy().size
-
     def __len__(self):
         return len(self.df)
 
@@ -52,12 +50,12 @@ class MRIDataset(Dataset):
             image = self.transform(image)
 
         ### extract the patch from MRI based on a specific size
-        patches = extract_patches(image, 7, 7)
+        patches = extract_patches(image, 50, 50)
         for patch in patches:
             sample = {'image_id': img_name + '_' + sess_name, 'image': patch, 'label': label}
             samples.append(sample)
 
-        return sample
+        return samples
 
     def session_restriction(self, session):
         """
@@ -316,16 +314,14 @@ def load_split(diagnoses_tsv, val_size=0.15):
 def extract_patches(image_tensor, patch_size, stride):
 
     ## use pytorch tensor.upfold to crop the patch.
-    patches_tensor = image_tensor.unfold(1, patch_size, stride).unfold(2, patch_size, stride).unfold(3, patch_size, stride)
+    patches_tensor = image_tensor.unfold(1, patch_size, stride).unfold(2, patch_size, stride).unfold(3, patch_size, stride).contiguous()
     # the dimension of patch_tensor should be [1, patch_num1, patch_num2, patch_num3, patch_size1, patch_size2, patch_size3]
     # resize it into [num_patch, patch_size1, patch_size2, patch_size3]
-
     patches_tensor = patches_tensor.view(-1, patch_size, patch_size, patch_size)
-
     patches = []
-
-    for i in range(len(patches_tensor.shape[0])):
+    for i in range(patches_tensor.shape[0]):
         patch = patches_tensor[i, ...]
+        patch.unsqueeze_(0)
         patches.append(patch)
     return patches
 

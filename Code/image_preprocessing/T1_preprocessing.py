@@ -31,7 +31,7 @@ def preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working
     import nipype.interfaces.utility as nutil
     import nipype.pipeline.engine as npe
     import tempfile
-    from T1_preprocessing_utils import get_subid_sesid_datasink, bids_datagrabber_t1w, crop_nifti, rename_file, ants_registration_syn_quick, ants_histogram_intensity_normalization
+    from T1_preprocessing_utils import get_subid_sesid_datasink, bids_datagrabber_t1w, crop_nifti, rename_file, ants_registration_syn_quick, ants_histogram_intensity_normalization, save_as_pt
     from clinica.pipelines.engine import get_subject_session_list
 
     if working_directory is None:
@@ -95,9 +95,16 @@ def preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working
                                                               function=ants_histogram_intensity_normalization))
     intensitynorm.inputs.image_dimension = 3
 
+    ## save nii.gz into pytorch .pt format.
+    save_as_pt = npe.MapNode(name='save_as_pt',
+                            iterfield=['input_img'],
+                               interface=nutil.Function(
+                                   function=save_as_pt,
+                                   input_names=['input_img'],
+                                   output_names=['output_file']))
 
     outputnode = npe.Node(nutil.IdentityInterface(
-        fields=['out_file_inn', 'out_file_crop', 'out_file_reg']),
+        fields=['out_file_inn', 'out_file_crop', 'out_file_reg', 'out_pt']),
         name='outputnode')
 
     # get the information for datasinker.
@@ -107,8 +114,8 @@ def preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working
     get_identifiers.inputs.caps_directory = caps_directory
 
     ### datasink
-    datasink = npe.MapNode(nio.DataSink(infields=['out_file_inn', 'out_file_crop', 'out_file_reg']), name='datasinker',
-                          iterfield=['out_file_inn', 'out_file_crop', 'out_file_reg', 'base_directory', 'substitutions', 'regexp_substitutions'])
+    datasink = npe.MapNode(nio.DataSink(infields=['out_file_inn', 'out_file_crop', 'out_file_reg', 'out_pt']), name='datasinker',
+                          iterfield=['out_file_inn', 'out_file_crop', 'out_file_reg', 'out_pt', 'base_directory', 'substitutions', 'regexp_substitutions'])
     datasink.inputs.remove_dest_dir = True
 
 
@@ -138,6 +145,8 @@ def preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working
                 (cropnifti, intensitynorm, [('output_img', 'input_img')]),
                 (cropnifti, intensitynorm, [('crop_template', 'crop_template')]),
 
+                (cropnifti, save_as_pt, [('output_img', 'input_img')]),
+
                 ## datasink
                 # Saving files with datasink:
                 (get_subject_session_list, get_identifiers, [('subjects', 'participant_id')]),
@@ -154,6 +163,8 @@ def preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working
                 (cropnifti, outputnode, [('output_img', 'out_file_crop')]),
                 (antsRegistrationSyNQuick, datasink, [('image_warped', 'out_file_reg')]),
                 (antsRegistrationSyNQuick, outputnode, [('image_warped', 'out_file_reg')]),
+                (save_as_pt, outputnode, [('output_file', 'out_pt')]),
+                (save_as_pt, datasink, [('output_file', 'out_pt')]),
                 ])
 
 
