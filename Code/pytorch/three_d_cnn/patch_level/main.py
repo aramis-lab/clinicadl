@@ -3,7 +3,7 @@ import argparse
 from time import time
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
-
+from tensorboardX import SummaryWriter
 from classification_utils import *
 from data_utils import *
 from model import *
@@ -16,8 +16,8 @@ parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/ju
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch_test',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument("-m", "--model", default='Conv_3', type=str, choices=["Conv_3", "Conv_4", "Test", "Test_nobatch", "Rieke", "Test2", 'Optim'],
-                    help="model selected")
+# parser.add_argument("-m", "--model", default='Conv_3', type=str, choices=["Conv_3", "Conv_4", "Test", "Test_nobatch", "Rieke", "Test2", 'Optim'],
+#                     help="model selected")
 
 # Data Management
 parser.add_argument("--batch_size", default=2, type=int,
@@ -44,6 +44,8 @@ parser.add_argument("--transfer_learning_epochs", "-t_e", type=int, default=10,
                     help="Number of epochs for pretraining")
 parser.add_argument("--transfer_learning_rate", "-t_lr", type=float, default=1e-4,
                     help='The learning rate used for AE pretraining')
+parser.add_argument("--network", default="VoxResNet", choices=["VoxResNet"],
+                    help="Deep network type. (default=VoxResNet)")
 
 # Training arguments
 parser.add_argument("--epochs", default=3, type=int,
@@ -55,11 +57,11 @@ parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
 
-parser.add_argument('--gpu', action='store_true', default=False,
+parser.add_argument('--use_gpu', action='store_true', default=False,
                     help='Uses gpu instead of cpu if cuda is available')
 parser.add_argument('--evaluation_steps', '-esteps', default=1, type=int,
                     help='Fix the number of batches to use before validation')
-parser.add_argument('--num_threads', type=int, default=1,
+parser.add_argument('--num_threads', type=int, default=0,
                     help='Number of threads used.')
 parser.add_argument('--weight_decay', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
@@ -76,37 +78,36 @@ def main(options):
 
     transformations = None
 
-    total_time = time()
     # Pretraining the model
-    if options.transfer_learning:
-        model = eval(options.model)()
-        loss = torch.nn.MSELoss()
-        if options.transfer_learning_tsv is None:
-            raise Exception("A tsv file with data for pretraining must be given")
-        training_tsv, valid_tsv = load_split(options.transfer_learning_tsv)
+    # if options.transfer_learning:
+        # model = eval(options.model)()
+        # loss = torch.nn.MSELoss()
+        # if options.transfer_learning_tsv is None:
+        #     raise Exception("A tsv file with data for pretraining must be given")
+        # training_tsv, valid_tsv = load_split(options.transfer_learning_tsv)
+        #
+        # data_train = MRIDataset(options.caps_directory, training_tsv, transformations)
+        # data_valid = MRIDataset(options.caps_directory, valid_tsv, transformations)
+        #
+        # # Use argument load to distinguish training and testing
+        # train_loader = DataLoader(data_train,
+        #                           batch_size=options.batch_size,
+        #                           shuffle=options.shuffle,
+        #                           num_workers=options.num_workers,
+        #                           drop_last=True
+        #                           )
+        #
+        # valid_loader = DataLoader(data_valid,
+        #                           batch_size=options.batch_size,
+        #                           shuffle=False,
+        #                           num_workers=options.num_workers,
+        #                           drop_last=False
+        #                           )
+        #
+        # pretraining_dir = path.join(options.output_dir, 'pretraining')
+        # greedy_learning(model, train_loader, valid_loader, loss, True, pretraining_dir, options)
 
-        data_train = MRIDataset(options.caps_directory, training_tsv, transformations)
-        data_valid = MRIDataset(options.caps_directory, valid_tsv, transformations)
-
-        # Use argument load to distinguish training and testing
-        train_loader = DataLoader(data_train,
-                                  batch_size=options.batch_size,
-                                  shuffle=options.shuffle,
-                                  num_workers=options.num_workers,
-                                  drop_last=True
-                                  )
-
-        valid_loader = DataLoader(data_valid,
-                                  batch_size=options.batch_size,
-                                  shuffle=False,
-                                  num_workers=options.num_workers,
-                                  drop_last=False
-                                  )
-
-        pretraining_dir = path.join(options.output_dir, 'pretraining')
-        greedy_learning(model, train_loader, valid_loader, loss, True, pretraining_dir, options)
-
-    for run in range(options.runs):
+    for fi in range(options.runs):
         # Get the data.
         training_tsv, valid_tsv = load_split(options.diagnosis_tsv)
 
@@ -128,9 +129,19 @@ def main(options):
                                   drop_last=False
                                   )
 
-        # Initialize the model
-        print('Initialization of the model')
-        model = create_model(options)
+        if options.network == "VoxResNet":
+            model = VoxResNet()
+        else:
+            raise Exception('The model has not been implemented')
+
+        ## Decide to use gpu or cpu to train the model
+        if options.use_gpu == False:
+            use_cuda = False
+            model.cpu()
+        else:
+            print("Using GPU")
+            use_cuda = True
+            model.cuda()
 
         # Define loss and optimizer
         loss = torch.nn.CrossEntropyLoss()
@@ -143,40 +154,73 @@ def main(options):
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
 
         print('Beginning the training task')
-        training_time = time()
-        train(model, train_loader, valid_loader, loss, optimizer, run, options)
-        training_time = time() - training_time
+        # parameters used in training
+        best_accuracy = 0.0
+        writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "iteration_" + str(fi), "train")))
+        writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "iteration_" + str(fi), "valid")))
 
-        # Load best model
-        best_model, best_epoch = load_model(model, os.path.join(options.output_dir, "run" + str(run)))
+        ## get the info for training and write them into tsv files.
+        train_subjects = []
+        valid_subjects = []
+        y_grounds_train = []
+        y_grounds_valid = []
+        y_hats_train = []
+        y_hats_valid = []
 
-        # Get best performance
-        acc_mean_train_subject, _ = test(best_model, train_loader, options.gpu, loss)
-        acc_mean_valid_subject, _ = test(best_model, valid_loader, options.gpu, loss)
-        valid_accuracies[run] = acc_mean_valid_subject
-        accuracies = (acc_mean_train_subject, acc_mean_valid_subject)
-        write_summary(options.output_dir, run, accuracies, best_epoch, training_time)
+        for epoch_i in range(options.epochs):
+            print("At %s -th epoch." % str(epoch_i))
 
-        del best_model
+            # train the model
+            example_imgs, train_subject, y_ground_train, y_hat_train, acc_mean_train, global_steps_train = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch_i, model_mode='train')
+            train_subjects.extend(train_subject)
+            y_grounds_train.extend(y_ground_train)
+            y_hats_train.extend(y_hat_train)
+            ## at then end of each epoch, we validate one time for the model with the validation data
+            _, valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_steps_valid = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch_i, model_mode='valid', global_steps=global_steps_train)
+            print("Slice level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch_i))
+            valid_subjects.extend(valid_subject)
+            y_grounds_valid.extend(y_ground_valid)
+            y_hats_valid.extend(y_hat_valid)
 
-    total_time = time() - total_time
-    print("Total time of computation: %d s" % total_time)
-    text_file = open(path.join(options.output_dir, 'model_output.txt'), 'w')
-    text_file.write('Time of training: %d s \n' % total_time)
-    text_file.write('Mean best validation accuracy: %.2f %% \n' % np.mean(valid_accuracies))
-    text_file.write('Standard variation of best validation accuracy: %.2f %% \n' % np.std(valid_accuracies))
-    text_file.close()
+            ## update the learing rate
+            if epoch_i % 1 == 0:
+                scheduler.step()
 
+            # save the best model on the validation dataset
+            is_best = acc_mean_valid > best_accuracy
+            best_prec1 = max(best_accuracy, acc_mean_valid)
+            save_checkpoint({
+                'epoch': epoch_i + 1,
+                'state_dict': model.state_dict(),
+                'best_predic1': best_prec1,
+                'optimizer': optimizer.state_dict()
+            }, is_best, os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi)))
 
-def write_summary(output_dir, run, accuracies, best_epoch, time):
-    fold_dir = path.join(output_dir, "run" + str(run))
-    text_file = open(path.join(fold_dir, 'run_output.txt'), 'w')
-    text_file.write('Fold: %i \n' % run)
-    text_file.write('Best epoch: %i \n' % best_epoch)
-    text_file.write('Time of training: %d s \n' % time)
-    text_file.write('Accuracy on training set: %.2f %% \n' % accuracies[0])
-    text_file.write('Accuracy on validation set: %.2f %% \n' % accuracies[1])
-    text_file.close()
+        # ### using test data to get the final performance
+        # ## take the best_validated model for test
+        # if os.path.isfile(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar")):
+        #     print("=> loading checkpoint '{}'".format(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar")))
+        #     checkpoint = torch.load(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar"))
+        #     best_epoch = checkpoint['epoch']
+        #     model.load_state_dict(checkpoint['state_dict'])
+        #     optimizer.load_state_dict(checkpoint['optimizer'])
+        #     print("=> loaded model '{}' for the best perfomrmance at (epoch {})".format(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar"), best_epoch))
+        # else:
+        #     print("=> no checkpoint found at '{}'".format(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar")))
+        #
+        # imgs_test, test_subject, y_ground_test, y_hat_test, acc_mean_test, global_steps_test = train(model, test_loader, use_cuda, loss, optimizer, writer_test, 0, model_mode='test')
+        # test_subjects.extend(test_subject)
+        # y_grounds_test.extend(y_ground_test)
+        # y_hats_test.extend(y_hat_test)
+        # print("Slice level mean test accuracy for fold %d is: %f" % (fi, acc_mean_test))
+        # test_accuracy[fi] = acc_mean_test
+
+        ## save the graph and image
+        writer_train.add_graph(model, example_imgs)
+
+        ### write the information of subjects and performances into tsv files.
+        iteration_subjects_df_train, results_train = results_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train, mode='train')
+        iteration_subjects_df_valid, results_valid = results_to_tsvs(options.output_dir, fi, valid_subjects, y_grounds_valid, y_hats_valid, mode='validation')
 
 
 if __name__ == "__main__":

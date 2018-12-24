@@ -7,237 +7,126 @@ import shutil
 import warnings
 import pandas as pd
 from time import time
+import torch
+from torch.autograd import Variable
+from torch.utils.data import Dataset
+import os, shutil
+from skimage.transform import resize
+from os import path
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
 
-
-def train(model, train_loader, valid_loader, loss_func, optimizer, run, options):
+def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, model_mode="train", global_steps=0):
     """
-    This is the function to train the model
+    This is the function to train, validate or test the model, depending on the model_mode parameter.
     :param model:
-    :param train_loader:
-    :param valid_loader:
+    :param data_loader:
+    :param use_cuda:
     :param loss_func:
     :param optimizer:
-    :param run:
-    :param options:
-    """
-    # Create writers
-    from tensorboardX import SummaryWriter
-    from time import time
-
-    writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "run" + str(run), "train")))  # Replace with a path creation
-    filename = os.path.join(options.output_dir, "run" + str(run), 'training.tsv')
-    columns = ['epoch', 'iteration', 'acc_train', 'total_loss_train', 'acc_valid', 'total_loss_valid']
-    results_df = pd.DataFrame(columns=columns)
-    with open(filename, 'w') as f:
-        results_df.to_csv(f, index=False, sep='\t')
-
-    # Initialize variables
-    best_valid_accuracy = 0.0
-    epoch = 0
-
-    model.train()  # set the module to training mode
-
-    while epoch < options.epochs:
-        total_correct_cnt = 0.0
-        print("At %d-th epoch." % epoch)
-
-        evaluation_flag = True
-        step_flag = True
-        last_check_point_i = 0
-        tend = time()
-        total_time = 0
-        print('The number of batches in this sampler based on the batch size: %s' % str(len(train_loader)))
-
-        for i, subject_data in enumerate(train_loader, 0):
-            t0 = time()
-            total_time = total_time + t0 - tend
-            num_pathes = len(subject_data)
-
-            print('The number of pathes in one subject is: %s' % str(num_pathes))
-            for j in range(num_pathes):
-                data_dic = subject_data[j]
-                if options.gpu:
-                    imgs, labels = data_dic['image'].cuda(), data_dic['label'].cuda()
-                else:
-                    imgs, labels = data_dic['image'], data_dic['label']
-                train_output = model(imgs)
-                _, predict = train_output.topk(1)
-                loss = loss_func(train_output, labels)
-                batch_correct_cnt = (predict.squeeze(1) == labels).sum().float()
-                total_correct_cnt += batch_correct_cnt
-                # accuracy = float(batch_correct_cnt) / len(labels)
-                model.zero_grad()
-                loss.backward()
-
-                # writer_train.add_scalar('training_accuracy', accuracy / len(data), i + epoch * len(train_loader.dataset))
-                # writer_train.add_scalar('training_loss', loss.item() / len(data), i + epoch * len(train_loader.dataset))
-
-                del imgs
-
-                if (i+1) % options.accumulation_steps == 0:
-                    step_flag = False
-                    optimizer.step()
-                    optimizer.zero_grad()
-
-                    # Evaluate the model only when no gradients are accumulated
-                    if(i+1) % options.evaluation_steps == 0:
-                        evaluation_flag = False
-                        print('Iteration %d' % i)
-                        acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, loss_func)
-                        acc_mean_valid, total_loss_valid = test(model, valid_loader, options.gpu, loss_func)
-                        model.train()
-                        print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
-                        print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
-
-                        row = np.array([epoch, i, acc_mean_train, total_loss_train, acc_mean_valid, total_loss_valid]).reshape(1, -1)
-                        row_df = pd.DataFrame(row, columns=columns)
-                        with open(filename, 'a') as f:
-                            row_df.to_csv(f, header=False, index=False, sep='\t')
-                        # # Do not save on iteration level because of accuracy noise
-                        # is_best = acc_mean_valid > best_valid_accuracy
-                        # # Save only if is best to avoid performance deterioration
-                        # if is_best:
-                        #     best_valid_accuracy = acc_mean_valid
-                        #     save_checkpoint({'model': model.state_dict(),
-                        #                      'iteration': i,
-                        #                      'epoch': epoch,
-                        #                      'valid_acc': acc_mean_valid},
-                        #                     is_best,
-                        #                     os.path.join(options.output_dir, "run" + str(run)))
-                        #     last_check_point_i = i
-
-                tend = time()
-        print('Mean time per batch (train):', total_time / len(train_loader) * train_loader.batch_size)
-
-        # If no step has been performed, raise Exception
-        if step_flag:
-            raise Exception('The model has not been updated once in the epoch. The accumulation step may be too large.')
-
-        # If no evaluation has been performed, warn the user
-        elif evaluation_flag:
-            warnings.warn('Your evaluation steps are too big compared to the size of the dataset.'
-                          'The model is evaluated only once at the end of the epoch')
-
-        # Always test the results and save them once at the end of the epoch
-        if last_check_point_i != i:
-            model.zero_grad()
-            print('Last checkpoint at the end of the epoch %d' % epoch)
-            acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, loss_func)
-            acc_mean_valid, total_loss_valid = test(model, valid_loader, options.gpu, loss_func)
-            model.train()
-            print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
-            print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
-
-            row = np.array([epoch, i, acc_mean_train, total_loss_train, acc_mean_valid, total_loss_valid]).reshape(1, -1)
-            row_df = pd.DataFrame(row, columns=columns)
-            with open(filename, 'a') as f:
-                row_df.to_csv(f, header=False, index=False, sep='\t')
-            is_best = acc_mean_valid > best_valid_accuracy
-            best_valid_accuracy = max(acc_mean_valid, best_valid_accuracy)
-            save_checkpoint({'model': model.state_dict(),
-                             'epoch': epoch,
-                             'valid_acc': acc_mean_valid},
-                            is_best,
-                            os.path.join(options.output_dir, "run" + str(run)))
-
-        print('Total correct labels: %d / %d' % (total_correct_cnt, len(train_loader) * train_loader.batch_size))
-        epoch += 1
-
-
-def test(model, dataloader, use_cuda, loss_func, verbose=False, full_return=False):
-    """
-    Computes the balanced accuracy of the model
-
-    :param model: the network (subclass of nn.Module)
-    :param dataloader: a DataLoader wrapping a dataset
-    :param use_cuda: if True a gpu is used
-    :param full_return: if True also returns the sensitivities and specificities for a multiclass problem
+    :param writer:
+    :param epoch_i:
     :return:
-        balanced accuracy of the model (float)
-        total loss on the dataloader
     """
-    model.eval()
+    # main training loop
+    correct_cnt = 0.0
+    acc = 0.0
+    subjects = []
+    y_ground = []
+    y_hat = []
 
-    # Use tensors instead of arrays to avoid bottlenecks
-    predicted_tensor = torch.zeros(len(dataloader.dataset))
-    truth_tensor = torch.zeros(len(dataloader.dataset))
-    if use_cuda:
-        predicted_tensor = predicted_tensor.cuda()
-        truth_tensor = truth_tensor.cuda()
-
-    total_time = 0
-    total_loss = 0
-    tend = time()
-    for i, data in enumerate(dataloader, 0):
-        t0 = time()
-        total_time = total_time + t0 - tend
-        if use_cuda:
-            inputs, labels = data['image'].cuda(), data['label'].cuda()
-        else:
-            inputs, labels = data['image'], data['label']
-
-        outputs = model(inputs)
-        loss = loss_func(outputs, labels)
-        total_loss += loss.item()
-        _, predicted = torch.max(outputs.data, 1)
-
-        idx = i * dataloader.batch_size
-        idx_end = (i + 1) * dataloader.batch_size
-        predicted_tensor[idx:idx_end:] = predicted
-        truth_tensor[idx:idx_end:] = labels
-
-        del inputs, outputs, labels
-        tend = time()
-    print('Mean time per batch (test):', total_time / len(dataloader) * dataloader.batch_size)
-
-    # Computation of the balanced accuracy
-    component = len(np.unique(truth_tensor))
-
-    # Cast to numpy arrays to avoid bottleneck in the next loop
-    if use_cuda:
-        predicted_arr = predicted_tensor.cpu().numpy().astype(int)
-        truth_arr = truth_tensor.cpu().numpy().astype(int)
+    if model_mode == "train":
+        model.train() ## set the model to training mode
     else:
-        predicted_arr = predicted_tensor.numpy()
-        truth_arr = truth_tensor.numpy()
+        model.eval() ## set the model to evaluation mode
+    print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
+    for i, subject_data in enumerate(data_loader):
+        # for each iteration, the train data contains batch_size * n_patchs_in_each_subject images
+        loss_batch = 0.0
+        acc_batch = 0.0
+        num_patch = len(subject_data)
 
-    cluster_diagnosis_prop = np.zeros(shape=(component, component))
-    for i, predicted in enumerate(predicted_arr):
-        truth = truth_arr[i]
-        cluster_diagnosis_prop[predicted, truth] += 1
+        print('The number of patchs in one subject is: %s' % str(num_patch))
 
-    acc = 0
-    sensitivity = np.zeros(component)
-    specificity = np.zeros(component)
-    for i in range(component):
-        diag_represented = np.argmax(cluster_diagnosis_prop[i])
-        acc += cluster_diagnosis_prop[i, diag_represented] / np.sum(cluster_diagnosis_prop.T[diag_represented])
+        for j in range(num_patch):
+            data_dic = subject_data[j]
+            if use_cuda:
+                imgs, labels = data_dic['image'].cuda(), data_dic['label'].cuda()
+            else:
+                imgs, labels = data_dic['image'], data_dic['label']
 
-        # Computation of sensitivity
-        sen_array = cluster_diagnosis_prop[i]
-        if np.sum(sen_array) == 0:
-            sensitivity[diag_represented] = None
-        else:
-            sensitivity[diag_represented] = sen_array[diag_represented] / np.sum(sen_array) * 100
+            ## add the participant_id + session_id
+            image_ids = data_dic['image_id']
+            subjects.extend(image_ids)
 
-        # Computation of specificity
-        spe_array = np.delete(cluster_diagnosis_prop, i, 0)
-        if np.sum(spe_array) == 0:
-            specificity[diag_represented] = None
-        else:
-            specificity[diag_represented] = (1 - np.sum(spe_array[:, diag_represented]) / np.sum(spe_array)) * 100
+            # TO track of indices, int64 is a better choice for large models.
+            integer_encoded = labels.data.cpu().numpy()
+            gound_truth_list = integer_encoded.tolist()
+            y_ground.extend(gound_truth_list)
+            ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
 
-    acc = acc * 100 / component
-    if verbose:
-        print('Accuracy of diagnosis: ' + str(acc))
-        print('Sensitivity of diagnoses:', sensitivity)
-        print('Specificity of diagnoses:', specificity)
+            print('The group true label is %s' % (str(labels)))
+            if use_cuda:
+                ground_truth = ground_truth.cuda()
+            output = model(imgs)
+            _, predict = output.topk(1)
+            predict_list = predict.data.cpu().numpy().tolist()
+            y_hat.extend([item for sublist in predict_list for item in sublist])
+            if model_mode == "train" or model_mode == 'valid':
+                print("output.device: " + str(output.device))
+                print("ground_truth.device: " + str(ground_truth.device))
+                print("The predicted label is: " + str(output))
+                loss = loss_func(output, ground_truth)
+                loss_batch += loss.item()
+            correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
+            correct_cnt += correct_this_batch
+            # To monitor the training process using tensorboard, we only display the training loss and accuracy, the other performance metrics, such
+            # as balanced accuracy, will be saved in the tsv file.
+            accuracy = float(correct_this_batch) / len(ground_truth)
+            acc_batch += accuracy
+            if model_mode == "train":
+                print("For batch %d patch %d training loss is : %f" % (i, j, loss.item()))
+                print("For batch %d patch %d training accuracy is : %f" % (i, j, accuracy))
+            elif model_mode == "valid":
+                print("For batch %d patch %d validation accuracy is : %f" % (i, j, accuracy))
+                print("For batch %d patch %d validation loss is : %f" % (i, j, loss.item()))
+            elif model_mode == "test":
+                print("For batch %d patch %d validate accuracy is : %f" % (i, j, accuracy))
 
-    if full_return:
-        return acc, total_loss, sensitivity, specificity
+            # Unlike tensorflow, in Pytorch, we need to manully zero the graident before each backpropagation step, becase Pytorch accumulates the gradients
+            # on subsequent backward passes. The initial designing for this is convenient for training RNNs.
+            if model_mode == "train":
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+            # delete the temporal varibles taking the GPU memory
+            if i == 0 and j == 0:
+                example_imgs = imgs[:, :, 1, :, :]
+            del imgs, labels, output, ground_truth, loss, predict
 
-    return acc, total_loss
+        if model_mode == "train":
+            writer.add_scalar('patch-level accuracy', acc_batch / num_patch, i + epoch_i * len(data_loader.dataset))
+            writer.add_scalar('loss', loss_batch / num_patch, i + epoch_i * len(data_loader.dataset))
+            ## just for debug
+            writer.add_image('example_image', example_imgs)
+        elif model_mode == "test":
+            writer.add_scalar('patch-level accuracy', acc_batch / num_patch, i)
 
+        ## add all accuracy for each iteration
+        acc += acc_batch / num_patch
+
+    acc_mean = acc / len(data_loader)
+    if model_mode == "valid":
+        writer.add_scalar('patch-level accuracy', acc_mean, global_steps)
+        writer.add_scalar('loss', loss_batch / num_patch / i, global_steps)
+
+    if model_mode == "train":
+        global_steps = i + epoch_i * len(data_loader.dataset)
+    else:
+        global_steps = 0
+
+    return example_imgs, subjects, y_ground, y_hat, acc_mean, global_steps
 
 def show_plot(points):
     plt.figure()
@@ -672,3 +561,93 @@ def cpuStats():
     py = psutil.Process(pid)
     memoryUse = py.memory_info()[0] / 2. ** 30  # memory use in GB...I think
     print('memory GB:', memoryUse)
+
+def results_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat, mode='train'):
+    """
+    This is a function to trace all subject during training, test and validation, and calculate the performances with different metrics into tsv files.
+    :param output_dir:
+    :param iteration:
+    :param subject_list:
+    :param y_truth:
+    :param y_hat:
+    :return:
+    """
+
+    # check if the folder exist
+    iteration_dir = os.path.join(output_dir, 'performances', 'iteration-' + str(iteration))
+    if not os.path.exists(iteration_dir):
+        os.makedirs(iteration_dir)
+    iteration_subjects_df = pd.DataFrame({'iteration': iteration,
+                                                'y': y_truth,
+                                                'y_hat': y_hat,
+                                                'subject': subject_list})
+    iteration_subjects_df.to_csv(os.path.join(iteration_dir, mode + '_subjects.tsv'), index=False, sep='\t', encoding='utf-8')
+
+    results = evaluate_prediction(np.asarray(y_truth), np.asarray(y_hat))
+    del results['confusion_matrix']
+    pd.DataFrame(results, index=[0]).to_csv(os.path.join(iteration_dir, mode + '_result.tsv'), index=False, sep='\t', encoding='utf-8')
+
+    return iteration_subjects_df, pd.DataFrame(results, index=[0])
+
+def evaluate_prediction(y, y_hat):
+
+    true_positive = 0.0
+    true_negative = 0.0
+    false_positive = 0.0
+    false_negative = 0.0
+
+    tp = []
+    tn = []
+    fp = []
+    fn = []
+
+    for i in range(len(y)):
+        if y[i] == 1:
+            if y_hat[i] == 1:
+                true_positive += 1
+                tp.append(i)
+            else:
+                false_negative += 1
+                fn.append(i)
+        else:  # -1
+            if y_hat[i] == 0:
+                true_negative += 1
+                tn.append(i)
+            else:
+                false_positive += 1
+                fp.append(i)
+
+    accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
+
+    if (true_positive + false_negative) != 0:
+        sensitivity = true_positive / (true_positive + false_negative)
+    else:
+        sensitivity = 0.0
+
+    if (false_positive + true_negative) != 0:
+        specificity = true_negative / (false_positive + true_negative)
+    else:
+        specificity = 0.0
+
+    if (true_positive + false_positive) != 0:
+        ppv = true_positive / (true_positive + false_positive)
+    else:
+        ppv = 0.0
+
+    if (true_negative + false_negative) != 0:
+        npv = true_negative / (true_negative + false_negative)
+    else:
+        npv = 0.0
+
+    balanced_accuracy = (sensitivity + specificity) / 2
+
+    results = {'accuracy': accuracy,
+               'balanced_accuracy': balanced_accuracy,
+               'sensitivity': sensitivity,
+               'specificity': specificity,
+               'ppv': ppv,
+               'npv': npv,
+               'confusion_matrix': {'tp': len(tp), 'tn': len(tn), 'fp': len(fp), 'fn': len(fn)}
+               }
+
+    return results

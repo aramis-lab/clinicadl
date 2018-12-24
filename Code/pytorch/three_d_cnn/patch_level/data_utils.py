@@ -50,7 +50,7 @@ class MRIDataset(Dataset):
             image = self.transform(image)
 
         ### extract the patch from MRI based on a specific size
-        patches = extract_patches(image, 50, 50)
+        patches = extract_patches(image, 110, 20)
         for patch in patches:
             sample = {'image_id': img_name + '_' + sess_name, 'image': patch, 'label': label}
             samples.append(sample)
