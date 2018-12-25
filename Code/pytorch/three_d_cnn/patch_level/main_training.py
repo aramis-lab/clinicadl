@@ -1,120 +1,125 @@
 import argparse
+
+from time import time
 import torchvision.transforms as transforms
-from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
+from tensorboardX import SummaryWriter
 from classification_utils import *
-from model import alexnet2D, lenet2D, resnet2D
+from data_utils import *
+from model import *
+import copy
 
-__author__ = "Junhao Wen"
-__copyright__ = "Copyright 2018 The Aramis Lab Team"
-__credits__ = ["Junhao Wen"]
-__license__ = "See LICENSE.txt file"
-__version__ = "0.1.0"
-__maintainer__ = "Junhao Wen"
-__email__ = "junhao.wen89@gmail.com"
-__status__ = "Development"
-
-parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D CNN")
+parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D patch CNN")
 
 parser.add_argument("-id", "--caps_directory", default='/teams/ARAMIS/PROJECTS/CLINICA/CLINICA_datasets/temp/CAPS_ADNI_DL',
                            help="Path to the caps of image processing pipeline of DL")
 parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/test.tsv',
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
-parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch',
+parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch_test',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-
-## optional args
-parser.add_argument("--transfer_learning", default=True,
-                           help="If do transfer learning")
-parser.add_argument("--network", default="ResNet2D", choices=["AlexNet2D", "ResNet2D", "Lenet2D", "AllConvNet2D"],
-                    help="Deep network type. (default=AlexNet)")
-parser.add_argument("--runs", default=1,
-                    help="How many times to run the training and validation procedures with the same data split strategy, default is 1.")
-parser.add_argument("--shuffle", default=True,
+parser.add_argument("--network", default="AllConvNet3D", choices=["VoxResNet", "AllConvNet3D"],
+                    help="Deep network type. (default=VoxResNet)")
+parser.add_argument("--patch_size", default="21", type=int,
+                    help="The patch size extracted from the MRI")
+parser.add_argument("--patch_stride", default="10", type=int,
+                    help="The stride for the patch extract window from the MRI")
+parser.add_argument("--batch_size", default=2, type=int,
+                    help="Batch size for training. (default=1)")
+parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
-parser.add_argument("--epochs", default=1, type=int,
+parser.add_argument("--runs", default=1, type=int,
+                    help="Number of runs with the same training / validation split.")
+parser.add_argument("--num_workers", '-w', default=0, type=int,
+                    help='the number of batch being loaded in parallel')
+
+# transfer learning
+parser.add_argument("-tla", "--transfer_learning_autoencoder", default=False, action='store_true',
+                    help="If do transfer learning using autoencoder, the learnt weights will be transferred")
+parser.add_argument("-tlt", "--transfer_learning_task", default=False, action='store_true',
+                    help="If do transfer learning using different tasks, the learnt weights will be transferred")
+parser.add_argument("-tbm", "--transfer_learnt_best_model", default=False, action='store_true',
+                    help="The path to save the transfer learning model")
+
+# Training arguments
+parser.add_argument("--epochs", default=3, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
-parser.add_argument("--batch_size", default=2, type=int,
-                    help="Batch size for training. (default=1)")
+
+# Optimizer arguments
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument("--use_gpu", default=True, nargs='+',
-                    help="If use gpu or cpu. Empty implies cpu usage.")
-parser.add_argument('--force', default=True,
-                    help='If force to rerun the classification, default behavior is to clean the output folder and restart from scratch')
-parser.add_argument('--mri_plane', default=0,
-                    help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
-parser.add_argument("--num_workers", '-w', default=4, type=int,
-                    help='the number of batch being loaded in parallel')
-parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
-                    help='momentum')
+parser.add_argument('--use_gpu', action='store_true', default=False,
+                    help='Uses gpu instead of cpu if cuda is available')
+parser.add_argument('--evaluation_steps', '-esteps', default=1, type=int,
+                    help='Fix the number of batches to use before validation')
 parser.add_argument('--weight_decay', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
 
-# parser.add_argument("--estop", default=1e-2, type=float,
-#                     help="Early stopping criteria on the development set. (default=1e-2)")
+# parser.add_argument("--test_sessions", default=["ses-M00"], nargs='+', type=str,
+#                     help="Test the accuracy at the end of the model for the sessions selected")
+# parser.add_argument("--visualization", action='store_true', default=False,
+#                     help='Chooses if visualization is done on AE pretraining')
+# parser.add_argument("-m", "--model", default='Conv_3', type=str, choices=["Conv_3", "Conv_4", "Test", "Test_nobatch", "Rieke", "Test2", 'Optim'],
+#                     help="model selected")
 
 def main(options):
 
     if not os.path.exists(options.output_dir):
         os.makedirs(options.output_dir)
+    check_and_clean(options.output_dir)
 
-    if options.force == True:
-        check_and_clean(options.output_dir)
+    ## Train the model with transfer learning
+    if options.transfer_learning_autoencoder:
+        print('Train the model with the weights from a pre-trained model by autoencoder!')
+
+        try:
+            model = eval(options.network)()
+        except:
+            raise Exception('The model has not been implemented')
+
+        pretraining_model = torch.load(options.transfer_learnt_best_model)
+
+        ## convert the weight and bias into the current model
+        model.state_dict()['conv1.weight'] = pretraining_model['encoder.weight']
+        model.state_dict()['conv1.bias'] = pretraining_model['encoder.bias']
+
+    elif options.transfer_learning_task:
+        print('Train the model with the weights from a pre-trained model by different tasks!')
+        model = torch.load(options.transfer_learnt_best_model)
+
+    else:
+        print('Train the model from scratch!')
+        try:
+            model = eval(options.network)()
+        except:
+            raise Exception('The model has not been implemented')
+
+    ## the inital model weight and bias
+    init_state = copy.deepcopy(model.state_dict())
 
     for fi in range(options.runs):
-        # Get the data.
-        print("Running for the %d run" % fi)
 
-        # Initial the model
-        if options.transfer_learning == True:
-            if options.network == "AlexNet2D":
-                model = alexnet2D(pretrained=options.transfer_learning)
-                trg_size = (224, 224)  ## this is the original input size of alexnet
-            elif options.network == "ResNet2D":
-                model = resnet2D('resnet152', pretrained=options.transfer_learning)
-                trg_size = (224, 224)  ## this is the original input size of resnet
-            else:
-                raise Exception('The model has not been implemented')
-            transformations = transforms.Compose([CustomResize(trg_size),
-                                                  CustomToTensor()
-                                                  ])
-        else:
-            if options.network == "Lenet2D":
-                model = lenet2D(mri_plane=options.mri_plane)
-            elif options.network == "AlexNet2D":
-                model = alexnet2D(mri_plane=options.mri_plane, num_classes=2)
-            else:
-                raise Exception('The model has not been implemented')
-            transformations = CustomToTensor()
+        model.load_state_dict(init_state)
 
-        ## load the tsv file
-        training_tsv, valid_tsv = load_split(options.diagnosis_tsv, val_size=0.15)
-
-        if options.transfer_learning == True:
-            data_train = mri_to_slice_level(options.caps_directory, training_tsv, transform=transformations, mri_plane=options.mri_plane)
-            data_valid = mri_to_slice_level(options.caps_directory, valid_tsv, transform=transformations, mri_plane=options.mri_plane)
-        else:
-            data_train = mri_to_slice_level(options.caps_directory, training_tsv, transform=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
-            data_valid = mri_to_slice_level(options.caps_directory, valid_tsv, transform=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
+        training_tsv, valid_tsv = load_split(options.diagnosis_tsv)
+        data_train = MRIDataset(options.caps_directory, training_tsv, options.patch_size, options.patch_stride)
+        data_valid = MRIDataset(options.caps_directory, valid_tsv, options.patch_size, options.patch_stride)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
                                   batch_size=options.batch_size,
                                   shuffle=options.shuffle,
                                   num_workers=options.num_workers,
-                                  drop_last=True,
-                                  pin_memory=True)
+                                  drop_last=True
+                                  )
 
         valid_loader = DataLoader(data_valid,
-                                 batch_size=options.batch_size,
-                                 shuffle=False,
-                                 num_workers=options.num_workers,
-                                 drop_last=True,
-                                 pin_memory=True)
-
+                                  batch_size=options.batch_size,
+                                  shuffle=False,
+                                  num_workers=options.num_workers,
+                                  drop_last=False
+                                  )
         ## Decide to use gpu or cpu to train the model
         if options.use_gpu == False:
             use_cuda = False
@@ -124,9 +129,9 @@ def main(options):
             use_cuda = True
             model.cuda()
 
-        # Binary cross-entropy loss
+        # Define loss and optimizer
         loss = torch.nn.CrossEntropyLoss()
-        # initial learning rate for training
+
         lr = options.learning_rate
         # chosen optimer for back-propogation
         optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), lr,
@@ -134,6 +139,7 @@ def main(options):
         # apply exponential decay for learning rate
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
 
+        print('Beginning the training task')
         # parameters used in training
         best_accuracy = 0.0
         writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "iteration_" + str(fi), "train")))
@@ -163,16 +169,16 @@ def main(options):
             y_hats_valid.extend(y_hat_valid)
 
             ## update the learing rate
-            if epoch_i % 1 == 0:
+            if epoch_i % 20 == 0:
                 scheduler.step()
 
             # save the best model on the validation dataset
             is_best = acc_mean_valid > best_accuracy
-            best_prec1 = max(best_accuracy, acc_mean_valid)
+            best_accuracy = max(best_accuracy, acc_mean_valid)
             save_checkpoint({
                 'epoch': epoch_i + 1,
                 'state_dict': model.state_dict(),
-                'best_predic1': best_prec1,
+                'best_predict': best_accuracy,
                 'optimizer': optimizer.state_dict()
             }, is_best, os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi)))
 
@@ -207,5 +213,5 @@ if __name__ == "__main__":
     ret = parser.parse_known_args()
     options = ret[0]
     if ret[1]:
-        print("unknown arguments: %s" % (parser.parse_known_args()[1]))
+        print("unknown arguments: %s" % parser.parse_known_args()[1])
     main(options)

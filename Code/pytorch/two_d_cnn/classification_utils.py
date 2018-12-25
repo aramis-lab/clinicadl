@@ -224,7 +224,7 @@ def split_subjects_to_tsv(diagnoses_tsv, val_size=0.15):
         os.makedirs(sets_dir)
 
     # split the train data into training and validation set
-    skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size, random_state=2)
+    skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size)
     indices = next(skf_2.split(np.zeros(len(y)), y))
     train_ind, valid_ind = indices
 

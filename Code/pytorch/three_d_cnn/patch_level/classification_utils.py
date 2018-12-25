@@ -128,6 +128,65 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
 
     return example_imgs, subjects, y_ground, y_hat, acc_mean, global_steps
 
+
+def train_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, options, global_steps=0):
+    """
+    This trains the autoencoder with all data
+    :param autoencoder:
+    :param data_loader:
+    :param use_cuda:
+    :param loss_func:
+    :param optimizer:
+    :param writer:
+    :param epoch_i:
+    :param global_steps:
+    :return:
+    """
+    epoch_loss = 0
+    sparsity = 0.05
+    beta = 0.5
+    print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
+    for i, subject_data in enumerate(data_loader):
+        # for each iteration, the train data contains batch_size * n_patchs_in_each_subject images
+        loss_batch = 0.0
+        num_patch = len(subject_data)
+
+        print('The number of patchs in one subject is: %s' % str(num_patch))
+
+        for j in range(num_patch):
+            data_dic = subject_data[j]
+            if use_cuda:
+                imgs = data_dic['image'].cuda()
+            else:
+                imgs = data_dic['image']
+
+            output, hidden = autoencoder(imgs)
+            loss1 = loss_func(output, imgs)
+            sparsity_part = Variable(torch.ones(hidden.shape) * sparsity).cuda()
+            loss2 = (sparsity_part * torch.log(sparsity_part / (hidden + 1e-8)) + (1 - sparsity_part) * torch.log(
+                (1 - sparsity_part) / ((1 - hidden + 1e-8)))).sum() / options.batch_size
+            # kl_div_loss(mean_activitaion, sparsity)
+            loss = loss1 + beta * loss2
+            loss_batch += loss
+            print("For batch %d patch %d training loss is : %f" % (i, j, loss.item()))
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            if i == 0 and j == 0:
+                example_imgs = imgs[:, :, 1, :, :]
+            ## save memory
+            del imgs, output, loss
+
+        ## save loss into tensorboardX
+        writer.add_scalar('loss', loss_batch / num_patch, i + epoch_i * len(data_loader.dataset))
+        epoch_loss += loss_batch
+
+    return example_imgs, epoch_loss
+
+
+
 def show_plot(points):
     plt.figure()
     fig, ax = plt.subplots()

@@ -158,57 +158,6 @@ def multiple_time_points(df, subset_df):
     mtp_df.reset_index(inplace=True, drop=True)
     return mtp_df
 
-
-# def old_split_subjects_to_tsv(diagnoses_tsv, n_splits=5, val_size=0.15):
-#     """
-#     Write the tsv files corresponding to the train/val/test splits of all folds
-#
-#     :param diagnoses_tsv: (str) path to the tsv file with diagnoses
-#     :param n_splits: (int) the number of splits wanted in the cross-validation
-#     :param val_size: (float) proportion of the train set being used for validation
-#     :return: None
-#     """
-#
-#     df = pd.read_csv(diagnoses_tsv, sep='\t')
-#     if 'diagnosis' not in list(df.columns.values):
-#         raise Exception('Diagnoses file is not in the correct format.')
-#     # Here we reduce the DataFrame to have only one diagnosis per subject (multiple time points case)
-#     diagnosis_df = subject_diagnosis_df(df)
-#     diagnoses_list = list(diagnosis_df.diagnosis)
-#     unique = list(set(diagnoses_list))
-#     y = np.array([unique.index(x) for x in diagnoses_list])  # There is one label per diagnosis depending on the order
-#
-#     splits = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=2)
-#     sets_dir = path.join(path.dirname(diagnoses_tsv),
-#                          path.basename(diagnoses_tsv).split('.')[0],
-#                          'splits-' + str(n_splits))
-#     if not path.exists(sets_dir):
-#         os.makedirs(sets_dir)
-#
-#     n_iteration = 0
-#     for train_index, test_index in splits.split(np.zeros(len(y)), y):
-#
-#         y_train = y[train_index]
-#         diagnosis_df_train = diagnosis_df.loc[train_index]
-#
-#         # split the train data into training and validation set
-#         skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size, random_state=2)
-#         indices = next(skf_2.split(np.zeros(len(y_train)), y_train))
-#         train_ind, valid_ind = indices
-#
-#         df_sub_test = diagnosis_df.iloc[test_index]
-#         df_sub_valid = diagnosis_df_train.iloc[valid_ind]
-#         df_sub_train = diagnosis_df_train.iloc[train_ind]
-#         df_test = multiple_time_points(df, df_sub_test)
-#         df_valid = multiple_time_points(df, df_sub_valid)
-#         df_train = multiple_time_points(df, df_sub_train)
-#
-#         df_train.to_csv(path.join(sets_dir, 'val_size-' + str(val_size) + '_iteration-' + str(n_iteration) + '_train.tsv'), sep='\t', index=False)
-#         df_test.to_csv(path.join(sets_dir, 'val_size-' + str(val_size) + '_iteration-' + str(n_iteration) + '_test.tsv'), sep='\t', index=False)
-#         df_valid.to_csv(path.join(sets_dir, 'val_size-' + str(val_size) + '_iteration-' + str(n_iteration) + '_valid.tsv'), sep='\t', index=False)
-#         n_iteration += 1
-
-
 def split_subjects_to_tsv(diagnoses_tsv, val_size=0.15):
     """
     Write the tsv files corresponding to the train/val/test splits of all folds
@@ -234,7 +183,7 @@ def split_subjects_to_tsv(diagnoses_tsv, val_size=0.15):
         os.makedirs(sets_dir)
 
     # split the train data into training and validation set
-    skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size, random_state=2)
+    skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size)
     indices = next(skf_2.split(np.zeros(len(y)), y))
     train_ind, valid_ind = indices
 
