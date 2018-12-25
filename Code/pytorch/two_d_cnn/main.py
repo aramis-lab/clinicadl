@@ -26,7 +26,7 @@ parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junha
 ## optional args
 parser.add_argument("--transfer_learning", default=True,
                            help="If do transfer learning")
-parser.add_argument("--network", default="ResNet2D", choices=["AlexNet2D", "ResNet2D", "Lenet2D"],
+parser.add_argument("--network", default="ResNet2D", choices=["AlexNet2D", "ResNet2D", "Lenet2D", "AllConvNet2D"],
                     help="Deep network type. (default=AlexNet)")
 parser.add_argument("--runs", default=1,
                     help="How many times to run the training and validation procedures with the same data split strategy, default is 1.")
