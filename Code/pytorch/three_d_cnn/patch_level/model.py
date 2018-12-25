@@ -628,3 +628,29 @@ class AllConvNet3D(nn.Module):
         out = self.softmax(pool_out)
 
         return out
+
+############################################
+### Autoencoder
+############################################
+
+class AutoEncoder(nn.Module):
+    """
+    This is the implementation of autoencoder.
+    Ideally, we can train each layer of a CNN using this ae and transfer the learned parameters to the task-specific CNN
+    Note: Need to calculate the size of in_features and out_features of the nn.Linear layer to fit each layer of CNN.
+
+    Ref of the sparse ae: https://stats.stackexchange.com/questions/149478/what-is-the-intuition-behind-the-sparsity-parameter-in-sparse-autoencoders
+    """
+    def __init__(self):
+        super(AutoEncoder, self).__init__()
+        self.encoder = nn.Linear(343, 410)
+        self.sparsify = nn.Sigmoid()
+        self.decoder = nn.Linear(410, 343)
+
+    def forward(self, x):
+        out = x.view(-1, 343)
+        out = self.encoder(out)
+        out = self.sparsify(out)
+        hidden = out
+        out = self.decoder(out)
+        return out, hidden
