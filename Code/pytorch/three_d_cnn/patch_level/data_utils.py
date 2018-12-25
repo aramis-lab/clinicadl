@@ -12,7 +12,7 @@ import random
 class MRIDataset(Dataset):
     """labeled Faces in the Wild dataset."""
 
-    def __init__(self, img_dir, data_file, transform=None):
+    def __init__(self, img_dir, data_file, patch_size, patch_stride, transform=None):
         """
         Args:
             img_dir (string): Directory of all the images.
@@ -23,6 +23,8 @@ class MRIDataset(Dataset):
         self.img_dir = img_dir
         self.transform = transform
         self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
+        self.patch_size = patch_size
+        self.patch_stride = patch_stride
 
         # Check the format of the tsv file here
         self.df = pd.read_csv(data_file, sep='\t')
@@ -50,7 +52,7 @@ class MRIDataset(Dataset):
             image = self.transform(image)
 
         ### extract the patch from MRI based on a specific size
-        patches = extract_patches(image, 110, 20)
+        patches = extract_patches(image, self.patch_size, self.patch_stride)
         for patch in patches:
             sample = {'image_id': img_name + '_' + sess_name, 'image': patch, 'label': label}
             samples.append(sample)

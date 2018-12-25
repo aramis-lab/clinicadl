@@ -18,7 +18,12 @@ parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junha
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 # parser.add_argument("-m", "--model", default='Conv_3', type=str, choices=["Conv_3", "Conv_4", "Test", "Test_nobatch", "Rieke", "Test2", 'Optim'],
 #                     help="model selected")
-
+parser.add_argument("--network", default="AllConvNet3D", choices=["VoxResNet", "AllConvNet3D"],
+                    help="Deep network type. (default=VoxResNet)")
+parser.add_argument("--patch_size", default="21", type=int,
+                    help="The patch size extracted from the MRI")
+parser.add_argument("--patch_stride", default="10", type=int,
+                    help="The stride for the patch extract window from the MRI")
 # Data Management
 parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
@@ -44,8 +49,6 @@ parser.add_argument("--transfer_learning_epochs", "-t_e", type=int, default=10,
                     help="Number of epochs for pretraining")
 parser.add_argument("--transfer_learning_rate", "-t_lr", type=float, default=1e-4,
                     help='The learning rate used for AE pretraining')
-parser.add_argument("--network", default="VoxResNet", choices=["VoxResNet"],
-                    help="Deep network type. (default=VoxResNet)")
 
 # Training arguments
 parser.add_argument("--epochs", default=3, type=int,
@@ -70,13 +73,7 @@ parser.add_argument('--weight_decay', default=1e-4, type=float,
 def main(options):
 
     check_and_clean(options.output_dir)
-    torch.set_num_threads(options.num_threads)
-    valid_accuracies = np.zeros(options.runs)
-    if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
-        raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
-                        (options.evaluation_steps, options.accumulation_steps))
-
-    transformations = None
+    # torch.set_num_threads(options.num_threads)
 
     # Pretraining the model
     # if options.transfer_learning:
@@ -111,8 +108,8 @@ def main(options):
         # Get the data.
         training_tsv, valid_tsv = load_split(options.diagnosis_tsv)
 
-        data_train = MRIDataset(options.caps_directory, training_tsv, transform=transformations)
-        data_valid = MRIDataset(options.caps_directory, valid_tsv, transform=transformations)
+        data_train = MRIDataset(options.caps_directory, training_tsv, options.patch_size, options.patch_stride)
+        data_valid = MRIDataset(options.caps_directory, valid_tsv, options.patch_size, options.patch_stride)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
@@ -131,6 +128,8 @@ def main(options):
 
         if options.network == "VoxResNet":
             model = VoxResNet()
+        elif options.network == "AllConvNet3D":
+            model = AllConvNet3D()
         else:
             raise Exception('The model has not been implemented')
 
