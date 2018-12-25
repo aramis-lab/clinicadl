@@ -30,7 +30,6 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
     :return:
     """
     # main training loop
-    correct_cnt = 0.0
     acc = 0.0
     subjects = []
     y_ground = []
@@ -80,7 +79,6 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
                 loss = loss_func(output, ground_truth)
                 loss_batch += loss.item()
             correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
-            correct_cnt += correct_this_batch
             # To monitor the training process using tensorboard, we only display the training loss and accuracy, the other performance metrics, such
             # as balanced accuracy, will be saved in the tsv file.
             accuracy = float(correct_this_batch) / len(ground_truth)
@@ -103,7 +101,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             # delete the temporal varibles taking the GPU memory
             if i == 0 and j == 0:
                 example_imgs = imgs[:, :, 1, :, :]
-            del imgs, labels, output, ground_truth, loss, predict
+            del imgs, labels, output, ground_truth, loss, predict, data_dic, integer_encoded, gound_truth_list, loss, correct_this_batch, accuracy
 
         if model_mode == "train":
             writer.add_scalar('patch-level accuracy', acc_batch / num_patch, i + epoch_i * len(data_loader.dataset))
