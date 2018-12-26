@@ -101,7 +101,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             # delete the temporal varibles taking the GPU memory
             if i == 0 and j == 0:
                 example_imgs = imgs[:, :, 1, :, :]
-            del imgs, labels, output, ground_truth, loss, predict, data_dic, integer_encoded, gound_truth_list, loss, correct_this_batch, accuracy
+            del imgs, labels, output, ground_truth, loss, predict, data_dic, integer_encoded, gound_truth_list, correct_this_batch, accuracy
 
         if model_mode == "train":
             writer.add_scalar('patch-level accuracy', acc_batch / num_patch, i + epoch_i * len(data_loader.dataset))

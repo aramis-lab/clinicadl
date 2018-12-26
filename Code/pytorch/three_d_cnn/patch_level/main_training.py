@@ -51,10 +51,10 @@ parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "
                     help="Optimizer of choice for training. (default=Adam)")
 parser.add_argument('--use_gpu', action='store_true', default=False,
                     help='Uses gpu instead of cpu if cuda is available')
-parser.add_argument('--evaluation_steps', '-esteps', default=1, type=int,
-                    help='Fix the number of batches to use before validation')
 parser.add_argument('--weight_decay', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
+parser.add_argument('--random_state', default=None,
+                    help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
 
 # parser.add_argument("--test_sessions", default=["ses-M00"], nargs='+', type=str,
 #                     help="Test the accuracy at the end of the model for the sessions selected")
@@ -72,6 +72,7 @@ def main(options):
     ## Train the model with transfer learning
     if options.transfer_learning_autoencoder:
         print('Train the model with the weights from a pre-trained model by autoencoder!')
+        print('The chosen network is %s !' % options.network)
 
         try:
             model = eval(options.network)()
@@ -86,10 +87,12 @@ def main(options):
 
     elif options.transfer_learning_task:
         print('Train the model with the weights from a pre-trained model by different tasks!')
+        print('The chosen network is %s !' % options.network)
         model = torch.load(options.transfer_learnt_best_model)
 
     else:
         print('Train the model from scratch!')
+        print('The chosen network is %s !' % options.network)
         try:
             model = eval(options.network)()
         except:
@@ -99,12 +102,12 @@ def main(options):
     init_state = copy.deepcopy(model.state_dict())
 
     for fi in range(options.runs):
-
+        print("Running for the %d run" % fi)
         model.load_state_dict(init_state)
 
-        training_tsv, valid_tsv = load_split(options.diagnosis_tsv)
-        data_train = MRIDataset(options.caps_directory, training_tsv, options.patch_size, options.patch_stride)
-        data_valid = MRIDataset(options.caps_directory, valid_tsv, options.patch_size, options.patch_stride)
+        training_tsv, valid_tsv = load_split(options.diagnosis_tsv, random_state=options.random_state)
+        data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride)
+        data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size, options.patch_stride)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,

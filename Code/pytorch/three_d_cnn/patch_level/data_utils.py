@@ -9,7 +9,7 @@ from scipy.ndimage.filters import gaussian_filter
 import random
 
 
-class MRIDataset(Dataset):
+class MRIDataset_patch(Dataset):
     """labeled Faces in the Wild dataset."""
 
     def __init__(self, img_dir, data_file, patch_size, patch_stride, transform=None):
@@ -61,7 +61,7 @@ class MRIDataset(Dataset):
 
     def session_restriction(self, session):
         """
-            Allows to generate a new MRIDataset using some specific sessions only (mostly used for evaluation of test)
+            Allows to generate a new MRIDataset_patch using some specific sessions only (mostly used for evaluation of test)
 
             :param session: (str) the session wanted. Must be 'all' or 'ses-MXX'
             :return: (DataFrame) the dataset with the wanted sessions
@@ -158,7 +158,7 @@ def multiple_time_points(df, subset_df):
     mtp_df.reset_index(inplace=True, drop=True)
     return mtp_df
 
-def split_subjects_to_tsv(diagnoses_tsv, val_size=0.15):
+def split_subjects_to_tsv(diagnoses_tsv, val_size=0.15, random_state=None):
     """
     Write the tsv files corresponding to the train/val/test splits of all folds
 
@@ -183,7 +183,7 @@ def split_subjects_to_tsv(diagnoses_tsv, val_size=0.15):
         os.makedirs(sets_dir)
 
     # split the train data into training and validation set
-    skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size)
+    skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size, random_state=random_state)
     indices = next(skf_2.split(np.zeros(len(y)), y))
     train_ind, valid_ind = indices
 
@@ -195,48 +195,7 @@ def split_subjects_to_tsv(diagnoses_tsv, val_size=0.15):
     df_valid.to_csv(path.join(sets_dir, 'valid.tsv'), sep='\t', index=False)
     df_train.to_csv(path.join(sets_dir, 'train.tsv'), sep='\t', index=False)
 
-
-# def old_load_split(diagnoses_tsv, fold, n_splits=5, val_size=0.15):
-#     """
-#     Returns the paths of the TSV files for each set
-#
-#     :param diagnoses_tsv: (str) path to the tsv file with diagnoses
-#     :param fold: (int) the number of the current fold
-#     :param n_splits: (int) the total number of folds
-#     :param val_size: (float) the proportion of the training set used for validation
-#     :return: 3 Strings
-#         training_tsv
-#         test_tsv
-#         valid_tsv
-#     """
-#     sets_dir = path.join(path.dirname(diagnoses_tsv),
-#                          path.basename(diagnoses_tsv).split('.')[0],
-#                          'splits-' + str(n_splits))
-#
-#     if fold >= n_splits:
-#         raise Exception("The fold number must not exceed the number of splits.")
-#
-#     training_tsv = path.join(sets_dir,
-#                              'val_size-' + str(val_size) + '_iteration-' + str(fold) + '_train.tsv')
-#     test_tsv = path.join(sets_dir,
-#                          'val_size-' + str(val_size) + '_iteration-' + str(fold) + '_test.tsv')
-#     valid_tsv = path.join(sets_dir,
-#                           'val_size-' + str(val_size) + '_iteration-' + str(fold) + '_valid.tsv')
-#
-#     if not path.exists(training_tsv) or not path.exists(test_tsv) or not path.exists(valid_tsv):
-#         old_split_subjects_to_tsv(diagnoses_tsv, n_splits, val_size)
-#
-#         training_tsv = path.join(sets_dir,
-#                                  'val_size-' + str(val_size) + '_iteration-' + str(fold) + '_train.tsv')
-#         test_tsv = path.join(sets_dir,
-#                              'val_size-' + str(val_size) + '_iteration-' + str(fold) + '_test.tsv')
-#         valid_tsv = path.join(sets_dir,
-#                               'val_size-' + str(val_size) + '_iteration-' + str(fold) + '_valid.tsv')
-#
-#     return training_tsv, test_tsv, valid_tsv
-
-
-def load_split(diagnoses_tsv, val_size=0.15):
+def load_split(diagnoses_tsv, val_size=0.15, random_state=None):
     """
     Returns the paths of the TSV files for each set
 
@@ -254,7 +213,7 @@ def load_split(diagnoses_tsv, val_size=0.15):
     valid_tsv = path.join(sets_dir, 'valid.tsv')
 
     if not path.exists(training_tsv) or not path.exists(valid_tsv):
-        split_subjects_to_tsv(diagnoses_tsv, val_size)
+        split_subjects_to_tsv(diagnoses_tsv, val_size, random_state=random_state)
 
         training_tsv = path.join(sets_dir, 'train.tsv')
         valid_tsv = path.join(sets_dir, 'valid.tsv')

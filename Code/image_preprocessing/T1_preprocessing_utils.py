@@ -261,7 +261,8 @@ def save_as_pt(input_img):
     import nibabel as nib
 
     image_array = nib.load(input_img).get_fdata()
-    image_tensor = torch.from_numpy(image_array).unsqueeze(0)
+    image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
+    ## make sure the tensor dtype is torch.float32
     output_file = os.path.join(os.path.dirname(input_img), input_img.split('.nii.gz')[0] + '.pt')
     # save
     torch.save(image_tensor, output_file)
