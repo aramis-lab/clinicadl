@@ -4,6 +4,7 @@ from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 from classification_utils import *
 from model import alexnet2D, lenet2D, resnet2D
+import copy
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -24,9 +25,9 @@ parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junha
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 
 ## optional args
-parser.add_argument("--transfer_learning", default=True,
+parser.add_argument("--transfer_learning", default=False,
                            help="If do transfer learning")
-parser.add_argument("--network", default="ResNet2D", choices=["AlexNet2D", "ResNet2D", "Lenet2D", "AllConvNet2D"],
+parser.add_argument("--network", default="Lenet2D", choices=["AlexNet2D", "ResNet2D", "Lenet2D", "AllConvNet2D"],
                     help="Deep network type. (default=AlexNet)")
 parser.add_argument("--runs", default=1,
                     help="How many times to run the training and validation procedures with the same data split strategy, default is 1.")
@@ -52,6 +53,8 @@ parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--weight_decay', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
+parser.add_argument('--random_state', default=None,
+                    help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
 
 # parser.add_argument("--estop", default=1e-2, type=float,
 #                     help="Early stopping criteria on the development set. (default=1e-2)")
@@ -60,45 +63,60 @@ def main(options):
 
     if not os.path.exists(options.output_dir):
         os.makedirs(options.output_dir)
-
     if options.force == True:
         check_and_clean(options.output_dir)
+
+    # Initial the model
+    if options.transfer_learning == True:
+        print('Do transfer learning with existed model trained on ImageNet!\n')
+        print('The chosen network is %s !' % options.network)
+        if options.network == "AlexNet2D":
+            model = alexnet2D(pretrained=options.transfer_learning)
+            trg_size = 224  ## this is the original input size of alexnet
+        elif options.network == "ResNet2D":
+            model = resnet2D('resnet152', pretrained=options.transfer_learning)
+            trg_size = 224  ## this is the original input size of resnet
+        else:
+            raise Exception('The model has not been implemented')
+        # transformations = transforms.Compose([CustomResize(trg_size),
+        #                                       CustomToTensor()
+        #                                       ])
+
+        transformations = transforms.Compose([transforms.Resize(trg_size),
+                                              transforms.ToTensor(),
+                                              transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+                                              ])
+    else:
+        print('Train the model from scratch!')
+        print('The chosen network is %s !' % options.network)
+        if options.network == "Lenet2D":
+            model = lenet2D(mri_plane=options.mri_plane)
+        elif options.network == "AlexNet2D":
+            model = alexnet2D(mri_plane=options.mri_plane, num_classes=2)
+        else:
+            raise Exception('The model has not been implemented')
+        # transformations = CustomToTensor()
+        transformations = transforms.Compose([transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+                                              ])
+
+    ## the inital model weight and bias
+    init_state = copy.deepcopy(model.state_dict())
 
     for fi in range(options.runs):
         # Get the data.
         print("Running for the %d run" % fi)
+        model.load_state_dict(init_state)
 
-        # Initial the model
-        if options.transfer_learning == True:
-            if options.network == "AlexNet2D":
-                model = alexnet2D(pretrained=options.transfer_learning)
-                trg_size = (224, 224)  ## this is the original input size of alexnet
-            elif options.network == "ResNet2D":
-                model = resnet2D('resnet152', pretrained=options.transfer_learning)
-                trg_size = (224, 224)  ## this is the original input size of resnet
-            else:
-                raise Exception('The model has not been implemented')
-            transformations = transforms.Compose([CustomResize(trg_size),
-                                                  CustomToTensor()
-                                                  ])
-        else:
-            if options.network == "Lenet2D":
-                model = lenet2D(mri_plane=options.mri_plane)
-            elif options.network == "AlexNet2D":
-                model = alexnet2D(mri_plane=options.mri_plane, num_classes=2)
-            else:
-                raise Exception('The model has not been implemented')
-            transformations = CustomToTensor()
 
         ## load the tsv file
-        training_tsv, valid_tsv = load_split(options.diagnosis_tsv, val_size=0.15)
+        training_tsv, valid_tsv = load_split(options.diagnosis_tsv, val_size=0.15, random_state=options.random_state)
 
         if options.transfer_learning == True:
-            data_train = mri_to_slice_level(options.caps_directory, training_tsv, transform=transformations, mri_plane=options.mri_plane)
-            data_valid = mri_to_slice_level(options.caps_directory, valid_tsv, transform=transformations, mri_plane=options.mri_plane)
+            data_train = MRIDataset_slice(options.caps_directory, training_tsv, transform=transformations, mri_plane=options.mri_plane)
+            data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transform=transformations, mri_plane=options.mri_plane)
         else:
-            data_train = mri_to_slice_level(options.caps_directory, training_tsv, transform=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
-            data_valid = mri_to_slice_level(options.caps_directory, valid_tsv, transform=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
+            data_train = MRIDataset_slice(options.caps_directory, training_tsv, transform=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
+            data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transform=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,

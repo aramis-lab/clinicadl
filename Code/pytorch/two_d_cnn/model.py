@@ -46,7 +46,7 @@ class lenet2D(nn.Module):
 
         if mri_plane == 0:
             self.classifier = nn.Sequential(
-                nn.Linear(61 * 54 * 43, 512),
+                nn.Linear(64 * 51 * 43, 512),
                 nn.LeakyReLU(inplace=True),
                 nn.Dropout(),
                 nn.Linear(512, num_classes),

@@ -30,103 +30,97 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
     :return:
     """
     # main training loop
-    correct_cnt = 0.0
     acc = 0.0
+    loss = 0.0
+
     subjects = []
     y_ground = []
     y_hat = []
-
+    print("Start %s!" % model_mode)
     if model_mode == "train":
         model.train() ## set the model to training mode
     else:
         model.eval() ## set the model to evaluation mode
     print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
-    for i, subject_data in enumerate(data_loader):
-        # for each iteration, the train data contains batch_size * n_slices_in_each_subject images
-        loss_batch = 0.0
-        acc_batch = 0.0
-        num_slice = len(subject_data)
+    for i, batch_data in enumerate(data_loader):
+        if use_cuda:
+            imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
+        else:
+            imgs, labels = batch_data['image'], batch_data['label']
 
-        print('The number of slices in one subject is: %s' % str(num_slice))
+        ## add the participant_id + session_id
+        image_ids = batch_data['image_id']
+        subjects.extend(image_ids)
 
-        for j in range(num_slice):
-            data_dic = subject_data[j]
-            if use_cuda:
-                imgs, labels = data_dic['image'].cuda(), data_dic['label'].cuda()
-            else:
-                imgs, labels = data_dic['image'], data_dic['label']
+        integer_encoded = labels.data.cpu().numpy()
+        gound_truth_list = integer_encoded.tolist()
+        y_ground.extend(gound_truth_list)
+        ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
 
-            ## add the participant_id + session_id
-            image_ids = data_dic['image_id']
-            subjects.extend(image_ids)
+        print('The group true label is %s' % (str(labels)))
+        if use_cuda:
+            ground_truth = ground_truth.cuda()
+        output = model(imgs)
+        _, predict = output.topk(1)
+        predict_list = predict.data.cpu().numpy().tolist()
+        y_hat.extend([item for sublist in predict_list for item in sublist])
+        if model_mode == "train" or model_mode == 'valid':
+            print("output.device: " + str(output.device))
+            print("ground_truth.device: " + str(ground_truth.device))
+            print("The predicted label is: " + str(output))
+            loss_batch = loss_func(output, ground_truth)
+        correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
+        # To monitor the training process using tensorboard, we only display the training loss and accuracy, the other performance metrics, such
+        # as balanced accuracy, will be saved in the tsv file.
+        accuracy = float(correct_this_batch) / len(ground_truth)
+        acc += accuracy
+        loss += loss_batch
 
-            # TO track of indices, int64 is a better choice for large models.
-            integer_encoded = labels.data.cpu().numpy()
-            gound_truth_list = integer_encoded.tolist()
-            y_ground.extend(gound_truth_list)
-            ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
-
-            print('The group true label is %s' % (str(labels)))
-            if use_cuda:
-                ground_truth = ground_truth.cuda()
-            output = model(imgs)
-            _, predict = output.topk(1)
-            predict_list = predict.data.cpu().numpy().tolist()
-            y_hat.extend([item for sublist in predict_list for item in sublist])
-            if model_mode == "train" or model_mode == 'valid':
-                print("output.device: " + str(output.device))
-                print("ground_truth.device: " + str(ground_truth.device))
-                print("The predicted label is: " + str(output))
-                loss = loss_func(output, ground_truth)
-                loss_batch += loss.item()
-            correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
-            correct_cnt += correct_this_batch
-            # To monitor the training process using tensorboard, we only display the training loss and accuracy, the other performance metrics, such
-            # as balanced accuracy, will be saved in the tsv file.
-            accuracy = float(correct_this_batch) / len(ground_truth)
-            acc_batch += accuracy
-            if model_mode == "train":
-                print("For batch %d slice %d training loss is : %f" % (i, j, loss.item()))
-                print("For batch %d slice %d training accuracy is : %f" % (i, j, accuracy))
-            elif model_mode == "valid":
-                print("For batch %d slice %d validation accuracy is : %f" % (i, j, accuracy))
-                print("For batch %d slice %d validation loss is : %f" % (i, j, loss.item()))
-            elif model_mode == "test":
-                print("For batch %d slice %d validate accuracy is : %f" % (i, j, accuracy))
-
-            # Unlike tensorflow, in Pytorch, we need to manully zero the graident before each backpropagation step, becase Pytorch accumulates the gradients
-            # on subsequent backward passes. The initial designing for this is convenient for training RNNs.
-            if model_mode == "train":
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-            # delete the temporal varibles taking the GPU memory
-            if i == 0 and j == 0:
-                example_imgs = imgs
-            del imgs, labels, output, ground_truth, loss, predict
+        if i == 0:
+            example_imgs = imgs
 
         if model_mode == "train":
-            writer.add_scalar('slice-level accuracy', acc_batch / num_slice, i + epoch_i * len(data_loader.dataset))
-            writer.add_scalar('loss', loss_batch / num_slice, i + epoch_i * len(data_loader.dataset))
+            print("For batch %d, training loss is : %f" % (i, loss_batch.item()))
+            print("For batch %d, training accuracy is : %f" % (i, accuracy))
+
+            writer.add_scalar('classification accuracy', accuracy, i + epoch_i * len(data_loader))
+            writer.add_scalar('loss', loss_batch, i + epoch_i * len(data_loader))
             ## just for debug
-            writer.add_image('example_image', example_imgs)
+            if i == 0:
+                writer.add_image('example_image', example_imgs)
+
+        elif model_mode == "valid":
+            print("For batch %d, validation accuracy is : %f" % (i, accuracy))
+            print("For batch %d, validation loss is : %f" % (i, loss_batch.item()))
+
         elif model_mode == "test":
-            writer.add_scalar('slice-level accuracy', acc_batch / num_slice, i)
+            print("For batch %d, validate accuracy is : %f" % (i, accuracy))
+            writer.add_scalar('classification accuracy', accuracy, i + epoch_i * len(data_loader))
 
-        ## add all accuracy for each iteration
-        acc += acc_batch / num_slice
+        # Unlike tensorflow, in Pytorch, we need to manully zero the graident before each backpropagation step, becase Pytorch accumulates the gradients
+        # on subsequent backward passes. The initial designing for this is convenient for training RNNs.
+        if model_mode == "train":
+            optimizer.zero_grad()
+            loss_batch.backward()
+            optimizer.step()
 
-    acc_mean = acc / len(data_loader)
-    if model_mode == "valid":
-        writer.add_scalar('slice-level accuracy', acc_mean, global_steps)
-        writer.add_scalar('loss', loss_batch / num_slice / i, global_steps)
+        ## update the global steps
+        if model_mode == "train":
+            global_steps = i + epoch_i * len(data_loader)
 
-    if model_mode == "train":
-        global_steps = i + epoch_i * len(data_loader.dataset)
-    else:
-        global_steps = 0
+        # delete the temporal varibles taking the GPU memory
+        del batch_data, imgs, labels, output, ground_truth, predict, gound_truth_list, correct_this_batch, loss_batch
 
-    return example_imgs, subjects, y_ground, y_hat, acc_mean, global_steps
+    accuracy_batch_mean = acc / len(data_loader)
+    loss_batch_mean = loss / len(data_loader)
+
+    if model_mode == 'valid':
+        writer.add_scalar('classification accuracy', accuracy_batch_mean, global_steps + i)
+        writer.add_scalar('loss', loss_batch_mean, global_steps + i)
+
+    del loss_batch_mean, data_loader
+
+    return example_imgs, subjects, y_ground, y_hat, accuracy_batch_mean, global_steps
 
 def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar'):
     """
@@ -199,7 +193,7 @@ def multiple_time_points(df, subset_df):
     mtp_df.reset_index(inplace=True, drop=True)
     return mtp_df
 
-def split_subjects_to_tsv(diagnoses_tsv, val_size=0.15):
+def split_subjects_to_tsv(diagnoses_tsv, val_size=0.15, random_state=None):
     """
     Write the tsv files corresponding to the train/val/test splits of all folds
 
@@ -224,7 +218,7 @@ def split_subjects_to_tsv(diagnoses_tsv, val_size=0.15):
         os.makedirs(sets_dir)
 
     # split the train data into training and validation set
-    skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size)
+    skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size, random_state=random_state)
     indices = next(skf_2.split(np.zeros(len(y)), y))
     train_ind, valid_ind = indices
 
@@ -236,7 +230,7 @@ def split_subjects_to_tsv(diagnoses_tsv, val_size=0.15):
     df_valid.to_csv(path.join(sets_dir, 'valid.tsv'), sep='\t', index=False)
     df_train.to_csv(path.join(sets_dir, 'train.tsv'), sep='\t', index=False)
 
-def load_split(diagnoses_tsv, val_size=0.15):
+def load_split(diagnoses_tsv, val_size=0.15, random_state=None):
     """
     Returns the paths of the TSV files for each set
 
@@ -254,7 +248,7 @@ def load_split(diagnoses_tsv, val_size=0.15):
     valid_tsv = path.join(sets_dir, 'valid.tsv')
 
     if not path.exists(training_tsv) or not path.exists(valid_tsv):
-        split_subjects_to_tsv(diagnoses_tsv, val_size)
+        split_subjects_to_tsv(diagnoses_tsv, val_size, random_state=random_state)
 
         training_tsv = path.join(sets_dir, 'train.tsv')
         valid_tsv = path.join(sets_dir, 'valid.tsv')
@@ -267,7 +261,7 @@ def check_and_clean(d):
       shutil.rmtree(d)
   os.mkdir(d)
 
-class mri_to_slice_level(Dataset):
+class MRIDataset_slice(Dataset):
     """
     This class reads the CAPS of image processing pipeline of DL
 
@@ -275,7 +269,6 @@ class mri_to_slice_level(Dataset):
 
     Return: a Pytorch Dataset objective
     """
-    ## TODO: using pytorch tensor.unfold to extract the slices instead of numpy array.
 
     def __init__(self, caps_directory, tsv, transform=None, transfer_learning=True, mri_plane=0):
         """
@@ -309,49 +302,65 @@ class mri_to_slice_level(Dataset):
         self.session_list = session_list
         self.label_list = label_list
 
-    def __len__(self):
-        return len(self.participant_list)
+        slices = []
+        for i in range(len(participant_list)):
+            img_name = participant_list[i]
+            img_label = label_list[i]
+            sess_name = session_list[i]
+            ## image without intensity normalization
+            image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+            # image with intensity normalization
+            # image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_linear_registration.pt')
+            label = self.diagnosis_code[img_label]
 
-    def __getitem__(self, idx):
-
-        img_name = self.participant_list[idx]
-        img_label = self.label_list[idx]
-        sess_name = self.session_list[idx]
-        ## image without intensity normalization
-        image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
-        # image with intensity normalization
-        # image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_linear_registration.pt')
-        samples = []
-        label = self.diagnosis_code[img_label]
-
-        if self.transfer_learning == True:
-            ### get all the slices from the three view, basically, we take 3 slices and create a RBG image so that we can using this for transferring learning.
-            images_list = slices_to_rgb(image_path, self.mri_plane, img_mode='rgb_slice')
+            ### To improve the efficiency, the func extract_slices should be done with pytorch Tensor, not on numpy
+            images_list = extract_slices(image_path, self.mri_plane, transfer_learning=self.transfer_learning)
 
             for img in images_list:
                 if self.transform:
                     img = self.transform(img)
-                sample = {'image_id': img_name + '_' + sess_name, 'image': img, 'label': label}
-                samples.append(sample)
+                slice = {'image_id': img_name + '_' + sess_name, 'image': img, 'label': label}
+                slices.append(slice)
+        self.slices = slices
 
-        else:
-            images_list = slices_to_rgb(image_path, self.mri_plane, img_mode='original_slice')
-            for img in (images_list):
-                if self.transform:
-                    img = self.transform(img)
-                sample = {'image_id': img_name + '_' + sess_name, 'image': img, 'label': label}
-                samples.append(sample)
+    def __len__(self):
+        return len(self.slices)
 
+    def __getitem__(self, idx):
+
+        # img_name = self.participant_list[idx]
+        # img_label = self.label_list[idx]
+        # sess_name = self.session_list[idx]
+        # ## image without intensity normalization
+        # image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+        # # image with intensity normalization
+        # # image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_linear_registration.pt')
+        # samples = []
+        # label = self.diagnosis_code[img_label]
+        #
+        # ### To improve the efficiency, the func extract_slices should be done with pytorch Tensor, not on numpy
+        # images_list = extract_slices(image_path, self.mri_plane, transfer_learning=self.transfer_learning)
+        #
+        # for img in images_list:
+        #     if self.transform:
+        #         img = self.transform(img)
+        #     sample = {'image_id': img_name + '_' + sess_name, 'image': img, 'label': label}
+        #     samples.append(sample)
+
+        # if need shuffle the data?
         # random.shuffle(samples)
 
-        return samples
+        sample = self.slices[idx]
+
+        return sample
 
 
-def slices_to_rgb(image_path, view, img_mode='rgb_slice'):
+def extract_slices(image_path, view, transfer_learning=False):
     """
     This is a function to grab each slice in each view and create a rgb image for transferring learning: duplicate the slices into R, G, B channel
     :param image_path:
     :param view:
+    :param transfer_learning: If False, extract the original slices, otherwise, extract the slices and duplicate 3 times to create a fake RGB image.
     :return:
 
     To note, for each view:
@@ -360,61 +369,39 @@ def slices_to_rgb(image_path, view, img_mode='rgb_slice'):
     Saggital_view= "[slice_i, :, :]"
     """
 
-    image_array = torch.load(image_path)
-    ## reshape the tensor, delete the first dimension
-    image_array = image_array.view(image_array.shape[1],image_array.shape[2], image_array.shape[3])
+    image_tensor = torch.load(image_path)
+    ## reshape the tensor, delete the first dimension for slice-level
+    image_tensor = image_tensor.view(image_tensor.shape[1], image_tensor.shape[2], image_tensor.shape[3])
 
-    if img_mode == 'rgb_slice':
-        image_array = (image_array - image_array.min()) / (image_array.max() - image_array.min()) * 255
+    # if transfer_learning == True:
+    #     image_tensor = (image_tensor - image_tensor.min()) / (image_tensor.max() - image_tensor.min()) * 255
         # image_array = (image_array - image_array.min()) / (image_array.max() - image_array.min())
 
-    slice_to_rgb_imgs = []
-    slice_list = range(15, image_array.shape[view] - 15) # delete the first 20 slice and last 15 slices
-    # slice_list = range(70, 71) # for test
+    extracted_slices = []
+    slice_list = range(15, image_tensor.shape[view] - 15) # delete the first 20 slice and last 15 slices
 
-    if img_mode == 'rgb_slice' or img_mode == "original_slice":
+    for i in slice_list:
+        ## sagital
+        if view == 0:
+            slice_select = image_tensor[i, :, :]
 
-        for i in slice_list:
-            ## sagital
-            if view == 0:
-                slice_select = image_array[i, :, :]
+        ## coronal
+        elif view == 1:
+            slice_select = image_tensor[:, i, :]
 
-            ## coronal
-            elif view == 1:
-                slice_select = image_array[:, i, :]
+        ## axial
+        elif view == 2:
+            slice_select = image_tensor[:, :, i]
 
-            ## axial
-            elif view == 2:
-                slice_select = image_array[:, :, i]
+        if transfer_learning == False:
+            slice_to_rgb_img = slice_select.unsqueeze(0) # shape should be 1 * W * L
 
-            if img_mode == 'original_slice':
-                slice_to_rgb_img = np.reshape(slice_select, (slice_select.shape[0], slice_select.shape[1], 1)).numpy()
-                # change tensor to numpy array
+        else:
+            slice_to_rgb_img = torch.stack((slice_select, slice_select, slice_select)) ## shape should be 3 * W * L
 
-                if len(slice_to_rgb_img.shape) > 3 and slice_to_rgb_img.shape[3] == 1:
-                    slice_to_rgb_img_resize = np.resize(slice_to_rgb_img,
-                                                   (slice_to_rgb_img.shape[0], slice_to_rgb_img.shape[1], slice_to_rgb_img.shape[2]))
-                    slice_to_rgb_imgs.append(slice_to_rgb_img_resize)
-                else:
-                    slice_to_rgb_imgs.append(slice_to_rgb_img)
+        extracted_slices.append(slice_to_rgb_img)
 
-            else:
-                # test = np.zeros((slice_select.shape[0], slice_select.shape[1], 3), dtype=np.float32)
-                # test[..., 0] = slice_select
-                # test[..., 1] = slice_select
-                # test[..., 2] = slice_select
-
-                slice_to_rgb_img = np.stack((slice_select,)*3, axis=-1)
-                ## change the datatype into uint8, but before fitting the image into pytorch, pytorch needs float, that is why the contrast of image has been inversed.
-
-                if len(slice_to_rgb_img.shape) > 3 and slice_to_rgb_img.shape[3] == 1:
-                    slice_to_rgb_img_resize = np.resize(slice_to_rgb_img,
-                                                   (slice_to_rgb_img.shape[0], slice_to_rgb_img.shape[1], slice_to_rgb_img.shape[2]))
-                    slice_to_rgb_imgs.append(slice_to_rgb_img_resize)
-                else:
-                    slice_to_rgb_imgs.append(slice_to_rgb_img)
-
-    return slice_to_rgb_imgs
+    return extracted_slices
 
 class CustomResize(object):
     def __init__(self, trg_size):
@@ -441,6 +428,7 @@ class CustomToTensor(object):
 
     def __call__(self, pic):
         if isinstance(pic, np.ndarray):
+            ## to torch.float32
             img = torch.from_numpy(pic.transpose((2, 0, 1))).float()
 
             # Pytorch does not work with int type. Here, it just change the visualization, the value itself does not change.
