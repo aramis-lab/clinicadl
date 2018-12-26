@@ -267,12 +267,12 @@ class MRIDataset_slice(Dataset):
     Return: a Pytorch Dataset objective
     """
 
-    def __init__(self, caps_directory, tsv, transform=None, transfer_learning=True, mri_plane=0):
+    def __init__(self, caps_directory, tsv, transformations=None, transfer_learning=False, mri_plane=0):
         """
         Args:
             caps_directory (string): the output folder of image processing pipeline.
             tsv (string): the tsv containing three columns, participant_id, session_id and diagnosis.
-            transform (callable, optional): if the data sample should be done some transform or not, such as resize the image.
+            transformations (callable, optional): if the data sample should be done some transformations or not, such as resize the image.
 
         To note, for each view:
             Axial_view = "[:, :, slice_i]"
@@ -282,7 +282,7 @@ class MRIDataset_slice(Dataset):
         """
         self.caps_directory = caps_directory
         self.tsv = tsv
-        self.transform = transform
+        self.transformations = transformations
         self.transfer_learning = transfer_learning
         self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
         self.mri_plane = mri_plane
@@ -337,11 +337,11 @@ class MRIDataset_slice(Dataset):
         label = self.diagnosis_code[img_label]
         index_slice = idx % self.slices_per_patient
         ### To improve the efficiency, the func extract_slice should be done with pytorch Tensor, not on numpy
-        extracted_slice = extract_slice(image_path, index_slice, self.mri_plane, transfer_learning=self.transfer_learning)
+        extracted_slice = extract_slice(image_path, index_slice, self.mri_plane, self.transfer_learning)
 
         # for img in images_list:
-        if self.transform:
-            img = self.transform(extracted_slice)
+        if self.transformations:
+            img = self.transformations(extracted_slice)
         sample = {'image_id': img_name + '_' + sess_name, 'image': img, 'label': label}
             # samples.append(sample)
 
@@ -351,7 +351,7 @@ class MRIDataset_slice(Dataset):
         return sample
 
 
-def extract_slice(image_path, index_slice, view, transfer_learning=False):
+def extract_slice(image_path, index_slice, view, transfer_learning):
     """
     This is a function to grab one slice in each view and create a rgb image for transferring learning: duplicate the slices into R, G, B channel
     :param image_path:

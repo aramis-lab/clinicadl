@@ -112,11 +112,11 @@ def main(options):
         training_tsv, valid_tsv = load_split(options.diagnosis_tsv, val_size=0.15, random_state=options.random_state)
 
         if options.transfer_learning == True:
-            data_train = MRIDataset_slice(options.caps_directory, training_tsv, transform=transformations, mri_plane=options.mri_plane)
-            data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transform=transformations, mri_plane=options.mri_plane)
+            data_train = MRIDataset_slice(options.caps_directory, training_tsv, transformations=transformations, mri_plane=options.mri_plane)
+            data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transformations=transformations, mri_plane=options.mri_plane)
         else:
-            data_train = MRIDataset_slice(options.caps_directory, training_tsv, transform=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
-            data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transform=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
+            data_train = MRIDataset_slice(options.caps_directory, training_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
+            data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
