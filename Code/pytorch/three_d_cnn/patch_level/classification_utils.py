@@ -44,11 +44,11 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
         # for each iteration, the train data contains batch_size * n_patchs_in_each_subject images
         loss_batch = 0.0
         acc_batch = 0.0
-        num_patch = len(subject_data)
+        num_batch = len(subject_data)
 
-        print('The number of patchs in one subject is: %s' % str(num_patch))
+        print('The number of patchs in one subject is: %s' % str(num_batch))
 
-        for j in range(num_patch):
+        for j in range(num_batch):
             data_dic = subject_data[j]
             if use_cuda:
                 imgs, labels = data_dic['image'].cuda(), data_dic['label'].cuda()
@@ -59,7 +59,6 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             image_ids = data_dic['image_id']
             subjects.extend(image_ids)
 
-            # TO track of indices, int64 is a better choice for large models.
             integer_encoded = labels.data.cpu().numpy()
             gound_truth_list = integer_encoded.tolist()
             y_ground.extend(gound_truth_list)
@@ -84,13 +83,13 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             accuracy = float(correct_this_batch) / len(ground_truth)
             acc_batch += accuracy
             if model_mode == "train":
-                print("For batch %d patch %d training loss is : %f" % (i, j, loss.item()))
-                print("For batch %d patch %d training accuracy is : %f" % (i, j, accuracy))
+                print("For batch %d iteration %d training loss is : %f" % (i, j, loss.item()))
+                print("For batch %d iteration %d training accuracy is : %f" % (i, j, accuracy))
             elif model_mode == "valid":
-                print("For batch %d patch %d validation accuracy is : %f" % (i, j, accuracy))
-                print("For batch %d patch %d validation loss is : %f" % (i, j, loss.item()))
+                print("For batch %d iteration %d validation accuracy is : %f" % (i, j, accuracy))
+                print("For batch %d iteration %d validation loss is : %f" % (i, j, loss.item()))
             elif model_mode == "test":
-                print("For batch %d patch %d validate accuracy is : %f" % (i, j, accuracy))
+                print("For batch %d iteration %d validate accuracy is : %f" % (i, j, accuracy))
 
             # Unlike tensorflow, in Pytorch, we need to manully zero the graident before each backpropagation step, becase Pytorch accumulates the gradients
             # on subsequent backward passes. The initial designing for this is convenient for training RNNs.
@@ -101,28 +100,31 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             # delete the temporal varibles taking the GPU memory
             if i == 0 and j == 0:
                 example_imgs = imgs[:, :, 1, :, :]
-            del imgs, labels, output, ground_truth, loss, predict, data_dic, integer_encoded, gound_truth_list, correct_this_batch, accuracy
+            del data_dic, imgs, labels, output, ground_truth, predict, gound_truth_list, correct_this_batch, loss, integer_encoded, accuracy
+
 
         if model_mode == "train":
-            writer.add_scalar('patch-level accuracy', acc_batch / num_patch, i + epoch_i * len(data_loader.dataset))
-            writer.add_scalar('loss', loss_batch / num_patch, i + epoch_i * len(data_loader.dataset))
+            writer.add_scalar('patch-level accuracy', acc_batch / num_batch, i + epoch_i * len(data_loader.dataset))
+            writer.add_scalar('loss', loss_batch / num_batch, i + epoch_i * len(data_loader.dataset))
             ## just for debug
             writer.add_image('example_image', example_imgs)
         elif model_mode == "test":
-            writer.add_scalar('patch-level accuracy', acc_batch / num_patch, i)
+            writer.add_scalar('patch-level accuracy', acc_batch / num_batch, i)
 
         ## add all accuracy for each iteration
-        acc += acc_batch / num_patch
+        acc += acc_batch / num_batch
 
     acc_mean = acc / len(data_loader)
     if model_mode == "valid":
         writer.add_scalar('patch-level accuracy', acc_mean, global_steps)
-        writer.add_scalar('loss', loss_batch / num_patch / i, global_steps)
+        writer.add_scalar('loss', loss_batch / num_batch / i, global_steps)
 
     if model_mode == "train":
         global_steps = i + epoch_i * len(data_loader.dataset)
     else:
         global_steps = 0
+
+    del data_loader
 
     return example_imgs, subjects, y_ground, y_hat, acc_mean, global_steps
 
@@ -147,11 +149,11 @@ def train_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, writer, e
     for i, subject_data in enumerate(data_loader):
         # for each iteration, the train data contains batch_size * n_patchs_in_each_subject images
         loss_batch = 0.0
-        num_patch = len(subject_data)
+        num_batch = len(subject_data)
 
-        print('The number of patchs in one subject is: %s' % str(num_patch))
+        print('The number of patchs in one subject is: %s' % str(num_batch))
 
-        for j in range(num_patch):
+        for j in range(num_batch):
             data_dic = subject_data[j]
             if use_cuda:
                 imgs = data_dic['image'].cuda()
@@ -178,7 +180,7 @@ def train_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, writer, e
             del imgs, output, loss
 
         ## save loss into tensorboardX
-        writer.add_scalar('loss', loss_batch / num_patch, i + epoch_i * len(data_loader.dataset))
+        writer.add_scalar('loss', loss_batch / num_batch, i + epoch_i * len(data_loader.dataset))
         epoch_loss += loss_batch
 
     return example_imgs, epoch_loss

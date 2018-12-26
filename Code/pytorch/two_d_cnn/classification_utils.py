@@ -41,43 +41,39 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
         model.train() ## set the model to training mode
     else:
         model.eval() ## set the model to evaluation mode
+        torch.cuda.empty_cache()
+        # model.zero_grad()
     print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
     for i, batch_data in enumerate(data_loader):
         if use_cuda:
-            imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
+            imgs, labels = Variable(batch_data['image'].cuda(), volatile=True), Variable(batch_data['label'].cuda(), volatile=True)
         else:
-            imgs, labels = batch_data['image'], batch_data['label']
+            imgs, labels = Variable(batch_data['image'], volatile=True), Variable(batch_data['label'], volatile=True)
 
         ## add the participant_id + session_id
         image_ids = batch_data['image_id']
         subjects.extend(image_ids)
 
-        integer_encoded = labels.data.cpu().numpy()
-        gound_truth_list = integer_encoded.tolist()
+        gound_truth_list = labels.data.cpu().numpy().tolist()
         y_ground.extend(gound_truth_list)
-        ground_truth = Variable(torch.from_numpy(integer_encoded)).long()
 
         print('The group true label is %s' % (str(labels)))
-        if use_cuda:
-            ground_truth = ground_truth.cuda()
         output = model(imgs)
+
         _, predict = output.topk(1)
         predict_list = predict.data.cpu().numpy().tolist()
         y_hat.extend([item for sublist in predict_list for item in sublist])
         if model_mode == "train" or model_mode == 'valid':
             print("output.device: " + str(output.device))
-            print("ground_truth.device: " + str(ground_truth.device))
+            print("labels.device: " + str(labels.device))
             print("The predicted label is: " + str(output))
-            loss_batch = loss_func(output, ground_truth)
-        correct_this_batch = (predict.squeeze(1) == ground_truth).sum().float()
+            loss_batch = loss_func(output, labels)
+        correct_this_batch = (predict.squeeze(1) == labels).sum().float()
         # To monitor the training process using tensorboard, we only display the training loss and accuracy, the other performance metrics, such
         # as balanced accuracy, will be saved in the tsv file.
-        accuracy = float(correct_this_batch) / len(ground_truth)
+        accuracy = float(correct_this_batch) / len(labels)
         acc += accuracy
         loss += loss_batch
-
-        if i == 0:
-            example_imgs = imgs
 
         if model_mode == "train":
             print("For batch %d, training loss is : %f" % (i, loss_batch.item()))
@@ -85,13 +81,10 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
 
             writer.add_scalar('classification accuracy', accuracy, i + epoch_i * len(data_loader))
             writer.add_scalar('loss', loss_batch, i + epoch_i * len(data_loader))
-            ## just for debug
-            if i == 0:
-                writer.add_image('example_image', example_imgs)
 
         elif model_mode == "valid":
             print("For batch %d, validation accuracy is : %f" % (i, accuracy))
-            print("For batch %d, validation loss is : %f" % (i, loss_batch.item()))
+            # print("For batch %d, validation loss is : %f" % (i, loss_batch.item()))
 
         elif model_mode == "test":
             print("For batch %d, validate accuracy is : %f" % (i, accuracy))
@@ -109,7 +102,10 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             global_steps = i + epoch_i * len(data_loader)
 
         # delete the temporal varibles taking the GPU memory
-        del batch_data, imgs, labels, output, ground_truth, predict, gound_truth_list, correct_this_batch, loss_batch
+        # del imgs, labels
+        del imgs, labels, output, predict, gound_truth_list, correct_this_batch, loss_batch
+        # Releases all unoccupied cached memory
+        torch.cuda.empty_cache()
 
     accuracy_batch_mean = acc / len(data_loader)
     loss_batch_mean = loss / len(data_loader)
@@ -118,9 +114,10 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
         writer.add_scalar('classification accuracy', accuracy_batch_mean, global_steps + i)
         writer.add_scalar('loss', loss_batch_mean, global_steps + i)
 
-    del loss_batch_mean, data_loader
+    del loss_batch_mean
+    torch.cuda.empty_cache()
 
-    return example_imgs, subjects, y_ground, y_hat, accuracy_batch_mean, global_steps
+    return subjects, y_ground, y_hat, accuracy_batch_mean, global_steps
 
 def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar'):
     """
@@ -298,66 +295,65 @@ class MRIDataset_slice(Dataset):
         session_list = list(df['session_id'])
         label_list = list(df['diagnosis'])
 
-        self.participant_list = participant_list
-        self.session_list = session_list
-        self.label_list = label_list
+        # self.participant_list = participant_list
+        # self.session_list = session_list
+        # self.label_list = label_list
 
-        slices = []
-        for i in range(len(participant_list)):
-            img_name = participant_list[i]
-            img_label = label_list[i]
-            sess_name = session_list[i]
-            ## image without intensity normalization
-            image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
-            # image with intensity normalization
-            # image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_linear_registration.pt')
-            label = self.diagnosis_code[img_label]
+        ## sagital
+        if mri_plane == 0:
+            self.slice_participant_list = [ele for ele in participant_list for _ in range(139)]
+            self.slice_session_list = [ele for ele in session_list for _ in range(139)]
+            self.slice_label_list = [ele for ele in label_list for _ in range(139)]
+            self.slices_per_patient = 139
 
-            ### To improve the efficiency, the func extract_slices should be done with pytorch Tensor, not on numpy
-            images_list = extract_slices(image_path, self.mri_plane, transfer_learning=self.transfer_learning)
+        ## coronal
+        elif mri_plane == 1:
+            self.slice_participant_list = [ele for ele in participant_list for _ in range(139)]
+            self.slice_session_list = [ele for ele in session_list for _ in range(139)]
+            self.slice_label_list = [ele for ele in label_list for _ in range(139)]
+            self.slices_per_patient = 139
 
-            for img in images_list:
-                if self.transform:
-                    img = self.transform(img)
-                slice = {'image_id': img_name + '_' + sess_name, 'image': img, 'label': label}
-                slices.append(slice)
-        self.slices = slices
+        ## axial
+        elif mri_plane == 2:
+            self.slice_participant_list = [ele for ele in participant_list for _ in range(139)]
+            self.slice_session_list = [ele for ele in session_list for _ in range(139)]
+            self.slice_label_list = [ele for ele in label_list for _ in range(139)]
+            self.slices_per_patient = 139
+
 
     def __len__(self):
-        return len(self.slices)
+        return len(self.slice_participant_list)
 
     def __getitem__(self, idx):
 
-        # img_name = self.participant_list[idx]
-        # img_label = self.label_list[idx]
-        # sess_name = self.session_list[idx]
-        # ## image without intensity normalization
-        # image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
-        # # image with intensity normalization
-        # # image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_linear_registration.pt')
+        img_name = self.slice_participant_list[idx]
+        sess_name = self.slice_session_list[idx]
+        img_label = self.slice_label_list[idx]
+        ## image without intensity normalization
+        image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+        # image with intensity normalization
+        # image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_linear_registration.pt')
         # samples = []
-        # label = self.diagnosis_code[img_label]
-        #
-        # ### To improve the efficiency, the func extract_slices should be done with pytorch Tensor, not on numpy
-        # images_list = extract_slices(image_path, self.mri_plane, transfer_learning=self.transfer_learning)
-        #
+        label = self.diagnosis_code[img_label]
+        index_slice = idx % self.slices_per_patient
+        ### To improve the efficiency, the func extract_slice should be done with pytorch Tensor, not on numpy
+        extracted_slice = extract_slice(image_path, index_slice, self.mri_plane, transfer_learning=self.transfer_learning)
+
         # for img in images_list:
-        #     if self.transform:
-        #         img = self.transform(img)
-        #     sample = {'image_id': img_name + '_' + sess_name, 'image': img, 'label': label}
-        #     samples.append(sample)
+        if self.transform:
+            img = self.transform(extracted_slice)
+        sample = {'image_id': img_name + '_' + sess_name, 'image': img, 'label': label}
+            # samples.append(sample)
 
         # if need shuffle the data?
         # random.shuffle(samples)
 
-        sample = self.slices[idx]
-
         return sample
 
 
-def extract_slices(image_path, view, transfer_learning=False):
+def extract_slice(image_path, index_slice, view, transfer_learning=False):
     """
-    This is a function to grab each slice in each view and create a rgb image for transferring learning: duplicate the slices into R, G, B channel
+    This is a function to grab one slice in each view and create a rgb image for transferring learning: duplicate the slices into R, G, B channel
     :param image_path:
     :param view:
     :param transfer_learning: If False, extract the original slices, otherwise, extract the slices and duplicate 3 times to create a fake RGB image.
@@ -373,35 +369,31 @@ def extract_slices(image_path, view, transfer_learning=False):
     ## reshape the tensor, delete the first dimension for slice-level
     image_tensor = image_tensor.view(image_tensor.shape[1], image_tensor.shape[2], image_tensor.shape[3])
 
-    # if transfer_learning == True:
-    #     image_tensor = (image_tensor - image_tensor.min()) / (image_tensor.max() - image_tensor.min()) * 255
-        # image_array = (image_array - image_array.min()) / (image_array.max() - image_array.min())
 
     extracted_slices = []
-    slice_list = range(15, image_tensor.shape[view] - 15) # delete the first 20 slice and last 15 slices
+    # slice_list = range(15, image_tensor.shape[view] - 15) # delete the first 20 slice and last 15 slices
 
-    for i in slice_list:
-        ## sagital
-        if view == 0:
-            slice_select = image_tensor[i, :, :]
+    # for i in slice_list:
+    ## sagital
+    if view == 0:
+        slice_select = image_tensor[index_slice, :, :]
 
-        ## coronal
-        elif view == 1:
-            slice_select = image_tensor[:, i, :]
+    ## coronal
+    elif view == 1:
+        slice_select = image_tensor[:, index_slice, :]
 
-        ## axial
-        elif view == 2:
-            slice_select = image_tensor[:, :, i]
+    ## axial
+    elif view == 2:
+        slice_select = image_tensor[:, :, index_slice]
 
-        if transfer_learning == False:
-            slice_to_rgb_img = slice_select.unsqueeze(0) # shape should be 1 * W * L
+    ## convert the slices to images based on if transfer learning or not
+    if transfer_learning == False:
+        extracted_slice = slice_select.unsqueeze(0) ## shape should be 1 * W * L
+    else:
+        extracted_slice = torch.stack((slice_select, slice_select, slice_select)) ## shape should be 3 * W * L
 
-        else:
-            slice_to_rgb_img = torch.stack((slice_select, slice_select, slice_select)) ## shape should be 3 * W * L
 
-        extracted_slices.append(slice_to_rgb_img)
-
-    return extracted_slices
+    return extracted_slice
 
 class CustomResize(object):
     def __init__(self, trg_size):
