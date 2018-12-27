@@ -39,83 +39,115 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
     print("Start %s!" % model_mode)
     if model_mode == "train":
         model.train() ## set the model to training mode
-    else:
-        model.eval() ## set the model to evaluation mode
-        torch.cuda.empty_cache()
-        # model.zero_grad()
-    print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
-    for i, batch_data in enumerate(data_loader):
-        if use_cuda:
-            imgs, labels = Variable(batch_data['image'].cuda(), volatile=True), Variable(batch_data['label'].cuda(), volatile=True)
-        else:
-            imgs, labels = Variable(batch_data['image'], volatile=True), Variable(batch_data['label'], volatile=True)
+        print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
+        for i, batch_data in enumerate(data_loader):
+            if use_cuda:
+                imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
+            else:
+                imgs, labels = batch_data['image'], batch_data['label']
 
-        ## add the participant_id + session_id
-        image_ids = batch_data['image_id']
-        subjects.extend(image_ids)
+            ## add the participant_id + session_id
+            image_ids = batch_data['image_id']
+            subjects.extend(image_ids)
 
-        gound_truth_list = labels.data.cpu().numpy().tolist()
-        y_ground.extend(gound_truth_list)
+            gound_truth_list = labels.data.cpu().numpy().tolist()
+            y_ground.extend(gound_truth_list)
 
-        print('The group true label is %s' % (str(labels)))
-        output = model(imgs)
+            print('The group true label is %s' % (str(labels)))
+            output = model(imgs)
 
-        _, predict = output.topk(1)
-        predict_list = predict.data.cpu().numpy().tolist()
-        y_hat.extend([item for sublist in predict_list for item in sublist])
-        if model_mode == "train" or model_mode == 'valid':
-            print("output.device: " + str(output.device))
-            print("labels.device: " + str(labels.device))
-            print("The predicted label is: " + str(output))
-            loss_batch = loss_func(output, labels)
-        correct_this_batch = (predict.squeeze(1) == labels).sum().float()
-        # To monitor the training process using tensorboard, we only display the training loss and accuracy, the other performance metrics, such
-        # as balanced accuracy, will be saved in the tsv file.
-        accuracy = float(correct_this_batch) / len(labels)
-        acc += accuracy
-        loss += loss_batch
+            _, predict = output.topk(1)
+            predict_list = predict.data.cpu().numpy().tolist()
+            y_hat.extend([item for sublist in predict_list for item in sublist])
+            if model_mode == "train" or model_mode == 'valid':
+                print("output.device: " + str(output.device))
+                print("labels.device: " + str(labels.device))
+                print("The predicted label is: " + str(output))
+                loss_batch = loss_func(output, labels)
+            correct_this_batch = (predict.squeeze(1) == labels).sum().float()
+            # To monitor the training process using tensorboard, we only display the training loss and accuracy, the other performance metrics, such
+            # as balanced accuracy, will be saved in the tsv file.
+            accuracy = float(correct_this_batch) / len(labels)
+            acc += accuracy
+            loss += loss_batch
 
-        if model_mode == "train":
             print("For batch %d, training loss is : %f" % (i, loss_batch.item()))
             print("For batch %d, training accuracy is : %f" % (i, accuracy))
 
             writer.add_scalar('classification accuracy', accuracy, i + epoch_i * len(data_loader))
             writer.add_scalar('loss', loss_batch, i + epoch_i * len(data_loader))
 
-        elif model_mode == "valid":
-            print("For batch %d, validation accuracy is : %f" % (i, accuracy))
-            # print("For batch %d, validation loss is : %f" % (i, loss_batch.item()))
-
-        elif model_mode == "test":
-            print("For batch %d, validate accuracy is : %f" % (i, accuracy))
-            writer.add_scalar('classification accuracy', accuracy, i + epoch_i * len(data_loader))
-
-        # Unlike tensorflow, in Pytorch, we need to manully zero the graident before each backpropagation step, becase Pytorch accumulates the gradients
-        # on subsequent backward passes. The initial designing for this is convenient for training RNNs.
-        if model_mode == "train":
+            # Unlike tensorflow, in Pytorch, we need to manully zero the graident before each backpropagation step, becase Pytorch accumulates the gradients
+            # on subsequent backward passes. The initial designing for this is convenient for training RNNs.
             optimizer.zero_grad()
             loss_batch.backward()
             optimizer.step()
 
-        ## update the global steps
-        if model_mode == "train":
+            ## update the global steps
             global_steps = i + epoch_i * len(data_loader)
 
-        # delete the temporal varibles taking the GPU memory
-        # del imgs, labels
-        del imgs, labels, output, predict, gound_truth_list, correct_this_batch, loss_batch
-        # Releases all unoccupied cached memory
+            # delete the temporal varibles taking the GPU memory
+            # del imgs, labels
+            del imgs, labels, output, predict, gound_truth_list, correct_this_batch, loss_batch
+            # Releases all unoccupied cached memory
+            torch.cuda.empty_cache()
+
+        accuracy_batch_mean = acc / len(data_loader)
+        loss_batch_mean = loss / len(data_loader)
+        del loss_batch_mean
         torch.cuda.empty_cache()
 
-    accuracy_batch_mean = acc / len(data_loader)
-    loss_batch_mean = loss / len(data_loader)
+    elif model_mode == "valid":
+        model.eval() ## set the model to evaluation mode
+        torch.cuda.empty_cache()
+        with torch.no_grad():
+            ## torch.no_grad() needs to be set, otherwise the accumulation of gradients would explose the GPU memory.
+            print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
+            for i, batch_data in enumerate(data_loader):
+                if use_cuda:
+                    imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
+                else:
+                    imgs, labels = batch_data['image'], batch_data['label']
 
-    if model_mode == 'valid':
-        writer.add_scalar('classification accuracy', accuracy_batch_mean, global_steps + i)
-        writer.add_scalar('loss', loss_batch_mean, global_steps + i)
+                ## add the participant_id + session_id
+                image_ids = batch_data['image_id']
+                subjects.extend(image_ids)
 
-    del loss_batch_mean
-    torch.cuda.empty_cache()
+                gound_truth_list = labels.data.cpu().numpy().tolist()
+                y_ground.extend(gound_truth_list)
+
+                print('The group true label is %s' % (str(labels)))
+                output = model(imgs)
+
+                _, predict = output.topk(1)
+                predict_list = predict.data.cpu().numpy().tolist()
+                y_hat.extend([item for sublist in predict_list for item in sublist])
+                print("output.device: " + str(output.device))
+                print("labels.device: " + str(labels.device))
+                print("The predicted label is: " + str(output))
+                loss_batch = loss_func(output, labels)
+                correct_this_batch = (predict.squeeze(1) == labels).sum().float()
+                # To monitor the training process using tensorboard, we only display the training loss and accuracy, the other performance metrics, such
+                # as balanced accuracy, will be saved in the tsv file.
+                accuracy = float(correct_this_batch) / len(labels)
+                acc += accuracy
+                loss += loss_batch
+                print("For batch %d, validation accuracy is : %f" % (i, accuracy))
+
+                # delete the temporal varibles taking the GPU memory
+                # del imgs, labels
+                del imgs, labels, output, predict, gound_truth_list, correct_this_batch, loss_batch
+                # Releases all unoccupied cached memory
+                torch.cuda.empty_cache()
+
+            accuracy_batch_mean = acc / len(data_loader)
+            loss_batch_mean = loss / len(data_loader)
+
+            writer.add_scalar('classification accuracy', accuracy_batch_mean, global_steps)
+            writer.add_scalar('loss', loss_batch_mean, global_steps)
+
+            del loss_batch_mean
+            torch.cuda.empty_cache()
 
     return subjects, y_ground, y_hat, accuracy_batch_mean, global_steps
 
