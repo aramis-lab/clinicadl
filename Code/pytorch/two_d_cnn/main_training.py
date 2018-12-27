@@ -37,7 +37,7 @@ parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
-parser.add_argument("--batch_size", default=2, type=int,
+parser.add_argument("--batch_size", default=8, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
@@ -111,12 +111,8 @@ def main(options):
         ## load the tsv file
         training_tsv, valid_tsv = load_split(options.diagnosis_tsv, val_size=0.15, random_state=options.random_state)
 
-        if options.transfer_learning == True:
-            data_train = MRIDataset_slice(options.caps_directory, training_tsv, transformations=transformations, mri_plane=options.mri_plane)
-            data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transformations=transformations, mri_plane=options.mri_plane)
-        else:
-            data_train = MRIDataset_slice(options.caps_directory, training_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
-            data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
+        data_train = MRIDataset_slice(options.caps_directory, training_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
+        data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
@@ -141,6 +137,9 @@ def main(options):
             print("Using GPU")
             use_cuda = True
             model.cuda()
+
+        ## example image for tensorbordX usage:$
+        example_batch = next(iter(train_loader))['image'].cuda()
 
         # Binary cross-entropy loss
         loss = torch.nn.CrossEntropyLoss()
@@ -214,8 +213,7 @@ def main(options):
         # test_accuracy[fi] = acc_mean_test
 
         ## save the graph and image
-        dumpy_input = (torch.zeros(1, 208, 179))
-        writer_train.add_graph(model, dumpy_input)
+        writer_train.add_graph(model, example_batch)
 
         ### write the information of subjects and performances into tsv files.
         iteration_subjects_df_train, results_train = results_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train, mode='train')

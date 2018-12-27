@@ -97,34 +97,32 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+
             # delete the temporal varibles taking the GPU memory
             if i == 0 and j == 0:
                 example_imgs = imgs[:, :, 1, :, :]
-            del data_dic, imgs, labels, output, ground_truth, predict, gound_truth_list, correct_this_batch, loss, integer_encoded, accuracy
-
+            del imgs, labels, output, ground_truth, loss, predict, data_dic, integer_encoded, gound_truth_list, correct_this_batch, accuracy
 
         if model_mode == "train":
-            writer.add_scalar('patch-level accuracy', acc_batch / num_batch, i + epoch_i * len(data_loader.dataset))
+            writer.add_scalar('classification accuracy', acc_batch / num_batch, i + epoch_i * len(data_loader.dataset))
             writer.add_scalar('loss', loss_batch / num_batch, i + epoch_i * len(data_loader.dataset))
             ## just for debug
             writer.add_image('example_image', example_imgs)
         elif model_mode == "test":
-            writer.add_scalar('patch-level accuracy', acc_batch / num_batch, i)
+            writer.add_scalar('classification accuracy', acc_batch / num_batch, i)
 
         ## add all accuracy for each iteration
         acc += acc_batch / num_batch
 
     acc_mean = acc / len(data_loader)
     if model_mode == "valid":
-        writer.add_scalar('patch-level accuracy', acc_mean, global_steps)
+        writer.add_scalar('classification accuracy', acc_mean, global_steps)
         writer.add_scalar('loss', loss_batch / num_batch / i, global_steps)
 
     if model_mode == "train":
         global_steps = i + epoch_i * len(data_loader.dataset)
     else:
         global_steps = 0
-
-    del data_loader
 
     return example_imgs, subjects, y_ground, y_hat, acc_mean, global_steps
 
@@ -149,11 +147,11 @@ def train_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, writer, e
     for i, subject_data in enumerate(data_loader):
         # for each iteration, the train data contains batch_size * n_patchs_in_each_subject images
         loss_batch = 0.0
-        num_batch = len(subject_data)
+        num_patch = len(subject_data)
 
-        print('The number of patchs in one subject is: %s' % str(num_batch))
+        print('The number of patchs in one subject is: %s' % str(num_patch))
 
-        for j in range(num_batch):
+        for j in range(num_patch):
             data_dic = subject_data[j]
             if use_cuda:
                 imgs = data_dic['image'].cuda()
@@ -180,7 +178,7 @@ def train_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, writer, e
             del imgs, output, loss
 
         ## save loss into tensorboardX
-        writer.add_scalar('loss', loss_batch / num_batch, i + epoch_i * len(data_loader.dataset))
+        writer.add_scalar('loss', loss_batch / num_patch, i + epoch_i * len(data_loader.dataset))
         epoch_loss += loss_batch
 
     return example_imgs, epoch_loss
