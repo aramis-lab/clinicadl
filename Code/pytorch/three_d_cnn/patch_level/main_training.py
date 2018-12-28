@@ -22,11 +22,14 @@ parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/ju
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch_test',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument("--network", default="AllConvNet3D", choices=["VoxResNet", "AllConvNet3D"],
+parser.add_argument("-nw", "--network", default="AllConvNet3D", choices=["VoxResNet", "AllConvNet3D"],
                     help="Deep network type. (default=VoxResNet)")
-parser.add_argument("--patch_size", default="50", type=int,
+parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
+                    help="Learning rate of the optimization. (default=0.01)")
+
+parser.add_argument("--patch_size", default="21", type=int,
                     help="The patch size extracted from the MRI")
-parser.add_argument("--patch_stride", default="50", type=int,
+parser.add_argument("--patch_stride", default="21", type=int,
                     help="The stride for the patch extract window from the MRI")
 parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
@@ -34,7 +37,7 @@ parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
 parser.add_argument("--runs", default=1, type=int,
                     help="Number of runs with the same training / validation split.")
-parser.add_argument("--num_workers", '-w', default=0, type=int,
+parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
 
 # transfer learning
@@ -48,8 +51,6 @@ parser.add_argument("-tbm", "--transfer_learnt_best_model", default=False, actio
 # Training arguments
 parser.add_argument("--epochs", default=3, type=int,
                     help="Epochs through the data. (default=20)")
-parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
-                    help="Learning rate of the optimization. (default=0.01)")
 
 # Optimizer arguments
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
