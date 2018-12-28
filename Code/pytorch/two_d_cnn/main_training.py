@@ -15,7 +15,7 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
-parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D CNN")
+parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D CNN, The input MRI's dimension is 169*208*179 after cropping")
 
 parser.add_argument("-id", "--caps_directory", default='/teams/ARAMIS/PROJECTS/CLINICA/CLINICA_datasets/temp/CAPS_ADNI_DL',
                            help="Path to the caps of image processing pipeline of DL")
@@ -71,21 +71,17 @@ def main(options):
         print('Do transfer learning with existed model trained on ImageNet!\n')
         print('The chosen network is %s !' % options.network)
         if options.network == "AlexNet2D":
-            model = alexnet2D(pretrained=options.transfer_learning)
-            trg_size = 224  ## this is the original input size of alexnet
+            model = alexnet2D(transfer_learning=options.transfer_learning)
+            trg_size = (224, 224)  ## this is the original input size of alexnet
         elif options.network == "ResNet2D":
             model = resnet2D('resnet152', pretrained=options.transfer_learning)
-            trg_size = 224  ## this is the original input size of resnet
+            trg_size = (224, 224)  ## this is the original input size of resnet
         else:
             raise Exception('The model has not been implemented')
-        # transformations = transforms.Compose([CustomResize(trg_size),
-        #                                       CustomToTensor()
-        #                                       ])
 
-        transformations = transforms.Compose([transforms.Resize(trg_size),
-                                              transforms.ToTensor(),
-                                              transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-                                              ])
+        transformations = transforms.Compose([transforms.ToPILImage(),
+                                              transforms.Resize(trg_size),
+                                              transforms.ToTensor()])
     else:
         print('Train the model from scratch!')
         print('The chosen network is %s !' % options.network)
@@ -95,9 +91,7 @@ def main(options):
             model = alexnet2D(mri_plane=options.mri_plane, num_classes=2)
         else:
             raise Exception('The model has not been implemented')
-        # transformations = CustomToTensor()
-        transformations = transforms.Compose([transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-                                              ])
+        transformations = None
 
     ## the inital model weight and bias
     init_state = copy.deepcopy(model.state_dict())
@@ -192,25 +186,6 @@ def main(options):
                 'best_predict': best_accuracy,
                 'optimizer': optimizer.state_dict()
             }, is_best, os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi)))
-
-        # ### using test data to get the final performance
-        # ## take the best_validated model for test
-        # if os.path.isfile(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar")):
-        #     print("=> loading checkpoint '{}'".format(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar")))
-        #     checkpoint = torch.load(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar"))
-        #     best_epoch = checkpoint['epoch']
-        #     model.load_state_dict(checkpoint['state_dict'])
-        #     optimizer.load_state_dict(checkpoint['optimizer'])
-        #     print("=> loaded model '{}' for the best perfomrmance at (epoch {})".format(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar"), best_epoch))
-        # else:
-        #     print("=> no checkpoint found at '{}'".format(os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi), "model_best.pth.tar")))
-        #
-        # imgs_test, test_subject, y_ground_test, y_hat_test, acc_mean_test, global_steps_test = train(model, test_loader, use_cuda, loss, optimizer, writer_test, 0, model_mode='test')
-        # test_subjects.extend(test_subject)
-        # y_grounds_test.extend(y_ground_test)
-        # y_hats_test.extend(y_hat_test)
-        # print("Slice level mean test accuracy for fold %d is: %f" % (fi, acc_mean_test))
-        # test_accuracy[fi] = acc_mean_test
 
         ## save the graph and image
         writer_train.add_graph(model, example_batch)

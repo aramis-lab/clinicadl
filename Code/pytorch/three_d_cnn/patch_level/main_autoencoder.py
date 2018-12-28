@@ -1,13 +1,17 @@
 import argparse
-
-from time import time
-import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 from classification_utils import *
-from data_utils import *
 from model import *
-import copy
+
+__author__ = "Junhao Wen"
+__copyright__ = "Copyright 2018 The Aramis Lab Team"
+__credits__ = ["Junhao Wen"]
+__license__ = "See LICENSE.txt file"
+__version__ = "0.1.0"
+__maintainer__ = "Junhao Wen"
+__email__ = "junhao.wen89@gmail.com"
+__status__ = "Development"
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D patch autoencoder")
 
@@ -15,15 +19,15 @@ parser.add_argument("-id", "--caps_directory", default='/teams/ARAMIS/PROJECTS/C
                            help="Path to the caps of image processing pipeline of DL")
 parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/test.tsv',
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
-parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch_test',
+parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch_ae',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument("--network", default="Autoencoder", choices=["Autoencoder", "ConvAutoencoder"],
-                    help="Autoencoder network type. (default=VoxResNet)")
-parser.add_argument("--patch_size", default="21", type=int,
+parser.add_argument("--network", default="SparseAutoencoder", choices=["SparseAutoencoder", "ConvAutoencoder"],
+                    help="Autoencoder network type. (default=SparseAutoencoder)")
+parser.add_argument("--patch_size", default="7", type=int,
                     help="The patch size extracted from the MRI")
-parser.add_argument("--patch_stride", default="10", type=int,
+parser.add_argument("--patch_stride", default="7", type=int,
                     help="The stride for the patch extract window from the MRI")
-parser.add_argument("--batch_size", default=2, type=int,
+parser.add_argument("--batch_size", default=16, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
@@ -58,11 +62,11 @@ def main(options):
 
     print('Start the autoencoder!')
     try:
-        autoencoder = eval(options.network)()
+        autoencoder = eval(options.network)(input_size=options.patch_size)
     except:
         raise Exception('The model has not been implemented')
 
-    data_train = MRIDataset(options.caps_directory, options.diagnosis_tsv, options.patch_size, options.patch_stride)
+    data_train = MRIDataset_patch(options.caps_directory, options.diagnosis_tsv, options.patch_size, options.patch_stride)
 
     # Use argument load to distinguish training and testing
     train_loader = DataLoader(data_train,
@@ -81,6 +85,9 @@ def main(options):
         use_cuda = True
         autoencoder.cuda()
 
+    ## example image for tensorbordX usage:$
+    example_batch = next(iter(train_loader))['image'].cuda()
+
     # Define loss and optimizer, for autoencoder, better using MSELoss
     loss = torch.nn.MSELoss()
     lr = options.learning_rate
@@ -98,10 +105,10 @@ def main(options):
     for epoch_i in range(options.epochs):
         print("At %s -th epoch." % str(epoch_i))
         # train the ae
-        example_imgs, epoch_loss = train_ae(autoencoder, train_loader, use_cuda, loss, optimizer, writer_train, epoch_i, options)
+        epoch_loss = train_ae(autoencoder, train_loader, use_cuda, loss, optimizer, writer_train, epoch_i, options)
 
         ## update the learing rate
-        if epoch_i % 20 == 0:
+        if epoch_i % 5 == 0:
             scheduler.step()
 
         # save the best model based on the updated batch_loss for each epoch
@@ -115,7 +122,7 @@ def main(options):
         }, is_best, os.path.join(options.output_dir, "best_model_dir"))
 
     ## save the graph and image
-    writer_train.add_graph(autoencoder, example_imgs)
+    writer_train.add_graph(autoencoder, example_batch)
 
 if __name__ == "__main__":
     ret = parser.parse_known_args()
