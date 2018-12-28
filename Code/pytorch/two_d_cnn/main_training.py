@@ -73,7 +73,7 @@ def main(options):
             model = alexnet2D(transfer_learning=options.transfer_learning)
             trg_size = (224, 224)  ## this is the original input size of alexnet
         elif options.network == "ResNet2D":
-            model = resnet2D('resnet152', pretrained=options.transfer_learning)
+            model = resnet2D('resnet152', transfer_learning=options.transfer_learning)
             trg_size = (224, 224)  ## this is the original input size of resnet
         else:
             raise Exception('The model has not been implemented')
