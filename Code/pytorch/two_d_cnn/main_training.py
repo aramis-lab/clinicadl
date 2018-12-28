@@ -25,7 +25,7 @@ parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junha
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 
 ## optional args
-parser.add_argument("--transfer_learning", default=False,
+parser.add_argument("--transfer_learning", default=False, choices=[True, False],
                            help="If do transfer learning")
 parser.add_argument("--network", default="Lenet2D", choices=["AlexNet2D", "ResNet2D", "Lenet2D", "AllConvNet2D"],
                     help="Deep network type. (default=AlexNet)")
