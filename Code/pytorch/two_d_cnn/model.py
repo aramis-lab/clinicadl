@@ -1,4 +1,3 @@
-import torch.nn as nn
 from torchvision.models import alexnet
 import torch.nn as nn
 import math
@@ -151,15 +150,15 @@ class alexnetonechannel(nn.Module):
         return x
 
 
-def alexnet2D(mri_plane=0, pretrained=False, **kwargs):
+def alexnet2D(mri_plane=0, transfer_learning=False, **kwargs):
     """Implementation of AlexNet model architecture based on this paper: `"One weird trick..." <https://arxiv.org/abs/1404.5997>`.
 
     Args:
-        pretrained (bool): If True, returns a model pretrained on ImageNet
+        transfer_learning (bool): If True, returns a model transfer_learning on ImageNet
     """
 
-    if pretrained == True:
-        model = alexnet(pretrained)
+    if transfer_learning == True:
+        model = alexnet(transfer_learning)
         for p in model.features.parameters():
             p.requires_grad = False
 
@@ -170,7 +169,7 @@ def alexnet2D(mri_plane=0, pretrained=False, **kwargs):
         for p in model.features[8].parameters():
             p.requires_grad = True
 
-        ## add a fc layer on top of the pretrained model and a sigmoid classifier
+        ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
         model.classifier.add_module('dropout', nn.Dropout(p=0.8))
         model.classifier.add_module('fc_out', nn.Linear(1000, 2)) ## For linear layer, Pytorch used similar H initialization for the weight.
         model.classifier.add_module('sigmoid', nn.Softmax(dim=1))
@@ -331,18 +330,18 @@ class ResNet(nn.Module):
 
         return x
 
-def resnet2D(resnet_type, pretrained=False, **kwargs):
+def resnet2D(resnet_type, transfer_learning=False, **kwargs):
     """
     Construct a RestNet model, the type of resnet models were list as variable: resnet_type.
 
     :param resnet_type: One of these models: ['resnet18', 'resnet34', 'resnet50', 'resnet101', 'resnet152']
-    :param pretrained: If True, returns a model pre-trained on ImageNet
+    :param transfer_learning: If True, returns a model pre-trained on ImageNet
     :param kwargs:
     :return:
     """
     if resnet_type == 'resnet152':
         model = ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
-        if pretrained:
+        if transfer_learning:
             model.load_state_dict(model_zoo.load_url(model_urls['resnet152']))
             for p in model.parameters():
                 p.requires_grad = False
@@ -351,13 +350,13 @@ def resnet2D(resnet_type, pretrained=False, **kwargs):
             for p in model.fc.parameters():
                 p.requires_grad = True
 
-            ## add a fc layer on top of the pretrained model and a sigmoid classifier
+            ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
             model.add_module('fc_out', nn.Linear(1000, 2))  ## For linear layer, Pytorch used similar H initialization for the weight.
             model.add_module('sigmoid', nn.Softmax(dim=1))
 
     elif resnet_type == 'resnet101':
         model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
-        if pretrained:
+        if transfer_learning:
             model.load_state_dict(model_zoo.load_url(model_urls['resnet101']))
             for p in model.parameters():
                 p.requires_grad = False
@@ -366,13 +365,13 @@ def resnet2D(resnet_type, pretrained=False, **kwargs):
             for p in model.fc.parameters():
                 p.requires_grad = True
 
-            ## add a fc layer on top of the pretrained model and a sigmoid classifier
+            ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
             model.add_module('fc_out', nn.Linear(1000, 2))  ## For linear layer, Pytorch used similar H initialization for the weight.
             model.add_module('sigmoid', nn.Softmax(dim=1))
 
     elif resnet_type == 'resnet50':
         model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
-        if pretrained:
+        if transfer_learning:
             model.load_state_dict(model_zoo.load_url(model_urls['resnet50']))
             for p in model.parameters():
                 p.requires_grad = False
@@ -381,13 +380,13 @@ def resnet2D(resnet_type, pretrained=False, **kwargs):
             for p in model.fc.parameters():
                 p.requires_grad = True
 
-            ## add a fc layer on top of the pretrained model and a sigmoid classifier
+            ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
             model.add_module('fc_out', nn.Linear(1000, 2))  ## For linear layer, Pytorch used similar H initialization for the weight.
             model.add_module('sigmoid', nn.Softmax(dim=1))
 
     elif resnet_type == 'resnet34':
         model = ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
-        if pretrained:
+        if transfer_learning:
             model.load_state_dict(model_zoo.load_url(model_urls['resnet34']))
             for p in model.parameters():
                 p.requires_grad = False
@@ -396,13 +395,13 @@ def resnet2D(resnet_type, pretrained=False, **kwargs):
             for p in model.fc.parameters():
                 p.requires_grad = True
 
-            ## add a fc layer on top of the pretrained model and a sigmoid classifier
+            ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
             model.add_module('fc_out', nn.Linear(1000, 2))  ## For linear layer, Pytorch used similar H initialization for the weight.
             model.add_module('sigmoid', nn.Softmax(dim=1))
 
     elif resnet_type == 'resnet18':
         model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
-        if pretrained:
+        if transfer_learning:
             model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
             for p in model.parameters():
                 p.requires_grad = False
@@ -411,7 +410,7 @@ def resnet2D(resnet_type, pretrained=False, **kwargs):
             for p in model.fc.parameters():
                 p.requires_grad = True
 
-            ## add a fc layer on top of the pretrained model and a sigmoid classifier
+            ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
             model.add_module('fc_out', nn.Linear(1000, 2))  ## For linear layer, Pytorch used similar H initialization for the weight.
             model.add_module('sigmoid', nn.Softmax(dim=1))
 

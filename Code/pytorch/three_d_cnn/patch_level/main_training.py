@@ -1,15 +1,20 @@
 import argparse
-
-from time import time
-import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 from classification_utils import *
-from data_utils import *
-from model import *
 import copy
+from model import *
 
-parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D patch CNN")
+__author__ = "Junhao Wen"
+__copyright__ = "Copyright 2018 The Aramis Lab Team"
+__credits__ = ["Junhao Wen"]
+__license__ = "See LICENSE.txt file"
+__version__ = "0.1.0"
+__maintainer__ = "Junhao Wen"
+__email__ = "junhao.wen89@gmail.com"
+__status__ = "Development"
+
+parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D patch CNN. The input MRI's dimension is 169*208*179 after cropping")
 
 parser.add_argument("-id", "--caps_directory", default='/teams/ARAMIS/PROJECTS/CLINICA/CLINICA_datasets/temp/CAPS_ADNI_DL',
                            help="Path to the caps of image processing pipeline of DL")
@@ -19,9 +24,9 @@ parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junha
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 parser.add_argument("--network", default="AllConvNet3D", choices=["VoxResNet", "AllConvNet3D"],
                     help="Deep network type. (default=VoxResNet)")
-parser.add_argument("--patch_size", default="21", type=int,
+parser.add_argument("--patch_size", default="50", type=int,
                     help="The patch size extracted from the MRI")
-parser.add_argument("--patch_stride", default="10", type=int,
+parser.add_argument("--patch_stride", default="50", type=int,
                     help="The stride for the patch extract window from the MRI")
 parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
@@ -56,12 +61,6 @@ parser.add_argument('--weight_decay', default=1e-4, type=float,
 parser.add_argument('--random_state', default=None,
                     help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
 
-# parser.add_argument("--test_sessions", default=["ses-M00"], nargs='+', type=str,
-#                     help="Test the accuracy at the end of the model for the sessions selected")
-# parser.add_argument("--visualization", action='store_true', default=False,
-#                     help='Chooses if visualization is done on AE pretraining')
-# parser.add_argument("-m", "--model", default='Conv_3', type=str, choices=["Conv_3", "Conv_4", "Test", "Test_nobatch", "Rieke", "Test2", 'Optim'],
-#                     help="model selected")
 
 def main(options):
 
@@ -114,14 +113,16 @@ def main(options):
                                   batch_size=options.batch_size,
                                   shuffle=options.shuffle,
                                   num_workers=options.num_workers,
-                                  drop_last=True
+                                  drop_last=True,
+                                  pin_memory=True
                                   )
 
         valid_loader = DataLoader(data_valid,
                                   batch_size=options.batch_size,
                                   shuffle=False,
                                   num_workers=options.num_workers,
-                                  drop_last=False
+                                  drop_last=False,
+                                  pin_memory=True
                                   )
         ## Decide to use gpu or cpu to train the model
         if options.use_gpu == False:
@@ -131,6 +132,9 @@ def main(options):
             print("Using GPU")
             use_cuda = True
             model.cuda()
+
+        ## example image for tensorbordX usage:$
+        example_batch = next(iter(train_loader))['image'].cuda()
 
         # Define loss and optimizer
         loss = torch.nn.CrossEntropyLoss()
@@ -160,7 +164,7 @@ def main(options):
             print("At %s -th epoch." % str(epoch_i))
 
             # train the model
-            example_imgs, train_subject, y_ground_train, y_hat_train, acc_mean_train, global_steps_train = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch_i, model_mode='train')
+            train_subject, y_ground_train, y_hat_train, acc_mean_train, global_steps_train = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch_i, model_mode='train')
             train_subjects.extend(train_subject)
             y_grounds_train.extend(y_ground_train)
             y_hats_train.extend(y_hat_train)
@@ -205,7 +209,7 @@ def main(options):
         # test_accuracy[fi] = acc_mean_test
 
         ## save the graph and image
-        writer_train.add_graph(model, example_imgs)
+        writer_train.add_graph(model, example_batch)
 
         ### write the information of subjects and performances into tsv files.
         iteration_subjects_df_train, results_train = results_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train, mode='train')

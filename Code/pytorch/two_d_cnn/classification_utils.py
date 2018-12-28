@@ -327,10 +327,6 @@ class MRIDataset_slice(Dataset):
         session_list = list(df['session_id'])
         label_list = list(df['diagnosis'])
 
-        # self.participant_list = participant_list
-        # self.session_list = session_list
-        # self.label_list = label_list
-
         ## sagital
         if mri_plane == 0:
             self.slice_participant_list = [ele for ele in participant_list for _ in range(139)]
@@ -338,7 +334,7 @@ class MRIDataset_slice(Dataset):
             self.slice_label_list = [ele for ele in label_list for _ in range(139)]
             self.slices_per_patient = 139
 
-        ## coronal
+        ## coronal TODO: cahnge the number of slices based on different views
         elif mri_plane == 1:
             self.slice_participant_list = [ele for ele in participant_list for _ in range(139)]
             self.slice_session_list = [ele for ele in session_list for _ in range(139)]
@@ -365,7 +361,6 @@ class MRIDataset_slice(Dataset):
         image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
         # image with intensity normalization
         # image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_linear_registration.pt')
-        # samples = []
         label = self.diagnosis_code[img_label]
         index_slice = idx % self.slices_per_patient
         ### To improve the efficiency, the func extract_slice should be done with pytorch Tensor, not on numpy
@@ -373,12 +368,9 @@ class MRIDataset_slice(Dataset):
 
         # for img in images_list:
         if self.transformations:
-            img = self.transformations(extracted_slice)
-        sample = {'image_id': img_name + '_' + sess_name, 'image': img, 'label': label}
-            # samples.append(sample)
+            extracted_slice = self.transformations(extracted_slice)
 
-        # if need shuffle the data?
-        # random.shuffle(samples)
+        sample = {'image_id': img_name + '_' + sess_name, 'image': extracted_slice, 'label': label}
 
         return sample
 
@@ -422,6 +414,7 @@ def extract_slice(image_path, index_slice, view, transfer_learning):
     if transfer_learning == False:
         extracted_slice = slice_select.unsqueeze(0) ## shape should be 1 * W * L
     else:
+        slice_select = (slice_select - slice_select.min()) / (slice_select.max() - slice_select.min())
         extracted_slice = torch.stack((slice_select, slice_select, slice_select)) ## shape should be 3 * W * L
 
 
