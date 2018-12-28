@@ -23,7 +23,7 @@ parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/ju
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument("-tl", "--transfer_learning", default=False, choices=[True, False],
+parser.add_argument("-tl", "--transfer_learning", default=False, type=bool,
                            help="If do transfer learning")
 parser.add_argument("-nw", "--network", default="Lenet2D", choices=["AlexNet2D", "ResNet2D", "Lenet2D", "AllConvNet2D"],
                     help="Deep network type. (default=AlexNet)")
@@ -32,7 +32,7 @@ parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
 
 parser.add_argument("--runs", default=1, type=int,
                     help="How many times to run the training and validation procedures with the same data split strategy, default is 1.")
-parser.add_argument("--shuffle", default=True,
+parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
 parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data. (default=20)")
@@ -40,9 +40,9 @@ parser.add_argument("--batch_size", default=8, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument("--use_gpu", default=True, nargs='+',
+parser.add_argument("--use_gpu", default=True, nargs='+', type=bool,
                     help="If use gpu or cpu. Empty implies cpu usage.")
-parser.add_argument('--force', default=True,
+parser.add_argument('--force', default=True, type=bool,
                     help='If force to rerun the classification, default behavior is to clean the output folder and restart from scratch')
 parser.add_argument('--mri_plane', default=0,
                     help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
