@@ -41,11 +41,11 @@ parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
 
 # transfer learning
-parser.add_argument("-tla", "--transfer_learning_autoencoder", default=False, action='store_true',
+parser.add_argument("-tla", "--transfer_learning_autoencoder", default=False, type=bool, action='store_true',
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred")
-parser.add_argument("-tlt", "--transfer_learning_task", default=False, action='store_true',
+parser.add_argument("-tlt", "--transfer_learning_task", default=False, type=bool, action='store_true',
                     help="If do transfer learning using different tasks, the learnt weights will be transferred")
-parser.add_argument("-tbm", "--transfer_learnt_best_model", default=False, action='store_true',
+parser.add_argument("-tbm", "--transfer_learnt_best_model", default=False, type=bool, action='store_true',
                     help="The path to save the transfer learning model")
 
 # Training arguments
@@ -55,7 +55,7 @@ parser.add_argument("--epochs", default=3, type=int,
 # Optimizer arguments
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument('--use_gpu', action='store_true', default=False,
+parser.add_argument('--use_gpu', action='store_true', default=False, type=bool,
                     help='Uses gpu instead of cpu if cuda is available')
 parser.add_argument('--weight_decay', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
