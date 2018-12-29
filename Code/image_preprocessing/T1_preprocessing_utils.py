@@ -32,7 +32,7 @@ def get_subid_sesid_datasink(participant_id, session_id, caps_directory):
         (participant_id + '_' + session_id + '_SyN_QuickWarped_cropped.nii.gz',
         participant_id + '_' + session_id + '_space-MNI_res-1x1x1.nii.gz'),
         (participant_id + '_' + session_id + '_SyN_QuickWarped_cropped.pt',
-         participant_id + '_' + session_id + '_space-MNI_res-1x1x1.nii.pt'),
+         participant_id + '_' + session_id + '_space-MNI_res-1x1x1.pt'),
         (participant_id + '_' + session_id + '_SyN_QuickWarped.nii.gz',
          participant_id + '_' + session_id + '_space-MNI_res-1x1x1_linear_registration.nii.gz')
         ]

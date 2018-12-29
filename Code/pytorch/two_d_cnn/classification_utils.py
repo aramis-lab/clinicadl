@@ -299,7 +299,7 @@ class MRIDataset_slice(Dataset):
     Return: a Pytorch Dataset objective
     """
 
-    def __init__(self, caps_directory, tsv, transformations=None, transfer_learning=False, mri_plane=0):
+    def __init__(self, caps_directory, tsv, transformations=None, transfer_learning=False, mri_plane=0, data_type='from_slice'):
         """
         Args:
             caps_directory (string): the output folder of image processing pipeline.
@@ -318,6 +318,7 @@ class MRIDataset_slice(Dataset):
         self.transfer_learning = transfer_learning
         self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
         self.mri_plane = mri_plane
+        self.data_type = data_type
 
         df = pd.io.parsers.read_csv(tsv, sep='\t')
         if ('diagnosis' != list(df.columns.values)[2]) and ('session_id' != list(df.columns.values)[1]) and (
@@ -333,20 +334,22 @@ class MRIDataset_slice(Dataset):
             self.slice_session_list = [ele for ele in session_list for _ in range(139)]
             self.slice_label_list = [ele for ele in label_list for _ in range(139)]
             self.slices_per_patient = 139
+            self.slice_direction = 'sag'
 
-        ## coronal TODO: cahnge the number of slices based on different views
         elif mri_plane == 1:
-            self.slice_participant_list = [ele for ele in participant_list for _ in range(139)]
-            self.slice_session_list = [ele for ele in session_list for _ in range(139)]
-            self.slice_label_list = [ele for ele in label_list for _ in range(139)]
-            self.slices_per_patient = 139
+            self.slice_participant_list = [ele for ele in participant_list for _ in range(178)]
+            self.slice_session_list = [ele for ele in session_list for _ in range(178)]
+            self.slice_label_list = [ele for ele in label_list for _ in range(178)]
+            self.slices_per_patient = 178
+            self.slice_direction = 'cor'
 
         ## axial
         elif mri_plane == 2:
-            self.slice_participant_list = [ele for ele in participant_list for _ in range(139)]
-            self.slice_session_list = [ele for ele in session_list for _ in range(139)]
-            self.slice_label_list = [ele for ele in label_list for _ in range(139)]
-            self.slices_per_patient = 139
+            self.slice_participant_list = [ele for ele in participant_list for _ in range(149)]
+            self.slice_session_list = [ele for ele in session_list for _ in range(149)]
+            self.slice_label_list = [ele for ele in label_list for _ in range(149)]
+            self.slices_per_patient = 149
+            self.slice_direction = 'axi'
 
 
     def __len__(self):
@@ -357,14 +360,25 @@ class MRIDataset_slice(Dataset):
         img_name = self.slice_participant_list[idx]
         sess_name = self.slice_session_list[idx]
         img_label = self.slice_label_list[idx]
-        ## image without intensity normalization
-        image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
-        # image with intensity normalization
-        # image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_linear_registration.pt')
         label = self.diagnosis_code[img_label]
         index_slice = idx % self.slices_per_patient
-        ### To improve the efficiency, the func extract_slice should be done with pytorch Tensor, not on numpy
-        extracted_slice = extract_slice(image_path, index_slice, self.mri_plane, self.transfer_learning)
+
+        if self.data_type == 'from_MRI':
+            ## image without intensity normalization
+            image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+            extracted_slice = extract_slice_from_mri(image_path, index_slice, self.mri_plane, self.transfer_learning)
+        else:
+            if self.transfer_learning:
+                slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+                                          'preprocessing_dl',
+                                          img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' + self.slice_direction + '_rgblslice-' + str(
+                                              index_slice) + '.pt')
+            else:
+                slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+                                          'preprocessing_dl',
+                                          img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' + self.slice_direction + '_originalslice-' + str(
+                                              index_slice) + '.pt')
+            extracted_slice = torch.load(slice_path)
 
         # for img in images_list:
         if self.transformations:
@@ -375,7 +389,7 @@ class MRIDataset_slice(Dataset):
         return sample
 
 
-def extract_slice(image_path, index_slice, view, transfer_learning):
+def extract_slice_from_mri(image_path, index_slice, view, transfer_learning):
     """
     This is a function to grab one slice in each view and create a rgb image for transferring learning: duplicate the slices into R, G, B channel
     :param image_path:
@@ -416,7 +430,6 @@ def extract_slice(image_path, index_slice, view, transfer_learning):
     else:
         slice_select = (slice_select - slice_select.min()) / (slice_select.max() - slice_select.min())
         extracted_slice = torch.stack((slice_select, slice_select, slice_select)) ## shape should be 3 * W * L
-
 
     return extracted_slice
 

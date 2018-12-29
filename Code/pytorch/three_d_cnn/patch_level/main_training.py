@@ -26,6 +26,8 @@ parser.add_argument("-nw", "--network", default="AllConvNet3D", choices=["VoxRes
                     help="Deep network type. (default=VoxResNet)")
 parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
+parser.add_argument("-dty", "--data_type", default="from_patch", choices=["from_MRI", "from_patch"],
+                    help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
 
 parser.add_argument("--patch_size", default="21", type=int,
                     help="The patch size extracted from the MRI")
@@ -41,11 +43,11 @@ parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
 
 # transfer learning
-parser.add_argument("-tla", "--transfer_learning_autoencoder", default=False, type=bool, action='store_true',
+parser.add_argument("-tla", "--transfer_learning_autoencoder", default=False, action='store_true',
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred")
-parser.add_argument("-tlt", "--transfer_learning_task", default=False, type=bool, action='store_true',
+parser.add_argument("-tlt", "--transfer_learning_task", default=False, action='store_true',
                     help="If do transfer learning using different tasks, the learnt weights will be transferred")
-parser.add_argument("-tbm", "--transfer_learnt_best_model", default=False, type=bool, action='store_true',
+parser.add_argument("-tbm", "--transfer_learnt_best_model", default=False, action='store_true',
                     help="The path to save the transfer learning model")
 
 # Training arguments
@@ -55,13 +57,12 @@ parser.add_argument("--epochs", default=3, type=int,
 # Optimizer arguments
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument('--use_gpu', action='store_true', default=False, type=bool,
+parser.add_argument('--use_gpu', action='store_true', default=False,
                     help='Uses gpu instead of cpu if cuda is available')
 parser.add_argument('--weight_decay', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--random_state', default=None,
                     help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
-
 
 def main(options):
 
@@ -106,8 +107,8 @@ def main(options):
         model.load_state_dict(init_state)
 
         training_tsv, valid_tsv = load_split(options.diagnosis_tsv, random_state=options.random_state)
-        data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride)
-        data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size, options.patch_stride)
+        data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride, data_type=options.data_type)
+        data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size, options.patch_stride, data_type=options.data_type)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,

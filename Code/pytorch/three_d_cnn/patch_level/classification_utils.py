@@ -295,7 +295,7 @@ def evaluate_prediction(y, y_hat):
 class MRIDataset_patch(Dataset):
     """labeled Faces in the Wild dataset."""
 
-    def __init__(self, caps_directory, data_file, patch_size, stride_size, transformations=None):
+    def __init__(self, caps_directory, data_file, patch_size, stride_size, transformations=None, data_type='from_patch'):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -308,6 +308,7 @@ class MRIDataset_patch(Dataset):
         self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
         self.patch_size = patch_size
         self.stride_size = stride_size
+        self.data_type = data_type
 
         # Check the format of the tsv file here
         self.df = pd.read_csv(data_file, sep='\t')
@@ -319,7 +320,7 @@ class MRIDataset_patch(Dataset):
         session_list = list(self.df['session_id'])
         label_list = list(self.df['diagnosis'])
 
-        ## TODO: dynamically calculate the number of patches from each MRI based on the parameters of patch_size & stride_size:
+        ## dynamically calculate the number of patches from each MRI based on the parameters of patch_size & stride_size:
         ## Question posted on: https://discuss.pytorch.org/t/how-to-extract-smaller-image-patches-3d/16837/9
         patch_dims = [math.floor((169 - patch_size) / stride_size + 1), math.floor((208 - patch_size) / stride_size + 1), math.floor((179 - patch_size) / stride_size + 1)]
         self.patchs_per_patient = int(patch_dims[0] * patch_dims[1] * patch_dims[2])
@@ -335,18 +336,26 @@ class MRIDataset_patch(Dataset):
         sess_name = self.patch_session_list[idx]
         img_label = self.patch_label_list[idx]
         ## image without intensity normalization
-        image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
         # image with intensity normalization
         # image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_linear_registration.pt')
-        image = torch.load(image_path)
         label = self.diagnosis_code[img_label]
         index_patch = idx % self.patchs_per_patient
 
-        if self.transformations:
-            image = self.transformations(image)
+        if self.data_type == 'from_MRI':
+            image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+            image = torch.load(image_path)
+            ### extract the patch from MRI based on a specific size
+            patch = extract_patch_from_mri(image, index_patch, self.patch_size, self.stride_size, self.patchs_per_patient)
+        else:
+            patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+                                      'preprocessing_dl',
+                                      img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-' + str(self.patch_size) + '_stride-' + str(self.stride_size) + '_patch-' + str(
+                                          index_patch) + '.pt')
+            patch = torch.load(patch_path)
 
-        ### extract the patch from MRI based on a specific size
-        patch = extract_patch(image, index_patch, self.patch_size, self.stride_size, self.patchs_per_patient)
+        if self.transformations:
+            patch = self.transformations(patch)
+
         sample = {'image_id': img_name + '_' + sess_name, 'image': patch, 'label': label}
 
         return sample
@@ -489,17 +498,16 @@ def load_split(diagnoses_tsv, val_size=0.15, random_state=None):
     return training_tsv, valid_tsv
 
 
-def extract_patch(image_tensor, index_patch, patch_size, stride_size, patchs_per_patient):
+def extract_patch_from_mri(image_tensor, index_patch, patch_size, stride_size, patchs_per_patient):
 
     ## use pytorch tensor.upfold to crop the patch.
     patches_tensor = image_tensor.unfold(1, patch_size, stride_size).unfold(2, patch_size, stride_size).unfold(3, patch_size, stride_size).contiguous()
     # the dimension of patch_tensor should be [1, patch_num1, patch_num2, patch_num3, patch_size1, patch_size2, patch_size3]
     patches_tensor = patches_tensor.view(-1, patch_size, patch_size, patch_size)
-    try:
-        patchs_per_patient == patches_tensor[0]
-    except:
-        print("Oops, the number of patches were not correctly calculated")
-    extracted_patch = patches_tensor[index_patch].unsqueeze_(0) ## add one dimension
+    if patchs_per_patient != patches_tensor.shape[0]:
+        raise Exception("Oops, the number of patches were not correctly calculated")
+
+    extracted_patch = patches_tensor[index_patch, ...].unsqueeze_(0) ## add one dimension
 
     return extracted_patch
 
