@@ -23,8 +23,9 @@ parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/ju
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument("-tl", "--transfer_learning", default=False, type=bool,
-                           help="If do transfer learning")
+parser.add_argument("-tl", "--transfer_learning", default=False, type=bool, help="If do transfer learning")
+parser.add_argument("-dty", "--data_type", default="from_slice", choices=["from_MRI", "from_slice"],
+                    help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
 parser.add_argument("-nw", "--network", default="Lenet2D", choices=["AlexNet2D", "ResNet2D", "Lenet2D", "AllConvNet2D"],
                     help="Deep network type. (default=AlexNet)")
 parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
@@ -44,7 +45,7 @@ parser.add_argument("--use_gpu", default=True, nargs='+', type=bool,
                     help="If use gpu or cpu. Empty implies cpu usage.")
 parser.add_argument('--force', default=True, type=bool,
                     help='If force to rerun the classification, default behavior is to clean the output folder and restart from scratch')
-parser.add_argument('--mri_plane', default=0,
+parser.add_argument('--mri_plane', default=1,
                     help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
 parser.add_argument("--num_workers", default=4, type=int,
                     help='the number of batch being loaded in parallel')
@@ -100,12 +101,11 @@ def main(options):
         print("Running for the %d run" % fi)
         model.load_state_dict(init_state)
 
-
         ## load the tsv file
         training_tsv, valid_tsv = load_split(options.diagnosis_tsv, val_size=0.15, random_state=options.random_state)
 
-        data_train = MRIDataset_slice(options.caps_directory, training_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
-        data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane)
+        data_train = MRIDataset_slice(options.caps_directory, training_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type)
+        data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
