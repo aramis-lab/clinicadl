@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 from classification_utils import *
 from model import *
+import torchvision.transforms as transforms
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -21,7 +22,10 @@ parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/ju
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch_ae',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument("--network", default="SparseAutoencoder", choices=["SparseAutoencoder", "ConvAutoencoder"],
+parser.add_argument("-dty", "--data_type", default="from_MRI", choices=["from_MRI", "from_patch"],
+                    help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
+
+parser.add_argument("--network", default="SparseAutoencoder", choices=["SparseAutoencoder"],
                     help="Autoencoder network type. (default=SparseAutoencoder)")
 parser.add_argument("--patch_size", default="7", type=int,
                     help="The patch size extracted from the MRI")
@@ -31,7 +35,7 @@ parser.add_argument("--batch_size", default=16, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
-parser.add_argument("--num_workers", '-w', default=0, type=int,
+parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
 # Training arguments
 parser.add_argument("--epochs", default=3, type=int,
@@ -65,8 +69,10 @@ def main(options):
         autoencoder = eval(options.network)(input_size=options.patch_size)
     except:
         raise Exception('The model has not been implemented')
+    ## need to normalized the value to [0, 1]
+    transformations = transforms.Compose([CustomNormalizeMinMax()])
 
-    data_train = MRIDataset_patch(options.caps_directory, options.diagnosis_tsv, options.patch_size, options.patch_stride)
+    data_train = MRIDataset_patch(options.caps_directory, options.diagnosis_tsv, options.patch_size, options.patch_stride, transformations=transformations, data_type=options.data_type)
 
     # Use argument load to distinguish training and testing
     train_loader = DataLoader(data_train,

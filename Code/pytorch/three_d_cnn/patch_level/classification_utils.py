@@ -7,6 +7,7 @@ from os import path
 from torch.utils.data import Dataset
 from sklearn.model_selection import StratifiedShuffleSplit
 from torch.autograd import Variable
+import torch.nn.functional as F
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -169,8 +170,8 @@ def train_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, writer, e
     # Releases all unoccupied cached memory
     torch.cuda.empty_cache()
     epoch_loss = 0
-    sparsity = 0.05 ## control the sparsity of the hidden layer
-    beta = 0.5 ## controls the relative importance of the penalty term
+    sparsity = 0.05
+    beta = 3
     print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
     for i, batch_data in enumerate(data_loader):
         if use_cuda:
@@ -178,25 +179,44 @@ def train_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, writer, e
         else:
             imgs = batch_data['image']
 
-        decoded, encoded = autoencoder(imgs)
-        imgs_flatten = imgs.view(imgs.shape[0], options.patch_size * options.patch_size * options.patch_size)
-        loss1 = loss_func(decoded, imgs_flatten)
-        sparsity_part = torch.ones(encoded.shape) * sparsity
-        loss2 = (sparsity_part * torch.log(sparsity_part / (encoded + 1e-8)) + (1 - sparsity_part) * torch.log(
-            (1 - sparsity_part) / ((1 - encoded + 1e-8)))).sum() / options.batch_size
-        # kl_div_loss(mean_activitaion, sparsity)
-        loss = loss1 + beta * loss2
-        epoch_loss += loss
-        print("For batch %d, training loss is : %f" % (i, loss.item()))
+        ## check if the patch contains no information, which means the patch is at the edge fo the MRI and contains NAN
+        if torch.sum(torch.isnan(imgs.view(1, -1))):
+            del imgs
+            pass
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        else:
+            decoded, encoded = autoencoder(imgs)
+            imgs_flatten = imgs.view(imgs.shape[0], options.patch_size * options.patch_size * options.patch_size)
+            loss1 = loss_func(decoded, imgs_flatten) / options.batch_size
+            if use_cuda:
+                rho = (torch.ones([1, encoded.shape[1]]) * sparsity).cuda()
+                rho_hat = torch.sum(encoded, dim=0, keepdim=True).cuda()
+            else:
+                rho = torch.ones([1, encoded.shape[1]]) * sparsity
+                rho_hat = torch.sum(encoded, dim=0, keepdim=True)
+            ## the sparsity loss
+            loss2 = kl_divergence(rho, rho_hat) * beta
+            if np.sum(np.isnan(imgs_flatten.detach().numpy())):
+                raise Exception('Stop, this is wrong! imgs_flatten')
+            if np.sum(np.isnan(decoded.detach().numpy())):
+                raise Exception('Stop, this is wrong! decoded')
+            if np.sum(np.isnan(rho.detach().numpy())):
+                raise Exception('Stop, this is wrong! rho')
+            if np.sum(np.isnan(rho_hat.detach().numpy())):
+                raise Exception('Stop, this is wrong! rho_hat')
+            # kl_div_loss(mean_activitaion, sparsity)
+            loss = loss1 + beta * loss2
+            epoch_loss += loss
+            print("For batch %d, training loss is : %f" % (i, loss.item()))
 
-        ## save loss into tensorboardX
-        writer.add_scalar('loss', loss, i + epoch_i * len(data_loader))
-        ## save memory
-        del imgs, decoded, loss, loss1, loss2, encoded, sparsity_part, imgs_flatten
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            ## save loss into tensorboardX
+            writer.add_scalar('loss', loss, i + epoch_i * len(data_loader))
+            ## save memory
+            del imgs, decoded, loss, loss1, loss2, encoded, rho, imgs_flatten, rho_hat
 
     return epoch_loss
 
@@ -336,8 +356,6 @@ class MRIDataset_patch(Dataset):
         sess_name = self.patch_session_list[idx]
         img_label = self.patch_label_list[idx]
         ## image without intensity normalization
-        # image with intensity normalization
-        # image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_linear_registration.pt')
         label = self.diagnosis_code[img_label]
         index_patch = idx % self.patchs_per_patient
 
@@ -533,3 +551,32 @@ def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar
     torch.save(state, os.path.join(checkpoint_dir, filename))
     if is_best:
         shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(checkpoint_dir, 'model_best.pth.tar'))
+
+class CustomNormalizeMinMax(object):
+    def __init__(self):
+        pass
+
+    def __call__(self, tensor):
+        if isinstance(tensor, torch.Tensor):
+            ## normalize to [0, 1]
+            tensor = (tensor - tensor.min()) / (tensor.max() - tensor.min())
+
+            return tensor
+        else:
+            raise Exception('CustomNormalizedMinMax needs a torch tensor, but it is not given.')
+
+def kl_divergence(p, q):
+    '''
+    This is the penalty term quantified by KL divergence.
+    ref: http://ufldl.stanford.edu/wiki/index.php/Autoencoders_and_Sparsity
+    :param p:
+    :param q:
+    :return:
+    '''
+    p = F.softmax(p)
+    q = F.softmax(q)
+
+    s1 = torch.sum(p * torch.log(p / q))
+    s2 = torch.sum((1 - p) * torch.log((1 - p) / (1 - q)))
+
+    return s1 + s2
