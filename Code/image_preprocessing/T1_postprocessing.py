@@ -14,7 +14,7 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
-def postprocessing_t1w(caps_directory, tsv, patch_size, stride_size, working_directory=None):
+def postprocessing_t1w(caps_directory, tsv, patch_size, stride_size, working_directory=None, extract_method='slice'):
     """
     This is a postprocessing pipeline to prepare the slice-level and patch-level data from the whole MRI and save them
     on disk, so that to facilitate the training process:
@@ -77,17 +77,35 @@ def postprocessing_t1w(caps_directory, tsv, patch_size, stride_size, working_dir
     wf = npe.Workflow(name='t1w_postprocessing_dl')
     wf.base_dir = working_directory
 
-    wf.connect([
-                (inputnode, get_subject_session_list, [('tsv', 'tsv')]),
-                (inputnode, get_subject_session_list, [('caps_directory', 'caps_directory')]),
+    if extract_method == 'slice':
+        wf.connect([
+            (inputnode, get_subject_session_list, [('tsv', 'tsv')]),
+            (inputnode, get_subject_session_list, [('caps_directory', 'caps_directory')]),
 
-                (get_subject_session_list, extract_slices, [('preprocessed_T1', 'preprocessed_T1')]),
+            (get_subject_session_list, extract_slices, [('preprocessed_T1', 'preprocessed_T1')]),
+            (extract_slices, outputnode, [('preprocessed_T1', 'preprocessed_T1')]),
+        ])
+    elif extract_method == 'patch':
+        wf.connect([
+            (inputnode, get_subject_session_list, [('tsv', 'tsv')]),
+            (inputnode, get_subject_session_list, [('caps_directory', 'caps_directory')]),
 
-                (get_subject_session_list, extract_patches, [('preprocessed_T1', 'preprocessed_T1')]),
-                (inputnode, extract_patches, [('patch_size', 'patch_size')]),
-                (inputnode, extract_patches, [('stride_size', 'stride_size')]),
+            (get_subject_session_list, extract_patches, [('preprocessed_T1', 'preprocessed_T1')]),
+            (inputnode, extract_patches, [('patch_size', 'patch_size')]),
+            (inputnode, extract_patches, [('stride_size', 'stride_size')]),
+        ])
+    else:
+        wf.connect([
+                    (inputnode, get_subject_session_list, [('tsv', 'tsv')]),
+                    (inputnode, get_subject_session_list, [('caps_directory', 'caps_directory')]),
 
-                (extract_slices, outputnode, [('preprocessed_T1', 'preprocessed_T1')]),
-                ])
+                    (get_subject_session_list, extract_slices, [('preprocessed_T1', 'preprocessed_T1')]),
+
+                    (get_subject_session_list, extract_patches, [('preprocessed_T1', 'preprocessed_T1')]),
+                    (inputnode, extract_patches, [('patch_size', 'patch_size')]),
+                    (inputnode, extract_patches, [('stride_size', 'stride_size')]),
+
+                    (extract_slices, outputnode, [('preprocessed_T1', 'preprocessed_T1')]),
+                    ])
 
     return wf

@@ -38,7 +38,7 @@ parser.add_argument("--shuffle", default=True, type=bool,
 parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
 # Training arguments
-parser.add_argument("--epochs", default=3, type=int,
+parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
@@ -86,13 +86,14 @@ def main(options):
     if options.use_gpu == False:
         use_cuda = False
         autoencoder.cpu()
+        example_batch = next(iter(train_loader))['image']
     else:
         print("Using GPU")
         use_cuda = True
         autoencoder.cuda()
+        ## example image for tensorbordX usage:$
+        example_batch = next(iter(train_loader))['image'].cuda()
 
-    ## example image for tensorbordX usage:$
-    example_batch = next(iter(train_loader))['image'].cuda()
 
     # Define loss and optimizer, for autoencoder, better using MSELoss
     loss = torch.nn.MSELoss()

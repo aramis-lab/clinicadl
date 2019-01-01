@@ -157,3 +157,33 @@ class SparseAutoencoder(nn.Module):
         encoded = F.sigmoid(self.encoder(out))
         decoded = F.sigmoid(self.decoder(encoded))
         return decoded, encoded
+
+class autoencoder(nn.Module):
+    """
+    This is the implementation of convolutional autoencoder.
+
+    Ref: `Stacked Convolutional Auto-Encoders for Hierarchical Feature Extraction`
+    """
+    def init(self):
+        super(autoencoder, self).init()
+        self.encoder = nn.Sequential(
+            nn.Conv3d(1, 16, 3, stride=3, padding=1),  # b, 16, 10, 10
+            nn.ReLU(True),
+            nn.MaxPool3d(2, stride=2),  # b, 16, 5, 5
+            nn.Conv3d(16, 8, 3, stride=2, padding=1),  # b, 8, 3, 3
+            nn.ReLU(True),
+            nn.MaxPool3d(2, stride=1)  # b, 8, 2, 2
+        )
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose3d(8, 16, 3, stride=2),  # b, 16, 5, 5
+            nn.ReLU(True),
+            nn.ConvTranspose3d(16, 8, 5, stride=3, padding=1),  # b, 8, 15, 15
+            nn.ReLU(True),
+            nn.ConvTranspose3d(8, 1, 2, stride=2, padding=1),  # b, 1, 28, 28
+            nn.Sigmoid() ## value range [0, 1]
+        )
+
+    def forward(self, x):
+        encoded = self.encoder(x)
+        decoded = self.decoder(encoded)
+        return decoded, encoded

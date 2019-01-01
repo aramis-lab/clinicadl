@@ -130,13 +130,15 @@ def main(options):
         if options.use_gpu == False:
             use_cuda = False
             model.cpu()
+            example_batch = next(iter(train_loader))['image']
+
         else:
             print("Using GPU")
             use_cuda = True
             model.cuda()
+            ## example image for tensorbordX usage:$
+            example_batch = next(iter(train_loader))['image'].cuda()
 
-        ## example image for tensorbordX usage:$
-        example_batch = next(iter(train_loader))['image'].cuda()
 
         # Define loss and optimizer
         loss = torch.nn.CrossEntropyLoss()
