@@ -342,7 +342,10 @@ def load_autoencoder_data(train_val_path, diagnoses_list, baseline=True):
         train_df = pd.concat([train_df, train_diagnosis_df])
         valid_df = pd.concat([valid_df, valid_diagnosis_df])
 
-        return train_df, valid_df
+    train_df.reset_index(inplace=True)
+    valid_df.reset_index(inplace=True)
+
+    return train_df, valid_df
 
 
 # def load_pretraining_split(diagnoses_tsv, val_size=0.15):
