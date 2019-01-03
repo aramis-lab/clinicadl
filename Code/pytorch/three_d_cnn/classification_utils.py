@@ -616,7 +616,7 @@ def visualize_ae(decoder, dataloader, results_path, gpu):
 
     img_path = path.join(dataloader.dataset.img_dir, 'subjects', subject, session,
                          't1', 'preprocessing_dl',
-                         subject + '_' + session + '_space-MNI_res-1x1x1_linear_registration.nii.gz')
+                         subject + '_' + session + '_space-MNI_res-1x1x1.nii.gz')
     data = nib.load(img_path)
     img = data.get_data()
     affine = data.get_affine()
@@ -626,7 +626,7 @@ def visualize_ae(decoder, dataloader, results_path, gpu):
         img_tensor = img_tensor.cuda()
     print(img_tensor.size())
     output_tensor = decoder(img_tensor)
-    output = nib.Nifti1Image(output_tensor[0].cpu().detach().numpy(), affine)
+    output = nib.Nifti1Image(output_tensor[0][0].cpu().detach().numpy(), affine)
     nib.save(output, os.path.join(results_path, 'output_image.nii'))
     nib.save(data, os.path.join(results_path, 'input_image.nii'))
 

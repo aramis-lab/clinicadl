@@ -108,6 +108,10 @@ def main(options):
             decoder = Decoder(model)
             ae_finetuning(decoder, train_loader, valid_loader, criterion, options.gpu, run_path, options)
 
+            best_decoder = load_model(decoder, run_path)
+            visualize_ae(best_decoder, train_loader, path.join(run_path, "train"), options.gpu)
+            visualize_ae(best_decoder, valid_loader, path.join(run_path, "valid"), options.gpu)
+
     total_time = time() - total_time
     print('Total time', total_time)
 
