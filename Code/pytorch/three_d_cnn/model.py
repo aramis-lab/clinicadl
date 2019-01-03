@@ -59,6 +59,103 @@ class Test2(nn.Module):
         return x
 
 
+class Test3(nn.Module):
+    """
+    Classifier for a multi-class classification task
+    """
+    def __init__(self):
+        super(Test3, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 8, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2)
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+
+            nn.Linear(64 * 9 * 12 * 10, 5000),
+            nn.ReLU(),
+
+            nn.Linear(5000, 1000),
+            nn.ReLU(),
+
+            nn.Linear(1000, 500),
+            nn.ReLU(),
+
+            nn.Linear(500, 2)
+
+        )
+
+        self.flattened_shape = [-1, 64, 9, 12, 10]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
+class Test4(nn.Module):
+    """
+    Classifier for a multi-class classification task
+    """
+    def __init__(self):
+        super(Test4, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 8, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2)
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+
+            nn.Linear(64 * 9 * 12 * 10, 5000),
+            nn.ReLU(),
+
+            nn.Linear(5000, 500),
+            nn.ReLU(),
+
+            nn.Linear(500, 2)
+
+        )
+
+        self.flattened_shape = [-1, 64, 9, 12, 10]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
 class Optim(nn.Module):
     """
     Classifier for a multi-class classification task
