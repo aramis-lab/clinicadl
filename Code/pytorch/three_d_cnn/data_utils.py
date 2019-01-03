@@ -318,6 +318,7 @@ def load_autoencoder_data(train_val_path, diagnoses_list, baseline=True):
 
     :param train_val_path: Path to the train / val decomposition
     :param diagnoses_list: list of diagnoses to select to construct the DataFrames
+    :param baseline: bool choose to use baseline only instead of all data available
     :return:
         train_df DataFrame with training data
         valid_df DataFrame with validation data

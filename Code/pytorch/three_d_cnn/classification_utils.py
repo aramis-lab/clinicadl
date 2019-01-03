@@ -21,10 +21,10 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
     :param options:
     """
     # Create writers
-    from tensorboardX import SummaryWriter
     from time import time
 
-    writer_train = SummaryWriter(log_dir=(os.path.join(options.log_dir, "run" + str(run), "train")))  # Replace with a path creation
+    if not os.path.exists(os.path.join(options.log_dir, "run" + str(run))):
+        os.makedirs(os.path.join(options.log_dir, "run" + str(run)))
     filename = os.path.join(options.log_dir, "run" + str(run), 'training.tsv')
     columns = ['epoch', 'iteration', 'acc_train', 'mean_loss_train', 'acc_valid', 'mean_loss_valid']
     results_df = pd.DataFrame(columns=columns)
@@ -257,7 +257,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
         os.makedirs(results_path)
     filename = os.path.join(results_path, 'training.tsv')
 
-    columns = ['epoch', 'iteration', 'loss_train', 'mean_loass_train', 'loss_valid', 'mean_loss_valid']
+    columns = ['epoch', 'iteration', 'loss_train', 'mean_loss_train', 'loss_valid', 'mean_loss_valid']
     results_df = pd.DataFrame(columns=columns)
     with open(filename, 'w') as f:
         results_df.to_csv(f, index=False, sep='\t')
@@ -454,7 +454,7 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
         os.makedirs(results_path)
 
     filename = os.path.join(results_path, 'training.tsv')
-    columns = ['epoch', 'iteration', 'loss_train', 'mean_loass_train', 'loss_valid', 'mean_loss_valid']
+    columns = ['epoch', 'iteration', 'loss_train', 'mean_loss_train', 'loss_valid', 'mean_loss_valid']
     results_df = pd.DataFrame(columns=columns)
     with open(filename, 'w') as f:
         results_df.to_csv(f, index=False, sep='\t')
