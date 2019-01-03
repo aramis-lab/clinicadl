@@ -38,6 +38,8 @@ parser.add_argument("--epochs", default=20, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--learning_rate", "-lr", default=1e-4, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
+parser.add_argument("--greedy_learning", action="store_true", default=False,
+                    help="Optimize with greedy layer-wise learning")
 
 # Optimizer arguments
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
@@ -58,6 +60,9 @@ parser.add_argument("--num_workers", '-w', default=1, type=int,
 
 
 def main(options):
+
+    options.transfer_learning_rate = options.learning_rate
+    options.transfer_learning_epochs = options.epochs
 
     check_and_clean(options.result_path)
     torch.set_num_threads(options.num_threads)
@@ -93,6 +98,7 @@ def main(options):
                               )
 
     for run in range(options.runs):
+        print('Beginning run %i' % run)
         run_path = path.join(options.result_path, 'run' + str(run))
 
         if options.greedy_learning:
