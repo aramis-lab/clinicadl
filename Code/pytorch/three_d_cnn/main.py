@@ -1,7 +1,4 @@
 import argparse
-
-from time import time
-import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
 from classification_utils import *
@@ -11,8 +8,8 @@ from model import *
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 
 # Mandatory arguments
-parser.add_argument("diagnosis_tsv", type=str,
-                    help="Path to tsv file of the population."
+parser.add_argument("diagnosis_path", type=str,
+                    help="Path to tsv files of the population."
                          " To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("log_dir", type=str,
                     help="Path to log dir for tensorboard usage.")
@@ -22,6 +19,10 @@ parser.add_argument("model", type=str, choices=["Conv_3", "Conv_4", "Test", "Tes
                     help="model selected")
 
 # Data Management
+parser.add_argument("--diagnoses", "-d", default=['AD', 'CN'], nargs='+', type=str,
+                    help="The diagnoses used for the classification")
+parser.add_argument("--data_augmentation", default=False, action="store_true",
+                    help="Use all data available instead of baseline")
 parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument('--accumulation_steps', '-asteps', default=1, type=int,
@@ -40,8 +41,8 @@ parser.add_argument("--num_workers", '-w', default=1, type=int,
 # Pretraining arguments
 parser.add_argument("-t", "--transfer_learning", default=False, action='store_true',
                     help="If do transfer learning")
-parser.add_argument("--transfer_learning_tsv", "-t_tsv", type=str, default=None,
-                    help='If transfer learning, gives the tsv file to use to perform pretraining')
+parser.add_argument("--transfer_learning_diagnoses", "-t_diagnoses", type=str, default=None, nargs='+',
+                    help='If transfer learning, gives the diagnoses to use to perform pretraining')
 parser.add_argument("--transfer_learning_epochs", "-t_e", type=int, default=10,
                     help="Number of epochs for pretraining")
 parser.add_argument("--transfer_learning_rate", "-t_lr", type=float, default=1e-4,
@@ -87,9 +88,9 @@ def main(options):
     if options.transfer_learning:
         model = eval(options.model)()
         criterion = torch.nn.MSELoss()
-        if options.transfer_learning_tsv is None:
-            raise Exception("A tsv file with data for pretraining must be given")
-        training_tsv, valid_tsv = load_split(options.transfer_learning_tsv)
+        if options.transfer_learning_diagnoses is None:
+            raise Exception("Diagnosis labels must be given to train the autoencoder.")
+        training_tsv, valid_tsv = load_autoencoder_data(options.diagnosis_path, options.transfer_learning_diagnoses)
 
         data_train = MRIDataset(options.input_dir, training_tsv, transformations)
         data_valid = MRIDataset(options.input_dir, valid_tsv, transformations)
@@ -114,7 +115,8 @@ def main(options):
 
     for run in range(options.runs):
         # Get the data.
-        training_tsv, valid_tsv = load_split(options.diagnosis_tsv)
+        training_tsv, valid_tsv = load_autoencoder_data(options.diagnosis_path, options.diagnoses,
+                                                        not options.data_augmentation)
 
         data_train = MRIDataset(options.input_dir, training_tsv, transform=transformations)
         data_valid = MRIDataset(options.input_dir, valid_tsv, transform=transformations)
