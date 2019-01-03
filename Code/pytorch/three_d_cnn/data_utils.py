@@ -326,19 +326,20 @@ def load_autoencoder_data(train_val_path, diagnoses_list, baseline=True):
     valid_df = pd.DataFrame()
 
     for diagnosis in diagnoses_list:
+
         if baseline:
             train_diagnosis_path = path.join(train_val_path, 'train', diagnosis + '_baseline.tsv')
-            valid_diagnosis_path = path.join(train_val_path, 'validation', diagnosis + '_baseline.tsv')
 
         else:
             train_diagnosis_path = path.join(train_val_path, 'train', diagnosis + '.tsv')
-            valid_diagnosis_path = path.join(train_val_path, 'validation', diagnosis + '.tsv')
+
+        valid_diagnosis_path = path.join(train_val_path, 'validation', diagnosis + '_baseline.tsv')
 
         train_diagnosis_df = pd.read_csv(train_diagnosis_path, sep='\t')
         valid_diagnosis_df = pd.read_csv(valid_diagnosis_path, sep='\t')
 
-        train_df = pd.concat(train_df, train_diagnosis_df)
-        valid_df = pd.concat(valid_df, valid_diagnosis_df)
+        train_df = pd.concat([train_df, train_diagnosis_df])
+        valid_df = pd.concat([valid_df, valid_diagnosis_df])
 
         return train_df, valid_df
 
