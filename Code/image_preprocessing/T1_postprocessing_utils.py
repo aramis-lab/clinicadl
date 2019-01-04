@@ -38,10 +38,11 @@ def get_caps_t1(caps_directory, tsv):
 
     return preprocessed_T1
 
-def extract_slices(preprocessed_T1):
+def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
     """
     This is to extract the slices from three directions
     :param preprocessed_T1:
+    :param slice_direction: which axis direction that the slices were extracted
     :return:
     """
     import torch, os
@@ -52,69 +53,77 @@ def extract_slices(preprocessed_T1):
 
     ## sagital
     slice_list_sag = range(15, image_tensor.shape[0] - 15) # delete the first 20 slice and last 15 slices
-    for index_slice in slice_list_sag:
-        # for i in slice_list:
-        ## sagital
-        slice_select_sag = image_tensor[index_slice, :, :]
 
-        ## convert the slices to images based on if transfer learning or not
-        # train from scratch
-        extracted_slice_original_sag = slice_select_sag.unsqueeze(0) ## shape should be 1 * W * L
+    if slice_direction == 0:
+        for index_slice in slice_list_sag:
+            # for i in slice_list:
+            ## sagital
+            slice_select_sag = image_tensor[index_slice, :, :]
 
-        # train for transfer learning, creating the fake RGB image.
-        slice_select_sag = (slice_select_sag - slice_select_sag.min()) / (slice_select_sag.max() - slice_select_sag.min())
-        extracted_slice_rgb_sag = torch.stack((slice_select_sag, slice_select_sag, slice_select_sag)) ## shape should be 3 * W * L
+            ## convert the slices to images based on if transfer learning or not
+            # train from scratch
+            extracted_slice_original_sag = slice_select_sag.unsqueeze(0) ## shape should be 1 * W * L
 
-        # save into .pt format
-        output_file_original = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-sag_originalslice-' + str(index_slice) + '.pt')
-        torch.save(extracted_slice_original_sag, output_file_original)
+            # train for transfer learning, creating the fake RGB image.
+            slice_select_sag = (slice_select_sag - slice_select_sag.min()) / (slice_select_sag.max() - slice_select_sag.min())
+            extracted_slice_rgb_sag = torch.stack((slice_select_sag, slice_select_sag, slice_select_sag)) ## shape should be 3 * W * L
 
-        output_file_rgb = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-sag_rgblslice-' + str(index_slice) + '.pt')
-        torch.save(extracted_slice_rgb_sag, output_file_rgb)
+            # save into .pt format
+            if slice_mode == 'original':
+                output_file_original = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-sag_originalslice-' + str(index_slice) + '.pt')
+                torch.save(extracted_slice_original_sag, output_file_original)
+            elif slice_mode == 'rgb':
+                output_file_rgb = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-sag_rgblslice-' + str(index_slice) + '.pt')
+                torch.save(extracted_slice_rgb_sag, output_file_rgb)
 
-    ## cornal
-    slice_list_cor = range(15, image_tensor.shape[1] - 15) # delete the first 20 slice and last 15 slices
-    for index_slice in slice_list_cor:
-        # for i in slice_list:
-        ## sagital
-        slice_select_cor = image_tensor[:, index_slice, :]
+    elif slice_direction == 1:
+        ## cornal
+        slice_list_cor = range(15, image_tensor.shape[1] - 15) # delete the first 20 slice and last 15 slices
+        for index_slice in slice_list_cor:
+            # for i in slice_list:
+            ## sagital
+            slice_select_cor = image_tensor[:, index_slice, :]
 
-        ## convert the slices to images based on if transfer learning or not
-        # train from scratch
-        extracted_slice_original_cor = slice_select_cor.unsqueeze(0) ## shape should be 1 * W * L
+            ## convert the slices to images based on if transfer learning or not
+            # train from scratch
+            extracted_slice_original_cor = slice_select_cor.unsqueeze(0) ## shape should be 1 * W * L
 
-        # train for transfer learning, creating the fake RGB image.
-        slice_select_cor = (slice_select_cor - slice_select_cor.min()) / (slice_select_cor.max() - slice_select_cor.min())
-        extracted_slice_rgb_cor = torch.stack((slice_select_cor, slice_select_cor, slice_select_cor)) ## shape should be 3 * W * L
+            # train for transfer learning, creating the fake RGB image.
+            slice_select_cor = (slice_select_cor - slice_select_cor.min()) / (slice_select_cor.max() - slice_select_cor.min())
+            extracted_slice_rgb_cor = torch.stack((slice_select_cor, slice_select_cor, slice_select_cor)) ## shape should be 3 * W * L
 
-        # save into .pt format
-        output_file_original = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-cor_originalslice-' + str(index_slice) + '.pt')
-        torch.save(extracted_slice_original_cor, output_file_original)
+            # save into .pt format
+            if slice_mode == 'original':
+                output_file_original = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-cor_originalslice-' + str(index_slice) + '.pt')
+                torch.save(extracted_slice_original_cor, output_file_original)
+            elif slice_mode == 'rgb':
+                output_file_rgb = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-cor_rgblslice-' + str(index_slice) + '.pt')
+                torch.save(extracted_slice_rgb_cor, output_file_rgb)
 
-        output_file_rgb = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-cor_rgblslice-' + str(index_slice) + '.pt')
-        torch.save(extracted_slice_rgb_cor, output_file_rgb)
+    else:
 
-    ## axial
-    slice_list_axi = range(15, image_tensor.shape[2] - 15) # delete the first 20 slice and last 15 slices
-    for index_slice in slice_list_axi:
-        # for i in slice_list:
-        ## sagital
-        slice_select_axi = image_tensor[:, :, index_slice]
+        ## axial
+        slice_list_axi = range(15, image_tensor.shape[2] - 15) # delete the first 20 slice and last 15 slices
+        for index_slice in slice_list_axi:
+            # for i in slice_list:
+            ## sagital
+            slice_select_axi = image_tensor[:, :, index_slice]
 
-        ## convert the slices to images based on if transfer learning or not
-        # train from scratch
-        extracted_slice_original_axi = slice_select_axi.unsqueeze(0) ## shape should be 1 * W * L
+            ## convert the slices to images based on if transfer learning or not
+            # train from scratch
+            extracted_slice_original_axi = slice_select_axi.unsqueeze(0) ## shape should be 1 * W * L
 
-        # train for transfer learning, creating the fake RGB image.
-        slice_select_axi = (slice_select_axi - slice_select_axi.min()) / (slice_select_axi.max() - slice_select_axi.min())
-        extracted_slice_rgb_axi = torch.stack((slice_select_axi, slice_select_axi, slice_select_axi)) ## shape should be 3 * W * L
+            # train for transfer learning, creating the fake RGB image.
+            slice_select_axi = (slice_select_axi - slice_select_axi.min()) / (slice_select_axi.max() - slice_select_axi.min())
+            extracted_slice_rgb_axi = torch.stack((slice_select_axi, slice_select_axi, slice_select_axi)) ## shape should be 3 * W * L
 
-        # save into .pt format
-        output_file_original = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-axi_originalslice-' + str(index_slice) + '.pt')
-        torch.save(extracted_slice_original_axi, output_file_original)
-
-        output_file_rgb = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-axi_rgblslice-' + str(index_slice) + '.pt')
-        torch.save(extracted_slice_rgb_axi, output_file_rgb)
+            # save into .pt format
+            if slice_mode == 'original':
+                output_file_original = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-axi_originalslice-' + str(index_slice) + '.pt')
+                torch.save(extracted_slice_original_axi, output_file_original)
+            elif slice_mode == 'rgb':
+                output_file_rgb = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-axi_rgblslice-' + str(index_slice) + '.pt')
+                torch.save(extracted_slice_rgb_axi, output_file_rgb)
 
     return preprocessed_T1
 
