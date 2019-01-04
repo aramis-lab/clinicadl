@@ -14,7 +14,7 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
-parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D patch autoencoder")
+parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D autoencoder")
 
 parser.add_argument("-id", "--caps_directory", default='/teams/ARAMIS/PROJECTS/CLINICA/CLINICA_datasets/temp/CAPS_ADNI_DL',
                            help="Path to the caps of image processing pipeline of DL")
@@ -55,6 +55,8 @@ parser.add_argument('--weight_decay', default=1e-4, type=float,
 #                     help='Chooses if visualization is done on AE pretraining')
 # parser.add_argument("-m", "--model", default='Conv_3', type=str, choices=["Conv_3", "Conv_4", "Test", "Test_nobatch", "Rieke", "Test2", 'Optim'],
 #                     help="model selected")
+
+##TODO: train all ae together layer by layer.
 
 def main(options):
 
@@ -112,7 +114,7 @@ def main(options):
     for epoch_i in range(options.epochs):
         print("At %s -th epoch." % str(epoch_i))
         # train the ae
-        epoch_loss = train_ae(autoencoder, train_loader, use_cuda, loss, optimizer, writer_train, epoch_i, options)
+        epoch_loss = train_sparse_ae(autoencoder, train_loader, use_cuda, loss, optimizer, writer_train, epoch_i, options)
 
         ## update the learing rate
         if epoch_i % 5 == 0:

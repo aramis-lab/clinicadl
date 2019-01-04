@@ -153,9 +153,9 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
     return subjects, y_ground, y_hat, accuracy_batch_mean, global_steps
 
 
-def train_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, options):
+def train_sparse_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, options):
     """
-    This trains the autoencoder with all data
+    This trains the sparse autoencoder.
     :param autoencoder:
     :param data_loader:
     :param use_cuda:
@@ -192,7 +192,7 @@ def train_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, writer, e
                 rho = (torch.ones([1, encoded.shape[1]]) * sparsity).cuda()
                 rho_hat = torch.sum(encoded, dim=0, keepdim=True).cuda()
             else:
-                rho = torch.ones([1, encoded.shape[1]]) * sparsity
+                rho = torch.ones([1, encoded.shape[1]]) * sparsity ## this value should be near to 0.
                 rho_hat = torch.sum(encoded, dim=0, keepdim=True)
             ## the sparsity loss
             loss2 = kl_divergence(rho, rho_hat) * beta
@@ -205,7 +205,7 @@ def train_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, writer, e
             if np.sum(np.isnan(rho_hat.detach().numpy())):
                 raise Exception('Stop, this is wrong! rho_hat')
             # kl_div_loss(mean_activitaion, sparsity)
-            loss = loss1 + beta * loss2
+            loss = loss1 + beta * loss2 ## beta indicates the importance of the sparsity loss
             epoch_loss += loss
             print("For batch %d, training loss is : %f" % (i, loss.item()))
 
@@ -580,3 +580,12 @@ def kl_divergence(p, q):
     s2 = torch.sum((1 - p) * torch.log((1 - p) / (1 - q)))
 
     return s1 + s2
+
+def extract_slice_img(x):
+    """
+    This is to extrac a middle slice of the input patch or MRI to check the reconstruction quality
+    :param x:
+    :return:
+    """
+    slices = x[:, 0, x.shape[-1] // 2, ...].unsqueeze(1)
+    return slices

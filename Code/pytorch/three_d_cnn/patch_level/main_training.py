@@ -116,7 +116,6 @@ def main(options):
                                   shuffle=options.shuffle,
                                   num_workers=options.num_workers,
                                   drop_last=True,
-                                  pin_memory=True
                                   )
 
         valid_loader = DataLoader(data_valid,
@@ -124,7 +123,6 @@ def main(options):
                                   shuffle=False,
                                   num_workers=options.num_workers,
                                   drop_last=False,
-                                  pin_memory=True
                                   )
         ## Decide to use gpu or cpu to train the model
         if options.use_gpu == False:

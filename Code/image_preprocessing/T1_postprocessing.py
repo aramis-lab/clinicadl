@@ -14,7 +14,7 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
-def postprocessing_t1w(caps_directory, tsv, patch_size, stride_size, working_directory=None, extract_method='slice'):
+def postprocessing_t1w(caps_directory, tsv, patch_size, stride_size, working_directory=None, extract_method='slice', slice_direction=0, slice_mode='original'):
     """
     This is a postprocessing pipeline to prepare the slice-level and patch-level data from the whole MRI and save them
     on disk, so that to facilitate the training process:
@@ -58,8 +58,10 @@ def postprocessing_t1w(caps_directory, tsv, patch_size, stride_size, working_dir
                             iterfield=['preprocessed_T1'],
                                interface=nutil.Function(
                                    function=extract_slices,
-                                   input_names=['preprocessed_T1'],
+                                   input_names=['preprocessed_T1', 'slice_direction', 'slice_mode'],
                                    output_names=['preprocessed_T1']))
+    extract_slices.inputs.slice_direction = slice_direction
+    extract_slices.inputs.slice_mode = slice_mode
 
     ## extract the patches.
     extract_patches = npe.MapNode(name='extract_patches',

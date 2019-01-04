@@ -1,6 +1,8 @@
 from torchvision.models import alexnet
 import torch.nn as nn
 import torch.nn.functional as F
+import torch
+from torch.autograd import Variable
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -158,32 +160,105 @@ class SparseAutoencoder(nn.Module):
         decoded = F.sigmoid(self.decoder(encoded))
         return decoded, encoded
 
-class autoencoder(nn.Module):
-    """
-    This is the implementation of convolutional autoencoder.
+############################################
+### Stacked Convoultional Autoencoder
+############################################
 
-    Ref: `Stacked Convolutional Auto-Encoders for Hierarchical Feature Extraction`
+class ConvAutoencoder(nn.Module):
+    r"""
+    Convolutional autoencoder layer for stacked autoencoders.
+    This module is automatically trained when in model.training is True.
+
+    Ref: `Stacked Convolutional Auto-Encoders for Hierarchical Feature Extraction`,
+         `Reducing the Dimensionality of Data with Neural Networks`,
+         `Extracting and Composing Robust Features with Denoising Autoencoders`
+
+    Args:
+        input_size: The number of features in the input
+        output_size: The number of features to output
+        stride: Stride of the convolutional layers.
     """
-    def init(self):
-        super(autoencoder, self).init()
-        self.encoder = nn.Sequential(
-            nn.Conv3d(1, 16, 3, stride=3, padding=1),  # b, 16, 10, 10
-            nn.ReLU(True),
-            nn.MaxPool3d(2, stride=2),  # b, 16, 5, 5
-            nn.Conv3d(16, 8, 3, stride=2, padding=1),  # b, 8, 3, 3
-            nn.ReLU(True),
-            nn.MaxPool3d(2, stride=1)  # b, 8, 2, 2
+
+    def __init__(self, input_size, output_size):
+        super(ConvAutoencoder, self).__init__()
+
+        self.forward_pass = nn.Sequential(
+            nn.Conv3d(input_size, output_size, kernel_size=2, stride=2, padding=0),
+            nn.ReLU(),
+            nn.MaxPool3d(2, stride=2, return_indices=True)
         )
-        self.decoder = nn.Sequential(
-            nn.ConvTranspose3d(8, 16, 3, stride=2),  # b, 16, 5, 5
-            nn.ReLU(True),
-            nn.ConvTranspose3d(16, 8, 5, stride=3, padding=1),  # b, 8, 15, 15
-            nn.ReLU(True),
-            nn.ConvTranspose3d(8, 1, 2, stride=2, padding=1),  # b, 1, 28, 28
-            nn.Sigmoid() ## value range [0, 1]
+        self.backward_pass = nn.Sequential(
+            nn.ConvTranspose3d(output_size, input_size, kernel_size=2, stride=2, padding=0),
+            nn.ReLU(),
         )
+
+        self.criterion = nn.MSELoss()
+        self.optimizer = torch.optim.SGD(self.parameters(), lr=0.01)
+        self.max_pool_indices=None
 
     def forward(self, x):
-        encoded = self.encoder(x)
-        decoded = self.decoder(encoded)
-        return decoded, encoded
+        # Train each autoencoder with backpropogation if model is set to be train
+        x = x.detach()
+        # Add noise for the input.
+        x_noisy = x * (Variable(x.data.new(x.size()).normal_(0, 0.1)) > -.1).type_as(x)
+        y, self.max_pool_indices = self.forward_pass(x_noisy)
+
+        if self.training:
+            ## check if the original shape of x is the exponential of 2, assuming that the 3 dimensions of patches are the same.
+            if (x.shape[-1]) & (x.shape[-1] - 1) == 0:
+                x_reconstruct = F.max_unpool3d(y, self.max_pool_indices, 2, 2)
+            else:
+                x_reconstruct = F.max_unpool3d(y, self.max_pool_indices, 2, 2, output_size=[2 * y.shape[-1] + 1, 2 * y.shape[-1] + 1, 2 * y.shape[-1] + 1])
+            x_reconstruct = self.backward_pass(x_reconstruct)
+            loss = self.criterion(x_reconstruct, Variable(x.data, requires_grad=False))
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+
+        return y.detach()
+
+    def reconstruct(self, x):
+
+        ## check if the original shape of x is the exponential of 2, assuming that the 3 dimensions of patches are the same.
+        if (x.shape[-1]) & (x.shape[-1] - 1) == 0:
+            x_reconstruct = F.max_unpool3d(x, self.max_pool_indices, 2, 2)
+        else:
+            x_reconstruct = F.max_unpool3d(x, self.max_pool_indices, 2, 2,
+                                           output_size=[2 * x.shape[-1] + 1, 2 * x.shape[-1] + 1, 2 * x.shape[-1] + 1])
+        reconstruct = self.backward_pass(x_reconstruct)
+
+        return reconstruct
+
+
+class StackedConvDenAutoencoder(nn.Module):
+    r"""
+    A stacked autoencoder made from the convolutional denoising autoencoders above.
+    Each autoencoder is trained independently and at the same time.
+
+    Note: as for each AE, we use one conv layer and one maxpooling, so that the encoder of each AE will outputs 1/4
+    dimension patches of the original one.
+    """
+
+    def __init__(self):
+        super(StackedConvDenAutoencoder, self).__init__()
+
+        self.ae1 = ConvAutoencoder(1, 128)
+        self.ae2 = ConvAutoencoder(128, 256)
+        self.ae3 = ConvAutoencoder(256, 512)
+
+    def forward(self, x):
+        a1 = self.ae1(x)
+        a2 = self.ae2(a1)
+        a3 = self.ae3(a2)
+
+        if self.training:
+            return a3
+
+        else:
+            return a3, self.reconstruct(a3)
+
+    def reconstruct(self, x):
+        a2_reconstruct = self.ae3.reconstruct(x)
+        a1_reconstruct = self.ae2.reconstruct(a2_reconstruct)
+        x_reconstruct = self.ae1.reconstruct(a1_reconstruct)
+        return x_reconstruct
