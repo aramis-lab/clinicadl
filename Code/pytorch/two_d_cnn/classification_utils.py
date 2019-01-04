@@ -367,3 +367,106 @@ class CustomToTensor(object):
 
             # backward compatibility
             return img.float()
+
+
+class MRIDataset_slice(Dataset):
+    """
+    This class reads the CAPS of image processing pipeline of DL
+
+    To note, this class processes the MRI to be RGB for transfer learning.
+
+    Return: a Pytorch Dataset objective
+    """
+    def __init__(self, img_dir, data_file, transform=None, RGBchannels=False, mri_plane=0, deleted_slices=30):
+        """
+        Args:
+            img_dir (string): Directory of all the images.
+            data_file (string): File name of the train/test split file.
+            transform (callable, optional): Optional transform to be applied on a sample.
+            RGBchannels (bool, optional): Sets the number of channels to 3.
+            mri_plane (int, optional): Chooses the MRI plane (can be 0, 1 or 2).
+            deleted_slices (int, optional): Number of slices deleted before or after the end of the image.
+
+        """
+        self.img_dir = img_dir
+        self.transform = transform
+        self.RGBchannels = RGBchannels
+
+        self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
+        slice_code = {0: 'sag', 1: 'cor', 2: 'axi'}
+        self.slice_code = slice_code[mri_plane]
+
+        # Check the format of the tsv file here
+        if isinstance(data_file, str):
+            self.df = pd.read_csv(data_file, sep='\t')
+        elif isinstance(data_file, pd.DataFrame):
+            self.df = data_file
+        else:
+            raise Exception('The argument datafile is not of correct type.')
+
+        if ('diagnosis' not in list(self.df.columns.values)) or ('session_id' not in list(self.df.columns.values)) or \
+           ('participant_id' not in list(self.df.columns.values)):
+            raise Exception("the data file is not in the correct format."
+                            "Columns should include ['participant_id', 'session_id', 'diagnosis']")
+
+        self.size = self[0]['image'].numpy().size
+
+        # Find the number of slices per image
+        img_name = self.df.loc[0, 'participant_id']
+        sess_name = self.df.loc[0, 'session_id']
+        image_path = os.path.join(self.img_dir, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl',
+                                  img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+        image = torch.load(image_path)
+        self.slices_per_participant = image.size(mri_plane + 1) - deleted_slices
+
+    def __len__(self):
+        return len(self.df) * self.slices_per_participant
+
+    def __getitem__(self, idx):
+
+        # Get the index of the participant in the DataFrame and the index of the slice
+        idx_participant = int(idx / self.slices_per_participant)
+        idx_slice = idx % self.slices_per_participant
+
+        img_name = self.df.loc[idx_participant, 'participant_id']
+        sess_name = self.df.loc[idx_participant, 'session_id']
+        img_label = self.df.loc[idx_participant, 'diagnosis']
+        label = self.diagnosis_code[img_label]
+
+        slice_path = os.path.join(self.img_dir, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl',
+                                  img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' + self.slice_code +
+                                  '_originalslice-' + str(idx_slice) + '.pt')
+        extracted_slice = torch.load(slice_path)
+
+        # Check here if the dimension is correct
+        if self.RGBchannels:
+            extracted_slice = extracted_slice.repeat(3, 1, 1)
+
+        # for img in images_list:
+        if self.transform:
+            extracted_slice = self.transform(extracted_slice)
+
+        sample = {'image_id': img_name + '_' + sess_name, 'image': extracted_slice, 'label': label}
+
+        return sample
+
+    def get(self, idx_participant, idx_slice):
+        """
+        A getter to find an image given the index of the participant and the index of the slice.
+
+        :param idx_participant: (int) the index of the participant in the DataFrame df.
+        :param idx_slice: (int) the index of the slice.
+        :return: the corresponding sample given by __getitem__
+        """
+
+        # Check if idx_slice is correct
+        if idx_slice >= self.slices_per_participant or idx_slice < 0:
+            raise ValueError('The index of the slice must be an int between 0 and %i. %i was given.'
+                             % (self.slices_per_participant - 1, idx_slice))
+
+        if idx_participant >= len(self.df) or idx_slice < 0:
+            raise ValueError('The index of the participant must be an int between 0 and %i. %i was given.'
+                             % (len(self.df) - 1, idx_slice))
+
+        idx = idx_participant * self.slices_per_participant + idx_slice
+        return self[idx]
