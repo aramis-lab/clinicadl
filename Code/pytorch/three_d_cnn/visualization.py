@@ -22,6 +22,8 @@ parser.add_argument("--diagnoses", "-d", default=["AD", "CN"], nargs='+', type=s
                     help="Take all the subjects possible for autoencoder training")
 parser.add_argument("--gpu", action="store_true", default=False,
                     help="if True computes the visualization on GPU")
+parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
+                    help="Performs MinMaxNormalization for visualization")
 
 
 def main(options):
@@ -33,7 +35,11 @@ def main(options):
 
     for set in sets:
 
-        set_path = path.join(options.model_path, "visualization", set)
+        if options.minmaxnormalization:
+            set_path = path.join(options.model_path, "visualization_norm", set)
+        else:
+            set_path = path.join(options.model_path, "visualization", set)
+
         if not path.exists(set_path):
             os.makedirs(set_path)
 
@@ -52,6 +58,10 @@ def main(options):
             input_nii = nib.load(image_path)
             input_np = input_nii.get_data()
             input_pt = torch.from_numpy(input_np).unsqueeze(0).unsqueeze(0).float()
+            if options.minmaxnormalization:
+                transform = MinMaxNormalization()
+                input_pt = transform(input_pt)
+
             output_pt = best_decoder(input_pt)
             output_np = output_pt.detach().numpy()[0][0]
             output_nii = nib.Nifti1Image(output_np, affine=input_nii.affine)
