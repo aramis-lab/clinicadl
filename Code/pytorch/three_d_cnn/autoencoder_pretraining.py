@@ -70,7 +70,7 @@ def main(options):
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
                         (options.evaluation_steps, options.accumulation_steps))
 
-    transformations = None
+    transformations = MinMaxNormalization()
 
     total_time = time()
     # Training the autoencoder based on the model
