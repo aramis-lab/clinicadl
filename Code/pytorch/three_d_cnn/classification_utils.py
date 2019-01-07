@@ -61,7 +61,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
             total_correct_cnt += batch_correct_cnt
             loss.backward()
 
-            del imgs
+            del imgs, labels
 
             if (i+1) % options.accumulation_steps == 0:
                 step_flag = False
