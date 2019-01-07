@@ -302,9 +302,9 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
                     evaluation_flag = False
                     print('Iteration %d' % i)
                     loss_train = test_ae(decoder, train_loader, gpu, criterion)
-                    mean_loss_train = loss_train / (len(train_loader) * train_loader.dataset.size)
+                    mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
                     loss_valid = test_ae(decoder, valid_loader, gpu, criterion)
-                    mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.dataset.size)
+                    mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.batch_size)
                     decoder.train()
                     print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
                     row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
