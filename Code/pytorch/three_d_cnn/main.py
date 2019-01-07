@@ -15,7 +15,7 @@ parser.add_argument("log_dir", type=str,
                     help="Path to log dir for tensorboard usage.")
 parser.add_argument("input_dir", type=str,
                     help="Path to input dir of the MRI (preprocessed CAPS_dir).")
-parser.add_argument("model", type=str, choices=["Conv_3", "Conv_4", "Test", "Test_nobatch", "Rieke", "Test2", 'Optim'],
+parser.add_argument("model", type=str,
                     help="model selected")
 
 # Data Management
@@ -39,8 +39,10 @@ parser.add_argument("--num_workers", '-w', default=1, type=int,
                     help='the number of batch being loaded in parallel')
 
 # Pretraining arguments
-parser.add_argument("-t", "--transfer_learning", default=False, action='store_true',
-                    help="If do transfer learning")
+parser.add_argument("-t", "--transfer_learning", default=None, type=str,
+                    help="If a value is given, use autoencoder pretraining."
+                         "If an existing path is given, a pretrained autoencoder is used."
+                         "Else a new autoencoder is trained")
 parser.add_argument("--transfer_learning_diagnoses", "-t_diagnoses", type=str, default=None, nargs='+',
                     help='If transfer learning, gives the diagnoses to use to perform pretraining')
 parser.add_argument("--transfer_learning_epochs", "-t_e", type=int, default=10,
@@ -74,6 +76,18 @@ parser.add_argument('--num_threads', type=int, default=1,
 
 def main(options):
 
+    # Check if model is implemented
+    import model
+    import inspect
+
+    choices = []
+    for name, obj in inspect.getmembers(model):
+        if inspect.isclass(obj):
+            choices.append(name)
+
+    if options.model not in choices:
+        raise NotImplementedError('The model wanted %s has not been implemented in the module model.py' % options.model)
+
     check_and_clean(options.log_dir)
     torch.set_num_threads(options.num_threads)
     valid_accuracies = np.zeros(options.runs)
@@ -85,33 +99,39 @@ def main(options):
 
     total_time = time()
     # Pretraining the model
-    if options.transfer_learning:
+    if options.transfer_learning is not None:
         model = eval(options.model)()
         criterion = torch.nn.MSELoss()
-        if options.transfer_learning_diagnoses is None:
-            raise Exception("Diagnosis labels must be given to train the autoencoder.")
-        training_tsv, valid_tsv = load_autoencoder_data(options.diagnosis_path, options.transfer_learning_diagnoses)
 
-        data_train = MRIDataset(options.input_dir, training_tsv, transformations)
-        data_valid = MRIDataset(options.input_dir, valid_tsv, transformations)
+        if path.exists(options.transfer_learning):
+            print("A pretrained autoencoder is loaded at path %s" % options.transfer_learning)
+            apply_autoencoder_weights(model, options.transfer_learning, options.log_dir)
 
-        # Use argument load to distinguish training and testing
-        train_loader = DataLoader(data_train,
-                                  batch_size=options.batch_size,
-                                  shuffle=options.shuffle,
-                                  num_workers=options.num_workers,
-                                  drop_last=True
-                                  )
+        else:
+            if options.transfer_learning_diagnoses is None:
+                raise Exception("Diagnosis labels must be given to train the autoencoder.")
+            training_tsv, valid_tsv = load_autoencoder_data(options.diagnosis_path, options.transfer_learning_diagnoses)
 
-        valid_loader = DataLoader(data_valid,
-                                  batch_size=options.batch_size,
-                                  shuffle=False,
-                                  num_workers=options.num_workers,
-                                  drop_last=False
-                                  )
+            data_train = MRIDataset(options.input_dir, training_tsv, transformations)
+            data_valid = MRIDataset(options.input_dir, valid_tsv, transformations)
 
-        pretraining_dir = path.join(options.log_dir, 'pretraining')
-        greedy_learning(model, train_loader, valid_loader, criterion, True, pretraining_dir, options)
+            # Use argument load to distinguish training and testing
+            train_loader = DataLoader(data_train,
+                                      batch_size=options.batch_size,
+                                      shuffle=options.shuffle,
+                                      num_workers=options.num_workers,
+                                      drop_last=True
+                                      )
+
+            valid_loader = DataLoader(data_valid,
+                                      batch_size=options.batch_size,
+                                      shuffle=False,
+                                      num_workers=options.num_workers,
+                                      drop_last=False
+                                      )
+
+            pretraining_dir = path.join(options.log_dir, 'pretraining')
+            greedy_learning(model, train_loader, valid_loader, criterion, True, pretraining_dir, options)
 
     for run in range(options.runs):
         # Get the data.

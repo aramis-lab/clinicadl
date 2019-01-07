@@ -21,7 +21,7 @@ class MRIDataset(Dataset):
         """
         self.img_dir = img_dir
         self.transform = transform
-        self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
+        self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1, 'unlabeled': -1}
 
         # Check the format of the tsv file here
         if isinstance(data_file, str):
@@ -101,6 +101,13 @@ class ToTensor(object):
         image = image.astype(float)
 
         return torch.from_numpy(image[np.newaxis, :]).float()
+
+
+class MinMaxNormalization(object):
+    """Normalizes a tensor between 0 and 1"""
+
+    def __call__(self, image):
+        return (image - image.min()) / (image.max() - image.min())
 
 
 def subject_diagnosis_df(subject_session_df):
