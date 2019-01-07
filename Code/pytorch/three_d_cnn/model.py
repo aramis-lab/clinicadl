@@ -87,16 +87,16 @@ class Test3(nn.Module):
         self.classifier = nn.Sequential(
             Flatten(),
 
-            nn.Linear(64 * 9 * 12 * 10, 5000),
-            nn.ReLU(),
-
-            nn.Linear(5000, 1000),
+            nn.Linear(64 * 9 * 12 * 10, 1000),
             nn.ReLU(),
 
             nn.Linear(1000, 500),
             nn.ReLU(),
 
-            nn.Linear(500, 2)
+            nn.Linear(500, 100),
+            nn.ReLU(),
+
+            nn.Linear(100, 2)
 
         )
 
@@ -137,13 +137,13 @@ class Test4(nn.Module):
         self.classifier = nn.Sequential(
             Flatten(),
 
-            nn.Linear(64 * 9 * 12 * 10, 5000),
+            nn.Linear(64 * 9 * 12 * 10, 1000),
             nn.ReLU(),
 
-            nn.Linear(5000, 500),
+            nn.Linear(1000, 100),
             nn.ReLU(),
 
-            nn.Linear(500, 2)
+            nn.Linear(100, 2)
 
         )
 
@@ -528,7 +528,7 @@ def create_model(options):
     else:
         model.cpu()
 
-    if options.transfer_learning:
+    if options.transfer_learning is not None:
         model, _ = load_model(model, path.join(options.log_dir, "pretraining"), 'model_pretrained.pth.tar')
 
     return model
@@ -604,3 +604,25 @@ class Decoder(nn.Module):
                 inv_layers.append(layer)
         inv_layers.reverse()
         return nn.Sequential(*inv_layers)
+
+
+def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path):
+    from copy import deepcopy
+    from os import path
+    import os
+    from classification_utils import save_checkpoint
+
+    decoder = Decoder(model)
+    result_dict = torch.load(pretrained_autoencoder_path)
+
+    decoder.load_state_dict(result_dict['model'])
+    model.features = deepcopy(decoder.encoder)
+    if not path.exists(path.join(model_path, 'pretraining')):
+        os.makedirs(path.join(model_path, "pretraining"))
+
+    save_checkpoint({'model': model.state_dict(),
+                     'epoch': -1,
+                     'path': pretrained_autoencoder_path},
+                    False,
+                    path.join(model_path, "pretraining"),
+                    'model_pretrained.pth.tar')
