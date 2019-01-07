@@ -24,6 +24,39 @@ parser.add_argument("--gpu", action="store_true", default=False,
                     help="if True computes the visualization on GPU")
 parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
                     help="Performs MinMaxNormalization for visualization")
+parser.add_argument("--feature_maps", "-fm", default=False, action="store_true",
+                    help="Performs feature maps extraction and visualization")
+
+
+def feature_maps_extraction(decoder, input_pt, results_path, affine, level=0):
+    """
+    Visualization of the feature maps of different levels (from 0 to decoder.level - 1)
+
+    :param decoder: (Decoder)
+    :param input_pt: (tensor) the input image
+    :param results_path: (str) path to the visualization
+    :param affine: (np array) Nifti parameter to construct images
+    :param level: (int) the number of convolutional levels kept to extract the feature maps
+    :return:
+        None
+    """
+    from copy import copy
+
+    affine_level = copy(affine)
+    affine_level[0:3, 0:3] = affine_level[0:3, 0:3] * 2**(level + 1)
+    if level >= decoder.level:
+        raise ValueError("The feature maps level %s cannot be superior or equal to the decoder level %s."
+                         % (level, decoder.level))
+
+    encoder = extract_first_layers(decoder, level + 1)
+    output_pt = encoder(input_pt)
+    n_feature_maps = output_pt.size(1)
+
+    for i in range(n_feature_maps):
+        feature_map_np = output_pt.detach().numpy()[0][i]
+        feature_map_nii = nib.Nifti1Image(feature_map_np, affine=affine_level)
+
+        nib.save(feature_map_nii, path.join(results_path, 'level-' + str(level) + '_feature_map-' + str(i)))
 
 
 def main(options):
@@ -61,6 +94,10 @@ def main(options):
             if options.minmaxnormalization:
                 transform = MinMaxNormalization()
                 input_pt = transform(input_pt)
+
+            if options.feature_maps:
+                for level in range(decoder.level):
+                    feature_maps_extraction(decoder, input_pt, diagnosis_path, input_nii.affine, level)
 
             output_pt = best_decoder(input_pt)
             output_np = output_pt.detach().numpy()[0][0]

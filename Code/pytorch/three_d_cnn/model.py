@@ -540,6 +540,8 @@ class Decoder(nn.Module):
         from copy import deepcopy
         super(Decoder, self).__init__()
 
+        self.level = 0
+
         if model is not None:
             self.encoder = deepcopy(model.features)
             self.decoder = self.construct_inv_layers(model)
@@ -588,6 +590,7 @@ class Decoder(nn.Module):
             if isinstance(layer, nn.Conv3d):
                 inv_layers.append(nn.ConvTranspose3d(layer.out_channels, layer.in_channels, layer.kernel_size,
                                                      stride=layer.stride))
+                self.level += 1
             elif isinstance(layer, PadMaxPool3d):
                 inv_layers.append(CropMaxUnpool3d(layer.kernel_size, stride=layer.stride))
             elif isinstance(layer, nn.MaxPool3d):
