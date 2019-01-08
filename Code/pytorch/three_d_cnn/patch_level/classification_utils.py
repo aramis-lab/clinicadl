@@ -589,3 +589,23 @@ def extract_slice_img(x):
     """
     slices = x[:, 0, x.shape[-1] // 2, ...].unsqueeze(1)
     return slices
+
+def visualize_ae(ae, data, results_path):
+    """
+    To reconstruct one example patch and save it in nifti format for visualization
+    :param ae:
+    :param data: tensor, shape [1, 1, height, width, length]
+    :param results_path:
+    :return:
+    """
+    import nibabel as nib
+    import os
+
+    # set the model to be eval
+    ae.eval()
+    encoder, decoder = ae(data)
+    reconstructed_nii = nib.Nifti1Image(decoder[0][0].cpu().detach().numpy(), np.eye(4))
+    input_nii = nib.Nifti1Image(data[0][0].cpu().detach().numpy(), np.eye(4))
+    nib.save(reconstructed_nii, os.path.join(results_path, 'example_patch_reconstructed.nii.gz'))
+    nib.save(input_nii, os.path.join(results_path, 'example_patch_original.nii.gz'))
+

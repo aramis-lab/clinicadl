@@ -20,7 +20,7 @@ parser.add_argument("-id", "--caps_directory", default='/teams/ARAMIS/PROJECTS/C
                            help="Path to the caps of image processing pipeline of DL")
 parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/test.tsv',
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
-parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch_ae',
+parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch_ae_denoised_convae_norm',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 parser.add_argument("-dty", "--data_type", default="from_MRI", choices=["from_MRI", "from_patch"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
@@ -108,8 +108,8 @@ def main(options):
 
     print('Beginning the training for autoencoder')
     # parameters used in training
-    best_loss = 1e10
-    writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "autoencoder_train")))
+    best_loss = np.inf
+    writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "SparseAutoencoder", "train")))
 
     for epoch_i in range(options.epochs):
         print("At %s -th epoch." % str(epoch_i))
