@@ -14,7 +14,7 @@ parser.add_argument("result_path", type=str,
                     help="Path to the result folder.")
 parser.add_argument("input_dir", type=str,
                     help="Path to input dir of the MRI (preprocessed CAPS_dir).")
-parser.add_argument("model", type=str, choices=["Conv_3", "Conv_4", "Test", "Test_nobatch", "Rieke", "Test2", 'Optim'],
+parser.add_argument("model", type=str,
                     help="model selected")
 
 # Data Management
@@ -60,6 +60,18 @@ parser.add_argument("--num_workers", '-w', default=1, type=int,
 
 
 def main(options):
+
+    # Check if model is implemented
+    import model
+    import inspect
+
+    choices = []
+    for name, obj in inspect.getmembers(model):
+        if inspect.isclass(obj):
+            choices.append(name)
+
+    if options.model not in choices:
+        raise NotImplementedError('The model wanted %s has not been implemented in the module model.py' % options.model)
 
     options.transfer_learning_rate = options.learning_rate
     options.transfer_learning_epochs = options.epochs
