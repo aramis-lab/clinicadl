@@ -6,6 +6,63 @@ All the architectures are built here
 """
 
 
+class Test2_batch(nn.Module):
+    """
+    Classifier for a multi-class classification task
+    """
+    def __init__(self):
+        super(Test2_batch, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 8, 3),
+            nn.BatchNorm3d(8),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3),
+            nn.BatchNorm3d(16),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3),
+            nn.BatchNorm3d(32),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2)
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+
+            nn.Linear(64 * 9 * 12 * 10, 5000),
+            nn.ReLU(),
+
+            nn.Linear(5000, 1000),
+            nn.ReLU(),
+
+            nn.Linear(1000, 500),
+            nn.ReLU(),
+
+            nn.Linear(500, 100),
+            nn.ReLU(),
+
+            nn.Linear(100, 2)
+
+        )
+
+        self.flattened_shape = [-1, 64, 9, 12, 10]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
 class Test2(nn.Module):
     """
     Classifier for a multi-class classification task
@@ -601,8 +658,8 @@ class Decoder(nn.Module):
                 inv_layers.append(Reshape(model.flattened_shape))
             elif isinstance(layer, nn.LeakyReLU):
                 inv_layers.append(nn.LeakyReLU(negative_slope=1 / layer.negative_slope))
-            elif i == len(self.encoder) - 1 and isinstance(layer, nn.BatchNorm3d):
-                pass
+            # elif i == len(self.encoder) - 1 and isinstance(layer, nn.BatchNorm3d):
+            #     pass
             else:
                 inv_layers.append(layer)
         inv_layers.reverse()
