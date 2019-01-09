@@ -1,6 +1,8 @@
 from modules import *
 import torch.nn as nn
 import torch
+from copy import deepcopy
+
 """
 All the architectures are built here
 """
@@ -658,10 +660,11 @@ class Decoder(nn.Module):
                 inv_layers.append(Reshape(model.flattened_shape))
             elif isinstance(layer, nn.LeakyReLU):
                 inv_layers.append(nn.LeakyReLU(negative_slope=1 / layer.negative_slope))
-            # elif i == len(self.encoder) - 1 and isinstance(layer, nn.BatchNorm3d):
-            #     pass
+            elif i == len(self.encoder) - 1 and isinstance(layer, nn.BatchNorm3d):
+                pass
             else:
                 inv_layers.append(layer)
+        inv_layers = replace_relu(inv_layers)
         inv_layers.reverse()
         return nn.Sequential(*inv_layers)
 
@@ -686,3 +689,25 @@ def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path):
                     False,
                     path.join(model_path, "pretraining"),
                     'model_pretrained.pth.tar')
+
+
+def replace_relu(inv_layers):
+    idx_relu, idx_conv = -1, -1
+    for idx, layer in enumerate(inv_layers):
+        if isinstance(layer, nn.ConvTranspose3d):
+            idx_conv = idx
+        elif isinstance(layer, nn.ReLU):
+            idx_relu = idx
+
+        if idx_conv != -1 and idx_relu != -1:
+            inv_layers[idx_relu], inv_layers[idx_conv] = inv_layers[idx_conv], inv_layers[idx_relu]
+            idx_conv, idx_relu = -1, -1
+
+    # Check if number of features of batch normalization layers is still correct
+    for idx, layer in enumerate(inv_layers):
+        if isinstance(layer, nn.BatchNorm3d):
+            conv = inv_layers[idx + 1]
+            inv_layers[idx] = nn.BatchNorm3d(conv.out_channels)
+
+    return inv_layers
+
