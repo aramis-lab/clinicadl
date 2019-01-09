@@ -32,6 +32,8 @@ parser.add_argument("--baseline", action="store_true", default=False,
                     help="if True only the baseline is used")
 parser.add_argument("--visualization", action='store_true', default=False,
                     help='Chooses if visualization is done on AE pretraining')
+parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
+                    help="Performs MinMaxNormalization for visualization")
 
 # Training arguments
 parser.add_argument("--epochs", default=20, type=int,
@@ -40,6 +42,8 @@ parser.add_argument("--learning_rate", "-lr", default=1e-4, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--greedy_learning", action="store_true", default=False,
                     help="Optimize with greedy layer-wise learning")
+parser.add_argument("--add_sigmoid", default=False, action="store_true",
+                    help="Ad sigmoid function at the end of the decoder.")
 
 # Optimizer arguments
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
@@ -82,7 +86,10 @@ def main(options):
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
                         (options.evaluation_steps, options.accumulation_steps))
 
-    transformations = MinMaxNormalization()
+    if options.minmaxnormalization:
+        transformations = MinMaxNormalization()
+    else:
+        transformations = None
 
     total_time = time()
     # Training the autoencoder based on the model
@@ -118,6 +125,11 @@ def main(options):
 
         else:
             decoder = Decoder(model)
+            if options.add_sigmoid:
+                if isinstance(decoder.decoder[-1], nn.ReLU):
+                    decoder.decoder = nn.Sequential(*list(decoder.decoder)[:-1])
+                decoder.decoder.add_module("sigmoid", nn.Sigmoid())
+
             ae_finetuning(decoder, train_loader, valid_loader, criterion, options.gpu, run_path, options)
 
             best_decoder = load_model(decoder, run_path)
