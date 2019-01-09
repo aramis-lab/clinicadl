@@ -37,6 +37,8 @@ parser.add_argument("--visualization", action='store_true', default=False,
                     help='Chooses if visualization is done on AE pretraining')
 parser.add_argument("--num_workers", '-w', default=1, type=int,
                     help='the number of batch being loaded in parallel')
+parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
+                    help="Performs MinMaxNormalization for visualization")
 
 # Pretraining arguments
 parser.add_argument("-t", "--transfer_learning", default=None, type=str,
@@ -95,7 +97,10 @@ def main(options):
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
                         (options.evaluation_steps, options.accumulation_steps))
 
-    transformations = None
+    if options.minmaxnormalization:
+        transformations = MinMaxNormalization()
+    else:
+        transformations = None
 
     total_time = time()
     # Pretraining the model
