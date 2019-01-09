@@ -328,9 +328,9 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
         if last_check_point_i != i:
             print('Last checkpoint at the end of the epoch %d' % epoch)
             loss_train = test_ae(decoder, train_loader, gpu, criterion)
-            mean_loss_train = loss_train / (len(train_loader) * train_loader.dataset.size)
+            mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
             loss_valid = test_ae(decoder, valid_loader, gpu, criterion)
-            mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.dataset.size)
+            mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.batch_size)
             decoder.train()
             print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
 
@@ -574,9 +574,7 @@ def extract_ae(decoder, level):
 
         if n_conv == level + 1:
             output_decoder.encoder.add_module(str(len(output_decoder.encoder)), layer)
-            # Do not keep two successive BatchNorm layers
-            if not isinstance(layer, nn.BatchNorm3d):
-                inverse_layers.append(decoder.decoder[len(decoder.decoder) - (i + 1)])
+            inverse_layers.append(decoder.decoder[len(decoder.decoder) - (i + 1)])
 
         elif n_conv > level + 1:
             break
