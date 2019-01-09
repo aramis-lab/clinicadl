@@ -265,6 +265,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
     decoder.train()
     optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
                                                          options.transfer_learning_rate)
+    first_visu = True
     print(decoder)
 
     if gpu:
@@ -348,6 +349,9 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
                                  'loss_valid': loss_valid},
                                 is_best,
                                 results_path)
+        if epoch % 10:
+            visualize_subject(decoder, train_loader, results_path, epoch, options, first_visu)
+            first_visu = False
 
     # print('End of training', torch.cuda.memory_allocated())
 
@@ -408,6 +412,11 @@ def greedy_learning(model, train_loader, valid_loader, criterion, gpu, results_p
         level += 1
         first_layers = extract_first_layers(decoder, level)
         auto_encoder = extract_ae(decoder, level)
+
+    if options.add_sigmoid:
+        if isinstance(decoder.decoder[-1], torch.nn.ReLU):
+            decoder.decoder = torch.nn.Sequential(*list(decoder.decoder)[:-1])
+        decoder.decoder.add_module("sigmoid", torch.nn.Sigmoid())
 
     ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_path, options)
 
@@ -600,6 +609,40 @@ def extract_first_layers(decoder, level):
             break
 
     return first_layers
+
+
+def visualize_subject(decoder, dataloader, results_path, epoch, options, first_time=False):
+    from os import path
+    import nibabel as nib
+    from data_utils import MinMaxNormalization
+
+    visualization_path = path.join(results_path, 'iterative_visualization')
+
+    if not path.exists(visualization_path):
+        os.makedirs(visualization_path)
+
+
+    set_df = dataloader.dataset.df
+    subject = set_df.loc[0, 'participant_id']
+    session = set_df.loc[0, 'session_id']
+    image_path = path.join(options.input_dir, 'subjects', subject, session,
+                           't1', 'preprocessing_dl',
+                            subject + '_' + session + '_space-MNI_res-1x1x1.nii.gz')
+    input_nii = nib.load(image_path)
+    input_np = input_nii.get_data()
+    input_pt = torch.from_numpy(input_np).unsqueeze(0).unsqueeze(0).float()
+    if options.minmaxnormalization:
+        transform = MinMaxNormalization()
+        input_pt = transform(input_pt)
+
+    output_pt = decoder(input_pt)
+    output_np = output_pt.detach().numpy()[0][0]
+    output_nii = nib.Nifti1Image(output_np, affine=input_nii.affine)
+
+    if first_time:
+        nib.save(input_nii, path.join(visualization_path, 'input.nii'))
+
+    nib.save(output_nii, path.join(visualization_path, 'epoch-' + str(epoch) + '.nii'))
 
 
 def visualize_ae(decoder, dataloader, results_path, gpu):
