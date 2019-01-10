@@ -6,7 +6,7 @@ import os
 import shutil
 import warnings
 import pandas as pd
-from time import time
+from time import time, sleep
 
 
 def train(model, train_loader, valid_loader, criterion, optimizer, run, options):
@@ -73,9 +73,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
                     evaluation_flag = False
                     print('Iteration %d' % i)
                     acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
-                    mean_loss_train = total_loss_train / len(train_loader)
+                    mean_loss_train = total_loss_train / (len(train_loader) * train_loader.batch_size)
                     acc_mean_valid, total_loss_valid = test(model, valid_loader, options.gpu, criterion)
-                    mean_loss_valid = total_loss_valid / len(valid_loader)
+                    mean_loss_valid = total_loss_valid / (len(valid_loader) * train_loader.batch_size)
                     model.train()
                     print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
                     print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
@@ -102,9 +102,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
             model.zero_grad()
             print('Last checkpoint at the end of the epoch %d' % epoch)
             acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
-            mean_loss_train = total_loss_train / len(train_loader)
+            mean_loss_train = total_loss_train / (len(train_loader) * train_loader.batch_size)
             acc_mean_valid, total_loss_valid = test(model, valid_loader, options.gpu, criterion)
-            mean_loss_valid = total_loss_valid / len(valid_loader)
+            mean_loss_valid = total_loss_valid / (len(valid_loader) * valid_loader.batch_size)
             model.train()
             print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
             print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
@@ -349,7 +349,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
                                  'loss_valid': loss_valid},
                                 is_best,
                                 results_path)
-        if epoch % 10:
+        if epoch % 10 == 0:
             visualize_subject(decoder, train_loader, results_path, epoch, options, first_visu)
             first_visu = False
 
@@ -619,13 +619,13 @@ def visualize_subject(decoder, dataloader, results_path, epoch, options, first_t
     if not path.exists(visualization_path):
         os.makedirs(visualization_path)
 
-
     set_df = dataloader.dataset.df
     subject = set_df.loc[0, 'participant_id']
     session = set_df.loc[0, 'session_id']
     image_path = path.join(options.input_dir, 'subjects', subject, session,
                            't1', 'preprocessing_dl',
                             subject + '_' + session + '_space-MNI_res-1x1x1.nii.gz')
+
     input_nii = nib.load(image_path)
     input_np = input_nii.get_data()
     input_pt = torch.from_numpy(input_np).unsqueeze(0).unsqueeze(0).float()
@@ -633,7 +633,14 @@ def visualize_subject(decoder, dataloader, results_path, epoch, options, first_t
         transform = MinMaxNormalization()
         input_pt = transform(input_pt)
 
+    if options.gpu:
+        input_pt = input_pt.cuda()
+
     output_pt = decoder(input_pt)
+
+    if options.gpu:
+        output_pt = output_pt.cpu()
+
     output_np = output_pt.detach().numpy()[0][0]
     output_nii = nib.Nifti1Image(output_np, affine=input_nii.affine)
 

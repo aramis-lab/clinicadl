@@ -9,7 +9,7 @@ from scipy.ndimage.filters import gaussian_filter
 
 
 class MRIDataset(Dataset):
-    """labeled Faces in the Wild dataset."""
+    """Dataset of MRI organized in a CAPS folder."""
 
     def __init__(self, img_dir, data_file, transform=None):
         """
