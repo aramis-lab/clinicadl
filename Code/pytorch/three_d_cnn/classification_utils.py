@@ -68,6 +68,8 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
                 optimizer.step()
                 optimizer.zero_grad()
 
+                del loss
+
                 # Evaluate the model only when no gradients are accumulated
                 if(i+1) % options.evaluation_steps == 0:
                     evaluation_flag = False
@@ -171,9 +173,6 @@ def test(model, dataloader, use_cuda, criterion, verbose=False, full_return=Fals
         tend = time()
     print('Mean time per batch (test):', total_time / len(dataloader) * dataloader.batch_size)
 
-    # Computation of the balanced accuracy
-    component = len(np.unique(truth_tensor))
-
     # Cast to numpy arrays to avoid bottleneck in the next loop
     if use_cuda:
         predicted_arr = predicted_tensor.cpu().numpy().astype(int)
@@ -182,6 +181,8 @@ def test(model, dataloader, use_cuda, criterion, verbose=False, full_return=Fals
         predicted_arr = predicted_tensor.numpy()
         truth_arr = truth_tensor.numpy()
 
+    # Computation of the balanced accuracy
+    component = len(np.unique(truth_arr))
     cluster_diagnosis_prop = np.zeros(shape=(component, component))
     for i, predicted in enumerate(predicted_arr):
         truth = truth_arr[i]
@@ -291,6 +292,8 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
             loss = criterion(train_output, imgs)
             loss.backward()
 
+            del imgs, train_output
+
             # writer_train.add_scalar('training_loss', loss.item() / len(data), i + epoch * len(train_loader.dataset))
 
             if (i+1) % options.accumulation_steps == 0:
@@ -312,8 +315,6 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
                     row_df = pd.DataFrame(row, columns=columns)
                     with open(filename, 'a') as f:
                         row_df.to_csv(f, header=False, index=False, sep='\t')
-
-            del imgs, train_output
 
         # If no step has been performed, raise Exception
         if step_flag:
