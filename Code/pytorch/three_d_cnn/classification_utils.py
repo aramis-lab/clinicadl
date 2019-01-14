@@ -115,7 +115,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
             row_df = pd.DataFrame(row, columns=columns)
             with open(filename, 'a') as f:
                 row_df.to_csv(f, header=False, index=False, sep='\t')
-            is_best = acc_mean_valid > best_valid_accuracy
+            is_best = acc_mean_valid > best_valid_accuracy  # TODO Change for loss ?
             best_valid_accuracy = max(acc_mean_valid, best_valid_accuracy)
             save_checkpoint({'model': model.state_dict(),
                              'epoch': epoch,

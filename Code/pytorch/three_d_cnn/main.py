@@ -33,8 +33,6 @@ parser.add_argument("--runs", default=1, type=int,
                     help="Number of runs with the same training / validation split.")
 parser.add_argument("--test_sessions", default=["ses-M00"], nargs='+', type=str,
                     help="Test the accuracy at the end of the model for the sessions selected")
-parser.add_argument("--visualization", action='store_true', default=False,
-                    help='Chooses if visualization is done on AE pretraining')
 parser.add_argument("--num_workers", '-w', default=1, type=int,
                     help='the number of batch being loaded in parallel')
 parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
@@ -51,6 +49,8 @@ parser.add_argument("--transfer_learning_epochs", "-t_e", type=int, default=10,
                     help="Number of epochs for pretraining")
 parser.add_argument("--transfer_learning_rate", "-t_lr", type=float, default=1e-4,
                     help='The learning rate used for AE pretraining')
+parser.add_argument("--visualization", action='store_true', default=False,
+                    help='Chooses if visualization is done on AE pretraining')
 
 # Training arguments
 parser.add_argument("--epochs", default=20, type=int,
