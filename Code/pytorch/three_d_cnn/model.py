@@ -281,6 +281,57 @@ class Test3(nn.Module):
         return x
 
 
+class Test4_batch(nn.Module):
+    """
+    Classifier for a multi-class classification task
+    """
+    def __init__(self):
+        super(Test4_batch, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 8, 3),
+            nn.BatchNorm3d(8),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3),
+            nn.BatchNorm3d(16),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3),
+            nn.BatchNorm3d(32),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2)
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+
+            nn.Linear(64 * 9 * 12 * 10, 1000),
+            nn.ReLU(),
+
+            nn.Linear(1000, 100),
+            nn.ReLU(),
+
+            nn.Linear(100, 2)
+
+        )
+
+        self.flattened_shape = [-1, 64, 9, 12, 10]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
 class Test4(nn.Module):
     """
     Classifier for a multi-class classification task
