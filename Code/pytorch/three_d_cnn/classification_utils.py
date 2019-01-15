@@ -6,7 +6,7 @@ import os
 import shutil
 import warnings
 import pandas as pd
-from time import time, sleep
+from time import time
 
 
 def train(model, train_loader, valid_loader, criterion, optimizer, run, options):
@@ -23,17 +23,29 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
     # Create writers
     from time import time
 
-    if not os.path.exists(os.path.join(options.log_dir, "run" + str(run))):
-        os.makedirs(os.path.join(options.log_dir, "run" + str(run)))
-    filename = os.path.join(options.log_dir, "run" + str(run), 'training.tsv')
     columns = ['epoch', 'iteration', 'acc_train', 'mean_loss_train', 'acc_valid', 'mean_loss_valid']
-    results_df = pd.DataFrame(columns=columns)
-    with open(filename, 'w') as f:
-        results_df.to_csv(f, index=False, sep='\t')
+    if not isinstance(run, str):
+        if not os.path.exists(os.path.join(options.log_dir, "run" + str(run))):
+            os.makedirs(os.path.join(options.log_dir, "run" + str(run)))
+        filename = os.path.join(options.log_dir, "run" + str(run), 'training.tsv')
+        results_df = pd.DataFrame(columns=columns)
+        with open(filename, 'w') as f:
+            results_df.to_csv(f, index=False, sep='\t')
+        options.beginning_epoch = 0
+
+    else:
+        filename = os.path.join(options.log_dir, run, 'training.tsv')
+        if not os.path.exists(filename):
+            raise ValueError('The training.tsv file of the resumed experiment does not exist.')
+        truncated_tsv = pd.read_csv(filename, sep='\t')
+        truncated_tsv.set_index(['epoch', 'iteration'], inplace=True)
+        truncated_tsv.drop(options.beginning_epoch, level=0, inplace=True)
+        truncated_tsv.to_csv(filename, index=True, sep='\t')
+        run = int(run[-1])
 
     # Initialize variables
     best_valid_accuracy = 0.0
-    epoch = 0
+    epoch = options.beginning_epoch
 
     model.train()  # set the module to training mode
 
@@ -122,6 +134,14 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
                              'valid_acc': acc_mean_valid},
                             is_best,
                             os.path.join(options.log_dir, "run" + str(run)))
+            # Save optimizer state_dict to be able to reload
+            save_checkpoint({'optimizer': optimizer.state_dict(),
+                             'epoch': epoch,
+                             'name': options.optimizer,
+                             },
+                            False,
+                            os.path.join(options.log_dir, "run" + str(run)),
+                            filename='optimizer.pth.tar')
 
         print('Total correct labels: %d / %d' % (total_correct_cnt, len(train_loader) * train_loader.batch_size))
         epoch += 1
@@ -229,10 +249,10 @@ def show_plot(points):
     plt.plot(points)
 
 
-def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar'):
+def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar', best_filename='model_best.pth.tar'):
     torch.save(state, os.path.join(checkpoint_dir, filename))
     if is_best:
-        shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(checkpoint_dir, 'model_best.pth.tar'))
+        shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(checkpoint_dir, best_filename))
 
 
 def load_model(model, checkpoint_dir, filename='model_best.pth.tar'):
@@ -350,6 +370,15 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
                                  'loss_valid': loss_valid},
                                 is_best,
                                 results_path)
+            # Save optimizer state_dict to be able to reload
+            save_checkpoint({'optimizer': optimizer.state_dict(),
+                             'epoch': epoch,
+                             'name': options.optimizer,
+                             },
+                            False,
+                            results_path,
+                            filename='optimizer.pth.tar')
+
         if epoch % 10 == 0:
             visualize_subject(decoder, train_loader, results_path, epoch, options, first_visu)
             first_visu = False
@@ -393,7 +422,8 @@ def greedy_learning(model, train_loader, valid_loader, criterion, gpu, results_p
     from model import Decoder
     from copy import deepcopy
 
-    decoder = Decoder(model)
+    if not isinstance(model, Decoder):
+        decoder = Decoder(model)
 
     level = 0
     first_layers = extract_first_layers(decoder, level)
@@ -423,12 +453,13 @@ def greedy_learning(model, train_loader, valid_loader, criterion, gpu, results_p
 
     # Updating and setting weights of the convolutional layers
     best_decoder, best_epoch = load_model(decoder, results_path)
-    model.features = deepcopy(best_decoder.encoder)
-    save_checkpoint({'model': model.state_dict(),
-                     'epoch': best_epoch},
-                    False,
-                    os.path.join(results_path),
-                    'model_pretrained.pth.tar')
+    if not isinstance(model, Decoder):
+        model.features = deepcopy(best_decoder.encoder)
+        save_checkpoint({'model': model.state_dict(),
+                         'epoch': best_epoch},
+                        False,
+                        os.path.join(results_path),
+                        'model_pretrained.pth.tar')
 
     if options.visualization:
         visualize_ae(best_decoder, train_loader, os.path.join(results_path, "train"), gpu)

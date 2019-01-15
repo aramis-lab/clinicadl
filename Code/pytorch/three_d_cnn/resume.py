@@ -19,6 +19,9 @@ parser.add_argument("model_path", type=str,
 # Default values not specified in previous models
 parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
                     help="Performs MinMaxNormalization for visualization")
+parser.add_argument("--shuffle", default=True, type=bool,
+                    help="Load data if shuffled or not, shuffle for training, no for test data.")
+
 
 # Optimizer arguments
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
@@ -52,8 +55,13 @@ def parse_model_name(model_path, options):
     options.log_dir = os.path.abspath(os.path.join(options.model_path, os.pardir))
 
     for option in model_options:
-        key = option.split('-')[0]
-        content = option.split('-')[1]
+        option_split = option.split("-")
+        key = option_split[0]
+        if len(option_split) > 2:
+            content = "-".join(option_split[1:])
+        else:
+            content = option_split[1]
+
         if key == 'model':
             options.model = content
         elif key == 'task':
@@ -89,6 +97,7 @@ def parse_model_name(model_path, options):
 def main(options):
 
     options, run = parse_model_name(options.model_path, options)
+    print(path.exists(options.model_path))
 
     # Check if model is implemented
     import model
@@ -102,7 +111,6 @@ def main(options):
     if options.model not in choices:
         raise NotImplementedError('The model wanted %s has not been implemented in the module model.py' % options.model)
 
-    check_and_clean(options.log_dir)
     torch.set_num_threads(options.num_threads)
     if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
@@ -141,12 +149,23 @@ def main(options):
     print('Initialization of the model')
     model = eval(options.model)()
     model, current_epoch = load_model(model, options.model_path, 'checkpoint.pth.tar')
-    options.beginning_epoch = current_epoch
+    if options.gpu:
+        model = model.cuda()
+
+    options.beginning_epoch = current_epoch + 1
 
     # Define criterion and optimizer
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
-                                                         options.learning_rate)
+    optimizer_path = path.join(options.model_path, 'optimizer.pth.tar')
+    if path.exists(optimizer_path):
+        print('Loading optimizer')
+        optimizer_dict = torch.load(optimizer_path)
+        name = optimizer_dict["name"]
+        optimizer = eval("torch.optim." + name)(filter(lambda x: x.requires_grad, model.parameters()))
+        optimizer.load_state_dict(optimizer_dict["optimizer"])
+    else:
+        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
+                                                             options.learning_rate)
 
     print('Resuming the training task')
     training_time = time()
