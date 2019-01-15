@@ -49,7 +49,7 @@ parser.add_argument("--transfer_learning_epochs", "-t_e", type=int, default=10,
                     help="Number of epochs for pretraining")
 parser.add_argument("--transfer_learning_rate", "-t_lr", type=float, default=1e-4,
                     help='The learning rate used for AE pretraining')
-parser.add_argument("--features_learning_rate", "f_lr", type=float, default=None,
+parser.add_argument("--features_learning_rate", "-f_lr", type=float, default=None,
                     help="Learning rate applied to the convolutional layers."
                          "If None all the layers have the same learning rate.")
 parser.add_argument("--visualization", action='store_true', default=False,
