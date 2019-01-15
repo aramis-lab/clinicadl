@@ -17,6 +17,13 @@ parser.add_argument("input_dir", type=str,
 parser.add_argument("model", type=str,
                     help="model selected")
 
+# Transfer learning from other autoencoder
+parser.add_argument("--pretrained_path", type=str, default=None,
+                    help="Path to a pretrained model (can be of different size).")
+parser.add_argument("--pretrained_difference", "-d", type=int, default=0,
+                    help="Difference of size between the pretrained autoencoder and the training one. \n"
+                         "If the new one is larger, difference will be positive.")
+
 # Data Management
 parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
@@ -120,16 +127,20 @@ def main(options):
         print('Beginning run %i' % run)
         run_path = path.join(options.result_path, 'run' + str(run))
 
+        decoder = Decoder(model)
+        if options.pretrained_path is not None:
+            decoder = initialize_other_autoencoder(decoder, options.pretrained_path, run_path,
+                                                   difference=options.pretrained_difference)
+
+        if options.add_sigmoid:
+            if isinstance(decoder.decoder[-1], nn.ReLU):
+                decoder.decoder = nn.Sequential(*list(decoder.decoder)[:-1])
+            decoder.decoder.add_module("sigmoid", nn.Sigmoid())
+
         if options.greedy_learning:
-            greedy_learning(model, train_loader, valid_loader, criterion, options.gpu, run_path, options)
+            greedy_learning(decoder, train_loader, valid_loader, criterion, options.gpu, run_path, options)
 
         else:
-            decoder = Decoder(model)
-            if options.add_sigmoid:
-                if isinstance(decoder.decoder[-1], nn.ReLU):
-                    decoder.decoder = nn.Sequential(*list(decoder.decoder)[:-1])
-                decoder.decoder.add_module("sigmoid", nn.Sigmoid())
-
             ae_finetuning(decoder, train_loader, valid_loader, criterion, options.gpu, run_path, options)
 
             best_decoder = load_model(decoder, run_path)
