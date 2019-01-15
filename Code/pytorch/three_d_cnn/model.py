@@ -123,7 +123,6 @@ class Test2_batch_drop(nn.Module):
         return x
 
 
-
 class Test2(nn.Module):
     """
     Classifier for a multi-class classification task
@@ -169,6 +168,66 @@ class Test2(nn.Module):
         )
 
         self.flattened_shape = [-1, 64, 9, 12, 10]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
+class Test31_batch(nn.Module):
+    """
+    Classifier for a multi-class classification task
+    """
+    def __init__(self):
+        super(Test31_batch, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 8, 3),
+            nn.BatchNorm3d(8),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3),
+            nn.BatchNorm3d(16),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3),
+            nn.BatchNorm3d(32),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+
+            nn.Linear(64 * 4 * 6 * 5, 1000),
+            nn.ReLU(),
+
+            nn.Linear(1000, 500),
+            nn.ReLU(),
+
+            nn.Linear(500, 100),
+            nn.ReLU(),
+
+            nn.Linear(100, 2)
+
+        )
+
+        self.flattened_shape = [-1, 64, 4, 6, 5]
 
     def forward(self, x):
         x = self.features(x)
@@ -263,6 +322,60 @@ class Test3(nn.Module):
             nn.ReLU(),
 
             nn.Linear(1000, 500),
+            nn.ReLU(),
+
+            nn.Linear(500, 100),
+            nn.ReLU(),
+
+            nn.Linear(100, 2)
+
+        )
+
+        self.flattened_shape = [-1, 64, 9, 12, 10]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
+class Conv4_FC4_0(nn.Module):
+    """
+    Classifier for a multi-class classification task
+    """
+    def __init__(self):
+        super(Conv4_FC4_0, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 8, 3),
+            nn.BatchNorm3d(8),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3),
+            nn.BatchNorm3d(16),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3),
+            nn.BatchNorm3d(32),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2)
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+
+            nn.Linear(64 * 9 * 12 * 10, 5000),
+            nn.ReLU(),
+
+            nn.Linear(5000, 500),
             nn.ReLU(),
 
             nn.Linear(500, 100),
@@ -853,6 +966,45 @@ def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path):
                     False,
                     path.join(model_path, "pretraining"),
                     'model_pretrained.pth.tar')
+
+
+def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_path, difference=0):
+    from os import path
+    import os
+    from classification_utils import save_checkpoint
+
+    result_dict = torch.load(pretrained_autoencoder_path)
+    parameters_dict = result_dict['model']
+    module_length = int(len(decoder) / decoder.level)
+    difference = difference * module_length
+
+    for key in parameters_dict.keys():
+        section, number, spec = key.split('.')
+        number = int(number)
+        if section == 'encoder' and number < len(decoder.encoder):
+            data_ptr = eval('decoder.' + section + '[number].' + spec + '.data')
+            data_ptr = parameters_dict[key]
+        elif section == 'decoder':
+            # Deeper autoencoder
+            if difference >= 0:
+                data_ptr = eval('decoder.' + section + '[number + difference].' + spec + '.data')
+                data_ptr = parameters_dict[key]
+            # More shallow autoencoder
+            elif difference < 0 and number < len(decoder.decoder):
+                data_ptr = eval('decoder.' + section + '[number].' + spec + '.data')
+                new_key = '.'.join(['decoder', str(number + difference), spec])
+                data_ptr = parameters_dict[new_key]
+
+    if not path.exists(path.join(model_path, 'pretraining')):
+        os.makedirs(path.join(model_path, "pretraining"))
+
+    save_checkpoint({'model': decoder.state_dict(),
+                     'epoch': -1,
+                     'path': pretrained_autoencoder_path},
+                    False,
+                    path.join(model_path, "pretraining"),
+                    'model_pretrained.pth.tar')
+    return decoder
 
 
 def replace_relu(inv_layers):
