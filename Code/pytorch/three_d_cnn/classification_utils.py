@@ -198,8 +198,8 @@ def test(model, dataloader, use_cuda, criterion, verbose=False, full_return=Fals
         predicted_arr = predicted_tensor.cpu().numpy().astype(int)
         truth_arr = truth_tensor.cpu().numpy().astype(int)
     else:
-        predicted_arr = predicted_tensor.numpy()
-        truth_arr = truth_tensor.numpy()
+        predicted_arr = predicted_tensor.numpy().astype(int)
+        truth_arr = truth_tensor.numpy().astype(int)
 
     # Computation of the balanced accuracy
     component = len(np.unique(truth_arr))
