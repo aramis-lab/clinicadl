@@ -214,7 +214,7 @@ class Test31_batch(nn.Module):
         self.classifier = nn.Sequential(
             Flatten(),
 
-            nn.Linear(64 * 4 * 6 * 5, 1000),
+            nn.Linear(64 * 4 * 5 * 4, 1000),
             nn.ReLU(),
 
             nn.Linear(1000, 500),
@@ -227,7 +227,426 @@ class Test31_batch(nn.Module):
 
         )
 
-        self.flattened_shape = [-1, 64, 4, 6, 5]
+        self.flattened_shape = [-1, 64, 4, 5, 4]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
+class Test31_batch_drop(nn.Module):
+    """
+    Classifier for a multi-class classification task
+    """
+    def __init__(self):
+        super(Test31_batch_drop, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 8, 3),
+            nn.BatchNorm3d(8),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3),
+            nn.BatchNorm3d(16),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3),
+            nn.BatchNorm3d(32),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+            nn.Dropout(p=0.5),
+
+            nn.Linear(64 * 4 * 5 * 4, 1000),
+            nn.ReLU(),
+
+            nn.Linear(1000, 500),
+            nn.ReLU(),
+
+            nn.Linear(500, 100),
+            nn.ReLU(),
+
+            nn.Linear(100, 2)
+
+        )
+
+        self.flattened_shape = [-1, 64, 4, 5, 4]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
+class Conv5_FC3_0(nn.Module):
+    """
+    Classifier for a multi-class classification task
+    """
+    def __init__(self):
+        super(Conv5_FC3_0, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 8, 3),
+            nn.BatchNorm3d(8),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3),
+            nn.BatchNorm3d(16),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3),
+            nn.BatchNorm3d(32),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+            nn.Dropout(p=0.5),
+
+            nn.Linear(64 * 4 * 5 * 4, 1000),
+            nn.ReLU(),
+
+            nn.Linear(1000, 100),
+            nn.ReLU(),
+
+            nn.Linear(100, 2)
+
+        )
+
+        self.flattened_shape = [-1, 64, 4, 5, 4]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
+class Conv5_FC2_0(nn.Module):
+    """
+    Classifier for a multi-class classification task
+    """
+    def __init__(self):
+        super(Conv5_FC2_0, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 8, 3),
+            nn.BatchNorm3d(8),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3),
+            nn.BatchNorm3d(16),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3),
+            nn.BatchNorm3d(32),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+            nn.Dropout(p=0.5),
+
+            nn.Linear(64 * 4 * 5 * 4, 500),
+            nn.ReLU(),
+
+            nn.Linear(500, 2)
+
+        )
+
+        self.flattened_shape = [-1, 64, 4, 5, 4]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
+class Conv6_FC2_0(nn.Module):
+    """
+    Classifier for a multi-class classification task
+    """
+    def __init__(self):
+        super(Conv6_FC2_0, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 8, 3),
+            nn.BatchNorm3d(8),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3),
+            nn.BatchNorm3d(16),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3),
+            nn.BatchNorm3d(32),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2)
+
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+            nn.Dropout(p=0.5),
+
+            nn.Linear(64 * 1 * 2 * 1, 50),
+            nn.ReLU(),
+
+            nn.Linear(50, 2)
+
+        )
+
+        self.flattened_shape = [-1, 64, 1, 2, 1]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
+class Conv6_FC2_1(nn.Module):
+    """
+    Classifier for a multi-class classification task
+    """
+    def __init__(self):
+        super(Conv6_FC2_1, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 8, 3, padding=1),
+            nn.BatchNorm3d(8),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3, padding=1),
+            nn.BatchNorm3d(16),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3, padding=1),
+            nn.BatchNorm3d(32),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3, padding=1),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 64, 3, padding=1),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 64, 3, padding=1),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2)
+
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+            nn.Dropout(p=0.5),
+
+            nn.Linear(64 * 3 * 4 * 3, 100),
+            nn.ReLU(),
+
+            nn.Linear(100, 2)
+
+        )
+
+        self.flattened_shape = [-1, 64, 3, 4, 3]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
+class Conv6_FC2_2(nn.Module):
+    """
+    Classifier for a multi-class classification task
+    """
+    def __init__(self):
+        super(Conv6_FC2_2, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 8, 3),
+            nn.BatchNorm3d(8),
+            nn.LeakyReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3),
+            nn.BatchNorm3d(16),
+            nn.LeakyReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3),
+            nn.BatchNorm3d(32),
+            nn.LeakyReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.LeakyReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.LeakyReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 64, 3),
+            nn.BatchNorm3d(64),
+            nn.LeakyReLU(),
+            PadMaxPool3d(2, 2)
+
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+            nn.Dropout(p=0.5),
+
+            nn.Linear(64 * 1 * 2 * 1, 50),
+            nn.LeakyReLU(),
+
+            nn.Linear(50, 2)
+
+        )
+
+        self.flattened_shape = [-1, 64, 1, 2, 1]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
+class Conv7_FC2_0(nn.Module):
+    """
+    Classifier for a multi-class classification task
+    """
+    def __init__(self):
+        super(Conv7_FC2_0, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 8, 3, padding=1),
+            nn.BatchNorm3d(8),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3, padding=1),
+            nn.BatchNorm3d(16),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3, padding=1),
+            nn.BatchNorm3d(32),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3, padding=1),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 64, 3, padding=1),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 64, 3, padding=1),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 64, 3, padding=1),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2)
+
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+            nn.Dropout(p=0.5),
+
+            nn.Linear(64 * 2 * 2 * 2, 100),
+            nn.ReLU(),
+
+            nn.Linear(100, 2)
+
+        )
+
+        self.flattened_shape = [-1, 64, 2, 2, 2]
 
     def forward(self, x):
         x = self.features(x)
@@ -853,6 +1272,165 @@ class Conv_5(nn.Module):
         return x
 
 
+class Backstrom(nn.Module):
+    """
+       Classifier for a 2-class classification task
+
+       """
+
+    def __init__(self, dropout=0.0, n_classes=2):
+        super(Backstrom, self).__init__()
+
+        self.features = nn.Sequential(
+            # Convolutions
+            nn.Conv3d(1, 64, 7, stride=2, padding=3),
+            nn.ReLU(),
+
+            nn.Conv3d(64, 64, 3, padding=1),
+            nn.ReLU(),
+
+            nn.Conv3d(64, 128, 3, padding=1),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(128, 128, 3, padding=1),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(128, 128, 3, padding=1),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+        )
+        self.classifier = nn.Sequential(
+            # Fully connected layers
+            Flatten(),
+            nn.Dropout(p=dropout),
+
+            nn.Linear(128 * 11 * 13 * 12, 256),
+            nn.ReLU(),
+
+            nn.Linear(256, 256),
+            nn.ReLU(),
+
+            nn.Linear(256, n_classes)
+        )
+
+        self.flattened_shape = [-1, 128, 11, 13, 12]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
+class Cheng(nn.Module):
+    """
+       Classifier for a 2-class classification task
+
+       """
+
+    def __init__(self, dropout=0.0, n_classes=2):
+        super(Cheng, self).__init__()
+
+        self.features = nn.Sequential(
+            # Convolutions
+            nn.Conv3d(1, 15, 3, padding=1),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(15, 25, 3, padding=1),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(25, 50, 3, padding=1),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(50, 50, 3, padding=1),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+        )
+        self.classifier = nn.Sequential(
+            # Fully connected layers
+            Flatten(),
+            nn.Dropout(p=dropout),
+
+            nn.Linear(50 * 11 * 13 * 12, 40),
+            nn.ReLU(),
+
+            nn.Linear(40, n_classes)
+        )
+
+        self.flattened_shape = [-1, 50, 11, 13, 12]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
+class Initial_architecture(nn.Module):
+    """
+    Classifier for a multi-class classification task
+    """
+    def __init__(self, dropout=0.5):
+        super(Initial_architecture, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 8, 3, padding=1),
+            nn.BatchNorm3d(8),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3, padding=1),
+            nn.BatchNorm3d(16),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3, padding=1),
+            nn.BatchNorm3d(32),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3, padding=1),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 128, 3, padding=1),
+            nn.BatchNorm3d(128),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+            nn.Dropout(p=dropout),
+
+            nn.Linear(128 * 6 * 7 * 6, 1300),
+            nn.ReLU(),
+
+            nn.Linear(1300, 50),
+            nn.ReLU(),
+
+            nn.Linear(50, 2)
+
+        )
+
+        self.flattened_shape = [-1, 128, 6, 7, 6]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
 def create_model(options):
     from classification_utils import load_model
     from os import path
@@ -925,7 +1503,7 @@ class Decoder(nn.Module):
         for i, layer in enumerate(self.encoder):
             if isinstance(layer, nn.Conv3d):
                 inv_layers.append(nn.ConvTranspose3d(layer.out_channels, layer.in_channels, layer.kernel_size,
-                                                     stride=layer.stride))
+                                                     stride=layer.stride, padding=layer.padding))
                 self.level += 1
             elif isinstance(layer, PadMaxPool3d):
                 inv_layers.append(CropMaxUnpool3d(layer.kernel_size, stride=layer.stride))
@@ -940,22 +1518,21 @@ class Decoder(nn.Module):
             elif i == len(self.encoder) - 1 and isinstance(layer, nn.BatchNorm3d):
                 pass
             else:
-                inv_layers.append(layer)
+                inv_layers.append(deepcopy(layer))
         inv_layers = replace_relu(inv_layers)
         inv_layers.reverse()
         return nn.Sequential(*inv_layers)
 
 
-def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path):
+def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, difference=0):
     from copy import deepcopy
     from os import path
     import os
     from classification_utils import save_checkpoint
 
     decoder = Decoder(model)
-    result_dict = torch.load(pretrained_autoencoder_path)
+    initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_path, difference=difference)
 
-    decoder.load_state_dict(result_dict['model'])
     model.features = deepcopy(decoder.encoder)
     if not path.exists(path.join(model_path, 'pretraining')):
         os.makedirs(path.join(model_path, "pretraining"))
@@ -1012,7 +1589,7 @@ def replace_relu(inv_layers):
     for idx, layer in enumerate(inv_layers):
         if isinstance(layer, nn.ConvTranspose3d):
             idx_conv = idx
-        elif isinstance(layer, nn.ReLU):
+        elif isinstance(layer, nn.ReLU) or isinstance(layer, nn.LeakyReLU):
             idx_relu = idx
 
         if idx_conv != -1 and idx_relu != -1:
