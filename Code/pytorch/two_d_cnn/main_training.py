@@ -24,10 +24,10 @@ parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/ju
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument("-tl", "--transfer_learning", default=False, type=bool, help="If do transfer learning")
+parser.add_argument("-tl", "--transfer_learning", default=True, type=bool, help="If do transfer learning")
 parser.add_argument("-dty", "--data_type", default="from_slice", choices=["from_MRI", "from_slice"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
-parser.add_argument("-nw", "--network", default="Lenet2D", choices=["AlexNet2D", "ResNet2D", "Lenet2D", "AllConvNet2D"],
+parser.add_argument("-nw", "--network", default="ResNet2D", choices=["AlexNet2D", "ResNet2D", "Lenet2D", "AllConvNet2D"],
                     help="Deep network type. (default=AlexNet)")
 parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")

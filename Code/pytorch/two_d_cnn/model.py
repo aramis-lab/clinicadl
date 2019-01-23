@@ -414,6 +414,10 @@ def resnet2D(resnet_type, transfer_learning=False, **kwargs):
         if transfer_learning:
             model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
             for p in model.parameters():
+                p.requires_grad = False
+
+            ## fine-tune the 4-th res blocak
+            for p in model.layer4.parameters():
                 p.requires_grad = True
 
             ## fine-tune the last FC layer
