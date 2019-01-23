@@ -309,7 +309,7 @@ class MRIDataset_slice(Dataset):
     Return: a Pytorch Dataset objective
     """
 
-    def __init__(self, caps_directory, tsv, transformations=None, transfer_learning=False, mri_plane=0, data_type='from_slice'):
+    def __init__(self, caps_directory, tsv, transformations=None, transfer_learning=False, mri_plane=0, data_type='from_slice', image_processing='LinearReg'):
         """
         Args:
             caps_directory (string): the output folder of image processing pipeline.
@@ -329,6 +329,7 @@ class MRIDataset_slice(Dataset):
         self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
         self.mri_plane = mri_plane
         self.data_type = data_type
+        self.image_processing = image_processing
 
         df = pd.io.parsers.read_csv(tsv, sep='\t')
         if ('diagnosis' != list(df.columns.values)[2]) and ('session_id' != list(df.columns.values)[1]) and (
@@ -340,26 +341,51 @@ class MRIDataset_slice(Dataset):
 
         ## make sure the slice are not from the edge of the MRI which lacks information of brain, here exclude the first and last 20 slices of the MRI
         ## sagital
-        if mri_plane == 0:
-            self.slices_per_patient = 139 - 40
-            self.slice_participant_list = [ele for ele in participant_list for _ in range(self.slices_per_patient)]
-            self.slice_session_list = [ele for ele in session_list for _ in range(self.slices_per_patient)]
-            self.slice_label_list = [ele for ele in label_list for _ in range(self.slices_per_patient)]
-            self.slice_direction = 'sag'
 
-        elif mri_plane == 1:
-            self.slices_per_patient = 178 - 40
-            self.slice_participant_list = [ele for ele in participant_list for _ in range(self.slices_per_patient)]
-            self.slice_session_list = [ele for ele in session_list for _ in range(self.slices_per_patient)]
-            self.slice_label_list = [ele for ele in label_list for _ in range(self.slices_per_patient)]
-            self.slice_direction = 'cor'
-        ## axial
-        elif mri_plane == 2:
-            self.slices_per_patient = 149 - 40
-            self.slice_participant_list = [ele for ele in participant_list for _ in range(self.slices_per_patient)]
-            self.slice_session_list = [ele for ele in session_list for _ in range(self.slices_per_patient)]
-            self.slice_label_list = [ele for ele in label_list for _ in range(self.slices_per_patient)]
-            self.slice_direction = 'axi'
+        ## This dimension is for the output of image processing pipeline of Raw: 169 * 208 * 179
+        if self.image_processing == 'LinearReg':
+            if mri_plane == 0:
+                self.slices_per_patient = 169 - 40
+                self.slice_participant_list = [ele for ele in participant_list for _ in range(self.slices_per_patient)]
+                self.slice_session_list = [ele for ele in session_list for _ in range(self.slices_per_patient)]
+                self.slice_label_list = [ele for ele in label_list for _ in range(self.slices_per_patient)]
+                self.slice_direction = 'sag'
+
+            elif mri_plane == 1:
+                self.slices_per_patient = 208 - 40
+                self.slice_participant_list = [ele for ele in participant_list for _ in range(self.slices_per_patient)]
+                self.slice_session_list = [ele for ele in session_list for _ in range(self.slices_per_patient)]
+                self.slice_label_list = [ele for ele in label_list for _ in range(self.slices_per_patient)]
+                self.slice_direction = 'cor'
+            ## axial
+            elif mri_plane == 2:
+                self.slices_per_patient = 179 - 40
+                self.slice_participant_list = [ele for ele in participant_list for _ in range(self.slices_per_patient)]
+                self.slice_session_list = [ele for ele in session_list for _ in range(self.slices_per_patient)]
+                self.slice_label_list = [ele for ele in label_list for _ in range(self.slices_per_patient)]
+                self.slice_direction = 'axi'
+        ## This dimension is for the output of image processing pipeline of spm pipeline: 121 x 145 x 121
+        else:
+            if mri_plane == 0:
+                self.slices_per_patient = 121 - 40
+                self.slice_participant_list = [ele for ele in participant_list for _ in range(self.slices_per_patient)]
+                self.slice_session_list = [ele for ele in session_list for _ in range(self.slices_per_patient)]
+                self.slice_label_list = [ele for ele in label_list for _ in range(self.slices_per_patient)]
+                self.slice_direction = 'sag'
+
+            elif mri_plane == 1:
+                self.slices_per_patient = 145 - 40
+                self.slice_participant_list = [ele for ele in participant_list for _ in range(self.slices_per_patient)]
+                self.slice_session_list = [ele for ele in session_list for _ in range(self.slices_per_patient)]
+                self.slice_label_list = [ele for ele in label_list for _ in range(self.slices_per_patient)]
+                self.slice_direction = 'cor'
+            ## axial
+            elif mri_plane == 2:
+                self.slices_per_patient = 121 - 40
+                self.slice_participant_list = [ele for ele in participant_list for _ in range(self.slices_per_patient)]
+                self.slice_session_list = [ele for ele in session_list for _ in range(self.slices_per_patient)]
+                self.slice_label_list = [ele for ele in label_list for _ in range(self.slices_per_patient)]
+                self.slice_direction = 'axi'
 
 
     def __len__(self):
@@ -377,21 +403,33 @@ class MRIDataset_slice(Dataset):
         # else:
         index_slice = idx % self.slices_per_patient
         if self.data_type == 'from_MRI':
-            ## image without intensity normalization
-            image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+            if self.image_processing == 'LinearReg':
+                image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+            else:
+                image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'spm', 'dartel', 'group-ADNIbl', img_name + '_' + sess_name + '_T1w_segm-graymatter_space-Ixi549Space_modulated-on_fwhm-8mm_probability.pt')
+
             extracted_slice = extract_slice_from_mri(image_path, index_slice + 20, self.mri_plane, self.transfer_learning)
         # read the slices directly
         else:
-            if self.transfer_learning:
-                slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
-                                          'preprocessing_dl',
-                                          img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' + self.slice_direction + '_rgblslice-' + str(
-                                              index_slice + 20) + '.pt')
+            if self.image_processing == 'LinearReg':
+                if self.transfer_learning:
+                    slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+                                              'preprocessing_dl',
+                                              img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' + self.slice_direction + '_rgblslice-' + str(
+                                                  index_slice + 20) + '.pt')
+                else:
+                    slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+                                              'preprocessing_dl',
+                                              img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' + self.slice_direction + '_originalslice-' + str(
+                                                  index_slice + 20) + '.pt')
             else:
-                slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
-                                          'preprocessing_dl',
-                                          img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' + self.slice_direction + '_originalslice-' + str(
-                                              index_slice + 20) + '.pt')
+                if self.transfer_learning:
+                    slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'spm', 'dartel', 'group-ADNIbl', img_name + '_' + sess_name + '_T1w_segm-graymatter_space-Ixi549Space_modulated-on_fwhm-8mm_probability_axis-' + self.slice_direction + '_rgblslice-' + str(
+                                                  index_slice + 20) + '.pt')
+                else:
+                    slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'spm', 'dartel', 'group-ADNIbl', img_name + '_' + sess_name + '_T1w_segm-graymatter_space-Ixi549Space_modulated-on_fwhm-8mm_probability_axis-' + self.slice_direction + '_rgblslice-' + str(
+                                                  index_slice + 20) + '.pt')
+
             extracted_slice = torch.load(slice_path)
             extracted_slice = (extracted_slice - extracted_slice.min()) / (extracted_slice.max() - extracted_slice.min())
 

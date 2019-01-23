@@ -417,8 +417,8 @@ def resnet2D(resnet_type, transfer_learning=False, **kwargs):
                 p.requires_grad = False
 
             ## fine-tune the 4-th res blocak
-            for p in model.layer4.parameters():
-                p.requires_grad = True
+            #for p in model.layer4.parameters():
+             #   p.requires_grad = True
 
             ## fine-tune the last FC layer
             for p in model.fc.parameters():

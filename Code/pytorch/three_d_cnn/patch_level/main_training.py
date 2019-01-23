@@ -96,6 +96,7 @@ def main(options):
         print('The chosen network is %s !' % options.network)
         try:
             model = eval(options.network)()
+	#model = AllConvNet3D()
         except:
             raise Exception('The model has not been implemented')
 
@@ -105,6 +106,7 @@ def main(options):
     for fi in range(options.runs):
         print("Running for the %d run" % fi)
         model.load_state_dict(init_state)
+	print("Reading patches %s" % str(options.data_type))
 
         training_tsv, valid_tsv = load_split(options.diagnosis_tsv, random_state=options.random_state)
         data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride, data_type=options.data_type)
