@@ -54,6 +54,10 @@ parser.add_argument("--features_learning_rate", "-f_lr", type=float, default=Non
                          "If None all the layers have the same learning rate.")
 parser.add_argument("--visualization", action='store_true', default=False,
                     help='Chooses if visualization is done on AE pretraining')
+parser.add_argument("--transfer_difference", "-t_diff", type=int, default=0,
+                    help="Difference of convolutional layers between current model and pretrained model")
+parser.add_argument("--add_sigmoid", default=False, action="store_true",
+                    help="Ad sigmoid function at the end of the decoder.")
 
 # Training arguments
 parser.add_argument("--epochs", default=20, type=int,
@@ -113,7 +117,7 @@ def main(options):
 
         if path.exists(options.transfer_learning):
             print("A pretrained autoencoder is loaded at path %s" % options.transfer_learning)
-            apply_autoencoder_weights(model, options.transfer_learning, options.log_dir)
+            apply_autoencoder_weights(model, options.transfer_learning, options.log_dir, options.transfer_difference)
 
         else:
             if options.transfer_learning_diagnoses is None:
