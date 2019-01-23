@@ -355,28 +355,38 @@ def load_autoencoder_data(train_val_path, diagnoses_list, baseline=True):
     return train_df, valid_df
 
 
-# def load_pretraining_split(diagnoses_tsv, val_size=0.15):
-#
-#     sets_dir = path.join(path.dirname(diagnoses_tsv),
-#                          path.basename(diagnoses_tsv).split('.')[0],
-#                          "pretraining")
-#
-#     training_tsv = path.join(sets_dir,
-#                              'val_size-' + str(val_size) + '_train.tsv')
-#     valid_tsv = path.join(sets_dir,
-#                           'val_size-' + str(val_size) + '_valid.tsv')
-#
-#     if not path.exists(training_tsv) or not path.exists(valid_tsv):
-#         pretraining_split(diagnoses_tsv, val_size)
-#
-#         training_tsv = path.join(sets_dir,
-#                                  'val_size-' + str(val_size) + '_train.tsv')
-#         valid_tsv = path.join(sets_dir,
-#                               'val_size-' + str(val_size) + '_valid.tsv')
-#
-#     return training_tsv, valid_tsv
-#
-#
+def load_split2(train_val_path, diagnoses_list, split, baseline=True):
+
+    train_df = pd.DataFrame()
+    valid_df = pd.DataFrame()
+
+    for diagnosis in diagnoses_list:
+
+        if baseline:
+            train_diagnosis_path = path.join(train_val_path, 'train',
+                                             'split-' + str(split),
+                                             diagnosis + '_baseline.tsv')
+        else:
+            train_diagnosis_path = path.join(train_val_path, 'train',
+                                             'split-' + str(split),
+                                             diagnosis + '_baseline.tsv')
+
+        valid_diagnosis_path = path.join(train_val_path, 'validation',
+                                         'split-' + str(split),
+                                         diagnosis + '_baseline.tsv')
+
+        train_diagnosis_df = pd.read_csv(train_diagnosis_path, sep='\t')
+        valid_diagnosis_df = pd.read_csv(valid_diagnosis_path, sep='\t')
+
+        train_df = pd.concat([train_df, train_diagnosis_df])
+        valid_df = pd.concat([valid_df, valid_diagnosis_df])
+
+    train_df.reset_index(inplace=True, drop=True)
+    valid_df.reset_index(inplace=True, drop=True)
+
+    return train_df, valid_df
+
+
 # def pretraining_split(diagnoses_tsv, val_size=0.15):
 #     """
 #     Write the tsv files corresponding to the train/val splits for pretraining
