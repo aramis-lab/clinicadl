@@ -283,3 +283,79 @@ class StackedConvDenAutoencoder(nn.Module):
         a1_reconstruct = self.ae2.reconstruct(a2_reconstruct)
         x_reconstruct = self.ae1.reconstruct(a1_reconstruct)
         return x_reconstruct
+
+class AutoEncoder(nn.Module):
+
+    def __init__(self, model=None):
+        from copy import deepcopy
+        super(AutoEncoder, self).__init__()
+
+        self.level = 0
+
+        if model is not None:
+            self.encoder = deepcopy(model.features)
+            self.decoder = self.construct_inv_layers(model)
+
+            for i, layer in enumerate(self.encoder):
+                if isinstance(layer, PadMaxPool3d):
+                    self.encoder[i].set_new_return()
+                elif isinstance(layer, nn.MaxPool3d):
+                    self.encoder[i].return_indices = True
+        else:
+            self.encoder = nn.Sequential()
+            self.decoder = nn.Sequential()
+
+    def __len__(self):
+        return len(self.encoder)
+
+    def forward(self, x):
+
+        indices_list = []
+        pad_list = []
+        # If your version of Pytorch <= 0.4.0 you can execute this method on a GPU
+        for layer in self.encoder:
+            if isinstance(layer, PadMaxPool3d):
+                x, indices, pad = layer(x)
+                indices_list.append(indices)
+                pad_list.append(pad)
+            elif isinstance(layer, nn.MaxPool3d):
+                x, indices = layer(x)
+                indices_list.append(indices)
+            else:
+                x = layer(x)
+
+        for layer in self.decoder:
+            if isinstance(layer, CropMaxUnpool3d):
+                x = layer(x, indices_list.pop(), pad_list.pop())
+            elif isinstance(layer, nn.MaxUnpool3d):
+                x = layer(x, indices_list.pop())
+            else:
+                x = layer(x)
+
+        return x
+
+    def construct_inv_layers(self, model):
+        inv_layers = []
+        for i, layer in enumerate(self.encoder):
+            if isinstance(layer, nn.Conv3d):
+                inv_layers.append(nn.ConvTranspose3d(layer.out_channels, layer.in_channels, layer.kernel_size,
+                                                     stride=layer.stride, padding=layer.padding))
+                self.level += 1
+            elif isinstance(layer, PadMaxPool3d):
+                inv_layers.append(CropMaxUnpool3d(layer.kernel_size, stride=layer.stride))
+            elif isinstance(layer, nn.MaxPool3d):
+                inv_layers.append(nn.MaxUnpool3d(layer.kernel_size, stride=layer.stride))
+            elif isinstance(layer, nn.Linear):
+                inv_layers.append(nn.Linear(layer.out_features, layer.in_features))
+            elif isinstance(layer, Flatten):
+                inv_layers.append(Reshape(model.flattened_shape))
+            elif isinstance(layer, nn.LeakyReLU):
+                inv_layers.append(nn.LeakyReLU(negative_slope=1 / layer.negative_slope))
+            elif i == len(self.encoder) - 1 and isinstance(layer, nn.BatchNorm3d):
+                pass
+            else:
+                inv_layers.append(deepcopy(layer))
+        inv_layers = replace_relu(inv_layers)
+        inv_layers.reverse()
+        return nn.Sequential(*inv_layers)
+

@@ -16,7 +16,7 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
-parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D autoencoder")
+parser = argparse.ArgumentParser(description="Argparser for 3D convolutional autoencoder")
 
 parser.add_argument("-id", "--caps_directory", default='/teams/ARAMIS/PROJECTS/CLINICA/CLINICA_datasets/temp/CAPS_ADNI_DL',
                            help="Path to the caps of image processing pipeline of DL")
@@ -51,6 +51,8 @@ parser.add_argument('--use_gpu', action='store_true', default=False,
                     help='Uses gpu instead of cpu if cuda is available')
 parser.add_argument('--weight_decay', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
+parser.add_argument('--random_state', default=544423,
+                    help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
 
 
 def main(options):
@@ -61,16 +63,17 @@ def main(options):
 
     ## Train the model with autoencoder
 
-    print('Start the training for convolutional autoencoder and testing with a linear classifier, the weight and bias of each ConvAE will be saved for future use!')
+    print('Start the training for convolutional autoencoder, the optimal model be saved for future use!')
     try:
         model = eval(options.network)()
     except:
         raise Exception('The model has not been implemented')
 
     ## need to normalized the value to [0, 1]
-    transformations = transforms.Compose([CustomNormalizeMinMax()])
+    transformations = transforms.Compose([NormalizeMinMax()])
 
-    training_tsv, valid_tsv = load_split(options.diagnosis_tsv)
+    # to set the random_state to be a value, so that the data split for ae and cnn will be the same
+    training_tsv, valid_tsv = load_split(options.diagnosis_tsv, random_state=options.random_state)
 
     data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride, transformations=transformations,
                                   data_type=options.data_type)
@@ -105,81 +108,85 @@ def main(options):
         ## example image for tensorbordX usage:$
         example_batch = (next(iter(train_loader))['image'].cuda())[0, ...].unsqueeze(0)
 
+    criterion = torch.nn.MSELoss()
     writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvDenAutoencoder", "train")))
+    writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvDenAutoencoder", "valid")))
 
-    best_loss_eval = np.inf
-    for epoch in range(options.epochs):
-        if epoch % 10 == 0:
-            if use_cuda:
-                # Test the quality of our features with a randomly initialzed linear classifier.
-                classifier = nn.Linear(512 * options.patch_size/(4*4*4), 2).cuda()
-            else:
-                classifier = nn.Linear(512 * options.patch_size/(4*4*4), 2)
-            criterion = nn.CrossEntropyLoss()
-            optimizer = torch.optim.Adam(classifier.parameters(), lr=options.learning_rate)
+    greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, use_cuda, writer_train, writer_valid, options)
 
-        model.train()
-        total_time = time.time()
-        correct = 0
-        for i, batch_data in enumerate(train_loader):
-
-            if use_cuda:
-                img, target = batch_data['image'].cuda(), batch_data['label'].cuda()
-            else:
-                img, target = batch_data['image'], batch_data['label']
-
-            features = model(img).detach()
-            prediction = classifier(features.view(features.size(0), -1))
-            loss = criterion(prediction, target)
-
-            ## save loss into tensorboardX
-            writer_train.add_scalar('loss', loss, i + epoch * len(train_loader))
-            print("For iteration %d, classification training loss is : %f" % (i + epoch * len(train_loader), loss.item()))
-
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            pred = prediction.data.max(1, keepdim=True)[1]
-            correct += pred.eq(target.data.view_as(pred)).cpu().sum()
-
-        total_time = time.time() - total_time
-
-        ## get the AE reconstruction loss and linear classifier training performances
-        model.eval()
-        features, x_reconstructed = model(img)
-        reconstruction_loss = torch.mean((x_reconstructed.data - img.data)**2)
-
-        ## save the same slice from the reconstructed patch and original patch to do visual check
-        if epoch % 10 == 0:
-            print("Saving epoch {}".format(epoch))
-            if not os.path.exists(os.path.join(options.output_dir, 'imgs')):
-                os.makedirs(os.path.join(options.output_dir, 'imgs'))
-            orig = extract_slice_img(img.cpu().data)
-            save_image(orig, os.path.join(options.output_dir, 'imgs', 'orig_{}.png'.format(epoch)))
-            pic = extract_slice_img(x_reconstructed.cpu().data)
-            save_image(pic, os.path.join(options.output_dir, 'imgs', 'reconstruction_{}.png'.format(epoch)))
-
-        print("For epoch %d, reconstruction loss is : %f" % (epoch, reconstruction_loss.item()))
-        print("Epoch {} complete\tTime: {:.4f}s\t\tLoss: {:.4f}".format(epoch, total_time, reconstruction_loss))
-        print("Feature Statistics\tMean: {:.4f}\t\tMax: {:.4f}\t\tSparsity: {:.4f}%".format(
-            torch.mean(features.data), torch.max(features.data), torch.sum(features.data > 0.0)*100 / features.data.numel())
-        )
-        print("Linear classifier performance: {:.4f}%".format(correct.item() / float((len(train_loader)*options.batch_size))))
-        print("="*80)
-
-        # save the best model at the last epoch
-        is_best = reconstruction_loss < best_loss_eval
-        # is_best = True
-        best_loss_eval = min(reconstruction_loss, best_loss_eval)
-        save_checkpoint({
-            'epoch': epoch,
-            'state_dict': model.state_dict(),
-            'best_loss': best_loss_eval,
-            'optimizer': optimizer.state_dict()
-        }, is_best, os.path.join(options.output_dir, "best_model_dir"))
-
-    ## reconstruct one example with the latest model
-    visualize_ae(model, example_batch, path.join(options.output_dir, "imgs"))
+    # best_loss_eval = np.inf
+    # for epoch in range(options.epochs):
+    #     if epoch % 10 == 0:
+    #         if use_cuda:
+    #             # Test the quality of our features with a randomly initialzed linear classifier.
+    #             classifier = nn.Linear(512 * options.patch_size/(4*4*4), 2).cuda()
+    #         else:
+    #             classifier = nn.Linear(512 * options.patch_size/(4*4*4), 2)
+    #         criterion = nn.CrossEntropyLoss()
+    #         optimizer = torch.optim.Adam(classifier.parameters(), lr=options.learning_rate)
+    #
+    #     model.train()
+    #     total_time = time.time()
+    #     correct = 0
+    #     for i, batch_data in enumerate(train_loader):
+    #
+    #         if use_cuda:
+    #             img, target = batch_data['image'].cuda(), batch_data['label'].cuda()
+    #         else:
+    #             img, target = batch_data['image'], batch_data['label']
+    #
+    #         features = model(img).detach()
+    #         prediction = classifier(features.view(features.size(0), -1))
+    #         loss = criterion(prediction, target)
+    #
+    #         ## save loss into tensorboardX
+    #         writer_train.add_scalar('loss', loss, i + epoch * len(train_loader))
+    #         print("For iteration %d, classification training loss is : %f" % (i + epoch * len(train_loader), loss.item()))
+    #
+    #         optimizer.zero_grad()
+    #         loss.backward()
+    #         optimizer.step()
+    #         pred = prediction.data.max(1, keepdim=True)[1]
+    #         correct += pred.eq(target.data.view_as(pred)).cpu().sum()
+    #
+    #     total_time = time.time() - total_time
+    #
+    #     ## get the AE reconstruction loss and linear classifier training performances
+    #     model.eval()
+    #     features, x_reconstructed = model(img)
+    #     reconstruction_loss = torch.mean((x_reconstructed.data - img.data)**2)
+    #
+    #     ## save the same slice from the reconstructed patch and original patch to do visual check
+    #     if epoch % 10 == 0:
+    #         print("Saving epoch {}".format(epoch))
+    #         if not os.path.exists(os.path.join(options.output_dir, 'imgs')):
+    #             os.makedirs(os.path.join(options.output_dir, 'imgs'))
+    #         orig = extract_slice_img(img.cpu().data)
+    #         save_image(orig, os.path.join(options.output_dir, 'imgs', 'orig_{}.png'.format(epoch)))
+    #         pic = extract_slice_img(x_reconstructed.cpu().data)
+    #         save_image(pic, os.path.join(options.output_dir, 'imgs', 'reconstruction_{}.png'.format(epoch)))
+    #
+    #     print("For epoch %d, reconstruction loss is : %f" % (epoch, reconstruction_loss.item()))
+    #     print("Epoch {} complete\tTime: {:.4f}s\t\tLoss: {:.4f}".format(epoch, total_time, reconstruction_loss))
+    #     print("Feature Statistics\tMean: {:.4f}\t\tMax: {:.4f}\t\tSparsity: {:.4f}%".format(
+    #         torch.mean(features.data), torch.max(features.data), torch.sum(features.data > 0.0)*100 / features.data.numel())
+    #     )
+    #     print("Linear classifier performance: {:.4f}%".format(correct.item() / float((len(train_loader)*options.batch_size))))
+    #     print("="*80)
+    #
+    #     # save the best model at the last epoch
+    #     is_best = reconstruction_loss < best_loss_eval
+    #     # is_best = True
+    #     best_loss_eval = min(reconstruction_loss, best_loss_eval)
+    #     save_checkpoint({
+    #         'epoch': epoch,
+    #         'state_dict': model.state_dict(),
+    #         'best_loss': best_loss_eval,
+    #         'optimizer': optimizer.state_dict()
+    #     }, is_best, os.path.join(options.output_dir, "best_model_dir"))
+    #
+    # ## reconstruct one example with the latest model
+    # visualize_ae(model, example_batch, path.join(options.output_dir, "imgs"))
 
 
 if __name__ == "__main__":

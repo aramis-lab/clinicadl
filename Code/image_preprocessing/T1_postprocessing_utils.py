@@ -52,7 +52,7 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
     image_tensor = image_tensor.view(image_tensor.shape[1], image_tensor.shape[2], image_tensor.shape[3])
 
     ## sagital
-    slice_list_sag = range(15, image_tensor.shape[0] - 15) # delete the first 20 slice and last 15 slices
+    slice_list_sag = range(20, image_tensor.shape[0] - 20) # delete the first 20 slice and last 20 slices
 
     if slice_direction == 0:
         for index_slice in slice_list_sag:
@@ -73,7 +73,7 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
                 output_file_original = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-sag_originalslice-' + str(index_slice) + '.pt')
                 torch.save(extracted_slice_original_sag, output_file_original)
             elif slice_mode == 'rgb':
-                output_file_rgb = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-sag_rgblslice-' + str(index_slice) + '.pt')
+                output_file_rgb = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-sag_rgbslice-' + str(index_slice) + '.pt')
                 torch.save(extracted_slice_rgb_sag, output_file_rgb)
 
     elif slice_direction == 1:

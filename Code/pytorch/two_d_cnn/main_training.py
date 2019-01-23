@@ -18,7 +18,7 @@ __status__ = "Development"
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D CNN, The input MRI's dimension is 169*208*179 after cropping")
 
-parser.add_argument("-id", "--caps_directory", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI',
+parser.add_argument("-id", "--caps_directory", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI_clinica_spm',
                            help="Path to the caps of image processing pipeline of DL")
 parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/test.tsv',
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
@@ -56,9 +56,8 @@ parser.add_argument('--weight_decay', default=1e-2, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--random_state', default=None,
                     help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
-
-# parser.add_argument("--estop", default=1e-2, type=float,
-#                     help="Early stopping criteria on the development set. (default=1e-2)")
+parser.add_argument('--image_processing', default="LinearReg", choices=["LinearReg", "Segmented"],
+                    help="The output of which image processing pipeline to fit into the network. By defaut, using the raw one with only linear registration, otherwise, using the output of spm pipeline of Clinica")
 
 def main(options):
 
@@ -107,8 +106,8 @@ def main(options):
         ## load the tsv file
         training_tsv, valid_tsv = load_split(options.diagnosis_tsv, val_size=0.15, random_state=options.random_state)
 
-        data_train = MRIDataset_slice(options.caps_directory, training_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type)
-        data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type)
+        data_train = MRIDataset_slice(options.caps_directory, training_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type, image_processing=options.image_processing)
+        data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type, image_processing=options.image_processing)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
