@@ -7,6 +7,7 @@ from os import path
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
+from time import time
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -40,8 +41,14 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
     if model_mode == "train":
         model.train() ## set the model to training mode
         print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
+	tend = time()
+        total_time = 0
+
         for i, batch_data in enumerate(data_loader):
-            if use_cuda:
+            t0 = time()
+            total_time = total_time + t0 - tend
+
+	    if use_cuda:
                 imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
             else:
                 imgs, labels = batch_data['image'], batch_data['label']
@@ -69,7 +76,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             # as balanced accuracy, will be saved in the tsv file.
             accuracy = float(correct_this_batch) / len(labels)
             acc += accuracy
-            loss += loss_batch
+            loss += loss_batch.item()
 
             print("For batch %d, training loss is : %f" % (i, loss_batch.item()))
             print("For batch %d, training accuracy is : %f" % (i, accuracy))
@@ -91,6 +98,9 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             del imgs, labels, output, predict, gound_truth_list, correct_this_batch, loss_batch
             # Releases all unoccupied cached memory
             torch.cuda.empty_cache()
+	    tend = time()
+        print('Mean time per batch (train):', total_time / len(data_loader))
+
 
         accuracy_batch_mean = acc / len(data_loader)
         loss_batch_mean = loss / len(data_loader)
@@ -131,7 +141,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
                 # as balanced accuracy, will be saved in the tsv file.
                 accuracy = float(correct_this_batch) / len(labels)
                 acc += accuracy
-                loss += loss_batch
+                loss += loss_batch.item()
                 print("For batch %d, validation accuracy is : %f" % (i, accuracy))
 
                 # delete the temporal varibles taking the GPU memory
@@ -342,7 +352,6 @@ class MRIDataset_slice(Dataset):
             self.slice_label_list = [ele for ele in label_list for _ in range(178)]
             self.slices_per_patient = 178
             self.slice_direction = 'cor'
-
         ## axial
         elif mri_plane == 2:
             self.slice_participant_list = [ele for ele in participant_list for _ in range(149)]
@@ -356,19 +365,22 @@ class MRIDataset_slice(Dataset):
         return len(self.slice_participant_list)
 
     def __getitem__(self, idx):
+	#slice_time = time()
 
         img_name = self.slice_participant_list[idx]
         sess_name = self.slice_session_list[idx]
         img_label = self.slice_label_list[idx]
         label = self.diagnosis_code[img_label]
-        index_slice = idx % self.slices_per_patient
+        index_slice = idx % self.slices_per_patient + 15
 
         if self.data_type == 'from_MRI':
             ## image without intensity normalization
             image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
             extracted_slice = extract_slice_from_mri(image_path, index_slice, self.mri_plane, self.transfer_learning)
+	# read the slices directly
         else:
-            if self.transfer_learning:
+           # read_time = time()
+	    if self.transfer_learning:
                 slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
                                           'preprocessing_dl',
                                           img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' + self.slice_direction + '_rgblslice-' + str(
@@ -379,15 +391,26 @@ class MRIDataset_slice(Dataset):
                                           img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' + self.slice_direction + '_originalslice-' + str(
                                               index_slice) + '.pt')
             extracted_slice = torch.load(slice_path)
-
-        # for img in images_list:
+	    extracted_slice = (extracted_slice - extracted_slice.min()) / (extracted_slice.max() - extracted_slice.min())
+	    #read_time = time() - read_time
+	    #print("Read the data time from slices: %d s" % read_time)
+        # check if the slice has NAN value
+	if torch.isnan(extracted_slice).any() == True:
+	    #nan_time = time()
+	    print("Double check, this slice has Nan value: %s" % str(img_name + '_' + sess_name + '_' + str(index_slice)))
+	    extracted_slice[torch.isnan(extracted_slice)] = 0
+		#raise Exception('Have Nan in the slices, it does not make sense, double check it')
+	    #nan_time = time() - nan_time
+            #print("Check NAN time from slices: %d s" % nan_time)
+	# for img in images_list:
         if self.transformations:
-            extracted_slice = self.transformations(extracted_slice)
-
+            #trans_time = time()
+	    extracted_slice = self.transformations(extracted_slice)
+	    #trans_time = time() - trans_time
+            #print("Transform time from slices: %d s" % trans_time)
         sample = {'image_id': img_name + '_' + sess_name, 'image': extracted_slice, 'label': label}
 
         return sample
-
 
 def extract_slice_from_mri(image_path, index_slice, view, transfer_learning):
     """
@@ -426,6 +449,7 @@ def extract_slice_from_mri(image_path, index_slice, view, transfer_learning):
 
     ## convert the slices to images based on if transfer learning or not
     if transfer_learning == False:
+	slice_select = (slice_select - slice_select.min()) / (slice_select.max() - slice_select.min())
         extracted_slice = slice_select.unsqueeze(0) ## shape should be 1 * W * L
     else:
         slice_select = (slice_select - slice_select.min()) / (slice_select.max() - slice_select.min())

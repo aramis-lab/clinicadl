@@ -34,37 +34,39 @@ class lenet2D(nn.Module):
         super(lenet2D, self).__init__()
         self.features = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=5, stride=1),
+	    nn.Dropout(0.8),
             nn.LeakyReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.BatchNorm2d(32),
             nn.Conv2d(32, 64, kernel_size=5, padding=2),
-            nn.LeakyReLU(inplace=True),
+            nn.Dropout(0.8),
+	    nn.LeakyReLU(inplace=True),
             nn.BatchNorm2d(64),
             nn.MaxPool2d(kernel_size=2, stride=2)
         )
 
         if mri_plane == 0:
             self.classifier = nn.Sequential(
-                nn.Linear(64 * 51 * 43, 512),
+                nn.Linear(64 * 51 * 43, 256),
                 nn.LeakyReLU(inplace=True),
-                nn.Dropout(),
-                nn.Linear(512, num_classes),
+                nn.Dropout(0.8),
+                nn.Linear(256, num_classes),
                 nn.Softmax(dim=1)
             )
         elif mri_plane == 1:
             self.classifier = nn.Sequential(
-                nn.Linear(64 * 41 * 43, 512),
+                nn.Linear(64 * 41 * 43, 256),
                 nn.LeakyReLU(inplace=True),
                 nn.Dropout(),
-                nn.Linear(512, num_classes),
+                nn.Linear(256, num_classes),
                 nn.Softmax(dim=1)
             )
         else:
             self.classifier = nn.Sequential(
-                nn.Linear(64 * 41 * 51, 512),
+                nn.Linear(64 * 41 * 51, 256),
                 nn.LeakyReLU(inplace=True),
                 nn.Dropout(),
-                nn.Linear(512, num_classes),
+                nn.Linear(256, num_classes),
                 # the Softmax has been encompassed into the loss function in Pytorch implementation, if you just wanna the label, it does not change anything
                 # for the classification, because you will call argmax on the logits; otherwise, if you want to have a probability, you should always add a softmax
                 # layer
@@ -160,14 +162,18 @@ def alexnet2D(mri_plane=0, transfer_learning=False, **kwargs):
     if transfer_learning == True:
         model = alexnet(transfer_learning)
         for p in model.features.parameters():
-            p.requires_grad = False
+         #   p.requires_grad = False
+	    p.requires_grad = True # first, try to overfit the model
 
         ## fine-tune the last convolution layer
-        for p in model.features[10].parameters():
-            p.requires_grad = True
+        #for p in model.features[10].parameters():
+          #  p.requires_grad = True
         # fine-tune the last second convolution layer
-        for p in model.features[8].parameters():
-            p.requires_grad = True
+        #for p in model.features[8].parameters():
+         #   p.requires_grad = True
+	# fine-tune the last second convolution layer
+        #for p in model.features[6].parameters():
+         #   p.requires_grad = True
 
         ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
         model.classifier.add_module('dropout', nn.Dropout(p=0.8))
@@ -325,8 +331,12 @@ class ResNet(nn.Module):
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = self.fc(x)
-        x = self.fc_out(x)
-        x = self.sigmoid(x)
+
+	## adding top layers
+        x = self.fc_out1(x)
+        x = self.drop_out(x)
+	x = self.fc_out2(x)
+	x = self.softmax(x)
 
         return x
 
@@ -404,15 +414,17 @@ def resnet2D(resnet_type, transfer_learning=False, **kwargs):
         if transfer_learning:
             model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
             for p in model.parameters():
-                p.requires_grad = False
+                p.requires_grad = True
 
             ## fine-tune the last FC layer
             for p in model.fc.parameters():
                 p.requires_grad = True
 
             ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
-            model.add_module('fc_out', nn.Linear(1000, 2))  ## For linear layer, Pytorch used similar H initialization for the weight.
-            model.add_module('sigmoid', nn.Softmax(dim=1))
+            model.add_module('fc_out1', nn.Linear(1000, 100))
+	    model.add_module('drop_out', nn.Dropout(p=0.8))
+            model.add_module('fc_out2', nn.Linear(100, 2))
+	    model.add_module('softmax', nn.Softmax(dim=1))
 
     return model
 

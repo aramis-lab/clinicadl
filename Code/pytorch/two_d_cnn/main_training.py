@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from classification_utils import *
 from model import alexnet2D, lenet2D, resnet2D
 import copy
+from time import time
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -45,13 +46,13 @@ parser.add_argument("--use_gpu", default=True, nargs='+', type=bool,
                     help="If use gpu or cpu. Empty implies cpu usage.")
 parser.add_argument('--force', default=True, type=bool,
                     help='If force to rerun the classification, default behavior is to clean the output folder and restart from scratch')
-parser.add_argument('--mri_plane', default=1,
+parser.add_argument('--mri_plane', default=0,
                     help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
 parser.add_argument("--num_workers", default=4, type=int,
                     help='the number of batch being loaded in parallel')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
-parser.add_argument('--weight_decay', default=1e-4, type=float,
+parser.add_argument('--weight_decay', default=1e-2, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--random_state', default=None,
                     help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
@@ -74,7 +75,7 @@ def main(options):
             model = alexnet2D(transfer_learning=options.transfer_learning)
             trg_size = (224, 224)  ## this is the original input size of alexnet
         elif options.network == "ResNet2D":
-            model = resnet2D('resnet152', transfer_learning=options.transfer_learning)
+            model = resnet2D('resnet18', transfer_learning=options.transfer_learning)
             trg_size = (224, 224)  ## this is the original input size of resnet
         else:
             raise Exception('The model has not been implemented')
@@ -92,7 +93,8 @@ def main(options):
         else:
             raise Exception('The model has not been implemented')
         transformations = None
-
+    # calculate the time consumation
+    total_time = time()
     ## the inital model weight and bias
     init_state = copy.deepcopy(model.state_dict())
 
@@ -101,6 +103,9 @@ def main(options):
         print("Running for the %d run" % fi)
         model.load_state_dict(init_state)
 
+	print("Load the slices %s " % str(options.data_type))
+	print("The initial learning rate is %s" % str(options.learning_rate))
+	## Begin the training
         ## load the tsv file
         training_tsv, valid_tsv = load_split(options.diagnosis_tsv, val_size=0.15, random_state=options.random_state)
 
@@ -194,9 +199,14 @@ def main(options):
         iteration_subjects_df_train, results_train = results_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train, mode='train')
         iteration_subjects_df_valid, results_valid = results_to_tsvs(options.output_dir, fi, valid_subjects, y_grounds_valid, y_hats_valid, mode='validation')
 
+    total_time = time() - total_time
+    print("Total time of computation: %d s" % total_time)
+
 
 if __name__ == "__main__":
     ret = parser.parse_known_args()
+    print("The commandline arguments:")
+    print(ret)
     options = ret[0]
     if ret[1]:
         print("unknown arguments: %s" % (parser.parse_known_args()[1]))
