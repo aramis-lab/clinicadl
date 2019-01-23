@@ -41,14 +41,14 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
     if model_mode == "train":
         model.train() ## set the model to training mode
         print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
-	tend = time()
+        tend = time()
         total_time = 0
 
         for i, batch_data in enumerate(data_loader):
             t0 = time()
             total_time = total_time + t0 - tend
 
-	    if use_cuda:
+            if use_cuda:
                 imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
             else:
                 imgs, labels = batch_data['image'], batch_data['label']
@@ -98,7 +98,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             del imgs, labels, output, predict, gound_truth_list, correct_this_batch, loss_batch
             # Releases all unoccupied cached memory
             torch.cuda.empty_cache()
-	    tend = time()
+            tend = time()
         print('Mean time per batch (train):', total_time / len(data_loader))
 
 
@@ -338,26 +338,27 @@ class MRIDataset_slice(Dataset):
         session_list = list(df['session_id'])
         label_list = list(df['diagnosis'])
 
+        ## make sure the slice are not from the edge of the MRI which lacks information of brain, here exclude the first and last 20 slices of the MRI
         ## sagital
         if mri_plane == 0:
-            self.slice_participant_list = [ele for ele in participant_list for _ in range(139)]
-            self.slice_session_list = [ele for ele in session_list for _ in range(139)]
-            self.slice_label_list = [ele for ele in label_list for _ in range(139)]
-            self.slices_per_patient = 139
+            self.slices_per_patient = 139 - 40
+            self.slice_participant_list = [ele for ele in participant_list for _ in range(self.slices_per_patient)]
+            self.slice_session_list = [ele for ele in session_list for _ in range(self.slices_per_patient)]
+            self.slice_label_list = [ele for ele in label_list for _ in range(self.slices_per_patient)]
             self.slice_direction = 'sag'
 
         elif mri_plane == 1:
-            self.slice_participant_list = [ele for ele in participant_list for _ in range(178)]
-            self.slice_session_list = [ele for ele in session_list for _ in range(178)]
-            self.slice_label_list = [ele for ele in label_list for _ in range(178)]
-            self.slices_per_patient = 178
+            self.slices_per_patient = 178 - 40
+            self.slice_participant_list = [ele for ele in participant_list for _ in range(self.slices_per_patient)]
+            self.slice_session_list = [ele for ele in session_list for _ in range(self.slices_per_patient)]
+            self.slice_label_list = [ele for ele in label_list for _ in range(self.slices_per_patient)]
             self.slice_direction = 'cor'
         ## axial
         elif mri_plane == 2:
-            self.slice_participant_list = [ele for ele in participant_list for _ in range(149)]
-            self.slice_session_list = [ele for ele in session_list for _ in range(149)]
-            self.slice_label_list = [ele for ele in label_list for _ in range(149)]
-            self.slices_per_patient = 149
+            self.slices_per_patient = 149 - 40
+            self.slice_participant_list = [ele for ele in participant_list for _ in range(self.slices_per_patient)]
+            self.slice_session_list = [ele for ele in session_list for _ in range(self.slices_per_patient)]
+            self.slice_label_list = [ele for ele in label_list for _ in range(self.slices_per_patient)]
             self.slice_direction = 'axi'
 
 
@@ -365,50 +366,44 @@ class MRIDataset_slice(Dataset):
         return len(self.slice_participant_list)
 
     def __getitem__(self, idx):
-	#slice_time = time()
 
         img_name = self.slice_participant_list[idx]
         sess_name = self.slice_session_list[idx]
         img_label = self.slice_label_list[idx]
         label = self.diagnosis_code[img_label]
-        index_slice = idx % self.slices_per_patient + 15
-
+        # ## make sure the slice are not from the edge of the MRI which lacks information of brain, here exclude the first and last 20 slices of the MRI
+        # if not 20 < idx % self.slices_per_patient < (self.slices_per_patient - 20):
+        #     pass
+        # else:
+        index_slice = idx % self.slices_per_patient
         if self.data_type == 'from_MRI':
             ## image without intensity normalization
             image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
-            extracted_slice = extract_slice_from_mri(image_path, index_slice, self.mri_plane, self.transfer_learning)
-	# read the slices directly
+            extracted_slice = extract_slice_from_mri(image_path, index_slice + 20, self.mri_plane, self.transfer_learning)
+        # read the slices directly
         else:
-           # read_time = time()
-	    if self.transfer_learning:
+            if self.transfer_learning:
                 slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
                                           'preprocessing_dl',
                                           img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' + self.slice_direction + '_rgblslice-' + str(
-                                              index_slice) + '.pt')
+                                              index_slice + 20) + '.pt')
             else:
                 slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
                                           'preprocessing_dl',
                                           img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' + self.slice_direction + '_originalslice-' + str(
-                                              index_slice) + '.pt')
+                                              index_slice + 20) + '.pt')
             extracted_slice = torch.load(slice_path)
-	    extracted_slice = (extracted_slice - extracted_slice.min()) / (extracted_slice.max() - extracted_slice.min())
-	    #read_time = time() - read_time
-	    #print("Read the data time from slices: %d s" % read_time)
+            extracted_slice = (extracted_slice - extracted_slice.min()) / (extracted_slice.max() - extracted_slice.min())
+
         # check if the slice has NAN value
-	if torch.isnan(extracted_slice).any() == True:
-	    #nan_time = time()
-	    print("Double check, this slice has Nan value: %s" % str(img_name + '_' + sess_name + '_' + str(index_slice)))
-	    extracted_slice[torch.isnan(extracted_slice)] = 0
-		#raise Exception('Have Nan in the slices, it does not make sense, double check it')
-	    #nan_time = time() - nan_time
-            #print("Check NAN time from slices: %d s" % nan_time)
-	# for img in images_list:
+        if torch.isnan(extracted_slice).any() == True:
+            print("Double check, this slice has Nan value: %s" % str(img_name + '_' + sess_name + '_' + str(index_slice + 20)))
+            extracted_slice[torch.isnan(extracted_slice)] = 0
+
         if self.transformations:
-            #trans_time = time()
-	    extracted_slice = self.transformations(extracted_slice)
-	    #trans_time = time() - trans_time
-            #print("Transform time from slices: %d s" % trans_time)
-        sample = {'image_id': img_name + '_' + sess_name, 'image': extracted_slice, 'label': label}
+            extracted_slice = self.transformations(extracted_slice)
+
+        sample = {'image_id': img_name + '_' + sess_name + '_slice' + str(index_slice + 20), 'image': extracted_slice, 'label': label}
 
         return sample
 
@@ -430,10 +425,6 @@ def extract_slice_from_mri(image_path, index_slice, view, transfer_learning):
     ## reshape the tensor, delete the first dimension for slice-level
     image_tensor = image_tensor.view(image_tensor.shape[1], image_tensor.shape[2], image_tensor.shape[3])
 
-
-    extracted_slices = []
-    # slice_list = range(15, image_tensor.shape[view] - 15) # delete the first 20 slice and last 15 slices
-
     # for i in slice_list:
     ## sagital
     if view == 0:
@@ -449,7 +440,7 @@ def extract_slice_from_mri(image_path, index_slice, view, transfer_learning):
 
     ## convert the slices to images based on if transfer learning or not
     if transfer_learning == False:
-	slice_select = (slice_select - slice_select.min()) / (slice_select.max() - slice_select.min())
+        slice_select = (slice_select - slice_select.min()) / (slice_select.max() - slice_select.min())
         extracted_slice = slice_select.unsqueeze(0) ## shape should be 1 * W * L
     else:
         slice_select = (slice_select - slice_select.min()) / (slice_select.max() - slice_select.min())
@@ -500,23 +491,65 @@ def results_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat, mode='t
     :return:
     """
 
+    def remove_slice_number(s):
+        return s.split('_slice')[0]
+
     # check if the folder exist
     iteration_dir = os.path.join(output_dir, 'performances', 'iteration-' + str(iteration))
     if not os.path.exists(iteration_dir):
         os.makedirs(iteration_dir)
-    iteration_subjects_df = pd.DataFrame({'iteration': iteration,
+    performance_df = pd.DataFrame({'iteration': iteration,
                                                 'y': y_truth,
                                                 'y_hat': y_hat,
                                                 'subject': subject_list})
-    iteration_subjects_df.to_csv(os.path.join(iteration_dir, mode + '_subjects.tsv'), index=False, sep='\t', encoding='utf-8')
+    performance_df.to_csv(os.path.join(iteration_dir, mode + '_slice_level_result.tsv'), index=False, sep='\t', encoding='utf-8')
 
-    results = evaluate_prediction(np.asarray(y_truth), np.asarray(y_hat))
+    ## calculate the subject-level performances based on the majority vote.
+    # delete the slice number in the column of subject
+    performance_df_subject = performance_df
+    subject_df = performance_df_subject['subject']
+    subject_series = subject_df.apply(remove_slice_number)
+    subject_df_new = pd.DataFrame({'subject': subject_series.values})
+    # replace the column in the dataframe
+    performance_df_subject['subject'] = subject_df_new['subject'].values
+
+    ## do majority vote
+    df_y = performance_df_subject.groupby(['subject'], as_index=False).y.mean() # get the true label for each subject
+    df_yhat = pd.DataFrame(columns=['subject', 'y_hat'])
+    for subject, subject_df in performance_df_subject.groupby(['subject']):
+        num_slice = len(subject_df.y_hat)
+        slices_predicted_as_one = subject_df.y_hat.sum()
+        if slices_predicted_as_one > num_slice / 2:
+            label = 1
+        else:
+            label = 0
+        row_array = np.array(list([subject, label])).reshape(1, 2)
+        row_df = pd.DataFrame(row_array, columns=df_yhat.columns)
+        df_yhat = df_yhat.append(row_df)
+
+    # reset the index of df_yhat
+    df_yhat.reset_index()
+    result_df = pd.merge(df_y, df_yhat, on='subject')
+    ## insert the column of iteration
+    result_df['iteration'] = str(iteration)
+
+    result_df.to_csv(os.path.join(iteration_dir, mode + '_subject_level_result.tsv'), index=False, sep='\t', encoding='utf-8')
+
+    results = evaluate_prediction(list(result_df.y), [int(e) for e in list(result_df.y_hat)]) ## Note, y_hat here is not int, is string
     del results['confusion_matrix']
-    pd.DataFrame(results, index=[0]).to_csv(os.path.join(iteration_dir, mode + '_result.tsv'), index=False, sep='\t', encoding='utf-8')
 
-    return iteration_subjects_df, pd.DataFrame(results, index=[0])
+    pd.DataFrame(results, index=[0]).to_csv(os.path.join(iteration_dir, mode + '_subject_level_metrics.tsv'), index=False, sep='\t', encoding='utf-8')
+
+    return performance_df, pd.DataFrame(results, index=[0])
 
 def evaluate_prediction(y, y_hat):
+
+    """
+    This is a function to calculate the different metrics based on the list of true label and predicted label
+    :param y: list
+    :param y_hat: list
+    :return:
+    """
 
     true_positive = 0.0
     true_negative = 0.0

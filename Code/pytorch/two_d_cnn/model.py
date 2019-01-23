@@ -34,13 +34,13 @@ class lenet2D(nn.Module):
         super(lenet2D, self).__init__()
         self.features = nn.Sequential(
             nn.Conv2d(1, 32, kernel_size=5, stride=1),
-	    nn.Dropout(0.8),
+            nn.Dropout(0.8),
             nn.LeakyReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.BatchNorm2d(32),
             nn.Conv2d(32, 64, kernel_size=5, padding=2),
             nn.Dropout(0.8),
-	    nn.LeakyReLU(inplace=True),
+            nn.LeakyReLU(inplace=True),
             nn.BatchNorm2d(64),
             nn.MaxPool2d(kernel_size=2, stride=2)
         )
@@ -162,8 +162,8 @@ def alexnet2D(mri_plane=0, transfer_learning=False, **kwargs):
     if transfer_learning == True:
         model = alexnet(transfer_learning)
         for p in model.features.parameters():
-         #   p.requires_grad = False
-	    p.requires_grad = True # first, try to overfit the model
+        #   p.requires_grad = False
+            p.requires_grad = True # first, try to overfit the model
 
         ## fine-tune the last convolution layer
         #for p in model.features[10].parameters():
@@ -171,7 +171,7 @@ def alexnet2D(mri_plane=0, transfer_learning=False, **kwargs):
         # fine-tune the last second convolution layer
         #for p in model.features[8].parameters():
          #   p.requires_grad = True
-	# fine-tune the last second convolution layer
+        # fine-tune the last second convolution layer
         #for p in model.features[6].parameters():
          #   p.requires_grad = True
 
@@ -332,11 +332,11 @@ class ResNet(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc(x)
 
-	## adding top layers
+        ## adding top layers
         x = self.fc_out1(x)
         x = self.drop_out(x)
-	x = self.fc_out2(x)
-	x = self.softmax(x)
+        x = self.fc_out2(x)
+        x = self.softmax(x)
 
         return x
 
@@ -422,9 +422,9 @@ def resnet2D(resnet_type, transfer_learning=False, **kwargs):
 
             ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
             model.add_module('fc_out1', nn.Linear(1000, 100))
-	    model.add_module('drop_out', nn.Dropout(p=0.8))
+            model.add_module('drop_out', nn.Dropout(p=0.8))
             model.add_module('fc_out2', nn.Linear(100, 2))
-	    model.add_module('softmax', nn.Softmax(dim=1))
+            model.add_module('softmax', nn.Softmax(dim=1))
 
     return model
 

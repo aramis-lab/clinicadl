@@ -370,15 +370,15 @@ class MRIDataset_patch(Dataset):
                                       img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-' + str(self.patch_size) + '_stride-' + str(self.stride_size) + '_patch-' + str(
                                           index_patch) + '.pt')
             patch = torch.load(patch_path)
-	
-        # check if the slice has NAN value
+
+        # check if the patch has NAN value
         if torch.isnan(patch).any() == True:	
-	    print("Double check, this patch has Nan value: %s" % str(image_name + '_' + sess_name + str(index_patch)))
+            print("Double check, this patch has Nan value: %s" % str(img_name + '_' + sess_name + str(index_patch)))
             patch[torch.isnan(patch)] = 0
 
         if self.transformations:
             patch = self.transformations(patch)
-	
+
         sample = {'image_id': img_name + '_' + sess_name, 'image': patch, 'label': label}
 
         return sample
@@ -594,8 +594,6 @@ def extract_slice_img(x):
     """
     slices = x[:, 0, x.shape[-1] // 2, ...].unsqueeze(1)
     return slices
-<<<<<<< HEAD
-=======
 
 def visualize_ae(ae, data, results_path):
     """
@@ -615,5 +613,3 @@ def visualize_ae(ae, data, results_path):
     input_nii = nib.Nifti1Image(data[0][0].cpu().detach().numpy(), np.eye(4))
     nib.save(reconstructed_nii, os.path.join(results_path, 'example_patch_reconstructed.nii.gz'))
     nib.save(input_nii, os.path.join(results_path, 'example_patch_original.nii.gz'))
-
->>>>>>> 575df586e4c046b0ba7e07d8257c6c79f05a38eb
