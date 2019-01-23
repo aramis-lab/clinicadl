@@ -213,12 +213,13 @@ class ConvAutoencoder(nn.Module):
         )
 
         self.criterion = nn.MSELoss()
-        self.optimizer = torch.optim.SGD(self.parameters(), lr=0.01)
+        self.optimizer = torch.optim.SGD(self.parameters(), lr=0.1)
         self.max_pool_indices=None
 
     def forward(self, x):
         # Train each autoencoder with backpropogation if model is set to be train
         x = x.detach()
+        # y, self.max_pool_indices = self.forward_pass(x)
         # Add noise for the input.
         x_noisy = x * (Variable(x.data.new(x.size()).normal_(0, 0.1)) > -.1).type_as(x)
         y, self.max_pool_indices = self.forward_pass(x_noisy)
