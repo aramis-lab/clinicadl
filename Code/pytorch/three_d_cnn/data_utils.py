@@ -355,7 +355,7 @@ def load_autoencoder_data(train_val_path, diagnoses_list, baseline=True):
     return train_df, valid_df
 
 
-def load_split2(train_val_path, diagnoses_list, split, baseline=True):
+def load_split2(train_val_path, diagnoses_list, split, n_splits=5, baseline=True):
 
     train_df = pd.DataFrame()
     valid_df = pd.DataFrame()
@@ -363,15 +363,15 @@ def load_split2(train_val_path, diagnoses_list, split, baseline=True):
     for diagnosis in diagnoses_list:
 
         if baseline:
-            train_diagnosis_path = path.join(train_val_path, 'train',
+            train_diagnosis_path = path.join(train_val_path, 'train_splits-' + str(n_splits),
                                              'split-' + str(split),
                                              diagnosis + '_baseline.tsv')
         else:
-            train_diagnosis_path = path.join(train_val_path, 'train',
+            train_diagnosis_path = path.join(train_val_path, 'train_splits-' + str(n_splits),
                                              'split-' + str(split),
                                              diagnosis + '_baseline.tsv')
 
-        valid_diagnosis_path = path.join(train_val_path, 'validation',
+        valid_diagnosis_path = path.join(train_val_path, 'validation_splits-' + str(n_splits),
                                          'split-' + str(split),
                                          diagnosis + '_baseline.tsv')
 
