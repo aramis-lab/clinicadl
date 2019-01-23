@@ -70,21 +70,40 @@ parser = argparse.ArgumentParser(description="Argparser test")
 
 parser.add_argument("formatted_data_path", type=str,
                     help="Path to the folder containing formatted data.")
+parser.add_argument("--n_splits", "-n", type=int, default=0,
+                    help="Number of splits. If 0 the unique train / test split is studied")
+parser.add_argument("--subset_name", type=str, default="test",
+                    help="Name of the subset that is complementary to train.")
 
 args = parser.parse_args()
 check_train = True
 
-results_path = path.join(args.formatted_data_path, 'lists_by_diagnosis')
+if args.n_splits == 0:
+    train_path = path.join(args.formatted_data_path, 'train')
+    test_path = path.join(args.formatted_data_path, args.subset_name)
+    if not path.exists(train_path):
+        check_train = False
 
-train_path = path.join(results_path, 'train')
-test_path = path.join(results_path, 'test')
-if not path.exists(train_path):
-    check_train = False
+    check_subject_unicity(test_path)
+    if check_train:
+        check_subject_unicity(train_path)
+        check_independance(train_path, test_path)
+        MCI_path = path.join(train_path, 'MCI_baseline.tsv')
+        if path.exists(MCI_path):
+            check_subgroup_independence(train_path, test_path)
 
-check_subject_unicity(test_path)
-if check_train:
-    check_subject_unicity(train_path)
-    check_independance(train_path, test_path)
-    MCI_path = path.join(train_path, 'MCI_baseline.tsv')
-    if path.exists(MCI_path):
-        check_subgroup_independence(train_path, test_path)
+else:
+    for split in range(args.n_splits):
+        train_path = path.join(args.formatted_data_path, 'train_splits-' + str(args.n_splits), 'split-' + str(split))
+        test_path = path.join(args.formatted_data_path, args.subset_name + '_splits-' + str(args.n_splits), 'split-' + str(split))
+
+        if not path.exists(train_path):
+            check_train = False
+
+        check_subject_unicity(test_path)
+        if check_train:
+            check_subject_unicity(train_path)
+            check_independance(train_path, test_path)
+            MCI_path = path.join(train_path, 'MCI_baseline.tsv')
+            if path.exists(MCI_path):
+                check_subgroup_independence(train_path, test_path)
