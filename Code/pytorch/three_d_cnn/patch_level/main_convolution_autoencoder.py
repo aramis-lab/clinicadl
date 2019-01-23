@@ -20,9 +20,9 @@ parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D autoencod
 
 parser.add_argument("-id", "--caps_directory", default='/teams/ARAMIS/PROJECTS/CLINICA/CLINICA_datasets/temp/CAPS_ADNI_DL',
                            help="Path to the caps of image processing pipeline of DL")
-parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/test.tsv',
+parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_task/train/AD_vs_CN_baseline.tsv',
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
-parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch_ae',
+parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch_ae_conv',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 parser.add_argument("-dty", "--data_type", default="from_MRI", choices=["from_MRI", "from_patch"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
@@ -33,7 +33,7 @@ parser.add_argument("--patch_size", default="64", type=int,
                     help="The patch size extracted from the MRI")
 parser.add_argument("--patch_stride", default="64", type=int,
                     help="The stride for the patch extract window from the MRI")
-parser.add_argument("--batch_size", default=2, type=int,
+parser.add_argument("--batch_size", default=16, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
@@ -41,7 +41,7 @@ parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
 
 # Training arguments
-parser.add_argument("--epochs", default=10, type=int,
+parser.add_argument("--epochs", default=100, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
@@ -96,13 +96,18 @@ def main(options):
     if options.use_gpu == False:
         use_cuda = False
         model.cpu()
+        ## example image for tensorbordX usage:$
+        example_batch = (next(iter(train_loader))['image'])[0, ...].unsqueeze(0)
     else:
         print("Using GPU")
         use_cuda = True
         model.cuda()
+        ## example image for tensorbordX usage:$
+        example_batch = (next(iter(train_loader))['image'].cuda())[0, ...].unsqueeze(0)
 
     writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvDenAutoencoder", "train")))
 
+    best_loss_eval = np.inf
     for epoch in range(options.epochs):
         if epoch % 10 == 0:
             if use_cuda:
@@ -145,7 +150,7 @@ def main(options):
         reconstruction_loss = torch.mean((x_reconstructed.data - img.data)**2)
 
         ## save the same slice from the reconstructed patch and original patch to do visual check
-        if epoch % 1 == 0:
+        if epoch % 10 == 0:
             print("Saving epoch {}".format(epoch))
             if not os.path.exists(os.path.join(options.output_dir, 'imgs')):
                 os.makedirs(os.path.join(options.output_dir, 'imgs'))
@@ -159,10 +164,22 @@ def main(options):
         print("Feature Statistics\tMean: {:.4f}\t\tMax: {:.4f}\t\tSparsity: {:.4f}%".format(
             torch.mean(features.data), torch.max(features.data), torch.sum(features.data > 0.0)*100 / features.data.numel())
         )
-        print("Linear classifier performance: {:.4f}%".format(correct / (len(train_loader)*options.batch_size)))
+        print("Linear classifier performance: {:.4f}%".format(correct.item() / float((len(train_loader)*options.batch_size))))
         print("="*80)
 
-    torch.save(model.state_dict(), './CDAE.pth')
+        # save the best model at the last epoch
+        is_best = reconstruction_loss < best_loss_eval
+        # is_best = True
+        best_loss_eval = min(reconstruction_loss, best_loss_eval)
+        save_checkpoint({
+            'epoch': epoch,
+            'state_dict': model.state_dict(),
+            'best_loss': best_loss_eval,
+            'optimizer': optimizer.state_dict()
+        }, is_best, os.path.join(options.output_dir, "best_model_dir"))
+
+    ## reconstruct one example with the latest model
+    visualize_ae(model, example_batch, path.join(options.output_dir, "imgs"))
 
 
 if __name__ == "__main__":
