@@ -70,7 +70,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             # as balanced accuracy, will be saved in the tsv file.
             accuracy = float(correct_this_batch) / len(labels)
             acc += accuracy
-            loss += loss_batch
+            loss += loss_batch.item()
 
             print("For batch %d, training loss is : %f" % (i, loss_batch.item()))
             print("For batch %d, training accuracy is : %f" % (i, accuracy))
@@ -132,7 +132,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
                 # as balanced accuracy, will be saved in the tsv file.
                 accuracy = float(correct_this_batch) / len(labels)
                 acc += accuracy
-                loss += loss_batch
+                loss += loss_batch.item()
                 print("For batch %d, validation accuracy is : %f" % (i, accuracy))
 
                 # delete the temporal varibles taking the GPU memory
@@ -370,10 +370,15 @@ class MRIDataset_patch(Dataset):
                                       img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-' + str(self.patch_size) + '_stride-' + str(self.stride_size) + '_patch-' + str(
                                           index_patch) + '.pt')
             patch = torch.load(patch_path)
+	
+        # check if the slice has NAN value
+        if torch.isnan(patch).any() == True:	
+	    print("Double check, this patch has Nan value: %s" % str(image_name + '_' + sess_name + str(index_patch)))
+            patch[torch.isnan(patch)] = 0
 
         if self.transformations:
             patch = self.transformations(patch)
-
+	
         sample = {'image_id': img_name + '_' + sess_name, 'image': patch, 'label': label}
 
         return sample

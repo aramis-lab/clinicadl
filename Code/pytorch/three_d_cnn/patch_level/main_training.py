@@ -57,7 +57,7 @@ parser.add_argument("--epochs", default=3, type=int,
 # Optimizer arguments
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument('--use_gpu', action='store_true', default=False,
+parser.add_argument('--use_gpu', action='store_true', default=True,
                     help='Uses gpu instead of cpu if cuda is available')
 parser.add_argument('--weight_decay', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
@@ -96,6 +96,7 @@ def main(options):
         print('The chosen network is %s !' % options.network)
         try:
             model = eval(options.network)()
+	#model = AllConvNet3D()
         except:
             raise Exception('The model has not been implemented')
 
@@ -105,6 +106,7 @@ def main(options):
     for fi in range(options.runs):
         print("Running for the %d run" % fi)
         model.load_state_dict(init_state)
+	print("Reading patches %s" % str(options.data_type))
 
         training_tsv, valid_tsv = load_split(options.diagnosis_tsv, random_state=options.random_state)
         data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride, data_type=options.data_type)
@@ -171,7 +173,7 @@ def main(options):
             y_grounds_train.extend(y_ground_train)
             y_hats_train.extend(y_hat_train)
             ## at then end of each epoch, we validate one time for the model with the validation data
-            _, valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_steps_valid = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch_i, model_mode='valid', global_steps=global_steps_train)
+            valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_steps_valid = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch_i, model_mode='valid', global_steps=global_steps_train)
             print("Slice level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch_i))
             valid_subjects.extend(valid_subject)
             y_grounds_valid.extend(y_ground_valid)
@@ -220,6 +222,7 @@ def main(options):
 
 if __name__ == "__main__":
     ret = parser.parse_known_args()
+    print(ret)
     options = ret[0]
     if ret[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
