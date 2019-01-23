@@ -65,6 +65,19 @@ def check_subgroup_independence(train_path, test_path):
 
         assert flag_independant
 
+    MCI_test_df = pd.read_csv(path.join(test_path, 'MCI_baseline.tsv'), sep='\t')
+    MCI_test_df.set_index(['participant_id', 'session_id'], inplace=True)
+    for sub_diagnosis in sub_diagnosis_list:
+        flag_independant = True
+        sub_test_df = pd.read_csv(path.join(train_path, sub_diagnosis), sep='\t')
+        sub_test_df.set_index(['participant_id', 'session_id'], inplace=True)
+
+        for subject, session in MCI_test_df.index:
+            if subject in sub_test_df.index:
+                flag_independant = False
+
+        assert flag_independant
+
 
 parser = argparse.ArgumentParser(description="Argparser test")
 
