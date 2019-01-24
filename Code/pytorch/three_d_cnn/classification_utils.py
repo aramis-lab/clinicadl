@@ -45,6 +45,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
 
     # Initialize variables
     best_valid_accuracy = 0.0
+    best_valid_loss = np.inf
     epoch = options.beginning_epoch
 
     model.train()  # set the module to training mode
@@ -127,19 +128,22 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
             row_df = pd.DataFrame(row, columns=columns)
             with open(filename, 'a') as f:
                 row_df.to_csv(f, header=False, index=False, sep='\t')
-            is_best = acc_mean_valid > best_valid_accuracy  # TODO Change for loss ?
+            accuracy_is_best = acc_mean_valid > best_valid_accuracy  # TODO Change for loss ?
+            loss_is_best = mean_loss_valid < best_valid_loss
             best_valid_accuracy = max(acc_mean_valid, best_valid_accuracy)
+            best_valid_loss = min(mean_loss_valid, best_valid_loss)
+
             save_checkpoint({'model': model.state_dict(),
                              'epoch': epoch,
                              'valid_acc': acc_mean_valid},
-                            is_best,
+                            accuracy_is_best, loss_is_best,
                             os.path.join(options.log_dir, "run" + str(run)))
             # Save optimizer state_dict to be able to reload
             save_checkpoint({'optimizer': optimizer.state_dict(),
                              'epoch': epoch,
                              'name': options.optimizer,
                              },
-                            False,
+                            False, False,
                             os.path.join(options.log_dir, "run" + str(run)),
                             filename='optimizer.pth.tar')
 
@@ -249,10 +253,16 @@ def show_plot(points):
     plt.plot(points)
 
 
-def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar', best_filename='model_best.pth.tar'):
+def save_checkpoint(state, accuracy_is_best, loss_is_best, checkpoint_dir, filename='checkpoint.pth.tar',
+                    best_accuracy='model_best_accuracy.pth.tar',
+                    best_loss='model_best_loss.pth.tar'):
+
     torch.save(state, os.path.join(checkpoint_dir, filename))
-    if is_best:
-        shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(checkpoint_dir, best_filename))
+    if accuracy_is_best:
+        shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(checkpoint_dir, best_accuracy))
+
+    if loss_is_best:
+        shutil.copyfile(os.path.join(checkpoint_dir, filename), os.path.join(checkpoint_dir, best_loss))
 
 
 def load_model(model, checkpoint_dir, filename='model_best.pth.tar'):
