@@ -21,8 +21,8 @@ parser.add_argument("model", type=str,
 # Data Management
 parser.add_argument("--diagnoses", "-d", default=['AD', 'CN'], nargs='+', type=str,
                     help="The diagnoses used for the classification")
-parser.add_argument("--data_augmentation", default=False, action="store_true",
-                    help="Use all data available instead of baseline")
+parser.add_argument("--baseline", default=False, action="store_true",
+                    help="Use only baseline data instead of all scans available")
 parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument('--accumulation_steps', '-asteps', default=1, type=int,
@@ -37,6 +37,10 @@ parser.add_argument("--num_workers", '-w', default=1, type=int,
                     help='the number of batch being loaded in parallel')
 parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
                     help="Performs MinMaxNormalization for visualization")
+parser.add_argument("--n_splits", type=int, default=None,
+                    help="If a value is given will load data of a k-fold CV")
+parser.add_argument("--split", type=int, default=0,
+                    help="Will load the specific split wanted.")
 
 # Pretraining arguments
 parser.add_argument("-t", "--transfer_learning", default=None, type=str,
@@ -122,7 +126,8 @@ def main(options):
         else:
             if options.transfer_learning_diagnoses is None:
                 raise Exception("Diagnosis labels must be given to train the autoencoder.")
-            training_tsv, valid_tsv = load_autoencoder_data(options.diagnosis_path, options.transfer_learning_diagnoses)
+            training_tsv, valid_tsv = load_data(options.diagnosis_path, options.transfer_learning_diagnoses,
+                                                options.split, options.n_splits, options.baseline)
 
             data_train = MRIDataset(options.input_dir, training_tsv, transformations)
             data_valid = MRIDataset(options.input_dir, valid_tsv, transformations)
@@ -147,8 +152,8 @@ def main(options):
 
     for run in range(options.runs):
         # Get the data.
-        training_tsv, valid_tsv = load_autoencoder_data(options.diagnosis_path, options.diagnoses,
-                                                        not options.data_augmentation)
+        training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
+                                            options.split, options.n_splits, options.baseline)
 
         data_train = MRIDataset(options.input_dir, training_tsv, transform=transformations)
         data_valid = MRIDataset(options.input_dir, valid_tsv, transform=transformations)

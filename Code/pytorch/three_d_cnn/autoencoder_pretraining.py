@@ -41,6 +41,10 @@ parser.add_argument("--visualization", action='store_true', default=False,
                     help='Chooses if visualization is done on AE pretraining')
 parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
                     help="Performs MinMaxNormalization for visualization")
+parser.add_argument("--n_splits", type=int, default=None,
+                    help="If a value is given will load data of a k-fold CV")
+parser.add_argument("--split", type=int, default=0,
+                    help="Will load the specific split wanted.")
 
 # Training arguments
 parser.add_argument("--epochs", default=20, type=int,
@@ -103,7 +107,8 @@ def main(options):
     model = eval(options.model)()
     criterion = torch.nn.MSELoss()
 
-    training_tsv, valid_tsv = load_autoencoder_data(options.diagnosis_path, options.diagnoses)
+    training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
+                                        options.split, options.n_splits, options.baseline)
 
     data_train = MRIDataset(options.input_dir, training_tsv, transformations)
     data_valid = MRIDataset(options.input_dir, valid_tsv, transformations)

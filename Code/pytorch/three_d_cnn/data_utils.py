@@ -355,25 +355,31 @@ def load_autoencoder_data(train_val_path, diagnoses_list, baseline=True):
     return train_df, valid_df
 
 
-def load_split2(train_val_path, diagnoses_list, split, n_splits=5, baseline=True):
+def load_data(train_val_path, diagnoses_list, split, n_splits=None, baseline=True):
 
     train_df = pd.DataFrame()
     valid_df = pd.DataFrame()
 
+    if n_splits is None:
+        train_path = path.join(train_val_path, 'train')
+        valid_path = path.join(train_val_path, 'validation')
+
+    else:
+        train_path = path.join(train_val_path, 'train_splits-' + str(n_splits),
+                               'split-' + str(split))
+        valid_path = path.join(train_val_path, 'validation_splits-' + str(n_splits),
+                               'split-' + str(split))
+    print("Train", train_path)
+    print("Valid", valid_path)
+
     for diagnosis in diagnoses_list:
 
         if baseline:
-            train_diagnosis_path = path.join(train_val_path, 'train_splits-' + str(n_splits),
-                                             'split-' + str(split),
-                                             diagnosis + '_baseline.tsv')
+            train_diagnosis_path = path.join(train_path, diagnosis + '_baseline.tsv')
         else:
-            train_diagnosis_path = path.join(train_val_path, 'train_splits-' + str(n_splits),
-                                             'split-' + str(split),
-                                             diagnosis + '_baseline.tsv')
+            train_diagnosis_path = path.join(train_path, diagnosis + '_baseline.tsv')
 
-        valid_diagnosis_path = path.join(train_val_path, 'validation_splits-' + str(n_splits),
-                                         'split-' + str(split),
-                                         diagnosis + '_baseline.tsv')
+        valid_diagnosis_path = path.join(valid_path, diagnosis + '_baseline.tsv')
 
         train_diagnosis_df = pd.read_csv(train_diagnosis_path, sep='\t')
         valid_diagnosis_df = pd.read_csv(valid_diagnosis_path, sep='\t')
@@ -385,41 +391,3 @@ def load_split2(train_val_path, diagnoses_list, split, n_splits=5, baseline=True
     valid_df.reset_index(inplace=True, drop=True)
 
     return train_df, valid_df
-
-
-# def pretraining_split(diagnoses_tsv, val_size=0.15):
-#     """
-#     Write the tsv files corresponding to the train/val splits for pretraining
-#
-#     :param diagnoses_tsv: (str) path to the tsv file with diagnoses
-#     :param val_size: (float) proportion of the train set being used for validation
-#     :return: None
-#     """
-#
-#     df = pd.read_csv(diagnoses_tsv, sep='\t')
-#     if 'diagnosis' not in list(df.columns.values):
-#         raise Exception('Diagnoses file is not in the correct format.')
-#     # Here we reduce the DataFrame to have only one diagnosis per subject (multiple time points case)
-#     diagnosis_df = subject_diagnosis_df(df)
-#     diagnoses_list = list(diagnosis_df.diagnosis)
-#     unique = list(set(diagnoses_list))
-#     y = np.array([unique.index(x) for x in diagnoses_list])  # There is one label per diagnosis depending on the order
-#
-#     sets_dir = path.join(path.dirname(diagnoses_tsv),
-#                          path.basename(diagnoses_tsv).split('.')[0],
-#                          "pretraining")
-#     if not path.exists(sets_dir):
-#         os.makedirs(sets_dir)
-#
-#     # split the train data into training and validation set
-#     splits = StratifiedShuffleSplit(n_splits=1, test_size=val_size)
-#     indices = next(splits.split(np.zeros(len(y)), y))
-#     train_ind, valid_ind = indices
-#
-#     df_sub_valid = diagnosis_df.iloc[valid_ind]
-#     df_sub_train = diagnosis_df.iloc[train_ind]
-#     df_valid = multiple_time_points(df, df_sub_valid)
-#     df_train = multiple_time_points(df, df_sub_train)
-#
-#     df_train.to_csv(path.join(sets_dir, 'val_size-' + str(val_size) + '_train.tsv'), sep='\t', index=False)
-#     df_valid.to_csv(path.join(sets_dir, 'val_size-' + str(val_size) + '_valid.tsv'), sep='\t', index=False)
