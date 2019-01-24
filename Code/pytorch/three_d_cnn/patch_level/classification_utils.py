@@ -40,33 +40,29 @@ def greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, gpu
     from os import path
     from model import AutoEncoder
     from copy import deepcopy
-
+    ## if the model defined is not already construted to an AE, then we convert the CNN into an AE, keeping the same structure with original CNN
     if not isinstance(model, AutoEncoder):
-        ae = AutoEncoder(model)
+        ae = AutoEncoder(model) ## Reconstruct all the AEs in one graph
 
+    ## Here, to extract each AE for layer-wise training 
     level = 0
-    first_layers = extract_first_layers(ae, level)
-    auto_encoder = extract_ae(ae, level)
+    former_layer = extract_encoder_layer_wise(ae, level) ## extract the former AE
+    auto_encoder_layer = extract_ae(ae, level)
 
-    while len(auto_encoder) > 0:
-        print('Cell learning level %i' % level)
-        level_path = path.join(options.output_dir, 'level-' + str(level))
+    while len(auto_encoder_layer) > 0:
+        print('Layer-wise training of stacked convolutional AE for the %i -th AE' % level)
+        # level_path = path.join(options.output_dir, 'ConvAutoencoder', 'log_dir', 'layer-' + str(level))
         # Create the method to train with first layers
-        ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterion, gpu, level_path, options)
-        best_ae, _ = load_model(auto_encoder, level_path)
+        ae_training(auto_encoder_layer, former_layer, train_loader, valid_loader, criterion, gpu, options, writer_train, writer_valid, level)
+        best_ae, _ = load_model(auto_encoder_layer)
 
         # Copy the weights of best_ae in decoder encoder and decoder layers
         set_weights(ae, best_ae, level)
 
         # Prepare next iteration
         level += 1
-        first_layers = extract_first_layers(ae, level)
-        auto_encoder = extract_ae(ae, level)
-
-    # if options.add_sigmoid:
-    #     if isinstance(ae.decoder[-1], torch.nn.ReLU):
-    #         ae.decoder = torch.nn.Sequential(*list(ae.decoder)[:-1])
-    #         ae.decoder.add_module("sigmoid", torch.nn.Sigmoid())
+        former_layer = extract_encoder_layer_wise(ae, level)
+        auto_encoder_layer = extract_ae(ae, level)
 
     ae_finetuning(ae, train_loader, valid_loader, criterion, gpu, options.output_dir, options)
 
@@ -86,24 +82,36 @@ def greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, gpu
 
     return model
 
-def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterion, gpu, results_path, options):
+def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterion, gpu, options, writer_train, writer_valid, level, global_step=0):
+    """
+    This is the function to train the AEs in a greedy layer-wise way.
+    :param auto_encoder:
+    :param former_layer:
+    :param train_loader:
+    :param valid_loader:
+    :param criterion:
+    :param gpu:
+    :param results_path:
+    :param options:
+    :return:
+    """
     from os import path
 
-    if not path.exists(results_path):
-        os.makedirs(results_path)
+    # if not path.exists(results_path):
+    #     os.makedirs(results_path)
 
-    filename = os.path.join(results_path, 'training.tsv')
-    columns = ['epoch', 'iteration', 'loss_train', 'mean_loss_train', 'loss_valid', 'mean_loss_valid']
-    results_df = pd.DataFrame(columns=columns)
-    with open(filename, 'w') as f:
-        results_df.to_csv(f, index=False, sep='\t')
+    # filename = os.path.join(results_path, 'training.tsv')
+    # columns = ['epoch', 'iteration', 'loss_train', 'mean_loss_train', 'loss_valid', 'mean_loss_valid']
+    # results_df = pd.DataFrame(columns=columns)
+    # with open(filename, 'w') as f:
+    #     results_df.to_csv(f, index=False, sep='\t')
 
     auto_encoder.train()
-    first_layers.eval()
-    print(first_layers)
+    former_layer.eval()
+    print(former_layer)
     print(auto_encoder)
     optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, auto_encoder.parameters()),
-                                                         options.transfer_learning_rate)
+                                                         options.learning_rate)
 
     if gpu:
         auto_encoder.cuda()
@@ -111,83 +119,94 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
     # Initialize variables
     best_loss_valid = np.inf
     print("Beginning training")
-    for epoch in range(options.transfer_learning_epochs):
+    for epoch in range(options.epochs):
         print("At %d-th epoch." % epoch)
 
         auto_encoder.zero_grad()
-        evaluation_flag = True
-        step_flag = True
-        last_check_point_i = 0
+        # evaluation_flag = True
+        # step_flag = True
+        # last_check_point_i = 0
+
+        print('The number of batches in this sampler based on the batch size: %s' % str(len(train_loader)))
+        ## begin the training for each batch data
         for i, data in enumerate(train_loader):
+
             if gpu:
                 imgs = data['image'].cuda()
             else:
                 imgs = data['image']
 
-            hidden = first_layers(imgs)
+            hidden = former_layer(imgs) ## output of encoder for former AE and input for the encoder of next AE
             train_output = auto_encoder(hidden)
-            loss = criterion(train_output, hidden)
-            loss.backward()
+            loss_train = criterion(train_output, hidden)
+            loss_train.backward()
 
-            # writer_train.add_scalar('training_loss', loss.item() / len(data), i + epoch * len(train_loader.dataset))
+            # moniter the training loss for each batch using tensorboardX
+            writer_train.add_scalar('loss_layer-' + str(level), loss_train, i + epoch * len(train_loader))
+            print("Training loss is %f for the -th batch %d" % (loss_train, i))
 
             if (i+1) % options.accumulation_steps == 0:
-                step_flag = False
+                # step_flag = False
                 optimizer.step()
                 optimizer.zero_grad()
 
-                # Evaluate the decoder only when no gradients are accumulated
-                if (i+1) % options.evaluation_steps == 0:
-                    evaluation_flag = False
-                    print('Iteration %d' % i)
-                    loss_train = test_ae(auto_encoder, train_loader, gpu, criterion, first_layers=first_layers)
-                    mean_loss_train = loss_train / (len(train_loader) * train_loader.dataset.size)
-                    loss_valid = test_ae(auto_encoder, valid_loader, gpu, criterion, first_layers=first_layers)
-                    mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.dataset.size)
-                    auto_encoder.train()
-                    print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
-
-                    row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
-                    row_df = pd.DataFrame(row, columns=columns)
-                    with open(filename, 'a') as f:
-                        row_df.to_csv(f, header=False, index=False, sep='\t')
+                # # Evaluate the decoder only when no gradients are accumulated
+                # if (i+1) % options.evaluation_steps == 0:
+                #     evaluation_flag = False
+                #     print('Iteration %d' % i)
+                #     loss_train = test_ae(auto_encoder, train_loader, gpu, criterion, former_layer=former_layer)
+                #     mean_loss_train = loss_train / (len(train_loader) * options.batch_size)
+                #     loss_valid = test_ae(auto_encoder, valid_loader, gpu, criterion, former_layer=former_layer)
+                #     mean_loss_valid = loss_valid / (len(valid_loader) * options.batch_size)
+                #     auto_encoder.train()
+                #     print("validation loss is %f at the end of iteration %d" % (loss_valid, i))
+                #
+                #     row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
+                #     row_df = pd.DataFrame(row, columns=columns)
+                #     with open(filename, 'a') as f:
+                #         row_df.to_csv(f, header=False, index=False, sep='\t')
 
             del imgs
+            ## update the global steps
+            global_step = i + epoch * len(train_loader)
 
-        # If no step has been performed, raise Exception
-        if step_flag:
-            raise Exception('The model has not been updated once in the epoch. The accumulation step may be too large.')
-
-        # If no evaluation has been performed, warn the user
-        if evaluation_flag:
-            warnings.warn('Your evaluation steps are too big compared to the size of the dataset.'
-                          'The model is evaluated only once at the end of the epoch')
+        # # If no step has been performed, raise Exception
+        # if step_flag:
+        #     raise Exception('The model has not been updated once in the epoch. The accumulation step may be too large.')
+        #
+        # # If no evaluation has been performed, warn the user
+        # if evaluation_flag:
+        #     warnings.warn('Your evaluation steps are too big compared to the size of the dataset.'
+        #                   'The model is evaluated only once at the end of the epoch')
 
         # Always test the results and save them once at the end of the epoch
-        if last_check_point_i != i:
-            print('Last checkpoint at the end of the epoch %d' % epoch)
-            loss_train = test_ae(auto_encoder, train_loader, gpu, criterion, first_layers=first_layers)
-            mean_loss_train = loss_train / (len(train_loader) * train_loader.dataset.size)
-            loss_valid = test_ae(auto_encoder, valid_loader, gpu, criterion, first_layers=first_layers)
-            mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.dataset.size)
-            auto_encoder.train()
-            print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
+        # if last_check_point_i != i:
+        print('Validation at the end of each epoch %d' % epoch)
+        # loss_train = test_ae(auto_encoder, train_loader, gpu, criterion, former_layer=former_layer)
+        # mean_loss_train = loss_train / (len(train_loader) * options.batch_size)
+        loss_valid = test_ae(auto_encoder, valid_loader, gpu, criterion, former_layer=former_layer)
+        mean_loss_valid = loss_valid / (len(valid_loader))
+        writer_valid.add_scalar('loss_layer-' + str(level), mean_loss_valid, global_step)
+        print("Validation loss is %f for the -th batch %d" % (mean_loss_valid, global_step))
 
-            row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
-            row_df = pd.DataFrame(row, columns=columns)
-            with open(filename, 'a') as f:
-                row_df.to_csv(f, header=False, index=False, sep='\t')
+        ## reset the model to train mode after evaluation
+        auto_encoder.train()
 
-            is_best = loss_valid < best_loss_valid
-            # Save only if is best to avoid performance deterioration
-            if is_best:
-                best_loss_valid = loss_valid
-                save_checkpoint({'model': auto_encoder.state_dict(),
-                                 'iteration': i,
-                                 'epoch': epoch,
-                                 'loss_valid': loss_valid},
-                                is_best,
-                                results_path)
+        # row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
+        # row_df = pd.DataFrame(row, columns=columns)
+        # with open(filename, 'a') as f:
+        #     row_df.to_csv(f, header=False, index=False, sep='\t')
+
+        is_best = loss_valid < best_loss_valid
+        # Save only if is best to avoid performance deterioration
+        if is_best:
+            best_loss_valid = loss_valid
+            save_checkpoint({'model': auto_encoder.state_dict(),
+                             'iteration': i,
+                             'epoch': epoch,
+                             'loss_valid': loss_valid},
+                            is_best,
+                            os.path.join(options.output_dir, "best_model_dir"))
 
 def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_path, options):
     from os import path
@@ -203,7 +222,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
 
     decoder.train()
     optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
-                                                         options.transfer_learning_rate)
+                                                         options.learning_rate)
     first_visu = True
     print(decoder)
 
@@ -213,7 +232,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
     # Initialize variables
     best_loss_valid = np.inf
     print("Beginning training")
-    for epoch in range(options.transfer_learning_epochs):
+    for epoch in range(options.epochs):
         print("At %d-th epoch." % epoch)
 
         decoder.zero_grad()
@@ -248,7 +267,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
                     loss_valid = test_ae(decoder, valid_loader, gpu, criterion)
                     mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.batch_size)
                     decoder.train()
-                    print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
+                    print("validation loss is %f at the end of iteration %d" % (loss_valid, i))
                     row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
                     row_df = pd.DataFrame(row, columns=columns)
                     with open(filename, 'a') as f:
@@ -271,7 +290,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, gpu, results_p
             loss_valid = test_ae(decoder, valid_loader, gpu, criterion)
             mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.batch_size)
             decoder.train()
-            print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
+            print("validation loss is %f at the end of iteration %d" % (loss_valid, i))
 
             row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
             row_df = pd.DataFrame(row, columns=columns)
@@ -360,7 +379,7 @@ def visualize_subject(decoder, dataloader, results_path, epoch, options, first_t
     nib.save(output_nii, path.join(visualization_path, 'epoch-' + str(epoch) + '.nii'))
 
 
-def test_ae(model, dataloader, use_cuda, criterion, first_layers=None):
+def test_ae(model, dataloader, use_cuda, criterion, former_layer=None):
     """
     Computes the loss of the model
 
@@ -378,8 +397,8 @@ def test_ae(model, dataloader, use_cuda, criterion, first_layers=None):
         else:
             inputs = data['image']
 
-        if first_layers is not None:
-            hidden = first_layers(inputs)
+        if former_layer is not None:
+            hidden = former_layer(inputs)
         else:
             hidden = inputs
         outputs = model(hidden)
@@ -464,13 +483,13 @@ def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_pat
                     'model_pretrained.pth.tar')
     return decoder
 
-def extract_first_layers(ae, level):
+def extract_encoder_layer_wise(ae, level):
     import torch.nn as nn
     from copy import deepcopy
     from modules import PadMaxPool3d
 
     n_conv = 0
-    first_layers = nn.Sequential()
+    former_layer = nn.Sequential()
 
     for i, layer in enumerate(ae.encoder):
         if isinstance(layer, nn.Conv3d):
@@ -482,11 +501,11 @@ def extract_first_layers(ae, level):
             if isinstance(layer, PadMaxPool3d):
                 layer_copy.set_new_return(False, False)
 
-            first_layers.add_module(str(i), layer_copy)
+            former_layer.add_module(str(i), layer_copy)
         else:
             break
 
-    return first_layers
+    return former_layer
 
 def extract_ae(ae, level):
     import torch.nn as nn
@@ -494,7 +513,7 @@ def extract_ae(ae, level):
 
     n_conv = 0
     output_ae = AutoEncoder()
-    inverse_layers = []
+    decoder_layers = []
 
     for i, layer in enumerate(ae.encoder):
         if isinstance(layer, nn.Conv3d):
@@ -502,36 +521,36 @@ def extract_ae(ae, level):
 
         if n_conv == level + 1:
             output_ae.encoder.add_module(str(len(output_ae.encoder)), layer)
-            inverse_layers.append(ae.decoder[len(ae.decoder) - (i + 1)])
+            decoder_layers.append(ae.decoder[len(ae.decoder) - (i + 1)])
 
         elif n_conv > level + 1:
             break
 
-    inverse_layers.reverse()
-    output_ae.decoder = nn.Sequential(*inverse_layers)
+    decoder_layers.reverse()
+    output_ae.decoder = nn.Sequential(*decoder_layers)
     return output_ae
 
 
-def replace_relu(inv_layers):
+def replace_relu(decoder_layers):
     import torch.nn as nn
     idx_relu, idx_conv = -1, -1
-    for idx, layer in enumerate(inv_layers):
+    for idx, layer in enumerate(decoder_layers):
         if isinstance(layer, nn.ConvTranspose3d):
             idx_conv = idx
         elif isinstance(layer, nn.ReLU) or isinstance(layer, nn.LeakyReLU):
             idx_relu = idx
 
         if idx_conv != -1 and idx_relu != -1:
-            inv_layers[idx_relu], inv_layers[idx_conv] = inv_layers[idx_conv], inv_layers[idx_relu]
+            decoder_layers[idx_relu], decoder_layers[idx_conv] = decoder_layers[idx_conv], decoder_layers[idx_relu]
             idx_conv, idx_relu = -1, -1
 
     # Check if number of features of batch normalization layers is still correct
-    for idx, layer in enumerate(inv_layers):
+    for idx, layer in enumerate(decoder_layers):
         if isinstance(layer, nn.BatchNorm3d):
-            conv = inv_layers[idx + 1]
-            inv_layers[idx] = nn.BatchNorm3d(conv.out_channels)
+            conv = decoder_layers[idx + 1]
+            decoder_layers[idx] = nn.BatchNorm3d(conv.out_channels)
 
-    return inv_layers
+    return decoder_layers
 
 
 ###############################

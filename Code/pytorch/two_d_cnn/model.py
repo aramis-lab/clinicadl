@@ -1,4 +1,4 @@
-from torchvision.models import alexnet
+from torchvision.models import alexnet, vgg16
 import torch.nn as nn
 import math
 import torch.utils.model_zoo as model_zoo
@@ -186,6 +186,46 @@ def alexnet2D(mri_plane=0, transfer_learning=False, **kwargs):
     return model
 
 ############################################
+### Vgg net
+############################################
+def Vgg16(transfer_learning=True, **kwargs):
+    """Transfer learning for VggNet.
+
+    Args:
+        transfer_learning (bool): If True, returns a model transfer_learning on ImageNet
+    """
+
+    if transfer_learning == True:
+        model = vgg16(transfer_learning)
+        for p in model.features.parameters():
+            p.requires_grad = False
+        #     p.requires_grad = True # first, try to overfit the model
+
+        ## fine-tune the last convolution layer
+        #for p in model.features[10].parameters():
+          #  p.requires_grad = True
+        # fine-tune the last second convolution layer
+        #for p in model.features[8].parameters():
+         #   p.requires_grad = True
+        # fine-tune the last second convolution layer
+        #for p in model.features[6].parameters():
+         #   p.requires_grad = True
+
+        ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
+        model.classifier.add_module('dropout', nn.Dropout(p=0.8))
+        model.classifier.add_module('fc_out', nn.Linear(1000, 2)) ## For linear layer, Pytorch used similar H initialization for the weight.
+        model.classifier.add_module('sigmoid', nn.Softmax(dim=1))
+
+    else:
+        raise Exception("VggNet is impossible to train from scracth in our application!")
+
+    return model
+
+
+
+
+
+############################################
 ### ResNet
 ############################################
 
@@ -333,9 +373,9 @@ class ResNet(nn.Module):
         x = self.fc(x)
 
         ## adding top layers
-        x = self.fc_out1(x)
         x = self.drop_out(x)
-        x = self.fc_out2(x)
+        x = self.fc_out1(x)
+        # x = self.fc_out2(x)
         x = self.softmax(x)
 
         return x
@@ -425,9 +465,9 @@ def resnet2D(resnet_type, transfer_learning=False, **kwargs):
                 p.requires_grad = True
 
             ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
-            model.add_module('fc_out1', nn.Linear(1000, 100))
             model.add_module('drop_out', nn.Dropout(p=0.8))
-            model.add_module('fc_out2', nn.Linear(100, 2))
+            model.add_module('fc_out1', nn.Linear(1000, 100))
+            # model.add_module('fc_out2', nn.Linear(100, 2))
             model.add_module('softmax', nn.Softmax(dim=1))
 
     return model

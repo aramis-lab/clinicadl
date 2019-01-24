@@ -392,8 +392,8 @@ def greedy_learning(model, train_loader, valid_loader, criterion, gpu, results_p
     decoder = AutoEncoder(model)
 
     level = 0
-    first_layers = extract_former_layers(decoder, level)
-    auto_encoder = extract_ae(decoder, level)
+    first_layers = extract_former_layers(decoder, level) ## extract the layer-wise encoder
+    auto_encoder = extract_ae(decoder, level) ## extract the layer-wise decoder
 
     while len(auto_encoder) > 0:
         print('Cell learning level %i' % level)
@@ -557,7 +557,7 @@ def extract_ae(decoder, level):
     from model import AutoEncoder
 
     n_conv = 0
-    output_decoder = Decoder()
+    output_decoder = AutoEncoder()
     inverse_layers = []
 
     for i, layer in enumerate(decoder.encoder):

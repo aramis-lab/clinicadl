@@ -3,7 +3,7 @@ import torchvision.transforms as transforms
 from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 from classification_utils import *
-from model import alexnet2D, lenet2D, resnet2D
+from model import *
 import copy
 from time import time
 
@@ -18,7 +18,7 @@ __status__ = "Development"
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D CNN, The input MRI's dimension is 169*208*179 after cropping")
 
-parser.add_argument("-id", "--caps_directory", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI_clinica_spm',
+parser.add_argument("-id", "--caps_directory", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI',
                            help="Path to the caps of image processing pipeline of DL")
 parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/test.tsv',
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
@@ -27,7 +27,7 @@ parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junha
 parser.add_argument("-tl", "--transfer_learning", default=True, type=bool, help="If do transfer learning")
 parser.add_argument("-dty", "--data_type", default="from_slice", choices=["from_MRI", "from_slice"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
-parser.add_argument("-nw", "--network", default="ResNet2D", choices=["AlexNet2D", "ResNet2D", "Lenet2D", "AllConvNet2D"],
+parser.add_argument("-nw", "--network", default="Vgg16", choices=["AlexNet2D", "ResNet2D", "Lenet2D", "AllConvNet2D", "Vgg16"],
                     help="Deep network type. (default=AlexNet)")
 parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
@@ -42,7 +42,7 @@ parser.add_argument("--batch_size", default=32, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument("--use_gpu", default=True, nargs='+', type=bool,
+parser.add_argument("--use_gpu", default=False, nargs='+', type=bool,
                     help="If use gpu or cpu. Empty implies cpu usage.")
 parser.add_argument('--force', default=True, type=bool,
                     help='If force to rerun the classification, default behavior is to clean the output folder and restart from scratch')
@@ -70,13 +70,18 @@ def main(options):
     if options.transfer_learning == True:
         print('Do transfer learning with existed model trained on ImageNet!\n')
         print('The chosen network is %s !' % options.network)
-        if options.network == "AlexNet2D":
-            model = alexnet2D(transfer_learning=options.transfer_learning)
-            trg_size = (224, 224)  ## this is the original input size of alexnet
-        elif options.network == "ResNet2D":
-            model = resnet2D('resnet18', transfer_learning=options.transfer_learning)
-            trg_size = (224, 224)  ## this is the original input size of resnet
-        else:
+
+        try:
+            model = eval(options.network)()
+            trg_size = (224, 224) # most of the imagenet pretrained model has this input size
+        # if options.network == "AlexNet2D":
+        #     model = alexnet2D(transfer_learning=options.transfer_learning)
+        #     trg_size = (224, 224)  ## this is the original input size of alexnet
+        # elif options.network == "ResNet2D":
+        #     model = resnet2D('resnet18', transfer_learning=options.transfer_learning)
+        #     trg_size = (224, 224)  ## this is the original input size of resnet
+        # else:
+        except:
             raise Exception('The model has not been implemented')
 
         transformations = transforms.Compose([transforms.ToPILImage(),
