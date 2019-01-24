@@ -16,22 +16,22 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
-parser = argparse.ArgumentParser(description="Argparser for 3D convolutional autoencoder")
+parser = argparse.ArgumentParser(description="Argparser for 3D convolutional autoencoder, the AE will be reconstructed based on the CNN that you choose")
 
-parser.add_argument("-id", "--caps_directory", default='/teams/ARAMIS/PROJECTS/CLINICA/CLINICA_datasets/temp/CAPS_ADNI_DL',
+parser.add_argument("-id", "--caps_directory", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI',
                            help="Path to the caps of image processing pipeline of DL")
-parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_task/train/AD_vs_CN_baseline.tsv',
+parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/test.tsv',
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch_ae_conv',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument("-dty", "--data_type", default="from_MRI", choices=["from_MRI", "from_patch"],
+parser.add_argument("-dty", "--data_type", default="from_patch", choices=["from_MRI", "from_patch"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
-parser.add_argument("--network", default="StackedConvDenAutoencoder", choices=["StackedConvDenAutoencoder"],
-                    help="Autoencoder network type. (default=SparseAutoencoder)")
+parser.add_argument("--network", default="Conv_5_FC_2", choices=["Conv_5_FC_2"],
+                    help="Autoencoder network type. (default=Conv_5_FC_2)")
 
-parser.add_argument("--patch_size", default="64", type=int,
+parser.add_argument("--patch_size", default="51", type=int,
                     help="The patch size extracted from the MRI")
-parser.add_argument("--patch_stride", default="64", type=int,
+parser.add_argument("--patch_stride", default="51", type=int,
                     help="The stride for the patch extract window from the MRI")
 parser.add_argument("--batch_size", default=16, type=int,
                     help="Batch size for training. (default=1)")
@@ -41,7 +41,7 @@ parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
 
 # Training arguments
-parser.add_argument("--epochs", default=100, type=int,
+parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
@@ -53,6 +53,10 @@ parser.add_argument('--weight_decay', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
 parser.add_argument('--random_state', default=544423,
                     help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
+parser.add_argument('--accumulation_steps', '-asteps', default=1, type=int,
+                    help='Accumulates gradients in order to increase the size of the batch')
+# parser.add_argument('--evaluation_steps', '-esteps', default=1, type=int,
+#                     help='Fix the number of batches to use before validation')
 
 
 def main(options):
@@ -109,8 +113,8 @@ def main(options):
         example_batch = (next(iter(train_loader))['image'].cuda())[0, ...].unsqueeze(0)
 
     criterion = torch.nn.MSELoss()
-    writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvDenAutoencoder", "train")))
-    writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvDenAutoencoder", "valid")))
+    writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "train")))
+    writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "valid")))
 
     greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, use_cuda, writer_train, writer_valid, options)
 
@@ -191,6 +195,7 @@ def main(options):
 
 if __name__ == "__main__":
     ret = parser.parse_known_args()
+    print ret
     options = ret[0]
     if ret[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
