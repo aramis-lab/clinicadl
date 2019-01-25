@@ -27,7 +27,7 @@ parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junha
 parser.add_argument("-tl", "--transfer_learning", default=True, type=bool, help="If do transfer learning")
 parser.add_argument("-dty", "--data_type", default="from_slice", choices=["from_MRI", "from_slice"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
-parser.add_argument("-nw", "--network", default="Vgg16", choices=["AlexNet2D", "ResNet2D", "Lenet2D", "AllConvNet2D", "Vgg16", "Densenet161", "Inception"],
+parser.add_argument("-nw", "--network", default="DenseNet161", choices=["AlexNet", "ResNet", "LeNet", "AllConvNet", "Vgg16", "DenseNet161", "InceptionV3"],
                     help="Deep network type. (default=AlexNet)")
 parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
@@ -73,25 +73,26 @@ def main(options):
 
         try:
             model = eval(options.network)()
-	    #if options.network == "Inception_v3":
-            #	trg_size = (229, 229)
-	    #else:
-	    trg_size = (224, 224) # most of the imagenet pretrained model has this input size
+            if options.network == "InceptionV3":
+                trg_size = (299, 299)
+            else:
+                trg_size = (224, 224) # most of the imagenet pretrained model has this input size
         except:
-            raise Exception('The model has not been implemented')
+            raise Exception('The model has not been implemented or has bugs in to model implementation')
 
+        ## All pre-trained models expect input images normalized in the same way, i.e. mini-batches of 3-channel RGB
+        # images of shape (3 x H x W), where H and W are expected to be at least 224. The images have to be loaded in
+        # to a range of [0, 1] and then normalized using mean = [0.485, 0.456, 0.406] and std = [0.229, 0.224, 0.225].
         transformations = transforms.Compose([transforms.ToPILImage(),
                                               transforms.Resize(trg_size),
                                               transforms.ToTensor(),
-						transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225])])
+                                              transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                                    std=[0.229, 0.224, 0.225])])
     else:
         print('Train the model from scratch!')
         print('The chosen network is %s !' % options.network)
-        if options.network == "Lenet2D":
-            model = lenet2D(mri_plane=options.mri_plane)
-        elif options.network == "AlexNet2D":
-            model = alexnet2D(mri_plane=options.mri_plane, num_classes=2)
+        if options.network == "LeNet":
+            model = LeNet(mri_plane=options.mri_plane)
         else:
             raise Exception('The model has not been implemented')
         transformations = None
