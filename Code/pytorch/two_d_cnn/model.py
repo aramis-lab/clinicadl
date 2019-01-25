@@ -1,9 +1,9 @@
 import torch.nn.functional as F
 import torch.utils.model_zoo as model_zoo
 from torchvision.models import alexnet, vgg16
-from Code.pytorch.two_d_cnn.models.incpetion_tl import *
-from Code.pytorch.two_d_cnn.models.resnet_tl import *
-from Code.pytorch.two_d_cnn.models.densenet_tl import *
+from models.incpetion_tl import *
+from models.resnet_tl import *
+from models.densenet_tl import *
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
