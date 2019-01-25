@@ -188,7 +188,7 @@ def main(options):
             best_accuracy = max(best_accuracy, acc_mean_valid)
             save_checkpoint({
                 'epoch': epoch_i + 1,
-                'state_dict': model.state_dict(),
+                'model': model.state_dict(),
                 'best_predict': best_accuracy,
                 'optimizer': optimizer.state_dict()
             }, is_best, os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi)))

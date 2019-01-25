@@ -106,7 +106,7 @@ def main(options):
             greedy_learning(model, train_loader, valid_loader, criterion, options.gpu, run_path, options)
 
         else:
-            decoder = Decoder(model)
+            decoder = AutoEncoder(model)
             ae_finetuning(decoder, train_loader, valid_loader, criterion, options.gpu, run_path, options)
 
             best_decoder = load_model(decoder, run_path)

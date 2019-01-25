@@ -1,4 +1,4 @@
-from torch import cat, split
+from torch import split
 import torch.nn as nn
 
 
