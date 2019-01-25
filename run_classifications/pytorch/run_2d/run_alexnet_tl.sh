@@ -5,11 +5,11 @@
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --workdir=/network/lustre/iss01/home/junhao.wen/working_dir/pytorch
-#SBATCH --output=/network/lustre/iss01/home/junhao.wen/working_dir/pytorch/logs/run_2dalexnet_tl_%j.out
-#SBATCH --error=/network/lustre/iss01/home/junhao.wen/working_dir/pytorch/logs/run_2dalexnet_tl_%j.err
+#SBATCH --output=/network/lustre/iss01/home/junhao.wen/working_dir/pytorch/logs/alexnet_tl_%j.out
+#SBATCH --error=/network/lustre/iss01/home/junhao.wen/working_dir/pytorch/logs/alexnet_tl_%j.err
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=junhao.wen@icm-institute.org
-#SBATCH --job-name="training 2dalexnet transfer"
+#SBATCH --job-name="alexnet tl"
 #SBATCH --gres=gpu:1
 
 ## Load CUDA and python
