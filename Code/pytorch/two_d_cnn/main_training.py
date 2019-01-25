@@ -27,7 +27,7 @@ parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junha
 parser.add_argument("-tl", "--transfer_learning", default=True, type=bool, help="If do transfer learning")
 parser.add_argument("-dty", "--data_type", default="from_slice", choices=["from_MRI", "from_slice"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
-parser.add_argument("-nw", "--network", default="Vgg16", choices=["AlexNet2D", "ResNet2D", "Lenet2D", "AllConvNet2D", "Vgg16"],
+parser.add_argument("-nw", "--network", default="Vgg16", choices=["AlexNet2D", "ResNet2D", "Lenet2D", "AllConvNet2D", "Vgg16", "Densenet161", "Inception"],
                     help="Deep network type. (default=AlexNet)")
 parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
@@ -73,20 +73,18 @@ def main(options):
 
         try:
             model = eval(options.network)()
-            trg_size = (224, 224) # most of the imagenet pretrained model has this input size
-        # if options.network == "AlexNet2D":
-        #     model = alexnet2D(transfer_learning=options.transfer_learning)
-        #     trg_size = (224, 224)  ## this is the original input size of alexnet
-        # elif options.network == "ResNet2D":
-        #     model = resnet2D('resnet18', transfer_learning=options.transfer_learning)
-        #     trg_size = (224, 224)  ## this is the original input size of resnet
-        # else:
+	    #if options.network == "Inception_v3":
+            #	trg_size = (229, 229)
+	    #else:
+	    trg_size = (224, 224) # most of the imagenet pretrained model has this input size
         except:
             raise Exception('The model has not been implemented')
 
         transformations = transforms.Compose([transforms.ToPILImage(),
                                               transforms.Resize(trg_size),
-                                              transforms.ToTensor()])
+                                              transforms.ToTensor(),
+						transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])])
     else:
         print('Train the model from scratch!')
         print('The chosen network is %s !' % options.network)

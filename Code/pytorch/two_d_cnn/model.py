@@ -1,4 +1,4 @@
-from torchvision.models import alexnet, vgg16
+from torchvision.models import alexnet, vgg16, inception_v3, densenet161
 import torch.nn as nn
 import math
 import torch.utils.model_zoo as model_zoo
@@ -199,22 +199,15 @@ def Vgg16(transfer_learning=True, **kwargs):
         model = vgg16(transfer_learning)
         for p in model.features.parameters():
             p.requires_grad = False
-        #     p.requires_grad = True # first, try to overfit the model
 
-        ## fine-tune the last convolution layer
-        #for p in model.features[10].parameters():
-          #  p.requires_grad = True
-        # fine-tune the last second convolution layer
-        #for p in model.features[8].parameters():
-         #   p.requires_grad = True
-        # fine-tune the last second convolution layer
-        #for p in model.features[6].parameters():
-         #   p.requires_grad = True
+        ## fine-tune the self.classifer containing 3 FC layers
+        for p in model.classifier.parameters():
+            p.requires_grad = True
 
         ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
-        model.classifier.add_module('dropout', nn.Dropout(p=0.8))
-        model.classifier.add_module('fc_out', nn.Linear(1000, 2)) ## For linear layer, Pytorch used similar H initialization for the weight.
-        model.classifier.add_module('sigmoid', nn.Softmax(dim=1))
+        model.add_module('dropout', nn.Dropout(p=0.8))
+        model.add_module('fc_out', nn.Linear(1000, 2)) ## For linear layer, Pytorch used similar H initialization for the weight.
+        model.add_module('sigmoid', nn.Softmax(dim=1))
 
     else:
         raise Exception("VggNet is impossible to train from scracth in our application!")
@@ -222,8 +215,66 @@ def Vgg16(transfer_learning=True, **kwargs):
     return model
 
 
+############################################
+### inception_v3
+############################################
+def Inception(transfer_learning=True, **kwargs):
+    """Transfer learning for Inception_v3.
+
+    Args:
+        transfer_learning (bool): If True, returns a model transfer_learning on ImageNet
+    """
+
+    if transfer_learning == True:
+        model = inception_v3(transfer_learning)
+        for p in model.features.parameters():
+            p.requires_grad = False
+
+        ## fine-tune the last fc layer
+        for p in model.fc.parameters():
+            p.requires_grad = True
+
+        ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
+        model.add_module('dropout', nn.Dropout(p=0.8))
+        model.add_module('fc_out', nn.Linear(1000, 2)) ## For linear layer, Pytorch used similar H initialization for the weight.
+        model.add_module('sigmoid', nn.Softmax(dim=1))
+
+    else:
+        raise Exception("Inception Net is impossible to train from scracth in our application!")
+
+    return model
 
 
+############################################
+### densenet161
+############################################
+def Densenet161(transfer_learning=True, **kwargs):
+    """Transfer learning for Densenet161.
+
+    Args:
+        transfer_learning (bool): If True, returns a model transfer_learning on ImageNet
+    """
+
+    if transfer_learning == True:
+        model = densenet161(transfer_learning)
+        for p in model.features.parameters():
+            p.requires_grad = False
+        
+	### fine-tune the last dense block & last fc layer
+	for p in model.classifier.parameters():
+            p.requires_grad = True
+	for p in model.features.denseblock4.denselayer24.parameters():
+            p.requires_grad = True
+
+	## add a fc layer on top of the transfer_learning model and a sigmoid classifier
+        model.add_module('dropout', nn.Dropout(p=0.8))
+        model.add_module('fc_out', nn.Linear(1000, 2)) ## For linear layer, Pytorch used similar H initialization for the weight.
+        model.add_module('sigmoid', nn.Softmax(dim=1))
+
+    else:
+        raise Exception("Densenet161 is impossible to train from scracth in our application!")
+
+    return model
 
 ############################################
 ### ResNet
@@ -457,8 +508,8 @@ def resnet2D(resnet_type, transfer_learning=False, **kwargs):
                 p.requires_grad = False
 
             ## fine-tune the 4-th res blocak
-            #for p in model.layer4.parameters():
-             #   p.requires_grad = True
+            for p in model.layer4.parameters():
+                p.requires_grad = True
 
             ## fine-tune the last FC layer
             for p in model.fc.parameters():
@@ -466,7 +517,7 @@ def resnet2D(resnet_type, transfer_learning=False, **kwargs):
 
             ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
             model.add_module('drop_out', nn.Dropout(p=0.8))
-            model.add_module('fc_out1', nn.Linear(1000, 100))
+            model.add_module('fc_out1', nn.Linear(1000, 2))
             # model.add_module('fc_out2', nn.Linear(100, 2))
             model.add_module('softmax', nn.Softmax(dim=1))
 
