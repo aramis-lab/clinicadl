@@ -1,8 +1,9 @@
-from torchvision.models import alexnet, vgg16, inception_v3, densenet161
-import torch.nn as nn
-import math
-import torch.utils.model_zoo as model_zoo
 import torch.nn.functional as F
+import torch.utils.model_zoo as model_zoo
+from torchvision.models import alexnet, vgg16
+from Code.pytorch.two_d_cnn.models.incpetion_tl import *
+from Code.pytorch.two_d_cnn.models.resnet_tl import *
+from Code.pytorch.two_d_cnn.models.densenet_tl import *
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -14,77 +15,8 @@ __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
 ############################################
-### LeNet
+### ImageNet pretrained models
 ############################################
-
-class lenet2D(nn.Module):
-    """
-    Pytorch implementation of customized Lenet-5.
-    The original Lenet-5 architecture was described in the original paper `"Gradient-Based Learning Applied to Document Recgonition`.
-        The original architecture includes: input_layer + conv1 + maxpool1 + conv2 + maxpool2 + fc1 + fc2 + output, activation function function used is relu.
-
-    In our implementation, we adopted batch normalization layer and dropout techniques, we chose to use leaky_relu for the activation function.
-
-    To note:
-        Here, we train it from scratch and use the original signal of MRI slices, which shape is (H * W * 1), thus the in_channels is 1
-
-    """
-
-    def __init__(self, mri_plane, num_classes=2):
-        super(lenet2D, self).__init__()
-        self.features = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=5, stride=1),
-            nn.Dropout(0.8),
-            nn.LeakyReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.BatchNorm2d(32),
-            nn.Conv2d(32, 64, kernel_size=5, padding=2),
-            nn.Dropout(0.8),
-            nn.LeakyReLU(inplace=True),
-            nn.BatchNorm2d(64),
-            nn.MaxPool2d(kernel_size=2, stride=2)
-        )
-
-        if mri_plane == 0:
-            self.classifier = nn.Sequential(
-                nn.Linear(64 * 51 * 43, 256),
-                nn.LeakyReLU(inplace=True),
-                nn.Dropout(0.8),
-                nn.Linear(256, num_classes),
-                nn.Softmax(dim=1)
-            )
-        elif mri_plane == 1:
-            self.classifier = nn.Sequential(
-                nn.Linear(64 * 41 * 43, 256),
-                nn.LeakyReLU(inplace=True),
-                nn.Dropout(),
-                nn.Linear(256, num_classes),
-                nn.Softmax(dim=1)
-            )
-        else:
-            self.classifier = nn.Sequential(
-                nn.Linear(64 * 41 * 51, 256),
-                nn.LeakyReLU(inplace=True),
-                nn.Dropout(),
-                nn.Linear(256, num_classes),
-                # the Softmax has been encompassed into the loss function in Pytorch implementation, if you just wanna the label, it does not change anything
-                # for the classification, because you will call argmax on the logits; otherwise, if you want to have a probability, you should always add a softmax
-                # layer
-                nn.Softmax(dim=1)
-            )
-
-
-    def forward(self, x):
-        """
-        This is the function to pass the image tensor into the model
-        :param x:
-        :return:
-        """
-        x = self.features(x)
-        x = x.view(x.size(0), -1) ## reshape the tensor so that it can be connected with self.classifier()
-        x = self.classifier(x)
-        return x
-
 
 ############################################
 ### AlexNet
@@ -152,7 +84,7 @@ class alexnetonechannel(nn.Module):
         return x
 
 
-def alexnet2D(mri_plane=0, transfer_learning=False, **kwargs):
+def AlexNet(transfer_learning=True, **kwargs):
     """Implementation of AlexNet model architecture based on this paper: `"One weird trick..." <https://arxiv.org/abs/1404.5997>`.
 
     Args:
@@ -165,23 +97,18 @@ def alexnet2D(mri_plane=0, transfer_learning=False, **kwargs):
         #   p.requires_grad = False
             p.requires_grad = True # first, try to overfit the model
 
-        ## fine-tune the last convolution layer
-        #for p in model.features[10].parameters():
-          #  p.requires_grad = True
-        # fine-tune the last second convolution layer
-        #for p in model.features[8].parameters():
-         #   p.requires_grad = True
-        # fine-tune the last second convolution layer
-        #for p in model.features[6].parameters():
-         #   p.requires_grad = True
+        ## fine-tune the classifer part of alexnet: 2 FC layer
+        for p in model.classifier.parameters():
+            p.requires_grad = True
 
-        ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
-        model.classifier.add_module('dropout', nn.Dropout(p=0.8))
+        ## add a fc layer on top of the transfer_learning model and a softmax classifier
+        ## alexnet has self.classifer in forward function, we do not have to rewrite the forward part for new adding layers.
+        model.classifier.add_module('drop_out', nn.Dropout(p=0.8))
         model.classifier.add_module('fc_out', nn.Linear(1000, 2)) ## For linear layer, Pytorch used similar H initialization for the weight.
-        model.classifier.add_module('sigmoid', nn.Softmax(dim=1))
+        model.classifier.add_module('softmax', nn.Softmax(dim=1))
 
     else:
-        model = alexnetonechannel(mri_plane, num_classes=2)
+        raise Exception("AlexNet is impossible to train from scracth in our application, you can implement it if you want!")
 
     return model
 
@@ -204,13 +131,14 @@ def Vgg16(transfer_learning=True, **kwargs):
         for p in model.classifier.parameters():
             p.requires_grad = True
 
-        ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
-        model.add_module('dropout', nn.Dropout(p=0.8))
-        model.add_module('fc_out', nn.Linear(1000, 2)) ## For linear layer, Pytorch used similar H initialization for the weight.
-        model.add_module('sigmoid', nn.Softmax(dim=1))
+        ## add a fc layer on top of the transfer_learning model and a softmax classifier
+        ## Vgg16 has self.classifer in forward function, we do not have to rewrite the forward part for new adding layers.
+        model.classifier.add_module('drop_out', nn.Dropout(p=0.8))
+        model.classifier.add_module('fc_out', nn.Linear(1000, 2)) ## For linear layer, Pytorch used similar H initialization for the weight.
+        model.classifier.add_module('softmax', nn.Softmax(dim=1))
 
     else:
-        raise Exception("VggNet is impossible to train from scracth in our application!")
+        raise Exception("VggNet is impossible to train from scracth in our application, you can implement it if you want!")
 
     return model
 
@@ -218,7 +146,7 @@ def Vgg16(transfer_learning=True, **kwargs):
 ############################################
 ### inception_v3
 ############################################
-def Inception(transfer_learning=True, **kwargs):
+def InceptionV3(transfer_learning=True, **kwargs):
     """Transfer learning for Inception_v3.
 
     Args:
@@ -227,20 +155,20 @@ def Inception(transfer_learning=True, **kwargs):
 
     if transfer_learning == True:
         model = inception_v3(transfer_learning)
-        for p in model.features.parameters():
+        for p in model.parameters():
             p.requires_grad = False
 
         ## fine-tune the last fc layer
         for p in model.fc.parameters():
             p.requires_grad = True
 
-        ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
-        model.add_module('dropout', nn.Dropout(p=0.8))
+        ## add a fc layer on top of the transfer_learning model and a softmax classifier
+        model.add_module('drop_out', nn.Dropout(p=0.8))
         model.add_module('fc_out', nn.Linear(1000, 2)) ## For linear layer, Pytorch used similar H initialization for the weight.
-        model.add_module('sigmoid', nn.Softmax(dim=1))
+        model.add_module('softmax', nn.Softmax(dim=1))
 
     else:
-        raise Exception("Inception Net is impossible to train from scracth in our application!")
+        raise Exception("InceptionV3 is impossible to train from scracth in our application, you can implement it if you want!")
 
     return model
 
@@ -248,8 +176,8 @@ def Inception(transfer_learning=True, **kwargs):
 ############################################
 ### densenet161
 ############################################
-def Densenet161(transfer_learning=True, **kwargs):
-    """Transfer learning for Densenet161.
+def DenseNet161(transfer_learning=True, **kwargs):
+    """Transfer learning for DenseNet161.
 
     Args:
         transfer_learning (bool): If True, returns a model transfer_learning on ImageNet
@@ -259,179 +187,30 @@ def Densenet161(transfer_learning=True, **kwargs):
         model = densenet161(transfer_learning)
         for p in model.features.parameters():
             p.requires_grad = False
-        
-	### fine-tune the last dense block & last fc layer
-	for p in model.classifier.parameters():
-            p.requires_grad = True
-	for p in model.features.denseblock4.denselayer24.parameters():
+
+        ### fine-tune the last dense block & last fc layer
+        for p in model.features.denseblock4.denselayer24.parameters():
+                p.requires_grad = True
+        for p in model.classifier.parameters():
             p.requires_grad = True
 
-	## add a fc layer on top of the transfer_learning model and a sigmoid classifier
-        model.add_module('dropout', nn.Dropout(p=0.8))
+        ## add a fc layer on top of the transfer_learning model and a softmax classifier
+        ## DenseNet161 has self.classifer in forward function, we do not have to rewrite the forward part for new adding layers.
+        model.add_module('drop_out', nn.Dropout(p=0.8))
         model.add_module('fc_out', nn.Linear(1000, 2)) ## For linear layer, Pytorch used similar H initialization for the weight.
-        model.add_module('sigmoid', nn.Softmax(dim=1))
+        model.add_module('softmax', nn.Softmax(dim=1))
 
     else:
-        raise Exception("Densenet161 is impossible to train from scracth in our application!")
+        raise Exception("DenseNet161 is impossible to train from scracth in our application, you can implement it if you want!")
 
     return model
 
+
 ############################################
-### ResNet
+### ResNets
 ############################################
 
-model_urls = {
-    'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
-    'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
-    'resnet50': 'https://download.pytorch.org/models/resnet50-19c8e357.pth',
-    'resnet101': 'https://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
-    'resnet152': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
-}
-
-
-def conv3x3(in_planes, out_planes, stride=1):
-    "3x3 convolution with padding"
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                     padding=1, bias=False)
-
-
-class BasicBlock(nn.Module):
-    expansion = 1
-
-    def __init__(self, inplanes, planes, stride=1, downsample=None):
-        super(BasicBlock, self).__init__()
-        self.conv1 = conv3x3(inplanes, planes, stride)
-        self.bn1 = nn.BatchNorm2d(planes)
-        self.relu = nn.ReLU(inplace=True)
-        self.conv2 = conv3x3(planes, planes)
-        self.bn2 = nn.BatchNorm2d(planes)
-        self.downsample = downsample
-        self.stride = stride
-
-    def forward(self, x):
-        residual = x
-
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-
-        out = self.conv2(out)
-        out = self.bn2(out)
-
-        if self.downsample is not None:
-            residual = self.downsample(x)
-
-        out += residual
-        out = self.relu(out)
-
-        return out
-
-
-class Bottleneck(nn.Module):
-    expansion = 4
-
-    def __init__(self, inplanes, planes, stride=1, downsample=None):
-        super(Bottleneck, self).__init__()
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
-                               padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(planes)
-        self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
-        self.bn3 = nn.BatchNorm2d(planes * 4)
-        self.relu = nn.ReLU(inplace=True)
-        self.downsample = downsample
-        self.stride = stride
-
-    def forward(self, x):
-        residual = x
-
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-
-        out = self.conv2(out)
-        out = self.bn2(out)
-        out = self.relu(out)
-
-        out = self.conv3(out)
-        out = self.bn3(out)
-
-        if self.downsample is not None:
-            residual = self.downsample(x)
-
-        out += residual
-        out = self.relu(out)
-
-        return out
-
-
-class ResNet(nn.Module):
-
-    def __init__(self, block, layers, num_classes=1000):
-        self.inplanes = 64
-        super(ResNet, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
-                               bias=False)
-        self.bn1 = nn.BatchNorm2d(64)
-        self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
-        self.avgpool = nn.AvgPool2d(7, stride=1)
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
-
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
-
-    def _make_layer(self, block, planes, blocks, stride=1):
-        downsample = None
-        if stride != 1 or self.inplanes != planes * block.expansion:
-            downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(planes * block.expansion),
-            )
-
-        layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample))
-        self.inplanes = planes * block.expansion
-        for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes))
-
-        return nn.Sequential(*layers)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        x = self.fc(x)
-
-        ## adding top layers
-        x = self.drop_out(x)
-        x = self.fc_out1(x)
-        # x = self.fc_out2(x)
-        x = self.softmax(x)
-
-        return x
-
-def resnet2D(resnet_type, transfer_learning=False, **kwargs):
+def ResNet(resnet_type='resnet18', transfer_learning=True, **kwargs):
     """
     Construct a RestNet model, the type of resnet models were list as variable: resnet_type.
 
@@ -441,7 +220,7 @@ def resnet2D(resnet_type, transfer_learning=False, **kwargs):
     :return:
     """
     if resnet_type == 'resnet152':
-        model = ResNet(Bottleneck, [3, 8, 36, 3], **kwargs)
+        model = ResNets(Bottleneck, [3, 8, 36, 3], **kwargs)
         if transfer_learning:
             model.load_state_dict(model_zoo.load_url(model_urls['resnet152']))
             for p in model.parameters():
@@ -451,12 +230,15 @@ def resnet2D(resnet_type, transfer_learning=False, **kwargs):
             for p in model.fc.parameters():
                 p.requires_grad = True
 
-            ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
+            ## add a fc layer on top of the transfer_learning model and a softmax classifier
             model.add_module('fc_out', nn.Linear(1000, 2))  ## For linear layer, Pytorch used similar H initialization for the weight.
-            model.add_module('sigmoid', nn.Softmax(dim=1))
+            model.add_module('softmax', nn.Softmax(dim=1))
+        else:
+            raise Exception(
+                "resnet152 is impossible to train from scracth in our application, you can implement it if you want!")
 
     elif resnet_type == 'resnet101':
-        model = ResNet(Bottleneck, [3, 4, 23, 3], **kwargs)
+        model = ResNets(Bottleneck, [3, 4, 23, 3], **kwargs)
         if transfer_learning:
             model.load_state_dict(model_zoo.load_url(model_urls['resnet101']))
             for p in model.parameters():
@@ -466,12 +248,15 @@ def resnet2D(resnet_type, transfer_learning=False, **kwargs):
             for p in model.fc.parameters():
                 p.requires_grad = True
 
-            ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
+            ## add a fc layer on top of the transfer_learning model and a softmax classifier
             model.add_module('fc_out', nn.Linear(1000, 2))  ## For linear layer, Pytorch used similar H initialization for the weight.
-            model.add_module('sigmoid', nn.Softmax(dim=1))
+            model.add_module('softmax', nn.Softmax(dim=1))
+        else:
+            raise Exception(
+                "resnet101 is impossible to train from scracth in our application, you can implement it if you want!")
 
     elif resnet_type == 'resnet50':
-        model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
+        model = ResNets(Bottleneck, [3, 4, 6, 3], **kwargs)
         if transfer_learning:
             model.load_state_dict(model_zoo.load_url(model_urls['resnet50']))
             for p in model.parameters():
@@ -481,12 +266,15 @@ def resnet2D(resnet_type, transfer_learning=False, **kwargs):
             for p in model.fc.parameters():
                 p.requires_grad = True
 
-            ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
+            ## add a fc layer on top of the transfer_learning model and a softmax classifier
             model.add_module('fc_out', nn.Linear(1000, 2))  ## For linear layer, Pytorch used similar H initialization for the weight.
-            model.add_module('sigmoid', nn.Softmax(dim=1))
+            model.add_module('softmax', nn.Softmax(dim=1))
+        else:
+            raise Exception(
+                "resnet50 is impossible to train from scracth in our application, you can implement it if you want!")
 
     elif resnet_type == 'resnet34':
-        model = ResNet(BasicBlock, [3, 4, 6, 3], **kwargs)
+        model = ResNets(BasicBlock, [3, 4, 6, 3], **kwargs)
         if transfer_learning:
             model.load_state_dict(model_zoo.load_url(model_urls['resnet34']))
             for p in model.parameters():
@@ -496,12 +284,15 @@ def resnet2D(resnet_type, transfer_learning=False, **kwargs):
             for p in model.fc.parameters():
                 p.requires_grad = True
 
-            ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
+            ## add a fc layer on top of the transfer_learning model and a softmax classifier
             model.add_module('fc_out', nn.Linear(1000, 2))  ## For linear layer, Pytorch used similar H initialization for the weight.
-            model.add_module('sigmoid', nn.Softmax(dim=1))
+            model.add_module('softmax', nn.Softmax(dim=1))
+        else:
+            raise Exception(
+                "resnet34 is impossible to train from scracth in our application, you can implement it if you want!")
 
     elif resnet_type == 'resnet18':
-        model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
+        model = ResNets(BasicBlock, [2, 2, 2, 2], **kwargs)
         if transfer_learning:
             model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
             for p in model.parameters():
@@ -515,14 +306,19 @@ def resnet2D(resnet_type, transfer_learning=False, **kwargs):
             for p in model.fc.parameters():
                 p.requires_grad = True
 
-            ## add a fc layer on top of the transfer_learning model and a sigmoid classifier
+            ## add a fc layer on top of the transfer_learning model and a softmax classifier
             model.add_module('drop_out', nn.Dropout(p=0.8))
-            model.add_module('fc_out1', nn.Linear(1000, 2))
-            # model.add_module('fc_out2', nn.Linear(100, 2))
+            model.add_module('fc_out', nn.Linear(1000, 2))
             model.add_module('softmax', nn.Softmax(dim=1))
+        else:
+            raise Exception(
+                "resnet18 is impossible to train from scracth in our application, you can implement it if you want!")
 
     return model
 
+############################################
+### Train from scratch models
+############################################
 
 ############################################
 ### AllConvNet
@@ -530,12 +326,12 @@ def resnet2D(resnet_type, transfer_learning=False, **kwargs):
 
 import torch.nn as nn
 
-class AllConvNet2D(nn.Module):
+class AllConvNet(nn.Module):
     """
     Pytorch implementation of `Striving for Simplicity: The All Convolutional Net` (https://arxiv.org/abs/1412.6806)
     """
     def __init__(self, input_size, n_classes=2, **kwargs):
-        super(AllConvNet2D, self).__init__()
+        super(AllConvNet, self).__init__()
         self.conv1 = nn.Conv2d(input_size, 96, 3, padding=1)
         self.conv2 = nn.Conv2d(96, 96, 3, padding=1)
         self.conv3 = nn.Conv2d(96, 96, 3, padding=1, stride=2)
@@ -566,3 +362,75 @@ class AllConvNet2D(nn.Module):
         pool_out.squeeze_(-1)
 
         return pool_out
+
+############################################
+### LeNet
+############################################
+
+class LeNet(nn.Module):
+    """
+    Pytorch implementation of customized Lenet-5.
+    The original Lenet-5 architecture was described in the original paper `"Gradient-Based Learning Applied to Document Recgonition`.
+        The original architecture includes: input_layer + conv1 + maxpool1 + conv2 + maxpool2 + fc1 + fc2 + output, activation function function used is relu.
+
+    In our implementation, we adopted batch normalization layer and dropout techniques, we chose to use leaky_relu for the activation function.
+
+    To note:
+        Here, we train it from scratch and use the original signal of MRI slices, which shape is (H * W * 1), thus the in_channels is 1
+
+    """
+
+    def __init__(self, mri_plane, num_classes=2):
+        super(LeNet, self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=5, stride=1),
+            nn.Dropout(0.8),
+            nn.LeakyReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.BatchNorm2d(32),
+            nn.Conv2d(32, 64, kernel_size=5, padding=2),
+            nn.Dropout(0.8),
+            nn.LeakyReLU(inplace=True),
+            nn.BatchNorm2d(64),
+            nn.MaxPool2d(kernel_size=2, stride=2)
+        )
+
+        if mri_plane == 0:
+            self.classifier = nn.Sequential(
+                nn.Linear(64 * 51 * 43, 256),
+                nn.LeakyReLU(inplace=True),
+                nn.Dropout(0.8),
+                nn.Linear(256, num_classes),
+                nn.Softmax(dim=1)
+            )
+        elif mri_plane == 1:
+            self.classifier = nn.Sequential(
+                nn.Linear(64 * 41 * 43, 256),
+                nn.LeakyReLU(inplace=True),
+                nn.Dropout(),
+                nn.Linear(256, num_classes),
+                nn.Softmax(dim=1)
+            )
+        else:
+            self.classifier = nn.Sequential(
+                nn.Linear(64 * 41 * 51, 256),
+                nn.LeakyReLU(inplace=True),
+                nn.Dropout(),
+                nn.Linear(256, num_classes),
+                # the Softmax has been encompassed into the loss function in Pytorch implementation, if you just wanna the label, it does not change anything
+                # for the classification, because you will call argmax on the logits; otherwise, if you want to have a probability, you should always add a softmax
+                # layer
+                nn.Softmax(dim=1)
+            )
+
+
+    def forward(self, x):
+        """
+        This is the function to pass the image tensor into the model
+        :param x:
+        :return:
+        """
+        x = self.features(x)
+        x = x.view(x.size(0), -1) ## reshape the tensor so that it can be connected with self.classifier()
+        x = self.classifier(x)
+        return x
