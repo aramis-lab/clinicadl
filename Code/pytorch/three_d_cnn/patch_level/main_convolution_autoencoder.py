@@ -4,10 +4,8 @@ from tensorboardX import SummaryWriter
 from classification_utils import *
 from model import *
 import torchvision.transforms as transforms
-import time
-from torchvision.utils import save_image
 
-__author__ = "Junhao Wen"
+__author__ = "Junhao Wen, Elina Thibeausutre"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
 __credits__ = ["Junhao Wen"]
 __license__ = "See LICENSE.txt file"
@@ -18,6 +16,7 @@ __status__ = "Development"
 
 parser = argparse.ArgumentParser(description="Argparser for 3D convolutional autoencoder, the AE will be reconstructed based on the CNN that you choose")
 
+## Data arguments
 parser.add_argument("-id", "--caps_directory", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI',
                            help="Path to the caps of image processing pipeline of DL")
 parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/test.tsv',
@@ -26,37 +25,38 @@ parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junha
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 parser.add_argument("-dty", "--data_type", default="from_patch", choices=["from_MRI", "from_patch"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
-parser.add_argument("--network", default="Conv_5_FC_2", choices=["Conv_5_FC_2"],
-                    help="Autoencoder network type. (default=Conv_5_FC_2)")
-
 parser.add_argument("--patch_size", default="51", type=int,
                     help="The patch size extracted from the MRI")
 parser.add_argument("--patch_stride", default="51", type=int,
                     help="The stride for the patch extract window from the MRI")
-parser.add_argument("--batch_size", default=16, type=int,
-                    help="Batch size for training. (default=1)")
 parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
-parser.add_argument("--num_workers", default=0, type=int,
-                    help='the number of batch being loaded in parallel')
+parser.add_argument('--random_state', default=544423,
+                    help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
 
 # Training arguments
+parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2"],
+                    help="Autoencoder network type. (default=Conv_4_FC_2)")
+parser.add_argument("--num_workers", default=0, type=int,
+                    help='the number of batch being loaded in parallel')
+parser.add_argument("--batch_size", default=16, type=int,
+                    help="Batch size for training. (default=1)")
 parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument('--use_gpu', action='store_true', default=False,
+parser.add_argument('--use_gpu', action='store_true', default=True,
                     help='Uses gpu instead of cpu if cuda is available')
 parser.add_argument('--weight_decay', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
-parser.add_argument('--random_state', default=544423,
-                    help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
 parser.add_argument('--accumulation_steps', '-asteps', default=1, type=int,
                     help='Accumulates gradients in order to increase the size of the batch')
-# parser.add_argument('--evaluation_steps', '-esteps', default=1, type=int,
-#                     help='Fix the number of batches to use before validation')
+
+## visualization
+parser.add_argument("--visualization", action='store_true', default=True,
+                    help='Chooses if visualization is done on AE pretraining')
 
 
 def main(options):
@@ -71,7 +71,7 @@ def main(options):
     try:
         model = eval(options.network)()
     except:
-        raise Exception('The model has not been implemented')
+        raise Exception('The model has not been implemented or has bugs in the model codes')
 
     ## need to normalized the value to [0, 1]
     transformations = transforms.Compose([NormalizeMinMax()])
@@ -115,87 +115,18 @@ def main(options):
     criterion = torch.nn.MSELoss()
     writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "train")))
     writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "valid")))
+    writer_train_ft = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "fine_tine", "train")))
+    writer_valid_ft = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "fine_tine", "valid")))
 
-    greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, use_cuda, writer_train, writer_valid, options)
+    model, best_autodecoder = greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, use_cuda, writer_train, writer_valid, writer_train_ft, writer_valid_ft, options)
 
-    # best_loss_eval = np.inf
-    # for epoch in range(options.epochs):
-    #     if epoch % 10 == 0:
-    #         if use_cuda:
-    #             # Test the quality of our features with a randomly initialzed linear classifier.
-    #             classifier = nn.Linear(512 * options.patch_size/(4*4*4), 2).cuda()
-    #         else:
-    #             classifier = nn.Linear(512 * options.patch_size/(4*4*4), 2)
-    #         criterion = nn.CrossEntropyLoss()
-    #         optimizer = torch.optim.Adam(classifier.parameters(), lr=options.learning_rate)
-    #
-    #     model.train()
-    #     total_time = time.time()
-    #     correct = 0
-    #     for i, batch_data in enumerate(train_loader):
-    #
-    #         if use_cuda:
-    #             img, target = batch_data['image'].cuda(), batch_data['label'].cuda()
-    #         else:
-    #             img, target = batch_data['image'], batch_data['label']
-    #
-    #         features = model(img).detach()
-    #         prediction = classifier(features.view(features.size(0), -1))
-    #         loss = criterion(prediction, target)
-    #
-    #         ## save loss into tensorboardX
-    #         writer_train.add_scalar('loss', loss, i + epoch * len(train_loader))
-    #         print("For iteration %d, classification training loss is : %f" % (i + epoch * len(train_loader), loss.item()))
-    #
-    #         optimizer.zero_grad()
-    #         loss.backward()
-    #         optimizer.step()
-    #         pred = prediction.data.max(1, keepdim=True)[1]
-    #         correct += pred.eq(target.data.view_as(pred)).cpu().sum()
-    #
-    #     total_time = time.time() - total_time
-    #
-    #     ## get the AE reconstruction loss and linear classifier training performances
-    #     model.eval()
-    #     features, x_reconstructed = model(img)
-    #     reconstruction_loss = torch.mean((x_reconstructed.data - img.data)**2)
-    #
-    #     ## save the same slice from the reconstructed patch and original patch to do visual check
-    #     if epoch % 10 == 0:
-    #         print("Saving epoch {}".format(epoch))
-    #         if not os.path.exists(os.path.join(options.output_dir, 'imgs')):
-    #             os.makedirs(os.path.join(options.output_dir, 'imgs'))
-    #         orig = extract_slice_img(img.cpu().data)
-    #         save_image(orig, os.path.join(options.output_dir, 'imgs', 'orig_{}.png'.format(epoch)))
-    #         pic = extract_slice_img(x_reconstructed.cpu().data)
-    #         save_image(pic, os.path.join(options.output_dir, 'imgs', 'reconstruction_{}.png'.format(epoch)))
-    #
-    #     print("For epoch %d, reconstruction loss is : %f" % (epoch, reconstruction_loss.item()))
-    #     print("Epoch {} complete\tTime: {:.4f}s\t\tLoss: {:.4f}".format(epoch, total_time, reconstruction_loss))
-    #     print("Feature Statistics\tMean: {:.4f}\t\tMax: {:.4f}\t\tSparsity: {:.4f}%".format(
-    #         torch.mean(features.data), torch.max(features.data), torch.sum(features.data > 0.0)*100 / features.data.numel())
-    #     )
-    #     print("Linear classifier performance: {:.4f}%".format(correct.item() / float((len(train_loader)*options.batch_size))))
-    #     print("="*80)
-    #
-    #     # save the best model at the last epoch
-    #     is_best = reconstruction_loss < best_loss_eval
-    #     # is_best = True
-    #     best_loss_eval = min(reconstruction_loss, best_loss_eval)
-    #     save_checkpoint({
-    #         'epoch': epoch,
-    #         'state_dict': model.state_dict(),
-    #         'best_loss': best_loss_eval,
-    #         'optimizer': optimizer.state_dict()
-    #     }, is_best, os.path.join(options.output_dir, "best_model_dir"))
-    #
-    # ## reconstruct one example with the latest model
-    # visualize_ae(model, example_batch, path.join(options.output_dir, "imgs"))
-
+    if options.visualization:
+        visualize_ae(best_autodecoder, example_batch, os.path.join(options.output_dir, "visualize"))
 
 if __name__ == "__main__":
     ret = parser.parse_known_args()
-    print ret
+    print("The commandline arguments:")
+    print(ret)
     options = ret[0]
     if ret[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
