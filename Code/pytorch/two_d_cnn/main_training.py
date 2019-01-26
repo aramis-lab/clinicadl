@@ -18,53 +18,51 @@ __status__ = "Development"
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D CNN, The input MRI's dimension is 169*208*179 after cropping")
 
+## data argument
 parser.add_argument("-id", "--caps_directory", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI',
                            help="Path to the caps of image processing pipeline of DL")
 parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/test.tsv',
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument("-tl", "--transfer_learning", default=True, type=bool, help="If do transfer learning")
 parser.add_argument("-dty", "--data_type", default="from_slice", choices=["from_MRI", "from_slice"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
-parser.add_argument("-nw", "--network", default="DenseNet161", choices=["AlexNet", "ResNet", "LeNet", "AllConvNet", "Vgg16", "DenseNet161", "InceptionV3"],
-                    help="Deep network type. (default=AlexNet)")
-parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
-                    help="Learning rate of the optimization. (default=0.01)")
-
-parser.add_argument("--runs", default=1, type=int,
-                    help="How many times to run the training and validation procedures with the same data split strategy, default is 1.")
+parser.add_argument('--mri_plane', default=0,
+                    help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
 parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
-parser.add_argument("--epochs", default=1, type=int,
+parser.add_argument('--image_processing', default="LinearReg", choices=["LinearReg", "Segmented"],
+                    help="The output of which image processing pipeline to fit into the network. By defaut, using the raw one with only linear registration, otherwise, using the output of spm pipeline of Clinica")
+parser.add_argument('--random_state', default=None,
+                    help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
+
+## train argument
+parser.add_argument("-nw", "--network", default="AlexNet", choices=["AlexNet", "ResNet", "LeNet", "AllConvNet", "Vgg16", "DenseNet161", "InceptionV3"],
+                    help="Deep network type. Only ResNet was designed for training from scratch.")
+parser.add_argument('--train_from_stop_point', default=True, type=bool,
+                    help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
+parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
+                    help="Learning rate of the optimization. (default=0.01)")
+parser.add_argument("-tl", "--transfer_learning", default=True, type=bool, help="If do transfer learning")
+parser.add_argument("--runs", default=1, type=int,
+                    help="How many times to run the training and validation procedures with the same data split strategy, default is 1.")
+parser.add_argument("--epochs", default=2, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--batch_size", default=32, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument("--use_gpu", default=False, nargs='+', type=bool,
+parser.add_argument("--use_gpu", default=True, nargs='+', type=bool,
                     help="If use gpu or cpu. Empty implies cpu usage.")
-parser.add_argument('--force', default=True, type=bool,
-                    help='If force to rerun the classification, default behavior is to clean the output folder and restart from scratch')
-parser.add_argument('--mri_plane', default=0,
-                    help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
 parser.add_argument("--num_workers", default=4, type=int,
                     help='the number of batch being loaded in parallel')
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--weight_decay', default=1e-2, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
-parser.add_argument('--random_state', default=None,
-                    help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
-parser.add_argument('--image_processing', default="LinearReg", choices=["LinearReg", "Segmented"],
-                    help="The output of which image processing pipeline to fit into the network. By defaut, using the raw one with only linear registration, otherwise, using the output of spm pipeline of Clinica")
+
 
 def main(options):
-
-    if not os.path.exists(options.output_dir):
-        os.makedirs(options.output_dir)
-    if options.force == True:
-        check_and_clean(options.output_dir)
 
     # Initial the model
     if options.transfer_learning == True:
@@ -85,9 +83,7 @@ def main(options):
         # to a range of [0, 1] and then normalized using mean = [0.485, 0.456, 0.406] and std = [0.229, 0.224, 0.225].
         transformations = transforms.Compose([transforms.ToPILImage(),
                                               transforms.Resize(trg_size),
-                                              transforms.ToTensor(),
-                                              transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                                                    std=[0.229, 0.224, 0.225])])
+                                              transforms.ToTensor()])
     else:
         print('Train the model from scratch!')
         print('The chosen network is %s !' % options.network)
@@ -96,6 +92,7 @@ def main(options):
         else:
             raise Exception('The model has not been implemented')
         transformations = None
+
     # calculate the time consumation
     total_time = time()
     ## the inital model weight and bias
@@ -104,6 +101,14 @@ def main(options):
     for fi in range(options.runs):
         # Get the data.
         print("Running for the %d run" % fi)
+
+        ## if train a model at the stopping point?
+        if options.train_from_stop_point:
+            model, global_step, global_epoch = load_model_from_log(model, os.path.join(options.output_dir, 'best_model_dir', "iteration_" + str(fi)),
+                                           filename='checkpoint.pth.tar')
+        else:
+            global_step = 0
+
         model.load_state_dict(init_state)
 
         ## Begin the training
@@ -164,33 +169,38 @@ def main(options):
         y_hats_train = []
         y_hats_valid = []
 
-        for epoch_i in range(options.epochs):
-            print("At %s -th epoch." % str(epoch_i))
+        for epoch in range(options.epochs):
+
+            if options.train_from_stop_point:
+                epoch += global_epoch
+
+            print("At %s -th epoch." % str(epoch))
 
             # train the model
-            train_subject, y_ground_train, y_hat_train, acc_mean_train, global_steps_train = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch_i, model_mode='train')
+            train_subject, y_ground_train, y_hat_train, acc_mean_train, global_step = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch, model_mode='train', global_step=global_step)
             train_subjects.extend(train_subject)
             y_grounds_train.extend(y_ground_train)
             y_hats_train.extend(y_hat_train)
             ## at then end of each epoch, we validate one time for the model with the validation data
-            valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_steps_valid = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch_i, model_mode='valid', global_steps=global_steps_train)
-            print("Slice level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch_i))
+            valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_step = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, model_mode='valid', global_step=global_step)
+            print("Slice level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
             valid_subjects.extend(valid_subject)
             y_grounds_valid.extend(y_ground_valid)
             y_hats_valid.extend(y_hat_valid)
 
             ## update the learing rate
-            if epoch_i % 20 == 0:
+            if epoch % 20 == 0:
                 scheduler.step()
 
             # save the best model on the validation dataset
             is_best = acc_mean_valid > best_accuracy
             best_accuracy = max(best_accuracy, acc_mean_valid)
             save_checkpoint({
-                'epoch': epoch_i + 1,
+                'epoch': epoch + 1,
                 'model': model.state_dict(),
                 'best_predict': best_accuracy,
-                'optimizer': optimizer.state_dict()
+                'optimizer': optimizer.state_dict(),
+                'global_step': global_step
             }, is_best, os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi)))
 
         ## save the graph and image
@@ -205,10 +215,12 @@ def main(options):
 
 
 if __name__ == "__main__":
-    ret = parser.parse_known_args()
+    commandline = parser.parse_known_args()
     print("The commandline arguments:")
-    print(ret)
-    options = ret[0]
-    if ret[1]:
+    print(commandline)
+    ## save the commind line arguments into a tsv file for tracing all different kinds of experiments
+    commandline_to_jason(commandline)
+    options = commandline[0]
+    if commandline[1]:
         print("unknown arguments: %s" % (parser.parse_known_args()[1]))
     main(options)
