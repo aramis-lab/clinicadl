@@ -47,7 +47,7 @@ parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument('--use_gpu', action='store_true', default=True,
+parser.add_argument('--use_gpu', action='store_true', default=False,
                     help='Uses gpu instead of cpu if cuda is available')
 parser.add_argument('--weight_decay', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
@@ -61,13 +61,7 @@ parser.add_argument("--visualization", action='store_true', default=True,
 
 def main(options):
 
-    if not os.path.exists(options.output_dir):
-        os.makedirs(options.output_dir)
-    check_and_clean(options.output_dir)
-
-    ## Train the model with autoencoder
-
-    print('Start the training for convolutional autoencoder, the optimal model be saved for future use!')
+    print('Start the training for stacked convolutional autoencoders, the optimal model be saved for future use!')
     try:
         model = eval(options.network)()
     except:
@@ -124,10 +118,12 @@ def main(options):
         visualize_ae(best_autodecoder, example_batch, os.path.join(options.output_dir, "visualize"))
 
 if __name__ == "__main__":
-    ret = parser.parse_known_args()
+    commandline = parser.parse_known_args()
     print("The commandline arguments:")
-    print(ret)
-    options = ret[0]
-    if ret[1]:
+    print(commandline)
+    ## save the commind line arguments into a tsv file for tracing all different kinds of experiments
+    commandline_to_jason(commandline, pretrain_ae=True)
+    options = commandline[0]
+    if commandline[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
     main(options)

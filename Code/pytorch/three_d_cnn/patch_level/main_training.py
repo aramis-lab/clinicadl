@@ -36,10 +36,16 @@ parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
 parser.add_argument('--random_state', default=544423,
                     help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
+parser.add_argument("--num_workers", default=0, type=int,
+                    help='the number of batch being loaded in parallel')
 
 # transfer learning
-parser.add_argument("-tla", "--transfer_learning_autoencoder", default=True, action='store_true',
+parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2", "VoxResNet", "AllConvNet3D"],
+                    help="Autoencoder network type. (default=Conv_4_FC_2). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
+parser.add_argument("-tla", "--transfer_learning_autoencoder", default=False, action='store_true',
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
+parser.add_argument('--train_from_stop_point', default=True, type=bool,
+                    help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
 
 # Training arguments
 parser.add_argument("--epochs", default=1, type=int,
@@ -48,10 +54,6 @@ parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--runs", default=1, type=int,
                     help="Number of runs with the same training / validation split.")
-parser.add_argument("--num_workers", default=0, type=int,
-                    help='the number of batch being loaded in parallel')
-parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2", "VoxResNet", "AllConvNet3D"],
-                    help="Autoencoder network type. (default=Conv_4_FC_2). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
 parser.add_argument('--use_gpu', action='store_true', default=True,
@@ -61,15 +63,13 @@ parser.add_argument('--weight_decay', default=1e-4, type=float,
 
 def main(options):
 
-    if not os.path.exists(options.output_dir):
-        os.makedirs(options.output_dir)
-    if options.transfer_learning_autoencoder:
+    if not options.train_from_stop_point:
         ## only delete the CNN output, not the AE output
         check_and_clean(os.path.join(options.output_dir, 'best_model_dir', 'CNN'))
         check_and_clean(os.path.join(options.output_dir, 'log_dir', 'CNN'))
         check_and_clean(os.path.join(options.output_dir, 'performances'))
     else:
-        raise Exception("Be careful with the pretrained AE, make sure that you do not want to delete it")
+        print("Be careful with the pretrained AE or retrain the same model from a stopping point, make sure that you do not want to delete it")
 
     ## Train the model with pretrained AE
     if options.transfer_learning_autoencoder:
@@ -95,6 +95,14 @@ def main(options):
 
     for fi in range(options.runs):
         print("Running for the %d run" % fi)
+
+        ## if train a model at the stopping point?
+        if options.train_from_stop_point:
+            model, global_step, global_epoch = load_model_from_log(model, os.path.join(options.output_dir, 'best_model_dir', 'CNN', "iteration_" + str(fi)),
+                                           filename='checkpoint.pth.tar')
+        else:
+            global_step = 0
+
         model.load_state_dict(init_state)
 
         ## need to normalized the value to [0, 1]
@@ -154,33 +162,38 @@ def main(options):
         y_hats_train = []
         y_hats_valid = []
 
-        for epoch_i in range(options.epochs):
-            print("At %s -th epoch." % str(epoch_i))
+        for epoch in range(options.epochs):
+            
+            if options.train_from_stop_point:
+                epoch += global_epoch
+                
+            print("At %s -th epoch." % str(epoch))
 
             # train the model
-            train_subject, y_ground_train, y_hat_train, acc_mean_train, global_steps_train = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch_i, model_mode='train')
+            train_subject, y_ground_train, y_hat_train, acc_mean_train, global_step = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch, model_mode='train', global_step=global_step)
             train_subjects.extend(train_subject)
             y_grounds_train.extend(y_ground_train)
             y_hats_train.extend(y_hat_train)
             ## at then end of each epoch, we validate one time for the model with the validation data
-            valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_steps_valid = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch_i, model_mode='valid', global_steps=global_steps_train)
-            print("Slice level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch_i))
+            valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_step = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, model_mode='valid', global_step=global_step)
+            print("Slice level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
             valid_subjects.extend(valid_subject)
             y_grounds_valid.extend(y_ground_valid)
             y_hats_valid.extend(y_hat_valid)
 
             ## update the learing rate
-            if epoch_i % 20 == 0:
+            if epoch % 20 == 0:
                 scheduler.step()
 
             # save the best model on the validation dataset
             is_best = acc_mean_valid > best_accuracy
             best_accuracy = max(best_accuracy, acc_mean_valid)
             save_checkpoint({
-                'epoch': epoch_i + 1,
+                'epoch': epoch + 1,
                 'model': model.state_dict(),
                 'best_predict': best_accuracy,
-                'optimizer': optimizer.state_dict()
+                'optimizer': optimizer.state_dict(),
+                'global_step': global_step
             }, is_best, os.path.join(options.output_dir, "best_model_dir", "CNN", "iteration_" + str(fi)))
 
         ## save the graph and image
@@ -192,10 +205,12 @@ def main(options):
 
 
 if __name__ == "__main__":
-    ret = parser.parse_known_args()
+    commandline = parser.parse_known_args()
     print("The commandline arguments:")
-    print(ret)
-    options = ret[0]
-    if ret[1]:
+    print(commandline)
+    ## save the commind line arguments into a tsv file for tracing all different kinds of experiments
+    commandline_to_jason(commandline)
+    options = commandline[0]
+    if commandline[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
     main(options)

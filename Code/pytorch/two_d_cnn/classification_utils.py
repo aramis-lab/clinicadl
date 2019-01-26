@@ -18,7 +18,7 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
-def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, model_mode="train", global_steps=0):
+def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, model_mode="train", global_step=0):
     """
     This is the function to train, validate or test the model, depending on the model_mode parameter.
     :param model:
@@ -27,7 +27,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
     :param loss_func:
     :param optimizer:
     :param writer:
-    :param epoch_i:
+    :param epoch:
     :return:
     """
     # main training loop
@@ -81,8 +81,11 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             print("For batch %d, training loss is : %f" % (i, loss_batch.item()))
             print("For batch %d, training accuracy is : %f" % (i, accuracy))
 
-            writer.add_scalar('classification accuracy', accuracy, i + epoch_i * len(data_loader))
-            writer.add_scalar('loss', loss_batch, i + epoch_i * len(data_loader))
+            # writer.add_scalar('classification accuracy', accuracy, i + epoch * len(data_loader))
+            # writer.add_scalar('loss', loss_batch, i + epoch * len(data_loader))
+
+            writer.add_scalar('classification accuracy', accuracy, global_step)
+            writer.add_scalar('loss', loss_batch, global_step)
 
             # Unlike tensorflow, in Pytorch, we need to manully zero the graident before each backpropagation step, becase Pytorch accumulates the gradients
             # on subsequent backward passes. The initial designing for this is convenient for training RNNs.
@@ -90,8 +93,8 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             loss_batch.backward()
             optimizer.step()
 
-            ## update the global steps
-            global_steps = i + epoch_i * len(data_loader)
+            ## Update global_step only during training
+            global_step = i + epoch * len(data_loader)
 
             # delete the temporal varibles taking the GPU memory
             # del imgs, labels
@@ -153,13 +156,13 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             accuracy_batch_mean = acc / len(data_loader)
             loss_batch_mean = loss / len(data_loader)
 
-            writer.add_scalar('classification accuracy', accuracy_batch_mean, global_steps)
-            writer.add_scalar('loss', loss_batch_mean, global_steps)
+            writer.add_scalar('classification accuracy', accuracy_batch_mean, global_step)
+            writer.add_scalar('loss', loss_batch_mean, global_step)
 
             del loss_batch_mean
             torch.cuda.empty_cache()
 
-    return subjects, y_ground, y_hat, accuracy_batch_mean, global_steps
+    return subjects, y_ground, y_hat, accuracy_batch_mean, global_step
 
 def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar'):
     """
@@ -169,6 +172,8 @@ def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar
     :param checkpoint_dir:
     :param filename:
     :return:
+        checkpoint.pth.tar: this is the model trained by the last epoch, useful to retrain from this stopping point
+        model_best.pth.tar: if is_best is Ture, this is the best model during the validation, useful for testing the performances of the model
     """
     import shutil, os
     if not os.path.exists(checkpoint_dir):
@@ -649,3 +654,51 @@ def evaluate_prediction(y, y_hat):
                }
 
     return results
+
+def commandline_to_jason(commanline):
+    """
+    This is a function to write the python argparse object into a jason file. This helps for DL when searching for hyperparameters
+    :param commanline: a tuple contain the output of `parser.parse_known_args()`
+    :return:
+    """
+    import json, os
+
+    commandline_arg_dic = vars(commanline[0])
+    ## add unknown args too
+    commandline_arg_dic['unknown_arg'] = commanline[1]
+
+    ## if train_from_stop_point, do not delete this folders
+    if "train_from_stop_point" in commandline_arg_dic.keys():
+        if commandline_arg_dic['train_from_stop_point']:
+            print('You should be responsible to make sure you did not change any parameters to train from the stopping point with the same model!')
+            pass
+    else:
+        if not os.path.exists(commandline_arg_dic['output_dir']):
+            os.makedirs(commandline_arg_dic['output_dir'])
+
+        check_and_clean(commandline_arg_dic['output_dir'])
+        if not os.path.exists(os.path.join(commandline_arg_dic['output_dir'], 'log_dir')):
+            os.makedirs(os.path.join(commandline_arg_dic['output_dir'], 'log_dir'))
+
+    output_dir = commandline_arg_dic['output_dir']
+    # save to json file
+    json = json.dumps(commandline_arg_dic)
+    f = open(os.path.join(output_dir, "log_dir", "commandline.json"), "w")
+    f.write(json)
+    f.close()
+
+def load_model_from_log(model, checkpoint_dir, filename='checkpoint.pth.tar'):
+    """
+    This is to load a saved model from the log folder
+    :param model:
+    :param checkpoint_dir:
+    :param filename:
+    :return:
+    """
+    from copy import deepcopy
+
+    model_updated = deepcopy(model)
+    param_dict = torch.load(os.path.join(checkpoint_dir, filename))
+    model_updated.load_state_dict(param_dict['model'])
+    return model_updated, param_dict['global_step'], param_dict['epoch']
+
