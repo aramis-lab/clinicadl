@@ -116,6 +116,7 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
                 imgs = data['image'].cuda()
             else:
                 imgs = data['image']
+	    print("Device used: " + str(imgs.device))
 
             hidden = former_layer(imgs) ## output of encoder for former AE and input for the encoder of next AE
             train_output = auto_encoder(hidden)
@@ -187,7 +188,7 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, gpu, 
     # Initialize variables
     best_loss_valid = np.inf
     print("Beginning training")
-    for epoch in range(options.epochs):
+    for epoch in range(options.epochs_fine_tuning):
         print("At %d-th epoch." % epoch)
 
         auto_encoder_all.zero_grad()
@@ -1223,15 +1224,24 @@ def commandline_to_jason(commanline, pretrain_ae=False):
 
     ## if train_from_stop_point, do not delete this folders
     if "train_from_stop_point" in commandline_arg_dic.keys():
-        if commandline_arg_dic['train_from_stop_point']:
-            print('You should be responsible to make sure you did not change any parameters to train from the stopping point with the same model!')
-            pass
+    	if commandline_arg_dic['train_from_stop_point']:
+        	print('You should be responsible to make sure you did not change any parameters to train from the stopping point with the same model!')
+        else:
+	### for CNN train from beginning
+		if not os.path.exists(commandline_arg_dic['output_dir']):
+			os.makedirs(commandline_arg_dic['output_dir'])
+		check_and_clean(commandline_arg_dic['output_dir'])
+		if not os.path.exists(os.path.join(commandline_arg_dic['output_dir'], 'log_dir')):
+			os.makedirs(os.path.join(commandline_arg_dic['output_dir'], 'log_dir'))
     else:
-        if not os.path.exists(commandline_arg_dic['output_dir']):
-            os.makedirs(commandline_arg_dic['output_dir'])
-        check_and_clean(commandline_arg_dic['output_dir'])
-        if not os.path.exists(os.path.join(commandline_arg_dic['output_dir'], 'log_dir')):
-            os.makedirs(os.path.join(commandline_arg_dic['output_dir'], 'log_dir'))
+	### for AE 
+	if not os.path.exists(commandline_arg_dic['output_dir']):
+        	os.makedirs(commandline_arg_dic['output_dir'])
+    	check_and_clean(commandline_arg_dic['output_dir'])
+    
+    ## anyway, make sure the log_dir exist
+    if not os.path.exists(os.path.join(commandline_arg_dic['output_dir'], 'log_dir')):
+        os.makedirs(os.path.join(commandline_arg_dic['output_dir'], 'log_dir'))
 
     output_dir = commandline_arg_dic['output_dir']
     # save to json file

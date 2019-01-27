@@ -17,21 +17,21 @@ __status__ = "Development"
 parser = argparse.ArgumentParser(description="Argparser for 3D convolutional autoencoder, the AE will be reconstructed based on the CNN that you choose")
 
 ## Data arguments
-parser.add_argument("-id", "--caps_directory", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI',
+parser.add_argument("--caps_directory", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI',
                            help="Path to the caps of image processing pipeline of DL")
-parser.add_argument("-dt", "--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/test.tsv',
+parser.add_argument("--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/test.tsv',
                            help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
-parser.add_argument("-od", "--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch_ae_conv',
+parser.add_argument("--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch_ae_conv',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument("-dty", "--data_type", default="from_patch", choices=["from_MRI", "from_patch"],
+parser.add_argument("--data_type", default="from_patch", choices=["from_MRI", "from_patch"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
-parser.add_argument("--patch_size", default="51", type=int,
+parser.add_argument("--patch_size", default=51, type=int,
                     help="The patch size extracted from the MRI")
-parser.add_argument("--patch_stride", default="51", type=int,
+parser.add_argument("--patch_stride", default=51, type=int,
                     help="The stride for the patch extract window from the MRI")
 parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
-parser.add_argument('--random_state', default=544423,
+parser.add_argument('--random_state', default=544423, type=int,
                     help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
 
 # Training arguments
@@ -43,19 +43,21 @@ parser.add_argument("--batch_size", default=16, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data. (default=20)")
-parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
+parser.add_argument("--epochs_fine_tuning", default=1, type=int,
+                    help="Epochs for fine tuning all the stacked AEs after greedy layer-wise training")
+parser.add_argument("--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument('--use_gpu', action='store_true', default=False,
+parser.add_argument("--use_gpu", default=True, type=bool,
                     help='Uses gpu instead of cpu if cuda is available')
-parser.add_argument('--weight_decay', default=1e-4, type=float,
-                    metavar='W', help='weight decay (default: 1e-4)')
-parser.add_argument('--accumulation_steps', '-asteps', default=1, type=int,
+parser.add_argument("--weight_decay", default=1e-4, type=float,
+                    help='weight decay (default: 1e-4)')
+parser.add_argument("--accumulation_steps",  default=1, type=int,
                     help='Accumulates gradients in order to increase the size of the batch')
 
 ## visualization
-parser.add_argument("--visualization", action='store_true', default=True,
+parser.add_argument("--visualization", default=True, type=bool,
                     help='Chooses if visualization is done on AE pretraining')
 
 
@@ -114,6 +116,9 @@ def main(options):
 
     model, best_autodecoder = greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, use_cuda, writer_train, writer_valid, writer_train_ft, writer_valid_ft, options)
 
+    ## save the graph and image
+    writer_train.add_graph(best_autodecoder, example_batch)
+
     if options.visualization:
         visualize_ae(best_autodecoder, example_batch, os.path.join(options.output_dir, "visualize"))
 
@@ -125,5 +130,5 @@ if __name__ == "__main__":
     commandline_to_jason(commandline, pretrain_ae=True)
     options = commandline[0]
     if commandline[1]:
-        print("unknown arguments: %s" % parser.parse_known_args()[1])
+        raise Exception("unknown arguments: %s" % parser.parse_known_args()[1])
     main(options)

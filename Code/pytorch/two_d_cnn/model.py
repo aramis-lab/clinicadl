@@ -65,6 +65,10 @@ def Vgg16(transfer_learning=True, **kwargs):
         for p in model.features.parameters():
             p.requires_grad = False
 
+	## fine-tune the last convnet features.28
+	for p in model.features[28].parameters():
+	    p.requires_grad = True
+
         ## fine-tune the self.classifer containing 3 FC layers
         for p in model.classifier.parameters():
             p.requires_grad = True
@@ -95,6 +99,10 @@ def InceptionV3(transfer_learning=True, **kwargs):
         model = inception_v3(transfer_learning)
         for p in model.parameters():
             p.requires_grad = False
+
+	## fine tune Mixed_7c block
+	for p in model.Mixed_7c.parameters():
+	    p.requires_grad = True
 
         ## fine-tune the last fc layer
         for p in model.fc.parameters():
