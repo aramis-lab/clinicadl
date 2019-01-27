@@ -18,7 +18,7 @@ module load CUDA/9.0
 #export CUDA_VISIBLE_DEVICES=0,1
 ## Begin the training
 echo "Begin the image postprocessing:"
-python /network/lustre/iss01/home/junhao.wen/Project/AD-DL/Code/image_preprocessing/run_postprocessing.py
+python /network/lustre/iss01/home/junhao.wen/Project/AD-DL/Code/image_preprocessing/run_postprocessing_adni.py
 echo "Finish!"
 
 
