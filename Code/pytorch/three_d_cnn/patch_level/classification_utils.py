@@ -7,6 +7,7 @@ from os import path
 from torch.utils.data import Dataset
 from sklearn.model_selection import StratifiedShuffleSplit
 import torch.nn.functional as F
+from time import time
 
 __author__ = "Junhao Wen, Elina Thibeausutre"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -50,7 +51,7 @@ def greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, gpu
     auto_encoder_layer = extract_ae_layer_wise(ae, level)
 
     while len(auto_encoder_layer) > 0:
-        print('Layer-wise training of stacked convolutional AE for the %i -th AE' % level)
+        print('Layer-wise training for %d -th AE' % level)
         # Create the method to train with first layers
         best_model_former_layer_path = ae_training(auto_encoder_layer, former_layer, train_loader, valid_loader, criterion, gpu, options, writer_train, writer_valid, level)
         best_ae, _ = load_model_from_chcekpoint(auto_encoder_layer, best_model_former_layer_path)
@@ -102,21 +103,25 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
 
     # Initialize variables
     best_loss_valid = np.inf
-    print("Beginning training")
+    print("Beginning layer-wise training")
     for epoch in range(options.epochs):
-        print("At %d-th epoch." % epoch)
+        print("Layer-wise training at %d-th epoch." % epoch)
 
         auto_encoder.zero_grad()
 
         print('The number of batches in this sampler based on the batch size: %s' % str(len(train_loader)))
+        tend = time()
+        total_time = 0
         ## begin the training for each batch data
         for i, data in enumerate(train_loader):
+            t0 = time()
+            total_time = total_time + t0 - tend
 
             if gpu:
                 imgs = data['image'].cuda()
             else:
                 imgs = data['image']
-	    print("Device used: " + str(imgs.device))
+            print("Device used: " + str(imgs.device))
 
             hidden = former_layer(imgs) ## output of encoder for former AE and input for the encoder of next AE
             train_output = auto_encoder(hidden)
@@ -136,17 +141,20 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
                 optimizer.step()
                 optimizer.zero_grad()
 
-            del imgs, train_output
+            del imgs, train_output, hidden, hidden_requires_grad_no, loss_train
             ## update the global steps
             global_step = i + epoch * len(train_loader)
+            torch.cuda.empty_cache()
+
+            tend = time()
+        print('Mean time per batch (train):', total_time / len(train_loader))
 
         # Always test the results and save them once at the end of the epoch
-        print('Validation at the end of each epoch %d' % epoch)
-
+        print('Layer-wise validation at the end of each epoch %d' % epoch)
         loss_valid = test_ae(auto_encoder, valid_loader, gpu, criterion, former_layer=former_layer)
         mean_loss_valid = loss_valid / (len(valid_loader))
         writer_valid.add_scalar('loss_layer-' + str(level), mean_loss_valid, global_step)
-        print("Validation loss is %f for the -th epoch %d" % (mean_loss_valid, global_step))
+        print("Layer-wise mean validation loss is %f for the -th epoch %d" % (mean_loss_valid, global_step))
 
         ## reset the model to train mode after evaluation
         auto_encoder.train()
@@ -187,9 +195,9 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, gpu, 
 
     # Initialize variables
     best_loss_valid = np.inf
-    print("Beginning training")
+    print("Beginning fine-tuning")
     for epoch in range(options.epochs_fine_tuning):
-        print("At %d-th epoch." % epoch)
+        print("Fine-tuning at %d-th epoch." % epoch)
 
         auto_encoder_all.zero_grad()
 
@@ -210,24 +218,22 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, gpu, 
             ## update the global steps
             global_step = i + epoch * len(train_loader)
 
-            del imgs, train_output
+            del imgs, train_output, loss
+            torch.cuda.empty_cache()
 
             if (i+1) % options.accumulation_steps == 0:
-                step_flag = False
                 optimizer.step()
                 optimizer.zero_grad()
 
         # Always test the results and save them once at the end of the epoch
-        print('Last checkpoint at the end of the epoch %d' % epoch)
+        print('Fine-tuning all AEs of validation at the end of the epoch %d' % epoch)
         loss_valid = test_ae(auto_encoder_all, valid_loader, gpu, criterion)
         mean_loss_valid = loss_valid / (len(valid_loader))
         writer_valid_ft.add_scalar('loss', mean_loss_valid, global_step)
-        print("Validation loss is %f for the -th batch %d" % (mean_loss_valid, global_step))
+        print("Fine-tuning mean validation loss is %f for the -th batch %d" % (mean_loss_valid, global_step))
 
         ## reset the model to train mode after evaluation
         auto_encoder_all.train()
-        print("Validation loss is %f for the -th epoch %d" % (mean_loss_valid, global_step))
-
 
         is_best = loss_valid < best_loss_valid
         # Save only if is best to avoid performance deterioration
@@ -239,32 +245,6 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, gpu, 
                              'loss_valid': mean_loss_valid},
                             is_best,
                             os.path.join(options.output_dir, "best_model_dir", "fine_tune"))
-
-def stack_layer_wise_ae(ae_all, ae_layer, level):
-    """
-    This is a function to transfer each layer-wise AE weights onto the graph-based AE, and then frozen the stacked AEs.
-    :param ae_all:
-    :param auto_encoder:
-    :param level:
-    :return:
-    """
-    import torch.nn as nn
-
-    n_conv = 0
-    i_ae = 0
-
-    for i, layer in enumerate(ae_all.encoder):
-        if isinstance(layer, nn.Conv3d): # if is convnet, adding one layer for ae
-            n_conv += 1
-        ## transfering the Layers in each block.
-        if n_conv == level + 1:
-            ae_all.encoder[i] = ae_layer.encoder[i_ae] ## transfer the layer-wise AE weight into the graph-wise AEs
-            ae_all.decoder[len(ae_all) - (i+1)] = ae_layer.decoder[len(ae_layer) - (i_ae+1)]
-            i_ae += 1
-
-    return ae_all
-
-
 
 def test_ae(model, dataloader, use_cuda, criterion, former_layer=None):
     """
@@ -294,10 +274,35 @@ def test_ae(model, dataloader, use_cuda, criterion, former_layer=None):
         hidden_requires_grad_no.requires_grad = False
         loss = criterion(outputs, hidden_requires_grad_no)
         total_loss += loss.item()
-
+        torch.cuda.empty_cache()
+        
         del inputs, outputs, loss
 
     return total_loss
+
+def stack_layer_wise_ae(ae_all, ae_layer, level):
+    """
+    This is a function to transfer each layer-wise AE weights onto the graph-based AE, and then frozen the stacked AEs.
+    :param ae_all:
+    :param auto_encoder:
+    :param level:
+    :return:
+    """
+    import torch.nn as nn
+
+    n_conv = 0
+    i_ae = 0
+
+    for i, layer in enumerate(ae_all.encoder):
+        if isinstance(layer, nn.Conv3d): # if is convnet, adding one layer for ae
+            n_conv += 1
+        ## transfering the Layers in each block.
+        if n_conv == level + 1:
+            ae_all.encoder[i] = ae_layer.encoder[i_ae] ## transfer the layer-wise AE weight into the graph-wise AEs
+            ae_all.decoder[len(ae_all) - (i+1)] = ae_layer.decoder[len(ae_layer) - (i_ae+1)]
+            i_ae += 1
+
+    return ae_all
 
 def load_model_from_chcekpoint(model, checkpoint_dir, filename='model_best.pth.tar'):
     """

@@ -39,7 +39,7 @@ parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2"],
                     help="Autoencoder network type. (default=Conv_4_FC_2)")
 parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
-parser.add_argument("--batch_size", default=16, type=int,
+parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data. (default=20)")
