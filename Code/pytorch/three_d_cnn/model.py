@@ -177,9 +177,9 @@ def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, di
     save_checkpoint({'model': model.state_dict(),
                      'epoch': -1,
                      'path': pretrained_autoencoder_path},
-                    False,
+                    False, False,
                     path.join(model_path, "pretraining"),
-                    'model_pretrained.pth.tar')
+                    filename='model_pretrained.pth.tar')
 
 
 def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_path, difference=0):
