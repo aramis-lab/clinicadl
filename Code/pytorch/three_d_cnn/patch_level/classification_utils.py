@@ -41,6 +41,10 @@ def greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, gpu
     from os import path
     from model import AutoEncoder
     from copy import deepcopy
+    
+
+    t1 = time()
+
     ## if the model defined is not already construted to an AE, then we convert the CNN into an AE, keeping the same structure with original CNN
     if not isinstance(model, AutoEncoder):
         ae = AutoEncoder(model) ## Reconstruct all the AEs in one graph
@@ -104,6 +108,9 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
     # Initialize variables
     best_loss_valid = np.inf
     print("Beginning layer-wise training")
+
+    t2 = time()
+    print("This step takes time: %f" % (t2 -t1))
     for epoch in range(options.epochs):
         print("Layer-wise training at %d-th epoch." % epoch)
 
@@ -112,6 +119,7 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
         print('The number of batches in this sampler based on the batch size: %s' % str(len(train_loader)))
         tend = time()
         total_time = 0
+	initial_time = time()
         ## begin the training for each batch data
         for i, data in enumerate(train_loader):
             t0 = time()
@@ -145,7 +153,10 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
             ## update the global steps
             global_step = i + epoch * len(train_loader)
             torch.cuda.empty_cache()
-
+	    
+	    t_temp = time()
+	    print('Training the %d -th batch using  %f s:' % (i, t_temp -t0))    
+	
             tend = time()
         print('Mean time per batch (train):', total_time / len(train_loader))
 
@@ -926,19 +937,28 @@ class MRIDataset_patch(Dataset):
             ### extract the patch from MRI based on a specific size
             patch = extract_patch_from_mri(image, index_patch, self.patch_size, self.stride_size, self.patchs_per_patient)
         else:
-            patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+            t1 = time()
+	    patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
                                       'preprocessing_dl',
                                       img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-' + str(self.patch_size) + '_stride-' + str(self.stride_size) + '_patch-' + str(
                                           index_patch) + '.pt')
             patch = torch.load(patch_path)
+	t2 = time()
+	print("Load patch: %f s" % (t2 -t1))
 
         # check if the patch has NAN value
         if torch.isnan(patch).any() == True:	
             print("Double check, this patch has Nan value: %s" % str(img_name + '_' + sess_name + str(index_patch)))
             patch[torch.isnan(patch)] = 0
 
+        t3 = time()
+        print("Check NAN: %f s" % (t3 -t2))
+
         if self.transformations:
             patch = self.transformations(patch)
+	
+	t4 = time()
+	print("Transfrom: %f s" % (t4 -t3))
 
         sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(index_patch), 'image': patch, 'label': label}
 
