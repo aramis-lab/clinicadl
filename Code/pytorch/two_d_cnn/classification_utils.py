@@ -670,17 +670,17 @@ def commandline_to_jason(commanline):
     ## if train_from_stop_point, do not delete this folders
     if "train_from_stop_point" in commandline_arg_dic.keys():
         if commandline_arg_dic['train_from_stop_point']: # for train from stopping point
-        	print('You should be responsible to make sure you did not change any parameters to train from the stopping point with the same model!')
+            print('You should be responsible to make sure you did not change any parameters to train from the stopping point with the same model!')
         
-	else:  # train from 0
-		if not os.path.exists(commandline_arg_dic['output_dir']):
-                	os.makedirs(commandline_arg_dic['output_dir'])
+    else:  # train from 0
+        if not os.path.exists(commandline_arg_dic['output_dir']):
+            os.makedirs(commandline_arg_dic['output_dir'])
 
-       		check_and_clean(commandline_arg_dic['output_dir'])
+        check_and_clean(commandline_arg_dic['output_dir'])
     
     # anyway, need to have log_dir to be present
     if not os.path.exists(os.path.join(commandline_arg_dic['output_dir'], 'log_dir')):
-    	os.makedirs(os.path.join(commandline_arg_dic['output_dir'], 'log_dir'))
+        os.makedirs(os.path.join(commandline_arg_dic['output_dir'], 'log_dir'))
 
     output_dir = commandline_arg_dic['output_dir']
     # save to json file
