@@ -41,10 +41,6 @@ def greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, gpu
     from os import path
     from model import AutoEncoder
     from copy import deepcopy
-    
-
-    t1 = time()
-
     ## if the model defined is not already construted to an AE, then we convert the CNN into an AE, keeping the same structure with original CNN
     if not isinstance(model, AutoEncoder):
         ae = AutoEncoder(model) ## Reconstruct all the AEs in one graph
@@ -108,9 +104,6 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
     # Initialize variables
     best_loss_valid = np.inf
     print("Beginning layer-wise training")
-
-    t2 = time()
-    print("This step takes time: %f" % (t2 -t1))
     for epoch in range(options.epochs):
         print("Layer-wise training at %d-th epoch." % epoch)
 
