@@ -32,8 +32,13 @@ def AlexNet(transfer_learning=True, **kwargs):
     if transfer_learning == True:
         model = alexnet(transfer_learning)
         for p in model.features.parameters():
-        #   p.requires_grad = False
-            p.requires_grad = True # first, try to overfit the model
+           p.requires_grad = False
+
+        # fine tune the last tow conv layers
+        for p in model.features[10].parameters():
+            p.requires_grad = True
+        for p in model.features[8].parameters():
+            p.requires_grad = True
 
         ## fine-tune the classifer part of alexnet: 2 FC layer
         for p in model.classifier.parameters():
@@ -65,9 +70,9 @@ def Vgg16(transfer_learning=True, **kwargs):
         for p in model.features.parameters():
             p.requires_grad = False
 
-	## fine-tune the last convnet features.28
-	for p in model.features[28].parameters():
-	    p.requires_grad = True
+        ## fine-tune the last convnet features.28
+        for p in model.features[28].parameters():
+            p.requires_grad = True
 
         ## fine-tune the self.classifer containing 3 FC layers
         for p in model.classifier.parameters():
@@ -100,9 +105,9 @@ def InceptionV3(transfer_learning=True, **kwargs):
         for p in model.parameters():
             p.requires_grad = False
 
-	## fine tune Mixed_7c block
-	for p in model.Mixed_7c.parameters():
-	    p.requires_grad = True
+        ## fine tune Mixed_7c block
+        for p in model.Mixed_7c.parameters():
+            p.requires_grad = True
 
         ## fine-tune the last fc layer
         for p in model.fc.parameters():

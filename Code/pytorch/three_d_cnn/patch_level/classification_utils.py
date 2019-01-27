@@ -275,7 +275,7 @@ def test_ae(model, dataloader, use_cuda, criterion, former_layer=None):
         loss = criterion(outputs, hidden_requires_grad_no)
         total_loss += loss.item()
         torch.cuda.empty_cache()
-        
+
         del inputs, outputs, loss
 
     return total_loss
