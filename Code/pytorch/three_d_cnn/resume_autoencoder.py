@@ -16,6 +16,12 @@ parser.add_argument("input_dir", type=str,
 parser.add_argument("model_path", type=str,
                     help="model selected")
 
+# Data management
+parser.add_argument("--diagnoses", default=["AD", "CN", "MCI", "unlabeled"], nargs='+', type=str,
+                    help="Take all the subjects possible for autoencoder training")
+parser.add_argument("--baseline", action="store_true", default=False,
+                    help="if True only the baseline is used")
+
 # Default values not specified in previous models
 parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
                     help="Performs MinMaxNormalization for visualization")
@@ -68,18 +74,10 @@ def parse_model_name(model_path, options):
 
         if key == 'model':
             options.model = content
-        elif key == 'task':
-            diagnoses = content.split('_')
-            if 'baseline' in diagnoses:
-                options.baseline = True
-                diagnoses.remove('baseline')
-            else:
-                options.baseline = False
-            options.diagnoses = diagnoses
         elif key == 'gpu':
-            options.gpu = bool(content)
+            options.gpu = bool(int(content))
         elif key == 'epochs':
-            options.epochs = int(content)
+            options.transfer_learning_epochs = int(content)
         elif key == 'workers':
             options.num_workers = int(content)
         elif key == 'threads':
@@ -87,7 +85,11 @@ def parse_model_name(model_path, options):
         elif key == 'lr':
             options.learning_rate = float(content)
         elif key == 'norm':
-            options.minmaxnormalization = bool(content)
+            options.minmaxnormalization = bool(int(content))
+        elif key == 'gl':
+            options.greedy_learning = bool(int(content))
+        elif key == 'sigmoid':
+            options.add_sigmoid = bool(int(content))
         elif key == 'batch':
             options.batch_size = int(content)
         elif key == 'acc':
@@ -132,7 +134,7 @@ def main(options):
     total_time = time()
 
     # Get the data.
-    training_tsv, valid_tsv = load_data(options.diagnosis_path, options.transfer_learning_diagnoses,
+    training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
                                         options.split, options.n_splits, options.baseline)
 
     data_train = MRIDataset(options.input_dir, training_tsv, transform=transformations)
@@ -156,30 +158,36 @@ def main(options):
     # Initialize the model
     print('Initialization of the model')
     model = eval(options.model)()
-    model, current_epoch = load_model(model, options.model_path, 'checkpoint.pth.tar')
+    decoder = Decoder(model)
+
+    decoder, current_epoch = load_model(decoder, options.model_path, 'checkpoint.pth.tar')
     if options.gpu:
-        model = model.cuda()
+        decoder = decoder.cuda()
 
     options.beginning_epoch = current_epoch + 1
 
     # Define criterion and optimizer
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.MSELoss()
     optimizer_path = path.join(options.model_path, 'optimizer.pth.tar')
     if path.exists(optimizer_path):
         print('Loading optimizer')
         optimizer_dict = torch.load(optimizer_path)
         name = optimizer_dict["name"]
-        optimizer = eval("torch.optim." + name)(filter(lambda x: x.requires_grad, model.parameters()))
+        optimizer = eval("torch.optim." + name)(filter(lambda x: x.requires_grad, decoder.parameters()))
         optimizer.load_state_dict(optimizer_dict["optimizer"])
     else:
-        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
+        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
                                                              options.learning_rate)
 
     print('Resuming the training task')
     training_time = time()
-    # TODO deal with the run parameter (str 'runX') and modify train accordingly
+    # TODO deal allow to resume ae_finetuning
 
-    train(model, train_loader, valid_loader, criterion, optimizer, run, options)
+    if options.greedy_learning:
+        greedy_learning(decoder, train_loader, valid_loader, criterion, optimizer, options.model_path, True, options)
+
+    else:
+        ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, options.model_path, True, options)
     training_time = time() - training_time
 
     # Load best model

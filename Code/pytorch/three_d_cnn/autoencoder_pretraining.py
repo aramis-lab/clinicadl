@@ -103,8 +103,6 @@ def main(options):
         transformations = None
 
     total_time = time()
-    # Training the autoencoder based on the model
-    model = eval(options.model)()
     criterion = torch.nn.MSELoss()
 
     training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
@@ -132,7 +130,11 @@ def main(options):
         print('Beginning run %i' % run)
         run_path = path.join(options.result_path, 'run' + str(run))
 
+        model = eval(options.model)()
         decoder = Decoder(model)
+        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
+                                                             options.transfer_learning_rate)
+
         if options.pretrained_path is not None:
             decoder = initialize_other_autoencoder(decoder, options.pretrained_path, run_path,
                                                    difference=options.pretrained_difference)
@@ -143,10 +145,10 @@ def main(options):
             decoder.decoder.add_module("sigmoid", nn.Sigmoid())
 
         if options.greedy_learning:
-            greedy_learning(decoder, train_loader, valid_loader, criterion, options.gpu, run_path, options)
+            greedy_learning(decoder, train_loader, valid_loader, criterion, optimizer, run_path, False, options)
 
         else:
-            ae_finetuning(decoder, train_loader, valid_loader, criterion, options.gpu, run_path, options)
+            ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, run_path, False, options)
 
             best_decoder = load_model(decoder, run_path)
             visualize_ae(best_decoder, train_loader, path.join(run_path, "train"), options.gpu)
