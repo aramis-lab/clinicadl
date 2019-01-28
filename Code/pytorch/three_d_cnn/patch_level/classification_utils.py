@@ -115,6 +115,7 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
 
         ## begin the training for each batch data
         for i, data in enumerate(train_loader):
+            torch.cuda.synchronize()
             t0 = time()
             total_time = total_time + t0 - tend
 
@@ -125,7 +126,7 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
             else:
                 imgs = data['image']
             print("Device used: " + str(imgs.device))
-
+            torch.cuda.synchronize()
             t1 = time()
             total_time += t1 - t0
             print("Loading data on GPU", t1 - t0)
@@ -143,7 +144,7 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
 
             loss_train = criterion(train_output, hidden_requires_grad_no)
             loss_train.backward()
-
+            torch.cuda.synchronize()
             t3 = time()
             print("Backward pass", t3 - t2)
 
@@ -159,8 +160,9 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
             del imgs, train_output, hidden, hidden_requires_grad_no, loss_train
             ## update the global steps
             global_step = i + epoch * len(train_loader)
+            
             torch.cuda.empty_cache()
-
+            torch.cuda.synchronize()
             t_temp = time()
             print('Training the %d -th batch in total using  %f s:' % (i, t_temp -t0))
 
