@@ -78,6 +78,41 @@ def greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, gpu
 
     return model, best_autodecoder
 
+def stacked_ae_learning(model, train_loader, valid_loader, criterion, gpu, writer_train, writer_valid, options):
+    """
+    This aims to train the stacked AEs together for autoencoder
+    :param model:
+    :param train_loader:
+    :param valid_loader:
+    :param criterion:
+    :param gpu:
+    :param writer_train:
+    :param writer_valid:
+    :param options:
+    :return:
+        Return both the pretrained CNN for future use and also the stacked AEs
+    """
+    from os import path
+    from model import AutoEncoder
+    from copy import deepcopy
+    ## if the model defined is not already construted to an AE, then we convert the CNN into an AE, keeping the same structure with original CNN
+    if not isinstance(model, AutoEncoder):
+        ae = AutoEncoder(model) ## Reconstruct all the AEs in one graph
+
+    ae_finetuning(ae, train_loader, valid_loader, criterion, gpu, writer_train, writer_valid, options)
+
+    # Updating and setting weights of the convolutional layers
+    best_autodecoder, best_epoch = load_model_from_chcekpoint(ae, path.join(options.output_dir, 'best_model_dir', 'fine_tune'))
+    if not isinstance(model, AutoEncoder): ## the model defined with CNN and the AutoEncoder, we transfer the encoder features to the CNN
+        model.features = deepcopy(best_autodecoder.encoder)
+        save_checkpoint({'model': model.state_dict(),
+                         'epoch': best_epoch},
+                        False,
+                        os.path.join(options.output_dir, 'best_model_dir'),
+                        'model_pretrained_with_AE.pth.tar')
+
+    return model, best_autodecoder
+
 def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterion, gpu, options, writer_train, writer_valid, level, global_step=0):
     """
     This is the function to train the AEs in a greedy layer-wise way.
@@ -104,7 +139,7 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
     # Initialize variables
     best_loss_valid = np.inf
     print("Beginning layer-wise training")
-    for epoch in range(options.epochs):
+    for epoch in range(options.epochs_layer_wise):
         print("Layer-wise training at %d-th epoch." % epoch)
 
         auto_encoder.zero_grad()
@@ -160,7 +195,7 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
             del imgs, train_output, hidden, hidden_requires_grad_no, loss_train
             ## update the global steps
             global_step = i + epoch * len(train_loader)
-            
+
             torch.cuda.empty_cache()
             torch.cuda.synchronize()
             t_temp = time()
@@ -217,20 +252,47 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, gpu, 
     # Initialize variables
     best_loss_valid = np.inf
     print("Beginning fine-tuning")
+
+    print('The number of batches in this sampler based on the batch size: %s' % str(len(train_loader)))
+    tend = time()
+    total_time = 0
+
     for epoch in range(options.epochs_fine_tuning):
         print("Fine-tuning at %d-th epoch." % epoch)
 
         auto_encoder_all.zero_grad()
 
         for i, data in enumerate(train_loader):
+
+            torch.cuda.synchronize()
+            t0 = time()
+            total_time = total_time + t0 - tend
+
+            print("Loading available between batches of data by CPU using time: ", t0 - tend)
+
             if gpu:
                 imgs = data['image'].cuda()
             else:
                 imgs = data['image']
 
+            print("Device used: " + str(imgs.device))
+            torch.cuda.synchronize()
+            t1 = time()
+            total_time += t1 - t0
+            print("Loading data on GPU", t1 - t0)
+
             train_output = auto_encoder_all(imgs)
+
+            torch.cuda.synchronize()
+            t2 = time()
+            print("Real time forward pass", t2 - t1)
+
             loss = criterion(train_output, imgs)
             loss.backward()
+            torch.cuda.synchronize()
+            t3 = time()
+            print("Backward pass", t3 - t2)
+
 
             # moniter the training loss for each batch using tensorboardX
             writer_train_ft.add_scalar('loss', loss, i + epoch * len(train_loader))
@@ -240,11 +302,19 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, gpu, 
             global_step = i + epoch * len(train_loader)
 
             del imgs, train_output, loss
-            torch.cuda.empty_cache()
 
             if (i+1) % options.accumulation_steps == 0:
                 optimizer.step()
                 optimizer.zero_grad()
+
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()
+            t_temp = time()
+            print('Training the %d -th batch in total using  %f s:' % (i, t_temp -t0))
+
+            tend = time()
+
+        print('Mean time per batch (train):', total_time / len(train_loader))
 
         # Always test the results and save them once at the end of the epoch
         print('Fine-tuning all AEs of validation at the end of the epoch %d' % epoch)

@@ -37,14 +37,16 @@ parser.add_argument('--random_state', default=544423, type=int,
 # Training arguments
 parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2"],
                     help="Autoencoder network type. (default=Conv_4_FC_2)")
+parser.add_argument("--ae_training_method", default="stacked_ae", choices=["layer_wise_ae", "stacked_ae"],
+                    help="How to train the autoencoder, layer wise or train all AEs together")
 parser.add_argument("--num_workers", default=4, type=int,
                     help='the number of batch being loaded in parallel')
 parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
-parser.add_argument("--epochs", default=1, type=int,
-                    help="Epochs through the data. (default=20)")
+parser.add_argument("--epochs_layer_wise", default=1, type=int,
+                    help="Epochs for layer-wise AE training")
 parser.add_argument("--epochs_fine_tuning", default=1, type=int,
-                    help="Epochs for fine tuning all the stacked AEs after greedy layer-wise training")
+                    help="Epochs for fine tuning all the stacked AEs after greedy layer-wise training, or directly train the AEs together")
 parser.add_argument("--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
@@ -114,7 +116,12 @@ def main(options):
     writer_train_ft = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "fine_tine", "train")))
     writer_valid_ft = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "fine_tine", "valid")))
 
-    model, best_autodecoder = greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, use_cuda, writer_train, writer_valid, writer_train_ft, writer_valid_ft, options)
+    if options.ae_training_method == 'layer_wise_ae':
+        model, best_autodecoder = greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, use_cuda, writer_train, writer_valid, writer_train_ft, writer_valid_ft, options)
+    else:
+        model, best_autodecoder = stacked_ae_learning(model, train_loader, valid_loader, criterion, use_cuda,
+                                                             writer_train, writer_valid,
+                                                             options)
 
     ## save the graph and image
     writer_train.add_graph(best_autodecoder, example_batch)
