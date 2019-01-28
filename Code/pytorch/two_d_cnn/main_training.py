@@ -39,11 +39,11 @@ parser.add_argument('--random_state', default=555555,
 ## train argument
 parser.add_argument("--network", default="AlexNet", choices=["AlexNet", "ResNet", "LeNet", "AllConvNet", "Vgg16", "DenseNet161", "InceptionV3"],
                     help="Deep network type. Only ResNet was designed for training from scratch.")
-parser.add_argument("--train_from_stop_point", default=True, type=bool,
+parser.add_argument("--train_from_stop_point", default=False, type=bool,
                     help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
 parser.add_argument("--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
-parser.add_argument("--transfer_learning", default=True, type=bool, help="If do transfer learning")
+parser.add_argument("--transfer_learning", default=False, type=bool, help="If do transfer learning")
 parser.add_argument("--runs", default=1, type=int,
                     help="How many times to run the training and validation procedures with the same data split strategy, default is 1.")
 parser.add_argument("--epochs", default=10, type=int,
@@ -61,6 +61,7 @@ parser.add_argument('--momentum', default=0.9, type=float,
 parser.add_argument('--weight_decay', default=1e-2, type=float,
                      help='weight decay (default: 1e-4)')
 
+## TODO; check the behavior of default for bool in argparser
 
 def main(options):
 
