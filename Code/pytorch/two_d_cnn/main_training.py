@@ -39,14 +39,14 @@ parser.add_argument('--random_state', default=555555,
 ## train argument
 parser.add_argument("--network", default="AlexNet", choices=["AlexNet", "ResNet", "LeNet", "AllConvNet", "Vgg16", "DenseNet161", "InceptionV3"],
                     help="Deep network type. Only ResNet was designed for training from scratch.")
-parser.add_argument("--train_from_stop_point", default=False, type=bool,
+parser.add_argument("--train_from_stop_point", default=True, type=bool,
                     help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
 parser.add_argument("--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--transfer_learning", default=True, type=bool, help="If do transfer learning")
 parser.add_argument("--runs", default=1, type=int,
                     help="How many times to run the training and validation procedures with the same data split strategy, default is 1.")
-parser.add_argument("--epochs", default=2, type=int,
+parser.add_argument("--epochs", default=10, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--batch_size", default=32, type=int,
                     help="Batch size for training. (default=1)")
@@ -54,7 +54,7 @@ parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "
                     help="Optimizer of choice for training. (default=Adam)")
 parser.add_argument("--use_gpu", default=True, type=bool,
                     help="If use gpu or cpu. Empty implies cpu usage.")
-parser.add_argument("--num_workers", default=4, type=int,
+parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
 parser.add_argument('--momentum', default=0.9, type=float,
                     help='momentum')
@@ -102,15 +102,6 @@ def main(options):
         # Get the data.
         print("Running for the %d run" % fi)
 
-        ## if train a model at the stopping point?
-        if options.train_from_stop_point:
-            model, global_step, global_epoch = load_model_from_log(model, os.path.join(options.output_dir, 'best_model_dir', "iteration_" + str(fi)),
-                                           filename='checkpoint.pth.tar')
-        else:
-            global_step = 0
-
-        model.load_state_dict(init_state)
-
         ## Begin the training
         ## load the tsv file
         training_tsv, valid_tsv = load_split(options.diagnosis_tsv, val_size=0.15, random_state=options.random_state)
@@ -133,6 +124,25 @@ def main(options):
                                  drop_last=True,
                                  pin_memory=True)
 
+        # initial learning rate for training
+        lr = options.learning_rate
+        # chosen optimer for back-propogation
+        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), lr,
+                                                             weight_decay=options.weight_decay)
+        # apply exponential decay for learning rate
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
+
+        ## if train a model at the stopping point?
+
+        ## TODO: it seems that the retraining from stop point still has some probme, the training acc is not smooth between two runs
+        if options.train_from_stop_point:
+            model, optimizer, global_step, global_epoch = load_model_from_log(model, optimizer, os.path.join(options.output_dir, 'best_model_dir', "iteration_" + str(fi)),
+                                           filename='checkpoint.pth.tar')
+        else:
+            global_step = 0
+
+        model.load_state_dict(init_state)
+
         ## Decide to use gpu or cpu to train the model
         if options.use_gpu == False:
             use_cuda = False
@@ -148,13 +158,6 @@ def main(options):
 
         # Binary cross-entropy loss
         loss = torch.nn.CrossEntropyLoss()
-        # initial learning rate for training
-        lr = options.learning_rate
-        # chosen optimer for back-propogation
-        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), lr,
-                                                             weight_decay=options.weight_decay)
-        # apply exponential decay for learning rate
-        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
 
         # parameters used in training
         best_accuracy = 0.0

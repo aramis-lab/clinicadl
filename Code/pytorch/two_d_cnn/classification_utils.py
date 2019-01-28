@@ -671,7 +671,11 @@ def commandline_to_jason(commanline):
     if "train_from_stop_point" in commandline_arg_dic.keys():
         if commandline_arg_dic['train_from_stop_point']: # for train from stopping point
             print('You should be responsible to make sure you did not change any parameters to train from the stopping point with the same model!')
-        
+
+        else:
+            ## train from 0
+            check_and_clean(commandline_arg_dic['output_dir'])
+
     else:  # train from 0
         if not os.path.exists(commandline_arg_dic['output_dir']):
             os.makedirs(commandline_arg_dic['output_dir'])
@@ -689,7 +693,7 @@ def commandline_to_jason(commanline):
     f.write(json)
     f.close()
 
-def load_model_from_log(model, checkpoint_dir, filename='checkpoint.pth.tar'):
+def load_model_from_log(model, optimizer, checkpoint_dir, filename='checkpoint.pth.tar'):
     """
     This is to load a saved model from the log folder
     :param model:
@@ -699,8 +703,13 @@ def load_model_from_log(model, checkpoint_dir, filename='checkpoint.pth.tar'):
     """
     from copy import deepcopy
 
+    ## set the model to be eval mode, we explicitly think that the model was saved in eval mode, otherwise, it will affects the BN and dropout
+
+    model.eval()
     model_updated = deepcopy(model)
     param_dict = torch.load(os.path.join(checkpoint_dir, filename))
     model_updated.load_state_dict(param_dict['model'])
-    return model_updated, param_dict['global_step'], param_dict['epoch']
+    optimizer.load_state_dict(param_dict['optimizer'])
+
+    return model_updated, optimizer, param_dict['global_step'], param_dict['epoch']
 
