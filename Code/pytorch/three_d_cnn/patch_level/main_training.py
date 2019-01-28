@@ -96,15 +96,6 @@ def main(options):
     for fi in range(options.runs):
         print("Running for the %d run" % fi)
 
-        ## if train a model at the stopping point?
-        if options.train_from_stop_point:
-            model, global_step, global_epoch = load_model_from_log(model, os.path.join(options.output_dir, 'best_model_dir', 'CNN', "iteration_" + str(fi)),
-                                           filename='checkpoint.pth.tar')
-        else:
-            global_step = 0
-
-        model.load_state_dict(init_state)
-
         ## need to normalized the value to [0, 1]
         transformations = transforms.Compose([NormalizeMinMax()])
 
@@ -126,6 +117,23 @@ def main(options):
                                   num_workers=options.num_workers,
                                   drop_last=False,
                                   )
+
+        lr = options.learning_rate
+        # chosen optimer for back-propogation
+        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), lr,
+                                                             weight_decay=options.weight_decay)
+        # apply exponential decay for learning rate
+        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
+
+        ## if train a model at the stopping point?
+        if options.train_from_stop_point:
+            model, optimizer, global_step, global_epoch = load_model_from_log(model, optimizer, os.path.join(options.output_dir, 'best_model_dir', 'CNN', "iteration_" + str(fi)),
+                                           filename='checkpoint.pth.tar')
+        else:
+            global_step = 0
+
+        model.load_state_dict(init_state)
+
         ## Decide to use gpu or cpu to train the model
         if options.use_gpu == False:
             use_cuda = False
@@ -141,12 +149,6 @@ def main(options):
 
         # Define loss and optimizer
         loss = torch.nn.CrossEntropyLoss()
-        lr = options.learning_rate
-        # chosen optimer for back-propogation
-        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), lr,
-                                                             weight_decay=options.weight_decay)
-        # apply exponential decay for learning rate
-        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
 
         print('Beginning the training task')
         # parameters used in training

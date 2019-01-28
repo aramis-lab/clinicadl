@@ -64,7 +64,7 @@ def greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, gpu
         former_layer = frozen_weight_layer_wise(ae, level) ## to frozen the former layer of AE and extract the encoder part of this AE
         auto_encoder_layer = extract_ae_layer_wise(ae, level) ## extract the next AE
 
-    ae_finetuning(ae, train_loader, valid_loader, criterion, gpu, options.output_dir, writer_train_ft, writer_valid_ft, options)
+    ae_finetuning(ae, train_loader, valid_loader, criterion, gpu, writer_train_ft, writer_valid_ft, options)
 
     # Updating and setting weights of the convolutional layers
     best_autodecoder, best_epoch = load_model_from_chcekpoint(ae, path.join(options.output_dir, 'best_model_dir', 'fine_tune'))
@@ -176,7 +176,7 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
 
     return os.path.join(options.output_dir, "best_model_dir", "layer-" + str(level))
 
-def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, gpu, results_path, writer_train_ft, writer_valid_ft, options, global_step=0):
+def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, gpu, writer_train_ft, writer_valid_ft, options, global_step=0):
     """
     After training the AEs in a layer-wise way, we fine-tune the whole AEs
     :param auto_encoder:
@@ -528,7 +528,7 @@ def load_model_after_ae(model, checkpoint_dir, filename='checkpoint.pth.tar'):
     return model_after_ae, param_dict['epoch']
 
 
-def load_model_from_log(model, checkpoint_dir, filename='checkpoint.pth.tar'):
+def load_model_from_log(model, optimizer, checkpoint_dir, filename='checkpoint.pth.tar'):
     """
     This is to load a saved model from the log folder
     :param model:
@@ -538,10 +538,15 @@ def load_model_from_log(model, checkpoint_dir, filename='checkpoint.pth.tar'):
     """
     from copy import deepcopy
 
+    ## set the model to be eval mode, we explicitly think that the model was saved in eval mode, otherwise, it will affects the BN and dropout
+
+    model.eval()
     model_updated = deepcopy(model)
     param_dict = torch.load(os.path.join(checkpoint_dir, filename))
     model_updated.load_state_dict(param_dict['model'])
-    return model_updated, param_dict['global_step'], param_dict['epoch']
+    optimizer.load_state_dict(param_dict['optimizer'])
+
+    return model_updated, optimizer, param_dict['global_step'], param_dict['epoch']
 
 
 
@@ -1242,20 +1247,20 @@ def commandline_to_jason(commanline, pretrain_ae=False):
 
     ## if train_from_stop_point, do not delete this folders
     if "train_from_stop_point" in commandline_arg_dic.keys():
-    	if commandline_arg_dic['train_from_stop_point']:
-        	print('You should be responsible to make sure you did not change any parameters to train from the stopping point with the same model!')
+        if commandline_arg_dic['train_from_stop_point']:
+            print('You should be responsible to make sure you did not change any parameters to train from the stopping point with the same model!')
         else:
-	### for CNN train from beginning
-		if not os.path.exists(commandline_arg_dic['output_dir']):
-			os.makedirs(commandline_arg_dic['output_dir'])
-		check_and_clean(commandline_arg_dic['output_dir'])
-		if not os.path.exists(os.path.join(commandline_arg_dic['output_dir'], 'log_dir')):
-			os.makedirs(os.path.join(commandline_arg_dic['output_dir'], 'log_dir'))
+            ### for CNN train from beginning
+            if not os.path.exists(commandline_arg_dic['output_dir']):
+                os.makedirs(commandline_arg_dic['output_dir'])
+            check_and_clean(commandline_arg_dic['output_dir'])
+            if not os.path.exists(os.path.join(commandline_arg_dic['output_dir'], 'log_dir')):
+                os.makedirs(os.path.join(commandline_arg_dic['output_dir'], 'log_dir'))
     else:
-	### for AE 
-	if not os.path.exists(commandline_arg_dic['output_dir']):
-        	os.makedirs(commandline_arg_dic['output_dir'])
-    	check_and_clean(commandline_arg_dic['output_dir'])
+        ### for AE
+        if not os.path.exists(commandline_arg_dic['output_dir']):
+                os.makedirs(commandline_arg_dic['output_dir'])
+        check_and_clean(commandline_arg_dic['output_dir'])
     
     ## anyway, make sure the log_dir exist
     if not os.path.exists(os.path.join(commandline_arg_dic['output_dir'], 'log_dir')):
