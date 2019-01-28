@@ -112,11 +112,13 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
         print('The number of batches in this sampler based on the batch size: %s' % str(len(train_loader)))
         tend = time()
         total_time = 0
-	initial_time = time()
+
         ## begin the training for each batch data
         for i, data in enumerate(train_loader):
             t0 = time()
             total_time = total_time + t0 - tend
+
+            print("Loading available between batches of data by CPU using time: ", t0 - tend)
 
             if gpu:
                 imgs = data['image'].cuda()
@@ -124,14 +126,26 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
                 imgs = data['image']
             print("Device used: " + str(imgs.device))
 
+            t1 = time()
+            total_time += t1 - t0
+            print("Loading data on GPU", t1 - t0)
+
             hidden = former_layer(imgs) ## output of encoder for former AE and input for the encoder of next AE
             train_output = auto_encoder(hidden)
+
+            torch.cuda.synchronize()
+            t2 = time()
+            print("Real time forward pass", t2 - t1)
+
             ## explicitly set the variable of criterion to be requires_grad=False
             hidden_requires_grad_no = hidden.detach()
             hidden_requires_grad_no.requires_grad = False
 
             loss_train = criterion(train_output, hidden_requires_grad_no)
             loss_train.backward()
+
+            t3 = time()
+            print("Backward pass", t3 - t2)
 
             # moniter the training loss for each batch using tensorboardX
             writer_train.add_scalar('loss_layer-' + str(level), loss_train, i + epoch * len(train_loader))
@@ -146,11 +160,12 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
             ## update the global steps
             global_step = i + epoch * len(train_loader)
             torch.cuda.empty_cache()
-	    
-	    t_temp = time()
-	    print('Training the %d -th batch using  %f s:' % (i, t_temp -t0))    
-	
+
+            t_temp = time()
+            print('Training the %d -th batch in total using  %f s:' % (i, t_temp -t0))
+
             tend = time()
+
         print('Mean time per batch (train):', total_time / len(train_loader))
 
         # Always test the results and save them once at the end of the epoch
@@ -936,27 +951,22 @@ class MRIDataset_patch(Dataset):
             patch = extract_patch_from_mri(image, index_patch, self.patch_size, self.stride_size, self.patchs_per_patient)
         else:
             t1 = time()
-	    patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+            patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
                                       'preprocessing_dl',
                                       img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-' + str(self.patch_size) + '_stride-' + str(self.stride_size) + '_patch-' + str(
                                           index_patch) + '.pt')
-            patch = torch.load(patch_path)
-	t2 = time()
-	print("Load patch: %f s" % (t2 -t1))
+
+        patch = torch.load(patch_path)
+        t2 = time()
+        print("Load patch: %f s" % (t2 -t1))
 
         # check if the patch has NAN value
         if torch.isnan(patch).any() == True:	
             print("Double check, this patch has Nan value: %s" % str(img_name + '_' + sess_name + str(index_patch)))
             patch[torch.isnan(patch)] = 0
 
-        t3 = time()
-        print("Check NAN: %f s" % (t3 -t2))
-
         if self.transformations:
             patch = self.transformations(patch)
-	
-	t4 = time()
-	print("Transfrom: %f s" % (t4 -t3))
 
         sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(index_patch), 'image': patch, 'label': label}
 

@@ -25,9 +25,9 @@ parser.add_argument("--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/P
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 parser.add_argument("--data_type", default="from_patch", choices=["from_MRI", "from_patch"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
-parser.add_argument("--patch_size", default=51, type=int,
+parser.add_argument("--patch_size", default=50, type=int,
                     help="The patch size extracted from the MRI")
-parser.add_argument("--patch_stride", default=51, type=int,
+parser.add_argument("--patch_stride", default=25, type=int,
                     help="The stride for the patch extract window from the MRI")
 parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
@@ -37,7 +37,7 @@ parser.add_argument('--random_state', default=544423, type=int,
 # Training arguments
 parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2"],
                     help="Autoencoder network type. (default=Conv_4_FC_2)")
-parser.add_argument("--num_workers", default=0, type=int,
+parser.add_argument("--num_workers", default=4, type=int,
                     help='the number of batch being loaded in parallel')
 parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
