@@ -1347,10 +1347,6 @@ def commandline_to_jason(commanline, pretrain_ae=False):
         if commandline_arg_dic['train_from_stop_point']:
             print('You should be responsible to make sure you did not change any parameters to train from the stopping point with the same model!')
         else:
-            ### for CNN train from beginning
-            if not os.path.exists(commandline_arg_dic['output_dir']):
-                os.makedirs(commandline_arg_dic['output_dir'])
-            check_and_clean(commandline_arg_dic['output_dir'])
             if not os.path.exists(os.path.join(commandline_arg_dic['output_dir'], 'log_dir')):
                 os.makedirs(os.path.join(commandline_arg_dic['output_dir'], 'log_dir'))
     else:
