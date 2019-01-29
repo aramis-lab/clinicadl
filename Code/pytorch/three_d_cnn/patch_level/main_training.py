@@ -128,7 +128,7 @@ def main(options):
         ## if train a model at the stopping point?
         if options.train_from_stop_point:
             model, optimizer, global_step, global_epoch = load_model_from_log(model, optimizer, os.path.join(options.output_dir, 'best_model_dir', 'CNN', "iteration_" + str(fi)),
-                                           filename='checkpoint.pth.tar')
+                                           filename='model_pretrained_with_AE.pth.tar')
         else:
             global_step = 0
 
