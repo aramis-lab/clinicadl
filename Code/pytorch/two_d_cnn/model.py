@@ -386,14 +386,14 @@ class LeNet(nn.Module):
         x = self.classifier(x)
         return x
 
-class alexnetonechannel(nn.Module):
+class AlexNetonechannel(nn.Module):
     """
     In the implementation of torchvision, the softmax layer was encompassed in the loss function 'CrossEntropyLoss' and
     'NLLLoss'
     """
 
-    def __init__(self, mri_plane, num_classes=1000):
-        super(alexnetonechannel, self).__init__()
+    def __init__(self, mri_plane, num_classes=2):
+        super(AlexNetonechannel, self).__init__()
         self.features = nn.Sequential(
             nn.Conv2d(1, 64, kernel_size=11, stride=4, padding=2),
             nn.ReLU(inplace=True),

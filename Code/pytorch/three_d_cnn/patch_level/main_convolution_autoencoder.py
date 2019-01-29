@@ -19,8 +19,8 @@ parser = argparse.ArgumentParser(description="Argparser for 3D convolutional aut
 ## Data arguments
 parser.add_argument("--caps_directory", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI',
                            help="Path to the caps of image processing pipeline of DL")
-parser.add_argument("--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/test.tsv',
-                           help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
+parser.add_argument("--diagnosis_tsv_path", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_diagnosis/test',
+                           help="Path to tsv file of the population based on the diagnosis tsv files. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch_ae_conv',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 parser.add_argument("--data_type", default="from_patch", choices=["from_MRI", "from_patch"],
@@ -39,7 +39,11 @@ parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2"],
                     help="Autoencoder network type. (default=Conv_4_FC_2)")
 parser.add_argument("--ae_training_method", default="stacked_ae", choices=["layer_wise_ae", "stacked_ae"],
                     help="How to train the autoencoder, layer wise or train all AEs together")
-parser.add_argument("--num_workers", default=4, type=int,
+parser.add_argument("--diagnoses_list", default=["AD", "CN", "MCI"], type=str,
+                    help="Take all the subjects possible for autoencoder training")
+parser.add_argument("--split", type=int, default=0,
+                    help="Will load the specific split wanted for the k-fold cross validation")
+parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
 parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
@@ -74,8 +78,8 @@ def main(options):
     ## need to normalized the value to [0, 1]
     transformations = transforms.Compose([NormalizeMinMax()])
 
-    # to set the random_state to be a value, so that the data split for ae and cnn will be the same
-    training_tsv, valid_tsv = load_split(options.diagnosis_tsv, random_state=options.random_state)
+    # to set the split = 0
+    _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, 0, 5)
 
     data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride, transformations=transformations,
                                   data_type=options.data_type)
@@ -111,8 +115,8 @@ def main(options):
         example_batch = (next(iter(train_loader))['image'].cuda())[0, ...].unsqueeze(0)
 
     criterion = torch.nn.MSELoss()
-    writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "train")))
-    writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "valid")))
+    writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "layer_wise", "train")))
+    writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "layer_wise", "valid")))
     writer_train_ft = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "fine_tine", "train")))
     writer_valid_ft = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "fine_tine", "valid")))
 
@@ -124,7 +128,7 @@ def main(options):
                                                              options)
 
     ## save the graph and image
-    # TODO bug to save the model graph
+    # TODO bug to save the model graph for 3D patch, here is the discuss: https://github.com/lanpa/tensorboardX/issues/346
     # writer_train.add_graph(best_autodecoder, example_batch)
 
     if options.visualization:

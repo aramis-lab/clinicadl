@@ -67,21 +67,15 @@ def greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, gpu
     ae_finetuning(ae, train_loader, valid_loader, criterion, gpu, writer_train_ft, writer_valid_ft, options)
 
     # Updating and setting weights of the convolutional layers
-    best_autodecoder, best_epoch = load_model_from_chcekpoint(ae, path.join(options.output_dir, 'best_model_dir', 'fine_tune'))
-    if not isinstance(model, AutoEncoder): ## the model defined with CNN and the AutoEncoder, we transfer the encoder features to the CNN
-        model.features = deepcopy(best_autodecoder.encoder)
-        save_checkpoint({'model': model.state_dict(),
-                         'epoch': best_epoch},
-                        False,
-                        os.path.join(options.output_dir, 'best_model_dir'),
-                        'model_pretrained_with_AE.pth.tar')
+    best_autodecoder, best_epoch = load_model_from_chcekpoint(ae, path.join(options.output_dir, 'best_model_dir', 'ConvAutoencoder', 'fine_tune', 'AutoEncoder'))
 
-    ## save the AEs itself
-    save_checkpoint({'model': best_autodecoder.state_dict(),
+    ## save only the Encoders too
+    model.features = deepcopy(best_autodecoder.encoder)
+    save_checkpoint({'model': model.state_dict(),
                      'epoch': best_epoch},
                     False,
-                    os.path.join(options.output_dir, 'best_model_dir'),
-                    'pretrained_AE.pth.tar')
+                    os.path.join(options.output_dir, 'best_model_dir', 'ConvAutoencoder', 'fine_tune', 'Encoder'),
+                    'model_best_encoder.pth.tar')
 
     return model, best_autodecoder
 
@@ -109,22 +103,15 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, gpu, write
     ae_finetuning(ae, train_loader, valid_loader, criterion, gpu, writer_train, writer_valid, options)
 
     # Updating and setting weights of the convolutional layers
-    best_autodecoder, best_epoch = load_model_from_chcekpoint(ae, path.join(options.output_dir, 'best_model_dir', 'fine_tune'))
+    best_autodecoder, best_epoch = load_model_from_chcekpoint(ae, path.join(options.output_dir, 'best_model_dir', 'ConvAutoencoder', 'fine_tune', 'AutoEncoder'))
 
-    ## save the featues of AE to the CNN
-    if not isinstance(model, AutoEncoder):
-        model.features = deepcopy(best_autodecoder.encoder)
-        save_checkpoint({'model': model.state_dict(),
-                         'epoch': best_epoch},
-                        False,
-                        os.path.join(options.output_dir, 'best_model_dir'),
-                        'model_pretrained_with_AE.pth.tar')
-    ## save the AEs itself
-    save_checkpoint({'model': best_autodecoder.state_dict(),
+    # ## save the encoder part of the AEs, the best AEs has been saved in the ae_finetuning part
+    model.features = deepcopy(best_autodecoder.encoder)
+    save_checkpoint({'model': model.state_dict(),
                      'epoch': best_epoch},
                     False,
-                    os.path.join(options.output_dir, 'best_model_dir'),
-                    'pretrained_AE.pth.tar')
+                    os.path.join(options.output_dir, 'best_model_dir', 'ConvAutoencoder', 'fine_tune', 'Encoder'),
+                    'model_best_encoder.pth.tar')
 
     return model, best_autodecoder
 
@@ -230,18 +217,19 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
         ## reset the model to train mode after evaluation
         auto_encoder.train()
 
+        best_model_path = os.path.join(options.output_dir, "best_model_dir", "ConvAutoencoder", "layer-" + str(level))
+
         is_best = loss_valid < best_loss_valid
         # Save only if is best to avoid performance deterioration
-        if is_best:
-            best_loss_valid = loss_valid
-            save_checkpoint({'model': auto_encoder.state_dict(),
-                             'iteration': i,
-                             'epoch': epoch,
-                             'loss_valid': mean_loss_valid},
-                            is_best,
-                            os.path.join(options.output_dir, "best_model_dir", "layer-" + str(level)))
+        best_loss_valid = min(loss_valid, best_loss_valid)
+        save_checkpoint({'model': auto_encoder.state_dict(),
+                         'iteration': i,
+                         'epoch': epoch,
+                         'loss_valid': mean_loss_valid},
+                        is_best,
+                        best_model_path)
 
-    return os.path.join(options.output_dir, "best_model_dir", "layer-" + str(level))
+    return best_model_path
 
 def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, gpu, writer_train_ft, writer_valid_ft, options, global_step=0):
     """
@@ -341,16 +329,16 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, gpu, 
         ## reset the model to train mode after evaluation
         auto_encoder_all.train()
 
-        is_best = loss_valid < best_loss_valid
-        # Save only if is best to avoid performance deterioration
-        if is_best:
-            best_loss_valid = loss_valid
-            save_checkpoint({'model': auto_encoder_all.state_dict(),
-                             'iteration': i,
-                             'epoch': epoch,
-                             'loss_valid': mean_loss_valid},
-                            is_best,
-                            os.path.join(options.output_dir, "best_model_dir", "fine_tune"))
+        is_best_loss = loss_valid < best_loss_valid
+        # Save best based on smallest loss
+        best_loss_valid = min(loss_valid, best_loss_valid)
+        save_checkpoint({'model': auto_encoder_all.state_dict(),
+                         'iteration': i,
+                         'epoch': epoch,
+                         'loss_valid': mean_loss_valid},
+                        is_best_loss,
+                        os.path.join(options.output_dir, "best_model_dir", "ConvAutoencoder", "fine_tune", "AutoEncoder"))
+
 
 def test_ae(model, dataloader, use_cuda, criterion, former_layer=None):
     """
@@ -733,7 +721,6 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
 
         accuracy_batch_mean = acc / len(data_loader)
         loss_batch_mean = loss / len(data_loader)
-        del loss_batch_mean
         torch.cuda.empty_cache()
 
     elif model_mode == "valid":
@@ -785,10 +772,9 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             writer.add_scalar('classification accuracy', accuracy_batch_mean, global_step)
             writer.add_scalar('loss', loss_batch_mean, global_step)
 
-            del loss_batch_mean
             torch.cuda.empty_cache()
 
-    return subjects, y_ground, y_hat, accuracy_batch_mean, global_step
+    return subjects, y_ground, y_hat, accuracy_batch_mean, global_step, loss_batch_mean
 
 
 def train_sparse_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, options):
@@ -1171,9 +1157,9 @@ def split_subjects_to_tsv(diagnoses_tsv, val_size=0.15, random_state=None):
     df_valid.to_csv(path.join(sets_dir, 'valid.tsv'), sep='\t', index=False)
     df_train.to_csv(path.join(sets_dir, 'train.tsv'), sep='\t', index=False)
 
-def load_split(diagnoses_tsv, val_size=0.15, random_state=None):
+def load_split_by_task(diagnoses_tsv, val_size=0.15, random_state=None):
     """
-    Returns the paths of the TSV files for each set
+    Returns the paths of the TSV files for each set based on the task. The training and validation data has been age,sex correceted split
 
     :param diagnoses_tsv: (str) path to the tsv file with diagnoses
     :param val_size: (float) the proportion of the training set used for validation
@@ -1196,11 +1182,11 @@ def load_split(diagnoses_tsv, val_size=0.15, random_state=None):
 
     return training_tsv, valid_tsv
 
-def load_split_autoencoder(train_val_path, diagnoses_list, baseline=True):
+def load_split_by_diagnosis(options, split, n_splits=None, baseline=True, autoencoder=True):
     """
-    Creates a DataFrame for training and validation sets given the wanted diagnoses
+    Creates a DataFrame for training and validation sets given the wanted diagnoses, this is helpful to train the autoencoder with maximum availble data
 
-    :param train_val_path: Path to the train / val decomposition
+    :param options: object of the argparser
     :param diagnoses_list: list of diagnoses to select to construct the DataFrames
     :param baseline: bool choose to use baseline only instead of all data available
     :return:
@@ -1210,18 +1196,29 @@ def load_split_autoencoder(train_val_path, diagnoses_list, baseline=True):
     train_df = pd.DataFrame()
     valid_df = pd.DataFrame()
 
-    for diagnosis in diagnoses_list:
+    if n_splits is None:
+        train_path = path.join(options.diagnosis_tsv_path, 'train')
+        valid_path = path.join(options.diagnosis_tsv_path, 'validation')
+
+    else:
+        train_path = path.join(options.diagnosis_tsv_path, 'train_splits-' + str(n_splits),
+                               'split-' + str(split))
+        valid_path = path.join(options.diagnosis_tsv_path, 'validation_splits-' + str(n_splits),
+                               'split-' + str(split))
+    print("Train", train_path)
+    print("Valid", valid_path)
+
+    for diagnosis in options.diagnoses_list:
 
         if baseline:
-            train_diagnosis_path = path.join(train_val_path, 'train', diagnosis + '_baseline.tsv')
-
+            train_diagnosis_tsv = path.join(train_path, diagnosis + '_baseline.tsv')
         else:
-            train_diagnosis_path = path.join(train_val_path, 'train', diagnosis + '.tsv')
+            train_diagnosis_tsv = path.join(train_path, diagnosis + '.tsv')
 
-        valid_diagnosis_path = path.join(train_val_path, 'validation', diagnosis + '_baseline.tsv')
+        valid_diagnosis_tsv = path.join(valid_path, diagnosis + '_baseline.tsv')
 
-        train_diagnosis_df = pd.read_csv(train_diagnosis_path, sep='\t')
-        valid_diagnosis_df = pd.read_csv(valid_diagnosis_path, sep='\t')
+        train_diagnosis_df = pd.read_csv(train_diagnosis_tsv, sep='\t')
+        valid_diagnosis_df = pd.read_csv(valid_diagnosis_tsv, sep='\t')
 
         train_df = pd.concat([train_df, train_diagnosis_df])
         valid_df = pd.concat([valid_df, valid_diagnosis_df])
@@ -1229,9 +1226,18 @@ def load_split_autoencoder(train_val_path, diagnoses_list, baseline=True):
     train_df.reset_index(inplace=True, drop=True)
     valid_df.reset_index(inplace=True, drop=True)
 
-    return train_df, valid_df
+    if autoencoder == True:
+        train_tsv = os.path.join(options.output_dir, "log_dir", 'AE_training_subjects.tsv')
+        train_df.to_csv(train_tsv, index=False, sep='\t', encoding='utf-8')
+        valid_tsv = os.path.join(options.output_dir, "log_dir", 'AE_validation_subjects.tsv')
+        valid_df.to_csv(valid_tsv, index=False, sep='\t', encoding='utf-8')
+    else:
+        train_tsv = os.path.join(options.output_dir, "log_dir", 'CNN_training_subjects.tsv')
+        train_df.to_csv(train_tsv, index=False, sep='\t', encoding='utf-8')
+        valid_tsv = os.path.join(options.output_dir, "log_dir", 'CNN_validation_subjects.tsv')
+        valid_df.to_csv(valid_tsv, index=False, sep='\t', encoding='utf-8')
 
-
+    return train_df, valid_df, train_tsv, valid_tsv
 
 def extract_patch_from_mri(image_tensor, index_patch, patch_size, stride_size, patchs_per_patient):
 

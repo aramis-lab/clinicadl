@@ -8,7 +8,7 @@ from model import *
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D AE pretraining")
 
 # Mandatory arguments
-parser.add_argument("--diagnosis_path", type=str, default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_diagnosis',
+parser.add_argument("--diagnosis_path", type=str, default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_diagnosis/train',
                     help="Path to the folder containing the tsv files of the population.")
 parser.add_argument("--result_path", type=str, default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch_ae_elina',
                     help="Path to the result folder.")
