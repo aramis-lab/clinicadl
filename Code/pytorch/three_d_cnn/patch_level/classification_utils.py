@@ -76,6 +76,13 @@ def greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, gpu
                         os.path.join(options.output_dir, 'best_model_dir'),
                         'model_pretrained_with_AE.pth.tar')
 
+    ## save the AEs itself
+    save_checkpoint({'model': best_autodecoder.state_dict(),
+                     'epoch': best_epoch},
+                    False,
+                    os.path.join(options.output_dir, 'best_model_dir'),
+                    'pretrained_AE.pth.tar')
+
     return model, best_autodecoder
 
 def stacked_ae_learning(model, train_loader, valid_loader, criterion, gpu, writer_train, writer_valid, options):
@@ -103,13 +110,21 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, gpu, write
 
     # Updating and setting weights of the convolutional layers
     best_autodecoder, best_epoch = load_model_from_chcekpoint(ae, path.join(options.output_dir, 'best_model_dir', 'fine_tune'))
-    if not isinstance(model, AutoEncoder): ## the model defined with CNN and the AutoEncoder, we transfer the encoder features to the CNN
+
+    ## save the featues of AE to the CNN
+    if not isinstance(model, AutoEncoder):
         model.features = deepcopy(best_autodecoder.encoder)
         save_checkpoint({'model': model.state_dict(),
                          'epoch': best_epoch},
                         False,
                         os.path.join(options.output_dir, 'best_model_dir'),
                         'model_pretrained_with_AE.pth.tar')
+    ## save the AEs itself
+    save_checkpoint({'model': best_autodecoder.state_dict(),
+                     'epoch': best_epoch},
+                    False,
+                    os.path.join(options.output_dir, 'best_model_dir'),
+                    'pretrained_AE.pth.tar')
 
     return model, best_autodecoder
 
