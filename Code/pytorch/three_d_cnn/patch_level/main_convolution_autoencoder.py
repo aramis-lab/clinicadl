@@ -25,9 +25,9 @@ parser.add_argument("--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/P
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 parser.add_argument("--data_type", default="from_patch", choices=["from_MRI", "from_patch"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
-parser.add_argument("--patch_size", default=50, type=int,
+parser.add_argument("--patch_size", default=51, type=int,
                     help="The patch size extracted from the MRI")
-parser.add_argument("--patch_stride", default=25, type=int,
+parser.add_argument("--patch_stride", default=51, type=int,
                     help="The stride for the patch extract window from the MRI")
 parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
@@ -124,7 +124,8 @@ def main(options):
                                                              options)
 
     ## save the graph and image
-    writer_train.add_graph(best_autodecoder, example_batch)
+    # TODO bug to save the model graph
+    # writer_train.add_graph(best_autodecoder, example_batch)
 
     if options.visualization:
         visualize_ae(best_autodecoder, example_batch, os.path.join(options.output_dir, "visualize"))
