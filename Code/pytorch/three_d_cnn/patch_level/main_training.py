@@ -44,7 +44,7 @@ parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2", 
                     help="Autoencoder network type. (default=Conv_4_FC_2). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
 parser.add_argument("--transfer_learning_autoencoder", default=False, type=bool,
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
-parser.add_argument("--train_from_stop_point", default=True, type=bool,
+parser.add_argument("--train_from_stop_point", default=False, type=bool,
                     help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
 
 # Training arguments
@@ -128,7 +128,7 @@ def main(options):
         ## if train a model at the stopping point?
         if options.train_from_stop_point:
             model, optimizer, global_step, global_epoch = load_model_from_log(model, optimizer, os.path.join(options.output_dir, 'best_model_dir', 'CNN', "iteration_" + str(fi)),
-                                           filename='model_pretrained_with_AE.pth.tar')
+                                           filename='checkpoint.pth.tar')
         else:
             global_step = 0
 
