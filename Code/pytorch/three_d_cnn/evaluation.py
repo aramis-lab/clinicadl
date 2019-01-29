@@ -108,9 +108,9 @@ if __name__ == "__main__":
     text_file.write('Sensitivities on training set: %.2f %%, %.2f %% \n' % (sen_train[0], sen_train[1]))
     text_file.write('Specificities on training set: %.2f %%, %.2f %% \n' % (spe_train[0], spe_train[1]))
 
-    text_file.write('Accuracy on training set: %.2f %% \n' % acc_valid)
-    text_file.write('Loss on training set: %f \n' % loss_valid)
-    text_file.write('Sensitivities on training set: %.2f %%, %.2f %% \n' % (sen_valid[0], sen_valid[1]))
-    text_file.write('Specificities on training set: %.2f %%, %.2f %% \n' % (spe_valid[0], spe_valid[1]))
+    text_file.write('Accuracy on validation set: %.2f %% \n' % acc_valid)
+    text_file.write('Loss on validation set: %f \n' % loss_valid)
+    text_file.write('Sensitivities on validation set: %.2f %%, %.2f %% \n' % (sen_valid[0], sen_valid[1]))
+    text_file.write('Specificities on validation set: %.2f %%, %.2f %% \n' % (spe_valid[0], spe_valid[1]))
 
     text_file.close()
