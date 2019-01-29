@@ -42,7 +42,7 @@ parser.add_argument("--num_workers", default=0, type=int,
 # transfer learning
 parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2", "VoxResNet", "AllConvNet3D"],
                     help="Autoencoder network type. (default=Conv_4_FC_2). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
-parser.add_argument("--transfer_learning_autoencoder", default=False, type=bool,
+parser.add_argument("--transfer_learning_autoencoder", default=True, type=bool,
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
 parser.add_argument("--train_from_stop_point", default=False, type=bool,
                     help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
@@ -63,13 +63,13 @@ parser.add_argument('--weight_decay', default=1e-4, type=float,
 
 def main(options):
 
-    if not options.train_from_stop_point:
+    if options.train_from_stop_point:
         ## only delete the CNN output, not the AE output
         check_and_clean(os.path.join(options.output_dir, 'best_model_dir', 'CNN'))
         check_and_clean(os.path.join(options.output_dir, 'log_dir', 'CNN'))
         check_and_clean(os.path.join(options.output_dir, 'performances'))
     else:
-        print("Be careful with the pretrained AE or retrain the same model from a stopping point, make sure that you do not want to delete it")
+        print("Train the model from 0 epoch")
 
     ## Train the model with pretrained AE
     if options.transfer_learning_autoencoder:
@@ -79,9 +79,9 @@ def main(options):
 
         try:
             model = eval(options.network)()
-            model, _ = load_model_after_ae(model, os.path.join(options.output_dir, 'best_model_dir'), filename='model_pretrained_with_AE.pth.tar')
         except:
             raise Exception('The model has not been implemented or has bugs in the model codes')
+        model, _ = load_model_after_ae(model, os.path.join(options.output_dir, 'log_dir', 'best_model_dir'), filename='model_pretrained_with_AE.pth.tar')
     else:
         print('Train the model from scratch!')
         print('The chosen network is %s !' % options.network)
