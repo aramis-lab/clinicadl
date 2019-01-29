@@ -20,8 +20,8 @@ parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D patch CNN
 ## Data arguments
 parser.add_argument("--caps_directory", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI',
                            help="Path to the caps of image processing pipeline of DL")
-parser.add_argument("--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/test.tsv',
-                           help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
+parser.add_argument("--diagnosis_tsv_path", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_diagnosis/test',
+                           help="Path to tsv file of the population based on the diagnosis tsv files. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch_ae_conv',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 parser.add_argument("--data_type", default="from_patch", choices=["from_MRI", "from_patch"],
@@ -46,6 +46,10 @@ parser.add_argument("--transfer_learning_autoencoder", default=True, type=bool,
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
 parser.add_argument("--train_from_stop_point", default=False, type=bool,
                     help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
+parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,
+                    help="Labels based on binary classification")
+parser.add_argument("--split", type=int, default=0,
+                    help="Will load the specific split wanted for the k-fold cross validation")
 
 # Training arguments
 parser.add_argument("--epochs", default=1, type=int,
@@ -64,6 +68,7 @@ parser.add_argument('--weight_decay', default=1e-4, type=float,
 def main(options):
 
     if options.train_from_stop_point:
+        ## TODO, it seems having problme for this
         ## only delete the CNN output, not the AE output
         check_and_clean(os.path.join(options.output_dir, 'best_model_dir', 'CNN'))
         check_and_clean(os.path.join(options.output_dir, 'log_dir', 'CNN'))
@@ -81,7 +86,7 @@ def main(options):
             model = eval(options.network)()
         except:
             raise Exception('The model has not been implemented or has bugs in the model codes')
-        model, _ = load_model_after_ae(model, os.path.join(options.output_dir, 'log_dir', 'best_model_dir'), filename='model_pretrained_with_AE.pth.tar')
+        model, _ = load_model_after_ae(model, os.path.join(options.output_dir, 'best_model_dir', 'ConvAutoencoder', 'fine_tune', 'Encoder'), filename='model_best_encoder.pth.tar')
     else:
         print('Train the model from scratch!')
         print('The chosen network is %s !' % options.network)
@@ -99,7 +104,9 @@ def main(options):
         ## need to normalized the value to [0, 1]
         transformations = transforms.Compose([NormalizeMinMax()])
 
-        training_tsv, valid_tsv = load_split(options.diagnosis_tsv, random_state=options.random_state)
+        # to set the split = 0
+        _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, 0, 5, autoencoder=False)
+
         data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride, transformations=transformations, data_type=options.data_type)
         data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size, options.patch_stride, transformations=transformations, data_type=options.data_type)
 
@@ -153,6 +160,7 @@ def main(options):
         print('Beginning the training task')
         # parameters used in training
         best_accuracy = 0.0
+        best_loss_valid = np.inf
         writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "CNN", "iteration_" + str(fi), "train")))
         writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "CNN", "iteration_" + str(fi), "valid")))
 
@@ -172,12 +180,12 @@ def main(options):
             print("At %s -th epoch." % str(epoch))
 
             # train the model
-            train_subject, y_ground_train, y_hat_train, acc_mean_train, global_step = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch, model_mode='train', global_step=global_step)
+            train_subject, y_ground_train, y_hat_train, acc_mean_train, global_step, loss_batch_mean = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch, model_mode='train', global_step=global_step)
             train_subjects.extend(train_subject)
             y_grounds_train.extend(y_ground_train)
             y_hats_train.extend(y_hat_train)
             ## at then end of each epoch, we validate one time for the model with the validation data
-            valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_step = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, model_mode='valid', global_step=global_step)
+            valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_step, loss_batch_mean = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, model_mode='valid', global_step=global_step)
             print("Slice level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
             valid_subjects.extend(valid_subject)
             y_grounds_valid.extend(y_ground_valid)
@@ -187,7 +195,7 @@ def main(options):
             if epoch % 20 == 0:
                 scheduler.step()
 
-            # save the best model on the validation dataset
+            # save the best model based on the best acc
             is_best = acc_mean_valid > best_accuracy
             best_accuracy = max(best_accuracy, acc_mean_valid)
             save_checkpoint({
@@ -196,7 +204,18 @@ def main(options):
                 'best_predict': best_accuracy,
                 'optimizer': optimizer.state_dict(),
                 'global_step': global_step
-            }, is_best, os.path.join(options.output_dir, "best_model_dir", "CNN", "iteration_" + str(fi)))
+            }, is_best, os.path.join(options.output_dir, "best_model_dir", "CNN", "iteration_" + str(fi), 'best_acc'))
+
+            # save the best model based on the best loss
+            is_best = loss_batch_mean < best_loss_valid
+            best_loss_valid = min(loss_batch_mean, best_loss_valid)
+            save_checkpoint({
+                'epoch': epoch + 1,
+                'model': model.state_dict(),
+                'best_predict': best_accuracy,
+                'optimizer': optimizer.state_dict(),
+                'global_step': global_step
+            }, is_best, os.path.join(options.output_dir, "best_model_dir", "CNN", "iteration_" + str(fi), "best_loss"))
 
         ## save the graph and image
         writer_train.add_graph(model, example_batch)

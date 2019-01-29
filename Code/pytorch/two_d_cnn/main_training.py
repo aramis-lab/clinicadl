@@ -21,8 +21,8 @@ parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D CNN, The 
 ## data argument
 parser.add_argument("--caps_directory", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI',
                            help="Path to the caps of image processing pipeline of DL")
-parser.add_argument("--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/test.tsv',
-                           help="Path to tsv file of the population. To note, the column name should be participant_id, session_id and diagnosis.")
+parser.add_argument("--diagnosis_tsv_path", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_diagnosis/test',
+                           help="Path to tsv file of the population based on the diagnosis tsv files. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 parser.add_argument("--data_type", default="from_slice", choices=["from_MRI", "from_slice"],
@@ -37,16 +37,18 @@ parser.add_argument('--random_state', default=555555,
                     help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
 
 ## train argument
-parser.add_argument("--network", default="AlexNet", choices=["AlexNet", "ResNet", "LeNet", "AllConvNet", "Vgg16", "DenseNet161", "InceptionV3"],
+parser.add_argument("--network", default="AlexNet", choices=["AlexNet", "ResNet", "LeNet", "AllConvNet", "Vgg16", "DenseNet161", "InceptionV3", "AlexNetonechannel"],
                     help="Deep network type. Only ResNet was designed for training from scratch.")
+parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,
+                    help="Labels for any binary task")
 parser.add_argument("--train_from_stop_point", default=False, type=bool,
                     help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
 parser.add_argument("--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
-parser.add_argument("--transfer_learning", default=False, type=bool, help="If do transfer learning")
+parser.add_argument("--transfer_learning", default=True, type=bool, help="If do transfer learning")
 parser.add_argument("--runs", default=1, type=int,
                     help="How many times to run the training and validation procedures with the same data split strategy, default is 1.")
-parser.add_argument("--epochs", default=10, type=int,
+parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--batch_size", default=32, type=int,
                     help="Batch size for training. (default=1)")
@@ -88,9 +90,10 @@ def main(options):
     else:
         print('Train the model from scratch!')
         print('The chosen network is %s !' % options.network)
-        if options.network == "LeNet":
-            model = LeNet(mri_plane=options.mri_plane)
-        else:
+
+        try:
+            model = eval(options.network)(mri_plane=options.mri_plane)
+        except:
             raise Exception('The model has not been implemented')
         transformations = None
 
@@ -105,7 +108,7 @@ def main(options):
 
         ## Begin the training
         ## load the tsv file
-        training_tsv, valid_tsv = load_split(options.diagnosis_tsv, val_size=0.15, random_state=options.random_state)
+        _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, 0, 5)
 
         data_train = MRIDataset_slice(options.caps_directory, training_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type, image_processing=options.image_processing)
         data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type, image_processing=options.image_processing)
@@ -208,7 +211,8 @@ def main(options):
             }, is_best, os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi)))
 
         ## save the graph and image
-        writer_train.add_graph(model, example_batch)
+        # TODO bug to save the model graph
+        #writer_train.add_graph(model, example_batch)
 
         ### write the information of subjects and performances into tsv files.
         iteration_subjects_df_train, results_train = results_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train, mode='train')

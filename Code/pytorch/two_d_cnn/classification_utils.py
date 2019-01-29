@@ -274,9 +274,9 @@ def split_subjects_to_tsv(diagnoses_tsv, val_size=0.15, random_state=None):
     df_valid.to_csv(path.join(sets_dir, 'valid.tsv'), sep='\t', index=False)
     df_train.to_csv(path.join(sets_dir, 'train.tsv'), sep='\t', index=False)
 
-def load_split(diagnoses_tsv, val_size=0.15, random_state=None):
+def load_split_by_task(diagnoses_tsv, val_size=0.15, random_state=None):
     """
-    Returns the paths of the TSV files for each set
+    Returns the paths of the TSV files for each set based on the task. The training and validation data has been age,sex correceted split
 
     :param diagnoses_tsv: (str) path to the tsv file with diagnoses
     :param val_size: (float) the proportion of the training set used for validation
@@ -298,6 +298,57 @@ def load_split(diagnoses_tsv, val_size=0.15, random_state=None):
         valid_tsv = path.join(sets_dir, 'valid.tsv')
 
     return training_tsv, valid_tsv
+
+def load_split_by_diagnosis(options, split, n_splits=None, baseline=True):
+    """
+    Creates a DataFrame for training and validation sets given the wanted diagnoses, this is helpful to train the autoencoder with maximum availble data
+
+    :param options: object of the argparser
+    :param diagnoses_list: list of diagnoses to select to construct the DataFrames
+    :param baseline: bool choose to use baseline only instead of all data available
+    :return:
+        train_df DataFrame with training data
+        valid_df DataFrame with validation data
+    """
+    train_df = pd.DataFrame()
+    valid_df = pd.DataFrame()
+
+    if n_splits is None:
+        train_path = path.join(options.diagnosis_tsv_path, 'train')
+        valid_path = path.join(options.diagnosis_tsv_path, 'validation')
+
+    else:
+        train_path = path.join(options.diagnosis_tsv_path, 'train_splits-' + str(n_splits),
+                               'split-' + str(split))
+        valid_path = path.join(options.diagnosis_tsv_path, 'validation_splits-' + str(n_splits),
+                               'split-' + str(split))
+    print("Train", train_path)
+    print("Valid", valid_path)
+
+    for diagnosis in options.diagnoses_list:
+
+        if baseline:
+            train_diagnosis_tsv = path.join(train_path, diagnosis + '_baseline.tsv')
+        else:
+            train_diagnosis_tsv = path.join(train_path, diagnosis + '.tsv')
+
+        valid_diagnosis_tsv = path.join(valid_path, diagnosis + '_baseline.tsv')
+
+        train_diagnosis_df = pd.read_csv(train_diagnosis_tsv, sep='\t')
+        valid_diagnosis_df = pd.read_csv(valid_diagnosis_tsv, sep='\t')
+
+        train_df = pd.concat([train_df, train_diagnosis_df])
+        valid_df = pd.concat([valid_df, valid_diagnosis_df])
+
+    train_df.reset_index(inplace=True, drop=True)
+    valid_df.reset_index(inplace=True, drop=True)
+
+    train_tsv = os.path.join(options.output_dir, "log_dir", 'AE_training_subjects.tsv')
+    train_df.to_csv(train_tsv, index=False, sep='\t', encoding='utf-8')
+    valid_tsv = os.path.join(options.output_dir, "log_dir", 'AE_validation_subjects.tsv')
+    valid_df.to_csv(valid_tsv, index=False, sep='\t', encoding='utf-8')
+
+    return train_df, valid_df, train_tsv, valid_tsv
 
 def check_and_clean(d):
 

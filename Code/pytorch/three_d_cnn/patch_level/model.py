@@ -18,8 +18,7 @@ __status__ = "Development"
 
 class Conv_4_FC_2(nn.Module):
     """
-       Classifier for a 2-class classification task
-
+       Classification model based on the input patch.
        """
 
     def __init__(self, dropout=0.5, n_classes=2):
