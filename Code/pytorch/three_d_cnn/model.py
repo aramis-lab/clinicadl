@@ -215,7 +215,7 @@ def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_pat
     save_checkpoint({'model': decoder.state_dict(),
                      'epoch': -1,
                      'path': pretrained_autoencoder_path},
-                    False,
+                    False, False,
                     path.join(model_path, "pretraining"),
                     'model_pretrained.pth.tar')
     return decoder

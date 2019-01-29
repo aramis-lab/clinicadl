@@ -479,7 +479,7 @@ def greedy_learning(model, train_loader, valid_loader, criterion, optimizer, res
         model.features = deepcopy(best_decoder.encoder)
         save_checkpoint({'model': model.state_dict(),
                          'epoch': best_epoch},
-                        False,
+                        False, False,
                         os.path.join(results_path),
                         'model_pretrained.pth.tar')
 
