@@ -132,7 +132,7 @@ def main(options):
     total_time = time()
 
     # Get the data.
-    training_tsv, valid_tsv = load_data(options.diagnosis_path, options.transfer_learning_diagnoses,
+    training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
                                         options.split, options.n_splits, options.baseline)
 
     data_train = MRIDataset(options.input_dir, training_tsv, transform=transformations)
