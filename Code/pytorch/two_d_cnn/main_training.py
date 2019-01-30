@@ -222,7 +222,7 @@ def main(options):
 
         ## save the graph and image
         # buf for 3D image, for 2D slice, it can save the graph
-        writer_train.add_graph(model, example_batch)
+        # writer_train.add_graph(model, example_batch)
 
         ### write the information of subjects and performances into tsv files.
         fold_subjects_df_train, results_train = results_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train, mode='train')
