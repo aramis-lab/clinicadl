@@ -7,8 +7,7 @@ from T1_postprocessing import postprocessing_t1w
 caps_directory = '/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/AIBL'
 working_dir = '/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/run/junhao.wen/AIBL'
 
-#tsv = '/network/lustre/iss01/home/junhao.wen/Project/AD-DL/tsv_files/tsv_after_qc/AIBL_after_qc.tsv'
-tsv = ''
+tsv = '/network/lustre/iss01/home/junhao.wen/Project/AD-DL/tsv_files/tsv_after_qc/AIBL_after_qc.tsv'
 patch_size = 50
 stride_size = 25
 
