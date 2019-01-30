@@ -1,6 +1,6 @@
 ####################
 
-from Code.image_preprocessing.T1_postprocessing import postprocessing_t1w
+from T1_postprocessing import postprocessing_t1w
 
 ## run the pipeline
  # for lustre
