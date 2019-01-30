@@ -1,6 +1,6 @@
 ####################
 
-from T1_preprocessing import preprocessing_t1w
+from Code.image_preprocessing.T1_preprocessing import preprocessing_t1w
 
 ## run the pipeline
 #  for test

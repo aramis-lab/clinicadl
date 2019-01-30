@@ -150,3 +150,21 @@ def extract_patches(preprocessed_T1, patch_size, stride_size):
 
     return preprocessed_T1
 
+def save_as_pt(input_img):
+    """
+    This function is to transfer nii.gz file into .pt format, in order to train the pytorch model more efficient when loading the data.
+    :param input_img:
+    :return:
+    """
+
+    import torch, os
+    import nibabel as nib
+
+    image_array = nib.load(input_img).get_fdata()
+    image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
+    ## make sure the tensor dtype is torch.float32
+    output_file = os.path.join(os.path.dirname(input_img), input_img.split('.nii.gz')[0] + '.pt')
+    # save
+    torch.save(image_tensor, output_file)
+
+    return output_file

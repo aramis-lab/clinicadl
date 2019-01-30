@@ -95,14 +95,6 @@ def preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working
                                                               function=ants_histogram_intensity_normalization))
     intensitynorm.inputs.image_dimension = 3
 
-    ## save nii.gz into pytorch .pt format.
-    save_as_pt = npe.MapNode(name='save_as_pt',
-                            iterfield=['input_img'],
-                               interface=nutil.Function(
-                                   function=save_as_pt,
-                                   input_names=['input_img'],
-                                   output_names=['output_file']))
-
     outputnode = npe.Node(nutil.IdentityInterface(
         fields=['out_file_inn', 'out_file_crop', 'out_file_reg', 'out_pt']),
         name='outputnode')
@@ -145,8 +137,6 @@ def preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working
                 (cropnifti, intensitynorm, [('output_img', 'input_img')]),
                 (cropnifti, intensitynorm, [('crop_template', 'crop_template')]),
 
-                (cropnifti, save_as_pt, [('output_img', 'input_img')]),
-
                 ## datasink
                 # Saving files with datasink:
                 (get_subject_session_list, get_identifiers, [('subjects', 'participant_id')]),
@@ -162,9 +152,7 @@ def preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working
                 (cropnifti, datasink, [('output_img', 'out_file_crop')]),
                 (cropnifti, outputnode, [('output_img', 'out_file_crop')]),
                 (antsRegistrationSyNQuick, datasink, [('image_warped', 'out_file_reg')]),
-                (antsRegistrationSyNQuick, outputnode, [('image_warped', 'out_file_reg')]),
-                (save_as_pt, outputnode, [('output_file', 'out_pt')]),
-                (save_as_pt, datasink, [('output_file', 'out_pt')]),
+                (antsRegistrationSyNQuick, outputnode, [('image_warped', 'out_file_reg')])
                 ])
 
 

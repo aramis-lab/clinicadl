@@ -1,6 +1,6 @@
 ####################
 
-from quality_check_image_similarity import quality_check_image_similarity
+from Code.image_preprocessing.quality_check_image_similarity import quality_check_image_similarity
 
 ## run the pipeline
 #  for test
