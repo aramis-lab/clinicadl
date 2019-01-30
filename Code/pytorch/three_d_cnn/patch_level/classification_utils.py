@@ -1384,19 +1384,3 @@ def commandline_to_jason(commanline, pretrain_ae=False):
     f.write(json)
     f.close()
 
-def initialize_model(options):
-    """
-    This is to initialize the model
-    :param options:
-    :return:
-    """
-    from model import *
-
-    model = eval(options.network)()
-
-    if options.use_gpu:
-        model.cuda()
-    else:
-        model.cpu()
-
-    return model
