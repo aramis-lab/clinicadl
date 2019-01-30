@@ -34,7 +34,7 @@ def postprocessing_t1w(caps_directory, tsv, patch_size, stride_size, working_dir
     import nipype.interfaces.utility as nutil
     import nipype.pipeline.engine as npe
     import tempfile
-    from T1_postprocessing_utils import get_caps_t1, extract_slices, extract_patches
+    from T1_postprocessing_utils import get_caps_t1, extract_slices, extract_patches, save_as_pt
 
     if working_directory is None:
         working_directory = tempfile.mkdtemp()
@@ -52,6 +52,14 @@ def postprocessing_t1w(caps_directory, tsv, patch_size, stride_size, working_dir
                                    function=get_caps_t1,
                                    input_names=['caps_directory', 'tsv'],
                                    output_names=['preprocessed_T1']))
+
+    ## save nii.gz into pytorch .pt format.
+    save_as_pt = npe.MapNode(name='save_as_pt',
+                            iterfield=['input_img'],
+                               interface=nutil.Function(
+                                   function=save_as_pt,
+                                   input_names=['input_img'],
+                                   output_names=['output_file']))
 
     ## extract the slices from 3 directions.
     extract_slices = npe.MapNode(name='extract_slices',
@@ -84,7 +92,8 @@ def postprocessing_t1w(caps_directory, tsv, patch_size, stride_size, working_dir
             (inputnode, get_subject_session_list, [('tsv', 'tsv')]),
             (inputnode, get_subject_session_list, [('caps_directory', 'caps_directory')]),
 
-            (get_subject_session_list, extract_slices, [('preprocessed_T1', 'preprocessed_T1')]),
+            (get_subject_session_list, save_as_pt, [('preprocessed_T1', 'input_img')]),
+            (save_as_pt, extract_slices, [('output_file', 'preprocessed_T1')]),
             (extract_slices, outputnode, [('preprocessed_T1', 'preprocessed_T1')]),
         ])
     elif extract_method == 'patch':
@@ -92,7 +101,8 @@ def postprocessing_t1w(caps_directory, tsv, patch_size, stride_size, working_dir
             (inputnode, get_subject_session_list, [('tsv', 'tsv')]),
             (inputnode, get_subject_session_list, [('caps_directory', 'caps_directory')]),
 
-            (get_subject_session_list, extract_patches, [('preprocessed_T1', 'preprocessed_T1')]),
+            (get_subject_session_list, save_as_pt, [('preprocessed_T1', 'input_img')]),
+            (save_as_pt, extract_patches, [('output_file', 'preprocessed_T1')]),
             (inputnode, extract_patches, [('patch_size', 'patch_size')]),
             (inputnode, extract_patches, [('stride_size', 'stride_size')]),
         ])
@@ -101,9 +111,11 @@ def postprocessing_t1w(caps_directory, tsv, patch_size, stride_size, working_dir
                     (inputnode, get_subject_session_list, [('tsv', 'tsv')]),
                     (inputnode, get_subject_session_list, [('caps_directory', 'caps_directory')]),
 
-                    (get_subject_session_list, extract_slices, [('preprocessed_T1', 'preprocessed_T1')]),
+                    (get_subject_session_list, save_as_pt, [('preprocessed_T1', 'input_img')]),
+                    (save_as_pt, extract_slices, [('output_file', 'preprocessed_T1')]),
 
-                    (get_subject_session_list, extract_patches, [('preprocessed_T1', 'preprocessed_T1')]),
+                    (get_subject_session_list, save_as_pt, [('preprocessed_T1', 'input_img')]),
+                    (save_as_pt, extract_patches, [('output_file', 'preprocessed_T1')]),
                     (inputnode, extract_patches, [('patch_size', 'patch_size')]),
                     (inputnode, extract_patches, [('stride_size', 'stride_size')]),
 
