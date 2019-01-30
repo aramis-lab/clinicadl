@@ -33,8 +33,6 @@ parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
 parser.add_argument('--image_processing', default="LinearReg", choices=["LinearReg", "Segmented"],
                     help="The output of which image processing pipeline to fit into the network. By defaut, using the raw one with only linear registration, otherwise, using the output of spm pipeline of Clinica")
-parser.add_argument('--random_state', default=555555,
-                    help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
 
 ## train argument
 parser.add_argument("--network", default="AlexNet", choices=["AlexNet", "ResNet", "LeNet", "AllConvNet", "Vgg16", "DenseNet161", "InceptionV3", "AlexNetonechannel"],
@@ -46,8 +44,8 @@ parser.add_argument("--train_from_stop_point", default=False, type=bool,
 parser.add_argument("--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--transfer_learning", default=True, type=bool, help="If do transfer learning")
-parser.add_argument("--runs", default=1, type=int,
-                    help="How many times to run the training and validation procedures with the same data split strategy, default is 1.")
+parser.add_argument("--n_splits", default=5, type=int,
+                    help="Define the cross validation, by default, we use 5-fold.")
 parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--batch_size", default=32, type=int,
@@ -102,13 +100,12 @@ def main(options):
     ## the inital model weight and bias
     init_state = copy.deepcopy(model.state_dict())
 
-    for fi in range(options.runs):
-        # Get the data.
-        print("Running for the %d run" % fi)
+    for fi in range(options.n_splits):
+        print("Running for the %d -th fold" % fi)
 
         ## Begin the training
         ## load the tsv file
-        _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, 0, 5)
+        _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, 5)
 
         data_train = MRIDataset_slice(options.caps_directory, training_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type, image_processing=options.image_processing)
         data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type, image_processing=options.image_processing)
@@ -140,7 +137,7 @@ def main(options):
 
         ## TODO: it seems that the retraining from stop point still has some probme, the training acc is not smooth between two runs
         if options.train_from_stop_point:
-            model, optimizer, global_step, global_epoch = load_model_from_log(model, optimizer, os.path.join(options.output_dir, 'best_model_dir', "iteration_" + str(fi)),
+            model, optimizer, global_step, global_epoch = load_model_from_log(model, optimizer, os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi)),
                                            filename='checkpoint.pth.tar')
         else:
             global_step = 0
@@ -165,8 +162,10 @@ def main(options):
 
         # parameters used in training
         best_accuracy = 0.0
-        writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "iteration_" + str(fi), "train")))
-        writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "iteration_" + str(fi), "valid")))
+        best_loss_valid = np.inf
+
+        writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "train")))
+        writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "valid")))
 
         ## get the info for training and write them into tsv files.
         train_subjects = []
@@ -184,12 +183,12 @@ def main(options):
             print("At %s -th epoch." % str(epoch))
 
             # train the model
-            train_subject, y_ground_train, y_hat_train, acc_mean_train, global_step = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch, model_mode='train', global_step=global_step)
+            train_subject, y_ground_train, y_hat_train, acc_mean_train, global_step, loss_batch_mean_train = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch, model_mode='train', global_step=global_step)
             train_subjects.extend(train_subject)
             y_grounds_train.extend(y_ground_train)
             y_hats_train.extend(y_hat_train)
             ## at then end of each epoch, we validate one time for the model with the validation data
-            valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_step = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, model_mode='valid', global_step=global_step)
+            valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_step, loss_batch_mean_valid = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, model_mode='valid', global_step=global_step)
             print("Slice level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
             valid_subjects.extend(valid_subject)
             y_grounds_valid.extend(y_ground_valid)
@@ -199,7 +198,7 @@ def main(options):
             if epoch % 20 == 0:
                 scheduler.step()
 
-            # save the best model on the validation dataset
+            # save the best model based on the best acc
             is_best = acc_mean_valid > best_accuracy
             best_accuracy = max(best_accuracy, acc_mean_valid)
             save_checkpoint({
@@ -208,15 +207,29 @@ def main(options):
                 'best_predict': best_accuracy,
                 'optimizer': optimizer.state_dict(),
                 'global_step': global_step
-            }, is_best, os.path.join(options.output_dir, "best_model_dir", "iteration_" + str(fi)))
+            }, is_best, os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), 'best_acc'))
+
+            # save the best model based on the best loss
+            is_best = loss_batch_mean_valid < best_loss_valid
+            best_loss_valid = min(loss_batch_mean_valid, best_loss_valid)
+            save_checkpoint({
+                'epoch': epoch + 1,
+                'model': model.state_dict(),
+                'best_loss': best_loss_valid,
+                'optimizer': optimizer.state_dict(),
+                'global_step': global_step
+            }, is_best, os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "best_loss"))
 
         ## save the graph and image
-        # TODO bug to save the model graph
-        #writer_train.add_graph(model, example_batch)
+        # buf for 3D image, for 2D slice, it can save the graph
+        writer_train.add_graph(model, example_batch)
 
         ### write the information of subjects and performances into tsv files.
-        iteration_subjects_df_train, results_train = results_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train, mode='train')
-        iteration_subjects_df_valid, results_valid = results_to_tsvs(options.output_dir, fi, valid_subjects, y_grounds_valid, y_hats_valid, mode='validation')
+        fold_subjects_df_train, results_train = results_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train, mode='train')
+        fold_subjects_df_valid, results_valid = results_to_tsvs(options.output_dir, fi, valid_subjects, y_grounds_valid, y_hats_valid, mode='validation')
+
+        del optimizer
+        torch.cuda.empty_cache()
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)

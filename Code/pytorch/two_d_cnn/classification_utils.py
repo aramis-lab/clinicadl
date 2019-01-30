@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
 from time import time
+import tempfile
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -107,7 +108,6 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
 
         accuracy_batch_mean = acc / len(data_loader)
         loss_batch_mean = loss / len(data_loader)
-        del loss_batch_mean
         torch.cuda.empty_cache()
 
     elif model_mode == "valid":
@@ -159,10 +159,9 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
             writer.add_scalar('classification accuracy', accuracy_batch_mean, global_step)
             writer.add_scalar('loss', loss_batch_mean, global_step)
 
-            del loss_batch_mean
             torch.cuda.empty_cache()
 
-    return subjects, y_ground, y_hat, accuracy_batch_mean, global_step
+    return subjects, y_ground, y_hat, accuracy_batch_mean, global_step, loss_batch_mean
 
 def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar'):
     """
@@ -343,9 +342,9 @@ def load_split_by_diagnosis(options, split, n_splits=None, baseline=True):
     train_df.reset_index(inplace=True, drop=True)
     valid_df.reset_index(inplace=True, drop=True)
 
-    train_tsv = os.path.join(options.output_dir, "log_dir", 'AE_training_subjects.tsv')
+    train_tsv = os.path.join(tempfile.mkdtemp(), 'AE_training_subjects.tsv')
     train_df.to_csv(train_tsv, index=False, sep='\t', encoding='utf-8')
-    valid_tsv = os.path.join(options.output_dir, "log_dir", 'AE_validation_subjects.tsv')
+    valid_tsv = os.path.join(tempfile.mkdtemp(), 'AE_validation_subjects.tsv')
     valid_df.to_csv(valid_tsv, index=False, sep='\t', encoding='utf-8')
 
     return train_df, valid_df, train_tsv, valid_tsv
@@ -589,7 +588,7 @@ def results_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat, mode='t
         return s.split('_slice')[0]
 
     # check if the folder exist
-    iteration_dir = os.path.join(output_dir, 'performances', 'iteration-' + str(iteration))
+    iteration_dir = os.path.join(output_dir, 'performances', 'fold_' + str(iteration))
     if not os.path.exists(iteration_dir):
         os.makedirs(iteration_dir)
     performance_df = pd.DataFrame({'iteration': iteration,

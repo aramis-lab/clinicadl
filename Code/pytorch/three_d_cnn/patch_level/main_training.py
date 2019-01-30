@@ -34,8 +34,6 @@ parser.add_argument("--batch_size", default=8, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
-parser.add_argument("--random_state", default=544423, type=int,
-                    help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
 parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
 
@@ -48,16 +46,14 @@ parser.add_argument("--train_from_stop_point", default=False, type=bool,
                     help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
 parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,
                     help="Labels based on binary classification")
-parser.add_argument("--split", type=int, default=0,
-                    help="Will load the specific split wanted for the k-fold cross validation")
 
 # Training arguments
 parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
-parser.add_argument("--runs", default=1, type=int,
-                    help="Number of runs with the same training / validation split.")
+parser.add_argument("--n_splits", default=5, type=int,
+                    help="Define the cross validation, by default, we use 5-fold.")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
 parser.add_argument('--use_gpu', default=True, type=bool,
@@ -66,15 +62,6 @@ parser.add_argument('--weight_decay', default=1e-4, type=float,
                     help='weight decay (default: 1e-4)')
 
 def main(options):
-
-    if options.train_from_stop_point:
-        ## TODO, it seems having problme for this
-        ## only delete the CNN output, not the AE output
-        check_and_clean(os.path.join(options.output_dir, 'best_model_dir', 'CNN'))
-        check_and_clean(os.path.join(options.output_dir, 'log_dir', 'CNN'))
-        check_and_clean(os.path.join(options.output_dir, 'performances'))
-    else:
-        print("Train the model from 0 epoch")
 
     ## Train the model with pretrained AE
     if options.transfer_learning_autoencoder:
@@ -86,7 +73,6 @@ def main(options):
             model = eval(options.network)()
         except:
             raise Exception('The model has not been implemented or has bugs in the model codes')
-        model, _ = load_model_after_ae(model, os.path.join(options.output_dir, 'best_model_dir', 'ConvAutoencoder', 'fine_tune', 'Encoder'), filename='model_best_encoder.pth.tar')
     else:
         print('Train the model from scratch!')
         print('The chosen network is %s !' % options.network)
@@ -98,14 +84,28 @@ def main(options):
     ## the inital model weight and bias
     init_state = copy.deepcopy(model.state_dict())
 
-    for fi in range(options.runs):
-        print("Running for the %d run" % fi)
+    for fi in range(options.n_splits):
+        print("Running for the %d -th fold" % fi)
+
+        if options.train_from_stop_point:
+            ## TODO, it seems having problme for this
+            ## only delete the CNN output, not the AE output
+            check_and_clean(os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'CNN'))
+            check_and_clean(os.path.join(options.output_dir, 'log_dir', "fold_" + str(fi), 'CNN'))
+            check_and_clean(os.path.join(options.output_dir, "fold_" + str(fi), 'performances'))
+        else:
+            print("Train the model from 0 epoch")
+
+        if options.transfer_learning_autoencoder:
+            model, _ = load_model_after_ae(model, os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi),
+                                                               'ConvAutoencoder', 'fine_tune', 'Encoder'),
+                                           filename='model_best_encoder.pth.tar')
 
         ## need to normalized the value to [0, 1]
         transformations = transforms.Compose([NormalizeMinMax()])
 
         # to set the split = 0
-        _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, 0, 5, autoencoder=False)
+        _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, 5, autoencoder=False)
 
         data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride, transformations=transformations, data_type=options.data_type)
         data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size, options.patch_stride, transformations=transformations, data_type=options.data_type)
@@ -134,11 +134,13 @@ def main(options):
 
         ## if train a model at the stopping point?
         if options.train_from_stop_point:
-            model, optimizer, global_step, global_epoch = load_model_from_log(model, optimizer, os.path.join(options.output_dir, 'best_model_dir', 'CNN', "iteration_" + str(fi)),
+            model, optimizer, global_step, global_epoch = load_model_from_log(model, optimizer, os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'CNN'),
                                            filename='checkpoint.pth.tar')
         else:
             global_step = 0
 
+        if fi != 0:
+            model = eval(options.network)()
         model.load_state_dict(init_state)
 
         ## Decide to use gpu or cpu to train the model
@@ -161,8 +163,8 @@ def main(options):
         # parameters used in training
         best_accuracy = 0.0
         best_loss_valid = np.inf
-        writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "CNN", "iteration_" + str(fi), "train")))
-        writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "CNN", "iteration_" + str(fi), "valid")))
+        writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "CNN", "train")))
+        writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "CNN", "valid")))
 
         ## get the info for training and write them into tsv files.
         train_subjects = []
@@ -204,7 +206,7 @@ def main(options):
                 'best_predict': best_accuracy,
                 'optimizer': optimizer.state_dict(),
                 'global_step': global_step
-            }, is_best, os.path.join(options.output_dir, "best_model_dir", "CNN", "iteration_" + str(fi), 'best_acc'))
+            }, is_best, os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "CNN", 'best_acc'))
 
             # save the best model based on the best loss
             is_best = loss_batch_mean < best_loss_valid
@@ -212,18 +214,19 @@ def main(options):
             save_checkpoint({
                 'epoch': epoch + 1,
                 'model': model.state_dict(),
-                'best_predict': best_accuracy,
+                'best_loss': best_loss_valid,
                 'optimizer': optimizer.state_dict(),
                 'global_step': global_step
-            }, is_best, os.path.join(options.output_dir, "best_model_dir", "CNN", "iteration_" + str(fi), "best_loss"))
+            }, is_best, os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "CNN", "best_loss"))
 
         ## save the graph and image
         writer_train.add_graph(model, example_batch)
 
         ### write the information of subjects and performances into tsv files.
-        iteration_subjects_df_train, results_train = results_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train, mode='train')
-        iteration_subjects_df_valid, results_valid = results_to_tsvs(options.output_dir, fi, valid_subjects, y_grounds_valid, y_hats_valid, mode='validation')
+        fold_subjects_df_train, results_train = results_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train, mode='train')
+        fold_subjects_df_valid, results_valid = results_to_tsvs(options.output_dir, fi, valid_subjects, y_grounds_valid, y_hats_valid, mode='validation')
 
+        torch.cuda.empty_cache()
 
 if __name__ == "__main__":
     commandline = parser.parse_known_args()

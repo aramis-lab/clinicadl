@@ -4,6 +4,7 @@ from tensorboardX import SummaryWriter
 from classification_utils import *
 from model import *
 import torchvision.transforms as transforms
+import copy
 
 __author__ = "Junhao Wen, Elina Thibeausutre"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -31,8 +32,8 @@ parser.add_argument("--patch_stride", default=51, type=int,
                     help="The stride for the patch extract window from the MRI")
 parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
-parser.add_argument('--random_state', default=544423, type=int,
-                    help='If set random state when splitting data training and validation set using StratifiedShuffleSplit')
+parser.add_argument("--n_splits", default=5, type=int,
+                    help="Define the cross validation, by default, we use 5-fold.")
 
 # Training arguments
 parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2"],
@@ -41,8 +42,6 @@ parser.add_argument("--ae_training_method", default="stacked_ae", choices=["laye
                     help="How to train the autoencoder, layer wise or train all AEs together")
 parser.add_argument("--diagnoses_list", default=["AD", "CN", "MCI"], type=str,
                     help="Take all the subjects possible for autoencoder training")
-parser.add_argument("--split", type=int, default=0,
-                    help="Will load the specific split wanted for the k-fold cross validation")
 parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
 parser.add_argument("--batch_size", default=2, type=int,
@@ -78,61 +77,75 @@ def main(options):
     ## need to normalized the value to [0, 1]
     transformations = transforms.Compose([NormalizeMinMax()])
 
-    # to set the split = 0
-    _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, 0, 5)
+    ## the inital model weight and bias
+    init_state = copy.deepcopy(model.state_dict())
 
-    data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride, transformations=transformations,
-                                  data_type=options.data_type)
-    data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size, options.patch_stride, transformations=transformations,
-                                  data_type=options.data_type)
+    for fi in range(options.n_splits):
+        print("Running for the %d -th fold" % fi)
 
-    # Use argument load to distinguish training and testing
-    train_loader = DataLoader(data_train,
-                              batch_size=options.batch_size,
-                              shuffle=options.shuffle,
-                              num_workers=options.num_workers,
-                              drop_last=True
-                              )
+        # to set the split = 0
+        _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, 5)
 
-    valid_loader = DataLoader(data_valid,
-                              batch_size=options.batch_size,
-                              shuffle=False,
-                              num_workers=options.num_workers,
-                              drop_last=False
-                              )
+        data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride, transformations=transformations,
+                                      data_type=options.data_type)
+        data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size, options.patch_stride, transformations=transformations,
+                                      data_type=options.data_type)
 
-    ## Decide to use gpu or cpu to train the autoencoder
-    if options.use_gpu == False:
-        use_cuda = False
-        model.cpu()
-        ## example image for tensorbordX usage:$
-        example_batch = (next(iter(train_loader))['image'])[0, ...].unsqueeze(0)
-    else:
-        print("Using GPU")
-        use_cuda = True
-        model.cuda()
-        ## example image for tensorbordX usage:$
-        example_batch = (next(iter(train_loader))['image'].cuda())[0, ...].unsqueeze(0)
+        # Use argument load to distinguish training and testing
+        train_loader = DataLoader(data_train,
+                                  batch_size=options.batch_size,
+                                  shuffle=options.shuffle,
+                                  num_workers=options.num_workers,
+                                  drop_last=True
+                                  )
 
-    criterion = torch.nn.MSELoss()
-    writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "layer_wise", "train")))
-    writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "layer_wise", "valid")))
-    writer_train_ft = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "fine_tine", "train")))
-    writer_valid_ft = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "ConvAutoencoder", "fine_tine", "valid")))
+        valid_loader = DataLoader(data_valid,
+                                  batch_size=options.batch_size,
+                                  shuffle=False,
+                                  num_workers=options.num_workers,
+                                  drop_last=False
+                                  )
 
-    if options.ae_training_method == 'layer_wise_ae':
-        model, best_autodecoder = greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, use_cuda, writer_train, writer_valid, writer_train_ft, writer_valid_ft, options)
-    else:
-        model, best_autodecoder = stacked_ae_learning(model, train_loader, valid_loader, criterion, use_cuda,
-                                                             writer_train, writer_valid,
-                                                             options)
+        if fi != 0:
+            model = eval(options.network)()
+        model.load_state_dict(init_state)
 
-    ## save the graph and image
-    # TODO bug to save the model graph for 3D patch, here is the discuss: https://github.com/lanpa/tensorboardX/issues/346
-    # writer_train.add_graph(best_autodecoder, example_batch)
+        ## Decide to use gpu or cpu to train the autoencoder
+        if options.use_gpu == False:
+            use_cuda = False
+            model.cpu()
+            ## example image for tensorbordX usage:$
+            example_batch = (next(iter(train_loader))['image'])[0, ...].unsqueeze(0)
+        else:
+            print("Using GPU")
+            use_cuda = True
+            model.cuda()
+            ## example image for tensorbordX usage:$
+            example_batch = (next(iter(train_loader))['image'].cuda())[0, ...].unsqueeze(0)
 
-    if options.visualization:
-        visualize_ae(best_autodecoder, example_batch, os.path.join(options.output_dir, "visualize"))
+        criterion = torch.nn.MSELoss()
+        writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "ConvAutoencoder", "layer_wise", "train")))
+        writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "ConvAutoencoder", "layer_wise", "valid")))
+        writer_train_ft = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "ConvAutoencoder", "fine_tine", "train")))
+        writer_valid_ft = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "ConvAutoencoder", "fine_tine", "valid")))
+
+        if options.ae_training_method == 'layer_wise_ae':
+            ## TODO: check the memory accumulation during the 5-fold CV
+            model, best_autodecoder = greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, use_cuda, writer_train, writer_valid, writer_train_ft, writer_valid_ft, options, fi)
+        else:
+            model, best_autodecoder = stacked_ae_learning(model, train_loader, valid_loader, criterion, use_cuda,
+                                                                 writer_train, writer_valid,
+                                                                 options, fi)
+
+        ## save the graph and image
+        # TODO bug to save the model graph for 3D patch, here is the discuss: https://github.com/lanpa/tensorboardX/issues/346
+        # writer_train.add_graph(best_autodecoder, example_batch)
+
+        if options.visualization:
+            visualize_ae(best_autodecoder, example_batch, os.path.join(options.output_dir, "visualize", "fold_" + str(fi)))
+
+        del best_autodecoder, train_loader, valid_loader, example_batch, criterion, model
+        torch.cuda.empty_cache()
 
 if __name__ == "__main__":
     commandline = parser.parse_known_args()
