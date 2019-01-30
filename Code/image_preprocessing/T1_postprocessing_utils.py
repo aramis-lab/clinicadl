@@ -33,7 +33,7 @@ def get_caps_t1(caps_directory, tsv):
     sess_list = list(df['session_id'])
 
     for i in range(len(img_list)):
-        img_path = os.path.join(caps_directory, 'subjects', img_list[i], sess_list[i], 't1', 'preprocessing_dl', img_list[i] + '_' + sess_list[i] + '_space-MNI_res-1x1x1.pt')
+        img_path = os.path.join(caps_directory, 'subjects', img_list[i], sess_list[i], 't1', 'preprocessing_dl', img_list[i] + '_' + sess_list[i] + '_space-MNI_res-1x1x1.nii.gz')
         preprocessed_T1.append(img_path)
 
     return preprocessed_T1
