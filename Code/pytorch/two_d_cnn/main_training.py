@@ -46,9 +46,9 @@ parser.add_argument("--learning_rate", default=1e-3, type=float,
 parser.add_argument("--transfer_learning", default=True, type=bool, help="If do transfer learning")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")
-parser.add_argument("--split", default=None, type=int,
+parser.add_argument("--split", default=0, type=int,
                     help="Define a specific fold in the k-fold, this is very useful to find the optimal model, where you do not want to run your k-fold validation")
-parser.add_argument("--epochs", default=1, type=int,
+parser.add_argument("--epochs", default=2, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--batch_size", default=32, type=int,
                     help="Batch size for training. (default=1)")
@@ -179,6 +179,7 @@ def main(options):
         writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "valid")))
 
         ## get the info for training and write them into tsv files.
+        ## only save the last epoch, if you wanna check the performances during training, using tensorboard
         train_subjects = []
         valid_subjects = []
         y_grounds_train = []
@@ -195,15 +196,17 @@ def main(options):
 
             # train the model
             train_subject, y_ground_train, y_hat_train, acc_mean_train, global_step, loss_batch_mean_train = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch, model_mode='train', global_step=global_step)
-            train_subjects.extend(train_subject)
-            y_grounds_train.extend(y_ground_train)
-            y_hats_train.extend(y_hat_train)
+            if epoch == options.epochs -1:
+                train_subjects.extend(train_subject)
+                y_grounds_train.extend(y_ground_train)
+                y_hats_train.extend(y_hat_train)
             ## at then end of each epoch, we validate one time for the model with the validation data
             valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_step, loss_batch_mean_valid = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, model_mode='valid', global_step=global_step)
             print("Slice level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
-            valid_subjects.extend(valid_subject)
-            y_grounds_valid.extend(y_ground_valid)
-            y_hats_valid.extend(y_hat_valid)
+            if epoch == options.epochs - 1:
+                valid_subjects.extend(valid_subject)
+                y_grounds_valid.extend(y_ground_valid)
+                y_hats_valid.extend(y_hat_valid)
 
             ## update the learing rate
             if epoch % 20 == 0:
