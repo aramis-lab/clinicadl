@@ -298,7 +298,7 @@ def load_split_by_task(diagnoses_tsv, val_size=0.15, random_state=None):
 
     return training_tsv, valid_tsv
 
-def load_split_by_diagnosis(options, split, n_splits=None, baseline=True):
+def load_split_by_diagnosis(options, split, n_splits=5, baseline=True):
     """
     Creates a DataFrame for training and validation sets given the wanted diagnoses, this is helpful to train the autoencoder with maximum availble data
 
@@ -723,14 +723,19 @@ def commandline_to_jason(commanline):
             print('You should be responsible to make sure you did not change any parameters to train from the stopping point with the same model!')
 
         else:
-            ## train from 0
-            check_and_clean(commandline_arg_dic['output_dir'])
+            if commandline_arg_dic['split'] != None:
+                pass
+            else:
+                ## train from 0
+                check_and_clean(commandline_arg_dic['output_dir'])
 
     else:  # train from 0
         if not os.path.exists(commandline_arg_dic['output_dir']):
             os.makedirs(commandline_arg_dic['output_dir'])
-
-        check_and_clean(commandline_arg_dic['output_dir'])
+        if commandline_arg_dic['split'] != None:
+            pass
+        else:
+            check_and_clean(commandline_arg_dic['output_dir'])
     
     # anyway, need to have log_dir to be present
     if not os.path.exists(os.path.join(commandline_arg_dic['output_dir'], 'log_dir')):

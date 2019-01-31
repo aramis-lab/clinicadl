@@ -46,6 +46,8 @@ parser.add_argument("--learning_rate", default=1e-3, type=float,
 parser.add_argument("--transfer_learning", default=True, type=bool, help="If do transfer learning")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")
+parser.add_argument("--split", default=None, type=int,
+                    help="Define a specific fold in the k-fold, this is very useful to find the optimal model, where you do not want to run your k-fold validation")
 parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--batch_size", default=32, type=int,
@@ -100,12 +102,21 @@ def main(options):
     ## the inital model weight and bias
     init_state = copy.deepcopy(model.state_dict())
 
+    if options.split != None:
+        print("Only run for a specific fold, meaning that you are trying to find your optimal model by exploring your training and validation data")
+        options.n_splits = 1
+
     for fi in range(options.n_splits):
         print("Running for the %d -th fold" % fi)
 
         ## Begin the training
         ## load the tsv file
-        _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, 5)
+        if options.split != None:
+            ## train seperately a specific fold during the k-fold, also good for the limitation of your comuptational power
+            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split)
+            fi = options.split
+        else:
+             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi)
 
         data_train = MRIDataset_slice(options.caps_directory, training_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type, image_processing=options.image_processing)
         data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type, image_processing=options.image_processing)

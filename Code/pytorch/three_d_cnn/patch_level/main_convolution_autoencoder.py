@@ -34,6 +34,8 @@ parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")
+parser.add_argument("--split", default=3, type=int,
+                    help="Define a specific fold in the k-fold, this is very useful to find the optimal model, where you do not want to run your k-fold validation")
 
 # Training arguments
 parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2"],
@@ -80,11 +82,20 @@ def main(options):
     ## the inital model weight and bias
     init_state = copy.deepcopy(model.state_dict())
 
+    if options.split != None:
+        print("Only run for a specific fold, meaning that you are trying to find your optimal model by exploring your training and validation data")
+        options.n_splits = 1
+
     for fi in range(options.n_splits):
         print("Running for the %d -th fold" % fi)
 
         # to set the split = 0
-        _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, 5)
+        if options.split != None:
+            ## train seperately a specific fold during the k-fold, also good for the limitation of your comuptational power
+            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split)
+            fi = options.split
+        else:
+             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi)
 
         data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride, transformations=transformations,
                                       data_type=options.data_type)
