@@ -91,6 +91,15 @@ def main(options):
         options.n_splits = 1
 
     for fi in range(options.n_splits):
+
+        # to set the split = 0
+        if options.split != None:
+            ## train seperately a specific fold during the k-fold, also good for the limitation of your comuptational power
+            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split)
+            fi = options.split
+        else:
+             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi)
+
         print("Running for the %d -th fold" % fi)
 
         if options.train_from_stop_point:
@@ -109,14 +118,6 @@ def main(options):
 
         ## need to normalized the value to [0, 1]
         transformations = transforms.Compose([NormalizeMinMax()])
-
-        # to set the split = 0
-        if options.split != None:
-            ## train seperately a specific fold during the k-fold, also good for the limitation of your comuptational power
-            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split)
-            fi = options.split
-        else:
-             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi)
 
         data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride, transformations=transformations, data_type=options.data_type)
         data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size, options.patch_stride, transformations=transformations, data_type=options.data_type)

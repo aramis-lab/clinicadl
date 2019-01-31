@@ -87,7 +87,6 @@ def main(options):
         options.n_splits = 1
 
     for fi in range(options.n_splits):
-        print("Running for the %d -th fold" % fi)
 
         # to set the split = 0
         if options.split != None:
@@ -96,6 +95,9 @@ def main(options):
             fi = options.split
         else:
              _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi)
+
+        print("Running for the %d -th fold" % fi)
+
 
         data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride, transformations=transformations,
                                       data_type=options.data_type)
