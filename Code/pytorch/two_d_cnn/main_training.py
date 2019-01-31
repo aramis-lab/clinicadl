@@ -46,7 +46,7 @@ parser.add_argument("--learning_rate", default=1e-3, type=float,
 parser.add_argument("--transfer_learning", default=True, type=bool, help="If do transfer learning")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")
-parser.add_argument("--split", default=0, type=int,
+parser.add_argument("--split", default=None, type=int,
                     help="Define a specific fold in the k-fold, this is very useful to find the optimal model, where you do not want to run your k-fold validation")
 parser.add_argument("--epochs", default=2, type=int,
                     help="Epochs through the data. (default=20)")
