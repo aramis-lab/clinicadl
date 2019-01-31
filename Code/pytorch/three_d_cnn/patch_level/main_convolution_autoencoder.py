@@ -147,7 +147,7 @@ def main(options):
             model, best_autodecoder = greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, use_cuda, writer_train, writer_valid, writer_train_ft, writer_valid_ft, options, fi)
         else:
             model, best_autodecoder = stacked_ae_learning(model, train_loader, valid_loader, criterion, use_cuda,
-                                                                 writer_train, writer_valid,
+                                                          writer_train_ft, writer_valid_ft,
                                                                  options, fi)
 
         ## save the graph and image
