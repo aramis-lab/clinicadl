@@ -54,7 +54,7 @@ class MRIDataset(Dataset):
 
         if self.transform:
             image = self.transform(image)
-        sample = {'image': image, 'label': label}
+        sample = {'image': image, 'label': label, 'participant_id': img_name, 'session_id': sess_name}
 
         return sample
 

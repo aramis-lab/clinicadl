@@ -92,16 +92,20 @@ if __name__ == "__main__":
                               drop_last=False
                               )
 
-    acc_train, loss_train, sen_train, spe_train = test(best_model, train_loader, options.gpu, criterion,
-                                                       verbose=False, full_return=True)
-    acc_valid, loss_valid, sen_valid, spe_valid = test(best_model, valid_loader, options.gpu, criterion,
-                                                       verbose=False, full_return=True)
+    acc_train, loss_train, sen_train, spe_train, train_df = test(best_model, train_loader, options.gpu, criterion,
+                                                                 verbose=False, full_return=True)
+    acc_valid, loss_valid, sen_valid, spe_valid, valid_df = test(best_model, valid_loader, options.gpu, criterion,
+                                                                 verbose=False, full_return=True)
     print("Training, acc %f, loss %f, sensibility %f, specificity %f"
           % (acc_train, loss_train, sen_train[0], spe_train[0]))
     print("Validation, acc %f, loss %f, sensibility %f, specificity %f"
           % (acc_valid, loss_valid, sen_valid[0], spe_valid[0]))
 
-    text_file = open(path.join(options.model_path, 'evaluation_' + options.selection + '.txt'), 'w')
+    evaluation_path = path.join(options.model_path, 'performances')
+    if not path.exists(evaluation_path):
+        os.makedirs(evaluation_path)
+
+    text_file = open(path.join(evaluation_path, 'evaluation_' + options.selection + '.txt'), 'w')
     text_file.write('Best epoch: %i \n' % best_epoch)
     text_file.write('Accuracy on training set: %.2f %% \n' % acc_train)
     text_file.write('Loss on training set: %f \n' % loss_train)
@@ -114,3 +118,6 @@ if __name__ == "__main__":
     text_file.write('Specificities on validation set: %.2f %%, %.2f %% \n' % (spe_valid[0], spe_valid[1]))
 
     text_file.close()
+
+    train_df.to_csv(path.join(evaluation_path, 'train_' + options.selection + '_result.tsv'), sep='\t')
+    valid_df.to_csv(path.join(evaluation_path, 'valid_' + options.selection + '_result.tsv'), sep='\t')

@@ -23,7 +23,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
     # Create writers
     from time import time
 
-    columns = ['epoch', 'iteration', 'acc_train', 'mean_loss_train', 'acc_valid', 'mean_loss_valid']
+    columns = ['epoch', 'iteration', 'acc_train', 'mean_loss_train', 'acc_valid', 'mean_loss_valid', 'time']
     if not isinstance(run, str):
         if not os.path.exists(os.path.join(options.log_dir, "run" + str(run))):
             os.makedirs(os.path.join(options.log_dir, "run" + str(run)))
@@ -49,6 +49,8 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
     epoch = options.beginning_epoch
 
     model.train()  # set the module to training mode
+
+    t_beggining = time()
 
     while epoch < options.epochs:
         total_correct_cnt = 0.0
@@ -95,7 +97,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
                     print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
                     print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
-                    row = np.array([epoch, i, acc_mean_train, mean_loss_train, acc_mean_valid, mean_loss_valid]).reshape(1, -1)
+                    t_current = time() - t_beggining
+                    row = np.array([epoch, i, acc_mean_train, mean_loss_train, acc_mean_valid, mean_loss_valid,
+                                    t_current]).reshape(1, -1)
                     row_df = pd.DataFrame(row, columns=columns)
                     with open(filename, 'a') as f:
                         row_df.to_csv(f, header=False, index=False, sep='\t')
@@ -124,7 +128,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
             print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
             print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
-            row = np.array([epoch, i, acc_mean_train, mean_loss_train, acc_mean_valid, mean_loss_valid]).reshape(1, -1)
+            t_current = time() - t_beggining
+            row = np.array([epoch, i, acc_mean_train, mean_loss_train, acc_mean_valid, mean_loss_valid,
+                            t_current]).reshape(1, -1)
             row_df = pd.DataFrame(row, columns=columns)
             with open(filename, 'a') as f:
                 row_df.to_csv(f, header=False, index=False, sep='\t')
@@ -168,6 +174,10 @@ def test(model, dataloader, use_cuda, criterion, verbose=False, full_return=Fals
     # Use tensors instead of arrays to avoid bottlenecks
     predicted_tensor = torch.zeros(len(dataloader.dataset))
     truth_tensor = torch.zeros(len(dataloader.dataset))
+
+    columns = ["participant_id", "session_id", "true_label", "predicted_label"]
+    results_df = pd.DataFrame(columns=columns)
+
     if use_cuda:
         predicted_tensor = predicted_tensor.cuda()
         truth_tensor = truth_tensor.cuda()
@@ -182,11 +192,16 @@ def test(model, dataloader, use_cuda, criterion, verbose=False, full_return=Fals
             inputs, labels = data['image'].cuda(), data['label'].cuda()
         else:
             inputs, labels = data['image'], data['label']
-
         outputs = model(inputs)
         loss = criterion(outputs, labels)
         total_loss += loss.item()
         _, predicted = torch.max(outputs.data, 1)
+
+        # Generate detailed DataFrame
+        for idx, sub in enumerate(data['participant_id']):
+            row = [sub, data['session_id'][idx], predicted[idx], labels[idx]]
+            row_df = pd.DataFrame(np.array(row).reshape(1, -1), columns=columns)
+            results_df = pd.concat([results_df, row_df])
 
         idx = i * dataloader.batch_size
         idx_end = (i + 1) * dataloader.batch_size
@@ -196,6 +211,7 @@ def test(model, dataloader, use_cuda, criterion, verbose=False, full_return=Fals
         del inputs, outputs, labels
         tend = time()
     print('Mean time per batch (test):', total_time / len(dataloader) * dataloader.batch_size)
+    results_df.reset_index(inplace=True, drop=True)
 
     # Cast to numpy arrays to avoid bottleneck in the next loop
     if use_cuda:
@@ -240,7 +256,7 @@ def test(model, dataloader, use_cuda, criterion, verbose=False, full_return=Fals
         print('Specificity of diagnoses:', specificity)
 
     if full_return:
-        return acc, total_loss, sensitivity, specificity
+        return acc, total_loss, sensitivity, specificity, results_df
 
     return acc, total_loss
 
