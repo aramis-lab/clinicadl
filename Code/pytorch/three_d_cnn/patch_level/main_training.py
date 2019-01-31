@@ -178,6 +178,7 @@ def main(options):
         writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "CNN", "valid")))
 
         ## get the info for training and write them into tsv files.
+        ## only save the last epoch, if you wanna check the performances during training, using tensorboard
         train_subjects = []
         valid_subjects = []
         y_grounds_train = []
@@ -194,15 +195,17 @@ def main(options):
 
             # train the model
             train_subject, y_ground_train, y_hat_train, acc_mean_train, global_step, loss_batch_mean = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch, model_mode='train', global_step=global_step)
-            train_subjects.extend(train_subject)
-            y_grounds_train.extend(y_ground_train)
-            y_hats_train.extend(y_hat_train)
+            if epoch == options.epochs -1:
+                train_subjects.extend(train_subject)
+                y_grounds_train.extend(y_ground_train)
+                y_hats_train.extend(y_hat_train)
             ## at then end of each epoch, we validate one time for the model with the validation data
             valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_step, loss_batch_mean = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, model_mode='valid', global_step=global_step)
             print("Slice level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
-            valid_subjects.extend(valid_subject)
-            y_grounds_valid.extend(y_ground_valid)
-            y_hats_valid.extend(y_hat_valid)
+            if epoch == options.epochs -1:
+                valid_subjects.extend(valid_subject)
+                y_grounds_valid.extend(y_ground_valid)
+                y_hats_valid.extend(y_hat_valid)
 
             ## update the learing rate
             if epoch % 20 == 0:
