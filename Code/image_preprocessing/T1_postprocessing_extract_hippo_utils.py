@@ -25,44 +25,98 @@ def get_caps_t1(caps_directory, tsv):
     import os
 
     preprocessed_T1 = []
+    cropped_hipp_file_name = []
+    preprocessed_T1_folder = []
+
     df = pd.read_csv(tsv, sep='\t')
     if ('session_id' != list(df.columns.values)[1]) and (
                 'participant_id' != list(df.columns.values)[0]):
         raise Exception('the data file is not in the correct format.')
-    img_list = list(df['participant_id'])
-    sess_list = list(df['session_id'])
+    participant_id = list(df['participant_id'])
+    session_id = list(df['session_id'])
 
-    for i in range(len(img_list)):
-        img_path = os.path.join(caps_directory, 'subjects', img_list[i], sess_list[i], 't1', 'preprocessing_dl', img_list[i] + '_' + sess_list[i] + '_space-MNI_res-1x1x1.nii.gz')
+    for i in range(len(participant_id)):
+        img_path = os.path.join(caps_directory, 'subjects', participant_id[i], session_id[i], 't1', 'preprocessing_dl', participant_id[i] + '_' + session_id[i] + '_space-MNI_res-1x1x1.nii.gz')
         preprocessed_T1.append(img_path)
+        preprocessed_T1_folder.append(os.path.join(caps_directory, 'subjects', participant_id[i], session_id[i], 't1', 'preprocessing_dl'))
+        cropped_hipp_file_name.append(participant_id[i] + '_' + session_id[i] + '_space-MNI_res-1x1x1_hippocampus.nii')
 
-    return preprocessed_T1
+    return preprocessed_T1, cropped_hipp_file_name, participant_id, session_id, preprocessed_T1_folder
 
-def crop_nifti_hippo(input_img, ref_img):
+def save_as_pt(input_img):
     """
-
+    This function is to transfer nii.gz file into .pt format, in order to train the pytorch model more efficient when loading the data.
     :param input_img:
-    :param crop_sagittal:
-    :param crop_coronal:
-    :param crop_axial:
     :return:
     """
 
+    import torch, os
     import nibabel as nib
+
+    image_array = nib.load(input_img).get_fdata()
+    image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
+    ## make sure the tensor dtype is torch.float32
+    output_file = os.path.join(os.path.dirname(input_img), input_img.split('.nii')[0] + '.pt')
+    # save
+    torch.save(image_tensor, output_file)
+
+    return output_file
+
+def compress_nii(in_file, same_dir=True):
+    """
+        This is a function to compress the resulting nii images
+    Args:
+        in_file:
+
+    Returns:
+
+    """
+    from os import getcwd, remove
+    from os.path import abspath, join
+    import gzip
+    import shutil
+    from nipype.utils.filemanip import split_filename
+
+    orig_dir, base, ext = split_filename(str(in_file))
+
+    # Not compressed
+    if same_dir:
+        out_file = abspath(join(orig_dir, base + ext + '.gz'))
+    else:
+        out_file = abspath(join(getcwd(), base + ext + '.gz'))
+
+    with open(in_file, 'rb') as f_in, gzip.open(out_file, 'wb') as f_out:
+        shutil.copyfileobj(f_in, f_out)
+
+    return out_file
+
+def get_subid_sesid_datasink(participant_id, session_id, caps_directory):
+    """
+    This is to extract the base_directory for the DataSink including participant_id and sesion_id in CAPS directory, also the tuple_list for substitution
+    :param participant_id:
+    :return: base_directory for DataSink
+    """
     import os
-    import numpy as np
-    from nilearn.image import resample_img, crop_img, resample_to_img
-    from nibabel.spatialimages import SpatialImage
 
-    basedir = os.getcwd()
-    crop_ref = crop_img(ref_img, rtol=0.5)
-    crop_ref.to_filename(os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped_template.nii.gz'))
-    crop_template = os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped_template.nii.gz')
+    ## for MapNode
+    base_directory = os.path.join(caps_directory, 'subjects', participant_id, session_id, 't1',
+                                          'preprocessing_dl')
 
-    ## resample the individual MRI onto the cropped template image
-    crop_img = resample_to_img(input_img, crop_template)
-    crop_img.to_filename(os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped.nii.gz'))
+    subst_tuple_list = [
+        (participant_id + '_' + session_id + '_space-MNI_res-1x1x1_hippocampus.nii.gz',
+         participant_id + '_' + session_id + '_space-MNI_res-1x1x1_hippocampus_crop.nii.gz'),
+        (participant_id + '_' + session_id + '_space-MNI_res-1x1x1_hippocampus.pt',
+         participant_id + '_' + session_id + '_space-MNI_res-1x1x1_hippocampus_crop.pt'),
+        ]
 
-    output_img = os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped.nii.gz')
+    regexp_substitutions = [
+        # I don't know why it's adding this empty folder, so I remove it:
+        # NOTE, . means any characters and * means any number of repetition in python regex
+        (r'/output_hippocampus_nii/_hippocampus_patches\d{1,4}/', r'/'),
+        (r'/output_hippocampus_pt/_hippocampus_patches\d{1,4}/', r'/'),
+        # I don't know why it's adding this empty folder, so I remove it:
+        (r'/trait_added/_datasinker\d{1,4}/', r'/')
+    ]
 
-    return output_img, crop_template
+    return base_directory, subst_tuple_list, regexp_substitutions
+
