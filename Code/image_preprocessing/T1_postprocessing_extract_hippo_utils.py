@@ -90,7 +90,7 @@ def compress_nii(in_file, same_dir=True):
 
     return out_file
 
-def get_subid_sesid_datasink(participant_id, session_id, caps_directory):
+def get_subid_sesid_datasink(participant_id, session_id, caps_directory, hemi):
     """
     This is to extract the base_directory for the DataSink including participant_id and sesion_id in CAPS directory, also the tuple_list for substitution
     :param participant_id:
@@ -104,9 +104,9 @@ def get_subid_sesid_datasink(participant_id, session_id, caps_directory):
 
     subst_tuple_list = [
         (participant_id + '_' + session_id + '_space-MNI_res-1x1x1_hippocampus.nii.gz',
-         participant_id + '_' + session_id + '_space-MNI_res-1x1x1_hippocampus_crop.nii.gz'),
+         participant_id + '_' + session_id + '_space-MNI_res-1x1x1_hippocampus_hemi-' + hemi + '.nii.gz'),
         (participant_id + '_' + session_id + '_space-MNI_res-1x1x1_hippocampus.pt',
-         participant_id + '_' + session_id + '_space-MNI_res-1x1x1_hippocampus_crop.pt'),
+         participant_id + '_' + session_id + '_space-MNI_res-1x1x1_hippocampus_hemi-' + hemi + '.pt'),
         ]
 
     regexp_substitutions = [

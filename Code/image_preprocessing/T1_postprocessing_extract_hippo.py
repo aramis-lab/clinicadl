@@ -14,7 +14,7 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
-def postprocessing_t1w_extract_hippo(caps_directory, tsv, working_directory=None):
+def postprocessing_t1w_extract_hippo(caps_directory, tsv, working_directory=None, hemi='right'):
     """
     This is a postprocessing pipeline to prepare the slice-level and patch-level data from the whole MRI and save them
     on disk, so that to facilitate the training process:
@@ -35,7 +35,7 @@ def postprocessing_t1w_extract_hippo(caps_directory, tsv, working_directory=None
     import nipype.pipeline.engine as npe
     import nipype.interfaces.io as nio
     import tempfile
-    from T1_postprocessing_extract_hippo_utils import get_caps_t1, save_as_pt, compress_nii, get_subid_sesid_datasink, cp_to_caps
+    from T1_postprocessing_extract_hippo_utils import get_caps_t1, save_as_pt, compress_nii, get_subid_sesid_datasink
 
     if working_directory is None:
         working_directory = tempfile.mkdtemp()
@@ -58,11 +58,16 @@ def postprocessing_t1w_extract_hippo(caps_directory, tsv, working_directory=None
                                    interface=MRIConvert())
 
     hippocampus_patches.inputs.out_type='nii'
-    hippocampus_patches.inputs.crop_center=(95, 110, 60) ## the center of the right and left hippocampus
-    hippocampus_patches.inputs.crop_size=(100, 50, 50) ## the output cropped hippocampus size
+
+    ## TODO, to decide the position of hippocampus of each hemisphere
+    if hemi == 'left':
+        hippocampus_patches.inputs.crop_center=(95, 110, 60) ## the center of the right and left hippocampus
+        hippocampus_patches.inputs.crop_size=(100, 50, 50) ## the output cropped hippocampus size
+    else:
+        hippocampus_patches.inputs.crop_center=(95, 110, 60) ## the center of the right and left hippocampus
+        hippocampus_patches.inputs.crop_size=(100, 50, 50) ## the output cropped hippocampus size
 
     # zip the result imgs
-    ## TODO have bug to save as nii.gz
     ###in the newest version of nipype for MRIConvert, it seems that they can be saved directly as nii.gz
     zip_hippocampus = npe.MapNode(name='zip_hippocampus',
                           interface=nutil.Function(input_names=['in_file'],
@@ -77,20 +82,12 @@ def postprocessing_t1w_extract_hippo(caps_directory, tsv, working_directory=None
                                  input_names=['input_img'],
                                  output_names=['output_file']))
 
-
-    ## cp file to CAPS.
-    cp_to_caps = npe.MapNode(name='cp_to_caps',
-                             iterfield=['input_img', 'input_pt', 'preprocessed_T1_folder'],
-                             interface=nutil.Function(
-                                 function=cp_to_caps,
-                                 input_names=['input_img', 'input_pt', 'preprocessed_T1_folder'],
-                                 output_names=['input_img', 'input_pt']))
-
     # get the information for datasinker.
     get_identifiers = npe.MapNode(nutil.Function(
-        input_names=['participant_id', 'session_id', 'caps_directory'], output_names=['base_directory', 'subst_tuple_list', 'regexp_substitutions'],
+        input_names=['participant_id', 'session_id', 'caps_directory', 'hemi'], output_names=['base_directory', 'subst_tuple_list', 'regexp_substitutions'],
         function=get_subid_sesid_datasink), iterfield=['participant_id', 'session_id'], name='get_subid_sesid_datasink')
     get_identifiers.inputs.caps_directory = caps_directory
+    get_identifiers.inputs.hemi = hemi
 
     ### datasink
     datasink = npe.MapNode(nio.DataSink(infields=['output_hippocampus_nii', 'output_hippocampus_pt']), name='datasinker',
