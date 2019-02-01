@@ -43,7 +43,7 @@ parser.add_argument("--train_from_stop_point", default=False, type=bool,
                     help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
 parser.add_argument("--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
-parser.add_argument("--transfer_learning", default=True, type=bool, help="If do transfer learning")
+parser.add_argument("--transfer_learning", default=False, type=bool, help="If do transfer learning")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")
 parser.add_argument("--split", default=None, type=int,
