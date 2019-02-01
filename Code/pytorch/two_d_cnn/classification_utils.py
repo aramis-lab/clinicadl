@@ -768,3 +768,143 @@ def load_model_from_log(model, optimizer, checkpoint_dir, filename='checkpoint.p
 
     return model_updated, optimizer, param_dict['global_step'], param_dict['epoch']
 
+
+
+## TODO soft voting system
+def results_to_tsvs_train_valid(output_dir, iteration, train_subjects, y_grounds_train, y_hats_train, train_subjects_prob, valid_subjects, y_grounds_valid, y_hats_valid, valid_subjects_prob):
+    """
+    This is a function to calculate the subject-level acc for training, validation and test
+
+    For train, the slice-level acc were saved during all training, which will be used for calculating the validation and
+    test subject-level performances
+
+    :param output_dir:
+    :param iteration:
+    :param subject_list:
+    :param y_truth:
+    :param y_hat:
+    :return:
+    """
+
+    # check if the folder exist
+    results_dir = os.path.join(output_dir, 'performances', 'fold_' + str(iteration))
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
+    ### for train
+    # slice-level
+    performance_df_slice_train = pd.DataFrame({'iteration': iteration,
+                                                'y': y_grounds_train,
+                                                'y_hat': y_hats_train,
+                                                'subject': train_subjects,
+                                                'probability': train_subjects_prob})
+    performance_df_slice_train.to_csv(os.path.join(results_dir, 'train_slice_level_result.tsv'), index=False, sep='\t', encoding='utf-8', columns=["subject", "y", "y_hat", "probability", "iteration"])
+
+    # subject-level
+    result_df_train = hard_voting(performance_df_slice_train, results_dir, iteration, "train")
+    results = evaluate_prediction(list(result_df_train.y), [int(e) for e in list(result_df_train.y_hat)]) ## Note, convert y_hat to good format
+    del results['confusion_matrix']
+    pd.DataFrame(results, index=[0]).to_csv(os.path.join(results_dir, 'train_subject_level_metrics_hard.tsv'), index=False, sep='\t', encoding='utf-8')
+
+    ## valid
+    # slice-level
+    performance_df_slice_valid = pd.DataFrame({'iteration': iteration,
+                                                'y': y_grounds_valid,
+                                                'y_hat': y_hats_valid,
+                                                'subject': valid_subjects,
+                                                'probability': valid_subjects_prob})
+    performance_df_slice_valid.to_csv(os.path.join(results_dir, 'valid_slice_level_result.tsv'), index=False, sep='\t', encoding='utf-8', columns=["subject", "y", "y_hat", "probability", "iteration"])
+    ## hard for valid
+    result_df_valid = hard_voting(performance_df_slice_valid, results_dir, iteration, 'valid')
+    results = evaluate_prediction(list(result_df_valid.y), [int(e) for e in list(result_df_valid.y_hat)]) ## Note, y_hat here is not int, is string
+    del results['confusion_matrix']
+    pd.DataFrame(results, index=[0]).to_csv(os.path.join(results_dir, 'train_subject_level_metrics_hard.tsv'), index=False, sep='\t', encoding='utf-8')
+
+    ## soft for valid based on the training performances
+    result_df_valid = soft_voting(performance_df_slice_valid, performance_df_slice_train, results_dir, iteration, 'valid')
+    results = evaluate_prediction(list(result_df_valid.y), [int(e) for e in list(result_df_valid.y_hat)]) ## Note, N y_hat here is not int, is string
+    del results['confusion_matrix']
+    pd.DataFrame(results, index=[0]).to_csv(os.path.join(results_dir, 'train_subject_level_metrics_soft.tsv'), index=False, sep='\t', encoding='utf-8')
+
+
+def soft_voting(performance_df_slice_valid, performance_df_slice_train, output_dir, iteration, mode):
+    """
+    This is for soft voting for subject-level performances
+    :param performance_df: the pandas dataframe, including columns: iteration, y, y_hat, subject, probability
+
+    ref:
+    :return:
+    """
+
+    performance_df_subject = performance_df_slice_valid
+    subject_df = performance_df_subject['subject']
+    subject_series = subject_df.apply(remove_slice_number)
+    subject_df_new = pd.DataFrame({'subject': subject_series.values})
+    # replace the column in the dataframe
+    performance_df_subject['subject'] = subject_df_new['subject'].values
+
+    ## do majority vote
+    df_y = performance_df_subject.groupby(['subject'], as_index=False).y.mean() # get the true label for each subject
+    df_yhat = pd.DataFrame(columns=['subject', 'y_hat'])
+    for subject, subject_df in performance_df_subject.groupby(['subject']):
+        num_slice = len(subject_df.y_hat)
+        slices_predicted_as_one = subject_df.y_hat.sum()
+        if slices_predicted_as_one > num_slice / 2:
+            label = 1
+        else:
+            label = 0
+        row_array = np.array(list([subject, label])).reshape(1, 2)
+        row_df = pd.DataFrame(row_array, columns=df_yhat.columns)
+        df_yhat = df_yhat.append(row_df)
+
+    # reset the index of df_yhat
+    df_yhat.reset_index()
+    result_df = pd.merge(df_y, df_yhat, on='subject')
+    ## insert the column of iteration
+    result_df['iteration'] = str(iteration)
+
+    result_df.to_csv(os.path.join(output_dir, mode + '_subject_level_result_hard.tsv'), index=False, sep='\t', encoding='utf-8')
+
+    return result_df
+
+
+def remove_slice_number(s):
+    return s.split('_slice')[0]
+
+def hard_voting(performance_df, output_dir, iteration, mode):
+    """
+    This is for hard voting for subject-level performances
+    :param performance_df: the pandas dataframe, including columns: iteration, y, y_hat, subject, probability
+    :return:
+    """
+
+    performance_df_subject = performance_df
+    subject_df = performance_df_subject['subject']
+    subject_series = subject_df.apply(remove_slice_number)
+    subject_df_new = pd.DataFrame({'subject': subject_series.values})
+    # replace the column in the dataframe
+    performance_df_subject['subject'] = subject_df_new['subject'].values
+
+    ## do majority vote
+    df_y = performance_df_subject.groupby(['subject'], as_index=False).y.mean() # get the true label for each subject
+    df_yhat = pd.DataFrame(columns=['subject', 'y_hat'])
+    for subject, subject_df in performance_df_subject.groupby(['subject']):
+        num_slice = len(subject_df.y_hat)
+        slices_predicted_as_one = subject_df.y_hat.sum()
+        if slices_predicted_as_one > num_slice / 2:
+            label = 1
+        else:
+            label = 0
+        row_array = np.array(list([subject, label])).reshape(1, 2)
+        row_df = pd.DataFrame(row_array, columns=df_yhat.columns)
+        df_yhat = df_yhat.append(row_df)
+
+    # reset the index of df_yhat
+    df_yhat.reset_index()
+    result_df = pd.merge(df_y, df_yhat, on='subject')
+    ## insert the column of iteration
+    result_df['iteration'] = str(iteration)
+
+    result_df.to_csv(os.path.join(output_dir, mode + '_subject_level_result_hard.tsv'), index=False, sep='\t', encoding='utf-8')
+
+    return result_df

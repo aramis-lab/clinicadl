@@ -33,6 +33,9 @@ parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
 parser.add_argument('--image_processing', default="LinearReg", choices=["LinearReg", "Segmented"],
                     help="The output of which image processing pipeline to fit into the network. By defaut, using the raw one with only linear registration, otherwise, using the output of spm pipeline of Clinica")
+parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["baseline", "longitudinal"],
+                    help="Using baseline scans or all available longitudinal scans for training")
+
 
 ## train argument
 parser.add_argument("--network", default="AlexNet", choices=["AlexNet", "ResNet", "LeNet", "AllConvNet", "Vgg16", "DenseNet161", "InceptionV3", "AlexNetonechannel"],
@@ -113,10 +116,10 @@ def main(options):
         ## load the tsv file
         if options.split != None:
             ## train seperately a specific fold during the k-fold, also good for the limitation of your comuptational power
-            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split)
+            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split, n_splits=options.n_splits, baseline=options.baseline_or_longitudinal)
             fi = options.split
         else:
-             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi)
+             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, n_splits=options.n_splits, baseline=options.baseline_or_longitudinal)
 
         data_train = MRIDataset_slice(options.caps_directory, training_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type, image_processing=options.image_processing)
         data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type, image_processing=options.image_processing)
@@ -239,6 +242,7 @@ def main(options):
         # writer_train.add_graph(model, example_batch)
 
         ### write the information of subjects and performances into tsv files.
+        ## TODO soft voting system
         fold_subjects_df_train, results_train = results_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train, mode='train')
         fold_subjects_df_valid, results_valid = results_to_tsvs(options.output_dir, fi, valid_subjects, y_grounds_valid, y_hats_valid, mode='validation')
 
