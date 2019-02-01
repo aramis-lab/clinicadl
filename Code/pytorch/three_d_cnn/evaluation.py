@@ -119,5 +119,5 @@ if __name__ == "__main__":
 
     text_file.close()
 
-    train_df.to_csv(path.join(evaluation_path, 'train_' + options.selection + '_result.tsv'), sep='\t')
-    valid_df.to_csv(path.join(evaluation_path, 'valid_' + options.selection + '_result.tsv'), sep='\t')
+    train_df.to_csv(path.join(evaluation_path, 'train_' + options.selection + '_result.tsv'), sep='\t', index=False)
+    valid_df.to_csv(path.join(evaluation_path, 'valid_' + options.selection + '_result.tsv'), sep='\t', index=False)
