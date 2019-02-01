@@ -14,7 +14,7 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
-def postprocessing_t1w_extract_hippo(caps_directory, tsv, ref_template, working_directory=None):
+def postprocessing_t1w_extract_hippo(caps_directory, tsv, working_directory=None):
     """
     This is a postprocessing pipeline to prepare the slice-level and patch-level data from the whole MRI and save them
     on disk, so that to facilitate the training process:
@@ -30,39 +30,74 @@ def postprocessing_t1w_extract_hippo(caps_directory, tsv, ref_template, working_
     :return:
     """
 
-    import nipype.interfaces.io as nio
+    from nipype.interfaces.freesurfer import MRIConvert
     import nipype.interfaces.utility as nutil
     import nipype.pipeline.engine as npe
+    import nipype.interfaces.io as nio
     import tempfile
-    from T1_postprocessing_utils import get_caps_t1, crop_niftii_hippo
+    from T1_postprocessing_extract_hippo_utils import get_caps_t1, save_as_pt, compress_nii, get_subid_sesid_datasink, cp_to_caps
 
     if working_directory is None:
         working_directory = tempfile.mkdtemp()
 
     inputnode = npe.Node(nutil.IdentityInterface(
-        fields=['caps_directory', 'tsv', 'ref_template']),
+        fields=['caps_directory', 'tsv']),
         name='inputnode')
     inputnode.inputs.caps_directory = caps_directory
     inputnode.inputs.tsv = tsv
-    inputnode.inputs.ref_template = ref_template
 
     get_subject_session_list = npe.Node(name='get_subject_session_list',
                                interface=nutil.Function(
                                    function=get_caps_t1,
                                    input_names=['caps_directory', 'tsv'],
-                                   output_names=['preprocessed_T1']))
+                                   output_names=['preprocessed_T1', 'cropped_hipp_file_name', 'participant_id', 'session_id', 'preprocessed_T1_folder']))
 
-    ## extract the patches.
-    cropnifti_hippo = npe.MapNode(name='cropnifti',
-                            iterfield=['input_img'],
-                               interface=nutil.Function(
-                                   function=crop_niftii_hippo,
-                                   input_names=['input_img', 'ref_img'],
-                                   output_names=['output_img', 'crop_template']))
-    cropnifti.inputs.ref_img = ref_template
+    ## extract the hippocampus.
+    hippocampus_patches = npe.MapNode(name='hippocampus_patches',
+                                   iterfield=['in_file', 'out_file'],
+                                   interface=MRIConvert())
+
+    hippocampus_patches.inputs.out_type='nii'
+    hippocampus_patches.inputs.crop_center=(95, 110, 60) ## the center of the right and left hippocampus
+    hippocampus_patches.inputs.crop_size=(100, 50, 50) ## the output cropped hippocampus size
+
+    # zip the result imgs
+    ## TODO have bug to save as nii.gz
+    ###in the newest version of nipype for MRIConvert, it seems that they can be saved directly as nii.gz
+    zip_hippocampus = npe.MapNode(name='zip_hippocampus',
+                          interface=nutil.Function(input_names=['in_file'],
+                                                 output_names=['out_file'],
+                                                 function=compress_nii), iterfield=['in_file'])
+
+    ## save nii.gz into pytorch .pt format.
+    save_as_pt = npe.MapNode(name='save_as_pt',
+                             iterfield=['input_img'],
+                             interface=nutil.Function(
+                                 function=save_as_pt,
+                                 input_names=['input_img'],
+                                 output_names=['output_file']))
+
+
+    ## cp file to CAPS.
+    cp_to_caps = npe.MapNode(name='cp_to_caps',
+                             iterfield=['input_img', 'input_pt', 'preprocessed_T1_folder'],
+                             interface=nutil.Function(
+                                 function=cp_to_caps,
+                                 input_names=['input_img', 'input_pt', 'preprocessed_T1_folder'],
+                                 output_names=['input_img', 'input_pt']))
+
+    # get the information for datasinker.
+    get_identifiers = npe.MapNode(nutil.Function(
+        input_names=['participant_id', 'session_id', 'caps_directory'], output_names=['base_directory', 'subst_tuple_list', 'regexp_substitutions'],
+        function=get_subid_sesid_datasink), iterfield=['participant_id', 'session_id'], name='get_subid_sesid_datasink')
+    get_identifiers.inputs.caps_directory = caps_directory
+
+    ### datasink
+    datasink = npe.MapNode(nio.DataSink(infields=['output_hippocampus_nii', 'output_hippocampus_pt']), name='datasinker',
+                          iterfield=['output_hippocampus_nii', 'output_hippocampus_pt', 'base_directory', 'substitutions', 'regexp_substitutions'])
 
     outputnode = npe.Node(nutil.IdentityInterface(
-        fields=['preprocessed_T1']),
+        fields=['output_hippocampus_nii', 'output_hippocampus_pt']),
         name='outputnode')
 
     wf = npe.Workflow(name='t1w_postprocessing_dl_extract_hippo')
@@ -72,6 +107,20 @@ def postprocessing_t1w_extract_hippo(caps_directory, tsv, ref_template, working_
             (inputnode, get_subject_session_list, [('tsv', 'tsv')]),
             (inputnode, get_subject_session_list, [('caps_directory', 'caps_directory')]),
 
-            (get_subject_session_list, cropnifti_hippo, [('preprocessed_T1', 'input_img')]),
-            (cropnifti_hippo, outputnode, [('preprocessed_T1', 'preprocessed_T1')]),
+            (get_subject_session_list, hippocampus_patches, [('preprocessed_T1', 'in_file')]),
+            (get_subject_session_list, hippocampus_patches, [('cropped_hipp_file_name', 'out_file')]),
+            (hippocampus_patches, zip_hippocampus, [('out_file', 'in_file')]),
+            (zip_hippocampus, save_as_pt, [('out_file', 'input_img')]),
+
+            # Saving files with datasink:
+            (get_subject_session_list, get_identifiers, [('participant_id', 'participant_id')]),
+            (get_subject_session_list, get_identifiers, [('session_id', 'session_id')]),
+
+            (get_identifiers, datasink, [('base_directory', 'base_directory')]),
+            (get_identifiers, datasink, [('subst_tuple_list', 'substitutions')]),
+            (get_identifiers, datasink, [('regexp_substitutions', 'regexp_substitutions')]),
+            (save_as_pt, datasink, [('output_file', 'output_hippocampus_pt')]),
+            (zip_hippocampus, datasink, [('out_file', 'output_hippocampus_nii')]),
     ])
+
+    return wf
