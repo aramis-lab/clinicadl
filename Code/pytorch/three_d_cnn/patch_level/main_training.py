@@ -36,6 +36,9 @@ parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
 parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
+parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["baseline", "longitudinal"],
+                    help="Using baseline scans or all available longitudinal scans for training")
+
 
 # transfer learning
 parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2", "VoxResNet", "AllConvNet3D"],
@@ -95,10 +98,10 @@ def main(options):
         # to set the split = 0
         if options.split != None:
             ## train seperately a specific fold during the k-fold, also good for the limitation of your comuptational power
-            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split)
+            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split, n_splits=options.n_splits, baseline=options.baseline_or_longitudinal)
             fi = options.split
         else:
-             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi)
+             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, n_splits=options.n_splits, baseline=options.baseline_or_longitudinal)
 
         print("Running for the %d -th fold" % fi)
 
