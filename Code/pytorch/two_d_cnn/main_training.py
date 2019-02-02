@@ -116,10 +116,10 @@ def main(options):
         ## load the tsv file
         if options.split != None:
             ## train seperately a specific fold during the k-fold, also good for the limitation of your comuptational power
-            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split, n_splits=options.n_splits, baseline=options.baseline_or_longitudinal)
+            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split, n_splits=options.n_splits, baseline_or_longitudinal=options.baseline_or_longitudinal)
             fi = options.split
         else:
-             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, n_splits=options.n_splits, baseline=options.baseline_or_longitudinal)
+             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, n_splits=options.n_splits, baseline_or_longitudinal=options.baseline_or_longitudinal)
 
         data_train = MRIDataset_slice(options.caps_directory, training_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type, image_processing=options.image_processing)
         data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type, image_processing=options.image_processing)
