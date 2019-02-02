@@ -298,7 +298,7 @@ def load_split_by_task(diagnoses_tsv, val_size=0.15, random_state=None):
 
     return training_tsv, valid_tsv
 
-def load_split_by_diagnosis(options, split, n_splits=5, baseline=True):
+def load_split_by_diagnosis(options, split, n_splits=5, baseline_or_longitudinal='baseline'):
     """
     Creates a DataFrame for training and validation sets given the wanted diagnoses, this is helpful to train the autoencoder with maximum availble data
 
@@ -326,7 +326,7 @@ def load_split_by_diagnosis(options, split, n_splits=5, baseline=True):
 
     for diagnosis in options.diagnoses_list:
 
-        if baseline:
+        if baseline_or_longitudinal == "baseline":
             train_diagnosis_tsv = path.join(train_path, diagnosis + '_baseline.tsv')
         else:
             train_diagnosis_tsv = path.join(train_path, diagnosis + '.tsv')
