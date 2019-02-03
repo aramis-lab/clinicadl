@@ -51,13 +51,15 @@ parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,
                     help="Labels based on binary classification")
 
 # Training arguments
-parser.add_argument("--epochs", default=1, type=int,
+parser.add_argument("--epochs", default=100, type=int,
                     help="Epochs through the data. (default=20)")
+parser.add_argument("--training_accuracy_batches", default=5, type=int,
+                    help="How many former batches to be fit into the trained model to quantify the training performance")
 parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")
-parser.add_argument("--split", default=None, type=int,
+parser.add_argument("--split", default=0, type=int,
                     help="Define a specific fold in the k-fold, this is very useful to find the optimal model, where you do not want to run your k-fold validation")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
@@ -98,10 +100,10 @@ def main(options):
         # to set the split = 0
         if options.split != None:
             ## train seperately a specific fold during the k-fold, also good for the limitation of your comuptational power
-            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split, n_splits=options.n_splits, baseline_or_longitudinal=options.baseline_or_longitudinal, autoencoder=False)
+            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split, baseline_or_longitudinal=options.baseline_or_longitudinal, autoencoder=False)
             fi = options.split
         else:
-             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, n_splits=options.n_splits, baseline_or_longitudinal=options.baseline_or_longitudinal, autoencoder=False)
+             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, baseline_or_longitudinal=options.baseline_or_longitudinal, autoencoder=False)
 
         print("Running for the %d -th fold" % fi)
 
@@ -198,13 +200,13 @@ def main(options):
             print("At %s -th epoch." % str(epoch))
 
             # train the model
-            train_subject, y_ground_train, y_hat_train, acc_mean_train, global_step, loss_batch_mean = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch, model_mode='train', global_step=global_step)
+            train_subject, y_ground_train, y_hat_train, acc_mean_train, global_step, loss_batch_mean = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch, model_mode='train', global_step=global_step, training_accuracy_batches=options.training_accuracy_batches)
             if epoch == options.epochs -1:
                 train_subjects.extend(train_subject)
                 y_grounds_train.extend(y_ground_train)
                 y_hats_train.extend(y_hat_train)
             ## at then end of each epoch, we validate one time for the model with the validation data
-            valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_step, loss_batch_mean = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, model_mode='valid', global_step=global_step)
+            valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_step, loss_batch_mean = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, model_mode='valid', global_step=global_step, training_accuracy_batches=options.training_accuracy_batches)
             print("Slice level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
             if epoch == options.epochs -1:
                 valid_subjects.extend(valid_subject)

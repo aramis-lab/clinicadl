@@ -46,12 +46,12 @@ parser.add_argument("--train_from_stop_point", default=False, type=bool,
                     help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
 parser.add_argument("--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
-parser.add_argument("--transfer_learning", default=False, type=bool, help="If do transfer learning")
+parser.add_argument("--transfer_learning", default=True, type=bool, help="If do transfer learning")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")
 parser.add_argument("--split", default=None, type=int,
                     help="Define a specific fold in the k-fold, this is very useful to find the optimal model, where you do not want to run your k-fold validation")
-parser.add_argument("--epochs", default=2, type=int,
+parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--batch_size", default=32, type=int,
                     help="Batch size for training. (default=1)")
@@ -116,10 +116,10 @@ def main(options):
         ## load the tsv file
         if options.split != None:
             ## train seperately a specific fold during the k-fold, also good for the limitation of your comuptational power
-            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split, n_splits=options.n_splits, baseline_or_longitudinal=options.baseline_or_longitudinal)
+            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split, baseline_or_longitudinal=options.baseline_or_longitudinal)
             fi = options.split
         else:
-             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, n_splits=options.n_splits, baseline_or_longitudinal=options.baseline_or_longitudinal)
+             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, baseline_or_longitudinal=options.baseline_or_longitudinal)
 
         data_train = MRIDataset_slice(options.caps_directory, training_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type, image_processing=options.image_processing)
         data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type, image_processing=options.image_processing)
@@ -217,25 +217,27 @@ def main(options):
 
             # save the best model based on the best acc
             is_best = acc_mean_valid > best_accuracy
-            best_accuracy = max(best_accuracy, acc_mean_valid)
-            save_checkpoint({
-                'epoch': epoch + 1,
-                'model': model.state_dict(),
-                'best_predict': best_accuracy,
-                'optimizer': optimizer.state_dict(),
-                'global_step': global_step
-            }, is_best, os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), 'best_acc'))
+            if is_best:
+                best_accuracy = max(best_accuracy, acc_mean_valid)
+                save_checkpoint({
+                    'epoch': epoch + 1,
+                    'model': model.state_dict(),
+                    'best_predict': best_accuracy,
+                    'optimizer': optimizer.state_dict(),
+                    'global_step': global_step
+                }, is_best, os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), 'best_acc'))
 
             # save the best model based on the best loss
             is_best = loss_batch_mean_valid < best_loss_valid
-            best_loss_valid = min(loss_batch_mean_valid, best_loss_valid)
-            save_checkpoint({
-                'epoch': epoch + 1,
-                'model': model.state_dict(),
-                'best_loss': best_loss_valid,
-                'optimizer': optimizer.state_dict(),
-                'global_step': global_step
-            }, is_best, os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "best_loss"))
+            if is_best:
+                best_loss_valid = min(loss_batch_mean_valid, best_loss_valid)
+                save_checkpoint({
+                    'epoch': epoch + 1,
+                    'model': model.state_dict(),
+                    'best_loss': best_loss_valid,
+                    'optimizer': optimizer.state_dict(),
+                    'global_step': global_step
+                }, is_best, os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "best_loss"))
 
         ## save the graph and image
         # buf for 3D image, for 2D slice, it can save the graph
