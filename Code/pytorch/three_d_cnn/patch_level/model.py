@@ -60,7 +60,8 @@ class Conv_4_FC_2(nn.Module):
             nn.Linear(64 * 2 * 2 * 2, 1000),
             nn.ReLU(),
 
-            nn.Linear(1000, n_classes)
+            nn.Linear(1000, n_classes),
+            nn.Softmax(dim=1)
         )
 
         self.flattened_shape = [-1, 4, 5, 4, 23]

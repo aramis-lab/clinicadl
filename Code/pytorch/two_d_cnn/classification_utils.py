@@ -66,26 +66,24 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
 
             _, predict = output.topk(1)
             predict_list = predict.data.cpu().numpy().tolist()
-            y_hat.extend([item for sublist in predict_list for item in sublist])
-            if model_mode == "train" or model_mode == 'valid':
-                print("output.device: " + str(output.device))
-                print("labels.device: " + str(labels.device))
-                print("The predicted label is: " + str(output))
-                loss_batch = loss_func(output, labels)
-            correct_this_batch = (predict.squeeze(1) == labels).sum().float()
-            # To monitor the training process using tensorboard, we only display the training loss and accuracy, the other performance metrics, such
-            # as balanced accuracy, will be saved in the tsv file.
-            accuracy = float(correct_this_batch) / len(labels)
-            acc += accuracy
+            predict_list = [item for sublist in predict_list for item in sublist]
+            y_hat.extend(predict_list)
+
+            print("output.device: " + str(output.device))
+            print("labels.device: " + str(labels.device))
+            print("The predicted label is: " + str(output))
+            loss_batch = loss_func(output, labels)
+
+            ## calculate the balanced accuracy
+            results = evaluate_prediction(labels.data.cpu().numpy().tolist(), predict_list)
+            balanced_accuracy = results['balanced_accuracy']
+            acc += balanced_accuracy
             loss += loss_batch.item()
 
             print("For batch %d, training loss is : %f" % (i, loss_batch.item()))
-            print("For batch %d, training accuracy is : %f" % (i, accuracy))
+            print("For batch %d, training accuracy is : %f" % (i, balanced_accuracy))
 
-            # writer.add_scalar('classification accuracy', accuracy, i + epoch * len(data_loader))
-            # writer.add_scalar('loss', loss_batch, i + epoch * len(data_loader))
-
-            writer.add_scalar('classification accuracy', accuracy, global_step)
+            writer.add_scalar('classification accuracy', balanced_accuracy, global_step)
             writer.add_scalar('loss', loss_batch, global_step)
 
             # Unlike tensorflow, in Pytorch, we need to manully zero the graident before each backpropagation step, becase Pytorch accumulates the gradients
@@ -99,12 +97,11 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
 
             # delete the temporal varibles taking the GPU memory
             # del imgs, labels
-            del imgs, labels, output, predict, gound_truth_list, correct_this_batch, loss_batch
+            del imgs, labels, output, predict, gound_truth_list, loss_batch, balanced_accuracy, results
             # Releases all unoccupied cached memory
             torch.cuda.empty_cache()
             tend = time()
         print('Mean time per batch (train):', total_time / len(data_loader))
-
 
         accuracy_batch_mean = acc / len(data_loader)
         loss_batch_mean = loss / len(data_loader)
@@ -134,26 +131,29 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
 
                 _, predict = output.topk(1)
                 predict_list = predict.data.cpu().numpy().tolist()
-                y_hat.extend([item for sublist in predict_list for item in sublist])
+                predict_list = [item for sublist in predict_list for item in sublist]
+                y_hat.extend(predict_list)
+
                 print("output.device: " + str(output.device))
                 print("labels.device: " + str(labels.device))
                 print("The predicted label is: " + str(output))
                 loss_batch = loss_func(output, labels)
-                correct_this_batch = (predict.squeeze(1) == labels).sum().float()
-                # To monitor the training process using tensorboard, we only display the training loss and accuracy, the other performance metrics, such
-                # as balanced accuracy, will be saved in the tsv file.
-                accuracy = float(correct_this_batch) / len(labels)
-                acc += accuracy
+
+                ## calculate the balanced accuracy
+                results = evaluate_prediction(labels.data.cpu().numpy().tolist(), predict_list)
+                balanced_accuracy = results['balanced_accuracy']
                 loss += loss_batch.item()
-                print("For batch %d, validation accuracy is : %f" % (i, accuracy))
+                print("For batch %d, validation accuracy is : %f" % (i, balanced_accuracy))
 
                 # delete the temporal varibles taking the GPU memory
                 # del imgs, labels
-                del imgs, labels, output, predict, gound_truth_list, correct_this_batch, loss_batch
+                del imgs, labels, output, predict, gound_truth_list, balanced_accuracy, loss_batch, results
                 # Releases all unoccupied cached memory
                 torch.cuda.empty_cache()
 
-            accuracy_batch_mean = acc / len(data_loader)
+            ## calculate the balanced accuracy
+            results = evaluate_prediction(y_ground, y_hat)
+            accuracy_batch_mean = results['balanced_accuracy']
             loss_batch_mean = loss / len(data_loader)
 
             writer.add_scalar('classification accuracy', accuracy_batch_mean, global_step)
