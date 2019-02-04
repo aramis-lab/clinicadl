@@ -703,15 +703,15 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
 
             ## calculate the balanced accuracy
             results = evaluate_prediction(labels.data.cpu().numpy().tolist(), predict_list)
-            balanced_accuracy = results['balanced_accuracy']
-            acc += balanced_accuracy
+            accuracy = results['accuracy']
+            acc += accuracy
             loss += loss_batch.item()
 
-            writer.add_scalar('classification accuracy', balanced_accuracy, global_step)
+            writer.add_scalar('classification accuracy', accuracy, global_step)
             writer.add_scalar('loss', loss_batch, global_step)
 
             print("For batch %d, training loss is : %f" % (i, loss_batch.item()))
-            print("For batch %d, training accuracy is : %f" % (i, balanced_accuracy))
+            print("For batch %d, training accuracy is : %f" % (i, accuracy))
 
             # Unlike tensorflow, in Pytorch, we need to manully zero the graident before each backpropagation step, becase Pytorch accumulates the gradients
             # on subsequent backward passes. The initial designing for this is convenient for training RNNs.
@@ -722,7 +722,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             ## update the global steps
             global_step = i + epoch_i * len(data_loader)
 
-            # ## accumlate n batch of data to calculate the training accuracy, this helps when the batch size is quite small
+            # # ## accumlate n batch of data to calculate the training accuracy, this helps when the batch size is quite small
             # train_images.append(imgs)
             # train_labels.append(labels)
             #
@@ -743,19 +743,17 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             #
             #     ## calculate the balanced accuracy
             #     results = evaluate_prediction(y_ground_batches, y_hat_batches)
-            #     balanced_accuracy_batches = results['balanced_accuracy']
+            #     accuracy_batches = results['accuracy']
             #
-            #     writer.add_scalar('classification accuracy', balanced_accuracy_batches, global_step)
+            #     writer.add_scalar('classification accuracy', accuracy_batches, global_step)
             #     writer.add_scalar('loss', loss_batchs / len(train_images), global_step)
             #     # initialize these variables
             #     train_images = []
             #     train_labels = []
-            #     del y_hat_batches, y_ground_batches, loss_batchs
-
+            #     del y_hat_batches, y_ground_batches, loss_batchs, accuracy_batches
 
             # delete the temporal varibles taking the GPU memory
-            # del imgs, labels
-            del imgs, labels, output, predict, gound_truth_list, loss_batch, balanced_accuracy, results
+            del imgs, labels, output, predict, gound_truth_list, loss_batch, accuracy, results
             # Releases all unoccupied cached memory
             torch.cuda.empty_cache()
 
@@ -795,20 +793,20 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
                 loss_batch = loss_func(output, labels)
                 ## calculate the balanced accuracy
                 results = evaluate_prediction(labels.data.cpu().numpy().tolist(), predict_list)
-                balanced_accuracy = results['balanced_accuracy']
+                accuracy = results['accuracy']
 
                 loss += loss_batch.item()
-                print("For batch %d, validation accuracy is : %f" % (i, balanced_accuracy))
+                print("For batch %d, validation accuracy is : %f" % (i, accuracy))
 
                 # delete the temporal varibles taking the GPU memory
                 # del imgs, labels
-                del imgs, labels, output, predict, gound_truth_list, balanced_accuracy, loss_batch, results
+                del imgs, labels, output, predict, gound_truth_list, accuracy, loss_batch, results
                 # Releases all unoccupied cached memory
                 torch.cuda.empty_cache()
 
             ## calculate the balanced accuracy
             results = evaluate_prediction(y_ground, y_hat)
-            accuracy_batch_mean = results['balanced_accuracy']
+            accuracy_batch_mean = results['accuracy']
             loss_batch_mean = loss / len(data_loader)
 
             writer.add_scalar('classification accuracy', accuracy_batch_mean, global_step)

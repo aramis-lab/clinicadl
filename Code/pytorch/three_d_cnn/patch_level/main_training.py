@@ -51,7 +51,7 @@ parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,
                     help="Labels based on binary classification")
 
 # Training arguments
-parser.add_argument("--epochs", default=100, type=int,
+parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--training_accuracy_batches", default=5, type=int,
                     help="How many former batches to be fit into the trained model to quantify the training performance")
