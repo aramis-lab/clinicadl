@@ -75,15 +75,15 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
             loss_batch = loss_func(output, labels)
 
             ## calculate the balanced accuracy
-            results = evaluate_prediction(labels.data.cpu().numpy().tolist(), predict_list)
-            balanced_accuracy = results['balanced_accuracy']
-            acc += balanced_accuracy
+            results = evaluate_prediction(gound_truth_list, predict_list)
+            accuracy = results['accuracy']
+            acc += accuracy
             loss += loss_batch.item()
 
             print("For batch %d, training loss is : %f" % (i, loss_batch.item()))
-            print("For batch %d, training accuracy is : %f" % (i, balanced_accuracy))
+            print("For batch %d, training accuracy is : %f" % (i, accuracy))
 
-            writer.add_scalar('classification accuracy', balanced_accuracy, global_step)
+            writer.add_scalar('classification accuracy', accuracy, global_step)
             writer.add_scalar('loss', loss_batch, global_step)
 
             # Unlike tensorflow, in Pytorch, we need to manully zero the graident before each backpropagation step, becase Pytorch accumulates the gradients
@@ -97,7 +97,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
 
             # delete the temporal varibles taking the GPU memory
             # del imgs, labels
-            del imgs, labels, output, predict, gound_truth_list, loss_batch, balanced_accuracy, results
+            del imgs, labels, output, predict, gound_truth_list, loss_batch, accuracy, results
             # Releases all unoccupied cached memory
             torch.cuda.empty_cache()
             tend = time()
@@ -140,14 +140,14 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
                 loss_batch = loss_func(output, labels)
 
                 ## calculate the balanced accuracy
-                results = evaluate_prediction(labels.data.cpu().numpy().tolist(), predict_list)
-                balanced_accuracy = results['balanced_accuracy']
+                results = evaluate_prediction(gound_truth_list, predict_list)
+                accuracy = results['accuracy']
                 loss += loss_batch.item()
-                print("For batch %d, validation accuracy is : %f" % (i, balanced_accuracy))
+                print("For batch %d, validation accuracy is : %f" % (i, accuracy))
 
                 # delete the temporal varibles taking the GPU memory
                 # del imgs, labels
-                del imgs, labels, output, predict, gound_truth_list, balanced_accuracy, loss_batch, results
+                del imgs, labels, output, predict, gound_truth_list, accuracy, loss_batch, results
                 # Releases all unoccupied cached memory
                 torch.cuda.empty_cache()
 
@@ -162,6 +162,67 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
             torch.cuda.empty_cache()
 
     return subjects, y_ground, y_hat, accuracy_batch_mean, global_step, loss_batch_mean
+
+def test(model, data_loader, use_cuda):
+    """
+    The function to evaluate the testing data for the trained classifiers
+    :param model:
+    :param test_loader:
+    :param use_cuda:
+    :return:
+    """
+
+    subjects = []
+    y_ground = []
+    y_hat = []
+    print("Start evaluate the model!")
+
+    model.eval()  ## set the model to evaluation mode
+    torch.cuda.empty_cache()
+    with torch.no_grad():
+        ## torch.no_grad() needs to be set, otherwise the accumulation of gradients would explose the GPU memory.
+        print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
+        for i, batch_data in enumerate(data_loader):
+            if use_cuda:
+                imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
+            else:
+                imgs, labels = batch_data['image'], batch_data['label']
+
+            ## add the participant_id + session_id
+            image_ids = batch_data['image_id']
+            subjects.extend(image_ids)
+
+            gound_truth_list = labels.data.cpu().numpy().tolist()
+            y_ground.extend(gound_truth_list)
+
+            print('The group true label is %s' % (str(labels)))
+            output = model(imgs)
+
+            _, predict = output.topk(1)
+            predict_list = predict.data.cpu().numpy().tolist()
+            predict_list = [item for sublist in predict_list for item in sublist]
+            y_hat.extend(predict_list)
+
+            print("output.device: " + str(output.device))
+            print("labels.device: " + str(labels.device))
+            print("The predicted label is: " + str(output))
+
+            ## calculate the balanced accuracy
+            results = evaluate_prediction(gound_truth_list, predict_list)
+            accuracy = results['accuracy']
+            print("For batch %d, test accuracy is : %f" % (i, accuracy))
+
+            # delete the temporal varibles taking the GPU memory
+            del imgs, labels, output, predict, gound_truth_list, accuracy, results
+            # Releases all unoccupied cached memory
+            torch.cuda.empty_cache()
+
+        ## calculate the balanced accuracy
+        results = evaluate_prediction(y_ground, y_hat)
+        accuracy_batch_mean = results['balanced_accuracy']
+        torch.cuda.empty_cache()
+
+    return subjects, y_ground, y_hat, accuracy_batch_mean
 
 def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar'):
     """
@@ -470,7 +531,7 @@ class MRIDataset_slice(Dataset):
                 if self.transfer_learning:
                     slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
                                               'preprocessing_dl',
-                                              img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' + self.slice_direction + '_rgblslice-' + str(
+                                              img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' + self.slice_direction + '_rgbslice-' + str(
                                                   index_slice + 20) + '.pt')
                 else:
                     slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
@@ -479,10 +540,10 @@ class MRIDataset_slice(Dataset):
                                                   index_slice + 20) + '.pt')
             else:
                 if self.transfer_learning:
-                    slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'spm', 'dartel', 'group-ADNIbl', img_name + '_' + sess_name + '_T1w_segm-graymatter_space-Ixi549Space_modulated-on_fwhm-8mm_probability_axis-' + self.slice_direction + '_rgblslice-' + str(
+                    slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'spm', 'dartel', 'group-ADNIbl', img_name + '_' + sess_name + '_T1w_segm-graymatter_space-Ixi549Space_modulated-on_fwhm-8mm_probability_axis-' + self.slice_direction + '_rgbslice-' + str(
                                                   index_slice + 20) + '.pt')
                 else:
-                    slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'spm', 'dartel', 'group-ADNIbl', img_name + '_' + sess_name + '_T1w_segm-graymatter_space-Ixi549Space_modulated-on_fwhm-8mm_probability_axis-' + self.slice_direction + '_rgblslice-' + str(
+                    slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'spm', 'dartel', 'group-ADNIbl', img_name + '_' + sess_name + '_T1w_segm-graymatter_space-Ixi549Space_modulated-on_fwhm-8mm_probability_axis-' + self.slice_direction + '_rgbslice-' + str(
                                                   index_slice + 20) + '.pt')
 
             extracted_slice = torch.load(slice_path)
@@ -573,7 +634,7 @@ class CustomToTensor(object):
             # return img.float()
             return img
 
-def results_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat, mode='train'):
+def results_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat, mode='train', vote_mode='hard'):
     """
     This is a function to trace all subject during training, test and validation, and calculate the performances with different metrics into tsv files.
     :param output_dir:
@@ -595,7 +656,15 @@ def results_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat, mode='t
                                                 'y': y_truth,
                                                 'y_hat': y_hat,
                                                 'subject': subject_list})
+
+    ## save the slice level results
     performance_df.to_csv(os.path.join(iteration_dir, mode + '_slice_level_result.tsv'), index=False, sep='\t', encoding='utf-8')
+
+    ## save the sliece level different metrics
+    results = evaluate_prediction(list(performance_df.y), [int(e) for e in list(performance_df.y_hat)]) ## Note, y_hat here is not int, is string
+    del results['confusion_matrix']
+
+    pd.DataFrame(results, index=[0]).to_csv(os.path.join(iteration_dir, mode + '_slice_level_metrics.tsv'), index=False, sep='\t', encoding='utf-8')
 
     ## calculate the subject-level performances based on the majority vote.
     # delete the slice number in the column of subject
@@ -606,7 +675,7 @@ def results_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat, mode='t
     # replace the column in the dataframe
     performance_df_subject['subject'] = subject_df_new['subject'].values
 
-    ## do majority vote
+    ## do hard majority vote
     df_y = performance_df_subject.groupby(['subject'], as_index=False).y.mean() # get the true label for each subject
     df_yhat = pd.DataFrame(columns=['subject', 'y_hat'])
     for subject, subject_df in performance_df_subject.groupby(['subject']):
@@ -626,12 +695,12 @@ def results_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat, mode='t
     ## insert the column of iteration
     result_df['iteration'] = str(iteration)
 
-    result_df.to_csv(os.path.join(iteration_dir, mode + '_subject_level_result.tsv'), index=False, sep='\t', encoding='utf-8')
+    result_df.to_csv(os.path.join(iteration_dir, mode + '_subject_level_result_' + vote_mode + '_vote.tsv'), index=False, sep='\t', encoding='utf-8')
 
     results = evaluate_prediction(list(result_df.y), [int(e) for e in list(result_df.y_hat)]) ## Note, y_hat here is not int, is string
     del results['confusion_matrix']
 
-    pd.DataFrame(results, index=[0]).to_csv(os.path.join(iteration_dir, mode + '_subject_level_metrics.tsv'), index=False, sep='\t', encoding='utf-8')
+    pd.DataFrame(results, index=[0]).to_csv(os.path.join(iteration_dir, mode + '_subject_level_metrics_' + vote_mode + '_vote.tsv'), index=False, sep='\t', encoding='utf-8')
 
     return performance_df, pd.DataFrame(results, index=[0])
 
@@ -767,6 +836,25 @@ def load_model_from_log(model, optimizer, checkpoint_dir, filename='checkpoint.p
     optimizer.load_state_dict(param_dict['optimizer'])
 
     return model_updated, optimizer, param_dict['global_step'], param_dict['epoch']
+
+def load_model_test(model, checkpoint_dir, filename):
+    """
+    This is to load a saved model for testing
+    :param model:
+    :param checkpoint_dir:
+    :param filename:
+    :return:
+    """
+    from copy import deepcopy
+
+    ## set the model to be eval mode, we explicitly think that the model was saved in eval mode, otherwise, it will affects the BN and dropout
+    model.eval()
+    model_updated = deepcopy(model)
+    param_dict = torch.load(os.path.join(checkpoint_dir, filename))
+    model_updated.load_state_dict(param_dict['model'])
+
+    return model_updated, param_dict['global_step'], param_dict['epoch']
+
 
 
 

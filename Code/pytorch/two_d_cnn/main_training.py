@@ -38,7 +38,7 @@ parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["
 
 
 ## train argument
-parser.add_argument("--network", default="AlexNet", choices=["AlexNet", "ResNet", "LeNet", "AllConvNet", "Vgg16", "DenseNet161", "InceptionV3", "AlexNetonechannel"],
+parser.add_argument("--network", default="ResNet", choices=["AlexNet", "ResNet", "LeNet", "AllConvNet", "Vgg16", "DenseNet161", "InceptionV3", "AlexNetonechannel"],
                     help="Deep network type. Only ResNet was designed for training from scratch.")
 parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,
                     help="Labels for any binary task")
