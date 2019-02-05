@@ -20,8 +20,13 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
     :param run:
     :param options:
     """
-    # Create writers
+    # from tensorboardX import SummaryWriter
     from time import time
+
+    # Create writers
+    # TODO: Use tensorboardX once it is installed on the cluster
+    # writer_train = SummaryWriter(os.path.join(options.log_dir, 'train'))
+    # writer_valid = SummaryWriter(os.path.join(options.log_dir, 'validation'))
 
     columns = ['epoch', 'iteration', 'acc_train', 'mean_loss_train', 'acc_valid', 'mean_loss_valid', 'time']
     if not isinstance(run, str):
@@ -53,7 +58,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
     t_beggining = time()
 
     while epoch < options.epochs:
-        total_correct_cnt = 0.0
         print("At %d-th epoch." % epoch)
 
         model.zero_grad()
@@ -62,6 +66,16 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
         last_check_point_i = 0
         tend = time()
         total_time = 0
+
+        # Initialize metrics for training evaluation
+        concat_loss = []
+        if options.gpu:
+            concat_prediction = torch.LongTensor().cuda()
+            concat_truth = torch.LongTensor().cuda()
+        else:
+            concat_prediction = torch.LongTensor()
+            concat_truth = torch.LongTensor()
+
         for i, data in enumerate(train_loader, 0):
             t0 = time()
             total_time = total_time + t0 - tend
@@ -70,10 +84,13 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
             else:
                 imgs, labels = data['image'], data['label']
             train_output = model(imgs)
-            _, predict = train_output.topk(1)
+            _, predict_batch = train_output.topk(1)
+            concat_prediction = torch.cat((concat_prediction, predict_batch), 0)
+            concat_truth = torch.cat((concat_truth, labels))
             loss = criterion(train_output, labels)
-            batch_correct_cnt = (predict.squeeze(1) == labels).sum().float()
-            total_correct_cnt += batch_correct_cnt
+            concat_loss.append(loss.item())
+
+            # Back propagation
             loss.backward()
 
             del imgs, labels
@@ -89,11 +106,32 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
                 if(i+1) % options.evaluation_steps == 0:
                     evaluation_flag = False
                     print('Iteration %d' % i)
-                    acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
-                    mean_loss_train = total_loss_train / (len(train_loader) * train_loader.batch_size)
+                    # Training performance is evaluated on the last batches seen
+                    if options.gpu:
+                        concat_prediction_arr = concat_prediction.view(-1).cpu().numpy().astype(int)
+                        concat_truth_arr = concat_truth.view(-1).cpu().numpy().astype(int)
+                    else:
+                        concat_prediction_arr = concat_prediction.view(-1).numpy().astype(int)
+                        concat_truth_arr = concat_truth.view(-1).numpy().astype(int)
+
+                    if options.training_evaluation == 'n_batches':
+                        metrics = evaluate_prediction(concat_truth_arr, concat_prediction_arr, options.evaluation_steps)
+                        acc_mean_train = metrics['balanced_accuracy']
+                        total_loss_train = sum(concat_loss[-options.evaluation_steps:])
+                        mean_loss_train = total_loss_train / (options.evaluation_steps * train_loader.batch_size)
+                    else:
+                        acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
+                        mean_loss_train = total_loss_train / (len(train_loader) * train_loader.batch_size)
+
                     acc_mean_valid, total_loss_valid = test(model, valid_loader, options.gpu, criterion)
-                    mean_loss_valid = total_loss_valid / (len(valid_loader) * train_loader.batch_size)
+                    mean_loss_valid = total_loss_valid / (len(valid_loader) * valid_loader.batch_size)
                     model.train()
+
+                    # TODO: Use tensorboardX once it is installed on the cluster
+                    # writer_train.add_scalar('balanced_accuracy', acc_mean_train, i + epoch * len(train_loader))
+                    # writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
+                    # writer_valid.add_scalar('balanced_accuracy', acc_mean_valid, i + epoch * len(train_loader))
+                    # writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
                     print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
                     print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
@@ -120,11 +158,32 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
         if last_check_point_i != i:
             model.zero_grad()
             print('Last checkpoint at the end of the epoch %d' % epoch)
-            acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
-            mean_loss_train = total_loss_train / (len(train_loader) * train_loader.batch_size)
+            # Training performance is evaluated on the last batches seen
+            if options.gpu:
+                concat_prediction_arr = concat_prediction.view(-1).cpu().numpy().astype(int)
+                concat_truth_arr = concat_truth.view(-1).cpu().numpy().astype(int)
+            else:
+                concat_prediction_arr = concat_prediction.view(-1).numpy().astype(int)
+                concat_truth_arr = concat_truth.numpy().view(-1).astype(int)
+
+            if options.training_evaluation == 'n_batches':
+                metrics = evaluate_prediction(concat_truth_arr, concat_prediction_arr, options.evaluation_steps)
+                acc_mean_train = metrics['balanced_accuracy']
+                total_loss_train = sum(concat_loss[-options.evaluation_steps:])
+                mean_loss_train = total_loss_train / (options.evaluation_steps * train_loader.batch_size)
+            else:
+                acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
+                mean_loss_train = total_loss_train / (len(train_loader) * train_loader.batch_size)
+
             acc_mean_valid, total_loss_valid = test(model, valid_loader, options.gpu, criterion)
             mean_loss_valid = total_loss_valid / (len(valid_loader) * valid_loader.batch_size)
             model.train()
+
+            # TODO: Use tensorboardX once it is installed on the cluster
+            # writer_train.add_scalar('balanced_accuracy', acc_mean_train, i + epoch * len(train_loader))
+            # writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
+            # writer_valid.add_scalar('balanced_accuracy', acc_mean_valid, i + epoch * len(train_loader))
+            # writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
             print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
             print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
@@ -153,8 +212,86 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
                             os.path.join(options.log_dir, "run" + str(run)),
                             filename='optimizer.pth.tar')
 
-        print('Total correct labels: %d / %d' % (total_correct_cnt, len(train_loader) * train_loader.batch_size))
         epoch += 1
+
+
+def evaluate_prediction(concat_true, concat_prediction, horizon=None):
+
+    """
+    This is a function to calculate the different metrics based on the list of true label and predicted label
+    :param concat_true: list of concatenated last labels
+    :param concat_prediction: list of concatenated last prediction
+    :param horizon: (int) number of batches to consider to evaluate performance
+    :return:
+    """
+
+    if horizon is not None:
+        y = list(concat_true)[-horizon:]
+        y_hat = list(concat_prediction)[-horizon:]
+    else:
+        y = list(concat_true)
+        y_hat = list(concat_prediction)
+
+    true_positive = 0.0
+    true_negative = 0.0
+    false_positive = 0.0
+    false_negative = 0.0
+
+    tp = []
+    tn = []
+    fp = []
+    fn = []
+
+    for i in range(len(y)):
+        if y[i] == 1:
+            if y_hat[i] == 1:
+                true_positive += 1
+                tp.append(i)
+            else:
+                false_negative += 1
+                fn.append(i)
+        else:  # -1
+            if y_hat[i] == 0:
+                true_negative += 1
+                tn.append(i)
+            else:
+                false_positive += 1
+                fp.append(i)
+
+    accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
+
+    if (true_positive + false_negative) != 0:
+        sensitivity = true_positive / (true_positive + false_negative)
+    else:
+        sensitivity = 0.0
+
+    if (false_positive + true_negative) != 0:
+        specificity = true_negative / (false_positive + true_negative)
+    else:
+        specificity = 0.0
+
+    if (true_positive + false_positive) != 0:
+        ppv = true_positive / (true_positive + false_positive)
+    else:
+        ppv = 0.0
+
+    if (true_negative + false_negative) != 0:
+        npv = true_negative / (true_negative + false_negative)
+    else:
+        npv = 0.0
+
+    balanced_accuracy = (sensitivity + specificity) / 2
+
+    results = {'accuracy': accuracy,
+               'balanced_accuracy': balanced_accuracy,
+               'sensitivity': sensitivity,
+               'specificity': specificity,
+               'ppv': ppv,
+               'npv': npv,
+               'confusion_matrix': {'tp': len(tp), 'tn': len(tn), 'fp': len(fp), 'fn': len(fn)}
+               }
+
+    return results
 
 
 def test(model, dataloader, use_cuda, criterion, verbose=False, full_return=False):
@@ -199,7 +336,7 @@ def test(model, dataloader, use_cuda, criterion, verbose=False, full_return=Fals
 
         # Generate detailed DataFrame
         for idx, sub in enumerate(data['participant_id']):
-            row = [sub, data['session_id'][idx], predicted[idx], labels[idx]]
+            row = [sub, data['session_id'][idx], predicted[idx].item(), labels[idx].item()]
             row_df = pd.DataFrame(np.array(row).reshape(1, -1), columns=columns)
             results_df = pd.concat([results_df, row_df])
 
@@ -221,44 +358,47 @@ def test(model, dataloader, use_cuda, criterion, verbose=False, full_return=Fals
         predicted_arr = predicted_tensor.numpy().astype(int)
         truth_arr = truth_tensor.numpy().astype(int)
 
-    # Computation of the balanced accuracy
-    component = len(np.unique(truth_arr))
-    cluster_diagnosis_prop = np.zeros(shape=(component, component))
-    for i, predicted in enumerate(predicted_arr):
-        truth = truth_arr[i]
-        cluster_diagnosis_prop[predicted, truth] += 1
+    # # Computation of the balanced accuracy
+    # component = len(np.unique(truth_arr))
+    # cluster_diagnosis_prop = np.zeros(shape=(component, component))
+    # for i, predicted in enumerate(predicted_arr):
+    #     truth = truth_arr[i]
+    #     cluster_diagnosis_prop[predicted, truth] += 1
+    #
+    # acc = 0
+    # sensitivity = np.zeros(component)
+    # specificity = np.zeros(component)
+    # for i in range(component):
+    #     diag_represented = np.argmax(cluster_diagnosis_prop[i])
+    #     acc += cluster_diagnosis_prop[i, diag_represented] / np.sum(cluster_diagnosis_prop.T[diag_represented])
+    #
+    #     # Computation of sensitivity
+    #     sen_array = cluster_diagnosis_prop[i]
+    #     if np.sum(sen_array) == 0:
+    #         sensitivity[diag_represented] = None
+    #     else:
+    #         sensitivity[diag_represented] = sen_array[diag_represented] / np.sum(sen_array) * 100
+    #
+    #     # Computation of specificity
+    #     spe_array = np.delete(cluster_diagnosis_prop, i, 0)
+    #     if np.sum(spe_array) == 0:
+    #         specificity[diag_represented] = None
+    #     else:
+    #         specificity[diag_represented] = (1 - np.sum(spe_array[:, diag_represented]) / np.sum(spe_array)) * 100
+    #
+    # acc = acc * 100 / component
+    # if verbose:
+    #     print('Accuracy of diagnosis: ' + str(acc))
+    #     print('Sensitivity of diagnoses:', sensitivity)
+    #     print('Specificity of diagnoses:', specificity)
+    #
 
-    acc = 0
-    sensitivity = np.zeros(component)
-    specificity = np.zeros(component)
-    for i in range(component):
-        diag_represented = np.argmax(cluster_diagnosis_prop[i])
-        acc += cluster_diagnosis_prop[i, diag_represented] / np.sum(cluster_diagnosis_prop.T[diag_represented])
-
-        # Computation of sensitivity
-        sen_array = cluster_diagnosis_prop[i]
-        if np.sum(sen_array) == 0:
-            sensitivity[diag_represented] = None
-        else:
-            sensitivity[diag_represented] = sen_array[diag_represented] / np.sum(sen_array) * 100
-
-        # Computation of specificity
-        spe_array = np.delete(cluster_diagnosis_prop, i, 0)
-        if np.sum(spe_array) == 0:
-            specificity[diag_represented] = None
-        else:
-            specificity[diag_represented] = (1 - np.sum(spe_array[:, diag_represented]) / np.sum(spe_array)) * 100
-
-    acc = acc * 100 / component
-    if verbose:
-        print('Accuracy of diagnosis: ' + str(acc))
-        print('Sensitivity of diagnoses:', sensitivity)
-        print('Specificity of diagnoses:', specificity)
+    results = evaluate_prediction(truth_arr, predicted_arr)
 
     if full_return:
-        return acc, total_loss, sensitivity, specificity, results_df
+        return results, total_loss, results_df
 
-    return acc, total_loss
+    return results['balanced_accuracy'], total_loss
 
 
 def show_plot(points):
@@ -299,10 +439,16 @@ def check_and_clean(d):
 
 def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, results_path, resume, options):
     from os import path
+    from tensorboardX import SummaryWriter
 
     if not path.exists(results_path):
         os.makedirs(results_path)
+
     filename = os.path.join(results_path, 'training.tsv')
+
+    # Create writers
+    writer_train = SummaryWriter(os.path.join(results_path, 'train'))
+    writer_valid = SummaryWriter(os.path.join(results_path, 'validation'))
 
     if not resume:
         columns = ['epoch', 'iteration', 'loss_train', 'mean_loss_train', 'loss_valid', 'mean_loss_valid']
@@ -339,6 +485,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
         evaluation_flag = True
         step_flag = True
         last_check_point_i = 0
+        concat_loss = []
         for i, data in enumerate(train_loader):
             if options.gpu:
                 imgs = data['image'].cuda()
@@ -347,6 +494,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
 
             train_output = decoder(imgs)
             loss = criterion(train_output, imgs)
+            concat_loss.append(loss.item())
             loss.backward()
 
             del imgs, train_output
@@ -360,11 +508,19 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
                 if (i+1) % options.evaluation_steps == 0:
                     evaluation_flag = False
                     print('Iteration %d' % i)
-                    loss_train = test_ae(decoder, train_loader, options.gpu, criterion)
-                    mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
+                    if options.training_evaluation == 'n_batches':
+                        loss_train = sum(concat_loss[-options.evaluation_steps:])
+                        mean_loss_train = loss_train / (options.evaluation_steps * train_loader.batch_size)
+                    else:
+                        loss_train = test_ae(decoder, train_loader, options.gpu, criterion)
+                        mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
+
                     loss_valid = test_ae(decoder, valid_loader, options.gpu, criterion)
                     mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.batch_size)
                     decoder.train()
+
+                    writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
+                    writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
                     print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
                     row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
                     row_df = pd.DataFrame(row, columns=columns)
@@ -383,11 +539,20 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
         # Always test the results and save them once at the end of the epoch
         if last_check_point_i != i:
             print('Last checkpoint at the end of the epoch %d' % epoch)
-            loss_train = test_ae(decoder, train_loader, options.gpu, criterion)
-            mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
+
+            if options.training_evaluation == 'n_batches':
+                loss_train = sum(concat_loss[-options.evaluation_steps:])
+                mean_loss_train = loss_train / (options.evaluation_steps * train_loader.batch_size)
+            else:
+                loss_train = test_ae(decoder, train_loader, options.gpu, criterion)
+                mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
+
             loss_valid = test_ae(decoder, valid_loader, options.gpu, criterion)
             mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.batch_size)
             decoder.train()
+
+            writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
+            writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
             print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
 
             row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
@@ -528,11 +693,17 @@ def set_weights(decoder, auto_encoder, level):
 
 def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterion, results_path, options):
     from os import path
+    from tensorboardX import SummaryWriter
 
     if not path.exists(results_path):
         os.makedirs(results_path)
 
     filename = os.path.join(results_path, 'training.tsv')
+
+    # Create writers
+    writer_train = SummaryWriter(os.path.join(results_path, 'train'))
+    writer_valid = SummaryWriter(os.path.join(results_path, 'validation'))
+
     columns = ['epoch', 'iteration', 'loss_train', 'mean_loss_train', 'loss_valid', 'mean_loss_valid']
     results_df = pd.DataFrame(columns=columns)
     with open(filename, 'w') as f:
@@ -558,6 +729,7 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
         evaluation_flag = True
         step_flag = True
         last_check_point_i = 0
+        concat_loss = []
         for i, data in enumerate(train_loader):
             if options.gpu:
                 imgs = data['image'].cuda()
@@ -567,6 +739,8 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
             hidden = first_layers(imgs)
             train_output = auto_encoder(hidden)
             loss = criterion(train_output, hidden)
+            concat_loss.append(loss.item())
+
             loss.backward()
 
             # writer_train.add_scalar('training_loss', loss.item() / len(data), i + epoch * len(train_loader.dataset))
@@ -580,11 +754,19 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
                 if (i+1) % options.evaluation_steps == 0:
                     evaluation_flag = False
                     print('Iteration %d' % i)
-                    loss_train = test_ae(auto_encoder, train_loader, options.gpu, criterion, first_layers=first_layers)
-                    mean_loss_train = loss_train / (len(train_loader) * train_loader.dataset.size)
+                    if options.training_evaluation == 'n_batches':
+                        loss_train = sum(concat_loss[-options.evaluation_steps:])
+                        mean_loss_train = loss_train / (options.evaluation_steps * train_loader.batch_size)
+                    else:
+                        loss_train = test_ae(auto_encoder, train_loader, options.gpu, criterion)
+                        mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
+
                     loss_valid = test_ae(auto_encoder, valid_loader, options.gpu, criterion, first_layers=first_layers)
                     mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.dataset.size)
                     auto_encoder.train()
+
+                    writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
+                    writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
                     print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
 
                     row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
@@ -606,11 +788,19 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
         # Always test the results and save them once at the end of the epoch
         if last_check_point_i != i:
             print('Last checkpoint at the end of the epoch %d' % epoch)
-            loss_train = test_ae(auto_encoder, train_loader, options.gpu, criterion, first_layers=first_layers)
-            mean_loss_train = loss_train / (len(train_loader) * train_loader.dataset.size)
+            if options.training_evaluation == 'n_batches':
+                loss_train = sum(concat_loss[-options.evaluation_steps:])
+                mean_loss_train = loss_train / (options.evaluation_steps * train_loader.batch_size)
+            else:
+                loss_train = test_ae(auto_encoder, train_loader, options.gpu, criterion)
+                mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
+
             loss_valid = test_ae(auto_encoder, valid_loader, options.gpu, criterion, first_layers=first_layers)
             mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.dataset.size)
             auto_encoder.train()
+
+            writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
+            writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
             print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
 
             row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)

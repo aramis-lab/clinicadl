@@ -25,6 +25,8 @@ parser.add_argument("--pretrained_difference", "-d", type=int, default=0,
                          "If the new one is larger, difference will be positive.")
 
 # Data Management
+parser.add_argument("--data_path", default="linear", choices=["linear", "dartel", "mni"], type=str,
+                    help="Defines the path to data in CAPS.")
 parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument('--accumulation_steps', '-asteps', default=1, type=int,
@@ -108,8 +110,8 @@ def main(options):
     training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
                                         options.split, options.n_splits, options.baseline)
 
-    data_train = MRIDataset(options.input_dir, training_tsv, transformations)
-    data_valid = MRIDataset(options.input_dir, valid_tsv, transformations)
+    data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transformations)
+    data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transformations)
 
     # Use argument load to distinguish training and testing
     train_loader = DataLoader(data_train,

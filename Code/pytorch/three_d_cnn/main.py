@@ -19,6 +19,8 @@ parser.add_argument("model", type=str,
                     help="model selected")
 
 # Data Management
+parser.add_argument("--data_path", default="linear", choices=["linear", "dartel", "mni"], type=str,
+                    help="Defines the path to data in CAPS.")
 parser.add_argument("--diagnoses", "-d", default=['AD', 'CN'], nargs='+', type=str,
                     help="The diagnoses used for the classification")
 parser.add_argument("--baseline", default=False, action="store_true",
@@ -41,6 +43,8 @@ parser.add_argument("--n_splits", type=int, default=None,
                     help="If a value is given will load data of a k-fold CV")
 parser.add_argument("--split", type=int, default=0,
                     help="Will load the specific split wanted.")
+parser.add_argument("--training_evaluation", default='whole_set', type=str, choices=['whole_set', 'n_batches'],
+                    help="Choose the way training evaluation is performed.")
 
 # Pretraining arguments
 parser.add_argument("-t", "--transfer_learning", default=None, type=str,
@@ -129,8 +133,8 @@ def main(options):
             training_tsv, valid_tsv = load_data(options.diagnosis_path, options.transfer_learning_diagnoses,
                                                 options.split, options.n_splits, options.baseline)
 
-            data_train = MRIDataset(options.input_dir, training_tsv, transformations)
-            data_valid = MRIDataset(options.input_dir, valid_tsv, transformations)
+            data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transformations)
+            data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transformations)
 
             # Use argument load to distinguish training and testing
             train_loader = DataLoader(data_train,
@@ -155,8 +159,8 @@ def main(options):
         training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
                                             options.split, options.n_splits, options.baseline)
 
-        data_train = MRIDataset(options.input_dir, training_tsv, transform=transformations)
-        data_valid = MRIDataset(options.input_dir, valid_tsv, transform=transformations)
+        data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transform=transformations)
+        data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transform=transformations)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
