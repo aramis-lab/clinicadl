@@ -6,22 +6,24 @@ from os import path
 from torch.utils.data import Dataset
 from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
 from scipy.ndimage.filters import gaussian_filter
-
+import warnings
 
 class MRIDataset(Dataset):
     """Dataset of MRI organized in a CAPS folder."""
 
-    def __init__(self, img_dir, data_file, transform=None):
+    def __init__(self, img_dir, data_file, data_path='linear', transform=None):
         """
         Args:
             img_dir (string): Directory of all the images.
             data_file (string): File name of the train/test split file.
+            data_path (string): Defines the path to the data in CAPS
             transform (callable, optional): Optional transform to be applied on a sample.
 
         """
         self.img_dir = img_dir
         self.transform = transform
         self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1, 'unlabeled': -1}
+        self.data_path = data_path
 
         # Check the format of the tsv file here
         if isinstance(data_file, str):
@@ -46,9 +48,21 @@ class MRIDataset(Dataset):
         img_label = self.df.loc[idx, 'diagnosis']
         sess_name = self.df.loc[idx, 'session_id']
         # Not in BIDS but in CAPS
-        image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
-                               't1', 'preprocessing_dl',
-                               img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+        if self.data_path == "linear":
+            image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
+                                   't1', 'preprocessing_dl',
+                                   img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+        elif self.data_path == "dartel":
+            image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
+                                   't1', 'spm', 'dartel', 'group-ADNI-bl',
+                                   img_name + '_' + sess_name + '.pt')
+            raise NotImplementedError("Dartel output has not been computed yet.")
+        elif self.data_path == "mni":
+            warnings.warn("All sessions are not available for MNI: actually only working with ses-M00.")
+            image_path = path.join(self.img_dir, 'subjects', img_name, 'ses-M00',
+                                   't1', 'spm', 'segmentation', 'normalized_space',
+                                   img_name + '_' + sess_name + '_space-Ixi549Space_T1w.pt')
+
         image = torch.load(image_path)
         label = self.diagnosis_code[img_label]
 
