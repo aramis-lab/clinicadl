@@ -30,7 +30,7 @@ parser.add_argument("--patch_size", default=51, type=int,
                     help="The patch size extracted from the MRI")
 parser.add_argument("--patch_stride", default=51, type=int,
                     help="The stride for the patch extract window from the MRI")
-parser.add_argument("--batch_size", default=8, type=int,
+parser.add_argument("--batch_size", default=5, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
@@ -63,7 +63,7 @@ parser.add_argument("--split", default=0, type=int,
                     help="Define a specific fold in the k-fold, this is very useful to find the optimal model, where you do not want to run your k-fold validation")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument('--use_gpu', default=True, type=bool,
+parser.add_argument('--use_gpu', default=False, type=bool,
                     help='Uses gpu instead of cpu if cuda is available')
 parser.add_argument('--weight_decay', default=1e-4, type=float,
                     help='weight decay (default: 1e-4)')
