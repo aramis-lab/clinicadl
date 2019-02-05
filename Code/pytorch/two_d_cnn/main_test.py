@@ -31,7 +31,7 @@ parser.add_argument("--mri_plane", default=0, type=int,
                     help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
 parser.add_argument('--image_processing', default="LinearReg", choices=["LinearReg", "Segmented"],
                     help="The output of which image processing pipeline to fit into the network. By defaut, using the raw one with only linear registration, otherwise, using the output of spm pipeline of Clinica")
-parser.add_argument('--best_model_fold', default=3,
+parser.add_argument('--best_model_fold', default=4,
                     help="Use the best from the which fold of training")
 parser.add_argument('--best_model_criteria', default="best_acc", choices=["best_acc", "best_loss"],
                     help="Evaluate the model performance based on which criterior")
