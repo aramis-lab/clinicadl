@@ -109,10 +109,11 @@ def main(options):
 
         if options.train_from_stop_point:
             ## TODO, it seems having problme for this
-            ## only delete the CNN output, not the AE output
-            check_and_clean(os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'CNN'))
-            check_and_clean(os.path.join(options.output_dir, 'log_dir', "fold_" + str(fi), 'CNN'))
-            check_and_clean(os.path.join(options.output_dir, "fold_" + str(fi), 'performances'))
+            # ## only delete the CNN output, not the AE output
+            # check_and_clean(os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'CNN'))
+            # check_and_clean(os.path.join(options.output_dir, 'log_dir', "fold_" + str(fi), 'CNN'))
+            # check_and_clean(os.path.join(options.output_dir, "fold_" + str(fi), 'performances'))
+            print("Train the same model from last trained epoch")
         else:
             print("Train the model from 0 epoch")
 
