@@ -18,6 +18,8 @@ parser.add_argument("input_dir", type=str,
                     help="Path to input dir of the MRI (preprocessed CAPS_dir).")
 
 # Data Management
+parser.add_argument("--data_path", default="linear", choices=["linear", "dartel", "mni"], type=str,
+                    help="Defines the path to data in CAPS.")
 parser.add_argument("--selection", default="loss", type=str, choices=['loss', 'accuracy'],
                     help="Loads the model selected on minimal loss or maximum accuracy on validation.")
 parser.add_argument("--diagnoses", "-d", default=["AD", "CN"], nargs='+', type=str,
@@ -74,8 +76,8 @@ if __name__ == "__main__":
     else:
         transformations = None
 
-    data_train = MRIDataset(options.input_dir, training_tsv, transform=transformations)
-    data_valid = MRIDataset(options.input_dir, valid_tsv, transform=transformations)
+    data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transform=transformations)
+    data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transform=transformations)
 
     # Use argument load to distinguish training and testing
     train_loader = DataLoader(data_train,
@@ -92,14 +94,19 @@ if __name__ == "__main__":
                               drop_last=False
                               )
 
-    acc_train, loss_train, sen_train, spe_train, train_df = test(best_model, train_loader, options.gpu, criterion,
-                                                                 verbose=False, full_return=True)
-    acc_valid, loss_valid, sen_valid, spe_valid, valid_df = test(best_model, valid_loader, options.gpu, criterion,
-                                                                 verbose=False, full_return=True)
+    metrics_train, loss_train, train_df = test(best_model, train_loader, options.gpu, criterion,
+                                               verbose=False, full_return=True)
+    metrics_valid, loss_valid, valid_df = test(best_model, valid_loader, options.gpu, criterion,
+                                               verbose=False, full_return=True)
+
+    acc_train, sen_train, spe_train = metrics_train['balanced_accuracy'] * 100, metrics_train['sensitivity'] * 100,\
+                                      metrics_train['specificity'] * 100
+    acc_valid, sen_valid, spe_valid = metrics_valid['balanced_accuracy'] * 100, metrics_valid['sensitivity'] * 100, \
+                                      metrics_valid['specificity'] * 100
     print("Training, acc %f, loss %f, sensibility %f, specificity %f"
-          % (acc_train, loss_train, sen_train[0], spe_train[0]))
+          % (acc_train, loss_train, sen_train, spe_train))
     print("Validation, acc %f, loss %f, sensibility %f, specificity %f"
-          % (acc_valid, loss_valid, sen_valid[0], spe_valid[0]))
+          % (acc_valid, loss_valid, sen_valid, spe_valid))
 
     evaluation_path = path.join(options.model_path, 'performances')
     if not path.exists(evaluation_path):
@@ -109,13 +116,13 @@ if __name__ == "__main__":
     text_file.write('Best epoch: %i \n' % best_epoch)
     text_file.write('Accuracy on training set: %.2f %% \n' % acc_train)
     text_file.write('Loss on training set: %f \n' % loss_train)
-    text_file.write('Sensitivities on training set: %.2f %%, %.2f %% \n' % (sen_train[0], sen_train[1]))
-    text_file.write('Specificities on training set: %.2f %%, %.2f %% \n' % (spe_train[0], spe_train[1]))
+    text_file.write('Sensitivities on training set: %.2f %%, %.2f %% \n' % (sen_train, sen_train))
+    text_file.write('Specificities on training set: %.2f %%, %.2f %% \n' % (spe_train, spe_train))
 
     text_file.write('Accuracy on validation set: %.2f %% \n' % acc_valid)
     text_file.write('Loss on validation set: %f \n' % loss_valid)
-    text_file.write('Sensitivities on validation set: %.2f %%, %.2f %% \n' % (sen_valid[0], sen_valid[1]))
-    text_file.write('Specificities on validation set: %.2f %%, %.2f %% \n' % (spe_valid[0], spe_valid[1]))
+    text_file.write('Sensitivities on validation set: %.2f %%, %.2f %% \n' % (sen_valid, sen_valid))
+    text_file.write('Specificities on validation set: %.2f %%, %.2f %% \n' % (spe_valid, spe_valid))
 
     text_file.close()
 
