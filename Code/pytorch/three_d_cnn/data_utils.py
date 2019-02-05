@@ -59,9 +59,11 @@ class MRIDataset(Dataset):
             raise NotImplementedError("Dartel output has not been computed yet.")
         elif self.data_path == "mni":
             warnings.warn("All sessions are not available for MNI: actually only working with ses-M00.")
-            image_path = path.join(self.img_dir, 'subjects', img_name, 'ses-M00',
+            image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
                                    't1', 'spm', 'segmentation', 'normalized_space',
                                    img_name + '_' + sess_name + '_space-Ixi549Space_T1w.pt')
+        else:
+            raise NotImplementedError("The data path %s is not implemented" % self.data_path)
 
         image = torch.load(image_path)
         label = self.diagnosis_code[img_label]
