@@ -702,7 +702,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             loss_batch = loss_func(output, labels)
 
             ## calculate the balanced accuracy
-            results = evaluate_prediction(labels.data.cpu().numpy().tolist(), predict_list)
+            results = evaluate_prediction(gound_truth_list, predict_list)
             accuracy = results['accuracy']
             acc += accuracy
             loss += loss_batch.item()
@@ -792,7 +792,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
                 print("The predicted label is: " + str(output))
                 loss_batch = loss_func(output, labels)
                 ## calculate the balanced accuracy
-                results = evaluate_prediction(labels.data.cpu().numpy().tolist(), predict_list)
+                results = evaluate_prediction(gound_truth_list, predict_list)
                 accuracy = results['accuracy']
 
                 loss += loss_batch.item()
