@@ -15,6 +15,8 @@
 ## Load CUDA and python
 module load python/2.7
 module load CUDA/9.0
+module load clinica.all
+
 #export CUDA_VISIBLE_DEVICES=0,1
 ## Begin the training
 echo "Begin the image postprocessing:"
