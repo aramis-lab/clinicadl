@@ -47,6 +47,8 @@ parser.add_argument("--n_splits", type=int, default=None,
                     help="If a value is given will load data of a k-fold CV")
 parser.add_argument("--split", type=int, default=0,
                     help="Will load the specific split wanted.")
+parser.add_argument("--training_evaluation", default='whole_set', type=str, choices=['whole_set', 'n_batches'],
+                    help="Choose the way training evaluation is performed.")
 
 # Training arguments
 parser.add_argument("--epochs", default=20, type=int,
@@ -108,7 +110,7 @@ def main(options):
     criterion = torch.nn.MSELoss()
 
     training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
-                                        options.split, options.n_splits, options.baseline)
+                                        options.split, options.n_splits, options.baseline, options.data_path)
 
     data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transformations)
     data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transformations)

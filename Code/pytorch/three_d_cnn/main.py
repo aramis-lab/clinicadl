@@ -131,7 +131,7 @@ def main(options):
             if options.transfer_learning_diagnoses is None:
                 raise Exception("Diagnosis labels must be given to train the autoencoder.")
             training_tsv, valid_tsv = load_data(options.diagnosis_path, options.transfer_learning_diagnoses,
-                                                options.split, options.n_splits, options.baseline)
+                                                options.split, options.n_splits, options.baseline, options.data_path)
 
             data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transformations)
             data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transformations)
@@ -157,7 +157,7 @@ def main(options):
     for run in range(options.runs):
         # Get the data.
         training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
-                                            options.split, options.n_splits, options.baseline)
+                                            options.split, options.n_splits, options.baseline, options.data_path)
 
         data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transform=transformations)
         data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transform=transformations)

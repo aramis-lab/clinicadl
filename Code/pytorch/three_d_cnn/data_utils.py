@@ -8,6 +8,7 @@ from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
 from scipy.ndimage.filters import gaussian_filter
 import warnings
 
+
 class MRIDataset(Dataset):
     """Dataset of MRI organized in a CAPS folder."""
 
@@ -371,7 +372,7 @@ def load_autoencoder_data(train_val_path, diagnoses_list, baseline=True):
     return train_df, valid_df
 
 
-def load_data(train_val_path, diagnoses_list, split, n_splits=None, baseline=True):
+def load_data(train_val_path, diagnoses_list, split, n_splits=None, baseline=True, data_path='linear'):
 
     train_df = pd.DataFrame()
     valid_df = pd.DataFrame()
@@ -385,6 +386,11 @@ def load_data(train_val_path, diagnoses_list, split, n_splits=None, baseline=Tru
                                'split-' + str(split))
         valid_path = path.join(train_val_path, 'validation_splits-' + str(n_splits),
                                'split-' + str(split))
+
+    if data_path in ['mni', 'dartel']:
+        train_path = path.join(train_path, 'SPM')
+        valid_path = path.join(valid_path, 'SPM')
+
     print("Train", train_path)
     print("Valid", valid_path)
 

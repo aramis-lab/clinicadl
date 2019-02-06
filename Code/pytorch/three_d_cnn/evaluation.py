@@ -69,7 +69,7 @@ if __name__ == "__main__":
                                         filename='model_best_' + options.selection + '.pth.tar')
 
     training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
-                                        options.split, options.n_splits, options.baseline)
+                                        options.split, options.n_splits, options.baseline, options.data_path)
 
     if options.minmaxnormalization:
         transformations = MinMaxNormalization()

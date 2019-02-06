@@ -869,7 +869,7 @@ def extract_first_layers(decoder, level):
     return first_layers
 
 
-def visualize_subject(decoder, dataloader, results_path, epoch, options, first_time=False):
+def visualize_subject(decoder, dataloader, results_path, epoch, options, first_time=False, data_path='linear'):
     from os import path
     import nibabel as nib
     from data_utils import MinMaxNormalization
@@ -882,9 +882,16 @@ def visualize_subject(decoder, dataloader, results_path, epoch, options, first_t
     set_df = dataloader.dataset.df
     subject = set_df.loc[0, 'participant_id']
     session = set_df.loc[0, 'session_id']
-    image_path = path.join(options.input_dir, 'subjects', subject, session,
-                           't1', 'preprocessing_dl',
-                            subject + '_' + session + '_space-MNI_res-1x1x1.nii.gz')
+    if data_path == 'linear':
+        image_path = path.join(options.input_dir, 'subjects', subject, session,
+                               't1', 'preprocessing_dl',
+                               subject + '_' + session + '_space-MNI_res-1x1x1.nii.gz')
+    elif data_path == 'mni':
+        image_path = path.join(options.input_dir, 'subjects', subject, session,
+                               't1', 'spm', 'segmentation', 'normalized_space',
+                               subject + '_' + session + '_space-Ixi549Space_T1w.nii.gz')
+    else:
+        raise NotImplementedError('Data path %s is not implemented' % data_path)
 
     input_nii = nib.load(image_path)
     input_np = input_nii.get_data()
@@ -910,7 +917,7 @@ def visualize_subject(decoder, dataloader, results_path, epoch, options, first_t
     nib.save(output_nii, path.join(visualization_path, 'epoch-' + str(epoch) + '.nii'))
 
 
-def visualize_ae(decoder, dataloader, results_path, gpu):
+def visualize_ae(decoder, dataloader, results_path, gpu, data_path='linear'):
     import nibabel as nib
     from data_utils import ToTensor
     import os
@@ -922,10 +929,18 @@ def visualize_ae(decoder, dataloader, results_path, gpu):
     subject = dataloader.dataset.df.loc[0, 'participant_id']
     session = dataloader.dataset.df.loc[0, 'session_id']
 
-    img_path = path.join(dataloader.dataset.img_dir, 'subjects', subject, session,
-                         't1', 'preprocessing_dl',
-                         subject + '_' + session + '_space-MNI_res-1x1x1.nii.gz')
-    data = nib.load(img_path)
+    if data_path == 'linear':
+        image_path = path.join(dataloader.dataset.img_dir, 'subjects', subject, session,
+                               't1', 'preprocessing_dl',
+                               subject + '_' + session + '_space-MNI_res-1x1x1.nii.gz')
+    elif data_path == 'mni':
+        image_path = path.join(dataloader.dataset.img_dir, 'subjects', subject, session,
+                               't1', 'spm', 'segmentation', 'normalized_space',
+                               subject + '_' + session + '_space-Ixi549Space_T1w.nii.gz')
+    else:
+        raise NotImplementedError('Data path %s is not implemented' % data_path)
+
+    data = nib.load(image_path)
     img = data.get_data()
     affine = data.get_affine()
     img_tensor = ToTensor()(img)
