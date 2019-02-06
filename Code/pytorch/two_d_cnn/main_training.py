@@ -184,7 +184,9 @@ def main(options):
         ## get the info for training and write them into tsv files.
         ## only save the last epoch, if you wanna check the performances during training, using tensorboard
         train_subjects = []
+        train_probas = []
         valid_subjects = []
+        valid_probas = []
         y_grounds_train = []
         y_grounds_valid = []
         y_hats_train = []
@@ -198,55 +200,56 @@ def main(options):
             print("At %s -th epoch." % str(epoch))
 
             # train the model
-            train_subject, y_ground_train, y_hat_train, acc_mean_train, global_step, loss_batch_mean_train = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch, model_mode='train', global_step=global_step)
+            train_subject, y_ground_train, y_hat_train, train_proba, acc_mean_train, global_step, loss_batch_mean_train = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch, model_mode='train', global_step=global_step)
             if epoch == options.epochs -1:
                 train_subjects.extend(train_subject)
                 y_grounds_train.extend(y_ground_train)
                 y_hats_train.extend(y_hat_train)
+                train_probas.extend(train_proba)
+
             ## at then end of each epoch, we validate one time for the model with the validation data
-            valid_subject, y_ground_valid, y_hat_valid, acc_mean_valid, global_step, loss_batch_mean_valid = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, model_mode='valid', global_step=global_step)
+            valid_subject, y_ground_valid, y_hat_valid, valide_proba, acc_mean_valid, global_step, loss_batch_mean_valid = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, model_mode='valid', global_step=global_step)
             print("Slice level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
             if epoch == options.epochs - 1:
                 valid_subjects.extend(valid_subject)
                 y_grounds_valid.extend(y_ground_valid)
                 y_hats_valid.extend(y_hat_valid)
+                valid_probas.extend(valide_proba)
 
             ## update the learing rate
-            if epoch % 20 == 0:
+            if epoch % 20 == 0 and epoch !=0:
                 scheduler.step()
 
             # save the best model based on the best acc
             is_best = acc_mean_valid > best_accuracy
-            if is_best:
-                best_accuracy = max(best_accuracy, acc_mean_valid)
-                save_checkpoint({
-                    'epoch': epoch + 1,
-                    'model': model.state_dict(),
-                    'best_predict': best_accuracy,
-                    'optimizer': optimizer.state_dict(),
-                    'global_step': global_step
-                }, is_best, os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), 'best_acc'))
+            best_accuracy = max(best_accuracy, acc_mean_valid)
+            save_checkpoint({
+                'epoch': epoch + 1,
+                'model': model.state_dict(),
+                'best_predict': best_accuracy,
+                'optimizer': optimizer.state_dict(),
+                'global_step': global_step
+            }, is_best, os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), 'best_acc'))
 
             # save the best model based on the best loss
             is_best = loss_batch_mean_valid < best_loss_valid
-            if is_best:
-                best_loss_valid = min(loss_batch_mean_valid, best_loss_valid)
-                save_checkpoint({
-                    'epoch': epoch + 1,
-                    'model': model.state_dict(),
-                    'best_loss': best_loss_valid,
-                    'optimizer': optimizer.state_dict(),
-                    'global_step': global_step
-                }, is_best, os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "best_loss"))
+            best_loss_valid = min(loss_batch_mean_valid, best_loss_valid)
+            save_checkpoint({
+                'epoch': epoch + 1,
+                'model': model.state_dict(),
+                'best_loss': best_loss_valid,
+                'optimizer': optimizer.state_dict(),
+                'global_step': global_step
+            }, is_best, os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "best_loss"))
 
         ## save the graph and image
         # buf for 3D image, for 2D slice, it can save the graph
         # writer_train.add_graph(model, example_batch)
 
         ### write the information of subjects and performances into tsv files.
-        ## TODO soft voting system
-        fold_subjects_df_train, results_train = results_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train, mode='train')
-        fold_subjects_df_valid, results_valid = results_to_tsvs(options.output_dir, fi, valid_subjects, y_grounds_valid, y_hats_valid, mode='validation')
+        ## For train & valid, we offer only hard voting for
+        hard_voting_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train, train_probas, mode='train')
+        hard_voting_to_tsvs(options.output_dir, fi, valid_subjects, y_grounds_valid, y_hats_valid, valid_probas, mode='validation')
 
         del optimizer
         torch.cuda.empty_cache()

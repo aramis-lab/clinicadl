@@ -23,15 +23,21 @@ parser.add_argument("--caps_directory", default='/network/lustre/dtlake01/aramis
                            help="Path to the caps of image processing pipeline of DL")
 parser.add_argument("--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_task/test/AD_vs_CN_baseline.tsv',
                            help="Path to the tsv containing all the test dataset")
+# parser.add_argument("--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_task/test/AD_vs_CN_baseline_test.tsv',
+#                            help="Path to the tsv containing all the test dataset")
+
 parser.add_argument("--output_dir", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/AD_CN/2d_slice/ResNet_tl/longitudinal/5_fold/pytorch_resnet18_tl_fintune_lastResBlock_top_last1fc_dropout0.8_lr10-6_bs32_ep50_wd10-4_baseline',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
+# parser.add_argument("--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch',
+#                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
+
 parser.add_argument("--data_type", default="from_slice", choices=["from_MRI", "from_slice"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
 parser.add_argument("--mri_plane", default=0, type=int,
                     help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
 parser.add_argument('--image_processing', default="LinearReg", choices=["LinearReg", "Segmented"],
                     help="The output of which image processing pipeline to fit into the network. By defaut, using the raw one with only linear registration, otherwise, using the output of spm pipeline of Clinica")
-parser.add_argument('--best_model_fold', default=4,
+parser.add_argument('--best_model_fold', default=0,
                     help="Use the best from the which fold of training")
 parser.add_argument('--best_model_criteria', default="best_acc", choices=["best_acc", "best_loss"],
                     help="Evaluate the model performance based on which criterior")
@@ -110,12 +116,15 @@ def main(options):
         use_cuda = True
         model.cuda()
 
-    subjects, y_ground, y_hat, accuracy_batch_mean = test(model, test_loader, use_cuda)
+    subjects, y_ground, y_hat, proba, accuracy_batch_mean = test(model, test_loader, use_cuda)
     print("Slice level balanced accuracy is %f" % (accuracy_batch_mean))
 
     ### write the information of subjects and performances into tsv files.
-    ## TODO soft voting system
-    fold_subjects_df_train, results_train = results_to_tsvs(options.output_dir, options.best_model_fold, subjects, y_ground, y_hat, mode='test')
+    ## Hard voting
+    hard_voting_to_tsvs(options.output_dir, options.best_model_fold, subjects, y_ground, y_hat, proba, mode='test')
+
+    # Sof voting
+    soft_voting_to_tsvs(options.output_dir, options.best_model_fold, mode='test')
 
 if __name__ == "__main__":
     commandline = parser.parse_known_args()
