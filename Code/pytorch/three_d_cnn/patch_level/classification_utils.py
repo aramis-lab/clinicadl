@@ -647,7 +647,7 @@ def load_model_from_log(model, optimizer, checkpoint_dir, filename='checkpoint.p
 
     return model_updated, optimizer, param_dict['global_step'], param_dict['epoch']
 
-def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, model_mode="train", global_step=0, training_accuracy_batches=5):
+def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, model_mode="train", global_step=0):
     """
     This is the function to train, validate or test the model, depending on the model_mode parameter.
     :param model:
@@ -668,9 +668,9 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
     y_hat = []
     proba = []
 
-    ## accumulate the former batches of data
-    train_images = []
-    train_labels = []
+    # ## accumulate the former batches of data
+    # train_images = []
+    # train_labels = []
 
     print("Start for %s!" % model_mode)
     if model_mode == "train":
@@ -726,7 +726,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
 
             ## calculate the balanced accuracy
             results = evaluate_prediction(gound_truth_list, predict_list)
-            accuracy = results['accuracy']
+            accuracy = results['balanced_accuracy']
             acc += accuracy
             loss += loss_batch.item()
 
@@ -770,7 +770,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             #
             #     ## calculate the balanced accuracy
             #     results = evaluate_prediction(y_ground_batches, y_hat_batches)
-            #     accuracy_batches = results['accuracy']
+            #     accuracy_batches = results['balanced_accuracy']
             #
             #     writer.add_scalar('classification accuracy', accuracy_batches, global_step)
             #     writer.add_scalar('loss', loss_batchs / len(train_images), global_step)
@@ -830,7 +830,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
 
                 ## calculate the balanced accuracy
                 results = evaluate_prediction(gound_truth_list, predict_list)
-                accuracy = results['accuracy']
+                accuracy = results['balanced_accuracy']
 
                 loss += loss_batch.item()
                 print("For batch %d, validation accuracy is : %f" % (i, accuracy))
@@ -843,7 +843,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
 
             ## calculate the balanced accuracy
             results = evaluate_prediction(y_ground, y_hat)
-            accuracy_batch_mean = results['accuracy']
+            accuracy_batch_mean = results['balanced_accuracy']
             loss_batch_mean = loss / len(data_loader)
 
             writer.add_scalar('classification accuracy', accuracy_batch_mean, global_step)
