@@ -676,11 +676,24 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
     if model_mode == "train":
         model.train() ## set the model to training mode
         print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
+
+        tend = time()
+        total_time = 0
+
         for i, batch_data in enumerate(data_loader):
+            # torch.cuda.synchronize()
+            t0 = time()
+            total_time = total_time + t0 - tend
+
             if use_cuda:
                 imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
             else:
                 imgs, labels = batch_data['image'], batch_data['label']
+
+            torch.cuda.synchronize()
+            t1 = time()
+            total_time += t1 - t0
+            print("Loading data on GPU", t1 - t0)
 
             ## add the participant_id + session_id
             image_ids = batch_data['image_id']
@@ -691,6 +704,10 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
 
             print('The group true label is %s' % (str(labels)))
             output = model(imgs)
+
+            torch.cuda.synchronize()
+            t2 = time()
+            print("Real time forward pass", t2 - t1)
 
             _, predict = output.topk(1)
             predict_list = predict.data.cpu().numpy().tolist()
@@ -722,6 +739,10 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             optimizer.zero_grad()
             loss_batch.backward()
             optimizer.step()
+
+            torch.cuda.synchronize()
+            t3 = time()
+            print("Backward pass", t3 - t2)
 
             ## update the global steps
             global_step = i + epoch_i * len(data_loader)
@@ -761,6 +782,12 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             # Releases all unoccupied cached memory
             torch.cuda.empty_cache()
 
+            torch.cuda.synchronize()
+            t_temp = time()
+            print('Training the %d -th batch in total using  %f s:' % (i, t_temp -t0))
+            tend = time()
+
+        print('Mean time per batch (train):', total_time / len(data_loader))
         accuracy_batch_mean = acc / len(data_loader)
         loss_batch_mean = loss / len(data_loader)
         torch.cuda.empty_cache()
