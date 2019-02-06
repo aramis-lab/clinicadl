@@ -104,7 +104,7 @@ def main(options):
                                                                                    "fold_" + str(options.best_model_fold), str(options.best_model_criteria)),
                                                                       filename='model_best.pth.tar')
 
-    print("The best model was saved during training from fold %d at the %d -th epoch at the %d -th global step" % (options.best_model_fold, best_epoch, best_global_step))
+    print("The best model was saved during training from fold %d at the %d -th epoch at the %d -th global step" % (int(options.best_model_fold), int(best_epoch), int(best_global_step)))
     print("Please check if the model has been already severly overfitted at the best epoch by tensorboardX!")
 
     ## Decide to use gpu or cpu to train the model
