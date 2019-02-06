@@ -951,7 +951,7 @@ def soft_voting_to_tsvs(output_dir, iteration, mode='test', vote_mode='soft'):
 
     pd.DataFrame(results, index=[0]).to_csv(os.path.join(output_dir, 'performances', 'fold_' + str(iteration), mode + '_subject_level_metrics_' + vote_mode + '_vote.tsv'), index=False, sep='\t', encoding='utf-8')
 
-# output_dir = '/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch'
-# best_model_fold = 4
-# soft_voting_to_tsvs(output_dir, best_model_fold, mode='test')
+output_dir = '/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch'
+best_model_fold = 4
+soft_voting_to_tsvs(output_dir, best_model_fold, mode='test')
 
