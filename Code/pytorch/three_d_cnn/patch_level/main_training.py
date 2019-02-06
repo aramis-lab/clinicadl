@@ -53,8 +53,8 @@ parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,
 # Training arguments
 parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data. (default=20)")
-parser.add_argument("--training_accuracy_batches", default=5, type=int,
-                    help="How many former batches to be fit into the trained model to quantify the training performance")
+# parser.add_argument("--training_accuracy_batches", default=5, type=int,
+#                     help="How many former batches to be fit into the trained model to quantify the training performance")
 parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--n_splits", default=5, type=int,
@@ -181,7 +181,9 @@ def main(options):
         # parameters used in training
         best_accuracy = 0.0
         best_loss_valid = np.inf
-        writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "CNN", "train")))
+        writer_train_batch = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "CNN", "train_batch")))
+        writer_train_all_data = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "CNN", "train_all_data")))
+        
         writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "CNN", "valid")))
 
         ## get the info for training and write them into tsv files.
@@ -203,16 +205,18 @@ def main(options):
             print("At %s -th epoch." % str(epoch))
 
             # train the model
-            train_subject, y_ground_train, y_hat_train, train_proba, acc_mean_train, global_step, loss_batch_mean = train(model, train_loader, use_cuda, loss, optimizer, writer_train, epoch, model_mode='train', global_step=global_step, training_accuracy_batches=options.training_accuracy_batches)
+            train_subject, y_ground_train, y_hat_train, train_proba, acc_mean_train, global_step, loss_batch_mean = train(model, train_loader, use_cuda, loss, optimizer, writer_train_batch, epoch, model_mode='train', global_step=global_step)
             if epoch == options.epochs -1:
                 train_subjects.extend(train_subject)
                 y_grounds_train.extend(y_ground_train)
                 y_hats_train.extend(y_hat_train)
                 train_probas.extend(train_proba)
+            # calculate the training accuracy based on all the training data
+            train_subject_all, y_ground_train_all, y_hat_train_all, train_proba_all, acc_mean_train_all, _, loss_batch_mean_train_all = train(model, train_loader, use_cuda, loss, optimizer, writer_train_all_data, epoch, model_mode='valid', global_step=global_step)
 
             ## at then end of each epoch, we validate one time for the model with the validation data
-            valid_subject, y_ground_valid, y_hat_valid, valide_proba, acc_mean_valid, global_step, loss_batch_mean = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, model_mode='valid', global_step=global_step, training_accuracy_batches=options.training_accuracy_batches)
-            print("Slice level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
+            valid_subject, y_ground_valid, y_hat_valid, valide_proba, acc_mean_valid, global_step, loss_batch_mean = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, model_mode='valid', global_step=global_step)
+            print("Patch level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
             if epoch == options.epochs -1:
                 valid_subjects.extend(valid_subject)
                 y_grounds_valid.extend(y_ground_valid)
@@ -246,7 +250,7 @@ def main(options):
             }, is_best, os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "CNN", "best_loss"))
 
         ## save the graph and image
-        writer_train.add_graph(model, example_batch)
+        writer_train_batch.add_graph(model, example_batch)
 
         ### write the information of subjects and performances into tsv files.
         ## For train & valid, we offer only hard voting for

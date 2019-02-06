@@ -80,7 +80,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
 
             ## calculate the balanced accuracy
             results = evaluate_prediction(gound_truth_list, predict_list)
-            accuracy = results['accuracy']
+            accuracy = results['balanced_accuracy']
             acc += accuracy
             loss += loss_batch.item()
 
@@ -148,7 +148,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
 
                 ## calculate the balanced accuracy
                 results = evaluate_prediction(gound_truth_list, predict_list)
-                accuracy = results['accuracy']
+                accuracy = results['balanced_accuracy']
                 loss += loss_batch.item()
                 print("For batch %d, validation accuracy is : %f" % (i, accuracy))
 
@@ -220,7 +220,7 @@ def test(model, data_loader, use_cuda):
 
             ## calculate the balanced accuracy
             results = evaluate_prediction(gound_truth_list, predict_list)
-            accuracy = results['accuracy']
+            accuracy = results['balanced_accuracy']
             print("For batch %d, test accuracy is : %f" % (i, accuracy))
 
             # delete the temporal varibles taking the GPU memory
@@ -733,19 +733,17 @@ def commandline_to_jason(commanline):
             print('You should be responsible to make sure you did not change any parameters to train from the stopping point with the same model!')
 
         else:
-            if commandline_arg_dic['split'] != None:
-                pass
-            else:
-                ## train from 0
-                check_and_clean(commandline_arg_dic['output_dir'])
+            # if commandline_arg_dic['split'] != None:
+            #     pass
+            # else:
+            #     ## train from 0
+            check_and_clean(commandline_arg_dic['output_dir'])
 
     else:  # train from 0
         if not os.path.exists(commandline_arg_dic['output_dir']):
             os.makedirs(commandline_arg_dic['output_dir'])
-        if commandline_arg_dic['split'] != None:
-            pass
-        else:
-            check_and_clean(commandline_arg_dic['output_dir'])
+
+        check_and_clean(commandline_arg_dic['output_dir'])
     
     # anyway, need to have log_dir to be present
     if not os.path.exists(os.path.join(commandline_arg_dic['output_dir'], 'log_dir')):
