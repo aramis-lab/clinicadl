@@ -685,6 +685,8 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
             t0 = time()
             total_time = total_time + t0 - tend
 
+            print("Loading available between batches of data by CPU using time: ", t0 - tend)
+
             if use_cuda:
                 imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
             else:
