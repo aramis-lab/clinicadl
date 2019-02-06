@@ -6,11 +6,11 @@
 #SBATCH --cpus-per-task=28
 #SBATCH --nodes=1
 #SBATCH --workdir=/network/lustre/iss01/home/junhao.wen/working_dir/pytorch
-#SBATCH --output=/network/lustre/iss01/home/junhao.wen/working_dir/pytorch/logs/image_postprocessing_%j.out
-#SBATCH --error=/network/lustre/iss01/home/junhao.wen/working_dir/pytorch/logs/image_postprocessing_%j.err
+#SBATCH --output=/network/lustre/iss01/home/junhao.wen/working_dir/pytorch/logs/image_postprocessing_adni%j.out
+#SBATCH --error=/network/lustre/iss01/home/junhao.wen/working_dir/pytorch/logs/image_postprocessing_adni%j.err
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=junhao.wen@icm-institute.org
-#SBATCH --job-name="image postprocessing"
+#SBATCH --job-name="image postprocessingi_adni"
 
 ## Load CUDA and python
 module load python/2.7
