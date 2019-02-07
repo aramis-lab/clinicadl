@@ -95,10 +95,10 @@ def main(options):
         # to set the split = 0
         if options.split != None:
             ## train seperately a specific fold during the k-fold, also good for the limitation of your comuptational power
-            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split, n_splits=options.n_splits, baseline=options.baseline_or_longitudinal)
+            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split, n_splits=options.n_splits, baseline_or_longitudinal=options.baseline_or_longitudinal)
             fi = options.split
         else:
-             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, n_splits=options.n_splits, baseline=options.baseline_or_longitudinal)
+             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, n_splits=options.n_splits, baseline_or_longitudinal=options.baseline_or_longitudinal)
 
         print("Running for the %d -th fold" % fi)
 
