@@ -421,6 +421,61 @@ def load_split_by_diagnosis(options, split, n_splits=5, baseline_or_longitudinal
 
     return train_df, valid_df, train_tsv, valid_tsv
 
+def load_split_by_slices(training_tsv, validation_tsv, mri_plane=0, val_size=0.15):
+    """
+    This is a function to gather the training and validaion tsv together, then do the bad data split by slice.
+    :param training_tsv:
+    :param validation_tsv:
+    :return:
+    """
+
+    df_training = pd.io.parsers.read_csv(training_tsv, sep='\t')
+    df_validation = pd.io.parsers.read_csv(validation_tsv, sep='\t')
+    df_all = pd.concat([df_training, df_validation])
+    df_all = df_all.reset_index(drop=True)
+
+    if mri_plane == 0:
+        slices_per_patient = 169 - 40
+        slice_index = range(20, 169 - 20)
+    elif mri_plane == 1:
+        slices_per_patient = 208 - 40
+        slice_index = range(20, 208 - 20)
+    else:
+        slices_per_patient = 179 - 40
+        slice_index = range(20, 179 - 20)
+
+    participant_list = list(df_all['participant_id'])
+    session_list = list(df_all['session_id'])
+    label_list = list(df_all['diagnosis'])
+
+    slice_participant_list = [ele for ele in participant_list for _ in range(slices_per_patient)]
+    slice_session_list = [ele for ele in session_list for _ in range(slices_per_patient)]
+    slice_label_list = [ele for ele in label_list for _ in range(slices_per_patient)]
+    slice_index_list = slice_index * len(label_list)
+
+    df_final = pd.DataFrame(columns=['participant_id', 'session_id', 'slice_id', 'diagnosis'])
+    df_final['participant_id'] = np.array(slice_participant_list)
+    df_final['session_id'] = np.array(slice_session_list)
+    df_final['slice_id'] = np.array(slice_index_list)
+    df_final['diagnosis'] = np.array(slice_label_list)
+
+    y = np.array(slice_label_list)
+    # split the train data into training and validation set
+    skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size, random_state=10000)
+    indices = next(skf_2.split(np.zeros(len(y)), y))
+    train_ind, valid_ind = indices
+
+    df_sub_train = df_final.iloc[train_ind]
+    df_sub_valid = df_final.iloc[valid_ind]
+
+    train_tsv_path = os.path.join(tempfile.mkdtemp(), 'bad_data_split_train.tsv')
+    valid_tsv_path = os.path.join(tempfile.mkdtemp(), 'bad_data_split_valid.tsv')
+
+    df_sub_train.to_csv(train_tsv_path, sep='\t', index=False)
+    df_sub_valid.to_csv(valid_tsv_path, sep='\t', index=False)
+
+    return train_tsv_path, valid_tsv_path
+
 def check_and_clean(d):
 
   if os.path.exists(d):
@@ -569,6 +624,103 @@ class MRIDataset_slice(Dataset):
             extracted_slice = self.transformations(extracted_slice)
 
         sample = {'image_id': img_name + '_' + sess_name + '_slice' + str(index_slice + 20), 'image': extracted_slice, 'label': label}
+
+        return sample
+
+class MRIDataset_slice_mixed(Dataset):
+    """
+    This class reads the CAPS of image processing pipeline of DL. However, this is used for the bad data split strategy
+
+    To note, this class processes the MRI to be RGB for transfer learning.
+
+    Return: a Pytorch Dataset objective
+    """
+
+    def __init__(self, caps_directory, tsv, transformations=None, transfer_learning=False, mri_plane=0, image_processing='LinearReg'):
+        """
+        Args:
+            caps_directory (string): the output folder of image processing pipeline.
+            tsv (string): the tsv containing three columns, participant_id, session_id and diagnosis.
+            transformations (callable, optional): if the data sample should be done some transformations or not, such as resize the image.
+
+        To note, for each view:
+            Axial_view = "[:, :, slice_i]"
+            Coronal_veiw = "[:, slice_i, :]"
+            Saggital_view= "[slice_i, :, :]"
+
+        """
+        self.caps_directory = caps_directory
+        self.tsv = tsv
+        self.transformations = transformations
+        self.transfer_learning = transfer_learning
+        self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
+        self.mri_plane = mri_plane
+        self.image_processing = image_processing
+
+        df = pd.io.parsers.read_csv(tsv, sep='\t')
+        if ('diagnosis' != list(df.columns.values)[2]) and ('session_id' != list(df.columns.values)[1]) and (
+            'participant_id' != list(df.columns.values)[0]) and ('slice_id' != list(df.columns.values)[1]):
+            raise Exception('the data file is not in the correct format.')
+        self.participant_list = list(df['participant_id'])
+        self.session_list = list(df['session_id'])
+        self.slice_list = list(df['slice_id'])
+        self.label_list = list(df['diagnosis'])
+
+        ## make sure the slice are not from the edge of the MRI which lacks information of brain, here exclude the first and last 20 slices of the MRI
+        ## sagital
+
+        if mri_plane == 0:
+            self.slice_direction = 'sag'
+
+        elif mri_plane == 1:
+            self.slice_direction = 'cor'
+        ## axial
+        elif mri_plane == 2:
+            self.slice_direction = 'axi'
+
+
+    def __len__(self):
+        return len(self.participant_list)
+
+    def __getitem__(self, idx):
+
+        img_name = self.participant_list[idx]
+        sess_name = self.session_list[idx]
+        slice_name = self.slice_list[idx]
+        img_label = self.label_list[idx]
+        label = self.diagnosis_code[img_label]
+
+        if self.image_processing == 'LinearReg':
+            if self.transfer_learning:
+                slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+                                          'preprocessing_dl',
+                                          img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' + self.slice_direction + '_rgbslice-' + str(
+                                              slice_name) + '.pt')
+            else:
+                slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+                                          'preprocessing_dl',
+                                          img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' + self.slice_direction + '_originalslice-' + str(
+                                              slice_name) + '.pt')
+        else:
+            if self.transfer_learning:
+                slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'spm', 'dartel', 'group-ADNIbl', img_name + '_' + sess_name + '_T1w_segm-graymatter_space-Ixi549Space_modulated-on_fwhm-8mm_probability_axis-' + self.slice_direction + '_rgbslice-' + str(
+                    slice_name) + '.pt')
+            else:
+                slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'spm', 'dartel', 'group-ADNIbl', img_name + '_' + sess_name + '_T1w_segm-graymatter_space-Ixi549Space_modulated-on_fwhm-8mm_probability_axis-' + self.slice_direction + '_rgbslice-' + str(
+                    slice_name) + '.pt')
+
+        extracted_slice = torch.load(slice_path)
+        extracted_slice = (extracted_slice - extracted_slice.min()) / (extracted_slice.max() - extracted_slice.min())
+
+        # check if the slice has NAN value
+        if torch.isnan(extracted_slice).any() == True:
+            print("Double check, this slice has Nan value: %s" % str(img_name + '_' + sess_name + '_' + str(slice_name)))
+            extracted_slice[torch.isnan(extracted_slice)] = 0
+
+        if self.transformations:
+            extracted_slice = self.transformations(extracted_slice)
+
+        sample = {'image_id': img_name + '_' + sess_name + '_slice' + str(slice_name), 'image': extracted_slice, 'label': label}
 
         return sample
 
@@ -949,7 +1101,4 @@ def soft_voting_to_tsvs(output_dir, iteration, mode='test', vote_mode='soft'):
 
     pd.DataFrame(results, index=[0]).to_csv(os.path.join(output_dir, 'performances', 'fold_' + str(iteration), mode + '_subject_level_metrics_' + vote_mode + '_vote.tsv'), index=False, sep='\t', encoding='utf-8')
 
-# output_dir = '/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch'
-# best_model_fold = 4
-# soft_voting_to_tsvs(output_dir, best_model_fold, mode='test')
 
