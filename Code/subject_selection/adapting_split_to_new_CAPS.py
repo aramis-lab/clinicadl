@@ -4,7 +4,7 @@ sessions).
 """
 
 
-def check_baseline_existence(CAPS_path, diagnosis_df):
+def check_baseline_existence(CAPS_path, diagnosis_df, diagnosis, enrich=False):
     """
     Select only sessions for which the modality is present
 
@@ -18,8 +18,16 @@ def check_baseline_existence(CAPS_path, diagnosis_df):
     for idx in diagnosis_df.index:
         subject = diagnosis_df.loc[idx, 'participant_id']
         session = diagnosis_df.loc[idx, 'session_id']
+        subject_path = path.join(CAPS_path, 'subjects', subject)
         session_path = path.join(CAPS_path, 'subjects', subject, session)
-        if not path.exists(session_path):
+        if path.exists(session_path):
+            pass
+        elif enrich and path.exists(subject_path) and "pMCI" not in diagnosis:
+            baseline_path = path.join(subject_path, 'ses-M00')
+            if path.exists(baseline_path):
+                # This could lead to label errors as pMCI may be sMCI before their baseline sessions
+                results_df.loc[idx, 'session_id'] = 'ses-M00'
+        else:
             results_df.drop(idx, inplace=True)
 
     return results_df
@@ -42,6 +50,8 @@ if __name__ == "__main__":
     # Modality selection
     parser.add_argument("--n_splits", "-s", default=None, type=int,
                         help="Number of splits to loop over all folders when needed.")
+    parser.add_argument("--enrich", "-e", default=False, action="store_true",
+                        help="Allow to use baseline sessions of")
 
     args = parser.parse_args()
 
@@ -59,7 +69,7 @@ if __name__ == "__main__":
             for diagnosis in diagnoses:
                 diagnosis_path = path.join(split_path, diagnosis)
                 diagnosis_df = pd.read_csv(diagnosis_path, sep='\t')
-                result_df = check_baseline_existence(args.CAPS_path, diagnosis_df)
+                result_df = check_baseline_existence(args.CAPS_path, diagnosis_df, diagnosis, args.enrich)
                 result_df.to_csv(path.join(result_path, diagnosis), sep='\t', index=False)
                 print(diagnosis, str(len(result_df)) + '/' + str(len(diagnosis_df)))
 
@@ -74,5 +84,5 @@ if __name__ == "__main__":
         for diagnosis in diagnoses:
             diagnosis_path = path.join(args.data_path, diagnosis)
             diagnosis_df = pd.read_csv(diagnosis_path, sep='\t')
-            result_df = check_baseline_existence(args.CAPS_path, diagnosis_df)
+            result_df = check_baseline_existence(args.CAPS_path, diagnosis_df, diagnosis, args.enrich)
             result_df.to_csv(path.join(result_path, diagnosis), sep='\t', index=False)
