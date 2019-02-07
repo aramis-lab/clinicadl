@@ -579,7 +579,8 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
                             filename='optimizer.pth.tar')
 
         if epoch % 10 == 0:
-            visualize_subject(decoder, train_loader, results_path, epoch, options, first_visu)
+            visualize_subject(decoder, train_loader, results_path, epoch, options, first_visu,
+                              data_path=options.data_path)
             first_visu = False
 
         epoch += 1
@@ -894,7 +895,8 @@ def visualize_subject(decoder, dataloader, results_path, epoch, options, first_t
         raise NotImplementedError('Data path %s is not implemented' % data_path)
 
     input_nii = nib.load(image_path)
-    input_np = input_nii.get_data()
+    input_np = input_nii.get_data().astype(float)
+    np.nan_to_num(input_np, copy=False)
     input_pt = torch.from_numpy(input_np).unsqueeze(0).unsqueeze(0).float()
     if options.minmaxnormalization:
         transform = MinMaxNormalization()
