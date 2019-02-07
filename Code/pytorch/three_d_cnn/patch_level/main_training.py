@@ -212,7 +212,7 @@ def main(options):
                 y_hats_train.extend(y_hat_train)
                 train_probas.extend(train_proba)
             # calculate the training accuracy based on all the training data
-            train_subject_all, y_ground_train_all, y_hat_train_all, train_proba_all, acc_mean_train_all, _, loss_batch_mean_train_all = train(model, train_loader, use_cuda, loss, optimizer, writer_train_all_data, epoch, model_mode='valid', global_step=global_step)
+            # train_subject_all, y_ground_train_all, y_hat_train_all, train_proba_all, acc_mean_train_all, _, loss_batch_mean_train_all = train(model, train_loader, use_cuda, loss, optimizer, writer_train_all_data, epoch, model_mode='valid', global_step=global_step)
 
             ## at then end of each epoch, we validate one time for the model with the validation data
             valid_subject, y_ground_valid, y_hat_valid, valide_proba, acc_mean_valid, global_step, loss_batch_mean = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, model_mode='valid', global_step=global_step)
