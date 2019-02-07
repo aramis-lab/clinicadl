@@ -34,7 +34,7 @@ parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")
-parser.add_argument("--split", default=None, type=int,
+parser.add_argument("--split", default=0, type=int,
                     help="Define a specific fold in the k-fold, this is very useful to find the optimal model, where you do not want to run your k-fold validation")
 parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["baseline", "longitudinal"],
                     help="Using baseline scans or all available longitudinal scans for training")
@@ -95,10 +95,10 @@ def main(options):
         # to set the split = 0
         if options.split != None:
             ## train seperately a specific fold during the k-fold, also good for the limitation of your comuptational power
-            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split, n_splits=options.n_splits, baseline_or_longitudinal=options.baseline_or_longitudinal)
+            _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, options.split, baseline_or_longitudinal=options.baseline_or_longitudinal)
             fi = options.split
         else:
-             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, n_splits=options.n_splits, baseline_or_longitudinal=options.baseline_or_longitudinal)
+             _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, baseline_or_longitudinal=options.baseline_or_longitudinal)
 
         print("Running for the %d -th fold" % fi)
 
