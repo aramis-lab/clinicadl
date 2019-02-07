@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import os
 from os import path
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, sampler
 from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
 from scipy.ndimage.filters import gaussian_filter
 import warnings
@@ -59,7 +59,6 @@ class MRIDataset(Dataset):
                                    img_name + '_' + sess_name + '.pt')
             raise NotImplementedError("Dartel output has not been computed yet.")
         elif self.data_path == "mni":
-            warnings.warn("All sessions are not available for MNI: actually only working with ses-M00.")
             image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
                                    't1', 'spm', 'segmentation', 'normalized_space',
                                    img_name + '_' + sess_name + '_space-Ixi549Space_T1w.pt')
@@ -125,6 +124,40 @@ class MinMaxNormalization(object):
 
     def __call__(self, image):
         return (image - image.min()) / (image.max() - image.min())
+
+
+def generate_sampler(dataset, sampler_option='random'):
+    """
+    Returns sampler according to the wanted options
+
+    :param dataset: (MRIDataset) the dataset to sample from
+    :param sampler_option: (str) choice of sampler
+    :return: (Sampler)
+    """
+    count = [0, 0]
+    diagnoses_df = dataset.df
+    for idx in diagnoses_df.index:
+        diagnosis = diagnoses_df.loc[idx, "diagnosis"]
+        key = dataset.diagnosis_code[diagnosis]
+        count[key] += 1
+
+    weight_per_class = 1 / np.array(count)
+    weights = [0] * len(diagnoses_df)
+
+    for idx, diagnosis in enumerate(diagnoses_df.diagnosis.values):
+        key = dataset.diagnosis_code[diagnosis]
+        weights[idx] = weight_per_class[key]
+
+    weights = torch.DoubleTensor(weights)
+
+    if sampler_option == 'random':
+        s = sampler.RandomSampler(dataset)
+    elif sampler_option == 'weighted':
+        s = sampler.WeightedRandomSampler(weights, len(weights))
+    else:
+        raise NotImplementedError("The option %s for sampler is not implemented" % sampler_option)
+
+    return s
 
 
 def subject_diagnosis_df(subject_session_df):

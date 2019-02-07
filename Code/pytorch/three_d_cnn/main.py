@@ -82,6 +82,8 @@ parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--weight_decay', '--wd', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
+parser.add_argument('--sampler', '-s', default="random", type=str,
+                    help="Sampler choice")
 
 parser.add_argument('--gpu', action='store_true', default=False,
                     help='Uses gpu instead of cpu if cuda is available')
@@ -136,10 +138,12 @@ def main(options):
             data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transformations)
             data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transformations)
 
+            train_sampler = generate_sampler(data_train, options.sampler)
+
             # Use argument load to distinguish training and testing
             train_loader = DataLoader(data_train,
                                       batch_size=options.batch_size,
-                                      shuffle=options.shuffle,
+                                      batch_sampler=train_sampler,
                                       num_workers=options.num_workers,
                                       drop_last=True
                                       )
@@ -162,10 +166,12 @@ def main(options):
         data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transform=transformations)
         data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transform=transformations)
 
+        train_sampler = generate_sampler(data_train, options)
+
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
                                   batch_size=options.batch_size,
-                                  shuffle=options.shuffle,
+                                  batch_sampler=train_sampler,
                                   num_workers=options.num_workers,
                                   drop_last=True
                                   )
