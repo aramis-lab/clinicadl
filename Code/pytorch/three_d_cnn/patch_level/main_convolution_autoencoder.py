@@ -71,7 +71,6 @@ parser.add_argument("--accumulation_steps",  default=1, type=int,
 parser.add_argument("--visualization", default=True, type=bool,
                     help='Chooses if visualization is done on AE pretraining')
 
-
 def main(options):
 
     print('Start the training for stacked convolutional autoencoders, the optimal model be saved for future use!')

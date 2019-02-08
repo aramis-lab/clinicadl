@@ -21,7 +21,7 @@ class Conv_4_FC_2(nn.Module):
        Classification model based on the input patch.
        """
 
-    def __init__(self, dropout=0.5, n_classes=2):
+    def __init__(self, dropout=0.9, n_classes=2):
         super(Conv_4_FC_2, self).__init__()
 
         self.features = nn.Sequential(
@@ -60,11 +60,11 @@ class Conv_4_FC_2(nn.Module):
             nn.Linear(64 * 2 * 2 * 2, 1000),
             nn.ReLU(),
 
-            nn.Dropout(p=dropout),
-            nn.Linear(1000, 100),
-            nn.ReLU(),
+            # nn.Dropout(p=dropout),
+            # nn.Linear(1000, 100),
+            # nn.ReLU(),
 
-            nn.Linear(100, n_classes),
+            nn.Linear(1000, n_classes),
             nn.Softmax(dim=1)
         )
 
