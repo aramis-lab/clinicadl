@@ -111,6 +111,7 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, gpu, write
 
     # ## save the encoder part of the AEs, the best AEs has been saved in the ae_finetuning part
     model.features = deepcopy(best_autodecoder.encoder)
+    ## TODO, bug to save AE, do not save the classifier, only save encoder.
     save_checkpoint({'model': model.state_dict(),
                      'epoch': best_epoch},
                     False,
