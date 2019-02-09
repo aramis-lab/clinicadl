@@ -111,7 +111,6 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, gpu, write
 
     # ## save the encoder part of the AEs, the best AEs has been saved in the ae_finetuning part
     model.features = deepcopy(best_autodecoder.encoder)
-    ## TODO, bug to save AE, do not save the classifier, only save encoder.
     save_checkpoint({'model': model.state_dict(),
                      'epoch': best_epoch},
                     False,
@@ -623,8 +622,20 @@ def load_model_after_ae(model, checkpoint_dir, filename='checkpoint.pth.tar'):
     from copy import deepcopy
 
     model_after_ae = deepcopy(model)
+    model_dict = model_after_ae.state_dict()
     param_dict = torch.load(os.path.join(checkpoint_dir, filename))
-    model_after_ae.load_state_dict(param_dict['model'])
+    ae_pretrained_dict = param_dict['model']
+
+    ## remove the classifier's weight, only take the AE
+    for k in ae_pretrained_dict.keys():
+        if 'classifier' not in k:
+            pass
+        else:
+            del ae_pretrained_dict[k]
+
+    model_dict.update(ae_pretrained_dict)
+    model_after_ae.load_state_dict(model_dict)
+
     return model_after_ae, param_dict['epoch']
 
 

@@ -44,12 +44,7 @@ class Conv_4_FC_2(nn.Module):
             nn.Conv3d(32, 64, 3),
             nn.BatchNorm3d(64),
             nn.ReLU(),
-            PadMaxPool3d(2, 2),
-
-            # nn.Conv3d(64, 64, 3),
-            # nn.BatchNorm3d(64),
-            # nn.ReLU(),
-            # PadMaxPool3d(2, 2),
+            PadMaxPool3d(2, 2)
 
         )
         self.classifier = nn.Sequential(
@@ -60,15 +55,73 @@ class Conv_4_FC_2(nn.Module):
             nn.Linear(64 * 2 * 2 * 2, 1000),
             nn.ReLU(),
 
-            # nn.Dropout(p=dropout),
-            # nn.Linear(1000, 100),
-            # nn.ReLU(),
+            nn.Dropout(p=dropout),
+            nn.Linear(1000, 100),
+            nn.ReLU(),
 
-            nn.Linear(1000, n_classes),
+            nn.Linear(100, n_classes),
             nn.Softmax(dim=1)
         )
 
-        self.flattened_shape = [-1, 4, 5, 4, 23]
+        self.flattened_shape = [-1, 64, 2, 2, 2]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+class Conv_7_FC_2(nn.Module):
+    """
+       Classification model based on the input patch.
+       """
+
+    def __init__(self, dropout=0.9, n_classes=2):
+        super(Conv_7_FC_2, self).__init__()
+
+        self.features = nn.Sequential(
+            # Convolutions
+            nn.Conv3d(1, 16, 3),
+            nn.Conv3d(16, 16, 3),
+            nn.BatchNorm3d(16),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3),
+            nn.Conv3d(32, 32, 3),
+            nn.BatchNorm3d(32),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 32, 3),
+            nn.BatchNorm3d(32),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3),
+            nn.Conv3d(64, 64, 1),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2)
+
+        )
+        self.classifier = nn.Sequential(
+            # Fully connected layers
+            Flatten(),
+
+            nn.Dropout(p=dropout),
+            nn.Linear(64 * 1 * 1 * 1, 1000),
+            nn.ReLU(),
+
+            nn.Dropout(p=dropout),
+            nn.Linear(1000, 100),
+            nn.ReLU(),
+
+            nn.Linear(100, n_classes),
+            nn.Softmax(dim=1)
+        )
+
+        self.flattened_shape = [-1, 64, 1, 1, 1]
 
     def forward(self, x):
         x = self.features(x)

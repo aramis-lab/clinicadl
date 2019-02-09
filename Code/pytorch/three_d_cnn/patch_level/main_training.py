@@ -41,7 +41,7 @@ parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["
 
 
 # transfer learning
-parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2", "VoxResNet", "AllConvNet3D"],
+parser.add_argument("--network", default="Conv_7_FC_2", choices=["Conv_4_FC_2", "Conv_7_FC_2", "AllConvNet3D"],
                     help="Autoencoder network type. (default=Conv_4_FC_2). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
 parser.add_argument("--transfer_learning_autoencoder", default=True, type=bool,
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
