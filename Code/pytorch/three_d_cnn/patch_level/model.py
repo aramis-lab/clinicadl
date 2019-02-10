@@ -18,31 +18,32 @@ __status__ = "Development"
 
 class Conv_4_FC_2(nn.Module):
     """
-       Classification model based on the input patch.
+       This network is the implementation of this paper:
+       'Multi-modality cascaded convolutional neural networks for Alzheimer's Disease diagnosis'
        """
 
-    def __init__(self, dropout=0.9, n_classes=2):
+    def __init__(self, dropout=0, n_classes=2):
         super(Conv_4_FC_2, self).__init__()
 
         self.features = nn.Sequential(
             # Convolutions
-            nn.Conv3d(1, 16, 3),
-            nn.BatchNorm3d(16),
+            nn.Conv3d(1, 15, 3),
+            nn.BatchNorm3d(15),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
 
-            nn.Conv3d(16, 32, 3),
-            nn.BatchNorm3d(32),
+            nn.Conv3d(15, 25, 3),
+            nn.BatchNorm3d(25),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
 
-            nn.Conv3d(32, 32, 3),
-            nn.BatchNorm3d(32),
+            nn.Conv3d(25, 50, 3),
+            nn.BatchNorm3d(50),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
 
-            nn.Conv3d(32, 64, 3),
-            nn.BatchNorm3d(64),
+            nn.Conv3d(50, 50, 3),
+            nn.BatchNorm3d(50),
             nn.ReLU(),
             PadMaxPool3d(2, 2)
 
@@ -52,18 +53,68 @@ class Conv_4_FC_2(nn.Module):
             Flatten(),
 
             nn.Dropout(p=dropout),
-            nn.Linear(64 * 2 * 2 * 2, 1000),
+            nn.Linear(50 * 2 * 2 * 2, 50),
             nn.ReLU(),
 
             nn.Dropout(p=dropout),
-            nn.Linear(1000, 100),
+            nn.Linear(50, 40),
             nn.ReLU(),
 
-            nn.Linear(100, n_classes),
+            nn.Linear(40, n_classes),
             nn.Softmax(dim=1)
         )
 
-        self.flattened_shape = [-1, 64, 2, 2, 2]
+        self.flattened_shape = [-1, 50, 2, 2, 2]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x
+
+
+class Conv_3_FC_2(nn.Module):
+    """
+       """
+
+    def __init__(self, dropout=0, n_classes=2):
+        super(Conv_3_FC_2, self).__init__()
+
+        self.features = nn.Sequential(
+            # Convolutions
+            nn.Conv3d(1, 15, 3),
+            nn.BatchNorm3d(15),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(15, 25, 3),
+            nn.BatchNorm3d(25),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(25, 50, 3),
+            nn.BatchNorm3d(50),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2)
+
+        )
+        self.classifier = nn.Sequential(
+            # Fully connected layers
+            Flatten(),
+
+            nn.Dropout(p=dropout),
+            nn.Linear(50 * 5 * 5 * 5, 50),
+            nn.ReLU(),
+
+            nn.Dropout(p=dropout),
+            nn.Linear(50, 40),
+            nn.ReLU(),
+
+            nn.Linear(40, n_classes),
+            nn.Softmax(dim=1)
+        )
+
+        self.flattened_shape = [-1, 50, 5, 5, 5]
 
     def forward(self, x):
         x = self.features(x)
