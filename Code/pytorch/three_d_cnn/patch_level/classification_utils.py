@@ -105,7 +105,7 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, gpu, write
     ae_finetuning(ae, train_loader, valid_loader, criterion, gpu, writer_train, writer_valid, options, fi)
 
     # Updating and setting weights of the convolutional layers
-    best_autodecoder, best_epoch = load_model_from_chcekpoint(ae, path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'fine_tune', 'AutoEncoder'))
+    best_autodecoder, best_epoch = load_model_from_chcekpoint(ae, path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'fine_tune', 'AutoEncoder'), 'model_best.pth.tar')
 
     del ae
 
@@ -342,7 +342,7 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, gpu, 
         save_checkpoint({'model': auto_encoder_all.state_dict(),
                          'iteration': i,
                          'epoch': epoch,
-                         'best_loss': mean_loss_valid},
+                         'best_loss': best_loss_valid},
                         is_best_loss,
                         os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "ConvAutoencoder", "fine_tune", "AutoEncoder"))
 
