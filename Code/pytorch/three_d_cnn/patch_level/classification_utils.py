@@ -69,7 +69,7 @@ def greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, gpu
     ae_finetuning(ae, train_loader, valid_loader, criterion, gpu, writer_train_ft, writer_valid_ft, options, fi)
 
     # Updating and setting weights of the convolutional layers
-    best_autodecoder, best_epoch = load_model_from_chcekpoint(ae, path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'fine_tune', 'AutoEncoder'))
+    best_autodecoder, best_epoch = load_model_from_chcekpoint(ae, path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'fine_tune', 'AutoEncoder', 'model_best.pth.tar'))
 
     ## save only the Encoders too
     model.features = deepcopy(best_autodecoder.encoder)
