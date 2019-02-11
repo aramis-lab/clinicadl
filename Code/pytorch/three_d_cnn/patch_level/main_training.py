@@ -259,7 +259,7 @@ def main(options):
             }, is_best, os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "CNN", "best_loss"))
 
         ## save the graph and image
-        writer_train_batch.add_graph(model, example_batch)
+        # writer_train_batch.add_graph(model, example_batch)
 
         ### write the information of subjects and performances into tsv files.
         ## For train & valid, we offer only hard voting for
