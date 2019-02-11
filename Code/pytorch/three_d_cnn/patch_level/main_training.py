@@ -43,7 +43,7 @@ parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["
 # transfer learning
 parser.add_argument("--network", default="Conv_3_FC_2", choices=["Conv_4_FC_2", "Conv_7_FC_2", "Conv_3_FC_2"],
                     help="Autoencoder network type. (default=Conv_4_FC_2). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
-parser.add_argument("--transfer_learning_autoencoder", default=True, type=bool,
+parser.add_argument("--transfer_learning_autoencoder", default=False, type=bool,
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
 parser.add_argument("--train_from_stop_point", default=False, type=bool,
                     help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
@@ -118,9 +118,11 @@ def main(options):
             print("Train the model from 0 epoch")
 
         if options.transfer_learning_autoencoder:
-            model, _ = load_model_after_ae(model, os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi),
+            model, saved_epoch = load_model_after_ae(model, os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi),
                                                                'ConvAutoencoder', 'fine_tune', 'Encoder'),
                                            filename='model_best_encoder.pth.tar')
+
+            print("The AE was saved at %s -th epoch" % str(saved_epoch))
 
         ## need to normalized the value to [0, 1]
         transformations = transforms.Compose([NormalizeMinMax()])
