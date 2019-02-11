@@ -1227,25 +1227,75 @@ class MRIDataset_patch(Dataset):
 
         return sample
 
-    def session_restriction(self, session):
+class MRIDataset_patch_hippocampus(Dataset):
+    """Loading the left and right hippocampus ROIs."""
+
+    def __init__(self, caps_directory, data_file, transformations=None):
         """
-            Allows to generate a new MRIDataset_patch using some specific sessions only (mostly used for evaluation of test)
+        Args:
+            caps_directory (string): Directory of all the images.
+            data_file (string): File name of the train/test split file.
+            transformations (callable, optional): Optional transformations to be applied on a sample.
 
-            :param session: (str) the session wanted. Must be 'all' or 'ses-MXX'
-            :return: (DataFrame) the dataset with the wanted sessions
-            """
-        from copy import copy
+        """
+        self.caps_directory = caps_directory
+        self.transformations = transformations
+        self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
 
-        data_output = copy(self)
-        if session == "all":
-            return data_output
+        # Check the format of the tsv file here
+        self.df = pd.read_csv(data_file, sep='\t')
+        if ('diagnosis' not in list(self.df.columns.values)) or ('session_id' not in list(self.df.columns.values)) or \
+           ('participant_id' not in list(self.df.columns.values)):
+            raise Exception("the data file is not in the correct format."
+                            "Columns should include ['participant_id', 'session_id', 'diagnosis']")
+        participant_list = list(self.df['participant_id'])
+        session_list = list(self.df['session_id'])
+        label_list = list(self.df['diagnosis'])
+
+        self.patchs_per_patient = 2
+        self.patch_participant_list = [ele for ele in participant_list for _ in range(self.patchs_per_patient)]
+        self.patch_session_list = [ele for ele in session_list for _ in range(self.patchs_per_patient)]
+        self.patch_label_list = [ele for ele in label_list for _ in range(self.patchs_per_patient)]
+
+    def __len__(self):
+        return len(self.patch_participant_list)
+
+    def __getitem__(self, idx):
+        img_name = self.patch_participant_list[idx]
+        sess_name = self.patch_session_list[idx]
+        img_label = self.patch_label_list[idx]
+        ## image without intensity normalization
+        label = self.diagnosis_code[img_label]
+        ## odd is left hipp, even is right
+        left_is_odd = idx % self.patchs_per_patient
+
+
+        t1 = time()
+
+        if left_is_odd == 1:
+            patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+                                  'preprocessing_dl',
+                                  img_name + '_' + sess_name + '_space-MNI_res-1x1x1_hippocampus_hemi-left.pt')
         else:
-            df_session = self.df[self.df.session_id == session]
-            df_session.reset_index(drop=True, inplace=True)
-            data_output.df = df_session
-            if len(data_output) == 0:
-                raise Exception("The session %s doesn't exist for any of the subjects in the test data" % session)
-            return data_output
+            patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+                                  'preprocessing_dl',
+                                  img_name + '_' + sess_name + '_space-MNI_res-1x1x1_hippocampus_hemi-right.pt')
+
+        patch = torch.load(patch_path)
+        t2 = time()
+        print("Load patch: %f s" % (t2 -t1))
+
+        # check if the patch has NAN value
+        if torch.isnan(patch).any() == True:
+            print("Double check, this patch has Nan value: %s" % str(img_name + '_' + sess_name + str(left_is_odd)))
+            patch[torch.isnan(patch)] = 0
+
+        if self.transformations:
+            patch = self.transformations(patch)
+
+        sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(left_is_odd), 'image': patch, 'label': label}
+
+        return sample
 
 
 def subject_diagnosis_df(subject_session_df):

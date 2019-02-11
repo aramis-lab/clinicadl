@@ -38,8 +38,8 @@ parser.add_argument("--split", default=0, type=int,
                     help="Define a specific fold in the k-fold, this is very useful to find the optimal model, where you do not want to run your k-fold validation")
 parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["baseline", "longitudinal"],
                     help="Using baseline scans or all available longitudinal scans for training")
-
-
+parser.add_argument('--hippocampus_roi', default=True, type=bool,
+                    help="If train the model using only hippocampus ROI")
 
 # Training arguments
 parser.add_argument("--network", default="Conv_3_FC_2", choices=["Conv_4_FC_2", "Conv_7_FC_2", "Conv_3_FC_2"],
@@ -101,11 +101,17 @@ def main(options):
 
         print("Running for the %d -th fold" % fi)
 
+        if options.hippocampus_roi:
+            print("Only using hippocampus ROI")
 
-        data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride, transformations=transformations,
-                                      data_type=options.data_type)
-        data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size, options.patch_stride, transformations=transformations,
-                                      data_type=options.data_type)
+            data_train = MRIDataset_patch_hippocampus(options.caps_directory, training_tsv, transformations=transformations)
+            data_valid = MRIDataset_patch_hippocampus(options.caps_directory, valid_tsv, transformations=transformations)
+
+        else:
+            data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride, transformations=transformations,
+                                          data_type=options.data_type)
+            data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size, options.patch_stride, transformations=transformations,
+                                          data_type=options.data_type)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
