@@ -30,7 +30,7 @@ parser.add_argument("--patch_size", default=50, type=int,
                     help="The patch size extracted from the MRI")
 parser.add_argument("--patch_stride", default=50, type=int,
                     help="The stride for the patch extract window from the MRI")
-parser.add_argument("--batch_size", default=5, type=int,
+parser.add_argument("--batch_size", default=1, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
@@ -38,12 +38,13 @@ parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
 parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["baseline", "longitudinal"],
                     help="Using baseline scans or all available longitudinal scans for training")
-
+parser.add_argument('--hippocampus_roi', default=True, type=bool,
+                    help="If train the model using only hippocampus ROI")
 
 # transfer learning
 parser.add_argument("--network", default="Conv_3_FC_2", choices=["Conv_4_FC_2", "Conv_7_FC_2", "Conv_3_FC_2"],
                     help="Autoencoder network type. (default=Conv_4_FC_2). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
-parser.add_argument("--transfer_learning_autoencoder", default=False, type=bool,
+parser.add_argument("--transfer_learning_autoencoder", default=True, type=bool,
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
 parser.add_argument("--train_from_stop_point", default=False, type=bool,
                     help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
@@ -126,9 +127,15 @@ def main(options):
 
         ## need to normalized the value to [0, 1]
         transformations = transforms.Compose([NormalizeMinMax()])
+        if options.hippocampus_roi:
+            print("Only using hippocampus ROI")
 
-        data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride, transformations=transformations, data_type=options.data_type)
-        data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size, options.patch_stride, transformations=transformations, data_type=options.data_type)
+            data_train = MRIDataset_patch_hippocampus(options.caps_directory, training_tsv, transformations=transformations)
+            data_valid = MRIDataset_patch_hippocampus(options.caps_directory, valid_tsv, transformations=transformations)
+
+        else:
+            data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride, transformations=transformations, data_type=options.data_type)
+            data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size, options.patch_stride, transformations=transformations, data_type=options.data_type)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,

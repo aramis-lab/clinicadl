@@ -103,7 +103,8 @@ class Conv_3_FC_2(nn.Module):
             Flatten(),
 
             nn.Dropout(p=dropout),
-            nn.Linear(50 * 5 * 5 * 5, 50),
+            # nn.Linear(50 * 5 * 5 * 5, 50),
+            nn.Linear(50 * 3 * 3 * 3, 50),
             nn.ReLU(),
 
             nn.Dropout(p=dropout),
@@ -114,7 +115,9 @@ class Conv_3_FC_2(nn.Module):
             nn.Softmax(dim=1)
         )
 
-        self.flattened_shape = [-1, 50, 5, 5, 5]
+        # self.flattened_shape = [-1, 50, 5, 5, 5]
+        ## for hippocampus
+        self.flattened_shape = [-1, 50, 3, 3, 3]
 
     def forward(self, x):
         x = self.features(x)
