@@ -46,7 +46,7 @@ parser.add_argument("--network", default="Conv_3_FC_2", choices=["Conv_4_FC_2", 
                     help="Autoencoder network type. (default=Conv_4_FC_2)")
 parser.add_argument("--ae_training_method", default="stacked_ae", choices=["layer_wise_ae", "stacked_ae"],
                     help="How to train the autoencoder, layer wise or train all AEs together")
-parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,
+parser.add_argument("--diagnoses_list", default=["AD", "CN", "MCI"], type=str,
                     help="Take all the subjects possible for autoencoder training")
 parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
