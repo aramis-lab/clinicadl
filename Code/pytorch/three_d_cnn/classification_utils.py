@@ -55,15 +55,15 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
 
     model.train()  # set the module to training mode
 
+    waiting_time = 0
     t_beggining = time()
 
-    while epoch < options.epochs:
+    while epoch < options.epochs and waiting_time < options.patience:
         print("At %d-th epoch." % epoch)
 
         model.zero_grad()
         evaluation_flag = True
         step_flag = True
-        last_check_point_i = 0
         tend = time()
         total_time = 0
 
@@ -155,62 +155,66 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
                           'The model is evaluated only once at the end of the epoch')
 
         # Always test the results and save them once at the end of the epoch
-        if last_check_point_i != i:
-            model.zero_grad()
-            print('Last checkpoint at the end of the epoch %d' % epoch)
-            # Training performance is evaluated on the last batches seen
-            if options.gpu:
-                concat_prediction_arr = concat_prediction.view(-1).cpu().numpy().astype(int)
-                concat_truth_arr = concat_truth.view(-1).cpu().numpy().astype(int)
-            else:
-                concat_prediction_arr = concat_prediction.view(-1).numpy().astype(int)
-                concat_truth_arr = concat_truth.numpy().view(-1).astype(int)
+        model.zero_grad()
+        print('Last checkpoint at the end of the epoch %d' % epoch)
+        # Training performance is evaluated on the last batches seen
+        if options.gpu:
+            concat_prediction_arr = concat_prediction.view(-1).cpu().numpy().astype(int)
+            concat_truth_arr = concat_truth.view(-1).cpu().numpy().astype(int)
+        else:
+            concat_prediction_arr = concat_prediction.view(-1).numpy().astype(int)
+            concat_truth_arr = concat_truth.numpy().view(-1).astype(int)
 
-            if options.training_evaluation == 'n_batches':
-                metrics = evaluate_prediction(concat_truth_arr, concat_prediction_arr, options.evaluation_steps)
-                acc_mean_train = metrics['balanced_accuracy']
-                total_loss_train = sum(concat_loss[-options.evaluation_steps:])
-                mean_loss_train = total_loss_train / (options.evaluation_steps * train_loader.batch_size)
-            else:
-                acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
-                mean_loss_train = total_loss_train / (len(train_loader) * train_loader.batch_size)
+        if options.training_evaluation == 'n_batches':
+            metrics = evaluate_prediction(concat_truth_arr, concat_prediction_arr, options.evaluation_steps)
+            acc_mean_train = metrics['balanced_accuracy']
+            total_loss_train = sum(concat_loss[-options.evaluation_steps:])
+            mean_loss_train = total_loss_train / (options.evaluation_steps * train_loader.batch_size)
+        else:
+            acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
+            mean_loss_train = total_loss_train / (len(train_loader) * train_loader.batch_size)
 
-            acc_mean_valid, total_loss_valid = test(model, valid_loader, options.gpu, criterion)
-            mean_loss_valid = total_loss_valid / (len(valid_loader) * valid_loader.batch_size)
-            model.train()
+        acc_mean_valid, total_loss_valid = test(model, valid_loader, options.gpu, criterion)
+        mean_loss_valid = total_loss_valid / (len(valid_loader) * valid_loader.batch_size)
+        model.train()
 
-            # TODO: Use tensorboardX once it is installed on the cluster
-            # writer_train.add_scalar('balanced_accuracy', acc_mean_train, i + epoch * len(train_loader))
-            # writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
-            # writer_valid.add_scalar('balanced_accuracy', acc_mean_valid, i + epoch * len(train_loader))
-            # writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
-            print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
-            print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
+        # TODO: Use tensorboardX once it is installed on the cluster
+        # writer_train.add_scalar('balanced_accuracy', acc_mean_train, i + epoch * len(train_loader))
+        # writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
+        # writer_valid.add_scalar('balanced_accuracy', acc_mean_valid, i + epoch * len(train_loader))
+        # writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
+        print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
+        print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
-            t_current = time() - t_beggining
-            row = np.array([epoch, i, acc_mean_train, mean_loss_train, acc_mean_valid, mean_loss_valid,
-                            t_current]).reshape(1, -1)
-            row_df = pd.DataFrame(row, columns=columns)
-            with open(filename, 'a') as f:
-                row_df.to_csv(f, header=False, index=False, sep='\t')
-            accuracy_is_best = acc_mean_valid > best_valid_accuracy  # TODO Change for loss ?
-            loss_is_best = mean_loss_valid < best_valid_loss
-            best_valid_accuracy = max(acc_mean_valid, best_valid_accuracy)
-            best_valid_loss = min(mean_loss_valid, best_valid_loss)
+        t_current = time() - t_beggining
+        row = np.array([epoch, i, acc_mean_train, mean_loss_train, acc_mean_valid, mean_loss_valid,
+                        t_current]).reshape(1, -1)
+        row_df = pd.DataFrame(row, columns=columns)
+        with open(filename, 'a') as f:
+            row_df.to_csv(f, header=False, index=False, sep='\t')
+        accuracy_is_best = acc_mean_valid > best_valid_accuracy  # TODO Change for loss ?
+        loss_is_best = mean_loss_valid < best_valid_loss
+        best_valid_accuracy = max(acc_mean_valid, best_valid_accuracy)
+        best_valid_loss = min(mean_loss_valid, best_valid_loss)
 
-            save_checkpoint({'model': model.state_dict(),
-                             'epoch': epoch,
-                             'valid_acc': acc_mean_valid},
-                            accuracy_is_best, loss_is_best,
-                            os.path.join(options.log_dir, "run" + str(run)))
-            # Save optimizer state_dict to be able to reload
-            save_checkpoint({'optimizer': optimizer.state_dict(),
-                             'epoch': epoch,
-                             'name': options.optimizer,
-                             },
-                            False, False,
-                            os.path.join(options.log_dir, "run" + str(run)),
-                            filename='optimizer.pth.tar')
+        save_checkpoint({'model': model.state_dict(),
+                         'epoch': epoch,
+                         'valid_acc': acc_mean_valid},
+                        accuracy_is_best, loss_is_best,
+                        os.path.join(options.log_dir, "run" + str(run)))
+        # Save optimizer state_dict to be able to reload
+        save_checkpoint({'optimizer': optimizer.state_dict(),
+                         'epoch': epoch,
+                         'name': options.optimizer,
+                         },
+                        False, False,
+                        os.path.join(options.log_dir, "run" + str(run)),
+                        filename='optimizer.pth.tar')
+
+        if loss_is_best:
+            waiting_time = 0
+        else:
+            waiting_time += 1
 
         epoch += 1
 
@@ -484,7 +488,6 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
         decoder.zero_grad()
         evaluation_flag = True
         step_flag = True
-        last_check_point_i = 0
         concat_loss = []
         for i, data in enumerate(train_loader):
             if options.gpu:
@@ -537,46 +540,45 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
                           'The model is evaluated only once at the end of the epoch')
 
         # Always test the results and save them once at the end of the epoch
-        if last_check_point_i != i:
-            print('Last checkpoint at the end of the epoch %d' % epoch)
+        print('Last checkpoint at the end of the epoch %d' % epoch)
 
-            if options.training_evaluation == 'n_batches':
-                loss_train = sum(concat_loss[-options.evaluation_steps:])
-                mean_loss_train = loss_train / (options.evaluation_steps * train_loader.batch_size)
-            else:
-                loss_train = test_ae(decoder, train_loader, options.gpu, criterion)
-                mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
+        if options.training_evaluation == 'n_batches':
+            loss_train = sum(concat_loss[-options.evaluation_steps:])
+            mean_loss_train = loss_train / (options.evaluation_steps * train_loader.batch_size)
+        else:
+            loss_train = test_ae(decoder, train_loader, options.gpu, criterion)
+            mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
 
-            loss_valid = test_ae(decoder, valid_loader, options.gpu, criterion)
-            mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.batch_size)
-            decoder.train()
+        loss_valid = test_ae(decoder, valid_loader, options.gpu, criterion)
+        mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.batch_size)
+        decoder.train()
 
-            writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
-            writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
-            print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
+        writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
+        writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
+        print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
 
-            row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
-            row_df = pd.DataFrame(row, columns=columns)
-            with open(filename, 'a') as f:
-                row_df.to_csv(f, header=False, index=False, sep='\t')
+        row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
+        row_df = pd.DataFrame(row, columns=columns)
+        with open(filename, 'a') as f:
+            row_df.to_csv(f, header=False, index=False, sep='\t')
 
-            is_best = loss_valid < best_loss_valid
-            best_loss_valid = min(best_loss_valid, loss_valid)
-            # Always save the model at the end of the epoch and update best model
-            save_checkpoint({'model': decoder.state_dict(),
-                             'iteration': i,
-                             'epoch': epoch,
-                             'loss_valid': loss_valid},
-                            False, is_best,
-                            results_path)
-            # Save optimizer state_dict to be able to reload
-            save_checkpoint({'optimizer': optimizer.state_dict(),
-                             'epoch': epoch,
-                             'name': options.optimizer,
-                             },
-                            False, False,
-                            results_path,
-                            filename='optimizer.pth.tar')
+        is_best = loss_valid < best_loss_valid
+        best_loss_valid = min(best_loss_valid, loss_valid)
+        # Always save the model at the end of the epoch and update best model
+        save_checkpoint({'model': decoder.state_dict(),
+                         'iteration': i,
+                         'epoch': epoch,
+                         'loss_valid': loss_valid},
+                        False, is_best,
+                        results_path)
+        # Save optimizer state_dict to be able to reload
+        save_checkpoint({'optimizer': optimizer.state_dict(),
+                         'epoch': epoch,
+                         'name': options.optimizer,
+                         },
+                        False, False,
+                        results_path,
+                        filename='optimizer.pth.tar')
 
         if epoch % 10 == 0:
             visualize_subject(decoder, train_loader, results_path, epoch, options, first_visu,
@@ -729,7 +731,6 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
         auto_encoder.zero_grad()
         evaluation_flag = True
         step_flag = True
-        last_check_point_i = 0
         concat_loss = []
         for i, data in enumerate(train_loader):
             if options.gpu:
@@ -787,38 +788,37 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
                           'The model is evaluated only once at the end of the epoch')
 
         # Always test the results and save them once at the end of the epoch
-        if last_check_point_i != i:
-            print('Last checkpoint at the end of the epoch %d' % epoch)
-            if options.training_evaluation == 'n_batches':
-                loss_train = sum(concat_loss[-options.evaluation_steps:])
-                mean_loss_train = loss_train / (options.evaluation_steps * train_loader.batch_size)
-            else:
-                loss_train = test_ae(auto_encoder, train_loader, options.gpu, criterion)
-                mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
+        print('Last checkpoint at the end of the epoch %d' % epoch)
+        if options.training_evaluation == 'n_batches':
+            loss_train = sum(concat_loss[-options.evaluation_steps:])
+            mean_loss_train = loss_train / (options.evaluation_steps * train_loader.batch_size)
+        else:
+            loss_train = test_ae(auto_encoder, train_loader, options.gpu, criterion)
+            mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
 
-            loss_valid = test_ae(auto_encoder, valid_loader, options.gpu, criterion, first_layers=first_layers)
-            mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.dataset.size)
-            auto_encoder.train()
+        loss_valid = test_ae(auto_encoder, valid_loader, options.gpu, criterion, first_layers=first_layers)
+        mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.dataset.size)
+        auto_encoder.train()
 
-            writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
-            writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
-            print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
+        writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
+        writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
+        print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
 
-            row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
-            row_df = pd.DataFrame(row, columns=columns)
-            with open(filename, 'a') as f:
-                row_df.to_csv(f, header=False, index=False, sep='\t')
+        row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
+        row_df = pd.DataFrame(row, columns=columns)
+        with open(filename, 'a') as f:
+            row_df.to_csv(f, header=False, index=False, sep='\t')
 
-            is_best = loss_valid < best_loss_valid
-            # Save only if is best to avoid performance deterioration
-            if is_best:
-                best_loss_valid = loss_valid
-                save_checkpoint({'model': auto_encoder.state_dict(),
-                                 'iteration': i,
-                                 'epoch': epoch,
-                                 'loss_valid': loss_valid},
-                                False, is_best,
-                                results_path)
+        is_best = loss_valid < best_loss_valid
+        # Save only if is best to avoid performance deterioration
+        if is_best:
+            best_loss_valid = loss_valid
+            save_checkpoint({'model': auto_encoder.state_dict(),
+                             'iteration': i,
+                             'epoch': epoch,
+                             'loss_valid': loss_valid},
+                            False, is_best,
+                            results_path)
 
 
 def extract_ae(decoder, level):
