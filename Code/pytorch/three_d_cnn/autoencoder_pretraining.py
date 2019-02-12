@@ -117,12 +117,10 @@ def main(options):
     data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transformations)
     data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transformations)
 
-    train_sampler = generate_sampler(data_train, options.sampler)
-
     # Use argument load to distinguish training and testing
     train_loader = DataLoader(data_train,
                               batch_size=options.batch_size,
-                              batch_sampler=train_sampler,
+                              shuffle=True,
                               num_workers=options.num_workers,
                               drop_last=True
                               )
