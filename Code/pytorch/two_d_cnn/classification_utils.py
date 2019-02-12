@@ -158,7 +158,6 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, ite
                 # Releases all unoccupied cached memory
                 torch.cuda.empty_cache()
 
-            # results = evaluate_prediction(y_ground, y_hat)
             results = soft_voting_subject_level(y_ground, y_hat, subjects, proba, iteration)
             accuracy_batch_mean = results['balanced_accuracy']
             loss_batch_mean = loss / len(data_loader)
