@@ -201,18 +201,18 @@ def main(options):
             print("At %s -th epoch." % str(epoch))
 
             # train the model
-            train_subject, y_ground_train, y_hat_train, train_proba, acc_mean_train, global_step, loss_batch_mean_train = train(model, train_loader, use_cuda, loss, optimizer, writer_train_batch, epoch, model_mode='train', global_step=global_step)
+            train_subject, y_ground_train, y_hat_train, train_proba, acc_mean_train, global_step, loss_batch_mean_train = train(model, train_loader, use_cuda, loss, optimizer, writer_train_batch, epoch, fi, model_mode='train', global_step=global_step)
             if epoch == options.epochs -1:
                 train_subjects.extend(train_subject)
                 y_grounds_train.extend(y_ground_train)
                 y_hats_train.extend(y_hat_train)
                 train_probas.extend(train_proba)
             
-            ## calculate the accuracy with the whole training data to moniter overfitting
-            train_subject_all, y_ground_train_all, y_hat_train_all, train_proba_all, acc_mean_train_all, _, loss_batch_mean_train_all = train(model, train_loader, use_cuda, loss, optimizer, writer_train_all_data, epoch, model_mode='valid', global_step=global_step)
+            ## calculate the accuracy with the whole training data for subject level balanced accuracy
+            train_subject_all, y_ground_train_all, y_hat_train_all, train_proba_all, acc_mean_train_all, _, loss_batch_mean_train_all = train(model, train_loader, use_cuda, loss, optimizer, writer_train_all_data, epoch, fi, model_mode='valid', global_step=global_step)
 
             ## at then end of each epoch, we validate one time for the model with the validation data
-            valid_subject, y_ground_valid, y_hat_valid, valide_proba, acc_mean_valid, global_step, loss_batch_mean_valid = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, model_mode='valid', global_step=global_step)
+            valid_subject, y_ground_valid, y_hat_valid, valide_proba, acc_mean_valid, global_step, loss_batch_mean_valid = train(model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, fi, model_mode='valid', global_step=global_step)
             print("Slice level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
             if epoch == options.epochs - 1:
                 valid_subjects.extend(valid_subject)
@@ -250,8 +250,7 @@ def main(options):
         # buf for 3D image, for 2D slice, it can save the graph
         # writer_train_batch.add_graph(model, example_batch)
 
-        ### write the information of subjects and performances into tsv files.
-        ## For train & valid, we offer only hard voting for
+        ### calculate the final epoch performance for training and validation
         hard_voting_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train, train_probas, mode='train')
         hard_voting_to_tsvs(options.output_dir, fi, valid_subjects, y_grounds_valid, y_hats_valid, valid_probas, mode='validation')
 

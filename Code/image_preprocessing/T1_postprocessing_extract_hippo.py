@@ -62,10 +62,10 @@ def postprocessing_t1w_extract_hippo(caps_directory, tsv, working_directory=None
     ## TODO, to decide the position of hippocampus of each hemisphere
     if hemi == 'left':
         hippocampus_patches.inputs.crop_center=(61, 96, 68) ## the center of the right and left hippocampus
-        hippocampus_patches.inputs.crop_size=(32, 32, 32) ## the output cropped hippocampus size
+        hippocampus_patches.inputs.crop_size=(50, 50, 50) ## the output cropped hippocampus size
     else:
         hippocampus_patches.inputs.crop_center=(109, 96, 68) ## the center of the right and right hippocampus
-        hippocampus_patches.inputs.crop_size=(32, 32, 32) ## the output cropped hippocampus size
+        hippocampus_patches.inputs.crop_size=(50, 50, 50) ## the output cropped hippocampus size
 
     # zip the result imgs
     ###in the newest version of nipype for MRIConvert, it seems that they can be saved directly as nii.gz

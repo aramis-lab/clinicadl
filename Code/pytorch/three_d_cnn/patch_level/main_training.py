@@ -26,9 +26,9 @@ parser.add_argument("--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/P
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 parser.add_argument("--data_type", default="from_patch", choices=["from_MRI", "from_patch"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
-parser.add_argument("--patch_size", default=50, type=int,
+parser.add_argument("--patch_size", default=32, type=int,
                     help="The patch size extracted from the MRI")
-parser.add_argument("--patch_stride", default=50, type=int,
+parser.add_argument("--patch_stride", default=32, type=int,
                     help="The stride for the patch extract window from the MRI")
 parser.add_argument("--batch_size", default=1, type=int,
                     help="Batch size for training. (default=1)")
@@ -38,7 +38,7 @@ parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
 parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["baseline", "longitudinal"],
                     help="Using baseline scans or all available longitudinal scans for training")
-parser.add_argument('--hippocampus_roi', default=False, type=bool,
+parser.add_argument('--hippocampus_roi', default=True, type=bool,
                     help="If train the model using only hippocampus ROI")
 
 # transfer learning
@@ -60,7 +60,7 @@ parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")
-parser.add_argument("--split", default=None, type=int,
+parser.add_argument("--split", default=1, type=int,
                     help="Define a specific fold in the k-fold, this is very useful to find the optimal model, where you do not want to run your k-fold validation")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
