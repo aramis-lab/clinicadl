@@ -26,9 +26,9 @@ parser.add_argument("--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/P
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 parser.add_argument("--data_type", default="from_patch", choices=["from_MRI", "from_patch"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
-parser.add_argument("--patch_size", default=32, type=int,
+parser.add_argument("--patch_size", default=50, type=int,
                     help="The patch size extracted from the MRI")
-parser.add_argument("--patch_stride", default=32, type=int,
+parser.add_argument("--patch_stride", default=50, type=int,
                     help="The stride for the patch extract window from the MRI")
 parser.add_argument("--batch_size", default=1, type=int,
                     help="Batch size for training. (default=1)")
@@ -42,7 +42,7 @@ parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["
 # transfer learning
 parser.add_argument("--network", default="Conv_3_FC_2", choices=["Conv_4_FC_2", "Conv_7_FC_2", "Conv_3_FC_2"],
                     help="Autoencoder network type. (default=Conv_4_FC_2). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
-parser.add_argument("--num_cnn", default=35,
+parser.add_argument("--num_cnn", default=35, type=int,
                     help="How many CNNs we want to train in a patch-wise way. By default, we train each patch from all subjects for one CNN")
 parser.add_argument("--transfer_learning_autoencoder", default=True, type=bool,
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
