@@ -7,7 +7,7 @@ from T1_postprocessing_extract_hippo import postprocessing_t1w_extract_hippo
 ##
 caps_directory= '/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI'
 # tsv= '/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/image_preprocessing_test.tsv'
-tsv= '/network/lustre/iss01/home/junhao.wen/Project/AD-DL/tsv_files/tsv_after_qc/ADNI_after_qc.tsv'
+tsv= '/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/AD_CN_ALL_ADNI.tsv'
 # tsv= '/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/test.tsv'
 working_dir = '/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/working_dir'
 # working_dir = '/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL'
