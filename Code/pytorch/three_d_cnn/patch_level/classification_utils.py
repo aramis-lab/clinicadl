@@ -932,7 +932,7 @@ def train_sparse_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, wr
 
     return epoch_loss
 
-def hard_voting_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat, probas, mode='train', vote_mode='hard'):
+def hard_voting_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat, probas, mode='train', vote_mode='hard', patch_index=None):
     """
     This is a function to trace all subject during training, test and validation, and calculate the performances with different metrics into tsv files.
     :param output_dir:
@@ -944,7 +944,12 @@ def hard_voting_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat, pro
     """
 
     # check if the folder exist
-    iteration_dir = os.path.join(output_dir, 'performances', 'fold_' + str(iteration))
+    if patch_index == None:
+        iteration_dir = os.path.join(output_dir, 'performances', 'fold_' + str(iteration))
+    else:
+        iteration_dir = os.path.join(output_dir, 'performances', 'fold_' + str(iteration), 'cnn-' + str(patch_index))
+
+
     if not os.path.exists(iteration_dir):
         os.makedirs(iteration_dir)
 
@@ -955,7 +960,7 @@ def hard_voting_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat, pro
                                                 'probability': probas})
 
     ## save the patch level results
-    performance_df.to_csv(os.path.join(iteration_dir, mode + '_patch_level_result.tsv'), index=False, sep='\t', encoding='utf-8', columns=['subject', 'y', 'y_hat', 'probability', 'iteration'])
+    performance_df.to_csv(os.path.join(iteration_dir, mode + '_patch_level_result-patch_index.tsv'), index=False, sep='\t', encoding='utf-8', columns=['subject', 'y', 'y_hat', 'probability', 'iteration'])
 
     ## save the sliece level different metrics
     results = evaluate_prediction(list(performance_df.y), [int(e) for e in list(performance_df.y_hat)]) ## Note, y_hat here is not int, is string
@@ -1300,6 +1305,70 @@ class MRIDataset_patch_hippocampus(Dataset):
 
         return sample
 
+
+class MRIDataset_patch_by_index(Dataset):
+    """Loading the left and right hippocampus ROIs."""
+
+    def __init__(self, caps_directory, data_file, patch_size, stride_size, index_patch, transformations=None, data_type='from_patch'):
+        """
+        Args:
+            caps_directory (string): Directory of all the images.
+            data_file (string): File name of the train/test split file.
+            transformations (callable, optional): Optional transformations to be applied on a sample.
+
+        """
+        self.caps_directory = caps_directory
+        self.transformations = transformations
+        self.index_patch = index_patch
+        self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
+        self.patch_size = patch_size
+        self.stride_size = stride_size
+        self.data_type = data_type
+
+        # Check the format of the tsv file here
+        self.df = pd.read_csv(data_file, sep='\t')
+        if ('diagnosis' not in list(self.df.columns.values)) or ('session_id' not in list(self.df.columns.values)) or \
+           ('participant_id' not in list(self.df.columns.values)):
+            raise Exception("the data file is not in the correct format."
+                            "Columns should include ['participant_id', 'session_id', 'diagnosis']")
+        participant_list = list(self.df['participant_id'])
+        session_list = list(self.df['session_id'])
+        label_list = list(self.df['diagnosis'])
+
+        self.patch_participant_list = participant_list
+        self.patch_session_list = session_list
+        self.patch_label_list = label_list
+
+    def __len__(self):
+        return len(self.patch_participant_list)
+
+    def __getitem__(self, idx):
+        img_name = self.patch_participant_list[idx]
+        sess_name = self.patch_session_list[idx]
+        img_label = self.patch_label_list[idx]
+        label = self.diagnosis_code[img_label]
+
+        t1 = time()
+        patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+                                  'preprocessing_dl',
+                                  img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-' + str(self.patch_size) + '_stride-' + str(self.stride_size) + '_patch-' + str(
+                                      self.index_patch) + '.pt')
+
+        patch = torch.load(patch_path)
+        t2 = time()
+        print("Load patch: %f s" % (t2 -t1))
+
+        # check if the patch has NAN value
+        if torch.isnan(patch).any() == True:
+            print("Double check, this patch has Nan value: %s" % str(img_name + '_' + sess_name + str(self.index_patch)))
+            patch[torch.isnan(patch)] = 0
+
+        if self.transformations:
+            patch = self.transformations(patch)
+
+        sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(self.index_patch), 'image': patch, 'label': label}
+
+        return sample
 
 def subject_diagnosis_df(subject_session_df):
     """
