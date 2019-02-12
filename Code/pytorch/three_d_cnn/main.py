@@ -72,8 +72,8 @@ parser.add_argument("--epochs", default=20, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--learning_rate", "-lr", default=1e-4, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
-parser.add_argument("--tolerance", "-tol", default=5e-2, type=float,
-                    help="Allows to stop when the training data is nearly learnt")
+parser.add_argument("--patience", type=int, default=10,
+                    help="Early stopping parameter.")
 
 # Optimizer arguments
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
@@ -82,8 +82,8 @@ parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--weight_decay', '--wd', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
-parser.add_argument('--sampler', '-s', default="random", type=str,
-                    help="Sampler choice")
+parser.add_argument('--sampler', '-s', default="random", type=str, choices=['random', 'weighted'],
+                    help="Sampler choice (random, or weighted for imbalanced datasets)")
 
 parser.add_argument('--gpu', action='store_true', default=False,
                     help='Uses gpu instead of cpu if cuda is available')
@@ -138,12 +138,10 @@ def main(options):
             data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transformations)
             data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transformations)
 
-            train_sampler = generate_sampler(data_train, options.sampler)
-
             # Use argument load to distinguish training and testing
             train_loader = DataLoader(data_train,
                                       batch_size=options.batch_size,
-                                      batch_sampler=train_sampler,
+                                      shuffle=True,
                                       num_workers=options.num_workers,
                                       drop_last=True
                                       )
@@ -161,17 +159,19 @@ def main(options):
     for run in range(options.runs):
         # Get the data.
         training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
-                                            options.split, options.n_splits, options.baseline, options.data_path)
+                                            options.split, options.n_splits, options.baseline, "linear")
+        training_tsv.to_csv("/network/lustre/iss01/home/elina.thibeausutre/debug/train_linear.tsv", sep='\t', index=False)
+        valid_tsv.to_csv("/network/lustre/iss01/home/elina.thibeausutre/debug/valid_linear.tsv", sep='\t', index=False)
 
         data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transform=transformations)
         data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transform=transformations)
 
-        train_sampler = generate_sampler(data_train, options)
+        train_sampler = generate_sampler(data_train, options.sampler)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
                                   batch_size=options.batch_size,
-                                  batch_sampler=train_sampler,
+                                  sampler=train_sampler,
                                   num_workers=options.num_workers,
                                   drop_last=True
                                   )
