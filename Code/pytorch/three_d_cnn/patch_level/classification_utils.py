@@ -1293,6 +1293,9 @@ class MRIDataset_patch_hippocampus(Dataset):
         if self.transformations:
             patch = self.transformations(patch)
 
+        ## TODO, maybe need to check if the patch only has background if the patch size is too small
+        print("Mean value after normalization: %f" % torch.mean(patch))
+
         sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(left_is_odd), 'image': patch, 'label': label}
 
         return sample

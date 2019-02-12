@@ -19,7 +19,7 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
-def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, model_mode="train", global_step=0):
+def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, iteration, model_mode="train", global_step=0):
     """
     This is the function to train, validate or test the model, depending on the model_mode parameter.
     :param model:
@@ -158,13 +158,13 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
                 # Releases all unoccupied cached memory
                 torch.cuda.empty_cache()
 
-            ## calculate the balanced accuracy
-            results = evaluate_prediction(y_ground, y_hat)
+            # results = evaluate_prediction(y_ground, y_hat)
+            results = soft_voting_subject_level(y_ground, y_hat, subjects, proba, iteration)
             accuracy_batch_mean = results['balanced_accuracy']
             loss_batch_mean = loss / len(data_loader)
 
-            writer.add_scalar('classification accuracy', accuracy_batch_mean, global_step)
-            writer.add_scalar('loss', loss_batch_mean, global_step)
+            writer.add_scalar('classification accuracy', accuracy_batch_mean, epoch)
+            writer.add_scalar('loss', loss_batch_mean, epoch)
 
             torch.cuda.empty_cache()
 
@@ -1102,3 +1102,75 @@ def soft_voting_to_tsvs(output_dir, iteration, mode='test', vote_mode='soft'):
     pd.DataFrame(results, index=[0]).to_csv(os.path.join(output_dir, 'performances', 'fold_' + str(iteration), mode + '_subject_level_metrics_' + vote_mode + '_vote.tsv'), index=False, sep='\t', encoding='utf-8')
 
 
+def soft_voting_subject_level(y_ground, y_hat, subjects, proba, iteration):
+    ## soft voting to get the subject-level balanced accuracy
+    performance_df_subject = pd.DataFrame({'iteration': iteration,
+                                           'y': y_ground,
+                                           'y_hat': y_hat,
+                                           'subject': subjects,
+                                           'probability': proba})
+
+    subject_df = performance_df_subject['subject']
+    subject_series = subject_df.apply(extract_subject_name)
+    slice_series = subject_df.apply(extract_slice_index)
+    subject_df_new = pd.DataFrame({'subject': subject_series.values})
+    slice_df_new = pd.DataFrame({'slice': slice_series.values})
+
+    # replace the column in the dataframe
+    performance_df_subject['subject'] = subject_df_new['subject'].values
+    performance_df_subject['slice'] = slice_df_new['slice'].values
+
+    ## selected the right classified subjects:
+    right_classified_df = performance_df_subject[performance_df_subject['y_hat'] == performance_df_subject['y']]
+    # right_classified_df = pd.DataFrame({'slice': right_classified_series['slice'].values})
+
+    ## count the number of right classified slices for each slice index
+    count_slices_series = right_classified_df['slice'].value_counts(normalize=True)
+    index_series = performance_df_subject['slice']
+    weight_list = []
+    for i in index_series:
+        if i in count_slices_series.index:
+            weight = count_slices_series[i]
+        else:
+            weight = 0
+        weight_list.append(weight)
+
+    weight_series = pd.Series(weight_list)
+    ## add to the df
+    performance_df_subject['weight'] = weight_series.values
+
+    ## do soft majority vote
+    ## y^ = arg max(sum(wj * pij))
+    df_final = pd.DataFrame(columns=['subject', 'y', 'y_hat', 'iteration'])
+    for subject, subject_df in performance_df_subject.groupby(['subject']):
+        num_slice = len(subject_df.y_hat)
+        p0_all = 0
+        p1_all = 0
+        for i in range(num_slice):
+            ## reindex the subject_df.probability
+            proba_series_reindex = subject_df.probability.reset_index()
+            weight_series_reindex = subject_df.weight.reset_index()
+            y_series_reindex = subject_df.y.reset_index()
+            iteration_series_reindex = subject_df.iteration.reset_index()
+
+            p0 = weight_series_reindex.weight[i] * proba_series_reindex.probability[i][0]
+            p1 = weight_series_reindex.weight[i] * proba_series_reindex.probability[i][1]
+
+            p0_all += p0
+            p1_all += p1
+
+            if i == 0:
+                y = y_series_reindex.y[i]
+                iteration = iteration_series_reindex.iteration[i]
+        proba_list = [p0_all, p1_all]
+        y_hat = proba_list.index(max(proba_list))
+
+        row_array = np.array(list([subject, y, y_hat, iteration])).reshape(1, 4)
+        row_df = pd.DataFrame(row_array, columns=['subject', 'y', 'y_hat', 'iteration'])
+        df_final = df_final.append(row_df)
+
+    results = evaluate_prediction([int(e) for e in list(df_final.y)], [int(e) for e in list(
+        df_final.y_hat)])  ## Note, y_hat here is not int, is string
+    del results['confusion_matrix']
+
+    return results
