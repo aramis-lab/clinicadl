@@ -56,7 +56,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
     model.train()  # set the module to training mode
 
     early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
-    mean_loss_valid = np.inf
+    mean_loss_valid = None
     t_beggining = time()
 
     while epoch < options.epochs and not early_stopping.step(mean_loss_valid):
@@ -477,7 +477,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
     best_loss_valid = np.inf
 
     early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
-    loss_valid = np.inf
+    loss_valid = None
     epoch = options.beginning_epoch
 
     print("Beginning training")
@@ -726,7 +726,7 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
     epoch = 0
 
     early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
-    loss_valid = np.inf
+    loss_valid = None
     print("Beginning training")
 
     while epoch < options.transfer_learning_epochs and not early_stopping.step(loss_valid):
