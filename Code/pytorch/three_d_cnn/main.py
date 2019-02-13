@@ -73,7 +73,9 @@ parser.add_argument("--epochs", default=20, type=int,
 parser.add_argument("--learning_rate", "-lr", default=1e-4, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--patience", type=int, default=10,
-                    help="Early stopping parameter.")
+                    help="Waiting time for early stopping.")
+parser.add_argument("--tolerance", type=float, default=0.05,
+                    help="Tolerance value for the early stopping.")
 
 # Optimizer arguments
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
@@ -159,7 +161,7 @@ def main(options):
     for run in range(options.runs):
         # Get the data.
         training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
-                                            options.split, options.n_splits, options.baseline, "linear")
+                                            options.split, options.n_splits, options.baseline, options.data_path)
         training_tsv.to_csv("/network/lustre/iss01/home/elina.thibeausutre/debug/train_linear.tsv", sep='\t', index=False)
         valid_tsv.to_csv("/network/lustre/iss01/home/elina.thibeausutre/debug/valid_linear.tsv", sep='\t', index=False)
 
@@ -172,6 +174,7 @@ def main(options):
         train_loader = DataLoader(data_train,
                                   batch_size=options.batch_size,
                                   sampler=train_sampler,
+                                  shuffle=True,
                                   num_workers=options.num_workers,
                                   drop_last=True
                                   )
@@ -220,8 +223,8 @@ def main(options):
     print("Total time of computation: %d s" % total_time)
     text_file = open(path.join(options.log_dir, 'model_output.txt'), 'w')
     text_file.write('Time of training: %d s \n' % total_time)
-    text_file.write('Mean best validation accuracy: %.2f %% \n' % np.mean(valid_accuracies))
-    text_file.write('Standard variation of best validation accuracy: %.2f %% \n' % np.std(valid_accuracies))
+    text_file.write('Mean best validation accuracy: %.2f %% \n' % np.mean(valid_accuracies) * 100)
+    text_file.write('Standard variation of best validation accuracy: %.2f %% \n' % np.std(valid_accuracies) * 100)
     text_file.close()
 
 
