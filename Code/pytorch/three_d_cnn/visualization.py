@@ -29,6 +29,12 @@ parser.add_argument("--feature_maps", "-fm", default=False, action="store_true",
 parser.add_argument("--filters", "-f", default=False, action="store_true",
                     help="Performs the visualization of filters by optimizing images which maximally activate"
                          "each filter.")
+parser.add_argument("--data_path", type=str, default="linear", choices=["linear", "mni"],
+                    help="Changes the path to MRI data.")
+parser.add_argument("--n_splits", type=int, default=None,
+                    help="Total number of splits.")
+parser.add_argument("--split", type=int, default=0,
+                    help="Split used for training.")
 
 
 def feature_maps_extraction(decoder, input_pt, results_path, affine, level=0):
@@ -263,14 +269,32 @@ def main(options):
             if not path.exists(diagnosis_path):
                 os.makedirs(diagnosis_path)
 
+            if options.n_splits is None:
+                data_path = path.join(options.diagnosis_path, set)
+            else:
+                data_path = path.join(options.diagnosis_path, set + '_splits-' + str(options.n_splits),
+                                      'split-' + str(options.split))
+
+            if options.data_path in ['mni', 'dartel']:
+                data_path = path.join(data_path, 'SPM')
+
             set_df = pd.read_csv(path.join(options.diagnosis_path, set, diagnosis + '_baseline.tsv'), sep='\t')
             subject = set_df.loc[0, 'participant_id']
             session = set_df.loc[0, 'session_id']
-            image_path = path.join(options.input_dir, 'subjects', subject, session,
-                                   't1', 'preprocessing_dl',
-                                   subject + '_' + session + '_space-MNI_res-1x1x1.nii.gz')
+            if options.data_path == 'linear':
+                image_path = path.join(options.input_dir, 'subjects', subject, session,
+                                       't1', 'preprocessing_dl',
+                                       subject + '_' + session + '_space-MNI_res-1x1x1.nii.gz')
+            elif options.data_path == 'mni':
+                image_path = path.join(options.input_dir, 'subjects', subject, session,
+                                       't1', 'spm', 'segmentation', 'normalized_space',
+                                       subject + '_' + session + '_space-Ixi549Space_T1w.nii.gz')
+            else:
+                raise ValueError("This option for data path does not exist: %s" % options.data_path)
+
             input_nii = nib.load(image_path)
-            input_np = input_nii.get_data()
+            input_np = input_nii.get_data().astype(float)
+            np.nan_to_num(input_np, copy=False)
             input_pt = torch.from_numpy(input_np).unsqueeze(0).unsqueeze(0).float()
             if options.minmaxnormalization:
                 transform = MinMaxNormalization()
