@@ -6,7 +6,6 @@ from os import path
 from torch.utils.data import Dataset, sampler
 from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
 from scipy.ndimage.filters import gaussian_filter
-import warnings
 
 
 class MRIDataset(Dataset):
@@ -151,7 +150,7 @@ def generate_sampler(dataset, sampler_option='random'):
     weights = torch.DoubleTensor(weights)
 
     if sampler_option == 'random':
-        s = sampler.RandomSampler(dataset)
+        s = None
     elif sampler_option == 'weighted':
         s = sampler.WeightedRandomSampler(weights, len(weights))
     else:
