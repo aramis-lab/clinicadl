@@ -214,17 +214,18 @@ def main(options):
         acc_mean_train_subject, _ = test(best_model, train_loader, options.gpu, criterion)
         acc_mean_valid_subject, _ = test(best_model, valid_loader, options.gpu, criterion)
         valid_accuracies[run] = acc_mean_valid_subject
-        accuracies = (acc_mean_train_subject, acc_mean_valid_subject)
+        accuracies = (acc_mean_train_subject * 100, acc_mean_valid_subject * 100)
         write_summary(options.log_dir, run, accuracies, best_epoch, training_time)
 
         del best_model
 
+    valid_accuracies = valid_accuracies * 100
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)
     text_file = open(path.join(options.log_dir, 'model_output.txt'), 'w')
     text_file.write('Time of training: %d s \n' % total_time)
-    text_file.write('Mean best validation accuracy: %.2f %% \n' % np.mean(valid_accuracies) * 100)
-    text_file.write('Standard variation of best validation accuracy: %.2f %% \n' % np.std(valid_accuracies) * 100)
+    text_file.write('Mean best validation accuracy: %.2f %% \n' % np.mean(valid_accuracies))
+    text_file.write('Standard variation of best validation accuracy: %.2f %% \n' % np.std(valid_accuracies))
     text_file.close()
 
 
