@@ -55,10 +55,11 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
 
     model.train()  # set the module to training mode
 
-    waiting_time = 0
+    early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
+    mean_loss_valid = np.inf
     t_beggining = time()
 
-    while epoch < options.epochs and waiting_time < options.patience:
+    while epoch < options.epochs and not early_stopping.step(mean_loss_valid):
         print("At %d-th epoch." % epoch)
 
         model.zero_grad()
@@ -210,11 +211,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
                         False, False,
                         os.path.join(options.log_dir, "run" + str(run)),
                         filename='optimizer.pth.tar')
-
-        if loss_is_best:
-            waiting_time = 0
-        else:
-            waiting_time += 1
 
         epoch += 1
 
@@ -479,10 +475,13 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
 
     # Initialize variables
     best_loss_valid = np.inf
+
+    early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
+    loss_valid = np.inf
     epoch = options.beginning_epoch
 
     print("Beginning training")
-    while epoch < options.transfer_learning_epochs:
+    while epoch < options.transfer_learning_epochs and not early_stopping.step(loss_valid):
         print("At %d-th epoch." % epoch)
 
         decoder.zero_grad()
@@ -724,8 +723,13 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
 
     # Initialize variables
     best_loss_valid = np.inf
+    epoch = 0
+
+    early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
+    loss_valid = np.inf
     print("Beginning training")
-    for epoch in range(options.transfer_learning_epochs):
+
+    while epoch < options.transfer_learning_epochs and not early_stopping.step(loss_valid):
         print("At %d-th epoch." % epoch)
 
         auto_encoder.zero_grad()
@@ -954,6 +958,49 @@ def visualize_ae(decoder, dataloader, results_path, gpu, data_path='linear'):
     output = nib.Nifti1Image(output_tensor[0][0].cpu().detach().numpy(), affine)
     nib.save(output, os.path.join(results_path, 'output_image.nii'))
     nib.save(data, os.path.join(results_path, 'input_image.nii'))
+
+
+class EarlyStopping(object):
+    def __init__(self, mode='min', min_delta=0, patience=10):
+        self.mode = mode
+        self.min_delta = min_delta
+        self.patience = patience
+        self.best = None
+        self.num_bad_epochs = 0
+        self.is_better = None
+        self._init_is_better(mode, min_delta)
+
+        if patience == 0:
+            self.is_better = lambda a, b: True
+            self.step = lambda a: False
+
+    def step(self, metrics):
+        if self.best is None:
+            self.best = metrics
+            return False
+
+        if np.isnan(metrics):
+            return True
+
+        if self.is_better(metrics, self.best):
+            self.num_bad_epochs = 0
+            self.best = metrics
+        else:
+            self.num_bad_epochs += 1
+
+        if self.num_bad_epochs >= self.patience:
+            return True
+
+        return False
+
+    def _init_is_better(self, mode, min_delta):
+        if mode not in {'min', 'max'}:
+            raise ValueError('mode ' + mode + ' is unknown!')
+
+        if mode == 'min':
+            self.is_better = lambda a, best: a < best - best * min_delta
+        if mode == 'max':
+            self.is_better = lambda a, best: a > best + best * min_delta
 
 
 def memReport():
