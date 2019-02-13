@@ -55,6 +55,10 @@ parser.add_argument("--epochs", default=20, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--learning_rate", "-lr", default=1e-4, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
+parser.add_argument("--patience", type=int, default=10,
+                    help="Waiting time for early stopping.")
+parser.add_argument("--tolerance", type=float, default=0.1,
+                    help="Tolerance value for the early stopping.")
 parser.add_argument("--greedy_learning", action="store_true", default=False,
                     help="Optimize with greedy layer-wise learning")
 parser.add_argument("--add_sigmoid", default=False, action="store_true",
