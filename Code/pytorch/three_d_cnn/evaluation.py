@@ -128,3 +128,30 @@ if __name__ == "__main__":
 
     train_df.to_csv(path.join(evaluation_path, 'train_' + options.selection + '_result.tsv'), sep='\t', index=False)
     valid_df.to_csv(path.join(evaluation_path, 'valid_' + options.selection + '_result.tsv'), sep='\t', index=False)
+
+    # Graphic part
+    import matplotlib.pyplot as plt
+
+    training_df = pd.read_csv(path.join(options.model_path, 'training.tsv'), sep='\t')
+    epochs = training_df.epoch.values
+    iterations = training_df.iterations.values
+    iterations = iterations / np.max(iterations)
+    x = epochs + iterations
+
+    plt.title('Fold ' + str(options.split))
+    plt.xlabel('epoch')
+    plt.ylabel('loss')
+    plt.plot(x, training_df.mean_loss_train.values, color='orange', label='training')
+    plt.plot(x, training_df.mean_loss_valid.values, color='blue', label='validation')
+    plt.legend()
+    plt.savefig(path.join(evaluation_path, 'loss.png'))
+    plt.close()
+
+    plt.title('Fold ' + str(options.split))
+    plt.xlabel('epoch')
+    plt.ylabel('accuracy')
+    plt.plot(x, training_df.acc_train.values, color='orange', label='training')
+    plt.plot(x, training_df.acc_valid.values, color='blue', label='validation')
+    plt.legend()
+    plt.savefig(path.join(evaluation_path, 'accuracy.png'))
+    plt.close()
