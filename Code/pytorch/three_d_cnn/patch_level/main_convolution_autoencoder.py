@@ -38,7 +38,7 @@ parser.add_argument("--split", default=None, type=int,
                     help="Define a specific fold in the k-fold, this is very useful to find the optimal model, where you do not want to run your k-fold validation")
 parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["baseline", "longitudinal"],
                     help="Using baseline scans or all available longitudinal scans for training")
-parser.add_argument('--hippocampus_roi', default=True, type=bool,
+parser.add_argument('--hippocampus_roi', default=False, type=bool,
                     help="If train the model using only hippocampus ROI")
 
 # Training arguments
