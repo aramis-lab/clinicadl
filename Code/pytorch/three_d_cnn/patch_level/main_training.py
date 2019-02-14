@@ -46,8 +46,9 @@ parser.add_argument("--network", default="Conv_3_FC_2", choices=["Conv_4_FC_2", 
                     help="Autoencoder network type. (default=Conv_4_FC_2). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
 parser.add_argument("--transfer_learning_autoencoder", default=True, type=bool,
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
-# parser.add_argument("--train_from_stop_point", default=False, type=bool,
-#                     help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
+## TODO
+parser.add_argument("--train_from_stop_point", default=False, type=bool,
+                    help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
 parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,
                     help="Labels based on binary classification")
 
