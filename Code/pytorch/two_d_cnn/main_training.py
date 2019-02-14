@@ -42,8 +42,8 @@ parser.add_argument("--network", default="ResNet", choices=["AlexNet", "ResNet",
                     help="Deep network type. Only ResNet was designed for training from scratch.")
 parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,
                     help="Labels for any binary task")
-parser.add_argument("--train_from_stop_point", default=False, type=bool,
-                    help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
+# parser.add_argument("--train_from_stop_point", default=False, type=bool,
+#                     help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
 parser.add_argument("--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--transfer_learning", default=True, type=bool, help="If do transfer learning")
@@ -110,7 +110,6 @@ def main(options):
         options.n_splits = 1
 
     for fi in range(options.n_splits):
-        print("Running for the %d -th fold" % fi)
 
         ## Begin the training
         ## load the tsv file
@@ -120,6 +119,8 @@ def main(options):
             fi = options.split
         else:
              _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, baseline_or_longitudinal=options.baseline_or_longitudinal)
+
+        print("Running for the %d -th fold" % fi)
 
         data_train = MRIDataset_slice(options.caps_directory, training_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type, image_processing=options.image_processing)
         data_valid = MRIDataset_slice(options.caps_directory, valid_tsv, transformations=transformations, transfer_learning=options.transfer_learning, mri_plane=options.mri_plane, data_type=options.data_type, image_processing=options.image_processing)
@@ -147,14 +148,7 @@ def main(options):
         # apply exponential decay for learning rate
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
 
-        ## if train a model at the stopping point?
-
-        ## TODO: it seems that the retraining from stop point still has some probme, the training acc is not smooth between two runs
-        if options.train_from_stop_point:
-            model, optimizer, global_step, global_epoch = load_model_from_log(model, optimizer, os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi)),
-                                           filename='checkpoint.pth.tar')
-        else:
-            global_step = 0
+        global_step = 0
 
         model.load_state_dict(init_state)
 
@@ -194,10 +188,6 @@ def main(options):
         y_hats_valid = []
 
         for epoch in range(options.epochs):
-
-            if options.train_from_stop_point:
-                epoch += global_epoch
-
             print("At %s -th epoch." % str(epoch))
 
             # train the model
