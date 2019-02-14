@@ -46,8 +46,8 @@ parser.add_argument("--num_cnn", default=35, type=int,
                     help="How many CNNs we want to train in a patch-wise way. By default, we train each patch from all subjects for one CNN")
 parser.add_argument("--transfer_learning_autoencoder", default=True, type=bool,
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
-parser.add_argument("--train_from_stop_point", default=False, type=bool,
-                    help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
+# parser.add_argument("--train_from_stop_point", default=False, type=bool,
+#                     help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
 parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,
                     help="Labels based on binary classification")
 
@@ -60,7 +60,7 @@ parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")
-parser.add_argument("--split", default=1, type=int,
+parser.add_argument("--split", default=None, type=int,
                     help="Define a specific fold in the k-fold, this is very useful to find the optimal model, where you do not want to run your k-fold validation")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
@@ -89,9 +89,6 @@ def main(options):
         except:
             raise Exception('The model has not been implemented')
 
-    ## the inital model weight and bias
-    init_state = copy.deepcopy(model.state_dict())
-
     if options.split != None:
         print("Only run for a specific fold, meaning that you are trying to find your optimal model by exploring your training and validation data")
         options.n_splits = 1
@@ -111,16 +108,7 @@ def main(options):
                  _, _, training_tsv, valid_tsv = load_split_by_diagnosis(options, fi, baseline_or_longitudinal=options.baseline_or_longitudinal, autoencoder=False)
 
             print("Running for the %d -th fold" % fi)
-
-            if options.train_from_stop_point:
-                ## TODO, it seems having problme to tackle this
-                # ## only delete the CNN output, not the AE output
-                # check_and_clean(os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'CNN'))
-                # check_and_clean(os.path.join(options.output_dir, 'log_dir', "fold_" + str(fi), 'CNN'))
-                # check_and_clean(os.path.join(options.output_dir, "fold_" + str(fi), 'performances'))
-                print("Train the same model from last trained epoch")
-            else:
-                print("Train the model from 0 epoch")
+            print("Train the model from 0 epoch")
 
             if options.transfer_learning_autoencoder:
                 model, saved_epoch = load_model_after_ae(model, os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi),
@@ -128,6 +116,9 @@ def main(options):
                                                filename='model_best_encoder.pth.tar')
 
                 print("The AE was saved at %s -th epoch" % str(saved_epoch))
+
+            ## the inital model weight and bias
+            init_state = copy.deepcopy(model.state_dict())
 
             ## need to normalized the value to [0, 1]
             transformations = transforms.Compose([NormalizeMinMax()])
@@ -157,15 +148,7 @@ def main(options):
             # apply exponential decay for learning rate
             scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
 
-            ## if train a model at the stopping point?
-            if options.train_from_stop_point:
-                model, optimizer, global_step, global_epoch = load_model_from_log(model, optimizer, os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'CNN'),
-                                               filename='checkpoint.pth.tar')
-            else:
-                global_step = 0
-
-            if fi != 0:
-                model = eval(options.network)()
+            global_step = 0
             model.load_state_dict(init_state)
 
             ## Decide to use gpu or cpu to train the model
@@ -204,10 +187,6 @@ def main(options):
             valid_probas = []
 
             for epoch in range(options.epochs):
-
-                if options.train_from_stop_point:
-                    epoch += global_epoch
-
                 print("At %s -th epoch." % str(epoch))
 
                 # train the model
