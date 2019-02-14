@@ -46,8 +46,9 @@ parser.add_argument("--num_cnn", default=35, type=int,
                     help="How many CNNs we want to train in a patch-wise way. By default, we train each patch from all subjects for one CNN")
 parser.add_argument("--transfer_learning_autoencoder", default=True, type=bool,
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
-# parser.add_argument("--train_from_stop_point", default=False, type=bool,
-#                     help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
+## TODO
+parser.add_argument("--train_from_stop_point", default=False, type=bool,
+                    help='If train a network from the very beginning or from the point where it stopped, where the network is saved by tensorboardX')
 parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,
                     help="Labels based on binary classification")
 
