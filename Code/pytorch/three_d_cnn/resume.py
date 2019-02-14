@@ -211,8 +211,9 @@ def write_summary(log_dir, run, accuracies, best_epoch, time):
 
 
 if __name__ == "__main__":
-    ret = parser.parse_known_args()
-    options = ret[0]
-    if ret[1]:
+    commandline = parser.parse_known_args()
+    commandline_to_json(commandline)
+    options = commandline[0]
+    if commandline[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
     main(options)

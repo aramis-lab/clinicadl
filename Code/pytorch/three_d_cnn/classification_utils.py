@@ -468,7 +468,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
     decoder.train()
 
     first_visu = True
-    print(decoder)
+    # print(decoder)
 
     if options.gpu:
         decoder.cuda()
@@ -1001,6 +1001,34 @@ class EarlyStopping(object):
             self.is_better = lambda a, best: a < best - best * min_delta
         if mode == 'max':
             self.is_better = lambda a, best: a > best + best * min_delta
+
+
+def commandline_to_json(commandline):
+    """
+    This is a function to write the python argparse object into a jason file. This helps for DL when searching for hyperparameters
+    :param commandline: a tuple contain the output of `parser.parse_known_args()`
+    :return:
+    """
+    import json
+
+    commandline_arg_dic = vars(commandline[0])
+    commandline_arg_dic['unknown_arg'] = commandline[1]
+
+    # if train_from_stop_point, do not delete the folders
+    if "model" not in commandline_arg_dic.keys():
+        print('Json file will not be written again.')
+
+    else:
+        check_and_clean(commandline_arg_dic['log_dir'])
+
+        output_dir = commandline_arg_dic['log_dir']
+        # save to json file
+        json = json.dumps(commandline_arg_dic)
+        print("Path of json file:", os.path.join(output_dir, "commandline.json"))
+        f = open(os.path.join(output_dir, "commandline.json"), "w")
+        f.write(json)
+        f.close()
+        print(os.path.exists(os.path.join(output_dir, "commandline.json")))
 
 
 def memReport():

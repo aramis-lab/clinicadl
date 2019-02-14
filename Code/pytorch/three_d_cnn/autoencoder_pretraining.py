@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D AE pretra
 # Mandatory arguments
 parser.add_argument("diagnosis_path", type=str,
                     help="Path to the folder containing the tsv files of the population.")
-parser.add_argument("result_path", type=str,
+parser.add_argument("log_dir", type=str,
                     help="Path to the result folder.")
 parser.add_argument("input_dir", type=str,
                     help="Path to input dir of the MRI (preprocessed CAPS_dir).")
@@ -89,6 +89,7 @@ def main(options):
     # Check if model is implemented
     import model
     import inspect
+    import sys
 
     choices = []
     for name, obj in inspect.getmembers(model):
@@ -101,7 +102,6 @@ def main(options):
     options.transfer_learning_rate = options.learning_rate
     options.transfer_learning_epochs = options.epochs
 
-    check_and_clean(options.result_path)
     torch.set_num_threads(options.num_threads)
     if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
@@ -136,9 +136,14 @@ def main(options):
                               drop_last=False
                               )
 
+    text_file = open(path.join(options.log_dir, 'python_version.txt'), 'w')
+    text_file.write('Version of python: %s \n' % sys.version)
+    text_file.write('Version of pytorch: %s \n' % torch.__version__)
+    text_file.close()
+
     for run in range(options.runs):
         print('Beginning run %i' % run)
-        run_path = path.join(options.result_path, 'run' + str(run))
+        run_path = path.join(options.log_dir, 'run' + str(run))
 
         model = eval(options.model)()
         decoder = Decoder(model)
@@ -169,8 +174,9 @@ def main(options):
 
 
 if __name__ == "__main__":
-    ret = parser.parse_known_args()
-    options = ret[0]
-    if ret[1]:
+    commandline = parser.parse_known_args()
+    commandline_to_json(commandline)
+    options = commandline[0]
+    if commandline[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
     main(options)

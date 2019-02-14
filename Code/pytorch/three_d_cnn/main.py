@@ -100,6 +100,7 @@ def main(options):
     # Check if model is implemented
     import model
     import inspect
+    import sys
 
     choices = []
     for name, obj in inspect.getmembers(model):
@@ -109,7 +110,6 @@ def main(options):
     if options.model not in choices:
         raise NotImplementedError('The model wanted %s has not been implemented in the module model.py' % options.model)
 
-    check_and_clean(options.log_dir)
     torch.set_num_threads(options.num_threads)
     valid_accuracies = np.zeros(options.runs)
     if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
@@ -157,6 +157,11 @@ def main(options):
 
             pretraining_dir = path.join(options.log_dir, 'pretraining')
             greedy_learning(model, train_loader, valid_loader, criterion, True, pretraining_dir, options)
+
+    text_file = open(path.join(options.log_dir, 'python_version.txt'), 'w')
+    text_file.write('Version of python: %s \n' % sys.version)
+    text_file.write('Version of pytorch: %s \n' % torch.__version__)
+    text_file.close()
 
     for run in range(options.runs):
         # Get the data.
@@ -241,8 +246,9 @@ def write_summary(log_dir, run, accuracies, best_epoch, time):
 
 
 if __name__ == "__main__":
-    ret = parser.parse_known_args()
-    options = ret[0]
-    if ret[1]:
+    commandline = parser.parse_known_args()
+    commandline_to_json(commandline)
+    options = commandline[0]
+    if commandline[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
     main(options)
