@@ -29,22 +29,22 @@ class Conv_4_FC_2(nn.Module):
             # Convolutions
             nn.Conv3d(1, 15, 3),
             nn.BatchNorm3d(15),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             PadMaxPool3d(2, 2),
 
             nn.Conv3d(15, 25, 3),
             nn.BatchNorm3d(25),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             PadMaxPool3d(2, 2),
 
             nn.Conv3d(25, 50, 3),
             nn.BatchNorm3d(50),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             PadMaxPool3d(2, 2),
 
             nn.Conv3d(50, 50, 3),
             nn.BatchNorm3d(50),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             PadMaxPool3d(2, 2)
 
         )
@@ -54,11 +54,11 @@ class Conv_4_FC_2(nn.Module):
 
             nn.Dropout(p=dropout),
             nn.Linear(50 * 2 * 2 * 2, 50),
-            nn.LeakyReLU(),
+            nn.ReLU(),
 
             nn.Dropout(p=dropout),
             nn.Linear(50, 40),
-            nn.LeakyReLU(),
+            nn.ReLU(),
 
             nn.Linear(40, n_classes),
             nn.Softmax(dim=1)
@@ -84,17 +84,17 @@ class Conv_3_FC_2(nn.Module):
             # Convolutions
             nn.Conv3d(1, 15, 3),
             nn.BatchNorm3d(15),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             PadMaxPool3d(2, 2),
 
             nn.Conv3d(15, 25, 3),
             nn.BatchNorm3d(25),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             PadMaxPool3d(2, 2),
 
             nn.Conv3d(25, 50, 3),
             nn.BatchNorm3d(50),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             PadMaxPool3d(2, 2)
 
         )
@@ -105,11 +105,11 @@ class Conv_3_FC_2(nn.Module):
             nn.Dropout(p=dropout),
             # nn.Linear(50 * 5 * 5 * 5, 50),
             nn.Linear(50 * 3 * 3 * 3, 50),
-            nn.LeakyReLU(),
+            nn.ReLU(),
 
             nn.Dropout(p=dropout),
             nn.Linear(50, 40),
-            nn.LeakyReLU(),
+            nn.ReLU(),
 
             nn.Linear(40, n_classes),
             nn.Softmax(dim=1)
@@ -138,24 +138,24 @@ class Conv_7_FC_2(nn.Module):
             nn.Conv3d(1, 16, 3),
             nn.Conv3d(16, 16, 3),
             nn.BatchNorm3d(16),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             PadMaxPool3d(2, 2),
 
             nn.Conv3d(16, 32, 3),
             nn.Conv3d(32, 32, 3),
             nn.BatchNorm3d(32),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             PadMaxPool3d(2, 2),
 
             nn.Conv3d(32, 32, 3),
             nn.BatchNorm3d(32),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             PadMaxPool3d(2, 2),
 
             nn.Conv3d(32, 64, 3),
             nn.Conv3d(64, 64, 1),
             nn.BatchNorm3d(64),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             PadMaxPool3d(2, 2)
 
         )
@@ -165,7 +165,7 @@ class Conv_7_FC_2(nn.Module):
 
             nn.Dropout(p=dropout),
             nn.Linear(64 * 1 * 1 * 1, 100),
-            nn.LeakyReLU(),
+            nn.ReLU(),
 
             # nn.Dropout(p=dropout),
             # nn.Linear(1000, 100),
