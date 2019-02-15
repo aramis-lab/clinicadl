@@ -21,16 +21,11 @@ parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D slice-lev
 ## data argument
 parser.add_argument("--caps_directory", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI',
                            help="Path to the caps of image processing pipeline of DL")
-parser.add_argument("--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_task/test/AD_vs_CN_baseline.tsv',
+parser.add_argument("--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_task/test/AD_vs_CN_baseline_test.tsv',
                            help="Path to the tsv containing all the test dataset")
-# parser.add_argument("--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_task/test/AD_vs_CN_baseline_test.tsv',
-#                            help="Path to the tsv containing all the test dataset")
 
 parser.add_argument("--output_dir", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/AD_CN/2d_slice/ResNet_tl/longitudinal/5_fold/pytorch_resnet18_tl_fintune_lastResBlock_top_last1fc_dropout0.8_lr10-6_bs32_ep50_wd10-4_baseline',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-# parser.add_argument("--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch',
-#                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-
 parser.add_argument("--data_type", default="from_slice", choices=["from_MRI", "from_slice"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
 parser.add_argument("--mri_plane", default=0, type=int,
@@ -71,9 +66,6 @@ def main(options):
         except:
             raise Exception('The model has not been implemented or has bugs in to model implementation')
 
-        ## All pre-trained models expect input images normalized in the same way, i.e. mini-batches of 3-channel RGB
-        # images of shape (3 x H x W), where H and W are expected to be at least 224. The images have to be loaded in
-        # to a range of [0, 1] and then normalized using mean = [0.485, 0.456, 0.406] and std = [0.229, 0.224, 0.225].
         transformations = transforms.Compose([transforms.ToPILImage(),
                                               transforms.Resize(trg_size),
                                               transforms.ToTensor()])
@@ -109,14 +101,12 @@ def main(options):
 
     ## Decide to use gpu or cpu to train the model
     if options.use_gpu == False:
-        use_cuda = False
         model.cpu()
     else:
         print("Using GPU")
-        use_cuda = True
         model.cuda()
 
-    subjects, y_ground, y_hat, proba, accuracy_batch_mean = test(model, test_loader, use_cuda)
+    subjects, y_ground, y_hat, proba, accuracy_batch_mean = test(model, test_loader, options)
     print("Slice level balanced accuracy is %f" % (accuracy_batch_mean))
 
     ### write the information of subjects and performances into tsv files.
