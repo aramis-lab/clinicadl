@@ -70,7 +70,7 @@ parser.add_argument("--train_from_stop_point", default=False, type=bool,
 ## early stopping arguments
 parser.add_argument("--patience", type=int, default=10,
                     help="tolerated epochs without improving for early stopping.")
-parser.add_argument("--tolerance", type=float, default=0.05,
+parser.add_argument("--tolerance", type=float, default=0,
                     help="Tolerance of magnitude of performance after each epoch.")
 
 def main(options):
