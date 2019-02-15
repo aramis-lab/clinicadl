@@ -30,8 +30,6 @@ parser.add_argument("--patch_size", default=50, type=int,
                     help="The patch size extracted from the MRI")
 parser.add_argument("--patch_stride", default=50, type=int,
                     help="The stride for the patch extract window from the MRI")
-parser.add_argument("--shuffle", default=True, type=bool,
-                    help="Load data if shuffled or not, shuffle for training, no for test data.")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")
 parser.add_argument("--split", default=None, type=int,
@@ -42,7 +40,7 @@ parser.add_argument('--hippocampus_roi', default=False, type=bool,
                     help="If train the model using only hippocampus ROI")
 
 # Training arguments
-parser.add_argument("--network", default="Conv_3_FC_2", choices=["Conv_4_FC_2", "Conv_7_FC_2", "Conv_3_FC_2"],
+parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2", "Conv_7_FC_2", "Conv_3_FC_2"],
                     help="Autoencoder network type. (default=Conv_4_FC_2)")
 parser.add_argument("--ae_training_method", default="stacked_ae", choices=["layer_wise_ae", "stacked_ae"],
                     help="How to train the autoencoder, layer wise or train all AEs together")
@@ -64,8 +62,6 @@ parser.add_argument("--use_gpu", default=True, type=bool,
                     help='Uses gpu instead of cpu if cuda is available')
 parser.add_argument("--weight_decay", default=1e-4, type=float,
                     help='weight decay (default: 1e-4)')
-parser.add_argument("--accumulation_steps",  default=1, type=int,
-                    help='Accumulates gradients in order to increase the size of the batch')
 
 ## visualization
 parser.add_argument("--visualization", default=True, type=bool,
@@ -116,7 +112,7 @@ def main(options):
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
                                   batch_size=options.batch_size,
-                                  shuffle=options.shuffle,
+                                  shuffle=True,
                                   num_workers=options.num_workers,
                                   drop_last=True
                                   )
@@ -134,13 +130,11 @@ def main(options):
 
         ## Decide to use gpu or cpu to train the autoencoder
         if options.use_gpu == False:
-            use_cuda = False
             model.cpu()
             ## example image for tensorbordX usage:$
             example_batch = (next(iter(train_loader))['image'])[0, ...].unsqueeze(0)
         else:
             print("Using GPU")
-            use_cuda = True
             model.cuda()
             ## example image for tensorbordX usage:$
             example_batch = (next(iter(train_loader))['image'].cuda())[0, ...].unsqueeze(0)
@@ -152,10 +146,9 @@ def main(options):
         writer_valid_ft = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "ConvAutoencoder", "fine_tine", "valid")))
 
         if options.ae_training_method == 'layer_wise_ae':
-            ## TODO: check the memory accumulation during the 5-fold CV
-            model, best_autodecoder = greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, use_cuda, writer_train, writer_valid, writer_train_ft, writer_valid_ft, options, fi)
+            model, best_autodecoder = greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, writer_train, writer_valid, writer_train_ft, writer_valid_ft, options, fi)
         else:
-            model, best_autodecoder = stacked_ae_learning(model, train_loader, valid_loader, criterion, use_cuda,
+            model, best_autodecoder = stacked_ae_learning(model, train_loader, valid_loader, criterion,
                                                           writer_train_ft, writer_valid_ft,
                                                                  options, fi)
 

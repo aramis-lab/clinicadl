@@ -24,7 +24,7 @@ __status__ = "Development"
 #### AutoEncoder
 #################################
 
-def greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, gpu, writer_train, writer_valid, writer_train_ft, writer_valid_ft, options, fi):
+def greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, writer_train, writer_valid, writer_train_ft, writer_valid_ft, options, fi):
     """
     This aims to do greedy layer wise learning for autoencoder
     :param model:
@@ -54,7 +54,7 @@ def greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, gpu
     while len(auto_encoder_layer) > 0:
         print('Layer-wise training for %d -th AE' % level)
         # Create the method to train with first layers
-        best_model_former_layer_path,  optimizer_train = ae_training(auto_encoder_layer, former_layer, train_loader, valid_loader, criterion, gpu, options, writer_train, writer_valid, level, fi)
+        best_model_former_layer_path,  optimizer_train = ae_training(auto_encoder_layer, former_layer, train_loader, valid_loader, criterion, options, writer_train, writer_valid, level, fi)
         del optimizer_train
         best_ae, _ = load_model_from_chcekpoint(auto_encoder_layer, best_model_former_layer_path)
 
@@ -66,7 +66,7 @@ def greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, gpu
         former_layer = frozen_weight_layer_wise(ae, level) ## to frozen the former layer of AE and extract the encoder part of this AE
         auto_encoder_layer = extract_ae_layer_wise(ae, level) ## extract the next AE
 
-    ae_finetuning(ae, train_loader, valid_loader, criterion, gpu, writer_train_ft, writer_valid_ft, options, fi)
+    ae_finetuning(ae, train_loader, valid_loader, criterion, writer_train_ft, writer_valid_ft, options, fi)
 
     # Updating and setting weights of the convolutional layers
     best_autodecoder, best_epoch = load_model_from_chcekpoint(ae, path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'fine_tune', 'AutoEncoder', 'model_best.pth.tar'))
@@ -81,14 +81,13 @@ def greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, gpu
 
     return model, best_autodecoder
 
-def stacked_ae_learning(model, train_loader, valid_loader, criterion, gpu, writer_train, writer_valid, options, fi):
+def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_train, writer_valid, options, fi):
     """
     This aims to train the stacked AEs together for autoencoder
     :param model:
     :param train_loader:
     :param valid_loader:
     :param criterion:
-    :param gpu:
     :param writer_train:
     :param writer_valid:
     :param options:
@@ -102,7 +101,7 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, gpu, write
     if not isinstance(model, AutoEncoder):
         ae = AutoEncoder(model) ## Reconstruct all the AEs in one graph
 
-    ae_finetuning(ae, train_loader, valid_loader, criterion, gpu, writer_train, writer_valid, options, fi)
+    ae_finetuning(ae, train_loader, valid_loader, criterion, writer_train, writer_valid, options, fi)
 
     # Updating and setting weights of the convolutional layers
     best_autodecoder, best_epoch = load_model_from_chcekpoint(ae, path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'fine_tune', 'AutoEncoder'), 'model_best.pth.tar')
@@ -121,7 +120,7 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, gpu, write
 
     return model, best_autodecoder
 
-def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterion, gpu, options, writer_train, writer_valid, level, fi, global_step=0):
+def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterion, options, writer_train, writer_valid, level, fi, global_step=0):
     """
     This is the function to train the AEs in a greedy layer-wise way.
     :param auto_encoder:
@@ -141,7 +140,7 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
     optimizer_train = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, auto_encoder.parameters()),
                                                          options.learning_rate)
 
-    if gpu:
+    if options.use_gpu:
         auto_encoder.cuda()
 
     # Initialize variables
@@ -164,7 +163,7 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
 
             # print("Loading available between batches of data by CPU using time: ", t0 - tend)
 
-            if gpu:
+            if options.use_gpu:
                 imgs = data['image'].cuda()
             else:
                 imgs = data['image']
@@ -195,10 +194,8 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
             writer_train.add_scalar('loss_layer-' + str(level), loss_train, i + epoch * len(train_loader))
             print("Training loss is %f for the -th batch %d" % (loss_train, i))
 
-            if (i+1) % options.accumulation_steps == 0:
-                # step_flag = False
-                optimizer_train.step()
-                optimizer_train.zero_grad()
+            optimizer_train.step()
+            optimizer_train.zero_grad()
 
             del imgs, train_output, hidden, hidden_requires_grad_no, loss_train
             ## update the global steps
@@ -215,7 +212,7 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
 
         # Always test the results and save them once at the end of the epoch
         print('Layer-wise validation at the end of each epoch %d' % epoch)
-        loss_valid = test_ae(auto_encoder, valid_loader, gpu, criterion, former_layer=former_layer)
+        loss_valid = test_ae(auto_encoder, valid_loader, options, criterion, former_layer=former_layer)
         mean_loss_valid = loss_valid / (len(valid_loader))
         writer_valid.add_scalar('loss_layer-' + str(level), mean_loss_valid, global_step)
         print("Layer-wise mean validation loss is %f for the -th epoch %d" % (mean_loss_valid, global_step))
@@ -235,9 +232,9 @@ def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterio
                         is_best,
                         best_model_path)
 
-    return best_model_path, optimizer_train, auto_encoder, former_layer
+    return best_model_path, optimizer_train
 
-def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, gpu, writer_train_ft, writer_valid_ft, options, fi, global_step=0):
+def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, writer_train_ft, writer_valid_ft, options, fi, global_step=0):
     """
     After training the AEs in a layer-wise way, we fine-tune the whole AEs
     :param auto_encoder:
@@ -255,7 +252,7 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, gpu, 
                                                          options.learning_rate)
     print(auto_encoder_all)
 
-    if gpu:
+    if options.use_gpu:
         auto_encoder_all.cuda()
 
     # Initialize variables
@@ -279,7 +276,7 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, gpu, 
 
             # print("Loading available between batches of data by CPU using time: ", t0 - tend)
 
-            if gpu:
+            if options.use_gpu:
                 imgs = data['image'].cuda()
             else:
                 imgs = data['image']
@@ -312,9 +309,8 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, gpu, 
 
             del imgs, train_output, loss
 
-            if (i+1) % options.accumulation_steps == 0:
-                optimizer.step()
-                optimizer.zero_grad()
+            optimizer.step()
+            optimizer.zero_grad()
 
             torch.cuda.empty_cache()
 
@@ -328,7 +324,7 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, gpu, 
 
         # Always test the results and save them once at the end of the epoch
         print('Fine-tuning all AEs of validation at the end of the epoch %d' % epoch)
-        loss_valid = test_ae(auto_encoder_all, valid_loader, gpu, criterion)
+        loss_valid = test_ae(auto_encoder_all, valid_loader, options, criterion)
         mean_loss_valid = loss_valid / (len(valid_loader))
         writer_valid_ft.add_scalar('loss', mean_loss_valid, global_step)
         print("Fine-tuning mean validation loss is %f for the -th batch %d" % (mean_loss_valid, global_step))
@@ -349,20 +345,20 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, gpu, 
     del optimizer, auto_encoder_all
 
 
-def test_ae(model, dataloader, use_cuda, criterion, former_layer=None):
+def test_ae(model, dataloader, options, criterion, former_layer=None):
     """
     Computes the loss of the model, either the loss of the layer-wise AE or all the AEs in a big graph one time.
 
     :param model: the network (subclass of nn.Module)
     :param dataloader: a DataLoader wrapping a dataset
-    :param use_cuda: if True a gpu is used
+    :param use_gpu: if True a gpu is used
     :return: loss of the model (float)
     """
     model.eval()
 
     total_loss = 0
     for i, data in enumerate(dataloader, 0):
-        if use_cuda:
+        if options.use_gpu:
             inputs = data['image'].cuda()
         else:
             inputs = data['image']
