@@ -235,7 +235,7 @@ def main(options):
 
             ## try early stopping criterion
             if early_stopping.step(loss_batch_mean_valid) or epoch == options.epochs - 1:
-                print("By applying early stopping, the model should be stopped training at %d-th epoch" % epoch)
+                print("By applying early stopping or at the last epoch defnied by user, the model should be stopped training at %d-th epoch" % epoch)
                 # if early stopping or last epoch, save the results into the tsv file
                 train_subjects.extend(train_subject)
                 y_grounds_train.extend(y_ground_train)
