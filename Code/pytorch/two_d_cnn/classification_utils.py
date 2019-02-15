@@ -1,12 +1,11 @@
 import torch
-from torch.autograd import Variable
 from torch.utils.data import Dataset
 import os, shutil
 from skimage.transform import resize
 from os import path
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
+from sklearn.model_selection import StratifiedShuffleSplit
 from time import time
 import tempfile
 
@@ -19,12 +18,12 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
-def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, iteration, model_mode="train", global_step=0):
+def train(model, data_loader, options, loss_func, optimizer, writer, epoch, iteration, model_mode="train", global_step=0):
     """
     This is the function to train, validate or test the model, depending on the model_mode parameter.
     :param model:
     :param data_loader:
-    :param use_cuda:
+    :param options.:
     :param loss_func:
     :param optimizer:
     :param writer:
@@ -50,7 +49,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, ite
             t0 = time()
             total_time = total_time + t0 - tend
 
-            if use_cuda:
+            if options.use_gpu:
                 imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
             else:
                 imgs, labels = batch_data['image'], batch_data['label']
@@ -118,7 +117,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, ite
             ## torch.no_grad() needs to be set, otherwise the accumulation of gradients would explose the GPU memory.
             print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
             for i, batch_data in enumerate(data_loader):
-                if use_cuda:
+                if options.use_gpu:
                     imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
                 else:
                     imgs, labels = batch_data['image'], batch_data['label']
@@ -169,12 +168,12 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, ite
 
     return subjects, y_ground, y_hat, proba, accuracy_batch_mean, global_step, loss_batch_mean
 
-def test(model, data_loader, use_cuda):
+def test(model, data_loader, options):
     """
     The function to evaluate the testing data for the trained classifiers
     :param model:
     :param test_loader:
-    :param use_cuda:
+    :param options.:
     :return:
     """
 
@@ -190,7 +189,7 @@ def test(model, data_loader, use_cuda):
         ## torch.no_grad() needs to be set, otherwise the accumulation of gradients would explose the GPU memory.
         print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
         for i, batch_data in enumerate(data_loader):
-            if use_cuda:
+            if options.use_gpu:
                 imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
             else:
                 imgs, labels = batch_data['image'], batch_data['label']

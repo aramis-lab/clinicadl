@@ -6,6 +6,7 @@ from classification_utils import *
 from model import *
 import copy
 from time import time
+from Code.pytorch.utils import EarlyStopping
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -31,8 +32,6 @@ parser.add_argument("--output_dir",
                     help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 parser.add_argument("--mri_plane", default=0, type=int,
                     help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
-parser.add_argument("--shuffle", default=True, type=bool,
-                    help="Load data if shuffled or not, shuffle for training, no for test data.")
 parser.add_argument('--image_processing', default="LinearReg", choices=["LinearReg", "Segmented"],
                     help="The output of which image processing pipeline to fit into the network. By defaut, using the raw one with only linear registration, otherwise, using the output of spm pipeline of Clinica")
 parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["baseline", "longitudinal"],
@@ -65,11 +64,14 @@ parser.add_argument("--use_gpu", default=True, type=bool,
                     help="If use gpu or cpu. Empty implies cpu usage.")
 parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
-parser.add_argument('--momentum', default=0.9, type=float,
-                    help='momentum')
 parser.add_argument('--weight_decay', default=1e-2, type=float,
                     help='weight decay (default: 1e-4)')
 
+## early stopping arguments
+parser.add_argument("--patience", type=int, default=10,
+                    help="tolerated epochs without improving for early stopping.")
+parser.add_argument("--tolerance", type=float, default=0.05,
+                    help="Tolerance of magnitude of performance after each epoch.")
 
 ## TODO; check the behavior of default for bool in argparser
 
@@ -143,7 +145,7 @@ def main(options):
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
                                   batch_size=options.batch_size,
-                                  shuffle=options.shuffle,
+                                  shuffle=True,
                                   num_workers=options.num_workers,
                                   drop_last=True,
                                   pin_memory=True)
@@ -169,12 +171,10 @@ def main(options):
 
         ## Decide to use gpu or cpu to train the model
         if options.use_gpu == False:
-            use_cuda = False
             model.cpu()
             example_batch = next(iter(train_loader))['image']
         else:
             print("Using GPU")
-            use_cuda = True
             model.cuda()
             ## example image for tensorbordX usage:$
             example_batch = next(iter(train_loader))['image'].cuda()
@@ -203,34 +203,29 @@ def main(options):
         y_hats_train = []
         y_hats_valid = []
 
+        # initialize the early stopping instance
+        early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
+
         for epoch in range(options.epochs):
             print("At %s -th epoch." % str(epoch))
 
             # train the model
             train_subject, y_ground_train, y_hat_train, train_proba, acc_mean_train, global_step, loss_batch_mean_train = train(
-                model, train_loader, use_cuda, loss, optimizer, writer_train_batch, epoch, fi, model_mode='train',
+                model, train_loader, options, loss, optimizer, writer_train_batch, epoch, fi, model_mode='train',
                 global_step=global_step)
-            if epoch == options.epochs - 1:
-                train_subjects.extend(train_subject)
-                y_grounds_train.extend(y_ground_train)
-                y_hats_train.extend(y_hat_train)
-                train_probas.extend(train_proba)
 
             ## calculate the accuracy with the whole training data to moniter overfitting
             train_subject_all, y_ground_train_all, y_hat_train_all, train_proba_all, acc_mean_train_all, _, loss_batch_mean_train_all = train(
-                model, train_loader, use_cuda, loss, optimizer, writer_train_all_data, epoch, fi, model_mode='valid',
+                model, train_loader, options, loss, optimizer, writer_train_all_data, epoch, fi, model_mode='valid',
                 global_step=global_step)
+            print("For training, subject level balanced accuracy is %f at the end of epoch %d" % (acc_mean_train_all, epoch))
+
 
             ## at then end of each epoch, we validate one time for the model with the validation data
             valid_subject, y_ground_valid, y_hat_valid, valide_proba, acc_mean_valid, global_step, loss_batch_mean_valid = train(
-                model, valid_loader, use_cuda, loss, optimizer, writer_valid, epoch, fi, model_mode='valid',
+                model, valid_loader, options, loss, optimizer, writer_valid, epoch, fi, model_mode='valid',
                 global_step=global_step)
-            print("Slice level average validation accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
-            if epoch == options.epochs - 1:
-                valid_subjects.extend(valid_subject)
-                y_grounds_valid.extend(y_ground_valid)
-                y_hats_valid.extend(y_hat_valid)
-                valid_probas.extend(valide_proba)
+            print("For validation, subject level balanced accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
 
             ## update the learing rate
             if epoch % 20 == 0 and epoch != 0:
@@ -257,6 +252,21 @@ def main(options):
                 'optimizer': optimizer.state_dict(),
                 'global_step': global_step
             }, is_best, os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "best_loss"))
+
+            ## try early stopping criterion
+            if early_stopping.step(loss_batch_mean_valid) or epoch == options.epochs - 1:
+                print("By applying early stopping, the model should be stopped training at %d-th epoch" % epoch)
+                # if early stopping or last epoch, save the results into the tsv file
+                train_subjects.extend(train_subject)
+                y_grounds_train.extend(y_ground_train)
+                y_hats_train.extend(y_hat_train)
+                train_probas.extend(train_proba)
+                valid_subjects.extend(valid_subject)
+                y_grounds_valid.extend(y_ground_valid)
+                y_hats_valid.extend(y_hat_valid)
+                valid_probas.extend(valide_proba)
+
+                break
 
         ## save the graph and image
         # buf for 3D image, for 2D slice, it can save the graph
