@@ -70,7 +70,7 @@ parser.add_argument('--weight_decay', default=1e-2, type=float,
 ## early stopping arguments
 parser.add_argument("--patience", type=int, default=10,
                     help="tolerated epochs without improving for early stopping.")
-parser.add_argument("--tolerance", type=float, default=0.05,
+parser.add_argument("--tolerance", type=float, default=0,
                     help="Tolerance of magnitude of performance after each epoch.")
 
 ## TODO; check the behavior of default for bool in argparser

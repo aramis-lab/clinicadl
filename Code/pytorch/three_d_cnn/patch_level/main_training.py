@@ -49,7 +49,7 @@ parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,
                     help="Labels based on binary classification")
 
 # Training arguments
-parser.add_argument("--epochs", default=1, type=int,
+parser.add_argument("--epochs", default=10, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
@@ -70,7 +70,7 @@ parser.add_argument("--train_from_stop_point", default=False, type=bool,
 ## early stopping arguments
 parser.add_argument("--patience", type=int, default=10,
                     help="tolerated epochs without improving for early stopping.")
-parser.add_argument("--tolerance", type=float, default=0.05,
+parser.add_argument("--tolerance", type=float, default=0,
                     help="Tolerance of magnitude of performance after each epoch.")
 
 def main(options):

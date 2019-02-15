@@ -17,7 +17,7 @@ class EarlyStopping(object):
         i) patience indicates how many epochs that the model could tolerate no loss decreasing or acc improving
         ii) min_delta gives the amplitude of loss decreasing or acc improving for each epoch
     """
-    def __init__(self, mode='min', min_delta=0, patience=10):
+    def __init__(self, mode='loss', min_delta=0, patience=10):
         self.mode = mode
         self.min_delta = min_delta
         self.patience = patience
@@ -50,10 +50,10 @@ class EarlyStopping(object):
         return False
 
     def _init_is_better(self, mode, min_delta):
-        if mode not in {'min', 'max'}:
+        if mode not in {'loss', 'acc'}:
             raise ValueError('mode ' + mode + ' is unknown!')
 
-        if mode == 'min':
+        if mode == 'loss':
             self.is_better = lambda a, best: a < best - best * min_delta
-        if mode == 'max':
+        if mode == 'acc':
             self.is_better = lambda a, best: a > best + best * min_delta
