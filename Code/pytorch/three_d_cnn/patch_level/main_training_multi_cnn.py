@@ -41,7 +41,7 @@ parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["
 # transfer learning
 parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2", "Conv_7_FC_2", "Conv_3_FC_2"],
                     help="Autoencoder network type. (default=Conv_4_FC_2). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
-parser.add_argument("--num_cnn", default=35, type=int,
+parser.add_argument("--num_cnn", default=36, type=int,
                     help="How many CNNs we want to train in a patch-wise way. By default, we train each patch from all subjects for one CNN")
 parser.add_argument("--transfer_learning_autoencoder", default=True, type=bool,
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
