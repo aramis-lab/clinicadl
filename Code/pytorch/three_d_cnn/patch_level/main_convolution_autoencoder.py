@@ -60,8 +60,6 @@ parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "
                     help="Optimizer of choice for training. (default=Adam)")
 parser.add_argument("--use_gpu", default=True, type=bool,
                     help='Uses gpu instead of cpu if cuda is available')
-parser.add_argument("--weight_decay", default=1e-4, type=float,
-                    help='weight decay (default: 1e-4)')
 
 ## visualization
 parser.add_argument("--visualization", default=True, type=bool,
