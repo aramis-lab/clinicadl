@@ -7,7 +7,7 @@ from data_utils import *
 from model import *
 from resume import parse_model_name
 
-parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D AE pretraining")
+parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
 
 # Mandatory arguments
 parser.add_argument("diagnosis_path", type=str,
@@ -32,11 +32,12 @@ parser.add_argument("--gpu", action="store_true", default=False,
                     help="if True computes the visualization on GPU")
 parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
                     help="Performs MinMaxNormalization for visualization")
-parser.add_argument("--feature_maps", "-fm", default=False, action="store_true",
-                    help="Performs feature maps extraction and visualization")
-parser.add_argument("--filters", "-f", default=False, action="store_true",
-                    help="Performs the visualization of filters by optimizing images which maximally activate"
-                         "each filter.")
+parser.add_argument("--graphics", action="store_true", default=False,
+                    help="Plot graphics.")
+
+# Computational ressources
+parser.add_argument("--num_workers", '-w', default=8, type=int,
+                    help='the number of batch being loaded in parallel')
 
 
 if __name__ == "__main__":
@@ -45,7 +46,7 @@ if __name__ == "__main__":
     if ret[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
 
-    options, run = parse_model_name(options.model_path, options)
+    options = parse_model_name(options.model_path, options)
     # Check if model is implemented
     import model
     import inspect
@@ -59,99 +60,116 @@ if __name__ == "__main__":
         raise NotImplementedError(
             'The model wanted %s has not been implemented in the module model.py' % options.model)
 
-    model = eval(options.model)()
-    if options.gpu:
-        model = model.cuda()
-    options.batch_size = 2  # To test on smaller GPU
+    # Loop on all folds trained
+    CNN_dir = os.path.join(options.model_path, 'Best_model_dir', 'CNN')
+    folds_dir = os.listdir(CNN_dir)
+    for fold_dir in folds_dir:
+        split = int(fold_dir[-1])
+        print("Fold " + str(split))
+        model = eval(options.model)()
+        if options.gpu:
+            model = model.cuda()
+        options.batch_size = 2  # To test on smaller GPU
 
-    criterion = torch.nn.CrossEntropyLoss()
-    best_model, best_epoch = load_model(model, options.model_path,
-                                        filename='model_best_' + options.selection + '.pth.tar')
+        criterion = torch.nn.CrossEntropyLoss()
 
-    training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
-                                        options.split, options.n_splits, options.baseline, options.data_path)
+        if options.selection == 'loss':
+            model_dir = os.path.join(CNN_dir, fold_dir, 'Best_loss')
+            folder_name = 'Best_loss'
+        else:
+            model_dir = os.path.join(CNN_dir, fold_dir, 'Best_acc')
+            folder_name = 'Best_acc'
 
-    if options.minmaxnormalization:
-        transformations = MinMaxNormalization()
-    else:
-        transformations = None
+        best_model, best_epoch = load_model(model, model_dir,
+                                            filename='Model_best.pth.tar')
 
-    data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transform=transformations)
-    data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transform=transformations)
+        training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
+                                            split, options.n_splits, options.baseline, options.data_path)
 
-    # Use argument load to distinguish training and testing
-    train_loader = DataLoader(data_train,
-                              batch_size=options.batch_size,
-                              shuffle=options.shuffle,
-                              num_workers=options.num_workers,
-                              drop_last=False
-                              )
+        if options.minmaxnormalization:
+            transformations = MinMaxNormalization()
+        else:
+            transformations = None
 
-    valid_loader = DataLoader(data_valid,
-                              batch_size=options.batch_size,
-                              shuffle=False,
-                              num_workers=options.num_workers,
-                              drop_last=False
-                              )
+        data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transform=transformations)
+        data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transform=transformations)
 
-    metrics_train, loss_train, train_df = test(best_model, train_loader, options.gpu, criterion,
-                                               verbose=False, full_return=True)
-    metrics_valid, loss_valid, valid_df = test(best_model, valid_loader, options.gpu, criterion,
-                                               verbose=False, full_return=True)
+        # Use argument load to distinguish training and testing
+        train_loader = DataLoader(data_train,
+                                  batch_size=options.batch_size,
+                                  shuffle=options.shuffle,
+                                  num_workers=options.num_workers,
+                                  drop_last=False
+                                  )
 
-    acc_train, sen_train, spe_train = metrics_train['balanced_accuracy'] * 100, metrics_train['sensitivity'] * 100,\
-                                      metrics_train['specificity'] * 100
-    acc_valid, sen_valid, spe_valid = metrics_valid['balanced_accuracy'] * 100, metrics_valid['sensitivity'] * 100, \
-                                      metrics_valid['specificity'] * 100
-    print("Training, acc %f, loss %f, sensibility %f, specificity %f"
-          % (acc_train, loss_train, sen_train, spe_train))
-    print("Validation, acc %f, loss %f, sensibility %f, specificity %f"
-          % (acc_valid, loss_valid, sen_valid, spe_valid))
+        valid_loader = DataLoader(data_valid,
+                                  batch_size=options.batch_size,
+                                  shuffle=False,
+                                  num_workers=options.num_workers,
+                                  drop_last=False
+                                  )
 
-    evaluation_path = path.join(options.model_path, 'performances')
-    if not path.exists(evaluation_path):
-        os.makedirs(evaluation_path)
+        metrics_train, loss_train, train_df = test(best_model, train_loader, options.gpu, criterion,
+                                                   verbose=False, full_return=True)
+        metrics_valid, loss_valid, valid_df = test(best_model, valid_loader, options.gpu, criterion,
+                                                   verbose=False, full_return=True)
 
-    text_file = open(path.join(evaluation_path, 'evaluation_' + options.selection + '.txt'), 'w')
-    text_file.write('Best epoch: %i \n' % best_epoch)
-    text_file.write('Accuracy on training set: %.2f %% \n' % acc_train)
-    text_file.write('Loss on training set: %f \n' % loss_train)
-    text_file.write('Sensitivities on training set: %.2f %%, %.2f %% \n' % (sen_train, sen_train))
-    text_file.write('Specificities on training set: %.2f %%, %.2f %% \n' % (spe_train, spe_train))
+        acc_train, sen_train, spe_train = metrics_train['balanced_accuracy'] * 100, metrics_train['sensitivity'] * 100,\
+                                          metrics_train['specificity'] * 100
+        acc_valid, sen_valid, spe_valid = metrics_valid['balanced_accuracy'] * 100, metrics_valid['sensitivity'] * 100, \
+                                          metrics_valid['specificity'] * 100
+        print("Training, acc %f, loss %f, sensibility %f, specificity %f"
+              % (acc_train, loss_train, sen_train, spe_train))
+        print("Validation, acc %f, loss %f, sensibility %f, specificity %f"
+              % (acc_valid, loss_valid, sen_valid, spe_valid))
 
-    text_file.write('Accuracy on validation set: %.2f %% \n' % acc_valid)
-    text_file.write('Loss on validation set: %f \n' % loss_valid)
-    text_file.write('Sensitivities on validation set: %.2f %%, %.2f %% \n' % (sen_valid, sen_valid))
-    text_file.write('Specificities on validation set: %.2f %%, %.2f %% \n' % (spe_valid, spe_valid))
+        evaluation_path = path.join(options.model_path, 'Performances', fold_dir)
+        if not path.exists(path.join(evaluation_path, folder_name)):
+            os.makedirs(path.join(evaluation_path, folder_name))
 
-    text_file.close()
+        text_file = open(path.join(evaluation_path, 'evaluation_' + options.selection + '.txt'), 'w')
+        text_file.write('Best epoch: %i \n' % best_epoch)
+        text_file.write('Accuracy on training set: %.2f %% \n' % acc_train)
+        text_file.write('Loss on training set: %f \n' % loss_train)
+        text_file.write('Sensitivities on training set: %.2f %%, %.2f %% \n' % (sen_train, sen_train))
+        text_file.write('Specificities on training set: %.2f %%, %.2f %% \n' % (spe_train, spe_train))
 
-    train_df.to_csv(path.join(evaluation_path, 'train_' + options.selection + '_result.tsv'), sep='\t', index=False)
-    valid_df.to_csv(path.join(evaluation_path, 'valid_' + options.selection + '_result.tsv'), sep='\t', index=False)
+        text_file.write('Accuracy on validation set: %.2f %% \n' % acc_valid)
+        text_file.write('Loss on validation set: %f \n' % loss_valid)
+        text_file.write('Sensitivities on validation set: %.2f %%, %.2f %% \n' % (sen_valid, sen_valid))
+        text_file.write('Specificities on validation set: %.2f %%, %.2f %% \n' % (spe_valid, spe_valid))
 
-    # Graphic part
-    import matplotlib.pyplot as plt
+        text_file.close()
 
-    training_df = pd.read_csv(path.join(options.model_path, 'training.tsv'), sep='\t')
-    epochs = training_df.epoch.values
-    iterations = training_df.iterations.values
-    iterations = iterations / np.max(iterations)
-    x = epochs + iterations
+        train_df.to_csv(path.join(evaluation_path, folder_name, 'train_subject_level_result.tsv'), sep='\t', index=False)
+        valid_df.to_csv(path.join(evaluation_path, folder_name, 'valid_subject_level_result.tsv'), sep='\t', index=False)
 
-    plt.title('Fold ' + str(options.split))
-    plt.xlabel('epoch')
-    plt.ylabel('loss')
-    plt.plot(x, training_df.mean_loss_train.values, color='orange', label='training')
-    plt.plot(x, training_df.mean_loss_valid.values, color='blue', label='validation')
-    plt.legend()
-    plt.savefig(path.join(evaluation_path, 'loss.png'))
-    plt.close()
+        # Graphic part
+        if options.graphics:
+            import matplotlib.pyplot as plt
 
-    plt.title('Fold ' + str(options.split))
-    plt.xlabel('epoch')
-    plt.ylabel('accuracy')
-    plt.plot(x, training_df.acc_train.values, color='orange', label='training')
-    plt.plot(x, training_df.acc_valid.values, color='blue', label='validation')
-    plt.legend()
-    plt.savefig(path.join(evaluation_path, 'accuracy.png'))
-    plt.close()
+            plt.switch_backend('agg')
+
+            training_df = pd.read_csv(path.join(options.model_path, 'Log_dir', 'CNN', fold_dir, 'training.tsv'), sep='\t')
+            epochs = training_df.epoch.values
+            iterations = training_df.iteration.values
+            iterations = iterations / np.max(iterations)
+            x = epochs + iterations
+
+            plt.title('Fold ' + str(split))
+            plt.xlabel('epoch')
+            plt.ylabel('loss')
+            plt.plot(x, training_df.mean_loss_train.values, color='orange', label='training')
+            plt.plot(x, training_df.mean_loss_valid.values, color='blue', label='validation')
+            plt.legend()
+            plt.savefig(path.join(evaluation_path, 'loss.png'))
+            plt.close()
+
+            plt.title('Fold ' + str(split))
+            plt.xlabel('epoch')
+            plt.ylabel('accuracy')
+            plt.plot(x, training_df.acc_train.values, color='orange', label='training')
+            plt.plot(x, training_df.acc_valid.values, color='blue', label='validation')
+            plt.legend()
+            plt.savefig(path.join(evaluation_path, 'accuracy.png'))
+            plt.close()

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import torch
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -9,7 +10,7 @@ import pandas as pd
 from time import time
 
 
-def train(model, train_loader, valid_loader, criterion, optimizer, run, options):
+def train(model, train_loader, valid_loader, criterion, optimizer, resume, options):
     """
     This is the function to train the model
     :param model:
@@ -17,36 +18,36 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
     :param valid_loader:
     :param criterion:
     :param optimizer:
-    :param run:
     :param options:
     """
-    # from tensorboardX import SummaryWriter
+    from tensorboardX import SummaryWriter
     from time import time
 
-    # Create writers
-    # TODO: Use tensorboardX once it is installed on the cluster
-    # writer_train = SummaryWriter(os.path.join(options.log_dir, 'train'))
-    # writer_valid = SummaryWriter(os.path.join(options.log_dir, 'validation'))
-
     columns = ['epoch', 'iteration', 'acc_train', 'mean_loss_train', 'acc_valid', 'mean_loss_valid', 'time']
-    if not isinstance(run, str):
-        if not os.path.exists(os.path.join(options.log_dir, "run" + str(run))):
-            os.makedirs(os.path.join(options.log_dir, "run" + str(run)))
-        filename = os.path.join(options.log_dir, "run" + str(run), 'training.tsv')
+    log_dir = os.path.join(options.output_dir, 'Log_dir', 'CNN', 'Fold_' + str(options.split))
+    best_model_dir = os.path.join(options.output_dir, 'Best_model_dir', 'CNN', 'Fold_' + str(options.split))
+    filename = os.path.join(log_dir, 'training.tsv')
+
+    if not resume:
+        check_and_clean(log_dir)
+        check_and_clean(best_model_dir)
+
         results_df = pd.DataFrame(columns=columns)
         with open(filename, 'w') as f:
             results_df.to_csv(f, index=False, sep='\t')
         options.beginning_epoch = 0
 
     else:
-        filename = os.path.join(options.log_dir, run, 'training.tsv')
         if not os.path.exists(filename):
             raise ValueError('The training.tsv file of the resumed experiment does not exist.')
         truncated_tsv = pd.read_csv(filename, sep='\t')
         truncated_tsv.set_index(['epoch', 'iteration'], inplace=True)
         truncated_tsv.drop(options.beginning_epoch, level=0, inplace=True)
         truncated_tsv.to_csv(filename, index=True, sep='\t')
-        run = int(run[-1])
+
+    # Create writers
+    writer_train = SummaryWriter(os.path.join(log_dir, 'train'))
+    writer_valid = SummaryWriter(os.path.join(log_dir, 'validation'))
 
     # Initialize variables
     best_valid_accuracy = 0.0
@@ -180,10 +181,10 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
         model.train()
 
         # TODO: Use tensorboardX once it is installed on the cluster
-        # writer_train.add_scalar('balanced_accuracy', acc_mean_train, i + epoch * len(train_loader))
-        # writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
-        # writer_valid.add_scalar('balanced_accuracy', acc_mean_valid, i + epoch * len(train_loader))
-        # writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
+        writer_train.add_scalar('balanced_accuracy', acc_mean_train, i + epoch * len(train_loader))
+        writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
+        writer_valid.add_scalar('balanced_accuracy', acc_mean_valid, i + epoch * len(train_loader))
+        writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
         print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
         print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
@@ -193,7 +194,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
         row_df = pd.DataFrame(row, columns=columns)
         with open(filename, 'a') as f:
             row_df.to_csv(f, header=False, index=False, sep='\t')
-        accuracy_is_best = acc_mean_valid > best_valid_accuracy  # TODO Change for loss ?
+        accuracy_is_best = acc_mean_valid > best_valid_accuracy
         loss_is_best = mean_loss_valid < best_valid_loss
         best_valid_accuracy = max(acc_mean_valid, best_valid_accuracy)
         best_valid_loss = min(mean_loss_valid, best_valid_loss)
@@ -202,14 +203,14 @@ def train(model, train_loader, valid_loader, criterion, optimizer, run, options)
                          'epoch': epoch,
                          'valid_acc': acc_mean_valid},
                         accuracy_is_best, loss_is_best,
-                        os.path.join(options.log_dir, "run" + str(run)))
+                        best_model_dir)
         # Save optimizer state_dict to be able to reload
         save_checkpoint({'optimizer': optimizer.state_dict(),
                          'epoch': epoch,
                          'name': options.optimizer,
                          },
                         False, False,
-                        os.path.join(options.log_dir, "run" + str(run)),
+                        best_model_dir,
                         filename='optimizer.pth.tar')
 
         epoch += 1
@@ -409,19 +410,24 @@ def show_plot(points):
     plt.plot(points)
 
 
-def save_checkpoint(state, accuracy_is_best, loss_is_best, checkpoint_dir, filename='checkpoint.pth.tar',
-                    best_accuracy='model_best_accuracy.pth.tar',
-                    best_loss='model_best_loss.pth.tar'):
+def save_checkpoint(state, accuracy_is_best, loss_is_best, checkpoint_dir, filename='Checkpoint.pth.tar',
+                    best_accuracy='Best_acc', best_loss='Best_loss'):
 
     torch.save(state, os.path.join(checkpoint_dir, filename))
     if accuracy_is_best:
-        shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(checkpoint_dir, best_accuracy))
+        best_accuracy_path = os.path.join(checkpoint_dir, best_accuracy)
+        if not os.path.exists(best_accuracy_path):
+            os.makedirs(best_accuracy_path)
+        shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(best_accuracy_path, 'Model_best.pth.tar'))
 
     if loss_is_best:
-        shutil.copyfile(os.path.join(checkpoint_dir, filename), os.path.join(checkpoint_dir, best_loss))
+        best_loss_path = os.path.join(checkpoint_dir, best_loss)
+        if not os.path.exists(best_loss_path):
+            os.makedirs(best_loss_path)
+        shutil.copyfile(os.path.join(checkpoint_dir, filename), os.path.join(best_loss_path, 'Model_best.pth.tar'))
 
 
-def load_model(model, checkpoint_dir, filename='model_best_loss.pth.tar'):
+def load_model(model, checkpoint_dir, filename='Model_best.pth.tar'):
     from copy import deepcopy
 
     best_model = deepcopy(model)
@@ -432,25 +438,23 @@ def load_model(model, checkpoint_dir, filename='model_best_loss.pth.tar'):
 
 def check_and_clean(d):
 
-    if os.path.exists(d):
-        shutil.rmtree(d)
-    os.makedirs(d)
+    # if os.path.exists(d):
+    #     shutil.rmtree(d)
+    # os.makedirs(d)
+    if not os.path.exists(d):
+        os.makedirs(d)
 
 
-def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, results_path, resume, options):
-    from os import path
+def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, resume, options):
     from tensorboardX import SummaryWriter
 
-    if not path.exists(results_path):
-        os.makedirs(results_path)
-
-    filename = os.path.join(results_path, 'training.tsv')
-
-    # Create writers
-    writer_train = SummaryWriter(os.path.join(results_path, 'train'))
-    writer_valid = SummaryWriter(os.path.join(results_path, 'validation'))
+    log_dir = os.path.join(options.output_dir, 'Log_dir', 'ConvAutoencoder', 'Fold_' + str(options.split))
+    best_model_dir = os.path.join(options.output_dir, 'Best_model_dir', 'ConvAutoencoder', 'Fold_' + str(options.split))
+    filename = os.path.join(log_dir, 'training.tsv')
 
     if not resume:
+        check_and_clean(log_dir)
+        check_and_clean(best_model_dir)
         columns = ['epoch', 'iteration', 'loss_train', 'mean_loss_train', 'loss_valid', 'mean_loss_valid']
         results_df = pd.DataFrame(columns=columns)
         with open(filename, 'w') as f:
@@ -465,10 +469,13 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
         truncated_tsv.drop(options.beginning_epoch, level=0, inplace=True)
         truncated_tsv.to_csv(filename, index=True, sep='\t')
 
-    decoder.train()
+    # Create writers
+    writer_train = SummaryWriter(os.path.join(log_dir, 'train'))
+    writer_valid = SummaryWriter(os.path.join(log_dir, 'validation'))
 
+    decoder.train()
     first_visu = True
-    # print(decoder)
+    print(decoder)
 
     if options.gpu:
         decoder.cuda()
@@ -569,19 +576,19 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
                          'epoch': epoch,
                          'loss_valid': loss_valid},
                         False, is_best,
-                        results_path)
+                        best_model_dir)
         # Save optimizer state_dict to be able to reload
         save_checkpoint({'optimizer': optimizer.state_dict(),
                          'epoch': epoch,
                          'name': options.optimizer,
                          },
                         False, False,
-                        results_path,
+                        best_model_dir,
                         filename='optimizer.pth.tar')
 
         if epoch % 10 == 0:
-            visualize_subject(decoder, train_loader, results_path, epoch, options, first_visu,
-                              data_path=options.data_path)
+            visualize_subject(decoder, train_loader, log_dir, epoch, options, first_visu,
+                              data_path=options.preprocessing)
             first_visu = False
 
         epoch += 1
@@ -619,7 +626,7 @@ def test_ae(model, dataloader, use_cuda, criterion, first_layers=None):
     return total_loss
 
 
-def greedy_learning(model, train_loader, valid_loader, criterion, optimizer, results_path, resume, options):
+def greedy_learning(model, train_loader, valid_loader, criterion, optimizer, resume, options):
     from os import path
     from model import Decoder
     from copy import deepcopy
@@ -1003,7 +1010,7 @@ class EarlyStopping(object):
             self.is_better = lambda a, best: a > best + best * min_delta
 
 
-def commandline_to_json(commandline):
+def commandline_to_json(commandline, model_type):
     """
     This is a function to write the python argparse object into a jason file. This helps for DL when searching for hyperparameters
     :param commandline: a tuple contain the output of `parser.parse_known_args()`
@@ -1015,20 +1022,17 @@ def commandline_to_json(commandline):
     commandline_arg_dic['unknown_arg'] = commandline[1]
 
     # if train_from_stop_point, do not delete the folders
-    if "model" not in commandline_arg_dic.keys():
-        print('Json file will not be written again.')
+    output_dir = commandline_arg_dic['output_dir']
+    log_dir = os.path.join(output_dir, 'Log_dir', model_type, 'Fold_' + str(commandline_arg_dic['split']))
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
 
-    else:
-        check_and_clean(commandline_arg_dic['log_dir'])
-
-        output_dir = commandline_arg_dic['log_dir']
-        # save to json file
-        json = json.dumps(commandline_arg_dic)
-        print("Path of json file:", os.path.join(output_dir, "commandline.json"))
-        f = open(os.path.join(output_dir, "commandline.json"), "w")
-        f.write(json)
-        f.close()
-        print(os.path.exists(os.path.join(output_dir, "commandline.json")))
+    # save to json file
+    json = json.dumps(commandline_arg_dic)
+    print("Path of json file:", os.path.join(log_dir, "commandline.json"))
+    f = open(os.path.join(log_dir, "commandline.json"), "w")
+    f.write(json)
+    f.close()
 
 
 def memReport():

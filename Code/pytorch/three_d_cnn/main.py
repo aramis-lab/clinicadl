@@ -11,7 +11,7 @@ parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 parser.add_argument("diagnosis_path", type=str,
                     help="Path to tsv files of the population."
                          " To note, the column name should be participant_id, session_id and diagnosis.")
-parser.add_argument("log_dir", type=str,
+parser.add_argument("output_dir", type=str,
                     help="Path to log dir for tensorboard usage.")
 parser.add_argument("input_dir", type=str,
                     help="Path to input dir of the MRI (preprocessed CAPS_dir).")
@@ -19,7 +19,7 @@ parser.add_argument("model", type=str,
                     help="model selected")
 
 # Data Management
-parser.add_argument("--data_path", default="linear", choices=["linear", "dartel", "mni"], type=str,
+parser.add_argument("--preprocessing", default="linear", choices=["linear", "dartel", "mni"], type=str,
                     help="Defines the path to data in CAPS.")
 parser.add_argument("--diagnoses", "-d", default=['AD', 'CN'], nargs='+', type=str,
                     help="The diagnoses used for the classification")
@@ -31,8 +31,6 @@ parser.add_argument('--accumulation_steps', '-asteps', default=1, type=int,
                     help='Accumulates gradients in order to increase the size of the batch')
 parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
-parser.add_argument("--runs", default=1, type=int,
-                    help="Number of runs with the same training / validation split.")
 parser.add_argument("--test_sessions", default=["ses-M00"], nargs='+', type=str,
                     help="Test the accuracy at the end of the model for the sessions selected")
 parser.add_argument("--num_workers", '-w', default=1, type=int,
@@ -111,7 +109,6 @@ def main(options):
         raise NotImplementedError('The model wanted %s has not been implemented in the module model.py' % options.model)
 
     torch.set_num_threads(options.num_threads)
-    valid_accuracies = np.zeros(options.runs)
     if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
                         (options.evaluation_steps, options.accumulation_steps))
@@ -129,16 +126,17 @@ def main(options):
 
         if path.exists(options.transfer_learning):
             print("A pretrained autoencoder is loaded at path %s" % options.transfer_learning)
-            apply_autoencoder_weights(model, options.transfer_learning, options.log_dir, options.transfer_difference)
+            apply_autoencoder_weights(model, options.transfer_learning, options.output_dir, options.split,
+                                      difference=options.transfer_difference)
 
         else:
             if options.transfer_learning_diagnoses is None:
                 raise Exception("Diagnosis labels must be given to train the autoencoder.")
             training_tsv, valid_tsv = load_data(options.diagnosis_path, options.transfer_learning_diagnoses,
-                                                options.split, options.n_splits, options.baseline, options.data_path)
+                                                options.split, options.n_splits, options.baseline, options.preprocessing)
 
-            data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transformations)
-            data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transformations)
+            data_train = MRIDataset(options.input_dir, training_tsv, options.preprocessing, transformations)
+            data_valid = MRIDataset(options.input_dir, valid_tsv, options.preprocessing, transformations)
 
             # Use argument load to distinguish training and testing
             train_loader = DataLoader(data_train,
@@ -155,99 +153,82 @@ def main(options):
                                       drop_last=False
                                       )
 
-            pretraining_dir = path.join(options.log_dir, 'pretraining')
+            pretraining_dir = path.join(options.output_dir, 'pretraining')
             greedy_learning(model, train_loader, valid_loader, criterion, True, pretraining_dir, options)
 
-    text_file = open(path.join(options.log_dir, 'python_version.txt'), 'w')
+    text_file = open(path.join(options.output_dir, 'python_version.txt'), 'w')
     text_file.write('Version of python: %s \n' % sys.version)
     text_file.write('Version of pytorch: %s \n' % torch.__version__)
     text_file.close()
 
-    for run in range(options.runs):
-        # Get the data.
-        training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
-                                            options.split, options.n_splits, options.baseline, options.data_path)
-        training_tsv.to_csv("/network/lustre/iss01/home/elina.thibeausutre/debug/train_linear.tsv", sep='\t', index=False)
-        valid_tsv.to_csv("/network/lustre/iss01/home/elina.thibeausutre/debug/valid_linear.tsv", sep='\t', index=False)
+    # Get the data.
+    training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
+                                        options.split, options.n_splits, options.baseline, options.preprocessing)
+    # training_tsv.to_csv("/network/lustre/iss01/home/elina.thibeausutre/debug/train_linear.tsv", sep='\t', index=False)
+    # valid_tsv.to_csv("/network/lustre/iss01/home/elina.thibeausutre/debug/valid_linear.tsv", sep='\t', index=False)
 
-        data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transform=transformations)
-        data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transform=transformations)
+    data_train = MRIDataset(options.input_dir, training_tsv, options.preprocessing, transform=transformations)
+    data_valid = MRIDataset(options.input_dir, valid_tsv, options.preprocessing, transform=transformations)
 
-        train_sampler = generate_sampler(data_train, options.sampler)
+    train_sampler = generate_sampler(data_train, options.sampler)
 
-        # Use argument load to distinguish training and testing
-        train_loader = DataLoader(data_train,
-                                  batch_size=options.batch_size,
-                                  sampler=train_sampler,
-                                  shuffle=True,
-                                  num_workers=options.num_workers,
-                                  drop_last=True
-                                  )
+    # Use argument load to distinguish training and testing
+    train_loader = DataLoader(data_train,
+                              batch_size=options.batch_size,
+                              sampler=train_sampler,
+                              shuffle=True,
+                              num_workers=options.num_workers,
+                              drop_last=True
+                              )
 
-        valid_loader = DataLoader(data_valid,
-                                  batch_size=options.batch_size,
-                                  shuffle=False,
-                                  num_workers=options.num_workers,
-                                  drop_last=False
-                                  )
+    valid_loader = DataLoader(data_valid,
+                              batch_size=options.batch_size,
+                              shuffle=False,
+                              num_workers=options.num_workers,
+                              drop_last=False
+                              )
 
-        # Initialize the model
-        print('Initialization of the model')
-        model = create_model(options)
+    # Initialize the model
+    print('Initialization of the model')
+    model = create_model(options)
 
-        # Define criterion and optimizer
-        criterion = torch.nn.CrossEntropyLoss()
-        if options.features_learning_rate is None:
-            optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
-                                                                 options.learning_rate)
-        else:
-            optimizer = eval("torch.optim." + options.optimizer)([
-                {'params': filter(lambda x: x.requires_grad, model.features.parameters()),
-                 'lr': options.features_learning_rate},
-                {'params': filter(lambda x: x.requires_grad, model.classifier.parameters())}
-                ], lr=options.learning_rate)
+    # Define criterion and optimizer
+    criterion = torch.nn.CrossEntropyLoss()
+    if options.features_learning_rate is None:
+        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
+                                                             options.learning_rate)
+    else:
+        optimizer = eval("torch.optim." + options.optimizer)([
+            {'params': filter(lambda x: x.requires_grad, model.features.parameters()),
+             'lr': options.features_learning_rate},
+            {'params': filter(lambda x: x.requires_grad, model.classifier.parameters())}
+            ], lr=options.learning_rate)
 
-        print('Beginning the training task')
-        training_time = time()
-        train(model, train_loader, valid_loader, criterion, optimizer, run, options)
-        training_time = time() - training_time
+    print('Beginning the training task')
+    train(model, train_loader, valid_loader, criterion, optimizer, False, options)
 
-        # Load best model
-        best_model, best_epoch = load_model(model, os.path.join(options.log_dir, "run" + str(run)))
+    # Load best model
+    best_model_dir = path.join(options.output_dir, 'Best_model_dir', 'CNN', 'Fold_' + str(options.split))
+    best_model, best_epoch = load_model(model, path.join(best_model_dir, 'Best_loss'))
 
-        # Get best performance
-        acc_mean_train_subject, _ = test(best_model, train_loader, options.gpu, criterion)
-        acc_mean_valid_subject, _ = test(best_model, valid_loader, options.gpu, criterion)
-        valid_accuracies[run] = acc_mean_valid_subject
-        accuracies = (acc_mean_train_subject * 100, acc_mean_valid_subject * 100)
-        write_summary(options.log_dir, run, accuracies, best_epoch, training_time)
+    # Get best performance
+    acc_mean_train_subject, _ = test(best_model, train_loader, options.gpu, criterion)
+    acc_mean_valid_subject, _ = test(best_model, valid_loader, options.gpu, criterion)
+    log_dir = os.path.join(options.output_dir, 'Log_dir', 'CNN', 'Fold_' + str(options.split))
 
-        del best_model
-
-    valid_accuracies = valid_accuracies * 100
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)
-    text_file = open(path.join(options.log_dir, 'model_output.txt'), 'w')
+    text_file = open(path.join(log_dir, 'fold_output.txt'), 'w')
+    text_file.write('Loss selection \n')
     text_file.write('Time of training: %d s \n' % total_time)
-    text_file.write('Mean best validation accuracy: %.2f %% \n' % np.mean(valid_accuracies))
-    text_file.write('Standard variation of best validation accuracy: %.2f %% \n' % np.std(valid_accuracies))
-    text_file.close()
-
-
-def write_summary(log_dir, run, accuracies, best_epoch, time):
-    fold_dir = path.join(log_dir, "run" + str(run))
-    text_file = open(path.join(fold_dir, 'run_output.txt'), 'w')
-    text_file.write('Fold: %i \n' % run)
-    text_file.write('Best epoch: %i \n' % best_epoch)
-    text_file.write('Time of training: %d s \n' % time)
-    text_file.write('Accuracy on training set: %.2f %% \n' % accuracies[0])
-    text_file.write('Accuracy on validation set: %.2f %% \n' % accuracies[1])
+    text_file.write('Training accuracy: %.2f %% \n' % (acc_mean_train_subject * 100))
+    text_file.write('Validation accuracy: %.2f %% \n' % (acc_mean_valid_subject * 100))
     text_file.close()
 
 
 if __name__ == "__main__":
     commandline = parser.parse_known_args()
-    commandline_to_json(commandline)
+    commandline_to_json(commandline, 'CNN')
     options = commandline[0]
     if commandline[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])

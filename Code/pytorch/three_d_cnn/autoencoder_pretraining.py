@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D AE pretra
 # Mandatory arguments
 parser.add_argument("diagnosis_path", type=str,
                     help="Path to the folder containing the tsv files of the population.")
-parser.add_argument("log_dir", type=str,
+parser.add_argument("output_dir", type=str,
                     help="Path to the result folder.")
 parser.add_argument("input_dir", type=str,
                     help="Path to input dir of the MRI (preprocessed CAPS_dir).")
@@ -25,7 +25,7 @@ parser.add_argument("--pretrained_difference", "-d", type=int, default=0,
                          "If the new one is larger, difference will be positive.")
 
 # Data Management
-parser.add_argument("--data_path", default="linear", choices=["linear", "dartel", "mni"], type=str,
+parser.add_argument("--preprocessing", default="linear", choices=["linear", "dartel", "mni"], type=str,
                     help="Defines the path to data in CAPS.")
 parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
@@ -33,8 +33,6 @@ parser.add_argument('--accumulation_steps', '-asteps', default=1, type=int,
                     help='Accumulates gradients in order to increase the size of the batch')
 parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
-parser.add_argument("--runs", default=1, type=int,
-                    help="Number of runs with the same training / validation split.")
 parser.add_argument("--diagnoses", default=["AD", "CN"], nargs='+', type=str,
                     help="Take all the subjects possible for autoencoder training")
 parser.add_argument("--baseline", action="store_true", default=False,
@@ -116,10 +114,10 @@ def main(options):
     criterion = torch.nn.MSELoss()
 
     training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
-                                        options.split, options.n_splits, options.baseline, options.data_path)
+                                        options.split, options.n_splits, options.baseline, options.preprocessing)
 
-    data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transformations)
-    data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transformations)
+    data_train = MRIDataset(options.input_dir, training_tsv, options.preprocessing, transformations)
+    data_valid = MRIDataset(options.input_dir, valid_tsv, options.preprocessing, transformations)
 
     # Use argument load to distinguish training and testing
     train_loader = DataLoader(data_train,
@@ -136,38 +134,36 @@ def main(options):
                               drop_last=False
                               )
 
-    text_file = open(path.join(options.log_dir, 'python_version.txt'), 'w')
+    text_file = open(path.join(options.output_dir, 'python_version.txt'), 'w')
     text_file.write('Version of python: %s \n' % sys.version)
     text_file.write('Version of pytorch: %s \n' % torch.__version__)
     text_file.close()
 
-    for run in range(options.runs):
-        print('Beginning run %i' % run)
-        run_path = path.join(options.log_dir, 'run' + str(run))
+    model = eval(options.model)()
+    decoder = Decoder(model)
+    optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
+                                                         options.transfer_learning_rate)
 
-        model = eval(options.model)()
-        decoder = Decoder(model)
-        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
-                                                             options.transfer_learning_rate)
+    if options.pretrained_path is not None:
+        decoder = initialize_other_autoencoder(decoder, options.pretrained_path, options.output_dir,
+                                               difference=options.pretrained_difference)
 
-        if options.pretrained_path is not None:
-            decoder = initialize_other_autoencoder(decoder, options.pretrained_path, run_path,
-                                                   difference=options.pretrained_difference)
+    if options.add_sigmoid:
+        if isinstance(decoder.decoder[-1], nn.ReLU):
+            decoder.decoder = nn.Sequential(*list(decoder.decoder)[:-1])
+        decoder.decoder.add_module("sigmoid", nn.Sigmoid())
 
-        if options.add_sigmoid:
-            if isinstance(decoder.decoder[-1], nn.ReLU):
-                decoder.decoder = nn.Sequential(*list(decoder.decoder)[:-1])
-            decoder.decoder.add_module("sigmoid", nn.Sigmoid())
+    if options.greedy_learning:
+        greedy_learning(decoder, train_loader, valid_loader, criterion, optimizer, False, options)
 
-        if options.greedy_learning:
-            greedy_learning(decoder, train_loader, valid_loader, criterion, optimizer, run_path, False, options)
-
-        else:
-            ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, run_path, False, options)
-
-            best_decoder = load_model(decoder, run_path)
-            visualize_ae(best_decoder, train_loader, path.join(run_path, "train"), options.gpu)
-            visualize_ae(best_decoder, valid_loader, path.join(run_path, "valid"), options.gpu)
+    else:
+        ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, False, options)
+        # best_model_path = path.join(options.output_dir, 'Best_model_dir', 'ConvAutoencoder',
+        #                             'Fold_' + str(options.split), 'Best_loss', 'Model_best.pth.tar')
+        # best_decoder = load_model(decoder, best_model_path)
+        #
+        # visualize_ae(best_decoder, train_loader, path.join(run_path, "train"), options.gpu)
+        # visualize_ae(best_decoder, valid_loader, path.join(run_path, "valid"), options.gpu)
 
     total_time = time() - total_time
     print('Total time', total_time)
@@ -175,7 +171,7 @@ def main(options):
 
 if __name__ == "__main__":
     commandline = parser.parse_known_args()
-    commandline_to_json(commandline)
+    commandline_to_json(commandline, 'ConvAutoencoder')
     options = commandline[0]
     if commandline[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])

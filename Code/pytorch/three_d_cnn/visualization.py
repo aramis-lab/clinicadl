@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D AE pretra
 # Mandatory arguments
 parser.add_argument("diagnosis_path", type=str,
                     help="Path to the folder containing the tsv files of the population.")
-parser.add_argument("model_path", type=str,
+parser.add_argument("output_dir", type=str,
                     help="Path to the trained model folder.")
 parser.add_argument("input_dir", type=str,
                     help="Path to input dir of the MRI (preprocessed CAPS_dir).")
@@ -250,15 +250,13 @@ def main(options):
 
     model = eval(options.model)()
     decoder = Decoder(model)
-    best_decoder, _ = load_model(decoder, options.model_path)
+    best_model_dir = path.join(options.output_dir, 'Best_model_dir', 'ConvAutoencoder', 'Fold_' + str(options.split),
+                               'Best_loss')
+    best_decoder, _ = load_model(decoder, best_model_dir)
     sets = ['train', 'validation']
 
     for set in sets:
-
-        if options.minmaxnormalization:
-            set_path = path.join(options.model_path, "visualization_norm", set)
-        else:
-            set_path = path.join(options.model_path, "visualization", set)
+        set_path = path.join(options.output_dir, "visualization", "Fold_" + str(options.split), set)
 
         if not path.exists(set_path):
             os.makedirs(set_path)
@@ -278,7 +276,7 @@ def main(options):
             if options.data_path in ['mni', 'dartel']:
                 data_path = path.join(data_path, 'SPM')
 
-            set_df = pd.read_csv(path.join(options.diagnosis_path, set, diagnosis + '_baseline.tsv'), sep='\t')
+            set_df = pd.read_csv(path.join(data_path, diagnosis + '_baseline.tsv'), sep='\t')
             subject = set_df.loc[0, 'participant_id']
             session = set_df.loc[0, 'session_id']
             if options.data_path == 'linear':
@@ -300,21 +298,21 @@ def main(options):
                 transform = MinMaxNormalization()
                 input_pt = transform(input_pt)
 
-            if options.feature_maps:
-
-                for level in range(decoder.level):
-                    feature_maps_extraction(decoder, input_pt, diagnosis_path, input_nii.affine, level)
-
-                    selected_layer = level * int(len(decoder) / decoder.level)
-
-            if options.filters:
-
-                for level in range(decoder.level):
-                    n_filters = decoder.encoder[selected_layer].weight.size(0)
-                    for selected_filter in range(n_filters):
-                        visualization_tool = CNNLayerVisualization(decoder, selected_layer, selected_filter,
-                                                                   (100, 100, 100))
-                        visualization_tool.visualise_layer_without_hooks(diagnosis_path, input_nii.affine)
+            # if options.feature_maps:
+            #
+            #     for level in range(decoder.level):
+            #         feature_maps_extraction(decoder, input_pt, diagnosis_path, input_nii.affine, level)
+            #
+            #         selected_layer = level * int(len(decoder) / decoder.level)
+            #
+            # if options.filters:
+            #
+            #     for level in range(decoder.level):
+            #         n_filters = decoder.encoder[selected_layer].weight.size(0)
+            #         for selected_filter in range(n_filters):
+            #             visualization_tool = CNNLayerVisualization(decoder, selected_layer, selected_filter,
+            #                                                        (100, 100, 100))
+            #             visualization_tool.visualise_layer_without_hooks(diagnosis_path, input_nii.affine)
 
             output_pt = best_decoder(input_pt)
             output_np = output_pt.detach().numpy()[0][0]

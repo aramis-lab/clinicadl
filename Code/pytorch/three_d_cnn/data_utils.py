@@ -11,19 +11,19 @@ from scipy.ndimage.filters import gaussian_filter
 class MRIDataset(Dataset):
     """Dataset of MRI organized in a CAPS folder."""
 
-    def __init__(self, img_dir, data_file, data_path='linear', transform=None):
+    def __init__(self, img_dir, data_file, preprocessing='linear', transform=None):
         """
         Args:
             img_dir (string): Directory of all the images.
             data_file (string): File name of the train/test split file.
-            data_path (string): Defines the path to the data in CAPS
+            preprocessing (string): Defines the path to the data in CAPS
             transform (callable, optional): Optional transform to be applied on a sample.
 
         """
         self.img_dir = img_dir
         self.transform = transform
         self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1, 'unlabeled': -1}
-        self.data_path = data_path
+        self.data_path = preprocessing
 
         # Check the format of the tsv file here
         if isinstance(data_file, str):
@@ -52,11 +52,6 @@ class MRIDataset(Dataset):
             image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
                                    't1', 'preprocessing_dl',
                                    img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
-        elif self.data_path == "dartel":
-            image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
-                                   't1', 'spm', 'dartel', 'group-ADNI-bl',
-                                   img_name + '_' + sess_name + '.pt')
-            raise NotImplementedError("Dartel output has not been computed yet.")
         elif self.data_path == "mni":
             image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
                                    't1', 'spm', 'segmentation', 'normalized_space',

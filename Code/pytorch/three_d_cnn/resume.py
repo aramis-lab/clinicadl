@@ -49,11 +49,7 @@ def correct_model_options(model_options):
 
 
 def parse_model_name(model_path, options):
-    run = model_path.split(os.sep)[-1]
-    if run[:-1] != 'run':
-        raise ValueError("The model path given is not correct it should include the runX folder.")
-
-    model_name = model_path.split(os.sep)[-2]
+    model_name = model_path.split(os.sep)[-1]
     model_options = model_name.split('_')
     model_options = correct_model_options(model_options)
     options.log_dir = os.path.abspath(os.path.join(options.model_path, os.pardir))
@@ -94,17 +90,17 @@ def parse_model_name(model_path, options):
             options.accumulation_steps = int(content)
         elif key == 'eval':
             options.evaluation_steps = int(content)
-        elif key == 'totalsplits':
+        elif key == 'splits':
             options.n_splits = int(content)
         elif key == 'split':
             options.split = int(content)
 
-    return options, run
+    return options
 
 
 def main(options):
 
-    options, run = parse_model_name(options.model_path, options)
+    options = parse_model_name(options.model_path, options)
     print(path.exists(options.model_path))
 
     # Check if model is implemented
@@ -179,7 +175,7 @@ def main(options):
     training_time = time()
     # TODO deal with the run parameter (str 'runX') and modify train accordingly
 
-    train(model, train_loader, valid_loader, criterion, optimizer, run, options)
+    train(model, train_loader, valid_loader, criterion, optimizer, True, options)
     training_time = time() - training_time
 
     # Load best model

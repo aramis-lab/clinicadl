@@ -221,7 +221,7 @@ class Decoder(nn.Module):
         return nn.Sequential(*inv_layers)
 
 
-def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, difference=0):
+def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, fold, difference=0):
     from copy import deepcopy
     from os import path
     import os
@@ -231,14 +231,15 @@ def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, di
     initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_path, difference=difference)
 
     model.features = deepcopy(decoder.encoder)
-    if not path.exists(path.join(model_path, 'pretraining')):
-        os.makedirs(path.join(model_path, "pretraining"))
+    pretraining_path = os.path.join(model_path, 'Best_model_dir', 'ConvAutoencoder', 'Fold_' + str(fold), 'Encoder')
+    if not path.exists(pretraining_path):
+        os.makedirs(pretraining_path)
 
     save_checkpoint({'model': model.state_dict(),
                      'epoch': -1,
                      'path': pretrained_autoencoder_path},
                     False, False,
-                    path.join(model_path, "pretraining"),
+                    pretraining_path,
                     filename='model_pretrained.pth.tar')
 
 
