@@ -24,8 +24,8 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
     from time import time
 
     columns = ['epoch', 'iteration', 'acc_train', 'mean_loss_train', 'acc_valid', 'mean_loss_valid', 'time']
-    log_dir = os.path.join(options.output_dir, 'Log_dir', 'CNN', 'Fold_' + str(options.split))
-    best_model_dir = os.path.join(options.output_dir, 'Best_model_dir', 'CNN', 'Fold_' + str(options.split))
+    log_dir = os.path.join(options.output_dir, 'log_dir', 'CNN', 'fold_' + str(options.split))
+    best_model_dir = os.path.join(options.output_dir, 'best_model_dir', 'CNN', 'fold_' + str(options.split))
     filename = os.path.join(log_dir, 'training.tsv')
 
     if not resume:
@@ -47,7 +47,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
 
     # Create writers
     writer_train = SummaryWriter(os.path.join(log_dir, 'train'))
-    writer_valid = SummaryWriter(os.path.join(log_dir, 'validation'))
+    writer_valid = SummaryWriter(os.path.join(log_dir, 'valid'))
 
     # Initialize variables
     best_valid_accuracy = 0.0
@@ -129,11 +129,10 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
                     mean_loss_valid = total_loss_valid / (len(valid_loader) * valid_loader.batch_size)
                     model.train()
 
-                    # TODO: Use tensorboardX once it is installed on the cluster
-                    # writer_train.add_scalar('balanced_accuracy', acc_mean_train, i + epoch * len(train_loader))
-                    # writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
-                    # writer_valid.add_scalar('balanced_accuracy', acc_mean_valid, i + epoch * len(train_loader))
-                    # writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
+                    writer_train.add_scalar('balanced_accuracy', acc_mean_train, i + epoch * len(train_loader))
+                    writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
+                    writer_valid.add_scalar('balanced_accuracy', acc_mean_valid, i + epoch * len(train_loader))
+                    writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
                     print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
                     print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
@@ -180,7 +179,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
         mean_loss_valid = total_loss_valid / (len(valid_loader) * valid_loader.batch_size)
         model.train()
 
-        # TODO: Use tensorboardX once it is installed on the cluster
         writer_train.add_scalar('balanced_accuracy', acc_mean_train, i + epoch * len(train_loader))
         writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
         writer_valid.add_scalar('balanced_accuracy', acc_mean_valid, i + epoch * len(train_loader))
@@ -410,24 +408,24 @@ def show_plot(points):
     plt.plot(points)
 
 
-def save_checkpoint(state, accuracy_is_best, loss_is_best, checkpoint_dir, filename='Checkpoint.pth.tar',
-                    best_accuracy='Best_acc', best_loss='Best_loss'):
+def save_checkpoint(state, accuracy_is_best, loss_is_best, checkpoint_dir, filename='checkpoint.pth.tar',
+                    best_accuracy='best_acc', best_loss='best_loss'):
 
     torch.save(state, os.path.join(checkpoint_dir, filename))
     if accuracy_is_best:
         best_accuracy_path = os.path.join(checkpoint_dir, best_accuracy)
         if not os.path.exists(best_accuracy_path):
             os.makedirs(best_accuracy_path)
-        shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(best_accuracy_path, 'Model_best.pth.tar'))
+        shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(best_accuracy_path, 'model_best.pth.tar'))
 
     if loss_is_best:
         best_loss_path = os.path.join(checkpoint_dir, best_loss)
         if not os.path.exists(best_loss_path):
             os.makedirs(best_loss_path)
-        shutil.copyfile(os.path.join(checkpoint_dir, filename), os.path.join(best_loss_path, 'Model_best.pth.tar'))
+        shutil.copyfile(os.path.join(checkpoint_dir, filename), os.path.join(best_loss_path, 'model_best.pth.tar'))
 
 
-def load_model(model, checkpoint_dir, filename='Model_best.pth.tar'):
+def load_model(model, checkpoint_dir, filename='model_best.pth.tar'):
     from copy import deepcopy
 
     best_model = deepcopy(model)
@@ -448,8 +446,8 @@ def check_and_clean(d):
 def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, resume, options):
     from tensorboardX import SummaryWriter
 
-    log_dir = os.path.join(options.output_dir, 'Log_dir', 'ConvAutoencoder', 'Fold_' + str(options.split))
-    best_model_dir = os.path.join(options.output_dir, 'Best_model_dir', 'ConvAutoencoder', 'Fold_' + str(options.split))
+    log_dir = os.path.join(options.output_dir, 'log_dir', 'ConvAutoencoder', 'fold_' + str(options.split))
+    best_model_dir = os.path.join(options.output_dir, 'best_model_dir', 'ConvAutoencoder', 'fold_' + str(options.split))
     filename = os.path.join(log_dir, 'training.tsv')
 
     if not resume:
@@ -471,7 +469,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
 
     # Create writers
     writer_train = SummaryWriter(os.path.join(log_dir, 'train'))
-    writer_valid = SummaryWriter(os.path.join(log_dir, 'validation'))
+    writer_valid = SummaryWriter(os.path.join(log_dir, 'valid'))
 
     decoder.train()
     first_visu = True
@@ -711,7 +709,7 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
 
     # Create writers
     writer_train = SummaryWriter(os.path.join(results_path, 'train'))
-    writer_valid = SummaryWriter(os.path.join(results_path, 'validation'))
+    writer_valid = SummaryWriter(os.path.join(results_path, 'valid'))
 
     columns = ['epoch', 'iteration', 'loss_train', 'mean_loss_train', 'loss_valid', 'mean_loss_valid']
     results_df = pd.DataFrame(columns=columns)
@@ -1023,7 +1021,7 @@ def commandline_to_json(commandline, model_type):
 
     # if train_from_stop_point, do not delete the folders
     output_dir = commandline_arg_dic['output_dir']
-    log_dir = os.path.join(output_dir, 'Log_dir', model_type, 'Fold_' + str(commandline_arg_dic['split']))
+    log_dir = os.path.join(output_dir, 'log_dir', model_type, 'fold_' + str(commandline_arg_dic['split']))
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 

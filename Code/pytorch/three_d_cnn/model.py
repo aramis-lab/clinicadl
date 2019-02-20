@@ -231,7 +231,7 @@ def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, fo
     initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_path, difference=difference)
 
     model.features = deepcopy(decoder.encoder)
-    pretraining_path = os.path.join(model_path, 'Best_model_dir', 'ConvAutoencoder', 'Fold_' + str(fold), 'Encoder')
+    pretraining_path = os.path.join(model_path, 'best_model_dir', 'ConvAutoencoder', 'fold_' + str(fold), 'Model')
     if not path.exists(pretraining_path):
         os.makedirs(pretraining_path)
 

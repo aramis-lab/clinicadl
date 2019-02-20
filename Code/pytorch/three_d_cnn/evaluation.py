@@ -61,7 +61,7 @@ if __name__ == "__main__":
             'The model wanted %s has not been implemented in the module model.py' % options.model)
 
     # Loop on all folds trained
-    CNN_dir = os.path.join(options.model_path, 'Best_model_dir', 'CNN')
+    CNN_dir = os.path.join(options.model_path, 'best_model_dir', 'CNN')
     folds_dir = os.listdir(CNN_dir)
     for fold_dir in folds_dir:
         split = int(fold_dir[-1])
@@ -74,14 +74,14 @@ if __name__ == "__main__":
         criterion = torch.nn.CrossEntropyLoss()
 
         if options.selection == 'loss':
-            model_dir = os.path.join(CNN_dir, fold_dir, 'Best_loss')
-            folder_name = 'Best_loss'
+            model_dir = os.path.join(CNN_dir, fold_dir, 'best_loss')
+            folder_name = 'best_loss'
         else:
-            model_dir = os.path.join(CNN_dir, fold_dir, 'Best_acc')
-            folder_name = 'Best_acc'
+            model_dir = os.path.join(CNN_dir, fold_dir, 'best_acc')
+            folder_name = 'best_acc'
 
         best_model, best_epoch = load_model(model, model_dir,
-                                            filename='Model_best.pth.tar')
+                                            filename='model_best.pth.tar')
 
         training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
                                             split, options.n_splits, options.baseline, options.data_path)
@@ -123,7 +123,7 @@ if __name__ == "__main__":
         print("Validation, acc %f, loss %f, sensibility %f, specificity %f"
               % (acc_valid, loss_valid, sen_valid, spe_valid))
 
-        evaluation_path = path.join(options.model_path, 'Performances', fold_dir)
+        evaluation_path = path.join(options.model_path, 'performances', fold_dir)
         if not path.exists(path.join(evaluation_path, folder_name)):
             os.makedirs(path.join(evaluation_path, folder_name))
 
@@ -150,7 +150,7 @@ if __name__ == "__main__":
 
             plt.switch_backend('agg')
 
-            training_df = pd.read_csv(path.join(options.model_path, 'Log_dir', 'CNN', fold_dir, 'training.tsv'), sep='\t')
+            training_df = pd.read_csv(path.join(options.model_path, 'log_dir', 'CNN', fold_dir, 'training.tsv'), sep='\t')
             epochs = training_df.epoch.values
             iterations = training_df.iteration.values
             iterations = iterations / np.max(iterations)

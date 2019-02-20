@@ -158,8 +158,8 @@ def main(options):
 
     else:
         ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, False, options)
-        # best_model_path = path.join(options.output_dir, 'Best_model_dir', 'ConvAutoencoder',
-        #                             'Fold_' + str(options.split), 'Best_loss', 'Model_best.pth.tar')
+        # best_model_path = path.join(options.output_dir, 'best_model_dir', 'ConvAutoencoder',
+        #                             'fold_' + str(options.split), 'best_loss', 'model_best.pth.tar')
         # best_decoder = load_model(decoder, best_model_path)
         #
         # visualize_ae(best_decoder, train_loader, path.join(run_path, "train"), options.gpu)

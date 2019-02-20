@@ -208,13 +208,13 @@ def main(options):
     train(model, train_loader, valid_loader, criterion, optimizer, False, options)
 
     # Load best model
-    best_model_dir = path.join(options.output_dir, 'Best_model_dir', 'CNN', 'Fold_' + str(options.split))
-    best_model, best_epoch = load_model(model, path.join(best_model_dir, 'Best_loss'))
+    best_model_dir = path.join(options.output_dir, 'best_model_dir', 'CNN', 'fold_' + str(options.split))
+    best_model, best_epoch = load_model(model, path.join(best_model_dir, 'best_loss'))
 
     # Get best performance
     acc_mean_train_subject, _ = test(best_model, train_loader, options.gpu, criterion)
     acc_mean_valid_subject, _ = test(best_model, valid_loader, options.gpu, criterion)
-    log_dir = os.path.join(options.output_dir, 'Log_dir', 'CNN', 'Fold_' + str(options.split))
+    log_dir = os.path.join(options.output_dir, 'log_dir', 'CNN', 'fold_' + str(options.split))
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)

@@ -250,13 +250,13 @@ def main(options):
 
     model = eval(options.model)()
     decoder = Decoder(model)
-    best_model_dir = path.join(options.output_dir, 'Best_model_dir', 'ConvAutoencoder', 'Fold_' + str(options.split),
-                               'Best_loss')
+    best_model_dir = path.join(options.output_dir, 'best_model_dir', 'ConvAutoencoder', 'fold_' + str(options.split),
+                               'best_loss')
     best_decoder, _ = load_model(decoder, best_model_dir)
     sets = ['train', 'validation']
 
     for set in sets:
-        set_path = path.join(options.output_dir, "visualization", "Fold_" + str(options.split), set)
+        set_path = path.join(options.output_dir, "visualization", "fold_" + str(options.split), set)
 
         if not path.exists(set_path):
             os.makedirs(set_path)
