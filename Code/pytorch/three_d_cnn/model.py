@@ -134,13 +134,14 @@ def create_model(options):
 
     model = eval(options.model)()
 
-    if options.gpu:  # TODO Check if version 0.4.1 allows loading a model saved on a different device
+    if options.gpu:
         model.cuda()
     else:
         model.cpu()
 
     if options.transfer_learning is not None:
-        model, _ = load_model(model, path.join(options.log_dir, "pretraining"), 'model_pretrained.pth.tar')
+        model, _ = load_model(model, path.join(options.output_dir, "best_model_dir", "ConvAutoencoder",
+                                               "fold_" + str(options.split), "Model"), 'model_pretrained.pth.tar')
 
     return model
 
@@ -228,7 +229,7 @@ def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, fo
     from classification_utils import save_checkpoint
 
     decoder = Decoder(model)
-    initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_path, difference=difference)
+    initialize_other_autoencoder(decoder, pretrained_autoencoder_path, difference=difference)
 
     model.features = deepcopy(decoder.encoder)
     pretraining_path = os.path.join(model_path, 'best_model_dir', 'ConvAutoencoder', 'fold_' + str(fold), 'Model')
@@ -243,10 +244,7 @@ def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, fo
                     filename='model_pretrained.pth.tar')
 
 
-def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_path, difference=0):
-    from os import path
-    import os
-    from classification_utils import save_checkpoint
+def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, difference=0):
 
     result_dict = torch.load(pretrained_autoencoder_path)
     parameters_dict = result_dict['model']
@@ -270,15 +268,6 @@ def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_pat
                 new_key = '.'.join(['decoder', str(number + difference), spec])
                 data_ptr = parameters_dict[new_key]
 
-    if not path.exists(path.join(model_path, 'pretraining')):
-        os.makedirs(path.join(model_path, "pretraining"))
-
-    save_checkpoint({'model': decoder.state_dict(),
-                     'epoch': -1,
-                     'path': pretrained_autoencoder_path},
-                    False, False,
-                    path.join(model_path, "pretraining"),
-                    'model_pretrained.pth.tar')
     return decoder
 
 

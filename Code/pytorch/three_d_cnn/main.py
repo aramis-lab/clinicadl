@@ -220,6 +220,7 @@ def main(options):
     print("Total time of computation: %d s" % total_time)
     text_file = open(path.join(log_dir, 'fold_output.txt'), 'w')
     text_file.write('Loss selection \n')
+    text_file.write('Best loss : %i \n' % best_epoch)
     text_file.write('Time of training: %d s \n' % total_time)
     text_file.write('Training accuracy: %.2f %% \n' % (acc_mean_train_subject * 100))
     text_file.write('Validation accuracy: %.2f %% \n' % (acc_mean_valid_subject * 100))

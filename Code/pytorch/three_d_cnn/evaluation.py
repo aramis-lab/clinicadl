@@ -97,7 +97,7 @@ if __name__ == "__main__":
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
                                   batch_size=options.batch_size,
-                                  shuffle=options.shuffle,
+                                  shuffle=False,
                                   num_workers=options.num_workers,
                                   drop_last=False
                                   )
@@ -143,6 +143,16 @@ if __name__ == "__main__":
 
         train_df.to_csv(path.join(evaluation_path, folder_name, 'train_subject_level_result.tsv'), sep='\t', index=False)
         valid_df.to_csv(path.join(evaluation_path, folder_name, 'valid_subject_level_result.tsv'), sep='\t', index=False)
+
+        # Save all metrics except confusion matrix
+        del metrics_train['confusion_matrix']
+        pd.DataFrame(metrics_train, index=[0]).to_csv(path.join(evaluation_path, folder_name,
+                                                                'train_subject_level_metrics.tsv'),
+                                                      sep='\t', index=False)
+        del metrics_valid['confusion_matrix']
+        pd.DataFrame(metrics_valid, index=[0]).to_csv(path.join(evaluation_path, folder_name,
+                                                                'valid_subject_level_metrics.tsv'),
+                                                      sep='\t', index=False)
 
         # Graphic part
         if options.graphics:
