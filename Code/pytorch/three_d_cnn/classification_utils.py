@@ -335,7 +335,7 @@ def test(model, dataloader, use_cuda, criterion, verbose=False, full_return=Fals
 
         # Generate detailed DataFrame
         for idx, sub in enumerate(data['participant_id']):
-            row = [sub, data['session_id'][idx], predicted[idx].item(), labels[idx].item()]
+            row = [sub, data['session_id'][idx], labels[idx].item(), predicted[idx].item()]
             row_df = pd.DataFrame(np.array(row).reshape(1, -1), columns=columns)
             results_df = pd.concat([results_df, row_df])
 
@@ -356,41 +356,6 @@ def test(model, dataloader, use_cuda, criterion, verbose=False, full_return=Fals
     else:
         predicted_arr = predicted_tensor.numpy().astype(int)
         truth_arr = truth_tensor.numpy().astype(int)
-
-    # # Computation of the balanced accuracy
-    # component = len(np.unique(truth_arr))
-    # cluster_diagnosis_prop = np.zeros(shape=(component, component))
-    # for i, predicted in enumerate(predicted_arr):
-    #     truth = truth_arr[i]
-    #     cluster_diagnosis_prop[predicted, truth] += 1
-    #
-    # acc = 0
-    # sensitivity = np.zeros(component)
-    # specificity = np.zeros(component)
-    # for i in range(component):
-    #     diag_represented = np.argmax(cluster_diagnosis_prop[i])
-    #     acc += cluster_diagnosis_prop[i, diag_represented] / np.sum(cluster_diagnosis_prop.T[diag_represented])
-    #
-    #     # Computation of sensitivity
-    #     sen_array = cluster_diagnosis_prop[i]
-    #     if np.sum(sen_array) == 0:
-    #         sensitivity[diag_represented] = None
-    #     else:
-    #         sensitivity[diag_represented] = sen_array[diag_represented] / np.sum(sen_array) * 100
-    #
-    #     # Computation of specificity
-    #     spe_array = np.delete(cluster_diagnosis_prop, i, 0)
-    #     if np.sum(spe_array) == 0:
-    #         specificity[diag_represented] = None
-    #     else:
-    #         specificity[diag_represented] = (1 - np.sum(spe_array[:, diag_represented]) / np.sum(spe_array)) * 100
-    #
-    # acc = acc * 100 / component
-    # if verbose:
-    #     print('Accuracy of diagnosis: ' + str(acc))
-    #     print('Sensitivity of diagnoses:', sensitivity)
-    #     print('Specificity of diagnoses:', specificity)
-    #
 
     results = evaluate_prediction(truth_arr, predicted_arr)
 
