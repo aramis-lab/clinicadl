@@ -1,0 +1,2 @@
+The image preprocessing for DL specific pipeline will be included in the current repository.
+However, for the image processing pipeline of CLinica-SPM, we use this version of Clinica: 867bdbca9e86ad6581ce68b8c294d3582c49b151

@@ -489,7 +489,7 @@ import torch.nn as nn
 
 class AllConvNet3D(nn.Module):
     """
-    3D version of pytorch implementation of `Striving for Simplicity: The All Convolutional Net` (https://arxiv.org/abs/1412.6806)
+    3D version of classifiers implementation of `Striving for Simplicity: The All Convolutional Net` (https://arxiv.org/abs/1412.6806)
     Ref: `Automated classification of Alzheimer's disease and mild cognitive impairment using a single MRI and deep neural networks`
     """
     def __init__(self, n_classes=2, **kwargs):

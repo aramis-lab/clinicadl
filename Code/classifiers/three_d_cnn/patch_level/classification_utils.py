@@ -1541,7 +1541,7 @@ def load_split_by_diagnosis(options, split, n_splits=5, baseline_or_longitudinal
 
 def extract_patch_from_mri(image_tensor, index_patch, patch_size, stride_size, patchs_per_patient):
 
-    ## use pytorch tensor.upfold to crop the patch.
+    ## use classifiers tensor.upfold to crop the patch.
     patches_tensor = image_tensor.unfold(1, patch_size, stride_size).unfold(2, patch_size, stride_size).unfold(3, patch_size, stride_size).contiguous()
     # the dimension of patch_tensor should be [1, patch_num1, patch_num2, patch_num3, patch_size1, patch_size2, patch_size3]
     patches_tensor = patches_tensor.view(-1, patch_size, patch_size, patch_size)
