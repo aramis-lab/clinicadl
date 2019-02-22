@@ -137,7 +137,7 @@ def extract_patches(preprocessed_T1, patch_size, stride_size):
 
     image_tensor = torch.load(preprocessed_T1)
 
-    ## use pytorch tensor.upfold to crop the patch.
+    ## use classifiers tensor.upfold to crop the patch.
     patches_tensor = image_tensor.unfold(1, patch_size, stride_size).unfold(2, patch_size, stride_size).unfold(3, patch_size, stride_size).contiguous()
     # the dimension of patch_tensor should be [1, patch_num1, patch_num2, patch_num3, patch_size1, patch_size2, patch_size3]
     patches_tensor = patches_tensor.view(-1, patch_size, patch_size, patch_size)
@@ -152,7 +152,7 @@ def extract_patches(preprocessed_T1, patch_size, stride_size):
 
 def save_as_pt(input_img):
     """
-    This function is to transfer nii.gz file into .pt format, in order to train the pytorch model more efficient when loading the data.
+    This function is to transfer nii.gz file into .pt format, in order to train the classifiers model more efficient when loading the data.
     :param input_img:
     :return:
     """

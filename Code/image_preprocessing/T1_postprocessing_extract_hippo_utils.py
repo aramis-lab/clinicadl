@@ -45,7 +45,7 @@ def get_caps_t1(caps_directory, tsv):
 
 def save_as_pt(input_img):
     """
-    This function is to transfer nii.gz file into .pt format, in order to train the pytorch model more efficient when loading the data.
+    This function is to transfer nii.gz file into .pt format, in order to train the classifiers model more efficient when loading the data.
     :param input_img:
     :return:
     """

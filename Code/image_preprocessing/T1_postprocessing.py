@@ -53,7 +53,7 @@ def postprocessing_t1w(caps_directory, tsv, patch_size, stride_size, working_dir
                                    input_names=['caps_directory', 'tsv'],
                                    output_names=['preprocessed_T1']))
 
-    ## save nii.gz into pytorch .pt format.
+    ## save nii.gz into classifiers .pt format.
     save_as_pt = npe.MapNode(name='save_as_pt',
                             iterfield=['input_img'],
                                interface=nutil.Function(

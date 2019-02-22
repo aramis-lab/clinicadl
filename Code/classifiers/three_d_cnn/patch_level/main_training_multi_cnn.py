@@ -2,7 +2,7 @@ import argparse
 from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 from classification_utils import *
-from Code.pytorch.utils import EarlyStopping
+from Code.classifiers.utils import EarlyStopping
 import copy
 from model import *
 import torchvision.transforms as transforms

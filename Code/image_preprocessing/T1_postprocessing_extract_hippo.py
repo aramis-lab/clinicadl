@@ -74,7 +74,7 @@ def postprocessing_t1w_extract_hippo(caps_directory, tsv, working_directory=None
                                                  output_names=['out_file'],
                                                  function=compress_nii), iterfield=['in_file'])
 
-    ## save nii.gz into pytorch .pt format.
+    ## save nii.gz into classifiers .pt format.
     save_as_pt = npe.MapNode(name='save_as_pt',
                              iterfield=['input_img'],
                              interface=nutil.Function(
