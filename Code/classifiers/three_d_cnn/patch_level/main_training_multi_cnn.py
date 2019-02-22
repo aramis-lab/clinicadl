@@ -7,7 +7,7 @@ import copy
 from model import *
 import torchvision.transforms as transforms
 
-__author__ = "Junhao Wen, Elina Thibeausutre"
+__author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
 __credits__ = ["Junhao Wen"]
 __license__ = "See LICENSE.txt file"

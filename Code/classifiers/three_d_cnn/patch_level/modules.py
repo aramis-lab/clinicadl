@@ -1,12 +1,6 @@
 from torch import split
 import torch.nn as nn
 
-
-# class AddingNodes(nn.Module):
-#     def forward(self, input, nodes):
-#         return cat([input, nodes], dim=1)
-
-
 class ExcludingNodes(nn.Module):
     def __init__(self, n_excluded=1):
         super(ExcludingNodes, self).__init__()
@@ -87,19 +81,3 @@ class CropMaxUnpool3d(nn.Module):
 
         return output
 
-
-# class ConvLBP(nn.Conv3d):
-#     """
-#     A 3D convolution layer with fixed binary weights
-#
-#     source: https://github.com/dizcza/lbcnn.pytorch/
-#     """
-#     def __init__(self, in_channels, out_channels, kernel_size=3, sparsity=0.5):
-#         super(ConvLBP).__init__(in_channels, out_channels, kernel_size, padding=1, bias=False)
-#         weights = next(self.parameters())
-#         matrix_proba = torch.FloatTensor(weights.data.shape).fill_(0.5)
-#         binary_weights = torch.bernoulli(matrix_proba) * 2 - 1
-#         mask_inactive = torch.rand(matrix_proba.shape) > sparsity
-#         binary_weights.masked_fill_(mask_inactive, 0)
-#         weights.data = binary_weights
-#         weights.requires_grad = False
