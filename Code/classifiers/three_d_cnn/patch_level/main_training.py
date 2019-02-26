@@ -21,7 +21,7 @@ parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D patch CNN
 ## Data arguments
 parser.add_argument("--caps_directory", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI',
                            help="Path to the caps of image processing pipeline of DL")
-parser.add_argument("--diagnosis_tsv_path", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_diagnosis/test',
+parser.add_argument("--diagnosis_tsv_path", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/Elina_version/data/ADNI/lists_by_diagnosis/train',
                            help="Path to tsv file of the population based on the diagnosis tsv files. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("--output_dir", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/Results/pytorch_ae_conv',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
@@ -37,7 +37,7 @@ parser.add_argument("--num_workers", default=0, type=int,
                     help='the number of batch being loaded in parallel')
 parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["baseline", "longitudinal"],
                     help="Using baseline scans or all available longitudinal scans for training")
-parser.add_argument('--hippocampus_roi', default=False, type=bool,
+parser.add_argument('--hippocampus_roi', default=True, type=bool,
                     help="If train the model using only hippocampus ROI")
 
 # transfer learning
@@ -45,7 +45,7 @@ parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2", 
                     help="Autoencoder network type. (default=Conv_4_FC_2). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
 parser.add_argument("--transfer_learning_autoencoder", default=True, type=bool,
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
-parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,
+parser.add_argument("--diagnoses_list", default=["sMCI", "pMCI"], type=str,
                     help="Labels based on binary classification")
 
 # Training arguments
