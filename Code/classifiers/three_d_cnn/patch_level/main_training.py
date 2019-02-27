@@ -116,8 +116,8 @@ def main(options):
                                                                    'ConvAutoencoder', 'fine_tune', 'Encoder'),
                                                filename='model_best_encoder.pth.tar')
                 print("The AE was saved at %s -th epoch" % str(saved_epoch))
-            elif set(options.diagnoses_list) == set(['pMCI', 'sMCI']):
-                ## Note, should manually create the CNN_source_task folder to move the task like CN vs AD and the target task sMCI vs pMCI will be contained in the folder of CNN
+            else:
+                ## For other taskes, we can always do transfer learning from the task AD vs CN
                 model, saved_epoch = load_model_after_cnn(model, os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi),
                                                                    'CNN_source_task', 'best_acc'),
                                                filename='model_best.pth.tar')
