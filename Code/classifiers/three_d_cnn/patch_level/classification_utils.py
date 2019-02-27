@@ -634,6 +634,23 @@ def load_model_after_ae(model, checkpoint_dir, filename='checkpoint.pth.tar'):
 
     return model_after_ae, param_dict['epoch']
 
+def load_model_after_cnn(model, checkpoint_dir, filename='checkpoint.pth.tar'):
+    """
+
+    :param model:
+    :param checkpoint_dir:
+    :param filename:
+    :return:
+    """
+    from copy import deepcopy
+
+    model.eval()
+    model_updated = deepcopy(model)
+    param_dict = torch.load(os.path.join(checkpoint_dir, filename))
+    model_updated.load_state_dict(param_dict['model'])
+
+    return model_updated, param_dict['epoch']
+
 
 def load_model_from_log(model, optimizer, checkpoint_dir, filename='checkpoint.pth.tar'):
     """
