@@ -16,8 +16,8 @@ stride_size = 50
 #wf.run(plugin='MultiProc', plugin_args={'n_procs': 28})
 
 # for rgb tf learning
-#wf = postprocessing_t1w(caps_directory, tsv, patch_size, stride_size, working_directory=working_dir, extract_method='slice', slice_mode='rgb')
-#wf.run(plugin='MultiProc', plugin_args={'n_procs': 28})
+wf = postprocessing_t1w(caps_directory, tsv, patch_size, stride_size, working_directory=working_dir, extract_method='slice', slice_mode='rgb')
+wf.run(plugin='MultiProc', plugin_args={'n_procs': 28})
 
 ## for patch
 wf = postprocessing_t1w(caps_directory, tsv, patch_size, stride_size, working_directory=working_dir, extract_method='patch')
