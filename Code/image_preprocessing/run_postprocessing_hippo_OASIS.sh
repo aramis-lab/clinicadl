@@ -6,20 +6,21 @@
 #SBATCH --cpus-per-task=28
 #SBATCH --nodes=1
 #SBATCH --workdir=/network/lustre/iss01/home/junhao.wen/working_dir/pytorch
-#SBATCH --output=/network/lustre/iss01/home/junhao.wen/working_dir/pytorch/logs/patch_aibl_%j.out
-#SBATCH --error=/network/lustre/iss01/home/junhao.wen/working_dir/pytorch/logs/patch_aibl_%j.err
+#SBATCH --output=/network/lustre/iss01/home/junhao.wen/working_dir/pytorch/logs/oasis_hippo_%j.out
+#SBATCH --error=/network/lustre/iss01/home/junhao.wen/working_dir/pytorch/logs/oasis_hippo_%j.err
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=junhao.wen@icm-institute.org
-#SBATCH --job-name="patch aibl"
+#SBATCH --job-name="oasis postprocessing extract hippo"
 
 ## Load CUDA and python
 module load python/2.7
 module load CUDA/9.0
-module load FreeSurfer/5.3.0.lua
+module load FreeSurfer/5.3.0
 
+#export CUDA_VISIBLE_DEVICES=0,1
 ## Begin the training
 echo "Begin the image postprocessing:"
-python /network/lustre/iss01/home/junhao.wen/Project/AD-DL/Code/image_preprocessing/run_postprocessing_aibl.py
+python /network/lustre/iss01/home/junhao.wen/Project/AD-DL/Code/image_preprocessing/run_postprocessing_hippo_OASIS.py
 echo "Finish!"
 
 

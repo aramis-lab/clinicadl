@@ -20,7 +20,7 @@ module load clinica.all
 #export CUDA_VISIBLE_DEVICES=0,1
 ## Begin the training
 echo "Begin the image postprocessing:"
-python /network/lustre/iss01/home/junhao.wen/Project/AD-DL/Code/image_preprocessing/run_postprocessing_hippo.py
+python /network/lustre/iss01/home/junhao.wen/Project/AD-DL/Code/image_preprocessing/run_postprocessing_hippo_adni.py
 echo "Finish!"
 
 
