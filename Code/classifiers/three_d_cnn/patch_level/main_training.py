@@ -111,11 +111,17 @@ def main(options):
         print("Train the model from 0 epoch")
 
         if options.transfer_learning_autoencoder:
-            model, saved_epoch = load_model_after_ae(model, os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi),
-                                                               'ConvAutoencoder', 'fine_tune', 'Encoder'),
-                                           filename='model_best_encoder.pth.tar')
-
-            print("The AE was saved at %s -th epoch" % str(saved_epoch))
+            if set(options.diagnoses_list) == set(['AD', 'CN']):
+                model, saved_epoch = load_model_after_ae(model, os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi),
+                                                                   'ConvAutoencoder', 'fine_tune', 'Encoder'),
+                                               filename='model_best_encoder.pth.tar')
+                print("The AE was saved at %s -th epoch" % str(saved_epoch))
+            elif set(options.diagnoses_list) == set(['pMCI', 'sMCI']):
+                ## Note, should manually create the CNN_source_task folder to move the task like CN vs AD and the target task sMCI vs pMCI will be contained in the folder of CNN
+                model, saved_epoch = load_model_after_cnn(model, os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi),
+                                                                   'CNN_source_task', 'best_acc'),
+                                               filename='model_best.pth.tar')
+                print("The CNN was saved at %s -th epoch" % str(saved_epoch))
 
         ## the inital model weight and bias after AE
         init_state = copy.deepcopy(model.state_dict())
