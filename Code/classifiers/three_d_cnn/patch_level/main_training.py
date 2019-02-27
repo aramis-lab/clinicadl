@@ -45,7 +45,8 @@ parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2", 
                     help="Autoencoder network type. (default=Conv_4_FC_2). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
 parser.add_argument("--transfer_learning_autoencoder", default=True, type=bool,
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
-parser.add_argument("--diagnoses_list", default=["sMCI", "pMCI"], type=list,
+## TODO: good way for argparser to have a list as argument
+parser.add_argument("--diagnoses_list", default=["MCI", "CN"], type=list,
                     help="Labels based on binary classification")
 
 # Training arguments
