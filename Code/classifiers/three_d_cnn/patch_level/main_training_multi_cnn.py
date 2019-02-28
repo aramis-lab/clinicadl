@@ -45,7 +45,7 @@ parser.add_argument("--num_cnn", default=36, type=int,
                     help="How many CNNs we want to train in a patch-wise way. By default, we train each patch from all subjects for one CNN")
 parser.add_argument("--transfer_learning_autoencoder", default=True, type=bool,
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
-parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,
+parser.add_argument("--diagnoses_list", default=["sMCI", "pMCI"], type=str,
                     help="Labels based on binary classification")
 
 # Training arguments
@@ -115,11 +115,24 @@ def main(options):
             print("Train the model from 0 epoch")
 
             if options.transfer_learning_autoencoder:
-                model, saved_epoch = load_model_after_ae(model, os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi),
-                                                                   'ConvAutoencoder', 'fine_tune', 'Encoder'),
-                                               filename='model_best_encoder.pth.tar')
-
-                print("The AE was saved at %s -th epoch" % str(saved_epoch))
+                if set(options.diagnoses_list) == set(['AD', 'CN']):
+                    model, saved_epoch = load_model_after_ae(model, os.path.join(options.output_dir, 'best_model_dir',
+                                                                                 "fold_" + str(fi),
+                                                                                 'ConvAutoencoder', 'fine_tune',
+                                                                                 'Encoder'),
+                                                             filename='model_best_encoder.pth.tar')
+                    print("The AE was saved at %s -th epoch" % str(saved_epoch))
+                else:
+                    if not os.path.exists(os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi),
+                                                       'CNN_source_task', 'best_acc')):
+                        raise Exception(
+                            "To make sure that you have manually moved the output folder of the source task to CNN_source_task!")
+                    ## For other taskes, we can always do transfer learning from the task AD vs CN
+                    model, saved_epoch = load_model_after_cnn(model, os.path.join(options.output_dir, 'best_model_dir',
+                                                                                  "fold_" + str(fi),
+                                                                                  'CNN_source_task', 'best_acc'),
+                                                              filename='model_best.pth.tar')
+                    print("The CNN was saved at %s -th epoch" % str(saved_epoch))
 
             ## the inital model weight and bias
             init_state = copy.deepcopy(model.state_dict())

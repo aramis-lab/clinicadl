@@ -118,6 +118,9 @@ def main(options):
                                                filename='model_best_encoder.pth.tar')
                 print("The AE was saved at %s -th epoch" % str(saved_epoch))
             else:
+                if not os.path.exists(os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi),
+                                                                   'CNN_source_task', 'best_acc')):
+                    raise Exception("To make sure that you have manually moved the output folder of the source task to CNN_source_task!")
                 ## For other taskes, we can always do transfer learning from the task AD vs CN
                 model, saved_epoch = load_model_after_cnn(model, os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi),
                                                                    'CNN_source_task', 'best_acc'),
