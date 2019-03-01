@@ -1787,34 +1787,15 @@ def load_model_test(model, checkpoint_dir, filename):
 
     return model_updated, param_dict['global_step'], param_dict['epoch'], param_dict['best_predict']
 
-def multi_cnn_soft_majority_voting(model, output_dir, fi, num_cnn, mode='test'):
+def multi_cnn_soft_majority_voting(output_dir, fi, num_cnn, weight_list, mode='test'):
     """
     This is a function to do soft majority voting based on the num_cnn CNNs' performances
     :param output_dir:
     :param fi:
     :param num_cnn:
     :return:
-
-    ##Note, this should be only used for test acc
     """
-
-    # check the best validation acc for all the CNNs
-    best_acc_cnns = []
     y_hat = []
-
-    for n in range(num_cnn):
-        # load the best trained model during the training
-        _, _, _, best_predict = load_model_test(model, os.path.join(output_dir, 'best_model_dir',
-                                                                                       "fold_" + str(fi), 'cnn-' + str(n), 'best_acc'),
-                                                                          filename='model_best.pth.tar')
-        best_acc_cnns.append(best_predict)
-
-    ## delete the weak classifiers whose acc is smaller than 0.6
-    weight_list = [0 if x < 0.7 else x for x in best_acc_cnns]
-    weight_list = [x / sum(weight_list) for x in weight_list]
-    if all(i == 0 for i in weight_list):
-        raise Exception("The ensemble learning does not really work, all classifiers work bad!")
-
     ## read the validation patch-level results.
     for i in range(num_cnn):
         # load the best trained model during the training
@@ -1825,6 +1806,7 @@ def multi_cnn_soft_majority_voting(model, output_dir, fi, num_cnn, mode='test'):
             df_final['subject'] = df['subject'].apply(extract_subject_name)
             df_final['y'] = df['y']
 
+        ##TODO, this is not correct, this is just the probability of the last epoch of validation
         tsv_path = os.path.join(output_dir, 'performances', "fold_" + str(fi), 'cnn-' + str(i), mode + '_patch_level_result-patch_index.tsv')
         proba_series = pd.io.parsers.read_csv(tsv_path, sep='\t')['probability']
         p0s = []
@@ -1879,3 +1861,23 @@ def multi_cnn_soft_majority_voting(model, output_dir, fi, num_cnn, mode='test'):
 
     metrics_soft_tsv_path = os.path.join(output_dir, 'performances', "fold_" + str(fi), mode + '_subject_level_metrics_soft_vote_multi_cnn.tsv')
     pd.DataFrame(results, index=[0]).to_csv(metrics_soft_tsv_path, index=False, sep='\t', encoding='utf-8')
+
+
+def weight_by_validation_acc(model, options):
+
+    ## get the weight for soft voting system from all validation acc from all N classifiers
+    best_acc_cnns = []
+    for n in range(options.num_cnn):
+        # load the best trained model during the training
+        _, _, _, best_predict = load_model_test(model, os.path.join(options.output_dir, 'best_model_dir',
+                                                                                       "fold_" + str(options.n_fold), 'cnn-' + str(n), options.best_model_criteria),
+                                                                          filename='model_best.pth.tar')
+        best_acc_cnns.append(best_predict)
+
+    ## delete the weak classifiers whose acc is smaller than 0.7
+    weight_list = [0 if x < 0.7 else x for x in best_acc_cnns]
+    weight_list = [x / sum(weight_list) for x in weight_list]
+    if all(i == 0 for i in weight_list):
+        raise Exception("The ensemble learning does not really work, all classifiers work bad!")
+
+    return weight_list
