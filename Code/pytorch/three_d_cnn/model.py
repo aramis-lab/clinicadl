@@ -128,6 +128,28 @@ class Conv5_FC3_mni(nn.Module):
         return x
 
 
+def transfer_from_autoencoder(model_path):
+    import os
+    from resume import correct_model_options
+
+    model_name = model_path.split(os.sep)[-6]
+    model_options = model_name.split('_')
+    model_options = correct_model_options(model_options)
+
+    for option in model_options:
+        option_split = option.split("-")
+        key = option_split[0]
+        if len(option_split) > 2:
+            content = "-".join(option_split[1:])
+        else:
+            content = option_split[1]
+        if key == 'task':
+            if content == 'autoencoder':
+                return True
+            else:
+                return False
+
+
 def create_model(options):
     from classification_utils import load_model
     from os import path
@@ -140,8 +162,12 @@ def create_model(options):
         model.cpu()
 
     if options.transfer_learning is not None:
-        model, _ = load_model(model, path.join(options.output_dir, "best_model_dir", "ConvAutoencoder",
-                                               "fold_" + str(options.split), "Model"), 'model_pretrained.pth.tar')
+        if transfer_from_autoencoder(options.transfer_learning):
+            model, _ = load_model(model, path.join(options.output_dir, "best_model_dir", "ConvAutoencoder",
+                                                   "fold_" + str(options.split), "Model"), 'model_pretrained.pth.tar')
+        else:
+            model, _ = load_model(model, path.join(options.output_dir, "best_model_dir", "CNN",
+                                                   "fold_" + str(options.split)), 'model_pretrained.pth.tar')
 
     return model
 
@@ -239,6 +265,26 @@ def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, fo
     save_checkpoint({'model': model.state_dict(),
                      'epoch': -1,
                      'path': pretrained_autoencoder_path},
+                    False, False,
+                    pretraining_path,
+                    filename='model_pretrained.pth.tar')
+
+
+def apply_pretrained_network_weights(model, pretrained_network_path, model_path, fold):
+    from os import path
+    import os
+    from classification_utils import save_checkpoint
+
+    results = torch.load(pretrained_network_path)
+    model.load_state_dict(results['model'])
+
+    pretraining_path = os.path.join(model_path, 'best_model_dir', 'CNN', 'fold_' + str(fold))
+    if not path.exists(pretraining_path):
+        os.makedirs(pretraining_path)
+
+    save_checkpoint({'model': model.state_dict(),
+                     'epoch': -1,
+                     'path': pretrained_network_path},
                     False, False,
                     pretraining_path,
                     filename='model_pretrained.pth.tar')

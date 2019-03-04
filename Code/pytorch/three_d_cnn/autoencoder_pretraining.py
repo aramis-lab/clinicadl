@@ -145,7 +145,7 @@ def main(options):
                                                          options.transfer_learning_rate)
 
     if options.pretrained_path is not None:
-        decoder = initialize_other_autoencoder(decoder, options.pretrained_path, options.output_dir,
+        decoder = initialize_other_autoencoder(decoder, options.pretrained_path,
                                                difference=options.pretrained_difference)
 
     if options.add_sigmoid:
