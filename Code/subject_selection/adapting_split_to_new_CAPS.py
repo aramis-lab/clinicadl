@@ -22,9 +22,14 @@ def check_baseline_existence(CAPS_path, diagnosis_df, diagnosis, enrich=False):
         session_path = path.join(CAPS_path, 'subjects', subject, session)
         if path.exists(session_path):
             pass
+        elif session == 'ses-M00':
+            session_path_python2 = path.join(subject_path, 'ses-M00-python2')
+            if path.exists(session_path_python2):
+                pass
         elif enrich and path.exists(subject_path) and "pMCI" not in diagnosis:
             baseline_path = path.join(subject_path, 'ses-M00')
-            if path.exists(baseline_path):
+            baseline_path_python2 = path.join(subject_path, 'ses-M00-python2')
+            if path.exists(baseline_path) or path.exists(baseline_path_python2):
                 # This could lead to label errors as pMCI may be sMCI before their baseline sessions
                 results_df.loc[idx, 'session_id'] = 'ses-M00'
         else:
