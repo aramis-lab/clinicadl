@@ -19,7 +19,7 @@ parser.add_argument("model", type=str,
                     help="model selected")
 
 # Data Management
-parser.add_argument("--preprocessing", default="linear", choices=["linear", "dartel", "mni"], type=str,
+parser.add_argument("--preprocessing", default="linear", choices=["linear", "mniskullstrip", "mni"], type=str,
                     help="Defines the path to data in CAPS.")
 parser.add_argument("--diagnoses", "-d", default=['AD', 'CN'], nargs='+', type=str,
                     help="The diagnoses used for the classification")
@@ -108,6 +108,10 @@ def main(options):
     if options.model not in choices:
         raise NotImplementedError('The model wanted %s has not been implemented in the module model.py' % options.model)
 
+    if "mni" in options.preprocessing:
+        options.preprocessing = "mni"
+        print(options.preprocessing)
+
     torch.set_num_threads(options.num_threads)
     if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
@@ -125,9 +129,13 @@ def main(options):
         criterion = torch.nn.MSELoss()
 
         if path.exists(options.transfer_learning):
-            print("A pretrained autoencoder is loaded at path %s" % options.transfer_learning)
-            apply_autoencoder_weights(model, options.transfer_learning, options.output_dir, options.split,
-                                      difference=options.transfer_difference)
+            if transfer_from_autoencoder(options.transfer_learning):
+                print("A pretrained autoencoder is loaded at path %s" % options.transfer_learning)
+                apply_autoencoder_weights(model, options.transfer_learning, options.output_dir, options.split,
+                                          difference=options.transfer_difference)
+            else:
+                print("A pretrained model is loaded at path %s" % options.transfer_learning)
+                apply_pretrained_network_weights(model, options.transfer_learning, options.output_dir, options.split)
 
         else:
             if options.transfer_learning_diagnoses is None:
@@ -162,6 +170,7 @@ def main(options):
     text_file.close()
 
     # Get the data.
+    # TODO: here check if there is everything in the SPM folder
     training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
                                         options.split, options.n_splits, options.baseline, options.preprocessing)
     # training_tsv.to_csv("/network/lustre/iss01/home/elina.thibeausutre/debug/train_linear.tsv", sep='\t', index=False)

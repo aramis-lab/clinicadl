@@ -18,7 +18,8 @@ parser.add_argument("input_dir", type=str,
                     help="Path to input dir of the MRI (preprocessed CAPS_dir).")
 
 # Data Management
-parser.add_argument("--data_path", default="linear", choices=["linear", "dartel", "mni"], type=str,
+parser.add_argument("--diagnoses", default=None, type=str, nargs='+')
+parser.add_argument("--preprocessing", default="linear", choices=["linear", "dartel", "mni"], type=str,
                     help="Defines the path to data in CAPS.")
 parser.add_argument("--selection", default="loss", type=str, choices=['loss', 'accuracy'],
                     help="Loads the model selected on minimal loss or maximum accuracy on validation.")
@@ -84,15 +85,15 @@ if __name__ == "__main__":
                                             filename='model_best.pth.tar')
 
         training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
-                                            split, options.n_splits, options.baseline, options.data_path)
+                                            split, options.n_splits, options.baseline, options.preprocessing)
 
         if options.minmaxnormalization:
             transformations = MinMaxNormalization()
         else:
             transformations = None
 
-        data_train = MRIDataset(options.input_dir, training_tsv, options.data_path, transform=transformations)
-        data_valid = MRIDataset(options.input_dir, valid_tsv, options.data_path, transform=transformations)
+        data_train = MRIDataset(options.input_dir, training_tsv, options.preprocessing, transform=transformations)
+        data_valid = MRIDataset(options.input_dir, valid_tsv, options.preprocessing, transform=transformations)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
