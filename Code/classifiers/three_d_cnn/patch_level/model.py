@@ -16,14 +16,14 @@ __status__ = "Development"
 ### Model for autoencoder pretraining
 ###########################################################
 
-class Conv_4_FC_2(nn.Module):
+class Conv_4_FC_3(nn.Module):
     """
        This network is the implementation of this paper:
        'Multi-modality cascaded convolutional neural networks for Alzheimer's Disease diagnosis'
        """
 
     def __init__(self, dropout=0, n_classes=2):
-        super(Conv_4_FC_2, self).__init__()
+        super(Conv_4_FC_3, self).__init__()
 
         self.features = nn.Sequential(
             # Convolutions

@@ -40,8 +40,8 @@ parser.add_argument('--hippocampus_roi', default=False, type=bool,
                     help="If train the model using only hippocampus ROI")
 
 # Training arguments
-parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2", "Conv_7_FC_2", "Conv_3_FC_2"],
-                    help="Autoencoder network type. (default=Conv_4_FC_2)")
+parser.add_argument("--network", default="Conv_4_FC_3", choices=["Conv_4_FC_3", "Conv_7_FC_2", "Conv_3_FC_2"],
+                    help="Autoencoder network type. (default=Conv_4_FC_3)")
 parser.add_argument("--ae_training_method", default="stacked_ae", choices=["layer_wise_ae", "stacked_ae"],
                     help="How to train the autoencoder, layer wise or train all AEs together")
 parser.add_argument("--diagnoses_list", default=["AD", "CN", "MCI"], type=str,

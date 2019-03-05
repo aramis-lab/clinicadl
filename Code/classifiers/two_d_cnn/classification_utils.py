@@ -1,7 +1,6 @@
 import torch
 from torch.utils.data import Dataset
 import os, shutil
-from skimage.transform import resize
 from os import path
 import pandas as pd
 import numpy as np
@@ -762,38 +761,6 @@ def extract_slice_from_mri(image_path, index_slice, view, transfer_learning):
         extracted_slice = torch.stack((slice_select, slice_select, slice_select)) ## shape should be 3 * W * L
 
     return extracted_slice
-
-class CustomResize(object):
-    def __init__(self, trg_size):
-        self.trg_size = trg_size
-
-    def __call__(self, img):
-        resized_img = self.resize_image(img, self.trg_size)
-        return resized_img
-
-    def resize_image(self, img_array, trg_size):
-        res = resize(img_array, trg_size, mode='reflect', preserve_range=True, anti_aliasing=False)
-        res = res.astype('uint8')
-        # type check
-        if type(res) != np.ndarray:
-            raise "type error!"
-
-        # PIL image cannot handle 3D image, only return ndarray type, which ToTensor accepts
-        return res
-
-
-class CustomToTensor(object):
-    def __init__(self):
-        pass
-
-    def __call__(self, pic):
-        if isinstance(pic, np.ndarray):
-            ## to torch.float32
-            img = torch.from_numpy(pic.transpose((2, 0, 1))).float()
-
-            # Pytorch does not work with int type. Here, it just change the visualization, the value itself does not change.
-            # return img.float()
-            return img
 
 def evaluate_prediction(y, y_hat):
 
