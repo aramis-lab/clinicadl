@@ -19,7 +19,7 @@ parser.add_argument("input_dir", type=str,
 
 # Data Management
 parser.add_argument("--diagnoses", default=None, type=str, nargs='+')
-parser.add_argument("--preprocessing", default="linear", choices=["linear", "dartel", "mni"], type=str,
+parser.add_argument("--preprocessing", default="linear", choices=["linear", "mniskullstrip", "mni"], type=str,
                     help="Defines the path to data in CAPS.")
 parser.add_argument("--selection", default="loss", type=str, choices=['loss', 'accuracy'],
                     help="Loads the model selected on minimal loss or maximum accuracy on validation.")
@@ -60,6 +60,10 @@ if __name__ == "__main__":
     if options.model not in choices:
         raise NotImplementedError(
             'The model wanted %s has not been implemented in the module model.py' % options.model)
+
+    if "mni" in options.preprocessing:
+        options.preprocessing = "mni"
+        print(options.preprocessing)
 
     # Loop on all folds trained
     CNN_dir = os.path.join(options.model_path, 'best_model_dir', 'CNN')
