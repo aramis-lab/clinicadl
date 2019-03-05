@@ -20,12 +20,12 @@ parser.add_argument("--caps_directory", default='/network/lustre/dtlake01/aramis
 parser.add_argument("--diagnosis_tsv_folder", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_diagnosis/train',
                            help="Path to tsv file of the population based on the diagnosis tsv files. To note, the column name should be participant_id, session_id and diagnosis.")
 
-parser.add_argument("--output_dir", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/AD_CN/SVM_results/longitudinal',
+parser.add_argument("--output_dir", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/sMCI_pMCI/SVM_results/from_scratch/baseline',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument('--baseline_or_longitudinal', default="longitudinal", choices=["baseline", "longitudinal"],
+parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["baseline", "longitudinal"],
                     help="Using baseline scans or all available longitudinal scans for training")
 
-parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,
+parser.add_argument("--diagnoses_list", default=["sMCI", "pMCI"], type=str,
                     help="Labels for any binary task")
 
 parser.add_argument("--n_splits", default=5, type=int,
@@ -33,7 +33,7 @@ parser.add_argument("--n_splits", default=5, type=int,
 parser.add_argument("--group_id", default='ADNIbl', type=str,
                     help='The group ID of your image processing pipeline of Clinica SPM')
 
-parser.add_argument("--num_workers", default=72, type=int,
+parser.add_argument("--num_workers", default=8, type=int,
                     help='the number of cpus to put to run the classification')
 
 def main(options):

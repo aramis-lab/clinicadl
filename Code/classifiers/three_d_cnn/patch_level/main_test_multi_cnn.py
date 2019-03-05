@@ -4,12 +4,7 @@ from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 from classification_utils import *
 from model import *
-import copy
-from time import time
 import os
-from classification_utils import load_model_test, extract_subject_name, evaluate_prediction
-from model import Conv_4_FC_2
-import pandas as pd
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -25,9 +20,9 @@ parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D patch-lev
 ## data argument
 parser.add_argument("--caps_directory", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI',
                            help="Path to the caps of image processing pipeline of DL")
-parser.add_argument("--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_task/test/AD_vs_CN_baseline_test.tsv',
+parser.add_argument("--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/Elina_version/data/ADNI/lists_by_task/test/AD_vs_CN_baseline.tsv',
                            help="Path to the tsv containing all the test dataset")
-parser.add_argument("--output_dir", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/AD_CN/3d_patch/AD_CN/longitudinal/final_results/pytorch_AE_Conv_4_FC_2_bs32_lr_e5_only_finetuning_epoch20_ps_50_ss_50_baseline_all_patch_backup_multiCNN',
+parser.add_argument("--output_dir", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/AD_CN/3d_patch/AD_CN/longitudinal/final_results/pytorch_AE_Conv_4_FC_3_bs32_lr_e5_only_finetuning_epoch20_ps_50_ss_50_baseline_all_patch_backup_multiCNN',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 parser.add_argument("--data_type", default="from_patch", choices=["from_MRI", "from_patch"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
@@ -37,15 +32,15 @@ parser.add_argument("--patch_size", default=50, type=int,
                     help="The patch size extracted from the MRI")
 parser.add_argument("--patch_stride", default=50, type=int,
                     help="The stride for the patch extract window from the MRI")
-parser.add_argument("--batch_size", default=1, type=int,
+parser.add_argument("--batch_size", default=32, type=int,
                     help="Batch size for training. (default=1)")
-parser.add_argument("--num_workers", default=0, type=int,
+parser.add_argument("--num_workers", default=8, type=int,
                     help='the number of batch being loaded in parallel')
 
 ## train argument
 # transfer learning
-parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2", "Conv_7_FC_2", "Conv_3_FC_2"],
-                    help="Autoencoder network type. (default=Conv_4_FC_2). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
+parser.add_argument("--network", default="Conv_4_FC_3", choices=["Conv_4_FC_3", "Conv_7_FC_2", "Conv_3_FC_2"],
+                    help="Autoencoder network type. (default=Conv_4_FC_3). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
 parser.add_argument("--num_cnn", default=36, type=int,
                     help="How many CNNs we want to train in a patch-wise way. By default, we train each patch from all subjects for one CNN")
 parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,

@@ -41,8 +41,8 @@ parser.add_argument('--hippocampus_roi', default=False, type=bool,
                     help="If train the model using only hippocampus ROI")
 
 # transfer learning
-parser.add_argument("--network", default="Conv_4_FC_2", choices=["Conv_4_FC_2", "Conv_7_FC_2", "Conv_3_FC_2"],
-                    help="Autoencoder network type. (default=Conv_4_FC_2). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
+parser.add_argument("--network", default="Conv_4_FC_3", choices=["Conv_4_FC_3", "Conv_7_FC_2", "Conv_3_FC_2"],
+                    help="Autoencoder network type. (default=Conv_4_FC_3). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
 parser.add_argument("--transfer_learning_autoencoder", default=True, type=bool,
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
 ## TODO: good way for argparser to have a list as argument
