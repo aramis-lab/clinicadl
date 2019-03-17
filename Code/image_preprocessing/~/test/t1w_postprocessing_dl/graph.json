@@ -1,0 +1,24 @@
+[
+    {
+        "group": 1,
+        "imports": [],
+        "name": "0_get_subject_session_list",
+        "size": 1
+    },
+    {
+        "group": 1,
+        "imports": [
+            "0_get_subject_session_list"
+        ],
+        "name": "1_save_as_pt",
+        "size": 1
+    },
+    {
+        "group": 1,
+        "imports": [
+            "1_save_as_pt"
+        ],
+        "name": "2_extract_slices",
+        "size": 1
+    }
+]

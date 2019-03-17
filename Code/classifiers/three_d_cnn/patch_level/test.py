@@ -99,8 +99,8 @@ def multi_cnn_soft_majority_voting(model, output_dir, fi, num_cnn, mode='test'):
 
 
 model = eval('Conv_4_FC_3')()
-output_dir = '/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/sMCI_pMCI/patch_level/pytorch_AE_Conv_4_FC_3_bs4_lr_e5_only_finetuning_epoch100_longitudinal_hippocampus50_es10_longCNN'
+output_dir = '/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/sMCI_pMCI/patch_level/pytorch_AE_Conv_4_FC_2_bs4_lr_e5_only_finetuning_epoch100_longitudinal_hippocampus50_es10_longCNN'
 num_cnn = 36
-fi = 4
+fi = 0
 multi_cnn_soft_majority_voting(model, output_dir, fi, num_cnn, mode='validation')
 

@@ -1,0 +1,13 @@
+[
+    [
+        "function_str",
+        "def save_as_pt(input_img):\n    \"\"\"\n    This function is to transfer nii.gz file into .pt format, in order to train the classifiers model more efficient when loading the data.\n    :param input_img:\n    :return:\n    \"\"\"\n\n    import torch, os\n    import nibabel as nib\n\n    image_array = nib.load(input_img).get_fdata()\n    image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()\n    ## make sure the tensor dtype is torch.float32\n    output_file = os.path.join(os.path.dirname(input_img), input_img.split('.nii.gz')[0] + '.pt')\n    # save\n    torch.save(image_tensor, output_file)\n\n    return output_file\n"
+    ],
+    [
+        "input_img",
+        [
+            "/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI_CAPS_test/subjects/sub-ADNI002S0619/ses-M00/t1/preprocessing_dl/sub-ADNI002S0619_ses-M00_space-MNI_res-1x1x1.nii.gz",
+            "b2befcf86c1f860ea99e6d5947d111a7"
+        ]
+    ]
+]

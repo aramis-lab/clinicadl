@@ -17,12 +17,12 @@ parser = argparse.ArgumentParser(description="Argparser for SVM")
 ## data argument
 parser.add_argument("--caps_directory", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI_clinica_spm',
                            help="Path to the caps Clinica SPM CAPS")
-parser.add_argument("--diagnosis_tsv_folder", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_diagnosis/train',
+parser.add_argument("--diagnosis_tsv_folder", default='/network/lustre/iss01/home/junhao.wen/Project/AD-DL/tsv_files/tsv_after_data_splits/Elina_version/data/ADNI/lists_by_diagnosis/train',
                            help="Path to tsv file of the population based on the diagnosis tsv files. To note, the column name should be participant_id, session_id and diagnosis.")
 
-parser.add_argument("--output_dir", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/sMCI_pMCI/SVM_results/from_scratch/baseline',
+parser.add_argument("--output_dir", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/sMCI_pMCI/SVM_results/from_scratch/longitudinal',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["baseline", "longitudinal"],
+parser.add_argument('--baseline_or_longitudinal', default="longitudinal", choices=["baseline", "longitudinal"],
                     help="Using baseline scans or all available longitudinal scans for training")
 
 parser.add_argument("--diagnoses_list", default=["sMCI", "pMCI"], type=str,
