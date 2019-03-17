@@ -58,7 +58,7 @@ def save_as_pt(input_img):
     ## make sure the tensor dtype is torch.float32
     output_file = os.path.join(os.path.dirname(input_img), input_img.split('.nii')[0] + '.pt')
     # save
-    torch.save(image_tensor, output_file)
+    torch.save(image_tensor.clone(), output_file)
 
     return output_file
 

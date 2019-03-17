@@ -71,10 +71,10 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
             # save into .pt format
             if slice_mode == 'original':
                 output_file_original = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-sag_originalslice-' + str(index_slice) + '.pt')
-                torch.save(extracted_slice_original_sag, output_file_original)
+                torch.save(extracted_slice_original_sag.clone(), output_file_original)
             elif slice_mode == 'rgb':
                 output_file_rgb = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-sag_rgbslice-' + str(index_slice) + '.pt')
-                torch.save(extracted_slice_rgb_sag, output_file_rgb)
+                torch.save(extracted_slice_rgb_sag.clone(), output_file_rgb)
 
     elif slice_direction == 1:
         ## cornal
@@ -95,10 +95,10 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
             # save into .pt format
             if slice_mode == 'original':
                 output_file_original = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-cor_originalslice-' + str(index_slice) + '.pt')
-                torch.save(extracted_slice_original_cor, output_file_original)
+                torch.save(extracted_slice_original_cor.clone(), output_file_original)
             elif slice_mode == 'rgb':
                 output_file_rgb = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-cor_rgblslice-' + str(index_slice) + '.pt')
-                torch.save(extracted_slice_rgb_cor, output_file_rgb)
+                torch.save(extracted_slice_rgb_cor.clone(), output_file_rgb)
 
     else:
 
@@ -120,10 +120,10 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
             # save into .pt format
             if slice_mode == 'original':
                 output_file_original = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-axi_originalslice-' + str(index_slice) + '.pt')
-                torch.save(extracted_slice_original_axi, output_file_original)
+                torch.save(extracted_slice_original_axi.clone(), output_file_original)
             elif slice_mode == 'rgb':
                 output_file_rgb = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-axi_rgblslice-' + str(index_slice) + '.pt')
-                torch.save(extracted_slice_rgb_axi, output_file_rgb)
+                torch.save(extracted_slice_rgb_axi.clone(), output_file_rgb)
 
     return preprocessed_T1
 
@@ -146,7 +146,7 @@ def extract_patches(preprocessed_T1, patch_size, stride_size):
         extracted_patch = patches_tensor[index_patch, ...].unsqueeze_(0) ## add one dimension
         # save into .pt format
         output_patch = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_patchsize-' + str(patch_size) + '_stride-' + str(stride_size) + '_patch-' + str(index_patch) + '.pt')
-        torch.save(extracted_patch, output_patch)
+        torch.save(extracted_patch.clone(), output_patch)
 
     return preprocessed_T1
 
@@ -165,6 +165,6 @@ def save_as_pt(input_img):
     ## make sure the tensor dtype is torch.float32
     output_file = os.path.join(os.path.dirname(input_img), input_img.split('.nii.gz')[0] + '.pt')
     # save
-    torch.save(image_tensor, output_file)
+    torch.save(image_tensor.clone(), output_file)
 
     return output_file
