@@ -23,8 +23,6 @@ parser.add_argument("--preprocessing", default="linear", choices=["linear", "mni
                     help="Defines the path to data in CAPS.")
 parser.add_argument("--selection", default="loss", type=str, choices=['loss', 'accuracy'],
                     help="Loads the model selected on minimal loss or maximum accuracy on validation.")
-parser.add_argument("--diagnoses", "-d", default=["AD", "CN"], nargs='+', type=str,
-                    help="Take all the subjects possible for autoencoder training")
 parser.add_argument("--baseline", default=False, action="store_true",
                     help="Use only baseline data instead of all scans available")
 parser.add_argument("--shuffle", default=True, type=bool,
@@ -35,6 +33,8 @@ parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_
                     help="Performs MinMaxNormalization for visualization")
 parser.add_argument("--graphics", action="store_true", default=False,
                     help="Plot graphics.")
+parser.add_argument("--position", default=-1, type=int,
+                    help="position of the name in the string given for evaluation.")
 
 # Computational ressources
 parser.add_argument("--num_workers", '-w', default=8, type=int,
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     if ret[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
 
-    options = parse_model_name(options.model_path, options)
+    options = parse_model_name(options.model_path, options, position=options.position)
     # Check if model is implemented
     import model
     import inspect

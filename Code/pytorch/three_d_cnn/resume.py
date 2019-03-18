@@ -48,8 +48,8 @@ def correct_model_options(model_options):
     return corrected_options
 
 
-def parse_model_name(model_path, options):
-    model_name = model_path.split(os.sep)[-1]
+def parse_model_name(model_path, options, position=-1):
+    model_name = model_path.split(os.sep)[position]
     model_options = model_name.split('_')
     model_options = correct_model_options(model_options)
     options.log_dir = os.path.abspath(os.path.join(options.model_path, os.pardir))
