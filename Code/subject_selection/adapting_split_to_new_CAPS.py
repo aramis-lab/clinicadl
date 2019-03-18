@@ -65,7 +65,7 @@ if __name__ == "__main__":
         for split in range(args.n_splits):
             split_path = path.join(args.data_path, 'split-' + str(split))
             diagnoses = os.listdir(split_path)
-            diagnoses = [x for x in diagnoses if x.endswith('_baseline.tsv')]
+            diagnoses = [x for x in diagnoses if x.endswith('.tsv')]
 
             result_path = path.join(split_path, 'SPM')
             if not path.exists(result_path):
@@ -74,13 +74,16 @@ if __name__ == "__main__":
             for diagnosis in diagnoses:
                 diagnosis_path = path.join(split_path, diagnosis)
                 diagnosis_df = pd.read_csv(diagnosis_path, sep='\t')
-                result_df = check_baseline_existence(args.CAPS_path, diagnosis_df, diagnosis, args.enrich)
+                if diagnosis.endswith('_baseline.tsv'):
+                    result_df = check_baseline_existence(args.CAPS_path, diagnosis_df, diagnosis, args.enrich)
+                else:
+                    result_df = check_baseline_existence(args.CAPS_path, diagnosis_df, diagnosis, False)
                 result_df.to_csv(path.join(result_path, diagnosis), sep='\t', index=False)
                 print(diagnosis, str(len(result_df)) + '/' + str(len(diagnosis_df)))
 
     else:
         diagnoses = os.listdir(args.data_path)
-        diagnoses = [x for x in diagnoses if x.endswith('_baseline.tsv')]
+        diagnoses = [x for x in diagnoses if x.endswith('.tsv')]
 
         result_path = path.join(args.data_path, 'SPM')
         if not path.exists(result_path):
