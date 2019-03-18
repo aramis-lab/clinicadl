@@ -25,7 +25,7 @@ parser.add_argument("--pretrained_difference", "-d", type=int, default=0,
                          "If the new one is larger, difference will be positive.")
 
 # Data Management
-parser.add_argument("--preprocessing", default="linear", choices=["linear", "dartel", "mni"], type=str,
+parser.add_argument("--preprocessing", default="linear", choices=["linear", "mniskullstrip", "mni"], type=str,
                     help="Defines the path to data in CAPS.")
 parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
@@ -99,6 +99,10 @@ def main(options):
 
     options.transfer_learning_rate = options.learning_rate
     options.transfer_learning_epochs = options.epochs
+
+    if "mni" in options.preprocessing:
+        options.preprocessing = "mni"
+        print(options.preprocessing)
 
     torch.set_num_threads(options.num_threads)
     if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
