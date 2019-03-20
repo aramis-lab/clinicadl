@@ -13,6 +13,7 @@ from multiprocessing.pool import ThreadPool
 from os import path
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
+import nibabel as nib
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -243,7 +244,7 @@ class KFoldCV(base.MLValidation):
 
         if splits_indices is None:
             skf = StratifiedKFold(n_splits=n_folds, shuffle=True, )
-            self._cv = list(splits.split(np.zeros(len(y)), y))
+            self._cv = list(skf.split(np.zeros(len(y)), y))
         else:
             self._cv = splits_indices
 
@@ -410,3 +411,119 @@ def extract_indices_from_5_fold(diagnosis_tsv_folder, n_splits, baseline_or_long
         splits_indices.append(index_tuple)
 
     return splits_indices, all_tsv
+
+
+def load_data(image_list, mask=True):
+    """
+
+    Args:
+        image_list:
+        mask:
+
+    Returns:
+
+    """
+    data = None
+    shape = None
+    data_mask = None
+    first = True
+
+    for i in range(len(image_list)):
+        subj = nib.load(image_list[i])
+        subj_data = np.nan_to_num(subj.get_data().flatten())
+
+        # Memory allocation for ndarray containing all data to avoid copying the array for each new subject
+        if first:
+            data = np.ndarray(shape=(len(image_list), subj_data.shape[0]), dtype=float, order='C')
+            shape = subj.get_data().shape
+            first = False
+
+        data[i, :] = subj_data
+
+    if mask:
+        data_mask = (data != 0).sum(axis=0) != 0
+        data = data[:, data_mask]
+
+    return data, shape, data_mask
+
+def revert_mask(weights, mask, shape):
+    """
+
+    Args:
+        weights:
+        mask:
+        shape:
+
+    Returns:
+
+    """
+
+    z = np.zeros(np.prod(shape))
+    z[mask] = weights
+
+    new_weights = np.reshape(z, shape)
+
+    return new_weights
+
+def evaluate_prediction(y, y_hat):
+
+    true_positive = 0.0
+    true_negative = 0.0
+    false_positive = 0.0
+    false_negative = 0.0
+
+    tp = []
+    tn = []
+    fp = []
+    fn = []
+
+    for i in range(len(y)):
+        if y[i] == 1:
+            if y_hat[i] == 1:
+                true_positive += 1
+                tp.append(i)
+            else:
+                false_negative += 1
+                fn.append(i)
+        else:  # -1
+            if y_hat[i] == 0:
+                true_negative += 1
+                tn.append(i)
+            else:
+                false_positive += 1
+                fp.append(i)
+
+    accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
+
+    if (true_positive + false_negative) != 0:
+        sensitivity = true_positive / (true_positive + false_negative)
+    else:
+        sensitivity = 0.0
+
+    if (false_positive + true_negative) != 0:
+        specificity = true_negative / (false_positive + true_negative)
+    else:
+        specificity = 0.0
+
+    if (true_positive + false_positive) != 0:
+        ppv = true_positive / (true_positive + false_positive)
+    else:
+        ppv = 0.0
+
+    if (true_negative + false_negative) != 0:
+        npv = true_negative / (true_negative + false_negative)
+    else:
+        npv = 0.0
+
+    balanced_accuracy = (sensitivity + specificity) / 2
+
+    results = {'accuracy': accuracy,
+               'balanced_accuracy': balanced_accuracy,
+               'sensitivity': sensitivity,
+               'specificity': specificity,
+               'ppv': ppv,
+               'npv': npv,
+               'confusion_matrix': {'tp': len(tp), 'tn': len(tn), 'fp': len(fp), 'fn': len(fn)}
+               }
+
+    return results

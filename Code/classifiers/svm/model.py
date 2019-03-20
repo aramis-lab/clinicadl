@@ -1,6 +1,3 @@
-import os
-from os import path
-import numpy as np
 from classification_utils import *
 from clinica.pipelines.machine_learning import base, algorithm, validation
 
