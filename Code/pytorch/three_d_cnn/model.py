@@ -132,7 +132,13 @@ def transfer_from_autoencoder(model_path):
     import os
     from resume import correct_model_options
 
-    model_name = model_path.split(os.sep)[-6]
+    # Find model name in path string
+    model_name = None
+    model_elements = model_path.split(os.sep)
+    for model_element in model_elements:
+        if "model-" in model_element:
+            model_name = model_element
+
     model_options = model_name.split('_')
     model_options = correct_model_options(model_options)
 
