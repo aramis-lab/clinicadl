@@ -31,7 +31,8 @@ def preprocessing_t1w(bids_directory, caps_directory, tsv, ref_template, working
     import nipype.interfaces.utility as nutil
     import nipype.pipeline.engine as npe
     import tempfile
-    from T1_preprocessing_utils import get_subid_sesid_datasink, bids_datagrabber_t1w, crop_nifti, rename_file, ants_registration_syn_quick, ants_histogram_intensity_normalization, save_as_pt
+    from T1_preprocessing_utils import get_subid_sesid_datasink, bids_datagrabber_t1w, crop_nifti, rename_file, ants_registration_syn_quick, ants_histogram_intensity_normalization 
+    from T1_postprocessing_extract_hippo_utils import save_as_pt
     from clinica.pipelines.engine import get_subject_session_list
 
     if working_directory is None:
