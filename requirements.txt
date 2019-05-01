@@ -5,6 +5,6 @@
 
 #nipype==0.12.1
 nilearn==0.3.1
-pytorch==1.0.0
-tensorflow==1.4.1
-#nipy==nipy-0.4.2
+#pytorch==1.0.0
+#tensorflow==1.4.1
+nipy==0.4.2
