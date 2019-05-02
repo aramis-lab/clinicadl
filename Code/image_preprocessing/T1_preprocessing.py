@@ -136,7 +136,7 @@ def preprocessing_t1w(bids_directory,
             nutil.IdentityInterface(
                 fields=[
                     'out_file_inn', 'out_file_crop', 
-                    'out_file_reg', 'out_pt'
+                    'out_file_reg'
                     ]
                 ),
             name='outputnode'
@@ -161,13 +161,13 @@ def preprocessing_t1w(bids_directory,
     datasink = npe.MapNode(
             nio.DataSink(infields=[
                 'out_file_inn', 'out_file_crop', 
-                'out_file_reg', 'out_pt'
+                'out_file_reg'
                 ]
                 ), 
             name='datasinker',
             iterfield=[
                 'out_file_inn', 'out_file_crop', 'out_file_reg', 
-                'out_pt', 'base_directory', 'substitutions', 
+                'base_directory', 'substitutions', 
                 'regexp_substitutions'
                 ]
             )
