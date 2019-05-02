@@ -26,4 +26,5 @@ crash*
 .pytest_cache/
 test/data
 
-
+# Notebook jupyter
+.ipynb_checkpoints/
