@@ -177,45 +177,45 @@ def preprocessing_t1w(bids_directory,
     wf.base_dir = working_directory
 
     wf.connect([
-                (inputnode, get_subject_session_list, [('bids_directory', 'input_dir')]),
-                (inputnode, get_subject_session_list, [('tsv', 'ss_file')]),
+        (inputnode, get_subject_session_list, [('bids_directory', 'input_dir')]),
+        (inputnode, get_subject_session_list, [('tsv', 'ss_file')]),
 
-                (inputnode, datagrabbernode, [('bids_directory', 'input_dir')]),
-                (get_subject_session_list, datagrabbernode, [('subjects', 'subject_list')]),
-                (get_subject_session_list, datagrabbernode, [('sessions', 'session_list')]),
+        (inputnode, datagrabbernode, [('bids_directory', 'input_dir')]),
+        (get_subject_session_list, datagrabbernode, [('subjects', 'subject_list')]),
+        (get_subject_session_list, datagrabbernode, [('sessions', 'session_list')]),
 
-                (get_subject_session_list, rename_file, [('subjects', 'subject')]),
-                (get_subject_session_list, rename_file, [('sessions', 'session')]),
+        (get_subject_session_list, rename_file, [('subjects', 'subject')]),
+        (get_subject_session_list, rename_file, [('sessions', 'session')]),
 
-                (datagrabbernode, n4biascorrection, [('anat_t1', 'input_image')]),
-                (rename_file, n4biascorrection, [('output_file_name', 'output_image')]),
+        (datagrabbernode, n4biascorrection, [('anat_t1', 'input_image')]),
+        (rename_file, n4biascorrection, [('output_file_name', 'output_image')]),
 
-                (n4biascorrection, antsRegistrationSyNQuick, [('output_image', 'moving_image')]),
-                (get_subject_session_list, antsRegistrationSyNQuick, [('subjects', 'participant_id')]),
-                (get_subject_session_list, antsRegistrationSyNQuick, [('sessions', 'session_id')]),
+        (n4biascorrection, antsRegistrationSyNQuick, [('output_image', 'moving_image')]),
+        (get_subject_session_list, antsRegistrationSyNQuick, [('subjects', 'participant_id')]),
+        (get_subject_session_list, antsRegistrationSyNQuick, [('sessions', 'session_id')]),
 
-                (antsRegistrationSyNQuick, cropnifti, [('image_warped', 'input_img')]),
+        (antsRegistrationSyNQuick, cropnifti, [('image_warped', 'input_img')]),
 
-                (cropnifti, intensitynorm, [('output_img', 'input_img')]),
-                (cropnifti, intensitynorm, [('crop_template', 'crop_template')]),
+        (cropnifti, intensitynorm, [('output_img', 'input_img')]),
+        (cropnifti, intensitynorm, [('crop_template', 'crop_template')]),
 
-                ## datasink
-                # Saving files with datasink:
-                (get_subject_session_list, get_identifiers, [('subjects', 'participant_id')]),
-                (get_subject_session_list, get_identifiers, [('sessions', 'session_id')]),
+        ## datasink
+        # Saving files with datasink:
+        (get_subject_session_list, get_identifiers, [('subjects', 'participant_id')]),
+        (get_subject_session_list, get_identifiers, [('sessions', 'session_id')]),
 
-                (get_identifiers, datasink, [('base_directory', 'base_directory')]),
-                (get_identifiers, datasink, [('subst_tuple_list', 'substitutions')]),
-                (get_identifiers, datasink, [('regexp_substitutions', 'regexp_substitutions')]),
-                # datasink to save outputs
-                # smoothed dti maps
-                (intensitynorm, datasink, [('output_img', 'out_file_inn')]),
-                (intensitynorm, outputnode, [('output_img', 'out_file_inn')]),
-                (cropnifti, datasink, [('output_img', 'out_file_crop')]),
-                (cropnifti, outputnode, [('output_img', 'out_file_crop')]),
-                (antsRegistrationSyNQuick, datasink, [('image_warped', 'out_file_reg')]),
-                (antsRegistrationSyNQuick, outputnode, [('image_warped', 'out_file_reg')])
-                ])
+        (get_identifiers, datasink, [('base_directory', 'base_directory')]),
+        (get_identifiers, datasink, [('subst_tuple_list', 'substitutions')]),
+        (get_identifiers, datasink, [('regexp_substitutions', 'regexp_substitutions')]),
+        # datasink to save outputs
+        # smoothed dti maps
+        (intensitynorm, datasink, [('output_img', 'out_file_inn')]),
+        (intensitynorm, outputnode, [('output_img', 'out_file_inn')]),
+        (cropnifti, datasink, [('output_img', 'out_file_crop')]),
+        (cropnifti, outputnode, [('output_img', 'out_file_crop')]),
+        (antsRegistrationSyNQuick, datasink, [('image_warped', 'out_file_reg')]),
+        (antsRegistrationSyNQuick, outputnode, [('image_warped', 'out_file_reg')])
+        ])
 
 
     return wf
