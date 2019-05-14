@@ -26,18 +26,20 @@ def postprocessing_t1w(caps_directory,
     This is a postprocessing pipeline to prepare the slice-level and
     patch-level data from the whole MRI and save them on disk, so that to
     facilitate the training process:
-        - For slice-level CNN, all slices were extracted from the whole MRI
-          from three different axis. The first and last 15 slice were discarded
-          due to the lack of information.
-        - For patch-level CNN, the 3D patch (with specific patch size) were
-          extracted by a 3D window.
+        - For slice-level CNN, all slices were extracted from the whole
+          MRI from three different axis. The first and last 15 slice were
+          discarded due to the lack of information.
+        - For patch-level CNN, the 3D patch (with specific patch size)
+          were extracted by a 3D window.
 
     :param caps_directory: CAPS directory where stores the output of
-        preprocessing.
-    :param tsv: subject list file containing the participant_id and session_id.
+                           preprocessing.
+    :param tsv: subject list file containing the participant_id and
+                session_id.  
     :param patch_size: the size for extracted 3D patches.
-    :param stride_size: the sliding siez of the 3D windows.
+    :param stride_size: the sliding siez of the 3D windows.  
     :param working_directory: working directory to store the intermediate files.
+    
     :return:
     """
 
