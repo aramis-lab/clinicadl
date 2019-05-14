@@ -15,6 +15,8 @@ Clinica, then we fit the processed data into this CNN.
 # Dependencies:
 - 1) Clinica
 - 2) Pytorch
+- 3) Nilearn
+- 4) Nipy
 
 # How to use ?
 
