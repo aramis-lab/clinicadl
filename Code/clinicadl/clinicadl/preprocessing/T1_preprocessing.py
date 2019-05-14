@@ -25,9 +25,13 @@ def preprocessing_t1w(bids_directory,
         2) linear registration to MNI (MNI icbm152 nlinear sym template) (ANTS)
         3) cropping the background to save the computational power
     Args:
+    bids_directory: folder with BIDS structure.
+    caps_directory: folder where CAPS structure will be stored.
+    ref_template: reference template for image refistration.
+    working_directory: folder containing the working directory.
 
     Returns:
-
+    wf: nipype workflow
     """
 
     from nipype.interfaces import ants
