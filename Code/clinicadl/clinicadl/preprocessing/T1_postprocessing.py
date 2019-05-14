@@ -14,7 +14,14 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
-def postprocessing_t1w(caps_directory, tsv, patch_size, stride_size, working_directory=None, extract_method='slice', slice_direction=0, slice_mode='original'):
+def postprocessing_t1w(caps_directory, 
+        tsv, 
+        patch_size, 
+        stride_size, 
+        working_directory=None, 
+        extract_method='slice', 
+        slice_direction=0, 
+        slice_mode='original'):
     """
     This is a postprocessing pipeline to prepare the slice-level and
     patch-level data from the whole MRI and save them on disk, so that to
