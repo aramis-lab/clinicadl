@@ -33,7 +33,7 @@ conda install -c pytorch pytorch torchvision
 ## Install the packet `clinicadl` as developer:
 
 ```
-pip install -e .
+pip install -e .Code/clinicadl/
 ```
 
 ## Use in command line mode
