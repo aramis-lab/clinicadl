@@ -13,10 +13,10 @@ Clinica, then we fit the processed data into this CNN.
   fit into the 2D CNN.
 
 # Dependencies:
-- 1) Clinica
-- 2) Pytorch
-- 3) Nilearn
-- 4) Nipy
+- Clinica
+- Pytorch
+- Nilearn
+- Nipy
 
 # How to use ?
 
@@ -30,7 +30,7 @@ pip install -r requirements.txt
 conda install -c pytorch pytorch torchvision
 ```
 
-## Install the packet `clinicadl` as developer:
+## Install the package `clinicadl` as developer:
 
 ```
 pip install -e .Code/clinicadl/
