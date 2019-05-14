@@ -37,7 +37,7 @@ def postprocessing_t1w(caps_directory,
     :param tsv: subject list file containing the participant_id and
                 session_id.  
     :param patch_size: the size for extracted 3D patches.
-    :param stride_size: the sliding siez of the 3D windows.  
+    :param stride_size: the sliding size of the 3D windows.  
     :param working_directory: working directory to store the intermediate files.
     
     :return:
