@@ -444,3 +444,18 @@ def load_data(train_val_path, diagnoses_list, split, n_splits=None, baseline=Tru
     valid_df.reset_index(inplace=True, drop=True)
 
     return train_df, valid_df
+
+
+def load_data_test(test_path, diagnoses_list):
+
+    test_df = pd.DataFrame()
+
+    for diagnosis in diagnoses_list:
+
+        test_diagnosis_path = path.join(test_path, diagnosis + '_baseline.tsv')
+        test_diagnosis_df = pd.read_csv(test_diagnosis_path, sep='\t')
+        test_df = pd.concat([test_df, test_diagnosis_df])
+
+    test_df.reset_index(inplace=True, drop=True)
+
+    return test_df
