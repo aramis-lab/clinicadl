@@ -1,9 +1,12 @@
 import argparse
+from os import path
+from time import time
+import torch
 from torch.utils.data import DataLoader
 
-from classification_utils import *
-from data_utils import *
-from model import *
+from utils.classification_utils import train, test, load_model, commandline_to_json
+from utils.data_utils import MRIDataset, MinMaxNormalization, load_data
+from utils.model import parse_model_name
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 
@@ -48,66 +51,13 @@ def correct_model_options(model_options):
     return corrected_options
 
 
-def parse_model_name(model_path, options, position=-1):
-    model_name = model_path.split(os.sep)[position]
-    model_options = model_name.split('_')
-    model_options = correct_model_options(model_options)
-    options.log_dir = os.path.abspath(os.path.join(options.model_path, os.pardir))
-
-    for option in model_options:
-        option_split = option.split("-")
-        key = option_split[0]
-        if len(option_split) > 2:
-            content = "-".join(option_split[1:])
-        else:
-            content = option_split[1]
-
-        if key == 'model':
-            options.model = content
-        elif key == 'task':
-            diagnoses = content.split('_')
-            if 'baseline' in diagnoses:
-                options.baseline = True
-                diagnoses.remove('baseline')
-            else:
-                options.baseline = False
-            if options.diagnoses is None:
-                options.diagnoses = diagnoses
-        elif key == 'gpu':
-            options.gpu = bool(content)
-        elif key == 'epochs':
-            options.epochs = int(content)
-        elif key == 'workers':
-            options.num_workers = int(content)
-        elif key == 'threads':
-            options.num_threads = int(content)
-        elif key == 'lr':
-            options.learning_rate = float(content)
-        elif key == 'norm':
-            options.minmaxnormalization = bool(content)
-        elif key == 'batch':
-            options.batch_size = int(content)
-        elif key == 'acc':
-            options.accumulation_steps = int(content)
-        elif key == 'eval':
-            options.evaluation_steps = int(content)
-        elif key == 'splits':
-            options.n_splits = int(content)
-        elif key == 'split':
-            options.split = int(content)
-        elif key == 'preprocessing':
-            options.preprocessing = content
-
-    return options
-
-
 def main(options):
 
     options = parse_model_name(options.model_path, options)
     print(path.exists(options.model_path))
 
     # Check if model is implemented
-    import model
+    from utils import model
     import inspect
 
     choices = []
@@ -176,19 +126,18 @@ def main(options):
 
     print('Resuming the training task')
     training_time = time()
-    # TODO deal with the run parameter (str 'runX') and modify train accordingly
 
     train(model, train_loader, valid_loader, criterion, optimizer, True, options)
     training_time = time() - training_time
 
     # Load best model
-    best_model, best_epoch = load_model(model, os.path.join(options.model_path))
+    best_model, best_epoch = load_model(model, path.join(options.model_path))
 
     # Get best performance
     acc_mean_train_subject, _ = test(best_model, train_loader, options.gpu, criterion)
     acc_mean_valid_subject, _ = test(best_model, valid_loader, options.gpu, criterion)
     accuracies = (acc_mean_train_subject, acc_mean_valid_subject)
-    write_summary(options.log_dir, run, accuracies, best_epoch, training_time)
+    write_summary(options.log_dir, accuracies, best_epoch, training_time)
 
     del best_model
 
@@ -198,14 +147,13 @@ def main(options):
     text_file.write('Time of training: %d s \n' % total_time)
 
 
-def write_summary(log_dir, run, accuracies, best_epoch, time):
-    fold_dir = path.join(log_dir, "run" + str(run))
-    text_file = open(path.join(fold_dir, 'run_output.txt'), 'w')
-    text_file.write('Fold: %i \n' % run)
-    text_file.write('Best epoch: %i \n' % best_epoch)
+def write_summary(log_dir, accuracies, best_epoch, time):
+    text_file = open(path.join(log_dir, 'fold_output.txt'), 'w')
+    text_file.write('Loss selection \n')
+    text_file.write('Best loss : %i \n' % best_epoch)
     text_file.write('Time of training: %d s \n' % time)
-    text_file.write('Accuracy on training set: %.2f %% \n' % accuracies[0])
-    text_file.write('Accuracy on validation set: %.2f %% \n' % accuracies[1])
+    text_file.write('Training accuracy: %.2f %% \n' % accuracies[0])
+    text_file.write('Validation accuracy: %.2f %% \n' % accuracies[1])
     text_file.close()
 
 

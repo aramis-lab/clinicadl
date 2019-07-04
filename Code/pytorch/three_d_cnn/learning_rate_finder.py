@@ -57,9 +57,8 @@ if __name__ == "__main__":
     import argparse
     from torch.utils.data import DataLoader
     import torch.nn as nn
-    import torch
-    from model import create_model
-    from data_utils import MRIDataset
+    from utils.model import create_model
+    from utils.data_utils import MRIDataset
     import os
 
     parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")

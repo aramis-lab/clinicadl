@@ -1,9 +1,12 @@
 import argparse
+import torch
+from time import time
+from os import path
 from torch.utils.data import DataLoader
 
-from classification_utils import *
-from data_utils import *
-from model import *
+from utils.classification_utils import load_model, greedy_learning, train, test, commandline_to_json
+from utils.data_utils import MinMaxNormalization, MRIDataset, load_data, generate_sampler
+from utils.model import transfer_from_autoencoder, apply_pretrained_network_weights, apply_autoencoder_weights, create_model
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 
@@ -96,7 +99,7 @@ parser.add_argument('--num_threads', type=int, default=1,
 def main(options):
 
     # Check if model is implemented
-    import model
+    from utils import model
     import inspect
     import sys
 
@@ -223,7 +226,7 @@ def main(options):
     # Get best performance
     acc_mean_train_subject, _ = test(best_model, train_loader, options.gpu, criterion)
     acc_mean_valid_subject, _ = test(best_model, valid_loader, options.gpu, criterion)
-    log_dir = os.path.join(options.output_dir, 'log_dir', 'CNN', 'fold_' + str(options.split))
+    log_dir = path.join(options.output_dir, 'log_dir', 'CNN', 'fold_' + str(options.split))
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)

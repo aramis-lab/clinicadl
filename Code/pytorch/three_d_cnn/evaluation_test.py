@@ -2,11 +2,11 @@ import argparse
 import os
 from os import path
 import pandas as pd
+import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from classification_utils import test, load_model
-from data_utils import MRIDataset, MinMaxNormalization, load_data_test
-from model import *
+from utils.classification_utils import test, load_model
+from utils.data_utils import MRIDataset, MinMaxNormalization, load_data_test
 from resume import parse_model_name
 
 parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     options = parse_model_name(options.model_path, options, position=options.position)
     # Check if model is implemented
-    import model
+    from utils import model
     import inspect
 
     choices = []
@@ -81,7 +81,7 @@ if __name__ == "__main__":
         if options.gpu:
             model = model.cuda()
 
-        criterion = torch.nn.CrossEntropyLoss()
+        criterion = nn.CrossEntropyLoss()
 
         if options.selection == 'loss':
             model_dir = os.path.join(CNN_dir, fold_dir, 'best_loss')

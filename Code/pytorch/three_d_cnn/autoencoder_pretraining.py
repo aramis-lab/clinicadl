@@ -1,9 +1,13 @@
 import argparse
+from os import path
+from time import time
+import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from classification_utils import *
-from data_utils import *
-from model import *
+from utils.classification_utils import ae_finetuning, greedy_learning, commandline_to_json
+from utils.data_utils import MinMaxNormalization, MRIDataset, load_data
+from utils.model import Decoder, initialize_other_autoencoder
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D AE pretraining")
 
@@ -85,7 +89,7 @@ parser.add_argument("--num_workers", '-w', default=1, type=int,
 def main(options):
 
     # Check if model is implemented
-    import model
+    from utils import model
     import inspect
     import sys
 

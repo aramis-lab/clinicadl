@@ -1,14 +1,12 @@
 import argparse
 
-import numpy as np
 import torchvision.transforms as transforms
 from tensorboardX import SummaryWriter
-from torch import cuda
 from torch.utils.data import DataLoader
 
-from classification_utils import *
-from data_utils import *
-from model import alexnet2D
+from utils.classification_utils import *
+from utils.data_utils import *
+from utils.model import alexnet2D
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D CNN")
 

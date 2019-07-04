@@ -1,4 +1,4 @@
-from modules import *
+from utils.modules import PadMaxPool3d, Flatten, CropMaxUnpool3d, Reshape
 import torch.nn as nn
 import torch
 from copy import deepcopy
@@ -156,8 +156,9 @@ def transfer_from_autoencoder(model_path):
                 return False
 
 
+# TODO raise ValueError in this method and move it to __init__ as in pac2019 repo
 def create_model(options):
-    from classification_utils import load_model
+    from utils.classification_utils import load_model
     from os import path
 
     model = eval(options.model)()
@@ -249,16 +250,37 @@ class Decoder(nn.Module):
                 pass
             else:
                 inv_layers.append(deepcopy(layer))
-        inv_layers = replace_relu(inv_layers)
+        inv_layers = self.replace_relu(inv_layers)
         inv_layers.reverse()
         return nn.Sequential(*inv_layers)
+
+    @staticmethod
+    def replace_relu(inv_layers):
+        idx_relu, idx_conv = -1, -1
+        for idx, layer in enumerate(inv_layers):
+            if isinstance(layer, nn.ConvTranspose3d):
+                idx_conv = idx
+            elif isinstance(layer, nn.ReLU) or isinstance(layer, nn.LeakyReLU):
+                idx_relu = idx
+
+            if idx_conv != -1 and idx_relu != -1:
+                inv_layers[idx_relu], inv_layers[idx_conv] = inv_layers[idx_conv], inv_layers[idx_relu]
+                idx_conv, idx_relu = -1, -1
+
+        # Check if number of features of batch normalization layers is still correct
+        for idx, layer in enumerate(inv_layers):
+            if isinstance(layer, nn.BatchNorm3d):
+                conv = inv_layers[idx + 1]
+                inv_layers[idx] = nn.BatchNorm3d(conv.out_channels)
+
+        return inv_layers
 
 
 def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, fold, difference=0):
     from copy import deepcopy
     from os import path
     import os
-    from classification_utils import save_checkpoint
+    from utils.classification_utils import save_checkpoint
 
     decoder = Decoder(model)
     initialize_other_autoencoder(decoder, pretrained_autoencoder_path, difference=difference)
@@ -279,7 +301,7 @@ def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, fo
 def apply_pretrained_network_weights(model, pretrained_network_path, model_path, fold):
     from os import path
     import os
-    from classification_utils import save_checkpoint
+    from utils.classification_utils import save_checkpoint
 
     results = torch.load(pretrained_network_path)
     model.load_state_dict(results['model'])
@@ -323,23 +345,55 @@ def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, differenc
     return decoder
 
 
-def replace_relu(inv_layers):
-    idx_relu, idx_conv = -1, -1
-    for idx, layer in enumerate(inv_layers):
-        if isinstance(layer, nn.ConvTranspose3d):
-            idx_conv = idx
-        elif isinstance(layer, nn.ReLU) or isinstance(layer, nn.LeakyReLU):
-            idx_relu = idx
+def parse_model_name(model_path, options, position=-1):
+    model_name = model_path.split(os.sep)[position]
+    model_options = model_name.split('_')
+    model_options = correct_model_options(model_options)
+    options.log_dir = os.path.abspath(os.path.join(options.model_path, os.pardir))
 
-        if idx_conv != -1 and idx_relu != -1:
-            inv_layers[idx_relu], inv_layers[idx_conv] = inv_layers[idx_conv], inv_layers[idx_relu]
-            idx_conv, idx_relu = -1, -1
+    for option in model_options:
+        option_split = option.split("-")
+        key = option_split[0]
+        if len(option_split) > 2:
+            content = "-".join(option_split[1:])
+        else:
+            content = option_split[1]
 
-    # Check if number of features of batch normalization layers is still correct
-    for idx, layer in enumerate(inv_layers):
-        if isinstance(layer, nn.BatchNorm3d):
-            conv = inv_layers[idx + 1]
-            inv_layers[idx] = nn.BatchNorm3d(conv.out_channels)
+        if key == 'model':
+            options.model = content
+        elif key == 'task':
+            diagnoses = content.split('_')
+            if 'baseline' in diagnoses:
+                options.baseline = True
+                diagnoses.remove('baseline')
+            else:
+                options.baseline = False
+            if options.diagnoses is None:
+                options.diagnoses = diagnoses
+        elif key == 'gpu':
+            options.gpu = bool(content)
+        elif key == 'epochs':
+            options.epochs = int(content)
+        elif key == 'workers':
+            options.num_workers = int(content)
+        elif key == 'threads':
+            options.num_threads = int(content)
+        elif key == 'lr':
+            options.learning_rate = float(content)
+        elif key == 'norm':
+            options.minmaxnormalization = bool(content)
+        elif key == 'batch':
+            options.batch_size = int(content)
+        elif key == 'acc':
+            options.accumulation_steps = int(content)
+        elif key == 'eval':
+            options.evaluation_steps = int(content)
+        elif key == 'splits':
+            options.n_splits = int(content)
+        elif key == 'split':
+            options.split = int(content)
+        elif key == 'preprocessing':
+            options.preprocessing = content
 
-    return inv_layers
+    return options
 

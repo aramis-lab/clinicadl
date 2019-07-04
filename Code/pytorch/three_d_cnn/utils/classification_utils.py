@@ -555,7 +555,6 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
             first_visu = False
 
         epoch += 1
-    # print('End of training', torch.cuda.memory_allocated())
 
 
 def test_ae(model, dataloader, use_cuda, criterion, first_layers=None):
@@ -591,7 +590,7 @@ def test_ae(model, dataloader, use_cuda, criterion, first_layers=None):
 
 def greedy_learning(model, train_loader, valid_loader, criterion, optimizer, resume, options):
     from os import path
-    from model import Decoder
+    from utils.model import Decoder
     from copy import deepcopy
 
     if resume:
@@ -799,7 +798,7 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
 
 def extract_ae(decoder, level):
     import torch.nn as nn
-    from model import Decoder
+    from utils.model import Decoder
 
     n_conv = 0
     output_decoder = Decoder()
@@ -824,7 +823,7 @@ def extract_ae(decoder, level):
 def extract_first_layers(decoder, level):
     import torch.nn as nn
     from copy import deepcopy
-    from modules import PadMaxPool3d
+    from utils.modules import PadMaxPool3d
 
     n_conv = 0
     first_layers = nn.Sequential()
@@ -849,7 +848,7 @@ def extract_first_layers(decoder, level):
 def visualize_subject(decoder, dataloader, results_path, epoch, options, first_time=False, data_path='linear'):
     from os import path
     import nibabel as nib
-    from data_utils import MinMaxNormalization
+    from utils.data_utils import MinMaxNormalization
 
     visualization_path = path.join(results_path, 'iterative_visualization')
 
@@ -897,7 +896,7 @@ def visualize_subject(decoder, dataloader, results_path, epoch, options, first_t
 
 def visualize_ae(decoder, dataloader, results_path, gpu, data_path='linear'):
     import nibabel as nib
-    from data_utils import ToTensor
+    from utils.data_utils import ToTensor
     import os
     from os import path
 

@@ -1,9 +1,13 @@
 import argparse
+import os
+import torch
+from os import path
+from time import time
 from torch.utils.data import DataLoader
 
-from classification_utils import *
-from data_utils import *
-from model import *
+from utils.classification_utils import load_model, greedy_learning, ae_finetuning, test
+from utils.data_utils import MRIDataset, MinMaxNormalization, load_data
+from utils.model import Decoder
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 
@@ -62,7 +66,7 @@ def parse_model_name(model_path, options):
     model_name = model_path.split(os.sep)[-2]
     model_options = model_name.split('_')
     model_options = correct_model_options(model_options)
-    options.log_dir = os.path.abspath(os.path.join(options.model_path, os.pardir))
+    options.log_dir = path.abspath(path.join(options.model_path, os.pardir))
 
     for option in model_options:
         option_split = option.split("-")
@@ -110,7 +114,7 @@ def main(options):
     print(path.exists(options.model_path))
 
     # Check if model is implemented
-    import model
+    from utils import model
     import inspect
 
     choices = []
@@ -180,42 +184,18 @@ def main(options):
                                                              options.learning_rate)
 
     print('Resuming the training task')
-    training_time = time()
     # TODO deal allow to resume ae_finetuning
 
     if options.greedy_learning:
-        greedy_learning(decoder, train_loader, valid_loader, criterion, optimizer, options.model_path, True, options)
+        greedy_learning(decoder, train_loader, valid_loader, criterion, optimizer, True, options)
 
     else:
-        ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, options.model_path, True, options)
-    training_time = time() - training_time
-
-    # Load best model
-    best_model, best_epoch = load_model(model, os.path.join(options.model_path))
-
-    # Get best performance
-    acc_mean_train_subject, _ = test(best_model, train_loader, options.gpu, criterion)
-    acc_mean_valid_subject, _ = test(best_model, valid_loader, options.gpu, criterion)
-    accuracies = (acc_mean_train_subject, acc_mean_valid_subject)
-    write_summary(options.log_dir, run, accuracies, best_epoch, training_time)
-
-    del best_model
+        ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, True, options)
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)
     text_file = open(path.join(options.log_dir, 'model_output.txt'), 'w')
     text_file.write('Time of training: %d s \n' % total_time)
-
-
-def write_summary(log_dir, run, accuracies, best_epoch, time):
-    fold_dir = path.join(log_dir, "run" + str(run))
-    text_file = open(path.join(fold_dir, 'run_output.txt'), 'w')
-    text_file.write('Fold: %i \n' % run)
-    text_file.write('Best epoch: %i \n' % best_epoch)
-    text_file.write('Time of training: %d s \n' % time)
-    text_file.write('Accuracy on training set: %.2f %% \n' % accuracies[0])
-    text_file.write('Accuracy on validation set: %.2f %% \n' % accuracies[1])
-    text_file.close()
 
 
 if __name__ == "__main__":

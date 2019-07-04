@@ -1,9 +1,9 @@
 import pandas as pd
 import argparse
 from os import path
-from copy import deepcopy, copy
+from copy import copy
 
-from classification_utils import evaluate_prediction
+from utils.classification_utils import evaluate_prediction
 
 parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
 

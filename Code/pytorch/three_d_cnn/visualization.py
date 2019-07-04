@@ -1,9 +1,9 @@
 import argparse
 import nibabel as nib
 
-from classification_utils import *
-from data_utils import *
-from model import *
+from utils.classification_utils import *
+from utils.data_utils import *
+from utils.model import *
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D AE pretraining")
 
@@ -237,7 +237,7 @@ class CNNLayerVisualization():
 def main(options):
 
     # Check if model is implemented
-    import model
+    from utils import model
     import inspect
 
     choices = []

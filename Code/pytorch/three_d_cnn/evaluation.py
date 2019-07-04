@@ -1,10 +1,14 @@
 import argparse
+import os
+from os import path
+import pandas as pd
+import numpy as np
+import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from classification_utils import *
-from data_utils import *
-from model import *
-from resume import parse_model_name
+from utils.classification_utils import load_model, test
+from utils.data_utils import MRIDataset, MinMaxNormalization, load_data
+from utils.model import parse_model_name
 
 parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
 
@@ -48,7 +52,7 @@ if __name__ == "__main__":
 
     options = parse_model_name(options.model_path, options, position=options.position)
     # Check if model is implemented
-    import model
+    from utils import model
     import inspect
 
     choices = []
@@ -65,7 +69,7 @@ if __name__ == "__main__":
         print(options.preprocessing)
 
     # Loop on all folds trained
-    CNN_dir = os.path.join(options.model_path, 'best_model_dir', 'CNN')
+    CNN_dir = path.join(options.model_path, 'best_model_dir', 'CNN')
     folds_dir = os.listdir(CNN_dir)
     for fold_dir in folds_dir:
         split = int(fold_dir[-1])
@@ -75,13 +79,13 @@ if __name__ == "__main__":
             model = model.cuda()
         options.batch_size = 2  # To test on smaller GPU
 
-        criterion = torch.nn.CrossEntropyLoss()
+        criterion = nn.CrossEntropyLoss()
 
         if options.selection == 'loss':
-            model_dir = os.path.join(CNN_dir, fold_dir, 'best_loss')
+            model_dir = path.join(CNN_dir, fold_dir, 'best_loss')
             folder_name = 'best_loss'
         else:
-            model_dir = os.path.join(CNN_dir, fold_dir, 'best_acc')
+            model_dir = path.join(CNN_dir, fold_dir, 'best_acc')
             folder_name = 'best_acc'
 
         best_model, best_epoch = load_model(model, model_dir,
