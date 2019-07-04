@@ -344,7 +344,7 @@ def test(model, dataloader, use_cuda, criterion, verbose=False, full_return=Fals
         predicted_tensor[idx:idx_end:] = predicted
         truth_tensor[idx:idx_end:] = labels
 
-        del inputs, outputs, labels
+        del inputs, outputs, labels, loss
         tend = time()
     print('Mean time per batch (test):', total_time / len(dataloader) * dataloader.batch_size)
     results_df.reset_index(inplace=True, drop=True)

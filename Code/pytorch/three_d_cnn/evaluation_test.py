@@ -31,6 +31,8 @@ parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_
                     help="Performs MinMaxNormalization for visualization")
 parser.add_argument("--position", default=-1, type=int,
                     help="position of the name in the string given for evaluation.")
+parser.add_argument("--split", type=int, default=None, nargs="+",
+                    help="Splits on which evaluation is performed. Default behaviour tests all possible folds.")
 
 # Computational ressources
 parser.add_argument("--batch_size", default=16, type=int,
@@ -67,14 +69,17 @@ if __name__ == "__main__":
 
     # Loop on all folds trained
     CNN_dir = os.path.join(options.model_path, 'best_model_dir', 'CNN')
-    folds_dir = os.listdir(CNN_dir)
+    if options.split is None:
+        folds_dir = os.listdir(CNN_dir)
+    else:
+        folds_dir = [path.join(CNN_dir, 'fold_' + str(fold)) for fold in options.split]
+
     for fold_dir in folds_dir:
         split = int(fold_dir[-1])
         print("Fold " + str(split))
         model = eval(options.model)()
         if options.gpu:
             model = model.cuda()
-        # options.batch_size = 2  # To test on smaller GPU
 
         criterion = torch.nn.CrossEntropyLoss()
 
@@ -110,7 +115,7 @@ if __name__ == "__main__":
 
         acc_test, sen_test, spe_test = metrics_test['balanced_accuracy'] * 100, metrics_test['sensitivity'] * 100,\
                                        metrics_test['specificity'] * 100
-        print("Training, acc %f, loss %f, sensibility %f, specificity %f"
+        print("Test, acc %f, loss %f, sensibility %f, specificity %f"
               % (acc_test, loss_test, sen_test, spe_test))
 
         evaluation_path = path.join(options.model_path, 'performances', fold_dir)
@@ -125,3 +130,6 @@ if __name__ == "__main__":
         pd.DataFrame(metrics_test, index=[0]).to_csv(path.join(evaluation_path, folder_name,
                                                                'test-' + options.cohort + '_subject_level_metrics.tsv'),
                                                      sep='\t', index=False)
+
+        del model, best_model
+
