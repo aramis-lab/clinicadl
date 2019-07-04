@@ -599,6 +599,8 @@ def greedy_learning(model, train_loader, valid_loader, criterion, optimizer, res
 
     if not isinstance(model, Decoder):
         decoder = Decoder(model)
+    else:
+        decoder = deepcopy(model)
 
     level = 0
     first_layers = extract_first_layers(decoder, level)
@@ -606,7 +608,7 @@ def greedy_learning(model, train_loader, valid_loader, criterion, optimizer, res
 
     while len(auto_encoder) > 0:
         print('Cell learning level %i' % level)
-        level_path = path.join(results_path, 'level-' + str(level))
+        level_path = path.join(options.output_dir, 'level-' + str(level))
         # Create the method to train with first layers
         ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterion, level_path, options)
         best_ae, _ = load_model(auto_encoder, level_path)
@@ -624,21 +626,21 @@ def greedy_learning(model, train_loader, valid_loader, criterion, optimizer, res
             decoder.decoder = torch.nn.Sequential(*list(decoder.decoder)[:-1])
         decoder.decoder.add_module("sigmoid", torch.nn.Sigmoid())
 
-    ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, results_path, False, options)
+    ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, False, options)
 
     # Updating and setting weights of the convolutional layers
-    best_decoder, best_epoch = load_model(decoder, results_path)
+    best_decoder, best_epoch = load_model(decoder, options.output_dir)
     if not isinstance(model, Decoder):
         model.features = deepcopy(best_decoder.encoder)
         save_checkpoint({'model': model.state_dict(),
                          'epoch': best_epoch},
                         False, False,
-                        os.path.join(results_path),
+                        os.path.join(options.output_dir),
                         'model_pretrained.pth.tar')
 
     if options.visualization:
-        visualize_ae(best_decoder, train_loader, os.path.join(results_path, "train"), options.gpu)
-        visualize_ae(best_decoder, valid_loader, os.path.join(results_path, "valid"), options.gpu)
+        visualize_ae(best_decoder, train_loader, os.path.join(options.output_dir, "train"), options.gpu)
+        visualize_ae(best_decoder, valid_loader, os.path.join(options.output_dir, "valid"), options.gpu)
 
     return model
 

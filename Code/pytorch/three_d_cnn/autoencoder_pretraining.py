@@ -162,12 +162,6 @@ def main(options):
 
     else:
         ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, False, options)
-        # best_model_path = path.join(options.output_dir, 'best_model_dir', 'ConvAutoencoder',
-        #                             'fold_' + str(options.split), 'best_loss', 'model_best.pth.tar')
-        # best_decoder = load_model(decoder, best_model_path)
-        #
-        # visualize_ae(best_decoder, train_loader, path.join(run_path, "train"), options.gpu)
-        # visualize_ae(best_decoder, valid_loader, path.join(run_path, "valid"), options.gpu)
 
     total_time = time() - total_time
     print('Total time', total_time)
