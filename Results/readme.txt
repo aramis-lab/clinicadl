@@ -1,1 +1,0 @@
-This folder contains all the classification results which are ready to visualize with TensorBoard.
