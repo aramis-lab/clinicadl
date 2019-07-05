@@ -1,0 +1,1 @@
+This folder contains the weights of the best models for each experiment, the corresponding json file and performances (these experiments refer to the Table 7 of the main manuscript).
