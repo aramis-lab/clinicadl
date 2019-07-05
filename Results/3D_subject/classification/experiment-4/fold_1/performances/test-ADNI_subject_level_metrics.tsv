@@ -1,0 +1,2 @@
+accuracy	balanced_accuracy	sensitivity	specificity	ppv	npv
+0.83	0.83	0.72	0.94	0.9230769230769231	0.7704918032786885
