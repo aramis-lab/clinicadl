@@ -7,6 +7,10 @@ heavily on the Clinica software platform that you will need to install. Another
 prerequisite is to do image processing for the original MRI data by using
 Clinica, then we fit the processed data into this CNN.
 
+
+# Bibliography
+All the papers described in the State of the art section of the manuscript may be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
+
 # Projects
 - 1) Implement 2D CNN to fit the processed png images from MRI
 - 2) Compress the 3D MRI to 2D multi-chanel image (compressive sensing), then
