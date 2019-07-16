@@ -390,12 +390,16 @@ def save_checkpoint(state, accuracy_is_best, loss_is_best, checkpoint_dir, filen
         shutil.copyfile(os.path.join(checkpoint_dir, filename), os.path.join(best_loss_path, 'model_best.pth.tar'))
 
 
-def load_model(model, checkpoint_dir, filename='model_best.pth.tar'):
+def load_model(model, checkpoint_dir, gpu, filename='model_best.pth.tar'):
     from copy import deepcopy
 
     best_model = deepcopy(model)
-    param_dict = torch.load(os.path.join(checkpoint_dir, filename))
+    param_dict = torch.load(os.path.join(checkpoint_dir, filename), map_location="cpu")
     best_model.load_state_dict(param_dict['model'])
+
+    if gpu:
+        best_model = best_model.cuda()
+
     return best_model, param_dict['epoch']
 
 
@@ -590,7 +594,7 @@ def test_ae(model, dataloader, use_cuda, criterion, first_layers=None):
 
 def greedy_learning(model, train_loader, valid_loader, criterion, optimizer, resume, options):
     from os import path
-    from utils.model import Decoder
+    from .model import Decoder
     from copy import deepcopy
 
     if resume:
@@ -798,7 +802,7 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
 
 def extract_ae(decoder, level):
     import torch.nn as nn
-    from utils.model import Decoder
+    from .model import Decoder
 
     n_conv = 0
     output_decoder = Decoder()
@@ -823,7 +827,7 @@ def extract_ae(decoder, level):
 def extract_first_layers(decoder, level):
     import torch.nn as nn
     from copy import deepcopy
-    from utils.modules import PadMaxPool3d
+    from .modules import PadMaxPool3d
 
     n_conv = 0
     first_layers = nn.Sequential()
@@ -997,6 +1001,36 @@ def commandline_to_json(commandline, model_type):
     f = open(os.path.join(log_dir, "commandline.json"), "w")
     f.write(json)
     f.close()
+
+
+def read_json(options, model_type, json_path=None, test=False):
+    """
+    Read a json file to update python argparse Namespace.
+
+    :param options: (argparse.Namespace) options of the model
+    :return: options (args.Namespace) options of the model updated
+    """
+    import json
+    from os import path
+
+    evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
+    if json_path is None:
+        json_path = path.join(options.model_path, 'log_dir', model_type, 'fold_' + str(options.split), 'commandline.json')
+
+    with open(json_path, "r") as f:
+        json_data = json.load(f)
+
+    for key, item in json_data.items():
+        # We do not change computational options
+        if key in ['gpu', 'num_workers', 'num_threads']:
+            pass
+        # If used for evaluation, some parameters were already given
+        if test and key in evaluation_parameters:
+            pass
+        else:
+            setattr(options, key, item)
+
+    return options
 
 
 def memReport():

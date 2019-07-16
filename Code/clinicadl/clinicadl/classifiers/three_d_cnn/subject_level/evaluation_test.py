@@ -5,9 +5,8 @@ import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from utils.classification_utils import test, load_model
+from utils.classification_utils import test, load_model, read_json
 from utils.data_utils import MRIDataset, MinMaxNormalization, load_data_test
-from resume import parse_model_name
 
 parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
 
@@ -49,7 +48,7 @@ if __name__ == "__main__":
     if ret[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
 
-    options = parse_model_name(options.model_path, options, position=options.position)
+    options = read_json(options)
     # Check if model is implemented
     from utils import model
     import inspect
@@ -90,7 +89,7 @@ if __name__ == "__main__":
             model_dir = os.path.join(CNN_dir, fold_dir, 'best_acc')
             folder_name = 'best_acc'
 
-        best_model, best_epoch = load_model(model, model_dir,
+        best_model, best_epoch = load_model(model, model_dir, options.gpu,
                                             filename='model_best.pth.tar')
 
         test_tsv = load_data_test(options.diagnosis_path, options.diagnoses)

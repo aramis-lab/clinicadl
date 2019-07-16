@@ -1,4 +1,4 @@
-from utils.modules import PadMaxPool3d, Flatten, CropMaxUnpool3d, Reshape
+from .modules import PadMaxPool3d, Flatten, CropMaxUnpool3d, Reshape
 import torch.nn as nn
 import torch
 from copy import deepcopy
@@ -130,7 +130,6 @@ class Conv5_FC3_mni(nn.Module):
 
 def transfer_from_autoencoder(model_path):
     import os
-    from resume import correct_model_options
 
     # Find model name in path string
     model_name = None
@@ -156,9 +155,8 @@ def transfer_from_autoencoder(model_path):
                 return False
 
 
-# TODO raise ValueError in this method and move it to __init__ as in pac2019 repo
 def create_model(options):
-    from utils.classification_utils import load_model
+    from .classification_utils import load_model
     from os import path
 
     model = eval(options.model)()
@@ -280,7 +278,7 @@ def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, fo
     from copy import deepcopy
     from os import path
     import os
-    from utils.classification_utils import save_checkpoint
+    from .classification_utils import save_checkpoint
 
     decoder = Decoder(model)
     initialize_other_autoencoder(decoder, pretrained_autoencoder_path, difference=difference)
@@ -301,7 +299,7 @@ def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, fo
 def apply_pretrained_network_weights(model, pretrained_network_path, model_path, fold):
     from os import path
     import os
-    from utils.classification_utils import save_checkpoint
+    from .classification_utils import save_checkpoint
 
     results = torch.load(pretrained_network_path)
     model.load_state_dict(results['model'])
@@ -345,55 +343,69 @@ def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, differenc
     return decoder
 
 
-def parse_model_name(model_path, options, position=-1):
-    model_name = model_path.split(os.sep)[position]
-    model_options = model_name.split('_')
-    model_options = correct_model_options(model_options)
-    options.log_dir = os.path.abspath(os.path.join(options.model_path, os.pardir))
-
-    for option in model_options:
-        option_split = option.split("-")
-        key = option_split[0]
-        if len(option_split) > 2:
-            content = "-".join(option_split[1:])
+def correct_model_options(model_options):
+    corrected_options = []
+    for i, option in enumerate(model_options):
+        if '-' not in option:
+            new_option = '_'.join([corrected_options[-1], option])
+            corrected_options[-1] = new_option
         else:
-            content = option_split[1]
+            corrected_options.append(option)
 
-        if key == 'model':
-            options.model = content
-        elif key == 'task':
-            diagnoses = content.split('_')
-            if 'baseline' in diagnoses:
-                options.baseline = True
-                diagnoses.remove('baseline')
-            else:
-                options.baseline = False
-            if options.diagnoses is None:
-                options.diagnoses = diagnoses
-        elif key == 'gpu':
-            options.gpu = bool(content)
-        elif key == 'epochs':
-            options.epochs = int(content)
-        elif key == 'workers':
-            options.num_workers = int(content)
-        elif key == 'threads':
-            options.num_threads = int(content)
-        elif key == 'lr':
-            options.learning_rate = float(content)
-        elif key == 'norm':
-            options.minmaxnormalization = bool(content)
-        elif key == 'batch':
-            options.batch_size = int(content)
-        elif key == 'acc':
-            options.accumulation_steps = int(content)
-        elif key == 'eval':
-            options.evaluation_steps = int(content)
-        elif key == 'splits':
-            options.n_splits = int(content)
-        elif key == 'split':
-            options.split = int(content)
-        elif key == 'preprocessing':
-            options.preprocessing = content
+    return corrected_options
 
-    return options
+#
+# def parse_model_name(model_path, options, position=-1):
+#     import os
+#
+#     model_name = model_path.split(os.sep)[position]
+#     model_options = model_name.split('_')
+#     model_options = correct_model_options(model_options)
+#     options.log_dir = os.path.abspath(os.path.join(options.model_path, os.pardir))
+#
+#     for option in model_options:
+#         option_split = option.split("-")
+#         key = option_split[0]
+#         if len(option_split) > 2:
+#             content = "-".join(option_split[1:])
+#         else:
+#             content = option_split[1]
+#
+#         if key == 'model':
+#             options.model = content
+#         elif key == 'task':
+#             diagnoses = content.split('_')
+#             if 'baseline' in diagnoses:
+#                 options.baseline = True
+#                 diagnoses.remove('baseline')
+#             else:
+#                 options.baseline = False
+#             if options.diagnoses is None:
+#                 options.diagnoses = diagnoses
+#         elif key == 'gpu':
+#             options.gpu = bool(content)
+#         elif key == 'epochs':
+#             options.epochs = int(content)
+#         elif key == 'workers':
+#             options.num_workers = int(content)
+#         elif key == 'threads':
+#             options.num_threads = int(content)
+#         elif key == 'lr':
+#             options.learning_rate = float(content)
+#         elif key == 'norm':
+#             options.minmaxnormalization = bool(content)
+#         elif key == 'batch':
+#             options.batch_size = int(content)
+#         elif key == 'acc':
+#             options.accumulation_steps = int(content)
+#         elif key == 'eval':
+#             options.evaluation_steps = int(content)
+#         elif key == 'splits':
+#             options.n_splits = int(content)
+#         elif key == 'split':
+#             options.split = int(content)
+#         elif key == 'preprocessing':
+#             options.preprocessing = content
+#
+#     return options
 
