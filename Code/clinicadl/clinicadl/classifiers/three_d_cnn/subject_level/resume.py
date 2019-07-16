@@ -4,56 +4,30 @@ from time import time
 import torch
 from torch.utils.data import DataLoader
 
-from utils.classification_utils import train, test, load_model, commandline_to_json
+from utils.classification_utils import train, test, load_model, read_json
 from utils.data_utils import MRIDataset, MinMaxNormalization, load_data
-from utils.model import parse_model_name
+from utils.model import create_model
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 
 # Mandatory arguments
-parser.add_argument("diagnosis_path", type=str,
-                    help="Path to tsv files of the population."
-                         " To note, the column name should be participant_id, session_id and diagnosis.")
-parser.add_argument("input_dir", type=str,
-                    help="Path to input dir of the MRI (preprocessed CAPS_dir).")
 parser.add_argument("model_path", type=str,
                     help="model selected")
-
-# Default values not specified in previous models
-parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
-                    help="Performs MinMaxNormalization for visualization")
-parser.add_argument("--shuffle", default=True, type=bool,
-                    help="Load data if shuffled or not, shuffle for training, no for test data.")
-parser.add_argument("--n_splits", type=int, default=None,
-                    help="If a value is given will load data of a k-fold CV")
-parser.add_argument("--split", type=int, default=0,
+parser.add_argument("split", type=int,
                     help="Will load the specific split wanted.")
 
-
-# Optimizer arguments
-parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
-                    help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
-                    help='momentum')
-parser.add_argument('--weight_decay', '--wd', default=1e-4, type=float,
-                    metavar='W', help='weight decay (default: 1e-4)')
-
-
-def correct_model_options(model_options):
-    corrected_options = []
-    for i, option in enumerate(model_options):
-        if '-' not in option:
-            new_option = '_'.join([corrected_options[-1], option])
-            corrected_options[-1] = new_option
-        else:
-            corrected_options.append(option)
-
-    return corrected_options
+# Computational argument
+parser.add_argument('--gpu', action='store_true', default=False,
+                    help='Uses gpu instead of cpu if cuda is available')
+parser.add_argument('--num_threads', type=int, default=0,
+                    help='Number of threads used.')
+parser.add_argument("--num_workers", '-w', default=1, type=int,
+                    help='the number of batch being loaded in parallel')
 
 
 def main(options):
 
-    options = parse_model_name(options.model_path, options)
+    options = read_json(options, "CNN")
     print(path.exists(options.model_path))
 
     # Check if model is implemented
@@ -104,10 +78,9 @@ def main(options):
 
     # Initialize the model
     print('Initialization of the model')
-    model = eval(options.model)()
-    model, current_epoch = load_model(model, options.model_path, 'checkpoint.pth.tar')
-    if options.gpu:
-        model = model.cuda()
+    model = create_model(options)
+    model_dir = path.join(options.model_path, "best_model_dir", "CNN", "fold_" + str(options.split))
+    model, current_epoch = load_model(model, model_dir, options.gpu, 'checkpoint.pth.tar')
 
     options.beginning_epoch = current_epoch + 1
 
@@ -131,35 +104,27 @@ def main(options):
     training_time = time() - training_time
 
     # Load best model
-    best_model, best_epoch = load_model(model, path.join(options.model_path))
+    best_model_dir = path.join(options.output_dir, 'best_model_dir', 'CNN', 'fold_' + str(options.split))
+    best_model, best_epoch = load_model(model, path.join(best_model_dir, 'best_loss'), options.gpu)
 
     # Get best performance
     acc_mean_train_subject, _ = test(best_model, train_loader, options.gpu, criterion)
     acc_mean_valid_subject, _ = test(best_model, valid_loader, options.gpu, criterion)
-    accuracies = (acc_mean_train_subject, acc_mean_valid_subject)
-    write_summary(options.log_dir, accuracies, best_epoch, training_time)
-
-    del best_model
+    log_dir = path.join(options.output_dir, 'log_dir', 'CNN', 'fold_' + str(options.split))
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)
-    text_file = open(path.join(options.log_dir, 'model_output.txt'), 'w')
-    text_file.write('Time of training: %d s \n' % total_time)
-
-
-def write_summary(log_dir, accuracies, best_epoch, time):
     text_file = open(path.join(log_dir, 'fold_output.txt'), 'w')
     text_file.write('Loss selection \n')
     text_file.write('Best loss : %i \n' % best_epoch)
-    text_file.write('Time of training: %d s \n' % time)
-    text_file.write('Training accuracy: %.2f %% \n' % accuracies[0])
-    text_file.write('Validation accuracy: %.2f %% \n' % accuracies[1])
+    text_file.write('Time of training: %d s \n' % total_time)
+    text_file.write('Training accuracy: %.2f %% \n' % (acc_mean_train_subject * 100))
+    text_file.write('Validation accuracy: %.2f %% \n' % (acc_mean_valid_subject * 100))
     text_file.close()
 
 
 if __name__ == "__main__":
     commandline = parser.parse_known_args()
-    commandline_to_json(commandline)
     options = commandline[0]
     if commandline[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])

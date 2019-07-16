@@ -92,7 +92,7 @@ parser.add_argument('--gpu', action='store_true', default=False,
                     help='Uses gpu instead of cpu if cuda is available')
 parser.add_argument('--evaluation_steps', '-esteps', default=1, type=int,
                     help='Fix the number of batches to use before validation')
-parser.add_argument('--num_threads', type=int, default=1,
+parser.add_argument('--num_threads', type=int, default=0,
                     help='Number of threads used.')
 
 
@@ -221,7 +221,7 @@ def main(options):
 
     # Load best model
     best_model_dir = path.join(options.output_dir, 'best_model_dir', 'CNN', 'fold_' + str(options.split))
-    best_model, best_epoch = load_model(model, path.join(best_model_dir, 'best_loss'))
+    best_model, best_epoch = load_model(model, path.join(best_model_dir, 'best_loss'), options.gpu)
 
     # Get best performance
     acc_mean_train_subject, _ = test(best_model, train_loader, options.gpu, criterion)

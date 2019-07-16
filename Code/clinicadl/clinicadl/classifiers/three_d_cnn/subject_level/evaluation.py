@@ -2,44 +2,27 @@ import argparse
 import os
 from os import path
 import pandas as pd
-import numpy as np
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from utils.classification_utils import load_model, test
+from utils.classification_utils import load_model, test, read_json
 from utils.data_utils import MRIDataset, MinMaxNormalization, load_data
-from utils.model import parse_model_name
 
 parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
 
 # Mandatory arguments
-parser.add_argument("diagnosis_path", type=str,
-                    help="Path to the folder containing the tsv files of the population.")
 parser.add_argument("model_path", type=str,
                     help="Path to the trained model folder.")
-parser.add_argument("input_dir", type=str,
-                    help="Path to input dir of the MRI (preprocessed CAPS_dir).")
 
-# Data Management
-parser.add_argument("--diagnoses", default=None, type=str, nargs='+')
-parser.add_argument("--preprocessing", default="linear", choices=["linear", "mniskullstrip", "mni"], type=str,
-                    help="Defines the path to data in CAPS.")
+# Model selection
 parser.add_argument("--selection", default="loss", type=str, choices=['loss', 'accuracy'],
                     help="Loads the model selected on minimal loss or maximum accuracy on validation.")
-parser.add_argument("--baseline", default=False, action="store_true",
-                    help="Use only baseline data instead of all scans available")
-parser.add_argument("--shuffle", default=True, type=bool,
-                    help="Load data if shuffled or not, shuffle for training, no for test data.")
-parser.add_argument("--gpu", action="store_true", default=False,
-                    help="if True computes the visualization on GPU")
-parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
-                    help="Performs MinMaxNormalization for visualization")
-parser.add_argument("--graphics", action="store_true", default=False,
-                    help="Plot graphics.")
-parser.add_argument("--position", default=-1, type=int,
-                    help="position of the name in the string given for evaluation.")
 
 # Computational ressources
+parser.add_argument("--gpu", action="store_true", default=False,
+                    help="if True computes the visualization on GPU")
+parser.add_argument('--num_threads', type=int, default=0,
+                    help='Number of threads used.')
 parser.add_argument("--num_workers", '-w', default=8, type=int,
                     help='the number of batch being loaded in parallel')
 
@@ -50,7 +33,6 @@ if __name__ == "__main__":
     if ret[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
 
-    options = parse_model_name(options.model_path, options, position=options.position)
     # Check if model is implemented
     from utils import model
     import inspect
@@ -60,24 +42,25 @@ if __name__ == "__main__":
         if inspect.isclass(obj):
             choices.append(name)
 
-    if options.model not in choices:
-        raise NotImplementedError(
-            'The model wanted %s has not been implemented in the module model.py' % options.model)
-
-    if "mni" in options.preprocessing:
-        options.preprocessing = "mni"
-        print(options.preprocessing)
-
     # Loop on all folds trained
     CNN_dir = path.join(options.model_path, 'best_model_dir', 'CNN')
     folds_dir = os.listdir(CNN_dir)
     for fold_dir in folds_dir:
         split = int(fold_dir[-1])
+        options.split = split
+        options = read_json(options, "CNN")
+
+        # Check if model is correct
+        if options.model not in choices:
+            raise NotImplementedError(
+                'The model wanted %s has not been implemented in the module model.py' % options.model)
+
+        if "mni" in options.preprocessing:
+            options.preprocessing = "mni"
+            print(options.preprocessing)
+
         print("Fold " + str(split))
-        model = eval(options.model)()
-        if options.gpu:
-            model = model.cuda()
-        options.batch_size = 2  # To test on smaller GPU
+        model = eval("model." + options.model)()
 
         criterion = nn.CrossEntropyLoss()
 
@@ -88,7 +71,7 @@ if __name__ == "__main__":
             model_dir = path.join(CNN_dir, fold_dir, 'best_acc')
             folder_name = 'best_acc'
 
-        best_model, best_epoch = load_model(model, model_dir,
+        best_model, best_epoch = load_model(model, model_dir, options.gpu,
                                             filename='model_best.pth.tar')
 
         training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
@@ -162,32 +145,3 @@ if __name__ == "__main__":
                                                                 'valid_subject_level_metrics.tsv'),
                                                       sep='\t', index=False)
 
-        # Graphic part
-        if options.graphics:
-            import matplotlib.pyplot as plt
-
-            plt.switch_backend('agg')
-
-            training_df = pd.read_csv(path.join(options.model_path, 'log_dir', 'CNN', fold_dir, 'training.tsv'), sep='\t')
-            epochs = training_df.epoch.values
-            iterations = training_df.iteration.values
-            iterations = iterations / np.max(iterations)
-            x = epochs + iterations
-
-            plt.title('Fold ' + str(split))
-            plt.xlabel('epoch')
-            plt.ylabel('loss')
-            plt.plot(x, training_df.mean_loss_train.values, color='orange', label='training')
-            plt.plot(x, training_df.mean_loss_valid.values, color='blue', label='validation')
-            plt.legend()
-            plt.savefig(path.join(evaluation_path, 'loss.png'))
-            plt.close()
-
-            plt.title('Fold ' + str(split))
-            plt.xlabel('epoch')
-            plt.ylabel('accuracy')
-            plt.plot(x, training_df.acc_train.values, color='orange', label='training')
-            plt.plot(x, training_df.acc_valid.values, color='blue', label='validation')
-            plt.legend()
-            plt.savefig(path.join(evaluation_path, 'accuracy.png'))
-            plt.close()
