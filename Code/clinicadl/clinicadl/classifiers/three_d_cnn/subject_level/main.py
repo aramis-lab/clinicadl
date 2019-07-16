@@ -47,27 +47,6 @@ parser.add_argument("--split", type=int, default=0,
 parser.add_argument("--training_evaluation", default='whole_set', type=str, choices=['whole_set', 'n_batches'],
                     help="Choose the way training evaluation is performed.")
 
-# Pretraining arguments
-parser.add_argument("-t", "--transfer_learning", default=None, type=str,
-                    help="If a value is given, use autoencoder pretraining."
-                         "If an existing path is given, a pretrained autoencoder is used."
-                         "Else a new autoencoder is trained")
-parser.add_argument("--transfer_learning_diagnoses", "-t_diagnoses", type=str, default=None, nargs='+',
-                    help='If transfer learning, gives the diagnoses to use to perform pretraining')
-parser.add_argument("--transfer_learning_epochs", "-t_e", type=int, default=10,
-                    help="Number of epochs for pretraining")
-parser.add_argument("--transfer_learning_rate", "-t_lr", type=float, default=1e-4,
-                    help='The learning rate used for AE pretraining')
-parser.add_argument("--features_learning_rate", "-f_lr", type=float, default=None,
-                    help="Learning rate applied to the convolutional layers."
-                         "If None all the layers have the same learning rate.")
-parser.add_argument("--visualization", action='store_true', default=False,
-                    help='Chooses if visualization is done on AE pretraining')
-parser.add_argument("--transfer_difference", "-t_diff", type=int, default=0,
-                    help="Difference of convolutional layers between current model and pretrained model")
-parser.add_argument("--add_sigmoid", default=False, action="store_true",
-                    help="Ad sigmoid function at the end of the decoder.")
-
 # Training arguments
 parser.add_argument("--epochs", default=20, type=int,
                     help="Epochs through the data. (default=20)")
@@ -81,6 +60,9 @@ parser.add_argument("--tolerance", type=float, default=0.05,
 # Optimizer arguments
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
+parser.add_argument("--features_learning_rate", "-f_lr", type=float, default=None,
+                    help="Learning rate applied to the convolutional layers."
+                         "If None all the layers have the same learning rate.")
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
                     help='momentum')
 parser.add_argument('--weight_decay', '--wd', default=1e-4, type=float,
@@ -126,46 +108,6 @@ def main(options):
         transformations = None
 
     total_time = time()
-    # Pretraining the model
-    if options.transfer_learning is not None:
-        model = eval(options.model)()
-        criterion = torch.nn.MSELoss()
-
-        if path.exists(options.transfer_learning):
-            if transfer_from_autoencoder(options.transfer_learning):
-                print("A pretrained autoencoder is loaded at path %s" % options.transfer_learning)
-                apply_autoencoder_weights(model, options.transfer_learning, options.output_dir, options.split,
-                                          difference=options.transfer_difference)
-            else:
-                print("A pretrained model is loaded at path %s" % options.transfer_learning)
-                apply_pretrained_network_weights(model, options.transfer_learning, options.output_dir, options.split)
-
-        else:
-            if options.transfer_learning_diagnoses is None:
-                raise Exception("Diagnosis labels must be given to train the autoencoder.")
-            training_tsv, valid_tsv = load_data(options.diagnosis_path, options.transfer_learning_diagnoses,
-                                                options.split, options.n_splits, options.baseline, options.preprocessing)
-
-            data_train = MRIDataset(options.input_dir, training_tsv, options.preprocessing, transformations)
-            data_valid = MRIDataset(options.input_dir, valid_tsv, options.preprocessing, transformations)
-
-            # Use argument load to distinguish training and testing
-            train_loader = DataLoader(data_train,
-                                      batch_size=options.batch_size,
-                                      shuffle=True,
-                                      num_workers=options.num_workers,
-                                      drop_last=True
-                                      )
-
-            valid_loader = DataLoader(data_valid,
-                                      batch_size=options.batch_size,
-                                      shuffle=False,
-                                      num_workers=options.num_workers,
-                                      drop_last=False
-                                      )
-
-            pretraining_dir = path.join(options.output_dir, 'pretraining')
-            greedy_learning(model, train_loader, valid_loader, criterion, True, pretraining_dir, options)
 
     text_file = open(path.join(options.output_dir, 'python_version.txt'), 'w')
     text_file.write('Version of python: %s \n' % sys.version)
@@ -173,11 +115,8 @@ def main(options):
     text_file.close()
 
     # Get the data.
-    # TODO: here check if there is everything in the SPM folder
     training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
                                         options.split, options.n_splits, options.baseline, options.preprocessing)
-    # training_tsv.to_csv("/network/lustre/iss01/home/elina.thibeausutre/debug/train_linear.tsv", sep='\t', index=False)
-    # valid_tsv.to_csv("/network/lustre/iss01/home/elina.thibeausutre/debug/valid_linear.tsv", sep='\t', index=False)
 
     data_train = MRIDataset(options.input_dir, training_tsv, options.preprocessing, transform=transformations)
     data_valid = MRIDataset(options.input_dir, valid_tsv, options.preprocessing, transform=transformations)
