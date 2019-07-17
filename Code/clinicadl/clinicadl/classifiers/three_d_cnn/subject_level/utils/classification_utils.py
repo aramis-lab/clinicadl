@@ -24,8 +24,8 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
     from time import time
 
     columns = ['epoch', 'iteration', 'acc_train', 'mean_loss_train', 'acc_valid', 'mean_loss_valid', 'time']
-    log_dir = os.path.join(options.output_dir, 'log_dir', 'CNN', 'fold_' + str(options.split))
-    best_model_dir = os.path.join(options.output_dir, 'best_model_dir', 'CNN', 'fold_' + str(options.split))
+    log_dir = os.path.join(options.output_dir, 'log_dir', 'fold_' + str(options.split), 'CNN')
+    best_model_dir = os.path.join(options.output_dir, 'best_model_dir', 'fold_' + str(options.split), 'CNN')
     filename = os.path.join(log_dir, 'training.tsv')
 
     if not resume:
@@ -130,8 +130,8 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
                     writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
                     writer_valid.add_scalar('balanced_accuracy', acc_mean_valid, i + epoch * len(train_loader))
                     writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
-                    print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
-                    print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
+                    print("Subject level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
+                    print("Subject level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
                     t_current = time() - t_beggining
                     row = np.array([epoch, i, acc_mean_train, mean_loss_train, acc_mean_valid, mean_loss_valid,
@@ -180,8 +180,8 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
         writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
         writer_valid.add_scalar('balanced_accuracy', acc_mean_valid, i + epoch * len(train_loader))
         writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
-        print("Scan level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
-        print("Scan level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
+        print("Subject level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
+        print("Subject level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
         t_current = time() - t_beggining
         row = np.array([epoch, i, acc_mean_train, mean_loss_train, acc_mean_valid, mean_loss_valid,
@@ -410,9 +410,9 @@ def check_and_clean(d):
 def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, resume, options):
     from tensorboardX import SummaryWriter
 
-    log_dir = os.path.join(options.output_dir, 'log_dir', 'ConvAutoencoder', 'fold_' + str(options.split))
-    visualization_path = os.path.join(options.output_dir, 'visualize', 'ConvAutoencoder', 'fold_' + str(options.split))
-    best_model_dir = os.path.join(options.output_dir, 'best_model_dir', 'ConvAutoencoder', 'fold_' + str(options.split))
+    log_dir = os.path.join(options.output_dir, 'log_dir', 'fold_' + str(options.split), 'ConvAutoencoder')
+    visualization_path = os.path.join(options.output_dir, 'visualize', 'fold_' + str(options.split))
+    best_model_dir = os.path.join(options.output_dir, 'best_model_dir', 'fold_' + str(options.split), 'ConvAutoencoder')
     filename = os.path.join(log_dir, 'training.tsv')
 
     if not resume:
@@ -988,7 +988,7 @@ def commandline_to_json(commandline, model_type):
 
     # if train_from_stop_point, do not delete the folders
     output_dir = commandline_arg_dic['output_dir']
-    log_dir = os.path.join(output_dir, 'log_dir', model_type, 'fold_' + str(commandline_arg_dic['split']))
+    log_dir = os.path.join(output_dir, 'log_dir', 'fold_' + str(commandline_arg_dic['split']), model_type)
     check_and_clean(log_dir)
 
     # save to json file
@@ -1011,7 +1011,8 @@ def read_json(options, model_type, json_path=None, test=False):
 
     evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
     if json_path is None:
-        json_path = path.join(options.model_path, 'log_dir', model_type, 'fold_' + str(options.split), 'commandline.json')
+        json_path = path.join(options.model_path, 'log_dir', 'fold_' + str(options.split),
+                              model_type, 'commandline.json')
 
     with open(json_path, "r") as f:
         json_data = json.load(f)
