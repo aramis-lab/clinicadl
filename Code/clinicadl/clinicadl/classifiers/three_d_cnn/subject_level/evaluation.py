@@ -1,3 +1,4 @@
+from __future__ import print_function
 import argparse
 import os
 from os import path
@@ -100,10 +101,8 @@ if __name__ == "__main__":
                                   drop_last=False
                                   )
 
-        metrics_train, loss_train, train_df = test(best_model, train_loader, options.gpu, criterion,
-                                                   verbose=False, full_return=True)
-        metrics_valid, loss_valid, valid_df = test(best_model, valid_loader, options.gpu, criterion,
-                                                   verbose=False, full_return=True)
+        metrics_train, loss_train, train_df = test(best_model, train_loader, options.gpu, criterion, full_return=True)
+        metrics_valid, loss_valid, valid_df = test(best_model, valid_loader, options.gpu, criterion, full_return=True)
 
         acc_train, sen_train, spe_train = metrics_train['balanced_accuracy'] * 100, metrics_train['sensitivity'] * 100,\
                                           metrics_train['specificity'] * 100

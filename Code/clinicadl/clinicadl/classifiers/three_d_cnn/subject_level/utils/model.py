@@ -156,7 +156,7 @@ def transfer_from_autoencoder(model_path):
 
 
 def create_model(options):
-    from .classification_utils import load_model
+    from utils.classification_utils import load_model
     from os import path
 
     model = eval(options.model)()
@@ -168,11 +168,17 @@ def create_model(options):
 
     if options.transfer_learning is not None:
         if transfer_from_autoencoder(options.transfer_learning):
-            model, _ = load_model(model, path.join(options.output_dir, "best_model_dir", "ConvAutoencoder",
-                                                   "fold_" + str(options.split), "Model"), 'model_pretrained.pth.tar')
+            print("A pretrained autoencoder is loaded at path %s" % options.transfer_learning)
+            pretraining_path = path.join(options.output_dir, 'best_model_dir', 'ConvAutoencoder',
+                                            'fold_' + str(options.split), 'Model')
+            apply_autoencoder_weights(model, options.transfer_learning, options)
+            model, _ = load_model(model, pretraining_path, options.gpu, filename='model_pretrained.pth.tar')
+
         else:
-            model, _ = load_model(model, path.join(options.output_dir, "best_model_dir", "CNN",
-                                                   "fold_" + str(options.split)), 'model_pretrained.pth.tar')
+            print("A pretrained model is loaded at path %s" % options.transfer_learning)
+            apply_pretrained_network_weights(model, options.transfer_learning, options)
+            pretraining_path = path.join(options.output_dir, 'best_model_dir', 'CNN', 'fold_' + str(options.split))
+            model, _ = load_model(model, pretraining_path, options.gpu, filename='model_pretrained.pth.tar')
 
     return model
 
@@ -274,17 +280,22 @@ class Decoder(nn.Module):
         return inv_layers
 
 
-def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, fold, difference=0):
+def apply_autoencoder_weights(model, pretrained_autoencoder_path, options, difference=0):
     from copy import deepcopy
     from os import path
     import os
-    from .classification_utils import save_checkpoint
+    from utils.classification_utils import save_checkpoint
 
     decoder = Decoder(model)
     initialize_other_autoencoder(decoder, pretrained_autoencoder_path, difference=difference)
 
     model.features = deepcopy(decoder.encoder)
-    pretraining_path = os.path.join(model_path, 'best_model_dir', 'ConvAutoencoder', 'fold_' + str(fold), 'Model')
+    for layer in model.features:
+        if isinstance(layer, PadMaxPool3d):
+            layer.set_new_return(False, False)
+
+    pretraining_path = os.path.join(options.output_dir, 'best_model_dir', 'ConvAutoencoder',
+                                    'fold_' + str(options.split), 'Model')
     if not path.exists(pretraining_path):
         os.makedirs(pretraining_path)
 
@@ -296,7 +307,7 @@ def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, fo
                     filename='model_pretrained.pth.tar')
 
 
-def apply_pretrained_network_weights(model, pretrained_network_path, model_path, fold):
+def apply_pretrained_network_weights(model, pretrained_network_path, options):
     from os import path
     import os
     from .classification_utils import save_checkpoint
@@ -304,7 +315,7 @@ def apply_pretrained_network_weights(model, pretrained_network_path, model_path,
     results = torch.load(pretrained_network_path)
     model.load_state_dict(results['model'])
 
-    pretraining_path = os.path.join(model_path, 'best_model_dir', 'CNN', 'fold_' + str(fold))
+    pretraining_path = os.path.join(options.output_dir, 'best_model_dir', 'CNN', 'fold_' + str(options.split))
     if not path.exists(pretraining_path):
         os.makedirs(pretraining_path)
 

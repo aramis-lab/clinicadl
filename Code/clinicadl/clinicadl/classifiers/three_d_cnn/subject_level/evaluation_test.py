@@ -1,3 +1,4 @@
+from __future__ import print_function
 import argparse
 import os
 from os import path
@@ -109,8 +110,7 @@ if __name__ == "__main__":
                                  drop_last=False
                                  )
 
-        metrics_test, loss_test, test_df = test(best_model, test_loader, options.gpu, criterion,
-                                                verbose=False, full_return=True)
+        metrics_test, loss_test, test_df = test(best_model, test_loader, options.gpu, criterion, full_return=True)
 
         acc_test, sen_test, spe_test = metrics_test['balanced_accuracy'] * 100, metrics_test['sensitivity'] * 100,\
                                        metrics_test['specificity'] * 100

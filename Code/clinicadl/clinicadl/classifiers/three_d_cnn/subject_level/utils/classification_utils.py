@@ -29,7 +29,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
     filename = os.path.join(log_dir, 'training.tsv')
 
     if not resume:
-        check_and_clean(log_dir)
         check_and_clean(best_model_dir)
 
         results_df = pd.DataFrame(columns=columns)
@@ -293,7 +292,7 @@ def evaluate_prediction(concat_true, concat_prediction, horizon=None):
     return results
 
 
-def test(model, dataloader, use_cuda, criterion, verbose=False, full_return=False):
+def test(model, dataloader, use_cuda, criterion, full_return=False):
     """
     Computes the balanced accuracy of the model
 
@@ -405,23 +404,22 @@ def load_model(model, checkpoint_dir, gpu, filename='model_best.pth.tar'):
 
 def check_and_clean(d):
 
-    # if os.path.exists(d):
-    #     shutil.rmtree(d)
-    # os.makedirs(d)
-    if not os.path.exists(d):
-        os.makedirs(d)
+    if os.path.exists(d):
+        shutil.rmtree(d)
+    os.makedirs(d)
 
 
 def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, resume, options):
     from tensorboardX import SummaryWriter
 
     log_dir = os.path.join(options.output_dir, 'log_dir', 'ConvAutoencoder', 'fold_' + str(options.split))
+    visualization_path = os.path.join(options.output_dir, 'visualize', 'ConvAutoencoder', 'fold_' + str(options.split))
     best_model_dir = os.path.join(options.output_dir, 'best_model_dir', 'ConvAutoencoder', 'fold_' + str(options.split))
     filename = os.path.join(log_dir, 'training.tsv')
 
     if not resume:
-        check_and_clean(log_dir)
         check_and_clean(best_model_dir)
+        check_and_clean(visualization_path)
         columns = ['epoch', 'iteration', 'loss_train', 'mean_loss_train', 'loss_valid', 'mean_loss_valid']
         results_df = pd.DataFrame(columns=columns)
         with open(filename, 'w') as f:
@@ -554,11 +552,14 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
                         filename='optimizer.pth.tar')
 
         if epoch % 10 == 0:
-            visualize_subject(decoder, train_loader, log_dir, epoch, options, first_visu,
+            visualize_subject(decoder, train_loader, visualization_path, epoch, options, first_visu,
                               data_path=options.preprocessing)
             first_visu = False
 
         epoch += 1
+
+    visualize_subject(decoder, train_loader, visualization_path, epoch, options, first_visu,
+                      data_path=options.preprocessing)
 
 
 def test_ae(model, dataloader, use_cuda, criterion, first_layers=None):
@@ -849,12 +850,10 @@ def extract_first_layers(decoder, level):
     return first_layers
 
 
-def visualize_subject(decoder, dataloader, results_path, epoch, options, first_time=False, data_path='linear'):
+def visualize_subject(decoder, dataloader, visualization_path, epoch, options, first_time=False, data_path='linear'):
     from os import path
     import nibabel as nib
     from utils.data_utils import MinMaxNormalization
-
-    visualization_path = path.join(results_path, 'iterative_visualization')
 
     if not path.exists(visualization_path):
         os.makedirs(visualization_path)
@@ -992,8 +991,7 @@ def commandline_to_json(commandline, model_type):
     # if train_from_stop_point, do not delete the folders
     output_dir = commandline_arg_dic['output_dir']
     log_dir = os.path.join(output_dir, 'log_dir', model_type, 'fold_' + str(commandline_arg_dic['split']))
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
+    check_and_clean(log_dir)
 
     # save to json file
     json = json.dumps(commandline_arg_dic)
