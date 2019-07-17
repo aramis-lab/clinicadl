@@ -25,7 +25,7 @@ parser.add_argument("cohort", type=str,
 parser.add_argument("--diagnoses", default=None, type=str, nargs='+')
 parser.add_argument("--preprocessing", default="linear", choices=["linear", "mniskullstrip", "mni"], type=str,
                     help="Defines the path to data in CAPS.")
-parser.add_argument("--selection", default="loss", type=str, choices=['loss', 'accuracy'],
+parser.add_argument("--selection_eval", default="loss", type=str, choices=['loss', 'accuracy'],
                     help="Loads the model selected on minimal loss or maximum accuracy on validation.")
 parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
                     help="Performs MinMaxNormalization for visualization")
@@ -83,7 +83,7 @@ if __name__ == "__main__":
 
         criterion = nn.CrossEntropyLoss()
 
-        if options.selection == 'loss':
+        if options.selection_eval == 'loss':
             model_dir = os.path.join(CNN_dir, fold_dir, 'best_loss')
             folder_name = 'best_loss'
         else:

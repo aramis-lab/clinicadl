@@ -16,7 +16,7 @@ parser.add_argument("model_path", type=str,
                     help="Path to the trained model folder.")
 
 # Model selection
-parser.add_argument("--selection", default="loss", type=str, choices=['loss', 'accuracy'],
+parser.add_argument("--selection_eval", default="loss", type=str, choices=['loss', 'accuracy'],
                     help="Loads the model selected on minimal loss or maximum accuracy on validation.")
 
 # Computational ressources
@@ -44,8 +44,8 @@ if __name__ == "__main__":
             choices.append(name)
 
     # Loop on all folds trained
-    CNN_dir = path.join(options.model_path, 'best_model_dir', 'CNN')
-    folds_dir = os.listdir(CNN_dir)
+    model_dir = path.join(options.model_path, 'best_model_dir')
+    folds_dir = os.listdir(model_dir)
     for fold_dir in folds_dir:
         split = int(fold_dir[-1])
         options.split = split
@@ -65,11 +65,11 @@ if __name__ == "__main__":
 
         criterion = nn.CrossEntropyLoss()
 
-        if options.selection == 'loss':
-            model_dir = path.join(CNN_dir, fold_dir, 'best_loss')
+        if options.selection_eval == 'loss':
+            model_dir = path.join(model_dir, fold_dir, 'CNN', 'best_loss')
             folder_name = 'best_loss'
         else:
-            model_dir = path.join(CNN_dir, fold_dir, 'best_acc')
+            model_dir = path.join(model_dir, fold_dir, 'CNN', 'best_acc')
             folder_name = 'best_acc'
 
         best_model, best_epoch = load_model(model, model_dir, options.gpu,
