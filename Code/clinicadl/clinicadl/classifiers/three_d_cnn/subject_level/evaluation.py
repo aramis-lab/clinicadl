@@ -117,20 +117,6 @@ if __name__ == "__main__":
         if not path.exists(path.join(evaluation_path, folder_name)):
             os.makedirs(path.join(evaluation_path, folder_name))
 
-        text_file = open(path.join(evaluation_path, 'evaluation_' + options.selection + '.txt'), 'w')
-        text_file.write('Best epoch: %i \n' % best_epoch)
-        text_file.write('Accuracy on training set: %.2f %% \n' % acc_train)
-        text_file.write('Loss on training set: %f \n' % loss_train)
-        text_file.write('Sensitivities on training set: %.2f %%, %.2f %% \n' % (sen_train, sen_train))
-        text_file.write('Specificities on training set: %.2f %%, %.2f %% \n' % (spe_train, spe_train))
-
-        text_file.write('Accuracy on validation set: %.2f %% \n' % acc_valid)
-        text_file.write('Loss on validation set: %f \n' % loss_valid)
-        text_file.write('Sensitivities on validation set: %.2f %%, %.2f %% \n' % (sen_valid, sen_valid))
-        text_file.write('Specificities on validation set: %.2f %%, %.2f %% \n' % (spe_valid, spe_valid))
-
-        text_file.close()
-
         train_df.to_csv(path.join(evaluation_path, folder_name, 'train_subject_level_result.tsv'), sep='\t', index=False)
         valid_df.to_csv(path.join(evaluation_path, folder_name, 'valid_subject_level_result.tsv'), sep='\t', index=False)
 

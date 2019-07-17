@@ -98,29 +98,11 @@ def main(options):
                                                              options.learning_rate)
 
     print('Resuming the training task')
-    training_time = time()
 
     train(model, train_loader, valid_loader, criterion, optimizer, True, options)
-    training_time = time() - training_time
-
-    # Load best model
-    best_model_dir = path.join(options.output_dir, 'best_model_dir', 'CNN', 'fold_' + str(options.split))
-    best_model, best_epoch = load_model(model, path.join(best_model_dir, 'best_loss'), options.gpu)
-
-    # Get best performance
-    acc_mean_train_subject, _ = test(best_model, train_loader, options.gpu, criterion)
-    acc_mean_valid_subject, _ = test(best_model, valid_loader, options.gpu, criterion)
-    log_dir = path.join(options.output_dir, 'log_dir', 'CNN', 'fold_' + str(options.split))
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)
-    text_file = open(path.join(log_dir, 'fold_output.txt'), 'w')
-    text_file.write('Loss selection \n')
-    text_file.write('Best loss : %i \n' % best_epoch)
-    text_file.write('Time of training: %d s \n' % total_time)
-    text_file.write('Training accuracy: %.2f %% \n' % (acc_mean_train_subject * 100))
-    text_file.write('Validation accuracy: %.2f %% \n' % (acc_mean_valid_subject * 100))
-    text_file.close()
 
 
 if __name__ == "__main__":
