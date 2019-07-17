@@ -414,10 +414,6 @@ def load_data(train_val_path, diagnoses_list, split, n_splits=None, baseline=Tru
         valid_path = path.join(train_val_path, 'validation_splits-' + str(n_splits),
                                'split-' + str(split))
 
-    if data_path in ['mni', 'dartel']:
-        train_path = path.join(train_path, 'SPM')
-        valid_path = path.join(valid_path, 'SPM')
-
     print("Train", train_path)
     print("Valid", valid_path)
 
