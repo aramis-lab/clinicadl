@@ -4,9 +4,8 @@ from time import time
 import torch
 from torch.utils.data import DataLoader
 
-from utils.classification_utils import train, test, load_model, read_json
+from utils.classification_utils import train, load_model, read_json
 from utils.data_utils import MRIDataset, MinMaxNormalization, load_data
-from utils.model import create_model
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 
@@ -78,7 +77,7 @@ def main(options):
 
     # Initialize the model
     print('Initialization of the model')
-    model = create_model(options)
+    model = eval("model." + options.model)
     model_dir = path.join(options.model_path, "best_model_dir", "CNN", "fold_" + str(options.split))
     model, current_epoch = load_model(model, model_dir, options.gpu, 'checkpoint.pth.tar')
 

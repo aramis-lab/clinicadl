@@ -78,7 +78,7 @@ def main(options):
 
     # Initialize the model
     print('Initialization of the model')
-    model = eval(options.model)()
+    model = eval("model." + options.model)()
     decoder = Decoder(model)
 
     decoder, current_epoch = load_model(decoder, options.model_path, options.gpu, 'checkpoint.pth.tar')

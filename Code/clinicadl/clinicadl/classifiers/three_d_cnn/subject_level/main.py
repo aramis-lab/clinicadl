@@ -4,7 +4,7 @@ from time import time
 from os import path
 from torch.utils.data import DataLoader
 
-from utils.classification_utils import load_model, train, test, commandline_to_json
+from utils.classification_utils import train, commandline_to_json
 from utils.data_utils import MinMaxNormalization, MRIDataset, load_data, generate_sampler
 from utils.model import create_model
 
@@ -57,11 +57,13 @@ parser.add_argument("--patience", type=int, default=10,
 parser.add_argument("--tolerance", type=float, default=0.05,
                     help="Tolerance value for the early stopping.")
 
-# Pretraining argument
+# Pretraining arguments
 parser.add_argument("-t", "--transfer_learning", default=None, type=str,
                     help="If a value is given, use autoencoder pretraining."
                          "If an existing path is given, a pretrained autoencoder is used."
                          "Else a new autoencoder is trained")
+parser.add_argument("--selection", default="acc", choices=["loss", "acc"], type=str,
+                    help="Allow to choose which model of the experiment is loaded.")
 
 # Optimizer arguments
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],

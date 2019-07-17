@@ -29,8 +29,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
     filename = os.path.join(log_dir, 'training.tsv')
 
     if not resume:
-        check_and_clean(best_model_dir)
-
         results_df = pd.DataFrame(columns=columns)
         with open(filename, 'w') as f:
             results_df.to_csv(f, index=False, sep='\t')
