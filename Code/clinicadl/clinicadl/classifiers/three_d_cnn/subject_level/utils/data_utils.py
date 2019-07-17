@@ -56,10 +56,6 @@ class MRIDataset(Dataset):
             image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
                                    't1', 'spm', 'segmentation', 'normalized_space',
                                    img_name + '_' + sess_name + '_space-Ixi549Space_T1w.pt')
-            # if not path.exists(image_path):
-            #     image_path = path.join(self.img_dir, 'subjects', img_name, 'ses-M00-python2',
-            #                            't1', 'spm', 'segmentation', 'normalized_space',
-            #                            img_name + '_ses-M00_space-Ixi549Space_T1w.pt')
         else:
             raise NotImplementedError("The data path %s is not implemented" % self.data_path)
 
