@@ -149,21 +149,21 @@ def create_model(options):
     else:
         model.cpu()
 
-    best_model_dir = path.join(options.output_dir, 'best_model_dir', 'CNN', 'fold_' + str(options.split))
+    best_model_dir = path.join(options.output_dir, 'best_model_dir', 'fold_' + str(options.split), 'CNN')
     check_and_clean(best_model_dir)
 
     if options.transfer_learning is not None:
         if transfer_from_autoencoder(options.transfer_learning):
             print("A pretrained autoencoder is loaded at path %s" % options.transfer_learning)
-            pretraining_path = path.join(options.output_dir, 'best_model_dir', 'ConvAutoencoder',
-                                            'fold_' + str(options.split), 'Model')
+            pretraining_path = path.join(options.output_dir, 'best_model_dir', 'fold_' + str(options.split),
+                                         'ConvAutoencoder', 'Encoder')
             apply_autoencoder_weights(model, options.transfer_learning, options)
             model, _ = load_model(model, pretraining_path, options.gpu, filename='model_pretrained.pth.tar')
 
         else:
             print("A pretrained model is loaded at path %s" % options.transfer_learning)
             apply_pretrained_network_weights(model, options.transfer_learning, options)
-            pretraining_path = path.join(options.output_dir, 'best_model_dir', 'CNN', 'fold_' + str(options.split))
+            pretraining_path = path.join(options.output_dir, 'best_model_dir', 'fold_' + str(options.split), 'CNN')
             print("The model is saved at path", pretraining_path)
             model, _ = load_model(model, pretraining_path, options.gpu, filename='model_pretrained.pth.tar')
 
