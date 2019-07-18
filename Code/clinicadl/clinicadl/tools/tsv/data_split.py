@@ -70,7 +70,6 @@ if __name__ == "__main__":
     import pandas as pd
     import os
     from os import path
-    from copy import copy
     import numpy as np
 
     parser = argparse.ArgumentParser(description="Argparser for data formatting")
