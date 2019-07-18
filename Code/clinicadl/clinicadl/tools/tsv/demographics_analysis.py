@@ -2,7 +2,7 @@
 if __name__ == "__main__":
     import argparse
     import pandas as pd
-    from utils import *
+    from tsv_utils import first_session, next_session, add_demographics
     import os
     from os import path
     from copy import copy

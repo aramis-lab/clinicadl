@@ -8,7 +8,7 @@ NB: Other preprocessing may be needed on the merged file obtained: for example t
 in the OASIS dataset is not done in this script. Moreover a quality check may be needed at the end of preprocessing
 pipelines, leading to the removal of some subjects.
 """
-from utils import *
+from tsv_utils import neighbour_session, last_session, after_end_screening
 
 
 def cleaning_nan_diagnoses(bids_df):
@@ -328,6 +328,9 @@ if __name__ == "__main__":
         if fileext == '.tsv':
             session = filename.split('_')[-1]
             missing_mods_df = pd.read_csv(path.join(args.missing_mods, file), sep='\t')
+            if len(missing_mods_df) == 0:
+                raise ValueError("Empty DataFrame at path %s" % path.join(args.missing_mods, file))
+
             missing_mods_df.set_index('participant_id', drop=True, inplace=True)
             missing_mods_dict[session] = missing_mods_df
 
