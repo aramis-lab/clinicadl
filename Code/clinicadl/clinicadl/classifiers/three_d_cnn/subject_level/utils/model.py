@@ -132,7 +132,8 @@ def transfer_from_autoencoder(experiment_path):
     import os
 
     # Find specific folders in experiment directory
-    models = os.listdir(os.path.join(experiment_path, "best_model_dir"))
+    folds = os.listdir(os.path.join(experiment_path, "best_model_dir"))
+    models = os.listdir(os.path.join(experiment_path, "best_model_dir", folds[0]))
     if models == ["ConvAutoencoder"]:
         return True
     return False
@@ -273,7 +274,7 @@ def apply_autoencoder_weights(model, experiment_path, options, difference=0):
     from utils.classification_utils import save_checkpoint, check_and_clean
 
     decoder = Decoder(model)
-    model_path = os.path.join(experiment_path, "best_model_dir", "ConvAutoencoder", "fold_" + str(options.split),
+    model_path = os.path.join(experiment_path, "best_model_dir", "fold_" + str(options.split), "ConvAutoencoder",
                               "best_loss", "model_best.pth.tar")
     initialize_other_autoencoder(decoder, model_path, difference=difference)
 
@@ -282,8 +283,8 @@ def apply_autoencoder_weights(model, experiment_path, options, difference=0):
         if isinstance(layer, PadMaxPool3d):
             layer.set_new_return(False, False)
 
-    pretraining_path = os.path.join(options.output_dir, 'best_model_dir', 'ConvAutoencoder',
-                                    'fold_' + str(options.split), 'Model')
+    pretraining_path = os.path.join(options.output_dir, 'best_model_dir', 'fold_' + str(options.split),
+                                    'ConvAutoencoder', 'Encoder')
     check_and_clean(pretraining_path)
 
     save_checkpoint({'model': model.state_dict(),
@@ -298,12 +299,12 @@ def apply_pretrained_network_weights(model, experiment_path, options):
     import os
     from utils.classification_utils import save_checkpoint, check_and_clean
 
-    model_path = os.path.join(experiment_path, "best_model_dir", "CNN", "fold_" + str(options.split),
+    model_path = os.path.join(experiment_path, "best_model_dir", "fold_" + str(options.split), "CNN",
                               "best_loss", "model_best.pth.tar")
     results = torch.load(model_path)
     model.load_state_dict(results['model'])
 
-    pretraining_path = os.path.join(options.output_dir, 'best_model_dir', 'CNN', 'fold_' + str(options.split))
+    pretraining_path = os.path.join(options.output_dir, 'best_model_dir', 'fold_' + str(options.split), 'CNN')
     check_and_clean(pretraining_path)
 
     save_checkpoint({'model': model.state_dict(),
