@@ -21,6 +21,8 @@ if __name__ == "__main__":
     # Modality selection
     parser.add_argument("--diagnoses", nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'],
                         default=['AD', 'CN'], help="Diagnosis that must be selected from the tsv file")
+    parser.add_argument("--mmse_name", type=str, default="MMS",
+                        help="Name of the variable related to the MMSE score in the merged tsv file.")
 
     args = parser.parse_args()
 
@@ -30,7 +32,7 @@ if __name__ == "__main__":
     if not path.exists(parent_directory):
         os.makedirs(parent_directory)
 
-    fields_dict = {'age': 'age', 'sex': 'sex', 'MMSE': 'MMS', 'CDR': 'cdr_global'}
+    fields_dict = {'age': 'age', 'sex': 'sex', 'MMSE': args.mmse_name, 'CDR': 'cdr_global'}
 
     columns = ['n_subjects', 'mean_age', 'std_age', 'min_age', 'max_age', 'sexF', 'sexM', 'mean_MMSE', 'std_MMSE',
                'min_MMSE', 'max_MMSE', 'CDR_0', 'CDR_0.5', 'CDR_1', 'CDR_2', 'CDR_3', 'mean_scans', 'std_scans',
