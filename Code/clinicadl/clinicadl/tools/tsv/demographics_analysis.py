@@ -1,12 +1,22 @@
+# coding: utf-8
+
+__author__ = "Elina Thibeau--Sutre"
+__copyright__ = "Copyright 2016-2019 The Aramis Lab Team"
+__credits__ = [""]
+__license__ = "See LICENSE.txt file"
+__version__ = "0.1.0"
+__maintainer__ = "Elina Thibeau--Sutre"
+__email__ = "elina.ts@free.fr"
+__status__ = "Completed"
+
+import argparse
+import pandas as pd
+from tsv_utils import first_session, next_session, add_demographics
+import os
+from os import path
+import numpy as np
 
 if __name__ == "__main__":
-    import argparse
-    import pandas as pd
-    from tsv_utils import first_session, next_session, add_demographics
-    import os
-    from os import path
-    from copy import copy
-    import numpy as np
 
     parser = argparse.ArgumentParser(description="Argparser for data formatting")
 
@@ -32,7 +42,7 @@ if __name__ == "__main__":
     if not path.exists(parent_directory):
         os.makedirs(parent_directory)
 
-    fields_dict = {'age': 'age', 'sex': 'sex', 'MMSE': args.mmse_name, 'CDR': 'cdr_global'}
+    fields_dict = {'age': 'age_bl', 'sex': 'sex', 'MMSE': args.mmse_name, 'CDR': 'cdr_global'}
 
     columns = ['n_subjects', 'mean_age', 'std_age', 'min_age', 'max_age', 'sexF', 'sexM', 'mean_MMSE', 'std_MMSE',
                'min_MMSE', 'max_MMSE', 'CDR_0', 'CDR_0.5', 'CDR_1', 'CDR_2', 'CDR_3', 'mean_scans', 'std_scans',
