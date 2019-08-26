@@ -140,9 +140,17 @@ def transfer_from_autoencoder(experiment_path):
 
 
 def create_model(options):
-    from utils.classification_utils import load_model, check_and_clean
+    from tools.deep_learning.classification_utils import load_model, check_and_clean
     from os import path
+    import inspect
 
+    choices = []
+    for name, obj in inspect.getmembers:
+        if inspect.isclass(obj):
+            choices.append(name)
+
+    if options.model not in choices:
+        raise NotImplementedError('The model wanted %s has not been implemented in the module model.py' % options.model)
     model = eval(options.model)()
 
     if options.gpu:
@@ -150,8 +158,9 @@ def create_model(options):
     else:
         model.cpu()
 
-    best_model_dir = path.join(options.output_dir, 'best_model_dir', 'fold_' + str(options.split), 'CNN')
-    check_and_clean(best_model_dir)
+    # TODO if resume must not check_and_clean
+    # best_model_dir = path.join(options.output_dir, 'best_model_dir', 'fold_' + str(options.split), 'CNN')
+    # check_and_clean(best_model_dir)
 
     if options.transfer_learning is not None:
         if transfer_from_autoencoder(options.transfer_learning):
@@ -271,7 +280,7 @@ class Decoder(nn.Module):
 def apply_autoencoder_weights(model, experiment_path, options, difference=0):
     from copy import deepcopy
     import os
-    from utils.classification_utils import save_checkpoint, check_and_clean
+    from tools.deep_learning.classification_utils import save_checkpoint, check_and_clean
 
     decoder = Decoder(model)
     model_path = os.path.join(experiment_path, "best_model_dir", "fold_" + str(options.split), "ConvAutoencoder",
@@ -297,7 +306,7 @@ def apply_autoencoder_weights(model, experiment_path, options, difference=0):
 
 def apply_pretrained_network_weights(model, experiment_path, options):
     import os
-    from utils.classification_utils import save_checkpoint, check_and_clean
+    from tools.deep_learning.classification_utils import save_checkpoint, check_and_clean
 
     model_path = os.path.join(experiment_path, "best_model_dir", "fold_" + str(options.split), "CNN",
                               "best_loss", "model_best.pth.tar")

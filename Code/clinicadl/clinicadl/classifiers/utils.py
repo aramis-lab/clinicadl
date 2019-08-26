@@ -1,23 +1,8 @@
-__author__ = "Junhao Wen, Elina Thibeausutre"
-__copyright__ = "Copyright 2018 The Aramis Lab Team"
-__credits__ = ["Junhao Wen"]
-__license__ = "See LICENSE.txt file"
-__version__ = "0.1.0"
-__maintainer__ = "Junhao Wen"
-__email__ = "junhao.wen89@gmail.com"
-__status__ = "Development"
-
 import numpy as np
 
-class EarlyStopping(object):
 
-    """
-    This is a class to implement early stopping
-    The criterion here:
-        i) patience indicates how many epochs that the model could tolerate no loss decreasing or acc improving
-        ii) min_delta gives the amplitude of loss decreasing or acc improving for each epoch
-    """
-    def __init__(self, mode='loss', min_delta=0, patience=10):
+class EarlyStopping(object):
+    def __init__(self, mode='min', min_delta=0, patience=10):
         self.mode = mode
         self.min_delta = min_delta
         self.patience = patience
@@ -50,10 +35,10 @@ class EarlyStopping(object):
         return False
 
     def _init_is_better(self, mode, min_delta):
-        if mode not in {'loss', 'acc'}:
+        if mode not in {'min', 'max'}:
             raise ValueError('mode ' + mode + ' is unknown!')
 
-        if mode == 'loss':
+        if mode == 'min':
             self.is_better = lambda a, best: a < best - best * min_delta
-        if mode == 'acc':
+        if mode == 'max':
             self.is_better = lambda a, best: a > best + best * min_delta

@@ -202,7 +202,7 @@ def main(options):
             valid_probas = []
 
             # initialize the early stopping instance
-            early_stopping = EarlyStopping('loss', min_delta=options.tolerance, patience=options.patience)
+            early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
 
             for epoch in range(options.epochs):
                 print("At %s -th epoch." % str(epoch))
