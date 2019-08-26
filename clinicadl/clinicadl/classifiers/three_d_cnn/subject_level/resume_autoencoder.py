@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 
 from classifiers.three_d_cnn.subject_level.utils import ae_finetuning
 from tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
-from tools.deep_learning import load_model, create_decoder, load_optimizer, read_json
+from tools.deep_learning import load_model, create_autoencoder, load_optimizer, read_json
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 
@@ -65,7 +65,7 @@ def main(options):
 
     # Initialize the model
     print('Initialization of the model')
-    decoder = create_decoder(options.model)
+    decoder = create_autoencoder(options.model)
 
     decoder, current_epoch = load_model(decoder, options.model_path, options.gpu, 'checkpoint.pth.tar')
     if options.gpu:

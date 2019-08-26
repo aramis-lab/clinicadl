@@ -1,4 +1,4 @@
-from .models import create_decoder, create_model, load_model, load_optimizer
+from .models import create_autoencoder, create_model, load_model, load_optimizer
 from .iotools import read_json, commandline_to_json
 
 
