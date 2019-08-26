@@ -23,7 +23,7 @@ parser.add_argument("model", type=str,
                     help="model selected")
 
 # Data Management
-parser.add_argument("--preprocessing", default="linear", choices=["linear", "mniskullstrip", "mni"], type=str,
+parser.add_argument("--preprocessing", default="linear", choices=["linear", "mni"], type=str,
                     help="Defines the path to data in CAPS.")
 parser.add_argument("--diagnoses", "-d", default=['AD', 'CN'], nargs='+', type=str,
                     help="The diagnoses used for the classification")
@@ -87,10 +87,6 @@ parser.add_argument('--num_threads', type=int, default=0,
 
 def main(options):
 
-    if "mni" in options.preprocessing:
-        options.preprocessing = "mni"
-        print(options.preprocessing)
-
     torch.set_num_threads(options.num_threads)
     if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
@@ -135,7 +131,7 @@ def main(options):
 
     # Initialize the model
     print('Initialization of the model')
-    model = create_model(options)
+    model = create_model(options.model, options.gpu)
     model = transfer_learning(model, options.split, options.output_dir, options.transfer_learning, options.gpu)
 
     # Define criterion and optimizer
