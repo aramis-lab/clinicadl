@@ -4,7 +4,7 @@ from os import path
 from time import time
 from torch.utils.data import DataLoader
 
-from classifiers.three_d_cnn.subject_level.classification import ae_finetuning
+from classifiers.three_d_cnn.subject_level.utils import ae_finetuning
 from tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
 from tools.deep_learning import load_model, create_decoder, load_optimizer, read_json
 

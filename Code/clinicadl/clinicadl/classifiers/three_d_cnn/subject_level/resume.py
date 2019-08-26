@@ -4,7 +4,7 @@ from time import time
 import torch
 from torch.utils.data import DataLoader
 
-from classifiers.three_d_cnn.subject_level.classification import train
+from classifiers.three_d_cnn.subject_level.utils import train
 from tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
 from tools.deep_learning import load_model, load_optimizer, read_json
 

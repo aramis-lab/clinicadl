@@ -132,7 +132,7 @@ class Decoder(nn.Module):
 def apply_autoencoder_weights(model, source_path, target_path, split, difference=0):
     from copy import deepcopy
     import os
-    from classifiers.three_d_cnn.subject_level.classification import save_checkpoint, check_and_clean
+    from classifiers.three_d_cnn.subject_level.utils import save_checkpoint, check_and_clean
 
     decoder = Decoder(model)
     model_path = os.path.join(source_path, "best_model_dir", "fold_" + str(split), "ConvAutoencoder",
@@ -164,7 +164,7 @@ def apply_pretrained_network_weights(model, source_path, target_path, split):
     import os
     import torch
 
-    from classifiers.three_d_cnn.subject_level.classification import save_checkpoint, check_and_clean
+    from tools.deep_learning.iotools import save_checkpoint, check_and_clean
 
     model_path = os.path.join(source_path, "best_model_dir", "fold_" + str(split), "CNN",
                               "best_loss", "model_best.pth.tar")
