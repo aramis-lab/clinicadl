@@ -1,4 +1,5 @@
 from .subject_level import Conv5_FC3, Conv5_FC3_mni
+from .slice_level import Conv_4_FC_3
 from .autoencoder import Decoder, initialize_other_autoencoder, transfer_learning
 
 
