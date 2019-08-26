@@ -1,4 +1,4 @@
-from .modules import PadMaxPool3d, Flatten, CropMaxUnpool3d, Reshape
+from tools.deep_learning.modules import PadMaxPool3d, Flatten, CropMaxUnpool3d, Reshape
 import torch.nn as nn
 import torch
 from copy import deepcopy
@@ -353,58 +353,5 @@ def correct_model_options(model_options):
 
     return corrected_options
 
-#
-# def parse_model_name(model_path, options, position=-1):
-#     import os
-#
-#     model_name = model_path.split(os.sep)[position]
-#     model_options = model_name.split('_')
-#     model_options = correct_model_options(model_options)
-#     options.log_dir = os.path.abspath(os.path.join(options.model_path, os.pardir))
-#
-#     for option in model_options:
-#         option_split = option.split("-")
-#         key = option_split[0]
-#         if len(option_split) > 2:
-#             content = "-".join(option_split[1:])
-#         else:
-#             content = option_split[1]
-#
-#         if key == 'model':
-#             options.model = content
-#         elif key == 'task':
-#             diagnoses = content.split('_')
-#             if 'baseline' in diagnoses:
-#                 options.baseline = True
-#                 diagnoses.remove('baseline')
-#             else:
-#                 options.baseline = False
-#             if options.diagnoses is None:
-#                 options.diagnoses = diagnoses
-#         elif key == 'gpu':
-#             options.gpu = bool(content)
-#         elif key == 'epochs':
-#             options.epochs = int(content)
-#         elif key == 'workers':
-#             options.num_workers = int(content)
-#         elif key == 'threads':
-#             options.num_threads = int(content)
-#         elif key == 'lr':
-#             options.learning_rate = float(content)
-#         elif key == 'norm':
-#             options.minmaxnormalization = bool(content)
-#         elif key == 'batch':
-#             options.batch_size = int(content)
-#         elif key == 'acc':
-#             options.accumulation_steps = int(content)
-#         elif key == 'eval':
-#             options.evaluation_steps = int(content)
-#         elif key == 'splits':
-#             options.n_splits = int(content)
-#         elif key == 'split':
-#             options.split = int(content)
-#         elif key == 'preprocessing':
-#             options.preprocessing = content
-#
-#     return options
+
 
