@@ -1,5 +1,5 @@
 from .subject_level import Conv5_FC3, Conv5_FC3_mni
-from .autoencoder import Decoder, initialize_other_autoencoder
+from .autoencoder import Decoder, initialize_other_autoencoder, transfer_learning
 
 
 def create_model(model_name, gpu=False):

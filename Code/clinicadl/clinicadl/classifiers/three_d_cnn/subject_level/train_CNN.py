@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from classifiers.three_d_cnn.subject_level.utils import train
 from tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data, generate_sampler
 from tools.deep_learning import create_model, commandline_to_json
-from tools.deep_learning.models.autoencoder import transfer_learning
+from tools.deep_learning.models import transfer_learning
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 
