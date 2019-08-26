@@ -7,6 +7,7 @@ import pandas as pd
 from time import time
 
 from tools.deep_learning.iotools import check_and_clean, save_checkpoint
+from tools.deep_learning import EarlyStopping
 
 
 def train(model, train_loader, valid_loader, criterion, optimizer, resume, options):
@@ -222,36 +223,15 @@ def evaluate_prediction(concat_true, concat_prediction, horizon=None):
 
     if horizon is not None:
         y = list(concat_true)[-horizon:]
-        y_hat = list(concat_prediction)[-horizon:]
+        y_pred = list(concat_prediction)[-horizon:]
     else:
         y = list(concat_true)
-        y_hat = list(concat_prediction)
+        y_pred = list(concat_prediction)
 
-    true_positive = 0.0
-    true_negative = 0.0
-    false_positive = 0.0
-    false_negative = 0.0
-
-    tp = []
-    tn = []
-    fp = []
-    fn = []
-
-    for i in range(len(y)):
-        if y[i] == 1:
-            if y_hat[i] == 1:
-                true_positive += 1
-                tp.append(i)
-            else:
-                false_negative += 1
-                fn.append(i)
-        else:  # -1
-            if y_hat[i] == 0:
-                true_negative += 1
-                tn.append(i)
-            else:
-                false_positive += 1
-                fp.append(i)
+    true_positive = np.sum((y_pred == 1) & (y == 1))
+    true_negative = np.sum((y_pred == 0) & (y == 0))
+    false_positive = np.sum((y_pred == 1) & (y == 0))
+    false_negative = np.sum((y_pred == 0) & (y == 1))
 
     accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
 
@@ -283,7 +263,6 @@ def evaluate_prediction(concat_true, concat_prediction, horizon=None):
                'specificity': specificity,
                'ppv': ppv,
                'npv': npv,
-               'confusion_matrix': {'tp': len(tp), 'tn': len(tn), 'fp': len(fp), 'fn': len(fn)}
                }
 
     return results
@@ -504,14 +483,12 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
                         filename='optimizer.pth.tar')
 
         if epoch % 10 == 0:
-            visualize_subject(decoder, train_loader, visualization_path, epoch, options, first_visu,
-                              data_path=options.preprocessing)
+            visualize_subject(decoder, train_loader, visualization_path, options, epoch=epoch, save_input=first_visu)
             first_visu = False
 
         epoch += 1
 
-    visualize_subject(decoder, train_loader, visualization_path, epoch, options, first_visu,
-                      data_path=options.preprocessing)
+    visualize_subject(decoder, train_loader, visualization_path, options, epoch=epoch, save_input=first_visu)
 
 
 def test_ae(model, dataloader, use_cuda, criterion, first_layers=None):
@@ -545,285 +522,17 @@ def test_ae(model, dataloader, use_cuda, criterion, first_layers=None):
     return total_loss
 
 
-def greedy_learning(model, train_loader, valid_loader, criterion, optimizer, resume, options):
-    from os import path
-    from tools.deep_learning.models.autoencoder import Decoder
-    from tools.deep_learning.models import load_model
-    from copy import deepcopy
-
-    if resume:
-        raise NotImplementedError('The resuming version of greedy learning of AE is not implemented.')
-
-    if not isinstance(model, Decoder):
-        decoder = Decoder(model)
-    else:
-        decoder = deepcopy(model)
-
-    level = 0
-    first_layers = extract_first_layers(decoder, level)
-    auto_encoder = extract_ae(decoder, level)
-
-    while len(auto_encoder) > 0:
-        print('Cell learning level %i' % level)
-        level_path = path.join(options.output_dir, 'level-' + str(level))
-        # Create the method to train with first layers
-        ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterion, level_path, options)
-        best_ae, _ = load_model(auto_encoder, level_path)
-
-        # Copy the weights of best_ae in decoder encoder and decoder layers
-        set_weights(decoder, best_ae, level)
-
-        # Prepare next iteration
-        level += 1
-        first_layers = extract_first_layers(decoder, level)
-        auto_encoder = extract_ae(decoder, level)
-
-    if options.add_sigmoid:
-        if isinstance(decoder.decoder[-1], torch.nn.ReLU):
-            decoder.decoder = torch.nn.Sequential(*list(decoder.decoder)[:-1])
-        decoder.decoder.add_module("sigmoid", torch.nn.Sigmoid())
-
-    ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, False, options)
-
-    # Updating and setting weights of the convolutional layers
-    best_decoder, best_epoch = load_model(decoder, options.output_dir)
-    if not isinstance(model, Decoder):
-        model.features = deepcopy(best_decoder.encoder)
-        save_checkpoint({'model': model.state_dict(),
-                         'epoch': best_epoch},
-                        False, False,
-                        os.path.join(options.output_dir),
-                        'model_pretrained.pth.tar')
-
-    if options.visualization:
-        visualize_ae(best_decoder, train_loader, os.path.join(options.output_dir, "train"), options.gpu)
-        visualize_ae(best_decoder, valid_loader, os.path.join(options.output_dir, "valid"), options.gpu)
-
-    return model
-
-
-def set_weights(decoder, auto_encoder, level):
-    import torch.nn as nn
-
-    n_conv = 0
-    i_ae = 0
-
-    for i, layer in enumerate(decoder.encoder):
-        if isinstance(layer, nn.Conv3d):
-            n_conv += 1
-
-        if n_conv == level + 1:
-            decoder.encoder[i] = auto_encoder.encoder[i_ae]
-            # Do BatchNorm layers are not used in decoder
-            if not isinstance(layer, nn.BatchNorm3d):
-                decoder.decoder[len(decoder) - (i+1)] = auto_encoder.decoder[len(auto_encoder) - (i_ae+1)]
-            i_ae += 1
-
-    return decoder
-
-
-def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterion, results_path, options):
-    from os import path
-    from tensorboardX import SummaryWriter
-
-    if not path.exists(results_path):
-        os.makedirs(results_path)
-
-    filename = os.path.join(results_path, 'training.tsv')
-
-    # Create writers
-    writer_train = SummaryWriter(os.path.join(results_path, 'train'))
-    writer_valid = SummaryWriter(os.path.join(results_path, 'valid'))
-
-    columns = ['epoch', 'iteration', 'loss_train', 'mean_loss_train', 'loss_valid', 'mean_loss_valid']
-    results_df = pd.DataFrame(columns=columns)
-    with open(filename, 'w') as f:
-        results_df.to_csv(f, index=False, sep='\t')
-
-    auto_encoder.train()
-    first_layers.eval()
-    print(first_layers)
-    print(auto_encoder)
-    optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, auto_encoder.parameters()),
-                                                         options.transfer_learning_rate)
-
-    if options.gpu:
-        auto_encoder.cuda()
-
-    # Initialize variables
-    best_loss_valid = np.inf
-    epoch = 0
-
-    early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
-    loss_valid = None
-    print("Beginning training")
-
-    while epoch < options.transfer_learning_epochs and not early_stopping.step(loss_valid):
-        print("At %d-th epoch." % epoch)
-
-        auto_encoder.zero_grad()
-        evaluation_flag = True
-        step_flag = True
-        concat_loss = []
-        for i, data in enumerate(train_loader):
-            if options.gpu:
-                imgs = data['image'].cuda()
-            else:
-                imgs = data['image']
-
-            hidden = first_layers(imgs)
-            train_output = auto_encoder(hidden)
-            loss = criterion(train_output, hidden)
-            concat_loss.append(loss.item())
-
-            loss.backward()
-
-            # writer_train.add_scalar('training_loss', loss.item() / len(data), i + epoch * len(train_loader.dataset))
-
-            if (i+1) % options.accumulation_steps == 0:
-                step_flag = False
-                optimizer.step()
-                optimizer.zero_grad()
-
-                # Evaluate the decoder only when no gradients are accumulated
-                if (i+1) % options.evaluation_steps == 0:
-                    evaluation_flag = False
-                    print('Iteration %d' % i)
-                    if options.training_evaluation == 'n_batches':
-                        loss_train = sum(concat_loss[-options.evaluation_steps:])
-                        mean_loss_train = loss_train / (options.evaluation_steps * train_loader.batch_size)
-                    else:
-                        loss_train = test_ae(auto_encoder, train_loader, options.gpu, criterion)
-                        mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
-
-                    loss_valid = test_ae(auto_encoder, valid_loader, options.gpu, criterion, first_layers=first_layers)
-                    mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.dataset.size)
-                    auto_encoder.train()
-
-                    writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
-                    writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
-                    print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
-
-                    row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
-                    row_df = pd.DataFrame(row, columns=columns)
-                    with open(filename, 'a') as f:
-                        row_df.to_csv(f, header=False, index=False, sep='\t')
-
-            del imgs
-
-        # If no step has been performed, raise Exception
-        if step_flag:
-            raise Exception('The model has not been updated once in the epoch. The accumulation step may be too large.')
-
-        # If no evaluation has been performed, warn the user
-        if evaluation_flag:
-            warnings.warn('Your evaluation steps are too big compared to the size of the dataset.'
-                          'The model is evaluated only once at the end of the epoch')
-
-        # Always test the results and save them once at the end of the epoch
-        print('Last checkpoint at the end of the epoch %d' % epoch)
-        if options.training_evaluation == 'n_batches':
-            loss_train = sum(concat_loss[-options.evaluation_steps:])
-            mean_loss_train = loss_train / (options.evaluation_steps * train_loader.batch_size)
-        else:
-            loss_train = test_ae(auto_encoder, train_loader, options.gpu, criterion)
-            mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
-
-        loss_valid = test_ae(auto_encoder, valid_loader, options.gpu, criterion, first_layers=first_layers)
-        mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.dataset.size)
-        auto_encoder.train()
-
-        writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
-        writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
-        print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
-
-        row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
-        row_df = pd.DataFrame(row, columns=columns)
-        with open(filename, 'a') as f:
-            row_df.to_csv(f, header=False, index=False, sep='\t')
-
-        is_best = loss_valid < best_loss_valid
-        # Save only if is best to avoid performance deterioration
-        if is_best:
-            best_loss_valid = loss_valid
-            save_checkpoint({'model': auto_encoder.state_dict(),
-                             'iteration': i,
-                             'epoch': epoch,
-                             'loss_valid': loss_valid},
-                            False, is_best,
-                            results_path)
-
-
-def extract_ae(decoder, level):
-    import torch.nn as nn
-    from tools.deep_learning.models.autoencoder import Decoder
-
-    n_conv = 0
-    output_decoder = Decoder()
-    inverse_layers = []
-
-    for i, layer in enumerate(decoder.encoder):
-        if isinstance(layer, nn.Conv3d):
-            n_conv += 1
-
-        if n_conv == level + 1:
-            output_decoder.encoder.add_module(str(len(output_decoder.encoder)), layer)
-            inverse_layers.append(decoder.decoder[len(decoder.decoder) - (i + 1)])
-
-        elif n_conv > level + 1:
-            break
-
-    inverse_layers.reverse()
-    output_decoder.decoder = nn.Sequential(*inverse_layers)
-    return output_decoder
-
-
-def extract_first_layers(decoder, level):
-    import torch.nn as nn
-    from copy import deepcopy
-    from tools.deep_learning.models.modules import PadMaxPool3d
-
-    n_conv = 0
-    first_layers = nn.Sequential()
-
-    for i, layer in enumerate(decoder.encoder):
-        if isinstance(layer, nn.Conv3d):
-            n_conv += 1
-
-        if n_conv < level + 1:
-            layer_copy = deepcopy(layer)
-            layer_copy.requires_grad = False
-            if isinstance(layer, PadMaxPool3d):
-                layer_copy.set_new_return(False, False)
-
-            first_layers.add_module(str(i), layer_copy)
-        else:
-            break
-
-    return first_layers
-
-
-def visualize_subject(decoder, dataloader, visualization_path, epoch, options, first_time=False, data_path='linear'):
+def visualize_subject(decoder, dataloader, visualization_path, options, epoch=None, save_input=False, subject_index=0):
     from os import path
     import nibabel as nib
-    from tools.deep_learning.data_utils import MinMaxNormalization
+    from tools.deep_learning.data import MinMaxNormalization
 
     if not path.exists(visualization_path):
         os.makedirs(visualization_path)
 
-    set_df = dataloader.dataset.df
-    subject = set_df.loc[0, 'participant_id']
-    session = set_df.loc[0, 'session_id']
-    if data_path == 'linear':
-        image_path = path.join(options.input_dir, 'subjects', subject, session,
-                               't1', 'preprocessing_dl',
-                               subject + '_' + session + '_space-MNI_res-1x1x1.nii.gz')
-    elif data_path == 'mni':
-        image_path = path.join(options.input_dir, 'subjects', subject, session,
-                               't1', 'spm', 'segmentation', 'normalized_space',
-                               subject + '_' + session + '_space-Ixi549Space_T1w.nii.gz')
-    else:
-        raise NotImplementedError('Data path %s is not implemented' % data_path)
+    dataset = dataloader.dataset
+    data = dataset[subject_index]
+    image_path = data['image_path']
 
     input_nii = nib.load(image_path)
     input_np = input_nii.get_data().astype(float)
@@ -838,94 +547,13 @@ def visualize_subject(decoder, dataloader, visualization_path, epoch, options, f
 
     output_pt = decoder(input_pt)
 
-    if options.gpu:
-        output_pt = output_pt.cpu()
-
-    output_np = output_pt.detach().numpy()[0][0]
+    output_np = output_pt.detach().cpu().numpy()[0][0]
     output_nii = nib.Nifti1Image(output_np, affine=input_nii.affine)
 
-    if first_time:
+    if save_input:
         nib.save(input_nii, path.join(visualization_path, 'input.nii'))
 
-    nib.save(output_nii, path.join(visualization_path, 'epoch-' + str(epoch) + '.nii'))
-
-
-def visualize_ae(decoder, dataloader, results_path, gpu, data_path='linear'):
-    import nibabel as nib
-    from tools.deep_learning.data_utils import ToTensor
-    import os
-    from os import path
-
-    if not path.exists(results_path):
-        os.makedirs(results_path)
-
-    subject = dataloader.dataset.df.loc[0, 'participant_id']
-    session = dataloader.dataset.df.loc[0, 'session_id']
-
-    if data_path == 'linear':
-        image_path = path.join(dataloader.dataset.img_dir, 'subjects', subject, session,
-                               't1', 'preprocessing_dl',
-                               subject + '_' + session + '_space-MNI_res-1x1x1.nii.gz')
-    elif data_path == 'mni':
-        image_path = path.join(dataloader.dataset.img_dir, 'subjects', subject, session,
-                               't1', 'spm', 'segmentation', 'normalized_space',
-                               subject + '_' + session + '_space-Ixi549Space_T1w.nii.gz')
+    if epoch is None:
+        nib.save(output_nii, path.join(visualization_path, 'output.nii'))
     else:
-        raise NotImplementedError('Data path %s is not implemented' % data_path)
-
-    data = nib.load(image_path)
-    img = data.get_data()
-    affine = data.get_affine()
-    img_tensor = ToTensor()(img)
-    img_tensor = img_tensor.unsqueeze(0)
-    if gpu:
-        img_tensor = img_tensor.cuda()
-    print(img_tensor.size())
-    output_tensor = decoder(img_tensor)
-    output = nib.Nifti1Image(output_tensor[0][0].cpu().detach().numpy(), affine)
-    nib.save(output, os.path.join(results_path, 'output_image.nii'))
-    nib.save(data, os.path.join(results_path, 'input_image.nii'))
-
-
-class EarlyStopping(object):
-    def __init__(self, mode='min', min_delta=0, patience=10):
-        self.mode = mode
-        self.min_delta = min_delta
-        self.patience = patience
-        self.best = None
-        self.num_bad_epochs = 0
-        self.is_better = None
-        self._init_is_better(mode, min_delta)
-
-        if patience == 0:
-            self.is_better = lambda a, b: True
-            self.step = lambda a: False
-
-    def step(self, metrics):
-        if self.best is None:
-            self.best = metrics
-            return False
-
-        if np.isnan(metrics):
-            return True
-
-        if self.is_better(metrics, self.best):
-            self.num_bad_epochs = 0
-            self.best = metrics
-        else:
-            self.num_bad_epochs += 1
-
-        if self.num_bad_epochs >= self.patience:
-            return True
-
-        return False
-
-    def _init_is_better(self, mode, min_delta):
-        if mode not in {'min', 'max'}:
-            raise ValueError('mode ' + mode + ' is unknown!')
-
-        if mode == 'min':
-            self.is_better = lambda a, best: a < best - best * min_delta
-        if mode == 'max':
-            self.is_better = lambda a, best: a > best + best * min_delta
-
+        nib.save(output_nii, path.join(visualization_path, 'epoch-' + str(epoch) + '.nii'))

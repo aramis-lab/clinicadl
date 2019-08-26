@@ -6,8 +6,9 @@ import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from utils.classification_utils import load_model, test, read_json
-from utils.data_utils import MRIDataset, MinMaxNormalization, load_data
+from classifiers.three_d_cnn.subject_level.classification import test
+from tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
+from tools.deep_learning import create_model, load_model, read_json
 
 parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
 
@@ -34,15 +35,6 @@ if __name__ == "__main__":
     if ret[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
 
-    # Check if model is implemented
-    from utils import model
-    import inspect
-
-    choices = []
-    for name, obj in inspect.getmembers(model):
-        if inspect.isclass(obj):
-            choices.append(name)
-
     # Loop on all folds trained
     model_dir = path.join(options.model_path, 'best_model_dir')
     folds_dir = os.listdir(model_dir)
@@ -51,17 +43,12 @@ if __name__ == "__main__":
         options.split = split
         options = read_json(options, "CNN")
 
-        # Check if model is correct
-        if options.model not in choices:
-            raise NotImplementedError(
-                'The model wanted %s has not been implemented in the module model.py' % options.model)
-
         if "mni" in options.preprocessing:
             options.preprocessing = "mni"
             print(options.preprocessing)
 
         print("Fold " + str(split))
-        model = eval("model." + options.model)()
+        model = create_model(options.model)
 
         criterion = nn.CrossEntropyLoss()
 
@@ -120,12 +107,9 @@ if __name__ == "__main__":
         train_df.to_csv(path.join(evaluation_path, folder_name, 'train_subject_level_result.tsv'), sep='\t', index=False)
         valid_df.to_csv(path.join(evaluation_path, folder_name, 'valid_subject_level_result.tsv'), sep='\t', index=False)
 
-        # Save all metrics except confusion matrix
-        del metrics_train['confusion_matrix']
         pd.DataFrame(metrics_train, index=[0]).to_csv(path.join(evaluation_path, folder_name,
                                                                 'train_subject_level_metrics.tsv'),
                                                       sep='\t', index=False)
-        del metrics_valid['confusion_matrix']
         pd.DataFrame(metrics_valid, index=[0]).to_csv(path.join(evaluation_path, folder_name,
                                                                 'valid_subject_level_metrics.tsv'),
                                                       sep='\t', index=False)

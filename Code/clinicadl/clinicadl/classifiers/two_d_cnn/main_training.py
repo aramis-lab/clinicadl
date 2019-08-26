@@ -4,7 +4,7 @@ from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 from classification_utils import *
 from model import *
-from Code.classifiers.utils import EarlyStopping
+from tools.deep_learning import EarlyStopping
 import copy
 from time import time
 

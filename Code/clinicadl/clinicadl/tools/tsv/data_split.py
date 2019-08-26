@@ -1,4 +1,4 @@
-from tsv_utils import complementary_list, add_demographics, baseline_df, chi2
+from tools.tsv.tsv_utils import complementary_list, add_demographics, baseline_df, chi2
 from scipy.stats import ttest_ind
 import shutil
 

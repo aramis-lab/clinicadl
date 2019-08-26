@@ -4,9 +4,9 @@ from time import time
 from os import path
 from torch.utils.data import DataLoader
 
-from utils.classification_utils import train, commandline_to_json
-from utils.data_utils import MinMaxNormalization, MRIDataset, load_data, generate_sampler
-from utils.model import create_model
+from classifiers.three_d_cnn.subject_level.classification import train
+from tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data, generate_sampler
+from tools.deep_learning import create_model, commandline_to_json
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 
@@ -99,7 +99,7 @@ def main(options):
             choices.append(name)
 
     if options.model not in choices:
-        raise NotImplementedError('The model wanted %s has not been implemented in the module model.py' % options.model)
+        raise NotImplementedError('The model wanted %s has not been implemented in the module subject_level.py' % options.model)
 
     if "mni" in options.preprocessing:
         options.preprocessing = "mni"
