@@ -99,8 +99,6 @@ class Decoder(nn.Module):
                 inv_layers.append(Reshape(model.flattened_shape))
             elif isinstance(layer, nn.LeakyReLU):
                 inv_layers.append(nn.LeakyReLU(negative_slope=1 / layer.negative_slope))
-            elif i == len(self.encoder) - 1 and isinstance(layer, nn.BatchNorm3d):
-                pass
             else:
                 inv_layers.append(deepcopy(layer))
         inv_layers = self.replace_relu(inv_layers)
@@ -132,7 +130,7 @@ class Decoder(nn.Module):
 def apply_autoencoder_weights(model, source_path, target_path, split, difference=0):
     from copy import deepcopy
     import os
-    from classifiers.three_d_cnn.subject_level.utils import save_checkpoint, check_and_clean
+    from tools.deep_learning.iotools import save_checkpoint, check_and_clean
 
     decoder = Decoder(model)
     model_path = os.path.join(source_path, "best_model_dir", "fold_" + str(split), "ConvAutoencoder",
