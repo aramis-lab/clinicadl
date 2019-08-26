@@ -1,21 +1,4 @@
-from torch import cat, split
 import torch.nn as nn
-
-
-class AddingNodes(nn.Module):
-    def forward(self, input, nodes):
-        return cat([input, nodes], dim=1)
-
-
-class ExcludingNodes(nn.Module):
-    def __init__(self, n_excluded=1):
-        super(ExcludingNodes, self).__init__()
-        self.n_excluded = n_excluded
-
-    def forward(self, input):
-        """Returns a tuple with the excluded nodes in last position"""
-        excluded, output = split(input, self.n_excluded, dim=1)
-        return output, excluded
 
 
 class Flatten(nn.Module):
