@@ -1,1 +1,0 @@
-This folder contains the weights of the best models for each experiment, the corresponding json file and performances. The label of each experiment corresponds to eTable4 and eTable5 for classification and autoencoder experiments respectively.
