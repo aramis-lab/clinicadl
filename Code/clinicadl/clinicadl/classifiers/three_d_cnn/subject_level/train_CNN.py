@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from classifiers.three_d_cnn.subject_level.utils import train
 from tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data, generate_sampler
 from tools.deep_learning import create_model, commandline_to_json
+from tools.deep_learning.models.autoencoder import transfer_learning
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 
@@ -59,9 +60,7 @@ parser.add_argument("--tolerance", type=float, default=0.05,
 
 # Pretraining arguments
 parser.add_argument("-t", "--transfer_learning", default=None, type=str,
-                    help="If a value is given, use autoencoder pretraining."
-                         "If an existing path is given, a pretrained autoencoder is used."
-                         "Else a new autoencoder is trained")
+                    help="If an existing path is given, a pretrained autoencoder is used.")
 parser.add_argument("--selection", default="acc", choices=["loss", "acc"], type=str,
                     help="Allow to choose which model of the experiment is loaded.")
 
@@ -87,19 +86,6 @@ parser.add_argument('--num_threads', type=int, default=0,
 
 
 def main(options):
-
-    # Check if model is implemented
-    from utils import model
-    import inspect
-    import sys
-
-    choices = []
-    for name, obj in inspect.getmembers(model):
-        if inspect.isclass(obj):
-            choices.append(name)
-
-    if options.model not in choices:
-        raise NotImplementedError('The model wanted %s has not been implemented in the module subject_level.py' % options.model)
 
     if "mni" in options.preprocessing:
         options.preprocessing = "mni"
@@ -150,6 +136,7 @@ def main(options):
     # Initialize the model
     print('Initialization of the model')
     model = create_model(options)
+    model = transfer_learning(model, options.split, options.output_dir, options.transfer_learning, options.gpu)
 
     # Define criterion and optimizer
     criterion = torch.nn.CrossEntropyLoss()
