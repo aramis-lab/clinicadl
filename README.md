@@ -1,20 +1,14 @@
 # Clinica Deep Learning AD
 This repository contains a software framework for reproducible experiments with
-2D convolutional neural network on automatic classification of Alzheimer's
-disease (AD) using anatomical MRI data from the publicly available datasets
-ADNI. It is developed by Junhao WEN and Ouyang WEI.  This architecture relies
-heavily on the Clinica software platform that you will need to install. Another
-prerequisite is to do image processing for the original MRI data by using
-Clinica, then we fit the processed data into this CNN.
+convolutional neural networks on automatic classification of Alzheimer's
+disease (AD) using anatomical MRI data from the publicly available dataset
+ADNI. It is developed by Junhao WEN, Elina Thibeau--Sutre and Mauricio DIAZ MELO.
+The preprint of the corresponding paper may be found [here](https://arxiv.org/abs/1904.07773)
 
 
 # Bibliography
 All the papers described in the State of the art section of the manuscript may be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 
-# Projects
-- 1) Implement 2D CNN to fit the processed png images from MRI
-- 2) Compress the 3D MRI to 2D multi-chanel image (compressive sensing), then
-  fit into the 2D CNN.
 
 # Dependencies:
 - Clinica
@@ -52,7 +46,6 @@ clinicadl preprocessing \
 ```
 
 Tape `clinicadl --help` for more info.
-
 
 
 ## Or use the scripts
