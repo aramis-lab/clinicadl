@@ -155,43 +155,7 @@ def generate_sampler(dataset, sampler_option='random'):
     return s
 
 
-def load_autoencoder_data(train_val_path, diagnoses_list, baseline=True):
-    """
-    Creates a DataFrame for training and validation sets given the wanted diagnoses
-
-    :param train_val_path: Path to the train / val decomposition
-    :param diagnoses_list: list of diagnoses to select to construct the DataFrames
-    :param baseline: bool choose to use baseline only instead of all data available
-    :return:
-        train_df DataFrame with training data
-        valid_df DataFrame with validation data
-    """
-    train_df = pd.DataFrame()
-    valid_df = pd.DataFrame()
-
-    for diagnosis in diagnoses_list:
-
-        if baseline:
-            train_diagnosis_path = path.join(train_val_path, 'train', diagnosis + '_baseline.tsv')
-
-        else:
-            train_diagnosis_path = path.join(train_val_path, 'train', diagnosis + '.tsv')
-
-        valid_diagnosis_path = path.join(train_val_path, 'validation', diagnosis + '_baseline.tsv')
-
-        train_diagnosis_df = pd.read_csv(train_diagnosis_path, sep='\t')
-        valid_diagnosis_df = pd.read_csv(valid_diagnosis_path, sep='\t')
-
-        train_df = pd.concat([train_df, train_diagnosis_df])
-        valid_df = pd.concat([valid_df, valid_diagnosis_df])
-
-    train_df.reset_index(inplace=True, drop=True)
-    valid_df.reset_index(inplace=True, drop=True)
-
-    return train_df, valid_df
-
-
-def load_data(train_val_path, diagnoses_list, split, n_splits=None, baseline=True, data_path='linear'):
+def load_data(train_val_path, diagnoses_list, split, n_splits=None, baseline=True):
 
     train_df = pd.DataFrame()
     valid_df = pd.DataFrame()

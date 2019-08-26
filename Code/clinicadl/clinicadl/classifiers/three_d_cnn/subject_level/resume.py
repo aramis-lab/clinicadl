@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 
 from classifiers.three_d_cnn.subject_level.utils import train
 from tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
-from tools.deep_learning import load_model, load_optimizer, read_json
+from tools.deep_learning import create_model, load_model, load_optimizer, read_json
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 
@@ -65,7 +65,7 @@ def main(options):
 
     # Initialize the model
     print('Initialization of the model')
-    model = eval("model." + options.model)
+    model = create_model(options.model, options.gpu)
     model_dir = path.join(options.model_path, "best_model_dir", "CNN", "fold_" + str(options.split))
     model, current_epoch = load_model(model, model_dir, options.gpu, 'checkpoint.pth.tar')
 

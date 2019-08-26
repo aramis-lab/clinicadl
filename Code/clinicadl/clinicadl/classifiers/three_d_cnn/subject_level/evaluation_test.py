@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 
 from classifiers.three_d_cnn.subject_level.utils import test
 from tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data_test
-from tools.deep_learning import load_model, read_json
+from tools.deep_learning import create_model, load_model, read_json
 
 parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
 
@@ -50,11 +50,7 @@ if __name__ == "__main__":
     if ret[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
 
-    options = read_json(options)
-
-    if "mni" in options.preprocessing:
-        options.preprocessing = "mni"
-        print(options.preprocessing)
+    options = read_json(options, "CNN")
 
     # Loop on all folds trained
     CNN_dir = os.path.join(options.model_path, 'best_model_dir', 'CNN')
@@ -66,9 +62,7 @@ if __name__ == "__main__":
     for fold_dir in folds_dir:
         split = int(fold_dir[-1])
         print("Fold " + str(split))
-        model = eval(options.model)()
-        if options.gpu:
-            model = model.cuda()
+        model = create_model(options.model, options.gpu)
 
         criterion = nn.CrossEntropyLoss()
 

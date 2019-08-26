@@ -43,10 +43,6 @@ if __name__ == "__main__":
         options.split = split
         options = read_json(options, "CNN")
 
-        if "mni" in options.preprocessing:
-            options.preprocessing = "mni"
-            print(options.preprocessing)
-
         print("Fold " + str(split))
         model = create_model(options.model)
 
@@ -63,7 +59,7 @@ if __name__ == "__main__":
                                             filename='model_best.pth.tar')
 
         training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
-                                            split, options.n_splits, options.baseline, options.preprocessing)
+                                            split, options.n_splits, options.baseline)
 
         if options.minmaxnormalization:
             transformations = MinMaxNormalization()
