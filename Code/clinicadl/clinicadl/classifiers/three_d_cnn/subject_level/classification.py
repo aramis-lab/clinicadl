@@ -1,13 +1,12 @@
 from __future__ import print_function
 import torch
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import numpy as np
 import os
-import shutil
 import warnings
 import pandas as pd
 from time import time
+
+from tools.deep_learning.iotools import check_and_clean, save_checkpoint
 
 
 def train(model, train_loader, valid_loader, criterion, optimizer, resume, options):
@@ -362,51 +361,6 @@ def test(model, dataloader, use_cuda, criterion, full_return=False):
     return results['balanced_accuracy'], total_loss
 
 
-def show_plot(points):
-    plt.figure()
-    fig, ax = plt.subplots()
-    loc = ticker.MultipleLocator(base=0.2) # put ticks at regular intervals
-    ax.yaxis.set_major_locator(loc)
-    plt.plot(points)
-
-
-def save_checkpoint(state, accuracy_is_best, loss_is_best, checkpoint_dir, filename='checkpoint.pth.tar',
-                    best_accuracy='best_acc', best_loss='best_loss'):
-
-    torch.save(state, os.path.join(checkpoint_dir, filename))
-    if accuracy_is_best:
-        best_accuracy_path = os.path.join(checkpoint_dir, best_accuracy)
-        if not os.path.exists(best_accuracy_path):
-            os.makedirs(best_accuracy_path)
-        shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(best_accuracy_path, 'model_best.pth.tar'))
-
-    if loss_is_best:
-        best_loss_path = os.path.join(checkpoint_dir, best_loss)
-        if not os.path.exists(best_loss_path):
-            os.makedirs(best_loss_path)
-        shutil.copyfile(os.path.join(checkpoint_dir, filename), os.path.join(best_loss_path, 'model_best.pth.tar'))
-
-
-def load_model(model, checkpoint_dir, gpu, filename='model_best.pth.tar'):
-    from copy import deepcopy
-
-    best_model = deepcopy(model)
-    param_dict = torch.load(os.path.join(checkpoint_dir, filename), map_location="cpu")
-    best_model.load_state_dict(param_dict['model'])
-
-    if gpu:
-        best_model = best_model.cuda()
-
-    return best_model, param_dict['epoch']
-
-
-def check_and_clean(d):
-
-    if os.path.exists(d):
-        shutil.rmtree(d)
-    os.makedirs(d)
-
-
 def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, resume, options):
     from tensorboardX import SummaryWriter
 
@@ -593,7 +547,8 @@ def test_ae(model, dataloader, use_cuda, criterion, first_layers=None):
 
 def greedy_learning(model, train_loader, valid_loader, criterion, optimizer, resume, options):
     from os import path
-    from .model import Decoder
+    from tools.deep_learning.models.autoencoder import Decoder
+    from tools.deep_learning.models import load_model
     from copy import deepcopy
 
     if resume:
@@ -801,7 +756,7 @@ def ae_training(auto_encoder, first_layers, train_loader, valid_loader, criterio
 
 def extract_ae(decoder, level):
     import torch.nn as nn
-    from .model import Decoder
+    from tools.deep_learning.models.autoencoder import Decoder
 
     n_conv = 0
     output_decoder = Decoder()
@@ -826,7 +781,7 @@ def extract_ae(decoder, level):
 def extract_first_layers(decoder, level):
     import torch.nn as nn
     from copy import deepcopy
-    from .modules import PadMaxPool3d
+    from tools.deep_learning.models.modules import PadMaxPool3d
 
     n_conv = 0
     first_layers = nn.Sequential()
@@ -851,7 +806,7 @@ def extract_first_layers(decoder, level):
 def visualize_subject(decoder, dataloader, visualization_path, epoch, options, first_time=False, data_path='linear'):
     from os import path
     import nibabel as nib
-    from utils.data_utils import MinMaxNormalization
+    from tools.deep_learning.data_utils import MinMaxNormalization
 
     if not path.exists(visualization_path):
         os.makedirs(visualization_path)
@@ -897,7 +852,7 @@ def visualize_subject(decoder, dataloader, visualization_path, epoch, options, f
 
 def visualize_ae(decoder, dataloader, results_path, gpu, data_path='linear'):
     import nibabel as nib
-    from utils.data_utils import ToTensor
+    from tools.deep_learning.data_utils import ToTensor
     import os
     from os import path
 
@@ -974,81 +929,3 @@ class EarlyStopping(object):
         if mode == 'max':
             self.is_better = lambda a, best: a > best + best * min_delta
 
-
-def commandline_to_json(commandline, model_type):
-    """
-    This is a function to write the python argparse object into a jason file. This helps for DL when searching for hyperparameters
-    :param commandline: a tuple contain the output of `parser.parse_known_args()`
-    :return:
-    """
-    import json
-
-    commandline_arg_dic = vars(commandline[0])
-    commandline_arg_dic['unknown_arg'] = commandline[1]
-
-    # if train_from_stop_point, do not delete the folders
-    output_dir = commandline_arg_dic['output_dir']
-    log_dir = os.path.join(output_dir, 'log_dir', 'fold_' + str(commandline_arg_dic['split']), model_type)
-    check_and_clean(log_dir)
-
-    # save to json file
-    json = json.dumps(commandline_arg_dic)
-    print("Path of json file:", os.path.join(log_dir, "commandline.json"))
-    f = open(os.path.join(log_dir, "commandline.json"), "w")
-    f.write(json)
-    f.close()
-
-
-def read_json(options, model_type, json_path=None, test=False):
-    """
-    Read a json file to update python argparse Namespace.
-
-    :param options: (argparse.Namespace) options of the model
-    :return: options (args.Namespace) options of the model updated
-    """
-    import json
-    from os import path
-
-    evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
-    if json_path is None:
-        json_path = path.join(options.model_path, 'log_dir', 'fold_' + str(options.split),
-                              model_type, 'commandline.json')
-
-    with open(json_path, "r") as f:
-        json_data = json.load(f)
-
-    for key, item in json_data.items():
-        # We do not change computational options
-        if key in ['gpu', 'num_workers', 'num_threads']:
-            pass
-        # If used for evaluation, some parameters were already given
-        if test and key in evaluation_parameters:
-            pass
-        else:
-            setattr(options, key, item)
-
-    return options
-
-
-def memReport():
-    import gc
-
-    cnt_tensor = 0
-    for obj in gc.get_objects():
-        if torch.is_tensor(obj) and (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
-            print(type(obj), obj.size(), obj.is_cuda)
-            cnt_tensor += 1
-    print('Count: ', cnt_tensor)
-
-
-def cpuStats():
-    import sys
-    import psutil
-
-    print(sys.version)
-    print(psutil.cpu_percent())
-    print(psutil.virtual_memory())  # physical memory usage
-    pid = os.getpid()
-    py = psutil.Process(pid)
-    memoryUse = py.memory_info()[0] / 2. ** 30  # memory use in GB...I think
-    print('memory GB:', memoryUse)
