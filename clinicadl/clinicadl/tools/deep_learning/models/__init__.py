@@ -1,6 +1,6 @@
 from .subject_level import Conv5_FC3, Conv5_FC3_mni
 from .slice_level import Conv_4_FC_3
-from .autoencoder import Decoder, initialize_other_autoencoder, transfer_learning
+from .autoencoder import AutoEncoder, initialize_other_autoencoder, transfer_learning
 
 
 def create_model(model_name, gpu=False):
@@ -19,9 +19,9 @@ def create_model(model_name, gpu=False):
     return model
 
 
-def create_decoder(model_name, gpu=False, transfer_learning=None, difference=0):
+def create_autoencoder(model_name, gpu=False, transfer_learning=None, difference=0):
     model = create_model(model_name, gpu)
-    decoder = Decoder(model)
+    decoder = AutoEncoder(model)
 
     if transfer_learning is not None:
         decoder = initialize_other_autoencoder(decoder, transfer_learning, difference)

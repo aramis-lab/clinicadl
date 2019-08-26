@@ -33,11 +33,16 @@ def transfer_from_autoencoder(experiment_path):
     return False
 
 
-class Decoder(nn.Module):
+class AutoEncoder(nn.Module):
 
     def __init__(self, model=None):
+        """
+        Construct an autoencoder from a given CNN. The encoder part corresponds to the convolutional part of the CNN.
+
+        :param model: (Module) a CNN. The convolutional part must be comprised in a 'features' class variable.
+        """
         from copy import deepcopy
-        super(Decoder, self).__init__()
+        super(AutoEncoder, self).__init__()
 
         self.level = 0
 
@@ -83,6 +88,14 @@ class Decoder(nn.Module):
         return x
 
     def construct_inv_layers(self, model):
+        """
+        Implements the decoder part from the CNN. The decoder part is the symmetrical list of the encoder
+        in which some layers are replaced by their transpose counterpart.
+        ConvTranspose and ReLU layers are inverted in the end.
+
+        :param model: (Module) a CNN. The convolutional part must be comprised in a 'features' class variable.
+        :return: (Module) decoder part of the Autoencoder
+        """
         inv_layers = []
         for i, layer in enumerate(self.encoder):
             if isinstance(layer, nn.Conv3d):
@@ -107,6 +120,12 @@ class Decoder(nn.Module):
 
     @staticmethod
     def replace_relu(inv_layers):
+        """
+        Invert convolutional and ReLU layers (give empirical better results)
+
+        :param inv_layers: (list) list of the layers of decoder part of the Auto-Encoder
+        :return: (list) the layers with the inversion
+        """
         idx_relu, idx_conv = -1, -1
         for idx, layer in enumerate(inv_layers):
             if isinstance(layer, nn.ConvTranspose3d):

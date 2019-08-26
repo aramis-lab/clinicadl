@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 
 from classifiers.three_d_cnn.subject_level.utils import ae_finetuning
 from tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data
-from tools.deep_learning import create_decoder, commandline_to_json
+from tools.deep_learning import create_autoencoder, commandline_to_json
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D AE pretraining")
 
@@ -133,7 +133,7 @@ def main(options):
     text_file.write('Version of pytorch: %s \n' % torch.__version__)
     text_file.close()
 
-    decoder = create_decoder(options.model, options.pretrained_path, difference=options.pretrained_difference)
+    decoder = create_autoencoder(options.model, options.pretrained_path, difference=options.pretrained_difference)
     optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
                                                          options.transfer_learning_rate)
 
