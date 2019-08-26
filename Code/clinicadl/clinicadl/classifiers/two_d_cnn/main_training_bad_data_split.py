@@ -6,7 +6,7 @@ from classification_utils import *
 from model import *
 import copy
 from time import time
-from Code.classifiers.utils import EarlyStopping
+from tools.deep_learning import EarlyStopping
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"

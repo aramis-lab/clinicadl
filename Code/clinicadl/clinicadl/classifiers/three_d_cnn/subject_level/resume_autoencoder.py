@@ -4,9 +4,9 @@ from os import path
 from time import time
 from torch.utils.data import DataLoader
 
-from utils.classification_utils import load_model, greedy_learning, ae_finetuning, read_json
-from utils.data_utils import MRIDataset, MinMaxNormalization, load_data
-from utils.model import Decoder
+from classifiers.three_d_cnn.subject_level.classification import ae_finetuning
+from tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
+from tools.deep_learning import load_model, create_decoder, load_optimizer, read_json
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 
@@ -28,19 +28,6 @@ parser.add_argument("--num_workers", '-w', default=1, type=int,
 def main(options):
 
     options = read_json(options, "ConvAutoencoder")
-    print(path.exists(options.model_path))
-
-    # Check if model is implemented
-    from utils import model
-    import inspect
-
-    choices = []
-    for name, obj in inspect.getmembers(model):
-        if inspect.isclass(obj):
-            choices.append(name)
-
-    if options.model not in choices:
-        raise NotImplementedError('The model wanted %s has not been implemented in the module model.py' % options.model)
 
     torch.set_num_threads(options.num_threads)
     if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
@@ -78,8 +65,7 @@ def main(options):
 
     # Initialize the model
     print('Initialization of the model')
-    model = eval("model." + options.model)()
-    decoder = Decoder(model)
+    decoder = create_decoder(options.model)
 
     decoder, current_epoch = load_model(decoder, options.model_path, options.gpu, 'checkpoint.pth.tar')
     if options.gpu:
@@ -90,23 +76,11 @@ def main(options):
     # Define criterion and optimizer
     criterion = torch.nn.MSELoss()
     optimizer_path = path.join(options.model_path, 'optimizer.pth.tar')
-    if path.exists(optimizer_path):
-        print('Loading optimizer')
-        optimizer_dict = torch.load(optimizer_path)
-        name = optimizer_dict["name"]
-        optimizer = eval("torch.optim." + name)(filter(lambda x: x.requires_grad, decoder.parameters()))
-        optimizer.load_state_dict(optimizer_dict["optimizer"])
-    else:
-        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
-                                                             options.learning_rate)
+    optimizer = load_optimizer(optimizer_path, decoder)
 
     print('Resuming the training task')
 
-    if options.greedy_learning:
-        greedy_learning(decoder, train_loader, valid_loader, criterion, optimizer, True, options)
-
-    else:
-        ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, True, options)
+    ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, True, options)
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)

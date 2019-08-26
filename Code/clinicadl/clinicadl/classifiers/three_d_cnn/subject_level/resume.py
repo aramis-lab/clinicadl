@@ -4,8 +4,9 @@ from time import time
 import torch
 from torch.utils.data import DataLoader
 
-from utils.classification_utils import train, load_model, read_json
-from utils.data_utils import MRIDataset, MinMaxNormalization, load_data
+from classifiers.three_d_cnn.subject_level.classification import train
+from tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
+from tools.deep_learning import load_model, load_optimizer, read_json
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 
@@ -27,19 +28,6 @@ parser.add_argument("--num_workers", '-w', default=1, type=int,
 def main(options):
 
     options = read_json(options, "CNN")
-    print(path.exists(options.model_path))
-
-    # Check if model is implemented
-    from utils import model
-    import inspect
-
-    choices = []
-    for name, obj in inspect.getmembers(model):
-        if inspect.isclass(obj):
-            choices.append(name)
-
-    if options.model not in choices:
-        raise NotImplementedError('The model wanted %s has not been implemented in the module model.py' % options.model)
 
     torch.set_num_threads(options.num_threads)
     if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
@@ -86,15 +74,7 @@ def main(options):
     # Define criterion and optimizer
     criterion = torch.nn.CrossEntropyLoss()
     optimizer_path = path.join(options.model_path, 'optimizer.pth.tar')
-    if path.exists(optimizer_path):
-        print('Loading optimizer')
-        optimizer_dict = torch.load(optimizer_path)
-        name = optimizer_dict["name"]
-        optimizer = eval("torch.optim." + name)(filter(lambda x: x.requires_grad, model.parameters()))
-        optimizer.load_state_dict(optimizer_dict["optimizer"])
-    else:
-        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
-                                                             options.learning_rate)
+    optimizer = load_optimizer(optimizer_path, model)
 
     print('Resuming the training task')
 

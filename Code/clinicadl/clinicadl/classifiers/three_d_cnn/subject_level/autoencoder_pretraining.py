@@ -6,9 +6,9 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from utils.classification_utils import ae_finetuning, greedy_learning, commandline_to_json
-from utils.data_utils import MinMaxNormalization, MRIDataset, load_data
-from utils.model import Decoder, initialize_other_autoencoder
+from classifiers.three_d_cnn.subject_level.classification import ae_finetuning
+from tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data
+from tools.deep_learning import create_decoder, commandline_to_json
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D AE pretraining")
 
@@ -62,8 +62,6 @@ parser.add_argument("--patience", type=int, default=10,
                     help="Waiting time for early stopping.")
 parser.add_argument("--tolerance", type=float, default=0.05,
                     help="Tolerance value for the early stopping.")
-parser.add_argument("--greedy_learning", action="store_true", default=False,
-                    help="Optimize with greedy layer-wise learning")
 parser.add_argument("--add_sigmoid", default=False, action="store_true",
                     help="Ad sigmoid function at the end of the decoder.")
 
@@ -90,18 +88,9 @@ parser.add_argument("--num_workers", '-w', default=8, type=int,
 def main(options):
 
     # Check if model is implemented
-    from utils import model
-    import inspect
     import sys
 
-    choices = []
-    for name, obj in inspect.getmembers(model):
-        if inspect.isclass(obj):
-            choices.append(name)
-
-    if options.model not in choices:
-        raise NotImplementedError('The model wanted %s has not been implemented in the module model.py' % options.model)
-
+    options.transfer_learning = None
     options.transfer_learning_rate = options.learning_rate
     options.transfer_learning_epochs = options.epochs
 
@@ -148,25 +137,16 @@ def main(options):
     text_file.write('Version of pytorch: %s \n' % torch.__version__)
     text_file.close()
 
-    model = eval("model." + options.model)()
-    decoder = Decoder(model)
+    decoder = create_decoder(options.model, options.pretrained_path, difference=options.pretrained_difference)
     optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
                                                          options.transfer_learning_rate)
-
-    if options.pretrained_path is not None:
-        decoder = initialize_other_autoencoder(decoder, options.pretrained_path,
-                                               difference=options.pretrained_difference)
 
     if options.add_sigmoid:
         if isinstance(decoder.decoder[-1], nn.ReLU):
             decoder.decoder = nn.Sequential(*list(decoder.decoder)[:-1])
         decoder.decoder.add_module("sigmoid", nn.Sigmoid())
 
-    if options.greedy_learning:
-        greedy_learning(decoder, train_loader, valid_loader, criterion, optimizer, False, options)
-
-    else:
-        ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, False, options)
+    ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, False, options)
 
     total_time = time() - total_time
     print('Total time', total_time)

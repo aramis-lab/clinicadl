@@ -6,8 +6,9 @@ import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from utils.classification_utils import test, load_model, read_json
-from utils.data_utils import MRIDataset, MinMaxNormalization, load_data_test
+from classifiers.three_d_cnn.subject_level.classification import test
+from tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data_test
+from tools.deep_learning import load_model, read_json
 
 parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
 
@@ -50,18 +51,6 @@ if __name__ == "__main__":
         print("unknown arguments: %s" % parser.parse_known_args()[1])
 
     options = read_json(options)
-    # Check if model is implemented
-    from utils import model
-    import inspect
-
-    choices = []
-    for name, obj in inspect.getmembers(model):
-        if inspect.isclass(obj):
-            choices.append(name)
-
-    if options.model not in choices:
-        raise NotImplementedError(
-            'The model wanted %s has not been implemented in the module model.py' % options.model)
 
     if "mni" in options.preprocessing:
         options.preprocessing = "mni"
@@ -124,8 +113,6 @@ if __name__ == "__main__":
         test_df.to_csv(path.join(evaluation_path, folder_name, 'test-' + options.cohort + '_subject_level_result.tsv'),
                        sep='\t', index=False)
 
-        # Save all metrics except confusion matrix
-        del metrics_test['confusion_matrix']
         pd.DataFrame(metrics_test, index=[0]).to_csv(path.join(evaluation_path, folder_name,
                                                                'test-' + options.cohort + '_subject_level_metrics.tsv'),
                                                      sep='\t', index=False)
