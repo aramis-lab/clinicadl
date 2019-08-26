@@ -6,7 +6,7 @@ import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from classifiers.three_d_cnn.subject_level.classification import test
+from classifiers.three_d_cnn.subject_level.utils import test
 from tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
 from tools.deep_learning import create_model, load_model, read_json
 

@@ -3,7 +3,7 @@ import argparse
 from os import path
 from copy import copy
 
-from classifiers.three_d_cnn.subject_level.classification import evaluate_prediction
+from classifiers.three_d_cnn.subject_level.utils import evaluate_prediction
 
 parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
 
