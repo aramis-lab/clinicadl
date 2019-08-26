@@ -262,6 +262,7 @@ class KFoldCV(base.MLValidation):
         for i in range(n_folds):
             self._fold_results.append(async_result[i].get())
 
+        ## save the mean of the best models
         self._classifier, self._best_params = self._ml_algorithm.apply_best_parameters(self._fold_results)
 
         return self._classifier, self._best_params, self._fold_results
@@ -340,7 +341,7 @@ def split_subjects_to_5fold(diagnoses_tsv, n_splits, shuffle=True, random_state=
 
     return splits_indices
 
-def extract_indices_from_5_fold(diagnosis_tsv_folder, n_splits, baseline_or_longitudinal='baseline', diagnoses_list=['AD', 'CN']):
+def extract_indices_from_5_fold(diagnosis_tsv_folder, n_splits, output_dir, baseline_or_longitudinal='baseline', diagnoses_list=['AD', 'CN']):
     """
     This is a function to restore the indices of the 5 fold made for CNN based on all the diagnosis tsvs
     :param diagnosis_tsv_folder:
@@ -386,7 +387,7 @@ def extract_indices_from_5_fold(diagnosis_tsv_folder, n_splits, baseline_or_long
             all_df = pd.concat([train_df, valid_df])
             all_df.reset_index(inplace=True, drop=True)
 
-            all_tsv = os.path.join(tempfile.mkdtemp(), 'all_subjects.tsv')
+            all_tsv = os.path.join(output_dir, 'all_subjects.tsv')
             all_df.to_csv(all_tsv, index=False, sep='\t', encoding='utf-8')
 
         ## find the index for the training and validation based on the concatenated tsv.
@@ -459,7 +460,7 @@ def revert_mask(weights, mask, shape):
     """
 
     z = np.zeros(np.prod(shape))
-    z[mask] = weights
+    z[mask] = weights ## ValueError: NumPy boolean array indexing assignment cannot assign 1636161 input values to the 1634188 output values where the mask is true
 
     new_weights = np.reshape(z, shape)
 
@@ -527,3 +528,55 @@ def evaluate_prediction(y, y_hat):
                }
 
     return results
+
+def save_weights(classifier, x, output_dir):
+
+    dual_coefficients = classifier.dual_coef_
+    sv_indices = classifier.support_
+
+    weighted_sv = dual_coefficients.transpose() * x[sv_indices]
+    weights = np.sum(weighted_sv, 0)
+
+    np.savetxt(path.join(output_dir, 'weights.txt'), weights)
+
+    return weights
+
+def apply_best_parameters_each_split(kernel, x, y, results_list, balanced, n_fold, diagnoses_tsv, output_dir):
+    """
+    Save the best model for each fold
+    :param results_list:
+    :return:
+    """
+
+    from sklearn.svm import SVC
+
+    best_c = results_list[n_fold]['best_parameter']['c']
+    best_bal_acc = results_list[n_fold]['best_parameter']['balanced_accuracy']
+    train_index = results_list[n_fold]['x_index']
+
+    if balanced:
+        svc = SVC(C=best_c, kernel='precomputed', probability=True, tol=1e-6, class_weight='balanced')
+    else:
+        svc = SVC(C=best_c, kernel='precomputed', probability=True, tol=1e-6)
+
+    outer_kernel = kernel[train_index, :][:, train_index]
+    y_train = y[train_index]
+
+    ## save the training data for reconstruction use
+    df = pd.io.parsers.read_csv(diagnoses_tsv, sep='\t')
+    df_training = df.iloc[train_index]
+
+    result_dir = path.join(output_dir, 'classifier', 'fold_' + str(n_fold))
+    if not path.exists(result_dir):
+        os.makedirs(result_dir)
+
+    training_tsv = os.path.join(result_dir, 'training_subjects.tsv')
+    df_training.to_csv(training_tsv, index=False, sep='\t', encoding='utf-8')
+
+    svc.fit(outer_kernel, y_train)
+    ## save the weight
+    save_weights(svc, x[train_index], result_dir)
+
+    return svc, {'c': best_c, 'balanced_accuracy': best_bal_acc}, train_index
+
+

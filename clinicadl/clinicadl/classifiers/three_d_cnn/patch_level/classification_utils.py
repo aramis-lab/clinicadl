@@ -878,6 +878,74 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, i
 
     return subjects, y_ground, y_hat, proba, accuracy_batch_mean, global_step, loss_batch_mean
 
+def test(model, data_loader, options):
+    """
+    The function to evaluate the testing data for the trained classifiers
+    :param model:
+    :param test_loader:
+    :param options.:
+    :return:
+    """
+
+    subjects = []
+    y_ground = []
+    y_hat = []
+    proba = []
+    print("Start evaluate the model!")
+    if options.use_gpu:
+        model.cuda()
+
+    model.eval()  ## set the model to evaluation mode
+    torch.cuda.empty_cache()
+    with torch.no_grad():
+        ## torch.no_grad() needs to be set, otherwise the accumulation of gradients would explose the GPU memory.
+        print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
+        for i, batch_data in enumerate(data_loader):
+            if options.use_gpu:
+                imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
+            else:
+                imgs, labels = batch_data['image'], batch_data['label']
+
+            ## add the participant_id + session_id
+            image_ids = batch_data['image_id']
+            subjects.extend(image_ids)
+
+            gound_truth_list = labels.data.cpu().numpy().tolist()
+            y_ground.extend(gound_truth_list)
+
+            print('The group true label is %s' % (str(labels)))
+            output = model(imgs)
+
+            _, predict = output.topk(1)
+            predict_list = predict.data.cpu().numpy().tolist()
+            predict_list = [item for sublist in predict_list for item in sublist]
+            y_hat.extend(predict_list)
+
+            print("output.device: " + str(output.device))
+            print("labels.device: " + str(labels.device))
+            print("The predicted label is: " + str(output))
+
+            ## adding the probability
+            proba.extend(output.data.cpu().numpy().tolist())
+
+            ## calculate the balanced accuracy
+            results = evaluate_prediction(gound_truth_list, predict_list)
+            accuracy = results['balanced_accuracy']
+            print("For batch %d, test accuracy is : %f" % (i, accuracy))
+
+            # delete the temporal varibles taking the GPU memory
+            del imgs, labels, output, predict, gound_truth_list, accuracy, results
+            # Releases all unoccupied cached memory
+            torch.cuda.empty_cache()
+
+        ## calculate the balanced accuracy
+        results = evaluate_prediction(y_ground, y_hat)
+        accuracy_batch_mean = results['balanced_accuracy']
+        torch.cuda.empty_cache()
+
+    return subjects, y_ground, y_hat, proba, accuracy_batch_mean
+
+
 def train_sparse_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, options):
     """
     This trains the sparse autoencoder.
@@ -1023,6 +1091,69 @@ def extract_subject_name(s):
 def extract_patch_index(s):
     return s.split('_patch')[1]
 
+def evaluate_prediction(y, y_hat):
+
+    true_positive = 0.0
+    true_negative = 0.0
+    false_positive = 0.0
+    false_negative = 0.0
+
+    tp = []
+    tn = []
+    fp = []
+    fn = []
+
+    for i in range(len(y)):
+        if y[i] == 1:
+            if y_hat[i] == 1:
+                true_positive += 1
+                tp.append(i)
+            else:
+                false_negative += 1
+                fn.append(i)
+        else:  # -1
+            if y_hat[i] == 0:
+                true_negative += 1
+                tn.append(i)
+            else:
+                false_positive += 1
+                fp.append(i)
+
+    accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
+
+    if (true_positive + false_negative) != 0:
+        sensitivity = true_positive / (true_positive + false_negative)
+    else:
+        sensitivity = 0.0
+
+    if (false_positive + true_negative) != 0:
+        specificity = true_negative / (false_positive + true_negative)
+    else:
+        specificity = 0.0
+
+    if (true_positive + false_positive) != 0:
+        ppv = true_positive / (true_positive + false_positive)
+    else:
+        ppv = 0.0
+
+    if (true_negative + false_negative) != 0:
+        npv = true_negative / (true_negative + false_negative)
+    else:
+        npv = 0.0
+
+    balanced_accuracy = (sensitivity + specificity) / 2
+
+    results = {'accuracy': accuracy,
+               'balanced_accuracy': balanced_accuracy,
+               'sensitivity': sensitivity,
+               'specificity': specificity,
+               'ppv': ppv,
+               'npv': npv,
+               'confusion_matrix': {'tp': len(tp), 'tn': len(tn), 'fp': len(fp), 'fn': len(fn)}
+               }
+
+    return results
+
 def soft_voting_to_tsvs(output_dir, iteration, mode='test', vote_mode='soft'):
     """
     This is for soft voting for subject-level performances
@@ -1033,7 +1164,7 @@ def soft_voting_to_tsvs(output_dir, iteration, mode='test', vote_mode='soft'):
     """
 
     # check if the folder exist
-    result_tsv = os.path.join(output_dir, 'performances', 'fold_' + str(iteration), 'test_patch_level_result.tsv')
+    result_tsv = os.path.join(output_dir, 'performances', 'fold_' + str(iteration), 'test_patch_level_result-patch_index.tsv')
 
     performance_df = pd.io.parsers.read_csv(result_tsv, sep='\t')
 
@@ -1100,75 +1231,15 @@ def soft_voting_to_tsvs(output_dir, iteration, mode='test', vote_mode='soft'):
 
     df_final.to_csv(os.path.join(os.path.join(output_dir, 'performances', 'fold_' + str(iteration), mode + '_subject_level_result_' + vote_mode + '_vote.tsv')), index=False, sep='\t', encoding='utf-8')
 
-    results = evaluate_prediction(list(df_final.y), [int(e) for e in list(df_final.y_hat)]) ## Note, y_hat here is not int, is string
+    results = evaluate_prediction([int(e) for e in list(df_final.y)], [int(e) for e in list(df_final.y_hat)]) ## Note, y_hat here is not int, is string
     del results['confusion_matrix']
 
     pd.DataFrame(results, index=[0]).to_csv(os.path.join(output_dir, 'performances', 'fold_' + str(iteration), mode + '_subject_level_metrics_' + vote_mode + '_vote.tsv'), index=False, sep='\t', encoding='utf-8')
 
-
-def evaluate_prediction(y, y_hat):
-
-    true_positive = 0.0
-    true_negative = 0.0
-    false_positive = 0.0
-    false_negative = 0.0
-
-    tp = []
-    tn = []
-    fp = []
-    fn = []
-
-    for i in range(len(y)):
-        if y[i] == 1:
-            if y_hat[i] == 1:
-                true_positive += 1
-                tp.append(i)
-            else:
-                false_negative += 1
-                fn.append(i)
-        else:  # -1
-            if y_hat[i] == 0:
-                true_negative += 1
-                tn.append(i)
-            else:
-                false_positive += 1
-                fp.append(i)
-
-    accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
-
-    if (true_positive + false_negative) != 0:
-        sensitivity = true_positive / (true_positive + false_negative)
-    else:
-        sensitivity = 0.0
-
-    if (false_positive + true_negative) != 0:
-        specificity = true_negative / (false_positive + true_negative)
-    else:
-        specificity = 0.0
-
-    if (true_positive + false_positive) != 0:
-        ppv = true_positive / (true_positive + false_positive)
-    else:
-        ppv = 0.0
-
-    if (true_negative + false_negative) != 0:
-        npv = true_negative / (true_negative + false_negative)
-    else:
-        npv = 0.0
-
-    balanced_accuracy = (sensitivity + specificity) / 2
-
-    results = {'accuracy': accuracy,
-               'balanced_accuracy': balanced_accuracy,
-               'sensitivity': sensitivity,
-               'specificity': specificity,
-               'ppv': ppv,
-               'npv': npv,
-               'confusion_matrix': {'tp': len(tp), 'tn': len(tn), 'fp': len(fp), 'fn': len(fn)}
-               }
-
-    return results
-
+# output_dir = "/network/lustre/dtlake01/aramis/users/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/AD_CN/ROI_based/Finished_exp/pytorch_AE_Conv_4_FC_2_bs4_lr_e5_only_finetuning_epoch200_baseline_hippocampus50_with_es_MedIA"
+# iteration = 0
+#
+# soft_voting_to_tsvs(output_dir, iteration, mode='test', vote_mode='soft')
 
 class MRIDataset_patch(Dataset):
     """labeled Faces in the Wild dataset."""

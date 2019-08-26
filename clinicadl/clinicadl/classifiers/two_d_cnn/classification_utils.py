@@ -994,7 +994,7 @@ def soft_voting_to_tsvs(output_dir, iteration, mode='test', vote_mode='soft'):
     """
 
     # check if the folder exist
-    result_tsv = os.path.join(output_dir, 'performances', 'fold_' + str(iteration), 'test_slice_level_result.tsv')
+    result_tsv = os.path.join(output_dir, 'performances', 'fold_' + str(iteration), mode + '_slice_level_result.tsv')
 
     performance_df = pd.io.parsers.read_csv(result_tsv, sep='\t')
 

@@ -1,11 +1,8 @@
 import argparse
 import torchvision.transforms as transforms
-from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 from classification_utils import *
 from model import *
-import copy
-from time import time
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -19,12 +16,12 @@ __status__ = "Development"
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D slice-level CNN for test the trained classifiers")
 
 ## data argument
-parser.add_argument("--caps_directory", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI',
+parser.add_argument("--caps_directory", default='/network/lustre/dtlake01/aramis/users/clinica/CLINICA_datasets/CAPS/Frontiers_DL/OASIS',
                            help="Path to the caps of image processing pipeline of DL")
-parser.add_argument("--diagnosis_tsv", default='/teams/ARAMIS/PROJECTS/junhao.wen/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_task/test/AD_vs_CN_baseline_test.tsv',
+parser.add_argument("--diagnosis_tsv", default='/network/lustre/dtlake01/aramis/users/junhao.wen/from_gpfs/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/OASIS/lists_by_task/test/AD_vs_CN_baseline.tsv',
                            help="Path to the tsv containing all the test dataset")
 
-parser.add_argument("--output_dir", default='/network/lustre/dtlake01/aramis/projects/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/AD_CN/2d_slice/ResNet_tl/longitudinal/5_fold/pytorch_resnet18_tl_fintune_lastResBlock_top_last1fc_dropout0.8_lr10-6_bs32_ep50_wd10-4_baseline',
+parser.add_argument("--output_dir", default='/network/lustre/dtlake01/aramis/users/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/AD_CN/2d_slice/ResNet_tl/longitudinal/5_fold/pytorch_resnet18_tl_fintune_lastResBlock_top_last1fc_dropout0.8_lr10-6_bs32_ep50_wd10-4_baseline',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
 parser.add_argument("--data_type", default="from_slice", choices=["from_MRI", "from_slice"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
@@ -32,7 +29,7 @@ parser.add_argument("--mri_plane", default=0, type=int,
                     help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
 parser.add_argument('--image_processing', default="LinearReg", choices=["LinearReg", "Segmented"],
                     help="The output of which image processing pipeline to fit into the network. By defaut, using the raw one with only linear registration, otherwise, using the output of spm pipeline of Clinica")
-parser.add_argument('--best_model_fold', default=0,
+parser.add_argument('--best_model_fold', default=4,
                     help="Use the best from the which fold of training")
 parser.add_argument('--best_model_criteria', default="best_acc", choices=["best_acc", "best_loss"],
                     help="Evaluate the model performance based on which criterior")
@@ -89,7 +86,6 @@ def main(options):
                              num_workers=options.num_workers,
                              drop_last=True,
                              pin_memory=True)
-
 
     # load the best trained model during the training
     model, best_global_step, best_epoch = load_model_test(model, os.path.join(options.output_dir, 'best_model_dir',
