@@ -6,7 +6,7 @@ import warnings
 import pandas as pd
 from time import time
 
-from tools.deep_learning.iotools import check_and_clean, save_checkpoint
+from tools.deep_learning.iotools import check_and_clean, save_checkpoint, visualize_subject
 from tools.deep_learning import EarlyStopping
 
 
@@ -520,40 +520,3 @@ def test_ae(model, dataloader, use_cuda, criterion, first_layers=None):
         del inputs, outputs, loss
 
     return total_loss
-
-
-def visualize_subject(decoder, dataloader, visualization_path, options, epoch=None, save_input=False, subject_index=0):
-    from os import path
-    import nibabel as nib
-    from tools.deep_learning.data import MinMaxNormalization
-
-    if not path.exists(visualization_path):
-        os.makedirs(visualization_path)
-
-    dataset = dataloader.dataset
-    data = dataset[subject_index]
-    image_path = data['image_path']
-
-    input_nii = nib.load(image_path)
-    input_np = input_nii.get_data().astype(float)
-    np.nan_to_num(input_np, copy=False)
-    input_pt = torch.from_numpy(input_np).unsqueeze(0).unsqueeze(0).float()
-    if options.minmaxnormalization:
-        transform = MinMaxNormalization()
-        input_pt = transform(input_pt)
-
-    if options.gpu:
-        input_pt = input_pt.cuda()
-
-    output_pt = decoder(input_pt)
-
-    output_np = output_pt.detach().cpu().numpy()[0][0]
-    output_nii = nib.Nifti1Image(output_np, affine=input_nii.affine)
-
-    if save_input:
-        nib.save(input_nii, path.join(visualization_path, 'input.nii'))
-
-    if epoch is None:
-        nib.save(output_nii, path.join(visualization_path, 'output.nii'))
-    else:
-        nib.save(output_nii, path.join(visualization_path, 'epoch-' + str(epoch) + '.nii'))
