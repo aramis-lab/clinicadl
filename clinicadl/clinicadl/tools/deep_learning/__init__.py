@@ -1,5 +1,5 @@
 from .models import create_autoencoder, create_model, load_model, load_optimizer
-from .iotools import read_json, commandline_to_json
+from .iotools import read_json, commandline_to_json, save_checkpoint
 
 
 class EarlyStopping(object):

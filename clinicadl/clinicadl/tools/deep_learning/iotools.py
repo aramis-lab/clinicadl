@@ -30,7 +30,7 @@ def save_checkpoint(state, accuracy_is_best, loss_is_best, checkpoint_dir, filen
 
 def commandline_to_json(commandline, model_type):
     """
-    This is a function to write the python argparse object into a jason file. This helps for DL when searching for hyperparameters
+    This is a function to write the python argparse object into a json file. This helps for DL when searching for hyperparameters
     :param commandline: a tuple contain the output of `parser.parse_known_args()`
     :return:
     """
@@ -40,7 +40,6 @@ def commandline_to_json(commandline, model_type):
     commandline_arg_dic = vars(commandline[0])
     commandline_arg_dic['unknown_arg'] = commandline[1]
 
-    # if train_from_stop_point, do not delete the folders
     output_dir = commandline_arg_dic['output_dir']
     log_dir = os.path.join(output_dir, 'log_dir', 'fold_' + str(commandline_arg_dic['split']), model_type)
     check_and_clean(log_dir)
@@ -82,6 +81,45 @@ def read_json(options, model_type, json_path=None, test=False):
             setattr(options, key, item)
 
     return options
+
+
+def visualize_subject(decoder, dataloader, visualization_path, options, epoch=None, save_input=False, subject_index=0):
+    from os import path, makedirs
+    import nibabel as nib
+    import numpy as np
+    import torch
+    from tools.deep_learning.data import MinMaxNormalization
+
+    if not path.exists(visualization_path):
+        makedirs(visualization_path)
+
+    dataset = dataloader.dataset
+    data = dataset[subject_index]
+    image_path = data['image_path']
+
+    input_nii = nib.load(image_path)
+    input_np = input_nii.get_data().astype(float)
+    np.nan_to_num(input_np, copy=False)
+    input_pt = torch.from_numpy(input_np).unsqueeze(0).unsqueeze(0).float()
+    if options.minmaxnormalization:
+        transform = MinMaxNormalization()
+        input_pt = transform(input_pt)
+
+    if options.gpu:
+        input_pt = input_pt.cuda()
+
+    output_pt = decoder(input_pt)
+
+    output_np = output_pt.detach().cpu().numpy()[0][0]
+    output_nii = nib.Nifti1Image(output_np, affine=input_nii.affine)
+
+    if save_input:
+        nib.save(input_nii, path.join(visualization_path, 'input.nii'))
+
+    if epoch is None:
+        nib.save(output_nii, path.join(visualization_path, 'output.nii'))
+    else:
+        nib.save(output_nii, path.join(visualization_path, 'epoch-' + str(epoch) + '.nii'))
 
 
 def memReport():

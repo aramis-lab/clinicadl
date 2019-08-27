@@ -3,7 +3,11 @@ import torch
 import sys
 from time import time
 from os import path
+import os
 from torch.utils.data import DataLoader
+
+package_path = path.abspath(path.join(path.abspath(path.join(path.abspath(path.join(path.abspath(path.join(sys.argv[0], os.pardir)), os.pardir)), os.pardir)), os.pardir))
+sys.path.append(package_path)
 
 from classifiers.three_d_cnn.subject_level.utils import train
 from tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data, generate_sampler
@@ -137,6 +141,7 @@ def main(options):
 
     # Define criterion and optimizer
     criterion = torch.nn.CrossEntropyLoss()
+    # TODO remove functionality not used (features_learning_rate)
     if options.features_learning_rate is None:
         optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
                                                              options.learning_rate)

@@ -3,34 +3,7 @@ import torch
 from copy import deepcopy
 
 from tools.deep_learning.models.modules import PadMaxPool3d, CropMaxUnpool3d, Flatten, Reshape
-from tools.deep_learning.models import load_model
-
-
-def transfer_learning(model, split, target_path, source_path=None, gpu=False):
-
-    if source_path is not None:
-        if transfer_from_autoencoder(source_path):
-            print("A pretrained autoencoder is loaded at path %s" % transfer_learning)
-            model_path = apply_autoencoder_weights(model, source_path, target_path, split)
-            model, _ = load_model(model, model_path, gpu, filename='model_pretrained.pth.tar')
-
-        else:
-            print("A pretrained model is loaded at path %s" % source_path)
-            model_path = apply_pretrained_network_weights(model, source_path, target_path, split)
-            model, _ = load_model(model, model_path, gpu, filename='model_pretrained.pth.tar')
-
-    return model
-
-
-def transfer_from_autoencoder(experiment_path):
-    import os
-
-    # Find specific folders in experiment directory
-    folds = os.listdir(os.path.join(experiment_path, "best_model_dir"))
-    models = os.listdir(os.path.join(experiment_path, "best_model_dir", folds[0]))
-    if models == ["ConvAutoencoder"]:
-        return True
-    return False
+from tools.deep_learning.models.iotools import load_model
 
 
 class AutoEncoder(nn.Module):
@@ -146,12 +119,55 @@ class AutoEncoder(nn.Module):
         return inv_layers
 
 
+def transfer_learning(model, split, target_path, source_path=None, gpu=False):
+    """
+    Allows transfer learning from a CNN or an autoencoder to a CNN
+
+    :param model: (nn.Module) the target CNN of the transfer learning.
+    :param split: (int) the fold number (for serialization purpose).
+    :param target_path: (str) path to the target experiment.
+    :param source_path: (str) path to the source experiment.
+    :param gpu: (bool) If True a GPU is used.
+    :return: (nn.Module) the model after transfer learning.
+    """
+
+    if source_path is not None:
+        if transfer_from_autoencoder(source_path):
+            print("A pretrained autoencoder is loaded at path %s" % transfer_learning)
+            model_path = apply_autoencoder_weights(model, source_path, target_path, split)
+            model, _ = load_model(model, model_path, gpu, filename='model_pretrained.pth.tar')
+
+        else:
+            print("A pretrained model is loaded at path %s" % source_path)
+            model_path = apply_pretrained_network_weights(model, source_path, target_path, split)
+            model, _ = load_model(model, model_path, gpu, filename='model_pretrained.pth.tar')
+
+    return model
+
+
+def transfer_from_autoencoder(experiment_path):
+    """
+    Allows to know if the experiment path contains an AutoEncoder or a CNN
+
+    :param experiment_path: (str) path to the experiment
+    :return: (bool)
+    """
+    import os
+
+    # Find specific folders in experiment directory
+    folds = os.listdir(os.path.join(experiment_path, "best_model_dir"))
+    models = os.listdir(os.path.join(experiment_path, "best_model_dir", folds[0]))
+    if models == ["ConvAutoencoder"]:
+        return True
+    return False
+
+
 def apply_autoencoder_weights(model, source_path, target_path, split, difference=0):
     from copy import deepcopy
     import os
     from tools.deep_learning.iotools import save_checkpoint, check_and_clean
 
-    decoder = Decoder(model)
+    decoder = AutoEncoder(model)
     model_path = os.path.join(source_path, "best_model_dir", "fold_" + str(split), "ConvAutoencoder",
                               "best_loss", "model_best.pth.tar")
 
