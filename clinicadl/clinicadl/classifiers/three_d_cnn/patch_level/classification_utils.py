@@ -24,62 +24,6 @@ __status__ = "Development"
 #### AutoEncoder
 #################################
 
-def greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, writer_train, writer_valid, writer_train_ft, writer_valid_ft, options, fi):
-    """
-    This aims to do greedy layer wise learning for autoencoder
-    :param model:
-    :param train_loader:
-    :param valid_loader:
-    :param criterion:
-    :param gpu:
-    :param writer_train:
-    :param writer_valid:
-    :param results_path:
-    :param options:
-    :return:
-        Return both the pretrained CNN for future use and also the stacked AEs
-    """
-    from os import path
-    from model import AutoEncoder
-    from copy import deepcopy
-    ## if the model defined is not already construted to an AE, then we convert the CNN into an AE, keeping the same structure with original CNN
-    if not isinstance(model, AutoEncoder):
-        ae = AutoEncoder(model) ## Reconstruct all the AEs in one graph
-
-    ## Here, to extract each AE for layer-wise training 
-    level = 0
-    former_layer = frozen_weight_layer_wise(ae, level) ## extract the former AE
-    auto_encoder_layer = extract_ae_layer_wise(ae, level)
-
-    while len(auto_encoder_layer) > 0:
-        print('Layer-wise training for %d -th AE' % level)
-        # Create the method to train with first layers
-        best_model_former_layer_path,  optimizer_train = ae_training(auto_encoder_layer, former_layer, train_loader, valid_loader, criterion, options, writer_train, writer_valid, level, fi)
-        del optimizer_train
-        best_ae, _ = load_model_from_chcekpoint(auto_encoder_layer, best_model_former_layer_path)
-
-        # Copy the weights of best_ae in decoder encoder and decoder layers
-        ae = stack_layer_wise_ae(ae, best_ae, level)
-
-        # Prepare next AE
-        level += 1
-        former_layer = frozen_weight_layer_wise(ae, level) ## to frozen the former layer of AE and extract the encoder part of this AE
-        auto_encoder_layer = extract_ae_layer_wise(ae, level) ## extract the next AE
-
-    ae_finetuning(ae, train_loader, valid_loader, criterion, writer_train_ft, writer_valid_ft, options, fi)
-
-    # Updating and setting weights of the convolutional layers
-    best_autodecoder, best_epoch = load_model_from_chcekpoint(ae, path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'fine_tune', 'AutoEncoder', 'model_best.pth.tar'))
-
-    ## save only the Encoders too
-    model.features = deepcopy(best_autodecoder.encoder)
-    save_checkpoint({'model': model.state_dict(),
-                     'epoch': best_epoch},
-                    False,
-                    os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'fine_tune', 'Encoder'),
-                    'model_best_encoder.pth.tar')
-
-    return model, best_autodecoder
 
 def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_train, writer_valid, options, fi):
     """
@@ -96,15 +40,18 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_tra
     """
     from os import path
     from tools.deep_learning.models import AutoEncoder
+    from tools.deep_learning import save_checkpoint, load_model
     from copy import deepcopy
-    ## if the model defined is not already construted to an AE, then we convert the CNN into an AE, keeping the same structure with original CNN
+
+    # if the model defined is not already construted to an AE, then we convert the CNN into an AE, keeping the same structure with original CNN
     if not isinstance(model, AutoEncoder):
-        ae = AutoEncoder(model) ## Reconstruct all the AEs in one graph
+        ae = AutoEncoder(model) # Reconstruct all the AEs in one graph
 
     ae_finetuning(ae, train_loader, valid_loader, criterion, writer_train, writer_valid, options, fi)
 
     # Updating and setting weights of the convolutional layers
-    best_autodecoder, best_epoch = load_model_from_chcekpoint(ae, path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'fine_tune', 'AutoEncoder'), 'model_best.pth.tar')
+    checkpoint_dir = path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'fine_tune', 'AutoEncoder')
+    best_autodecoder, best_epoch = load_model(ae, checkpoint_dir, options.gpu,  filename='model_best.pth.tar')
 
     del ae
 
@@ -112,127 +59,14 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_tra
     model.features = deepcopy(best_autodecoder.encoder)
     save_checkpoint({'model': model.state_dict(),
                      'epoch': best_epoch},
-                    False,
+                    False, False,
                     os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'fine_tune', 'Encoder'),
-                    'model_best_encoder.pth.tar')
+                    filename='model_best_encoder.pth.tar')
 
     del best_epoch
 
     return model, best_autodecoder
 
-def ae_training(auto_encoder, former_layer, train_loader, valid_loader, criterion, options, writer_train, writer_valid, level, fi, global_step=0):
-    """
-    This is the function to train the AEs in a greedy layer-wise way.
-    :param auto_encoder:
-    :param former_layer:
-    :param train_loader:
-    :param valid_loader:
-    :param criterion:
-    :param gpu:
-    :param results_path:
-    :param options:
-    :return:
-    """
-    auto_encoder.train()
-    former_layer.eval()
-    print(former_layer)
-    print(auto_encoder)
-    optimizer_train = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, auto_encoder.parameters()),
-                                                         options.learning_rate)
-
-    if options.use_gpu:
-        auto_encoder.cuda()
-
-    # Initialize variables
-    best_loss_valid = np.inf
-    print("Beginning layer-wise training")
-    for epoch in range(options.epochs_layer_wise):
-        print("Layer-wise training at %d-th epoch." % epoch)
-
-        auto_encoder.zero_grad()
-
-        print('The number of batches in this sampler based on the batch size: %s' % str(len(train_loader)))
-        tend = time()
-        total_time = 0
-
-        ## begin the training for each batch data
-        for i, data in enumerate(train_loader):
-            # torch.cuda.synchronize()
-            t0 = time()
-            total_time = total_time + t0 - tend
-
-            # print("Loading available between batches of data by CPU using time: ", t0 - tend)
-
-            if options.use_gpu:
-                imgs = data['image'].cuda()
-            else:
-                imgs = data['image']
-            # print("Device used: " + str(imgs.device))
-            # torch.cuda.synchronize()
-            # t1 = time()
-            # total_time += t1 - t0
-            # print("Loading data on GPU", t1 - t0)
-
-            hidden = former_layer(imgs) ## output of encoder for former AE and input for the encoder of next AE
-            train_output = auto_encoder(hidden)
-
-            # torch.cuda.synchronize()
-            # t2 = time()
-            # print("Real time forward pass", t2 - t1)
-
-            ## explicitly set the variable of criterion to be requires_grad=False
-            hidden_requires_grad_no = hidden.detach()
-            hidden_requires_grad_no.requires_grad = False
-
-            loss_train = criterion(train_output, hidden_requires_grad_no)
-            loss_train.backward()
-            # torch.cuda.synchronize()
-            # t3 = time()
-            # print("Backward pass", t3 - t2)
-
-            # moniter the training loss for each batch using tensorboardX
-            writer_train.add_scalar('loss_layer-' + str(level), loss_train, i + epoch * len(train_loader))
-            print("Training loss is %f for the -th batch %d" % (loss_train, i))
-
-            optimizer_train.step()
-            optimizer_train.zero_grad()
-
-            del imgs, train_output, hidden, hidden_requires_grad_no, loss_train
-            ## update the global steps
-            global_step = i + epoch * len(train_loader)
-
-            torch.cuda.empty_cache()
-            # torch.cuda.synchronize()
-            # t_temp = time()
-            # print('Training the %d -th batch in total using  %f s:' % (i, t_temp -t0))
-
-            tend = time()
-
-        print('Mean time per batch (train):', total_time / len(train_loader))
-
-        # Always test the results and save them once at the end of the epoch
-        print('Layer-wise validation at the end of each epoch %d' % epoch)
-        loss_valid = test_ae(auto_encoder, valid_loader, options, criterion, former_layer=former_layer)
-        mean_loss_valid = loss_valid / (len(valid_loader))
-        writer_valid.add_scalar('loss_layer-' + str(level), mean_loss_valid, global_step)
-        print("Layer-wise mean validation loss is %f for the -th epoch %d" % (mean_loss_valid, global_step))
-
-        ## reset the model to train mode after evaluation
-        auto_encoder.train()
-
-        best_model_path = os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "ConvAutoencoder", "layer-" + str(level))
-
-        is_best = loss_valid < best_loss_valid
-        # Save only if is best to avoid performance deterioration
-        best_loss_valid = min(loss_valid, best_loss_valid)
-        save_checkpoint({'model': auto_encoder.state_dict(),
-                         'iteration': i,
-                         'epoch': epoch,
-                         'best_loss': mean_loss_valid},
-                        is_best,
-                        best_model_path)
-
-    return best_model_path, optimizer_train
 
 def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, writer_train_ft, writer_valid_ft, options, fi, global_step=0):
     """
@@ -246,6 +80,7 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
     :param options:
     :return:
     """
+    from tools.deep_learning import save_checkpoint
 
     auto_encoder_all.train()
     optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, auto_encoder_all.parameters()),
@@ -269,8 +104,6 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
         auto_encoder_all.zero_grad()
 
         for i, data in enumerate(train_loader):
-
-            torch.cuda.synchronize()
             t0 = time()
             total_time = total_time + t0 - tend
 
@@ -281,30 +114,16 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
             else:
                 imgs = data['image']
 
-            # print("Device used: " + str(imgs.device))
-            # torch.cuda.synchronize()
-            # t1 = time()
-            # total_time += t1 - t0
-            # print("Loading data on GPU", t1 - t0)
-
             train_output = auto_encoder_all(imgs)
-
-            # torch.cuda.synchronize()
-            # t2 = time()
-            # print("Real time forward pass", t2 - t1)
 
             loss = criterion(train_output, imgs)
             loss.backward()
 
-            # torch.cuda.synchronize()
-            # t3 = time()
-            # print("Backward pass", t3 - t2)
-
-            # moniter the training loss for each batch using tensorboardX
+            # monitor the training loss for each batch using tensorboardX
             writer_train_ft.add_scalar('loss', loss, i + epoch * len(train_loader))
             print("Training loss is %f for the -th batch %d" % (loss, i))
 
-            ## update the global steps
+            # update the global steps
             global_step = i + epoch * len(train_loader)
 
             del imgs, train_output, loss
@@ -313,10 +132,6 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
             optimizer.zero_grad()
 
             torch.cuda.empty_cache()
-
-            # torch.cuda.synchronize()
-            # t_temp = time()
-            # print('Training the %d -th batch in total using  %f s:' % (i, t_temp -t0))
 
             tend = time()
 
@@ -329,7 +144,7 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
         writer_valid_ft.add_scalar('loss', mean_loss_valid, global_step)
         print("Fine-tuning mean validation loss is %f for the -th batch %d" % (mean_loss_valid, global_step))
 
-        ## reset the model to train mode after evaluation
+        # reset the model to train mode after evaluation
         auto_encoder_all.train()
 
         is_best_loss = loss_valid < best_loss_valid
@@ -339,7 +154,7 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
                          'iteration': i,
                          'epoch': epoch,
                          'best_loss': best_loss_valid},
-                        is_best_loss,
+                        False, is_best_loss,
                         os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "ConvAutoencoder", "fine_tune", "AutoEncoder"))
 
     del optimizer, auto_encoder_all
@@ -379,111 +194,13 @@ def test_ae(model, dataloader, options, criterion, former_layer=None):
 
     return total_loss
 
-def stack_layer_wise_ae(ae_all, ae_layer, level):
-    """
-    This is a function to transfer each layer-wise AE weights onto the graph-based AE, and then frozen the stacked AEs.
-    :param ae_all:
-    :param auto_encoder:
-    :param level:
-    :return:
-    """
-    import torch.nn as nn
-
-    n_conv = 0
-    i_ae = 0
-
-    for i, layer in enumerate(ae_all.encoder):
-        if isinstance(layer, nn.Conv3d): # if is convnet, adding one layer for ae
-            n_conv += 1
-        ## transfering the Layers in each block.
-        if n_conv == level + 1:
-            ae_all.encoder[i] = ae_layer.encoder[i_ae] ## transfer the layer-wise AE weight into the graph-wise AEs
-            ae_all.decoder[len(ae_all) - (i+1)] = ae_layer.decoder[len(ae_layer) - (i_ae+1)]
-            i_ae += 1
-
-    return ae_all
-
-def load_model_from_chcekpoint(model, checkpoint_dir, filename='model_best.pth.tar'):
-    """
-    Load the model based on the checkpoint file
-    :param model:
-    :param checkpoint_dir:
-    :param filename:
-    :return:
-    """
-    from copy import deepcopy
-
-    best_model = deepcopy(model)
-    param_dict = torch.load(os.path.join(checkpoint_dir, filename))
-    best_model.load_state_dict(param_dict['model'])
-    return best_model, param_dict['epoch']
-
-def frozen_weight_layer_wise(ae_all, level):
-    """
-    This is to frozen the weight of the former AE
-    :param ae_all:
-    :param level:
-    :return:
-    """
-    import torch.nn as nn
-    from copy import deepcopy
-    from modules import PadMaxPool3d
-
-    n_conv = 0
-    former_layer = nn.Sequential()
-
-    for i, layer in enumerate(ae_all.encoder):
-        if isinstance(layer, nn.Conv3d):
-            n_conv += 1
-
-        if n_conv < level + 1: ### frozen former layer weight
-            layer_copy = deepcopy(layer)
-            layer_copy.requires_grad = False
-            if isinstance(layer, PadMaxPool3d):
-                layer_copy.set_new_return(False, False)
-
-            former_layer.add_module(str(i), layer_copy)
-        else:
-            break
-
-    return former_layer
-
-def extract_ae_layer_wise(ae, level):
-    """
-    This is to extract the layer-wise AE from the the graph-based AEs based on the argument level.
-    :param ae:
-    :param level:
-    :return:
-    """
-    import torch.nn as nn
-    from model import AutoEncoder
-
-    n_conv = 0
-    output_ae = AutoEncoder()
-    decoder_layers = []
-
-    for i, layer in enumerate(ae.encoder):
-        if isinstance(layer, nn.Conv3d):
-            n_conv += 1
-
-        if n_conv == level + 1:
-            output_ae.encoder.add_module(str(len(output_ae.encoder)), layer)
-            decoder_layers.append(ae.decoder[len(ae.decoder) - (i + 1)])
-
-        elif n_conv > level + 1:
-            break
-
-    decoder_layers.reverse()
-    output_ae.decoder = nn.Sequential(*decoder_layers)
-    return output_ae
-
 
 def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, difference=0):
     from copy import deepcopy
     from os import path
     import os
-    from model import AutoEncoder
-
+    from tools.deep_learning import save_checkpoint
+    from tools.deep_learning.models import AutoEncoder
 
     decoder = AutoEncoder(model)
     initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_path, difference=difference)
@@ -495,13 +212,15 @@ def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, di
     save_checkpoint({'model': model.state_dict(),
                      'epoch': -1,
                      'path': pretrained_autoencoder_path},
-                    False,
+                    False, False,
                     path.join(model_path, "pretraining"),
                     'model_pretrained.pth.tar')
+
 
 def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_path, difference=0):
     from os import path
     import os
+    from tools.deep_learning import save_checkpoint
 
     result_dict = torch.load(pretrained_autoencoder_path)
     parameters_dict = result_dict['model']
@@ -531,7 +250,7 @@ def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_pat
     save_checkpoint({'model': decoder.state_dict(),
                      'epoch': -1,
                      'path': pretrained_autoencoder_path},
-                    False,
+                    False, False,
                     path.join(model_path, "pretraining"),
                     'model_pretrained.pth.tar')
     return decoder
@@ -741,6 +460,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, i
 
     return subjects, y_ground, y_hat, proba, accuracy_batch_mean, global_step, loss_batch_mean
 
+
 def test(model, data_loader, options):
     """
     The function to evaluate the testing data for the trained classifiers
@@ -876,6 +596,7 @@ def train_sparse_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, wr
 
     return epoch_loss
 
+
 def hard_voting_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat, probas, mode='train', vote_mode='hard', patch_index=None):
     """
     This is a function to trace all subject during training, test and validation, and calculate the performances with different metrics into tsv files.
@@ -948,11 +669,14 @@ def hard_voting_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat, pro
 
     pd.DataFrame(results, index=[0]).to_csv(os.path.join(iteration_dir, mode + '_subject_level_metrics_' + vote_mode + '_vote.tsv'), index=False, sep='\t', encoding='utf-8')
 
+
 def extract_subject_name(s):
     return s.split('_patch')[0]
 
+
 def extract_patch_index(s):
     return s.split('_patch')[1]
+
 
 def evaluate_prediction(y, y_hat):
 
@@ -1016,6 +740,7 @@ def evaluate_prediction(y, y_hat):
                }
 
     return results
+
 
 def soft_voting_to_tsvs(output_dir, iteration, mode='test', vote_mode='soft'):
     """
@@ -1099,10 +824,6 @@ def soft_voting_to_tsvs(output_dir, iteration, mode='test', vote_mode='soft'):
 
     pd.DataFrame(results, index=[0]).to_csv(os.path.join(output_dir, 'performances', 'fold_' + str(iteration), mode + '_subject_level_metrics_' + vote_mode + '_vote.tsv'), index=False, sep='\t', encoding='utf-8')
 
-# output_dir = "/network/lustre/dtlake01/aramis/users/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/AD_CN/ROI_based/Finished_exp/pytorch_AE_Conv_4_FC_2_bs4_lr_e5_only_finetuning_epoch200_baseline_hippocampus50_with_es_MedIA"
-# iteration = 0
-#
-# soft_voting_to_tsvs(output_dir, iteration, mode='test', vote_mode='soft')
 
 class MRIDataset_patch(Dataset):
     """labeled Faces in the Wild dataset."""
@@ -1181,6 +902,7 @@ class MRIDataset_patch(Dataset):
         sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(index_patch), 'image': patch, 'label': label}
 
         return sample
+
 
 class MRIDataset_patch_hippocampus(Dataset):
     """Loading the left and right hippocampus ROIs."""
@@ -1407,6 +1129,7 @@ class MRIDataset_patch_by_index(Dataset):
 #
 #     return train_df, valid_df, train_tsv, valid_tsv
 
+
 def extract_patch_from_mri(image_tensor, index_patch, patch_size, stride_size, patchs_per_patient):
 
     ## use classifiers tensor.upfold to crop the patch.
@@ -1419,13 +1142,6 @@ def extract_patch_from_mri(image_tensor, index_patch, patch_size, stride_size, p
     extracted_patch = patches_tensor[index_patch, ...].unsqueeze_(0) ## add one dimension
 
     return extracted_patch
-
-
-def check_and_clean(d):
-
-  if os.path.exists(d):
-      shutil.rmtree(d)
-  os.mkdir(d)
 
 # def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar'):
 #     """
@@ -1462,14 +1178,6 @@ def kl_divergence(p, q):
 
     return s1 + s2
 
-def extract_slice_img(x):
-    """
-    This is to extrac a middle slice of the input patch or MRI to check the reconstruction quality
-    :param x:
-    :return:
-    """
-    slices = x[:, 0, x.shape[-1] // 2, ...].unsqueeze(1)
-    return slices
 
 def visualize_ae(ae, data, results_path):
     """
@@ -1492,48 +1200,49 @@ def visualize_ae(ae, data, results_path):
     nib.save(reconstructed_nii, os.path.join(results_path, 'example_patch_reconstructed.nii.gz'))
     nib.save(input_nii, os.path.join(results_path, 'example_patch_original.nii.gz'))
 
-def commandline_to_jason(commanline, pretrain_ae=False):
-    """
-    This is a function to write the python argparse object into a jason file. This helps for DL when searching for hyperparameters
-    :param commanline: a tuple contain the output of `parser.parse_known_args()`
-    :return:
-    """
-    import json, os
+# def commandline_to_jason(commanline, pretrain_ae=False):
+#     """
+#     This is a function to write the python argparse object into a jason file. This helps for DL when searching for hyperparameters
+#     :param commanline: a tuple contain the output of `parser.parse_known_args()`
+#     :return:
+#     """
+#     import json, os
+#
+#     commandline_arg_dic = vars(commanline[0])
+#     ## add unknown args too
+#     commandline_arg_dic['unknown_arg'] = commanline[1]
+#
+#     ## if train_from_stop_point, do not delete this folders
+#     if "train_from_stop_point" in commandline_arg_dic.keys():
+#         if commandline_arg_dic['train_from_stop_point']:
+#             print('You should be responsible to make sure you did not change any parameters to train from the stopping point with the same model!')
+#         else:
+#             if not os.path.exists(os.path.join(commandline_arg_dic['output_dir'], 'log_dir')):
+#                 os.makedirs(os.path.join(commandline_arg_dic['output_dir'], 'log_dir'))
+#     else:
+#         ### for AE
+#         if not os.path.exists(commandline_arg_dic['output_dir']):
+#                 os.makedirs(commandline_arg_dic['output_dir'])
+#
+#         if commandline_arg_dic['split'] != None:
+#             pass
+#         else:
+#             check_and_clean(commandline_arg_dic['output_dir'])
+#
+#     ## anyway, make sure the log_dir exist
+#     if not os.path.exists(os.path.join(commandline_arg_dic['output_dir'], 'log_dir')):
+#         os.makedirs(os.path.join(commandline_arg_dic['output_dir'], 'log_dir'))
+#
+#     output_dir = commandline_arg_dic['output_dir']
+#     # save to json file
+#     json = json.dumps(commandline_arg_dic)
+#     if pretrain_ae:
+#         f = open(os.path.join(output_dir, "log_dir", "commandline_autoencoder.json"), "w")
+#     else:
+#         f = open(os.path.join(output_dir, "log_dir", "commandline_cnn.json"), "w")
+#     f.write(json)
+#     f.close()
 
-    commandline_arg_dic = vars(commanline[0])
-    ## add unknown args too
-    commandline_arg_dic['unknown_arg'] = commanline[1]
-
-    ## if train_from_stop_point, do not delete this folders
-    if "train_from_stop_point" in commandline_arg_dic.keys():
-        if commandline_arg_dic['train_from_stop_point']:
-            print('You should be responsible to make sure you did not change any parameters to train from the stopping point with the same model!')
-        else:
-            if not os.path.exists(os.path.join(commandline_arg_dic['output_dir'], 'log_dir')):
-                os.makedirs(os.path.join(commandline_arg_dic['output_dir'], 'log_dir'))
-    else:
-        ### for AE
-        if not os.path.exists(commandline_arg_dic['output_dir']):
-                os.makedirs(commandline_arg_dic['output_dir'])
-
-        if commandline_arg_dic['split'] != None:
-            pass
-        else:
-            check_and_clean(commandline_arg_dic['output_dir'])
-    
-    ## anyway, make sure the log_dir exist
-    if not os.path.exists(os.path.join(commandline_arg_dic['output_dir'], 'log_dir')):
-        os.makedirs(os.path.join(commandline_arg_dic['output_dir'], 'log_dir'))
-
-    output_dir = commandline_arg_dic['output_dir']
-    # save to json file
-    json = json.dumps(commandline_arg_dic)
-    if pretrain_ae:
-        f = open(os.path.join(output_dir, "log_dir", "commandline_autoencoder.json"), "w")
-    else:
-        f = open(os.path.join(output_dir, "log_dir", "commandline_cnn.json"), "w")
-    f.write(json)
-    f.close()
 
 def soft_voting_subject_level(y_ground, y_hat, subjects, proba, iteration):
     ## soft voting to get the subject-level balanced accuracy
@@ -1608,6 +1317,7 @@ def soft_voting_subject_level(y_ground, y_hat, subjects, proba, iteration):
 
     return results
 
+
 def load_model_test(model, checkpoint_dir, filename):
     """
     This is to load a saved model for testing
@@ -1625,6 +1335,7 @@ def load_model_test(model, checkpoint_dir, filename):
     model_updated.load_state_dict(param_dict['model'])
 
     return model_updated, param_dict['global_step'], param_dict['epoch'], param_dict['best_predict']
+
 
 def multi_cnn_soft_majority_voting(output_dir, fi, num_cnn, weight_list, mode='test'):
     """
