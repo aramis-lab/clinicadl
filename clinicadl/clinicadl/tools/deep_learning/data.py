@@ -1,10 +1,8 @@
 import torch
 import pandas as pd
 import numpy as np
-import os
 from os import path
 from torch.utils.data import Dataset, sampler
-from sklearn.model_selection import StratifiedShuffleSplit, StratifiedKFold
 from scipy.ndimage.filters import gaussian_filter
 
 
