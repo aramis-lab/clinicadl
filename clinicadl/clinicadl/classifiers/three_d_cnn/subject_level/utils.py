@@ -222,11 +222,11 @@ def evaluate_prediction(concat_true, concat_prediction, horizon=None):
     """
 
     if horizon is not None:
-        y = list(concat_true)[-horizon:]
-        y_pred = list(concat_prediction)[-horizon:]
+        y = np.array(concat_true)[-horizon:]
+        y_pred = np.array(concat_prediction)[-horizon:]
     else:
-        y = list(concat_true)
-        y_pred = list(concat_prediction)
+        y = np.array(concat_true)
+        y_pred = np.array(concat_prediction)
 
     true_positive = np.sum((y_pred == 1) & (y == 1))
     true_negative = np.sum((y_pred == 0) & (y == 0))
