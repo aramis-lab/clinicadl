@@ -2,6 +2,7 @@ from __future__ import print_function
 import argparse
 from os import path
 from time import time
+import sys
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -86,9 +87,6 @@ parser.add_argument("--num_workers", '-w', default=8, type=int,
 
 
 def main(options):
-
-    # Check if model is implemented
-    import sys
 
     options.transfer_learning = None
     options.transfer_learning_rate = options.learning_rate

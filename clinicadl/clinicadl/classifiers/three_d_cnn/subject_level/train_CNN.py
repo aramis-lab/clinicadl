@@ -1,5 +1,6 @@
 import argparse
 import torch
+import sys
 from time import time
 from os import path
 from torch.utils.data import DataLoader
@@ -106,7 +107,7 @@ def main(options):
 
     # Get the data.
     training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
-                                        options.split, options.n_splits, options.baseline, options.preprocessing)
+                                        options.split, options.n_splits, options.baseline)
 
     data_train = MRIDataset(options.input_dir, training_tsv, options.preprocessing, transform=transformations)
     data_valid = MRIDataset(options.input_dir, valid_tsv, options.preprocessing, transform=transformations)
