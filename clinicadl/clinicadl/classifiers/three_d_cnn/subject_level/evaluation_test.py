@@ -1,10 +1,15 @@
 from __future__ import print_function
 import argparse
 import os
+import torch
 from os import path
 import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
+import sys
+
+package_path = path.abspath(path.join(path.abspath(path.join(path.abspath(path.join(path.abspath(path.join(sys.argv[0], os.pardir)), os.pardir)), os.pardir)), os.pardir))
+sys.path.append(package_path)
 
 from classifiers.three_d_cnn.subject_level.utils import test
 from tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data_test
@@ -23,23 +28,18 @@ parser.add_argument("cohort", type=str,
                     help="Name of the cohort.")
 
 # Data Management
-parser.add_argument("--diagnoses", default=None, type=str, nargs='+')
-parser.add_argument("--preprocessing", default="linear", choices=["linear", "mniskullstrip", "mni"], type=str,
-                    help="Defines the path to data in CAPS.")
-parser.add_argument("--selection_eval", default="loss", type=str, choices=['loss', 'accuracy'],
+parser.add_argument("--diagnoses", default=None, type=str, nargs='+',
+                    help='Default will load the same diagnoses used in training.')
+parser.add_argument("--selection", default="loss", type=str, choices=['loss', 'accuracy'],
                     help="Loads the model selected on minimal loss or maximum accuracy on validation.")
-parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
-                    help="Performs MinMaxNormalization for visualization")
-parser.add_argument("--position", default=-1, type=int,
-                    help="position of the name in the string given for evaluation.")
-parser.add_argument("--split", type=int, default=None, nargs="+",
-                    help="Splits on which evaluation is performed. Default behaviour tests all possible folds.")
 
 # Computational ressources
 parser.add_argument("--batch_size", default=16, type=int,
                     help='Size of the batch loaded by the data loader.')
 parser.add_argument("--num_workers", '-w', default=8, type=int,
                     help='the number of batch being loaded in parallel')
+parser.add_argument('--num_threads', type=int, default=0,
+                    help='Number of threads used.')
 parser.add_argument("--gpu", action="store_true", default=False,
                     help="if True computes the visualization on GPU")
 
@@ -50,42 +50,45 @@ if __name__ == "__main__":
     if ret[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
 
-    options = read_json(options, "CNN")
+    torch.set_num_threads(options.num_threads)
 
     # Loop on all folds trained
-    CNN_dir = os.path.join(options.model_path, 'best_model_dir', 'CNN')
-    if options.split is None:
-        folds_dir = os.listdir(CNN_dir)
-    else:
-        folds_dir = [path.join(CNN_dir, 'fold_' + str(fold)) for fold in options.split]
+    best_model_dir = os.path.join(options.model_path, 'best_model_dir')
+    folds_dir = os.listdir(best_model_dir)
 
     for fold_dir in folds_dir:
         split = int(fold_dir[-1])
-        print("Fold " + str(split))
-        model = create_model(options.model, options.gpu)
+        print("Fold %i" % split)
+        model_options = argparse.Namespace()
+        json_path = path.join(options.model_path, 'log_dir', 'fold_' + str(split), "commandline_CNN.json")
+        model_options = read_json(model_options, "CNN", json_path=json_path)
+        model = create_model(model_options.model, options.gpu)
 
         criterion = nn.CrossEntropyLoss()
 
-        if options.selection_eval == 'loss':
-            model_dir = os.path.join(CNN_dir, fold_dir, 'best_loss')
+        if options.selection == 'loss':
+            model_dir = os.path.join(best_model_dir, fold_dir, 'CNN', 'best_loss')
             folder_name = 'best_loss'
         else:
-            model_dir = os.path.join(CNN_dir, fold_dir, 'best_acc')
+            model_dir = os.path.join(best_model_dir, fold_dir, 'CNN', 'best_acc')
             folder_name = 'best_acc'
 
         best_model, best_epoch = load_model(model, model_dir, options.gpu,
                                             filename='model_best.pth.tar')
 
+        # Load test data
+        if options.diagnoses is None:
+            options.diagnoses = model_options.diagnoses
+
         test_tsv = load_data_test(options.diagnosis_path, options.diagnoses)
 
-        if options.minmaxnormalization:
+        if model_options.minmaxnormalization:
             transformations = MinMaxNormalization()
         else:
             transformations = None
 
-        data_test = MRIDataset(options.input_dir, test_tsv, options.preprocessing, transform=transformations)
+        data_test = MRIDataset(options.input_dir, test_tsv, model_options.preprocessing, transform=transformations)
 
-        # Use argument load to distinguish training and testing
         test_loader = DataLoader(data_test,
                                  batch_size=options.batch_size,
                                  shuffle=False,
@@ -93,6 +96,7 @@ if __name__ == "__main__":
                                  drop_last=False
                                  )
 
+        # Run test
         metrics_test, loss_test, test_df = test(best_model, test_loader, options.gpu, criterion, full_return=True)
 
         acc_test, sen_test, spe_test = metrics_test['balanced_accuracy'] * 100, metrics_test['sensitivity'] * 100,\
