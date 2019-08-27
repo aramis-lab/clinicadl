@@ -13,7 +13,7 @@ package_path = path.abspath(path.join(path.abspath(path.join(path.abspath(path.j
 sys.path.append(package_path)
 
 from classifiers.three_d_cnn.patch_level.classification_utils import MRIDataset_patch_hippocampus, MRIDataset_patch
-from classifiers.three_d_cnn.patch_level.classification_utils import greedy_layer_wise_learning, stacked_ae_learning, visualize_ae
+from classifiers.three_d_cnn.patch_level.classification_utils import stacked_ae_learning, visualize_ae
 
 from tools.deep_learning import commandline_to_json
 from tools.deep_learning.data import load_data, MinMaxNormalization
@@ -55,8 +55,6 @@ parser.add_argument('--hippocampus_roi', default=False, type=bool,
 # Training arguments
 parser.add_argument("--network", default="Conv_4_FC_3", choices=["Conv_4_FC_3", "Conv_7_FC_2", "Conv_3_FC_2"],
                     help="Autoencoder network type. (default=Conv_4_FC_3)")
-parser.add_argument("--ae_training_method", default="stacked_ae", choices=["layer_wise_ae", "stacked_ae"],
-                    help="How to train the autoencoder, layer wise or train all AEs together")
 parser.add_argument("--diagnoses", default=["AD", "CN", "MCI"], type=str, nargs="+",
                     help="Take all the subjects possible for autoencoder training")
 parser.add_argument("--num_workers", default=0, type=int,
@@ -144,17 +142,11 @@ def main(options):
             example_batch = (next(iter(train_loader))['image'].cuda())[0, ...].unsqueeze(0)
 
         criterion = torch.nn.MSELoss()
-        writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "ConvAutoencoder", "layer_wise", "train")))
-        writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "ConvAutoencoder", "layer_wise", "valid")))
-        writer_train_ft = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "ConvAutoencoder", "fine_tine", "train")))
-        writer_valid_ft = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "ConvAutoencoder", "fine_tine", "valid")))
+        writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "ConvAutoencoder", "train")))
+        writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "ConvAutoencoder", "valid")))
 
-        if options.ae_training_method == 'layer_wise_ae':
-            model, best_autodecoder = greedy_layer_wise_learning(model, train_loader, valid_loader, criterion, writer_train, writer_valid, writer_train_ft, writer_valid_ft, options, fi)
-        else:
-            model, best_autodecoder = stacked_ae_learning(model, train_loader, valid_loader, criterion,
-                                                          writer_train_ft, writer_valid_ft,
-                                                                 options, fi)
+        model, best_autodecoder = stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_train,
+                                                      writer_valid, options, fi)
 
         if options.visualization:
             visualize_ae(best_autodecoder, example_batch, os.path.join(options.output_dir, "visualize", "fold_" + str(fi)))
