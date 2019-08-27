@@ -95,7 +95,7 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_tra
         Return both the pretrained CNN for future use and also the stacked AEs
     """
     from os import path
-    from model import AutoEncoder
+    from tools.deep_learning.models import AutoEncoder
     from copy import deepcopy
     ## if the model defined is not already construted to an AE, then we convert the CNN into an AE, keeping the same structure with original CNN
     if not isinstance(model, AutoEncoder):
@@ -478,77 +478,6 @@ def extract_ae_layer_wise(ae, level):
     return output_ae
 
 
-def revese_relu_conv(decoder_layers):
-    """
-    This is to reverse the order of the relu and convnet layer in a CNN block
-    :param decoder_layers:
-    :return:
-    """
-    import torch.nn as nn
-    idx_relu, idx_conv = -1, -1
-    for idx, layer in enumerate(decoder_layers):
-        if isinstance(layer, nn.ConvTranspose3d):
-            idx_conv = idx
-        elif isinstance(layer, nn.ReLU) or isinstance(layer, nn.LeakyReLU):
-            idx_relu = idx
-
-        if idx_conv != -1 and idx_relu != -1:
-            decoder_layers[idx_relu], decoder_layers[idx_conv] = decoder_layers[idx_conv], decoder_layers[idx_relu]
-            idx_conv, idx_relu = -1, -1
-
-    # Check if number of features of batch normalization layers is still correct
-    for idx, layer in enumerate(decoder_layers):
-        if isinstance(layer, nn.BatchNorm3d):
-            conv = decoder_layers[idx + 1]
-            decoder_layers[idx] = nn.BatchNorm3d(conv.out_channels)
-
-    return decoder_layers
-
-class MinMaxNormalization(object):
-    """Normalizes a tensor between 0 and 1"""
-
-    def __call__(self, image):
-        return (image - image.min()) / (image.max() - image.min())
-
-def visualize_subject(decoder, dataloader, results_path, epoch, options, first_time=False):
-    from os import path
-    import nibabel as nib
-
-    visualization_path = path.join(results_path, 'iterative_visualization')
-
-    if not path.exists(visualization_path):
-        os.makedirs(visualization_path)
-
-    set_df = dataloader.dataset.df
-    subject = set_df.loc[0, 'participant_id']
-    session = set_df.loc[0, 'session_id']
-    image_path = path.join(options.input_dir, 'subjects', subject, session,
-                           't1', 'preprocessing_dl',
-                            subject + '_' + session + '_space-MNI_res-1x1x1.nii.gz')
-
-    input_nii = nib.load(image_path)
-    input_np = input_nii.get_data()
-    input_pt = torch.from_numpy(input_np).unsqueeze(0).unsqueeze(0).float()
-    if options.minmaxnormalization:
-        transform = MinMaxNormalization()
-        input_pt = transform(input_pt)
-
-    if options.gpu:
-        input_pt = input_pt.cuda()
-
-    output_pt = decoder(input_pt)
-
-    if options.gpu:
-        output_pt = output_pt.cpu()
-
-    output_np = output_pt.detach().numpy()[0][0]
-    output_nii = nib.Nifti1Image(output_np, affine=input_nii.affine)
-
-    if first_time:
-        nib.save(input_nii, path.join(visualization_path, 'input.nii'))
-
-    nib.save(output_nii, path.join(visualization_path, 'epoch-' + str(epoch) + '.nii'))
-
 def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, difference=0):
     from copy import deepcopy
     from os import path
@@ -672,6 +601,7 @@ def load_model_from_log(model, optimizer, checkpoint_dir, filename='checkpoint.p
 
     return model_updated, optimizer, param_dict['global_step'], param_dict['epoch']
 
+
 def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, iteration, model_mode="train", global_step=0):
     """
     This is the function to train, validate or test the model, depending on the model_mode parameter.
@@ -702,27 +632,14 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, i
         model.train() ## set the model to training mode
         print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
 
-        tend = time()
-        total_time = 0
-
         for i, batch_data in enumerate(data_loader):
-            # torch.cuda.synchronize()
-            t0 = time()
-            total_time = total_time + t0 - tend
-
-            print("Loading available between batches of data by CPU using time: ", t0 - tend)
 
             if use_cuda:
                 imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
             else:
                 imgs, labels = batch_data['image'], batch_data['label']
 
-            torch.cuda.synchronize()
-            t1 = time()
-            total_time += t1 - t0
-            print("Loading data on GPU", t1 - t0)
-
-            ## add the participant_id + session_id
+            # add the participant_id + session_id
             image_ids = batch_data['image_id']
             subjects.extend(image_ids)
 
@@ -732,24 +649,18 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, i
             print('The group true label is %s' % (str(labels)))
             output = model(imgs)
 
-            torch.cuda.synchronize()
-            t2 = time()
-            print("Real time forward pass", t2 - t1)
-
             _, predict = output.topk(1)
             predict_list = predict.data.cpu().numpy().tolist()
             predict_list = [item for sublist in predict_list for item in sublist]
             y_hat.extend(predict_list)
 
-            print("output.device: " + str(output.device))
-            print("labels.device: " + str(labels.device))
             print("The predicted label is: " + str(output))
             loss_batch = loss_func(output, labels)
 
-            ## adding the probability
+            # adding the probability
             proba.extend(output.data.cpu().numpy().tolist())
 
-            ## calculate the balanced accuracy
+            # calculate the balanced accuracy
             results = evaluate_prediction(gound_truth_list, predict_list)
             accuracy = results['balanced_accuracy']
             acc += accuracy
@@ -760,61 +671,17 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, i
 
             print("For batch %d, training loss is : %f" % (i, loss_batch.item()))
             print("For batch %d, training accuracy is : %f" % (i, accuracy))
-
-            # Unlike tensorflow, in Pytorch, we need to manully zero the graident before each backpropagation step, becase Pytorch accumulates the gradients
-            # on subsequent backward passes. The initial designing for this is convenient for training RNNs.
             optimizer.zero_grad()
             loss_batch.backward()
             optimizer.step()
 
-            torch.cuda.synchronize()
-            t3 = time()
-            print("Backward pass", t3 - t2)
-
-            ## update the global steps
+            # update the global steps
             global_step = i + epoch_i * len(data_loader)
 
-            # # ## accumlate n batch of data to calculate the training accuracy, this helps when the batch size is quite small
-            # train_images.append(imgs)
-            # train_labels.append(labels)
-            #
-            # if (i+1) % training_accuracy_batches == 0 and i != 0:
-            #     y_hat_batches = []
-            #     y_ground_batches = []
-            #     loss_batchs = 0
-            #     for i in range(len(train_images)):
-            #         ## each n batch, fit the former n batches training data into the trained data, report his accuracy as training acc
-            #         output = model(train_images[i])
-            #         _, predict = output.topk(1)
-            #         predict_list = predict.data.cpu().numpy().tolist()
-            #         y_hat_batches.extend([item for sublist in predict_list for item in sublist])
-            #         y_ground_batches.extend(labels.data.cpu().numpy().tolist())
-            #
-            #         loss_batch = loss_func(output, labels)
-            #         loss_batchs += loss_batch
-            #
-            #     ## calculate the balanced accuracy
-            #     results = evaluate_prediction(y_ground_batches, y_hat_batches)
-            #     accuracy_batches = results['balanced_accuracy']
-            #
-            #     writer.add_scalar('classification accuracy', accuracy_batches, global_step)
-            #     writer.add_scalar('loss', loss_batchs / len(train_images), global_step)
-            #     # initialize these variables
-            #     train_images = []
-            #     train_labels = []
-            #     del y_hat_batches, y_ground_batches, loss_batchs, accuracy_batches
-
-            # delete the temporal varibles taking the GPU memory
+            # delete the temporary variables taking the GPU memory
             del imgs, labels, output, predict, gound_truth_list, loss_batch, accuracy, results
-            # Releases all unoccupied cached memory
             torch.cuda.empty_cache()
 
-            torch.cuda.synchronize()
-            t_temp = time()
-            print('Training the %d -th batch in total using  %f s:' % (i, t_temp -t0))
-            tend = time()
-
-        print('Mean time per batch (train):', total_time / len(data_loader))
         accuracy_batch_mean = acc / len(data_loader)
         loss_batch_mean = loss / len(data_loader)
         torch.cuda.empty_cache()
@@ -845,28 +712,24 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, i
                 predict_list = predict.data.cpu().numpy().tolist()
                 predict_list = [item for sublist in predict_list for item in sublist]
                 y_hat.extend(predict_list)
-                print("output.device: " + str(output.device))
-                print("labels.device: " + str(labels.device))
                 print("The predicted label is: " + str(output))
                 loss_batch = loss_func(output, labels)
 
-                ## adding the probability
+                # adding the probability
                 proba.extend(output.data.cpu().numpy().tolist())
 
-                ## calculate the balanced accuracy
+                # calculate the balanced accuracy
                 results = evaluate_prediction(gound_truth_list, predict_list)
                 accuracy = results['balanced_accuracy']
 
                 loss += loss_batch.item()
                 print("For batch %d, validation accuracy is : %f" % (i, accuracy))
 
-                # delete the temporal varibles taking the GPU memory
-                # del imgs, labels
+                # delete the temporary variables taking the GPU memory
                 del imgs, labels, output, predict, gound_truth_list, accuracy, loss_batch, results
-                # Releases all unoccupied cached memory
                 torch.cuda.empty_cache()
 
-            ## calculate the balanced accuracy
+            # calculate the balanced accuracy
             results = soft_voting_subject_level(y_ground, y_hat, subjects, proba, iteration)
             accuracy_batch_mean = results['balanced_accuracy']
             loss_batch_mean = loss / len(data_loader)
@@ -1260,7 +1123,13 @@ class MRIDataset_patch(Dataset):
         self.data_type = data_type
 
         # Check the format of the tsv file here
-        self.df = pd.read_csv(data_file, sep='\t')
+        if isinstance(data_file, str):
+            self.df = pd.read_csv(data_file, sep='\t')
+        elif isinstance(data_file, pd.DataFrame):
+            self.df = data_file
+        else:
+            raise Exception('The argument datafile is not of correct type.')
+
         if ('diagnosis' not in list(self.df.columns.values)) or ('session_id' not in list(self.df.columns.values)) or \
            ('participant_id' not in list(self.df.columns.values)):
             raise Exception("the data file is not in the correct format."
@@ -1294,15 +1163,12 @@ class MRIDataset_patch(Dataset):
             ### extract the patch from MRI based on a specific size
             patch = extract_patch_from_mri(image, index_patch, self.patch_size, self.stride_size, self.patchs_per_patient)
         else:
-            t1 = time()
             patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
                                       'preprocessing_dl',
                                       img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-' + str(self.patch_size) + '_stride-' + str(self.stride_size) + '_patch-' + str(
                                           index_patch) + '.pt')
 
         patch = torch.load(patch_path)
-        t2 = time()
-        print("Load patch: %f s" % (t2 -t1))
 
         # check if the patch has NAN value
         if torch.isnan(patch).any() == True:	
@@ -1332,7 +1198,13 @@ class MRIDataset_patch_hippocampus(Dataset):
         self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
 
         # Check the format of the tsv file here
-        self.df = pd.read_csv(data_file, sep='\t')
+        if isinstance(data_file, str):
+            self.df = pd.read_csv(data_file, sep='\t')
+        elif isinstance(data_file, pd.DataFrame):
+            self.df = data_file
+        else:
+            raise Exception('The argument datafile is not of correct type.')
+
         if ('diagnosis' not in list(self.df.columns.values)) or ('session_id' not in list(self.df.columns.values)) or \
            ('participant_id' not in list(self.df.columns.values)):
             raise Exception("the data file is not in the correct format."
@@ -1358,9 +1230,6 @@ class MRIDataset_patch_hippocampus(Dataset):
         ## odd is left hipp, even is right
         left_is_odd = idx % self.patchs_per_patient
 
-
-        t1 = time()
-
         if left_is_odd == 1:
             patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
                                   'preprocessing_dl',
@@ -1371,8 +1240,6 @@ class MRIDataset_patch_hippocampus(Dataset):
                                   img_name + '_' + sess_name + '_space-MNI_res-1x1x1_hippocampus_hemi-right.pt')
 
         patch = torch.load(patch_path)
-        t2 = time()
-        print("Load patch: %f s" % (t2 -t1))
 
         # check if the patch has NAN value
         if torch.isnan(patch).any() == True:
@@ -1410,7 +1277,13 @@ class MRIDataset_patch_by_index(Dataset):
         self.data_type = data_type
 
         # Check the format of the tsv file here
-        self.df = pd.read_csv(data_file, sep='\t')
+        if isinstance(data_file, str):
+            self.df = pd.read_csv(data_file, sep='\t')
+        elif isinstance(data_file, pd.DataFrame):
+            self.df = data_file
+        else:
+            raise Exception('The argument datafile is not of correct type.')
+
         if ('diagnosis' not in list(self.df.columns.values)) or ('session_id' not in list(self.df.columns.values)) or \
            ('participant_id' not in list(self.df.columns.values)):
             raise Exception("the data file is not in the correct format."
@@ -1432,15 +1305,12 @@ class MRIDataset_patch_by_index(Dataset):
         img_label = self.patch_label_list[idx]
         label = self.diagnosis_code[img_label]
 
-        t1 = time()
         patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
                                   'preprocessing_dl',
                                   img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-' + str(self.patch_size) + '_stride-' + str(self.stride_size) + '_patch-' + str(
                                       self.index_patch) + '.pt')
 
         patch = torch.load(patch_path)
-        t2 = time()
-        print("Load patch: %f s" % (t2 -t1))
 
         # check if the patch has NAN value
         if torch.isnan(patch).any() == True:
@@ -1454,178 +1324,88 @@ class MRIDataset_patch_by_index(Dataset):
 
         return sample
 
-def subject_diagnosis_df(subject_session_df):
-    """
-    Creates a DataFrame with only one occurence of each subject and the most early diagnosis
-    Some subjects may not have the baseline diagnosis (ses-M00 doesn't exist)
-
-    :param subject_session_df: (DataFrame) a DataFrame with columns containing 'participant_id', 'session_id', 'diagnosis'
-    :return: DataFrame with the same columns as the input
-    """
-    temp_df = subject_session_df.set_index(['participant_id', 'session_id'])
-    subjects_df = pd.DataFrame(columns=subject_session_df.columns)
-    for subject, subject_df in temp_df.groupby(level=0):
-        session_nb_list = [int(session[5::]) for _, session in subject_df.index.values]
-        session_nb_list.sort()
-        session_baseline_nb = session_nb_list[0]
-        if session_baseline_nb < 10:
-            session_baseline = 'ses-M0' + str(session_baseline_nb)
-        else:
-            session_baseline = 'ses-M' + str(session_baseline_nb)
-        row_baseline = list(subject_df.loc[(subject, session_baseline)])
-        row_baseline.insert(0, subject)
-        row_baseline.insert(1, session_baseline)
-        row_baseline = np.array(row_baseline).reshape(1, len(row_baseline))
-        row_df = pd.DataFrame(row_baseline, columns=subject_session_df.columns)
-        subjects_df = subjects_df.append(row_df)
-
-    subjects_df.reset_index(inplace=True, drop=True)
-    return subjects_df
-
-
-def multiple_time_points(df, subset_df):
-    """
-    Returns a DataFrame with all the time points of each subject
-
-    :param df: (DataFrame) the reference containing all the time points of all subjects.
-    :param subset_df: (DataFrame) the DataFrame containing the subset of subjects.
-    :return: mtp_df (DataFrame) a DataFrame with the time points of the subjects of subset_df
-    """
-    mtp_df = pd.DataFrame(columns=df.columns)
-    temp_df = df.set_index('participant_id')
-    for idx in subset_df.index.values:
-        subject = subset_df.loc[idx, 'participant_id']
-        subject_df = temp_df.loc[subject]
-        if isinstance(subject_df, pd.Series):
-            subject_id = subject_df.name
-            row = list(subject_df.values)
-            row.insert(0, subject_id)
-            subject_df = pd.DataFrame(np.array(row).reshape(1, len(row)), columns=df.columns)
-            mtp_df = mtp_df.append(subject_df)
-        else:
-            mtp_df = mtp_df.append(subject_df.reset_index())
-
-    mtp_df.reset_index(inplace=True, drop=True)
-    return mtp_df
-
-def split_subjects_to_tsv(diagnoses_tsv, val_size=0.15, random_state=None):
-    """
-    Write the tsv files corresponding to the train/val/test splits of all folds
-
-    :param diagnoses_tsv: (str) path to the tsv file with diagnoses
-    :param val_size: (float) proportion of the train set being used for validation
-    :return: None
-    """
-
-    df = pd.read_csv(diagnoses_tsv, sep='\t')
-    if 'diagnosis' not in list(df.columns.values):
-        raise Exception('Diagnoses file is not in the correct format.')
-    # Here we reduce the DataFrame to have only one diagnosis per subject (multiple time points case)
-    diagnosis_df = subject_diagnosis_df(df)
-    diagnoses_list = list(diagnosis_df.diagnosis)
-    unique = list(set(diagnoses_list))
-    y = np.array([unique.index(x) for x in diagnoses_list])  # There is one label per diagnosis depending on the order
-
-    sets_dir = path.join(path.dirname(diagnoses_tsv),
-                         path.basename(diagnoses_tsv).split('.')[0],
-                         'val_size-' + str(val_size))
-    if not path.exists(sets_dir):
-        os.makedirs(sets_dir)
-
-    # split the train data into training and validation set
-    skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size, random_state=random_state)
-    indices = next(skf_2.split(np.zeros(len(y)), y))
-    train_ind, valid_ind = indices
-
-    df_sub_valid = diagnosis_df.iloc[valid_ind]
-    df_sub_train = diagnosis_df.iloc[train_ind]
-    df_valid = multiple_time_points(df, df_sub_valid)
-    df_train = multiple_time_points(df, df_sub_train)
-
-    df_valid.to_csv(path.join(sets_dir, 'valid.tsv'), sep='\t', index=False)
-    df_train.to_csv(path.join(sets_dir, 'train.tsv'), sep='\t', index=False)
-
-def load_split_by_task(diagnoses_tsv, val_size=0.15, random_state=None):
-    """
-    Returns the paths of the TSV files for each set based on the task. The training and validation data has been age,sex correceted split
-
-    :param diagnoses_tsv: (str) path to the tsv file with diagnoses
-    :param val_size: (float) the proportion of the training set used for validation
-    :return: 3 Strings
-        training_tsv
-        valid_tsv
-    """
-    sets_dir = path.join(path.dirname(diagnoses_tsv),
-                         path.basename(diagnoses_tsv).split('.')[0],
-                         'val_size-' + str(val_size))
-
-    training_tsv = path.join(sets_dir, 'train.tsv')
-    valid_tsv = path.join(sets_dir, 'valid.tsv')
-
-    if not path.exists(training_tsv) or not path.exists(valid_tsv):
-        split_subjects_to_tsv(diagnoses_tsv, val_size, random_state=random_state)
-
-        training_tsv = path.join(sets_dir, 'train.tsv')
-        valid_tsv = path.join(sets_dir, 'valid.tsv')
-
-    return training_tsv, valid_tsv
-
-def load_split_by_diagnosis(options, split, n_splits=5, baseline_or_longitudinal='baseline', autoencoder=True):
-    """
-    Creates a DataFrame for training and validation sets given the wanted diagnoses, this is helpful to train the autoencoder with maximum availble data
-
-    :param options: object of the argparser
-    :param diagnoses_list: list of diagnoses to select to construct the DataFrames
-    :param baseline: bool choose to use baseline only instead of all data available
-    :return:
-        train_df DataFrame with training data
-        valid_df DataFrame with validation data
-    """
-    train_df = pd.DataFrame()
-    valid_df = pd.DataFrame()
-
-    if n_splits is None:
-        train_path = path.join(options.diagnosis_tsv_path, 'train')
-        valid_path = path.join(options.diagnosis_tsv_path, 'validation')
-
-    else:
-        train_path = path.join(options.diagnosis_tsv_path, 'train_splits-' + str(n_splits),
-                               'split-' + str(split))
-        valid_path = path.join(options.diagnosis_tsv_path, 'validation_splits-' + str(n_splits),
-                               'split-' + str(split))
-    print("Train", train_path)
-    print("Valid", valid_path)
-
-    for diagnosis in options.diagnoses_list:
-
-        if baseline_or_longitudinal == 'baseline':
-            train_diagnosis_tsv = path.join(train_path, diagnosis + '_baseline.tsv')
-        else:
-            train_diagnosis_tsv = path.join(train_path, diagnosis + '.tsv')
-
-        valid_diagnosis_tsv = path.join(valid_path, diagnosis + '_baseline.tsv')
-
-        train_diagnosis_df = pd.read_csv(train_diagnosis_tsv, sep='\t')
-        valid_diagnosis_df = pd.read_csv(valid_diagnosis_tsv, sep='\t')
-
-        train_df = pd.concat([train_df, train_diagnosis_df])
-        valid_df = pd.concat([valid_df, valid_diagnosis_df])
-
-    train_df.reset_index(inplace=True, drop=True)
-    valid_df.reset_index(inplace=True, drop=True)
-
-    if autoencoder == True:
-        train_tsv = os.path.join(tempfile.mkdtemp(), 'AE_training_subjects.tsv')
-        train_df.to_csv(train_tsv, index=False, sep='\t', encoding='utf-8')
-        valid_tsv = os.path.join(tempfile.mkdtemp(), 'AE_validation_subjects.tsv')
-        valid_df.to_csv(valid_tsv, index=False, sep='\t', encoding='utf-8')
-    else:
-        train_tsv = os.path.join(tempfile.mkdtemp(), 'CNN_training_subjects.tsv')
-        train_df.to_csv(train_tsv, index=False, sep='\t', encoding='utf-8')
-        valid_tsv = os.path.join(tempfile.mkdtemp(), 'CNN_validation_subjects.tsv')
-        valid_df.to_csv(valid_tsv, index=False, sep='\t', encoding='utf-8')
-
-    return train_df, valid_df, train_tsv, valid_tsv
+#
+# def load_split_by_task(diagnoses_tsv, val_size=0.15, random_state=None):
+#     """
+#     Returns the paths of the TSV files for each set based on the task. The training and validation data has been age,sex correceted split
+#
+#     :param diagnoses_tsv: (str) path to the tsv file with diagnoses
+#     :param val_size: (float) the proportion of the training set used for validation
+#     :return: 3 Strings
+#         training_tsv
+#         valid_tsv
+#     """
+#     sets_dir = path.join(path.dirname(diagnoses_tsv),
+#                          path.basename(diagnoses_tsv).split('.')[0],
+#                          'val_size-' + str(val_size))
+#
+#     training_tsv = path.join(sets_dir, 'train.tsv')
+#     valid_tsv = path.join(sets_dir, 'valid.tsv')
+#
+#     if not path.exists(training_tsv) or not path.exists(valid_tsv):
+#         split_subjects_to_tsv(diagnoses_tsv, val_size, random_state=random_state)
+#
+#         training_tsv = path.join(sets_dir, 'train.tsv')
+#         valid_tsv = path.join(sets_dir, 'valid.tsv')
+#
+#     return training_tsv, valid_tsv
+#
+# def load_split_by_diagnosis(options, split, n_splits=5, baseline_or_longitudinal='baseline', autoencoder=True):
+#     """
+#     Creates a DataFrame for training and validation sets given the wanted diagnoses, this is helpful to train the autoencoder with maximum availble data
+#
+#     :param options: object of the argparser
+#     :param diagnoses_list: list of diagnoses to select to construct the DataFrames
+#     :param baseline: bool choose to use baseline only instead of all data available
+#     :return:
+#         train_df DataFrame with training data
+#         valid_df DataFrame with validation data
+#     """
+#     train_df = pd.DataFrame()
+#     valid_df = pd.DataFrame()
+#
+#     if n_splits is None:
+#         train_path = path.join(options.diagnosis_tsv_path, 'train')
+#         valid_path = path.join(options.diagnosis_tsv_path, 'validation')
+#
+#     else:
+#         train_path = path.join(options.diagnosis_tsv_path, 'train_splits-' + str(n_splits),
+#                                'split-' + str(split))
+#         valid_path = path.join(options.diagnosis_tsv_path, 'validation_splits-' + str(n_splits),
+#                                'split-' + str(split))
+#     print("Train", train_path)
+#     print("Valid", valid_path)
+#
+#     for diagnosis in options.diagnoses_list:
+#
+#         if baseline_or_longitudinal == 'baseline':
+#             train_diagnosis_tsv = path.join(train_path, diagnosis + '_baseline.tsv')
+#         else:
+#             train_diagnosis_tsv = path.join(train_path, diagnosis + '.tsv')
+#
+#         valid_diagnosis_tsv = path.join(valid_path, diagnosis + '_baseline.tsv')
+#
+#         train_diagnosis_df = pd.read_csv(train_diagnosis_tsv, sep='\t')
+#         valid_diagnosis_df = pd.read_csv(valid_diagnosis_tsv, sep='\t')
+#
+#         train_df = pd.concat([train_df, train_diagnosis_df])
+#         valid_df = pd.concat([valid_df, valid_diagnosis_df])
+#
+#     train_df.reset_index(inplace=True, drop=True)
+#     valid_df.reset_index(inplace=True, drop=True)
+#
+#     if autoencoder == True:
+#         train_tsv = os.path.join(tempfile.mkdtemp(), 'AE_training_subjects.tsv')
+#         train_df.to_csv(train_tsv, index=False, sep='\t', encoding='utf-8')
+#         valid_tsv = os.path.join(tempfile.mkdtemp(), 'AE_validation_subjects.tsv')
+#         valid_df.to_csv(valid_tsv, index=False, sep='\t', encoding='utf-8')
+#     else:
+#         train_tsv = os.path.join(tempfile.mkdtemp(), 'CNN_training_subjects.tsv')
+#         train_df.to_csv(train_tsv, index=False, sep='\t', encoding='utf-8')
+#         valid_tsv = os.path.join(tempfile.mkdtemp(), 'CNN_validation_subjects.tsv')
+#         valid_df.to_csv(valid_tsv, index=False, sep='\t', encoding='utf-8')
+#
+#     return train_df, valid_df, train_tsv, valid_tsv
 
 def extract_patch_from_mri(image_tensor, index_patch, patch_size, stride_size, patchs_per_patient):
 
@@ -1647,36 +1427,24 @@ def check_and_clean(d):
       shutil.rmtree(d)
   os.mkdir(d)
 
-def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar'):
-    """
-    This is the function to save the best model during validation process
-    :param state: the parameters that you wanna save
-    :param is_best: if the performance is better than before
-    :param checkpoint_dir:
-    :param filename:
-    :return:
-        checkpoint.pth.tar: this is the model trained by the last epoch, useful to retrain from this stopping point
-        model_best.pth.tar: if is_best is Ture, this is the best model during the validation, useful for testing the performances of the model
-    """
-    import shutil, os
-    if not os.path.exists(checkpoint_dir):
-        os.makedirs(checkpoint_dir)
-    torch.save(state, os.path.join(checkpoint_dir, filename))
-    if is_best:
-        shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(checkpoint_dir, 'model_best.pth.tar'))
+# def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar'):
+#     """
+#     This is the function to save the best model during validation process
+#     :param state: the parameters that you wanna save
+#     :param is_best: if the performance is better than before
+#     :param checkpoint_dir:
+#     :param filename:
+#     :return:
+#         checkpoint.pth.tar: this is the model trained by the last epoch, useful to retrain from this stopping point
+#         model_best.pth.tar: if is_best is Ture, this is the best model during the validation, useful for testing the performances of the model
+#     """
+#     import shutil, os
+#     if not os.path.exists(checkpoint_dir):
+#         os.makedirs(checkpoint_dir)
+#     torch.save(state, os.path.join(checkpoint_dir, filename))
+#     if is_best:
+#         shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(checkpoint_dir, 'model_best.pth.tar'))
 
-class NormalizeMinMax(object):
-    def __init__(self):
-        pass
-
-    def __call__(self, tensor):
-        if isinstance(tensor, torch.Tensor):
-            ## normalize to [0, 1]
-            tensor = (tensor - tensor.min()) / (tensor.max() - tensor.min())
-
-            return tensor
-        else:
-            raise Exception('CustomNormalizedMinMax needs a torch tensor, but it is not given.')
 
 def kl_divergence(p, q):
     '''
