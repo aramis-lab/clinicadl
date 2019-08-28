@@ -14,6 +14,9 @@ def save_checkpoint(state, accuracy_is_best, loss_is_best, checkpoint_dir, filen
     import os
     import shutil
 
+    if not os.path.exists(checkpoint_dir):
+        os.makedirs(checkpoint_dir)
+
     torch.save(state, os.path.join(checkpoint_dir, filename))
     if accuracy_is_best:
         best_accuracy_path = os.path.join(checkpoint_dir, best_accuracy)
