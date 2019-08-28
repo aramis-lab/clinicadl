@@ -7,8 +7,8 @@ from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 import torchvision.transforms as transforms
 
-from classifiers.three_d_cnn.patch_level.classification_utils import load_model_after_ae, load_model_after_cnn
-from classifiers.three_d_cnn.patch_level.classification_utils import MRIDataset_patch_by_index, train, hard_voting_to_tsvs
+from .utils import load_model_after_ae, load_model_after_cnn
+from .utils import MRIDataset_patch_by_index, train, hard_voting_to_tsvs
 
 from tools.deep_learning import EarlyStopping, save_checkpoint, commandline_to_json
 from tools.deep_learning.data import MinMaxNormalization, load_data

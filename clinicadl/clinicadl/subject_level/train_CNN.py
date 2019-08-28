@@ -6,10 +6,10 @@ from os import path
 import os
 from torch.utils.data import DataLoader
 
-package_path = path.abspath(path.join(path.abspath(path.join(path.abspath(path.join(path.abspath(path.join(sys.argv[0], os.pardir)), os.pardir)), os.pardir)), os.pardir))
+package_path = path.abspath(path.join(sys.argv[0], os.pardir, os.pardir))
 sys.path.append(package_path)
 
-from classifiers.three_d_cnn.subject_level.utils import train
+from .utils import train
 from tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data, generate_sampler
 from tools.deep_learning import create_model, commandline_to_json
 from tools.deep_learning.models import transfer_learning

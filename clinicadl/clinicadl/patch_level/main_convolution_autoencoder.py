@@ -9,11 +9,11 @@ import torchvision.transforms as transforms
 import sys
 from os import path
 
-package_path = path.abspath(path.join(path.abspath(path.join(path.abspath(path.join(path.abspath(path.join(sys.argv[0], os.pardir)), os.pardir)), os.pardir)), os.pardir))
+package_path = path.abspath(path.join(sys.argv[0], os.pardir, os.pardir))
 sys.path.append(package_path)
 
-from classifiers.three_d_cnn.patch_level.classification_utils import MRIDataset_patch_hippocampus, MRIDataset_patch
-from classifiers.three_d_cnn.patch_level.classification_utils import stacked_ae_learning, visualize_ae
+from .utils import MRIDataset_patch_hippocampus, MRIDataset_patch
+from .utils import stacked_ae_learning, visualize_ae
 
 from tools.deep_learning import commandline_to_json
 from tools.deep_learning.data import load_data, MinMaxNormalization
