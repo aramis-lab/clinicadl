@@ -30,35 +30,35 @@ __status__ = "Development"
 
 parser = argparse.ArgumentParser(description="Argparser for 3D convolutional autoencoder, the AE will be reconstructed based on the CNN that you choose")
 
-# Data arguments
+# Mandatory arguments
 parser.add_argument("caps_directory", type=str,
                     help="Path to the caps of image processing pipeline of DL")
 parser.add_argument("diagnosis_tsv_path", type=str,
                     help="Path to tsv file of the population based on the diagnosis tsv files. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("output_dir", type=str,
                     help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
+
+# Data management
+parser.add_argument("--diagnoses", default=["AD", "CN", "MCI"], type=str, nargs="+",
+                    help="Take all the subjects possible for autoencoder training")
 parser.add_argument("--patch_size", default=50, type=int,
                     help="The patch size extracted from the MRI")
 parser.add_argument("--patch_stride", default=50, type=int,
                     help="The stride for the patch extract window from the MRI")
-parser.add_argument("--n_splits", default=5, type=int,
-                    help="Define the cross validation, by default, we use 5-fold.")
-parser.add_argument("--split", default=None, type=int,
-                    help="Default behaviour will run all splits, else only the splits specified will be run.")
 parser.add_argument("--baseline", default=False, action="store_true",
                     help="Use only baseline data instead of all scans available")
 parser.add_argument('--hippocampus_roi', default=False, type=bool,
                     help="If train the model using only hippocampus ROI")
 
+# Cross-validation
+parser.add_argument("--n_splits", default=5, type=int,
+                    help="Define the cross validation, by default, we use 5-fold.")
+parser.add_argument("--split", default=None, type=int,
+                    help="Default behaviour will run all splits, else only the splits specified will be run.")
+
 # Training arguments
 parser.add_argument("--network", default="Conv_4_FC_3", choices=["Conv_4_FC_3", "Conv_7_FC_2", "Conv_3_FC_2"],
                     help="Autoencoder network type. (default=Conv_4_FC_3)")
-parser.add_argument("--diagnoses", default=["AD", "CN", "MCI"], type=str, nargs="+",
-                    help="Take all the subjects possible for autoencoder training")
-parser.add_argument("--num_workers", default=0, type=int,
-                    help='the number of batch being loaded in parallel')
-parser.add_argument("--batch_size", default=2, type=int,
-                    help="Batch size for training. (default=1)")
 parser.add_argument("--epochs_layer_wise", default=1, type=int,
                     help="Epochs for layer-wise AE training")
 parser.add_argument("--epochs_fine_tuning", default=1, type=int,
@@ -67,12 +67,18 @@ parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument("--gpu", default=False, action='store_true',
-                    help='Uses gpu instead of cpu if cuda is available')
 
 # visualization
 parser.add_argument("--visualization", default=True, type=bool,
                     help='Chooses if visualization is done on AE pretraining')
+
+# Computational issues
+parser.add_argument("--num_workers", default=0, type=int,
+                    help='the number of batch being loaded in parallel')
+parser.add_argument("--batch_size", default=2, type=int,
+                    help="Batch size for training. (default=1)")
+parser.add_argument("--gpu", default=False, action='store_true',
+                    help='Uses gpu instead of cpu if cuda is available')
 
 
 def main(options):
