@@ -29,9 +29,10 @@ parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D patch CNN
 parser.add_argument("caps_directory", type=str,
                     help="Path to the caps of image processing pipeline of DL")
 parser.add_argument("diagnosis_tsv_path", type=str,
-                    help="Path to tsv file of the population based on the diagnosis tsv files. To note, the column name should be participant_id, session_id and diagnosis.")
+                    help="Path to tsv file of the population based on the diagnosis tsv files."
+                         "To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("output_dir", type=str,
-                    help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
+                    help="Path to store the classification outputs and the tsv files containing the performances.")
 
 # Data management
 parser.add_argument("--patch_size", default=50, type=int,
@@ -46,7 +47,7 @@ parser.add_argument("--network", default="Conv_4_FC_3",
                     help="Autoencoder network type. (default=Conv_4_FC_3). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
 parser.add_argument("--transfer_learning_autoencoder", default=True, type=bool,
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
-parser.add_argument("--diagnoses_list", default=["sMCI", "pMCI"], type=str,
+parser.add_argument("--diagnoses", default=["sMCI", "pMCI"], type=str,
                     help="Labels based on binary classification")
 
 # Training arguments
@@ -102,7 +103,7 @@ def main(options):
 
             if options.transfer_learning_autoencoder:
                 print('Train the model with the weights from a pre-trained model by autoencoder!')
-                if sorted(options.diagnoses_list) == ['AD', 'CN']:
+                if sorted(options.diagnoses) == ['AD', 'CN']:
                     model, saved_epoch = load_model_after_ae(model, os.path.join(options.output_dir, 'best_model_dir',
                                                                                  "fold_" + str(fi),
                                                                                  'ConvAutoencoder', 'fine_tune',
