@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from classifiers.three_d_cnn.subject_level.utils import ae_finetuning
+from .utils import ae_finetuning
 from tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data
 from tools.deep_learning import create_autoencoder, commandline_to_json
 

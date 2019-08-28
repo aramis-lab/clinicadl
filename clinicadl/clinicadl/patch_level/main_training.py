@@ -10,12 +10,12 @@ import torchvision.transforms as transforms
 import sys
 from os import path
 
-package_path = path.abspath(path.join(path.abspath(path.join(path.abspath(path.join(path.abspath(path.join(sys.argv[0], os.pardir)), os.pardir)), os.pardir)), os.pardir))
+package_path = path.abspath(path.join(sys.argv[0], os.pardir, os.pardir))
 sys.path.append(package_path)
 
-from classifiers.three_d_cnn.patch_level.classification_utils import MRIDataset_patch_hippocampus, MRIDataset_patch
-from classifiers.three_d_cnn.patch_level.classification_utils import load_model_after_ae, load_model_after_cnn
-from classifiers.three_d_cnn.patch_level.classification_utils import train, hard_voting_to_tsvs
+from .utils import MRIDataset_patch_hippocampus, MRIDataset_patch
+from .utils import load_model_after_ae, load_model_after_cnn
+from .utils import train, hard_voting_to_tsvs
 
 from tools.deep_learning import EarlyStopping, save_checkpoint, commandline_to_json
 from tools.deep_learning.data import MinMaxNormalization, load_data
