@@ -25,37 +25,35 @@ __status__ = "Development"
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D patch CNN with multiCNN")
 
-# Data arguments
+# Mandatory arguments
 parser.add_argument("caps_directory", type=str,
                     help="Path to the caps of image processing pipeline of DL")
 parser.add_argument("diagnosis_tsv_path", type=str,
                     help="Path to tsv file of the population based on the diagnosis tsv files. To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("output_dir", type=str,
                     help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
+
+# Data management
 parser.add_argument("--data_type", default="from_patch", choices=["from_MRI", "from_patch"],
                     help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
 parser.add_argument("--patch_size", default=50, type=int,
                     help="The patch size extracted from the MRI")
 parser.add_argument("--patch_stride", default=50, type=int,
                     help="The stride for the patch extract window from the MRI")
-parser.add_argument("--batch_size", default=1, type=int,
-                    help="Batch size for training. (default=1)")
-parser.add_argument("--num_workers", default=0, type=int,
-                    help='the number of batch being loaded in parallel')
 parser.add_argument("--baseline", default=False, action="store_true",
                     help="Use only baseline data instead of all scans available")
 
-# transfer learning
+# Transfer learning
 parser.add_argument("--network", default="Conv_4_FC_3",
                     help="Autoencoder network type. (default=Conv_4_FC_3). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
-parser.add_argument("--num_cnn", default=36, type=int,
-                    help="How many CNNs we want to train in a patch-wise way. By default, we train each patch from all subjects for one CNN")
 parser.add_argument("--transfer_learning_autoencoder", default=True, type=bool,
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
 parser.add_argument("--diagnoses_list", default=["sMCI", "pMCI"], type=str,
                     help="Labels based on binary classification")
 
 # Training arguments
+parser.add_argument("--num_cnn", default=36, type=int,
+                    help="How many CNNs we want to train in a patch-wise way. By default, we train each patch from all subjects for one CNN")
 parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
@@ -66,8 +64,6 @@ parser.add_argument("--split", default=None, type=int,
                     help="Default behaviour will run all splits, else only the splits specified will be run.")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument('--use_gpu', default=True, type=bool,
-                    help='Uses gpu instead of cpu if cuda is available')
 parser.add_argument('--weight_decay', default=1e-4, type=float,
                     help='weight decay (default: 1e-4)')
 
@@ -77,10 +73,17 @@ parser.add_argument("--patience", type=int, default=10,
 parser.add_argument("--tolerance", type=float, default=0,
                     help="Tolerance of magnitude of performance after each epoch.")
 
+# Computational issues
+parser.add_argument("--batch_size", default=1, type=int,
+                    help="Batch size for training. (default=1)")
+parser.add_argument("--num_workers", default=0, type=int,
+                    help='the number of batch being loaded in parallel')
+parser.add_argument('--gpu', default=False, action='store_true',
+                    help='Uses gpu instead of cpu if cuda is available')
 
 def main(options):
 
-    model = create_model(options.network, options.use_gpu)
+    model = create_model(options.network, options.gpu)
 
     if options.split is None:
         fold_iterator = range(options.n_splits)
@@ -183,15 +186,15 @@ def main(options):
                 print("At %s -th epoch." % str(epoch))
 
                 # train the model
-                train_subject, y_ground_train, y_hat_train, train_proba, acc_mean_train, global_step, loss_batch_mean_train = train(model, train_loader, options.use_gpu, loss, optimizer, writer_train_batch, epoch, fi, model_mode='train', global_step=global_step)
+                train_subject, y_ground_train, y_hat_train, train_proba, acc_mean_train, global_step, loss_batch_mean_train = train(model, train_loader, options.gpu, loss, optimizer, writer_train_batch, epoch, fi, model_mode='train', global_step=global_step)
 
                 # calculate the training accuracy based on all the training data
-                train_subject_all, y_ground_train_all, y_hat_train_all, train_proba_all, acc_mean_train_all, _, loss_batch_mean_train_all = train(model, train_loader, options.use_gpu, loss, optimizer, writer_train_all_data, epoch, fi, model_mode='valid', global_step=global_step)
+                train_subject_all, y_ground_train_all, y_hat_train_all, train_proba_all, acc_mean_train_all, _, loss_batch_mean_train_all = train(model, train_loader, options.gpu, loss, optimizer, writer_train_all_data, epoch, fi, model_mode='valid', global_step=global_step)
                 print("For training, subject level balanced accuracy is %f at the end of epoch %d" % (
                 acc_mean_train_all, epoch))
 
                 # at then end of each epoch, we validate one time for the model with the validation data
-                valid_subject, y_ground_valid, y_hat_valid, valide_proba, acc_mean_valid, global_step, loss_batch_mean_valid = train(model, valid_loader, options.use_gpu, loss, optimizer, writer_valid, epoch, fi, model_mode='valid', global_step=global_step)
+                valid_subject, y_ground_valid, y_hat_valid, valide_proba, acc_mean_valid, global_step, loss_batch_mean_valid = train(model, valid_loader, options.gpu, loss, optimizer, writer_valid, epoch, fi, model_mode='valid', global_step=global_step)
                 print("For validation, subject level balanced accuracy is %f at the end of epoch %d" % (
                 acc_mean_valid, epoch))
 
