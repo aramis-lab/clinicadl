@@ -24,8 +24,6 @@ parser.add_argument("--diagnosis_tsv", default='/network/lustre/dtlake01/aramis/
                            help="Path to the tsv containing all the test dataset")
 parser.add_argument("--output_dir", default='/network/lustre/dtlake01/aramis/users/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/Hao_results/sMCI_pMCI/patch_level/pytorch_AE_Conv_4_FC_2_bs4_lr_e5_only_finetuning_epoch100_longitudinal_hippocampus50_es10_baselineCNN_MedIA',
                            help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument("--data_type", default="from_patch", choices=["from_MRI", "from_patch"],
-                    help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
 parser.add_argument('--best_model_criteria', default="best_acc", choices=["best_acc", "best_loss"],
                     help="Evaluate the model performance based on which criterior")
 parser.add_argument("--patch_size", default=50, type=int,
@@ -66,8 +64,7 @@ def main(options):
     for n in range(options.num_cnn):
         if options.mode == 'test':
             dataset = MRIDataset_patch_by_index(options.caps_directory, options.diagnosis_tsv, options.patch_size,
-                                                   options.patch_stride, n, transformations=transformations,
-                                                   data_type=options.data_type)
+                                                   options.patch_stride, n, transformations=transformations)
 
             writer = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(options.n_fold), "cnn-" + str(n), "test")))
 
@@ -75,8 +72,7 @@ def main(options):
             _, _, _, valid_tsv = load_split_by_diagnosis(options, options.n_fold, baseline_or_longitudinal='baseline', autoencoder=False)
 
             dataset = MRIDataset_patch_by_index(options.caps_directory, valid_tsv, options.patch_size,
-                                                   options.patch_stride, n, transformations=transformations,
-                                                   data_type=options.data_type)
+                                                   options.patch_stride, n, transformations=transformations)
 
             writer = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(options.n_fold), "cnn-" + str(n), "valid-best")))
 

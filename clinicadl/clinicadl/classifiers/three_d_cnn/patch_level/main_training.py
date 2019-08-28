@@ -42,8 +42,6 @@ parser.add_argument("output_dir", type=str,
                     help="Path to store the classification outputs, and the tsv files containing the performances.")
 
 # Data management
-parser.add_argument("--data_type", default="from_patch", choices=["from_MRI", "from_patch"],
-                    help="Use which data to train the model, as extract slices from MRI is time-consuming, we recommand to run the postprocessing pipeline and train from slice data")
 parser.add_argument("--patch_size", default=50, type=int,
                     help="The patch size extracted from the MRI")
 parser.add_argument("--patch_stride", default=50, type=int,
@@ -142,10 +140,10 @@ def main(options):
             data_valid = MRIDataset_patch_hippocampus(options.caps_directory, valid_tsv, transformations=transformations)
 
         else:
-            data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size, options.patch_stride,
-                                          transformations=transformations, data_type=options.data_type)
-            data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size, options.patch_stride,
-                                          transformations=transformations, data_type=options.data_type)
+            data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size,
+                                          options.patch_stride, transformations=transformations)
+            data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size,
+                                          options.patch_stride, transformations=transformations)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,

@@ -911,7 +911,7 @@ def soft_voting_subject_level(y_ground, y_hat, subjects, proba, iteration):
 class MRIDataset_patch(Dataset):
     """labeled Faces in the Wild dataset."""
 
-    def __init__(self, caps_directory, data_file, patch_size, stride_size, transformations=None, data_type='from_patch'):
+    def __init__(self, caps_directory, data_file, patch_size, stride_size, transformations=None):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -924,7 +924,6 @@ class MRIDataset_patch(Dataset):
         self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
         self.patch_size = patch_size
         self.stride_size = stride_size
-        self.data_type = data_type
 
         # Check the format of the tsv file here
         if isinstance(data_file, str):
@@ -942,8 +941,8 @@ class MRIDataset_patch(Dataset):
         session_list = list(self.df['session_id'])
         label_list = list(self.df['diagnosis'])
 
-        ## dynamically calculate the number of patches from each MRI based on the parameters of patch_size & stride_size:
-        ## Question posted on: https://discuss.pytorch.org/t/how-to-extract-smaller-image-patches-3d/16837/9
+        # dynamically calculate the number of patches from each MRI based on the parameters of patch_size & stride_size:
+        # Question posted on: https://discuss.pytorch.org/t/how-to-extract-smaller-image-patches-3d/16837/9
         patch_dims = [math.floor((169 - patch_size) / stride_size + 1), math.floor((208 - patch_size) / stride_size + 1), math.floor((179 - patch_size) / stride_size + 1)]
         self.patchs_per_patient = int(patch_dims[0] * patch_dims[1] * patch_dims[2])
         self.patch_participant_list = [ele for ele in participant_list for _ in range(self.patchs_per_patient)]
@@ -957,17 +956,11 @@ class MRIDataset_patch(Dataset):
         img_name = self.patch_participant_list[idx]
         sess_name = self.patch_session_list[idx]
         img_label = self.patch_label_list[idx]
-        ## image without intensity normalization
+        # image without intensity normalization
         label = self.diagnosis_code[img_label]
         index_patch = idx % self.patchs_per_patient
 
-        if self.data_type == 'from_MRI':
-            image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
-            image = torch.load(image_path)
-            ### extract the patch from MRI based on a specific size
-            patch = extract_patch_from_mri(image, index_patch, self.patch_size, self.stride_size, self.patchs_per_patient)
-        else:
-            patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+        patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
                                       'preprocessing_dl',
                                       img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-' + str(self.patch_size) + '_stride-' + str(self.stride_size) + '_patch-' + str(
                                           index_patch) + '.pt')
@@ -975,7 +968,7 @@ class MRIDataset_patch(Dataset):
         patch = torch.load(patch_path)
 
         # check if the patch has NAN value
-        if torch.isnan(patch).any() == True:	
+        if torch.isnan(patch).any() == True:
             print("Double check, this patch has Nan value: %s" % str(img_name + '_' + sess_name + str(index_patch)))
             patch[torch.isnan(patch)] = 0
 
@@ -1065,7 +1058,7 @@ class MRIDataset_patch_hippocampus(Dataset):
 class MRIDataset_patch_by_index(Dataset):
     """Loading the left and right hippocampus ROIs."""
 
-    def __init__(self, caps_directory, data_file, patch_size, stride_size, index_patch, transformations=None, data_type='from_patch'):
+    def __init__(self, caps_directory, data_file, patch_size, stride_size, index_patch, transformations=None):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -1079,7 +1072,6 @@ class MRIDataset_patch_by_index(Dataset):
         self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
         self.patch_size = patch_size
         self.stride_size = stride_size
-        self.data_type = data_type
 
         # Check the format of the tsv file here
         if isinstance(data_file, str):
