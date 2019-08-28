@@ -57,12 +57,10 @@ parser.add_argument("--split", default=None, type=int,
                     help="Default behaviour will run all splits, else only the splits specified will be run.")
 
 # Training arguments
-parser.add_argument("--network", default="Conv_4_FC_3", choices=["Conv_4_FC_3", "Conv_7_FC_2", "Conv_3_FC_2"],
+parser.add_argument("--network", default="Conv_4_FC_3",
                     help="Autoencoder network type. (default=Conv_4_FC_3)")
-parser.add_argument("--epochs_layer_wise", default=1, type=int,
-                    help="Epochs for layer-wise AE training")
-parser.add_argument("--epochs_fine_tuning", default=1, type=int,
-                    help="Epochs for fine tuning all the stacked AEs after greedy layer-wise training, or directly train the AEs together")
+parser.add_argument("--epochs", default=1, type=int,
+                    help="Epochs through the data.")
 parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
