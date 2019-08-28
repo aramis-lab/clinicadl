@@ -126,6 +126,8 @@ def save_data(df, output_dir, folder_name):
     :param folder_name:
     :return: path to the tsv files
     """
+    import os
+    from os import path
 
     results_dir = path.join(output_dir, 'data', folder_name)
     if not path.exists(results_dir):
@@ -145,6 +147,7 @@ def save_additional_parameters(workflow, output_dir):
     :return: None
     """
     import numpy as np
+    from os import path
 
     mask = workflow._input._data_mask
     orig_shape = workflow._input._orig_shape
