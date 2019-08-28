@@ -1,14 +1,9 @@
-import shutil
 import torch
 import pandas as pd
 import numpy as np
 import os, math
-from os import path
 from torch.utils.data import Dataset
-from sklearn.model_selection import StratifiedShuffleSplit
-import torch.nn.functional as F
 from time import time
-import tempfile
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -21,7 +16,7 @@ __status__ = "Development"
 
 
 #################################
-#### AutoEncoder
+# AutoEncoder train / test
 #################################
 
 
@@ -43,7 +38,8 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_tra
     from tools.deep_learning import save_checkpoint, load_model
     from copy import deepcopy
 
-    # if the model defined is not already construted to an AE, then we convert the CNN into an AE, keeping the same structure with original CNN
+    # if the model defined is not already constructed to an AE, then we convert the CNN into an AE
+    # keeping the same structure with original CNN
     if not isinstance(model, AutoEncoder):
         ae = AutoEncoder(model) # Reconstruct all the AEs in one graph
 
@@ -55,7 +51,7 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_tra
 
     del ae
 
-    # ## save the encoder part of the AEs, the best AEs has been saved in the ae_finetuning part
+    # save the encoder part of the AEs, the best AEs has been saved in the ae_finetuning part
     model.features = deepcopy(best_autodecoder.encoder)
     save_checkpoint({'model': model.state_dict(),
                      'epoch': best_epoch},
@@ -195,65 +191,135 @@ def test_ae(model, dataloader, options, criterion, former_layer=None):
     return total_loss
 
 
-def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, difference=0):
-    from copy import deepcopy
-    from os import path
-    import os
-    from tools.deep_learning import save_checkpoint
-    from tools.deep_learning.models import AutoEncoder
+# def train_sparse_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, options):
+#     """
+#     This trains the sparse autoencoder.
+#     :param autoencoder:
+#     :param data_loader:
+#     :param use_cuda:
+#     :param loss_func:
+#     :param optimizer:
+#     :param writer:
+#     :param epoch_i:
+#     :param global_step:
+#     :return:
+#     """
+#     print("Start training for sparse autoencoder!")
+#     # Releases all unoccupied cached memory
+#     torch.cuda.empty_cache()
+#     epoch_loss = 0
+#     sparsity = 0.05
+#     beta = 3
+#     print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
+#     for i, batch_data in enumerate(data_loader):
+#         if use_cuda:
+#             imgs = batch_data['image'].cuda()
+#         else:
+#             imgs = batch_data['image']
+#
+#         ## check if the patch contains no information, which means the patch is at the edge fo the MRI and contains NAN
+#         if torch.sum(torch.isnan(imgs.view(1, -1))):
+#             del imgs
+#             pass
+#
+#         else:
+#             decoded, encoded = autoencoder(imgs)
+#             imgs_flatten = imgs.view(imgs.shape[0], options.patch_size * options.patch_size * options.patch_size)
+#             loss1 = loss_func(decoded, imgs_flatten) / options.batch_size
+#             if use_cuda:
+#                 rho = (torch.ones([1, encoded.shape[1]]) * sparsity).cuda()
+#                 rho_hat = torch.sum(encoded, dim=0, keepdim=True).cuda()
+#             else:
+#                 rho = torch.ones([1, encoded.shape[1]]) * sparsity ## this value should be near to 0.
+#                 rho_hat = torch.sum(encoded, dim=0, keepdim=True)
+#             ## the sparsity loss
+#             loss2 = kl_divergence(rho, rho_hat) * beta
+#             if np.sum(np.isnan(imgs_flatten.detach().numpy())):
+#                 raise Exception('Stop, this is wrong! imgs_flatten')
+#             if np.sum(np.isnan(decoded.detach().numpy())):
+#                 raise Exception('Stop, this is wrong! decoded')
+#             if np.sum(np.isnan(rho.detach().numpy())):
+#                 raise Exception('Stop, this is wrong! rho')
+#             if np.sum(np.isnan(rho_hat.detach().numpy())):
+#                 raise Exception('Stop, this is wrong! rho_hat')
+#             # kl_div_loss(mean_activitaion, sparsity)
+#             loss = loss1 + beta * loss2 ## beta indicates the importance of the sparsity loss
+#             epoch_loss += loss
+#             print("For batch %d, training loss is : %f" % (i, loss.item()))
+#
+#             optimizer.zero_grad()
+#             loss.backward()
+#             optimizer.step()
+#
+#             ## save loss into tensorboardX
+#             writer.add_scalar('loss', loss, i + epoch_i * len(data_loader))
+#             ## save memory
+#             del imgs, decoded, loss, loss1, loss2, encoded, rho, imgs_flatten, rho_hat
+#
+#     return epoch_loss
+# # def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, difference=0):
+# #     from copy import deepcopy
+# #     from os import path
+# #     import os
+# #     from tools.deep_learning import save_checkpoint
+# #     from tools.deep_learning.models import AutoEncoder
+# #
+# #     decoder = AutoEncoder(model)
+# #     initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_path, difference=difference)
+# #
+# #     model.features = deepcopy(decoder.encoder)
+# #     if not path.exists(path.join(model_path, 'pretraining')):
+# #         os.makedirs(path.join(model_path, "pretraining"))
+# #
+# #     save_checkpoint({'model': model.state_dict(),
+# #                      'epoch': -1,
+# #                      'path': pretrained_autoencoder_path},
+# #                     False, False,
+# #                     path.join(model_path, "pretraining"),
+# #                     'model_pretrained.pth.tar')
+# #
+# #
+# # def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_path, difference=0):
+# #     from os import path
+# #     import os
+# #     from tools.deep_learning import save_checkpoint
+# #
+# #     result_dict = torch.load(pretrained_autoencoder_path)
+# #     parameters_dict = result_dict['model']
+# #     module_length = int(len(decoder) / decoder.level)
+# #     difference = difference * module_length
+# #
+# #     for key in parameters_dict.keys():
+# #         section, number, spec = key.split('.')
+# #         number = int(number)
+# #         if section == 'encoder' and number < len(decoder.encoder):
+# #             data_ptr = eval('decoder.' + section + '[number].' + spec + '.data')
+# #             data_ptr = parameters_dict[key]
+# #         elif section == 'decoder':
+# #             # Deeper autoencoder
+# #             if difference >= 0:
+# #                 data_ptr = eval('decoder.' + section + '[number + difference].' + spec + '.data')
+# #                 data_ptr = parameters_dict[key]
+# #             # More shallow autoencoder
+# #             elif difference < 0 and number < len(decoder.decoder):
+# #                 data_ptr = eval('decoder.' + section + '[number].' + spec + '.data')
+# #                 new_key = '.'.join(['decoder', str(number + difference), spec])
+# #                 data_ptr = parameters_dict[new_key]
+# #
+# #     if not path.exists(path.join(model_path, 'pretraining')):
+# #         os.makedirs(path.join(model_path, "pretraining"))
+# #
+# #     save_checkpoint({'model': decoder.state_dict(),
+# #                      'epoch': -1,
+# #                      'path': pretrained_autoencoder_path},
+# #                     False, False,
+# #                     path.join(model_path, "pretraining"),
+# #                     'model_pretrained.pth.tar')
+# #     return decoder
 
-    decoder = AutoEncoder(model)
-    initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_path, difference=difference)
-
-    model.features = deepcopy(decoder.encoder)
-    if not path.exists(path.join(model_path, 'pretraining')):
-        os.makedirs(path.join(model_path, "pretraining"))
-
-    save_checkpoint({'model': model.state_dict(),
-                     'epoch': -1,
-                     'path': pretrained_autoencoder_path},
-                    False, False,
-                    path.join(model_path, "pretraining"),
-                    'model_pretrained.pth.tar')
-
-
-def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_path, difference=0):
-    from os import path
-    import os
-    from tools.deep_learning import save_checkpoint
-
-    result_dict = torch.load(pretrained_autoencoder_path)
-    parameters_dict = result_dict['model']
-    module_length = int(len(decoder) / decoder.level)
-    difference = difference * module_length
-
-    for key in parameters_dict.keys():
-        section, number, spec = key.split('.')
-        number = int(number)
-        if section == 'encoder' and number < len(decoder.encoder):
-            data_ptr = eval('decoder.' + section + '[number].' + spec + '.data')
-            data_ptr = parameters_dict[key]
-        elif section == 'decoder':
-            # Deeper autoencoder
-            if difference >= 0:
-                data_ptr = eval('decoder.' + section + '[number + difference].' + spec + '.data')
-                data_ptr = parameters_dict[key]
-            # More shallow autoencoder
-            elif difference < 0 and number < len(decoder.decoder):
-                data_ptr = eval('decoder.' + section + '[number].' + spec + '.data')
-                new_key = '.'.join(['decoder', str(number + difference), spec])
-                data_ptr = parameters_dict[new_key]
-
-    if not path.exists(path.join(model_path, 'pretraining')):
-        os.makedirs(path.join(model_path, "pretraining"))
-
-    save_checkpoint({'model': decoder.state_dict(),
-                     'epoch': -1,
-                     'path': pretrained_autoencoder_path},
-                    False, False,
-                    path.join(model_path, "pretraining"),
-                    'model_pretrained.pth.tar')
-    return decoder
+#################################
+# Transfer learning
+#################################
 
 def load_model_after_ae(model, checkpoint_dir, filename='checkpoint.pth.tar'):
     """
@@ -270,7 +336,7 @@ def load_model_after_ae(model, checkpoint_dir, filename='checkpoint.pth.tar'):
     param_dict = torch.load(os.path.join(checkpoint_dir, filename))
     ae_pretrained_dict = param_dict['model']
 
-    ## remove the classifier's weight, only take the AE
+    # remove the classifier's weight, only take the AE
     for k in ae_pretrained_dict.keys():
         if 'classifier' not in k:
             pass
@@ -281,6 +347,7 @@ def load_model_after_ae(model, checkpoint_dir, filename='checkpoint.pth.tar'):
     model_after_ae.load_state_dict(model_dict)
 
     return model_after_ae, param_dict['epoch']
+
 
 def load_model_after_cnn(model, checkpoint_dir, filename='checkpoint.pth.tar'):
     """
@@ -321,6 +388,10 @@ def load_model_from_log(model, optimizer, checkpoint_dir, filename='checkpoint.p
     return model_updated, optimizer, param_dict['global_step'], param_dict['epoch']
 
 
+#################################
+# CNN train / test
+#################################
+
 def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, iteration, model_mode="train", global_step=0):
     """
     This is the function to train, validate or test the model, depending on the model_mode parameter.
@@ -348,7 +419,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, i
 
     print("Start for %s!" % model_mode)
     if model_mode == "train":
-        model.train() ## set the model to training mode
+        model.train()  # set the model to training mode
         print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
 
         for i, batch_data in enumerate(data_loader):
@@ -365,7 +436,6 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, i
             gound_truth_list = labels.data.cpu().numpy().tolist()
             y_ground.extend(gound_truth_list)
 
-            print('The group true label is %s' % (str(labels)))
             output = model(imgs)
 
             _, predict = output.topk(1)
@@ -373,7 +443,6 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, i
             predict_list = [item for sublist in predict_list for item in sublist]
             y_hat.extend(predict_list)
 
-            print("The predicted label is: " + str(output))
             loss_batch = loss_func(output, labels)
 
             # adding the probability
@@ -406,7 +475,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, i
         torch.cuda.empty_cache()
 
     elif model_mode == "valid":
-        model.eval() ## set the model to evaluation mode
+        model.eval()  # set the model to evaluation mode
         torch.cuda.empty_cache()
         with torch.no_grad():
             ## torch.no_grad() needs to be set, otherwise the accumulation of gradients would explose the GPU memory.
@@ -529,72 +598,72 @@ def test(model, data_loader, options):
     return subjects, y_ground, y_hat, proba, accuracy_batch_mean
 
 
-def train_sparse_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, options):
-    """
-    This trains the sparse autoencoder.
-    :param autoencoder:
-    :param data_loader:
-    :param use_cuda:
-    :param loss_func:
-    :param optimizer:
-    :param writer:
-    :param epoch_i:
-    :param global_step:
-    :return:
-    """
-    print("Start training for sparse autoencoder!")
-    # Releases all unoccupied cached memory
-    torch.cuda.empty_cache()
-    epoch_loss = 0
-    sparsity = 0.05
-    beta = 3
-    print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
-    for i, batch_data in enumerate(data_loader):
-        if use_cuda:
-            imgs = batch_data['image'].cuda()
-        else:
-            imgs = batch_data['image']
+def evaluate_prediction(y, y_hat):
 
-        ## check if the patch contains no information, which means the patch is at the edge fo the MRI and contains NAN
-        if torch.sum(torch.isnan(imgs.view(1, -1))):
-            del imgs
-            pass
+    true_positive = 0.0
+    true_negative = 0.0
+    false_positive = 0.0
+    false_negative = 0.0
 
-        else:
-            decoded, encoded = autoencoder(imgs)
-            imgs_flatten = imgs.view(imgs.shape[0], options.patch_size * options.patch_size * options.patch_size)
-            loss1 = loss_func(decoded, imgs_flatten) / options.batch_size
-            if use_cuda:
-                rho = (torch.ones([1, encoded.shape[1]]) * sparsity).cuda()
-                rho_hat = torch.sum(encoded, dim=0, keepdim=True).cuda()
+    tp = []
+    tn = []
+    fp = []
+    fn = []
+
+    for i in range(len(y)):
+        if y[i] == 1:
+            if y_hat[i] == 1:
+                true_positive += 1
+                tp.append(i)
             else:
-                rho = torch.ones([1, encoded.shape[1]]) * sparsity ## this value should be near to 0.
-                rho_hat = torch.sum(encoded, dim=0, keepdim=True)
-            ## the sparsity loss
-            loss2 = kl_divergence(rho, rho_hat) * beta
-            if np.sum(np.isnan(imgs_flatten.detach().numpy())):
-                raise Exception('Stop, this is wrong! imgs_flatten')
-            if np.sum(np.isnan(decoded.detach().numpy())):
-                raise Exception('Stop, this is wrong! decoded')
-            if np.sum(np.isnan(rho.detach().numpy())):
-                raise Exception('Stop, this is wrong! rho')
-            if np.sum(np.isnan(rho_hat.detach().numpy())):
-                raise Exception('Stop, this is wrong! rho_hat')
-            # kl_div_loss(mean_activitaion, sparsity)
-            loss = loss1 + beta * loss2 ## beta indicates the importance of the sparsity loss
-            epoch_loss += loss
-            print("For batch %d, training loss is : %f" % (i, loss.item()))
+                false_negative += 1
+                fn.append(i)
+        else:  # -1
+            if y_hat[i] == 0:
+                true_negative += 1
+                tn.append(i)
+            else:
+                false_positive += 1
+                fp.append(i)
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+    accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
 
-            ## save loss into tensorboardX
-            writer.add_scalar('loss', loss, i + epoch_i * len(data_loader))
-            ## save memory
-            del imgs, decoded, loss, loss1, loss2, encoded, rho, imgs_flatten, rho_hat
+    if (true_positive + false_negative) != 0:
+        sensitivity = true_positive / (true_positive + false_negative)
+    else:
+        sensitivity = 0.0
 
-    return epoch_loss
+    if (false_positive + true_negative) != 0:
+        specificity = true_negative / (false_positive + true_negative)
+    else:
+        specificity = 0.0
+
+    if (true_positive + false_positive) != 0:
+        ppv = true_positive / (true_positive + false_positive)
+    else:
+        ppv = 0.0
+
+    if (true_negative + false_negative) != 0:
+        npv = true_negative / (true_negative + false_negative)
+    else:
+        npv = 0.0
+
+    balanced_accuracy = (sensitivity + specificity) / 2
+
+    results = {'accuracy': accuracy,
+               'balanced_accuracy': balanced_accuracy,
+               'sensitivity': sensitivity,
+               'specificity': specificity,
+               'ppv': ppv,
+               'npv': npv,
+               'confusion_matrix': {'tp': len(tp), 'tn': len(tn), 'fp': len(fp), 'fn': len(fn)}
+               }
+
+    return results
+
+#################################
+# Voting systems
+#################################
 
 
 def hard_voting_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat, probas, mode='train', vote_mode='hard', patch_index=None):
@@ -676,70 +745,6 @@ def extract_subject_name(s):
 
 def extract_patch_index(s):
     return s.split('_patch')[1]
-
-
-def evaluate_prediction(y, y_hat):
-
-    true_positive = 0.0
-    true_negative = 0.0
-    false_positive = 0.0
-    false_negative = 0.0
-
-    tp = []
-    tn = []
-    fp = []
-    fn = []
-
-    for i in range(len(y)):
-        if y[i] == 1:
-            if y_hat[i] == 1:
-                true_positive += 1
-                tp.append(i)
-            else:
-                false_negative += 1
-                fn.append(i)
-        else:  # -1
-            if y_hat[i] == 0:
-                true_negative += 1
-                tn.append(i)
-            else:
-                false_positive += 1
-                fp.append(i)
-
-    accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
-
-    if (true_positive + false_negative) != 0:
-        sensitivity = true_positive / (true_positive + false_negative)
-    else:
-        sensitivity = 0.0
-
-    if (false_positive + true_negative) != 0:
-        specificity = true_negative / (false_positive + true_negative)
-    else:
-        specificity = 0.0
-
-    if (true_positive + false_positive) != 0:
-        ppv = true_positive / (true_positive + false_positive)
-    else:
-        ppv = 0.0
-
-    if (true_negative + false_negative) != 0:
-        npv = true_negative / (true_negative + false_negative)
-    else:
-        npv = 0.0
-
-    balanced_accuracy = (sensitivity + specificity) / 2
-
-    results = {'accuracy': accuracy,
-               'balanced_accuracy': balanced_accuracy,
-               'sensitivity': sensitivity,
-               'specificity': specificity,
-               'ppv': ppv,
-               'npv': npv,
-               'confusion_matrix': {'tp': len(tp), 'tn': len(tn), 'fp': len(fp), 'fn': len(fn)}
-               }
-
-    return results
 
 
 def soft_voting_to_tsvs(output_dir, iteration, mode='test', vote_mode='soft'):
@@ -824,6 +829,84 @@ def soft_voting_to_tsvs(output_dir, iteration, mode='test', vote_mode='soft'):
 
     pd.DataFrame(results, index=[0]).to_csv(os.path.join(output_dir, 'performances', 'fold_' + str(iteration), mode + '_subject_level_metrics_' + vote_mode + '_vote.tsv'), index=False, sep='\t', encoding='utf-8')
 
+
+def soft_voting_subject_level(y_ground, y_hat, subjects, proba, iteration):
+    ## soft voting to get the subject-level balanced accuracy
+    performance_df_subject = pd.DataFrame({'iteration': iteration,
+                                           'y': y_ground,
+                                           'y_hat': y_hat,
+                                           'subject': subjects,
+                                           'probability': proba})
+
+    subject_df = performance_df_subject['subject']
+    subject_series = subject_df.apply(extract_subject_name)
+    patch_series = subject_df.apply(extract_patch_index)
+    subject_df_new = pd.DataFrame({'subject': subject_series.values})
+    patch_df_new = pd.DataFrame({'patch': patch_series.values})
+
+    # replace the column in the dataframe
+    performance_df_subject['subject'] = subject_df_new['subject'].values
+    performance_df_subject['patch'] = patch_df_new['patch'].values
+
+    ## selected the right classified subjects:
+    right_classified_df = performance_df_subject[performance_df_subject['y_hat'] == performance_df_subject['y']]
+    # right_classified_df = pd.DataFrame({'patch': right_classified_series['patch'].values})
+
+    ## count the number of right classified patch for each patch index
+    count_patchs_series = right_classified_df['patch'].value_counts(normalize=True)
+    index_series = performance_df_subject['patch']
+    weight_list = []
+    for i in index_series:
+        if i in count_patchs_series.index:
+            weight = count_patchs_series[i]
+        else:
+            weight = 0
+        weight_list.append(weight)
+
+    weight_series = pd.Series(weight_list)
+    ## add to the df
+    performance_df_subject['weight'] = weight_series.values
+
+    ## do soft majority vote
+    ## y^ = arg max(sum(wj * pij))
+    df_final = pd.DataFrame(columns=['subject', 'y', 'y_hat', 'iteration'])
+    for subject, subject_df in performance_df_subject.groupby(['subject']):
+        num_patch = len(subject_df.y_hat)
+        p0_all = 0
+        p1_all = 0
+        for i in range(num_patch):
+            ## reindex the subject_df.probability
+            proba_series_reindex = subject_df.probability.reset_index()
+            weight_series_reindex = subject_df.weight.reset_index()
+            y_series_reindex = subject_df.y.reset_index()
+            iteration_series_reindex = subject_df.iteration.reset_index()
+
+            p0 = weight_series_reindex.weight[i] * proba_series_reindex.probability[i][0]
+            p1 = weight_series_reindex.weight[i] * proba_series_reindex.probability[i][1]
+
+            p0_all += p0
+            p1_all += p1
+
+            if i == 0:
+                y = y_series_reindex.y[i]
+                iteration = iteration_series_reindex.iteration[i]
+        proba_list = [p0_all, p1_all]
+        y_hat = proba_list.index(max(proba_list))
+
+        row_array = np.array(list([subject, y, y_hat, iteration])).reshape(1, 4)
+        row_df = pd.DataFrame(row_array, columns=['subject', 'y', 'y_hat', 'iteration'])
+        df_final = df_final.append(row_df)
+
+    results = evaluate_prediction([int(e) for e in list(df_final.y)], [int(e) for e in list(
+        df_final.y_hat)])  ## Note, y_hat here is not int, is string
+    del results['confusion_matrix']
+
+    return results
+
+
+#################################
+# Datasets
+#################################
 
 class MRIDataset_patch(Dataset):
     """labeled Faces in the Wild dataset."""
@@ -1161,22 +1244,22 @@ def extract_patch_from_mri(image_tensor, index_patch, patch_size, stride_size, p
 #     if is_best:
 #         shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(checkpoint_dir, 'model_best.pth.tar'))
 
-
-def kl_divergence(p, q):
-    '''
-    This is the penalty term quantified by KL divergence.
-    ref: http://ufldl.stanford.edu/wiki/index.php/Autoencoders_and_Sparsity
-    :param p:
-    :param q:
-    :return:
-    '''
-    p = F.softmax(p)
-    q = F.softmax(q)
-
-    s1 = torch.sum(p * torch.log(p / q))
-    s2 = torch.sum((1 - p) * torch.log((1 - p) / (1 - q)))
-
-    return s1 + s2
+#
+# def kl_divergence(p, q):
+#     '''
+#     This is the penalty term quantified by KL divergence.
+#     ref: http://ufldl.stanford.edu/wiki/index.php/Autoencoders_and_Sparsity
+#     :param p:
+#     :param q:
+#     :return:
+#     '''
+#     p = F.softmax(p)
+#     q = F.softmax(q)
+#
+#     s1 = torch.sum(p * torch.log(p / q))
+#     s2 = torch.sum((1 - p) * torch.log((1 - p) / (1 - q)))
+#
+#     return s1 + s2
 
 
 def visualize_ae(ae, data, results_path):
@@ -1243,191 +1326,117 @@ def visualize_ae(ae, data, results_path):
 #     f.write(json)
 #     f.close()
 
-
-def soft_voting_subject_level(y_ground, y_hat, subjects, proba, iteration):
-    ## soft voting to get the subject-level balanced accuracy
-    performance_df_subject = pd.DataFrame({'iteration': iteration,
-                                           'y': y_ground,
-                                           'y_hat': y_hat,
-                                           'subject': subjects,
-                                           'probability': proba})
-
-    subject_df = performance_df_subject['subject']
-    subject_series = subject_df.apply(extract_subject_name)
-    patch_series = subject_df.apply(extract_patch_index)
-    subject_df_new = pd.DataFrame({'subject': subject_series.values})
-    patch_df_new = pd.DataFrame({'patch': patch_series.values})
-
-    # replace the column in the dataframe
-    performance_df_subject['subject'] = subject_df_new['subject'].values
-    performance_df_subject['patch'] = patch_df_new['patch'].values
-
-    ## selected the right classified subjects:
-    right_classified_df = performance_df_subject[performance_df_subject['y_hat'] == performance_df_subject['y']]
-    # right_classified_df = pd.DataFrame({'patch': right_classified_series['patch'].values})
-
-    ## count the number of right classified patch for each patch index
-    count_patchs_series = right_classified_df['patch'].value_counts(normalize=True)
-    index_series = performance_df_subject['patch']
-    weight_list = []
-    for i in index_series:
-        if i in count_patchs_series.index:
-            weight = count_patchs_series[i]
-        else:
-            weight = 0
-        weight_list.append(weight)
-
-    weight_series = pd.Series(weight_list)
-    ## add to the df
-    performance_df_subject['weight'] = weight_series.values
-
-    ## do soft majority vote
-    ## y^ = arg max(sum(wj * pij))
-    df_final = pd.DataFrame(columns=['subject', 'y', 'y_hat', 'iteration'])
-    for subject, subject_df in performance_df_subject.groupby(['subject']):
-        num_patch = len(subject_df.y_hat)
-        p0_all = 0
-        p1_all = 0
-        for i in range(num_patch):
-            ## reindex the subject_df.probability
-            proba_series_reindex = subject_df.probability.reset_index()
-            weight_series_reindex = subject_df.weight.reset_index()
-            y_series_reindex = subject_df.y.reset_index()
-            iteration_series_reindex = subject_df.iteration.reset_index()
-
-            p0 = weight_series_reindex.weight[i] * proba_series_reindex.probability[i][0]
-            p1 = weight_series_reindex.weight[i] * proba_series_reindex.probability[i][1]
-
-            p0_all += p0
-            p1_all += p1
-
-            if i == 0:
-                y = y_series_reindex.y[i]
-                iteration = iteration_series_reindex.iteration[i]
-        proba_list = [p0_all, p1_all]
-        y_hat = proba_list.index(max(proba_list))
-
-        row_array = np.array(list([subject, y, y_hat, iteration])).reshape(1, 4)
-        row_df = pd.DataFrame(row_array, columns=['subject', 'y', 'y_hat', 'iteration'])
-        df_final = df_final.append(row_df)
-
-    results = evaluate_prediction([int(e) for e in list(df_final.y)], [int(e) for e in list(
-        df_final.y_hat)])  ## Note, y_hat here is not int, is string
-    del results['confusion_matrix']
-
-    return results
+#
+# def load_model_test(model, checkpoint_dir, filename):
+#     """
+#     This is to load a saved model for testing
+#     :param model:
+#     :param checkpoint_dir:
+#     :param filename:
+#     :return:
+#     """
+#     from copy import deepcopy
+#
+#     ## set the model to be eval mode, we explicitly think that the model was saved in eval mode, otherwise, it will affects the BN and dropout
+#     model.eval()
+#     model_updated = deepcopy(model)
+#     param_dict = torch.load(os.path.join(checkpoint_dir, filename))
+#     model_updated.load_state_dict(param_dict['model'])
+#
+#     return model_updated, param_dict['global_step'], param_dict['epoch'], param_dict['best_predict']
 
 
-def load_model_test(model, checkpoint_dir, filename):
-    """
-    This is to load a saved model for testing
-    :param model:
-    :param checkpoint_dir:
-    :param filename:
-    :return:
-    """
-    from copy import deepcopy
+# def multi_cnn_soft_majority_voting(output_dir, fi, num_cnn, weight_list, mode='test'):
+#     """
+#     This is a function to do soft majority voting based on the num_cnn CNNs' performances
+#     :param output_dir:
+#     :param fi:
+#     :param num_cnn:
+#     :return:
+#     """
+#     y_hat = []
+#     ## read the validation patch-level results.
+#     for i in range(num_cnn):
+#         # load the best trained model during the training
+#         if i == 0:
+#             df = pd.io.parsers.read_csv(os.path.join(output_dir, 'performances', "fold_" + str(fi), 'cnn-' + str(i),
+#                                                      mode + '_patch_level_result-patch_index.tsv'), sep='\t')
+#             df_final = pd.DataFrame(columns=['subject', 'y', 'y_hat'])
+#             df_final['subject'] = df['subject'].apply(extract_subject_name)
+#             df_final['y'] = df['y']
+#
+#         ##TODO, this is not correct, this is just the probability of the last epoch of validation
+#         tsv_path = os.path.join(output_dir, 'performances', "fold_" + str(fi), 'cnn-' + str(i), mode + '_patch_level_result-patch_index.tsv')
+#         proba_series = pd.io.parsers.read_csv(tsv_path, sep='\t')['probability']
+#         p0s = []
+#         p1s = []
+#         for j in range(len(proba_series)):
+#             p0 = weight_list[i] * eval(proba_series[j])[0]
+#             p1 = weight_list[i] * eval(proba_series[j])[1]
+#             p0s.append(p0)
+#             p1s.append(p1)
+#         p0s_series = pd.Series(p0s)
+#         p1s_series = pd.Series(p1s)
+#
+#         ## adding the series into the final DataFrame
+#         ## insert the column of iteration
+#         df_final['cnn_' + str(i) + '_p0'] = p0s_series
+#         df_final['cnn_' + str(i) + '_p1'] = p1s_series
+#
+#     ## based on the p0 and p1 from all the CNNs, calculate the y_hat
+#     p0_final = []
+#     p1_final = []
+#     for k in range(num_cnn):
+#         p0_final.append(df_final['cnn_' + str(k) + '_p0'].tolist())
+#     for k in range(num_cnn):
+#         p1_final.append(df_final['cnn_' + str(k) + '_p1'].tolist())
+#
+#     ## element-wise adding to calcuate the final probability
+#     p0_soft = [sum(x) for x in zip(*p0_final)]
+#     p1_soft = [sum(x) for x in zip(*p1_final)]
+#
+#     for m in range(len(p0_soft)):
+#         proba_list = [p0_soft[m], p1_soft[m]]
+#         y_pred = proba_list.index(max(proba_list))
+#         y_hat.append(y_pred)
+#
+#     ### convert y_hat list ot series then add into the dataframe
+#     y_hat_series = pd.Series(y_hat)
+#     p0_soft_series = pd.Series(p0_soft)
+#     p1_soft_series = pd.Series(p1_soft)
+#     df_final['y_hat'] = y_hat_series
+#     df_final['p0_soft'] = p0_soft_series
+#     df_final['p1_soft'] = p1_soft_series
+#
+#     ## save the results into output_dir
+#     results_soft_tsv_path = os.path.join(output_dir, 'performances', "fold_" + str(fi),
+#                  'validation_subject_level_result_soft_vote_multi_cnn.tsv')
+#     df_final.to_csv(results_soft_tsv_path, index=False, sep='\t', encoding='utf-8')
+#
+#
+#     results = evaluate_prediction([int(e) for e in list(df_final.y)], [int(e) for e in list(
+#         df_final.y_hat)])  ## Note, y_hat here is not int, is string
+#     del results['confusion_matrix']
+#
+#     metrics_soft_tsv_path = os.path.join(output_dir, 'performances', "fold_" + str(fi), mode + '_subject_level_metrics_soft_vote_multi_cnn.tsv')
+#     pd.DataFrame(results, index=[0]).to_csv(metrics_soft_tsv_path, index=False, sep='\t', encoding='utf-8')
 
-    ## set the model to be eval mode, we explicitly think that the model was saved in eval mode, otherwise, it will affects the BN and dropout
-    model.eval()
-    model_updated = deepcopy(model)
-    param_dict = torch.load(os.path.join(checkpoint_dir, filename))
-    model_updated.load_state_dict(param_dict['model'])
-
-    return model_updated, param_dict['global_step'], param_dict['epoch'], param_dict['best_predict']
-
-
-def multi_cnn_soft_majority_voting(output_dir, fi, num_cnn, weight_list, mode='test'):
-    """
-    This is a function to do soft majority voting based on the num_cnn CNNs' performances
-    :param output_dir:
-    :param fi:
-    :param num_cnn:
-    :return:
-    """
-    y_hat = []
-    ## read the validation patch-level results.
-    for i in range(num_cnn):
-        # load the best trained model during the training
-        if i == 0:
-            df = pd.io.parsers.read_csv(os.path.join(output_dir, 'performances', "fold_" + str(fi), 'cnn-' + str(i),
-                                                     mode + '_patch_level_result-patch_index.tsv'), sep='\t')
-            df_final = pd.DataFrame(columns=['subject', 'y', 'y_hat'])
-            df_final['subject'] = df['subject'].apply(extract_subject_name)
-            df_final['y'] = df['y']
-
-        ##TODO, this is not correct, this is just the probability of the last epoch of validation
-        tsv_path = os.path.join(output_dir, 'performances', "fold_" + str(fi), 'cnn-' + str(i), mode + '_patch_level_result-patch_index.tsv')
-        proba_series = pd.io.parsers.read_csv(tsv_path, sep='\t')['probability']
-        p0s = []
-        p1s = []
-        for j in range(len(proba_series)):
-            p0 = weight_list[i] * eval(proba_series[j])[0]
-            p1 = weight_list[i] * eval(proba_series[j])[1]
-            p0s.append(p0)
-            p1s.append(p1)
-        p0s_series = pd.Series(p0s)
-        p1s_series = pd.Series(p1s)
-
-        ## adding the series into the final DataFrame
-        ## insert the column of iteration
-        df_final['cnn_' + str(i) + '_p0'] = p0s_series
-        df_final['cnn_' + str(i) + '_p1'] = p1s_series
-
-    ## based on the p0 and p1 from all the CNNs, calculate the y_hat
-    p0_final = []
-    p1_final = []
-    for k in range(num_cnn):
-        p0_final.append(df_final['cnn_' + str(k) + '_p0'].tolist())
-    for k in range(num_cnn):
-        p1_final.append(df_final['cnn_' + str(k) + '_p1'].tolist())
-
-    ## element-wise adding to calcuate the final probability
-    p0_soft = [sum(x) for x in zip(*p0_final)]
-    p1_soft = [sum(x) for x in zip(*p1_final)]
-
-    for m in range(len(p0_soft)):
-        proba_list = [p0_soft[m], p1_soft[m]]
-        y_pred = proba_list.index(max(proba_list))
-        y_hat.append(y_pred)
-
-    ### convert y_hat list ot series then add into the dataframe
-    y_hat_series = pd.Series(y_hat)
-    p0_soft_series = pd.Series(p0_soft)
-    p1_soft_series = pd.Series(p1_soft)
-    df_final['y_hat'] = y_hat_series
-    df_final['p0_soft'] = p0_soft_series
-    df_final['p1_soft'] = p1_soft_series
-
-    ## save the results into output_dir
-    results_soft_tsv_path = os.path.join(output_dir, 'performances', "fold_" + str(fi),
-                 'validation_subject_level_result_soft_vote_multi_cnn.tsv')
-    df_final.to_csv(results_soft_tsv_path, index=False, sep='\t', encoding='utf-8')
-
-
-    results = evaluate_prediction([int(e) for e in list(df_final.y)], [int(e) for e in list(
-        df_final.y_hat)])  ## Note, y_hat here is not int, is string
-    del results['confusion_matrix']
-
-    metrics_soft_tsv_path = os.path.join(output_dir, 'performances', "fold_" + str(fi), mode + '_subject_level_metrics_soft_vote_multi_cnn.tsv')
-    pd.DataFrame(results, index=[0]).to_csv(metrics_soft_tsv_path, index=False, sep='\t', encoding='utf-8')
-
-
-def weight_by_validation_acc(model, options):
-
-    ## get the weight for soft voting system from all validation acc from all N classifiers
-    best_acc_cnns = []
-    for n in range(options.num_cnn):
-        # load the best trained model during the training
-        _, _, _, best_predict = load_model_test(model, os.path.join(options.output_dir, 'best_model_dir',
-                                                                                       "fold_" + str(options.n_fold), 'cnn-' + str(n), options.best_model_criteria),
-                                                                          filename='model_best.pth.tar')
-        best_acc_cnns.append(best_predict)
-
-    ## delete the weak classifiers whose acc is smaller than 0.7
-    weight_list = [0 if x < 0.7 else x for x in best_acc_cnns]
-    weight_list = [x / sum(weight_list) for x in weight_list]
-    if all(i == 0 for i in weight_list):
-        raise Exception("The ensemble learning does not really work, all classifiers work bad!")
-
-    return weight_list
+#
+# def weight_by_validation_acc(model, options):
+#
+#     ## get the weight for soft voting system from all validation acc from all N classifiers
+#     best_acc_cnns = []
+#     for n in range(options.num_cnn):
+#         # load the best trained model during the training
+#         _, _, _, best_predict = load_model_test(model, os.path.join(options.output_dir, 'best_model_dir',
+#                                                                                        "fold_" + str(options.n_fold), 'cnn-' + str(n), options.best_model_criteria),
+#                                                                           filename='model_best.pth.tar')
+#         best_acc_cnns.append(best_predict)
+#
+#     ## delete the weak classifiers whose acc is smaller than 0.7
+#     weight_list = [0 if x < 0.7 else x for x in best_acc_cnns]
+#     weight_list = [x / sum(weight_list) for x in weight_list]
+#     if all(i == 0 for i in weight_list):
+#         raise Exception("The ensemble learning does not really work, all classifiers work bad!")
+#
+#     return weight_list
