@@ -34,26 +34,22 @@ parser.add_argument("--diagnoses", "-d", default=['AD', 'CN'], nargs='+', type=s
                     help="The diagnoses used for the classification")
 parser.add_argument("--baseline", default=False, action="store_true",
                     help="Use only baseline data instead of all scans available")
-parser.add_argument("--batch_size", default=2, type=int,
-                    help="Batch size for training. (default=1)")
-parser.add_argument('--accumulation_steps', '-asteps', default=1, type=int,
-                    help='Accumulates gradients in order to increase the size of the batch')
+parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
+                    help="Performs MinMaxNormalization.")
 parser.add_argument("--shuffle", default=True, type=bool,
                     help="Load data if shuffled or not, shuffle for training, no for test data.")
-parser.add_argument("--test_sessions", default=["ses-M00"], nargs='+', type=str,
-                    help="Test the accuracy at the end of the model for the sessions selected")
-parser.add_argument("--num_workers", '-w', default=1, type=int,
-                    help='the number of batch being loaded in parallel')
-parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
-                    help="Performs MinMaxNormalization for visualization")
+parser.add_argument('--sampler', '-s', default="random", type=str, choices=['random', 'weighted'],
+                    help="Sampler choice (random, or weighted for imbalanced datasets)")
+
+# Cross-validation
 parser.add_argument("--n_splits", type=int, default=None,
                     help="If a value is given will load data of a k-fold CV")
 parser.add_argument("--split", type=int, default=0,
                     help="Will load the specific split wanted.")
-parser.add_argument("--training_evaluation", default='whole_set', type=str, choices=['whole_set', 'n_batches'],
-                    help="Choose the way training evaluation is performed.")
 
 # Training arguments
+parser.add_argument('--accumulation_steps', '-asteps', default=1, type=int,
+                    help='Accumulates gradients in order to increase the size of the batch')
 parser.add_argument("--epochs", default=20, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--learning_rate", "-lr", default=1e-4, type=float,
@@ -72,22 +68,23 @@ parser.add_argument("--selection", default="acc", choices=["loss", "acc"], type=
 # Optimizer arguments
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument("--features_learning_rate", "-f_lr", type=float, default=None,
-                    help="Learning rate applied to the convolutional layers."
-                         "If None all the layers have the same learning rate.")
-parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
-                    help='momentum')
 parser.add_argument('--weight_decay', '--wd', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
-parser.add_argument('--sampler', '-s', default="random", type=str, choices=['random', 'weighted'],
-                    help="Sampler choice (random, or weighted for imbalanced datasets)")
 
+
+# Computational issues
 parser.add_argument('--gpu', action='store_true', default=False,
                     help='Uses gpu instead of cpu if cuda is available')
+parser.add_argument("--batch_size", default=2, type=int,
+                    help="Batch size for training. (default=1)")
 parser.add_argument('--evaluation_steps', '-esteps', default=1, type=int,
                     help='Fix the number of batches to use before validation')
+parser.add_argument("--training_evaluation", default='whole_set', type=str, choices=['whole_set', 'n_batches'],
+                    help="Choose the way training evaluation is performed.")
 parser.add_argument('--num_threads', type=int, default=0,
                     help='Number of threads used.')
+parser.add_argument("--num_workers", '-w', default=8, type=int,
+                    help='the number of batch being loaded in parallel')
 
 
 def main(options):
@@ -141,16 +138,8 @@ def main(options):
 
     # Define criterion and optimizer
     criterion = torch.nn.CrossEntropyLoss()
-    # TODO remove functionality not used (features_learning_rate)
-    if options.features_learning_rate is None:
-        optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
-                                                             options.learning_rate)
-    else:
-        optimizer = eval("torch.optim." + options.optimizer)([
-            {'params': filter(lambda x: x.requires_grad, model.features.parameters()),
-             'lr': options.features_learning_rate},
-            {'params': filter(lambda x: x.requires_grad, model.classifier.parameters())}
-            ], lr=options.learning_rate)
+    optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
+                                                         options.learning_rate, weight_decay=options.weight_decay)
 
     print('Beginning the training task')
     train(model, train_loader, valid_loader, criterion, optimizer, False, options)

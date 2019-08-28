@@ -33,28 +33,26 @@ parser.add_argument("--pretrained_difference", "-d", type=int, default=0,
 # Data Management
 parser.add_argument("--preprocessing", default="linear", choices=["linear", "mni"], type=str,
                     help="Defines the path to data in CAPS.")
-parser.add_argument("--batch_size", default=2, type=int,
-                    help="Batch size for training. (default=1)")
-parser.add_argument('--accumulation_steps', '-asteps', default=1, type=int,
-                    help='Accumulates gradients in order to increase the size of the batch')
-parser.add_argument("--shuffle", default=True, type=bool,
-                    help="Load data if shuffled or not, shuffle for training, no for test data.")
 parser.add_argument("--diagnoses", default=["AD", "CN"], nargs='+', type=str,
                     help="Take all the subjects possible for autoencoder training")
 parser.add_argument("--baseline", action="store_true", default=False,
                     help="if True only the baseline is used")
-parser.add_argument("--visualization", action='store_true', default=False,
-                    help='Chooses if visualization is done on AE pretraining')
 parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
-                    help="Performs MinMaxNormalization for visualization")
+                    help="Performs MinMaxNormalization")
+parser.add_argument('--sampler', '-s', default="random", type=str,
+                    help="Sampler choice")
+parser.add_argument("--shuffle", default=True, type=bool,
+                    help="Load data if shuffled or not, shuffle for training, no for test data.")
+
+# Cross-validation
 parser.add_argument("--n_splits", type=int, default=None,
                     help="If a value is given will load data of a k-fold CV")
 parser.add_argument("--split", type=int, default=0,
                     help="Will load the specific split wanted.")
-parser.add_argument("--training_evaluation", default='whole_set', type=str, choices=['whole_set', 'n_batches'],
-                    help="Choose the way training evaluation is performed.")
 
 # Training arguments
+parser.add_argument('--accumulation_steps', '-asteps', default=1, type=int,
+                    help='Accumulates gradients in order to increase the size of the batch')
 parser.add_argument("--epochs", default=20, type=int,
                     help="Epochs through the data. (default=20)")
 parser.add_argument("--learning_rate", "-lr", default=1e-4, type=float,
@@ -69,17 +67,18 @@ parser.add_argument("--add_sigmoid", default=False, action="store_true",
 # Optimizer arguments
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
-                    help='momentum')
 parser.add_argument('--weight_decay', '--wd', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)')
-parser.add_argument('--sampler', '-s', default="random", type=str,
-                    help="Sampler choice")
 
+# Computational issues
 parser.add_argument('--gpu', action='store_true', default=False,
                     help='Uses gpu instead of cpu if cuda is available')
+parser.add_argument("--batch_size", default=2, type=int,
+                    help="Batch size for training. (default=1)")
 parser.add_argument('--evaluation_steps', '-esteps', default=1, type=int,
                     help='Fix the number of batches to use before validation')
+parser.add_argument("--training_evaluation", default='whole_set', type=str, choices=['whole_set', 'n_batches'],
+                    help="Choose the way training evaluation is performed.")
 parser.add_argument('--num_threads', type=int, default=0,
                     help='Number of threads used.')
 parser.add_argument("--num_workers", '-w', default=8, type=int,
@@ -133,7 +132,8 @@ def main(options):
 
     decoder = create_autoencoder(options.model, options.pretrained_path, difference=options.pretrained_difference)
     optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
-                                                         options.transfer_learning_rate)
+                                                         options.transfer_learning_rate,
+                                                         weight_decay=options.weight_decay)
 
     if options.add_sigmoid:
         if isinstance(decoder.decoder[-1], nn.ReLU):
