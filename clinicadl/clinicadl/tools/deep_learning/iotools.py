@@ -41,13 +41,16 @@ def commandline_to_json(commandline, model_type):
     commandline_arg_dic['unknown_arg'] = commandline[1]
 
     output_dir = commandline_arg_dic['output_dir']
-    log_dir = os.path.join(output_dir, 'log_dir', 'fold_' + str(commandline_arg_dic['split']), model_type)
+    if commandline_arg_dic['split'] is None:
+        log_dir = os.path.join(output_dir, 'log_dir')
+    else:
+        log_dir = os.path.join(output_dir, 'log_dir', 'fold_' + str(commandline_arg_dic['split']))
     check_and_clean(log_dir)
 
     # save to json file
     json = json.dumps(commandline_arg_dic)
-    print("Path of json file:", os.path.join(log_dir, "commandline.json"))
-    f = open(os.path.join(log_dir, "commandline.json"), "w")
+    print("Path of json file:", os.path.join(log_dir, "commandline_" + model_type + ".json"))
+    f = open(os.path.join(log_dir, "commandline_" + model_type + ".json"), "w")
     f.write(json)
     f.close()
 
@@ -64,8 +67,7 @@ def read_json(options, model_type, json_path=None, test=False):
 
     evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
     if json_path is None:
-        json_path = path.join(options.model_path, 'log_dir', 'fold_' + str(options.split),
-                              model_type, 'commandline.json')
+        json_path = path.join(options.model_path, 'log_dir', 'commandline_' + model_type + '.json')
 
     with open(json_path, "r") as f:
         json_data = json.load(f)

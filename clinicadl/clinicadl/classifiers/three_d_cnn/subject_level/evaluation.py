@@ -1,10 +1,15 @@
 from __future__ import print_function
 import argparse
 import os
+import torch
 from os import path
 import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
+import sys
+
+package_path = path.abspath(path.join(path.abspath(path.join(path.abspath(path.join(path.abspath(path.join(sys.argv[0], os.pardir)), os.pardir)), os.pardir)), os.pardir))
+sys.path.append(package_path)
 
 from classifiers.three_d_cnn.subject_level.utils import test
 from tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
@@ -35,24 +40,28 @@ if __name__ == "__main__":
     if ret[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
 
+    torch.set_num_threads(options.num_threads)
+
     # Loop on all folds trained
-    model_dir = path.join(options.model_path, 'best_model_dir')
-    folds_dir = os.listdir(model_dir)
+    best_model_dir = os.path.join(options.model_path, 'best_model_dir')
+    folds_dir = os.listdir(best_model_dir)
+
     for fold_dir in folds_dir:
         split = int(fold_dir[-1])
         options.split = split
-        options = read_json(options, "CNN")
+        json_path = path.join(options.model_path, 'log_dir', 'fold_' + str(split), "commandline_CNN.json")
+        options = read_json(options, "CNN", json_path=json_path)
 
-        print("Fold " + str(split))
+        print("Fold %i" % split)
         model = create_model(options.model)
 
         criterion = nn.CrossEntropyLoss()
 
         if options.selection_eval == 'loss':
-            model_dir = path.join(model_dir, fold_dir, 'CNN', 'best_loss')
+            model_dir = path.join(best_model_dir, fold_dir, 'CNN', 'best_loss')
             folder_name = 'best_loss'
         else:
-            model_dir = path.join(model_dir, fold_dir, 'CNN', 'best_acc')
+            model_dir = path.join(best_model_dir, fold_dir, 'CNN', 'best_acc')
             folder_name = 'best_acc'
 
         best_model, best_epoch = load_model(model, model_dir, options.gpu,
