@@ -94,7 +94,7 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
     tend = time()
     total_time = 0
 
-    for epoch in range(options.epochs_fine_tuning):
+    for epoch in range(options.epochs):
         print("Fine-tuning at %d-th epoch." % epoch)
 
         auto_encoder_all.zero_grad()
