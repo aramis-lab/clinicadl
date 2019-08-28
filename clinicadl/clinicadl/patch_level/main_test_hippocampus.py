@@ -6,13 +6,13 @@ from torch.utils.data import DataLoader
 import sys
 from os import path
 
-package_path = path.abspath(path.join(path.abspath(path.join(path.abspath(path.join(path.abspath(path.join(sys.argv[0], os.pardir)), os.pardir)), os.pardir)), os.pardir))
+package_path = path.abspath(path.join(sys.argv[0], os.pardir, os.pardir))
 sys.path.append(package_path)
 
-from classifiers.three_d_cnn.patch_level.classification_utils import *
+from .utils import MRIDataset_patch_hippocampus, test, hard_voting_to_tsvs, soft_voting_to_tsvs
 
 from tools.deep_learning.data import MinMaxNormalization
-from tools.deep_learning.models import create_model
+from tools.deep_learning.models import create_model, load_model
 
 
 __author__ = "Junhao Wen"
@@ -26,31 +26,35 @@ __status__ = "Development"
 
 parser = argparse.ArgumentParser(description="Argparser for test of hippocampus approach")
 
-## Data arguments
-parser.add_argument("--caps_directory", type=str,
+# Mandatory arguments
+parser.add_argument("caps_directory", type=str,
                     help="Path to the caps of image processing pipeline of DL")
-parser.add_argument("--diagnosis_tsv_path", default='/network/lustre/dtlake01/aramis/users/junhao.wen/from_gpfs/PhD/ADNI_classification/gitlabs/AD-DL/tsv_files/tsv_after_data_splits/ADNI/lists_by_task/test/AD_vs_CN_baseline.tsv',
-                           help="Path to tsv file of the population based on the diagnosis tsv files. To note, the column name should be participant_id, session_id and diagnosis.")
-parser.add_argument("--output_dir", default='/network/lustre/dtlake01/aramis/users/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/AD_CN/ROI_based/Finished_exp/pytorch_AE_Conv_4_FC_2_bs4_lr_e5_only_finetuning_epoch200_baseline_hippocampus50_with_es_MedIA',
-                           help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
-parser.add_argument("--num_workers", default=8, type=int,
-                    help='the number of batch being loaded in parallel')
-parser.add_argument("--batch_size", default=32, type=int,
-                    help="Batch size for training. (default=1)")
+parser.add_argument("diagnosis_tsv_path", type=str,
+                    help="Path to tsv file of the population based on the diagnosis tsv files."
+                         "To note, the column name should be participant_id, session_id and diagnosis.")
+parser.add_argument("output_dir", type=str,
+                    help="Path to store the classification outputs and the tsv files containing the performances.")
 
-parser.add_argument('--best_model_fold', default=4,
-                    help="Use the best from the which fold of training")
-parser.add_argument('--gpu', default=False, action='store_true',
-                    help='Uses gpu instead of cpu if cuda is available')
+# Test parameters
 parser.add_argument("--network", default="Conv_4_FC_3", choices=["Conv_4_FC_3", "Conv_7_FC_2", "Conv_3_FC_2"],
-                    help="Autoencoder network type. (default=Conv_4_FC_3). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
+                    help="Autoencoder network type. (default=Conv_4_FC_3). "
+                         "Also, you can try training from scratch using VoxResNet and AllConvNet3D")
 parser.add_argument('--best_model_criteria', default="best_acc", choices=["best_acc", "best_loss"],
                     help="Evaluate the model performance based on which criterior")
 
 
+# Computational issues
+parser.add_argument("--num_workers", default=8, type=int,
+                    help='the number of batch being loaded in parallel')
+parser.add_argument("--batch_size", default=32, type=int,
+                    help="Batch size for training. (default=1)")
+parser.add_argument('--gpu', default=False, action='store_true',
+                    help='Uses gpu instead of cpu if cuda is available')
+
+
 def main(options):
 
-    # Initial the model
+    # Initialize the model
     model = create_model(options.network, options.gpu)
     transformations = transforms.Compose([MinMaxNormalization()])
 
@@ -67,23 +71,28 @@ def main(options):
                              drop_last=True,
                              pin_memory=True)
 
-    # load the best trained model during the training
-    model, best_global_step, best_epoch, best_predict = load_model_test(model, os.path.join(options.output_dir, 'best_model_dir',
-                                                                                   "fold_" + str(options.best_model_fold), 'CNN', str(options.best_model_criteria)),
-                                                                      filename='model_best.pth.tar')
+    # Loop on all available folds
+    fold_dirs = os.listdir(path.join(options.output_dir, 'best_model_dir'))
+    for fold_dir in fold_dirs:
+        fold = int(fold_dir[-1])
 
-    print("The best model was saved during training from fold %d at the %d -th epoch at the %d -th global step" % (int(options.best_model_fold), int(best_epoch), int(best_global_step)))
-    print("Please check if the model has been already severly overfitted at the best epoch by tensorboardX!")
+        # load the best trained model during the training
+        model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', fold_dir,
+                                                           'CNN', str(options.best_model_criteria)),
+                                       gpu=options.gpu, filename='model_best.pth.tar')
 
-    subjects, y_ground, y_hat, proba, accuracy_batch_mean = test(model, test_loader, options)
-    print("Patch level balanced accuracy is %f" % (accuracy_batch_mean))
+        print("The best model was saved during training from fold %d at the %d -th epoch" % (fold, best_epoch))
+        print("Please check if the model has been already severly overfitted at the best epoch by tensorboardX!")
 
-    # write the information of subjects and performances into tsv files.
-    # Hard voting
-    hard_voting_to_tsvs(options.output_dir, options.best_model_fold, subjects, y_ground, y_hat, proba, mode='test')
+        subjects, y_ground, y_hat, proba, accuracy_batch_mean = test(model, test_loader, options)
+        print("Patch level balanced accuracy is %f" % (accuracy_batch_mean))
 
-    # Soft voting
-    soft_voting_to_tsvs(options.output_dir, options.best_model_fold, mode='test')
+        # write the information of subjects and performances into tsv files.
+        # Hard voting
+        hard_voting_to_tsvs(options.output_dir, fold, subjects, y_ground, y_hat, proba, mode='test')
+
+        # Soft voting
+        soft_voting_to_tsvs(options.output_dir, fold, mode='test')
 
 
 if __name__ == "__main__":
