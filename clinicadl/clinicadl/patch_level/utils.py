@@ -46,7 +46,8 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_tra
     ae_finetuning(ae, train_loader, valid_loader, criterion, writer_train, writer_valid, options, fi)
 
     # Updating and setting weights of the convolutional layers
-    checkpoint_dir = path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'fine_tune', 'AutoEncoder')
+    checkpoint_dir = path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'fine_tune',
+                               'AutoEncoder', 'best_loss')
     best_autodecoder, best_epoch = load_model(ae, checkpoint_dir, options.gpu,  filename='model_best.pth.tar')
 
     del ae
@@ -83,7 +84,7 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
                                                          options.learning_rate)
     print(auto_encoder_all)
 
-    if options.use_gpu:
+    if options.gpu:
         auto_encoder_all.cuda()
 
     # Initialize variables
@@ -105,7 +106,7 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
 
             # print("Loading available between batches of data by CPU using time: ", t0 - tend)
 
-            if options.use_gpu:
+            if options.gpu:
                 imgs = data['image'].cuda()
             else:
                 imgs = data['image']
@@ -162,14 +163,14 @@ def test_ae(model, dataloader, options, criterion, former_layer=None):
 
     :param model: the network (subclass of nn.Module)
     :param dataloader: a DataLoader wrapping a dataset
-    :param use_gpu: if True a gpu is used
+    :param gpu: if True a gpu is used
     :return: loss of the model (float)
     """
     model.eval()
 
     total_loss = 0
     for i, data in enumerate(dataloader, 0):
-        if options.use_gpu:
+        if options.gpu:
             inputs = data['image'].cuda()
         else:
             inputs = data['image']
@@ -191,132 +192,6 @@ def test_ae(model, dataloader, options, criterion, former_layer=None):
     return total_loss
 
 
-# def train_sparse_ae(autoencoder, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, options):
-#     """
-#     This trains the sparse autoencoder.
-#     :param autoencoder:
-#     :param data_loader:
-#     :param use_cuda:
-#     :param loss_func:
-#     :param optimizer:
-#     :param writer:
-#     :param epoch_i:
-#     :param global_step:
-#     :return:
-#     """
-#     print("Start training for sparse autoencoder!")
-#     # Releases all unoccupied cached memory
-#     torch.cuda.empty_cache()
-#     epoch_loss = 0
-#     sparsity = 0.05
-#     beta = 3
-#     print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
-#     for i, batch_data in enumerate(data_loader):
-#         if use_cuda:
-#             imgs = batch_data['image'].cuda()
-#         else:
-#             imgs = batch_data['image']
-#
-#         ## check if the patch contains no information, which means the patch is at the edge fo the MRI and contains NAN
-#         if torch.sum(torch.isnan(imgs.view(1, -1))):
-#             del imgs
-#             pass
-#
-#         else:
-#             decoded, encoded = autoencoder(imgs)
-#             imgs_flatten = imgs.view(imgs.shape[0], options.patch_size * options.patch_size * options.patch_size)
-#             loss1 = loss_func(decoded, imgs_flatten) / options.batch_size
-#             if use_cuda:
-#                 rho = (torch.ones([1, encoded.shape[1]]) * sparsity).cuda()
-#                 rho_hat = torch.sum(encoded, dim=0, keepdim=True).cuda()
-#             else:
-#                 rho = torch.ones([1, encoded.shape[1]]) * sparsity ## this value should be near to 0.
-#                 rho_hat = torch.sum(encoded, dim=0, keepdim=True)
-#             ## the sparsity loss
-#             loss2 = kl_divergence(rho, rho_hat) * beta
-#             if np.sum(np.isnan(imgs_flatten.detach().numpy())):
-#                 raise Exception('Stop, this is wrong! imgs_flatten')
-#             if np.sum(np.isnan(decoded.detach().numpy())):
-#                 raise Exception('Stop, this is wrong! decoded')
-#             if np.sum(np.isnan(rho.detach().numpy())):
-#                 raise Exception('Stop, this is wrong! rho')
-#             if np.sum(np.isnan(rho_hat.detach().numpy())):
-#                 raise Exception('Stop, this is wrong! rho_hat')
-#             # kl_div_loss(mean_activitaion, sparsity)
-#             loss = loss1 + beta * loss2 ## beta indicates the importance of the sparsity loss
-#             epoch_loss += loss
-#             print("For batch %d, training loss is : %f" % (i, loss.item()))
-#
-#             optimizer.zero_grad()
-#             loss.backward()
-#             optimizer.step()
-#
-#             ## save loss into tensorboardX
-#             writer.add_scalar('loss', loss, i + epoch_i * len(data_loader))
-#             ## save memory
-#             del imgs, decoded, loss, loss1, loss2, encoded, rho, imgs_flatten, rho_hat
-#
-#     return epoch_loss
-# # def apply_autoencoder_weights(model, pretrained_autoencoder_path, model_path, difference=0):
-# #     from copy import deepcopy
-# #     from os import path
-# #     import os
-# #     from tools.deep_learning import save_checkpoint
-# #     from tools.deep_learning.models import AutoEncoder
-# #
-# #     decoder = AutoEncoder(model)
-# #     initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_path, difference=difference)
-# #
-# #     model.features = deepcopy(decoder.encoder)
-# #     if not path.exists(path.join(model_path, 'pretraining')):
-# #         os.makedirs(path.join(model_path, "pretraining"))
-# #
-# #     save_checkpoint({'model': model.state_dict(),
-# #                      'epoch': -1,
-# #                      'path': pretrained_autoencoder_path},
-# #                     False, False,
-# #                     path.join(model_path, "pretraining"),
-# #                     'model_pretrained.pth.tar')
-# #
-# #
-# # def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, model_path, difference=0):
-# #     from os import path
-# #     import os
-# #     from tools.deep_learning import save_checkpoint
-# #
-# #     result_dict = torch.load(pretrained_autoencoder_path)
-# #     parameters_dict = result_dict['model']
-# #     module_length = int(len(decoder) / decoder.level)
-# #     difference = difference * module_length
-# #
-# #     for key in parameters_dict.keys():
-# #         section, number, spec = key.split('.')
-# #         number = int(number)
-# #         if section == 'encoder' and number < len(decoder.encoder):
-# #             data_ptr = eval('decoder.' + section + '[number].' + spec + '.data')
-# #             data_ptr = parameters_dict[key]
-# #         elif section == 'decoder':
-# #             # Deeper autoencoder
-# #             if difference >= 0:
-# #                 data_ptr = eval('decoder.' + section + '[number + difference].' + spec + '.data')
-# #                 data_ptr = parameters_dict[key]
-# #             # More shallow autoencoder
-# #             elif difference < 0 and number < len(decoder.decoder):
-# #                 data_ptr = eval('decoder.' + section + '[number].' + spec + '.data')
-# #                 new_key = '.'.join(['decoder', str(number + difference), spec])
-# #                 data_ptr = parameters_dict[new_key]
-# #
-# #     if not path.exists(path.join(model_path, 'pretraining')):
-# #         os.makedirs(path.join(model_path, "pretraining"))
-# #
-# #     save_checkpoint({'model': decoder.state_dict(),
-# #                      'epoch': -1,
-# #                      'path': pretrained_autoencoder_path},
-# #                     False, False,
-# #                     path.join(model_path, "pretraining"),
-# #                     'model_pretrained.pth.tar')
-# #     return decoder
-
 #################################
 # Transfer learning
 #################################
@@ -335,15 +210,16 @@ def load_model_after_ae(model, checkpoint_dir, filename='checkpoint.pth.tar'):
     model_dict = model_after_ae.state_dict()
     param_dict = torch.load(os.path.join(checkpoint_dir, filename))
     ae_pretrained_dict = param_dict['model']
+    ae_pretrained_dict_copy = deepcopy(ae_pretrained_dict)
 
     # remove the classifier's weight, only take the AE
     for k in ae_pretrained_dict.keys():
         if 'classifier' not in k:
             pass
         else:
-            del ae_pretrained_dict[k]
+            del ae_pretrained_dict_copy[k]
 
-    model_dict.update(ae_pretrained_dict)
+    model_dict.update(ae_pretrained_dict_copy)
     model_after_ae.load_state_dict(model_dict)
 
     return model_after_ae, param_dict['epoch']
@@ -493,14 +369,12 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, i
                 gound_truth_list = labels.data.cpu().numpy().tolist()
                 y_ground.extend(gound_truth_list)
 
-                print('The group true label is %s' % (str(labels)))
                 output = model(imgs)
 
                 _, predict = output.topk(1)
                 predict_list = predict.data.cpu().numpy().tolist()
                 predict_list = [item for sublist in predict_list for item in sublist]
                 y_hat.extend(predict_list)
-                print("The predicted label is: " + str(output))
                 loss_batch = loss_func(output, labels)
 
                 # adding the probability
@@ -544,7 +418,7 @@ def test(model, data_loader, options):
     y_hat = []
     proba = []
     print("Start evaluate the model!")
-    if options.use_gpu:
+    if options.gpu:
         model.cuda()
 
     model.eval()  ## set the model to evaluation mode
@@ -553,7 +427,7 @@ def test(model, data_loader, options):
         ## torch.no_grad() needs to be set, otherwise the accumulation of gradients would explose the GPU memory.
         print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
         for i, batch_data in enumerate(data_loader):
-            if options.use_gpu:
+            if options.gpu:
                 imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
             else:
                 imgs, labels = batch_data['image'], batch_data['label']
@@ -960,10 +834,9 @@ class MRIDataset_patch(Dataset):
         label = self.diagnosis_code[img_label]
         index_patch = idx % self.patchs_per_patient
 
-        patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
-                                      'preprocessing_dl',
-                                      img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-' + str(self.patch_size) + '_stride-' + str(self.stride_size) + '_patch-' + str(
-                                          index_patch) + '.pt')
+        patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl',
+                                  img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-' + str(self.patch_size)
+                                  + '_stride-' + str(self.stride_size) + '_patch-' + str(index_patch) + '.pt')
 
         patch = torch.load(patch_path)
 
@@ -1048,8 +921,6 @@ class MRIDataset_patch_hippocampus(Dataset):
             patch = self.transformations(patch)
 
         ## TODO, maybe need to check if the patch only has background if the patch size is too small
-        print("Mean value after normalization: %f" % torch.mean(patch))
-
         sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(left_is_odd), 'image': patch, 'label': label}
 
         return sample
@@ -1121,138 +992,6 @@ class MRIDataset_patch_by_index(Dataset):
 
         return sample
 
-#
-# def load_split_by_task(diagnoses_tsv, val_size=0.15, random_state=None):
-#     """
-#     Returns the paths of the TSV files for each set based on the task. The training and validation data has been age,sex correceted split
-#
-#     :param diagnoses_tsv: (str) path to the tsv file with diagnoses
-#     :param val_size: (float) the proportion of the training set used for validation
-#     :return: 3 Strings
-#         training_tsv
-#         valid_tsv
-#     """
-#     sets_dir = path.join(path.dirname(diagnoses_tsv),
-#                          path.basename(diagnoses_tsv).split('.')[0],
-#                          'val_size-' + str(val_size))
-#
-#     training_tsv = path.join(sets_dir, 'train.tsv')
-#     valid_tsv = path.join(sets_dir, 'valid.tsv')
-#
-#     if not path.exists(training_tsv) or not path.exists(valid_tsv):
-#         split_subjects_to_tsv(diagnoses_tsv, val_size, random_state=random_state)
-#
-#         training_tsv = path.join(sets_dir, 'train.tsv')
-#         valid_tsv = path.join(sets_dir, 'valid.tsv')
-#
-#     return training_tsv, valid_tsv
-#
-# def load_split_by_diagnosis(options, split, n_splits=5, baseline_or_longitudinal='baseline', autoencoder=True):
-#     """
-#     Creates a DataFrame for training and validation sets given the wanted diagnoses, this is helpful to train the autoencoder with maximum availble data
-#
-#     :param options: object of the argparser
-#     :param diagnoses_list: list of diagnoses to select to construct the DataFrames
-#     :param baseline: bool choose to use baseline only instead of all data available
-#     :return:
-#         train_df DataFrame with training data
-#         valid_df DataFrame with validation data
-#     """
-#     train_df = pd.DataFrame()
-#     valid_df = pd.DataFrame()
-#
-#     if n_splits is None:
-#         train_path = path.join(options.diagnosis_tsv_path, 'train')
-#         valid_path = path.join(options.diagnosis_tsv_path, 'validation')
-#
-#     else:
-#         train_path = path.join(options.diagnosis_tsv_path, 'train_splits-' + str(n_splits),
-#                                'split-' + str(split))
-#         valid_path = path.join(options.diagnosis_tsv_path, 'validation_splits-' + str(n_splits),
-#                                'split-' + str(split))
-#     print("Train", train_path)
-#     print("Valid", valid_path)
-#
-#     for diagnosis in options.diagnoses_list:
-#
-#         if baseline_or_longitudinal == 'baseline':
-#             train_diagnosis_tsv = path.join(train_path, diagnosis + '_baseline.tsv')
-#         else:
-#             train_diagnosis_tsv = path.join(train_path, diagnosis + '.tsv')
-#
-#         valid_diagnosis_tsv = path.join(valid_path, diagnosis + '_baseline.tsv')
-#
-#         train_diagnosis_df = pd.read_csv(train_diagnosis_tsv, sep='\t')
-#         valid_diagnosis_df = pd.read_csv(valid_diagnosis_tsv, sep='\t')
-#
-#         train_df = pd.concat([train_df, train_diagnosis_df])
-#         valid_df = pd.concat([valid_df, valid_diagnosis_df])
-#
-#     train_df.reset_index(inplace=True, drop=True)
-#     valid_df.reset_index(inplace=True, drop=True)
-#
-#     if autoencoder == True:
-#         train_tsv = os.path.join(tempfile.mkdtemp(), 'AE_training_subjects.tsv')
-#         train_df.to_csv(train_tsv, index=False, sep='\t', encoding='utf-8')
-#         valid_tsv = os.path.join(tempfile.mkdtemp(), 'AE_validation_subjects.tsv')
-#         valid_df.to_csv(valid_tsv, index=False, sep='\t', encoding='utf-8')
-#     else:
-#         train_tsv = os.path.join(tempfile.mkdtemp(), 'CNN_training_subjects.tsv')
-#         train_df.to_csv(train_tsv, index=False, sep='\t', encoding='utf-8')
-#         valid_tsv = os.path.join(tempfile.mkdtemp(), 'CNN_validation_subjects.tsv')
-#         valid_df.to_csv(valid_tsv, index=False, sep='\t', encoding='utf-8')
-#
-#     return train_df, valid_df, train_tsv, valid_tsv
-
-
-def extract_patch_from_mri(image_tensor, index_patch, patch_size, stride_size, patchs_per_patient):
-
-    ## use classifiers tensor.upfold to crop the patch.
-    patches_tensor = image_tensor.unfold(1, patch_size, stride_size).unfold(2, patch_size, stride_size).unfold(3, patch_size, stride_size).contiguous()
-    # the dimension of patch_tensor should be [1, patch_num1, patch_num2, patch_num3, patch_size1, patch_size2, patch_size3]
-    patches_tensor = patches_tensor.view(-1, patch_size, patch_size, patch_size)
-    if patchs_per_patient != patches_tensor.shape[0]:
-        raise Exception("Oops, the number of patches were not correctly calculated")
-
-    extracted_patch = patches_tensor[index_patch, ...].unsqueeze_(0) ## add one dimension
-
-    return extracted_patch
-
-# def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar'):
-#     """
-#     This is the function to save the best model during validation process
-#     :param state: the parameters that you wanna save
-#     :param is_best: if the performance is better than before
-#     :param checkpoint_dir:
-#     :param filename:
-#     :return:
-#         checkpoint.pth.tar: this is the model trained by the last epoch, useful to retrain from this stopping point
-#         model_best.pth.tar: if is_best is Ture, this is the best model during the validation, useful for testing the performances of the model
-#     """
-#     import shutil, os
-#     if not os.path.exists(checkpoint_dir):
-#         os.makedirs(checkpoint_dir)
-#     torch.save(state, os.path.join(checkpoint_dir, filename))
-#     if is_best:
-#         shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(checkpoint_dir, 'model_best.pth.tar'))
-
-#
-# def kl_divergence(p, q):
-#     '''
-#     This is the penalty term quantified by KL divergence.
-#     ref: http://ufldl.stanford.edu/wiki/index.php/Autoencoders_and_Sparsity
-#     :param p:
-#     :param q:
-#     :return:
-#     '''
-#     p = F.softmax(p)
-#     q = F.softmax(q)
-#
-#     s1 = torch.sum(p * torch.log(p / q))
-#     s2 = torch.sum((1 - p) * torch.log((1 - p) / (1 - q)))
-#
-#     return s1 + s2
-
 
 def visualize_ae(ae, data, results_path):
     """
@@ -1274,161 +1013,3 @@ def visualize_ae(ae, data, results_path):
     input_nii = nib.Nifti1Image(data[0][0].cpu().detach().numpy(), np.eye(4))
     nib.save(reconstructed_nii, os.path.join(results_path, 'example_patch_reconstructed.nii.gz'))
     nib.save(input_nii, os.path.join(results_path, 'example_patch_original.nii.gz'))
-
-# def commandline_to_jason(commanline, pretrain_ae=False):
-#     """
-#     This is a function to write the python argparse object into a jason file. This helps for DL when searching for hyperparameters
-#     :param commanline: a tuple contain the output of `parser.parse_known_args()`
-#     :return:
-#     """
-#     import json, os
-#
-#     commandline_arg_dic = vars(commanline[0])
-#     ## add unknown args too
-#     commandline_arg_dic['unknown_arg'] = commanline[1]
-#
-#     ## if train_from_stop_point, do not delete this folders
-#     if "train_from_stop_point" in commandline_arg_dic.keys():
-#         if commandline_arg_dic['train_from_stop_point']:
-#             print('You should be responsible to make sure you did not change any parameters to train from the stopping point with the same model!')
-#         else:
-#             if not os.path.exists(os.path.join(commandline_arg_dic['output_dir'], 'log_dir')):
-#                 os.makedirs(os.path.join(commandline_arg_dic['output_dir'], 'log_dir'))
-#     else:
-#         ### for AE
-#         if not os.path.exists(commandline_arg_dic['output_dir']):
-#                 os.makedirs(commandline_arg_dic['output_dir'])
-#
-#         if commandline_arg_dic['split'] != None:
-#             pass
-#         else:
-#             check_and_clean(commandline_arg_dic['output_dir'])
-#
-#     ## anyway, make sure the log_dir exist
-#     if not os.path.exists(os.path.join(commandline_arg_dic['output_dir'], 'log_dir')):
-#         os.makedirs(os.path.join(commandline_arg_dic['output_dir'], 'log_dir'))
-#
-#     output_dir = commandline_arg_dic['output_dir']
-#     # save to json file
-#     json = json.dumps(commandline_arg_dic)
-#     if pretrain_ae:
-#         f = open(os.path.join(output_dir, "log_dir", "commandline_autoencoder.json"), "w")
-#     else:
-#         f = open(os.path.join(output_dir, "log_dir", "commandline_cnn.json"), "w")
-#     f.write(json)
-#     f.close()
-
-#
-# def load_model_test(model, checkpoint_dir, filename):
-#     """
-#     This is to load a saved model for testing
-#     :param model:
-#     :param checkpoint_dir:
-#     :param filename:
-#     :return:
-#     """
-#     from copy import deepcopy
-#
-#     ## set the model to be eval mode, we explicitly think that the model was saved in eval mode, otherwise, it will affects the BN and dropout
-#     model.eval()
-#     model_updated = deepcopy(model)
-#     param_dict = torch.load(os.path.join(checkpoint_dir, filename))
-#     model_updated.load_state_dict(param_dict['model'])
-#
-#     return model_updated, param_dict['global_step'], param_dict['epoch'], param_dict['best_predict']
-
-
-# def multi_cnn_soft_majority_voting(output_dir, fi, num_cnn, weight_list, mode='test'):
-#     """
-#     This is a function to do soft majority voting based on the num_cnn CNNs' performances
-#     :param output_dir:
-#     :param fi:
-#     :param num_cnn:
-#     :return:
-#     """
-#     y_hat = []
-#     ## read the validation patch-level results.
-#     for i in range(num_cnn):
-#         # load the best trained model during the training
-#         if i == 0:
-#             df = pd.io.parsers.read_csv(os.path.join(output_dir, 'performances', "fold_" + str(fi), 'cnn-' + str(i),
-#                                                      mode + '_patch_level_result-patch_index.tsv'), sep='\t')
-#             df_final = pd.DataFrame(columns=['subject', 'y', 'y_hat'])
-#             df_final['subject'] = df['subject'].apply(extract_subject_name)
-#             df_final['y'] = df['y']
-#
-#         ##TODO, this is not correct, this is just the probability of the last epoch of validation
-#         tsv_path = os.path.join(output_dir, 'performances', "fold_" + str(fi), 'cnn-' + str(i), mode + '_patch_level_result-patch_index.tsv')
-#         proba_series = pd.io.parsers.read_csv(tsv_path, sep='\t')['probability']
-#         p0s = []
-#         p1s = []
-#         for j in range(len(proba_series)):
-#             p0 = weight_list[i] * eval(proba_series[j])[0]
-#             p1 = weight_list[i] * eval(proba_series[j])[1]
-#             p0s.append(p0)
-#             p1s.append(p1)
-#         p0s_series = pd.Series(p0s)
-#         p1s_series = pd.Series(p1s)
-#
-#         ## adding the series into the final DataFrame
-#         ## insert the column of iteration
-#         df_final['cnn_' + str(i) + '_p0'] = p0s_series
-#         df_final['cnn_' + str(i) + '_p1'] = p1s_series
-#
-#     ## based on the p0 and p1 from all the CNNs, calculate the y_hat
-#     p0_final = []
-#     p1_final = []
-#     for k in range(num_cnn):
-#         p0_final.append(df_final['cnn_' + str(k) + '_p0'].tolist())
-#     for k in range(num_cnn):
-#         p1_final.append(df_final['cnn_' + str(k) + '_p1'].tolist())
-#
-#     ## element-wise adding to calcuate the final probability
-#     p0_soft = [sum(x) for x in zip(*p0_final)]
-#     p1_soft = [sum(x) for x in zip(*p1_final)]
-#
-#     for m in range(len(p0_soft)):
-#         proba_list = [p0_soft[m], p1_soft[m]]
-#         y_pred = proba_list.index(max(proba_list))
-#         y_hat.append(y_pred)
-#
-#     ### convert y_hat list ot series then add into the dataframe
-#     y_hat_series = pd.Series(y_hat)
-#     p0_soft_series = pd.Series(p0_soft)
-#     p1_soft_series = pd.Series(p1_soft)
-#     df_final['y_hat'] = y_hat_series
-#     df_final['p0_soft'] = p0_soft_series
-#     df_final['p1_soft'] = p1_soft_series
-#
-#     ## save the results into output_dir
-#     results_soft_tsv_path = os.path.join(output_dir, 'performances', "fold_" + str(fi),
-#                  'validation_subject_level_result_soft_vote_multi_cnn.tsv')
-#     df_final.to_csv(results_soft_tsv_path, index=False, sep='\t', encoding='utf-8')
-#
-#
-#     results = evaluate_prediction([int(e) for e in list(df_final.y)], [int(e) for e in list(
-#         df_final.y_hat)])  ## Note, y_hat here is not int, is string
-#     del results['confusion_matrix']
-#
-#     metrics_soft_tsv_path = os.path.join(output_dir, 'performances', "fold_" + str(fi), mode + '_subject_level_metrics_soft_vote_multi_cnn.tsv')
-#     pd.DataFrame(results, index=[0]).to_csv(metrics_soft_tsv_path, index=False, sep='\t', encoding='utf-8')
-
-#
-# def weight_by_validation_acc(model, options):
-#
-#     ## get the weight for soft voting system from all validation acc from all N classifiers
-#     best_acc_cnns = []
-#     for n in range(options.num_cnn):
-#         # load the best trained model during the training
-#         _, _, _, best_predict = load_model_test(model, os.path.join(options.output_dir, 'best_model_dir',
-#                                                                                        "fold_" + str(options.n_fold), 'cnn-' + str(n), options.best_model_criteria),
-#                                                                           filename='model_best.pth.tar')
-#         best_acc_cnns.append(best_predict)
-#
-#     ## delete the weak classifiers whose acc is smaller than 0.7
-#     weight_list = [0 if x < 0.7 else x for x in best_acc_cnns]
-#     weight_list = [x / sum(weight_list) for x in weight_list]
-#     if all(i == 0 for i in weight_list):
-#         raise Exception("The ensemble learning does not really work, all classifiers work bad!")
-#
-#     return weight_list
