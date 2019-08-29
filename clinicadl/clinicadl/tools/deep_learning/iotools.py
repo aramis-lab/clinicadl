@@ -102,6 +102,8 @@ def visualize_subject(decoder, dataloader, visualization_path, options, epoch=No
     dataset = dataloader.dataset
     data = dataset[subject_index]
     image_path = data['image_path']
+    nii_path, _ = path.splitext(image_path)
+    nii_path += '.nii.gz'
 
     input_nii = nib.load(image_path)
     input_np = input_nii.get_data().astype(float)
