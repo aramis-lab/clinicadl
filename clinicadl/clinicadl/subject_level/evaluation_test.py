@@ -30,7 +30,7 @@ parser.add_argument("cohort", type=str,
 # Data Management
 parser.add_argument("--diagnoses", default=None, type=str, nargs='+',
                     help='Default will load the same diagnoses used in training.')
-parser.add_argument("--selection", default="loss", type=str, choices=['loss', 'accuracy'],
+parser.add_argument("--selection", default="best_loss", type=str, choices=['best_loss', 'best_acc'],
                     help="Loads the model selected on minimal loss or maximum accuracy on validation.")
 
 # Computational ressources
@@ -62,13 +62,7 @@ if __name__ == "__main__":
 
         criterion = nn.CrossEntropyLoss()
 
-        if options.selection == 'loss':
-            model_dir = os.path.join(best_model_dir, fold_dir, 'CNN', 'best_loss')
-            folder_name = 'best_loss'
-        else:
-            model_dir = os.path.join(best_model_dir, fold_dir, 'CNN', 'best_acc')
-            folder_name = 'best_acc'
-
+        model_dir = os.path.join(best_model_dir, fold_dir, 'CNN', options.selection)
         best_model, best_epoch = load_model(model, model_dir, options.gpu,
                                             filename='model_best.pth.tar')
 
@@ -101,13 +95,13 @@ if __name__ == "__main__":
               % (acc_test, loss_test, sen_test, spe_test))
 
         evaluation_path = path.join(options.model_path, 'performances', fold_dir)
-        if not path.exists(path.join(evaluation_path, folder_name)):
-            os.makedirs(path.join(evaluation_path, folder_name))
+        if not path.exists(path.join(evaluation_path, options.selection)):
+            os.makedirs(path.join(evaluation_path, options.selection))
 
-        test_df.to_csv(path.join(evaluation_path, folder_name, 'test-' + options.cohort + '_subject_level_result.tsv'),
-                       sep='\t', index=False)
+        test_df.to_csv(path.join(evaluation_path, options.selection,
+                                 'test-' + options.cohort + '_subject_level_result.tsv'), sep='\t', index=False)
 
-        pd.DataFrame(metrics_test, index=[0]).to_csv(path.join(evaluation_path, folder_name,
+        pd.DataFrame(metrics_test, index=[0]).to_csv(path.join(evaluation_path, options.selection,
                                                                'test-' + options.cohort + '_subject_level_metrics.tsv'),
                                                      sep='\t', index=False)
 
