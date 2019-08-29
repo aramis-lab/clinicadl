@@ -19,8 +19,6 @@ parser.add_argument("split", type=int,
 # Optimizer arguments
 parser.add_argument('--gpu', action='store_true', default=False,
                     help='Uses gpu instead of cpu if cuda is available')
-parser.add_argument('--num_threads', type=int, default=0,
-                    help='Number of threads used.')
 parser.add_argument("--num_workers", '-w', default=1, type=int,
                     help='the number of batch being loaded in parallel')
 
@@ -29,7 +27,6 @@ def main(options):
 
     options = read_json(options, "ConvAutoencoder")
 
-    torch.set_num_threads(options.num_threads)
     if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
                         (options.evaluation_steps, options.accumulation_steps))

@@ -26,14 +26,14 @@ parser.add_argument("model", type=str,
 # Transfer learning from other autoencoder
 parser.add_argument("--pretrained_path", type=str, default=None,
                     help="Path to a pretrained model (can be of different size).")
-parser.add_argument("--pretrained_difference", "-d", type=int, default=0,
+parser.add_argument("--pretrained_difference", type=int, default=0,
                     help="Difference of size between the pretrained autoencoder and the training one. \n"
                          "If the new one is larger, difference will be positive.")
 
 # Data Management
 parser.add_argument("--preprocessing", default="linear", choices=["linear", "mni"], type=str,
                     help="Defines the path to data in CAPS.")
-parser.add_argument("--diagnoses", default=["AD", "CN"], nargs='+', type=str,
+parser.add_argument("--diagnoses", "-d", default=["AD", "CN"], nargs='+', type=str,
                     help="Take all the subjects possible for autoencoder training")
 parser.add_argument("--baseline", action="store_true", default=False,
                     help="if True only the baseline is used")
@@ -77,8 +77,6 @@ parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument('--evaluation_steps', '-esteps', default=1, type=int,
                     help='Fix the number of batches to use before validation')
-parser.add_argument('--num_threads', type=int, default=0,
-                    help='Number of threads used.')
 parser.add_argument("--num_workers", '-w', default=8, type=int,
                     help='the number of batch being loaded in parallel')
 
@@ -89,7 +87,6 @@ def main(options):
     options.transfer_learning_rate = options.learning_rate
     options.transfer_learning_epochs = options.epochs
 
-    torch.set_num_threads(options.num_threads)
     if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
                         (options.evaluation_steps, options.accumulation_steps))
