@@ -3,16 +3,9 @@ import os
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
-import sys
-from os import path
-
-package_path = path.abspath(path.join(sys.argv[0], os.pardir, os.pardir))
-sys.path.append(package_path)
-
 from .utils import MRIDataset_patch_hippocampus, test, hard_voting_to_tsvs, soft_voting_to_tsvs
-
 from tools.deep_learning.data import MinMaxNormalization
-from tools.deep_learning.models import create_model, load_model
+from tools.deep_learning import create_model, load_model
 
 
 __author__ = "Junhao Wen"
@@ -39,7 +32,7 @@ parser.add_argument("output_dir", type=str,
 parser.add_argument("--network", default="Conv_4_FC_3", choices=["Conv_4_FC_3", "Conv_7_FC_2", "Conv_3_FC_2"],
                     help="Autoencoder network type. (default=Conv_4_FC_3). "
                          "Also, you can try training from scratch using VoxResNet and AllConvNet3D")
-parser.add_argument('--best_model_criteria', default="best_acc", choices=["best_acc", "best_loss"],
+parser.add_argument('--selection', default="best_acc", choices=["best_acc", "best_loss"],
                     help="Evaluate the model performance based on which criterior")
 
 
@@ -72,14 +65,15 @@ def main(options):
                              pin_memory=True)
 
     # Loop on all available folds
-    fold_dirs = os.listdir(path.join(options.output_dir, 'best_model_dir'))
+    fold_dirs = os.listdir(os.path.join(options.output_dir, 'best_model_dir'))
     for fold_dir in fold_dirs:
         fold = int(fold_dir[-1])
 
         # load the best trained model during the training
         model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', fold_dir,
-                                                           'CNN', str(options.best_model_criteria)),
+                                                           'CNN', str(options.selection)),
                                        gpu=options.gpu, filename='model_best.pth.tar')
+        model.eval()
 
         print("The best model was saved during training from fold %d at the %d -th epoch" % (fold, best_epoch))
         print("Please check if the model has been already severly overfitted at the best epoch by tensorboardX!")
@@ -97,8 +91,6 @@ def main(options):
 
 if __name__ == "__main__":
     commandline = parser.parse_known_args()
-    print("The commandline arguments:")
-    print(commandline)
     options = commandline[0]
     if commandline[1]:
         raise Exception("unknown arguments: %s" % (parser.parse_known_args()[1]))
