@@ -3,14 +3,10 @@ import torch
 import sys
 from time import time
 from os import path
-import os
 from torch.utils.data import DataLoader
 
-package_path = path.abspath(path.join(sys.argv[0], os.pardir, os.pardir))
-sys.path.append(package_path)
-
 from .utils import train
-from tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data, generate_sampler
+from tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data
 from tools.deep_learning import create_model, commandline_to_json
 from tools.deep_learning.models import transfer_learning
 
@@ -36,8 +32,6 @@ parser.add_argument("--baseline", default=False, action="store_true",
                     help="Use only baseline data instead of all scans available")
 parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
                     help="Performs MinMaxNormalization.")
-parser.add_argument('--sampler', '-s', default="random", type=str, choices=['random', 'weighted'],
-                    help="Sampler choice (random, or weighted for imbalanced datasets)")
 
 # Cross-validation
 parser.add_argument("--n_splits", type=int, default=None,
@@ -57,10 +51,10 @@ parser.add_argument("--patience", type=int, default=10,
 parser.add_argument("--tolerance", type=float, default=0.05,
                     help="Tolerance value for the early stopping.")
 
-# Pretraining arguments
-parser.add_argument("-t", "--transfer_learning", default=None, type=str,
+# Transfer learning arguments
+parser.add_argument("--transfer_learning_path", default=None, type=str,
                     help="If an existing path is given, a pretrained autoencoder is used.")
-parser.add_argument("--selection", default="acc", choices=["loss", "acc"], type=str,
+parser.add_argument("--selection", default="best_acc", choices=["best_loss", "best_acc"], type=str,
                     help="Allow to choose which model of the experiment is loaded.")
 
 # Optimizer arguments
@@ -106,12 +100,9 @@ def main(options):
     data_train = MRIDataset(options.input_dir, training_tsv, options.preprocessing, transform=transformations)
     data_valid = MRIDataset(options.input_dir, valid_tsv, options.preprocessing, transform=transformations)
 
-    train_sampler = generate_sampler(data_train, options.sampler)
-
     # Use argument load to distinguish training and testing
     train_loader = DataLoader(data_train,
                               batch_size=options.batch_size,
-                              sampler=train_sampler,
                               shuffle=True,
                               num_workers=options.num_workers,
                               drop_last=True
@@ -127,7 +118,8 @@ def main(options):
     # Initialize the model
     print('Initialization of the model')
     model = create_model(options.model, options.gpu)
-    model = transfer_learning(model, options.split, options.output_dir, options.transfer_learning, options.gpu)
+    model = transfer_learning(model, options.split, options.output_dir, options.transfer_learning_path, options.gpu,
+                              selection=options.selection)
 
     # Define criterion and optimizer
     criterion = torch.nn.CrossEntropyLoss()
