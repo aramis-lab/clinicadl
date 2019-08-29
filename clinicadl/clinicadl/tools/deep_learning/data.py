@@ -119,40 +119,6 @@ class MinMaxNormalization(object):
         return (image - image.min()) / (image.max() - image.min())
 
 
-def generate_sampler(dataset, sampler_option='random'):
-    """
-    Returns sampler according to the wanted options
-
-    :param dataset: (MRIDataset) the dataset to sample from
-    :param sampler_option: (str) choice of sampler
-    :return: (Sampler)
-    """
-    count = [0, 0]
-    diagnoses_df = dataset.df
-    for idx in diagnoses_df.index:
-        diagnosis = diagnoses_df.loc[idx, "diagnosis"]
-        key = dataset.diagnosis_code[diagnosis]
-        count[key] += 1
-
-    weight_per_class = 1 / np.array(count)
-    weights = [0] * len(diagnoses_df)
-
-    for idx, diagnosis in enumerate(diagnoses_df.diagnosis.values):
-        key = dataset.diagnosis_code[diagnosis]
-        weights[idx] = weight_per_class[key]
-
-    weights = torch.DoubleTensor(weights)
-
-    if sampler_option == 'random':
-        s = None
-    elif sampler_option == 'weighted':
-        s = sampler.WeightedRandomSampler(weights, len(weights))
-    else:
-        raise NotImplementedError("The option %s for sampler is not implemented" % sampler_option)
-
-    return s
-
-
 def load_data(train_val_path, diagnoses_list, split, n_splits=None, baseline=True):
 
     train_df = pd.DataFrame()
