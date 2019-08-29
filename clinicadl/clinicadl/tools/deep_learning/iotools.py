@@ -48,7 +48,8 @@ def commandline_to_json(commandline, model_type):
         log_dir = os.path.join(output_dir, 'log_dir')
     else:
         log_dir = os.path.join(output_dir, 'log_dir', 'fold_' + str(commandline_arg_dic['split']))
-    check_and_clean(log_dir)
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
 
     # save to json file
     json = json.dumps(commandline_arg_dic)
