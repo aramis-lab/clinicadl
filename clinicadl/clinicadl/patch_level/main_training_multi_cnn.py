@@ -108,8 +108,7 @@ def main(options):
                 if options.transfer_learning_autoencoder:
                     print('Train the model with the weights from a pre-trained autoencoder.')
                     model, _ = load_model_after_ae(model, os.path.join(options.transfer_learning_path, 'best_model_dir',
-                                                                       "fold_" + str(fi), 'ConvAutoencoder',
-                                                                       'fine_tune', 'Encoder'),
+                                                                       "fold_" + str(fi), 'ConvAutoencoder', 'Encoder'),
                                                    filename='model_best_encoder.pth.tar')
                 else:
                     print('Train the model with the weights from a pre-trained CNN.')

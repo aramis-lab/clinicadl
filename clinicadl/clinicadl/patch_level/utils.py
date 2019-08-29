@@ -39,25 +39,24 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_tra
     from copy import deepcopy
 
     # if the model defined is not already constructed to an AE, then we convert the CNN into an AE
-    # keeping the same structure with original CNN
     if not isinstance(model, AutoEncoder):
-        ae = AutoEncoder(model)  # Reconstruct all the AEs in one graph
+        model = AutoEncoder(model)
 
-    ae_finetuning(ae, train_loader, valid_loader, criterion, writer_train, writer_valid, options, fi)
+    ae_finetuning(model, train_loader, valid_loader, criterion, writer_train, writer_valid, options, fi)
 
     # Updating and setting weights of the convolutional layers
-    checkpoint_dir = path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'fine_tune',
+    checkpoint_dir = path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder',
                                'AutoEncoder', 'best_loss')
-    best_autodecoder, best_epoch = load_model(ae, checkpoint_dir, options.gpu,  filename='model_best.pth.tar')
+    best_autodecoder, best_epoch = load_model(model, checkpoint_dir, options.gpu,  filename='model_best.pth.tar')
 
-    del ae
+    del model
 
     # save the encoder part of the AEs, the best AEs has been saved in the ae_finetuning part
     model.features = deepcopy(best_autodecoder.encoder)
     save_checkpoint({'model': model.state_dict(),
                      'epoch': best_epoch},
                     False, False,
-                    os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'fine_tune', 'Encoder'),
+                    os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'Encoder'),
                     filename='model_best_encoder.pth.tar')
 
     del best_epoch
@@ -150,7 +149,8 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
                          'epoch': epoch,
                          'best_loss': best_loss_valid},
                         False, is_best_loss,
-                        os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "ConvAutoencoder", "fine_tune", "AutoEncoder"))
+                        os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "ConvAutoencoder",
+                                     "AutoEncoder"))
 
     del optimizer, auto_encoder_all
 
@@ -995,24 +995,23 @@ class MRIDataset_patch_hippocampus(Dataset):
 
         if left_is_odd == 1:
             patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
-                                  'preprocessing_dl',
-                                  img_name + '_' + sess_name + '_space-MNI_res-1x1x1_hippocampus_hemi-left.pt')
+                                      'preprocessing_dl',
+                                      img_name + '_' + sess_name + '_space-MNI_res-1x1x1_hippocampus_hemi-left.pt')
         else:
             patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
-                                  'preprocessing_dl',
-                                  img_name + '_' + sess_name + '_space-MNI_res-1x1x1_hippocampus_hemi-right.pt')
+                                      'preprocessing_dl',
+                                      img_name + '_' + sess_name + '_space-MNI_res-1x1x1_hippocampus_hemi-right.pt')
 
         patch = torch.load(patch_path)
 
         # check if the patch has NAN value
-        if torch.isnan(patch).any() == True:
+        if torch.isnan(patch).any():
             print("Double check, this patch has Nan value: %s" % str(img_name + '_' + sess_name + str(left_is_odd)))
             patch[torch.isnan(patch)] = 0
 
         if self.transformations:
             patch = self.transformations(patch)
 
-        ## TODO, maybe need to check if the patch only has background if the patch size is too small
         sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(left_is_odd), 'image': patch, 'label': label}
 
         return sample
