@@ -35,8 +35,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
 
     if not resume:
         check_and_clean(best_model_dir)
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
+        check_and_clean(log_dir)
 
         results_df = pd.DataFrame(columns=columns)
         with open(filename, 'w') as f:
@@ -320,6 +319,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
     if not resume:
         check_and_clean(best_model_dir)
         check_and_clean(visualization_path)
+        check_and_clean(log_dir)
         columns = ['epoch', 'iteration', 'loss_train', 'mean_loss_train', 'loss_valid', 'mean_loss_valid']
         results_df = pd.DataFrame(columns=columns)
         with open(filename, 'w') as f:
