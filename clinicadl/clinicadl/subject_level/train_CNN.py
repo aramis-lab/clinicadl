@@ -36,8 +36,6 @@ parser.add_argument("--baseline", default=False, action="store_true",
                     help="Use only baseline data instead of all scans available")
 parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
                     help="Performs MinMaxNormalization.")
-parser.add_argument("--shuffle", default=True, type=bool,
-                    help="Load data if shuffled or not, shuffle for training, no for test data.")
 parser.add_argument('--sampler', '-s', default="random", type=str, choices=['random', 'weighted'],
                     help="Sampler choice (random, or weighted for imbalanced datasets)")
 
@@ -68,8 +66,8 @@ parser.add_argument("--selection", default="acc", choices=["loss", "acc"], type=
 # Optimizer arguments
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument('--weight_decay', '--wd', default=1e-4, type=float,
-                    metavar='W', help='weight decay (default: 1e-4)')
+parser.add_argument('--weight_decay', '--wd', default=0, type=float,
+                    metavar='W', help='weight decay of the optimizer')
 
 
 # Computational issues

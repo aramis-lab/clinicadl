@@ -41,8 +41,6 @@ parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_
                     help="Performs MinMaxNormalization")
 parser.add_argument('--sampler', '-s', default="random", type=str,
                     help="Sampler choice")
-parser.add_argument("--shuffle", default=True, type=bool,
-                    help="Load data if shuffled or not, shuffle for training, no for test data.")
 
 # Cross-validation
 parser.add_argument("--n_splits", type=int, default=None,
@@ -67,8 +65,8 @@ parser.add_argument("--add_sigmoid", default=False, action="store_true",
 # Optimizer arguments
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument('--weight_decay', '--wd', default=1e-4, type=float,
-                    metavar='W', help='weight decay (default: 1e-4)')
+parser.add_argument('--weight_decay', '--wd', default=0, type=float,
+                    metavar='W', help='weight decay of the optimizer')
 
 # Computational issues
 parser.add_argument('--gpu', action='store_true', default=False,
@@ -82,10 +80,6 @@ parser.add_argument("--num_workers", '-w', default=8, type=int,
 
 
 def main(options):
-
-    options.transfer_learning = None
-    options.transfer_learning_rate = options.learning_rate
-    options.transfer_learning_epochs = options.epochs
 
     if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
@@ -127,8 +121,7 @@ def main(options):
 
     decoder = create_autoencoder(options.model, options.pretrained_path, difference=options.pretrained_difference)
     optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
-                                                         options.transfer_learning_rate,
-                                                         weight_decay=options.weight_decay)
+                                                         options.learning_rate, weight_decay=options.weight_decay)
 
     if options.add_sigmoid:
         if isinstance(decoder.decoder[-1], nn.ReLU):
