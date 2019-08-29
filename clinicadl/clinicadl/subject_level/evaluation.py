@@ -28,8 +28,6 @@ parser.add_argument("--selection_eval", default="loss", type=str, choices=['loss
 # Computational ressources
 parser.add_argument("--gpu", action="store_true", default=False,
                     help="if True computes the visualization on GPU")
-parser.add_argument('--num_threads', type=int, default=0,
-                    help='Number of threads used.')
 parser.add_argument("--num_workers", '-w', default=8, type=int,
                     help='the number of batch being loaded in parallel')
 
@@ -39,8 +37,6 @@ if __name__ == "__main__":
     options = ret[0]
     if ret[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
-
-    torch.set_num_threads(options.num_threads)
 
     # Loop on all folds trained
     best_model_dir = os.path.join(options.model_path, 'best_model_dir')
