@@ -7,19 +7,12 @@ from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 import torchvision.transforms as transforms
 
-import sys
-from os import path
-
-package_path = path.abspath(path.join(sys.argv[0], os.pardir, os.pardir))
-sys.path.append(package_path)
-
 from .utils import MRIDataset_patch_hippocampus, MRIDataset_patch
 from .utils import load_model_after_ae, load_model_after_cnn
 from .utils import train, hard_voting_to_tsvs
 
-from tools.deep_learning import EarlyStopping, save_checkpoint, commandline_to_json
+from tools.deep_learning import EarlyStopping, save_checkpoint, commandline_to_json, create_model
 from tools.deep_learning.data import MinMaxNormalization, load_data
-from tools.deep_learning.models import create_model
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -42,13 +35,15 @@ parser.add_argument("output_dir", type=str,
                     help="Path to store the classification outputs, and the tsv files containing the performances.")
 
 # Data management
+parser.add_argument("--diagnoses", default=["AD", "CN"], type=str, nargs="+",
+                    help="Labels based on binary classification")
 parser.add_argument("--patch_size", default=50, type=int,
                     help="The patch size extracted from the MRI")
 parser.add_argument("--patch_stride", default=50, type=int,
                     help="The stride for the patch extract window from the MRI")
 parser.add_argument("--baseline", default=False, action="store_true",
                     help="Use only baseline data instead of all scans available")
-parser.add_argument('--hippocampus_roi', default=False, type=bool,
+parser.add_argument('--hippocampus_roi', default=False, action="store_true",
                     help="If train the model using only hippocampus ROI")
 
 # Cross-validation
@@ -59,11 +54,11 @@ parser.add_argument("--split", default=None, type=int,
 
 # transfer learning
 parser.add_argument("--network", default="Conv_4_FC_3",
-                    help="Autoencoder network type. (default=Conv_4_FC_3). Also, you can try training from scratch using VoxResNet and AllConvNet3D")
+                    help="Architecture of the network.")
 parser.add_argument("--transfer_learning_autoencoder", default=False, action="store_true",
-                    help="If do transfer learning using autoencoder, the learnt weights will be transferred. Should be exclusive with net_work")
-parser.add_argument("--diagnoses", default=["AD", "CN"], type=str, nargs="+",
-                    help="Labels based on binary classification")
+                    help="If do transfer learning using autoencoder saved at transfer_learning_path.")
+parser.add_argument("--transfer_learning_path", default=None,
+                    help='When a path to an experiment is given, will load the autoencoder / CNN weights.')
 
 # Training arguments
 parser.add_argument("--epochs", default=10, type=int,
@@ -92,8 +87,9 @@ parser.add_argument('--gpu', default=False, action="store_true",
 
 def main(options):
 
-    print('The chosen network is %s.' % options.network)
     model = create_model(options.network, options.gpu)
+    init_state = copy.deepcopy(model.state_dict())
+    transformations = transforms.Compose([MinMaxNormalization()])
 
     if options.split is None:
         fold_iterator = range(options.n_splits)
@@ -108,31 +104,21 @@ def main(options):
         print("Running for the %d-th fold" % fi)
         print("Train the model from 0 epoch")
 
-        if options.transfer_learning_autoencoder:
-            print('Train the model with the weights from a pre-trained model by autoencoder!')
-            if sorted(options.diagnoses) == ['AD', 'CN']:
-                model, saved_epoch = load_model_after_ae(model, os.path.join(options.output_dir, 'best_model_dir',
-                                                                             "fold_" + str(fi), 'ConvAutoencoder',
-                                                                             'fine_tune', 'Encoder'),
-                                                         filename='model_best_encoder.pth.tar')
-                print("The AE was saved at %s -th epoch" % str(saved_epoch))
+        if options.transfer_learning_path is not None:
+            if options.transfer_learning_autoencoder:
+                print('Train the model with the weights from a pre-trained autoencoder.')
+                model, _ = load_model_after_ae(model, os.path.join(options.transfer_learning_path, 'best_model_dir',
+                                                                   "fold_" + str(fi), 'ConvAutoencoder', 'fine_tune',
+                                                                   'Encoder'), filename='model_best_encoder.pth.tar')
             else:
-                if not os.path.exists(os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi),
-                                                   'CNN_source_task', 'best_acc')):
-                    raise Exception("To make sure that you have manually moved the output folder of the source task to CNN_source_task!")
+                print('Train the model with the weights from a pre-trained CNN.')
+                model, _ = load_model_after_cnn(model, os.path.join(options.transfer_learning_path, 'best_model_dir',
+                                                                    "fold_" + str(fi), 'CNN', 'best_acc'),
+                                                filename='model_best.pth.tar')
+        else:
+            print('The model is trained from scratch.')
+            model.load_state_dict(init_state)
 
-                # For other tasks, we can always do transfer learning from the task AD vs CN
-                model, saved_epoch = load_model_after_cnn(model, os.path.join(options.output_dir, 'best_model_dir',
-                                                                              "fold_" + str(fi),
-                                                                              'CNN_source_task', 'best_acc'),
-                                                          filename='model_best.pth.tar')
-                print("The CNN was saved at %s -th epoch" % str(saved_epoch))
-
-        # the initial model weight and bias after AE
-        init_state = copy.deepcopy(model.state_dict())
-
-        # need to normalized the value to [0, 1]
-        transformations = transforms.Compose([MinMaxNormalization()])
         if options.hippocampus_roi:
             print("Only using hippocampus ROI")
 
@@ -167,7 +153,6 @@ def main(options):
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
 
         global_step = 0
-        model.load_state_dict(init_state)
 
         # Define loss and optimizer
         loss = torch.nn.CrossEntropyLoss()
@@ -176,10 +161,13 @@ def main(options):
         # parameters used in training
         best_accuracy = 0.0
         best_loss_valid = np.inf
-        writer_train_batch = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "CNN", "train_batch")))
-        writer_train_all_data = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "CNN", "train_all_data")))
-        
-        writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "CNN", "valid")))
+
+        writer_train_batch = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi),
+                                                                 "CNN", "train_batch")))
+        writer_train_all_data = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi),
+                                                                    "CNN", "train_all_data")))
+        writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi),
+                                                           "CNN", "valid")))
 
         # get the info for training and write them into tsv files.
         # only save the last epoch, if you want to check the performances during training, use Tensorboard
@@ -231,7 +219,8 @@ def main(options):
 
             # try early stopping criterion
             if early_stopping.step(loss_batch_mean_valid) or epoch == options.epochs - 1:
-                print("By applying early stopping or at the last epoch defnied by user, the model should be stopped training at %d-th epoch" % epoch)
+                print("By applying early stopping or at the last epoch defined by user, "
+                      "the model should be stopped training at %d-th epoch" % epoch)
                 # if early stopping or last epoch, save the results into the tsv file
 
                 train_subjects.extend(train_subject)
