@@ -77,8 +77,6 @@ parser.add_argument("--batch_size", default=2, type=int,
                     help="Batch size for training. (default=1)")
 parser.add_argument('--evaluation_steps', '-esteps', default=1, type=int,
                     help='Fix the number of batches to use before validation')
-parser.add_argument("--training_evaluation", default='whole_set', type=str, choices=['whole_set', 'n_batches'],
-                    help="Choose the way training evaluation is performed.")
 parser.add_argument('--num_threads', type=int, default=0,
                     help='Number of threads used.')
 parser.add_argument("--num_workers", '-w', default=8, type=int,
