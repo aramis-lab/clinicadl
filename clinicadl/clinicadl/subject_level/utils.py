@@ -353,7 +353,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
     epoch = options.beginning_epoch
 
     print("Beginning training")
-    while epoch < options.transfer_learning_epochs and not early_stopping.step(loss_valid):
+    while epoch < options.epochs and not early_stopping.step(loss_valid):
         print("At %d-th epoch." % epoch)
 
         decoder.zero_grad()
