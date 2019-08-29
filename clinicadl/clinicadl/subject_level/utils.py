@@ -10,15 +10,20 @@ from tools.deep_learning.iotools import check_and_clean, save_checkpoint, visual
 from tools.deep_learning import EarlyStopping
 
 
+#####################
+# CNN train / test  #
+#####################
+
 def train(model, train_loader, valid_loader, criterion, optimizer, resume, options):
     """
     This is the function to train the model
-    :param model:
-    :param train_loader:
-    :param valid_loader:
-    :param criterion:
-    :param optimizer:
-    :param options:
+    :param model: (Module) CNN to be trained
+    :param train_loader: (DataLoader) wrapper of the training dataset
+    :param valid_loader: (DataLoader) wrapper of the validation dataset
+    :param criterion: (loss) function to calculate the loss
+    :param optimizer: (torch.optim) optimizer linked to model parameters
+    :param resume: (bool) if True, a begun job is resumed
+    :param options: (Namespace) ensemble of other options given to the main script.
     """
     from tensorboardX import SummaryWriter
     from time import time
@@ -70,15 +75,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
         tend = time()
         total_time = 0
 
-        # Initialize metrics for training evaluation
-        concat_loss = []
-        if options.gpu:
-            concat_prediction = torch.LongTensor().cuda()
-            concat_truth = torch.LongTensor().cuda()
-        else:
-            concat_prediction = torch.LongTensor()
-            concat_truth = torch.LongTensor()
-
         for i, data in enumerate(train_loader, 0):
             t0 = time()
             total_time = total_time + t0 - tend
@@ -88,10 +84,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
                 imgs, labels = data['image'], data['label']
             train_output = model(imgs)
             _, predict_batch = train_output.topk(1)
-            concat_prediction = torch.cat((concat_prediction, predict_batch), 0)
-            concat_truth = torch.cat((concat_truth, labels))
             loss = criterion(train_output, labels)
-            concat_loss.append(loss.item())
 
             # Back propagation
             loss.backward()
@@ -109,22 +102,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
                 if(i+1) % options.evaluation_steps == 0:
                     evaluation_flag = False
                     print('Iteration %d' % i)
-                    # Training performance is evaluated on the last batches seen
-                    if options.gpu:
-                        concat_prediction_arr = concat_prediction.view(-1).cpu().numpy().astype(int)
-                        concat_truth_arr = concat_truth.view(-1).cpu().numpy().astype(int)
-                    else:
-                        concat_prediction_arr = concat_prediction.view(-1).numpy().astype(int)
-                        concat_truth_arr = concat_truth.view(-1).numpy().astype(int)
 
-                    if options.training_evaluation == 'n_batches':
-                        metrics = evaluate_prediction(concat_truth_arr, concat_prediction_arr, options.evaluation_steps)
-                        acc_mean_train = metrics['balanced_accuracy']
-                        total_loss_train = sum(concat_loss[-options.evaluation_steps:])
-                        mean_loss_train = total_loss_train / (options.evaluation_steps * train_loader.batch_size)
-                    else:
-                        acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
-                        mean_loss_train = total_loss_train / (len(train_loader) * train_loader.batch_size)
+                    acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
+                    mean_loss_train = total_loss_train / (len(train_loader) * train_loader.batch_size)
 
                     acc_mean_valid, total_loss_valid = test(model, valid_loader, options.gpu, criterion)
                     mean_loss_valid = total_loss_valid / (len(valid_loader) * valid_loader.batch_size)
@@ -159,22 +139,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
         # Always test the results and save them once at the end of the epoch
         model.zero_grad()
         print('Last checkpoint at the end of the epoch %d' % epoch)
-        # Training performance is evaluated on the last batches seen
-        if options.gpu:
-            concat_prediction_arr = concat_prediction.view(-1).cpu().numpy().astype(int)
-            concat_truth_arr = concat_truth.view(-1).cpu().numpy().astype(int)
-        else:
-            concat_prediction_arr = concat_prediction.view(-1).numpy().astype(int)
-            concat_truth_arr = concat_truth.numpy().view(-1).astype(int)
 
-        if options.training_evaluation == 'n_batches':
-            metrics = evaluate_prediction(concat_truth_arr, concat_prediction_arr, options.evaluation_steps)
-            acc_mean_train = metrics['balanced_accuracy']
-            total_loss_train = sum(concat_loss[-options.evaluation_steps:])
-            mean_loss_train = total_loss_train / (options.evaluation_steps * train_loader.batch_size)
-        else:
-            acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
-            mean_loss_train = total_loss_train / (len(train_loader) * train_loader.batch_size)
+        acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
+        mean_loss_train = total_loss_train / (len(train_loader) * train_loader.batch_size)
 
         acc_mean_valid, total_loss_valid = test(model, valid_loader, options.gpu, criterion)
         mean_loss_valid = total_loss_valid / (len(valid_loader) * valid_loader.batch_size)
@@ -215,22 +182,14 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
         epoch += 1
 
 
-def evaluate_prediction(concat_true, concat_prediction, horizon=None):
+def evaluate_prediction(y, y_pred):
 
     """
     This is a function to calculate the different metrics based on the list of true label and predicted label
-    :param concat_true: list of concatenated last labels
-    :param concat_prediction: list of concatenated last prediction
-    :param horizon: (int) number of batches to consider to evaluate performance
-    :return:
+    :param y: list of labels
+    :param y_pred: list of predictions
+    :return: (dict) ensemble of metrics
     """
-
-    if horizon is not None:
-        y = np.array(concat_true)[-horizon:]
-        y_pred = np.array(concat_prediction)[-horizon:]
-    else:
-        y = np.array(concat_true)
-        y_pred = np.array(concat_prediction)
 
     true_positive = np.sum((y_pred == 1) & (y == 1))
     true_negative = np.sum((y_pred == 0) & (y == 0))
@@ -281,8 +240,14 @@ def test(model, dataloader, use_cuda, criterion, full_return=False):
     :param use_cuda: if True a gpu is used
     :param full_return: if True also returns the sensitivities and specificities for a multiclass problem
     :return:
-        balanced accuracy of the model (float)
-        total loss on the dataloader
+    if full_return
+        (dict) ensemble of metrics
+        (float) total loss
+        (DataFrame) results of each session
+    else
+        (float) balanced accuracy
+        (float) total loss
+
     """
     model.eval()
 
@@ -329,12 +294,8 @@ def test(model, dataloader, use_cuda, criterion, full_return=False):
     results_df.reset_index(inplace=True, drop=True)
 
     # Cast to numpy arrays to avoid bottleneck in the next loop
-    if use_cuda:
-        predicted_arr = predicted_tensor.cpu().numpy().astype(int)
-        truth_arr = truth_tensor.cpu().numpy().astype(int)
-    else:
-        predicted_arr = predicted_tensor.numpy().astype(int)
-        truth_arr = truth_tensor.numpy().astype(int)
+    predicted_arr = predicted_tensor.cpu().numpy().astype(int)
+    truth_arr = truth_tensor.cpu().numpy().astype(int)
 
     results = evaluate_prediction(truth_arr, predicted_arr)
 
@@ -343,6 +304,10 @@ def test(model, dataloader, use_cuda, criterion, full_return=False):
 
     return results['balanced_accuracy'], total_loss
 
+
+#############################
+# AutoEncoder train / test  #
+#############################
 
 def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, resume, options):
     from tensorboardX import SummaryWriter
@@ -394,7 +359,6 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
         decoder.zero_grad()
         evaluation_flag = True
         step_flag = True
-        concat_loss = []
         for i, data in enumerate(train_loader):
             if options.gpu:
                 imgs = data['image'].cuda()
@@ -403,7 +367,6 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
 
             train_output = decoder(imgs)
             loss = criterion(train_output, imgs)
-            concat_loss.append(loss.item())
             loss.backward()
 
             del imgs, train_output
@@ -417,12 +380,8 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
                 if (i+1) % options.evaluation_steps == 0:
                     evaluation_flag = False
                     print('Iteration %d' % i)
-                    if options.training_evaluation == 'n_batches':
-                        loss_train = sum(concat_loss[-options.evaluation_steps:])
-                        mean_loss_train = loss_train / (options.evaluation_steps * train_loader.batch_size)
-                    else:
-                        loss_train = test_ae(decoder, train_loader, options.gpu, criterion)
-                        mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
+                    loss_train = test_ae(decoder, train_loader, options.gpu, criterion)
+                    mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
 
                     loss_valid = test_ae(decoder, valid_loader, options.gpu, criterion)
                     mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.batch_size)
@@ -448,12 +407,8 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
         # Always test the results and save them once at the end of the epoch
         print('Last checkpoint at the end of the epoch %d' % epoch)
 
-        if options.training_evaluation == 'n_batches':
-            loss_train = sum(concat_loss[-options.evaluation_steps:])
-            mean_loss_train = loss_train / (options.evaluation_steps * train_loader.batch_size)
-        else:
-            loss_train = test_ae(decoder, train_loader, options.gpu, criterion)
-            mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
+        loss_train = test_ae(decoder, train_loader, options.gpu, criterion)
+        mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
 
         loss_valid = test_ae(decoder, valid_loader, options.gpu, criterion)
         mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.batch_size)
