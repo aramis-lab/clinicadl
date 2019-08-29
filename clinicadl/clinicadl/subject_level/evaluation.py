@@ -22,10 +22,10 @@ parser.add_argument("model_path", type=str,
                     help="Path to the trained model folder.")
 
 # Model selection
-parser.add_argument("--selection_eval", default="loss", type=str, choices=['loss', 'accuracy'],
+parser.add_argument("--selection", default="best_loss", type=str, choices=['best_loss', 'best_acc'],
                     help="Loads the model selected on minimal loss or maximum accuracy on validation.")
 
-# Computational ressources
+# Computational resources
 parser.add_argument("--gpu", action="store_true", default=False,
                     help="if True computes the visualization on GPU")
 parser.add_argument("--num_workers", '-w', default=8, type=int,
@@ -52,13 +52,7 @@ if __name__ == "__main__":
         model = create_model(options.model)
 
         criterion = nn.CrossEntropyLoss()
-
-        if options.selection_eval == 'loss':
-            model_dir = path.join(best_model_dir, fold_dir, 'CNN', 'best_loss')
-            folder_name = 'best_loss'
-        else:
-            model_dir = path.join(best_model_dir, fold_dir, 'CNN', 'best_acc')
-            folder_name = 'best_acc'
+        model_dir = path.join(best_model_dir, fold_dir, 'CNN', options.selection)
 
         best_model, best_epoch = load_model(model, model_dir, options.gpu,
                                             filename='model_best.pth.tar')
@@ -102,16 +96,18 @@ if __name__ == "__main__":
               % (acc_valid, loss_valid, sen_valid, spe_valid))
 
         evaluation_path = path.join(options.model_path, 'performances', fold_dir)
-        if not path.exists(path.join(evaluation_path, folder_name)):
-            os.makedirs(path.join(evaluation_path, folder_name))
+        if not path.exists(path.join(evaluation_path, options.selection)):
+            os.makedirs(path.join(evaluation_path, options.selection))
 
-        train_df.to_csv(path.join(evaluation_path, folder_name, 'train_subject_level_result.tsv'), sep='\t', index=False)
-        valid_df.to_csv(path.join(evaluation_path, folder_name, 'valid_subject_level_result.tsv'), sep='\t', index=False)
+        train_df.to_csv(path.join(evaluation_path, options.selection, 'train_subject_level_result.tsv'),
+                        sep='\t', index=False)
+        valid_df.to_csv(path.join(evaluation_path, options.selection, 'valid_subject_level_result.tsv'),
+                        sep='\t', index=False)
 
-        pd.DataFrame(metrics_train, index=[0]).to_csv(path.join(evaluation_path, folder_name,
+        pd.DataFrame(metrics_train, index=[0]).to_csv(path.join(evaluation_path, options.selection,
                                                                 'train_subject_level_metrics.tsv'),
                                                       sep='\t', index=False)
-        pd.DataFrame(metrics_valid, index=[0]).to_csv(path.join(evaluation_path, folder_name,
+        pd.DataFrame(metrics_valid, index=[0]).to_csv(path.join(evaluation_path, options.selection,
                                                                 'valid_subject_level_metrics.tsv'),
                                                       sep='\t', index=False)
 
