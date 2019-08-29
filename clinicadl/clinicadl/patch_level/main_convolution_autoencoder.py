@@ -6,18 +6,11 @@ from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 import torchvision.transforms as transforms
 
-import sys
-from os import path
-
-package_path = path.abspath(path.join(sys.argv[0], os.pardir, os.pardir))
-sys.path.append(package_path)
-
 from .utils import MRIDataset_patch_hippocampus, MRIDataset_patch
 from .utils import stacked_ae_learning, visualize_ae
 
-from tools.deep_learning import commandline_to_json
+from tools.deep_learning import commandline_to_json, create_model
 from tools.deep_learning.data import load_data, MinMaxNormalization
-from tools.deep_learning.models import create_model
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -34,9 +27,10 @@ parser = argparse.ArgumentParser(description="Argparser for 3D convolutional aut
 parser.add_argument("caps_directory", type=str,
                     help="Path to the caps of image processing pipeline of DL")
 parser.add_argument("diagnosis_tsv_path", type=str,
-                    help="Path to tsv file of the population based on the diagnosis tsv files. To note, the column name should be participant_id, session_id and diagnosis.")
+                    help="Path to tsv file of the population based on the diagnosis tsv files."
+                         "To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("output_dir", type=str,
-                    help="Path to store the classification outputs, including log files for tensorboard usage and also the tsv files containg the performances.")
+                    help="Path to store the classification outputs and the tsv files containing the performances.")
 
 # Data management
 parser.add_argument("--diagnoses", default=["AD", "CN", "MCI"], type=str, nargs="+",
@@ -47,7 +41,7 @@ parser.add_argument("--patch_stride", default=50, type=int,
                     help="The stride for the patch extract window from the MRI")
 parser.add_argument("--baseline", default=False, action="store_true",
                     help="Use only baseline data instead of all scans available")
-parser.add_argument('--hippocampus_roi', default=False, type=bool,
+parser.add_argument('--hippocampus_roi', default=False, action='store_true',
                     help="If train the model using only hippocampus ROI")
 
 # Cross-validation
@@ -58,7 +52,7 @@ parser.add_argument("--split", default=None, type=int,
 
 # Training arguments
 parser.add_argument("--network", default="Conv_4_FC_3",
-                    help="Autoencoder network type. (default=Conv_4_FC_3)")
+                    help="Architecture of the network on which the autoencoder is based.")
 parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data.")
 parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
@@ -81,13 +75,9 @@ parser.add_argument("--gpu", default=False, action='store_true',
 
 def main(options):
 
-    model = create_model(options.network)
-
-    # need to normalized the value to [0, 1]
-    transformations = transforms.Compose([MinMaxNormalization()])
-
-    # the initial model weight and bias
+    model = create_model(options.network, options.gpu)
     init_state = copy.deepcopy(model.state_dict())
+    transformations = transforms.Compose([MinMaxNormalization()])
 
     if options.split is None:
         fold_iterator = range(options.n_splits)
@@ -128,18 +118,14 @@ def main(options):
                                   drop_last=False
                                   )
 
-        if fi != 0:
-            model = eval(options.network)()
         model.load_state_dict(init_state)
 
         # Decide to use gpu or cpu to train the autoencoder
         if options.gpu == False:
-            model.cpu()
             # example image for tensorbordX usage:$
             example_batch = (next(iter(train_loader))['image'])[0, ...].unsqueeze(0)
         else:
             print("Using GPU")
-            model.cuda()
             # example image for tensorbordX usage:$
             example_batch = (next(iter(train_loader))['image'].cuda())[0, ...].unsqueeze(0)
 
@@ -153,14 +139,12 @@ def main(options):
         if options.visualization:
             visualize_ae(best_autodecoder, example_batch, os.path.join(options.output_dir, "visualize", "fold_" + str(fi)))
 
-        del best_autodecoder, train_loader, valid_loader, example_batch, criterion, model
+        del best_autodecoder, train_loader, valid_loader, example_batch, criterion
         torch.cuda.empty_cache()
 
 
 if __name__ == "__main__":
     commandline = parser.parse_known_args()
-    print("The commandline arguments:")
-    print(commandline)
     commandline_to_json(commandline, "ConvAutoencoder")
     options = commandline[0]
     if commandline[1]:
