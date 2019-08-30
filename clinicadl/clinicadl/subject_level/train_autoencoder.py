@@ -39,8 +39,6 @@ parser.add_argument("--baseline", action="store_true", default=False,
                     help="if True only the baseline is used")
 parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
                     help="Performs MinMaxNormalization")
-parser.add_argument('--sampler', '-s', default="random", type=str,
-                    help="Sampler choice")
 
 # Cross-validation
 parser.add_argument("--n_splits", type=int, default=None,
