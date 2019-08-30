@@ -105,7 +105,7 @@ def visualize_subject(decoder, dataloader, visualization_path, options, epoch=No
     nii_path, _ = path.splitext(image_path)
     nii_path += '.nii.gz'
 
-    input_nii = nib.load(image_path)
+    input_nii = nib.load(nii_path)
     input_np = input_nii.get_data().astype(float)
     np.nan_to_num(input_np, copy=False)
     input_pt = torch.from_numpy(input_np).unsqueeze(0).unsqueeze(0).float()
