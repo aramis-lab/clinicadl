@@ -39,17 +39,16 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_tra
     from copy import deepcopy
 
     # if the model defined is not already constructed to an AE, then we convert the CNN into an AE
-    if not isinstance(model, AutoEncoder):
-        model = AutoEncoder(model)
+    ae = AutoEncoder(model)
 
-    ae_finetuning(model, train_loader, valid_loader, criterion, writer_train, writer_valid, options, fi)
+    ae_finetuning(ae, train_loader, valid_loader, criterion, writer_train, writer_valid, options, fi)
 
     # Updating and setting weights of the convolutional layers
     checkpoint_dir = path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder',
                                'AutoEncoder', 'best_loss')
-    best_autodecoder, best_epoch = load_model(model, checkpoint_dir, options.gpu,  filename='model_best.pth.tar')
+    best_autodecoder, best_epoch = load_model(ae, checkpoint_dir, options.gpu,  filename='model_best.pth.tar')
 
-    del model
+    del ae
 
     # save the encoder part of the AEs, the best AEs has been saved in the ae_finetuning part
     model.features = deepcopy(best_autodecoder.encoder)
@@ -115,7 +114,6 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
 
             # monitor the training loss for each batch using tensorboardX
             writer_train_ft.add_scalar('loss', loss, i + epoch * len(train_loader))
-            print("Training loss is %f for the -th batch %d" % (loss, i))
 
             # update the global steps
             global_step = i + epoch * len(train_loader)
@@ -132,11 +130,10 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
         print('Mean time per batch (train):', total_time / len(train_loader))
 
         # Always test the results and save them once at the end of the epoch
-        print('Fine-tuning all AEs of validation at the end of the epoch %d' % epoch)
         loss_valid = test_ae(auto_encoder_all, valid_loader, options, criterion)
         mean_loss_valid = loss_valid / (len(valid_loader))
         writer_valid_ft.add_scalar('loss', mean_loss_valid, global_step)
-        print("Fine-tuning mean validation loss is %f for the -th batch %d" % (mean_loss_valid, global_step))
+        print("Mean validation loss is %f for the -th batch %d" % (mean_loss_valid, global_step))
 
         # reset the model to train mode after evaluation
         auto_encoder_all.train()
