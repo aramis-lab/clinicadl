@@ -80,8 +80,6 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
     auto_encoder_all.train()
     optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, auto_encoder_all.parameters()),
                                                          options.learning_rate)
-    print(auto_encoder_all)
-
     if options.gpu:
         auto_encoder_all.cuda()
 
