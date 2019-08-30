@@ -8,29 +8,6 @@ def check_and_clean(d):
     os.makedirs(d)
 
 
-def save_checkpoint(state, accuracy_is_best, loss_is_best, checkpoint_dir, filename='checkpoint.pth.tar',
-                    best_accuracy='best_acc', best_loss='best_loss'):
-    import torch
-    import os
-    import shutil
-
-    if not os.path.exists(checkpoint_dir):
-        os.makedirs(checkpoint_dir)
-
-    torch.save(state, os.path.join(checkpoint_dir, filename))
-    if accuracy_is_best:
-        best_accuracy_path = os.path.join(checkpoint_dir, best_accuracy)
-        if not os.path.exists(best_accuracy_path):
-            os.makedirs(best_accuracy_path)
-        shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(best_accuracy_path, 'model_best.pth.tar'))
-
-    if loss_is_best:
-        best_loss_path = os.path.join(checkpoint_dir, best_loss)
-        if not os.path.exists(best_loss_path):
-            os.makedirs(best_loss_path)
-        shutil.copyfile(os.path.join(checkpoint_dir, filename), os.path.join(best_loss_path, 'model_best.pth.tar'))
-
-
 def commandline_to_json(commandline, model_type):
     """
     This is a function to write the python argparse object into a json file. This helps for DL when searching for hyperparameters
