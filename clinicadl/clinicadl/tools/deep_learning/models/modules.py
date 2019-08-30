@@ -1,3 +1,7 @@
+"""
+Class of layers used in the CNN not directly implemented in pytorch.
+"""
+
 import torch.nn as nn
 
 

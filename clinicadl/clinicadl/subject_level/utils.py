@@ -16,7 +16,9 @@ from tools.deep_learning import EarlyStopping
 
 def train(model, train_loader, valid_loader, criterion, optimizer, resume, options):
     """
-    This is the function to train the model
+    Function used to train a CNN.
+    The best model and checkpoint will be found in the 'best_model_dir' of options.output_dir.
+
     :param model: (Module) CNN to be trained
     :param train_loader: (DataLoader) wrapper of the training dataset
     :param valid_loader: (DataLoader) wrapper of the validation dataset
@@ -309,6 +311,18 @@ def test(model, dataloader, use_cuda, criterion, full_return=False):
 #############################
 
 def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, resume, options):
+    """
+    Function used to train an autoencoder.
+    The best autoencoder and checkpoint will be found in the 'best_model_dir' of options.output_dir.
+
+    :param decoder: (Autoencoder) Autoencoder constructed from a CNN with the Autoencoder class.
+    :param train_loader: (DataLoader) wrapper of the training dataset.
+    :param valid_loader: (DataLoader) wrapper of the validation dataset.
+    :param criterion: (loss) function to calculate the loss.
+    :param optimizer: (torch.optim) optimizer linked to model parameters.
+    :param resume: (bool) if True, a begun job is resumed.
+    :param options: (Namespace) ensemble of other options given to the main script.
+    """
     from tensorboardX import SummaryWriter
 
     log_dir = os.path.join(options.output_dir, 'log_dir', 'fold_' + str(options.split), 'ConvAutoencoder')
@@ -450,13 +464,14 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
     visualize_subject(decoder, train_loader, visualization_path, options, epoch=epoch, save_input=first_visu)
 
 
-def test_ae(model, dataloader, use_cuda, criterion, first_layers=None):
+def test_ae(model, dataloader, use_cuda, criterion):
     """
     Computes the loss of the model
 
     :param model: the network (subclass of nn.Module)
     :param dataloader: a DataLoader wrapping a dataset
     :param use_cuda: if True a gpu is used
+    :param criterion: (loss) function to calculate the loss
     :return: loss of the model (float)
     """
     model.eval()
@@ -468,12 +483,8 @@ def test_ae(model, dataloader, use_cuda, criterion, first_layers=None):
         else:
             inputs = data['image']
 
-        if first_layers is not None:
-            hidden = first_layers(inputs)
-        else:
-            hidden = inputs
-        outputs = model(hidden)
-        loss = criterion(outputs, hidden)
+        outputs = model(inputs)
+        loss = criterion(outputs, inputs)
         total_loss += loss.item()
 
         del inputs, outputs, loss
