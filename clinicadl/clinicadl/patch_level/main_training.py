@@ -53,7 +53,7 @@ parser.add_argument("--split", default=None, type=int,
                     help="Default behaviour will run all splits, else only the splits specified will be run.")
 
 # transfer learning
-parser.add_argument("--network", default="Conv_4_FC_3",
+parser.add_argument("--network", default="Conv4_FC3",
                     help="Architecture of the network.")
 parser.add_argument("--transfer_learning_autoencoder", default=False, action="store_true",
                     help="If do transfer learning using autoencoder saved at transfer_learning_path.")

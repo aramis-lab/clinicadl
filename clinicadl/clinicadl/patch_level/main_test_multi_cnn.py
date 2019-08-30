@@ -38,7 +38,7 @@ parser.add_argument('--mode', default="test", choices=["test", "valid"],
 
 # train argument
 # transfer learning
-parser.add_argument("--network", default="Conv_4_FC_3",
+parser.add_argument("--network", default="Conv4_FC3",
                     help="Architecture of the network.")
 parser.add_argument("--num_cnn", default=36, type=int,
                     help="How many CNNs we want to train in a patch-wise way."
