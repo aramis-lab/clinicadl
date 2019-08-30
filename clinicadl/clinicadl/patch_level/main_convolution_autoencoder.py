@@ -51,7 +51,7 @@ parser.add_argument("--split", default=None, type=int,
                     help="Default behaviour will run all splits, else only the splits specified will be run.")
 
 # Training arguments
-parser.add_argument("--network", default="Conv_4_FC_3",
+parser.add_argument("--network", default="Conv4_FC3",
                     help="Architecture of the network on which the autoencoder is based.")
 parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data.")

@@ -29,7 +29,7 @@ parser.add_argument("output_dir", type=str,
                     help="Path to store the classification outputs and the tsv files containing the performances.")
 
 # Test parameters
-parser.add_argument("--network", default="Conv_4_FC_3", choices=["Conv_4_FC_3", "Conv_7_FC_2", "Conv_3_FC_2"],
+parser.add_argument("--network", default="Conv4_FC3",
                     help="Autoencoder network type. (default=Conv_4_FC_3). "
                          "Also, you can try training from scratch using VoxResNet and AllConvNet3D")
 parser.add_argument('--selection', default="best_acc", choices=["best_acc", "best_loss"],

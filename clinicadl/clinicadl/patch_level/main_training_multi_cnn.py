@@ -44,7 +44,7 @@ parser.add_argument("--baseline", default=False, action="store_true",
                     help="Use only baseline data instead of all scans available")
 
 # Transfer learning
-parser.add_argument("--network", default="Conv_4_FC_3",
+parser.add_argument("--network", default="Conv4_FC3",
                     help="Architecture of the network.")
 parser.add_argument("--transfer_learning_autoencoder", default=False, action="store_true",
                     help="If do transfer learning using autoencoder, the learnt weights will be transferred.")
