@@ -6,8 +6,8 @@ import warnings
 import pandas as pd
 from time import time
 
-from tools.deep_learning.iotools import check_and_clean, save_checkpoint, visualize_subject
-from tools.deep_learning import EarlyStopping
+from tools.deep_learning.iotools import check_and_clean, visualize_subject
+from tools.deep_learning import EarlyStopping, save_checkpoint
 
 
 #####################

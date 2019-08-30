@@ -134,7 +134,7 @@ def transfer_learning(model, split, target_path, source_path=None, gpu=False, se
 
     if source_path is not None:
         if transfer_from_autoencoder(source_path):
-            print("A pretrained autoencoder is loaded at path %s" % transfer_learning)
+            print("A pretrained autoencoder is loaded at path %s" % source_path)
             model_path = write_autoencoder_weights(model, source_path, target_path, split)
             model, _ = load_model(model, model_path, gpu, filename='model_pretrained.pth.tar')
 
@@ -176,7 +176,8 @@ def write_autoencoder_weights(model, source_path, target_path, split):
     """
     from copy import deepcopy
     import os
-    from tools.deep_learning.iotools import save_checkpoint, check_and_clean
+    from tools.deep_learning import save_checkpoint
+    from tools.deep_learning.iotools import check_and_clean
 
     decoder = AutoEncoder(model)
     model_path = os.path.join(source_path, "best_model_dir", "fold_" + str(split), "ConvAutoencoder",
@@ -218,7 +219,8 @@ def write_cnn_weights(model, source_path, target_path, split, selection="best_ac
     import os
     import torch
 
-    from tools.deep_learning.iotools import save_checkpoint, check_and_clean
+    from tools.deep_learning.iotools import check_and_clean
+    from tools.deep_learning import save_checkpoint
 
     model_path = os.path.join(source_path, "best_model_dir", "fold_" + str(split), "CNN",
                               selection, "model_best.pth.tar")
