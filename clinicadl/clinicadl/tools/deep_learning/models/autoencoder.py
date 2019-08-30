@@ -239,6 +239,14 @@ def write_cnn_weights(model, source_path, target_path, split, selection="best_ac
 
 
 def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, difference=0):
+    """
+    Initialize an autoencoder with another one values even if they have different sizes.
+
+    :param decoder: (Autoencoder) Autoencoder constructed from a CNN with the Autoencoder class.
+    :param pretrained_autoencoder_path: (str) path to a pretrained autoencoder weights and biases.
+    :param difference: (int) difference of depth between the pretrained encoder and the new one.
+    :return: (Autoencoder) initialized autoencoder
+    """
 
     result_dict = torch.load(pretrained_autoencoder_path)
     parameters_dict = result_dict['model']
