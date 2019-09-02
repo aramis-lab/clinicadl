@@ -252,16 +252,8 @@ def test(model, dataloader, use_cuda, criterion, full_return=False):
     """
     model.eval()
 
-    # Use tensors instead of arrays to avoid bottlenecks
-    predicted_tensor = torch.zeros(len(dataloader.dataset))
-    truth_tensor = torch.zeros(len(dataloader.dataset))
-
     columns = ["participant_id", "session_id", "true_label", "predicted_label"]
     results_df = pd.DataFrame(columns=columns)
-
-    if use_cuda:
-        predicted_tensor = predicted_tensor.cuda()
-        truth_tensor = truth_tensor.cuda()
 
     total_time = 0
     total_loss = 0
@@ -284,21 +276,13 @@ def test(model, dataloader, use_cuda, criterion, full_return=False):
             row_df = pd.DataFrame(np.array(row).reshape(1, -1), columns=columns)
             results_df = pd.concat([results_df, row_df])
 
-        idx = i * dataloader.batch_size
-        idx_end = (i + 1) * dataloader.batch_size
-        predicted_tensor[idx:idx_end:] = predicted
-        truth_tensor[idx:idx_end:] = labels
-
         del inputs, outputs, labels, loss
         tend = time()
     print('Mean time per batch (test):', total_time / len(dataloader) * dataloader.batch_size)
     results_df.reset_index(inplace=True, drop=True)
 
-    # Cast to numpy arrays to avoid bottleneck in the next loop
-    predicted_arr = predicted_tensor.cpu().numpy().astype(int)
-    truth_arr = truth_tensor.cpu().numpy().astype(int)
-
-    results = evaluate_prediction(truth_arr, predicted_arr)
+    results = evaluate_prediction(results_df.true_label.values.astype(int),
+                                  results_df.predicted_label.values.astype(int))
 
     if full_return:
         return results, total_loss, results_df
