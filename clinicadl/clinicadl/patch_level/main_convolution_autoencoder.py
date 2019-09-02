@@ -120,15 +120,6 @@ def main(options):
 
         model.load_state_dict(init_state)
 
-        # Decide to use gpu or cpu to train the autoencoder
-        if options.gpu == False:
-            # example image for tensorbordX usage:$
-            example_batch = (next(iter(train_loader))['image'])[0, ...].unsqueeze(0)
-        else:
-            print("Using GPU")
-            # example image for tensorbordX usage:$
-            example_batch = (next(iter(train_loader))['image'].cuda())[0, ...].unsqueeze(0)
-
         criterion = torch.nn.MSELoss()
         writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "ConvAutoencoder", "train")))
         writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "ConvAutoencoder", "valid")))
@@ -137,9 +128,10 @@ def main(options):
                                                       writer_valid, options, fi)
 
         if options.visualization:
-            visualize_ae(best_autodecoder, example_batch, os.path.join(options.output_dir, "visualize", "fold_" + str(fi)))
+            example_batch = data_train[0]['image'].unsqueeze(0)
+            visualize_ae(best_autodecoder, example_batch, os.path.join(options.output_dir, "visualize", "fold_%i" % fi))
 
-        del best_autodecoder, train_loader, valid_loader, example_batch, criterion
+        del best_autodecoder, train_loader, valid_loader, criterion
         torch.cuda.empty_cache()
 
 
