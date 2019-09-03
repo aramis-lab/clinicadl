@@ -2,9 +2,10 @@ import argparse
 import os
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
+import torch
 
-from .utils import MRIDataset_patch_hippocampus, test, hard_voting_to_tsvs, soft_voting_to_tsvs
-from tools.deep_learning.data import MinMaxNormalization
+from .utils import MRIDataset_patch_hippocampus, test, patch_level_to_tsvs, soft_voting_to_tsvs
+from tools.deep_learning.data import MinMaxNormalization, load_data_test, load_data
 from tools.deep_learning import create_model, load_model
 
 
@@ -34,6 +35,15 @@ parser.add_argument("--network", default="Conv4_FC3",
                          "Also, you can try training from scratch using VoxResNet and AllConvNet3D")
 parser.add_argument('--selection', default="best_acc", choices=["best_acc", "best_loss"],
                     help="Evaluate the model performance based on which criterior")
+parser.add_argument('--dataset', default="validation",
+                    help="If the evaluation on the validation set is wanted, must be set to 'validation'. "
+                         "Otherwise must be named with the form 'test-cohort_name'.")
+parser.add_argument("--diagnoses", default=["sMCI", "pMCI"], type=str, nargs="+",
+                    help="Labels based on binary classification.")
+parser.add_argument("--n_splits", default=5, type=int,
+                    help="Define the cross validation, by default, we use 5-fold.")
+parser.add_argument("--split", default=None, type=int,
+                    help="Default behaviour will run all splits, else only the splits specified will be run.")
 
 
 # Computational issues
@@ -51,42 +61,47 @@ def main(options):
     model = create_model(options.network, options.gpu)
     transformations = transforms.Compose([MinMaxNormalization()])
 
-    print("Running for test the performances of the trained model,"
-          "users should be responsible to take the right pretrained model")
+    # Define loss and optimizer
+    loss = torch.nn.CrossEntropyLoss()
 
-    data_test = MRIDataset_patch_hippocampus(options.caps_directory, options.diagnosis_tsv_path,
-                                             transformations=transformations)
+    if options.split is None:
+        fold_iterator = range(options.n_splits)
+    else:
+        fold_iterator = [options.split]
 
-    test_loader = DataLoader(data_test,
-                             batch_size=options.batch_size,
-                             shuffle=False,
-                             num_workers=options.num_workers,
-                             drop_last=True,
-                             pin_memory=True)
+    # Loop on folds
+    for fi in fold_iterator:
+        print("Fold " % fi)
 
-    # Loop on all available folds
-    fold_dirs = os.listdir(os.path.join(options.output_dir, 'best_model_dir'))
-    for fold_dir in fold_dirs:
-        fold = int(fold_dir[-1])
+        if options.dataset == 'validation':
+            _, test_df = load_data(options.diagnosis_tsv_path, options.diagnoses, fi,
+                                   n_splits=options.n_splits, baseline=True)
+        else:
+            test_df = load_data_test(options.diagnosis_tsv_path, options.diagnoses)
+
+        data_test = MRIDataset_patch_hippocampus(options.caps_directory, test_df, transformations=transformations)
+
+        test_loader = DataLoader(data_test,
+                                 batch_size=options.batch_size,
+                                 shuffle=False,
+                                 num_workers=options.num_workers,
+                                 pin_memory=True)
 
         # load the best trained model during the training
-        model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', fold_dir,
+        model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', "fold_%i" % fi,
                                                            'CNN', str(options.selection)),
                                        gpu=options.gpu, filename='model_best.pth.tar')
         model.eval()
 
-        print("The best model was saved during training from fold %d at the %d -th epoch" % (fold, best_epoch))
-        print("Please check if the model has been already severly overfitted at the best epoch by tensorboardX!")
+        print("The best model was saved during training from fold %i at the %i-th epoch" % (fi, best_epoch))
 
-        subjects, y_ground, y_hat, proba, accuracy_batch_mean = test(model, test_loader, options)
-        print("Patch level balanced accuracy is %f" % (accuracy_batch_mean))
+        results_df, metrics = test(model, test_loader, options.gpu, loss)
+        print("Patch level balanced accuracy is %f" % metrics['balanced_accuracy'])
 
-        # write the information of subjects and performances into tsv files.
-        # Hard voting
-        hard_voting_to_tsvs(options.output_dir, fold, subjects, y_ground, y_hat, proba, mode='test')
+        patch_level_to_tsvs(options.output_dir, results_df, metrics, fi, options.selection, dataset=options.dataset)
 
         # Soft voting
-        soft_voting_to_tsvs(options.output_dir, fold, mode='test')
+        soft_voting_to_tsvs(options.output_dir, fi, options.selection, dataset=options.dataset)
 
 
 if __name__ == "__main__":

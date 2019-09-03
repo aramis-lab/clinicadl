@@ -9,9 +9,9 @@ import torchvision.transforms as transforms
 
 from .utils import MRIDataset_patch_hippocampus, MRIDataset_patch
 from .utils import load_model_after_ae, load_model_after_cnn
-from .utils import train, hard_voting_to_tsvs
+from .utils import train, test, patch_level_to_tsvs, soft_voting_to_tsvs
 
-from tools.deep_learning import EarlyStopping, save_checkpoint, commandline_to_json, create_model
+from tools.deep_learning import EarlyStopping, save_checkpoint, commandline_to_json, create_model, load_model
 from tools.deep_learning.data import MinMaxNormalization, load_data
 
 __author__ = "Junhao Wen"
@@ -152,8 +152,6 @@ def main(options):
         # apply exponential decay for learning rate
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
 
-        global_step = 0
-
         # Define loss and optimizer
         loss = torch.nn.CrossEntropyLoss()
 
@@ -169,17 +167,6 @@ def main(options):
         writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi),
                                                            "CNN", "valid")))
 
-        # get the info for training and write them into tsv files.
-        # only save the last epoch, if you want to check the performances during training, use Tensorboard
-        train_subjects = []
-        valid_subjects = []
-        y_grounds_train = []
-        y_grounds_valid = []
-        y_hats_train = []
-        y_hats_valid = []
-        train_probas = []
-        valid_probas = []
-
         # initialize the early stopping instance
         early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
 
@@ -187,15 +174,23 @@ def main(options):
             print("At %s -th epoch." % str(epoch))
 
             # train the model
-            train_subject, y_ground_train, y_hat_train, train_proba, acc_mean_train, global_step, loss_batch_mean_train = train(model, train_loader, options.gpu, loss, optimizer, writer_train_batch, epoch, fi, model_mode='train', global_step=global_step)
+            train_df, acc_mean_train, loss_batch_mean_train, global_step \
+                = train(model, train_loader, options.gpu, loss, optimizer, writer_train_batch, epoch,
+                        model_mode='train')
 
             # calculate the training accuracy based on all the training data
-            train_subject_all, y_ground_train_all, y_hat_train_all, train_proba_all, acc_mean_train_all, _, loss_batch_mean_train_all = train(model, train_loader, options.gpu, loss, optimizer, writer_train_all_data, epoch, fi, model_mode='valid', global_step=global_step)
-            print("For training, subject level balanced accuracy is %f at the end of epoch %d" % (acc_mean_train_all, epoch))
+            train_all_df, acc_mean_train_all, loss_batch_mean_train_all, _,\
+                = train(model, train_loader, options.gpu, loss, optimizer, writer_train_all_data, epoch,
+                        model_mode='valid')
+            print("For training, subject level balanced accuracy is %f at the end of epoch %d"
+                  % (acc_mean_train_all, epoch))
 
             # at then end of each epoch, we validate one time for the model with the validation data
-            valid_subject, y_ground_valid, y_hat_valid, valide_proba, acc_mean_valid, global_step, loss_batch_mean_valid = train(model, valid_loader, options.gpu, loss, optimizer, writer_valid, epoch, fi, model_mode='valid', global_step=global_step)
-            print("For validation, subject level balanced accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
+            valid_df, acc_mean_valid, loss_batch_mean_valid, _ \
+                = train(model, valid_loader, options.gpu, loss, optimizer, writer_valid, epoch,
+                        model_mode='valid')
+            print("For validation, subject level balanced accuracy is %f at the end of epoch %d"
+                  % (acc_mean_valid, epoch))
 
             # update the learning rate
             if epoch % 20 == 0 and epoch != 0:
@@ -221,25 +216,29 @@ def main(options):
             if early_stopping.step(loss_batch_mean_valid) or epoch == options.epochs - 1:
                 print("By applying early stopping or at the last epoch defined by user, "
                       "the model should be stopped training at %d-th epoch" % epoch)
-                # if early stopping or last epoch, save the results into the tsv file
-
-                train_subjects.extend(train_subject)
-                y_grounds_train.extend(y_ground_train)
-                y_hats_train.extend(y_hat_train)
-                train_probas.extend(train_proba)
-                valid_subjects.extend(valid_subject)
-                y_grounds_valid.extend(y_ground_valid)
-                y_hats_valid.extend(y_hat_valid)
-                valid_probas.extend(valide_proba)
-
                 break
 
-        # write the information of subjects and performances into tsv files.
-        # For train & valid, we offer only hard voting
-        hard_voting_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train, train_probas, mode='train')
-        hard_voting_to_tsvs(options.output_dir, fi, valid_subjects, y_grounds_valid, y_hats_valid, valid_probas, mode='validation')
+        # Final evaluation for all criteria
+        for selection in ['best_loss', 'best_acc']:
+            model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', 'fold_%i' % fi,
+                                                               'CNN', str(selection)),
+                                           gpu=options.gpu, filename='model_best.pth.tar')
+            model.eval()
 
-        torch.cuda.empty_cache()
+            print("The best model was saved during training from fold %d at the %d -th epoch" % (fi, best_epoch))
+
+            train_df, metrics_train = test(model, train_loader, options.gpu, loss)
+            valid_df, metrics_valid = test(model, valid_loader, options.gpu, loss)
+
+            # write the information of subjects and performances into tsv files.
+            patch_level_to_tsvs(options.output_dir, train_df, metrics_train, fi,
+                                dataset='train', selection=selection)
+            patch_level_to_tsvs(options.output_dir, valid_df, metrics_valid, fi,
+                                dataset='validation', selection=selection)
+
+            soft_voting_to_tsvs(options.output_dir, fi, dataset='train')
+            soft_voting_to_tsvs(options.output_dir, fi, dataset='validation')
+            torch.cuda.empty_cache()
 
 
 if __name__ == "__main__":

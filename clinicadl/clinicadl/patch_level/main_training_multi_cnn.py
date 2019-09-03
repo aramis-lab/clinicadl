@@ -8,9 +8,9 @@ from tensorboardX import SummaryWriter
 import torchvision.transforms as transforms
 
 from .utils import load_model_after_ae, load_model_after_cnn
-from .utils import MRIDataset_patch_by_index, train, hard_voting_to_tsvs
+from .utils import MRIDataset_patch_by_index, train, test, patch_level_to_tsvs, soft_voting_to_tsvs
 
-from tools.deep_learning import EarlyStopping, save_checkpoint, commandline_to_json, create_model
+from tools.deep_learning import EarlyStopping, save_checkpoint, commandline_to_json, create_model, load_model
 from tools.deep_learning.data import MinMaxNormalization, load_data
 
 __author__ = "Junhao Wen"
@@ -34,7 +34,7 @@ parser.add_argument("output_dir", type=str,
                     help="Path to store the classification outputs and the tsv files containing the performances.")
 
 # Data management
-parser.add_argument("--diagnoses", default=["sMCI", "pMCI"], type=str,
+parser.add_argument("--diagnoses", default=["sMCI", "pMCI"], type=str, nargs="+",
                     help="Labels based on binary classification")
 parser.add_argument("--patch_size", default=50, type=int,
                     help="The patch size extracted from the MRI")
@@ -82,6 +82,7 @@ parser.add_argument("--num_workers", default=0, type=int,
 parser.add_argument('--gpu', default=False, action='store_true',
                     help='Uses gpu instead of cpu if cuda is available')
 
+
 def main(options):
 
     model = create_model(options.network, options.gpu)
@@ -93,16 +94,16 @@ def main(options):
     else:
         fold_iterator = [options.split]
 
-    # Loop the multi-CNN
-    for i in range(options.num_cnn):
-        print("Train the CNN for the %d -th patch" % i)
+    # Loop on folds
+    for fi in fold_iterator:
+        print("Fold %i" % fi)
 
-        for fi in fold_iterator:
+        for i in range(options.num_cnn):
 
-            training_tsv, valid_tsv = load_data(options.diagnosis_tsv_path, options.diagnoses, options.split,
+            training_tsv, valid_tsv = load_data(options.diagnosis_tsv_path, options.diagnoses, fi,
                                                 n_splits=options.n_splits, baseline=options.baseline)
 
-            print("Running for the %d -th fold" % fi)
+            print("Running for the %d-th fold" % fi)
             print("Train the model from 0 epoch")
             if options.transfer_learning_path is not None:
                 if options.transfer_learning_autoencoder:
@@ -146,8 +147,6 @@ def main(options):
             # apply exponential decay for learning rate
             scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
 
-            global_step = 0
-
             # Define loss and optimizer
             loss = torch.nn.CrossEntropyLoss()
 
@@ -155,21 +154,12 @@ def main(options):
             # parameters used in training
             best_accuracy = 0.0
             best_loss_valid = np.inf
-            writer_train_batch = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "cnn-" + str(i), "train_batch")))
-            writer_train_all_data = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "cnn-" + str(i), "train_all_data")))
-
-            writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "cnn-" + str(i), "valid")))
-
-            # get the info for training and write them into tsv files.
-            # only save the last epoch, if you wanna check the performances during training, using tensorboard
-            train_subjects = []
-            valid_subjects = []
-            y_grounds_train = []
-            y_grounds_valid = []
-            y_hats_train = []
-            y_hats_valid = []
-            train_probas = []
-            valid_probas = []
+            writer_train_batch = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_%i" % fi,
+                                                                     "cnn-%i" % i, "train_batch")))
+            writer_train_all_data = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_%i" % fi,
+                                                                        "cnn-%i" % i, "train_all_data")))
+            writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_%i" % fi,
+                                                               "cnn-%i" % i, "valid")))
 
             # initialize the early stopping instance
             early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
@@ -178,19 +168,25 @@ def main(options):
                 print("At %s -th epoch." % str(epoch))
 
                 # train the model
-                train_subject, y_ground_train, y_hat_train, train_proba, acc_mean_train, global_step, loss_batch_mean_train = train(model, train_loader, options.gpu, loss, optimizer, writer_train_batch, epoch, fi, model_mode='train', global_step=global_step)
+                train_df, acc_mean_train, loss_batch_mean_train, global_step,\
+                    = train(model, train_loader, options.gpu, loss, optimizer, writer_train_batch, epoch,
+                            model_mode='train')
 
                 # calculate the training accuracy based on all the training data
-                train_subject_all, y_ground_train_all, y_hat_train_all, train_proba_all, acc_mean_train_all, _, loss_batch_mean_train_all = train(model, train_loader, options.gpu, loss, optimizer, writer_train_all_data, epoch, fi, model_mode='valid', global_step=global_step)
+                train_all_df, acc_mean_train_all, loss_batch_mean_train_all, _,\
+                    = train(model, train_loader, options.gpu, loss, optimizer, writer_train_all_data, epoch,
+                            model_mode='valid')
                 print("For training, subject level balanced accuracy is %f at the end of epoch %d"
                       % (acc_mean_train_all, epoch))
 
                 # at then end of each epoch, we validate one time for the model with the validation data
-                valid_subject, y_ground_valid, y_hat_valid, valide_proba, acc_mean_valid, global_step, loss_batch_mean_valid = train(model, valid_loader, options.gpu, loss, optimizer, writer_valid, epoch, fi, model_mode='valid', global_step=global_step)
+                valid_df, acc_mean_valid, loss_batch_mean_valid, _\
+                    = train(model, valid_loader, options.gpu, loss, optimizer, writer_valid, epoch,
+                            model_mode='valid')
                 print("For validation, subject level balanced accuracy is %f at the end of epoch %d"
                       % (acc_mean_valid, epoch))
 
-                # update the learing rate
+                # update the learning rate
                 if epoch % 20 == 0 and epoch != 0:
                     scheduler.step()
 
@@ -208,30 +204,37 @@ def main(options):
                     'optimizer': optimizer.state_dict(),
                     'global_step': global_step},
                     acc_is_best, loss_is_best,
-                    os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "CNN"))
+                    os.path.join(options.output_dir, "best_model_dir", "fold_%i" % fi, "cnn-%i" % i))
 
                 # try early stopping criterion
                 if early_stopping.step(loss_batch_mean_valid) or epoch == options.epochs - 1:
-                    print("By applying early stopping or at the last epoch defnied by user, the model should be stopped training at %d-th epoch" % epoch)
-                    # if early stopping or last epoch, save the results into the tsv file
-
-                    train_subjects.extend(train_subject)
-                    y_grounds_train.extend(y_ground_train)
-                    y_hats_train.extend(y_hat_train)
-                    train_probas.extend(train_proba)
-                    valid_subjects.extend(valid_subject)
-                    y_grounds_valid.extend(y_ground_valid)
-                    y_hats_valid.extend(y_hat_valid)
-                    valid_probas.extend(valide_proba)
+                    print("By applying early stopping or at the last epoch defined by user,"
+                          "the model should be stopped training at %d-th epoch" % epoch)
 
                     break
 
-            # write the information of subjects and performances into tsv files.
-            # For train & valid, we offer only hard voting for
-            hard_voting_to_tsvs(options.output_dir, fi, train_subjects, y_grounds_train, y_hats_train, train_probas, mode='train', patch_index=i)
-            hard_voting_to_tsvs(options.output_dir, fi, valid_subjects, y_grounds_valid, y_hats_valid, valid_probas, mode='validation', patch_index=i)
+            for selection in ['best_acc', 'best_loss']:
+                # load the best trained model during the training
+                model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', 'fold_%i' % fi,
+                                                                   'CNN', selection),
+                                               gpu=options.gpu, filename='model_best.pth.tar')
+                model.eval()
 
-            torch.cuda.empty_cache()
+                print(
+                    "The best model was saved during training from fold %d at the %d -th epoch" % (fi, best_epoch))
+
+                train_df, metrics_train = test(model, train_loader, options.gpu, loss)
+                valid_df, metrics_valid = test(model, valid_loader, options.gpu, loss)
+                patch_level_to_tsvs(options.output_dir, train_df, metrics_train, fi, selection,
+                                    dataset='train', cnn_index=i)
+                patch_level_to_tsvs(options.output_dir, valid_df, metrics_valid, fi, selection,
+                                    dataset='validation', cnn_index=i)
+
+                torch.cuda.empty_cache()
+
+        for selection in ['best_acc', 'best_loss']:
+            soft_voting_to_tsvs(options.output_dir, fi, selection, dataset='train', num_cnn=options.num_cnn)
+            soft_voting_to_tsvs(options.output_dir, fi, selection, dataset='validation', num_cnn=options.num_cnn)
 
 
 if __name__ == "__main__":

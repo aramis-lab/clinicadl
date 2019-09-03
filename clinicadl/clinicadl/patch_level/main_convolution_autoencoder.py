@@ -129,6 +129,8 @@ def main(options):
 
         if options.visualization:
             example_batch = data_train[0]['image'].unsqueeze(0)
+            if options.gpu:
+                example_batch = example_batch.cuda()
             visualize_ae(best_autodecoder, example_batch, os.path.join(options.output_dir, "visualize", "fold_%i" % fi))
 
         del best_autodecoder, train_loader, valid_loader, criterion
