@@ -14,7 +14,7 @@ from tools.deep_learning import create_autoencoder, commandline_to_json
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D AE pretraining")
 
 # Mandatory arguments
-parser.add_argument("diagnosis_path", type=str,
+parser.add_argument("tsv_path", type=str,
                     help="Path to the folder containing the tsv files of the population.")
 parser.add_argument("output_dir", type=str,
                     help="Path to the result folder.")
@@ -39,6 +39,8 @@ parser.add_argument("--baseline", action="store_true", default=False,
                     help="if True only the baseline is used")
 parser.add_argument("--minmaxnormalization", "-n", default=False, action="store_true",
                     help="Performs MinMaxNormalization")
+parser.add_argument('--sampler', '-s', default="random", type=str,
+                    help="Sampler choice")
 
 # Cross-validation
 parser.add_argument("--n_splits", type=int, default=None,
@@ -77,13 +79,21 @@ parser.add_argument("--num_workers", '-w', default=8, type=int,
                     help='the number of batch being loaded in parallel')
 
 
-def main(options):
 
-    if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
+def train_autoencoder(
+        tsv_path: str, output_dir: str, input_dir: str, model: str,
+        evaluation_steps, acumulation_steps, minmaxnormalization=True,
+        diagnoses: str, split, nsplits, baseline,
+        preprocessing: str, batch_size, num_workers,
+        pretrained_path: str, pretrained_difference: int, optimizer="Adam",
+        learning_rate=1e-4, weight_decay=0i, add_sigmoid=False):
+     
+
+    if evaluation_steps % accumulation_steps != 0 and evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
-                        (options.evaluation_steps, options.accumulation_steps))
+                        (evaluation_steps, accumulation_steps))
 
-    if options.minmaxnormalization:
+    if minmaxnormalization:
         transformations = MinMaxNormalization()
     else:
         transformations = None
@@ -91,11 +101,11 @@ def main(options):
     total_time = time()
     criterion = torch.nn.MSELoss()
 
-    training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
-                                        options.split, options.n_splits, options.baseline)
+    training_tsv, valid_tsv = load_data(tsv_path, diagnoses,
+                                        split, n_splits, baseline)
 
-    data_train = MRIDataset(options.input_dir, training_tsv, options.preprocessing, transformations)
-    data_valid = MRIDataset(options.input_dir, valid_tsv, options.preprocessing, transformations)
+    data_train = MRIDataset(input_dir, training_tsv, preprocessing, transformations)
+    data_valid = MRIDataset(input_dir, valid_tsv, preprocessing, transformations)
 
     # Use argument load to distinguish training and testing
     train_loader = DataLoader(data_train,
@@ -106,22 +116,22 @@ def main(options):
                               )
 
     valid_loader = DataLoader(data_valid,
-                              batch_size=options.batch_size,
+                              batch_size=batch_size,
                               shuffle=False,
-                              num_workers=options.num_workers,
+                              num_workers=num_workers,
                               drop_last=False
                               )
 
-    text_file = open(path.join(options.output_dir, 'python_version.txt'), 'w')
+    text_file = open(path.join(output_dir, 'python_version.txt'), 'w')
     text_file.write('Version of python: %s \n' % sys.version)
     text_file.write('Version of pytorch: %s \n' % torch.__version__)
     text_file.close()
 
-    decoder = create_autoencoder(options.model, options.pretrained_path, difference=options.pretrained_difference)
-    optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
-                                                         options.learning_rate, weight_decay=options.weight_decay)
+    decoder = create_autoencoder(model, pretrained_path, difference=pretrained_difference)
+    optimizer = eval("torch.optim." + optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
+                                                         learning_rate, weight_decay)
 
-    if options.add_sigmoid:
+    if add_sigmoid:
         if isinstance(decoder.decoder[-1], nn.ReLU):
             decoder.decoder = nn.Sequential(*list(decoder.decoder)[:-1])
         decoder.decoder.add_module("sigmoid", nn.Sigmoid())
