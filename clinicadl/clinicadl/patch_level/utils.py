@@ -236,32 +236,11 @@ def load_model_after_cnn(model, checkpoint_dir, filename='checkpoint.pth.tar'):
     return model_updated, param_dict['epoch']
 
 
-def load_model_from_log(model, optimizer, checkpoint_dir, filename='checkpoint.pth.tar'):
-    """
-    This is to load a saved model from the log folder
-    :param model:
-    :param checkpoint_dir:
-    :param filename:
-    :return:
-    """
-    from copy import deepcopy
-
-    ## set the model to be eval mode, we explicitly think that the model was saved in eval mode, otherwise, it will affects the BN and dropout
-
-    model.eval()
-    model_updated = deepcopy(model)
-    param_dict = torch.load(os.path.join(checkpoint_dir, filename))
-    model_updated.load_state_dict(param_dict['model'])
-    optimizer.load_state_dict(param_dict['optimizer'])
-
-    return model_updated, optimizer, param_dict['global_step'], param_dict['epoch']
-
-
 #################################
 # CNN train / test
 #################################
 
-def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, iteration, model_mode="train", global_step=0):
+def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, model_mode="train"):
     """
     This is the function to train, validate or test the model, depending on the model_mode parameter.
     :param model:
@@ -273,196 +252,134 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, i
     :param epoch_i:
     :return:
     """
-    # main training loop
-    acc = 0.0
-    loss = 0.0
-
-    subjects = []
-    y_ground = []
-    y_hat = []
-    proba = []
-
-    # ## accumulate the former batches of data
-    # train_images = []
-    # train_labels = []
 
     print("Start for %s!" % model_mode)
+    global_step = None
     if model_mode == "train":
+        columns = ['participant_id', 'session_id', 'patch_index', 'true_label', 'predicted_label', 'proba0', 'proba1']
+        results_df = pd.DataFrame(columns=columns)
+        total_loss = 0.0
+
         model.train()  # set the model to training mode
         print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
 
-        for i, batch_data in enumerate(data_loader):
-
-            if use_cuda:
-                imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
-            else:
-                imgs, labels = batch_data['image'], batch_data['label']
-
-            # add the participant_id + session_id
-            image_ids = batch_data['image_id']
-            subjects.extend(image_ids)
-
-            gound_truth_list = labels.data.cpu().numpy().tolist()
-            y_ground.extend(gound_truth_list)
-
-            output = model(imgs)
-
-            _, predict = output.topk(1)
-            predict_list = predict.data.cpu().numpy().tolist()
-            predict_list = [item for sublist in predict_list for item in sublist]
-            y_hat.extend(predict_list)
-
-            loss_batch = loss_func(output, labels)
-
-            # adding the probability
-            proba.extend(output.data.cpu().numpy().tolist())
-
-            # calculate the balanced accuracy
-            results = evaluate_prediction(gound_truth_list, predict_list)
-            accuracy = results['balanced_accuracy']
-            acc += accuracy
-            loss += loss_batch.item()
-
-            writer.add_scalar('classification accuracy', accuracy, global_step)
-            writer.add_scalar('loss', loss_batch, global_step)
-
-            print("For batch %d, training loss is : %f" % (i, loss_batch.item()))
-            print("For batch %d, training accuracy is : %f" % (i, accuracy))
-            optimizer.zero_grad()
-            loss_batch.backward()
-            optimizer.step()
-
+        for i, data in enumerate(data_loader):
             # update the global steps
             global_step = i + epoch_i * len(data_loader)
 
+            if use_cuda:
+                imgs, labels = data['image'].cuda(), data['label'].cuda()
+            else:
+                imgs, labels = data['image'], data['label']
+
+            gound_truth_list = labels.data.cpu().numpy().tolist()
+
+            output = model(imgs)
+            _, predicted = torch.max(output.data, 1)
+            predict_list = predicted.data.cpu().numpy().tolist()
+            batch_loss = loss_func(output, labels)
+            total_loss += batch_loss.item()
+
+            # calculate the batch balanced accuracy and loss
+            batch_metrics = evaluate_prediction(gound_truth_list, predict_list)
+            batch_accuracy = batch_metrics['balanced_accuracy']
+
+            writer.add_scalar('classification accuracy', batch_accuracy, global_step)
+            writer.add_scalar('loss', batch_loss.item(), global_step)
+
+            optimizer.zero_grad()
+            batch_loss.backward()
+            optimizer.step()
+
+            # Generate detailed DataFrame
+            for idx, sub in enumerate(data['participant_id']):
+                row = [sub, data['session_id'][idx], data['patch_id'][idx],
+                       labels[idx].item(), predicted[idx].item(),
+                       output[idx, 0].item(), output[idx, 1]]
+                row_df = pd.DataFrame(np.array(row).reshape(1, -1), columns=columns)
+                results_df = pd.concat([results_df, row_df])
+
             # delete the temporary variables taking the GPU memory
-            del imgs, labels, output, predict, gound_truth_list, loss_batch, accuracy, results
+            del imgs, labels, output, predicted, batch_loss, batch_accuracy
             torch.cuda.empty_cache()
 
-        accuracy_batch_mean = acc / len(data_loader)
-        loss_batch_mean = loss / len(data_loader)
+        epoch_metrics = evaluate_prediction(results_df.true_label.values.astype(int),
+                                            results_df.predicted_label.values.astype(int))
+        accuracy_batch_mean = epoch_metrics['balanced_accuracy']
+        loss_batch_mean = total_loss / len(data_loader)
         torch.cuda.empty_cache()
 
     elif model_mode == "valid":
-        model.eval()  # set the model to evaluation mode
+        results_df, metrics_batch = test(model, data_loader, use_cuda, loss_func)
+
+        # calculate the balanced accuracy
+        _, metrics_subject = soft_voting(results_df, results_df)
+        accuracy_batch_mean = metrics_subject['balanced_accuracy']
+        total_loss = metrics_batch['total_loss']
+        loss_batch_mean = total_loss / len(data_loader)
+
+        writer.add_scalar('classification accuracy', accuracy_batch_mean, epoch_i)
+        writer.add_scalar('loss', loss_batch_mean, epoch_i)
+
         torch.cuda.empty_cache()
-        with torch.no_grad():
-            ## torch.no_grad() needs to be set, otherwise the accumulation of gradients would explose the GPU memory.
-            print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
-            for i, batch_data in enumerate(data_loader):
-                if use_cuda:
-                    imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
-                else:
-                    imgs, labels = batch_data['image'], batch_data['label']
 
-                ## add the participant_id + session_id
-                image_ids = batch_data['image_id']
-                subjects.extend(image_ids)
+    else:
+        raise ValueError('This mode %s was not implemented. Please choose between train and valid' % model_mode)
 
-                gound_truth_list = labels.data.cpu().numpy().tolist()
-                y_ground.extend(gound_truth_list)
-
-                output = model(imgs)
-
-                _, predict = output.topk(1)
-                predict_list = predict.data.cpu().numpy().tolist()
-                predict_list = [item for sublist in predict_list for item in sublist]
-                y_hat.extend(predict_list)
-                loss_batch = loss_func(output, labels)
-
-                # adding the probability
-                proba.extend(output.data.cpu().numpy().tolist())
-
-                # calculate the balanced accuracy
-                results = evaluate_prediction(gound_truth_list, predict_list)
-                accuracy = results['balanced_accuracy']
-
-                loss += loss_batch.item()
-                print("For batch %d, validation accuracy is : %f" % (i, accuracy))
-
-                # delete the temporary variables taking the GPU memory
-                del imgs, labels, output, predict, gound_truth_list, accuracy, loss_batch, results
-                torch.cuda.empty_cache()
-
-            # calculate the balanced accuracy
-            results = soft_voting_subject_level(y_ground, y_hat, subjects, proba, iteration)
-            accuracy_batch_mean = results['balanced_accuracy']
-            loss_batch_mean = loss / len(data_loader)
-
-            writer.add_scalar('classification accuracy', accuracy_batch_mean, epoch_i)
-            writer.add_scalar('loss', loss_batch_mean, epoch_i)
-
-            torch.cuda.empty_cache()
-
-    return subjects, y_ground, y_hat, proba, accuracy_batch_mean, global_step, loss_batch_mean
+    return results_df, accuracy_batch_mean, loss_batch_mean, global_step
 
 
-def test(model, data_loader, options):
+def test(model, data_loader, use_cuda, loss_func):
     """
     The function to evaluate the testing data for the trained classifiers
     :param model:
-    :param test_loader:
-    :param options.:
+    :param data_loader:
+    :param use_cuda:
     :return:
     """
 
-    subjects = []
-    y_ground = []
-    y_hat = []
-    proba = []
+    columns = ['participant_id', 'session_id', 'patch_id', 'true_label', 'predicted_label', 'proba0', 'proba1']
+    results_df = pd.DataFrame(columns=columns)
+    total_loss = 0
+
     print("Start evaluate the model!")
-    if options.gpu:
+    if use_cuda:
         model.cuda()
 
-    model.eval()  ## set the model to evaluation mode
+    model.eval()  # set the model to evaluation mode
     torch.cuda.empty_cache()
     with torch.no_grad():
-        ## torch.no_grad() needs to be set, otherwise the accumulation of gradients would explose the GPU memory.
         print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
-        for i, batch_data in enumerate(data_loader):
-            if options.gpu:
-                imgs, labels = batch_data['image'].cuda(), batch_data['label'].cuda()
+        for i, data in enumerate(data_loader):
+            if use_cuda:
+                imgs, labels = data['image'].cuda(), data['label'].cuda()
             else:
-                imgs, labels = batch_data['image'], batch_data['label']
+                imgs, labels = data['image'], data['label']
 
-            ## add the participant_id + session_id
-            image_ids = batch_data['image_id']
-            subjects.extend(image_ids)
-
-            gound_truth_list = labels.data.cpu().numpy().tolist()
-            y_ground.extend(gound_truth_list)
-
-            print('The group true label is %s' % (str(labels)))
             output = model(imgs)
+            loss = loss_func(output, labels)
+            total_loss += loss.item()
+            _, predicted = torch.max(output.data, 1)
 
-            _, predict = output.topk(1)
-            predict_list = predict.data.cpu().numpy().tolist()
-            predict_list = [item for sublist in predict_list for item in sublist]
-            y_hat.extend(predict_list)
+            # Generate detailed DataFrame
+            for idx, sub in enumerate(data['participant_id']):
+                row = [sub, data['session_id'][idx], data['patch_id'][idx].item(),
+                       labels[idx].item(), predicted[idx].item(),
+                       output[idx, 0].item(), output[idx, 1]]
 
-            print("output.device: " + str(output.device))
-            print("labels.device: " + str(labels.device))
-            print("The predicted label is: " + str(output))
+                row_df = pd.DataFrame(np.array(row).reshape(1, -1), columns=columns)
+                results_df = pd.concat([results_df, row_df])
 
-            ## adding the probability
-            proba.extend(output.data.cpu().numpy().tolist())
-
-            ## calculate the balanced accuracy
-            results = evaluate_prediction(gound_truth_list, predict_list)
-            accuracy = results['balanced_accuracy']
-            print("For batch %d, test accuracy is : %f" % (i, accuracy))
-
-            # delete the temporal varibles taking the GPU memory
-            del imgs, labels, output, predict, gound_truth_list, accuracy, results
-            # Releases all unoccupied cached memory
+            del imgs, labels, output
             torch.cuda.empty_cache()
 
-        ## calculate the balanced accuracy
-        results = evaluate_prediction(y_ground, y_hat)
-        accuracy_batch_mean = results['balanced_accuracy']
+        # calculate the balanced accuracy
+        results = evaluate_prediction(results_df.true_label.values.astype(int),
+                                      results_df.predicted_label.values.astype(int))
+        results['total_loss'] = total_loss
         torch.cuda.empty_cache()
 
-    return subjects, y_ground, y_hat, proba, accuracy_batch_mean
+    return results_df, results
 
 
 def evaluate_prediction(y, y_hat):
@@ -533,119 +450,91 @@ def evaluate_prediction(y, y_hat):
 #################################
 
 
-def hard_voting_to_tsvs(output_dir, iteration, subject_list, y_truth, y_hat, probas, mode='train', vote_mode='hard', patch_index=None):
+def patch_level_to_tsvs(output_dir, results_df, results, fold, selection, dataset='train', cnn_index=None):
     """
-    This is a function to trace all subject during training, test and validation, and calculate the performances with different metrics into tsv files.
-    :param output_dir:
-    :param iteration:
-    :param subject_list:
-    :param y_truth:
-    :param y_hat:
+    Allows to save the outputs of the test function.
+
+    :param output_dir: (str) path to the output directory.
+    :param results_df: (DataFrame) the individual results per patch.
+    :param results: (dict) the performances obtained on a series of metrics.
+    :param fold: (int) the fold for which the performances were obtained.
+    :param selection: (str) the metrics on which the model was selected (best_acc, best_loss)
+    :param dataset: (str) the dataset on which the evaluation was performed.
+    :param cnn_index: (int) provide the cnn_index only for a multi-cnn framework.
     :return:
     """
-
-    # check if the folder exist
-    if patch_index == None:
-        iteration_dir = os.path.join(output_dir, 'performances', 'fold_' + str(iteration))
+    if cnn_index is None:
+        performance_dir = os.path.join(output_dir, 'performances', 'fold_' + str(fold), selection)
     else:
-        iteration_dir = os.path.join(output_dir, 'performances', 'fold_' + str(iteration), 'cnn-' + str(patch_index))
+        performance_dir = os.path.join(output_dir, 'performances', 'fold_' + str(fold), 'cnn-' + str(cnn_index),
+                                       selection)
 
+    if not os.path.exists(performance_dir):
+        os.makedirs(performance_dir)
 
-    if not os.path.exists(iteration_dir):
-        os.makedirs(iteration_dir)
+    results_df.to_csv(os.path.join(performance_dir, dataset + '_patch_level_result-patch_index.tsv'), index=False,
+                      sep='\t')
 
-    performance_df = pd.DataFrame({'iteration': iteration,
-                                                'y': y_truth,
-                                                'y_hat': y_hat,
-                                                'subject': subject_list,
-                                                'probability': probas})
-
-    ## save the patch level results
-    performance_df.to_csv(os.path.join(iteration_dir, mode + '_patch_level_result-patch_index.tsv'), index=False, sep='\t', encoding='utf-8', columns=['subject', 'y', 'y_hat', 'probability', 'iteration'])
-
-    ## save the sliece level different metrics
-    results = evaluate_prediction(list(performance_df.y), [int(e) for e in list(performance_df.y_hat)]) ## Note, y_hat here is not int, is string
     del results['confusion_matrix']
-
-    pd.DataFrame(results, index=[0]).to_csv(os.path.join(iteration_dir, mode + '_patch_level_metrics.tsv'), index=False, sep='\t', encoding='utf-8')
-
-    ## calculate the subject-level performances based on the majority vote.
-    # delete the patch number in the column of subject
-    performance_df_subject = performance_df
-    subject_df = performance_df_subject['subject']
-    subject_series = subject_df.apply(extract_subject_name)
-    subject_df_new = pd.DataFrame({'subject': subject_series.values})
-    # replace the column in the dataframe
-    performance_df_subject['subject'] = subject_df_new['subject'].values
-
-    ## do hard majority vote
-    df_y = performance_df_subject.groupby(['subject'], as_index=False).y.mean() # get the true label for each subject
-    df_yhat = pd.DataFrame(columns=['subject', 'y_hat'])
-    for subject, subject_df in performance_df_subject.groupby(['subject']):
-        num_patch = len(subject_df.y_hat)
-        patchs_predicted_as_one = subject_df.y_hat.sum()
-        if patchs_predicted_as_one > num_patch / 2:
-            label = 1
-        else:
-            label = 0
-        row_array = np.array(list([subject, label])).reshape(1, 2)
-        row_df = pd.DataFrame(row_array, columns=df_yhat.columns)
-        df_yhat = df_yhat.append(row_df)
-
-    # reset the index of df_yhat
-    df_yhat.reset_index()
-    result_df = pd.merge(df_y, df_yhat, on='subject')
-    ## insert the column of iteration
-    result_df['iteration'] = str(iteration)
-
-    result_df.to_csv(os.path.join(iteration_dir, mode + '_subject_level_result_' + vote_mode + '_vote.tsv'), index=False, sep='\t', encoding='utf-8')
-
-    results = evaluate_prediction(list(result_df.y), [int(e) for e in list(result_df.y_hat)]) ## Note, y_hat here is not int, is string
-    del results['confusion_matrix']
-
-    pd.DataFrame(results, index=[0]).to_csv(os.path.join(iteration_dir, mode + '_subject_level_metrics_' + vote_mode + '_vote.tsv'), index=False, sep='\t', encoding='utf-8')
+    pd.DataFrame(results, index=[0]).to_csv(os.path.join(performance_dir, dataset + '_patch_level_metrics.tsv'),
+                                            index=False, sep='\t')
 
 
-def extract_subject_name(s):
-    return s.split('_patch')[0]
+def retrieve_patch_level_results(output_dir, fold, selection, dataset, num_cnn):
+    """Retrieve performance_df for single or multi-CNN framework."""
+    if num_cnn is None:
+        result_tsv = os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
+                                  dataset + '_patch_level_result-patch_index.tsv')
+        performance_df = pd.read_csv(result_tsv, sep='\t')
+
+    else:
+        performance_df = pd.DataFrame()
+        for cnn in range(num_cnn):
+            tsv_path = os.path.join(output_dir, 'performances', 'fold_%i' % fold, 'cnn-%i' % cnn, selection,
+                                    dataset + '_patch_level_result-patch_index.tsv')
+            cnn_df = pd.read_csv(tsv_path, sep='\t')
+            performance_df = pd.concat([performance_df, cnn_df])
+
+    return performance_df
 
 
-def extract_patch_index(s):
-    return s.split('_patch')[1]
-
-
-def soft_voting_to_tsvs(output_dir, iteration, mode='test', vote_mode='soft'):
+def soft_voting_to_tsvs(output_dir, fold, selection, dataset='test', num_cnn=None):
     """
     This is for soft voting for subject-level performances
     :param performance_df: the pandas dataframe, including columns: iteration, y, y_hat, subject, probability
+    :param selection: (str) the metrics on which the model was selected (best_acc, best_loss)
 
     ref: S. Raschka. Python Machine Learning., 2015
     :return:
     """
 
-    # check if the folder exist
-    result_tsv = os.path.join(output_dir, 'performances', 'fold_' + str(iteration), 'test_patch_level_result-patch_index.tsv')
+    # Choose which dataset is used to compute the weights of soft voting.
+    if dataset in ['train', 'validation']:
+        validation_dataset = dataset
+    else:
+        validation_dataset = 'validation'
+    test_df = retrieve_patch_level_results(output_dir, fold, selection, dataset, num_cnn)
+    validation_df = retrieve_patch_level_results(output_dir, fold, selection, validation_dataset, num_cnn)
 
-    performance_df = pd.io.parsers.read_csv(result_tsv, sep='\t')
+    df_final, metrics = soft_voting(test_df, validation_df)
 
-    performance_df_subject = performance_df
-    subject_df = performance_df_subject['subject']
-    subject_series = subject_df.apply(extract_subject_name)
-    patch_series = subject_df.apply(extract_patch_index)
-    subject_df_new = pd.DataFrame({'subject': subject_series.values})
-    patch_df_new = pd.DataFrame({'patch': patch_series.values})
+    df_final.to_csv(os.path.join(os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
+                                              dataset + '_subject_level_result_soft_vote.tsv')), index=False, sep='\t')
 
-    # replace the column in the dataframe
-    performance_df_subject['subject'] = subject_df_new['subject'].values
-    performance_df_subject['patch'] = patch_df_new['patch'].values
+    pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
+                                                         dataset + '_subject_level_metrics_soft_vote.tsv'),
+                                            index=False, sep='\t')
 
-    ## selected the right classified subjects:
-    right_classified_df = performance_df_subject[performance_df_subject['y_hat'] == performance_df_subject['y']]
-    # right_classified_df = pd.DataFrame({'patch': right_classified_series['patch'].values})
 
-    ## count the number of right classified patch for each patch index
-    count_patchs_series = right_classified_df['patch'].value_counts(normalize=True)
-    index_series = performance_df_subject['patch']
+def soft_voting(performance_df, validation_df):
+
+    # selected the right classified subjects on the validation set:
+    right_classified_df = validation_df[validation_df['true_label'] == validation_df['predicted_label']]
+
+    # count the number of right classified patch for each patch index
+    count_patchs_series = right_classified_df['patch_id'].value_counts(normalize=True)
+    print(count_patchs_series)
+    index_series = performance_df['patch_id']
     weight_list = []
     for i in index_series:
         if i in count_patchs_series.index:
@@ -655,120 +544,44 @@ def soft_voting_to_tsvs(output_dir, iteration, mode='test', vote_mode='soft'):
         weight_list.append(weight)
 
     weight_series = pd.Series(weight_list)
-    ## add to the df
-    performance_df_subject['weight'] = weight_series.values
+    # add to the df
+    performance_df['weight'] = weight_series.values
 
-    ## do soft majority vote
-    ## y^ = arg max(sum(wj * pij))
-    df_final = pd.DataFrame(columns=['subject', 'y', 'y_hat', 'iteration'])
-    for subject, subject_df in performance_df_subject.groupby(['subject']):
-        num_patch = len(subject_df.y_hat)
+    # do soft majority vote
+    columns = ['participant_id', 'session_id', 'true_label', 'predicted_label']
+    df_final = pd.DataFrame(columns=columns)
+    for subject_session, subject_df in performance_df.groupby(['participant_id', 'session_id']):
+        subject, session = subject_session
+        num_patch = len(subject_df.predicted_label)
         p0_all = 0
         p1_all = 0
-        for i in range(num_patch):
-            ## reindex the subject_df.probability
-            proba_series_reindex = subject_df.probability.reset_index()
-            weight_series_reindex = subject_df.weight.reset_index()
-            y_series_reindex = subject_df.y.reset_index()
-            iteration_series_reindex = subject_df.iteration.reset_index()
+        # reindex the subject_df.probability
+        proba0_series_reindex = subject_df.proba0.reset_index()
+        proba1_series_reindex = subject_df.proba1.reset_index()
+        weight_series_reindex = subject_df.weight.reset_index()
+        y_series_reindex = subject_df.true_label.reset_index()
+        y = y_series_reindex.y[0]
 
-            p0 = weight_series_reindex.weight[i] * eval(proba_series_reindex.probability[i])[0]
-            p1 = weight_series_reindex.weight[i] * eval(proba_series_reindex.probability[i])[1]
+        for i in range(num_patch):
+
+            p0 = weight_series_reindex.weight[i] * float(proba0_series_reindex.proba0[i])
+            p1 = weight_series_reindex.weight[i] * float(proba1_series_reindex.proba1[i])
 
             p0_all += p0
             p1_all += p1
 
-            if i == 0:
-                y = y_series_reindex.y[i]
-                iteration = iteration_series_reindex.iteration[i]
         proba_list = [p0_all, p1_all]
         y_hat = proba_list.index(max(proba_list))
 
-
-        row_array = np.array(list([subject, y, y_hat, iteration])).reshape(1, 4)
-        row_df = pd.DataFrame(row_array, columns=['subject', 'y', 'y_hat', 'iteration'])
+        row_array = np.array(list([subject, session, y, y_hat])).reshape(1, 4)
+        row_df = pd.DataFrame(row_array, columns=columns)
         df_final = df_final.append(row_df)
 
-    df_final.to_csv(os.path.join(os.path.join(output_dir, 'performances', 'fold_' + str(iteration), mode + '_subject_level_result_' + vote_mode + '_vote.tsv')), index=False, sep='\t', encoding='utf-8')
-
-    results = evaluate_prediction([int(e) for e in list(df_final.y)], [int(e) for e in list(df_final.y_hat)]) ## Note, y_hat here is not int, is string
+    results = evaluate_prediction(df_final.true_label.values.astype(int),
+                                  df_final.predicted_label.values.astype(int))
     del results['confusion_matrix']
 
-    pd.DataFrame(results, index=[0]).to_csv(os.path.join(output_dir, 'performances', 'fold_' + str(iteration), mode + '_subject_level_metrics_' + vote_mode + '_vote.tsv'), index=False, sep='\t', encoding='utf-8')
-
-
-def soft_voting_subject_level(y_ground, y_hat, subjects, proba, iteration):
-    ## soft voting to get the subject-level balanced accuracy
-    performance_df_subject = pd.DataFrame({'iteration': iteration,
-                                           'y': y_ground,
-                                           'y_hat': y_hat,
-                                           'subject': subjects,
-                                           'probability': proba})
-
-    subject_df = performance_df_subject['subject']
-    subject_series = subject_df.apply(extract_subject_name)
-    patch_series = subject_df.apply(extract_patch_index)
-    subject_df_new = pd.DataFrame({'subject': subject_series.values})
-    patch_df_new = pd.DataFrame({'patch': patch_series.values})
-
-    # replace the column in the dataframe
-    performance_df_subject['subject'] = subject_df_new['subject'].values
-    performance_df_subject['patch'] = patch_df_new['patch'].values
-
-    ## selected the right classified subjects:
-    right_classified_df = performance_df_subject[performance_df_subject['y_hat'] == performance_df_subject['y']]
-    # right_classified_df = pd.DataFrame({'patch': right_classified_series['patch'].values})
-
-    ## count the number of right classified patch for each patch index
-    count_patchs_series = right_classified_df['patch'].value_counts(normalize=True)
-    index_series = performance_df_subject['patch']
-    weight_list = []
-    for i in index_series:
-        if i in count_patchs_series.index:
-            weight = count_patchs_series[i]
-        else:
-            weight = 0
-        weight_list.append(weight)
-
-    weight_series = pd.Series(weight_list)
-    ## add to the df
-    performance_df_subject['weight'] = weight_series.values
-
-    ## do soft majority vote
-    ## y^ = arg max(sum(wj * pij))
-    df_final = pd.DataFrame(columns=['subject', 'y', 'y_hat', 'iteration'])
-    for subject, subject_df in performance_df_subject.groupby(['subject']):
-        num_patch = len(subject_df.y_hat)
-        p0_all = 0
-        p1_all = 0
-        for i in range(num_patch):
-            ## reindex the subject_df.probability
-            proba_series_reindex = subject_df.probability.reset_index()
-            weight_series_reindex = subject_df.weight.reset_index()
-            y_series_reindex = subject_df.y.reset_index()
-            iteration_series_reindex = subject_df.iteration.reset_index()
-
-            p0 = weight_series_reindex.weight[i] * proba_series_reindex.probability[i][0]
-            p1 = weight_series_reindex.weight[i] * proba_series_reindex.probability[i][1]
-
-            p0_all += p0
-            p1_all += p1
-
-            if i == 0:
-                y = y_series_reindex.y[i]
-                iteration = iteration_series_reindex.iteration[i]
-        proba_list = [p0_all, p1_all]
-        y_hat = proba_list.index(max(proba_list))
-
-        row_array = np.array(list([subject, y, y_hat, iteration])).reshape(1, 4)
-        row_df = pd.DataFrame(row_array, columns=['subject', 'y', 'y_hat', 'iteration'])
-        df_final = df_final.append(row_df)
-
-    results = evaluate_prediction([int(e) for e in list(df_final.y)], [int(e) for e in list(
-        df_final.y_hat)])  ## Note, y_hat here is not int, is string
-    del results['confusion_matrix']
-
-    return results
+    return df_final, results
 
 
 def multi_cnn_soft_majority_voting(output_dir, fi, num_cnn, mode='test'):
@@ -935,7 +748,8 @@ class MRIDataset_patch(Dataset):
         if self.transformations:
             patch = self.transformations(patch)
 
-        sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(index_patch), 'image': patch, 'label': label}
+        sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(index_patch), 'image': patch, 'label': label,
+                  'participant_id': img_name, 'session_id': sess_name, 'patch_id': index_patch}
 
         return sample
 
@@ -1007,7 +821,8 @@ class MRIDataset_patch_hippocampus(Dataset):
         if self.transformations:
             patch = self.transformations(patch)
 
-        sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(left_is_odd), 'image': patch, 'label': label}
+        sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(left_is_odd), 'image': patch, 'label': label,
+                  'participant_id': img_name, 'session_id': sess_name, 'patch_id': left_is_odd}
 
         return sample
 
@@ -1074,14 +889,15 @@ class MRIDataset_patch_by_index(Dataset):
         if self.transformations:
             patch = self.transformations(patch)
 
-        sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(self.index_patch), 'image': patch, 'label': label}
+        sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(self.index_patch), 'image': patch, 'label': label,
+                  'participant_id': img_name, 'session_id': sess_name, 'patch_id': self.index_patch}
 
         return sample
 
 
 def visualize_ae(ae, data, results_path):
     """
-    To reconstruct one example patch and save it in nifti format for visualization
+    To reconstruct one example batch and save it in nifti format for visualization
     :param ae:
     :param data: tensor, shape [1, 1, height, width, length]
     :param results_path:
