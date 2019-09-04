@@ -69,6 +69,9 @@ parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "
                     help="Optimizer of choice for training. (default=Adam)")
 parser.add_argument('--weight_decay', default=1e-4, type=float,
                     help='weight decay (default: 1e-4)')
+parser.add_argument('--selection_threshold', default=None, type=float,
+                    help='Threshold on the balanced accuracies to compute the subject_level performance '
+                         'only based on patches with balanced accuracy > threshold.')
 
 # early stopping arguments
 parser.add_argument("--patience", type=int, default=10,
@@ -176,19 +179,19 @@ def main(options):
             # train the model
             train_df, acc_mean_train, loss_batch_mean_train, global_step \
                 = train(model, train_loader, options.gpu, loss, optimizer, writer_train_batch, epoch,
-                        model_mode='train')
+                        model_mode='train', selection_threshold=options.selection_threshold)
 
             # calculate the training accuracy based on all the training data
             train_all_df, acc_mean_train_all, loss_batch_mean_train_all, _,\
                 = train(model, train_loader, options.gpu, loss, optimizer, writer_train_all_data, epoch,
-                        model_mode='valid')
+                        model_mode='valid', selection_threshold=options.selection_threshold)
             print("For training, subject level balanced accuracy is %f at the end of epoch %d"
                   % (acc_mean_train_all, epoch))
 
             # at then end of each epoch, we validate one time for the model with the validation data
             valid_df, acc_mean_valid, loss_batch_mean_valid, _ \
                 = train(model, valid_loader, options.gpu, loss, optimizer, writer_valid, epoch,
-                        model_mode='valid')
+                        model_mode='valid', selection_threshold=options.selection_threshold)
             print("For validation, subject level balanced accuracy is %f at the end of epoch %d"
                   % (acc_mean_valid, epoch))
 
@@ -236,8 +239,10 @@ def main(options):
             patch_level_to_tsvs(options.output_dir, valid_df, metrics_valid, fi,
                                 dataset='validation', selection=selection)
 
-            soft_voting_to_tsvs(options.output_dir, fi, dataset='train', selection=selection)
-            soft_voting_to_tsvs(options.output_dir, fi, dataset='validation', selection=selection)
+            soft_voting_to_tsvs(options.output_dir, fi, dataset='train', selection=selection,
+                                selection_threshold=options.selection_threshold)
+            soft_voting_to_tsvs(options.output_dir, fi, dataset='validation', selection=selection,
+                                selection_threshold=options.selection_threshold)
             torch.cuda.empty_cache()
 
 
