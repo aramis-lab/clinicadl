@@ -42,8 +42,7 @@ parser.add_argument("--n_splits", default=5, type=int,
 parser.add_argument("--split", default=None, type=int,
                     help="Default behaviour will run all splits, else only the splits specified will be run.")
 
-# train argument
-# transfer learning
+# test arguments
 parser.add_argument("--network", default="Conv4_FC3",
                     help="Architecture of the network.")
 parser.add_argument("--num_cnn", default=36, type=int,
@@ -51,6 +50,9 @@ parser.add_argument("--num_cnn", default=36, type=int,
                          "By default, we train each patch from all subjects for one CNN.")
 parser.add_argument("--diagnoses", default=["sMCI", "pMCI"], type=str, nargs="+",
                     help="Labels based on binary classification.")
+parser.add_argument('--selection_threshold', default=None, type=float,
+                    help='Threshold on the balanced accuracies to compute the subject_level performance '
+                         'only based on patches with balanced accuracy > threshold.')
 
 # Computational issues
 parser.add_argument("--batch_size", default=32, type=int,
@@ -76,7 +78,7 @@ def main(options):
 
     # Loop on folds
     for fi in fold_iterator:
-        print("Fold " % fi)
+        print("Fold %i" % fi)
 
         if options.dataset == 'validation':
             _, test_df = load_data(options.diagnosis_tsv_path, options.diagnoses, fi,
@@ -96,11 +98,10 @@ def main(options):
                                      pin_memory=True)
 
             # load the best trained model during the training
-            model_updated, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir',
-                                                                       "fold_%i" % fi, 'cnn-%i' % n,
-                                                                       options.selection), options.gpu,
-                                                   filename='model_best.pth.tar')
-            model_updated.eval()
+            model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', "fold_%i" % fi,
+                                                               'cnn-%i' % n, options.selection), options.gpu,
+                                           filename='model_best.pth.tar')
+            model.eval()
 
             print("The best model was saved during training from fold %i at the %i -th epoch" % (fi, best_epoch))
 
@@ -111,7 +112,8 @@ def main(options):
             patch_level_to_tsvs(options.output_dir, results_df, metrics, fi, options.selection,
                                 dataset=options.dataset, cnn_index=n)
 
-        soft_voting_to_tsvs(options.output_dir, fi, options.selection, dataset=options.dataset, num_cnn=options.num_cnn)
+        soft_voting_to_tsvs(options.output_dir, fi, options.selection, dataset=options.dataset, num_cnn=options.num_cnn,
+                            selection_threshold=options.selection_threshold)
 
 
 if __name__ == "__main__":
