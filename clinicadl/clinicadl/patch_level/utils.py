@@ -365,7 +365,7 @@ def test(model, data_loader, use_cuda, loss_func):
             for idx, sub in enumerate(data['participant_id']):
                 row = [sub, data['session_id'][idx], data['patch_id'][idx].item(),
                        labels[idx].item(), predicted[idx].item(),
-                       output[idx, 0].item(), output[idx, 1]]
+                       output[idx, 0].item(), output[idx, 1].item()]
 
                 row_df = pd.DataFrame(np.array(row).reshape(1, -1), columns=columns)
                 results_df = pd.concat([results_df, row_df])
@@ -533,7 +533,6 @@ def soft_voting(performance_df, validation_df):
 
     # count the number of right classified patch for each patch index
     count_patchs_series = right_classified_df['patch_id'].value_counts(normalize=True)
-    print(count_patchs_series)
     index_series = performance_df['patch_id']
     weight_list = []
     for i in index_series:
@@ -560,7 +559,7 @@ def soft_voting(performance_df, validation_df):
         proba1_series_reindex = subject_df.proba1.reset_index()
         weight_series_reindex = subject_df.weight.reset_index()
         y_series_reindex = subject_df.true_label.reset_index()
-        y = y_series_reindex.y[0]
+        y = y_series_reindex.true_label[0]
 
         for i in range(num_patch):
 
@@ -582,100 +581,6 @@ def soft_voting(performance_df, validation_df):
     del results['confusion_matrix']
 
     return df_final, results
-
-
-def multi_cnn_soft_majority_voting(output_dir, fi, num_cnn, mode='test'):
-    """
-    This is a function to do soft majority voting based on the num_cnn CNNs' performances
-    :param output_dir: (str) path to the output directory
-    :param fi: (int) the i-th fold
-    :param num_cnn: (int) number of CNNs used for the majority voting
-    :param mode: (str) Identifies the dataset to combine (ex. validation, test)
-    """
-
-    # check the best test patch-level acc for all the CNNs
-    best_acc_cnns = []
-    y_hat = []
-
-    for n in range(num_cnn):
-        # load the patch-level balanced accuracy from the tsv files
-        tsv_path_metric = os.path.join(output_dir, 'performances', "fold_" + str(fi), 'cnn-' + str(n), mode + '_patch_level_metrics.tsv')
-
-        best_ba = pd.read_csv(tsv_path_metric, sep='\t')['balanced_accuracy']
-
-        best_acc_cnns.append(best_ba[0])
-
-    # delete the weak classifiers whose acc is smaller than 0.6
-    ba_list = [0 if x < 0.7 else x for x in best_acc_cnns]
-    if all(ba == 0 for ba in ba_list):
-        print("Pay attention, all the CNNs did not perform well for %d -th fold" % (fi))
-    else:
-
-        weight_list = [x / sum(ba_list) for x in ba_list]
-
-        ## read the test data patch-level probability results.
-        for i in range(num_cnn):
-            # load the best trained model during the training
-
-            df = pd.read_csv(os.path.join(output_dir, 'performances', "fold_" + str(fi), 'cnn-' + str(i),
-                                          mode + '_patch_level_result-patch_index.tsv'), sep='\t')
-            if i == 0:
-                df_final = pd.DataFrame(columns=['subject', 'y', 'y_hat'])
-                df_final['subject'] = df['subject'].apply(extract_subject_name)
-                df_final['y'] = df['y']
-
-            proba_series = df['probability']
-            p0s = []
-            p1s = []
-            for j in range(len(proba_series)):
-                p0 = weight_list[i] * eval(proba_series[j])[0]
-                p1 = weight_list[i] * eval(proba_series[j])[1]
-                p0s.append(p0)
-                p1s.append(p1)
-            p0s_array = np.asarray(p0s)
-            p1s_array = np.asarray(p1s)
-
-            # adding the series into the final DataFrame
-            # insert the column of iteration
-            df_final['cnn_' + str(i) + '_p0'] = p0s_array
-            df_final['cnn_' + str(i) + '_p1'] = p1s_array
-
-        # based on the p0 and p1 from all the CNNs, calculate the y_hat
-        p0_final = []
-        p1_final = []
-        for k in range(num_cnn):
-            p0_final.append(df_final['cnn_' + str(k) + '_p0'].tolist())
-        for k in range(num_cnn):
-            p1_final.append(df_final['cnn_' + str(k) + '_p1'].tolist())
-
-        # element-wise adding to calcuate the final probability
-        p0_soft = [sum(x) for x in zip(*p0_final)]
-        p1_soft = [sum(x) for x in zip(*p1_final)]
-
-        # adding the final p0 and p1 to the dataframe
-        df_final['p0'] = np.asarray(p0_soft)
-        df_final['p1'] = np.asarray(p1_soft)
-
-        for m in range(len(p0_soft)):
-            proba_list = [p0_soft[m], p1_soft[m]]
-            y_pred = proba_list.index(max(proba_list))
-            y_hat.append(y_pred)
-
-        # adding y_pred into the dataframe
-        df_final['y_hat'] = np.asarray(y_hat)
-
-        # save the results into output_dir
-        results_soft_tsv_path = os.path.join(output_dir, 'performances', "fold_" + str(fi),
-                     mode + '_subject_level_result_soft_vote_multi_cnn.tsv')
-        df_final.to_csv(results_soft_tsv_path, index=False, sep='\t', encoding='utf-8')
-
-        results = evaluate_prediction([int(e) for e in list(df_final.y)], [int(e) for e in list(
-            df_final.y_hat)])  # Note, y_hat here is not int, is string
-        del results['confusion_matrix']
-
-        metrics_soft_tsv_path = os.path.join(output_dir, 'performances', "fold_" + str(fi),
-                                             mode + '_subject_level_metrics_soft_vote_multi_cnn.tsv')
-        pd.DataFrame(results, index=[0]).to_csv(metrics_soft_tsv_path, index=False, sep='\t', encoding='utf-8')
 
 #################################
 # Datasets
