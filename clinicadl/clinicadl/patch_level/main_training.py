@@ -236,8 +236,8 @@ def main(options):
             patch_level_to_tsvs(options.output_dir, valid_df, metrics_valid, fi,
                                 dataset='validation', selection=selection)
 
-            soft_voting_to_tsvs(options.output_dir, fi, dataset='train')
-            soft_voting_to_tsvs(options.output_dir, fi, dataset='validation')
+            soft_voting_to_tsvs(options.output_dir, fi, dataset='train', selection=selection)
+            soft_voting_to_tsvs(options.output_dir, fi, dataset='validation', selection=selection)
             torch.cuda.empty_cache()
 
 
