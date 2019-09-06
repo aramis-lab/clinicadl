@@ -2,6 +2,7 @@ from .autoencoder import AutoEncoder, initialize_other_autoencoder, transfer_lea
 from .iotools import load_model, load_optimizer, save_checkpoint
 from .subject_level import Conv5_FC3, Conv5_FC3_mni
 from .patch_level import Conv4_FC3
+from .slice_level import resnet18
 
 
 def create_model(model_name, gpu=False):

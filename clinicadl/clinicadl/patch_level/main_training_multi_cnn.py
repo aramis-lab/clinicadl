@@ -67,6 +67,9 @@ parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "
                     help="Optimizer of choice for training. (default=Adam)")
 parser.add_argument('--weight_decay', default=1e-4, type=float,
                     help='weight decay (default: 1e-4)')
+parser.add_argument('--selection_threshold', default=None, type=float,
+                    help='Threshold on the balanced accuracies to compute the subject_level performance '
+                         'only based on patches with balanced accuracy > threshold.')
 
 # early stopping arguments
 parser.add_argument("--patience", type=int, default=10,
@@ -233,8 +236,10 @@ def main(options):
                 torch.cuda.empty_cache()
 
         for selection in ['best_acc', 'best_loss']:
-            soft_voting_to_tsvs(options.output_dir, fi, selection, dataset='train', num_cnn=options.num_cnn)
-            soft_voting_to_tsvs(options.output_dir, fi, selection, dataset='validation', num_cnn=options.num_cnn)
+            soft_voting_to_tsvs(options.output_dir, fi, selection, dataset='train', num_cnn=options.num_cnn,
+                                selection_threshold=options.selection_threshold)
+            soft_voting_to_tsvs(options.output_dir, fi, selection, dataset='validation', num_cnn=options.num_cnn,
+                                selection_threshold=options.selection_threshold)
 
 
 if __name__ == "__main__":
