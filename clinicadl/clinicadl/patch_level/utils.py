@@ -240,7 +240,8 @@ def load_model_after_cnn(model, checkpoint_dir, filename='checkpoint.pth.tar'):
 # CNN train / test
 #################################
 
-def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, model_mode="train"):
+def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, model_mode="train",
+          selection_threshold=None):
     """
     This is the function to train, validate or test the model, depending on the model_mode parameter.
     :param model:
@@ -313,7 +314,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
         results_df, metrics_batch = test(model, data_loader, use_cuda, loss_func)
 
         # calculate the balanced accuracy
-        _, metrics_subject = soft_voting(results_df, results_df)
+        _, metrics_subject = soft_voting(results_df, results_df, selection_threshold=selection_threshold)
         accuracy_batch_mean = metrics_subject['balanced_accuracy']
         total_loss = metrics_batch['total_loss']
         loss_batch_mean = total_loss / len(data_loader)
@@ -376,6 +377,7 @@ def test(model, data_loader, use_cuda, loss_func):
         # calculate the balanced accuracy
         results = evaluate_prediction(results_df.true_label.values.astype(int),
                                       results_df.predicted_label.values.astype(int))
+        results_df.reset_index(inplace=True, drop=True)
         results['total_loss'] = total_loss
         torch.cuda.empty_cache()
 
@@ -494,11 +496,12 @@ def retrieve_patch_level_results(output_dir, fold, selection, dataset, num_cnn):
                                     dataset + '_patch_level_result-patch_index.tsv')
             cnn_df = pd.read_csv(tsv_path, sep='\t')
             performance_df = pd.concat([performance_df, cnn_df])
+        performance_df.reset_index(drop=True, inplace=True)
 
     return performance_df
 
 
-def soft_voting_to_tsvs(output_dir, fold, selection, dataset='test', num_cnn=None):
+def soft_voting_to_tsvs(output_dir, fold, selection, dataset='test', num_cnn=None, selection_threshold=None):
     """
     This is for soft voting for subject-level performances
     :param performance_df: the pandas dataframe, including columns: iteration, y, y_hat, subject, probability
@@ -516,35 +519,35 @@ def soft_voting_to_tsvs(output_dir, fold, selection, dataset='test', num_cnn=Non
     test_df = retrieve_patch_level_results(output_dir, fold, selection, dataset, num_cnn)
     validation_df = retrieve_patch_level_results(output_dir, fold, selection, validation_dataset, num_cnn)
 
-    df_final, metrics = soft_voting(test_df, validation_df)
+    performance_path = os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection)
+    if not os.path.exists(performance_path):
+        os.makedirs(performance_path)
 
-    df_final.to_csv(os.path.join(os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
-                                              dataset + '_subject_level_result_soft_vote.tsv')), index=False, sep='\t')
+    df_final, metrics = soft_voting(test_df, validation_df, selection_threshold=selection_threshold)
+
+    df_final.to_csv(os.path.join(os.path.join(performance_path, dataset + '_subject_level_result_soft_vote.tsv')),
+                    index=False, sep='\t')
 
     pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
                                                          dataset + '_subject_level_metrics_soft_vote.tsv'),
                                             index=False, sep='\t')
 
 
-def soft_voting(performance_df, validation_df):
+def soft_voting(performance_df, validation_df, selection_threshold=None):
 
-    # selected the right classified subjects on the validation set:
+    # Compute the patch accuracies on the validation set:
     right_classified_df = validation_df[validation_df['true_label'] == validation_df['predicted_label']]
+    n_valid = len(validation_df.groupby(['participant_id', 'session_id']).nunique())
+    patch_accuracies = right_classified_df['patch_id'].value_counts() / n_valid
+    if selection_threshold is not None:
+        patch_accuracies[patch_accuracies < selection_threshold] = 0
+    weight_series = patch_accuracies / patch_accuracies.sum()
 
-    # count the number of right classified patch for each patch index
-    count_patchs_series = right_classified_df['patch_id'].value_counts(normalize=True)
-    index_series = performance_df['patch_id']
-    weight_list = []
-    for i in index_series:
-        if i in count_patchs_series.index:
-            weight = count_patchs_series[i]
-        else:
-            weight = 0
-        weight_list.append(weight)
-
-    weight_series = pd.Series(weight_list)
-    # add to the df
-    performance_df['weight'] = weight_series.values
+    # Add the weights to performance_df
+    for idx in performance_df.index.values:
+        patch_id = performance_df.loc[idx, 'patch_id']
+        weight = weight_series.loc[patch_id]
+        performance_df.loc[idx, 'weight'] = weight
 
     # do soft majority vote
     columns = ['participant_id', 'session_id', 'true_label', 'predicted_label']
