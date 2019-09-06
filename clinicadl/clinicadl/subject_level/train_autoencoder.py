@@ -12,16 +12,12 @@ from .utils import Parameters
 from tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data
 from tools.deep_learning import create_autoencoder, commandline_to_json
 
-parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D AE pretraining")
-
-
 
 def train_autoencoder(params):
 """ Parameters
 params: class from utils module containing all the parameters for training a 
 CNN.
 """
-     
 
     if params.evaluation_steps % params.accumulation_steps != 0 and params.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
