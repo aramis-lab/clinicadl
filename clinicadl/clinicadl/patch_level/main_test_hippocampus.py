@@ -4,7 +4,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import torch
 
-from .utils import MRIDataset_patch_hippocampus, test, patch_level_to_tsvs, soft_voting_to_tsvs
+from .utils import MRIDataset_patch_hippocampus, test, patch_level_to_tsvs, soft_voting_to_tsvs, MRIDataset_patch
 from tools.deep_learning.data import MinMaxNormalization, load_data_test, load_data
 from tools.deep_learning import create_model, load_model
 
@@ -40,10 +40,19 @@ parser.add_argument('--dataset', default="validation",
                          "Otherwise must be named with the form 'test-cohort_name'.")
 parser.add_argument("--diagnoses", default=["sMCI", "pMCI"], type=str, nargs="+",
                     help="Labels based on binary classification.")
+parser.add_argument("--patch_size", default=50, type=int,
+                    help="The patch size extracted from the MRI")
+parser.add_argument("--patch_stride", default=50, type=int,
+                    help="The stride for the patch extract window from the MRI")
+parser.add_argument('--hippocampus_roi', default=False, action="store_true",
+                    help="If train the model using only hippocampus ROI")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")
 parser.add_argument("--split", default=None, type=int,
                     help="Default behaviour will run all splits, else only the splits specified will be run.")
+parser.add_argument('--selection_threshold', default=None, type=float,
+                    help='Threshold on the balanced accuracies to compute the subject_level performance '
+                         'only based on patches with balanced accuracy > threshold.')
 
 
 # Computational issues
@@ -71,7 +80,7 @@ def main(options):
 
     # Loop on folds
     for fi in fold_iterator:
-        print("Fold " % fi)
+        print("Fold %i" % fi)
 
         if options.dataset == 'validation':
             _, test_df = load_data(options.diagnosis_tsv_path, options.diagnoses, fi,
@@ -79,7 +88,11 @@ def main(options):
         else:
             test_df = load_data_test(options.diagnosis_tsv_path, options.diagnoses)
 
-        data_test = MRIDataset_patch_hippocampus(options.caps_directory, test_df, transformations=transformations)
+        if options.hippocampus_roi:
+            data_test = MRIDataset_patch_hippocampus(options.caps_directory, test_df, transformations=transformations)
+        else:
+            data_test = MRIDataset_patch(options.caps_directory, test_df, options.patch_size,
+                                          options.patch_stride, transformations=transformations)
 
         test_loader = DataLoader(data_test,
                                  batch_size=options.batch_size,
@@ -101,7 +114,8 @@ def main(options):
         patch_level_to_tsvs(options.output_dir, results_df, metrics, fi, options.selection, dataset=options.dataset)
 
         # Soft voting
-        soft_voting_to_tsvs(options.output_dir, fi, options.selection, dataset=options.dataset)
+        soft_voting_to_tsvs(options.output_dir, fi, selection=options.selection, dataset=options.dataset,
+                            selection_threshold=options.selection_threshold)
 
 
 if __name__ == "__main__":
