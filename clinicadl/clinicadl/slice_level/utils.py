@@ -410,7 +410,6 @@ class MRIDataset_slice(Dataset):
                                   self.slice_direction + '_rgbslice-' + str(index_slice + 20) + '.pt')
 
         extracted_slice = torch.load(slice_path)
-        extracted_slice = (extracted_slice - extracted_slice.min()) / (extracted_slice.max() - extracted_slice.min())
 
         # check if the slice has NAN value
         if torch.isnan(extracted_slice).any():
@@ -487,7 +486,6 @@ class MRIDataset_slice_mixed(Dataset):
                                   self.slice_direction + '_rgbslice-' + str(slice_name) + '.pt')
 
         extracted_slice = torch.load(slice_path)
-        extracted_slice = (extracted_slice - extracted_slice.min()) / (extracted_slice.max() - extracted_slice.min())
 
         # check if the slice has NAN value
         if torch.isnan(extracted_slice).any():

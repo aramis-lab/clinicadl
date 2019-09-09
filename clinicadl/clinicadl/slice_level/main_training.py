@@ -10,7 +10,7 @@ from time import time
 
 from .utils import MRIDataset_slice, train, test, slice_level_to_tsvs, soft_voting_to_tsvs
 from tools.deep_learning import EarlyStopping, save_checkpoint, commandline_to_json, create_model, load_model
-from tools.deep_learning.data import load_data
+from tools.deep_learning.data import load_data, MinMaxNormalization
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -86,7 +86,8 @@ def main(options):
     # All pre-trained models expect input images normalized in the same way, i.e. mini-batches of 3-channel RGB
     # images of shape (3 x H x W), where H and W are expected to be at least 224. The images have to be loaded in
     # to a range of [0, 1] and then normalized using mean = [0.485, 0.456, 0.406] and std = [0.229, 0.224, 0.225].
-    transformations = transforms.Compose([transforms.ToPILImage(),
+    transformations = transforms.Compose([MinMaxNormalization(),
+                                          transforms.ToPILImage(),
                                           transforms.Resize(trg_size),
                                           transforms.ToTensor()])
 
