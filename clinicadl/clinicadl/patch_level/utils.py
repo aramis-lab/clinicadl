@@ -256,6 +256,8 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
 
     print("Start for %s!" % model_mode)
     global_step = None
+    softmax = torch.nn.Softmax(dim=1)
+
     if model_mode == "train":
         columns = ['participant_id', 'session_id', 'patch_index', 'true_label', 'predicted_label', 'proba0', 'proba1']
         results_df = pd.DataFrame(columns=columns)
@@ -276,6 +278,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
             gound_truth_list = labels.data.cpu().numpy().tolist()
 
             output = model(imgs)
+            normalized_output = softmax(output)
             _, predicted = torch.max(output.data, 1)
             predict_list = predicted.data.cpu().numpy().tolist()
             batch_loss = loss_func(output, labels)
@@ -296,7 +299,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
             for idx, sub in enumerate(data['participant_id']):
                 row = [sub, data['session_id'][idx], data['patch_id'][idx],
                        labels[idx].item(), predicted[idx].item(),
-                       output[idx, 0].item(), output[idx, 1]]
+                       normalized_output[idx, 0].item(), normalized_output[idx, 1]]
                 row_df = pd.DataFrame(np.array(row).reshape(1, -1), columns=columns)
                 results_df = pd.concat([results_df, row_df])
 
@@ -339,6 +342,7 @@ def test(model, data_loader, use_cuda, loss_func):
     :return:
     """
 
+    softmax = torch.nn.Softmax(dim=1)
     columns = ['participant_id', 'session_id', 'patch_id', 'true_label', 'predicted_label', 'proba0', 'proba1']
     results_df = pd.DataFrame(columns=columns)
     total_loss = 0
@@ -358,6 +362,7 @@ def test(model, data_loader, use_cuda, loss_func):
                 imgs, labels = data['image'], data['label']
 
             output = model(imgs)
+            normalized_output = softmax(output)
             loss = loss_func(output, labels)
             total_loss += loss.item()
             _, predicted = torch.max(output.data, 1)
@@ -366,7 +371,7 @@ def test(model, data_loader, use_cuda, loss_func):
             for idx, sub in enumerate(data['participant_id']):
                 row = [sub, data['session_id'][idx], data['patch_id'][idx].item(),
                        labels[idx].item(), predicted[idx].item(),
-                       output[idx, 0].item(), output[idx, 1].item()]
+                       normalized_output[idx, 0].item(), normalized_output[idx, 1].item()]
 
                 row_df = pd.DataFrame(np.array(row).reshape(1, -1), columns=columns)
                 results_df = pd.concat([results_df, row_df])
