@@ -72,15 +72,13 @@ if __name__ == "__main__":
         train_loader = DataLoader(data_train,
                                   batch_size=options.batch_size,
                                   shuffle=False,
-                                  num_workers=options.num_workers,
-                                  drop_last=False
+                                  num_workers=options.num_workers
                                   )
 
         valid_loader = DataLoader(data_valid,
                                   batch_size=options.batch_size,
                                   shuffle=False,
-                                  num_workers=options.num_workers,
-                                  drop_last=False
+                                  num_workers=options.num_workers
                                   )
 
         metrics_train, loss_train, train_df = test(best_model, train_loader, options.gpu, criterion, full_return=True)

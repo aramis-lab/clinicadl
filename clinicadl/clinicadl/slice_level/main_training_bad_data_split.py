@@ -117,17 +117,15 @@ def main(options):
                                   batch_size=options.batch_size,
                                   shuffle=True,
                                   num_workers=options.num_workers,
-                                  drop_last=True,
                                   pin_memory=True)
 
         valid_loader = DataLoader(data_valid,
                                   batch_size=options.batch_size,
                                   shuffle=False,
                                   num_workers=options.num_workers,
-                                  drop_last=True,
                                   pin_memory=True)
 
-        # chosen optimizer for back-propogation
+        # chosen optimizer for back-propagation
         optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
                                                              options.learning_rate, weight_decay=options.weight_decay)
         # apply exponential decay for learning rate
