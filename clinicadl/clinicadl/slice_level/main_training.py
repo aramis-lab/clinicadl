@@ -128,9 +128,6 @@ def main(options):
         # chosen optimizer for back-propagation
         optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
                                                              options.learning_rate, weight_decay=options.weight_decay)
-        # apply exponential decay for learning rate
-        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
-
         model.load_state_dict(init_state)
 
         # Binary cross-entropy loss
@@ -168,10 +165,6 @@ def main(options):
                 train(model, valid_loader, options.gpu, loss, optimizer, writer_valid, epoch,
                       model_mode='valid', selection_threshold=options.selection_threshold)
             print("For validation, subject level balanced accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
-
-            # update the learning rate
-            if epoch % 20 == 0 and epoch != 0:
-                scheduler.step()
 
             # save the best model based on the best loss and accuracy
             acc_is_best = acc_mean_valid > best_accuracy
