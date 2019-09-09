@@ -40,9 +40,9 @@ parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["
                     help="Using baseline scans or all available longitudinal scans for training")
 
 # Train argument
-parser.add_argument("--network", default="ResNet", choices=["AlexNet", "ResNet", "LeNet", "AllConvNet", "Vgg16", "DenseNet161", "InceptionV3", "AlexNetonechannel"],
+parser.add_argument("--network", default="resnet18",
                     help="Deep network type. Only ResNet was designed for training from scratch.")
-parser.add_argument("--diagnoses_list", default=["AD", "CN"], type=str,
+parser.add_argument("--diagnoses", default=["AD", "CN"], type=str, nargs="+",
                     help="Labels for any binary task")
 
 parser.add_argument("--learning_rate", default=1e-3, type=float,

@@ -286,7 +286,7 @@ def evaluate_prediction(y, y_hat):
 # Datasets
 #################################
 
-def load_split_by_slices(training_tsv, validation_tsv, mri_plane=0, val_size=0.15):
+def mix_slices(df_training, df_validation, mri_plane=0, val_size=0.15):
     """
     This is a function to gather the training and validation tsv together, then do the bad data split by slice.
     :param training_tsv:
@@ -294,8 +294,6 @@ def load_split_by_slices(training_tsv, validation_tsv, mri_plane=0, val_size=0.1
     :return:
     """
 
-    df_training = pd.read_csv(training_tsv, sep='\t')
-    df_validation = pd.read_csv(validation_tsv, sep='\t')
     df_all = pd.concat([df_training, df_validation])
     df_all = df_all.reset_index(drop=True)
 
@@ -333,13 +331,7 @@ def load_split_by_slices(training_tsv, validation_tsv, mri_plane=0, val_size=0.1
     df_sub_train = df_final.iloc[train_ind]
     df_sub_valid = df_final.iloc[valid_ind]
 
-    train_tsv_path = os.path.join(tempfile.mkdtemp(), 'bad_data_split_train.tsv')
-    valid_tsv_path = os.path.join(tempfile.mkdtemp(), 'bad_data_split_valid.tsv')
-
-    df_sub_train.to_csv(train_tsv_path, sep='\t', index=False)
-    df_sub_valid.to_csv(valid_tsv_path, sep='\t', index=False)
-
-    return train_tsv_path, valid_tsv_path
+    return df_sub_train, df_sub_valid
 
 
 class MRIDataset_slice(Dataset):
