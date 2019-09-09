@@ -35,7 +35,6 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
     :param epoch:
     :return:
     """
-    print("Start for %s!" % model_mode)
     global_step = None
     softmax = torch.nn.Softmax(dim=1)
     if model_mode == "train":
@@ -127,14 +126,12 @@ def test(model, data_loader, use_cuda, loss_func):
     results_df = pd.DataFrame(columns=columns)
     total_loss = 0
 
-    print("Start evaluate the model!")
     if use_cuda:
         model.cuda()
 
     model.eval()  # set the model to evaluation mode
     torch.cuda.empty_cache()
     with torch.no_grad():
-        print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
         for i, data in enumerate(data_loader):
             if use_cuda:
                 imgs, labels = data['image'].cuda(), data['label'].cuda()
