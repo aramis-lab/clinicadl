@@ -116,14 +116,12 @@ def main(options):
                                   batch_size=options.batch_size,
                                   shuffle=True,
                                   num_workers=options.num_workers,
-                                  drop_last=True,
                                   pin_memory=True)
 
         valid_loader = DataLoader(data_valid,
                                   batch_size=options.batch_size,
                                   shuffle=False,
                                   num_workers=options.num_workers,
-                                  drop_last=True,
                                   pin_memory=True)
 
         # chosen optimizer for back-propagation

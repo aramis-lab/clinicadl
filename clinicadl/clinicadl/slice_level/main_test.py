@@ -91,7 +91,6 @@ def main(options):
                                  batch_size=options.batch_size,
                                  shuffle=False,
                                  num_workers=options.num_workers,
-                                 drop_last=True,
                                  pin_memory=True)
 
         # load the best trained model during the training
