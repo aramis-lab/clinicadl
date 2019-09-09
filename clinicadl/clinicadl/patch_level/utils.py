@@ -240,7 +240,7 @@ def load_model_after_cnn(model, checkpoint_dir, filename='checkpoint.pth.tar'):
 # CNN train / test
 #################################
 
-def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, model_mode="train",
+def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, model_mode="train",
           selection_threshold=None):
     """
     This is the function to train, validate or test the model, depending on the model_mode parameter.
@@ -250,7 +250,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
     :param loss_func:
     :param optimizer:
     :param writer:
-    :param epoch_i:
+    :param epoch:
     :return:
     """
 
@@ -266,7 +266,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
 
         for i, data in enumerate(data_loader):
             # update the global steps
-            global_step = i + epoch_i * len(data_loader)
+            global_step = i + epoch * len(data_loader)
 
             if use_cuda:
                 imgs, labels = data['image'].cuda(), data['label'].cuda()
@@ -319,8 +319,8 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch_i, m
         total_loss = metrics_batch['total_loss']
         loss_batch_mean = total_loss / len(data_loader)
 
-        writer.add_scalar('classification accuracy', accuracy_batch_mean, epoch_i)
-        writer.add_scalar('loss', loss_batch_mean, epoch_i)
+        writer.add_scalar('classification accuracy', accuracy_batch_mean, epoch)
+        writer.add_scalar('loss', loss_batch_mean, epoch)
 
         torch.cuda.empty_cache()
 
