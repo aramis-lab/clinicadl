@@ -182,7 +182,7 @@ def main(options):
                         model_mode='train', selection_threshold=options.selection_threshold)
 
             # calculate the training accuracy based on all the training data
-            train_all_df, acc_mean_train_all, loss_batch_mean_train_all, _,\
+            train_all_df, acc_mean_train_all, loss_batch_mean_train_all, _\
                 = train(model, train_loader, options.gpu, loss, optimizer, writer_train_all_data, epoch,
                         model_mode='valid', selection_threshold=options.selection_threshold)
             print("For training, subject level balanced accuracy is %f at the end of epoch %d"
