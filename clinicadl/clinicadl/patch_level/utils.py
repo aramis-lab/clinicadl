@@ -127,7 +127,7 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
         print('Mean time per batch (train):', total_time / len(train_loader))
 
         # Always test the results and save them once at the end of the epoch
-        loss_valid = test_ae(auto_encoder_all, valid_loader, options, criterion)
+        loss_valid = test_ae(auto_encoder_all, valid_loader, options.gpu, criterion)
         mean_loss_valid = loss_valid / (len(valid_loader))
         writer_valid_ft.add_scalar('loss', mean_loss_valid, global_step)
         print("Mean validation loss is %f for the -th batch %d" % (mean_loss_valid, global_step))
@@ -149,30 +149,27 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
     del optimizer, auto_encoder_all
 
 
-def test_ae(model, dataloader, options, criterion, former_layer=None):
+def test_ae(model, dataloader, gpu, criterion):
     """
     Computes the loss of the model, either the loss of the layer-wise AE or all the AEs in a big graph one time.
 
     :param model: the network (subclass of nn.Module)
     :param dataloader: a DataLoader wrapping a dataset
-    :param gpu: if True a gpu is used
+    :param gpu: (bool) if True a gpu is used
+    :param criterion:
     :return: loss of the model (float)
     """
     model.eval()
 
     total_loss = 0
     for i, data in enumerate(dataloader, 0):
-        if options.gpu:
+        if gpu:
             inputs = data['image'].cuda()
         else:
             inputs = data['image']
 
-        if former_layer is not None:
-            hidden = former_layer(inputs)
-        else:
-            hidden = inputs
+        hidden = inputs
         outputs = model(hidden)
-        ## explicitly set the variable of criterion to be requires_grad=False
         hidden_requires_grad_no = hidden.detach()
         hidden_requires_grad_no.requires_grad = False
         loss = criterion(outputs, hidden_requires_grad_no)
@@ -190,11 +187,14 @@ def test_ae(model, dataloader, options, criterion, former_layer=None):
 
 def load_model_after_ae(model, checkpoint_dir, filename='checkpoint.pth.tar'):
     """
-    This is to copy the weight of the pretrained AE to the current CNN
-    :param model:
-    :param checkpoint_dir:
-    :param filename:
+    Load and copy the weights and biases of a previously trained Encoder part of an autoencoder.
+
+    :param model: (nn.Module) the object in which the weights and biases are copied.
+    :param checkpoint_dir: (str) path to the directory in which the pretrained Autoencoder is saved.
+    :param filename: (str) name of the file in which the pretrained Autoencoder is saved.
     :return:
+        - model_updated (nn.Module) model initialized with the pretrained CNN
+        - best_epoch (int) the number of the epoch at which the pretrained CNN corresponds
     """
     from copy import deepcopy
 
@@ -204,7 +204,7 @@ def load_model_after_ae(model, checkpoint_dir, filename='checkpoint.pth.tar'):
     ae_pretrained_dict = param_dict['model']
     ae_pretrained_dict_copy = deepcopy(ae_pretrained_dict)
 
-    # remove the classifier's weight, only take the AE
+    # remove the classifier's weight, only take the convolutional part.
     for k in ae_pretrained_dict.keys():
         if 'classifier' not in k:
             pass
@@ -219,11 +219,14 @@ def load_model_after_ae(model, checkpoint_dir, filename='checkpoint.pth.tar'):
 
 def load_model_after_cnn(model, checkpoint_dir, filename='checkpoint.pth.tar'):
     """
+    Load and copy the weights and biases of a previously trained CNN.
 
-    :param model:
-    :param checkpoint_dir:
-    :param filename:
+    :param model: (nn.Module) the object in which the weights and biases are copied.
+    :param checkpoint_dir: (str) path to the directory in which the pretrained CNN is saved.
+    :param filename: (str) name of the file in which the pretrained CNN is saved.
     :return:
+        - model_updated (nn.Module) model initialized with the pretrained CNN
+        - best_epoch (int) the number of the epoch at which the pretrained CNN corresponds
     """
     from copy import deepcopy
 
@@ -453,7 +456,7 @@ def evaluate_prediction(y, y_hat):
 
 def patch_level_to_tsvs(output_dir, results_df, results, fold, selection, dataset='train', cnn_index=None):
     """
-    Allows to save the outputs of the test function.
+    Save the outputs of the test function to tsv files.
 
     :param output_dir: (str) path to the output directory.
     :param results_df: (DataFrame) the individual results per patch.
@@ -502,12 +505,17 @@ def retrieve_patch_level_results(output_dir, fold, selection, dataset, num_cnn):
 
 def soft_voting_to_tsvs(output_dir, fold, selection, dataset='test', num_cnn=None, selection_threshold=None):
     """
-    This is for soft voting for subject-level performances
-    :param performance_df: the pandas dataframe, including columns: iteration, y, y_hat, subject, probability
-    :param selection: (str) the metrics on which the model was selected (best_acc, best_loss)
+    Save soft voting results to tsv files.
 
-    ref: S. Raschka. Python Machine Learning., 2015
-    :return:
+    :param output_dir: (str) path to the output directory.
+    :param fold: (int) Fold number of the cross-validation.
+    :param selection: (str) criterion on which the model is selected (either best_loss or best_acc)
+    :param dataset: (str) name of the dataset for which the soft-voting is performed. If different from training or
+                    validation, the weights of soft voting will be computed on validation accuracies.
+    :param num_cnn: (int) if given load the patch level results of a multi-CNN framework.
+    :param selection_threshold: (float) all patches for which the classification accuracy is below the
+                                threshold is removed.
+
     """
 
     # Choose which dataset is used to compute the weights of soft voting.
@@ -537,6 +545,7 @@ def soft_voting(performance_df, validation_df, selection_threshold=None):
     Computes soft voting based on the probabilities in performance_df. Weights are computed based on the accuracies
     of validation_df.
 
+    ref: S. Raschka. Python Machine Learning., 2015
     :param performance_df: (DataFrame) results on patch level of the set on which the combination is made.
     :param validation_df: (DataFrame) results on patch level of the set used to compute the weights.
     :param selection_threshold: (float) if given, all patches for which the classification accuracy is below the
