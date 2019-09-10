@@ -101,13 +101,15 @@ def main(options):
     train_loader = DataLoader(data_train,
                               batch_size=options.batch_size,
                               shuffle=True,
-                              num_workers=options.num_workers
+                              num_workers=options.num_workers,
+                              pin_memory=True
                               )
 
     valid_loader = DataLoader(data_valid,
                               batch_size=options.batch_size,
                               shuffle=False,
-                              num_workers=options.num_workers
+                              num_workers=options.num_workers,
+                              pin_memory=True
                               )
 
     text_file = open(path.join(options.output_dir, 'python_version.txt'), 'w')
