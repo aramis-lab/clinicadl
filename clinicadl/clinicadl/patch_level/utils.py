@@ -260,7 +260,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
 
     if model_mode == "train":
         columns = ['participant_id', 'session_id', 'patch_index', 'true_label', 'predicted_label', 'proba0', 'proba1']
-        results_df = pd.DataFrame(columns=columns)
+        results_batch_df = pd.DataFrame(columns=columns)
         total_loss = 0.0
 
         model.train()  # set the model to training mode
@@ -296,27 +296,28 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
 
             # Generate detailed DataFrame
             for idx, sub in enumerate(data['participant_id']):
-                row = [sub, data['session_id'][idx], data['patch_id'][idx],
+                row = [sub, data['session_id'][idx], data['patch_id'][idx].item(),
                        labels[idx].item(), predicted[idx].item(),
-                       normalized_output[idx, 0].item(), normalized_output[idx, 1]]
+                       normalized_output[idx, 0].item(), normalized_output[idx, 1].item()]
                 row_df = pd.DataFrame(np.array(row).reshape(1, -1), columns=columns)
-                results_df = pd.concat([results_df, row_df])
+                results_batch_df = pd.concat([results_batch_df, row_df])
 
             # delete the temporary variables taking the GPU memory
             del imgs, labels, output, predicted, batch_loss, batch_accuracy
             torch.cuda.empty_cache()
 
-        epoch_metrics = evaluate_prediction(results_df.true_label.values.astype(int),
-                                            results_df.predicted_label.values.astype(int))
+        results_batch_df.reset_index(inplace=True, drop=True)
+        epoch_metrics = evaluate_prediction(results_batch_df.true_label.values.astype(int),
+                                            results_batch_df.predicted_label.values.astype(int))
         accuracy_batch_mean = epoch_metrics['balanced_accuracy']
         loss_batch_mean = total_loss / len(data_loader)
         torch.cuda.empty_cache()
 
     elif model_mode == "valid":
-        results_df, metrics_batch = test(model, data_loader, use_cuda, loss_func)
+        results_batch_df, metrics_batch = test(model, data_loader, use_cuda, loss_func)
 
         # calculate the balanced accuracy
-        _, metrics_subject = soft_voting(results_df, results_df, selection_threshold=selection_threshold)
+        _, metrics_subject = soft_voting(results_batch_df, results_batch_df, selection_threshold=selection_threshold)
         accuracy_batch_mean = metrics_subject['balanced_accuracy']
         total_loss = metrics_batch['total_loss']
         loss_batch_mean = total_loss / len(data_loader)
@@ -329,16 +330,20 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
     else:
         raise ValueError('This mode %s was not implemented. Please choose between train and valid' % model_mode)
 
-    return results_df, accuracy_batch_mean, loss_batch_mean, global_step
+    return results_batch_df, accuracy_batch_mean, loss_batch_mean, global_step
 
 
-def test(model, data_loader, use_cuda, loss_func):
+def test(model, dataloader, use_cuda, criterion):
     """
-    The function to evaluate the testing data for the trained classifiers
-    :param model:
-    :param data_loader:
-    :param use_cuda:
+    Computes the balanced accuracy of the model
+
+    :param model: the network (subclass of nn.Module)
+    :param dataloader: a DataLoader wrapping a dataset
+    :param use_cuda: if True a gpu is used
+    :param criterion: (loss) function to calculate the loss
     :return:
+        (DataFrame) results of each session
+        (dict) ensemble of metrics + total loss
     """
 
     softmax = torch.nn.Softmax(dim=1)
@@ -352,7 +357,7 @@ def test(model, data_loader, use_cuda, loss_func):
     model.eval()  # set the model to evaluation mode
     torch.cuda.empty_cache()
     with torch.no_grad():
-        for i, data in enumerate(data_loader):
+        for i, data in enumerate(dataloader):
             if use_cuda:
                 imgs, labels = data['image'].cuda(), data['label'].cuda()
             else:
@@ -360,7 +365,7 @@ def test(model, data_loader, use_cuda, loss_func):
 
             output = model(imgs)
             normalized_output = softmax(output)
-            loss = loss_func(output, labels)
+            loss = criterion(output, labels)
             total_loss += loss.item()
             _, predicted = torch.max(output.data, 1)
 
@@ -387,7 +392,12 @@ def test(model, data_loader, use_cuda, loss_func):
 
 
 def evaluate_prediction(y, y_hat):
-
+    """
+    This is a function to calculate the different metrics based on the list of true label and predicted label
+    :param y: list of labels
+    :param y_hat: list of predictions
+    :return: (dict) ensemble of metrics
+    """
     true_positive = 0.0
     true_negative = 0.0
     false_positive = 0.0

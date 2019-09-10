@@ -106,7 +106,7 @@ def main(options):
             training_tsv, valid_tsv = load_data(options.diagnosis_tsv_path, options.diagnoses, fi,
                                                 n_splits=options.n_splits, baseline=options.baseline)
 
-            print("Running for the %d-th fold" % fi)
+            print("Running for the %d-th CNN" % i)
             if options.transfer_learning_path is not None:
                 if options.transfer_learning_autoencoder:
                     print('Train the model with the weights from a pre-trained autoencoder.')
@@ -141,11 +141,9 @@ def main(options):
                                       num_workers=options.num_workers
                                       )
 
-            # chosen optimizer for back-propagation
+            # Define loss and optimizer
             optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
                                                                  options.learning_rate, weight_decay=options.weight_decay)
-
-            # Define loss and optimizer
             loss = torch.nn.CrossEntropyLoss()
 
             print('Beginning the training task')
@@ -203,7 +201,7 @@ def main(options):
                 # try early stopping criterion
                 if early_stopping.step(loss_batch_mean_valid) or epoch == options.epochs - 1:
                     print("By applying early stopping or at the last epoch defined by user,"
-                          "the model should be stopped training at %d-th epoch" % epoch)
+                          "the training is stopped at %d-th epoch" % epoch)
 
                     break
 
@@ -212,10 +210,6 @@ def main(options):
                 model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', 'fold_%i' % fi,
                                                                    'cnn-%i' % i, selection),
                                                gpu=options.gpu, filename='model_best.pth.tar')
-                model.eval()
-
-                print(
-                    "The best model was saved during training from fold %d at the %d -th epoch" % (fi, best_epoch))
 
                 train_df, metrics_train = test(model, train_loader, options.gpu, loss)
                 valid_df, metrics_valid = test(model, valid_loader, options.gpu, loss)

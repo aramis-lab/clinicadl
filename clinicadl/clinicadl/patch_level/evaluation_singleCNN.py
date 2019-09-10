@@ -104,9 +104,6 @@ def main(options):
         model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', "fold_%i" % fi,
                                                            'CNN', str(options.selection)),
                                        gpu=options.gpu, filename='model_best.pth.tar')
-        model.eval()
-
-        print("The best model was saved during training from fold %i at the %i-th epoch" % (fi, best_epoch))
 
         results_df, metrics = test(model, test_loader, options.gpu, loss)
         print("Patch level balanced accuracy is %f" % metrics['balanced_accuracy'])
