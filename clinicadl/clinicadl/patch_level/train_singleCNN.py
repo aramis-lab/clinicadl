@@ -105,7 +105,6 @@ def main(options):
                                             n_splits=options.n_splits, baseline=options.baseline)
 
         print("Running for the %d-th fold" % fi)
-        print("Train the model from 0 epoch")
 
         if options.transfer_learning_path is not None:
             if options.transfer_learning_autoencoder:
