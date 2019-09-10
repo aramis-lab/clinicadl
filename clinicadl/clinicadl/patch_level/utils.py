@@ -261,7 +261,6 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
         total_loss = 0.0
 
         model.train()  # set the model to training mode
-        print('The number of batches in this sampler based on the batch size: %s' % str(len(data_loader)))
 
         for i, data in enumerate(data_loader):
             # update the global steps
@@ -534,6 +533,18 @@ def soft_voting_to_tsvs(output_dir, fold, selection, dataset='test', num_cnn=Non
 
 
 def soft_voting(performance_df, validation_df, selection_threshold=None):
+    """
+    Computes soft voting based on the probabilities in performance_df. Weights are computed based on the accuracies
+    of validation_df.
+
+    :param performance_df: (DataFrame) results on patch level of the set on which the combination is made.
+    :param validation_df: (DataFrame) results on patch level of the set used to compute the weights.
+    :param selection_threshold: (float) if given, all patches for which the classification accuracy is below the
+                                threshold is removed.
+    :return:
+        - df_final (DataFrame) the results on the subject level
+        - results (dict) the metrics on the subject level
+    """
 
     # Compute the patch accuracies on the validation set:
     right_classified_df = validation_df[validation_df['true_label'] == validation_df['predicted_label']]
@@ -591,7 +602,6 @@ def soft_voting(performance_df, validation_df, selection_threshold=None):
 
 
 class MRIDataset_patch(Dataset):
-    """labeled Faces in the Wild dataset."""
 
     def __init__(self, caps_directory, data_file, patch_size, stride_size, transformations=None):
         """
@@ -619,51 +629,44 @@ class MRIDataset_patch(Dataset):
            ('participant_id' not in list(self.df.columns.values)):
             raise Exception("the data file is not in the correct format."
                             "Columns should include ['participant_id', 'session_id', 'diagnosis']")
-        participant_list = list(self.df['participant_id'])
-        session_list = list(self.df['session_id'])
-        label_list = list(self.df['diagnosis'])
 
-        # dynamically calculate the number of patches from each MRI based on the parameters of patch_size & stride_size:
-        # Question posted on: https://discuss.pytorch.org/t/how-to-extract-smaller-image-patches-3d/16837/9
-        patch_dims = [math.floor((169 - patch_size) / stride_size + 1), math.floor((208 - patch_size) / stride_size + 1), math.floor((179 - patch_size) / stride_size + 1)]
+        patch_dims = [math.floor((169 - patch_size) / stride_size + 1),
+                      math.floor((208 - patch_size) / stride_size + 1),
+                      math.floor((179 - patch_size) / stride_size + 1)]
         self.patchs_per_patient = int(patch_dims[0] * patch_dims[1] * patch_dims[2])
-        self.patch_participant_list = [ele for ele in participant_list for _ in range(self.patchs_per_patient)]
-        self.patch_session_list = [ele for ele in session_list for _ in range(self.patchs_per_patient)]
-        self.patch_label_list = [ele for ele in label_list for _ in range(self.patchs_per_patient)]
 
     def __len__(self):
-        return len(self.patch_participant_list)
+        return len(self.df) * self.patchs_per_patient
 
     def __getitem__(self, idx):
-        img_name = self.patch_participant_list[idx]
-        sess_name = self.patch_session_list[idx]
-        img_label = self.patch_label_list[idx]
-        # image without intensity normalization
+        sub_idx = idx // self.patchs_per_patient
+        img_name = self.df.loc[sub_idx, 'participant_id']
+        sess_name = self.df.loc[sub_idx, 'session_id']
+        img_label = self.df.loc[sub_idx, 'diagnosis']
         label = self.diagnosis_code[img_label]
-        index_patch = idx % self.patchs_per_patient
+        patch_idx = idx % self.patchs_per_patient
 
         patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl',
                                   img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-' + str(self.patch_size)
-                                  + '_stride-' + str(self.stride_size) + '_patch-' + str(index_patch) + '.pt')
+                                  + '_stride-' + str(self.stride_size) + '_patch-' + str(patch_idx) + '.pt')
 
         patch = torch.load(patch_path)
 
-        # check if the patch has NAN value
-        if torch.isnan(patch).any() == True:
-            print("Double check, this patch has Nan value: %s" % str(img_name + '_' + sess_name + str(index_patch)))
+        # check if the patch has NaN value
+        if torch.isnan(patch).any():
+            print("Double check, this patch has NaN value: %s" % str(img_name + '_' + sess_name + str(patch_idx)))
             patch[torch.isnan(patch)] = 0
 
         if self.transformations:
             patch = self.transformations(patch)
 
-        sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(index_patch), 'image': patch, 'label': label,
-                  'participant_id': img_name, 'session_id': sess_name, 'patch_id': index_patch}
+        sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(patch_idx), 'image': patch, 'label': label,
+                  'participant_id': img_name, 'session_id': sess_name, 'patch_id': patch_idx}
 
         return sample
 
 
 class MRIDataset_patch_hippocampus(Dataset):
-    """Loading the left and right hippocampus ROIs."""
 
     def __init__(self, caps_directory, data_file, transformations=None):
         """
@@ -689,25 +692,20 @@ class MRIDataset_patch_hippocampus(Dataset):
            ('participant_id' not in list(self.df.columns.values)):
             raise Exception("the data file is not in the correct format."
                             "Columns should include ['participant_id', 'session_id', 'diagnosis']")
-        participant_list = list(self.df['participant_id'])
-        session_list = list(self.df['session_id'])
-        label_list = list(self.df['diagnosis'])
 
         self.patchs_per_patient = 2
-        self.patch_participant_list = [ele for ele in participant_list for _ in range(self.patchs_per_patient)]
-        self.patch_session_list = [ele for ele in session_list for _ in range(self.patchs_per_patient)]
-        self.patch_label_list = [ele for ele in label_list for _ in range(self.patchs_per_patient)]
 
     def __len__(self):
-        return len(self.patch_participant_list)
+        return len(self.df) * self.patchs_per_patient
 
     def __getitem__(self, idx):
-        img_name = self.patch_participant_list[idx]
-        sess_name = self.patch_session_list[idx]
-        img_label = self.patch_label_list[idx]
-        ## image without intensity normalization
+        sub_idx = idx // self.patchs_per_patient
+        img_name = self.df.loc[sub_idx, 'participant_id']
+        sess_name = self.df.loc[sub_idx, 'session_id']
+        img_label = self.df.loc[sub_idx, 'diagnosis']
         label = self.diagnosis_code[img_label]
-        ## odd is left hipp, even is right
+
+        # 1 is left hippocampus, 0 is right
         left_is_odd = idx % self.patchs_per_patient
 
         if left_is_odd == 1:
@@ -721,9 +719,9 @@ class MRIDataset_patch_hippocampus(Dataset):
 
         patch = torch.load(patch_path)
 
-        # check if the patch has NAN value
+        # check if the patch has NaN value
         if torch.isnan(patch).any():
-            print("Double check, this patch has Nan value: %s" % str(img_name + '_' + sess_name + str(left_is_odd)))
+            print("Double check, this patch has NaN value: %s" % str(img_name + '_' + sess_name + str(left_is_odd)))
             patch[torch.isnan(patch)] = 0
 
         if self.transformations:
@@ -736,7 +734,6 @@ class MRIDataset_patch_hippocampus(Dataset):
 
 
 class MRIDataset_patch_by_index(Dataset):
-    """Loading the left and right hippocampus ROIs."""
 
     def __init__(self, caps_directory, data_file, patch_size, stride_size, index_patch, transformations=None):
         """
@@ -765,33 +762,26 @@ class MRIDataset_patch_by_index(Dataset):
            ('participant_id' not in list(self.df.columns.values)):
             raise Exception("the data file is not in the correct format."
                             "Columns should include ['participant_id', 'session_id', 'diagnosis']")
-        participant_list = list(self.df['participant_id'])
-        session_list = list(self.df['session_id'])
-        label_list = list(self.df['diagnosis'])
-
-        self.patch_participant_list = participant_list
-        self.patch_session_list = session_list
-        self.patch_label_list = label_list
 
     def __len__(self):
-        return len(self.patch_participant_list)
+        return len(self.df)
 
     def __getitem__(self, idx):
-        img_name = self.patch_participant_list[idx]
-        sess_name = self.patch_session_list[idx]
-        img_label = self.patch_label_list[idx]
+        img_name = self.df.loc[idx, 'participant_id']
+        sess_name = self.df.loc[idx, 'session_id']
+        img_label = self.df.loc[idx, 'diagnosis']
         label = self.diagnosis_code[img_label]
 
         patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
-                                  'preprocessing_dl',
-                                  img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-' + str(self.patch_size) + '_stride-' + str(self.stride_size) + '_patch-' + str(
-                                      self.index_patch) + '.pt')
+                                  'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-'
+                                  + str(self.patch_size) + '_stride-' + str(self.stride_size) + '_patch-' +
+                                  str(self.index_patch) + '.pt')
 
         patch = torch.load(patch_path)
 
-        # check if the patch has NAN value
-        if torch.isnan(patch).any() == True:
-            print("Double check, this patch has Nan value: %s" % str(img_name + '_' + sess_name + str(self.index_patch)))
+        # check if the patch has NaN value
+        if torch.isnan(patch).any():
+            print("Double check, this patch has NaN value: %s" % str(img_name + '_' + sess_name + str(self.index_patch)))
             patch[torch.isnan(patch)] = 0
 
         if self.transformations:
