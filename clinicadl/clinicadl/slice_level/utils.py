@@ -38,7 +38,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
     global_step = None
     softmax = torch.nn.Softmax(dim=1)
     if model_mode == "train":
-        columns = ['participant_id', 'session_id', 'patch_index', 'true_label', 'predicted_label', 'proba0', 'proba1']
+        columns = ['participant_id', 'session_id', 'slice_id', 'true_label', 'predicted_label', 'proba0', 'proba1']
         results_df = pd.DataFrame(columns=columns)
         total_loss = 0.0
 
@@ -76,7 +76,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
 
             # Generate detailed DataFrame
             for idx, sub in enumerate(data['participant_id']):
-                row = [sub, data['session_id'][idx], data['patch_id'][idx],
+                row = [sub, data['session_id'][idx], data['slice_id'][idx],
                        labels[idx].item(), predicted[idx].item(),
                        normalized_output[idx, 0].item(), normalized_output[idx, 1]]
                 row_df = pd.DataFrame(np.array(row).reshape(1, -1), columns=columns)
@@ -369,58 +369,46 @@ class MRIDataset_slice(Dataset):
         else:
             raise Exception('The argument datafile is not of correct type.')
 
-        participant_list = list(self.df['participant_id'])
-        session_list = list(self.df['session_id'])
-        label_list = list(self.df['diagnosis'])
-
         # This dimension is for the output of image processing pipeline of Raw: 169 * 208 * 179
         if mri_plane == 0:
             self.slices_per_patient = 169 - 40
-            self.slice_participant_list = [ele for ele in participant_list for _ in range(self.slices_per_patient)]
-            self.slice_session_list = [ele for ele in session_list for _ in range(self.slices_per_patient)]
-            self.slice_label_list = [ele for ele in label_list for _ in range(self.slices_per_patient)]
             self.slice_direction = 'sag'
         elif mri_plane == 1:
             self.slices_per_patient = 208 - 40
-            self.slice_participant_list = [ele for ele in participant_list for _ in range(self.slices_per_patient)]
-            self.slice_session_list = [ele for ele in session_list for _ in range(self.slices_per_patient)]
-            self.slice_label_list = [ele for ele in label_list for _ in range(self.slices_per_patient)]
             self.slice_direction = 'cor'
         elif mri_plane == 2:
             self.slices_per_patient = 179 - 40
-            self.slice_participant_list = [ele for ele in participant_list for _ in range(self.slices_per_patient)]
-            self.slice_session_list = [ele for ele in session_list for _ in range(self.slices_per_patient)]
-            self.slice_label_list = [ele for ele in label_list for _ in range(self.slices_per_patient)]
             self.slice_direction = 'axi'
 
     def __len__(self):
-        return len(self.slice_participant_list)
+        return len(self.df) * self.slices_per_patient
 
     def __getitem__(self, idx):
-
-        img_name = self.slice_participant_list[idx]
-        sess_name = self.slice_session_list[idx]
-        img_label = self.slice_label_list[idx]
+        sub_idx = idx // self.slices_per_patient
+        img_name = self.df.loc[sub_idx, 'participant_id']
+        sess_name = self.df.loc[sub_idx, 'session_id']
+        img_label = self.df.loc[sub_idx, 'diagnosis']
         label = self.diagnosis_code[img_label]
-        index_slice = idx % self.slices_per_patient
+        slice_idx = idx % self.slices_per_patient
 
         # read the slices directly
         slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
                                   'preprocessing_dl',
                                   img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' +
-                                  self.slice_direction + '_rgbslice-' + str(index_slice + 20) + '.pt')
+                                  self.slice_direction + '_rgbslice-' + str(slice_idx + 20) + '.pt')
 
         extracted_slice = torch.load(slice_path)
 
-        # check if the slice has NAN value
+        # check if the slice has NaN value
         if torch.isnan(extracted_slice).any():
-            print("Slice %s has nan values." % str(img_name + '_' + sess_name + '_' + str(index_slice + 20)))
+            print("Slice %s has NaN values." % str(img_name + '_' + sess_name + '_' + str(slice_idx + 20)))
             extracted_slice[torch.isnan(extracted_slice)] = 0
 
         if self.transformations:
             extracted_slice = self.transformations(extracted_slice)
 
-        sample = {'image_id': img_name + '_' + sess_name + '_slice' + str(index_slice + 20), 'image': extracted_slice, 'label': label}
+        sample = {'image_id': img_name + '_' + sess_name + '_slice' + str(slice_idx + 20), 'image': extracted_slice, 'label': label,
+                  'participant_id': img_name, 'session_id': sess_name, 'slice_id': slice_idx + 20}
 
         return sample
 
@@ -459,11 +447,6 @@ class MRIDataset_slice_mixed(Dataset):
         else:
             raise Exception('The argument datafile is not of correct type.')
 
-        self.participant_list = list(self.df['participant_id'])
-        self.session_list = list(self.df['session_id'])
-        self.slice_list = list(self.df['slice_id'])
-        self.label_list = list(self.df['diagnosis'])
-
         if mri_plane == 0:
             self.slice_direction = 'sag'
         elif mri_plane == 1:
@@ -472,14 +455,13 @@ class MRIDataset_slice_mixed(Dataset):
             self.slice_direction = 'axi'
 
     def __len__(self):
-        return len(self.participant_list)
+        return len(self.df)
 
     def __getitem__(self, idx):
-
-        img_name = self.participant_list[idx]
-        sess_name = self.session_list[idx]
-        slice_name = self.slice_list[idx]
-        img_label = self.label_list[idx]
+        img_name = self.df.loc[idx, 'participant_id']
+        sess_name = self.df.loc[idx, 'session_id']
+        slice_name = self.df.loc[idx, 'slice_id']
+        img_label = self.df.loc[idx, 'diagnosis']
         label = self.diagnosis_code[img_label]
 
         slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
@@ -488,9 +470,9 @@ class MRIDataset_slice_mixed(Dataset):
 
         extracted_slice = torch.load(slice_path)
 
-        # check if the slice has NAN value
+        # check if the slice has NaN value
         if torch.isnan(extracted_slice).any():
-            print("Slice %s has nan values." % str(img_name + '_' + sess_name + '_' + str(slice_name)))
+            print("Slice %s has NaN values." % str(img_name + '_' + sess_name + '_' + str(slice_name)))
             extracted_slice[torch.isnan(extracted_slice)] = 0
 
         if self.transformations:
