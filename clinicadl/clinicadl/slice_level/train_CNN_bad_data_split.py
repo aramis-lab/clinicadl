@@ -106,7 +106,7 @@ def main(options):
                                                   n_splits=options.n_splits, baseline=options.baseline)
 
         # split the training + validation by slice
-        training_df, valid_df = mix_slices(training_sub_df, valid_sub_df, mri_plane=options.mri_plane,)
+        training_df, valid_df = mix_slices(training_sub_df, valid_sub_df, mri_plane=options.mri_plane)
 
         data_train = MRIDataset_slice_mixed(options.caps_directory, training_df, transformations=transformations,
                                             mri_plane=options.mri_plane)
