@@ -69,7 +69,7 @@ def postprocessing_t1w(caps_directory,
     import nipype.interfaces.utility as nutil
     import nipype.pipeline.engine as npe
     import tempfile
-    from preprocessing.T1_postprocessing_utils import (get_caps_t1, 
+    from .T1_postprocessing_utils import (get_caps_t1, 
             extract_slices, extract_patches, save_as_pt)
 
     if working_directory is None:
