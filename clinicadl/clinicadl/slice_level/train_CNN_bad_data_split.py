@@ -45,7 +45,7 @@ parser.add_argument("--network", default="resnet18",
 parser.add_argument("--diagnoses", default=["AD", "CN"], type=str, nargs="+",
                     help="Labels for any binary task")
 
-parser.add_argument("--learning_rate", default=1e-3, type=float,
+parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")
