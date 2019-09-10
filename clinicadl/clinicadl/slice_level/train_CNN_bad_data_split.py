@@ -1,18 +1,16 @@
-import os
-import torch
 import argparse
-import copy
-import numpy as np
-from torch.utils.data import DataLoader
-from tensorboardX import SummaryWriter
 import torchvision.transforms as transforms
+from tensorboardX import SummaryWriter
+from torch.utils.data import DataLoader
+import copy
+import torch
+import os
+import numpy as np
+from time import time
 
-from .utils import MRIDataset_patch_hippocampus, MRIDataset_patch
-from .utils import load_model_after_ae, load_model_after_cnn
-from .utils import train, test, patch_level_to_tsvs, soft_voting_to_tsvs
-
-from tools.deep_learning import EarlyStopping, save_checkpoint, commandline_to_json, create_model, load_model
-from tools.deep_learning.data import MinMaxNormalization, load_data
+from .utils import mix_slices, MRIDataset_slice_mixed, train, test, slice_level_to_tsvs, soft_voting_to_tsvs
+from tools.deep_learning import EarlyStopping, create_model, save_checkpoint, load_model, commandline_to_json
+from tools.deep_learning.data import load_data, MinMaxNormalization
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -23,51 +21,47 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
-parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D patch CNN")
+parser = argparse.ArgumentParser(
+    description="Argparser for Pytorch 2D CNN, The input MRI's dimension is 169*208*179 after cropping")
 
-# Mandatory arguments
+# Mandatory argument
 parser.add_argument("caps_directory", type=str,
                     help="Path to the caps of image processing pipeline of DL")
 parser.add_argument("diagnosis_tsv_path", type=str,
-                    help="Path to tsv file of the population based on the diagnosis tsv files."
+                    help="Path to tsv file of the population based on the diagnosis tsv files. "
                          "To note, the column name should be participant_id, session_id and diagnosis.")
 parser.add_argument("output_dir", type=str,
                     help="Path to store the classification outputs, and the tsv files containing the performances.")
 
-# Data management
-parser.add_argument("--diagnoses", default=["AD", "CN"], type=str, nargs="+",
-                    help="Labels based on binary classification")
-parser.add_argument("--patch_size", default=50, type=int,
-                    help="The patch size extracted from the MRI")
-parser.add_argument("--patch_stride", default=50, type=int,
-                    help="The stride for the patch extract window from the MRI")
-parser.add_argument("--baseline", default=False, action="store_true",
-                    help="Use only baseline data instead of all scans available")
-parser.add_argument('--hippocampus_roi', default=False, action="store_true",
-                    help="If train the model using only hippocampus ROI")
+# Data argument
+parser.add_argument("--mri_plane", default=0, type=int,
+                    help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
+parser.add_argument('--baseline', default=False, action="store_true",
+                    help="Using baseline scans or all available longitudinal scans for training")
 
-# Cross-validation
+# train argument
+parser.add_argument("--network", default="resnet18",
+                    help="Deep network type. Only ResNet was designed for training from scratch.")
+parser.add_argument("--diagnoses", default=["AD", "CN"], type=str, nargs="+",
+                    help="Labels for any binary task")
+
+parser.add_argument("--learning_rate", default=1e-3, type=float,
+                    help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")
 parser.add_argument("--split", default=None, type=int,
-                    help="Default behaviour will run all splits, else only the splits specified will be run.")
-
-# transfer learning
-parser.add_argument("--network", default="Conv4_FC3",
-                    help="Architecture of the network.")
-parser.add_argument("--transfer_learning_autoencoder", default=False, action="store_true",
-                    help="If do transfer learning using autoencoder saved at transfer_learning_path.")
-parser.add_argument("--transfer_learning_path", default=None,
-                    help='When a path to an experiment is given, will load the autoencoder / CNN weights.')
-
-# Training arguments
-parser.add_argument("--epochs", default=10, type=int,
+                    help="Define a specific fold in the k-fold, this is very useful to find the optimal model, where you do not want to run your k-fold validation")
+parser.add_argument("--epochs", default=1, type=int,
                     help="Epochs through the data. (default=20)")
-parser.add_argument("-lr", "--learning_rate", default=1e-3, type=float,
-                    help="Learning rate of the optimization. (default=0.01)")
+parser.add_argument("--batch_size", default=32, type=int,
+                    help="Batch size for training. (default=1)")
 parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
                     help="Optimizer of choice for training. (default=Adam)")
-parser.add_argument('--weight_decay', default=1e-4, type=float,
+parser.add_argument("--gpu", default=False, action="store_true",
+                    help="If use gpu or cpu. Empty implies cpu usage.")
+parser.add_argument("--num_workers", default=0, type=int,
+                    help='the number of batch being loaded in parallel')
+parser.add_argument('--weight_decay', default=1e-2, type=float,
                     help='weight decay (default: 1e-4)')
 parser.add_argument('--selection_threshold', default=None, type=float,
                     help='Threshold on the balanced accuracies to compute the subject_level performance '
@@ -79,20 +73,26 @@ parser.add_argument("--patience", type=int, default=10,
 parser.add_argument("--tolerance", type=float, default=0,
                     help="Tolerance of magnitude of performance after each epoch.")
 
-# Computational issues
-parser.add_argument("--batch_size", default=1, type=int,
-                    help="Batch size for training. (default=1)")
-parser.add_argument("--num_workers", default=0, type=int,
-                    help='the number of batch being loaded in parallel')
-parser.add_argument('--gpu', default=False, action="store_true",
-                    help='Uses gpu instead of cpu if cuda is available')
-
 
 def main(options):
 
+    # Initialize the model
+    print('Do transfer learning with existed model trained on ImageNet!\n')
+    print('The chosen network is %s !' % options.network)
+
     model = create_model(options.network, options.gpu)
+    trg_size = (224, 224)  # most of the imagenet pretrained model has this input size
+
+    # All pre-trained models expect input images normalized in the same way, i.e. mini-batches of 3-channel RGB
+    # images of shape (3 x H x W), where H and W are expected to be at least 224. The images have to be loaded in
+    # to a range of [0, 1] and then normalized using mean = [0.485, 0.456, 0.406] and std = [0.229, 0.224, 0.225].
+    transformations = transforms.Compose([MinMaxNormalization(),
+                                          transforms.ToPILImage(),
+                                          transforms.Resize(trg_size),
+                                          transforms.ToTensor()])
+
+    total_time = time()
     init_state = copy.deepcopy(model.state_dict())
-    transformations = transforms.Compose([MinMaxNormalization()])
 
     if options.split is None:
         fold_iterator = range(options.n_splits)
@@ -100,75 +100,49 @@ def main(options):
         fold_iterator = [options.split]
 
     for fi in fold_iterator:
+        print("Running for the %d -th fold" % fi)
 
-        training_tsv, valid_tsv = load_data(options.diagnosis_tsv_path, options.diagnoses, fi,
-                                            n_splits=options.n_splits, baseline=options.baseline)
+        training_sub_df, valid_sub_df = load_data(options.diagnosis_tsv_path, options.diagnoses, fi,
+                                                  n_splits=options.n_splits, baseline=options.baseline)
 
-        print("Running for the %d-th fold" % fi)
-        print("Train the model from 0 epoch")
+        # split the training + validation by slice
+        training_df, valid_df = mix_slices(training_sub_df, valid_sub_df, mri_plane=options.mri_plane,)
 
-        if options.transfer_learning_path is not None:
-            if options.transfer_learning_autoencoder:
-                print('Train the model with the weights from a pre-trained autoencoder.')
-                model, _ = load_model_after_ae(model, os.path.join(options.transfer_learning_path, 'best_model_dir',
-                                                                   "fold_" + str(fi), 'ConvAutoencoder',
-                                                                   'Encoder'), filename='model_best_encoder.pth.tar')
-            else:
-                print('Train the model with the weights from a pre-trained CNN.')
-                model, _ = load_model_after_cnn(model, os.path.join(options.transfer_learning_path, 'best_model_dir',
-                                                                    "fold_" + str(fi), 'CNN', 'best_acc'),
-                                                filename='model_best.pth.tar')
-        else:
-            print('The model is trained from scratch.')
-            model.load_state_dict(init_state)
-
-        if options.hippocampus_roi:
-            print("Only using hippocampus ROI")
-
-            data_train = MRIDataset_patch_hippocampus(options.caps_directory, training_tsv, transformations=transformations)
-            data_valid = MRIDataset_patch_hippocampus(options.caps_directory, valid_tsv, transformations=transformations)
-
-        else:
-            data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size,
-                                          options.patch_stride, transformations=transformations)
-            data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size,
-                                          options.patch_stride, transformations=transformations)
+        data_train = MRIDataset_slice_mixed(options.caps_directory, training_df, transformations=transformations,
+                                            mri_plane=options.mri_plane)
+        data_valid = MRIDataset_slice_mixed(options.caps_directory, valid_df, transformations=transformations,
+                                            mri_plane=options.mri_plane)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
                                   batch_size=options.batch_size,
                                   shuffle=True,
                                   num_workers=options.num_workers,
-                                  drop_last=True,
-                                  )
+                                  pin_memory=True)
 
         valid_loader = DataLoader(data_valid,
                                   batch_size=options.batch_size,
                                   shuffle=False,
                                   num_workers=options.num_workers,
-                                  drop_last=False,
-                                  )
+                                  pin_memory=True)
 
         # chosen optimizer for back-propagation
         optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
                                                              options.learning_rate, weight_decay=options.weight_decay)
-        # apply exponential decay for learning rate
-        scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
+        model.load_state_dict(init_state)
 
-        # Define loss and optimizer
+        # Binary cross-entropy loss
         loss = torch.nn.CrossEntropyLoss()
 
-        print('Beginning the training task')
         # parameters used in training
         best_accuracy = 0.0
         best_loss_valid = np.inf
 
-        writer_train_batch = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi),
-                                                                 "CNN", "train_batch")))
-        writer_train_all_data = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi),
-                                                                    "CNN", "train_all_data")))
-        writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi),
-                                                           "CNN", "valid")))
+        writer_train_batch = SummaryWriter(
+            log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "train_batch")))
+        writer_train_all_data = SummaryWriter(
+            log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "train_all_data")))
+        writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "valid")))
 
         # initialize the early stopping instance
         early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
@@ -178,11 +152,11 @@ def main(options):
 
             # train the model
             train_df, acc_mean_train, loss_batch_mean_train, global_step \
-                = train(model, train_loader, options.gpu, loss, optimizer, writer_train_batch, epoch,
+                = train(model, train_loader, options, loss, optimizer, writer_train_batch, epoch,
                         model_mode='train', selection_threshold=options.selection_threshold)
 
-            # calculate the training accuracy based on all the training data
-            train_all_df, acc_mean_train_all, loss_batch_mean_train_all, _,\
+            # calculate the accuracy with the whole training data to monitor overfitting
+            train_all_df, acc_mean_train_all, loss_batch_mean_train_all, _\
                 = train(model, train_loader, options.gpu, loss, optimizer, writer_train_all_data, epoch,
                         model_mode='valid', selection_threshold=options.selection_threshold)
             print("For training, subject level balanced accuracy is %f at the end of epoch %d"
@@ -194,10 +168,6 @@ def main(options):
                         model_mode='valid', selection_threshold=options.selection_threshold)
             print("For validation, subject level balanced accuracy is %f at the end of epoch %d"
                   % (acc_mean_valid, epoch))
-
-            # update the learning rate
-            if epoch % 20 == 0 and epoch != 0:
-                scheduler.step()
 
             # save the best model based on the best loss and accuracy
             acc_is_best = acc_mean_valid > best_accuracy
@@ -219,6 +189,7 @@ def main(options):
             if early_stopping.step(loss_batch_mean_valid) or epoch == options.epochs - 1:
                 print("By applying early stopping or at the last epoch defined by user, "
                       "the model should be stopped training at %d-th epoch" % epoch)
+
                 break
 
         # Final evaluation for all criteria
@@ -228,15 +199,16 @@ def main(options):
                                            gpu=options.gpu, filename='model_best.pth.tar')
             model.eval()
 
-            print("The best model was saved during training from fold %d at the %d -th epoch" % (fi, best_epoch))
+            print(
+                "The best model was saved during training from fold %d at the %d -th epoch" % (fi, best_epoch))
 
             train_df, metrics_train = test(model, train_loader, options.gpu, loss)
             valid_df, metrics_valid = test(model, valid_loader, options.gpu, loss)
 
             # write the information of subjects and performances into tsv files.
-            patch_level_to_tsvs(options.output_dir, train_df, metrics_train, fi,
+            slice_level_to_tsvs(options.output_dir, train_df, metrics_train, fi,
                                 dataset='train', selection=selection)
-            patch_level_to_tsvs(options.output_dir, valid_df, metrics_valid, fi,
+            slice_level_to_tsvs(options.output_dir, valid_df, metrics_valid, fi,
                                 dataset='validation', selection=selection)
 
             soft_voting_to_tsvs(options.output_dir, fi, dataset='train', selection=selection,
@@ -245,11 +217,14 @@ def main(options):
                                 selection_threshold=options.selection_threshold)
             torch.cuda.empty_cache()
 
+    total_time = time() - total_time
+    print("Total time of computation: %d s" % total_time)
+
 
 if __name__ == "__main__":
     commandline = parser.parse_known_args()
     commandline_to_json(commandline, "CNN")
     options = commandline[0]
     if commandline[1]:
-        raise Exception("unknown arguments: %s" % parser.parse_known_args()[1])
+        raise Exception("unknown arguments: %s" % (parser.parse_known_args()[1]))
     main(options)

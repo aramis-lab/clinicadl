@@ -82,8 +82,7 @@ if __name__ == "__main__":
         test_loader = DataLoader(data_test,
                                  batch_size=options.batch_size,
                                  shuffle=False,
-                                 num_workers=options.num_workers,
-                                 drop_last=False
+                                 num_workers=options.num_workers
                                  )
 
         # Run test
