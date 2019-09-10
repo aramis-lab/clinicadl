@@ -22,20 +22,29 @@ def extract_data_func(args):
             args.slice_mode)
     wf.run(plugin='MultiProc', plugin_args={'n_procs': 8})
 
+def train_func(args):
+    pass
+
 def parse_command_line():
     parser = argparse.ArgumentParser(prog='clinicadl', 
             description='Clinica Deep Learning.')
 
-    subparsers = parser.add_subparsers(dest='cmd', help='subcommands')
+    subparser = parser.add_subparsers(title='Task to execute with clinicadl',
+            description='''What kind of task do you want to use with clinicadl
+            (preprocessing, extract, train, validate, classify).''',
+            dest='task', 
+            help='Stages/task to execute with clinicadl')
+    #subparser_extract = parser.add_subparsers(dest='ext',
+    #        help='Extract the data')
 
-    subparsers.required = True
+    subparser.required = True 
 
     # Preprocessing 1
     # preprocessing_parser: get command line arguments and options for
     # preprocessing
 
-    preprocessing_parser = subparsers.add_parser('preprocessing',
-            help='Prepare data for training')
+    preprocessing_parser = subparser.add_parser('preprocessing',
+            help='Prepare data for training (needs clinica installed).')
     preprocessing_parser.add_argument('bids_directory',
             help='Data using BIDS structure.',
             default=None)
@@ -52,7 +61,7 @@ def parse_command_line():
             help='Working directory to save temporary file.',
             default=None)
     preprocessing_parser.add_argument('-np', '--nproc',
-            help='Number of cores used for processing'
+            help='Number of cores used for processing (2 by default)',
             type=int, default=2)
 
 
@@ -61,8 +70,8 @@ def parse_command_line():
     # Preprocessing 2 - Extract data: slices or patches
     # extract_parser: get command line argument and options
 
-    extract_parser = subparsers.add_parser('extract',
-            help='Create data (slices or patches) for training')
+    extract_parser = subparser.add_parser('extract',
+            help='Create data (slices or patches) for training.')
     extract_parser.add_argument('caps_directory',
             help='Data using CAPS structure.',
             default=None)
@@ -88,12 +97,28 @@ def parse_command_line():
             help='Slice mode',
             choices=['original', 'rgb'], default='rgb')
     extract_parser.add_argument('-np', '--nproc',
-            help='Number of cores used for processing'
+            help='Number of cores used for processing',
             type=int, default=2)
     
     extract_parser.set_defaults(func=extract_data_func)
    
     
+    # Train - Train CNN model with preprocessed  data
+    # train_parser: get command line arguments and options
+
+    train_parser = subparser.add_parser('train',
+            help='Train with your data and create a model.')
+    train_parser.add_argument('model',
+            help='Choice your model (subject level, slice level, patch level, svm).',
+            default=None)
+    train_parser.add_argument('caps_directory',
+            help='Data using CAPS structure.',
+            default=None)
+    
+    train_parser.set_defaults(func=train_func)
+    
+    
     args = parser.parse_args()
     
+    print(args)
     return args
