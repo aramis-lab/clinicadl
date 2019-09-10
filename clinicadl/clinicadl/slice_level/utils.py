@@ -254,13 +254,13 @@ def mix_slices(df_training, df_validation, mri_plane=0, val_size=0.15):
 
     if mri_plane == 0:
         slices_per_patient = 169 - 40
-        slice_index = range(20, 169 - 20)
+        slice_index = list(np.arange(20, 169 - 20))
     elif mri_plane == 1:
         slices_per_patient = 208 - 40
-        slice_index = range(20, 208 - 20)
+        slice_index = list(np.arange(20, 208 - 20))
     else:
         slices_per_patient = 179 - 40
-        slice_index = range(20, 179 - 20)
+        slice_index = list(np.arange(20, 179 - 20))
 
     participant_list = list(df_all['participant_id'])
     session_list = list(df_all['session_id'])
@@ -285,6 +285,9 @@ def mix_slices(df_training, df_validation, mri_plane=0, val_size=0.15):
 
     df_sub_train = df_final.iloc[train_ind]
     df_sub_valid = df_final.iloc[valid_ind]
+
+    df_sub_train.reset_index(inplace=True, drop=True)
+    df_sub_valid.reset_index(inplace=True, drop=True)
 
     return df_sub_train, df_sub_valid
 
