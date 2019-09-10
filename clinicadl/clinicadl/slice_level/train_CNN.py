@@ -36,7 +36,7 @@ parser.add_argument("output_dir", type=str,
 parser.add_argument("--mri_plane", default=0, type=int,
                     help='Which coordinate axis to take for slicing the MRI. 0 is for sagittal, 1 is for coronal and '
                          '2 is for axial direction, respectively ')
-parser.add_argument('--baseline_or_longitudinal', default="baseline", choices=["baseline", "longitudinal"],
+parser.add_argument('--baseline', default=False, action="store_true",
                     help="Using baseline scans or all available longitudinal scans for training")
 
 # Train argument
@@ -45,7 +45,7 @@ parser.add_argument("--network", default="resnet18",
 parser.add_argument("--diagnoses", default=["AD", "CN"], type=str, nargs="+",
                     help="Labels for any binary task")
 
-parser.add_argument("--learning_rate", default=1e-3, type=float,
+parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
                     help="Learning rate of the optimization. (default=0.01)")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")

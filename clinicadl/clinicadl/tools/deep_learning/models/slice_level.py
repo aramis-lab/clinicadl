@@ -1,6 +1,7 @@
 import torch.utils.model_zoo as model_zoo
 from torchvision.models.resnet import BasicBlock
 from torch import nn
+import math
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
