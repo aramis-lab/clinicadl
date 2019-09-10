@@ -1,7 +1,7 @@
 import argparse
 
-from preprocessing.T1_preprocessing import preprocessing_t1w
-from preprocessing.T1_postprocessing import postprocessing_t1w
+from clinicadl.preprocessing.T1_preprocessing import preprocessing_t1w
+from clinicadl.preprocessing.T1_postprocessing import postprocessing_t1w
 
 def preprocessing_t1w_func(args):
     wf = preprocessing_t1w(args.bids_directory, 
