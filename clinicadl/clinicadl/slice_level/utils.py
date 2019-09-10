@@ -236,52 +236,6 @@ def evaluate_prediction(y, y_hat):
 
     return results
 
-# def save_checkpoint(state, is_best, checkpoint_dir, filename='checkpoint.pth.tar'):
-#     """
-#     This is the function to save the best model during validation process
-#     :param state: the parameters that you wanna save
-#     :param is_best: if the performance is better than before
-#     :param checkpoint_dir:
-#     :param filename:
-#     :return:
-#         checkpoint.pth.tar: this is the model trained by the last epoch, useful to retrain from this stopping point
-#         model_best.pth.tar: if is_best is Ture, this is the best model during the validation, useful for testing the performances of the model
-#     """
-#     import shutil, os
-#     if not os.path.exists(checkpoint_dir):
-#         os.makedirs(checkpoint_dir)
-#     torch.save(state, os.path.join(checkpoint_dir, filename))
-#     if is_best:
-#         shutil.copyfile(os.path.join(checkpoint_dir, filename),  os.path.join(checkpoint_dir, 'model_best.pth.tar'))
-
-# def subject_diagnosis_df(subject_session_df):
-#     """
-#     Creates a DataFrame with only one occurence of each subject and the most early diagnosis
-#     Some subjects may not have the baseline diagnosis (ses-M00 doesn't exist)
-#
-#     :param subject_session_df: (DataFrame) a DataFrame with columns containing 'participant_id', 'session_id', 'diagnosis'
-#     :return: DataFrame with the same columns as the input
-#     """
-#     temp_df = subject_session_df.set_index(['participant_id', 'session_id'])
-#     subjects_df = pd.DataFrame(columns=subject_session_df.columns)
-#     for subject, subject_df in temp_df.groupby(level=0):
-#         session_nb_list = [int(session[5::]) for _, session in subject_df.index.values]
-#         session_nb_list.sort()
-#         session_baseline_nb = session_nb_list[0]
-#         if session_baseline_nb < 10:
-#             session_baseline = 'ses-M0' + str(session_baseline_nb)
-#         else:
-#             session_baseline = 'ses-M' + str(session_baseline_nb)
-#         row_baseline = list(subject_df.loc[(subject, session_baseline)])
-#         row_baseline.insert(0, subject)
-#         row_baseline.insert(1, session_baseline)
-#         row_baseline = np.array(row_baseline).reshape(1, len(row_baseline))
-#         row_df = pd.DataFrame(row_baseline, columns=subject_session_df.columns)
-#         subjects_df = subjects_df.append(row_df)
-#
-#     subjects_df.reset_index(inplace=True, drop=True)
-#     return subjects_df
-
 
 #################################
 # Datasets
@@ -482,45 +436,6 @@ class MRIDataset_slice_mixed(Dataset):
                   'label': label, 'participant_id': img_name, 'session_id': sess_name, 'slice_id': slice_name}
 
         return sample
-
-# def load_model_from_log(model, optimizer, checkpoint_dir, filename='checkpoint.pth.tar'):
-#     """
-#     This is to load a saved model from the log folder
-#     :param model:
-#     :param checkpoint_dir:
-#     :param filename:
-#     :return:
-#     """
-#     from copy import deepcopy
-#
-#     ## set the model to be eval mode, we explicitly think that the model was saved in eval mode, otherwise, it will affects the BN and dropout
-#
-#     model.eval()
-#     model_updated = deepcopy(model)
-#     param_dict = torch.load(os.path.join(checkpoint_dir, filename))
-#     model_updated.load_state_dict(param_dict['model'])
-#     optimizer.load_state_dict(param_dict['optimizer'])
-#
-#     return model_updated, optimizer, param_dict['global_step'], param_dict['epoch']
-#
-# def load_model_test(model, checkpoint_dir, filename):
-#     """
-#     This is to load a saved model for testing
-#     :param model:
-#     :param checkpoint_dir:
-#     :param filename:
-#     :return:
-#     """
-#     from copy import deepcopy
-#
-#     ## set the model to be eval mode, we explicitly think that the model was saved in eval mode, otherwise, it will affects the BN and dropout
-#     model.eval()
-#     model_updated = deepcopy(model)
-#     param_dict = torch.load(os.path.join(checkpoint_dir, filename))
-#     model_updated.load_state_dict(param_dict['model'])
-#
-#     return model_updated, param_dict['global_step'], param_dict['epoch']
-#
 
 
 #################################
