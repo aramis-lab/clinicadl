@@ -9,18 +9,18 @@ def preprocessing_t1w_func(args):
             args.tsv_file,
             args.ref_template,
             args.working_directory)
-    wf.run(plugin='MultiProc', plugin_args={'n_procs': 8})
+    wf.run(plugin='MultiProc', plugin_args={'n_procs': args.nproc})
 
 def extract_data_func(args):
     wf = postprocessing_t1w(args.caps_directory, 
             args.tsv_file,
-            args.patch.size,
+            args.patch_size,
             args.stride_size,
             args.working_directory,
             args.extract_method,
             args.slice_direction,
             args.slice_mode)
-    wf.run(plugin='MultiProc', plugin_args={'n_procs': 8})
+    wf.run(plugin='MultiProc', plugin_args={'n_procs': args.nproc})
 
 def train_func(args):
     pass
