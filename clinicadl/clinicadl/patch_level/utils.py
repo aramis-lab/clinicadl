@@ -259,7 +259,7 @@ def train(model, data_loader, use_cuda, loss_func, optimizer, writer, epoch, mod
     softmax = torch.nn.Softmax(dim=1)
 
     if model_mode == "train":
-        columns = ['participant_id', 'session_id', 'patch_index', 'true_label', 'predicted_label', 'proba0', 'proba1']
+        columns = ['participant_id', 'session_id', 'patch_id', 'true_label', 'predicted_label', 'proba0', 'proba1']
         results_batch_df = pd.DataFrame(columns=columns)
         total_loss = 0.0
 
