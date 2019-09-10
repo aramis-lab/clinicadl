@@ -146,11 +146,9 @@ def main(options):
                                   num_workers=options.num_workers
                                   )
 
-        # chosen optimizer for back-propagation
+        # Define loss and optimizer
         optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
                                                              options.learning_rate, weight_decay=options.weight_decay)
-
-        # Define loss and optimizer
         loss = torch.nn.CrossEntropyLoss()
 
         print('Beginning the training task')
@@ -169,7 +167,7 @@ def main(options):
         early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
 
         for epoch in range(options.epochs):
-            print("At %s -th epoch." % str(epoch))
+            print("At %s-th epoch." % str(epoch))
 
             # train the model
             train_df, acc_mean_train, loss_batch_mean_train, global_step \
@@ -209,17 +207,14 @@ def main(options):
             # try early stopping criterion
             if early_stopping.step(loss_batch_mean_valid) or epoch == options.epochs - 1:
                 print("By applying early stopping or at the last epoch defined by user, "
-                      "the model should be stopped training at %d-th epoch" % epoch)
+                      "the training is stopped at %d-th epoch" % epoch)
                 break
 
         # Final evaluation for all criteria
         for selection in ['best_loss', 'best_acc']:
             model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', 'fold_%i' % fi,
-                                                               'CNN', str(selection)),
+                                                               'CNN', selection),
                                            gpu=options.gpu, filename='model_best.pth.tar')
-            model.eval()
-
-            print("The best model was saved during training from fold %d at the %d -th epoch" % (fi, best_epoch))
 
             train_df, metrics_train = test(model, train_loader, options.gpu, loss)
             valid_df, metrics_valid = test(model, valid_loader, options.gpu, loss)

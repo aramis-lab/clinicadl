@@ -239,6 +239,7 @@ def test(model, dataloader, use_cuda, criterion, full_return=False):
     :param model: the network (subclass of nn.Module)
     :param dataloader: a DataLoader wrapping a dataset
     :param use_cuda: if True a gpu is used
+    :param criterion: (loss) function to calculate the loss
     :param full_return: if True also returns the sensitivities and specificities for a multiclass problem
     :return:
     if full_return
