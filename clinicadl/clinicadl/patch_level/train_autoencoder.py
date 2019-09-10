@@ -61,7 +61,7 @@ parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "
                     help="Optimizer of choice for training. (default=Adam)")
 
 # visualization
-parser.add_argument("--visualization", default=True, type=bool,
+parser.add_argument("--visualization", default=False, action='store_true',
                     help='Chooses if visualization is done on AE pretraining')
 
 # Computational issues
@@ -89,13 +89,15 @@ def main(options):
         training_tsv, valid_tsv = load_data(options.diagnosis_tsv_path, options.diagnoses, fi,
                                             n_splits=options.n_splits, baseline=options.baseline)
 
-        print("Running for the %d -th fold" % fi)
+        print("Running for the %d-th fold" % fi)
 
         if options.hippocampus_roi:
             print("Only using hippocampus ROI")
 
-            data_train = MRIDataset_patch_hippocampus(options.caps_directory, training_tsv, transformations=transformations)
-            data_valid = MRIDataset_patch_hippocampus(options.caps_directory, valid_tsv, transformations=transformations)
+            data_train = MRIDataset_patch_hippocampus(options.caps_directory, training_tsv,
+                                                      transformations=transformations)
+            data_valid = MRIDataset_patch_hippocampus(options.caps_directory, valid_tsv,
+                                                      transformations=transformations)
 
         else:
             data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size,
@@ -119,8 +121,10 @@ def main(options):
         model.load_state_dict(init_state)
 
         criterion = torch.nn.MSELoss()
-        writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "ConvAutoencoder", "train")))
-        writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi), "ConvAutoencoder", "valid")))
+        writer_train = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi),
+                                                           "ConvAutoencoder", "train")))
+        writer_valid = SummaryWriter(log_dir=(os.path.join(options.output_dir, "log_dir", "fold_" + str(fi),
+                                                           "ConvAutoencoder", "valid")))
 
         model, best_autodecoder = stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_train,
                                                       writer_valid, options, fi)
@@ -131,7 +135,7 @@ def main(options):
                 example_batch = example_batch.cuda()
             visualize_ae(best_autodecoder, example_batch, os.path.join(options.output_dir, "visualize", "fold_%i" % fi))
 
-        del best_autodecoder, train_loader, valid_loader, criterion
+        del best_autodecoder, train_loader, valid_loader
         torch.cuda.empty_cache()
 
 

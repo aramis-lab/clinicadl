@@ -107,7 +107,6 @@ def main(options):
                                                 n_splits=options.n_splits, baseline=options.baseline)
 
             print("Running for the %d-th fold" % fi)
-            print("Train the model from 0 epoch")
             if options.transfer_learning_path is not None:
                 if options.transfer_learning_autoencoder:
                     print('Train the model with the weights from a pre-trained autoencoder.')
@@ -164,7 +163,7 @@ def main(options):
             early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
 
             for epoch in range(options.epochs):
-                print("At %s -th epoch." % str(epoch))
+                print("At %i-th epoch." % epoch)
 
                 # train the model
                 train_df, acc_mean_train, loss_batch_mean_train, global_step,\
@@ -211,7 +210,7 @@ def main(options):
             for selection in ['best_acc', 'best_loss']:
                 # load the best trained model during the training
                 model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', 'fold_%i' % fi,
-                                                                   'CNN', selection),
+                                                                   'cnn-%i' % i, selection),
                                                gpu=options.gpu, filename='model_best.pth.tar')
                 model.eval()
 
