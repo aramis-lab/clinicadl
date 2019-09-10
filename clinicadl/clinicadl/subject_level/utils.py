@@ -333,31 +333,32 @@ def test(model, dataloader, use_cuda, criterion, full_return=False):
     total_time = 0
     total_loss = 0
     tend = time()
-    for i, data in enumerate(dataloader, 0):
-        t0 = time()
-        total_time = total_time + t0 - tend
-        if use_cuda:
-            inputs, labels = data['image'].cuda(), data['label'].cuda()
-        else:
-            inputs, labels = data['image'], data['label']
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
-        total_loss += loss.item()
-        _, predicted = torch.max(outputs.data, 1)
+    with torch.no_grad():
+        for i, data in enumerate(dataloader, 0):
+            t0 = time()
+            total_time = total_time + t0 - tend
+            if use_cuda:
+                inputs, labels = data['image'].cuda(), data['label'].cuda()
+            else:
+                inputs, labels = data['image'], data['label']
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            total_loss += loss.item()
+            _, predicted = torch.max(outputs.data, 1)
 
-        # Generate detailed DataFrame
-        for idx, sub in enumerate(data['participant_id']):
-            row = [sub, data['session_id'][idx], labels[idx].item(), predicted[idx].item()]
-            row_df = pd.DataFrame(np.array(row).reshape(1, -1), columns=columns)
-            results_df = pd.concat([results_df, row_df])
+            # Generate detailed DataFrame
+            for idx, sub in enumerate(data['participant_id']):
+                row = [sub, data['session_id'][idx], labels[idx].item(), predicted[idx].item()]
+                row_df = pd.DataFrame(np.array(row).reshape(1, -1), columns=columns)
+                results_df = pd.concat([results_df, row_df])
 
-        del inputs, outputs, labels, loss
-        tend = time()
-    print('Mean time per batch (test):', total_time / len(dataloader) * dataloader.batch_size)
-    results_df.reset_index(inplace=True, drop=True)
+            del inputs, outputs, labels, loss
+            tend = time()
+        print('Mean time per batch (test):', total_time / len(dataloader) * dataloader.batch_size)
+        results_df.reset_index(inplace=True, drop=True)
 
-    results = evaluate_prediction(results_df.true_label.values.astype(int),
-                                  results_df.predicted_label.values.astype(int))
+        results = evaluate_prediction(results_df.true_label.values.astype(int),
+                                      results_df.predicted_label.values.astype(int))
 
     if full_return:
         return results, total_loss, results_df

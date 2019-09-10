@@ -49,15 +49,13 @@ def main(options):
     train_loader = DataLoader(data_train,
                               batch_size=options.batch_size,
                               shuffle=options.shuffle,
-                              num_workers=options.num_workers,
-                              drop_last=True
+                              num_workers=options.num_workers
                               )
 
     valid_loader = DataLoader(data_valid,
                               batch_size=options.batch_size,
                               shuffle=False,
-                              num_workers=options.num_workers,
-                              drop_last=False
+                              num_workers=options.num_workers
                               )
 
     # Initialize the model

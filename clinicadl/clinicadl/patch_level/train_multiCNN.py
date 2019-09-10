@@ -133,22 +133,18 @@ def main(options):
             train_loader = DataLoader(data_train,
                                       batch_size=options.batch_size,
                                       shuffle=True,
-                                      num_workers=options.num_workers,
-                                      drop_last=True,
+                                      num_workers=options.num_workers
                                       )
 
             valid_loader = DataLoader(data_valid,
                                       batch_size=options.batch_size,
                                       shuffle=False,
-                                      num_workers=options.num_workers,
-                                      drop_last=False,
+                                      num_workers=options.num_workers
                                       )
 
             # chosen optimizer for back-propagation
             optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
                                                                  options.learning_rate, weight_decay=options.weight_decay)
-            # apply exponential decay for learning rate
-            scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
 
             # Define loss and optimizer
             loss = torch.nn.CrossEntropyLoss()
@@ -188,10 +184,6 @@ def main(options):
                             model_mode='valid')
                 print("For validation, subject level balanced accuracy is %f at the end of epoch %d"
                       % (acc_mean_valid, epoch))
-
-                # update the learning rate
-                if epoch % 20 == 0 and epoch != 0:
-                    scheduler.step()
 
                 # save the best model based on the best loss and accuracy
                 acc_is_best = acc_mean_valid > best_accuracy
