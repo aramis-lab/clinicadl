@@ -1,4 +1,4 @@
-from tools.deep_learning.models.modules import PadMaxPool3d, Flatten
+from .modules import PadMaxPool3d, Flatten
 import torch.nn as nn
 
 """
