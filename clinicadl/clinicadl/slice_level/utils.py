@@ -1,12 +1,9 @@
 import torch
 from torch.utils.data import Dataset
-import os, shutil
-from os import path
+import os
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
-from time import time
-import tempfile
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
