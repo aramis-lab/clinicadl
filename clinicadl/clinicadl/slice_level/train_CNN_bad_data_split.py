@@ -100,7 +100,7 @@ def main(options):
         fold_iterator = [options.split]
 
     for fi in fold_iterator:
-        print("Running for the %d -th fold" % fi)
+        print("Running for the %d-th fold" % fi)
 
         training_sub_df, valid_sub_df = load_data(options.diagnosis_tsv_path, options.diagnoses, fi,
                                                   n_splits=options.n_splits, baseline=options.baseline)
@@ -148,7 +148,7 @@ def main(options):
         early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
 
         for epoch in range(options.epochs):
-            print("At %s -th epoch." % str(epoch))
+            print("At %i-th epoch." % epoch)
 
             # train the model
             train_df, acc_mean_train, loss_batch_mean_train, global_step \
@@ -188,7 +188,7 @@ def main(options):
             # try early stopping criterion
             if early_stopping.step(loss_batch_mean_valid) or epoch == options.epochs - 1:
                 print("By applying early stopping or at the last epoch defined by user, "
-                      "the model should be stopped training at %d-th epoch" % epoch)
+                      "the training is stopped at %d-th epoch" % epoch)
 
                 break
 
@@ -197,10 +197,6 @@ def main(options):
             model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', 'fold_%i' % fi,
                                                                'CNN', str(selection)),
                                            gpu=options.gpu, filename='model_best.pth.tar')
-            model.eval()
-
-            print(
-                "The best model was saved during training from fold %d at the %d -th epoch" % (fi, best_epoch))
 
             train_df, metrics_train = test(model, train_loader, options.gpu, loss)
             valid_df, metrics_valid = test(model, valid_loader, options.gpu, loss)
