@@ -142,7 +142,7 @@ def extract_patches(preprocessed_T1, patch_size, stride_size):
     # the dimension of patch_tensor should be [1, patch_num1, patch_num2, patch_num3, patch_size1, patch_size2, patch_size3]
     patches_tensor = patches_tensor.view(-1, patch_size, patch_size, patch_size)
 
-    for index_patch in xrange(patches_tensor.shape[0]):
+    for index_patch in range(patches_tensor.shape[0]):
         extracted_patch = patches_tensor[index_patch, ...].unsqueeze_(0) ## add one dimension
         # save into .pt format
         output_patch = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_patchsize-' + str(patch_size) + '_stride-' + str(stride_size) + '_patch-' + str(index_patch) + '.pt')
