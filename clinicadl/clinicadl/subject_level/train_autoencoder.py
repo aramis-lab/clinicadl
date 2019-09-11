@@ -8,7 +8,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from .utils import ae_finetuning
-from .utils import Parameters
+from tools.deep_learning import Parameters
 from tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data
 from tools.deep_learning import create_autoencoder, commandline_to_json
 
@@ -76,12 +76,12 @@ CNN.
     print('Total time', total_time)
 
 
-if __name__ == "__main__":
-    commandline = parser.parse_known_args()
-    commandline_to_json(commandline, 'ConvAutoencoder')
-    options = commandline[0]
-    if commandline[1]:
-        print("unknown arguments: %s" % parser.parse_known_args()[1])
-    train_params_autoencoder = Parameters(tsv_path, output_dir, input_dir, model)
-    train_params_autoencoder.write(options)
-    train_autoencoder(train_parameters_autoencoder)
+#if __name__ == "__main__":
+#    commandline = parser.parse_known_args()
+#    commandline_to_json(commandline, 'ConvAutoencoder')
+#    options = commandline[0]
+#    if commandline[1]:
+#        print("unknown arguments: %s" % parser.parse_known_args()[1])
+#    train_params_autoencoder = Parameters(tsv_path, output_dir, input_dir, model)
+#    train_params_autoencoder.write(options)
+#    train_autoencoder(train_parameters_autoencoder)

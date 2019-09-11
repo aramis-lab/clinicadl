@@ -1,7 +1,9 @@
 import argparse
 
-from clinicadl.preprocessing.T1_preprocessing import preprocessing_t1w
-from clinicadl.preprocessing.T1_postprocessing import postprocessing_t1w
+from .tools.deep_learning.iotools import Parameters
+from .tools.deep_learning import commandline_to_json
+from .preprocessing.T1_preprocessing import preprocessing_t1w
+from .preprocessing.T1_postprocessing import postprocessing_t1w
 
 def preprocessing_t1w_func(args):
     wf = preprocessing_t1w(args.bids_directory, 
@@ -22,8 +24,27 @@ def extract_data_func(args):
             args.slice_mode)
     wf.run(plugin='MultiProc', plugin_args={'n_procs': args.nproc})
 
+
+# Function to dispatch training to corresponding function
 def train_func(args):
-    pass
+    if args.mode=='subject' :
+       if args.train_autoencoder :
+           train_params_autoencoder = Parameters(args.tsv_path, 
+                   output_dir, 
+                   args.input_dir, 
+                   args.model)
+
+           train_params_autoencoder.write(options)
+           train_autoencoder(train_parameters_autoencoder)
+
+    if args.mode=='patch':
+        pass
+
+    if args.mode=='slice':
+        pass
+
+    if args.mode=='svn':
+        pass
 
 def parse_command_line():
     parser = argparse.ArgumentParser(prog='clinicadl', 
@@ -108,17 +129,105 @@ def parse_command_line():
 
     train_parser = subparser.add_parser('train',
             help='Train with your data and create a model.')
-    train_parser.add_argument('model',
-            help='Choice your model (subject level, slice level, patch level, svm).',
-            default=None)
+    train_parser.add_argument('mode',
+            help='Choose your mode (subject level, slice level, patch level, svm).',
+            choices=['subject', 'slice', 'patch', 'svm'],
+            default='subject')
     train_parser.add_argument('caps_directory',
             help='Data using CAPS structure.',
             default=None)
+    train_parser.add_argument('tsv_path',
+            help='tsv path with sujets/sessions to process.',
+            default=None)
+    train_parser.add_argument('output_dir',
+            help='Folder containing results of the training.',
+            default=None)
+    train_parser.add_argument('network',
+            help='CNN Model to be used during the training',
+            default='Conv5_FC3')
     
+    ## Optional parameters
+    ## Computational issues
+    train_parser.add_argument('-gpu', '--use_gpu', action='store_true',
+            help='Uses gpu instead of cpu if cuda is available',
+            default=False)
+    train_parser.add_argument('-np', '--nproc',
+            help='Number of cores used during the training',
+            type=int, default=2)
+    train_parser.add_argument("--batch_size", 
+            default=2, type=int,
+            help='Batch size for training. (default=2)',)
+    train_parser.add_argument('--evaluation_steps', '-esteps', 
+            default=1, type=int,
+            help='Fix the number of batches to use before validation')
+
+    ## Data Management
+    train_parser.add_argument('--preprocessing',
+            help='Defines the type of preprocessing of CAPS data.',
+            choices=['linear', 'mni'], type=str,
+            default='linear')
+    train_parser.add_argument('--diagnoses', '-d',
+            help='Take all the subjects possible for autoencoder training',
+            default=['AD', 'CN'], nargs='+', type=str)
+    train_parser.add_argument('--baseline',
+            help='if True only the baseline is used',
+            action="store_true",
+            default=False)
+    train_parser.add_argument('--minmaxnormalization', '-n', 
+            help='Performs MinMaxNormalization',
+            action="store_true",
+            default=False)
+
+    ## Cross-validation
+    train_parser.add_argument('--n_splits', 
+            help='If a value is given will load data of a k-fold CV', 
+            type=int, default=None)
+    train_parser.add_argument('--split', 
+            help='Will load the specific split wanted.', 
+            type=int, default=0)
+
+    ## Training arguments
+    train_parser.add_argument('-tAE', '--train_autoencoder', 
+            help='Add this option if you want to train an autoencoder',
+            action="store_true",
+            default=False)
+
+    train_parser.add_argument('--accumulation_steps', '-asteps',
+            help='Accumulates gradients in order to increase the size of the batch',
+            default=1, type=int)
+    train_parser.add_argument('--epochs', 
+            help='Epochs through the data. (default=20)',
+            default=20, type=int)
+    train_parser.add_argument('--learning_rate', '-lr',
+            help='Learning rate of the optimization. (default=0.01)',
+             default=1e-4, type=float)
+    train_parser.add_argument('--patience', 
+            help='Waiting time for early stopping.',
+            type=int, default=10)
+    train_parser.add_argument('--tolerance', 
+            help='Tolerance value for the early stopping.',
+            type=float, default=0.05)
+    train_parser.add_argument('--add_sigmoid', 
+            help='Ad sigmoid function at the end of the decoder.',
+            default=False, action="store_true")
+
+    ## Transfer learning from other autoencoder
+    train_parser.add_argument('--pretrained_path', 
+            help='Path to a pretrained model (can be of different size).',
+            type=str, default=None)
+    train_parser.add_argument("--pretrained_difference", 
+            help='''Difference of size between the pretrained autoencoder and 
+            the training one. If the new one is larger, difference will be 
+            positive.''',
+            type=int, default=0)
+
     train_parser.set_defaults(func=train_func)
     
-    
     args = parser.parse_args()
+    
+    commandline = parser.parse_known_args()
+    commandline_to_json(commandline, 'model_type')
+    
     
     print(args)
     return args
