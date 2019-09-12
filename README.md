@@ -2,7 +2,7 @@
 This repository contains a software framework for reproducible experiments with
 convolutional neural networks on automatic classification of Alzheimer's
 disease (AD) using anatomical MRI data from the publicly available dataset
-ADNI. It is developed by Junhao WEN, Elina Thibeau--Sutre and Mauricio DIAZ MELO.
+ADNI. It is developed by Junhao WEN, Elina Thibeau--Sutre and Mauricio Diaz.
 The preprint of the corresponding paper may be found [here](https://arxiv.org/abs/1904.07773)
 
 
