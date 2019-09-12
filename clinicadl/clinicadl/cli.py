@@ -46,6 +46,13 @@ def train_func(args):
     if args.mode=='svn':
         pass
 
+# Function to dispatch command line options from classify to corresponding
+# function
+def classify_func(args):
+    pass
+
+
+
 def parse_command_line():
     parser = argparse.ArgumentParser(prog='clinicadl', 
             description='Clinica Deep Learning.')
@@ -222,6 +229,32 @@ def parse_command_line():
             type=int, default=0)
 
     train_parser.set_defaults(func=train_func)
+    
+    
+    # Classify - Classify a subject or a list of tesv files with the CNN
+    # provieded as argument.
+    # classify_parser: get command line arguments and options
+
+    classify_parser = subparser.add_parser('classify',
+            help='Classify one image or a list of images with your previouly trained model.')
+    classify_parser.add_argument('mode',
+            help='Choose your mode (subject level, slice level, patch level, svm).',
+            choices=['subject', 'slice', 'patch', 'svm'],
+            default='subject')
+    classify_parser.add_argument('caps_directory',
+            help='Data using CAPS structure.',
+            default=None)
+    classify_parser.add_argument('tsv_path',
+            help='tsv path with sujets/sessions to process.',
+            default=None)
+    classify_parser.add_argument('output_dir',
+            help='Folder containing results of the training.',
+            default=None)
+    classify_parser.add_argument('model',
+            help='Path to the folder where the model was saved during the training.',
+            default=None)
+
+    classify_parser.set_defaults(func=classify_func)
     
     args = parser.parse_args()
     
