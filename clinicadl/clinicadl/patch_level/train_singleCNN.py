@@ -56,7 +56,7 @@ parser.add_argument("--split", default=None, type=int,
 parser.add_argument("--network", default="Conv4_FC3",
                     help="Architecture of the network.")
 parser.add_argument("--transfer_learning_autoencoder", default=False, action="store_true",
-                    help="If do transfer learning using autoencoder saved at transfer_learning_path.")
+                    help="If do transfer learning using an autoencoder else will look for a CNN model.")
 parser.add_argument("--transfer_learning_path", default=None,
                     help='When a path to an experiment is given, will load the autoencoder / CNN weights.')
 

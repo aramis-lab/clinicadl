@@ -119,7 +119,8 @@ class AutoEncoder(nn.Module):
         return inv_layers
 
 
-def transfer_learning(model, split, target_path, source_path=None, gpu=False, selection="best_acc"):
+def transfer_learning(model, split, target_path, transfer_learning_autoencoder=True, source_path=None, gpu=False,
+                      selection="best_acc"):
     """
     Allows transfer learning from a CNN or an autoencoder to a CNN
 
@@ -133,7 +134,7 @@ def transfer_learning(model, split, target_path, source_path=None, gpu=False, se
     """
 
     if source_path is not None:
-        if transfer_from_autoencoder(source_path):
+        if transfer_learning_autoencoder:
             print("A pretrained autoencoder is loaded at path %s" % source_path)
             model_path = write_autoencoder_weights(model, source_path, target_path, split)
             model, _ = load_model(model, model_path, gpu, filename='model_pretrained.pth.tar')
@@ -144,23 +145,6 @@ def transfer_learning(model, split, target_path, source_path=None, gpu=False, se
             model, _ = load_model(model, model_path, gpu, filename='model_pretrained.pth.tar')
 
     return model
-
-
-def transfer_from_autoencoder(experiment_path):
-    """
-    Allows to know if the experiment path contains an AutoEncoder or a CNN
-
-    :param experiment_path: (str) path to the experiment
-    :return: (bool)
-    """
-    import os
-
-    # Find specific folders in experiment directory
-    folds = os.listdir(os.path.join(experiment_path, "best_model_dir"))
-    models = os.listdir(os.path.join(experiment_path, "best_model_dir", folds[0]))
-    if models == ["ConvAutoencoder"]:
-        return True
-    return False
 
 
 def write_autoencoder_weights(model, source_path, target_path, split):
