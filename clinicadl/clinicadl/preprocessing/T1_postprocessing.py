@@ -43,11 +43,33 @@ def postprocessing_t1w(caps_directory,
     :return:
     """
 
+    
+    # test.py
+    print(__name__)
+
+#    try:
+#        # Trying to find module in the parent package
+#        import preprocessing.T1_postprocessing_utils
+#        print(T1_postprocessing_utils.debug)
+#        del T1_postprocessing_utils
+#    except ModuleNotFoundError:
+#            print('Relative import failed')
+#
+#    try:
+#        # Trying to find module on sys.path
+#        import T1_postprocessing_utils
+#        print(T1_postprocessing_utils.debug)
+#    except ModuleNotFoundError:
+#        print('Absolute import failed')
+#
+
+
+
     import nipype.interfaces.io as nio
     import nipype.interfaces.utility as nutil
     import nipype.pipeline.engine as npe
     import tempfile
-    from T1_postprocessing_utils import (get_caps_t1, 
+    from .T1_postprocessing_utils import (get_caps_t1, 
             extract_slices, extract_patches, save_as_pt)
 
     if working_directory is None:

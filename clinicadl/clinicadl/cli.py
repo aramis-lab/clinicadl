@@ -1,7 +1,9 @@
 import argparse
 
-from preprocessing.T1_preprocessing import preprocessing_t1w
-from preprocessing.T1_postprocessing import postprocessing_t1w
+from .tools.deep_learning.iotools import Parameters
+from .tools.deep_learning import commandline_to_json
+from .preprocessing.T1_preprocessing import preprocessing_t1w
+from .preprocessing.T1_postprocessing import postprocessing_t1w
 
 def preprocessing_t1w_func(args):
     wf = preprocessing_t1w(args.bids_directory, 
@@ -9,68 +11,256 @@ def preprocessing_t1w_func(args):
             args.tsv_file,
             args.ref_template,
             args.working_directory)
-    wf.run(plugin='MultiProc', plugin_args={'n_procs': 8})
+    wf.run(plugin='MultiProc', plugin_args={'n_procs': args.nproc})
 
-def postprocessing_t1w_func(args):
+def extract_data_func(args):
     wf = postprocessing_t1w(args.caps_directory, 
             args.tsv_file,
-            args.patch.size,
+            args.patch_size,
             args.stride_size,
             args.working_directory,
             args.extract_method,
             args.slice_direction,
             args.slice_mode)
-    wf.run(plugin='MultiProc', plugin_args={'n_procs': 8})
+    wf.run(plugin='MultiProc', plugin_args={'n_procs': args.nproc})
+
+
+# Function to dispatch training to corresponding function
+def train_func(args):
+    if args.mode=='subject' :
+       if args.train_autoencoder :
+           train_params_autoencoder = Parameters(args.tsv_path, 
+                   output_dir, 
+                   args.input_dir, 
+                   args.model)
+
+           train_params_autoencoder.write(options)
+           train_autoencoder(train_parameters_autoencoder)
+
+    if args.mode=='patch':
+        pass
+
+    if args.mode=='slice':
+        pass
+
+    if args.mode=='svn':
+        pass
+
+# Function to dispatch command line options from classify to corresponding
+# function
+def classify_func(args):
+    pass
+
+
 
 def parse_command_line():
-    parser = argparse.ArgumentParser(description='Clinica Deep Learning.')
+    parser = argparse.ArgumentParser(prog='clinicadl', 
+            description='Clinica Deep Learning.')
 
-    subparsers = parser.add_subparsers(dest='cmd', help='subcommands')
+    subparser = parser.add_subparsers(title='Task to execute with clinicadl',
+            description='''What kind of task do you want to use with clinicadl
+            (preprocessing, extract, train, validate, classify).''',
+            dest='task', 
+            help='Stages/task to execute with clinicadl')
+    #subparser_extract = parser.add_subparsers(dest='ext',
+    #        help='Extract the data')
 
-    subparsers.required = True
+    subparser.required = True 
 
     # Preprocessing 1
-    preprocessing1 = subparsers.add_parser('preprocessing',
-            help='Prepare data for training')
-    preprocessing1.add_argument('-bd', '--bids_directory',
-            help='Data using BIDS structure.')
-    preprocessing1.add_argument('-cd', '--caps_directory',
-            help='Data using CAPS structure.')
-    preprocessing1.add_argument('-tsv', '--tsv_file',
-            help='tsv file with sujets/sessions to process.')
-    preprocessing1.add_argument('-rt', '--ref_template',
-            help='Template reference.')
-    preprocessing1.add_argument('-wd', '--working_directory', default=None,
-            help='Working directory to save temporary file.')
+    # preprocessing_parser: get command line arguments and options for
+    # preprocessing
+
+    preprocessing_parser = subparser.add_parser('preprocessing',
+            help='Prepare data for training (needs clinica installed).')
+    preprocessing_parser.add_argument('bids_directory',
+            help='Data using BIDS structure.',
+            default=None)
+    preprocessing_parser.add_argument('caps_directory',
+            help='Data using CAPS structure.',
+            default=None)
+    preprocessing_parser.add_argument('tsv_file',
+            help='tsv file with sujets/sessions to process.',
+            default=None)
+    preprocessing_parser.add_argument('ref_template',
+            help='Template reference.',
+            default=None)
+    preprocessing_parser.add_argument('working_directory',
+            help='Working directory to save temporary file.',
+            default=None)
+    preprocessing_parser.add_argument('-np', '--nproc',
+            help='Number of cores used for processing (2 by default)',
+            type=int, default=2)
 
 
-    preprocessing1.set_defaults(func=preprocessing_t1w_func)
+    preprocessing_parser.set_defaults(func=preprocessing_t1w_func)
 
-    # Preprocessing 2 - Create slices and patches
+    # Preprocessing 2 - Extract data: slices or patches
+    # extract_parser: get command line argument and options
+
+    extract_parser = subparser.add_parser('extract',
+            help='Create data (slices or patches) for training.')
+    extract_parser.add_argument('caps_directory',
+            help='Data using CAPS structure.',
+            default=None)
+    extract_parser.add_argument('tsv_file',
+            help='tsv file with sujets/sessions to process.',
+            default=None)
+    extract_parser.add_argument('working_directory',
+            help='Working directory to save temporary file.',
+            default=None)
+    extract_parser.add_argument('extract_method',
+            help='Method used to extract features: slice or patch',
+            choices=['slice', 'patch'], default=None)
+    extract_parser.add_argument('-psz', '--patch_size',
+            help='Patch size e.g: --patch_size 50',
+            type=int, default=50)
+    extract_parser.add_argument('-ssz', '--stride_size',
+            help='Stride size  e.g.: --stride_size 50',
+            type=int, default=50)
+    extract_parser.add_argument('-sd', '--slice_direction',
+            help='Slice direction',
+            type=int, default=0)
+    extract_parser.add_argument('-sm', '--slice_mode',
+            help='Slice mode',
+            choices=['original', 'rgb'], default='rgb')
+    extract_parser.add_argument('-np', '--nproc',
+            help='Number of cores used for processing',
+            type=int, default=2)
     
-    preprocessing2 = subparsers.add_parser('createdata',
-            help='Create data (slices or patches) for training')
-    preprocessing2.add_argument('-cd', '--caps_directory',
-            help='Data using CAPS structure.')
-    preprocessing2.add_argument('-tsv', '--tsv_file',
-            help='tsv file with sujets/sessions to process.')
-    preprocessing2.add_argument('-wd', '--working_directory', default=None,
-            help='Working directory to save temporary file.')
-    preprocessing2.add_argument('-psz', '--patch_size',
-            help='Patch size')
-    preprocessing2.add_argument('-ssz', '--stride_size',
-            help='Stride size')
-    preprocessing2.add_argument('-ex', '--extract_method',
-            help='Method used to extact features: slice or patch')
-    preprocessing2.add_argument('-sd', '--slice_direction',
-            help='Slice direction')
-    preprocessing2.add_argument('-sm', '--slice_mode',
-            help='Slice mode')
-    
-    
-    preprocessing2.set_defaults(func=postprocessing_t1w_func)
+    extract_parser.set_defaults(func=extract_data_func)
    
+    
+    # Train - Train CNN model with preprocessed  data
+    # train_parser: get command line arguments and options
+
+    train_parser = subparser.add_parser('train',
+            help='Train with your data and create a model.')
+    train_parser.add_argument('mode',
+            help='Choose your mode (subject level, slice level, patch level, svm).',
+            choices=['subject', 'slice', 'patch', 'svm'],
+            default='subject')
+    train_parser.add_argument('caps_directory',
+            help='Data using CAPS structure.',
+            default=None)
+    train_parser.add_argument('tsv_path',
+            help='tsv path with sujets/sessions to process.',
+            default=None)
+    train_parser.add_argument('output_dir',
+            help='Folder containing results of the training.',
+            default=None)
+    train_parser.add_argument('network',
+            help='CNN Model to be used during the training',
+            default='Conv5_FC3')
+    
+    ## Optional parameters
+    ## Computational issues
+    train_parser.add_argument('-gpu', '--use_gpu', action='store_true',
+            help='Uses gpu instead of cpu if cuda is available',
+            default=False)
+    train_parser.add_argument('-np', '--nproc',
+            help='Number of cores used during the training',
+            type=int, default=2)
+    train_parser.add_argument("--batch_size", 
+            default=2, type=int,
+            help='Batch size for training. (default=2)',)
+    train_parser.add_argument('--evaluation_steps', '-esteps', 
+            default=1, type=int,
+            help='Fix the number of batches to use before validation')
+
+    ## Data Management
+    train_parser.add_argument('--preprocessing',
+            help='Defines the type of preprocessing of CAPS data.',
+            choices=['linear', 'mni'], type=str,
+            default='linear')
+    train_parser.add_argument('--diagnoses', '-d',
+            help='Take all the subjects possible for autoencoder training',
+            default=['AD', 'CN'], nargs='+', type=str)
+    train_parser.add_argument('--baseline',
+            help='if True only the baseline is used',
+            action="store_true",
+            default=False)
+    train_parser.add_argument('--minmaxnormalization', '-n', 
+            help='Performs MinMaxNormalization',
+            action="store_true",
+            default=False)
+
+    ## Cross-validation
+    train_parser.add_argument('--n_splits', 
+            help='If a value is given will load data of a k-fold CV', 
+            type=int, default=None)
+    train_parser.add_argument('--split', 
+            help='Will load the specific split wanted.', 
+            type=int, default=0)
+
+    ## Training arguments
+    train_parser.add_argument('-tAE', '--train_autoencoder', 
+            help='Add this option if you want to train an autoencoder',
+            action="store_true",
+            default=False)
+
+    train_parser.add_argument('--accumulation_steps', '-asteps',
+            help='Accumulates gradients in order to increase the size of the batch',
+            default=1, type=int)
+    train_parser.add_argument('--epochs', 
+            help='Epochs through the data. (default=20)',
+            default=20, type=int)
+    train_parser.add_argument('--learning_rate', '-lr',
+            help='Learning rate of the optimization. (default=0.01)',
+             default=1e-4, type=float)
+    train_parser.add_argument('--patience', 
+            help='Waiting time for early stopping.',
+            type=int, default=10)
+    train_parser.add_argument('--tolerance', 
+            help='Tolerance value for the early stopping.',
+            type=float, default=0.05)
+    train_parser.add_argument('--add_sigmoid', 
+            help='Ad sigmoid function at the end of the decoder.',
+            default=False, action="store_true")
+
+    ## Transfer learning from other autoencoder
+    train_parser.add_argument('--pretrained_path', 
+            help='Path to a pretrained model (can be of different size).',
+            type=str, default=None)
+    train_parser.add_argument("--pretrained_difference", 
+            help='''Difference of size between the pretrained autoencoder and 
+            the training one. If the new one is larger, difference will be 
+            positive.''',
+            type=int, default=0)
+
+    train_parser.set_defaults(func=train_func)
+    
+    
+    # Classify - Classify a subject or a list of tesv files with the CNN
+    # provieded as argument.
+    # classify_parser: get command line arguments and options
+
+    classify_parser = subparser.add_parser('classify',
+            help='Classify one image or a list of images with your previouly trained model.')
+    classify_parser.add_argument('mode',
+            help='Choose your mode (subject level, slice level, patch level, svm).',
+            choices=['subject', 'slice', 'patch', 'svm'],
+            default='subject')
+    classify_parser.add_argument('caps_directory',
+            help='Data using CAPS structure.',
+            default=None)
+    classify_parser.add_argument('tsv_path',
+            help='tsv path with sujets/sessions to process.',
+            default=None)
+    classify_parser.add_argument('output_dir',
+            help='Folder containing results of the training.',
+            default=None)
+    classify_parser.add_argument('model',
+            help='Path to the folder where the model was saved during the training.',
+            default=None)
+
+    classify_parser.set_defaults(func=classify_func)
     
     args = parser.parse_args()
     
+    commandline = parser.parse_known_args()
+    commandline_to_json(commandline, 'model_type')
+    
+    
+    print(args)
     return args
