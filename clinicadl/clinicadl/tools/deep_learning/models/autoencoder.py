@@ -127,6 +127,7 @@ def transfer_learning(model, split, target_path, transfer_learning_autoencoder=T
     :param model: (nn.Module) the target CNN of the transfer learning.
     :param split: (int) the fold number (for serialization purpose).
     :param target_path: (str) path to the target experiment.
+    :param transfer_learning_autoencoder: (bool) If True (resp. False), the initialization is from an AE (resp. CNN)
     :param source_path: (str) path to the source experiment.
     :param gpu: (bool) If True a GPU is used.
     :param selection: (str) chooses on which criterion the source model is selected (ex: best_loss, best_acc)
