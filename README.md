@@ -11,6 +11,7 @@ All the papers described in the State of the art section of the manuscript may b
 
 
 # Dependencies:
+- Python >= 3.6
 - Clinica
 - Pytorch
 - Nilearn
