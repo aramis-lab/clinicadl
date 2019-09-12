@@ -2,8 +2,8 @@ from torch import nn
 import torch
 from copy import deepcopy
 
-from tools.deep_learning.models.modules import PadMaxPool3d, CropMaxUnpool3d, Flatten, Reshape
-from tools.deep_learning.models.iotools import load_model
+from .modules import PadMaxPool3d, CropMaxUnpool3d, Flatten, Reshape
+from .iotools import load_model
 
 
 class AutoEncoder(nn.Module):

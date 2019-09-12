@@ -12,7 +12,7 @@ Clinica.egg-info
 *.sys
 *.so
 .DS_Store
-
+*.swp
 
 # Editor's files
 .idea

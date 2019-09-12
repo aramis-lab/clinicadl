@@ -1,4 +1,79 @@
 
+class Parameters:
+    """ Class to define and initialize parameters used in traning CNN networks"""
+
+    def __init__(self, tsv_path: str, output_dir: str, input_dir: str,
+                 model: str):
+        """
+        Parameters:
+        tsv_path: Path to the folder containing the tsv files of the population.
+        output_dir: Folder containing the results.
+        input_dir: Path to the input folder with MRI in CAPS format.
+        model: Neural network model.
+        """
+        self.tsv_path = tsv_path
+        self.output_dir = output_dir
+        self.input_dir = input_dir
+        self.model = model
+
+    def write(self, pretrained_path, pretrained_differencet,
+              preprocessing: str = "linear", diagnoses: str = ["AD", "CN"],
+              baseline: bool = False, minmaxnormalization: bool = False,
+              sampler: str = "random", n_splits: int = 1, split: int = 0,
+              accumulation_steps: int = 1, epochs: int = 20, 
+              learning_rate: float = 1e-4, patience: int = 10, 
+              tolerance: float = 0.05, add_sigmoid: bool = False,
+              optimizer: str = "Adam", weight_decay: float = 0.0,
+              gpu: bool = False, batch_size: int = 2, evaluation_steps: int = 1,
+              num_workers: int = 1):
+        """ 
+        Optional parameters used for training CNN.
+        pretrained_path: Path to a pretrained model (can be of different size).
+        pretrained_difference: Difference of size between the pretrained 
+                               autoencoder and the training.
+        preprocessing: Type of preprocessing done. Choices: "linear" or "mni".
+        diagnoses: Take all the subjects possible for autoencoder training.
+        baseline: Use only the baseline if True.
+        minmaxnormalization: Performs MinMaxNormalization.
+        sampler: Sampler choice.
+        n_splits: If a value is given will load data of a k-fold CV
+        split: User can specify a chosen split.
+        accumulation_steps: Accumulates gradients in order to increase the size
+                            of the batch.
+        epochs: Epochs through the data. (default=20).
+        learning_rate: Learning rate of the optimization. (default=0.01).
+        patience: Waiting time for early stopping.
+        tolerance: Tolerance value for the early stopping.
+        add_sigmoid: Ad sigmoid function at the end of the decoder.
+        optimizer: Optimizer of choice for training. (default=Adam).
+        weight_decay: Weight decay of the optimizer. 
+        gpu: GPU usage if True.
+        batch_size: Batch size for training. (default=1)
+        evaluation_steps: Fix the number of batches to use before validation
+        num_workers = Define the number of batch being loaded in parallel
+        """
+
+        self.pretrained_path = pretrained_path
+        self.pretrained_difference = pretrained_difference
+        self.preprocessing = preprocessing
+        self.diagnoses = diagnoses        
+        self.baseline = baseline
+        self.sampler = sampler
+        self.n_splits = n_splits
+        self.split = split
+        self.accumulation_steps = accumulation_steps
+        self.epochs = epochs
+        self.learning_rate = learning_rate
+        self.patience = patience
+        self.tolerance = tolerance
+        self.add_sigmoid = add_sigmoid
+        self.optimizer = optimizer
+        self.weight_decay = weight_decay
+        self.gpu = gpu
+        self.batch_size = batch_size
+        self.evaluation_steps = evaluation_steps
+        self.num_workers = num_workers
+
 def check_and_clean(d):
     import shutil
     import os
