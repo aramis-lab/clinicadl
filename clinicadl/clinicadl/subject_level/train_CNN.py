@@ -54,6 +54,8 @@ parser.add_argument("--tolerance", type=float, default=0.05,
 # Transfer learning arguments
 parser.add_argument("--transfer_learning_path", default=None, type=str,
                     help="If an existing path is given, a pretrained autoencoder is used.")
+parser.add_argument("--transfer_learning_autoencoder", default=False, action="store_true",
+                    help="If do transfer learning using an autoencoder else will look for a CNN model.")
 parser.add_argument("--selection", default="best_acc", choices=["best_loss", "best_acc"], type=str,
                     help="Allow to choose which model of the experiment is loaded.")
 
@@ -118,8 +120,9 @@ def main(options):
     # Initialize the model
     print('Initialization of the model')
     model = create_model(options.model, options.gpu)
-    model = transfer_learning(model, options.split, options.output_dir, options.transfer_learning_path, options.gpu,
-                              selection=options.selection)
+    model = transfer_learning(model, options.split, options.output_dir, source_path=options.transfer_learning_path,
+                              transfer_learning_autoencoder=options.transfer_learning_autoencoder,
+                              gpu=options.gpu, selection=options.selection)
 
     # Define criterion and optimizer
     criterion = torch.nn.CrossEntropyLoss()
