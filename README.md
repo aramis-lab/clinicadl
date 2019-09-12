@@ -61,7 +61,7 @@ Task to execute with clinicadl:
 
 ```
 
-Typical use for preprocessing:
+Typical use for `preprocessing`:
 
 ```bash
 clinicadl preprocessing --np 32 \
@@ -72,6 +72,66 @@ clinicadl preprocessing --np 32 \
   $WORKING_DIR
 ```
 
+For detailed instructions type `clinica 'action' -h`.
+For example:
+
+```bash
+clinicadl train -h
+usage: clinicadl train [-h] [-gpu] [-np NPROC] [--batch_size BATCH_SIZE]
+                       [--evaluation_steps EVALUATION_STEPS]
+                       [--preprocessing {linear,mni}]
+                       [--diagnoses DIAGNOSES [DIAGNOSES ...]] [--baseline]
+                       [--minmaxnormalization] [--n_splits N_SPLITS]
+                       [--split SPLIT] [-tAE]
+                       [--accumulation_steps ACCUMULATION_STEPS]
+                       [--epochs EPOCHS] [--learning_rate LEARNING_RATE]
+                       [--patience PATIENCE] [--tolerance TOLERANCE]
+                       [--add_sigmoid] [--pretrained_path PRETRAINED_PATH]
+                       [--pretrained_difference PRETRAINED_DIFFERENCE]
+                       {subject,slice,patch,svm} caps_directory tsv_path
+                       output_dir network
+
+positional arguments:
+  {subject,slice,patch,svm}
+                        Choose your mode (subject level, slice level, patch
+                        level, svm).
+  caps_directory        Data using CAPS structure.
+  tsv_path              tsv path with sujets/sessions to process.
+  output_dir            Folder containing results of the training.
+  network               CNN Model to be used during the training
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -gpu, --use_gpu       Uses gpu instead of cpu if cuda is available
+  -np NPROC, --nproc NPROC
+                        Number of cores used during the training
+  --batch_size BATCH_SIZE
+                        Batch size for training. (default=2)
+  --evaluation_steps EVALUATION_STEPS, -esteps EVALUATION_STEPS
+                        Fix the number of batches to use before validation
+  --preprocessing {linear,mni}
+                        Defines the type of preprocessing of CAPS data.
+  --diagnoses DIAGNOSES [DIAGNOSES ...], -d DIAGNOSES [DIAGNOSES ...]
+                        Take all the subjects possible for autoencoder
+                        training
+  --baseline            if True only the baseline is used
+  --minmaxnormalization, -n
+                        Performs MinMaxNormalization
+  --n_splits N_SPLITS   If a value is given will load data of a k-fold CV
+  --split SPLIT         Will load the specific split wanted.
+  -tAE, --train_autoencoder
+                        Add this option if you want to train an autoencoder
+  --accumulation_steps ACCUMULATION_STEPS, -asteps ACCUMULATION_STEPS
+                        Accumulates gradients in order to increase the size of
+                        the batch
+  --epochs EPOCHS       Epochs through the data. (default=20)
+  --learning_rate LEARNING_RATE, -lr LEARNING_RATE
+                        Learning rate of the optimization. (default=0.01)
+  --patience PATIENCE   Waiting time for early stopping.
+  --tolerance TOLERANCE
+                        Tolerance value for the early stopping.
+  --add_sigmoid         Ad sigmoid function at the end of the decoder.
+```
 
 ## Or use the scripts
 ```
