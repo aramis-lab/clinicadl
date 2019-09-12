@@ -18,17 +18,17 @@
 
 # Network structure
 NETWORK="Conv5_FC3"
+COHORT='ADNI'
 
 # Input arguments to clinicadl
-CAPS_DIR="/network/lustre/dtlake01/aramis/users/clinica/CLINICA_datasets/CAPS/Frontiers_DL/$COHORT$CAPS_EXT"
-TSV_PATH="/network/lustre/iss01/home/elina.thibeausutre/data/Frontiers/$COHORT/lists_by_diagnosis/train"
-OUTPUT_DIR="/network/lustre/iss01/home/elina.thibeausutre/results/$DATE/"
+CAPS_DIR="/network/lustre/dtlake01/aramis/users/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI_rerun"
+TSV_PATH="/network/lustre/dtlake01/aramis/users/mauricio.diazmelo/code/AD-DL/data/$COHORT/lists_by_diagnosis/train"
+OUTPUT_DIR="/network/lustre/iss01/home/mauricio.diazmelo/ADNI_rerun/results/$DATE/"
 
 # Computation ressources
 NUM_PROCESSORS=8
 
 # Dataset Management
-COHORT='ADNI'
 PREPROCESSING='linear'
 DIAGNOSES="AD CN MCI"
 SPLITS=5
@@ -81,8 +81,3 @@ clinicadl train \
   --learning_rate $LR
   --patience $PATIENCE
   --tolerance $TOLERANCE
-
-
-
-
-  $OPTIONS --visualization
