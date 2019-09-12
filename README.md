@@ -21,9 +21,9 @@ All the papers described in the State of the art section of the manuscript may b
 ## Create a conda environment with the corresponding dependencies:
 
 ```
-conda create --name clincadl_env_py27 python=2.7 jupyter
-conda activate clinicadl_env_py27
-conda install -c aramislab -c conda-forge clinica=0.1.3
+conda create --name clincadl_env_py36 python=3.6 jupyter
+conda activate clinicadl_env_py36
+conda install -c aramislab -c conda-forge clinica
 pip install -r requirements.txt
 conda install -c pytorch pytorch torchvision
 ```
