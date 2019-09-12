@@ -4,6 +4,9 @@ from .tools.deep_learning.iotools import Parameters
 from .tools.deep_learning import commandline_to_json
 from .preprocessing.T1_preprocessing import preprocessing_t1w
 from .preprocessing.T1_postprocessing import postprocessing_t1w
+from .subject_level.train_autoencoder import train_autoencoder
+
+
 
 def preprocessing_t1w_func(args):
     wf = preprocessing_t1w(args.bids_directory, 
@@ -30,12 +33,37 @@ def train_func(args):
     if args.mode=='subject' :
        if args.train_autoencoder :
            train_params_autoencoder = Parameters(args.tsv_path, 
-                   output_dir, 
+                   args.output_dir, 
                    args.input_dir, 
                    args.model)
-
-           train_params_autoencoder.write(options)
+           train_params_autoencoder.write(args.pretrained_path,
+                   args.pretrained_difference,
+                   args.preprocessing,
+                   args.diagnoses,
+                   args.baseline,
+                   args.minmaxnormalization,
+                   sampler = 'random',
+                   args.n_splits,
+                   args.split,
+                   args.accumulation_steps,
+                   args.epochs,
+                   args.learning_rate,
+                   args.patience,
+                   args.tolerance,
+                   args.add_sigmoid,
+                   optimizer = 'Adam',
+                   weight_decay = 0.0,
+                   args.use_gpu,
+                   args.batch_size,
+                   args.evaluation_steps,
+                   args.nproc)
            train_autoencoder(train_parameters_autoencoder)
+       else:
+           train_params_cnn = Parameters(args.tsv_path, 
+                   args.output_dir, 
+                   args.input_dir, 
+                   args.model)
+           #train_params_cnn.write(args.
 
     if args.mode=='patch':
         pass

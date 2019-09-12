@@ -16,16 +16,28 @@ class Parameters:
         self.input_dir = input_dir
         self.model = model
 
-    def write(self, pretrained_path, pretrained_differencet,
-              preprocessing: str = "linear", diagnoses: str = ["AD", "CN"],
-              baseline: bool = False, minmaxnormalization: bool = False,
-              sampler: str = "random", n_splits: int = 1, split: int = 0,
-              accumulation_steps: int = 1, epochs: int = 20, 
-              learning_rate: float = 1e-4, patience: int = 10, 
-              tolerance: float = 0.05, add_sigmoid: bool = False,
-              optimizer: str = "Adam", weight_decay: float = 0.0,
-              gpu: bool = False, batch_size: int = 2, evaluation_steps: int = 1,
-              num_workers: int = 1):
+    def write(self, 
+            pretrained_path, 
+            pretrained_difference,
+            preprocessing: str = "linear",
+            diagnoses: str = ["AD", "CN"],
+            baseline: bool = False,
+            minmaxnormalization: bool = False,
+            sampler: str = "random",
+            n_splits: int = 1,
+            split: int = 0,
+            accumulation_steps: int = 1,
+            epochs: int = 20, 
+            learning_rate: float = 1e-4,
+            patience: int = 10, 
+            tolerance: float = 0.05,
+            add_sigmoid: bool = False,
+            optimizer: str = "Adam",
+            weight_decay: float = 0.0,
+            gpu: bool = False,
+            batch_size: int = 2,
+            evaluation_steps: int = 1,
+            num_workers: int = 1):
         """ 
         Optional parameters used for training CNN.
         pretrained_path: Path to a pretrained model (can be of different size).
