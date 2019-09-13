@@ -39,6 +39,8 @@ parser.add_argument("--mri_plane", default=0, type=int,
                          '1 is for coronal and 2 is for axial direction, respectively ')
 parser.add_argument('--selection', default="best_acc", choices=["best_acc", "best_loss"],
                     help="Evaluate the model performance based on which criterion.")
+parser.add_argument('--prepare_dl', default=False, action="store_true",
+                    help="If True the outputs of preprocessing prepare_dl are used, else the whole MRI is loaded.")
 
 # test argument
 parser.add_argument("--network", default="resnet18",
@@ -86,7 +88,8 @@ def main(options):
 
         test_df = load_data_test(options.diagnosis_tsv_path, options.diagnoses)
         data_test = MRIDataset_slice(options.caps_directory, test_df,
-                                     transformations=transformations, mri_plane=options.mri_plane)
+                                     transformations=transformations, mri_plane=options.mri_plane,
+                                     prepare_dl=options.prepare_dl)
 
         test_loader = DataLoader(data_test,
                                  batch_size=options.batch_size,
