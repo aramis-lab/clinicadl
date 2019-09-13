@@ -464,13 +464,12 @@ def extract_slice_from_mri(image, index_slice, view):
     :return:
     To note, for each view:
     Axial_view = "[:, :, slice_i]"
-    Coronal_veiw = "[:, slice_i, :]"
-    Saggital_view= "[slice_i, :, :]"
+    Coronal_view = "[:, slice_i, :]"
+    Sagittal_view= "[slice_i, :, :]"
     """
 
     # reshape the tensor, delete the first dimension for slice-level
     image_tensor = image.squeeze(0)
-    print('After deleting first dim', image_tensor.shape)
 
     # sagittal
     if view == 0:
