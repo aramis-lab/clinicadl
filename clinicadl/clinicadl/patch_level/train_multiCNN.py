@@ -42,6 +42,8 @@ parser.add_argument("--patch_stride", default=50, type=int,
                     help="The stride for the patch extract window from the MRI")
 parser.add_argument("--baseline", default=False, action="store_true",
                     help="Use only baseline data instead of all scans available")
+parser.add_argument('--prepare_dl', default=False, action="store_true",
+                    help="If True the outputs of preprocessing prepare_dl are used, else the whole MRI is loaded.")
 
 # Transfer learning
 parser.add_argument("--network", default="Conv4_FC3",
@@ -124,9 +126,11 @@ def main(options):
                 model.load_state_dict(init_state)
 
             data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size,
-                                          options.patch_stride, transformations=transformations, patch_index=i)
+                                          options.patch_stride, transformations=transformations, patch_index=i,
+                                          prepare_dl=options.prepare_dl)
             data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size,
-                                          options.patch_stride, transformations=transformations, patch_index=i)
+                                          options.patch_stride, transformations=transformations, patch_index=i,
+                                          prepare_dl=options.prepare_dl)
 
             # Use argument load to distinguish training and testing
             train_loader = DataLoader(data_train,

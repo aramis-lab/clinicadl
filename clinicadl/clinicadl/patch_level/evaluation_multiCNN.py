@@ -41,6 +41,8 @@ parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")
 parser.add_argument("--split", default=None, type=int,
                     help="Default behaviour will run all splits, else only the splits specified will be run.")
+parser.add_argument('--prepare_dl', default=False, action="store_true",
+                    help="If True the outputs of preprocessing prepare_dl are used, else the whole MRI is loaded.")
 
 # test arguments
 parser.add_argument("--network", default="Conv4_FC3",
@@ -89,7 +91,8 @@ def main(options):
         for n in range(options.num_cnn):
 
             dataset = MRIDataset_patch(options.caps_directory, test_df, options.patch_size,
-                                       options.patch_stride, transformations=transformations, patch_index=n)
+                                       options.patch_stride, transformations=transformations, patch_index=n,
+                                       prepare_dl=options.prepare_dl)
 
             test_loader = DataLoader(dataset,
                                      batch_size=options.batch_size,

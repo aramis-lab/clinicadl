@@ -46,6 +46,8 @@ parser.add_argument("--patch_stride", default=50, type=int,
                     help="The stride for the patch extract window from the MRI")
 parser.add_argument('--hippocampus_roi', default=False, action="store_true",
                     help="If train the model using only hippocampus ROI")
+parser.add_argument('--prepare_dl', default=False, action="store_true",
+                    help="If True the outputs of preprocessing prepare_dl are used, else the whole MRI is loaded.")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")
 parser.add_argument("--split", default=None, type=int,
@@ -92,7 +94,8 @@ def main(options):
             data_test = MRIDataset_patch_hippocampus(options.caps_directory, test_df, transformations=transformations)
         else:
             data_test = MRIDataset_patch(options.caps_directory, test_df, options.patch_size,
-                                          options.patch_stride, transformations=transformations)
+                                         options.patch_stride, transformations=transformations,
+                                         prepare_dl=options.prepare_dl)
 
         test_loader = DataLoader(data_test,
                                  batch_size=options.batch_size,
