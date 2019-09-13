@@ -66,6 +66,8 @@ parser.add_argument('--weight_decay', default=1e-2, type=float,
 parser.add_argument('--selection_threshold', default=None, type=float,
                     help='Threshold on the balanced accuracies to compute the subject_level performance '
                          'only based on patches with balanced accuracy > threshold.')
+parser.add_argument('--prepare_dl', default=False, action="store_true",
+                    help="If True the outputs of preprocessing prepare_dl are used, else the whole MRI is loaded.")
 
 # early stopping arguments
 parser.add_argument("--patience", type=int, default=10,
@@ -109,9 +111,9 @@ def main(options):
         training_df, valid_df = mix_slices(training_sub_df, valid_sub_df, mri_plane=options.mri_plane)
 
         data_train = MRIDataset_slice_mixed(options.caps_directory, training_df, transformations=transformations,
-                                            mri_plane=options.mri_plane)
+                                            mri_plane=options.mri_plane, prepare_dl=options.prepare_dl)
         data_valid = MRIDataset_slice_mixed(options.caps_directory, valid_df, transformations=transformations,
-                                            mri_plane=options.mri_plane)
+                                            mri_plane=options.mri_plane, prepare_dl=options.prepare_dl)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,

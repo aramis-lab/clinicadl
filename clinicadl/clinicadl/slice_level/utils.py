@@ -298,7 +298,7 @@ class MRIDataset_slice(Dataset):
     Return: a Pytorch Dataset objective
     """
 
-    def __init__(self, caps_directory, data_file, transformations=None, mri_plane=0):
+    def __init__(self, caps_directory, data_file, transformations=None, mri_plane=0, prepare_dl=False):
         """
         Args:
             caps_directory (string): the output folder of image processing pipeline.
@@ -314,6 +314,7 @@ class MRIDataset_slice(Dataset):
         self.transformations = transformations
         self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
         self.mri_plane = mri_plane
+        self.prepare_dl = prepare_dl
 
         # Check the format of the tsv file here
         if isinstance(data_file, str):
@@ -345,13 +346,20 @@ class MRIDataset_slice(Dataset):
         label = self.diagnosis_code[img_label]
         slice_idx = idx % self.slices_per_patient
 
-        # read the slices directly
-        slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
-                                  'preprocessing_dl',
-                                  img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' +
-                                  self.slice_direction + '_rgbslice-' + str(slice_idx + 20) + '.pt')
+        if self.prepare_dl:
+            # read the slices directly
+            slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+                                      'preprocessing_dl',
+                                      img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' +
+                                      self.slice_direction + '_rgbslice-' + str(slice_idx + 20) + '.pt')
 
-        extracted_slice = torch.load(slice_path)
+            extracted_slice = torch.load(slice_path)
+        else:
+            image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+                                      'preprocessing_dl',
+                                      img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+            image = torch.load(image_path)
+            extracted_slice = extract_slice_from_mri(image, slice_idx + 20, self.mri_plane)
 
         # check if the slice has NaN value
         if torch.isnan(extracted_slice).any():
@@ -376,7 +384,7 @@ class MRIDataset_slice_mixed(Dataset):
     Return: a Pytorch Dataset objective
     """
 
-    def __init__(self, caps_directory, data_file, transformations=None, mri_plane=0):
+    def __init__(self, caps_directory, data_file, transformations=None, mri_plane=0, prepare_dl=False):
         """
         Args:
             caps_directory (string): the output folder of image processing pipeline.
@@ -392,6 +400,7 @@ class MRIDataset_slice_mixed(Dataset):
         self.transformations = transformations
         self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
         self.mri_plane = mri_plane
+        self.prepare_dl = prepare_dl
 
         # Check the format of the tsv file here
         if isinstance(data_file, str):
@@ -418,11 +427,19 @@ class MRIDataset_slice_mixed(Dataset):
         img_label = self.df.loc[idx, 'diagnosis']
         label = self.diagnosis_code[img_label]
 
-        slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
-                                  'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' +
-                                  self.slice_direction + '_rgbslice-' + str(slice_name) + '.pt')
+        if self.prepare_dl:
+            slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+                                      'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_axis-' +
+                                      self.slice_direction + '_rgbslice-' + str(slice_name) + '.pt')
 
-        extracted_slice = torch.load(slice_path)
+            extracted_slice = torch.load(slice_path)
+
+        else:
+            image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+                                      'preprocessing_dl',
+                                      img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+            image = torch.load(image_path)
+            extracted_slice = extract_slice_from_mri(image, slice_name, self.mri_plane)
 
         # check if the slice has NaN value
         if torch.isnan(extracted_slice).any():
@@ -436,6 +453,43 @@ class MRIDataset_slice_mixed(Dataset):
                   'label': label, 'participant_id': img_name, 'session_id': sess_name, 'slice_id': slice_name}
 
         return sample
+
+
+def extract_slice_from_mri(image, index_slice, view):
+    """
+    This is a function to grab one slice in each view and create a rgb image for transferring learning: duplicate the slices into R, G, B channel
+    :param image: (tensor)
+    :param index_slice: (int) index of the wanted slice
+    :param view:
+    :return:
+    To note, for each view:
+    Axial_view = "[:, :, slice_i]"
+    Coronal_veiw = "[:, slice_i, :]"
+    Saggital_view= "[slice_i, :, :]"
+    """
+
+    # reshape the tensor, delete the first dimension for slice-level
+    image_tensor = image.squeeze(0)
+    print('After deleting first dim', image_tensor.shape)
+
+    # sagittal
+    if view == 0:
+        slice_select = image_tensor[index_slice, :, :].clone()
+
+    # coronal
+    elif view == 1:
+        slice_select = image_tensor[:, index_slice, :].clone()
+
+    # axial
+    elif view == 2:
+        slice_select = image_tensor[:, :, index_slice].clone()
+
+    else:
+        raise ValueError("This view does not exist, please choose view in [0, 1, 2]")
+
+    extracted_slice = torch.stack((slice_select, slice_select, slice_select))
+
+    return extracted_slice
 
 
 #################################
