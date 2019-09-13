@@ -1,7 +1,7 @@
 import torch
 import pandas as pd
 import numpy as np
-import os, math
+import os
 from torch.utils.data import Dataset
 from time import time
 
@@ -63,7 +63,8 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_tra
     return model, best_autodecoder
 
 
-def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, writer_train_ft, writer_valid_ft, options, fi, global_step=0):
+def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, writer_train_ft, writer_valid_ft, options,
+                  fi, global_step=0):
     """
     After training the AEs in a layer-wise way, we fine-tune the whole AEs
     :param auto_encoder:
@@ -644,7 +645,7 @@ def soft_voting(performance_df, validation_df, selection_threshold=None):
 
 class MRIDataset_patch(Dataset):
 
-    def __init__(self, caps_directory, data_file, patch_size, stride_size, transformations=None, prepare_dl=False,
+    def __init__(self, caps_directory, data_file, patch_size, stride_size, transformations=None, prepare_dl=True,
                  patch_index=None):
         """
         Args:
@@ -799,66 +800,6 @@ class MRIDataset_patch_hippocampus(Dataset):
                   'participant_id': img_name, 'session_id': sess_name, 'patch_id': left_is_odd}
 
         return sample
-
-
-# class MRIDataset_patch_by_index(Dataset):
-#
-#     def __init__(self, caps_directory, data_file, patch_size, stride_size, index_patch, transformations=None):
-#         """
-#         Args:
-#             caps_directory (string): Directory of all the images.
-#             data_file (string): File name of the train/test split file.
-#             transformations (callable, optional): Optional transformations to be applied on a sample.
-#
-#         """
-#         self.caps_directory = caps_directory
-#         self.transformations = transformations
-#         self.index_patch = index_patch
-#         self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
-#         self.patch_size = patch_size
-#         self.stride_size = stride_size
-#
-#         # Check the format of the tsv file here
-#         if isinstance(data_file, str):
-#             self.df = pd.read_csv(data_file, sep='\t')
-#         elif isinstance(data_file, pd.DataFrame):
-#             self.df = data_file
-#         else:
-#             raise Exception('The argument datafile is not of correct type.')
-#
-#         if ('diagnosis' not in list(self.df.columns.values)) or ('session_id' not in list(self.df.columns.values)) or \
-#            ('participant_id' not in list(self.df.columns.values)):
-#             raise Exception("the data file is not in the correct format."
-#                             "Columns should include ['participant_id', 'session_id', 'diagnosis']")
-#
-#     def __len__(self):
-#         return len(self.df)
-#
-#     def __getitem__(self, idx):
-#         img_name = self.df.loc[idx, 'participant_id']
-#         sess_name = self.df.loc[idx, 'session_id']
-#         img_label = self.df.loc[idx, 'diagnosis']
-#         label = self.diagnosis_code[img_label]
-#
-#         patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
-#                                   'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-'
-#                                   + str(self.patch_size) + '_stride-' + str(self.stride_size) + '_patch-' +
-#                                   str(self.index_patch) + '.pt')
-#
-#         patch = torch.load(patch_path)
-#
-#         # check if the patch has NaN value
-#         if torch.isnan(patch).any():
-#             print("Double check, this patch has NaN value: %s" % str(img_name + '_' + sess_name + str(self.index_patch)))
-#             patch[torch.isnan(patch)] = 0
-#
-#         if self.transformations:
-#             patch = self.transformations(patch)
-#
-#         sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(self.index_patch), 'image': patch, 'label': label,
-#                   'participant_id': img_name, 'session_id': sess_name, 'patch_id': self.index_patch}
-#
-#         return sample
 
 
 def extract_patch_from_mri(image_tensor, index_patch, patch_size, stride_size):
