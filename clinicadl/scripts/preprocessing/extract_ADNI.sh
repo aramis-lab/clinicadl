@@ -1,5 +1,5 @@
 #!/bin/bash
-# Bash script for extract features used in classification algorithms proposed
+# Bash script to extract features used in classification algorithms proposed
 # by clinicadl
 
 CAPS_DIR=/network/lustre/dtlake01/aramis/users/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI_rerun

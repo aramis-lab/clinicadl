@@ -16,16 +16,31 @@ class Parameters:
         self.input_dir = input_dir
         self.model = model
 
-    def write(self, pretrained_path, pretrained_differencet,
-              preprocessing: str = "linear", diagnoses: str = ["AD", "CN"],
-              baseline: bool = False, minmaxnormalization: bool = False,
-              sampler: str = "random", n_splits: int = 1, split: int = 0,
-              accumulation_steps: int = 1, epochs: int = 20, 
-              learning_rate: float = 1e-4, patience: int = 10, 
-              tolerance: float = 0.05, add_sigmoid: bool = False,
-              optimizer: str = "Adam", weight_decay: float = 0.0,
-              gpu: bool = False, batch_size: int = 2, evaluation_steps: int = 1,
-              num_workers: int = 1):
+    def write(self, 
+            pretrained_path, 
+            pretrained_difference,
+            preprocessing: str = "linear",
+            diagnoses: str = ["AD", "CN"],
+            baseline: bool = False,
+            minmaxnormalization: bool = False,
+            sampler: str = "random",
+            n_splits: int = 1,
+            split: int = 0,
+            accumulation_steps: int = 1,
+            epochs: int = 20, 
+            learning_rate: float = 1e-4,
+            patience: int = 10, 
+            tolerance: float = 0.05,
+            add_sigmoid: bool = False,
+            optimizer: str = "Adam",
+            weight_decay: float = 0.1,
+            gpu: bool = False,
+            batch_size: int = 2,
+            evaluation_steps: int = 1,
+            num_workers: int = 1,
+            transfer_learning_path: str = None,
+            transfer_learning_autoencoder: str = None,
+            selection: str = "best_acc"):
         """ 
         Optional parameters used for training CNN.
         pretrained_path: Path to a pretrained model (can be of different size).
@@ -45,12 +60,13 @@ class Parameters:
         patience: Waiting time for early stopping.
         tolerance: Tolerance value for the early stopping.
         add_sigmoid: Ad sigmoid function at the end of the decoder.
-        optimizer: Optimizer of choice for training. (default=Adam).
+        optimizer: Optimizer of choice for training. (default=Adam). Choices=["SGD", "Adadelta", "Adam"].
         weight_decay: Weight decay of the optimizer. 
         gpu: GPU usage if True.
         batch_size: Batch size for training. (default=1)
         evaluation_steps: Fix the number of batches to use before validation
-        num_workers = Define the number of batch being loaded in parallel
+        num_workers:  Define the number of batch being loaded in parallel
+        selection: Allow to choose which model of the experiment is loaded . choices ["best_loss", "best_acc"]
         """
 
         self.pretrained_path = pretrained_path
@@ -58,6 +74,7 @@ class Parameters:
         self.preprocessing = preprocessing
         self.diagnoses = diagnoses        
         self.baseline = baseline
+        self.minmaxnormalization = minmaxnormalization
         self.sampler = sampler
         self.n_splits = n_splits
         self.split = split
@@ -73,6 +90,9 @@ class Parameters:
         self.batch_size = batch_size
         self.evaluation_steps = evaluation_steps
         self.num_workers = num_workers
+        self.transfer_learning_path = transfer_learning_path
+        self.transfer_learning_autoencoder = transfer_learning_autoencoder
+        self.selection = selection
 
 def check_and_clean(d):
     import shutil
@@ -85,8 +105,12 @@ def check_and_clean(d):
 
 def commandline_to_json(commandline, model_type):
     """
-    This is a function to write the python argparse object into a json file. This helps for DL when searching for hyperparameters
-    :param commandline: a tuple contain the output of `parser.parse_known_args()`
+    This is a function to write the python argparse object into a json file.
+    This helps for DL when searching for hyperparameters 
+    
+    :param commandline: a tuple contain the output of
+                        `parser.parse_known_args()` 
+    
     :return:
     """
     import json
@@ -103,8 +127,11 @@ def commandline_to_json(commandline, model_type):
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
+    if commandline_arg_dic['func'] is not None:
+        del commandline_arg_dic['func']
+
     # save to json file
-    json = json.dumps(commandline_arg_dic)
+    json = json.dumps(commandline_arg_dic, skipkeys=True)
     print("Path of json file:", os.path.join(log_dir, "commandline_" + model_type + ".json"))
     f = open(os.path.join(log_dir, "commandline_" + model_type + ".json"), "w")
     f.write(json)
