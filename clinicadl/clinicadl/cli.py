@@ -35,7 +35,7 @@ def train_func(args):
            train_params_autoencoder = Parameters(args.tsv_path, 
                    args.output_dir, 
                    args.caps_dir, 
-                   args.model)
+                   args.network)
            train_params_autoencoder.write(args.pretrained_path,
                    args.pretrained_difference,
                    args.preprocessing,
@@ -52,27 +52,30 @@ def train_func(args):
                    args.tolerance,
                    args.add_sigmoid,
                    'Adam',
-                   0.0,
+                   0.1,
                    args.use_gpu,
                    args.batch_size,
                    args.evaluation_steps,
                    args.nproc)
-           train_autoencoder(train_parameters_autoencoder)
+           train_autoencoder(train_params_autoencoder)
        else:
            train_params_cnn = Parameters(args.tsv_path, 
                    args.output_dir, 
                    args.caps_dir, 
-                   args.model)
+                   args.network)
            #train_params_cnn.write(args.
 
-    if args.mode=='patch':
+    elif args.mode=='patch':
         pass
 
-    if args.mode=='slice':
+    elif args.mode=='slice':
         pass
 
-    if args.mode=='svn':
+    elif args.mode=='svn':
         pass
+
+    else:
+        print('Mode not detected in clinicadl')
 
 # Function to dispatch command line options from classify to corresponding
 # function
@@ -278,7 +281,7 @@ def parse_command_line():
     classify_parser.add_argument('output_dir',
             help='Folder containing results of the training.',
             default=None)
-    classify_parser.add_argument('model',
+    classify_parser.add_argument('network_dir',
             help='Path to the folder where the model was saved during the training.',
             default=None)
 
@@ -287,10 +290,8 @@ def parse_command_line():
     args = parser.parse_args()
     
     commandline = parser.parse_known_args()
-    print(type(commandline))
-    print(commandline)
     commandline_to_json(commandline, 'model_type')
     
-    
-    print(args)
+    #print(args)
+   
     return args

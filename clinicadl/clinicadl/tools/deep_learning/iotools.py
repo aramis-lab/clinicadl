@@ -33,7 +33,7 @@ class Parameters:
             tolerance: float = 0.05,
             add_sigmoid: bool = False,
             optimizer: str = "Adam",
-            weight_decay: float = 0.0,
+            weight_decay: float = 0.1,
             gpu: bool = False,
             batch_size: int = 2,
             evaluation_steps: int = 1,
@@ -57,7 +57,7 @@ class Parameters:
         patience: Waiting time for early stopping.
         tolerance: Tolerance value for the early stopping.
         add_sigmoid: Ad sigmoid function at the end of the decoder.
-        optimizer: Optimizer of choice for training. (default=Adam).
+        optimizer: Optimizer of choice for training. (default=Adam). Choices=["SGD", "Adadelta", "Adam"].
         weight_decay: Weight decay of the optimizer. 
         gpu: GPU usage if True.
         batch_size: Batch size for training. (default=1)
@@ -70,6 +70,7 @@ class Parameters:
         self.preprocessing = preprocessing
         self.diagnoses = diagnoses        
         self.baseline = baseline
+        self.minmaxnormalization = minmaxnormalization
         self.sampler = sampler
         self.n_splits = n_splits
         self.split = split
