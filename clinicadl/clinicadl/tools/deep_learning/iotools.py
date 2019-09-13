@@ -122,7 +122,6 @@ def commandline_to_json(commandline, model_type):
     if commandline_arg_dic['func'] is not None:
         del commandline_arg_dic['func']
 
-    print(commandline_arg_dic)
     # save to json file
     json = json.dumps(commandline_arg_dic, skipkeys=True)
     print("Path of json file:", os.path.join(log_dir, "commandline_" + model_type + ".json"))
