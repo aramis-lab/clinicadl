@@ -4,7 +4,7 @@ import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
-from .utils import MRIDataset_patch_by_index, test, patch_level_to_tsvs, soft_voting_to_tsvs
+from .utils import MRIDataset_patch, test, patch_level_to_tsvs, soft_voting_to_tsvs
 from tools.deep_learning.models import create_model, load_model
 from tools.deep_learning.data import MinMaxNormalization, load_data, load_data_test
 
@@ -88,8 +88,8 @@ def main(options):
 
         for n in range(options.num_cnn):
 
-            dataset = MRIDataset_patch_by_index(options.caps_directory, test_df, options.patch_size,
-                                                options.patch_stride, n, transformations=transformations)
+            dataset = MRIDataset_patch(options.caps_directory, test_df, options.patch_size,
+                                       options.patch_stride, transformations=transformations, patch_index=n)
 
             test_loader = DataLoader(dataset,
                                      batch_size=options.batch_size,

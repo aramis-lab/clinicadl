@@ -181,6 +181,28 @@ def test_ae(model, dataloader, gpu, criterion):
     return total_loss
 
 
+def visualize_ae(ae, data, results_path):
+    """
+    To reconstruct one example batch and save it in nifti format for visualization
+    :param ae:
+    :param data: tensor, shape [1, 1, height, width, length]
+    :param results_path:
+    :return:
+    """
+    import nibabel as nib
+    import os
+
+    if not os.path.exists(results_path):
+        os.makedirs(results_path)
+    # set the model to be eval
+    ae.eval()
+    output = ae(data)
+    reconstructed_nii = nib.Nifti1Image(output[0][0].cpu().detach().numpy(), np.eye(4))
+    input_nii = nib.Nifti1Image(data[0][0].cpu().detach().numpy(), np.eye(4))
+    nib.save(reconstructed_nii, os.path.join(results_path, 'example_patch_reconstructed.nii.gz'))
+    nib.save(input_nii, os.path.join(results_path, 'example_patch_original.nii.gz'))
+
+
 #################################
 # Transfer learning
 #################################
@@ -622,7 +644,8 @@ def soft_voting(performance_df, validation_df, selection_threshold=None):
 
 class MRIDataset_patch(Dataset):
 
-    def __init__(self, caps_directory, data_file, patch_size, stride_size, transformations=None, prepare_dl=False):
+    def __init__(self, caps_directory, data_file, patch_size, stride_size, transformations=None, prepare_dl=False,
+                 patch_index=None):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -636,6 +659,7 @@ class MRIDataset_patch(Dataset):
         self.patch_size = patch_size
         self.stride_size = stride_size
         self.prepare_dl = prepare_dl
+        self.patch_index = patch_index
 
         # Check the format of the tsv file here
         if isinstance(data_file, str):
@@ -661,7 +685,10 @@ class MRIDataset_patch(Dataset):
         sess_name = self.df.loc[sub_idx, 'session_id']
         img_label = self.df.loc[sub_idx, 'diagnosis']
         label = self.diagnosis_code[img_label]
-        patch_idx = idx % self.patchs_per_patient
+        if self.patch_index is None:
+            patch_idx = idx % self.patchs_per_patient
+        else:
+            patch_idx = self.patch_index
 
         if self.prepare_dl:
             patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl',
@@ -689,6 +716,9 @@ class MRIDataset_patch(Dataset):
         return sample
 
     def num_patches_per_session(self):
+        if self.patch_index is not None:
+            return 1
+
         img_name = self.df.loc[0, 'participant_id']
         sess_name = self.df.loc[0, 'session_id']
 
@@ -771,64 +801,64 @@ class MRIDataset_patch_hippocampus(Dataset):
         return sample
 
 
-class MRIDataset_patch_by_index(Dataset):
-
-    def __init__(self, caps_directory, data_file, patch_size, stride_size, index_patch, transformations=None):
-        """
-        Args:
-            caps_directory (string): Directory of all the images.
-            data_file (string): File name of the train/test split file.
-            transformations (callable, optional): Optional transformations to be applied on a sample.
-
-        """
-        self.caps_directory = caps_directory
-        self.transformations = transformations
-        self.index_patch = index_patch
-        self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
-        self.patch_size = patch_size
-        self.stride_size = stride_size
-
-        # Check the format of the tsv file here
-        if isinstance(data_file, str):
-            self.df = pd.read_csv(data_file, sep='\t')
-        elif isinstance(data_file, pd.DataFrame):
-            self.df = data_file
-        else:
-            raise Exception('The argument datafile is not of correct type.')
-
-        if ('diagnosis' not in list(self.df.columns.values)) or ('session_id' not in list(self.df.columns.values)) or \
-           ('participant_id' not in list(self.df.columns.values)):
-            raise Exception("the data file is not in the correct format."
-                            "Columns should include ['participant_id', 'session_id', 'diagnosis']")
-
-    def __len__(self):
-        return len(self.df)
-
-    def __getitem__(self, idx):
-        img_name = self.df.loc[idx, 'participant_id']
-        sess_name = self.df.loc[idx, 'session_id']
-        img_label = self.df.loc[idx, 'diagnosis']
-        label = self.diagnosis_code[img_label]
-
-        patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
-                                  'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-'
-                                  + str(self.patch_size) + '_stride-' + str(self.stride_size) + '_patch-' +
-                                  str(self.index_patch) + '.pt')
-
-        patch = torch.load(patch_path)
-
-        # check if the patch has NaN value
-        if torch.isnan(patch).any():
-            print("Double check, this patch has NaN value: %s" % str(img_name + '_' + sess_name + str(self.index_patch)))
-            patch[torch.isnan(patch)] = 0
-
-        if self.transformations:
-            patch = self.transformations(patch)
-
-        sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(self.index_patch), 'image': patch, 'label': label,
-                  'participant_id': img_name, 'session_id': sess_name, 'patch_id': self.index_patch}
-
-        return sample
+# class MRIDataset_patch_by_index(Dataset):
+#
+#     def __init__(self, caps_directory, data_file, patch_size, stride_size, index_patch, transformations=None):
+#         """
+#         Args:
+#             caps_directory (string): Directory of all the images.
+#             data_file (string): File name of the train/test split file.
+#             transformations (callable, optional): Optional transformations to be applied on a sample.
+#
+#         """
+#         self.caps_directory = caps_directory
+#         self.transformations = transformations
+#         self.index_patch = index_patch
+#         self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
+#         self.patch_size = patch_size
+#         self.stride_size = stride_size
+#
+#         # Check the format of the tsv file here
+#         if isinstance(data_file, str):
+#             self.df = pd.read_csv(data_file, sep='\t')
+#         elif isinstance(data_file, pd.DataFrame):
+#             self.df = data_file
+#         else:
+#             raise Exception('The argument datafile is not of correct type.')
+#
+#         if ('diagnosis' not in list(self.df.columns.values)) or ('session_id' not in list(self.df.columns.values)) or \
+#            ('participant_id' not in list(self.df.columns.values)):
+#             raise Exception("the data file is not in the correct format."
+#                             "Columns should include ['participant_id', 'session_id', 'diagnosis']")
+#
+#     def __len__(self):
+#         return len(self.df)
+#
+#     def __getitem__(self, idx):
+#         img_name = self.df.loc[idx, 'participant_id']
+#         sess_name = self.df.loc[idx, 'session_id']
+#         img_label = self.df.loc[idx, 'diagnosis']
+#         label = self.diagnosis_code[img_label]
+#
+#         patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1',
+#                                   'preprocessing_dl', img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-'
+#                                   + str(self.patch_size) + '_stride-' + str(self.stride_size) + '_patch-' +
+#                                   str(self.index_patch) + '.pt')
+#
+#         patch = torch.load(patch_path)
+#
+#         # check if the patch has NaN value
+#         if torch.isnan(patch).any():
+#             print("Double check, this patch has NaN value: %s" % str(img_name + '_' + sess_name + str(self.index_patch)))
+#             patch[torch.isnan(patch)] = 0
+#
+#         if self.transformations:
+#             patch = self.transformations(patch)
+#
+#         sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(self.index_patch), 'image': patch, 'label': label,
+#                   'participant_id': img_name, 'session_id': sess_name, 'patch_id': self.index_patch}
+#
+#         return sample
 
 
 def extract_patch_from_mri(image_tensor, index_patch, patch_size, stride_size):
@@ -842,25 +872,3 @@ def extract_patch_from_mri(image_tensor, index_patch, patch_size, stride_size):
 
     return extracted_patch
 
-
-
-def visualize_ae(ae, data, results_path):
-    """
-    To reconstruct one example batch and save it in nifti format for visualization
-    :param ae:
-    :param data: tensor, shape [1, 1, height, width, length]
-    :param results_path:
-    :return:
-    """
-    import nibabel as nib
-    import os
-
-    if not os.path.exists(results_path):
-        os.makedirs(results_path)
-    # set the model to be eval
-    ae.eval()
-    output = ae(data)
-    reconstructed_nii = nib.Nifti1Image(output[0][0].cpu().detach().numpy(), np.eye(4))
-    input_nii = nib.Nifti1Image(data[0][0].cpu().detach().numpy(), np.eye(4))
-    nib.save(reconstructed_nii, os.path.join(results_path, 'example_patch_reconstructed.nii.gz'))
-    nib.save(input_nii, os.path.join(results_path, 'example_patch_original.nii.gz'))
