@@ -8,3 +8,4 @@ nilearn
 #pytorch==1.0.0
 #tensorflow==1.4.1
 nipy
+tensorboardX

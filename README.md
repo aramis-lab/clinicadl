@@ -16,6 +16,7 @@ All the papers described in the State of the art section of the manuscript may b
 - Pytorch
 - Nilearn
 - Nipy
+- TensorBoardX
 
 # How to use ?
 
