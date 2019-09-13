@@ -37,7 +37,10 @@ class Parameters:
             gpu: bool = False,
             batch_size: int = 2,
             evaluation_steps: int = 1,
-            num_workers: int = 1):
+            num_workers: int = 1,
+            transfer_learning_path: str = None,
+            transfer_learning_autoencoder: str = None,
+            selection: str = "best_acc"):
         """ 
         Optional parameters used for training CNN.
         pretrained_path: Path to a pretrained model (can be of different size).
@@ -62,7 +65,8 @@ class Parameters:
         gpu: GPU usage if True.
         batch_size: Batch size for training. (default=1)
         evaluation_steps: Fix the number of batches to use before validation
-        num_workers = Define the number of batch being loaded in parallel
+        num_workers:  Define the number of batch being loaded in parallel
+        selection: Allow to choose which model of the experiment is loaded . choices ["best_loss", "best_acc"]
         """
 
         self.pretrained_path = pretrained_path
@@ -86,6 +90,9 @@ class Parameters:
         self.batch_size = batch_size
         self.evaluation_steps = evaluation_steps
         self.num_workers = num_workers
+        self.transfer_learning_path = transfer_learning_path
+        self.transfer_learning_autoencoder = transfer_learning_autoencoder
+        self.selection = selection
 
 def check_and_clean(d):
     import shutil
