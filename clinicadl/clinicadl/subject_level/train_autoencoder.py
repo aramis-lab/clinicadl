@@ -8,21 +8,22 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from .utils import ae_finetuning
-from tools.deep_learning import Parameters
-from tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data
-from tools.deep_learning import create_autoencoder, commandline_to_json
+from ..tools.deep_learning.iotools import Parameters
+from ..tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data
+from ..tools.deep_learning import create_autoencoder, commandline_to_json
 
 
 def train_autoencoder(params):
-""" Parameters
-params: class from utils module containing all the parameters for training a 
-CNN.
-"""
-
+    """ Parameters
+    params: class from utils module containing all the parameters for training a 
+    CNN.
+    """
+    
     if params.evaluation_steps % params.accumulation_steps != 0 and params.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
                         (params.evaluation_steps, params.accumulation_steps))
 
+    
     if params.minmaxnormalization:
         transformations = MinMaxNormalization()
     else:
@@ -44,7 +45,7 @@ CNN.
     train_loader = DataLoader(data_train,
                               params.batch_size,
                               shuffle=True,
-                              params.num_workers,
+                              num_workers=params.num_workers,
                               drop_last=True
                               )
 
@@ -65,8 +66,7 @@ CNN.
 
     decoder = create_autoencoder(params.model, params.pretrained_path, 
                                  difference=params.pretrained_difference)
-    optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
-                                                         params.learning_rate, params.weight_decay)
+    optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()), params.learning_rate, weight_decay=params.weight_decay)
 
     if params.add_sigmoid:
         if isinstance(decoder.decoder[-1], nn.ReLU):
