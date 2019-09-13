@@ -645,7 +645,7 @@ def soft_voting(performance_df, validation_df, selection_threshold=None):
 
 class MRIDataset_patch(Dataset):
 
-    def __init__(self, caps_directory, data_file, patch_size, stride_size, transformations=None, prepare_dl=True,
+    def __init__(self, caps_directory, data_file, patch_size, stride_size, transformations=None, prepare_dl=False,
                  patch_index=None):
         """
         Args:

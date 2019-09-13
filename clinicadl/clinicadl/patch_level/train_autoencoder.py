@@ -43,6 +43,8 @@ parser.add_argument("--baseline", default=False, action="store_true",
                     help="Use only baseline data instead of all scans available")
 parser.add_argument('--hippocampus_roi', default=False, action='store_true',
                     help="If train the model using only hippocampus ROI")
+parser.add_argument('--prepare_dl', default=False, action="store_true",
+                    help="If True the outputs of preprocessing prepare_dl are used, else the whole MRI is loaded.")
 
 # Cross-validation
 parser.add_argument("--n_splits", default=5, type=int,
@@ -101,9 +103,11 @@ def main(options):
 
         else:
             data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size,
-                                          options.patch_stride, transformations=transformations)
+                                          options.patch_stride, transformations=transformations,
+                                          prepare_dl=options.prepare_dl)
             data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size,
-                                          options.patch_stride, transformations=transformations)
+                                          options.patch_stride, transformations=transformations,
+                                          prepare_dl=options.prepare_dl)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
