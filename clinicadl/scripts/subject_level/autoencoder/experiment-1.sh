@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=6
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
-#SBATCH --workdir=.
+#SBATCH --chdir=.
 #SBATCH --output=outputs/pytorch_job_%j.out
 #SBATCH --error=outputs/pytorch_job_%j.err
 #SBATCH --job-name=3DAE
@@ -15,10 +15,14 @@
 #export https_proxy=http://10.10.2.1:8123
 
 # Experiment training autoencoder
+module load clinica.all
+eval "$(conda shell.bash hook)"
+conda activate clinica_dl_pre_py36
 
 # Network structure
 NETWORK="Conv5_FC3"
-COHORT='ADNI'
+COHORT="ADNI"
+DATE="reproducibility_results"
 
 # Input arguments to clinicadl
 CAPS_DIR="/network/lustre/dtlake01/aramis/users/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI_rerun"
@@ -46,8 +50,6 @@ NORMALIZATION=1
 PATIENCE=50
 
 
-OPTIONS=""
-DATE="reproducibility_results"
 
 NAME="model-${NETWORK}_preprocessing-${PREPROCESSING}_task-autoencoder_baseline-${BASELINE}_norm-${NORMALIZATION}"
 
@@ -57,16 +59,16 @@ NAME="${NAME}_splits-${SPLITS}"
 fi
 
 echo $NAME
-echo $OPTIONS
 
 # Run clinicadl
 clinicadl train \
+  subject \
   $CAPS_DIR \
   $TSV_PATH \
   $OUTPUT_DIR$NAME \
   $NETWORK \
-  --train_autoencoder \  
-  --use-gpu \
+  --train_autoencoder \
+  --use_gpu \
   --nproc $NUM_PROCESSORS \
   --batch_size $BATCH \
   --evaluation_steps $EVALUATION \
@@ -74,10 +76,9 @@ clinicadl train \
   --diagnoses $DIAGNOSES \
   --baseline \
   --minmaxnormalization \
-  --n_splits $NSPLITS \
+  --n_splits $SPLITS \
   --split $SPLIT \
   --accumulation_steps $ACCUMULATION \
-  --eprochs $EPOCHS \
-  --learning_rate $LR
+  --epochs $EPOCHS \
+  --learning_rate $LR \
   --patience $PATIENCE
-  --tolerance $TOLERANCE
