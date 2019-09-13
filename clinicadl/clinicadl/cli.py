@@ -10,14 +10,14 @@ from .subject_level.train_autoencoder import train_autoencoder
 
 def preprocessing_t1w_func(args):
     wf = preprocessing_t1w(args.bids_directory, 
-            args.caps_directory,
+            args.caps_dir,
             args.tsv_file,
             args.ref_template,
             args.working_directory)
     wf.run(plugin='MultiProc', plugin_args={'n_procs': args.nproc})
 
 def extract_data_func(args):
-    wf = postprocessing_t1w(args.caps_directory, 
+    wf = postprocessing_t1w(args.caps_dir, 
             args.tsv_file,
             args.patch_size,
             args.stride_size,
@@ -34,7 +34,7 @@ def train_func(args):
        if args.train_autoencoder :
            train_params_autoencoder = Parameters(args.tsv_path, 
                    args.output_dir, 
-                   args.input_dir, 
+                   args.caps_dir, 
                    args.model)
            train_params_autoencoder.write(args.pretrained_path,
                    args.pretrained_difference,
@@ -42,7 +42,7 @@ def train_func(args):
                    args.diagnoses,
                    args.baseline,
                    args.minmaxnormalization,
-                   sampler = 'random',
+                   'random',
                    args.n_splits,
                    args.split,
                    args.accumulation_steps,
@@ -51,8 +51,8 @@ def train_func(args):
                    args.patience,
                    args.tolerance,
                    args.add_sigmoid,
-                   optimizer = 'Adam',
-                   weight_decay = 0.0,
+                   'Adam',
+                   0.0,
                    args.use_gpu,
                    args.batch_size,
                    args.evaluation_steps,
@@ -61,7 +61,7 @@ def train_func(args):
        else:
            train_params_cnn = Parameters(args.tsv_path, 
                    args.output_dir, 
-                   args.input_dir, 
+                   args.caps_dir, 
                    args.model)
            #train_params_cnn.write(args.
 
@@ -104,7 +104,7 @@ def parse_command_line():
     preprocessing_parser.add_argument('bids_directory',
             help='Data using BIDS structure.',
             default=None)
-    preprocessing_parser.add_argument('caps_directory',
+    preprocessing_parser.add_argument('caps_dir',
             help='Data using CAPS structure.',
             default=None)
     preprocessing_parser.add_argument('tsv_file',
@@ -128,7 +128,7 @@ def parse_command_line():
 
     extract_parser = subparser.add_parser('extract',
             help='Create data (slices or patches) for training.')
-    extract_parser.add_argument('caps_directory',
+    extract_parser.add_argument('caps_dir',
             help='Data using CAPS structure.',
             default=None)
     extract_parser.add_argument('tsv_file',
@@ -168,7 +168,7 @@ def parse_command_line():
             help='Choose your mode (subject level, slice level, patch level, svm).',
             choices=['subject', 'slice', 'patch', 'svm'],
             default='subject')
-    train_parser.add_argument('caps_directory',
+    train_parser.add_argument('caps_dir',
             help='Data using CAPS structure.',
             default=None)
     train_parser.add_argument('tsv_path',
@@ -269,7 +269,7 @@ def parse_command_line():
             help='Choose your mode (subject level, slice level, patch level, svm).',
             choices=['subject', 'slice', 'patch', 'svm'],
             default='subject')
-    classify_parser.add_argument('caps_directory',
+    classify_parser.add_argument('caps_dir',
             help='Data using CAPS structure.',
             default=None)
     classify_parser.add_argument('tsv_path',
@@ -287,6 +287,8 @@ def parse_command_line():
     args = parser.parse_args()
     
     commandline = parser.parse_known_args()
+    print(type(commandline))
+    print(commandline)
     commandline_to_json(commandline, 'model_type')
     
     
