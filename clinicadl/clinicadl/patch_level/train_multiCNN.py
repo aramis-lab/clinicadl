@@ -8,7 +8,7 @@ from tensorboardX import SummaryWriter
 import torchvision.transforms as transforms
 
 from .utils import load_model_after_ae, load_model_after_cnn
-from .utils import MRIDataset_patch_by_index, train, test, patch_level_to_tsvs, soft_voting_to_tsvs
+from .utils import MRIDataset_patch, train, test, patch_level_to_tsvs, soft_voting_to_tsvs
 
 from tools.deep_learning import EarlyStopping, save_checkpoint, commandline_to_json, create_model, load_model
 from tools.deep_learning.data import MinMaxNormalization, load_data
@@ -123,10 +123,10 @@ def main(options):
                 print('The model is trained from scratch.')
                 model.load_state_dict(init_state)
 
-            data_train = MRIDataset_patch_by_index(options.caps_directory, training_tsv, options.patch_size,
-                                                   options.patch_stride, i, transformations=transformations)
-            data_valid = MRIDataset_patch_by_index(options.caps_directory, valid_tsv, options.patch_size,
-                                                   options.patch_stride, i, transformations=transformations)
+            data_train = MRIDataset_patch(options.caps_directory, training_tsv, options.patch_size,
+                                          options.patch_stride, transformations=transformations, patch_index=i)
+            data_valid = MRIDataset_patch(options.caps_directory, valid_tsv, options.patch_size,
+                                          options.patch_stride, transformations=transformations, patch_index=i)
 
             # Use argument load to distinguish training and testing
             train_loader = DataLoader(data_train,
