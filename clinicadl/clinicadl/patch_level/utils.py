@@ -622,7 +622,7 @@ def soft_voting(performance_df, validation_df, selection_threshold=None):
 
 class MRIDataset_patch(Dataset):
 
-    def __init__(self, caps_directory, data_file, patch_size, stride_size, transformations=None):
+    def __init__(self, caps_directory, data_file, patch_size, stride_size, transformations=None, prepare_dl=False):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -635,6 +635,7 @@ class MRIDataset_patch(Dataset):
         self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
         self.patch_size = patch_size
         self.stride_size = stride_size
+        self.prepare_dl = prepare_dl
 
         # Check the format of the tsv file here
         if isinstance(data_file, str):
@@ -649,10 +650,7 @@ class MRIDataset_patch(Dataset):
             raise Exception("the data file is not in the correct format."
                             "Columns should include ['participant_id', 'session_id', 'diagnosis']")
 
-        patch_dims = [math.floor((169 - patch_size) / stride_size + 1),
-                      math.floor((208 - patch_size) / stride_size + 1),
-                      math.floor((179 - patch_size) / stride_size + 1)]
-        self.patchs_per_patient = int(patch_dims[0] * patch_dims[1] * patch_dims[2])
+        self.patchs_per_patient = self.num_patches_per_session()
 
     def __len__(self):
         return len(self.df) * self.patchs_per_patient
@@ -665,11 +663,17 @@ class MRIDataset_patch(Dataset):
         label = self.diagnosis_code[img_label]
         patch_idx = idx % self.patchs_per_patient
 
-        patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl',
-                                  img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-' + str(self.patch_size)
-                                  + '_stride-' + str(self.stride_size) + '_patch-' + str(patch_idx) + '.pt')
+        if self.prepare_dl:
+            patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl',
+                                      img_name + '_' + sess_name + '_space-MNI_res-1x1x1_patchsize-' + str(self.patch_size)
+                                      + '_stride-' + str(self.stride_size) + '_patch-' + str(patch_idx) + '.pt')
 
-        patch = torch.load(patch_path)
+            patch = torch.load(patch_path)
+        else:
+            image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl',
+                                      img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+            image = torch.load(image_path)
+            patch = extract_patch_from_mri(image, patch_idx, self.patch_size, self.stride_size)
 
         # check if the patch has NaN value
         if torch.isnan(patch).any():
@@ -683,6 +687,21 @@ class MRIDataset_patch(Dataset):
                   'participant_id': img_name, 'session_id': sess_name, 'patch_id': patch_idx}
 
         return sample
+
+    def num_patches_per_session(self):
+        img_name = self.df.loc[0, 'participant_id']
+        sess_name = self.df.loc[0, 'session_id']
+
+        image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name, 't1', 'preprocessing_dl',
+                                  img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+        image = torch.load(image_path)
+
+        patches_tensor = image.unfold(1, self.patch_size, self.stride_size
+                                      ).unfold(2, self.patch_size, self.stride_size
+                                               ).unfold(3, self.patch_size, self.stride_size).contiguous()
+        patches_tensor = patches_tensor.view(-1, self.patch_size, self.patch_size, self.patch_size)
+        num_patches = patches_tensor.shape[0]
+        return num_patches
 
 
 class MRIDataset_patch_hippocampus(Dataset):
@@ -810,6 +829,19 @@ class MRIDataset_patch_by_index(Dataset):
                   'participant_id': img_name, 'session_id': sess_name, 'patch_id': self.index_patch}
 
         return sample
+
+
+def extract_patch_from_mri(image_tensor, index_patch, patch_size, stride_size):
+
+    # use classifiers tensor.upfold to crop the patch.
+    patches_tensor = image_tensor.unfold(1, patch_size, stride_size
+                                         ).unfold(2, patch_size, stride_size
+                                                  ).unfold(3, patch_size, stride_size).contiguous()
+    patches_tensor = patches_tensor.view(-1, patch_size, patch_size, patch_size)
+    extracted_patch = patches_tensor[index_patch, ...].unsqueeze_(0).clone()
+
+    return extracted_patch
+
 
 
 def visualize_ae(ae, data, results_path):
