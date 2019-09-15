@@ -27,7 +27,7 @@ DATE="reproducibility_results"
 # Input arguments to clinicadl
 CAPS_DIR="$SCRATCH/../commun/datasets/ADNI_rerun"
 TSV_PATH="$HOME/code/AD-DL/data/$COHORT/lists_by_diagnosis/train"
-OUTPUT_DIR="$SCRATCH/results_subject/$DATE"
+OUTPUT_DIR="$SCRATCH/results/$DATE/"
 
 # Computation ressources
 NUM_PROCESSORS=8
