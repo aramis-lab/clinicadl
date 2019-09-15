@@ -34,8 +34,8 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_tra
         Return both the pretrained CNN for future use and also the stacked AEs
     """
     from os import path
-    from tools.deep_learning.models import AutoEncoder
-    from tools.deep_learning import save_checkpoint, load_model
+    from ..tools.deep_learning.models import AutoEncoder
+    from ..tools.deep_learning import save_checkpoint, load_model
     from copy import deepcopy
 
     # if the model defined is not already constructed to an AE, then we convert the CNN into an AE
@@ -76,7 +76,7 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
     :param options:
     :return:
     """
-    from tools.deep_learning import save_checkpoint
+    from ..tools.deep_learning import save_checkpoint
 
     auto_encoder_all.train()
     optimizer = eval("torch.optim." + options.optimizer)(filter(lambda x: x.requires_grad, auto_encoder_all.parameters()),
