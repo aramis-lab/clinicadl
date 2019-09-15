@@ -22,11 +22,6 @@ __maintainer__ = "Junhao Wen, Elina Thibeau-Sutre, Mauricio Diaz"
 __email__ = "junhao.wen89@gmail.com, mauricio.diaz@inria.fr"
 __status__ = "Development"
 
-parser = argparse.ArgumentParser(description="Argparser for 3D convolutional autoencoder, the AE will be reconstructed based on the CNN that you choose")
-
-# Mandatory arguments
-
-# Training arguments
 
 def train_autoencoder_patch(params):
 

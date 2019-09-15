@@ -7,6 +7,9 @@ from .preprocessing.T1_postprocessing import postprocessing_t1w
 from .subject_level.train_autoencoder import train_autoencoder
 from .subject_level.train_CNN import train_cnn
 from .slice_level.train_CNN import train_slice
+from .patch_level.train_autoencoder import train_autoencoder_patch
+from .patch_level.train_singleCNN import train_patch_single_cnn
+from .patch_level.train_multiCNN import train_patch_multi_cnn
 
 def preprocessing_t1w_func(args):
     wf = preprocessing_t1w(args.bids_directory, 
@@ -126,25 +129,29 @@ def train_func(args):
                    args.network)
            train_params_autoencoder.write(args.pretrained_path,
                    args.pretrained_difference,
-                   args.preprocessing,
-                   args.diagnoses,
-                   args.baseline,
-                   args.minmaxnormalization,
-                   'random',
-                   args.n_splits,
-                   args.split,
-                   args.accumulation_steps,
-                   args.epochs,
-                   args.learning_rate,
-                   args.patience,
-                   args.tolerance,
-                   args.add_sigmoid,
-                   'Adam',
-                   0.0,
-                   args.use_gpu,
-                   args.batch_size,
-                   args.evaluation_steps,
-                   args.nproc)
+                   preprocessing = args.preprocessing,
+                   diagnoses = args.diagnoses,
+                   baseline = args.baseline,
+                   minmaxnormalization = args.minmaxnormalization,
+                   sampler = 'random',
+                   n_splits = args.n_splits,
+                   split = args.split,
+                   accumulation_steps = args.accumulation_steps,
+                   epochs = args.epochs,
+                   learning_rate = args.learning_rate,
+                   patience = args.patience,
+                   tolerance = args.tolerance,
+                   add_sigmoid = args.add_sigmoid,
+                   optimizer = 'Adam',
+                   weight_decay = 0.0,
+                   gpu = args.use_gpu,
+                   batch_size = args.batch_size,
+                   evaluation_steps = args.evaluation_steps,
+                   num_workers = args.nproc,
+                   patch_size = args.patch_size,
+                   patch_stride = args.patch_stride,
+                   hippocampus_roi = args.hippocampus_roi,
+                   prepare_dl = args.prepare_dl)
            train_autoencoder_patch(train_params_autoencoder)
        else:
            train_params_patch = Parameters(args.tsv_path, 
@@ -153,28 +160,33 @@ def train_func(args):
                    args.network)
            train_params_patch.write(args.pretrained_path,
                    args.pretrained_difference,
-                   args.preprocessing,
-                   args.diagnoses,
-                   args.baseline,
-                   args.minmaxnormalization,
-                   args.sampler,
-                   args.n_splits,
-                   args.split,
-                   args.accumulation_steps,
-                   args.epochs,
-                   args.learning_rate,
-                   args.patience,
-                   args.tolerance,
-                   args.add_sigmoid,
-                   'Adam',
-                   0.1,
-                   args.use_gpu,
-                   args.batch_size,
-                   args.evaluation_steps,
-                   args.nproc,
-                   args.transfer_learning_path,
-                   args.transfer_learning_autoencoder,
-                   args.selection)
+                   preprocessing = args.preprocessing,
+                   diagnoses = args.diagnoses,
+                   baseline = args.baseline,
+                   minmaxnormalization = args.minmaxnormalization,
+                   sampler = 'random',
+                   n_splits = args.n_splits,
+                   split = args.split,
+                   accumulation_steps = args.accumulation_steps,
+                   epochs = args.epochs,
+                   learning_rate = args.learning_rate,
+                   patience = args.patience,
+                   tolerance = args.tolerance,
+                   add_sigmoid = args.add_sigmoid,
+                   optimizer = 'Adam',
+                   weight_decay = 0.0,
+                   gpu = args.use_gpu,
+                   batch_size = args.batch_size,
+                   evaluation_steps = args.evaluation_steps,
+                   num_workers = args.nproc,
+                   transfer_learning_path = args.transfer_learning_path,
+                   transfer_learning_autoencoder = args.transfer_learning_autoencoder,
+                   selection = args.selection,
+                   patch_size = args.patch_size,
+                   patch_stride = args.patch_stride,
+                   hippocampus_roi = args.hippocampus_roi,
+                   selection_threshold = args.selection_threshold,
+                   prepare_dl = args.prepare_dl)
            if args.network_type=='single':
                train_patch_single_cnn(train_params_cnn)
            else:
@@ -381,7 +393,15 @@ def parse_command_line():
     train_parser.add_argument("--selection", 
         help="Allow to choose which model of the experiment is loaded.",
         type=str, default="best_acc", choices=["best_loss", "best_acc"])
-
+    train_parser.add_argument("--selection_threshold", 
+        help='''Threshold on the balanced accuracies to compute the 
+        subject_level performance.only based on patches with balanced 
+        accuracy > threshold.''',
+        type=float, default=0.0)
+    train_parser.add_argument("--prepare_dl",
+        help='''If True the outputs of preprocessing are used, else the whole
+        MRI is loaded.''',
+        default=False, action="store_true")
     train_parser.set_defaults(func=train_func)
     
     
