@@ -186,6 +186,7 @@ def train_func(args):
                    patch_stride = args.patch_stride,
                    hippocampus_roi = args.hippocampus_roi,
                    selection_threshold = args.selection_threshold,
+                   num_cnn = args.num_cnn,
                    prepare_dl = args.prepare_dl)
            if args.network_type=='single':
                train_patch_single_cnn(train_params_cnn)
@@ -353,6 +354,10 @@ def parse_command_line():
         help='Add this option if you want to train an autoencoder',
         action="store_true",
         default=False)
+    train_parser.add_argument("--num_cnn", 
+        help='''How many CNNs we want to train in a patch-wise way.
+             By default, we train each patch from all subjects for one CNN''',
+        default=36, type=int)
     train_parser.add_argument('--sampler', '-sm',
         help='Sampler to be used',
         default='random', type=str)
