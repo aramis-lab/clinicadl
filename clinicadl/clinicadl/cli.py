@@ -52,7 +52,7 @@ def train_func(args):
                    args.tolerance,
                    args.add_sigmoid,
                    'Adam',
-                   0.1,
+                   0.0,
                    args.use_gpu,
                    args.batch_size,
                    args.evaluation_steps,

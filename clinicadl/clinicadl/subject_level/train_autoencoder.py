@@ -73,7 +73,7 @@ def train_autoencoder(params):
             decoder.decoder = nn.Sequential(*list(decoder.decoder)[:-1])
         decoder.decoder.add_module("sigmoid", nn.Sigmoid())
 
-    ae_finetuning(decoder, train_loader, valid_loader, criterion, params.optimizer, False, params)
+    ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, False, params)
 
     total_time = time() - total_time
     print('Total time', total_time)
