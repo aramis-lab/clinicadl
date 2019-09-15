@@ -6,7 +6,7 @@ from .preprocessing.T1_preprocessing import preprocessing_t1w
 from .preprocessing.T1_postprocessing import postprocessing_t1w
 from .subject_level.train_autoencoder import train_autoencoder
 from .subject_level.train_CNN import train_cnn
-
+from .slice_level.train_CNN import train_slice
 
 def preprocessing_t1w_func(args):
     wf = preprocessing_t1w(args.bids_directory, 
@@ -88,12 +88,97 @@ def train_func(args):
                    args.transfer_learning_autoencoder,
                    args.selection)
            train_cnn(train_params_cnn)
-    elif args.mode=='patch':
-        pass
-
     elif args.mode=='slice':
-        pass
-
+        train_params_slice = Parameters(args.tsv_path, 
+                args.output_dir, 
+                args.caps_dir, 
+                args.network)
+        train_params_slice.write(args.pretrained_path,
+                args.pretrained_difference,
+                args.preprocessing,
+                args.diagnoses,
+                args.baseline,
+                args.minmaxnormalization,
+                args.sampler,
+                args.n_splits,
+                args.split,
+                args.accumulation_steps,
+                args.epochs,
+                args.learning_rate,
+                args.patience,
+                args.tolerance,
+                args.add_sigmoid,
+                'Adam',
+                0.1,
+                args.use_gpu,
+                args.batch_size,
+                args.evaluation_steps,
+                args.nproc,
+                args.transfer_learning_path,
+                args.transfer_learning_autoencoder,
+                args.selection)
+        train_slice(train_params_slice)
+    elif args.mode=='patch':
+       if args.train_autoencoder :
+           train_params_autoencoder = Parameters(args.tsv_path, 
+                   args.output_dir, 
+                   args.caps_dir, 
+                   args.network)
+           train_params_autoencoder.write(args.pretrained_path,
+                   args.pretrained_difference,
+                   args.preprocessing,
+                   args.diagnoses,
+                   args.baseline,
+                   args.minmaxnormalization,
+                   'random',
+                   args.n_splits,
+                   args.split,
+                   args.accumulation_steps,
+                   args.epochs,
+                   args.learning_rate,
+                   args.patience,
+                   args.tolerance,
+                   args.add_sigmoid,
+                   'Adam',
+                   0.0,
+                   args.use_gpu,
+                   args.batch_size,
+                   args.evaluation_steps,
+                   args.nproc)
+           train_autoencoder_patch(train_params_autoencoder)
+       else:
+           train_params_patch = Parameters(args.tsv_path, 
+                   args.output_dir, 
+                   args.caps_dir, 
+                   args.network)
+           train_params_patch.write(args.pretrained_path,
+                   args.pretrained_difference,
+                   args.preprocessing,
+                   args.diagnoses,
+                   args.baseline,
+                   args.minmaxnormalization,
+                   args.sampler,
+                   args.n_splits,
+                   args.split,
+                   args.accumulation_steps,
+                   args.epochs,
+                   args.learning_rate,
+                   args.patience,
+                   args.tolerance,
+                   args.add_sigmoid,
+                   'Adam',
+                   0.1,
+                   args.use_gpu,
+                   args.batch_size,
+                   args.evaluation_steps,
+                   args.nproc,
+                   args.transfer_learning_path,
+                   args.transfer_learning_autoencoder,
+                   args.selection)
+           if args.network_type=='single':
+               train_patch_single_cnn(train_params_cnn)
+           else:
+               train_patch_multi_cnn(train_params_cnn)
     elif args.mode=='svn':
         pass
 
@@ -248,11 +333,14 @@ def parse_command_line():
         type=int, default=0)
 
     ## Training arguments
+    train_parser.add_argument('--network_type',
+        help='Chose between sinlge or multi CNN (applies only for mode patch-level)',
+        choices=['single', 'multi'], type=str,
+        default='single')
     train_parser.add_argument('-tAE', '--train_autoencoder', 
         help='Add this option if you want to train an autoencoder',
         action="store_true",
         default=False)
-
     train_parser.add_argument('--sampler', '-sm',
         help='Sampler to be used',
         default='random', type=str)
