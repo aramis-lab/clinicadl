@@ -173,7 +173,7 @@ def visualize_subject(decoder, dataloader, visualization_path, options, epoch=No
     import nibabel as nib
     import numpy as np
     import torch
-    from tools.deep_learning.data import MinMaxNormalization
+    from .data import MinMaxNormalization
 
     if not path.exists(visualization_path):
         makedirs(visualization_path)
