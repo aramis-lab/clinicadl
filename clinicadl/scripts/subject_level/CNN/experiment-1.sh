@@ -1,13 +1,14 @@
 #!/bin/bash
-#SBATCH --partition=gpu
-#SBATCH --time=2-00:00:00
-#SBATCH --mem=17G
-#SBATCH --cpus-per-task=6
+#SBATCH --partition=gpu_gct3
+#SBATCH --time=20:00:00
+#SBATCH --mem=30G
+#SBATCH --cpus-per-task=10
+#SBATCH --threads-per-core=1
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --chdir=.
-#SBATCH --output=outputs/pytorch_job_%j.out
-#SBATCH --error=outputs/pytorch_job_%j.err
+#SBATCH --output=pytorch_job_%j.out
+#SBATCH --error=pytorch_job_%j.err
 #SBATCH --job-name=3DAE
 #SBATCH --gres=gpu:1
 
@@ -15,9 +16,8 @@
 #export https_proxy=http://10.10.2.1:8123
 
 # Experiment taining CNN
-module load clinica.all
 eval "$(conda shell.bash hook)"
-conda activate clinica_dl_pre_py36
+conda activate clinicadl_env_py37
 
 # Network structure
 NETWORK="Conv5_FC3"
@@ -25,9 +25,9 @@ COHORT="ADNI"
 DATE="reproducibility_results"
 
 # Input arguments to clinicadl
-CAPS_DIR="/network/lustre/dtlake01/aramis/users/clinica/CLINICA_datasets/CAPS/Frontiers_DL/ADNI_rerun"
-TSV_PATH="/network/lustre/dtlake01/aramis/users/mauricio.diazmelo/code/AD-DL/data/$COHORT/lists_by_diagnosis/train"
-OUTPUT_DIR="/network/lustre/iss01/home/mauricio.diazmelo/ADNI_rerun/results/$DATE/"
+CAPS_DIR="$SCRATCH/../commun/datasets/ADNI_rerun"
+TSV_PATH="$HOME/code/AD-DL/data/$COHORT/lists_by_diagnosis/train"
+OUTPUT_DIR="$SCRATCH/results/$DATE/"
 
 # Computation ressources
 NUM_PROCESSORS=8

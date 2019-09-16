@@ -14,11 +14,11 @@ from tools.deep_learning.data import load_data, MinMaxNormalization
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
-__credits__ = ["Junhao Wen"]
+__credits__ = ["Junhao Wen" "Elina Thibeau-Sutre" "Mauricio Diaz"]
 __license__ = "See LICENSE.txt file"
 __version__ = "0.1.0"
-__maintainer__ = "Junhao Wen"
-__email__ = "junhao.wen89@gmail.com"
+__maintainer__ = "Junhao Wen, Elina Thibeau-Sutre, Mauricio Diaz"
+__email__ = "junhao.wen89@gmail.com, mauricio.diaz@inria.fr"
 __status__ = "Development"
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D CNN, The input MRI's dimension is 169*208*179 after cropping")
