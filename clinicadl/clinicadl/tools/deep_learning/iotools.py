@@ -6,7 +6,9 @@ class Parameters:
                  model: str):
         """
         Parameters:
-        tsv_path: Path to the folder containing the tsv files of the population.
+        tsv_path: Path to the folder containing the tsv files of the
+        population. To note, the column name should be participant_id,
+        session_id and diagnosis.
         output_dir: Folder containing the results.
         input_dir: Path to the input folder with MRI in CAPS format.
         model: Neural network model.
@@ -40,7 +42,14 @@ class Parameters:
             num_workers: int = 1,
             transfer_learning_path: str = None,
             transfer_learning_autoencoder: str = None,
-            selection: str = "best_acc"):
+            selection: str = "best_acc",
+            patch_size: int = 50,
+            patch_stride: int = 50,
+            hippocampus_roi: bool = False,
+            selection_threshold: float = None,
+            num_cnn: int = 36, 
+            prepare_dl: bool = False,
+            visualization: bool = False):
         """ 
         Optional parameters used for training CNN.
         pretrained_path: Path to a pretrained model (can be of different size).
@@ -60,14 +69,26 @@ class Parameters:
         patience: Waiting time for early stopping.
         tolerance: Tolerance value for the early stopping.
         add_sigmoid: Ad sigmoid function at the end of the decoder.
-        optimizer: Optimizer of choice for training. (default=Adam). Choices=["SGD", "Adadelta", "Adam"].
+        optimizer: Optimizer of choice for training. (default=Adam).
+                   Choices=["SGD", "Adadelta", "Adam"].
         weight_decay: Weight decay of the optimizer. 
         gpu: GPU usage if True.
         batch_size: Batch size for training. (default=1)
         evaluation_steps: Fix the number of batches to use before validation
         num_workers:  Define the number of batch being loaded in parallel
-        selection: Allow to choose which model of the experiment is loaded . choices ["best_loss", "best_acc"]
+        selection: Allow to choose which model of the experiment is loaded .
+                   choices ["best_loss", "best_acc"]
+        patch_size: The patch size extracted from the MRI.
+        patch_stride: The stride for the patch extract window from the MRI
+        hippocampus_roi: If train the model using only hippocampus ROI.
+        selection_threshold: Threshold on the balanced accuracies to compute
+                             the subject_level performance.
+        num_cnn: How many CNNs we want to train in a patch-wise way.
+                 By default, each patch is trained from all subjects for one CNN.
+        prepare_dl: If True the outputs of preprocessing are used, else the
+                    whole MRI is loaded. 
         """
+        
 
         self.pretrained_path = pretrained_path
         self.pretrained_difference = pretrained_difference
@@ -93,6 +114,12 @@ class Parameters:
         self.transfer_learning_path = transfer_learning_path
         self.transfer_learning_autoencoder = transfer_learning_autoencoder
         self.selection = selection
+        self.patch_size = patch_size
+        self.patch_stride = patch_stride
+        self.hippocampus_roi = hippocampus_roi
+        self.prepare_dl = prepare_dl
+        self.visualization = visualization
+        self.selection_threshold = selection_threshold
 
 def check_and_clean(d):
     import shutil
