@@ -161,8 +161,8 @@ def write_autoencoder_weights(model, source_path, target_path, split):
     """
     from copy import deepcopy
     import os
-    from tools.deep_learning import save_checkpoint
-    from tools.deep_learning.iotools import check_and_clean
+    from .iotools import save_checkpoint
+    from ..iotools import check_and_clean
 
     decoder = AutoEncoder(model)
     model_path = os.path.join(source_path, "best_model_dir", "fold_" + str(split), "ConvAutoencoder",
@@ -204,8 +204,8 @@ def write_cnn_weights(model, source_path, target_path, split, selection="best_ac
     import os
     import torch
 
-    from tools.deep_learning.iotools import check_and_clean
-    from tools.deep_learning import save_checkpoint
+    from ..iotools import check_and_clean
+    from .iotools import save_checkpoint
 
     model_path = os.path.join(source_path, "best_model_dir", "fold_" + str(split), "CNN",
                               selection, "model_best.pth.tar")
