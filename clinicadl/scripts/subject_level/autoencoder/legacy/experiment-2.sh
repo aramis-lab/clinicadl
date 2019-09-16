@@ -92,4 +92,18 @@ fi
 
 echo $NAME
 echo $OPTIONS
-python /network/lustre/iss01/home/elina.thibeausutre/AD-DL/Code/clinicadl/clinicadl/classifiers/three_d_cnn/subject_level/$SCRIPT $TSVPATH $RESULTSPATH$NAME $IMGPATH $MODEL -w $NUM_WORKERS --batch_size $BATCH --epochs $EPOCHS -asteps $ACCUMULATION -esteps $EVALUATION -lr $LR --num_threads $NUM_THREADS --diagnoses $DIAGNOSES --preprocessing $PREPROCESSING --patience $PATIENCE $OPTIONS --visualization
+python /network/lustre/iss01/home/elina.thibeausutre/AD-DL/Code/clinicadl/clinicadl/classifiers/three_d_cnn/subject_level/$SCRIPT 
+  $TSVPATH \
+  $RESULTSPATH$NAME \
+  $IMGPATH $MODEL \
+  -w $NUM_WORKERS \
+  --batch_size $BATCH \
+  --epochs $EPOCHS \
+  -asteps $ACCUMULATION \
+  -esteps $EVALUATION \
+  -lr $LR \
+  --num_threads $NUM_THREADS \
+  --diagnoses $DIAGNOSES \
+  --preprocessing $PREPROCESSING \
+  --patience $PATIENCE \
+  $OPTIONS --visualization
