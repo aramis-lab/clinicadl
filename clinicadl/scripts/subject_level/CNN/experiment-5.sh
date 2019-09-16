@@ -7,8 +7,8 @@
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --chdir=.
-#SBATCH --output=logs/exp4/pytorch_job_%j.out
-#SBATCH --error=logs/exp4/pytorch_job_%j.err
+#SBATCH --output=logs/exp5/pytorch_job_%j.out
+#SBATCH --error=logs/exp5/pytorch_job_%j.err
 #SBATCH --job-name=3DCNN
 #SBATCH --gres=gpu:1
 
@@ -20,16 +20,17 @@ eval "$(conda shell.bash hook)"
 conda activate clinicadl_env_py37
 
 # Network structure
-NETWORK="Conv5_FC3"
+NETWORK="Conv5_FC3_mni"
 COHORT="ADNI"
+CAPS_EXT="_skull_stripping"
 DATE="reproducibility_results"
 
 # Pretraining
 T_BOOL=1
-T_PATH="model-Conv5_FC3_preprocessing-linear_task-autoencoder_baseline-_norm-1_splits-5"
+T_PATH="model-Conv5_FC3_preprocessing-mni_task-autoencoder_baseline-_norm-1_splits-5"
 
 # Input arguments to clinicadl
-CAPS_DIR="$SCRATCH/../commun/datasets/ADNI_rerun"
+CAPS_DIR="$SCRATCH/../commun/datasets/$COHORT$CAPS_EXT"
 TSV_PATH="$HOME/code/AD-DL/data/$COHORT/lists_by_diagnosis/train"
 OUTPUT_DIR="$SCRATCH/results/$DATE/"
 T_PATH="$SCRATCH/results/$DATE/$T_PATH"
@@ -38,7 +39,7 @@ T_PATH="$SCRATCH/results/$DATE/$T_PATH"
 NUM_PROCESSORS=8
 
 # Dataset Management
-PREPROCESSING='linear'
+PREPROCESSING='mni'
 BASELINE=0
 TASK='AD CN'
 SPLITS=5
