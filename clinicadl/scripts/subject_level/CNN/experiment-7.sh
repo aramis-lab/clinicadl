@@ -26,7 +26,7 @@ DATE="reproducibility_results"
 
 # Pretraining
 T_BOOL=1
-T_PATH="reproducibility_results/model-Conv5_FC3_preprocessing-linear_task-AD_CN_baseline_norm-1_splits-5"
+T_PATH="model-Conv5_FC3_preprocessing-linear_task-AD_CN_baseline_norm-1_splits-5"
 
 # Input arguments to clinicadl
 CAPS_DIR="$SCRATCH/../commun/datasets/ADNI_rerun"
@@ -80,10 +80,10 @@ echo $NAME
 clinicadl train \
   subject \
   $CAPS_DIR \
-  $ATH \
+  $TSV_PATH \
   $OUTPUT_DIR$NAME \
-  $K \
-  --gnoses $TASK \
+  $NETWORK \
+  --diagnoses $TASK \
   --use_gpu \
   --nproc $NUM_PROCESSORS \
   --batch_size $BATCH \
@@ -97,6 +97,5 @@ clinicadl train \
   --epochs $EPOCHS \
   --sampler $SAMPLER \
   --learning_rate $LR \
-  --transfer_learning_autoencoder \
-  --transfer_learning_path $T_PATH
+  --transfer_learning_path $T_PATH \
   --patience $PATIENCE
