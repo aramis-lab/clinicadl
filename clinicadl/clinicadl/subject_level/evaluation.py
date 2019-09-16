@@ -1,19 +1,14 @@
 from __future__ import print_function
 import argparse
 import os
-import torch
 from os import path
 import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
-import sys
-
-package_path = path.abspath(path.join(sys.argv[0], os.pardir, os.pardir))
-sys.path.append(package_path)
 
 from .utils import test
-from tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
-from tools.deep_learning import create_model, load_model, read_json
+from ..tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
+from ..tools.deep_learning import create_model, load_model, read_json
 
 parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
 
@@ -22,6 +17,7 @@ parser.add_argument("model_path", type=str,
                     help="Path to the trained model folder.")
 
 # Model selection
+parser.add_argument("--tsv_path", default=None, type=str)
 parser.add_argument("--selection", default="best_loss", type=str, choices=['best_loss', 'best_acc'],
                     help="Loads the model selected on minimal loss or maximum accuracy on validation.")
 
@@ -45,11 +41,11 @@ if __name__ == "__main__":
     for fold_dir in folds_dir:
         split = int(fold_dir[-1])
         options.split = split
-        json_path = path.join(options.model_path, 'log_dir', 'fold_' + str(split), "commandline_CNN.json")
+        json_path = path.join(options.model_path, 'log_dir', 'fold_' + str(split), "commandline_model_type.json")
         options = read_json(options, "CNN", json_path=json_path)
 
         print("Fold %i" % split)
-        model = create_model(options.model)
+        model = create_model(options.network)
 
         criterion = nn.CrossEntropyLoss()
         model_dir = path.join(best_model_dir, fold_dir, 'CNN', options.selection)
@@ -57,7 +53,7 @@ if __name__ == "__main__":
         best_model, best_epoch = load_model(model, model_dir, options.gpu,
                                             filename='model_best.pth.tar')
 
-        training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
+        training_tsv, valid_tsv = load_data(options.tsv_path, options.diagnoses,
                                             split, options.n_splits, options.baseline)
 
         if options.minmaxnormalization:
@@ -65,8 +61,8 @@ if __name__ == "__main__":
         else:
             transformations = None
 
-        data_train = MRIDataset(options.input_dir, training_tsv, options.preprocessing, transform=transformations)
-        data_valid = MRIDataset(options.input_dir, valid_tsv, options.preprocessing, transform=transformations)
+        data_train = MRIDataset(options.caps_dir, training_tsv, options.preprocessing, transform=transformations)
+        data_valid = MRIDataset(options.caps_dir, valid_tsv, options.preprocessing, transform=transformations)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
@@ -88,7 +84,7 @@ if __name__ == "__main__":
 
         acc_train, sen_train, spe_train = metrics_train['balanced_accuracy'] * 100, metrics_train['sensitivity'] * 100,\
                                           metrics_train['specificity'] * 100
-        acc_valid, sen_valid, spe_valid = metrics_valid['balanced_accuracy'] * 100, metrics_valid['sensitivity'] * 100, \
+        acc_valid, sen_valid, spe_valid = metrics_valid['balanced_accuracy'] * 100, metrics_valid['sensitivity'] * 100,\
                                           metrics_valid['specificity'] * 100
         print("Training, acc %f, loss %f, sensibility %f, specificity %f"
               % (acc_train, loss_train, sen_train, spe_train))
