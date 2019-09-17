@@ -1,29 +1,24 @@
 from __future__ import print_function
 import argparse
 import os
-import torch
 from os import path
 import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
-import sys
-
-package_path = path.abspath(path.join(sys.argv[0], os.pardir, os.pardir))
-sys.path.append(package_path)
 
 from .utils import test
-from tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data_test
-from tools.deep_learning import create_model, load_model, read_json
+from ..tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data_test
+from ..tools.deep_learning import create_model, load_model, read_json
 
 parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
 
 # Mandatory arguments
-parser.add_argument("diagnosis_path", type=str,
-                    help="Path to the folder containing the tsv files of the population.")
 parser.add_argument("model_path", type=str,
                     help="Path to the trained model folder.")
-parser.add_argument("input_dir", type=str,
+parser.add_argument("caps_dir", type=str,
                     help="Path to input dir of the MRI (preprocessed CAPS_dir).")
+parser.add_argument("tsv_path", type=str,
+                    help="Path to the folder containing the tsv files of the population.")
 parser.add_argument("cohort", type=str,
                     help="Name of the cohort.")
 
@@ -33,7 +28,7 @@ parser.add_argument("--diagnoses", default=None, type=str, nargs='+',
 parser.add_argument("--selection", default="best_loss", type=str, choices=['best_loss', 'best_acc'],
                     help="Loads the model selected on minimal loss or maximum accuracy on validation.")
 
-# Computational ressources
+# Computational resources
 parser.add_argument("--batch_size", default=16, type=int,
                     help='Size of the batch loaded by the data loader.')
 parser.add_argument("--num_workers", '-w', default=8, type=int,
@@ -58,7 +53,7 @@ if __name__ == "__main__":
         model_options = argparse.Namespace()
         json_path = path.join(options.model_path, 'log_dir', 'fold_' + str(split), "commandline_CNN.json")
         model_options = read_json(model_options, "CNN", json_path=json_path)
-        model = create_model(model_options.model, options.gpu)
+        model = create_model(model_options.network, options.gpu)
 
         criterion = nn.CrossEntropyLoss()
 
@@ -70,14 +65,14 @@ if __name__ == "__main__":
         if options.diagnoses is None:
             options.diagnoses = model_options.diagnoses
 
-        test_tsv = load_data_test(options.diagnosis_path, options.diagnoses)
+        test_tsv = load_data_test(options.tsv_path, options.diagnoses)
 
         if model_options.minmaxnormalization:
             transformations = MinMaxNormalization()
         else:
             transformations = None
 
-        data_test = MRIDataset(options.input_dir, test_tsv, model_options.preprocessing, transform=transformations)
+        data_test = MRIDataset(options.caps_dir, test_tsv, model_options.preprocessing, transform=transformations)
 
         test_loader = DataLoader(data_test,
                                  batch_size=options.batch_size,
