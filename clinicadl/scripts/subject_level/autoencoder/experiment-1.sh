@@ -7,7 +7,7 @@
 #SBATCH --ntasks=1
 #SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/subject_level/autoencoder
 #SBATCH --output=./exp1/pytorch_job_%j.out
-#SBATCH --error=./exp2/_pytorch_job_%j.err
+#SBATCH --error=./exp1/_pytorch_job_%j.err
 #SBATCH --job-name=3DAE
 #SBATCH --gres=gpu:1
 

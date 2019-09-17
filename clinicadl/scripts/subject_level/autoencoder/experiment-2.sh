@@ -5,9 +5,9 @@
 #SBATCH --cpus-per-task=10
 #SBATCH --threads-per-core=1        # on réserve des coeurs physiques et non logiques
 #SBATCH --ntasks=1
-#SBATCH --workdir=$GCWORK/jobs/AD-DL/train/subject_level/autoencoder
-#SBATCH --output="${0##*/}"_pytorch_job_%j.out
-#SBATCH --error="${0##*/}"_pytorch_job_%j.err
+#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/subject_level/autoencoder
+#SBATCH --output=./exp2/pytorch_job_%j.out
+#SBATCH --error=./exp2/_pytorch_job_%j.err
 #SBATCH --job-name=3DAE
 #SBATCH --gres=gpu:1
 
