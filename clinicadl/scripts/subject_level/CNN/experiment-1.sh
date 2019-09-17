@@ -6,10 +6,10 @@
 #SBATCH --threads-per-core=1
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
-#SBATCH --chdir=.
-#SBATCH --output=pytorch_job_%j.out
-#SBATCH --error=pytorch_job_%j.err
-#SBATCH --job-name=3DAE
+#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/subject_level/cnn
+#SBATCH --output=./exp1/pytorch_job_%j.out
+#SBATCH --error=./exp1/pytorch_job_%j.err
+#SBATCH --job-name=3CNN_subject
 #SBATCH --gres=gpu:1
 
 #export http_proxy=http://10.10.2.1:8123
@@ -25,12 +25,13 @@ COHORT="ADNI"
 DATE="reproducibility_results"
 
 # Input arguments to clinicadl
-CAPS_DIR="$SCRATCH/../commun/datasets/ADNI_rerun"
+CAPS_DIR="$SCRATCH/../commun/datasets/$COHORT_rerun"
 TSV_PATH="$HOME/code/AD-DL/data/$COHORT/lists_by_diagnosis/train"
 OUTPUT_DIR="$SCRATCH/results/$DATE/"
 
 # Computation ressources
 NUM_PROCESSORS=8
+GPU=1
 
 # Dataset Management
 PREPROCESSING='linear'
@@ -62,7 +63,7 @@ if [ $BASELINE = 1 ]; then
 fi
 echo $TASK_NAME
 
-NAME="model-${NETWORK}_preprocessing-${PREPROCESSING}_task-${TASK_NAME}_norm-${NORMALIZATION}"
+NAME="subject_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-${TASK_NAME}_norm-${NORMALIZATION}"
 
 if [ $SPLITS > 0 ]; then
 echo "Use of $SPLITS-fold cross validation, split $SPLIT"

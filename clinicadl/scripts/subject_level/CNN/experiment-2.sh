@@ -62,7 +62,7 @@ if [ $BASELINE = 1 ]; then
 fi
 echo $TASK_NAME
 
-NAME="model-${NETWORK}_preprocessing-${PREPROCESSING}_task-${TASK_NAME}_norm-${NORMALIZATION}"
+NAME="subject_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-${TASK_NAME}_norm-${NORMALIZATION}"
 
 if [ $SPLITS > 0 ]; then
 echo "Use of $SPLITS-fold cross validation, split $SPLIT"
