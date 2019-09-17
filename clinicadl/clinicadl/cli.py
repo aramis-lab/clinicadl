@@ -354,6 +354,10 @@ def parse_command_line():
         help='Add this option if you want to train an autoencoder',
         action="store_true",
         default=False)
+    train_parser.add_argument('-hroi', '--hippocampus_roi', 
+        help='If true, use the hippocampus region',
+        action="store_true",
+        default=False)
     train_parser.add_argument("--num_cnn", 
         help='''How many CNNs we want to train in a patch-wise way.
              By default, we train each patch from all subjects for one CNN''',
@@ -382,6 +386,12 @@ def parse_command_line():
     train_parser.add_argument('--add_sigmoid', 
         help='Ad sigmoid function at the end of the decoder.',
         default=False, action="store_true")
+    train_parser.add_argument('-psz', '--patch_size',
+        help='Patch size e.g: --patch_size 50',
+        type=int, default=50)
+    train_parser.add_argument('-pst', '--patch_stride',
+        help='Patch stride e.g: --patch_stride 50',
+        type=int, default=50)
 
     ## Transfer learning from other autoencoder/network
     train_parser.add_argument('--pretrained_path', 
