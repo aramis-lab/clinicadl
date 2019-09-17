@@ -31,6 +31,7 @@ OUTPUT_DIR="$SCRATCH/results/$DATE/"
 
 # Computation ressources
 NUM_PROCESSORS=8
+GPU=1
 
 # Dataset Management
 PREPROCESSING='mni'
