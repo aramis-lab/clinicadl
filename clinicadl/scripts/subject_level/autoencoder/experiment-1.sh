@@ -5,9 +5,9 @@
 #SBATCH --cpus-per-task=10
 #SBATCH --threads-per-core=1        # on réserve des coeurs physiques et non logiques
 #SBATCH --ntasks=1
-#SBATCH --chdir=.
-#SBATCH --output=pytorch_job_%j.out
-#SBATCH --error=pytorch_job_%j.err
+#SBATCH --workdir=$GCWORK/jobs/AD-DL/train/patch_level/autoencoder
+#SBATCH --output="${0##*/}"_pytorch_job_%j.out
+#SBATCH --error="${0##*/}"_pytorch_job_%j.err
 #SBATCH --job-name=3DAE
 #SBATCH --gres=gpu:1
 
@@ -30,10 +30,12 @@ OUTPUT_DIR="$SCRATCH/results/$DATE/"
 
 # Computation ressources
 NUM_PROCESSORS=8
+GPU=1
 
 # Dataset Management
 PREPROCESSING='linear'
 DIAGNOSES="AD CN MCI"
+BASELINE=1
 SPLITS=5
 SPLIT=$1
 
@@ -48,7 +50,30 @@ SIGMOID=0
 NORMALIZATION=1
 PATIENCE=50
 
+# Pretraining
+T_BOOL=0
+T_PATH=""
+T_DIFF=0
 
+# Other options
+OPTIONS=""
+
+if [ $GPU = 1 ]; then
+OPTIONS="${OPTIONS} --use_gpu"
+fi
+
+if [ $NORMALIZATION = 1 ]; then
+OPTIONS="${OPTIONS} --minmaxnormalization"
+fi
+
+if [ $T_BOOL = 1 ]; then
+OPTIONS="$OPTIONS --pretrained_path $T_PATH -d $T_DIFF"
+fi
+
+if [ $BASELINE = 1 ]; then
+echo "using only baseline data"
+OPTIONS="$OPTIONS --baseline"
+fi
 
 NAME="model-${NETWORK}_preprocessing-${PREPROCESSING}_task-autoencoder_baseline-${BASELINE}_norm-${NORMALIZATION}"
 
@@ -67,17 +92,15 @@ clinicadl train \
   $OUTPUT_DIR$NAME \
   $NETWORK \
   --train_autoencoder \
-  --use_gpu \
   --nproc $NUM_PROCESSORS \
   --batch_size $BATCH \
   --evaluation_steps $EVALUATION \
   --preprocessing $PREPROCESSING \
   --diagnoses $DIAGNOSES \
-  --baseline \
-  --minmaxnormalization \
   --n_splits $SPLITS \
   --split $SPLIT \
   --accumulation_steps $ACCUMULATION \
   --epochs $EPOCHS \
   --learning_rate $LR \
-  --patience $PATIENCE
+  --patience $PATIENCE \
+  $OPTIONS
