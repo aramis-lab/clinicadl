@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=gpu_gct3
 #SBATCH --time=20:00:00
-#SBATCH --mem=30G
+#SBATCH --mem=60G
 #SBATCH --cpus-per-task=10
 #SBATCH --threads-per-core=1        # on réserve des coeurs physiques et non logiques
 #SBATCH --ntasks=1
@@ -19,17 +19,17 @@ eval "$(conda shell.bash hook)"
 conda activate clinicadl_env_py37
 
 # Network structure
-NETWORK="Conv_4_FC_2"
+NETWORK="Conv4_FC3"
 COHORT="ADNI"
 DATE="reproducibility_results"
 
 # Input arguments to clinicadl
-CAPS_DIR="$SCRATCH/../commun/datasets/$COHORT_rerun"
+CAPS_DIR="$SCRATCH/../commun/datasets/${COHORT}_rerun"
 TSV_PATH="$HOME/code/AD-DL/data/$COHORT/lists_by_diagnosis/train"
 OUTPUT_DIR="$SCRATCH/results/$DATE/"
 
 # Computation ressources
-NUM_PROCESSORS=8
+NUM_PROCESSORS=32
 GPU=1
 
 # Dataset Management
@@ -88,7 +88,7 @@ echo $NAME
 
 # Run clinicadl
 clinicadl train \
-  subject \
+  patch \
   $CAPS_DIR \
   $TSV_PATH \
   $OUTPUT_DIR$NAME \
@@ -104,5 +104,5 @@ clinicadl train \
   --accumulation_steps $ACCUMULATION \
   --epochs $EPOCHS \
   --learning_rate $LR \
-  --patience $PATIENCE
+  --patience $PATIENCE \
   $OPTIONS
