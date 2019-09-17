@@ -8,7 +8,7 @@
 #SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/subject_level/autoencoder
 #SBATCH --output=./exp1/pytorch_job_%j.out
 #SBATCH --error=./exp1/pytorch_job_%j.err
-#SBATCH --job-name=3DAE
+#SBATCH --job-name=3DAE_subj
 #SBATCH --gres=gpu:1
 
 #export http_proxy=http://10.10.2.1:8123
@@ -24,7 +24,7 @@ COHORT="ADNI"
 DATE="reproducibility_results"
 
 # Input arguments to clinicadl
-CAPS_DIR="$SCRATCH/../commun/datasets/$COHORT_rerun"
+CAPS_DIR="$SCRATCH/../commun/datasets/${COHORT}_rerun"
 TSV_PATH="$HOME/code/AD-DL/data/$COHORT/lists_by_diagnosis/train"
 OUTPUT_DIR="$SCRATCH/results/$DATE/"
 

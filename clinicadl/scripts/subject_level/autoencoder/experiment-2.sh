@@ -8,7 +8,7 @@
 #SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/subject_level/autoencoder
 #SBATCH --output=./exp2/pytorch_job_%j.out
 #SBATCH --error=./exp2/pytorch_job_%j.err
-#SBATCH --job-name=3DAE
+#SBATCH --job-name=3DAE_subj
 #SBATCH --gres=gpu:1
 
 #export http_proxy=http://10.10.2.1:8123
@@ -41,7 +41,7 @@ SPLITS=5
 SPLIT=$1
 
 # Training arguments
-EPOCHS=50
+EPOCHS=30
 BATCH=12
 ACCUMULATION=2
 EVALUATION=20
