@@ -24,7 +24,7 @@ COHORT="ADNI"
 DATE="reproducibility_results"
 
 # Input arguments to clinicadl
-CAPS_DIR="$SCRATCH/../commun/datasets/ADNI_rerun"
+CAPS_DIR="$SCRATCH/../commun/datasets/$COHORT_rerun"
 TSV_PATH="$HOME/code/AD-DL/data/$COHORT/lists_by_diagnosis/train"
 OUTPUT_DIR="$SCRATCH/results/$DATE/"
 
@@ -41,10 +41,11 @@ SPLIT=$1
 
 # Training arguments
 EPOCHS=50
-BATCH=6
+BATCH=12
 ACCUMULATION=2
 EVALUATION=20
 LR=1e-4
+WEIGHT_DECAY=0
 GREEDY_LEARNING=0
 SIGMOID=0
 NORMALIZATION=1
@@ -102,5 +103,6 @@ clinicadl train \
   --accumulation_steps $ACCUMULATION \
   --epochs $EPOCHS \
   --learning_rate $LR \
+  --weight_decay $WEIGHT_DECAY
   --patience $PATIENCE \
   $OPTIONS
