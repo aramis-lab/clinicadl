@@ -45,7 +45,7 @@ BASELINE=1
 ACCUMULATION=2
 EVALUATION=20
 LR=1e-5
-WEIGHT_DECAY=0
+WEIGHT_DECAY=1e-4
 GREEDY_LEARNING=0
 SIGMOID=0
 NORMALIZATION=1
@@ -104,5 +104,6 @@ clinicadl train \
   --accumulation_steps $ACCUMULATION \
   --epochs $EPOCHS \
   --learning_rate $LR \
+  --weight_decay $WEIGHT_DECAY \
   --patience $PATIENCE \
   $OPTIONS

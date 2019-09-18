@@ -1,15 +1,15 @@
 #!/bin/bash
 #SBATCH --partition=gpu_gct3
 #SBATCH --time=20:00:00
-#SBATCH --mem=30G
+#SBATCH --mem=60G
 #SBATCH --cpus-per-task=10
 #SBATCH --threads-per-core=1
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
-#SBATCH --chdir=.
-#SBATCH --output=pytorch_job_%j.out
-#SBATCH --error=pytorch_job_%j.err
-#SBATCH --job-name=3DAE
+#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/subject_level/cnn
+#SBATCH --output=./exp2/pytorch_job_%j.out
+#SBATCH --error=./exp2/pytorch_job_%j.err
+#SBATCH --job-name=3CNN_subject
 #SBATCH --gres=gpu:1
 
 #export http_proxy=http://10.10.2.1:8123
@@ -25,44 +25,62 @@ COHORT="ADNI"
 DATE="reproducibility_results"
 
 # Input arguments to clinicadl
-CAPS_DIR="$SCRATCH/../commun/datasets/ADNI_rerun"
+CAPS_DIR="$SCRATCH/../commun/datasets/${COHORT}_rerun"
 TSV_PATH="$HOME/code/AD-DL/data/$COHORT/lists_by_diagnosis/train"
 OUTPUT_DIR="$SCRATCH/results/$DATE/"
 
 # Computation ressources
 NUM_PROCESSORS=8
+GPU=1
 
 # Dataset Management
 PREPROCESSING='linear'
-BASELINE=1
 TASK='AD CN'
+BASELINE=1
 SPLITS=5
 SPLIT=$1
 
 # Training arguments
 EPOCHS=50
-BATCH=6
+BATCH=12
 ACCUMULATION=2
 EVALUATION=20
 SAMPLER="random"
 LR=1e-4
+WEIGHT_DECAY=0
 NORMALIZATION=1
-PATIENCE=5
+PATIENCE=10
 TOLERANCE=0
 
+# Pretraining
+T_BOOL=0
+T_PATH=""
+T_DIFF=0
+
+# Other options
 OPTIONS=""
 
+if [ $GPU = 1 ]; then
+OPTIONS="${OPTIONS} --use_gpu"
+fi
+
+if [ $NORMALIZATION = 1 ]; then
+OPTIONS="${OPTIONS} --minmaxnormalization"
+fi
+
+if [ $T_BOOL = 1 ]; then
+OPTIONS="$OPTIONS --pretrained_path $T_PATH -d $T_DIFF"
+fi
 TASK_NAME="${TASK// /_}"
 
 if [ $BASELINE = 1 ]; then
   echo "using only baseline data"
   TASK_NAME="${TASK_NAME}_baseline"
   OPTIONS="$OPTIONS --baseline"
-  PATIENCE=10
 fi
 echo $TASK_NAME
 
-NAME="subject_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-${TASK_NAME}_norm-${NORMALIZATION}"
+NAME="subject_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-${TASK_NAME}_norm-${NORMALIZATION}_t-${T_BOOL}"
 
 if [ $SPLITS > 0 ]; then
 echo "Use of $SPLITS-fold cross validation, split $SPLIT"
@@ -79,17 +97,16 @@ clinicadl train \
   $OUTPUT_DIR$NAME \
   $NETWORK \
   --diagnoses $TASK \
-  --use_gpu \
   --nproc $NUM_PROCESSORS \
   --batch_size $BATCH \
   --evaluation_steps $EVALUATION \
   --preprocessing $PREPROCESSING \
-  --baseline \
   --n_splits $SPLITS \
-  --minmaxnormalization \
   --split $SPLIT \
   --accumulation_steps $ACCUMULATION \
   --epochs $EPOCHS \
   --sampler $SAMPLER \
   --learning_rate $LR \
-  --patience $PATIENCE
+  --weight_decay $WEIGHT_DECAY \
+  --patience $PATIENCE \
+  $OPTIONS
