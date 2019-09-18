@@ -70,7 +70,7 @@ OPTIONS="${OPTIONS} --minmaxnormalization"
 fi
 
 if [ $T_BOOL = 1 ]; then
-OPTIONS="$OPTIONS --transfer_learning_autoencoder --transfer_learning_path $T_PATH"
+OPTIONS="$OPTIONS --transfer_learning_path $T_PATH"
 fi
 TASK_NAME="${TASK// /_}"
 
