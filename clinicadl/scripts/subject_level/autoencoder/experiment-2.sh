@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=gpu_gct3
 #SBATCH --time=20:00:00
-#SBATCH --mem=30G
+#SBATCH --mem=60G
 #SBATCH --cpus-per-task=10
 #SBATCH --threads-per-core=1        # on réserve des coeurs physiques et non logiques
 #SBATCH --ntasks=1
@@ -77,7 +77,7 @@ echo "using only baseline data"
 OPTIONS="$OPTIONS --baseline"
 fi
 
-NAME="model-${NETWORK}_preprocessing-${PREPROCESSING}_task-autoencoder_baseline-${BASELINE}_norm-${NORMALIZATION}"
+NAME="subject_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-autoencoder_baseline-${BASELINE}_norm-${NORMALIZATION}"
 
 if [ $SPLITS > 0 ]; then
 echo "Use of $SPLITS-fold cross validation, split $SPLIT"
@@ -104,6 +104,6 @@ clinicadl train \
   --accumulation_steps $ACCUMULATION \
   --epochs $EPOCHS \
   --learning_rate $LR \
-  --weight_decay $WEIGHT_DECAY
+  --weight_decay $WEIGHT_DECAY \
   --patience $PATIENCE \
   $OPTIONS
