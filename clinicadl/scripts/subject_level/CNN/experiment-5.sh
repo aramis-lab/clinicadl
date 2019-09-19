@@ -20,13 +20,13 @@ eval "$(conda shell.bash hook)"
 conda activate clinicadl_env_py37
 
 # Network structure
-NETWORK="Conv5_FC3"
+NETWORK="Conv5_FC3_mni"
 COHORT="ADNI"
 CAPS_EXT="_skull_stripping"
 DATE="reproducibility_results"
 
 # Input arguments to clinicadl
-CAPS_DIR="$SCRATCH/../commun/datasets/${COHORT}_rerun"
+CAPS_DIR="$SCRATCH/../commun/datasets/${COHORT}${CAPS_EXT}"
 TSV_PATH="$HOME/code/AD-DL/data/$COHORT/lists_by_diagnosis/train"
 OUTPUT_DIR="$SCRATCH/results/$DATE/"
 
@@ -35,7 +35,7 @@ NUM_PROCESSORS=8
 GPU=1
 
 # Dataset Management
-PREPROCESSING='linear'
+PREPROCESSING='mni'
 TASK='AD CN'
 BASELINE=0
 SPLITS=5
