@@ -39,22 +39,33 @@ def train_patch_single_cnn(params):
 
     for fi in fold_iterator:
 
-        training_tsv, valid_tsv = load_data(params.tsv_path, params.diagnoses, fi,
-                                            n_splits=params.n_splits, baseline=params.baseline)
+        training_tsv, valid_tsv = load_data(params.tsv_path,
+                params.diagnoses,
+                fi,
+                n_splits=params.n_splits,
+                baseline=params.baseline)
 
         print("Running for the %d-th fold" % fi)
 
         if params.transfer_learning_path is not None:
             if params.transfer_learning_autoencoder:
                 print('Train the model with the weights from a pre-trained autoencoder.')
-                model, _ = load_model_after_ae(model, os.path.join(params.transfer_learning_path, 'best_model_dir',
-                                                                   "fold_" + str(fi), 'ConvAutoencoder',
-                                                                   'Encoder'), filename='model_best_encoder.pth.tar')
+                model, _ = load_model_after_ae(model, 
+                        os.path.join(params.transfer_learning_path, 
+                            'best_model_dir', 
+                            "fold_" + str(fi), 
+                            'ConvAutoencoder', 
+                            'Encoder'), 
+                        filename='model_best_encoder.pth.tar')
             else:
                 print('Train the model with the weights from a pre-trained CNN.')
-                model, _ = load_model_after_cnn(model, os.path.join(params.transfer_learning_path, 'best_model_dir',
-                                                                    "fold_" + str(fi), 'CNN', 'best_acc'),
-                                                filename='model_best.pth.tar')
+                model, _ = load_model_after_cnn(model, 
+                        os.path.join(params.transfer_learning_path, 
+                            'best_model_dir', 
+                            "fold_" + str(fi), 
+                            'CNN', 
+                            'best_acc'),
+                        filename='model_best.pth.tar')
         else:
             print('The model is trained from scratch.')
             model.load_state_dict(init_state)
@@ -62,31 +73,41 @@ def train_patch_single_cnn(params):
         if params.hippocampus_roi:
             print("Only using hippocampus ROI")
 
-            data_train = MRIDataset_patch_hippocampus(params.input_dir, training_tsv, transformations=transformations)
-            data_valid = MRIDataset_patch_hippocampus(params.input_dir, valid_tsv, transformations=transformations)
+            data_train = MRIDataset_patch_hippocampus(params.input_dir,
+                    training_tsv,
+                    transformations=transformations)
+            data_valid = MRIDataset_patch_hippocampus(params.input_dir,
+                    valid_tsv,
+                    transformations=transformations)
 
         else:
-            data_train = MRIDataset_patch(params.input_dir, training_tsv, params.patch_size,
-                                          params.patch_stride, transformations=transformations,
-                                          prepare_dl=params.prepare_dl)
-            data_valid = MRIDataset_patch(params.input_dir, valid_tsv, params.patch_size,
-                                          params.patch_stride, transformations=transformations,
-                                          prepare_dl=params.prepare_dl)
+            data_train = MRIDataset_patch(params.input_dir,
+                    training_tsv,
+                    params.patch_size,
+                    params.patch_stride,
+                    transformations=transformations,
+                    prepare_dl=params.prepare_dl)
+            data_valid = MRIDataset_patch(params.input_dir,
+                    valid_tsv,
+                    params.patch_size,
+                    params.patch_stride,
+                    transformations=transformations,
+                    prepare_dl=params.prepare_dl)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
-                                  batch_size=params.batch_size,
-                                  shuffle=True,
-                                  num_workers=params.num_workers,
-                                  pin_memory=True
-                                  )
+                batch_size=params.batch_size,
+                shuffle=True,
+                num_workers=params.num_workers,
+                pin_memory=True
+                )
 
         valid_loader = DataLoader(data_valid,
-                                  batch_size=params.batch_size,
-                                  shuffle=False,
-                                  num_workers=params.num_workers,
-                                  pin_memory=True
-                                  )
+                batch_size=params.batch_size,
+                shuffle=False,
+                num_workers=params.num_workers,
+                pin_memory=True
+                )
 
         # Define loss and optimizer
         optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
@@ -106,7 +127,9 @@ def train_patch_single_cnn(params):
                                                            "CNN", "valid")))
 
         # initialize the early stopping instance
-        early_stopping = EarlyStopping('min', min_delta=params.tolerance, patience=params.patience)
+        early_stopping = EarlyStopping('min',
+                min_delta=params.tolerance,
+                patience=params.patience)
 
         for epoch in range(params.epochs):
             print("At %s-th epoch." % str(epoch))
