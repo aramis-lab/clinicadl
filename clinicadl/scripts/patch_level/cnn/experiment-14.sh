@@ -6,8 +6,8 @@
 #SBATCH --threads-per-core=1        # on réserve des coeurs physiques et non logiques
 #SBATCH --ntasks=1
 #SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/patch_level/single_cnn
-#SBATCH --output=./exp12/pytorch_job_%j.out
-#SBATCH --error=./exp12/pytorch_job_%j.err
+#SBATCH --output=./exp14/pytorch_job_%j.out
+#SBATCH --error=./exp14/pytorch_job_%j.err
 #SBATCH --job-name=3DCNN_patch
 #SBATCH --gres=gpu:1
 
@@ -20,7 +20,7 @@ conda activate clinicadl_env_py37
 
 # Network structure
 NETWORK="Conv4_FC3"
-NETWORK_TYPE="single"
+NETWORK_TYPE="multi"
 COHORT="ADNI"
 DATE="reproducibility_results"
 
@@ -46,11 +46,11 @@ BASELINE=1
 ACCUMULATION=2
 EVALUATION=20
 LR=1e-5
-WEIGHT_DECAY=1e-3
+WEIGHT_DECAY=1e-4
 GREEDY_LEARNING=0
 SIGMOID=0
 NORMALIZATION=1
-PATIENCE=20
+PATIENCE=15
 
 # Pretraining
 T_BOOL=1
@@ -79,7 +79,7 @@ OPTIONS="$OPTIONS --baseline"
 fi
 
 
-NAME="patch3D_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-autoencoder_baseline-${BASELINE}_norm-${NORMALIZATION}"
+NAME="patch3D_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-autoencoder_baseline-${BASELINE}_norm-${NORMALIZATION}_${NETWORK_TYPE}-cnn"
 
 if [ $SPLITS > 0 ]; then
 echo "Use of $SPLITS-fold cross validation, split $SPLIT"
