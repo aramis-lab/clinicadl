@@ -189,9 +189,9 @@ def train_func(args):
                    num_cnn = args.num_cnn,
                    prepare_dl = args.prepare_dl)
            if args.network_type=='single':
-               train_patch_single_cnn(train_params_cnn)
+               train_patch_single_cnn(train_params_patch)
            else:
-               train_patch_multi_cnn(train_params_cnn)
+               train_patch_multi_cnn(train_params_patch)
     elif args.mode=='svn':
         pass
 
