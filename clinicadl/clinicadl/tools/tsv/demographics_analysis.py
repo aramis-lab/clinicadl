@@ -11,7 +11,7 @@ __status__ = "Completed"
 
 import argparse
 import pandas as pd
-from tsv_utils import first_session, next_session, add_demographics
+from .tsv_utils import first_session, next_session, add_demographics
 import os
 from os import path
 import numpy as np
