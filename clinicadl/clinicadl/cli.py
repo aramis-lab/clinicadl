@@ -151,7 +151,7 @@ def train_func(args):
                    patch_size = args.patch_size,
                    patch_stride = args.patch_stride,
                    hippocampus_roi = args.hippocampus_roi,
-                   prepare_dl = args.prepare_dl)
+                   prepare_dl = args.use_extracted_patches)
            train_autoencoder_patch(train_params_autoencoder)
        else:
            train_params_patch = Parameters(args.tsv_path, 
@@ -187,7 +187,7 @@ def train_func(args):
                    hippocampus_roi = args.hippocampus_roi,
                    selection_threshold = args.selection_threshold,
                    num_cnn = args.num_cnn,
-                   prepare_dl = args.prepare_dl)
+                   prepare_dl = args.use_extracted_patches)
            if args.network_type=='single':
                train_patch_single_cnn(train_params_patch)
            else:
@@ -416,7 +416,7 @@ def parse_command_line():
         subject_level performance.only based on patches with balanced 
         accuracy > threshold.''',
         type=float, default=0.0)
-    train_parser.add_argument("--prepare_dl",
+    train_parser.add_argument("--use_extracted_patches",
         help='''If True the outputs of preprocessing are used, else the whole
         MRI is loaded.''',
         default=False, action="store_true")
