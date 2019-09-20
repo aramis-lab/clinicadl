@@ -117,6 +117,7 @@ class Parameters:
         self.patch_size = patch_size
         self.patch_stride = patch_stride
         self.hippocampus_roi = hippocampus_roi
+        self.num_cnn = num_cnn
         self.prepare_dl = prepare_dl
         self.visualization = visualization
         self.selection_threshold = selection_threshold
