@@ -6,7 +6,7 @@ from .preprocessing.T1_preprocessing import preprocessing_t1w
 from .preprocessing.T1_postprocessing import postprocessing_t1w
 from .subject_level.train_autoencoder import train_autoencoder
 from .subject_level.train_CNN import train_cnn
-from .slice_level.train_CNN import train_slice
+#from .slice_level.train_CNN import train_slice
 from .patch_level.train_autoencoder import train_autoencoder_patch
 from .patch_level.train_singleCNN import train_patch_single_cnn
 from .patch_level.train_multiCNN import train_patch_multi_cnn
@@ -41,25 +41,25 @@ def train_func(args):
                    args.network)
            train_params_autoencoder.write(args.pretrained_path,
                    args.pretrained_difference,
-                   args.preprocessing,
-                   args.diagnoses,
-                   args.baseline,
-                   args.minmaxnormalization,
-                   'random',
-                   args.n_splits,
-                   args.split,
-                   args.accumulation_steps,
-                   args.epochs,
-                   args.learning_rate,
-                   args.patience,
-                   args.tolerance,
-                   args.add_sigmoid,
-                   'Adam',
-                   0.0,
-                   args.use_gpu,
-                   args.batch_size,
-                   args.evaluation_steps,
-                   args.nproc)
+                   preprocessing = args.preprocessing,
+                   diagnoses = args.diagnoses,
+                   baseline = args.baseline,
+                   minmaxnormalization = args.minmaxnormalization,
+                   sampler = 'random',
+                   n_splits = args.n_splits,
+                   split = args.split,
+                   accumulation_steps = args.accumulation_steps,
+                   epochs = args.epochs,
+                   learning_rate = args.learning_rate,
+                   patience = args.patience,
+                   tolerance = args.tolerance,
+                   add_sigmoid = args.add_sigmoid,
+                   optimizer = 'Adam',
+                   weight_decay = args.weight_decay,
+                   gpu = args.use_gpu,
+                   batch_size = args.batch_size,
+                   evaluation_steps = args.evaluation_steps,
+                   num_workers = args.nproc)
            train_autoencoder(train_params_autoencoder)
        else:
            train_params_cnn = Parameters(args.tsv_path, 
@@ -68,28 +68,28 @@ def train_func(args):
                    args.network)
            train_params_cnn.write(args.pretrained_path,
                    args.pretrained_difference,
-                   args.preprocessing,
-                   args.diagnoses,
-                   args.baseline,
-                   args.minmaxnormalization,
-                   args.sampler,
-                   args.n_splits,
-                   args.split,
-                   args.accumulation_steps,
-                   args.epochs,
-                   args.learning_rate,
-                   args.patience,
-                   args.tolerance,
-                   args.add_sigmoid,
-                   'Adam',
-                   0.1,
-                   args.use_gpu,
-                   args.batch_size,
-                   args.evaluation_steps,
-                   args.nproc,
-                   args.transfer_learning_path,
-                   args.transfer_learning_autoencoder,
-                   args.selection)
+                   preprocessing = args.preprocessing,
+                   diagnoses = args.diagnoses,
+                   baseline = args.baseline,
+                   minmaxnormalization = args.minmaxnormalization,
+                   sampler = args.sampler,
+                   n_splits = args.n_splits,
+                   split = args.split,
+                   accumulation_steps = args.accumulation_steps,
+                   epochs = args.epochs,
+                   learning_rate = args.learning_rate,
+                   patience = args.patience,
+                   tolerance = args.tolerance,
+                   add_sigmoid = args.add_sigmoid,
+                   optimizer = 'Adam',
+                   weight_decay = args.weight_decay,
+                   gpu = args.use_gpu,
+                   batch_size = args.batch_size,
+                   evaluation_steps = args.evaluation_steps,
+                   num_workers = args.nproc,
+                   transfer_learning_path = args.transfer_learning_path,
+                   transfer_learning_autoencoder = args.transfer_learning_autoencoder,
+                   selection = args.selection)
            train_cnn(train_params_cnn)
     elif args.mode=='slice':
         train_params_slice = Parameters(args.tsv_path, 
@@ -112,7 +112,7 @@ def train_func(args):
                 args.tolerance,
                 args.add_sigmoid,
                 'Adam',
-                0.1,
+                args.weight_decay,
                 args.use_gpu,
                 args.batch_size,
                 args.evaluation_steps,
@@ -143,7 +143,7 @@ def train_func(args):
                    tolerance = args.tolerance,
                    add_sigmoid = args.add_sigmoid,
                    optimizer = 'Adam',
-                   weight_decay = 0.0,
+                   weight_decay = args.weight_decay,
                    gpu = args.use_gpu,
                    batch_size = args.batch_size,
                    evaluation_steps = args.evaluation_steps,
@@ -174,7 +174,7 @@ def train_func(args):
                    tolerance = args.tolerance,
                    add_sigmoid = args.add_sigmoid,
                    optimizer = 'Adam',
-                   weight_decay = 0.0,
+                   weight_decay = args.weight_decay,
                    gpu = args.use_gpu,
                    batch_size = args.batch_size,
                    evaluation_steps = args.evaluation_steps,
@@ -354,6 +354,10 @@ def parse_command_line():
         help='Add this option if you want to train an autoencoder',
         action="store_true",
         default=False)
+    train_parser.add_argument('-hroi', '--hippocampus_roi', 
+        help='If true, use the hippocampus region',
+        action="store_true",
+        default=False)
     train_parser.add_argument("--num_cnn", 
         help='''How many CNNs we want to train in a patch-wise way.
              By default, we train each patch from all subjects for one CNN''',
@@ -370,6 +374,9 @@ def parse_command_line():
     train_parser.add_argument('--learning_rate', '-lr',
         help='Learning rate of the optimization. (default=0.01)',
         default=1e-4, type=float)
+    train_parser.add_argument('--weight_decay', '-wd',
+        help='Weight decay value used in optimization. (default=1e-4)',
+        default=1e-4, type=float)
     train_parser.add_argument('--patience', 
         help='Waiting time for early stopping.',
         type=int, default=10)
@@ -379,6 +386,12 @@ def parse_command_line():
     train_parser.add_argument('--add_sigmoid', 
         help='Ad sigmoid function at the end of the decoder.',
         default=False, action="store_true")
+    train_parser.add_argument('-psz', '--patch_size',
+        help='Patch size e.g: --patch_size 50',
+        type=int, default=50)
+    train_parser.add_argument('-pst', '--patch_stride',
+        help='Patch stride e.g: --patch_stride 50',
+        type=int, default=50)
 
     ## Transfer learning from other autoencoder/network
     train_parser.add_argument('--pretrained_path', 

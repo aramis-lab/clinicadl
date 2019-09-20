@@ -5,10 +5,10 @@
 #SBATCH --cpus-per-task=10
 #SBATCH --threads-per-core=1        # on réserve des coeurs physiques et non logiques
 #SBATCH --ntasks=1
-#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/subject_level/autoencoder
-#SBATCH --output=./exp1/pytorch_job_%j.out
-#SBATCH --error=./exp1/pytorch_job_%j.err
-#SBATCH --job-name=3DAE_subj
+#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/patch_level/autoencoder
+#SBATCH --output=./exp7/pytorch_job_%j.out
+#SBATCH --error=./exp7/pytorch_job_%j.err
+#SBATCH --job-name=3DAE_patch
 #SBATCH --gres=gpu:1
 
 #export http_proxy=http://10.10.2.1:8123
@@ -19,7 +19,7 @@ eval "$(conda shell.bash hook)"
 conda activate clinicadl_env_py37
 
 # Network structure
-NETWORK="Conv5_FC3"
+NETWORK="Conv4_FC3"
 COHORT="ADNI"
 DATE="reproducibility_results"
 
@@ -29,23 +29,23 @@ TSV_PATH="$HOME/code/AD-DL/data/$COHORT/lists_by_diagnosis/train"
 OUTPUT_DIR="$SCRATCH/results/$DATE/"
 
 # Computation ressources
-NUM_PROCESSORS=8
+NUM_PROCESSORS=32
 GPU=1
 
 # Dataset Management
 PREPROCESSING='linear'
 DIAGNOSES="AD CN MCI"
-BASELINE=1
 SPLITS=5
 SPLIT=$1
 
 # Training arguments
-EPOCHS=50
-BATCH=12
+EPOCHS=15
+BATCH=32
+BASELINE=1
 ACCUMULATION=2
 EVALUATION=20
-LR=1e-4
-WEIGHT_DECAY=0
+LR=1e-5
+WEIGHT_DECAY=1e-4
 GREEDY_LEARNING=0
 SIGMOID=0
 NORMALIZATION=1
@@ -76,7 +76,8 @@ echo "using only baseline data"
 OPTIONS="$OPTIONS --baseline"
 fi
 
-NAME="subject_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-autoencoder_baseline-${BASELINE}_norm-${NORMALIZATION}"
+
+NAME="patch3D_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-autoencoder_baseline-${BASELINE}_norm-${NORMALIZATION}"
 
 if [ $SPLITS > 0 ]; then
 echo "Use of $SPLITS-fold cross validation, split $SPLIT"
@@ -87,7 +88,7 @@ echo $NAME
 
 # Run clinicadl
 clinicadl train \
-  subject \
+  patch \
   $CAPS_DIR \
   $TSV_PATH \
   $OUTPUT_DIR$NAME \
