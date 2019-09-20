@@ -3,24 +3,26 @@
 #SBATCH --time=20:00:00
 #SBATCH --mem=60G
 #SBATCH --cpus-per-task=10
-#SBATCH --threads-per-core=1        # on réserve des coeurs physiques et non logiques
+#SBATCH --threads-per-core=1
 #SBATCH --ntasks=1
-#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/subject_level/autoencoder
-#SBATCH --output=./exp1/pytorch_job_%j.out
-#SBATCH --error=./exp1/pytorch_job_%j.err
-#SBATCH --job-name=3DAE_subj
+#SBATCH --nodes=1
+#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/subject_level/cnn
+#SBATCH --output=./exp5/pytorch_job_%j.out
+#SBATCH --error=./exp5/pytorch_job_%j.err
+#SBATCH --job-name=3CNN_subject
 #SBATCH --gres=gpu:1
 
 #export http_proxy=http://10.10.2.1:8123
 #export https_proxy=http://10.10.2.1:8123
 
-# Experiment training autoencoder
+# Experiment taining CNN
 eval "$(conda shell.bash hook)"
 conda activate clinicadl_env_py37
 
 # Network structure
 NETWORK="Conv5_FC3"
 COHORT="ADNI"
+CAPS_EXT="_skull_stripping"
 DATE="reproducibility_results"
 
 # Input arguments to clinicadl
@@ -34,8 +36,8 @@ GPU=1
 
 # Dataset Management
 PREPROCESSING='linear'
-DIAGNOSES="AD CN MCI"
-BASELINE=1
+TASK='AD CN'
+BASELINE=0
 SPLITS=5
 SPLIT=$1
 
@@ -44,16 +46,17 @@ EPOCHS=50
 BATCH=12
 ACCUMULATION=2
 EVALUATION=20
+SAMPLER="random"
 LR=1e-4
 WEIGHT_DECAY=0
-GREEDY_LEARNING=0
-SIGMOID=0
 NORMALIZATION=1
-PATIENCE=50
+PATIENCE=5
+TOLERANCE=0
 
 # Pretraining
-T_BOOL=0
-T_PATH=""
+T_BOOL=1
+T_PATH="subject_model-Conv5_FC3_preprocessing-mni_task-autoencoder_baseline-1_norm-1_splits-5"
+T_PATH="$SCRATCH/results/$DATE/$T_PATH"
 T_DIFF=0
 
 # Other options
@@ -68,15 +71,18 @@ OPTIONS="${OPTIONS} --minmaxnormalization"
 fi
 
 if [ $T_BOOL = 1 ]; then
-OPTIONS="$OPTIONS --pretrained_path $T_PATH -d $T_DIFF"
+OPTIONS="$OPTIONS --transfer_learning_autoencoder --transfer_learning_path $T_PATH"
 fi
+TASK_NAME="${TASK// /_}"
 
 if [ $BASELINE = 1 ]; then
-echo "using only baseline data"
-OPTIONS="$OPTIONS --baseline"
+  echo "using only baseline data"
+  TASK_NAME="${TASK_NAME}_baseline"
+  OPTIONS="$OPTIONS --baseline"
 fi
+echo $TASK_NAME
 
-NAME="subject_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-autoencoder_baseline-${BASELINE}_norm-${NORMALIZATION}"
+NAME="subject_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-${TASK_NAME}_norm-${NORMALIZATION}_t-${T_BOOL}"
 
 if [ $SPLITS > 0 ]; then
 echo "Use of $SPLITS-fold cross validation, split $SPLIT"
@@ -92,16 +98,16 @@ clinicadl train \
   $TSV_PATH \
   $OUTPUT_DIR$NAME \
   $NETWORK \
-  --train_autoencoder \
+  --diagnoses $TASK \
   --nproc $NUM_PROCESSORS \
   --batch_size $BATCH \
   --evaluation_steps $EVALUATION \
   --preprocessing $PREPROCESSING \
-  --diagnoses $DIAGNOSES \
   --n_splits $SPLITS \
   --split $SPLIT \
   --accumulation_steps $ACCUMULATION \
   --epochs $EPOCHS \
+  --sampler $SAMPLER \
   --learning_rate $LR \
   --weight_decay $WEIGHT_DECAY \
   --patience $PATIENCE \

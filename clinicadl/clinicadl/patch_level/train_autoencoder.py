@@ -10,7 +10,7 @@ from .utils import MRIDataset_patch_hippocampus, MRIDataset_patch
 from .utils import stacked_ae_learning, visualize_ae
 
 from ..tools.deep_learning.iotools import Parameters
-from ..itools.deep_learning import commandline_to_json, create_model
+from ..tools.deep_learning import commandline_to_json, create_model
 from ..tools.deep_learning.data import load_data, MinMaxNormalization
 
 __author__ = "Junhao Wen, Elina Thibeau-Sutre, Mauricio Diaz"
@@ -25,7 +25,7 @@ __status__ = "Development"
 
 def train_autoencoder_patch(params):
 
-    model = create_model(params.network, params.gpu)
+    model = create_model(params.model, params.gpu)
     init_state = copy.deepcopy(model.state_dict())
     transformations = transforms.Compose([MinMaxNormalization()])
 
