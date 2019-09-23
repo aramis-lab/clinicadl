@@ -46,7 +46,7 @@ class Parameters:
             patch_size: int = 50,
             patch_stride: int = 50,
             hippocampus_roi: bool = False,
-            selection_threshold: float = None,
+            selection_threshold: float = 0.0,
             num_cnn: int = 36, 
             prepare_dl: bool = False,
             visualization: bool = False):

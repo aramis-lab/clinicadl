@@ -22,7 +22,7 @@ conda activate clinicadl_env_py37
 # Network structure
 NETWORK="Conv5_FC3"
 COHORT="ADNI"
-DATE="reproducibility_results"
+DATE="2_reproducibility"
 
 # Input arguments to clinicadl
 CAPS_DIR="$SCRATCH/../commun/datasets/${COHORT}_rerun"
@@ -42,7 +42,7 @@ SPLIT=$1
 
 # Training arguments
 EPOCHS=50
-BATCH=12
+BATCH=6
 ACCUMULATION=2
 EVALUATION=20
 SAMPLER="random"
@@ -72,6 +72,7 @@ fi
 if [ $T_BOOL = 1 ]; then
 OPTIONS="$OPTIONS --transfer_learning_path $T_PATH"
 fi
+
 TASK_NAME="${TASK// /_}"
 
 if [ $BASELINE = 1 ]; then

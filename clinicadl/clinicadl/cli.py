@@ -151,6 +151,7 @@ def train_func(args):
                    patch_size = args.patch_size,
                    patch_stride = args.patch_stride,
                    hippocampus_roi = args.hippocampus_roi,
+                   visualization = args.visualization,
                    prepare_dl = args.use_extracted_patches)
            train_autoencoder_patch(train_params_autoencoder)
        else:
@@ -313,6 +314,10 @@ def parse_command_line():
     train_parser.add_argument('-np', '--nproc',
         help='Number of cores used during the training',
         type=int, default=2)
+    train_parser.add_argument('--visualization',
+        help='Save results in visualization folder',
+        action="store_true",
+        default=False)
     train_parser.add_argument("--batch_size", 
         default=2, type=int,
         help='Batch size for training. (default=2)',)
@@ -451,7 +456,13 @@ def parse_command_line():
     args = parser.parse_args()
     
     commandline = parser.parse_known_args()
-    commandline_to_json(commandline, 'model_type')
+    
+    if args.train_autoencoder:
+      model_type = 'autoencoder'
+    else:
+      model_type = 'cnn'
+
+    commandline_to_json(commandline, model_type)
     
     #print(args)
    
