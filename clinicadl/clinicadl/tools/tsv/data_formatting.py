@@ -8,7 +8,7 @@ NB: Other preprocessing may be needed on the merged file obtained: for example t
 in the OASIS dataset is not done in this script. Moreover a quality check may be needed at the end of preprocessing
 pipelines, leading to the removal of some subjects.
 """
-from tsv_utils import neighbour_session, last_session, after_end_screening
+from .tsv_utils import neighbour_session, last_session, after_end_screening
 
 
 def cleaning_nan_diagnoses(bids_df):
