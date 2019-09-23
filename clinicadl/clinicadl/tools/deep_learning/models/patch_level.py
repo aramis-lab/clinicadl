@@ -16,9 +16,13 @@ __status__ = "Development"
 
 class Conv4_FC3(nn.Module):
     """
-       This network is the implementation of this paper:
-       'Multi-modality cascaded convolutional neural networks for Alzheimer's Disease diagnosis'
-       """
+    Classifier for a binary classification task
+
+    Patch level architecture used on Minimal preprocessing
+
+    This network is the implementation of this paper:
+    'Multi-modality cascaded convolutional neural networks for Alzheimer's Disease diagnosis'
+    """
 
     def __init__(self, dropout=0, n_classes=2):
         super(Conv4_FC3, self).__init__()
