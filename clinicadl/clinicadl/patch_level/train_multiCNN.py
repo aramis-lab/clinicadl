@@ -117,22 +117,40 @@ def train_patch_multi_cnn(params):
 
                 # train the model
                 train_df, acc_mean_train, loss_batch_mean_train, global_step,\
-                    = train(model, train_loader, params.gpu, loss, optimizer, writer_train_batch, epoch,
-                            model_mode='train')
+                    = train(model,
+                        train_loader,
+                        params.gpu,
+                        loss,
+                        optimizer,
+                        writer_train_batch,
+                        epoch,
+                        model_mode='train')
 
                 # calculate the training accuracy based on all the training data
                 train_all_df, acc_mean_train_all, loss_batch_mean_train_all, _,\
-                    = train(model, train_loader, params.gpu, loss, optimizer, writer_train_all_data, epoch,
-                            model_mode='valid')
-                print("For training, subject level balanced accuracy is %f at the end of epoch %d"
-                      % (acc_mean_train_all, epoch))
+                    = train(model,
+                        train_loader,
+                        params.gpu,
+                        loss,
+                        optimizer,
+                        writer_train_all_data,
+                        epoch,
+                        model_mode='valid')
+                print("For training, subject level balanced accuracy is %f at the end of epoch %d" % (acc_mean_train_all, epoch))
 
-                # at then end of each epoch, we validate one time for the model with the validation data
+                # at then end of each epoch, we validate one time for the model
+                # with the validation data
+                
                 valid_df, acc_mean_valid, loss_batch_mean_valid, _\
-                    = train(model, valid_loader, params.gpu, loss, optimizer, writer_valid, epoch,
-                            model_mode='valid')
-                print("For validation, subject level balanced accuracy is %f at the end of epoch %d"
-                      % (acc_mean_valid, epoch))
+                    = train(model,
+                        valid_loader,
+                        params.gpu,
+                        loss,
+                        optimizer,
+                        writer_valid,
+                        epoch,
+                         model_mode='valid')
+                print("For validation, subject level balanced accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
 
                 # save the best model based on the best loss and accuracy
                 acc_is_best = acc_mean_valid > best_accuracy
@@ -148,7 +166,10 @@ def train_patch_multi_cnn(params):
                     'optimizer': optimizer.state_dict(),
                     'global_step': global_step},
                     acc_is_best, loss_is_best,
-                    os.path.join(params.output_dir, "best_model_dir", "fold_%i" % fi, "cnn-%i" % i))
+                    os.path.join(params.output_dir,
+                      "best_model_dir",
+                      "fold_%i" % fi,
+                      "cnn-%i" % i))
 
                 # try early stopping criterion
                 if early_stopping.step(loss_batch_mean_valid) or epoch == params.epochs - 1:
@@ -159,21 +180,42 @@ def train_patch_multi_cnn(params):
 
             for selection in ['best_acc', 'best_loss']:
                 # load the best trained model during the training
-                model, best_epoch = load_model(model, os.path.join(params.output_dir, 'best_model_dir', 'fold_%i' % fi,
-                                                                   'cnn-%i' % i, selection),
-                                               gpu=params.gpu, filename='model_best.pth.tar')
+                model, best_epoch = load_model(model,
+                    os.path.join(params.output_dir,
+                      'best_model_dir',
+                      'fold_%i' % fi,
+                      'cnn-%i' % i,
+                      selection),
+                    gpu=params.gpu,
+                    filename='model_best.pth.tar')
 
-                train_df, metrics_train = test(model, train_loader, params.gpu, loss)
-                valid_df, metrics_valid = test(model, valid_loader, params.gpu, loss)
-                patch_level_to_tsvs(params.output_dir, train_df, metrics_train, fi, selection,
-                                    dataset='train', cnn_index=i)
-                patch_level_to_tsvs(params.output_dir, valid_df, metrics_valid, fi, selection,
-                                    dataset='validation', cnn_index=i)
+                train_df, metrics_train = test(model,
+                    train_loader,
+                    params.gpu,
+                    loss)
+                valid_df, metrics_valid = test(model,
+                    valid_loader,
+                    params.gpu,
+                    loss)
+                patch_level_to_tsvs(params.output_dir,
+                    train_df, metrics_train, fi,
+                    selection, dataset='train', cnn_index=i)
+                patch_level_to_tsvs(params.output_dir,
+                    valid_df, metrics_valid, fi,
+                    selection, dataset='validation', cnn_index=i)
 
                 torch.cuda.empty_cache()
 
         for selection in ['best_acc', 'best_loss']:
-            soft_voting_to_tsvs(params.output_dir, fi, selection, dataset='train', num_cnn=params.num_cnn,
-                                selection_threshold=params.selection_threshold)
-            soft_voting_to_tsvs(params.output_dir, fi, selection, dataset='validation', num_cnn=params.num_cnn,
-                                selection_threshold=params.selection_threshold)
+          soft_voting_to_tsvs(params.output_dir, 
+              fi,
+              selection,
+              dataset='train',
+              num_cnn=params.num_cnn,
+              selection_threshold=params.selection_threshold)
+          soft_voting_to_tsvs(params.output_dir,
+              fi,
+              selection,
+              dataset='validation',
+              num_cnn=params.num_cnn,
+              selection_threshold=params.selection_threshold)

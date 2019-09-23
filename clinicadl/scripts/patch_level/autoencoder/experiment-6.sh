@@ -8,8 +8,10 @@
 #SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/patch_level/autoencoder
 #SBATCH --output=./exp6/pytorch_job_%j.out
 #SBATCH --error=./exp6/pytorch_job_%j.err
-#SBATCH --job-name=3DAE_patch
+#SBATCH --job-name=exp6_AE
 #SBATCH --gres=gpu:1
+#SBATCH --mail-type=END
+#SBATCH --mail-user=mauricio.diaz@inria.fr
 
 #export http_proxy=http://10.10.2.1:8123
 #export https_proxy=http://10.10.2.1:8123
@@ -42,7 +44,7 @@ SPLIT=$1
 EPOCHS=15
 BATCH=32
 BASELINE=0
-ACCUMULATION=2
+ACCUMULATION=1
 EVALUATION=20
 LR=1e-5
 WEIGHT_DECAY=1e-4

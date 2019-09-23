@@ -5,11 +5,13 @@
 #SBATCH --cpus-per-task=10
 #SBATCH --threads-per-core=1        # on réserve des coeurs physiques et non logiques
 #SBATCH --ntasks=1
-#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/patch_level/single_cnn
+#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/patch_level/multi_cnn
 #SBATCH --output=./exp14/pytorch_job_%j.out
 #SBATCH --error=./exp14/pytorch_job_%j.err
-#SBATCH --job-name=3DCNN_patch
+#SBATCH --job-name=exp14_cnn
 #SBATCH --gres=gpu:1
+#SBATCH --mail-type=END
+#SBATCH --mail-user=mauricio.diaz@inria.fr
 
 #export http_proxy=http://10.10.2.1:8123
 #export https_proxy=http://10.10.2.1:8123
@@ -23,6 +25,8 @@ NETWORK="Conv4_FC3"
 NETWORK_TYPE="multi"
 COHORT="ADNI"
 DATE="reproducibility_results"
+NUM_CNN=36
+USE_EXTRACTED_PATCHES=1
 
 # Input arguments to clinicadl
 CAPS_DIR="$SCRATCH/../commun/datasets/${COHORT}_rerun"
@@ -43,7 +47,7 @@ SPLIT=$1
 EPOCHS=200
 BATCH=32
 BASELINE=1
-ACCUMULATION=2
+ACCUMULATION=1
 EVALUATION=20
 LR=1e-5
 WEIGHT_DECAY=1e-4
@@ -62,22 +66,26 @@ T_DIFF=0
 OPTIONS=""
 
 if [ $GPU = 1 ]; then
-OPTIONS="${OPTIONS} --use_gpu"
+  OPTIONS="${OPTIONS} --use_gpu"
 fi
 
 if [ $NORMALIZATION = 1 ]; then
-OPTIONS="${OPTIONS} --minmaxnormalization"
+  OPTIONS="${OPTIONS} --minmaxnormalization"
 fi
 
 if [ $T_BOOL = 1 ]; then
-OPTIONS="$OPTIONS --transfer_learning_autoencoder --transfer_learning_path $T_PATH"
+  OPTIONS="$OPTIONS --transfer_learning_autoencoder --transfer_learning_path $T_PATH"
 fi
 
 if [ $BASELINE = 1 ]; then
-echo "using only baseline data"
-OPTIONS="$OPTIONS --baseline"
+  echo "using only baseline data"
+  OPTIONS="$OPTIONS --baseline"
 fi
 
+if [ $USE_EXTRACTED_PATCHES = 1 ]; then
+  echo "Using extracted slices/patches"
+  OPTIONS="$OPTIONS --use_extracted_patches"
+fi
 
 NAME="patch3D_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-autoencoder_baseline-${BASELINE}_norm-${NORMALIZATION}_${NETWORK_TYPE}-cnn"
 
@@ -96,6 +104,7 @@ clinicadl train \
   $OUTPUT_DIR$NAME \
   $NETWORK \
   --network_type $NETWORK_TYPE \
+  --num_cnn $NUM_CNN \
   --batch_size $BATCH \
   --evaluation_steps $EVALUATION \
   --preprocessing $PREPROCESSING \
@@ -107,4 +116,5 @@ clinicadl train \
   --learning_rate $LR \
   --weight_decay $WEIGHT_DECAY \
   --patience $PATIENCE \
+  --selection_threshold 0.7 \
   $OPTIONS

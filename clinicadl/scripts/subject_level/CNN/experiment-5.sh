@@ -23,7 +23,7 @@ conda activate clinicadl_env_py37
 NETWORK="Conv5_FC3_mni"
 COHORT="ADNI"
 CAPS_EXT="_skull_stripping"
-DATE="reproducibility_results"
+DATE="2_reproducibility"
 
 # Input arguments to clinicadl
 CAPS_DIR="$SCRATCH/../commun/datasets/${COHORT}${CAPS_EXT}"
@@ -43,7 +43,7 @@ SPLIT=$1
 
 # Training arguments
 EPOCHS=50
-BATCH=12
+BATCH=6
 ACCUMULATION=2
 EVALUATION=20
 SAMPLER="random"

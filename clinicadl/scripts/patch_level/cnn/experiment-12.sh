@@ -8,8 +8,10 @@
 #SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/patch_level/single_cnn
 #SBATCH --output=./exp12/pytorch_job_%j.out
 #SBATCH --error=./exp12/pytorch_job_%j.err
-#SBATCH --job-name=3DCNN_patch
+#SBATCH --job-name=exp12_cnn
 #SBATCH --gres=gpu:1
+#SBATCH --mail-type=END
+#SBATCH --mail-user=mauricio.diaz@inria.f
 
 #export http_proxy=http://10.10.2.1:8123
 #export https_proxy=http://10.10.2.1:8123
@@ -43,7 +45,7 @@ SPLIT=$1
 EPOCHS=200
 BATCH=32
 BASELINE=1
-ACCUMULATION=2
+ACCUMULATION=1
 EVALUATION=20
 LR=1e-5
 WEIGHT_DECAY=1e-3

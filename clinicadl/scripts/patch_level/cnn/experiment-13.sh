@@ -8,8 +8,10 @@
 #SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/patch_level/single_cnn
 #SBATCH --output=./exp13/pytorch_job_%j.out
 #SBATCH --error=./exp13/pytorch_job_%j.err
-#SBATCH --job-name=3DCNN_patch
+#SBATCH --job-name=exp13_cnn
 #SBATCH --gres=gpu:1
+#SBATCH --mail-type=END
+#SBATCH --mail-user=mauricio.diaz@inria.fr
 
 #export http_proxy=http://10.10.2.1:8123
 #export https_proxy=http://10.10.2.1:8123
@@ -23,6 +25,7 @@ NETWORK="Conv4_FC3"
 NETWORK_TYPE="single"
 COHORT="ADNI"
 DATE="reproducibility_results"
+USE_EXTRACTED_PATCHES=1
 
 # Input arguments to clinicadl
 CAPS_DIR="$SCRATCH/../commun/datasets/${COHORT}_rerun"
@@ -43,7 +46,7 @@ SPLIT=$1
 EPOCHS=200
 BATCH=32
 BASELINE=0
-ACCUMULATION=2
+ACCUMULATION=1
 EVALUATION=20
 LR=1e-5
 WEIGHT_DECAY=1e-3
@@ -78,6 +81,10 @@ echo "using only baseline data"
 OPTIONS="$OPTIONS --baseline"
 fi
 
+if [ $USE_EXTRACTED_PATCHES = 1 ]; then
+  echo "Using extracted slices/patches"
+  OPTIONS="$OPTIONS --use_extracted_patches"
+fi
 
 NAME="patch3D_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-autoencoder_baseline-${BASELINE}_norm-${NORMALIZATION}"
 
