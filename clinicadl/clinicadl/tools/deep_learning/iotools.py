@@ -42,6 +42,7 @@ class Parameters:
             num_workers: int = 1,
             transfer_learning_path: str = None,
             transfer_learning_autoencoder: str = None,
+            transfer_learning_multicnn: bool = False,
             selection: str = "best_acc",
             patch_size: int = 50,
             patch_stride: int = 50,
@@ -87,6 +88,8 @@ class Parameters:
                  By default, each patch is trained from all subjects for one CNN.
         prepare_dl: If True the outputs of preprocessing are used, else the
                     whole MRI is loaded. 
+        transfer_learning_multicnn : If true use each model from the multicnn to 
+                                     initialize corresponding models.
         """
         
 
@@ -113,6 +116,7 @@ class Parameters:
         self.num_workers = num_workers
         self.transfer_learning_path = transfer_learning_path
         self.transfer_learning_autoencoder = transfer_learning_autoencoder
+        self.transfer_learning_multicnn = transfer_learning_multicnn
         self.selection = selection
         self.patch_size = patch_size
         self.patch_stride = patch_stride

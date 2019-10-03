@@ -182,6 +182,7 @@ def train_func(args):
                    num_workers = args.nproc,
                    transfer_learning_path = args.transfer_learning_path,
                    transfer_learning_autoencoder = args.transfer_learning_autoencoder,
+                   transfer_learning_multicnn = args.transfer_learning_multicnn,
                    selection = args.selection,
                    patch_size = args.patch_size,
                    patch_stride = args.patch_stride,
@@ -412,6 +413,9 @@ def parse_command_line():
         type=str, default=None)
     train_parser.add_argument("--transfer_learning_autoencoder",
         help="If do transfer learning using an autoencoder else will look for a CNN model.",
+        default=False, action="store_true")
+    train_parser.add_argument("--transfer_learning_multicnn",
+        help="If do transfer learning for multi-CNN initialize with multiple CNN models.",
         default=False, action="store_true")
     train_parser.add_argument("--selection", 
         help="Allow to choose which model of the experiment is loaded.",

@@ -49,16 +49,34 @@ def train_patch_multi_cnn(params):
 
             print("Running for the %d-th CNN" % i)
             if params.transfer_learning_path is not None:
-                if params.transfer_learning_autoencoder:
-                    print('Train the model with the weights from a pre-trained autoencoder.')
+              if params.transfer_learning_autoencoder:
+                print('Train the model with the weights from a pre-trained autoencoder.')
                     model, _ = load_model_after_ae(model, 
-                            os.path.join(params.transfer_learning_path, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'Encoder'),
-                            filename='model_best_encoder.pth.tar')
+                        os.path.join(params.transfer_learning_path,
+                          'best_model_dir',
+                          "fold_" + str(fi),
+                          'ConvAutoencoder',
+                          'Encoder'),
+                        filename='model_best_encoder.pth.tar')
                 else:
+                  if params.transfer_learning_multicnn:
+                    print('Train each of the models of multiple CNN with the weights from a pre-trained CNN.')
+                      model, _ = load_model_after_cnn(model,
+                          os.path.join(params.transfer_learning_path,
+                            'best_model_dir',
+                            "fold_" + str(fi),
+                            'cnn-' + str(i),
+                            'best_acc'),
+                          filename='model_best.pth.tar')
+                  else:
                     print('Train the model with the weights from a pre-trained CNN.')
-                    model, _ = load_model_after_cnn(model,
-                            os.path.join(params.transfer_learning_path, 'best_model_dir', "fold_" + str(fi), 'CNN', 'best_acc'),
-                            filename='model_best.pth.tar')
+                      model, _ = load_model_after_cnn(model,
+                          os.path.join(params.transfer_learning_path,
+                            'best_model_dir',
+                            "fold_" + str(fi),
+                            'CNN',
+                            'best_acc'),
+                          filename='model_best.pth.tar')
             else:
                 print('The model is trained from scratch.')
                 model.load_state_dict(init_state)
