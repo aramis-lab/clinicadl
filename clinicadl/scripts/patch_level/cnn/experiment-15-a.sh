@@ -1,14 +1,14 @@
 #!/bin/bash
-#SBATCH --partition=gpu_p1
+#SBATCH --partition=gpu_gct3
 #SBATCH --time=20:00:00
 #SBATCH --mem=60G
 #SBATCH --cpus-per-task=10
 #SBATCH --threads-per-core=1        # on réserve des coeurs physiques et non logiques
 #SBATCH --ntasks=1
 #SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/patch_level/multi_cnn
-#SBATCH --output=./exp17/pytorch_job_%j.out
-#SBATCH --error=./exp17/pytorch_job_%j.err
-#SBATCH --job-name=exp17_cnn
+#SBATCH --output=./exp15/pytorch_job_%j.out
+#SBATCH --error=./exp15/pytorch_job_%j.err
+#SBATCH --job-name=exp15_cnn
 #SBATCH --gres=gpu:1
 #SBATCH --mail-type=END
 #SBATCH --mail-user=mauricio.diaz@inria.fr
@@ -46,7 +46,7 @@ SPLIT=$1
 # Training arguments
 EPOCHS=200
 BATCH=32
-BASELINE=0
+BASELINE=1
 ACCUMULATION=1
 EVALUATION=20
 LR=1e-5
@@ -58,7 +58,7 @@ PATIENCE=20
 
 # Pretraining
 T_BOOL=1
-T_PATH="patch3D_model-Conv4_FC3_preprocessing-linear_task-autoencoder_baseline-0_norm-1_multi-cnn_splits-5"
+T_PATH="patch3D_model-Conv4_FC3_preprocessing-linear_task-autoencoder_baseline-1_norm-1_splits-5"
 T_PATH="$SCRATCH/results/$DATE/$T_PATH"
 T_DIFF=0
 
@@ -74,7 +74,7 @@ if [ $NORMALIZATION = 1 ]; then
 fi
 
 if [ $T_BOOL = 1 ]; then
-  OPTIONS="$OPTIONS --transfer_learning_path $T_PATH --transfer_learning_multicnn"
+  OPTIONS="$OPTIONS --transfer_learning_path $T_PATH"
 fi
 
 if [ $BASELINE = 1 ]; then
