@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=gpu_gct3
+#SBATCH --partition=gpu_p1
 #SBATCH --time=20:00:00
 #SBATCH --mem=60G
 #SBATCH --cpus-per-task=10
@@ -58,7 +58,7 @@ PATIENCE=20
 
 # Pretraining
 T_BOOL=1
-T_PATH="patch3D_model-Conv4_FC3_preprocessing-linear_task-autoencoder_baseline-1_norm-1_splits-5"
+T_PATH="patch3D_model-Conv4_FC3_preprocessing-linear_task-autoencoder_baseline-1_norm-1_multi-cnn_splits-5"
 T_PATH="$SCRATCH/results/$DATE/$T_PATH"
 T_DIFF=0
 
@@ -74,7 +74,7 @@ if [ $NORMALIZATION = 1 ]; then
 fi
 
 if [ $T_BOOL = 1 ]; then
-  OPTIONS="$OPTIONS --transfer_learning_path $T_PATH"
+  OPTIONS="$OPTIONS --transfer_learning_path $T_PATH --transfer_learning_multicnn"
 fi
 
 if [ $BASELINE = 1 ]; then
