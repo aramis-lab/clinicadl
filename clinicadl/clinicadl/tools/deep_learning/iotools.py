@@ -49,6 +49,7 @@ class Parameters:
             hippocampus_roi: bool = False,
             selection_threshold: float = 0.0,
             num_cnn: int = 36, 
+            mri_plane: int = 0,
             prepare_dl: bool = False,
             visualization: bool = False):
         """ 
@@ -86,6 +87,10 @@ class Parameters:
                              the subject_level performance.
         num_cnn: How many CNNs we want to train in a patch-wise way.
                  By default, each patch is trained from all subjects for one CNN.
+        mri_plane: Which coordinate axis to take for slicing the MRI.
+                   0 is for sagittal, 
+                   1 is for coronal and 
+                   2 is for axial direction
         prepare_dl: If True the outputs of preprocessing are used, else the
                     whole MRI is loaded. 
         transfer_learning_multicnn : If true use each model from the multicnn to 
@@ -122,6 +127,7 @@ class Parameters:
         self.patch_stride = patch_stride
         self.hippocampus_roi = hippocampus_roi
         self.num_cnn = num_cnn
+        self.mri_plane = mri_plane
         self.prepare_dl = prepare_dl
         self.visualization = visualization
         self.selection_threshold = selection_threshold

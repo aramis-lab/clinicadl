@@ -96,30 +96,20 @@ def train_func(args):
                 args.output_dir, 
                 args.caps_dir, 
                 args.network)
-        train_params_slice.write(args.pretrained_path,
-                args.pretrained_difference,
-                args.preprocessing,
-                args.diagnoses,
-                args.baseline,
-                args.minmaxnormalization,
-                args.sampler,
-                args.n_splits,
-                args.split,
-                args.accumulation_steps,
-                args.epochs,
-                args.learning_rate,
-                args.patience,
-                args.tolerance,
-                args.add_sigmoid,
-                'Adam',
-                args.weight_decay,
-                args.use_gpu,
-                args.batch_size,
-                args.evaluation_steps,
-                args.nproc,
-                args.transfer_learning_path,
-                args.transfer_learning_autoencoder,
-                args.selection)
+        train_params_slice.write(mri_plane = args.mri_plane,
+                diagnoses = args.diagnoses,
+                baseline = args.baseline,
+                learning_rate = args.learning_rate,
+                n_splits = args.n_splits,
+                split = args.split,
+                epochs = args.epochs,
+                batch_size = args.batch_size, 
+                optimizer = 'Adam',
+                weight_decay = args.weight_decay,
+                gpu = args.use_gpu,
+                num_workers = args.nproc,
+                selection_threshold = args.selection_threshold,
+                prepare_dl = args.use_extracted_patches)
         train_slice(train_params_slice)
     elif args.mode=='patch':
        if args.train_autoencoder :
@@ -368,6 +358,12 @@ def parse_command_line():
         help='''How many CNNs we want to train in a patch-wise way.
              By default, we train each patch from all subjects for one CNN''',
         default=36, type=int)
+    train_parser.add_argument("--mri_plane",
+        help='''Which coordinate axis to take for slicing the MRI.
+                0 for sagittal
+                1 for coronal
+                2 for axial direction.''',
+        default=0, type=int)
     train_parser.add_argument('--sampler', '-sm',
         help='Sampler to be used',
         default='random', type=str)
