@@ -6,7 +6,7 @@ from .preprocessing.T1_preprocessing import preprocessing_t1w
 from .preprocessing.T1_postprocessing import postprocessing_t1w
 from .subject_level.train_autoencoder import train_autoencoder
 from .subject_level.train_CNN import train_cnn
-#from .slice_level.train_CNN import train_slice
+from .slice_level.train_CNN import train_slice
 from .patch_level.train_autoencoder import train_autoencoder_patch
 from .patch_level.train_singleCNN import train_patch_single_cnn
 from .patch_level.train_multiCNN import train_patch_multi_cnn
@@ -100,6 +100,8 @@ def train_func(args):
                 diagnoses = args.diagnoses,
                 baseline = args.baseline,
                 learning_rate = args.learning_rate,
+                patience = args.patience,
+                tolerance = args.tolerance,
                 n_splits = args.n_splits,
                 split = args.split,
                 epochs = args.epochs,
