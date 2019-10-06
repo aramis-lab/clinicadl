@@ -25,13 +25,13 @@ __status__ = "Development"
 # The input MRI's dimension is 169*208*179 after cropping"
 
 
-def train_slice(params)
+def train_slice(params):
 
     # Initialize the model
     print('Do transfer learning with existed model trained on ImageNet!\n')
-    print('The chosen network is %s !' % params.network)
+    print('The chosen network is %s !' % params.model)
 
-    model = create_model(params.network, params.gpu)
+    model = create_model(params.model, params.gpu)
     trg_size = (224, 224)  # most of the imagenet pretrained model has this input size
 
     # All pre-trained models expect input images normalized in the same way, i.e. mini-batches of 3-channel RGB
@@ -58,9 +58,9 @@ def train_slice(params)
 
         print("Running for the %d-th fold" % fi)
 
-        data_train = MRIDataset_slice(params.caps_directory, training_tsv, transformations=transformations,
+        data_train = MRIDataset_slice(params.input_dir, training_tsv, transformations=transformations,
                                       mri_plane=params.mri_plane, prepare_dl=params.prepare_dl)
-        data_valid = MRIDataset_slice(params.caps_directory, valid_tsv, transformations=transformations,
+        data_valid = MRIDataset_slice(params.input_dir, valid_tsv, transformations=transformations,
                                       mri_plane=params.mri_plane, prepare_dl=params.prepare_dl)
 
         # Use argument load to distinguish training and testing
