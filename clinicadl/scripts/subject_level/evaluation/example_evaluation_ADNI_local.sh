@@ -12,7 +12,7 @@ GPU=1
 NUM_WORKERS=8
 NUM_THREADS=0
 OPTIONS=""
-WORKDIR="/network/lustre/dtlake01/aramis/users/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/Zenodo_rerun"
+WORKDIR="/network/lustre/dtlake01/aramis/users/clinica/CLINICA_datasets/CAPS/Frontiers_DL/Experiments_results/Zenodo_rerun/test1"
 OUTPUTDIR="subject_model-Conv5_FC3_preprocessing-linear_task-AD_CN_baseline_norm-0_t-0_splits-5"
 
 TSVPATH="$HOME/code/AD-DL/data/$COHORT/lists_by_diagnosis/test/"
