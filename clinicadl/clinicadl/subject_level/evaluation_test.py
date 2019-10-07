@@ -6,9 +6,9 @@ import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from .utils import test
-from ..tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data_test
-from ..tools.deep_learning import create_model, load_model, read_json
+from utils import test
+from clinicadl.tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data_test
+from clinicadl.tools.deep_learning import create_model, load_model, read_json
 
 parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
 
