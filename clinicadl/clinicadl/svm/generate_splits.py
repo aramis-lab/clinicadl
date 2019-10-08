@@ -29,8 +29,8 @@ parser.add_argument("--test_size", type=float, default=0.2,
                     help="Fraction of the training that is used as test during the repeated hold out.")
 
 if __name__ == "__main__":
-    from .utils import diagnosis_code
-    from tools.deep_learning.data import load_data
+    from .classification_utils import diagnosis_code
+    from ..tools.deep_learning.data import load_data
 
     commandline = parser.parse_known_args()
     options = commandline[0]
