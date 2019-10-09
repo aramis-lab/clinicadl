@@ -4,9 +4,9 @@ import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
-from .utils import MRIDataset_patch, test, patch_level_to_tsvs, soft_voting_to_tsvs
-from tools.deep_learning.models import create_model, load_model
-from tools.deep_learning.data import MinMaxNormalization, load_data, load_data_test
+from utils import MRIDataset_patch, test, patch_level_to_tsvs, soft_voting_to_tsvs
+from clinicadl.tools.deep_learning.models import create_model, load_model
+from clinicadl.tools.deep_learning.data import MinMaxNormalization, load_data, load_data_test
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -90,30 +90,32 @@ def main(options):
 
         for n in range(options.num_cnn):
 
-            dataset = MRIDataset_patch(options.caps_directory, test_df, options.patch_size,
-                                       options.patch_stride, transformations=transformations, patch_index=n,
-                                       prepare_dl=options.prepare_dl)
+          dataset = MRIDataset_patch(options.caps_directory, test_df, options.patch_size,
+              options.patch_stride, transformations=transformations, patch_index=n,
+              prepare_dl=options.prepare_dl)
 
-            test_loader = DataLoader(dataset,
-                                     batch_size=options.batch_size,
-                                     shuffle=False,
-                                     num_workers=options.num_workers,
-                                     pin_memory=True)
+          test_loader = DataLoader(dataset,
+              batch_size=options.batch_size,
+              shuffle=False,
+              num_workers=options.num_workers,
+              pin_memory=True)
 
-            # load the best trained model during the training
-            model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', "fold_%i" % fi,
-                                                               'cnn-%i' % n, options.selection), options.gpu,
-                                           filename='model_best.pth.tar')
+          # load the best trained model during the training
+          model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', "fold_%i" % fi,
+              'cnn-%i' % n, options.selection), options.gpu,
+              filename='model_best.pth.tar')
 
-            results_df, metrics = test(model, test_loader, options.gpu, loss)
-            print("Patch level balanced accuracy is %f" % metrics['balanced_accuracy'])
+          results_df, metrics = test(model, test_loader, options.gpu, loss)
+          print("Patch level balanced accuracy is %f" % metrics['balanced_accuracy'])
 
-            # write the test results into the tsv files
-            patch_level_to_tsvs(options.output_dir, results_df, metrics, fi, options.selection,
-                                dataset=options.dataset, cnn_index=n)
+          # write the test results into the tsv files
+          patch_level_to_tsvs(options.output_dir, results_df, metrics, fi, options.selection,
+              dataset=options.dataset, cnn_index=n)
 
+        
+        print("Selection threshold: ", options.selection_threshold)
         soft_voting_to_tsvs(options.output_dir, fi, options.selection, dataset=options.dataset, num_cnn=options.num_cnn,
-                            selection_threshold=options.selection_threshold)
+          selection_threshold=options.selection_threshold)
 
 
 if __name__ == "__main__":
