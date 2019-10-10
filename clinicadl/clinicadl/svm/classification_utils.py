@@ -1,14 +1,9 @@
-from clinica.pipelines.machine_learning import base, input, algorithm, validation
-import abc, os, tempfile
+import abc
+import os
 import pandas as pd
-import os.path as path
-from pandas.io import parsers
 from clinica.pipelines.machine_learning import base
 import clinica.pipelines.machine_learning.voxel_based_io as vbio
-import clinica.pipelines.machine_learning.vertex_based_io as vtxbio
-import clinica.pipelines.machine_learning.region_based_io as rbio
-import clinica.pipelines.machine_learning.tsv_based_io as tbio
-import clinica.pipelines.machine_learning.svm_utils as utils
+import clinica.pipelines.machine_learning.ml_utils as utils
 from multiprocessing.pool import ThreadPool
 from os import path
 import numpy as np
@@ -23,6 +18,7 @@ __version__ = "0.1.0"
 __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
+
 
 class CAPSInput(base.MLInput):
 
@@ -45,13 +41,13 @@ class CAPSInput(base.MLInput):
         self._y = None
         self._kernel = None
 
-        subjects_visits = parsers.read_csv(diagnoses_tsv, sep='\t')
+        subjects_visits = pd.read_csv(diagnoses_tsv, sep='\t')
         if list(subjects_visits.columns.values) != ['participant_id', 'session_id', 'diagnosis']:
             raise Exception('Subjects and visits file is not in the correct format.')
         self._subjects = list(subjects_visits.participant_id)
         self._sessions = list(subjects_visits.session_id)
 
-        diagnoses = parsers.read_csv(diagnoses_tsv, sep='\t')
+        diagnoses = pd.read_csv(diagnoses_tsv, sep='\t')
         if 'diagnosis' not in list(diagnoses.columns.values):
             raise Exception('Diagnoses file is not in the correct format.')
         self._diagnoses = list(diagnoses.diagnosis)
@@ -214,6 +210,7 @@ class CAPSVoxelBasedInput(CAPSInput):
         data = vbio.revert_mask(weights, self._data_mask, self._orig_shape)
         vbio.weights_to_nifti(data, self._images[0], output_filename)
 
+
 class KFoldCV(base.MLValidation):
 
     def __init__(self, ml_algorithm):
@@ -297,32 +294,6 @@ class KFoldCV(base.MLValidation):
         print("sensitivity: %s" % (mean_results['sensitivity'].to_string(index=False)))
         print("auc: %s" % (mean_results['auc'].to_string(index=False)))
 
-def split_subjects_to_5fold(diagnoses_tsv, n_splits, shuffle=True, random_state=2):
-    """
-    This is a function to do 5-fold data split with the given tsv files.
-    :param diagnoses_tsv:
-    :param n_splits:
-    :param shuffle:
-    :param random_state:
-    :return:
-    """
-
-    diagnoses = pd.io.parsers.read_csv(diagnoses_tsv, sep='\t')
-    if 'diagnosis' not in list(diagnoses.columns.values):
-        raise Exception('Diagnoses file is not in the correct format.')
-    diagnoses_list = list(diagnoses.diagnosis)
-    unique = list(set(diagnoses_list))
-    y = np.array([unique.index(x) for x in diagnoses_list])
-
-    splits = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=2)
-    splits_indices = []
-    n_iteration = 0
-    for train_index, test_index in splits.split(np.zeros(len(y)), y):
-
-        n_iteration += 1
-        splits_indices.append((train_index, test_index))
-
-    return splits_indices
 
 def extract_indices_from_5_fold(diagnosis_tsv_folder, n_splits, output_dir, baseline=True, diagnoses_list=['AD', 'CN']):
     """
@@ -397,7 +368,7 @@ def extract_indices_from_5_fold(diagnosis_tsv_folder, n_splits, output_dir, base
     return splits_indices, all_tsv
 
 
-def load_data(image_list, mask=True):
+def load_data_svm(image_list, mask=True):
     """
     Args:
         image_list:
@@ -427,6 +398,7 @@ def load_data(image_list, mask=True):
 
     return data, shape, data_mask
 
+
 def revert_mask(weights, mask, shape):
     """
     Args:
@@ -442,6 +414,7 @@ def revert_mask(weights, mask, shape):
     new_weights = np.reshape(z, shape)
 
     return new_weights
+
 
 def evaluate_prediction(y, y_hat):
 
@@ -522,7 +495,58 @@ def save_data(df, output_dir, folder_name):
     if not path.exists(results_dir):
         os.makedirs(results_dir)
 
-    df[['diagnosis']].to_csv(path.join(results_dir, 'diagnoses.tsv'), sep="\t", index=False)
-    df[['participant_id', 'session_id']].to_csv(path.join(results_dir, 'sessions.tsv'), sep="\t", index=False)
+    df.to_csv(path.join(results_dir, 'all_subjects.tsv'), sep="\t", index=False)
 
-    return results_dir
+    return path.join(results_dir, 'all_subjects.tsv')
+
+
+def save_weights(classifier, x, output_dir):
+
+    dual_coefficients = classifier.dual_coef_
+    sv_indices = classifier.support_
+
+    weighted_sv = dual_coefficients.transpose() * x[sv_indices]
+    weights = np.sum(weighted_sv, 0)
+
+    np.savetxt(path.join(output_dir, 'weights.txt'), weights)
+
+    return weights
+
+
+def apply_best_parameters_each_split(kernel, x, y, results_list, balanced, n_fold, diagnoses_tsv, output_dir):
+    """
+    Save the best model for each fold
+    :param results_list:
+    :return:
+    """
+
+    from sklearn.svm import SVC
+
+    best_c = results_list[n_fold]['best_parameter']['c']
+    best_bal_acc = results_list[n_fold]['best_parameter']['balanced_accuracy']
+    train_index = results_list[n_fold]['x_index']
+
+    if balanced:
+        svc = SVC(C=best_c, kernel='precomputed', probability=True, tol=1e-6, class_weight='balanced')
+    else:
+        svc = SVC(C=best_c, kernel='precomputed', probability=True, tol=1e-6)
+
+    outer_kernel = kernel[train_index, :][:, train_index]
+    y_train = y[train_index]
+
+    ## save the training data for reconstruction use
+    df = pd.read_csv(diagnoses_tsv, sep='\t')
+    df_training = df.iloc[train_index]
+
+    result_dir = path.join(output_dir, 'classifier', 'fold_' + str(n_fold))
+    if not path.exists(result_dir):
+        os.makedirs(result_dir)
+
+    training_tsv = os.path.join(result_dir, 'training_subjects.tsv')
+    df_training.to_csv(training_tsv, index=False, sep='\t', encoding='utf-8')
+
+    svc.fit(outer_kernel, y_train)
+    ## save the weight
+    save_weights(svc, x[train_index], result_dir)
+
+    return svc, {'c': best_c, 'balanced_accuracy': best_bal_acc}, train_index

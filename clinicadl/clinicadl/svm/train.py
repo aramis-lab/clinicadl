@@ -1,4 +1,5 @@
 import argparse
+import os
 from .classification_utils import extract_indices_from_5_fold
 from .model import VB_KFold_DualSVM
 from ..tools.deep_learning import commandline_to_json
@@ -31,6 +32,9 @@ parser.add_argument("--num_workers", '-w', default=1, type=int,
 
 def main(options):
 
+    if not os.path.exists(options.output_dir):
+        os.makedirs(options.output_dir)
+
     splits_indices, diagnosis_tsv = extract_indices_from_5_fold(options.diagnosis_path, options.n_splits,
                                                                 options.output_dir, baseline=options.baseline,
                                                                 diagnoses_list=options.diagnoses)
@@ -43,8 +47,9 @@ def main(options):
 
 if __name__ == "__main__":
     commandline = parser.parse_known_args()
+    commandline[0].split = None
+    commandline_to_json(commandline, 'SVM')
     options = commandline[0]
-    commandline_to_json(options, 'SVM')
     if commandline[1]:
         raise Exception("unknown arguments: %s" % (parser.parse_known_args()[1]))
     main(options)
