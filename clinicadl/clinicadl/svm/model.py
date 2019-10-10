@@ -1,5 +1,8 @@
-from .classification_utils import *
-from clinica.pipelines.machine_learning import base, algorithm, validation
+from os import path
+import numpy as np
+import os
+from .classification_utils import KFoldCV, CAPSVoxelBasedInput, apply_best_parameters_each_split
+from clinica.pipelines.machine_learning import base, algorithm
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -38,7 +41,7 @@ class VB_KFold_DualSVM(base.MLWorkflow):
         #
 
         self._input = CAPSVoxelBasedInput(caps_directory, diagnoses_tsv, group_id,
-                                                image_type, fwhm, modulated, pvc, mask_zeros, precomputed_kernel)
+                                          image_type, fwhm, modulated, pvc, mask_zeros, precomputed_kernel)
 
         self._validation = None
         self._algorithm = None

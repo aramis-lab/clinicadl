@@ -45,7 +45,7 @@ def main(options):
     _, source_orig_shape, source_mask = load_data_svm(source_data.get_images(), mask=True)
 
     folder_name = options.set + '_' + '_'.join(options.diagnoses)
-    result_dir = path.join(options.output_dir_target, folder_name)
+    result_dir = path.join(options.output_dir, folder_name)
     if not path.exists(result_dir):
         os.makedirs(result_dir)
 
@@ -58,7 +58,7 @@ def main(options):
         else:
             test_df = load_data_test(options.diagnosis_path, options.diagnoses)
 
-        test_path = save_data(test_df, path.join(options.output_dir, 'fold_%i' % fi), folder_name)
+        test_path = save_data(test_df, options.output_dir, path.join('fold_%i' % fi, folder_name))
 
         target_data = CAPSVoxelBasedInput(options.caps_directory_target, test_path,
                                           options.group_id_target, "T1", fwhm=8, mask_zeros=False)
@@ -67,10 +67,10 @@ def main(options):
         sessions = list(test_df.session_id)
         subjects_sessions = [subjects[i] + '_' + sessions[i] for i in range(len(subjects))]
 
-        weights = np.loadtxt(path.join(options.output_dir_source, 'classifier', 'fold_' + str(fi), 'weights.txt'))
+        weights = np.loadtxt(path.join(options.output_dir, 'classifier', 'fold_' + str(fi), 'weights.txt'))
 
         w = revert_mask(weights, source_mask, source_orig_shape).flatten()
-        b = np.loadtxt(path.join(options.output_dir_source, 'classifier', 'fold_' + str(fi), 'intersect.txt'))
+        b = np.loadtxt(path.join(options.output_dir, 'classifier', 'fold_' + str(fi), 'intersect.txt'))
 
         target_image = target_data.get_x()
         target_label = target_data.get_y()
@@ -88,7 +88,7 @@ def main(options):
         subjects_df.to_csv(path.join(result_dir, 'subjects_fold-' + str(fi) + '.tsv'),
                            index=False, sep='\t', encoding='utf-8')
         res_final = res_final.append(res_df)
-    res_final.to_csv(path.join(options.output_dir_target, 'test', 'results.tsv'), sep='\t', index=False)
+    res_final.to_csv(path.join(result_dir, 'results.tsv'), sep='\t', index=False)
 
 
 if __name__ == "__main__":
