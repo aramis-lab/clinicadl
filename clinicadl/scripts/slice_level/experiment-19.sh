@@ -2,7 +2,7 @@
 #SBATCH --partition=gpu_p1
 #SBATCH --time=20:00:00
 #SBATCH --mem=60G
-#SBATCH --cpus-per-task=10
+#SBATCH --cpus-per-task=32
 #SBATCH --threads-per-core=1        # on réserve des coeurs physiques et non logiques
 #SBATCH --ntasks=1
 #SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/slice_level
@@ -31,7 +31,7 @@ TSV_PATH="$HOME/code/AD-DL/data/$COHORT/lists_by_diagnosis/train"
 OUTPUT_DIR="$SCRATCH/results/$DATE/"
 
 # Computation ressources
-NUM_PROCESSORS=32
+NUM_PROCESSORS=48
 GPU=1
 
 # Dataset Management
@@ -79,6 +79,7 @@ clinicadl train \
   $TSV_PATH \
   $OUTPUT_DIR$NAME \
   $NETWORK \
+  --nproc $NUM_PROCESSORS \
   --batch_size $BATCH \
   --preprocessing $PREPROCESSING \
   --diagnoses $DIAGNOSES \
