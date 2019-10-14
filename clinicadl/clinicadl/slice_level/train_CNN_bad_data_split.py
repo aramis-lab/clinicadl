@@ -8,9 +8,9 @@ import os
 import numpy as np
 from time import time
 
-from .utils import mix_slices, MRIDataset_slice_mixed, train, test, slice_level_to_tsvs, soft_voting_to_tsvs
-from ..tools.deep_learning import EarlyStopping, create_model, save_checkpoint, load_model, commandline_to_json
-from ..tools.deep_learning.data import load_data, MinMaxNormalization
+from utils import mix_slices, MRIDataset_slice_mixed, train, test, slice_level_to_tsvs, soft_voting_to_tsvs
+from clinicadl.tools.deep_learning import EarlyStopping, create_model, save_checkpoint, load_model, commandline_to_json
+from clinicadl.tools.deep_learning.data import load_data, MinMaxNormalization
 
 
 __author__ = "Junhao Wen"
@@ -24,6 +24,59 @@ __status__ = "Development"
 
 # Train 2D CNN - Slice level network
 # The input MRI's dimension is 169*208*179 after cropping"
+parser = argparse.ArgumentParser(
+        description="Argparser for Pytorch 2D CNN, The input MRI's dimension is 169*208*179 after cropping")
+
+# Mandatory argument
+parser.add_argument("caps_directory", type=str,
+                        help="Path to the caps of image processing pipeline of DL")
+parser.add_argument("tsv_path", type=str,
+                        help="Path to tsv file of the population based on the diagnosis tsv files. "
+                                                 "To note, the column name should be participant_id, session_id and diagnosis.")
+parser.add_argument("output_dir", type=str,
+                        help="Path to store the classification outputs, and the tsv files containing the performances.")
+
+# Data argument
+parser.add_argument("--mri_plane", default=0, type=int,
+                        help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
+parser.add_argument('--baseline', default=False, action="store_true",
+                        help="Using baseline scans or all available longitudinal scans for training")
+
+# train argument
+parser.add_argument("--network", default="resnet18",
+                        help="Deep network type. Only ResNet was designed for training from scratch.")
+parser.add_argument("--diagnoses", default=["AD", "CN"], type=str, nargs="+",
+                        help="Labels for any binary task")
+
+parser.add_argument("--learning_rate", "-lr", default=1e-3, type=float,
+                        help="Learning rate of the optimization. (default=0.01)")
+parser.add_argument("--n_splits", default=5, type=int,
+                        help="Define the cross validation, by default, we use 5-fold.")
+parser.add_argument("--split", default=None, type=int,
+                        help="Define a specific fold in the k-fold, this is very useful to find the optimal model, where you do not want to run your k-fold validation")
+parser.add_argument("--epochs", default=1, type=int,
+                        help="Epochs through the data. (default=20)")
+parser.add_argument("--batch_size", default=32, type=int,
+                        help="Batch size for training. (default=1)")
+parser.add_argument("--optimizer", default="Adam", choices=["SGD", "Adadelta", "Adam"],
+                        help="Optimizer of choice for training. (default=Adam)")
+parser.add_argument("--gpu", default=False, action="store_true",
+                        help="If use gpu or cpu. Empty implies cpu usage.")
+parser.add_argument("--num_workers", default=0, type=int,
+                        help='the number of batch being loaded in parallel')
+parser.add_argument('--weight_decay', default=1e-2, type=float,
+                        help='weight decay (default: 1e-4)')
+parser.add_argument('--selection_threshold', default=None, type=float,
+                        help='Threshold on the balanced accuracies to compute the subject_level performance '
+                                                 'only based on patches with balanced accuracy > threshold.')
+parser.add_argument('--prepare_dl', default=False, action="store_true",
+                        help="If True the outputs of preprocessing prepare_dl are used, else the whole MRI is loaded.")
+
+# early stopping arguments
+parser.add_argument("--patience", type=int, default=10,
+                        help="tolerated epochs without improving for early stopping.")
+parser.add_argument("--tolerance", type=float, default=0,
+                        help="Tolerance of magnitude of performance after each epoch.")
 
 def train_CNN_bad_data_split(params):
 
@@ -166,3 +219,11 @@ def train_CNN_bad_data_split(params):
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)
+ 
+if __name__ == "__main__":
+  commandline = parser.parse_known_args()
+  commandline_to_json(commandline, "CNN")
+  options = commandline[0]
+  if commandline[1]:
+    raise Exception("unknown arguments: %s" % (parser.parse_known_args()[1]))
+  train_CNN_bad_data_split(options)
