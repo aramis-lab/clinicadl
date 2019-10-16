@@ -3,7 +3,8 @@ This repository contains a software framework for reproducible experiments with
 convolutional neural networks on automatic classification of Alzheimer's
 disease (AD) using anatomical MRI data from the publicly available dataset
 ADNI. It is developed by Junhao WEN, Elina Thibeau--Sutre and Mauricio Diaz.
-The preprint of the corresponding paper may be found [here](https://arxiv.org/abs/1904.07773)
+The preprint version of the corresponding paper may be found
+[here].(https://arxiv.org/abs/1904.07773)
 
 Automatic Classification of AD using a classical machine learning approach can
 be performed using the software available here:
@@ -18,10 +19,13 @@ All the papers described in the State of the art section of the manuscript may
 be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 
 
-
 # Dependencies:
 - Python >= 3.6
-- Clinica (needs to perform preprocessing)
+- Clinica (needs only to perform preprocessing)
+- Numpy
+- Pandas
+- Scikit-learn
+- Pandas
 - Pytorch
 - Nilearn
 - Nipy
@@ -145,10 +149,9 @@ optional arguments:
 ```
 
 ## Or use the scripts
+Look at the `clinicadl/scripts/` folder.
+
+# Run testing:
 ```
-python run_train.py --max_steps 10000 --dropout_rate 0.2
-```
-# run testing:
-```
-python run_test.py
+pytest clinicadl/tests/
 ```
