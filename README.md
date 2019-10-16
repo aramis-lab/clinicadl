@@ -5,9 +5,18 @@ disease (AD) using anatomical MRI data from the publicly available dataset
 ADNI. It is developed by Junhao WEN, Elina Thibeau--Sutre and Mauricio Diaz.
 The preprint of the corresponding paper may be found [here](https://arxiv.org/abs/1904.07773)
 
+Automatic Classification of AD using a classical machine learning approach can
+be performed using the software available here:
+<https://github.com/aramis-lab/AD-DL>.
+
+This software is currently in *active developmet*. 
+Pretrained models for the CNN networks can be obtained here :
+<https://zenodo.org/record/3491003>  
 
 # Bibliography
-All the papers described in the State of the art section of the manuscript may be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
+All the papers described in the State of the art section of the manuscript may
+be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
+
 
 
 # Dependencies:
