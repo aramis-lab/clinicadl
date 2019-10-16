@@ -1,7 +1,6 @@
 import argparse
 
 from .tools.deep_learning.iotools import Parameters
-from .tools.deep_learning import commandline_to_json
 from .preprocessing.T1_preprocessing import preprocessing_t1w
 from .preprocessing.T1_postprocessing import postprocessing_t1w
 from .subject_level.train_autoencoder import train_autoencoder
@@ -202,6 +201,8 @@ def classify_func(args):
 def parse_command_line():
     parser = argparse.ArgumentParser(prog='clinicadl', 
             description='Clinica Deep Learning.')
+    
+    parser.add_argument('--verbose', '-v', action='count')
 
     subparser = parser.add_subparsers(title='Task to execute with clinicadl',
             description='''What kind of task do you want to use with clinicadl
@@ -455,17 +456,17 @@ def parse_command_line():
 
     classify_parser.set_defaults(func=classify_func)
     
-    args = parser.parse_args()
-    
-    commandline = parser.parse_known_args()
-    
-    if args.train_autoencoder:
-      model_type = 'autoencoder'
-    else:
-      model_type = 'cnn'
-
-    commandline_to_json(commandline, model_type)
-    
-    #print(args)
+#    args = parser.parse_args()
+#    
+#    commandline = parser.parse_known_args()
+#    
+#    if args.train_autoencoder:
+#      model_type = 'autoencoder'
+#    else:
+#      model_type = 'cnn'
+#
+#    commandline_to_json(commandline, model_type)
+#    
+#    print(args)
    
-    return args
+    return parser
