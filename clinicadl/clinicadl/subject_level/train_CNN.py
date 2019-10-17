@@ -12,6 +12,21 @@ from ..tools.deep_learning import create_model, commandline_to_json
 from ..tools.deep_learning.models import transfer_learning
 
 def train_cnn(params):
+    
+    """
+    This function trains a cnn network using the subject-level features
+
+    Parameters
+    ----------
+
+    params : class clinicadl.tools.deep_learning.iotools.Parameters
+      Structure containing the parameters/options to launch the trainning of a CNN network.
+
+    Returns
+    _______
+    Nothing : models are stored in disk. 
+    
+    """
 
     if params.evaluation_steps % params.accumulation_steps != 0 and params.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %

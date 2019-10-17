@@ -1,17 +1,12 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Nov 06 14:17:41 2017
 
-@author: Junhao WEN
-"""
-
-__author__ = "Junhao Wen"
-__copyright__ = "Copyright 2018 The Aramis Lab Team"
+__author__ = "Junhao Wen, Mauricio Diaz"
+__copyright__ = "Copyright 2018-2020 The Aramis Lab Team"
 __credits__ = ["Junhao Wen"]
 __license__ = "See LICENSE.txt file"
-__version__ = "0.1.0"
-__maintainer__ = "Junhao Wen"
-__email__ = "junhao.wen89@gmail.com"
+__version__ = "0.0.1"
+__maintainer__ = "Mauricio Diaz"
+__email__ = "mauricio.diaz@inria.fr"
 __status__ = "Development"
 
 def preprocessing_t1w(bids_directory, 
@@ -20,18 +15,30 @@ def preprocessing_t1w(bids_directory,
         ref_template, 
         working_directory=None):
     """
-    This is a preprocessing pipeline including three steps:
-        1) N4 bias correction (Ants)
-        2) linear registration to MNI (MNI icbm152 nlinear sym template) (ANTS)
-        3) cropping the background to save the computational power
-    Args:
-    bids_directory: folder with BIDS structure.
-    caps_directory: folder where CAPS structure will be stored.
-    ref_template: reference template for image refistration.
-    working_directory: folder containing the working directory.
+    This preprocessing pipeline includes globally three steps:
+        1) N4 bias correction (performed with ANTS).
+        2) Linear registration to MNI (MNI icbm152 nlinear sym template)
+           (performed with ANTS).
+        3) Cropping the background (in order to save computational power).
+    
+    Parameters
+    ----------
 
-    Returns:
-    wf: nipype workflow
+    bids_directory: str
+      Folder with BIDS structure.
+    caps_directory: str
+      Folder where CAPS structure will be stored.
+    ref_template: str
+      reference template used for image registration.
+    working_directory: str
+      Folder containing a temporary space to save intermediate results.
+
+    Returns
+    -------
+    wf: class nipype.pipeline.engine.workflows.Workflow
+      A class du type nypipe workflow to control, setup, and execute a process
+      as a nypipe pipeline.
+      
     """
 
     from nipype.interfaces import ants
