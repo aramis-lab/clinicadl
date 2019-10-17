@@ -70,7 +70,7 @@ Task to execute with clinicadl:
 
   {preprocessing,extract,train,classify}
                         Stages/task to execute with clinicadl
-    preprocessing       Prepare data for training (needs clinica instqlled).
+    preprocessing       Prepare data for training (needs clinica installed).
     extract             Create data (slices or patches) for training.
     train               Train with your data and create a model.
     classify            Classify one image or a list of images with your
@@ -114,7 +114,7 @@ positional arguments:
   caps_directory        Data using CAPS structure.
   tsv_path              tsv path with sujets/sessions to process.
   output_dir            Folder containing results of the training.
-  network               CNN Model to be used during the training
+  network               CNN Model to be used during the training.
 
 optional arguments:
   -h, --help            show this help message and exit
