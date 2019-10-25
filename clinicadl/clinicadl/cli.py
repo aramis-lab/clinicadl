@@ -451,7 +451,7 @@ def parse_command_line():
         help='Folder containing results of the training.',
         default=None)
     classify_parser.add_argument('network_dir',
-        help='Path to the folder where the model was saved during the training.',
+        help='Model to use during classification.',
         default=None)
 
     classify_parser.set_defaults(func=classify_func)
