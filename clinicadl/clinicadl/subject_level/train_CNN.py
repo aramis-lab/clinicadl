@@ -24,7 +24,8 @@ def train_cnn(params):
 
     Returns
     _______
-    Nothing : models are stored in disk. 
+    
+    Models are stored in disk. 
     
     """
 
