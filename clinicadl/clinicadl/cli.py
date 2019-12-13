@@ -1,16 +1,9 @@
 import argparse
 
 from .tools.deep_learning.iotools import Parameters
-from .preprocessing.T1_preprocessing import preprocessing_t1w
-from .preprocessing.T1_postprocessing import postprocessing_t1w
-from .subject_level.train_autoencoder import train_autoencoder
-from .subject_level.train_CNN import train_cnn
-from .slice_level.train_CNN import train_slice
-from .patch_level.train_autoencoder import train_autoencoder_patch
-from .patch_level.train_singleCNN import train_patch_single_cnn
-from .patch_level.train_multiCNN import train_patch_multi_cnn
 
 def preprocessing_t1w_func(args):
+    from .preprocessing.T1_preprocessing import preprocessing_t1w
     wf = preprocessing_t1w(args.bids_directory,
             args.caps_dir,
             args.tsv_file,
@@ -19,6 +12,7 @@ def preprocessing_t1w_func(args):
     wf.run(plugin='MultiProc', plugin_args={'n_procs': args.nproc})
 
 def extract_data_func(args):
+    from .preprocessing.T1_postprocessing import postprocessing_t1w
     wf = postprocessing_t1w(args.caps_dir,
             args.tsv_file,
             args.patch_size,
@@ -32,6 +26,13 @@ def extract_data_func(args):
 
 # Function to dispatch training to corresponding function
 def train_func(args):
+    from .subject_level.train_autoencoder import train_autoencoder
+    from .subject_level.train_CNN import train_cnn
+    from .slice_level.train_CNN import train_slice
+    from .patch_level.train_autoencoder import train_autoencoder_patch
+    from .patch_level.train_singleCNN import train_patch_single_cnn
+    from .patch_level.train_multiCNN import train_patch_multi_cnn
+    
     if args.mode=='subject' :
        if args.train_autoencoder :
            train_params_autoencoder = Parameters(args.tsv_path,
