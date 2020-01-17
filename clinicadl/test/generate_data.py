@@ -25,8 +25,8 @@ def generate_random_dataset(caps_dir, data_df, output_dir, n_subjects, mean=0, s
         os.makedirs(path.join(output_dir, 'subjects'))
 
     # Retrieve image of first subject
-    participant_id = data_df.iloc[0, 'participant_id']
-    session_id = data_df.iloc[0, 'session_id']
+    participant_id = data_df.loc[0, 'participant_id']
+    session_id = data_df.loc[0, 'session_id']
     image_path = path.join(caps_dir, 'subjects', participant_id, session_id,
                            't1', 'spm', 'segmentation', 'normalized_space',
                            participant_id + '_' + session_id +
@@ -41,7 +41,9 @@ def generate_random_dataset(caps_dir, data_df, output_dir, n_subjects, mean=0, s
     data = np.array([participant_id_list, session_id_list, diagnosis_list])
     data = data.T
     output_df = pd.DataFrame(data, columns=['participant_id', 'session_id', 'diagnosis'])
-    output_df.to_csv(path.join(caps_dir, 'data.tsv'), sep='\t', index=False)
+    output_df['age'] = 60
+    output_df['sex'] = 'F'
+    output_df.to_csv(path.join(output_dir, 'data.tsv'), sep='\t', index=False)
 
     for i in range(2 * n_subjects):
         gauss = np.random.normal(mean, sigma, image.shape)
