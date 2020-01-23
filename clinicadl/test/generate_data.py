@@ -9,7 +9,7 @@ from os import path
 import os
 
 
-def generate_random_dataset(caps_dir, data_df, output_dir, n_subjects, mean=0, sigma=0.1):
+def generate_random_dataset(caps_dir, data_df, output_dir, n_subjects, mean=0, sigma=0.5):
     """
     Generates an intractable classification task from the first subject of the tsv file.
 
