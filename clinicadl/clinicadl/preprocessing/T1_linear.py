@@ -3,7 +3,8 @@ def preprocessing_t1w(bids_directory,
         tsv, 
         ref_template, 
         working_directory=None):
-    """
+
+   """
     This preprocessing pipeline includes globally three steps:
     1) N4 bias correction (performed with ANTS).
     2) Linear registration to MNI (MNI icbm152 nlinear sym template)
@@ -23,7 +24,8 @@ def preprocessing_t1w(bids_directory,
     working_directory: str
        Folder containing a temporary space to save intermediate results.
    """
-
+   
+   
    from clinica.utils.inputs import check_bids_folder
    from clinica.utils.participant import get_subject_session_list
    from clinica.utils.exceptions import ClinicaBIDSError, ClinicaException
@@ -167,34 +169,34 @@ def preprocessing_t1w(bids_directory,
    write_node.inputs.base_directory = caps_directory
    write_node.inputs.parameterization = False
 
-  ## Connectiong the workflow
-  from clinica.utils.nipype import fix_join
+   ## Connectiong the workflow
+   from clinica.utils.nipype import fix_join
 
-  wf = npe.Workflow(name='t1_linear_dl', base_dir=working_dir)
+   wf = npe.Workflow(name='t1_linear_dl', base_dir=working_directory)
 
-  wf.connect([
-      (read_node, image_id_node, [('t1w', 'bids_or_caps_file')]),
-      (read_node, container_path, [('t1w', 'bids_or_caps_filename')]),
-      (image_id_node , ants_registration_node, [('image_id', 'output_prefix')]),
-      (read_node, n4biascorrection, [("t1w", "input_image")]),
+   wf.connect([
+       (read_node, image_id_node, [('t1w', 'bids_or_caps_file')]),
+       (read_node, container_path, [('t1w', 'bids_or_caps_filename')]),
+       (image_id_node , ants_registration_node, [('image_id', 'output_prefix')]),
+       (read_node, n4biascorrection, [("t1w", "input_image")]),
 
-      (n4biascorrection, ants_registration_node, [('output_image', 'moving_image')]),
+       (n4biascorrection, ants_registration_node, [('output_image', 'moving_image')]),
 
-      (ants_registration_node, cropnifti, [('warped_image', 'input_img')]),
+       (ants_registration_node, cropnifti, [('warped_image', 'input_img')]),
 
-      (cropnifti, intensitynorm, [('output_img', 'input_img')]),
-      (cropnifti, intensitynorm, [('crop_template', 'crop_template')]),
+       (cropnifti, intensitynorm, [('output_img', 'input_img')]),
+       (cropnifti, intensitynorm, [('crop_template', 'crop_template')]),
 
-      # Connect to DataSink
-      (container_path, write_node, [(('container', fix_join, 't1_linear'), 'container')]),
-      (image_id_node, get_ids, [('image_id', 'image_id')]),
-      (get_ids, write_node, [('image_id_out', '@image_id')]),
-      (get_ids, write_node, [('subst_ls', 'substitutions')]),
-      #(get_ids, write_node, [('regexp_subst_ls', 'regexp_substitutions')]),
-      (n4biascorrection, write_node, [('output_image', '@outfile_corr')]),
-      (ants_registration_node, write_node, [('warped_image', '@outfile_reg')]),
-      (cropnifti, write_node, [('output_img', '@outfile_crop')]),
-      (intensitynorm, write_node, [('output_img', '@outfile_int')])
-      ])
+       # Connect to DataSink
+       (container_path, write_node, [(('container', fix_join, 't1_linear'), 'container')]),
+       (image_id_node, get_ids, [('image_id', 'image_id')]),
+       (get_ids, write_node, [('image_id_out', '@image_id')]),
+       (get_ids, write_node, [('subst_ls', 'substitutions')]),
+       #(get_ids, write_node, [('regexp_subst_ls', 'regexp_substitutions')]),
+       (n4biascorrection, write_node, [('output_image', '@outfile_corr')]),
+       (ants_registration_node, write_node, [('warped_image', '@outfile_reg')]),
+       (cropnifti, write_node, [('output_img', '@outfile_crop')]),
+       (intensitynorm, write_node, [('output_img', '@outfile_int')])
+       ])
 
-  return wf
+   return wf
