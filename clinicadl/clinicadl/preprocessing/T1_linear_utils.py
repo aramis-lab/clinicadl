@@ -37,6 +37,7 @@ def get_data_datasink(image_id):
             (image_id + 'Warped.nii.gz',
                 image_id + '_space-MNI152NLin2009cSym_res-1x1x1_linear_registration_T1w.nii.gz')
             ]
+    return image_id, substitutions_ls
 
 
 def crop_nifti(input_img, ref_img):
