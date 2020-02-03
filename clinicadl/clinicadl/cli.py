@@ -3,7 +3,7 @@ import argparse
 from .tools.deep_learning.iotools import Parameters
 
 def preprocessing_t1w_func(args):
-    from .preprocessing.T1_preprocessing import preprocessing_t1w
+    from .preprocessing.T1_linear import preprocessing_t1w
     wf = preprocessing_t1w(args.bids_directory,
             args.caps_dir,
             args.tsv_file,
