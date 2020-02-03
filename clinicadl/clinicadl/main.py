@@ -8,12 +8,12 @@ def main():
 
     commandline = parser.parse_known_args()
 
-    if args.train_autoencoder:
+    if hasattr(args, 'train_autoencoder'):
       model_type = 'autoencoder'
     else:
       model_type = 'cnn'
 
-    commandline_to_json(commandline, model_type)
+    #commandline_to_json(commandline, model_type)
 
     args.func(args)
 
