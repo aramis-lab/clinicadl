@@ -35,7 +35,7 @@ def preprocessing_t1w(bids_directory,
    check_bids_folder(bids_directory)
    input_dir = bids_directory
    is_bids_dir = True
-   base_dir = '/Users/mdiazmel/tmp/DL/working_dir/'
+   base_dir = working_directory
 
    sessions, subjects = get_subject_session_list(
            input_dir,
