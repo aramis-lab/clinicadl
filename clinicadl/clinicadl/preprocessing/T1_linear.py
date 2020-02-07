@@ -124,21 +124,24 @@ def preprocessing_t1w(bids_directory,
            )
    cropnifti.inputs.ref_img = ref_template
 
+   
+   #### Deprecrecated ####
+   #### This step was not used in the final version ####
    # 4. Histogram-based intensity normalization. This is a custom function
    #    performed by the binary `ImageMath` included with *ANTS*.
 
-   from .T1_linear_utils import ants_histogram_intensity_normalization
-
-   ## histogram-based intensity normalization
-   intensitynorm = npe.Node(
-           name='intensitynormalization',
-           interface=nutil.Function(
-               input_names=['image_dimension', 'crop_template', 'input_img'],
-               output_names=['output_img'],
-               function=ants_histogram_intensity_normalization
-               )
-           )
-   intensitynorm.inputs.image_dimension = 3
+#   from .T1_linear_utils import ants_histogram_intensity_normalization
+#
+#   ## histogram-based intensity normalization
+#   intensitynorm = npe.Node(
+#           name='intensitynormalization',
+#           interface=nutil.Function(
+#               input_names=['image_dimension', 'crop_template', 'input_img'],
+#               output_names=['output_img'],
+#               function=ants_histogram_intensity_normalization
+#               )
+#           )
+#   intensitynorm.inputs.image_dimension = 3
 
    ## DataSink and the output node
 
@@ -184,9 +187,6 @@ def preprocessing_t1w(bids_directory,
 
        (ants_registration_node, cropnifti, [('warped_image', 'input_img')]),
 
-       (cropnifti, intensitynorm, [('output_img', 'input_img')]),
-       (cropnifti, intensitynorm, [('crop_template', 'crop_template')]),
-
        # Connect to DataSink
        (container_path, write_node, [(('container', fix_join, 't1_linear'), 'container')]),
        (image_id_node, get_ids, [('image_id', 'image_id')]),
@@ -196,7 +196,6 @@ def preprocessing_t1w(bids_directory,
        (n4biascorrection, write_node, [('output_image', '@outfile_corr')]),
        (ants_registration_node, write_node, [('warped_image', '@outfile_reg')]),
        (cropnifti, write_node, [('output_img', '@outfile_crop')]),
-       (intensitynorm, write_node, [('output_img', '@outfile_int')])
        ])
 
    return wf
