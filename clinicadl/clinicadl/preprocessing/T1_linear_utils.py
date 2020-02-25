@@ -31,7 +31,7 @@ def get_data_datasink(image_id):
             (image_id + 'Warped_cropped_intensity_norm.nii.gz',
                 image_id + '_space-MNI152NLin2009cSym_res-1x1x1_intensity_norm_T1w.nii.gz'),
             (image_id + 'Warped_cropped.nii.gz',
-                image_id + '_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz'),
+                image_id + '_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz'),
              (image_id + '0GenericAffine.mat',
                 image_id + '_space-MNI152NLin2009cSym_res-1x1x1_affine.mat'),
             (image_id + 'Warped_cropped.pt',
@@ -60,14 +60,15 @@ def crop_nifti(input_img, ref_img):
 
     basedir = os.getcwd()
     crop_ref = crop_img(ref_img, rtol=0.5)
-    crop_ref.to_filename(os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped_template.nii.gz'))
-    crop_template = os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped_template.nii.gz')
+    # crop_ref.to_filename(os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped_template.nii.gz'))
+    # crop_template = os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped_template.nii.gz')
 
     ## resample the individual MRI onto the cropped template image
     crop_img = resample_to_img(input_img, crop_template)
     crop_img.to_filename(os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped.nii.gz'))
 
     output_img = os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped.nii.gz')
+    crop_template = ref_crop
 
     return output_img, crop_template
 
