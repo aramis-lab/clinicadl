@@ -1,7 +1,6 @@
 def preprocessing_t1w(bids_directory, 
         caps_directory, 
         tsv, 
-        ref_template, 
         working_directory=None):
 
    """
@@ -19,8 +18,6 @@ def preprocessing_t1w(bids_directory,
        Folder with BIDS structure.
     caps_directory: str
        Folder where CAPS structure will be stored.
-    ref_template: str
-       reference template used for image registration.
     working_directory: str
        Folder containing a temporary space to save intermediate results.
    """
@@ -31,7 +28,9 @@ def preprocessing_t1w(bids_directory,
    from clinica.utils.exceptions import ClinicaBIDSError, ClinicaException
    from clinica.utils.inputs import clinica_file_reader
    from clinica.utils.input_files import T1W_NII
-   from clinica.utils.inputs import fetch_file
+   from clinicadl.tools.inputs.input import fetch_file
+   from os.path import dirname, join, abspath, split, exists
+   from os import pardir
 
    check_bids_folder(bids_directory)
    input_dir = bids_directory
@@ -41,21 +40,21 @@ def preprocessing_t1w(bids_directory,
    root = dirname(abspath(join(abspath(__file__), pardir)))
    path_to_mask = join(root, 'resources', 'masks')
    ref_template = join(
-   path_to_mask, 'mni_icbm152_t1_tal_nlin_sym_09c.nii')
+           path_to_mask, 'mni_icbm152_t1_tal_nlin_sym_09c.nii')
    ref_crop = join(path_to_mask, 'ref_cropped_template.nii.gz')
    url1 = "https://aramislab.paris.inria.fr/files/data/img_t1_linear/ref_cropped_template.nii.gz"
    url2 = "https://aramislab.paris.inria.fr/files/data/img_t1_linear/mni_icbm152_t1_tal_nlin_sym_09c.nii"
    if not(exists(ref_template)):
        try:
            fetch_file(url2, ref_template)
-   except IOError as err:
-       print('Unable to download required template (mni_icbm152) for processing:', err)
+       except IOError as err:
+           print('Unable to download required template (mni_icbm152) for processing:', err)
 
    if not(exists(ref_crop)):
        try:
            fetch_file(url1, ref_crop)
-   except IOError as err:
-       print('Unable to download required template (ref_crop) for processing:', err)
+       except IOError as err:
+           print('Unable to download required template (ref_crop) for processing:', err)
 
    sessions, subjects = get_subject_session_list(
            input_dir,
