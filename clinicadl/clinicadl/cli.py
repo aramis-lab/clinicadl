@@ -7,7 +7,6 @@ def preprocessing_t1w_func(args):
     wf = preprocessing_t1w(args.bids_directory,
             args.caps_dir,
             args.tsv_file,
-            args.ref_template,
             args.working_directory)
     wf.run(plugin='MultiProc', plugin_args={'n_procs': args.nproc})
 
@@ -229,9 +228,6 @@ def parse_command_line():
         default=None)
     preprocessing_parser.add_argument('tsv_file',
         help='tsv file with sujets/sessions to process.',
-        default=None)
-    preprocessing_parser.add_argument('ref_template',
-        help='Template reference.',
         default=None)
     preprocessing_parser.add_argument('working_directory',
         help='Working directory to save temporary file.',
