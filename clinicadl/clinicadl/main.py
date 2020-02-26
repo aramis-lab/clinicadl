@@ -5,7 +5,8 @@ def main():
 
     parser = cli.parse_command_line()
     args = parser.parse_args()
-
+    
+    print(args)
     commandline = parser.parse_known_args()
 
     if hasattr(args, 'train_autoencoder'):
@@ -13,7 +14,10 @@ def main():
     else:
       model_type = 'cnn'
 
-    #commandline_to_json(commandline, model_type)
+    arguments = vars(args)
+
+    if arguments['task'] != 'preprocessing':
+      commandline_to_json(commandline, model_type)
 
     args.func(args)
 
