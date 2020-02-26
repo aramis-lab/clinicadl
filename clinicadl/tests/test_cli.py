@@ -6,13 +6,11 @@ def test_cli_preprocessing():
       '/dir/bids',
       '/dir/caps', 
       '/dir/tsv.file', 
-      '/dir/ref.template',
       '/dir/work/dir'])
   arguments = vars(args)
   assert (arguments["bids_directory"]=="/dir/bids" and 
           arguments["caps_dir"]=="/dir/caps" and
           arguments["tsv_file"]=="/dir/tsv.file" and
-          arguments["ref_template"]=="/dir/ref.template" and
           arguments["working_directory"]=="/dir/work/dir")
 
 def test_cli_extract():
