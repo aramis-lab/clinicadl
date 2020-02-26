@@ -137,11 +137,11 @@ def preprocessing_t1w(bids_directory,
            name='cropnifti',
            interface=nutil.Function(
                function=crop_nifti,
-               input_names=['input_img', 'ref_img'],
+               input_names=['input_img', 'ref_crop'],
                output_names=['output_img', 'crop_template']
                )
            )
-   cropnifti.inputs.ref_img = ref_template
+   cropnifti.inputs.ref_crop = ref_crop
 
    
    #### Deprecrecated ####

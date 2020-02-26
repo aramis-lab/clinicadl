@@ -42,7 +42,7 @@ def get_data_datasink(image_id):
     return image_id, substitutions_ls
 
 
-def crop_nifti(input_img, ref_img):
+def crop_nifti(input_img, ref_crop):
     """
 
     :param input_img:
@@ -55,16 +55,16 @@ def crop_nifti(input_img, ref_img):
     import nibabel as nib
     import os
     import numpy as np
-    from nilearn.image import resample_img, crop_img, resample_to_img
+    from nilearn.image import resample_img, resample_to_img
     from nibabel.spatialimages import SpatialImage
 
     basedir = os.getcwd()
-    crop_ref = crop_img(ref_img, rtol=0.5)
+    #crop_ref = crop_img(ref_img, rtol=0.5)
     # crop_ref.to_filename(os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped_template.nii.gz'))
     # crop_template = os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped_template.nii.gz')
 
     ## resample the individual MRI onto the cropped template image
-    crop_img = resample_to_img(input_img, crop_template)
+    crop_img = resample_to_img(input_img, ref_crop)
     crop_img.to_filename(os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped.nii.gz'))
 
     output_img = os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped.nii.gz')
