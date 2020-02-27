@@ -205,7 +205,7 @@ def preprocessing_t1w(bids_directory,
        (n4biascorrection, ants_registration_node, [('output_image', 'moving_image')]),
 
        (ants_registration_node, cropnifti, [('warped_image', 'input_img')]),
-       (ants_registration_node, write_node, [('out_matrix', 'affine_mat')]),
+       (ants_registration_node, write_node, [('out_matrix', '@affine_mat')]),
        # Connect to DataSink
        (container_path, write_node, [(('container', fix_join, 't1_linear'), 'container')]),
        (image_id_node, get_ids, [('image_id', 'image_id')]),
