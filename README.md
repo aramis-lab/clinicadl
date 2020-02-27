@@ -84,7 +84,6 @@ clinicadl preprocessing --np 32 \
   $BIDS_DIR \
   $CAPS_DIR \
   $TSV_FILE \
-  $REF_TEMPLATE \
   $WORKING_DIR
 ```
 
