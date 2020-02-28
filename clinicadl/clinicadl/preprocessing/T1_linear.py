@@ -64,6 +64,12 @@ def preprocessing_t1w(bids_directory,
            base_dir
            )
 
+   # Use hash instead of parameters for iterables folder names
+   # Otherwise path will be too long and generate OSError
+   from nipype import config
+   cfg = dict(execution={'parameterize_dirs': False})
+   config.update_config(cfg)
+
    from clinica.utils.exceptions import ClinicaBIDSError, ClinicaException
    from clinica.utils.inputs import clinica_file_reader
    from clinica.utils.input_files import T1W_NII
