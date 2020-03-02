@@ -22,15 +22,19 @@ def preprocessing_t1w(bids_directory,
        Folder containing a temporary space to save intermediate results.
    """
    
-   
+   from os.path import dirname, join, abspath, split, exists
+   from os import pardir
    from clinica.utils.inputs import check_bids_folder
    from clinica.utils.participant import get_subject_session_list
+   from clinica.utils.filemanip import get_subject_id
    from clinica.utils.exceptions import ClinicaBIDSError, ClinicaException
    from clinica.utils.inputs import clinica_file_reader
    from clinica.utils.input_files import T1W_NII
    from clinicadl.tools.inputs.input import fetch_file
-   from os.path import dirname, join, abspath, split, exists
-   from os import pardir
+   import nipype.pipeline.engine as npe
+   import nipype.interfaces.utility as nutil
+   from nipype.interfaces import ants
+
 
    check_bids_folder(bids_directory)
    input_dir = bids_directory
@@ -69,15 +73,6 @@ def preprocessing_t1w(bids_directory,
    from nipype import config
    cfg = dict(execution={'parameterize_dirs': False})
    config.update_config(cfg)
-
-   from clinica.utils.exceptions import ClinicaBIDSError, ClinicaException
-   from clinica.utils.inputs import clinica_file_reader
-   from clinica.utils.input_files import T1W_NII
-   import nipype.pipeline.engine as npe
-   import nipype.interfaces.utility as nutil
-   from nipype.interfaces import ants
-   from clinica.utils.filemanip import get_subject_id
-
 
    # Inputs from anat/ folder
    # ========================
