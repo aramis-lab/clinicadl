@@ -11,8 +11,9 @@ def preprocessing_t1w_func(args):
     wf.run(plugin='MultiProc', plugin_args={'n_procs': args.nproc})
 
 def extract_data_func(args):
-    from .preprocessing.T1_postprocessing import postprocessing_t1w
-    wf = postprocessing_t1w(args.caps_dir,
+    from .preprocessing.T1_DLfeatures import extract_DL_features_t1w 
+    #from .preprocessing.T1_postprocessing import postprocessing_t1w
+    wf = extract_DL_features_t1w(args.caps_dir,
             args.tsv_file,
             args.patch_size,
             args.stride_size,
