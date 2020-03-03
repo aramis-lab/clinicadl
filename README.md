@@ -36,8 +36,8 @@ be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 ## Create a conda environment with the corresponding dependencies:
 
 ```
-conda create --name clincadl_env_py36 python=3.6 jupyter
-conda activate clinicadl_env_py36
+conda create --name clinicadl_env python=3.6 jupyter
+conda activate clinicadl_env
 conda install -c aramislab -c conda-forge clinica
 
 git clone git@github.com:aramis-lab/AD-DL.git
