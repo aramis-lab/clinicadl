@@ -198,10 +198,12 @@ def extract_DL_features_t1w(caps_directory,
     wf = npe.Workflow(name='t1_dl_features', base_dir=working_directory)
 
     wf.connect([
-       (read_node, image_id_node, [('t1w', 'bids_or_caps_file')]),
-       (read_node, container_path, [('t1w', 'bids_or_caps_filename')]),
-       (read_node, save_as_pt, [('t1w', 'input_img')])
-       ])
+        (read_node, image_id_node, [('t1w', 'bids_or_caps_file')]),
+        (read_node, container_path, [('t1w', 'bids_or_caps_filename')]),
+        (read_node, save_as_pt, [('t1w', 'input_img')]),
+        (container_path, write_node, [(('container', fix_join, 't1_linear'), 'container')]),
+        (image_id_node, get_ids, [('image_id', 'image_id')]),
+        ])
     
     if extract_method == 'slice':
         wf.connect([
@@ -224,11 +226,9 @@ def extract_DL_features_t1w(caps_directory,
         
     wf.connect([    
         # Connect to DataSink
-        (container_path, write_node, [(('container', fix_join, 't1_linear'), 'container')]),
-        (image_id_node, get_ids, [('image_id', 'image_id')]),
         (get_ids, write_node, [('image_id_out', '@image_id')]),
         (get_ids, write_node, [('subst_ls', 'substitutions')]),
         (save_as_pt, write_node, [('output_file', '@output_pt_file')])    
-    ])
+        ])
 
     return wf
