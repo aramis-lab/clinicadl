@@ -34,6 +34,9 @@ be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 # How to use?
 
 ## Create a conda environment with the corresponding dependencies:
+Keep the following order of the installation instructions.
+It guaranties the right management of libraries depending on common pakages:
+
 
 ```
 conda create --name clinicadl_env python=3.6 jupyter
@@ -46,7 +49,7 @@ pip install -r requirements.txt
 conda install -c pytorch pytorch torchvision
 ```
 
-## Install the package `clinicadl` as developer:
+## Install the package `clinicadl` as developer in the active conda environment:
 
 ```
 cd clinicadl
@@ -151,7 +154,8 @@ optional arguments:
 ## Or use the scripts
 Look at the `clinicadl/scripts/` folder.
 
-# Run testing:
+## Run testing:
+Be sure to have the `pytest` library in order to run the test suite.
 ```
 pytest clinicadl/tests/
 ```
