@@ -21,13 +21,13 @@ be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 
 # Dependencies:
 - Python >= 3.6
-- Clinica (needs only to perform preprocessing)
+- Clinica (needs only to perform preprocessing) >= 0.3.2
 - Numpy
 - Pandas
 - Scikit-learn
 - Pandas
-- Pytorch
-- Nilearn
+- Pytorch => 1.1
+- Nilearn == 0.5.2
 - Nipy
 - TensorBoardX
 
