@@ -6,7 +6,6 @@ def main():
     parser = cli.parse_command_line()
     args = parser.parse_args()
     
-    print(args)
     commandline = parser.parse_known_args()
 
     if hasattr(args, 'train_autoencoder'):
