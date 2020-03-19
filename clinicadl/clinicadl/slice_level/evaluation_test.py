@@ -5,8 +5,8 @@ import torch
 import os
 
 from .utils import MRIDataset_slice, test, slice_level_to_tsvs, soft_voting_to_tsvs
-from tools.deep_learning import create_model, load_model
-from tools.deep_learning.data import MinMaxNormalization, load_data_test
+from ..tools.deep_learning import create_model, load_model
+from ..tools.deep_learning.data import MinMaxNormalization, load_data_test, load_data
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -22,7 +22,7 @@ parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D slice-lev
 # Mandatory arguments
 parser.add_argument("caps_directory", type=str,
                     help="Path to the caps of image processing pipeline of DL")
-parser.add_argument("diagnosis_tsv", type=str,
+parser.add_argument("diagnosis_tsv_path", type=str,
                     help="Path to the tsv containing all the test dataset")
 parser.add_argument("output_dir", type=str,
                     help="Path to store the classification outputs, and the tsv files containing the performances.")
@@ -30,6 +30,9 @@ parser.add_argument("output_dir", type=str,
 # Data arguments
 parser.add_argument("--diagnoses", default=["sMCI", "pMCI"], type=str, nargs="+",
                     help="Labels based on binary classification.")
+parser.add_argument('--dataset', default="validation", type=str,
+                    help="If the evaluation on the validation set is wanted, must be set to 'validation'. "
+                         "Otherwise must be named with the form 'test-cohort_name'.")
 parser.add_argument("--n_splits", default=5, type=int,
                     help="Define the cross validation, by default, we use 5-fold.")
 parser.add_argument("--split", default=None, type=int,
@@ -61,8 +64,7 @@ parser.add_argument("--num_workers", default=0, type=int,
 def main(options):
 
     # Initialize the model
-    print('Do transfer learning with existed model trained on ImageNet!\n')
-    print('The chosen network is %s !' % options.network)
+    print('Do transfer learning with existed model trained on ImageNet.')
 
     model = create_model(options.network, options.gpu)
     trg_size = (224, 224)  # most of the imagenet pretrained model has this input size
@@ -86,7 +88,12 @@ def main(options):
     for fi in fold_iterator:
         print("Fold %i" % fi)
 
-        test_df = load_data_test(options.diagnosis_tsv_path, options.diagnoses)
+        if options.dataset == 'validation':
+            _, test_df = load_data(options.diagnosis_tsv_path, options.diagnoses, fi,
+                                   n_splits=options.n_splits, baseline=True)
+        else:
+            test_df = load_data_test(options.diagnosis_tsv_path, options.diagnoses)
+
         data_test = MRIDataset_slice(options.caps_directory, test_df,
                                      transformations=transformations, mri_plane=options.mri_plane,
                                      prepare_dl=options.prepare_dl)
@@ -102,15 +109,13 @@ def main(options):
                                                            'CNN', str(options.selection)),
                                        gpu=options.gpu, filename='model_best.pth.tar')
 
-        print("The best model was saved during training from fold %i at the %i-th epoch" % (fi, best_epoch))
-
         results_df, metrics = test(model, test_loader, options.gpu, loss)
         print("Slice level balanced accuracy is %f" % (metrics['balanced_accuracy']))
 
-        slice_level_to_tsvs(options.output_dir, results_df, metrics, fi, options.selection, dataset='test')
+        slice_level_to_tsvs(options.output_dir, results_df, metrics, fi, options.selection, dataset=options.dataset)
 
         # Soft voting
-        soft_voting_to_tsvs(options.output_dir, fi, selection=options.selection, dataset='test',
+        soft_voting_to_tsvs(options.output_dir, fi, selection=options.selection, dataset=options.dataset,
                             selection_threshold=options.selection_threshold)
 
 

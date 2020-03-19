@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Nov 06 14:17:41 2017
 
-@author: Junhao WEN
-"""
 
-__author__ = "Junhao Wen"
-__copyright__ = "Copyright 2018 The Aramis Lab Team"
+__author__ = "Junhao Wen, Mauricio Diaz"
+__copyright__ = "Copyright 2018-2020 The Aramis Lab Team"
 __credits__ = ["Junhao Wen"]
 __license__ = "See LICENSE.txt file"
-__version__ = "0.1.0"
-__maintainer__ = "Junhao Wen"
-__email__ = "junhao.wen89@gmail.com"
+__version__ = "0.0.1"
+__maintainer__ = "Mauricio Diaz"
+__email__ = "mauricio.diaz@inria.fr"
 __status__ = "Development"
 
 def postprocessing_t1w(caps_directory, 
@@ -24,23 +20,35 @@ def postprocessing_t1w(caps_directory,
         slice_mode='original'):
     """
     This is a postprocessing pipeline to prepare the slice-level and
-    patch-level data from the whole MRI and save them on disk, so that to
+    patch-level data from the entire  MRI and save them on disk. This
     facilitate the training process:
-        - For slice-level CNN, all slices were extracted from the whole
+        - For slice-level CNN, all slices were extracted from the entire
           MRI from three different axis. The first and last 15 slice were
           discarded due to the lack of information.
         - For patch-level CNN, the 3D patch (with specific patch size)
           were extracted by a 3D window.
 
-    :param caps_directory: CAPS directory where stores the output of
-                           preprocessing.
-    :param tsv: subject list file containing the participant_id and
-                session_id.  
-    :param patch_size: the size for extracted 3D patches.
-    :param stride_size: the sliding size of the 3D windows.  
-    :param working_directory: working directory to store the intermediate files.
+    Parameters
+    ----------
+
+    caps_directory: str 
+      CAPS directory where stores the output of preprocessing.
+    tsv: str
+      TVS file with the subject list (participant_id and session_id).  
+    patch_size: int 
+      Size for extracted 3D patches.
+    stride_size: int
+      Sliding size window of the slice feature.  
+    working_directory: str
+      Folder containing a temporary space to save intermediate results.
     
-    :return:
+
+    Returns
+    -------
+    wf: class nipype.pipeline.engine.workflows.Workflow
+      A class du type nypipe workflow to control, setup, and execute a process
+      as a nypipe pipeline.
+
     """
 
     
