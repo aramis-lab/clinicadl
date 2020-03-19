@@ -7,9 +7,12 @@ import argparse
 import nibabel as nib
 from os import path
 import os
+import torch.nn.functional as F
+import torch
 
 
-def generate_random_dataset(caps_dir, data_df, output_dir, n_subjects, mean=0, sigma=0.5):
+def generate_random_dataset(caps_dir, data_df, output_dir, n_subjects, mean=0, sigma=0.5,
+                            preprocessing="linear", output_size=None):
     """
     Generates an intractable classification task from the first subject of the tsv file.
 
@@ -19,6 +22,8 @@ def generate_random_dataset(caps_dir, data_df, output_dir, n_subjects, mean=0, s
     :param n_subjects: (int) number of subjects in each class of the synthetic dataset
     :param mean: (float) mean of the gaussian noise
     :param sigma: (float) standard deviation of the gaussian noise
+    :param preprocessing: (str) preprocessing performed. Must be in ['linear', 'extensive'].
+    :param output_size: (tuple[int]) size of the output. If None no interpolation will be performed.
     """
     # Create subjects dir
     if not path.exists(path.join(output_dir, 'subjects')):
@@ -27,10 +32,18 @@ def generate_random_dataset(caps_dir, data_df, output_dir, n_subjects, mean=0, s
     # Retrieve image of first subject
     participant_id = data_df.loc[0, 'participant_id']
     session_id = data_df.loc[0, 'session_id']
-    image_path = path.join(caps_dir, 'subjects', participant_id, session_id,
-                           't1', 'spm', 'segmentation', 'normalized_space',
-                           participant_id + '_' + session_id +
-                           '_T1w_segm-graymatter_space-Ixi549Space_modulated-off_probability.nii.gz')
+    if preprocessing == "linear":
+        image_path = path.join(caps_dir, 'subjects', participant_id, session_id,
+                               't1', 'preprocessing_dl',
+                               participant_id + '_' + session_id +
+                               '_space-MNI_res-1x1x1.nii.gz')
+    elif preprocessing == "extensive":
+        image_path = path.join(caps_dir, 'subjects', participant_id, session_id,
+                               't1', 'spm', 'segmentation', 'normalized_space',
+                               participant_id + '_' + session_id +
+                               '_T1w_segm-graymatter_space-Ixi549Space_modulated-off_probability.nii.gz')
+    else:
+        raise ValueError("Preprocessing %s must be in ['linear', 'extensive']." % preprocessing)
     image_nii = nib.load(image_path)
     image = image_nii.get_data()
 
@@ -49,6 +62,10 @@ def generate_random_dataset(caps_dir, data_df, output_dir, n_subjects, mean=0, s
         gauss = np.random.normal(mean, sigma, image.shape)
         participant_id = 'sub-RAND%i' % i
         noisy_image = image + gauss
+        if output_size is not None:
+            noisy_image_pt = torch.Tensor(noisy_image[np.newaxis, np.newaxis, :])
+            noisy_image_pt = F.interpolate(noisy_image_pt, output_size)
+            noisy_image = noisy_image_pt.numpy()[0, 0, :, :, :]
         noisy_image_nii = nib.Nifti1Image(noisy_image, header=image_nii.header, affine=image_nii.affine)
         noisy_image_nii_path = path.join(output_dir, 'subjects', participant_id, 'ses-M00', 't1', 'preprocessing_dl')
         noisy_image_nii_filename = participant_id + '_ses-M00_space-MNI_res-1x1x1.nii.gz'
@@ -73,6 +90,10 @@ if __name__ == "__main__":
                         help="Chooses which type of synthetic dataset is wanted.")
     parser.add_argument("--n_subjects", type=int, default=300,
                         help="Number of subjects in each class of the synthetic dataset.")
+    parser.add_argument("--preprocessing", type=str, choices=["linear", "extensive"], default="linear",
+                        help="Preprocessing used to generate synthetic data.")
+    parser.add_argument("--output_size", type=int, nargs="+", default=None,
+                        help="If a value is given, interpolation will be used to up/downsample the image.")
 
     parsed_args = parser.parse_known_args()
     options = parsed_args[0]
@@ -82,6 +103,7 @@ if __name__ == "__main__":
     data_df = pd.read_csv(options.tsv_file, sep='\t')
 
     if options.selection == 'random':
-        generate_random_dataset(options.caps_dir, data_df, options.output_dir, options.n_subjects)
+        generate_random_dataset(options.caps_dir, data_df, options.output_dir, options.n_subjects,
+                                preprocessing=options.preprocessing, output_size=options.output_size)
     else:
         pass
