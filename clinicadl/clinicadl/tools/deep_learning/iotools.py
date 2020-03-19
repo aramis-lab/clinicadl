@@ -165,7 +165,7 @@ def commandline_to_json(commandline, model_type):
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    if commandline_arg_dic['func'] is not None:
+    if 'func' in commandline_arg_dic:
         del commandline_arg_dic['func']
 
     # save to json file
