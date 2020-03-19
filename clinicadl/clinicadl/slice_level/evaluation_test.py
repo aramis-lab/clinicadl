@@ -4,9 +4,9 @@ from torch.utils.data import DataLoader
 import torch
 import os
 
-from .utils import MRIDataset_slice, test, slice_level_to_tsvs, soft_voting_to_tsvs
-from ..tools.deep_learning import create_model, load_model
-from ..tools.deep_learning.data import MinMaxNormalization, load_data_test, load_data
+from clinicadl.slice_level.utils import MRIDataset_slice, test, slice_level_to_tsvs, soft_voting_to_tsvs
+from clinicadl.tools.deep_learning import create_model, load_model
+from clinicadl.tools.deep_learning.data import MinMaxNormalization, load_data_test, load_data
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
