@@ -75,6 +75,7 @@ Task to execute with clinicadl:
                         Stages/task to execute with clinicadl
     preprocessing       Prepare data for training (needs clinica installed).
     extract             Create data (slices or patches) for training.
+    generate            Generate synthetic data for functional tests.
     train               Train with your data and create a model.
     classify            Classify one image or a list of images with your
                         previouly trained model.  
@@ -156,6 +157,19 @@ Look at the `clinicadl/scripts/` folder.
 
 ## Run testing:
 Be sure to have the `pytest` library in order to run the test suite.
+This test suite includes unitary tests on commandline.
 ```
 pytest clinicadl/tests/
 ```
+
+For sanity chek trivial and intractable datasets can be generated to run pipelines. 
+To generate a synthetic dataset from any BIDS run the following command:
+```
+python clinicadl generate {random,trivial} caps_directory tsv_path output_directory
+```
+The intractable dataset will be made of noisy versions of the first image of the tsv file given at 
+`tsv_path` associated to random labels.
+
+The trivial dataset includes two labels:
+- AD corresponding to images with the left half of the brain with lower intensities,
+- CN corresponding to images with the right half of the brain with lower intensities.
