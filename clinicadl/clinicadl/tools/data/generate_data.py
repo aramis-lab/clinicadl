@@ -11,13 +11,13 @@ import torch.nn.functional as F
 import torch
 
 
-def generate_random_dataset(caps_dir, data_df, output_dir, n_subjects, mean=0, sigma=0.5,
+def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0, sigma=0.5,
                             preprocessing="linear", output_size=None):
     """
     Generates an intractable classification task from the first subject of the tsv file.
 
     :param caps_dir: (str) path to the CAPS directory.
-    :param data_df: (DataFrame) list of subjects/sessions.
+    :param tsv_file: (str) path to tsv file of list of subjects/sessions.
     :param output_dir: (str) folder containing the synthetic dataset in CAPS format
     :param n_subjects: (int) number of subjects in each class of the synthetic dataset
     :param mean: (float) mean of the gaussian noise
@@ -25,6 +25,9 @@ def generate_random_dataset(caps_dir, data_df, output_dir, n_subjects, mean=0, s
     :param preprocessing: (str) preprocessing performed. Must be in ['linear', 'extensive'].
     :param output_size: (tuple[int]) size of the output. If None no interpolation will be performed.
     """
+    # Read DataFrame
+    data_df = pd.read_csv(tsv_path, sep='\t')
+
     # Create subjects dir
     if not path.exists(path.join(output_dir, 'subjects')):
         os.makedirs(path.join(output_dir, 'subjects'))
@@ -81,7 +84,7 @@ if __name__ == "__main__":
     parser.add_argument("caps_dir", type=str,
                         help="Data using CAPS structure. Must include the output of t1-volume-tissue-segmentation "
                              "pipeline of clinica.")
-    parser.add_argument("tsv_file", type=str,
+    parser.add_argument("tsv_path", type=str,
                         help="tsv file with subjets/sessions to process.")
     parser.add_argument("output_dir", type=str,
                         help="Folder containing the final dataset in CAPS format.")
@@ -100,10 +103,8 @@ if __name__ == "__main__":
     if parsed_args[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
 
-    data_df = pd.read_csv(options.tsv_file, sep='\t')
-
     if options.selection == 'random':
-        generate_random_dataset(options.caps_dir, data_df, options.output_dir, options.n_subjects,
+        generate_random_dataset(options.caps_dir, options.tsv_path, options.output_dir, options.n_subjects,
                                 preprocessing=options.preprocessing, output_size=options.output_size)
     else:
         pass
