@@ -16,7 +16,7 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0, 
     Generates an intractable classification task from the first subject of the tsv file.
 
     :param caps_dir: (str) path to the CAPS directory.
-    :param tsv_file: (str) path to tsv file of list of subjects/sessions.
+    :param tsv_path: (str) path to tsv file of list of subjects/sessions.
     :param output_dir: (str) folder containing the synthetic dataset in CAPS format
     :param n_subjects: (int) number of subjects in each class of the synthetic dataset
     :param mean: (float) mean of the gaussian noise
