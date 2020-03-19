@@ -3,7 +3,6 @@ This file generates data for trivial or intractable (random) data for binary cla
 """
 import pandas as pd
 import numpy as np
-import argparse
 import nibabel as nib
 from os import path
 import os
@@ -75,36 +74,3 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0, 
         if not path.exists(noisy_image_nii_path):
             os.makedirs(noisy_image_nii_path)
         nib.save(noisy_image_nii, path.join(noisy_image_nii_path, noisy_image_nii_filename))
-
-
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description="Argparser for synthetic data generation")
-
-    parser.add_argument("caps_dir", type=str,
-                        help="Data using CAPS structure. Must include the output of t1-volume-tissue-segmentation "
-                             "pipeline of clinica.")
-    parser.add_argument("tsv_path", type=str,
-                        help="tsv file with subjets/sessions to process.")
-    parser.add_argument("output_dir", type=str,
-                        help="Folder containing the final dataset in CAPS format.")
-
-    parser.add_argument("--selection", default="trivial", type=str, choices=["trivial", "random"],
-                        help="Chooses which type of synthetic dataset is wanted.")
-    parser.add_argument("--n_subjects", type=int, default=300,
-                        help="Number of subjects in each class of the synthetic dataset.")
-    parser.add_argument("--preprocessing", type=str, choices=["linear", "extensive"], default="linear",
-                        help="Preprocessing used to generate synthetic data.")
-    parser.add_argument("--output_size", type=int, nargs="+", default=None,
-                        help="If a value is given, interpolation will be used to up/downsample the image.")
-
-    parsed_args = parser.parse_known_args()
-    options = parsed_args[0]
-    if parsed_args[1]:
-        print("unknown arguments: %s" % parser.parse_known_args()[1])
-
-    if options.selection == 'random':
-        generate_random_dataset(options.caps_dir, options.tsv_path, options.output_dir, options.n_subjects,
-                                preprocessing=options.preprocessing, output_size=options.output_size)
-    else:
-        pass
