@@ -24,7 +24,7 @@ def extract_data_func(args):
     wf.run(plugin='MultiProc', plugin_args={'n_procs': args.nproc})
 
 def generate_data_func(args):
-    from .tools.data.generate_data import generate_random_dataset
+    from .tools.data.generate_data import generate_random_dataset, generate_trivial_dataset
 
     if args.mode == "random":
         generate_random_dataset(
@@ -37,7 +37,14 @@ def generate_data_func(args):
             preprocessing=args.preprocessing,
             output_size=args.output_size)
     else:
-        pass
+        generate_trivial_dataset(
+            caps_dir=args.caps_dir,
+            tsv_path=args.tsv_path,
+            output_dir=args.output_dir,
+            n_subjects=args.n_subjects,
+            preprocessing=args.preprocessing,
+            output_size=args.output_size
+        )
 
 
 # Function to dispatch training to corresponding function
@@ -202,7 +209,7 @@ def train_func(args):
                train_patch_single_cnn(train_params_patch)
            else:
                train_patch_multi_cnn(train_params_patch)
-    elif args.mode=='svn':
+    elif args.mode == 'svn':
         pass
 
     else:
@@ -274,6 +281,13 @@ def parse_command_line():
         default=0.5,
         help="Standard deviation of the noise added for the random dataset."
         )
+    generate_parser.add_argument('mask_path',
+        type=str,
+        help='path to the extracted masks to generate the two labels.'
+        )
+    generate_parser.add_argument('atrophy_percent',
+        type=float,
+        help='percentage of atrophy applied')
 
     generate_parser.set_defaults(func=generate_data_func)
 
