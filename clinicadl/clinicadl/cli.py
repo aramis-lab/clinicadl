@@ -31,7 +31,7 @@ def generate_data_func(args):
             caps_dir=args.caps_dir,
             tsv_path=args.tsv_path,
             output_dir=args.output_dir,
-            n_subjects=args.n_subject,
+            n_subjects=args.n_subjects,
             mean=args.mean,
             sigma=args.sigma,
             preprocessing=args.preprocessing,
@@ -43,7 +43,10 @@ def generate_data_func(args):
             output_dir=args.output_dir,
             n_subjects=args.n_subjects,
             preprocessing=args.preprocessing,
-            output_size=args.output_size
+            output_size=args.output_size,
+            mask_path=args.mask_path,
+            atrophy_percent=args.atrophy_percent,
+            group=args.group
         )
 
 
@@ -255,39 +258,46 @@ def parse_command_line():
     generate_parser.add_argument('output_dir',
         help='Folder containing the synthetic dataset.',
         default=None)
-    generate_parser.add_argument('n_subjects',
+    generate_parser.add_argument('--n_subjects',
         type=int,
         default=300,
         help="Number of subjects in each class of the synthetic dataset."
         )
-    generate_parser.add_argument('preprocessing',
+    generate_parser.add_argument('--preprocessing',
         type=str,
         default='linear',
         help="Preprocessing used to generate synthetic data."
         )
-    generate_parser.add_argument('output_size',
+    generate_parser.add_argument('--output_size',
         type=int,
         nargs="+",
         default=None,
         help="If a value is given, interpolation will be used to up/downsample the image."
         )
-    generate_parser.add_argument('mean',
+    generate_parser.add_argument('--mean',
         type=float,
         default=0,
         help="Mean value of the noise added for the random dataset."
         )
-    generate_parser.add_argument('sigma',
+    generate_parser.add_argument('--sigma',
         type=float,
         default=0.5,
         help="Standard deviation of the noise added for the random dataset."
         )
-    generate_parser.add_argument('mask_path',
+    generate_parser.add_argument('--mask_path',
         type=str,
-        help='path to the extracted masks to generate the two labels.'
+        help='path to the extracted masks to generate the two labels.',
+        default=None
         )
-    generate_parser.add_argument('atrophy_percent',
+    generate_parser.add_argument('--atrophy_percent',
         type=float,
+        default=60,
         help='percentage of atrophy applied')
+    generate_parser.add_argument('--group',
+        type=str,
+        default=None,
+        help="Specific argument for dartel preprocessing."
+    )
 
     generate_parser.set_defaults(func=generate_data_func)
 

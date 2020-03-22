@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def find_image_path(caps_dir, participant_id, session_id, preprocessing):
+def find_image_path(caps_dir, participant_id, session_id, preprocessing, group=None):
     from os import path
     if preprocessing == "linear":
         image_path = path.join(caps_dir, 'subjects', participant_id, session_id,
@@ -13,6 +13,14 @@ def find_image_path(caps_dir, participant_id, session_id, preprocessing):
                                't1', 'spm', 'segmentation', 'normalized_space',
                                participant_id + '_' + session_id +
                                '_T1w_segm-graymatter_space-Ixi549Space_modulated-off_probability.nii.gz')
+
+    elif preprocessing == "dartel":
+        if group is None:
+            raise ValueError("A group value must be given with dartel preprocessing")
+        image_path = path.join(caps_dir, 'subjects', participant_id, session_id,
+                               't1', 'spm', 'dartel', group,
+                               participant_id + '_' + session_id +
+                               '_T1w_segm-graymatter_space-Ixi549Space_modulated-on_probability.nii.gz')
     else:
         raise ValueError("Preprocessing %s must be in ['linear', 'extensive']." % preprocessing)
 
