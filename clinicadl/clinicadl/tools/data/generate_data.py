@@ -69,7 +69,7 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0, 
 
 
 def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preprocessing="linear",
-                             mask_path=None, atrophy_percent=60, output_size=None):
+                             mask_path=None, atrophy_percent=60, output_size=None, group=None):
     """
     Generates a fully separable dataset.
 
@@ -81,6 +81,7 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
     :param mask_path: (str) path to the extracted masks to generate the two labels
     :param atrophy_percent: (float) percentage of atrophy applied
     :param output_size: (tuple[int]) size of the output. If None no interpolation will be performed.
+    :param group: (str) group used for dartel preprocessing.
     """
 
     # Read DataFrame
@@ -92,7 +93,8 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
                          "DataFrame extracted from %s" % (n_subjects, tsv_path))
 
     if mask_path is None:
-        mask_path = "AAL2"
+        raise ValueError('Please provide a path to masks. Such masks are available at '
+                         'clinicadl/tools/data/AAL2.')
 
     # Output tsv file
     columns = ['participant_id', 'session_id', 'diagnosis', 'age', 'sex']
@@ -105,13 +107,13 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
 
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
-        filename = 'sub-TRIV%i_ses-M00_space-MNI_res-1x1x1.nii.gz' % data_idx
-        path_image = os.path.join(output_dir, 'subjects', participant_id, session_id, 't1', 'preprocessing_dl')
+        filename = 'sub-TRIV%i_ses-M00_space-MNI_res-1x1x1.nii.gz' % i
+        path_image = os.path.join(output_dir, 'subjects', 'sub-TRIV%i' % i, 'ses-M00', 't1', 'preprocessing_dl')
 
         if not os.path.exists(path_image):
             os.makedirs(path_image)
 
-        image_path = find_image_path(caps_dir, participant_id, session_id, preprocessing)
+        image_path = find_image_path(caps_dir, participant_id, session_id, preprocessing, group)
         image_nii = nib.load(image_path)
         image = image_nii.get_data()
 
@@ -127,7 +129,7 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
         trivial_image_nii.to_filename(os.path.join(path_image, filename))
 
         # Append row to output tsv
-        row = ['sub-TRIV%i' % data_idx, 'ses-M00', diagnosis_list[label], 60, 'F']
+        row = ['sub-TRIV%i' % i, 'ses-M00', diagnosis_list[label], 60, 'F']
         row_df = pd.DataFrame([row], columns=columns)
         output_df = output_df.append(row_df)
 

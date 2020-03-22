@@ -15,7 +15,7 @@ def main():
 
     arguments = vars(args)
 
-    if (arguments['task'] != 'preprocessing') and (arguments['task'] != 'extract'):
+    if (arguments['task'] != 'preprocessing') and (arguments['task'] != 'extract') and (arguments['task'] != 'generate'):
       commandline_to_json(commandline, model_type)
 
     args.func(args)
