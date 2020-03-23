@@ -25,7 +25,6 @@ be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 - Numpy
 - Pandas
 - Scikit-learn
-- Pandas
 - Pytorch => 1.1
 - Nilearn == 0.5.2
 - Nipy
@@ -155,19 +154,28 @@ optional arguments:
 ## Or use the scripts
 Look at the `clinicadl/scripts/` folder.
 
-## Run testing:
-Be sure to have the `pytest` library in order to run the test suite.
-This test suite includes unitary tests on commandline.
+## Run testing.
+
+### Unit testing
+
+Be sure to have the `pytest` library in order to run the test suite.  This test
+suite includes unit testing to be launched using the command line: 
 ```
 pytest clinicadl/tests/
 ```
 
-For sanity chek trivial and intractable datasets can be generated to run pipelines. 
-To generate a synthetic dataset from any BIDS run the following command:
+### Model prediction tests
+
+For sanity check trivial datasets can be generated to train or test/validate
+the predictive models.
+
+The follow command allow you to generate two kinds of synthetic datasets: fully
+separable (trivial) or intractable data (IRM with random noise added). 
 ```
 python clinicadl generate {random,trivial} caps_directory tsv_path output_directory
 ```
-The intractable dataset will be made of noisy versions of the first image of the tsv file given at 
+The intractable dataset will be made of noisy versions of the first image of
+the tsv file given at 
 `tsv_path` associated to random labels.
 
 The trivial dataset includes two labels:
