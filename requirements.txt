@@ -5,7 +5,6 @@
 
 #nipype==0.12.1
 nilearn==0.5.0
-#pytorch==1.0.0
-#tensorflow==1.4.1
 nipy
 tensorboardX
+pandas
