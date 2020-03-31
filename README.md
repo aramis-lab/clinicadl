@@ -39,11 +39,11 @@ It guaranties the right management of libraries depending on common pakages:
 
 ```
 conda create --name clinicadl_env \
-  python=3.6 \ 
-  clinica \ 
-  pytorch \ 
-  torchvision \
-  -c pytorch -c conda-forge -c aramislab
+> python=3.6 \
+> clinica \
+> pytorch \
+> torchvision \
+> -c pytorch -c conda-forge -c aramislab
 
 git clone git@github.com:aramis-lab/AD-DL.git
 cd AD-DL
