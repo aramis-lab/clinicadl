@@ -1,6 +1,6 @@
 import argparse
 
-from .tools.deep_learning.iotools import Parameters
+from clinicadl.tools.deep_learning.iotools import Parameters
 
 def preprocessing_t1w_func(args):
     from .preprocessing.T1_linear import preprocessing_t1w
