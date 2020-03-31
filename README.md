@@ -38,14 +38,16 @@ It guaranties the right management of libraries depending on common pakages:
 
 
 ```
-conda create --name clinicadl_env python=3.6 jupyter
-conda activate clinicadl_env
-conda install -c aramislab -c conda-forge clinica
+conda create --name clinicadl_env \
+  python=3.6 \ 
+  clinica \ 
+  pytorch \ 
+  torchvision \
+  -c pytorch -c conda-forge -c aramislab
 
 git clone git@github.com:aramis-lab/AD-DL.git
 cd AD-DL
 pip install -r requirements.txt
-conda install -c pytorch pytorch torchvision
 ```
 
 ## Install the package `clinicadl` as developer in the active conda environment:
