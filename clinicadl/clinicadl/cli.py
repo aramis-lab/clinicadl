@@ -4,10 +4,10 @@ from clinicadl.tools.deep_learning.iotools import Parameters
 
 def preprocessing_t1w_func(args):
     from .preprocessing.T1_linear import preprocessing_t1w
-    wf = preprocessing_t1w(args.bids_directory,
+    wf = preprocessing_t1w(args.bids_dir,
             args.caps_dir,
             args.tsv_file,
-            args.working_directory)
+            args.working_dir)
     wf.run(plugin='MultiProc', plugin_args={'n_procs': args.nproc})
 
 def extract_data_func(args):
@@ -17,7 +17,7 @@ def extract_data_func(args):
             args.tsv_file,
             args.patch_size,
             args.stride_size,
-            args.working_directory,
+            args.working_dir,
             args.extract_method,
             args.slice_direction,
             args.slice_mode)
@@ -307,7 +307,7 @@ def parse_command_line():
 
     preprocessing_parser = subparser.add_parser('preprocessing',
         help='Prepare data for training (needs clinica installed).')
-    preprocessing_parser.add_argument('bids_directory',
+    preprocessing_parser.add_argument('bids_dir',
         help='Data using BIDS structure.',
         default=None)
     preprocessing_parser.add_argument('caps_dir',
@@ -316,7 +316,7 @@ def parse_command_line():
     preprocessing_parser.add_argument('tsv_file',
         help='tsv file with sujets/sessions to process.',
         default=None)
-    preprocessing_parser.add_argument('working_directory',
+    preprocessing_parser.add_argument('working_dir',
         help='Working directory to save temporary file.',
         default=None)
     preprocessing_parser.add_argument('-np', '--nproc',
@@ -336,7 +336,7 @@ def parse_command_line():
     extract_parser.add_argument('tsv_file',
         help='tsv file with sujets/sessions to process.',
         default=None)
-    extract_parser.add_argument('working_directory',
+    extract_parser.add_argument('working_dir',
         help='Working directory to save temporary file.',
         default=None)
     extract_parser.add_argument('extract_method',
