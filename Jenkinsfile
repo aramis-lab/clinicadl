@@ -56,7 +56,6 @@ pipeline {
                  pytest \
                     --verbose \
                     --disable-warnings \
-                    --timeout=0 \
                     ./tests/test_cli.py
                  conda deactivate
                  '''
