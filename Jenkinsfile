@@ -22,7 +22,7 @@ pipeline {
               sh 'echo "Agent name: ${NODE_NAME}"'
               sh '''#!/usr/bin/env bash
                  set +x
-                 source $WORKSPACE/../miniconda/etc/profile.d/conda.sh
+                 source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
                  conda activate clinicadl_env
                  echo "Install clinicadl using pip..."
                  cd AD-DL
@@ -50,7 +50,7 @@ pipeline {
               sh 'echo "Agent name: ${NODE_NAME}"'
               sh '''#!/usr/bin/env bash
                  set +x
-                 source $WORKSPACE/../miniconda/etc/profile.d/conda.sh
+                 source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
                  conda activate clinicadl_env
                  cd clinicadl
                  pytest \
