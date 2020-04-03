@@ -52,11 +52,10 @@ pipeline {
                  set +x
                  source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
                  conda activate clinicadl_env
-                 cd clinicadl
                  pytest \
                     --verbose \
                     --disable-warnings \
-                    ./tests/test_cli.py
+                    $WORKSPACE/clinicadl/tests/test_cli.py
                  conda deactivate
                  '''
             }
