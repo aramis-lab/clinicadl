@@ -40,7 +40,7 @@ pipeline {
       }
       stage('Tests') {
         parallel {
-          stage('Instantiate Linux') {
+          stage('CLI test Linux') {
             agent { label 'linux' }
             environment {
               PATH = "$HOME/miniconda/bin:$PATH"
@@ -52,8 +52,7 @@ pipeline {
                  set +x
                  source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
                  conda activate clinicadl_env
-                 pytest \
-                    --verbose \
+                 pytest --verbose \
                     --disable-warnings \
                     $WORKSPACE/clinicadl/tests/test_cli.py
                  conda deactivate
