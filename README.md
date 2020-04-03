@@ -45,6 +45,7 @@ conda create --name clinicadl_env \
 > torchvision \
 > -c pytorch -c conda-forge -c aramislab
 
+conda activate clinicadl_env
 git clone git@github.com:aramis-lab/AD-DL.git
 cd AD-DL
 pip install -r requirements.txt
