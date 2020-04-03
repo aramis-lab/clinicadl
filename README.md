@@ -12,7 +12,7 @@ Automatic Classification of AD using a classical machine learning approach can
 be performed using the software available here:
 <https://github.com/aramis-lab/AD-ML>.
 
-This software is currently in *active developmet*.
+This software is currently in *active development*.
 Pretrained models for the CNN networks can be obtained here:
 <https://zenodo.org/record/3491003>  
 
@@ -36,7 +36,7 @@ be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 
 ## Create a conda environment with the corresponding dependencies:
 Keep the following order of the installation instructions.
-It guaranties the right management of libraries depending on common pakages:
+It guaranties the right management of libraries depending on common packages:
 
 
 ```
