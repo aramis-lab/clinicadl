@@ -1,3 +1,5 @@
+[![Build Status](https://ci.inria.fr/clinicadl/buildStatus/icon?job=AD-DL%2Fmaster)](https://ci.inria.fr/clinicadl/job/AD-DL/job/master/)
+
 # Clinica Deep Learning AD
 This repository contains a software framework for reproducible experiments with
 convolutional neural networks (CNN) on automatic classification of Alzheimer's
