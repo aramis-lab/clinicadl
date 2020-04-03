@@ -22,6 +22,7 @@ pipeline {
             sh 'echo "Agent name: ${NODE_NAME}"'
             sh '''
                set +x
+               eval "$(conda shell.bash hook)"
                conda activate clinicadl_env
                echo "Install clinicadl using pip..."
                cd AD-DL
