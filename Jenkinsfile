@@ -20,9 +20,9 @@ pipeline {
             sh 'echo "My branch name is ${BRANCH_NAME}"'
             sh 'printenv'
             sh 'echo "Agent name: ${NODE_NAME}"'
-            sh '''
+            sh '''#!/usr/bin/env bash
                set +x
-               eval "$(conda shell.bash hook)"
+               source $WORKSPACE/miniconda/etc/profile.d/conda.sh
                conda activate clinicadl_env
                echo "Install clinicadl using pip..."
                cd AD-DL
