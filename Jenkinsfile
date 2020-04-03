@@ -10,6 +10,10 @@ pipeline {
         parallel {
           stage('Launch in Linux') {
             agent { label 'linux' }
+            environment {
+               PATH = "$HOME/miniconda/bin:$PATH"
+               }
+            when { changeset "requirements.txt" }   
             steps {
             echo 'Installing clinicadl sources in Linux...'
             echo 'My branch name is ${BRANCH_NAME}'
