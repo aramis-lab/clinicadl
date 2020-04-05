@@ -31,6 +31,7 @@ def preprocessing_t1w(bids_directory,
    from clinica.utils.inputs import clinica_file_reader
    from clinica.utils.input_files import T1W_NII
    from clinicadl.tools.inputs.input import fetch_file
+   from clinicadl.tools.inputs.input import RemoteFileStructure
    import nipype.pipeline.engine as npe
    import nipype.interfaces.utility as nutil
    from nipype.interfaces import ants
@@ -43,23 +44,30 @@ def preprocessing_t1w(bids_directory,
    
    root = dirname(abspath(join(abspath(__file__), pardir)))
    path_to_mask = join(root, 'resources', 'masks')
-   url = 'https://aramislab.paris.inria.fr/files/data/img_t1_linear/'
-   file1.url = url
-   file2.url = url
-   file1.filename = 'ref_cropped_template.nii.gz'
-   file2.filename = 'img_t1_linear/mni_icbm152_t1_tal_nlin_sym_09c.nii'
-   file1.checksum = 67e1e7861805a8fd35f7fcf2bdf9d2a39d7bcb2fd5a201016c4d2acdd715f5b3
-   file2.checksum = 93359ab97c1c027376397612a9b6c30e95406c15bf8695bd4a8efcb2064eaa3
+   url_aramis = 'https://aramislab.paris.inria.fr/files/data/img_t1_linear/'
+   FILE1 = RemoteFileStructure(
+           filename = 'ref_cropped_template.nii.gz',
+           url = url_aramis,
+           checksum = '67e1e7861805a8fd35f7fcf2bdf9d2a39d7bcb2fd5a201016c4d2acdd715f5b3'
+           )
+   FILE2 = RemoteFileStructure(
+           filename = 'mni_icbm152_t1_tal_nlin_sym_09c.nii',
+           url = url_aramis,
+           checksum = '93359ab97c1c027376397612a9b6c30e95406c15bf8695bd4a8efcb2064eaa34'
+           )
+
+   ref_template = join(path_to_mask, FILE2.filename)
+   ref_crop = join(path_to_mask, FILE1.filename)
 
    if not(exists(ref_template)):
        try:
-           ref_template = fetch_file(file2, path_to_mask)
+           ref_template = fetch_file(FILE2, path_to_mask)
        except IOError as err:
            print('Unable to download required template (mni_icbm152) for processing:', err)
 
    if not(exists(ref_crop)):
        try:
-           ref_crop = fetch_file(file1, path_to_mask)
+           ref_crop = fetch_file(FILE1, path_to_mask)
        except IOError as err:
            print('Unable to download required template (ref_crop) for processing:', err)
 
