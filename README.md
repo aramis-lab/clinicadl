@@ -23,12 +23,12 @@ be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 
 # Dependencies:
 - Python >= 3.6
-- Clinica (needs only to perform preprocessing) >= 0.3.2
+- Clinica (needs only to perform preprocessing) >= 0.3.4
 - Numpy
 - Pandas
 - Scikit-learn
 - Pytorch => 1.1
-- Nilearn == 0.5.2
+- Nilearn >= 0.5.3
 - Nipy
 - TensorBoardX
 
@@ -40,12 +40,7 @@ It guaranties the right management of libraries depending on common packages:
 
 
 ```
-conda create --name clinicadl_env \
-> python=3.6 \
-> clinica \
-> pytorch \
-> torchvision \
-> -c pytorch -c conda-forge -c aramislab
+conda create --name clinicadl_env python=3.6 pytorch torchvision -c pytorch
 
 conda activate clinicadl_env
 git clone git@github.com:aramis-lab/AD-DL.git
