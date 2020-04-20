@@ -9,10 +9,10 @@ def extract_DL_features_t1w(caps_directory,
                             extract_method='slice',
                             slice_direction=0,
                             slice_mode='original'):
-    """
-    This is a postprocessing pipeline to prepare the slice-level and
-    patch-level data from the entire  MRI and save them on disk. This
-    facilitate the training process:
+    """ This is a preprocessing pipeline to convert the MRIs in nii.gz format
+    into tensor versions (using pytorch format). It also prepares the
+    slice-level and patch-level data from the entire MRI and save them on disk.
+    This enables the training process:
         - For slice-level CNN, all slices were extracted from the entire
           MRI from three different axis. The first and last 15 slice were
           discarded due to the lack of information.
