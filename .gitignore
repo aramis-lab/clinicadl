@@ -28,6 +28,7 @@ test/data
 
 # Notebook jupyter
 .ipynb_checkpoints/
+clinicadl/notebooks/
 
 # Mask and other files
 clinicadl/clinicadl/resources/masks/*.nii
