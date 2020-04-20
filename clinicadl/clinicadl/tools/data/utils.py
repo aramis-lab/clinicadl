@@ -46,13 +46,13 @@ def im_loss_roi_gaussian_distribution(im_data, atlas_to_mask, min_value):
     coordinates = []
     for i in range(len(idx[0])):
         coordinates.append([idx[0][i], idx[1][i], idx[2][i]])
-    l = len(coordinates)  # all the non zero values
+    length_coordinates = len(coordinates)  # all the non zero values
 
-    n = np.random.normal(loc=0.0, scale=0.1, size=l)  # gaussian distribution with std = 0.1 and media = 0
+    n = np.random.normal(loc=0.0, scale=0.1, size=length_coordinates)  # gaussian distribution with std = 0.1 and media = 0
     max_value = np.min(n)
     n_new = n + abs(max_value)
 
-    n_diff = n_new * 10 + min_value #
+    n_diff = n_new * 10 + min_value
     for i, coord in enumerate(coordinates):
         x, y, z = coord
         gm_loss[x, y, z] = gm_masked[x, y, z] - n_diff[i] * (gm_masked[x, y, z]) / 100

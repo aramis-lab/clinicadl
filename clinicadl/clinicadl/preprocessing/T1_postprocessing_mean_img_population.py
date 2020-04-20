@@ -14,6 +14,7 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
+
 def get_mean_image_population(caps_directory, tsv, template_image):
     """
     THis is a function to grab all the cropped files
@@ -36,7 +37,7 @@ def get_mean_image_population(caps_directory, tsv, template_image):
     participant_id = list(df['participant_id'])
     session_id = list(df['session_id'])
 
-    ## get the template image info:
+    # get the template image info:
     template_image_data = nib.load(template_image)
     template_image_array = template_image_data.get_data()
     header = template_image_data.header
@@ -50,11 +51,9 @@ def get_mean_image_population(caps_directory, tsv, template_image):
         image_array = image_data.get_data()
         final_array[..., i] = image_array
 
-    ## take the mean of image
+    # take the mean of image
     final_mean_array = np.mean(final_array, axis=3)
 
-    ## save the mean image as nifti
+    # save the mean image as nifti
     mean_image = nib.Nifti1Image(final_mean_array, affine, header)
     nib.save(mean_image, os.path.join(caps_directory, 'group', 'mean_population.nii.gz'))
-
-

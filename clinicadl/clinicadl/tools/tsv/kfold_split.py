@@ -171,4 +171,3 @@ if __name__ == "__main__":
                 path.join(train_path, 'split-' + str(i), 'MCI_baseline.tsv'), sep='\t', index=False)
             test_df.to_csv(
                 path.join(test_path, 'split-' + str(i), 'MCI_baseline.tsv'), sep='\t', index=False)
-

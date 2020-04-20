@@ -1,5 +1,7 @@
 
 # Get containers to ptoduce the CAPS structure
+
+
 def container_from_filename(bids_or_caps_filename):
     """Extract container from BIDS or CAPS file.
     Args:
@@ -19,10 +21,11 @@ def container_from_filename(bids_or_caps_filename):
     m = re.search(r'(sub-[a-zA-Z0-9]+)/(ses-[a-zA-Z0-9]+)', bids_or_caps_filename)
     if m is None:
         raise ValueError('Input filename is not in a BIDS or CAPS compliant format.'
-                'It does not contain the participant and session ID.')
+                         'It does not contain the participant and session ID.')
     subject = m.group(1)
     session = m.group(2)
     return os.path.join('subjects', subject, session)
+
 
 def get_data_datasink(image_id):
     substitutions_ls = [  # registration
@@ -32,7 +35,7 @@ def get_data_datasink(image_id):
                 image_id + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_intensity_norm_T1w.nii.gz'),
             (image_id + 'Warped_cropped.nii.gz',
                 image_id + '_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz'),
-             (image_id + '0GenericAffine.mat',
+            (image_id + '0GenericAffine.mat',
                 image_id + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_affine.mat'),
             (image_id + 'Warped_cropped.pt',
                 image_id + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt'),
@@ -59,11 +62,11 @@ def crop_nifti(input_img, ref_crop):
     from nibabel.spatialimages import SpatialImage
 
     basedir = os.getcwd()
-    #crop_ref = crop_img(ref_img, rtol=0.5)
+    # crop_ref = crop_img(ref_img, rtol=0.5)
     # crop_ref.to_filename(os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped_template.nii.gz'))
     # crop_template = os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped_template.nii.gz')
 
-    ## resample the individual MRI onto the cropped template image
+    # resample the individual MRI onto the cropped template image
     crop_img = resample_to_img(input_img, ref_crop, force_resample=True)
     crop_img.to_filename(os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_cropped.nii.gz'))
 
@@ -86,7 +89,6 @@ def ants_histogram_intensity_normalization(crop_template, input_img, image_dimen
 
     basedir = os.getcwd()
     output_img = os.path.join(basedir, os.path.basename(input_img).split('.nii')[0] + '_intensity_norm.nii.gz')
-
 
     cmd = 'ImageMath ' + str(image_dimension) + ' ' + output_img + ' HistogramMatch ' + input_img + ' ' + crop_template
     os.system(cmd)

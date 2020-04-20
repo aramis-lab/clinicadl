@@ -36,32 +36,38 @@ def train_autoencoder_patch(params):
 
     for fi in fold_iterator:
 
-        training_tsv, valid_tsv = load_data(params.tsv_path,
-                params.diagnoses, 
+        training_tsv, valid_tsv = load_data(
+                params.tsv_path,
+                params.diagnoses,
                 fi,
                 n_splits=params.n_splits,
-                baseline=params.baseline)
+                baseline=params.baseline
+                )
 
         print("Running for the %d-th fold" % fi)
 
         if params.hippocampus_roi:
             print("Only using hippocampus ROI")
 
-            data_train = MRIDataset_patch_hippocampus(params.input_dir,
+            data_train = MRIDataset_patch_hippocampus(
+                    params.input_dir,
                     training_tsv,
                     transformations=transformations)
-            data_valid = MRIDataset_patch_hippocampus(params.input_dir,
+            data_valid = MRIDataset_patch_hippocampus(
+                    params.input_dir,
                     valid_tsv,
                     transformations=transformations)
 
         else:
-            data_train = MRIDataset_patch(params.input_dir, 
-                    training_tsv, 
+            data_train = MRIDataset_patch(
+                    params.input_dir,
+                    training_tsv,
                     params.patch_size,
                     params.patch_stride,
                     transformations=transformations,
                     prepare_dl=params.prepare_dl)
-            data_valid = MRIDataset_patch(params.input_dir, 
+            data_valid = MRIDataset_patch(
+                    params.input_dir,
                     valid_tsv,
                     params.patch_size,
                     params.patch_stride,
@@ -69,47 +75,72 @@ def train_autoencoder_patch(params):
                     prepare_dl=params.prepare_dl)
 
         # Use argument load to distinguish training and testing
-        train_loader = DataLoader(data_train,
+        train_loader = DataLoader(
+                data_train,
                 batch_size=params.batch_size,
                 shuffle=True,
                 num_workers=params.num_workers,
                 pin_memory=True
-                )
+                                  )
 
-        valid_loader = DataLoader(data_valid,
+        valid_loader = DataLoader(
+                data_valid,
                 batch_size=params.batch_size,
                 shuffle=False,
                 num_workers=params.num_workers,
                 pin_memory=True
-                )
+                                  )
 
         model.load_state_dict(init_state)
 
         criterion = torch.nn.MSELoss()
-        writer_train = SummaryWriter(log_dir=(os.path.join(params.output_dir, 
-            "log_dir", 
-            "fold_" + str(fi),
-            "ConvAutoencoder", "train")))
-        writer_valid = SummaryWriter(log_dir=(os.path.join(params.output_dir, 
-            "log_dir", 
-            "fold_" + str(fi),
-            "ConvAutoencoder", "valid")))
+        writer_train = SummaryWriter(
+                log_dir=(
+                    os.path.join(
+                        params.output_dir,
+                        "log_dir",
+                        "fold_" + str(fi),
+                        "ConvAutoencoder",
+                        "train"
+                        )
+                    )
+                )
 
-        model, best_autodecoder = stacked_ae_learning(model,
+        writer_valid = SummaryWriter(
+                log_dir=(
+                    os.path.join(
+                        params.output_dir,
+                        "log_dir",
+                        "fold_" + str(fi),
+                        "ConvAutoencoder", "valid"
+                        )
+                    )
+                )
+
+        model, best_autodecoder = stacked_ae_learning(
+                model,
                 train_loader,
                 valid_loader,
                 criterion,
                 writer_train,
-                writer_valid, 
-                params, 
-                fi)
+                writer_valid,
+                params,
+                fi
+                )
 
         if params.visualization:
             example_batch = data_train[0]['image'].unsqueeze(0)
             if params.gpu:
                 example_batch = example_batch.cuda()
-            visualize_ae(best_autodecoder, example_batch, 
-                    os.path.join(params.output_dir, "visualize", "fold_%i" % fi))
+            visualize_ae(
+                    best_autodecoder,
+                    example_batch,
+                    os.path.join(
+                        params.output_dir,
+                        "visualize",
+                        "fold_%i" % fi
+                        )
+                    )
 
         del best_autodecoder, train_loader, valid_loader
         torch.cuda.empty_cache()

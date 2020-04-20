@@ -15,15 +15,14 @@ from ..tools.deep_learning import create_autoencoder, commandline_to_json
 
 def train_autoencoder(params):
     """ Parameters
-    params: class from utils module containing all the parameters for training a 
+    params: class from utils module containing all the parameters for training a
     CNN.
     """
-    
+
     if params.evaluation_steps % params.accumulation_steps != 0 and params.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
                         (params.evaluation_steps, params.accumulation_steps))
 
-    
     if params.minmaxnormalization:
         transformations = MinMaxNormalization()
     else:
@@ -33,12 +32,12 @@ def train_autoencoder(params):
     criterion = torch.nn.MSELoss()
 
     training_tsv, valid_tsv = load_data(params.tsv_path, params.diagnoses,
-                                        params.split, params.n_splits, 
+                                        params.split, params.n_splits,
                                         params.baseline)
 
-    data_train = MRIDataset(params.input_dir, training_tsv, 
+    data_train = MRIDataset(params.input_dir, training_tsv,
                             params.preprocessing, transformations)
-    data_valid = MRIDataset(params.input_dir, valid_tsv, 
+    data_valid = MRIDataset(params.input_dir, valid_tsv,
                             params.preprocessing, transformations)
 
     # Use argument load to distinguish training and testing
@@ -64,7 +63,7 @@ def train_autoencoder(params):
     text_file.write('Version of pytorch: %s \n' % torch.__version__)
     text_file.close()
 
-    decoder = create_autoencoder(params.model, params.pretrained_path, 
+    decoder = create_autoencoder(params.model, params.pretrained_path,
                                  difference=params.pretrained_difference)
     optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()), params.learning_rate, weight_decay=params.weight_decay)
 
@@ -79,7 +78,7 @@ def train_autoencoder(params):
     print('Total time', total_time)
 
 
-#if __name__ == "__main__":
+# if __name__ == "__main__":
 #    commandline = parser.parse_known_args()
 #    commandline_to_json(commandline, 'ConvAutoencoder')
 #    options = commandline[0]

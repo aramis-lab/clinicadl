@@ -14,6 +14,7 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
+
 def get_caps_t1(caps_directory, tsv):
     """
     THis is a function to grab all the cropped files
@@ -38,6 +39,7 @@ def get_caps_t1(caps_directory, tsv):
 
     return preprocessed_T1
 
+
 def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
     """
     This is to extract the slices from three directions
@@ -45,28 +47,29 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
     :param slice_direction: which axis direction that the slices were extracted
     :return:
     """
-    import torch, os
+    import torch
+    import os
 
     image_tensor = torch.load(preprocessed_T1)
-    ## reshape the tensor, delete the first dimension for slice-level
+    # reshape the tensor, delete the first dimension for slice-level
     image_tensor = image_tensor.view(image_tensor.shape[1], image_tensor.shape[2], image_tensor.shape[3])
 
-    ## sagital
-    slice_list_sag = range(20, image_tensor.shape[0] - 20) # delete the first 20 slice and last 20 slices
+    # sagital
+    slice_list_sag = range(20, image_tensor.shape[0] - 20)  # delete the first 20 slice and last 20 slices
 
     if slice_direction == 0:
         for index_slice in slice_list_sag:
             # for i in slice_list:
-            ## sagital
+            # sagital
             slice_select_sag = image_tensor[index_slice, :, :]
 
-            ## convert the slices to images based on if transfer learning or not
+            # convert the slices to images based on if transfer learning or not
             # train from scratch
-            extracted_slice_original_sag = slice_select_sag.unsqueeze(0) ## shape should be 1 * W * L
+            extracted_slice_original_sag = slice_select_sag.unsqueeze(0)  # shape should be 1 * W * L
 
             # train for transfer learning, creating the fake RGB image.
             slice_select_sag = (slice_select_sag - slice_select_sag.min()) / (slice_select_sag.max() - slice_select_sag.min())
-            extracted_slice_rgb_sag = torch.stack((slice_select_sag, slice_select_sag, slice_select_sag)) ## shape should be 3 * W * L
+            extracted_slice_rgb_sag = torch.stack((slice_select_sag, slice_select_sag, slice_select_sag))  # shape should be 3 * W * L
 
             # save into .pt format
             if slice_mode == 'original':
@@ -77,20 +80,20 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
                 torch.save(extracted_slice_rgb_sag.clone(), output_file_rgb)
 
     elif slice_direction == 1:
-        ## cornal
-        slice_list_cor = range(15, image_tensor.shape[1] - 15) # delete the first 20 slice and last 15 slices
+        # cornal
+        slice_list_cor = range(15, image_tensor.shape[1] - 15)  # delete the first 20 slice and last 15 slices
         for index_slice in slice_list_cor:
             # for i in slice_list:
-            ## sagital
+            # sagital
             slice_select_cor = image_tensor[:, index_slice, :]
 
-            ## convert the slices to images based on if transfer learning or not
+            # convert the slices to images based on if transfer learning or not
             # train from scratch
-            extracted_slice_original_cor = slice_select_cor.unsqueeze(0) ## shape should be 1 * W * L
+            extracted_slice_original_cor = slice_select_cor.unsqueeze(0)  # shape should be 1 * W * L
 
             # train for transfer learning, creating the fake RGB image.
             slice_select_cor = (slice_select_cor - slice_select_cor.min()) / (slice_select_cor.max() - slice_select_cor.min())
-            extracted_slice_rgb_cor = torch.stack((slice_select_cor, slice_select_cor, slice_select_cor)) ## shape should be 3 * W * L
+            extracted_slice_rgb_cor = torch.stack((slice_select_cor, slice_select_cor, slice_select_cor))  # shape should be 3 * W * L
 
             # save into .pt format
             if slice_mode == 'original':
@@ -102,20 +105,20 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
 
     else:
 
-        ## axial
-        slice_list_axi = range(15, image_tensor.shape[2] - 15) # delete the first 20 slice and last 15 slices
+        # axial
+        slice_list_axi = range(15, image_tensor.shape[2] - 15)  # delete the first 20 slice and last 15 slices
         for index_slice in slice_list_axi:
             # for i in slice_list:
-            ## sagital
+            # sagital
             slice_select_axi = image_tensor[:, :, index_slice]
 
-            ## convert the slices to images based on if transfer learning or not
+            # convert the slices to images based on if transfer learning or not
             # train from scratch
-            extracted_slice_original_axi = slice_select_axi.unsqueeze(0) ## shape should be 1 * W * L
+            extracted_slice_original_axi = slice_select_axi.unsqueeze(0)  # shape should be 1 * W * L
 
             # train for transfer learning, creating the fake RGB image.
             slice_select_axi = (slice_select_axi - slice_select_axi.min()) / (slice_select_axi.max() - slice_select_axi.min())
-            extracted_slice_rgb_axi = torch.stack((slice_select_axi, slice_select_axi, slice_select_axi)) ## shape should be 3 * W * L
+            extracted_slice_rgb_axi = torch.stack((slice_select_axi, slice_select_axi, slice_select_axi))  # shape should be 3 * W * L
 
             # save into .pt format
             if slice_mode == 'original':
@@ -127,28 +130,31 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
 
     return preprocessed_T1
 
+
 def extract_patches(preprocessed_T1, patch_size, stride_size):
     """
     This is to extract the patches from three directions
     :param preprocessed_T1:
     :return:
     """
-    import torch, os
+    import torch
+    import os
 
     image_tensor = torch.load(preprocessed_T1)
 
-    ## use classifiers tensor.upfold to crop the patch.
+    # use classifiers tensor.upfold to crop the patch.
     patches_tensor = image_tensor.unfold(1, patch_size, stride_size).unfold(2, patch_size, stride_size).unfold(3, patch_size, stride_size).contiguous()
     # the dimension of patch_tensor should be [1, patch_num1, patch_num2, patch_num3, patch_size1, patch_size2, patch_size3]
     patches_tensor = patches_tensor.view(-1, patch_size, patch_size, patch_size)
 
     for index_patch in range(patches_tensor.shape[0]):
-        extracted_patch = patches_tensor[index_patch, ...].unsqueeze_(0) ## add one dimension
+        extracted_patch = patches_tensor[index_patch, ...].unsqueeze_(0)  # add one dimension
         # save into .pt format
         output_patch = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_patchsize-' + str(patch_size) + '_stride-' + str(stride_size) + '_patch-' + str(index_patch) + '.pt')
         torch.save(extracted_patch.clone(), output_patch)
 
     return preprocessed_T1
+
 
 def save_as_pt(input_img):
     """
@@ -157,12 +163,13 @@ def save_as_pt(input_img):
     :return:
     """
 
-    import torch, os
+    import torch
+    import os
     import nibabel as nib
 
     image_array = nib.load(input_img).get_fdata()
     image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
-    ## make sure the tensor dtype is torch.float32
+    # make sure the tensor dtype is torch.float32
     output_file = os.path.join(os.path.dirname(input_img), input_img.split('.nii.gz')[0] + '.pt')
     # save
     torch.save(image_tensor.clone(), output_file)

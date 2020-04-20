@@ -9,6 +9,7 @@ from torch.nn.parameter import Parameter
 
 # based on https://github.com/pytorch/vision/blob/master/torchvision/models/squeezenet.py
 
+
 class Fire(nn.Module):
 
     def __init__(self, inplanes, squeeze_planes,
@@ -38,7 +39,7 @@ class SqueezeNetQC(nn.Module):
         super(SqueezeNetQC, self).__init__()
         self.use_ref = use_ref
         self.feat = 3
-        
+
         if version not in [1.0, 1.1]:
             raise ValueError("Unsupported SqueezeNet version {version}:"
                              "1.0 or 1.1 expected".format(version=version))
@@ -75,7 +76,7 @@ class SqueezeNetQC(nn.Module):
                 Fire(384, 64, 256, 256),
                 Fire(512, 64, 256, 256),
             )
-        
+
         # Final convolution is initialized differently form the rest
         final_conv = nn.Conv2d(512*self.feat, self.num_classes, kernel_size=1)
         self.classifier = nn.Sequential(
@@ -96,11 +97,11 @@ class SqueezeNetQC(nn.Module):
 
     def forward(self, x):
         # split feats into batches, so each view is passed separately
-        x = x.view(-1, 2 if self.use_ref else 1 ,224,224)
+        x = x.view(-1, 2 if self.use_ref else 1, 224, 224)
         x = self.features(x)
         # reshape input to take into account 3 views
-        x = x.view(-1, 512*self.feat,13,13)
-        
+        x = x.view(-1, 512*self.feat, 13, 13)
+
         x = self.classifier(x)
         return x.view(x.size(0), self.num_classes)
 
@@ -114,12 +115,12 @@ class SqueezeNetQC(nn.Module):
                 if isinstance(param, Parameter):
                     param = param.data
                 # convert to mono weight
-                # collaps parameters along second dimension, emulating grayscale feature 
-                mono_param=param.sum( 1, keepdim=True )
+                # collaps parameters along second dimension, emulating grayscale feature
+                mono_param = param.sum(1, keepdim=True)
                 if self.use_ref:
-                    own_state[name].copy_( torch.cat((mono_param,mono_param),1) )
+                    own_state[name].copy_(torch.cat((mono_param, mono_param), 1))
                 else:
-                    own_state[name].copy_( mono_param )
+                    own_state[name].copy_(mono_param)
                 pass
             elif name == 'classifier.1.weight' or name == 'classifier.1.bias':
                 # don't use at all
@@ -134,7 +135,6 @@ class SqueezeNetQC(nn.Module):
                                        'whose dimensions in the model are {} and '
                                        'whose dimensions in the checkpoint are {}.'
                                        .format(name, own_state[name].size(), param.size()))
-            
 
 
 def squeezenet_qc(pretrained=False, **kwargs):

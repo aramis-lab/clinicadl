@@ -1,5 +1,7 @@
 
 # Get containers to ptoduce the CAPS structure
+
+
 def container_from_filename(bids_or_caps_filename):
     """Extract container from BIDS or CAPS file.
     Args:
@@ -19,10 +21,11 @@ def container_from_filename(bids_or_caps_filename):
     m = re.search(r'(sub-[a-zA-Z0-9]+)/(ses-[a-zA-Z0-9]+)', bids_or_caps_filename)
     if m is None:
         raise ValueError('Input filename is not in a BIDS or CAPS compliant format.'
-                'It does not contain the participant and session ID.')
+                         'It does not contain the participant and session ID.')
     subject = m.group(1)
     session = m.group(2)
     return os.path.join('subjects', subject, session)
+
 
 def get_data_datasink(image_id):
     substitutions_ls = [  # registration
@@ -32,7 +35,7 @@ def get_data_datasink(image_id):
                 image_id + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_intensity_norm_T1w.nii.gz'),
             (image_id + 'Warped_cropped.nii.gz',
                 image_id + '_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz'),
-             (image_id + '0GenericAffine.mat',
+            (image_id + '0GenericAffine.mat',
                 image_id + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_affine.mat'),
             (image_id + 'Warped_cropped.pt',
                 image_id + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt'),
