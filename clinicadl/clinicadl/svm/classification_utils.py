@@ -242,7 +242,7 @@ class KFoldCV(base.MLValidation):
         for i in range(n_folds):
             self._fold_results.append(async_result[i].get())
 
-        ## save the mean of the best models
+        # save the mean of the best models
         self._classifier, self._best_params = self._ml_algorithm.apply_best_parameters(self._fold_results)
 
         return self._classifier, self._best_params, self._fold_results
@@ -289,7 +289,7 @@ class KFoldCV(base.MLValidation):
         mean_results.to_csv(path.join(output_dir, 'mean_results.tsv'),
                             index=False, sep='\t', encoding='utf-8')
         print("Mean results of the classification:")
-        print("Balanced accuracy: %s" %(mean_results['balanced_accuracy'].to_string(index = False)))
+        print("Balanced accuracy: %s" % (mean_results['balanced_accuracy'].to_string(index=False)))
         print("specificity: %s" % (mean_results['specificity'].to_string(index=False)))
         print("sensitivity: %s" % (mean_results['sensitivity'].to_string(index=False)))
         print("auc: %s" % (mean_results['auc'].to_string(index=False)))
@@ -337,14 +337,14 @@ def extract_indices_from_5_fold(diagnosis_tsv_folder, n_splits, output_dir, base
         valid_df.reset_index(inplace=True, drop=True)
 
         if i == 0:
-            ## only concatenate the train + valid for the first fold
+            # only concatenate the train + valid for the first fold
             all_df = pd.concat([train_df, valid_df])
             all_df.reset_index(inplace=True, drop=True)
 
             all_tsv = os.path.join(output_dir, 'all_subjects.tsv')
             all_df.to_csv(all_tsv, index=False, sep='\t', encoding='utf-8')
 
-        ## find the index for the training and validation based on the concatenated tsv.
+        # find the index for the training and validation based on the concatenated tsv.
         for j in range(len(train_df)):
             row = train_df.iloc[j]
             for index, row_all in all_df.iterrows():
@@ -357,11 +357,11 @@ def extract_indices_from_5_fold(diagnosis_tsv_folder, n_splits, output_dir, base
                 if row['participant_id'] == row_all['participant_id'] and row['session_id'] == row_all['session_id'] and row['diagnosis'] == row_all['diagnosis']:
                     valid_index.append(index)
 
-        ## convert the list of index to be an array
+        # convert the list of index to be an array
         train_index_array = np.asarray(train_index)
         valid_index_array = np.asarray(valid_index)
 
-        ## convert the two arrays into a tuple
+        # convert the two arrays into a tuple
         index_tuple = (train_index_array, valid_index_array)
         splits_indices.append(index_tuple)
 
@@ -409,7 +409,7 @@ def revert_mask(weights, mask, shape):
     """
 
     z = np.zeros(np.prod(shape))
-    z[mask] = weights ## ValueError: NumPy boolean array indexing assignment cannot assign 1636161 input values to the 1634188 output values where the mask is true
+    z[mask] = weights  # ValueError: NumPy boolean array indexing assignment cannot assign 1636161 input values to the 1634188 output values where the mask is true
 
     new_weights = np.reshape(z, shape)
 
@@ -534,7 +534,7 @@ def apply_best_parameters_each_split(kernel, x, y, results_list, balanced, n_fol
     outer_kernel = kernel[train_index, :][:, train_index]
     y_train = y[train_index]
 
-    ## save the training data for reconstruction use
+    # save the training data for reconstruction use
     df = pd.read_csv(diagnoses_tsv, sep='\t')
     df_training = df.iloc[train_index]
 
@@ -546,7 +546,7 @@ def apply_best_parameters_each_split(kernel, x, y, results_list, balanced, n_fol
     df_training.to_csv(training_tsv, index=False, sep='\t', encoding='utf-8')
 
     svc.fit(outer_kernel, y_train)
-    ## save the weight
+    # save the weight
     save_weights(svc, x[train_index], result_dir)
 
     return svc, {'c': best_c, 'balanced_accuracy': best_bal_acc}, train_index

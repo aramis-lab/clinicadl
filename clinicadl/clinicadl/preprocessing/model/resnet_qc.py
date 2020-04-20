@@ -8,6 +8,7 @@ from torch.nn.parameter import Parameter
 
 # based on https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
 
+
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
@@ -97,8 +98,8 @@ class ResNetQC(nn.Module):
         #                        bias=False)
         self.conv1 = nn.Conv2d(2 if self.use_ref else 1, 64, kernel_size=7, stride=2, padding=3,
                                bias=False)
-        self.bn1    = nn.BatchNorm2d(64)
-        self.relu   = nn.ReLU(inplace=True)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
@@ -110,16 +111,16 @@ class ResNetQC(nn.Module):
             nn.Conv2d(self.feat*512*block.expansion, 512*block.expansion, kernel_size=1, stride=1, padding=0, bias=True),
             nn.BatchNorm2d(512*block.expansion),
             nn.ReLU(inplace=True),
-            nn.Conv2d(512*block.expansion, 32, kernel_size=1, stride=1, padding=0,bias=True),
+            nn.Conv2d(512*block.expansion, 32, kernel_size=1, stride=1, padding=0, bias=True),
             nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
-            nn.Conv2d(32, 32, kernel_size=7, stride=1, padding=0,bias=True),
+            nn.Conv2d(32, 32, kernel_size=7, stride=1, padding=0, bias=True),
             nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
-            nn.Conv2d(32, 32, kernel_size=1, stride=1, padding=0,bias=True),
+            nn.Conv2d(32, 32, kernel_size=1, stride=1, padding=0, bias=True),
             nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
-            nn.Dropout2d(p=0.5,inplace=True),
+            nn.Dropout2d(p=0.5, inplace=True),
             nn.Conv2d(32, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
             )
         for m in self.modules():
@@ -149,7 +150,7 @@ class ResNetQC(nn.Module):
 
     def forward(self, x):
         # split feats into batches
-        x = x.view(-1, 2 if self.use_ref else 1 ,224,224)
+        x = x.view(-1, 2 if self.use_ref else 1, 224, 224)
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -161,7 +162,7 @@ class ResNetQC(nn.Module):
         x = self.layer4(x)
 
         # merge batches together
-        x = x.view(-1, 512*self.feat,7,7)
+        x = x.view(-1, 512*self.feat, 7, 7)
         x = self.addon(x)
         x = x.view(x.size(0), -1)
 
@@ -177,12 +178,12 @@ class ResNetQC(nn.Module):
                 if isinstance(param, Parameter):
                     param = param.data
                 # convert to mono weight
-                # collaps parameters along second dimension, emulating grayscale feature 
-                mono_param=param.sum( 1, keepdim=True )
+                # collaps parameters along second dimension, emulating grayscale feature
+                mono_param = param.sum(1, keepdim=True)
                 if self.use_ref:
-                    own_state[name].copy_( torch.cat((mono_param,mono_param),1) )
+                    own_state[name].copy_(torch.cat((mono_param, mono_param), 1))
                 else:
-                    own_state[name].copy_( mono_param )
+                    own_state[name].copy_(mono_param)
                 pass
             elif name == 'fc.weight' or name == 'fc.bias' or name == 'conv2.weight' or name == 'conv2.bias':
                 # don't use at all
@@ -197,9 +198,6 @@ class ResNetQC(nn.Module):
                                        'whose dimensions in the model are {} and '
                                        'whose dimensions in the checkpoint are {}.'
                                        .format(name, own_state[name].size(), param.size()))
-            
-
-
 
 
 def resnet_qc_18(pretrained=False, **kwargs):

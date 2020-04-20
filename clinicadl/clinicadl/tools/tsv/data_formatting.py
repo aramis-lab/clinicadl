@@ -104,7 +104,7 @@ def mod_selection(bids_df, missing_mods_dict, mod='t1w'):
                 t1_present = missing_mods_dict[session].loc[subject, mod]
                 if not t1_present:
                     bids_copy_df.drop((subject, session), inplace=True)
-            except:
+            except Exception:
                 bids_copy_df.drop((subject, session), inplace=True)
 
     return bids_copy_df
@@ -360,7 +360,7 @@ if __name__ == "__main__":
         diagnosis_df = pd.DataFrame(output_df['diagnosis'], columns=['diagnosis'])
         diagnosis_df.to_csv(path.join(args.results_path, 'AD.tsv'), sep='\t')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
-        print('Found %s AD subjects for a total of %s sessions' %(len(sub_df), len(diagnosis_df)))
+        print('Found %s AD subjects for a total of %s sessions' % (len(sub_df), len(diagnosis_df)))
         print()
 
     if 'CN' in args.diagnoses:
@@ -372,7 +372,7 @@ if __name__ == "__main__":
         diagnosis_df = pd.DataFrame(output_df['diagnosis'], columns=['diagnosis'])
         diagnosis_df.to_csv(path.join(args.results_path, 'CN.tsv'), sep='\t')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
-        print('Found %s CN subjects for a total of %s sessions' %(len(sub_df), len(diagnosis_df)))
+        print('Found %s CN subjects for a total of %s sessions' % (len(sub_df), len(diagnosis_df)))
         print()
 
     if 'MCI' in args.diagnoses:

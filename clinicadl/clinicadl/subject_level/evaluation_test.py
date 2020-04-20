@@ -72,23 +72,32 @@ if __name__ == "__main__":
         else:
             transformations = None
 
-        data_test = MRIDataset(options.caps_dir,
-            test_tsv,
-            model_options.preprocessing,
-            transform=transformations)
+        data_test = MRIDataset(
+                options.caps_dir,
+                test_tsv,
+                model_options.preprocessing,
+                transform=transformations
+                )
 
-        test_loader = DataLoader(data_test,
-            batch_size=options.batch_size,
-            shuffle=False,
-            num_workers=options.num_workers,
-            pin_memory=True
-            )
+        test_loader = DataLoader(
+                data_test,
+                batch_size=options.batch_size,
+                shuffle=False,
+                num_workers=options.num_workers,
+                pin_memory=True
+                )
 
         # Run test
-        metrics_test, loss_test, test_df = test(best_model, test_loader, options.gpu, criterion, full_return=True)
+        metrics_test, loss_test, test_df = test(
+                best_model,
+                test_loader,
+                options.gpu,
+                criterion,
+                full_return=True)
 
-        acc_test, sen_test, spe_test = metrics_test['balanced_accuracy'] * 100, metrics_test['sensitivity'] * 100,\
-                                       metrics_test['specificity'] * 100
+        acc_test = metrics_test['balanced_accuracy'] * 100
+        sen_test = metrics_test['sensitivity'] * 100
+        spe_test = metrics_test['specificity'] * 100
         print("Test, acc %f, loss %f, sensibility %f, specificity %f"
               % (acc_test, loss_test, sen_test, spe_test))
 
@@ -104,4 +113,3 @@ if __name__ == "__main__":
                                                      sep='\t', index=False)
 
         del model, best_model
-

@@ -47,4 +47,3 @@ def create_autoencoder(model_name, gpu=False, transfer_learning_path=None, diffe
         decoder = initialize_other_autoencoder(decoder, transfer_learning_path, difference)
 
     return decoder
-

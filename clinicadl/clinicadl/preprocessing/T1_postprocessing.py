@@ -10,13 +10,15 @@ __maintainer__ = "Mauricio Diaz"
 __email__ = "mauricio.diaz@inria.fr"
 __status__ = "Development"
 
-def postprocessing_t1w(caps_directory, 
-        tsv, 
-        patch_size, 
-        stride_size, 
-        working_directory=None, 
-        extract_method='slice', 
-        slice_direction=0, 
+
+def postprocessing_t1w(
+        caps_directory,
+        tsv,
+        patch_size,
+        stride_size,
+        working_directory=None,
+        extract_method='slice',
+        slice_direction=0,
         slice_mode='original'):
     """
     This is a postprocessing pipeline to prepare the slice-level and
@@ -31,17 +33,17 @@ def postprocessing_t1w(caps_directory,
     Parameters
     ----------
 
-    caps_directory: str 
+    caps_directory: str
       CAPS directory where stores the output of preprocessing.
     tsv: str
-      TVS file with the subject list (participant_id and session_id).  
-    patch_size: int 
+      TVS file with the subject list (participant_id and session_id).
+    patch_size: int
       Size for extracted 3D patches.
     stride_size: int
-      Sliding size window of the slice feature.  
+      Sliding size window of the slice feature.
     working_directory: str
       Folder containing a temporary space to save intermediate results.
-    
+
 
     Returns
     -------
@@ -51,7 +53,6 @@ def postprocessing_t1w(caps_directory,
 
     """
 
-    
     # test.py
     print(__name__)
 
@@ -71,14 +72,14 @@ def postprocessing_t1w(caps_directory,
 #        print('Absolute import failed')
 #
 
-
-
     import nipype.interfaces.io as nio
     import nipype.interfaces.utility as nutil
     import nipype.pipeline.engine as npe
     import tempfile
-    from .T1_postprocessing_utils import (get_caps_t1, 
-            extract_slices, extract_patches, save_as_pt)
+    from .T1_postprocessing_utils import (get_caps_t1,
+                                          extract_slices,
+                                          extract_patches,
+                                          save_as_pt)
 
     if working_directory is None:
         working_directory = tempfile.mkdtemp()
@@ -103,35 +104,35 @@ def postprocessing_t1w(caps_directory,
                 )
             )
 
-    ## save nii.gz into classifiers .pt format.
+    # save nii.gz into classifiers .pt format.
     save_as_pt = npe.MapNode(
             name='save_as_pt',
             iterfield=['input_img'],
             interface=nutil.Function(
                 function=save_as_pt,
                 input_names=['input_img'],
-                output_names=['output_file'] 
+                output_names=['output_file']
                 )
             )
 
-    ## extract the slices from 3 directions.
+    # extract the slices from 3 directions.
     extract_slices = npe.MapNode(
             name='extract_slices',
             iterfield=['preprocessed_T1'],
             interface=nutil.Function(
                 function=extract_slices,
                 input_names=[
-                    'preprocessed_T1', 'slice_direction', 
+                    'preprocessed_T1', 'slice_direction',
                     'slice_mode'
                     ],
                 output_names=['preprocessed_T1']
                 )
             )
-    
+
     extract_slices.inputs.slice_direction = slice_direction
     extract_slices.inputs.slice_mode = slice_mode
 
-    ## extract the patches.
+    # extract the patches.
     extract_patches = npe.MapNode(
             name='extract_patches',
             iterfield=['preprocessed_T1'],
@@ -141,7 +142,6 @@ def postprocessing_t1w(caps_directory,
                 output_names=['preprocessed_T1']
                 )
             )
-
 
     outputnode = npe.Node(
             nutil.IdentityInterface(
