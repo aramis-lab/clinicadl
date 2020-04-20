@@ -30,5 +30,5 @@ test/data
 .ipynb_checkpoints/
 
 # Mask and other files
-clinicadl/resources/masks/*.nii
-clinicadl/resources/masks/*.nii.gz
+clinicadl/clinicadl/resources/masks/*.nii
+clinicadl/clinicadl/resources/masks/*.nii.gz
