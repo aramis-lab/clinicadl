@@ -1,0 +1,9 @@
+scanner:
+    diff_only: True
+    linter: pycodestyle
+
+pycodestyle:
+    ignore:
+        - E501 # Line too long
+
+no_blank_comment: True # If True, no comment is made on PR without any errors.
