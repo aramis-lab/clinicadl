@@ -16,7 +16,7 @@ def container_from_filename(bids_or_caps_filename):
                'subjects/sub-CLNC01/ses-M00'
     """
 
-    import os
+    from os.path import join
     import re
     m = re.search(r'(sub-[a-zA-Z0-9]+)/(ses-[a-zA-Z0-9]+)', bids_or_caps_filename)
     if m is None:
@@ -24,7 +24,7 @@ def container_from_filename(bids_or_caps_filename):
                          'It does not contain the participant and session ID.')
     subject = m.group(1)
     session = m.group(2)
-    return os.path.join('subjects', subject, session)
+    return join('subjects', subject, session)
 
 
 def get_data_datasink(image_id):
