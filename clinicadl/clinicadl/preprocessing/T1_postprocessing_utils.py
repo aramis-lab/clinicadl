@@ -158,12 +158,12 @@ def extract_patches(preprocessed_T1, patch_size, stride_size):
                 os.path.join(
                     basedir,
                     os.path.basename(preprocessed_T1).split('.pt')[0]
-                    + '_patchsize-' 
-                    + str(patch_size) 
-                    + '_stride-' 
-                    + str(stride_size) 
-                    + '_patch-' 
-                    + str(index_patch) 
+                    + '_patchsize-'
+                    + str(patch_size)
+                    + '_stride-'
+                    + str(stride_size)
+                    + '_patch-'
+                    + str(index_patch)
                     + '.pt'
                     )
                 )
@@ -188,8 +188,6 @@ def save_as_pt(input_img):
     image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
     # make sure the tensor dtype is torch.float32
     output_file = os.path.join(basedir, os.path.basename(input_img).split('.nii.gz')[0] + '.pt')
-    #input_img = os.path.basename(input_img)
-    #output_file = input_img.split('.nii.gz')[0] + '.pt'
     # save
     torch.save(image_tensor.clone(), output_file)
 

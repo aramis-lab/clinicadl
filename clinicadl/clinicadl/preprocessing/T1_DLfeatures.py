@@ -131,7 +131,6 @@ def extract_DL_features_t1w(caps_directory,
 
     # The core (processing) nodes
 
-    
     # Node to save MRI in nii.gz format into pytorch .pt format
     # ----------------------
     save_as_pt = npe.MapNode(
@@ -193,7 +192,7 @@ def extract_DL_features_t1w(caps_directory,
                 output_names=['image_id_out', 'subst_ls'],
                 function=get_data_datasink),
             name="GetIDs")
-    
+
     # Find container path from t1w filename
     # ----------------------
     container_path = npe.Node(
@@ -214,7 +213,7 @@ def extract_DL_features_t1w(caps_directory,
 
     subfolder = 'image_based'
     wf = npe.Workflow(name='dl_prepare_data', base_dir=working_directory)
-    
+
     # Connections
     # ----------------------
     wf.connect([
@@ -223,11 +222,11 @@ def extract_DL_features_t1w(caps_directory,
         (read_node, save_as_pt, [('t1w', 'input_img')]),
         (container_path, write_node, [(
             (
-                'container', fix_join, 
+                'container', fix_join,
                 'deeplearning_prepare_data', subfolder, 't1_linear'
                 ),
             'container')]),
-        
+
         (image_id_node, get_ids, [('image_id', 'image_id')]),
         # Connect to DataSink
         (get_ids, write_node, [('image_id_out', '@image_id')]),
@@ -254,10 +253,9 @@ def extract_DL_features_t1w(caps_directory,
             (save_as_pt, extract_patches, [('output_file', 'preprocessed_T1')]),
             (extract_patches, write_node, [('preprocessed_T1', '@preprocessed_T1')]),
             ])
-        
+
     wf.connect([
         (save_as_pt, write_node, [('output_file', '@output_pt_file')])
         ])
-
 
     return wf
