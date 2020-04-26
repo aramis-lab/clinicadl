@@ -57,6 +57,8 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
     # sagital
     slice_list_sag = range(20, image_tensor.shape[0] - 20)  # delete the first 20 slice and last 20 slices
 
+    output_file_original = []
+    output_file_rgb = []
     if slice_direction == 0:
         for index_slice in slice_list_sag:
             # for i in slice_list:
@@ -128,7 +130,7 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
                 output_file_rgb = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_axis-axi_rgblslice-' + str(index_slice) + '.pt')
                 torch.save(extracted_slice_rgb_axi.clone(), output_file_rgb)
 
-    return preprocessed_T1
+    return output_file_rgb, output_file_original
 
 
 def extract_patches(preprocessed_T1, patch_size, stride_size):
@@ -140,6 +142,7 @@ def extract_patches(preprocessed_T1, patch_size, stride_size):
     import torch
     import os
 
+    basedir = os.getcwd()
     image_tensor = torch.load(preprocessed_T1)
 
     # use classifiers tensor.upfold to crop the patch.
@@ -147,13 +150,26 @@ def extract_patches(preprocessed_T1, patch_size, stride_size):
     # the dimension of patch_tensor should be [1, patch_num1, patch_num2, patch_num3, patch_size1, patch_size2, patch_size3]
     patches_tensor = patches_tensor.view(-1, patch_size, patch_size, patch_size)
 
+    output_patch = []
     for index_patch in range(patches_tensor.shape[0]):
         extracted_patch = patches_tensor[index_patch, ...].unsqueeze_(0)  # add one dimension
         # save into .pt format
-        output_patch = os.path.join(os.path.dirname(preprocessed_T1), preprocessed_T1.split('.pt')[0] + '_patchsize-' + str(patch_size) + '_stride-' + str(stride_size) + '_patch-' + str(index_patch) + '.pt')
-        torch.save(extracted_patch.clone(), output_patch)
+        output_patch.append(
+                os.path.join(
+                    basedir,
+                    os.path.basename(preprocessed_T1).split('.pt')[0]
+                    + '_patchsize-' 
+                    + str(patch_size) 
+                    + '_stride-' 
+                    + str(stride_size) 
+                    + '_patch-' 
+                    + str(index_patch) 
+                    + '.pt'
+                    )
+                )
+        torch.save(extracted_patch.clone(), output_patch[index_patch])
 
-    return preprocessed_T1
+    return output_patch
 
 
 def save_as_pt(input_img):
@@ -167,10 +183,13 @@ def save_as_pt(input_img):
     import os
     import nibabel as nib
 
+    basedir = os.getcwd()
     image_array = nib.load(input_img).get_fdata()
     image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
     # make sure the tensor dtype is torch.float32
-    output_file = os.path.join(os.path.dirname(input_img), input_img.split('.nii.gz')[0] + '.pt')
+    output_file = os.path.join(basedir, os.path.basename(input_img).split('.nii.gz')[0] + '.pt')
+    #input_img = os.path.basename(input_img)
+    #output_file = input_img.split('.nii.gz')[0] + '.pt'
     # save
     torch.save(image_tensor.clone(), output_file)
 
