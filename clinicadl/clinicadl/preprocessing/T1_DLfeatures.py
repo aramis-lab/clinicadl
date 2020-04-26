@@ -107,6 +107,8 @@ def extract_DL_features_t1w(caps_directory,
 
     print(t1w_files)
 
+    # Read node
+    # ----------------------
     read_node = npe.Node(
             name="ReadingFiles",
             iterables=[
@@ -117,6 +119,8 @@ def extract_DL_features_t1w(caps_directory,
                 fields=get_input_fields())
             )
 
+    # Get subject ID node
+    # ----------------------
     image_id_node = npe.Node(
            interface=nutil.Function(
                input_names=['bids_or_caps_file'],
@@ -127,7 +131,9 @@ def extract_DL_features_t1w(caps_directory,
 
     # The core (processing) nodes
 
-    # save nii.gz into classifiers .pt format.
+    
+    # Node to save MRI in nii.gz format into pytorch .pt format
+    # ----------------------
     save_as_pt = npe.MapNode(
            name='save_as_pt',
            iterfield=['input_img'],
@@ -138,7 +144,8 @@ def extract_DL_features_t1w(caps_directory,
                )
            )
 
-    # extract the slices from 3 directions.
+    # Extract slices node (options: 3 directions, mode)
+    # ----------------------
     extract_slices = npe.MapNode(
             name='extract_slices',
             iterfield=['preprocessed_T1'],
@@ -155,7 +162,8 @@ def extract_DL_features_t1w(caps_directory,
     extract_slices.inputs.slice_direction = slice_direction
     extract_slices.inputs.slice_mode = slice_mode
 
-    # extract the patches.
+    # Extract patches node (options, patch size and stride size)
+    # ----------------------
     extract_patches = npe.MapNode(
             name='extract_patches',
             iterfield=['preprocessed_T1'],
@@ -169,20 +177,25 @@ def extract_DL_features_t1w(caps_directory,
     extract_patches.inputs.patch_size = patch_size
     extract_patches.inputs.stride_size = stride_size
 
+    # Output node
+    # ----------------------
     outputnode = npe.Node(
             nutil.IdentityInterface(
                 fields=['preprocessed_T1']),
             name='outputnode'
             )
 
+    # Node
+    # ----------------------
     get_ids = npe.Node(
             interface=nutil.Function(
                 input_names=['image_id'],
                 output_names=['image_id_out', 'subst_ls'],
                 function=get_data_datasink),
             name="GetIDs")
+    
     # Find container path from t1w filename
-    # =====================================
+    # ----------------------
     container_path = npe.Node(
             nutil.Function(
                 input_names=['bids_or_caps_filename'],
@@ -190,6 +203,8 @@ def extract_DL_features_t1w(caps_directory,
                 function=container_from_filename),
             name='ContainerPath')
 
+    # Write node
+    # ----------------------
     write_node = npe.Node(
             name="WriteCaps",
             interface=DataSink()
@@ -197,40 +212,52 @@ def extract_DL_features_t1w(caps_directory,
     write_node.inputs.base_directory = caps_directory
     write_node.inputs.parameterization = False
 
-    wf = npe.Workflow(name='t1_dl_features', base_dir=working_directory)
-
+    subfolder = 'image_based'
+    wf = npe.Workflow(name='dl_prepare_data', base_dir=working_directory)
+    
+    # Connections
+    # ----------------------
     wf.connect([
         (read_node, image_id_node, [('t1w', 'bids_or_caps_file')]),
         (read_node, container_path, [('t1w', 'bids_or_caps_filename')]),
         (read_node, save_as_pt, [('t1w', 'input_img')]),
-        (container_path, write_node, [(('container', fix_join, 't1_linear'), 'container')]),
+        (container_path, write_node, [(
+            (
+                'container', fix_join, 
+                'deeplearning_prepare_data', subfolder, 't1_linear'
+                ),
+            'container')]),
+        
         (image_id_node, get_ids, [('image_id', 'image_id')]),
+        # Connect to DataSink
+        (get_ids, write_node, [('image_id_out', '@image_id')]),
+        (get_ids, write_node, [('subst_ls', 'substitutions')]),
         ])
 
     if extract_method == 'slice':
+        subfolder = 'slice_based'
         wf.connect([
             (save_as_pt, extract_slices, [('output_file', 'preprocessed_T1')]),
-            (extract_slices, write_node, [('preprocessed_T1', '@preprocessed_T1')])
+            (extract_slices, write_node, [('preprocessed_T1', '@preprocessed_T1')]),
             ])
     elif extract_method == 'patch':
+        subfolder = 'patch_based'
         wf.connect([
             (save_as_pt, extract_patches, [('output_file', 'preprocessed_T1')]),
-            (extract_patches, write_node, [('preprocessed_T1', '@preprocessed_T1')])
+            (extract_patches, write_node, [('preprocessed_T1', '@preprocessed_T1')]),
             ])
     else:
         wf.connect([
             (save_as_pt, extract_slices, [('output_file', 'preprocessed_T1')]),
-            (extract_slices, write_node, [('preprocessed_T1', '@preprocessed_T1')])
+            (extract_slices, write_node, [('preprocessed_T1', '@preprocessed_T1')]),
 
             (save_as_pt, extract_patches, [('output_file', 'preprocessed_T1')]),
-            (extract_patches, write_node, [('preprocessed_T1', '@preprocessed_T1')])
+            (extract_patches, write_node, [('preprocessed_T1', '@preprocessed_T1')]),
             ])
-
+        
     wf.connect([
-        # Connect to DataSink
-        (get_ids, write_node, [('image_id_out', '@image_id')]),
-        (get_ids, write_node, [('subst_ls', 'substitutions')]),
         (save_as_pt, write_node, [('output_file', '@output_pt_file')])
         ])
+
 
     return wf
