@@ -255,7 +255,7 @@ def extract_dl_t1w(caps_directory,
             ])
     else:
         wf.connect([
-            (save_as_pt, write_node, [('output_file', '@output_pt_file')
+            (save_as_pt, write_node, [('output_file', '@output_pt_file')])
             ])
 
     wf.connect([
