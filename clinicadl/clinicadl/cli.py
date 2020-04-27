@@ -15,15 +15,15 @@ def preprocessing_t1w_func(args):
 
 
 def extract_data_func(args):
-    from .preprocessing.T1_DLfeatures import extract_DL_features_t1w
+    from .preprocessing.T1_preparedl import extract_dl_t1w
     # from .preprocessing.T1_postprocessing import postprocessing_t1w
     wf = extract_DL_features_t1w(
             args.caps_dir,
             args.tsv_file,
-            args.patch_size,
-            args.stride_size,
             args.working_dir,
             args.extract_method,
+            args.patch_size,
+            args.stride_size,
             args.slice_direction,
             args.slice_mode
             )
@@ -406,8 +406,10 @@ def parse_command_line():
             )
     extract_parser.add_argument(
             'extract_method',
-            help='Method used to extract features: slice or patch',
-            choices=['slice', 'patch'], default=None
+            help='''Method used to extract features. Three options: 'slice' 
+                 to get 2D slices from the MRI, 'patch' to get 3D volumetric 
+                 patches or 'whole' to get the complete MRI.''',
+            choices=['slice', 'patch', 'whole'], default='whole'
             )
     extract_parser.add_argument(
             '-psz', '--patch_size',
