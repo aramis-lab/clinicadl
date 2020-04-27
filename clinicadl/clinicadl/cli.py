@@ -406,9 +406,9 @@ def parse_command_line():
             )
     extract_parser.add_argument(
             'extract_method',
-            help='''Method used to extract features. Three options: 
-                 'slice' to get 2D slices from the MRI, 
-                 'patch' to get 3D volumetric patches or 
+            help='''Method used to extract features. Three options:
+                 'slice' to get 2D slices from the MRI,
+                 'patch' to get 3D volumetric patches or
                  'whole' to get the complete MRI.''',
             choices=['slice', 'patch', 'whole'], default='whole'
             )
@@ -424,7 +424,7 @@ def parse_command_line():
             )
     extract_parser.add_argument(
             '-sd', '--slice_direction',
-            help='''Slice direction (only for 'slice' extraction). Three options: 
+            help='''Slice direction (only for 'slice' extraction). Three options:
                  '0' -> Sagittal plane,
                  '1' -> Coronal plane or
                  '2' -> Axial plane''',

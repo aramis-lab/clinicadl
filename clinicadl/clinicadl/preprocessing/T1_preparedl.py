@@ -26,10 +26,10 @@ def extract_dl_t1w(caps_directory,
       CAPS directory where stores the output of preprocessing.
     tsv: str
       TVS file with the subject list (participant_id and session_id).
-    extract_method: 
-      Select which extract method will be applied for the outputs: 
-      - 'slice' to get slices from the MRI, 
-      - 'patch' to get 3D patches from MRI, 
+    extract_method:
+      Select which extract method will be applied for the outputs:
+      - 'slice' to get slices from the MRI,
+      - 'patch' to get 3D patches from MRI,
       - 'whole' to get the complete MRI
     patch_size: int
       Size for extracted 3D patches (only 'patch' method).
@@ -227,7 +227,6 @@ def extract_dl_t1w(caps_directory,
     subfolder = 'image_based'
     wf = npe.Workflow(name='dl_prepare_data', base_dir=working_directory)
 
-    
     # Connections
     # ----------------------
     wf.connect([
@@ -261,7 +260,7 @@ def extract_dl_t1w(caps_directory,
     wf.connect([
         (container_path, write_node, [(
             (
-                'container', fix_join, 
+                'container', fix_join,
                 'deeplearning_prepare_data', subfolder, 't1_linear'
                 ),
             'container')])

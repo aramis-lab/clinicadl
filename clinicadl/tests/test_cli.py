@@ -2,6 +2,7 @@ import pytest
 import clinicadl.cli as cli
 from clinicadl.tools.deep_learning.iotools import Parameters
 
+
 @pytest.fixture(params=['preprocessing',
     'extract',
     'generate',
@@ -16,7 +17,7 @@ def generate_cli_commands(request):
               '/dir/bids/',
               '/dir/caps/',
               '/dir/file.tsv',
-              '/dir/workdir/' ]
+              '/dir/workdir/']
       keys_output = [
               'task',
               'bids_dir',
@@ -27,7 +28,7 @@ def generate_cli_commands(request):
   if request.param == 'extract':
       test_input = [
               'extract',
-              '/dir/caps', 
+              '/dir/caps',
               '/dir/tsv.file',
               '/dir/work/dir',
               'slice',
@@ -50,7 +51,7 @@ def generate_cli_commands(request):
       test_input = [
               'generate',
               'random',
-              '/dir/caps', 
+              '/dir/caps',
               '/dir/tsv_path/',
               '/dir/output/',
               '--n_subjects', '10',
@@ -71,7 +72,7 @@ def generate_cli_commands(request):
       test_input = [
               'train',
               'slice',
-              '/dir/caps', 
+              '/dir/caps',
               '/dir/tsv_path/',
               '/dir/output/',
               'Conv5_FC3']
@@ -86,7 +87,7 @@ def generate_cli_commands(request):
       test_input = [
               'train',
               'subject',
-              '/dir/caps', 
+              '/dir/caps',
               '/dir/tsv_path/',
               '/dir/output/',
               'Conv5_FC3']
@@ -101,7 +102,7 @@ def generate_cli_commands(request):
       test_input = [
               'train',
               'patch',
-              '/dir/caps', 
+              '/dir/caps',
               '/dir/tsv_path/',
               '/dir/output/',
               'Conv5_FC3']
@@ -112,12 +113,12 @@ def generate_cli_commands(request):
               'tsv_path',
               'output_dir',
               'network']
-  
+
   return test_input, keys_output
 
 
 def test_cli(generate_cli_commands):
-  import re  
+  import re
   test_input = generate_cli_commands[0]
   keys_output = generate_cli_commands[1]
   print('Value of test_input is:', type(test_input), test_input)
@@ -129,4 +130,3 @@ def test_cli(generate_cli_commands):
   outputs = [str(arguments[x]) for x in keys_output]
   print(outputs)
   assert outputs == test_input_filtered
-

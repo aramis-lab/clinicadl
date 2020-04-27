@@ -159,9 +159,9 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
                 output_file_original.append(
                         os.path.join(
                             basedir,
-                            os.path.basename(preprocessed_T1).split('.pt')[0] 
-                            + '_axis-axi_originalslice-' 
-                            + str(index_slice) 
+                            os.path.basename(preprocessed_T1).split('.pt')[0]
+                            + '_axis-axi_originalslice-'
+                            + str(index_slice)
                             + '.pt'
                             )
                         )
