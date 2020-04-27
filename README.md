@@ -32,7 +32,7 @@ be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 - Nipy
 - TensorBoardX
 
-# How to use?
+# How to install `clinicadl` ?
 
 ## Create a conda environment with the corresponding dependencies:
 Keep the following order of the installation instructions.
@@ -55,30 +55,60 @@ cd clinicadl
 pip install -e .
 ```
 
-## Use in command line mode
+# How to use `clinicadl` ?
+
+`clinicadl` is an utility to be used with the command line.
+
+To have an overview of the general options proposed by the software type: 
 
 ```bash
 clinicadl -h
 
-usage: clinicadl [-h] {preprocessing,extract,train,classify} ...
+usage: clinicadl [-h] [--verbose]
+{generate,preprocessing,extract,train,classify} ...
 
 Clinica Deep Learning.
 
-optional arguments: -h, --help            show this help message and exit
+optional arguments:
+-h, --help            show this help message and exit
+--verbose, -v
 
 Task to execute with clinicadl:
-  What kind of task do you want to use with clinicadl (preprocessing,
-  extract, train, validate, classify).
+  What kind of task do you want to use with clinicadl? (preprocessing,
+  extract, generate, train, validate, classify).
 
-  {preprocessing,extract,train,classify}
-                        Stages/task to execute with clinicadl
+    {generate,preprocessing,extract,train,classify}
+                        Tasks proposed by clinicadl
+    generate            Generate synthetic data for functional tests.
     preprocessing       Prepare data for training (needs clinica installed).
     extract             Create data (slices or patches) for training.
-    generate            Generate synthetic data for functional tests.
     train               Train with your data and create a model.
     classify            Classify one image or a list of images with your
-                        previouly trained model.  
+                        previously trained model.
 ```
+
+## Tasks performed by clinica dl
+
+There are five kind of tasks that can be performed using the command line:
+
+* Generate a synthetic dataset useful to run functional tests.
+
+* T1 MRI preprocessing. It processes a dataset of T1 images stored in BIDS
+  format and prepares to extract the tensors (see paper for details on the
+  preprocessing). Output is stored using the
+  [CAPS](http://www.clinica.run/doc/CAPS/Introduction/) hierarchy.
+
+* T1 MRI tensor extraction. The `extract` option allows to create files in
+  Pytorch format (`.pt`) with different options: the complete MRI, 2D slices
+  and/or 3D patches. This files are also stored in the CAPS hierarchy.
+
+* Train neural networks. Tensors obtained are used to perform the training of CNN models.
+
+* MRI classification. Previously trained models can be used to performe the inference of a particular or a set of MRI.
+
+For detailed instructions and options of each task type  `clinica 'task' -h`.
+
+## Some examples
 
 Typical use for `preprocessing`:
 
@@ -90,73 +120,9 @@ clinicadl preprocessing --np 32 \
   $WORKING_DIR
 ```
 
-For detailed instructions type `clinica 'action' -h`.
-For example:
+# Run testing.
 
-```bash
-clinicadl train -h
-usage: clinicadl train [-h] [-gpu] [-np NPROC] [--batch_size BATCH_SIZE]
-                       [--evaluation_steps EVALUATION_STEPS]
-                       [--preprocessing {linear,mni}]
-                       [--diagnoses DIAGNOSES [DIAGNOSES ...]] [--baseline]
-                       [--minmaxnormalization] [--n_splits N_SPLITS]
-                       [--split SPLIT] [-tAE]
-                       [--accumulation_steps ACCUMULATION_STEPS]
-                       [--epochs EPOCHS] [--learning_rate LEARNING_RATE]
-                       [--patience PATIENCE] [--tolerance TOLERANCE]
-                       [--add_sigmoid] [--pretrained_path PRETRAINED_PATH]
-                       [--pretrained_difference PRETRAINED_DIFFERENCE]
-                       {subject,slice,patch,svm} caps_directory tsv_path
-                       output_dir network
-
-positional arguments:
-  {subject,slice,patch,svm}
-                        Choose your mode (subject level, slice level, patch
-                        level, svm).
-  caps_directory        Data using CAPS structure.
-  tsv_path              tsv path with sujets/sessions to process.
-  output_dir            Folder containing results of the training.
-  network               CNN Model to be used during the training.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -gpu, --use_gpu       Uses gpu instead of cpu if cuda is available
-  -np NPROC, --nproc NPROC
-                        Number of cores used during the training
-  --batch_size BATCH_SIZE
-                        Batch size for training. (default=2)
-  --evaluation_steps EVALUATION_STEPS, -esteps EVALUATION_STEPS
-                        Fix the number of batches to use before validation
-  --preprocessing {linear,mni}
-                        Defines the type of preprocessing of CAPS data.
-  --diagnoses DIAGNOSES [DIAGNOSES ...], -d DIAGNOSES [DIAGNOSES ...]
-                        Take all the subjects possible for autoencoder
-                        training
-  --baseline            if True only the baseline is used
-  --minmaxnormalization, -n
-                        Performs MinMaxNormalization
-  --n_splits N_SPLITS   If a value is given will load data of a k-fold CV
-  --split SPLIT         Will load the specific split wanted.
-  -tAE, --train_autoencoder
-                        Add this option if you want to train an autoencoder
-  --accumulation_steps ACCUMULATION_STEPS, -asteps ACCUMULATION_STEPS
-                        Accumulates gradients in order to increase the size of
-                        the batch
-  --epochs EPOCHS       Epochs through the data. (default=20)
-  --learning_rate LEARNING_RATE, -lr LEARNING_RATE
-                        Learning rate of the optimization. (default=0.01)
-  --patience PATIENCE   Waiting time for early stopping.
-  --tolerance TOLERANCE
-                        Tolerance value for the early stopping.
-  --add_sigmoid         Ad sigmoid function at the end of the decoder.
-```
-
-## Or use the scripts
-Look at the `clinicadl/scripts/` folder.
-
-## Run testing.
-
-### Unit testing
+## Unit testing
 
 Be sure to have the `pytest` library in order to run the test suite.  This test
 suite includes unit testing to be launched using the command line: 
@@ -164,7 +130,7 @@ suite includes unit testing to be launched using the command line:
 pytest clinicadl/tests/
 ```
 
-### Model prediction tests
+## Model prediction tests
 
 For sanity check trivial datasets can be generated to train or test/validate
 the predictive models.
