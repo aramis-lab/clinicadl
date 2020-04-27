@@ -261,11 +261,11 @@ def parse_command_line():
     parser.add_argument('--verbose', '-v', action='count')
 
     subparser = parser.add_subparsers(
-            title='Task to execute with clinicadl',
-            description='''What kind of task do you want to use with clinicadl
+            title='''Task to execute with clinicadl:''',
+            description='''What kind of task do you want to use with clinicadl?
             (preprocessing, extract, generate, train, validate, classify).''',
             dest='task',
-            help='Stages/task to execute with clinicadl')
+            help='''****** Tasks proposed by clinicadl ******''')
 
     subparser.required = True
 
@@ -645,7 +645,7 @@ def parse_command_line():
 
     classify_parser = subparser.add_parser(
             'classify',
-            help='''Classify one image or a list of images with your previouly
+            help='''Classify one image or a list of images with your previously
                  trained model.''')
     classify_parser.add_argument(
             'mode',
