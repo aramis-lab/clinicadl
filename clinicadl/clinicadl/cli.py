@@ -17,7 +17,7 @@ def preprocessing_t1w_func(args):
 def extract_data_func(args):
     from .preprocessing.T1_preparedl import extract_dl_t1w
     # from .preprocessing.T1_postprocessing import postprocessing_t1w
-    wf = extract_DL_features_t1w(
+    wf = extract_dl_t1w(
             args.caps_dir,
             args.tsv_file,
             args.working_dir,
