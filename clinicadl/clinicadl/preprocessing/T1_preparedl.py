@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-
-
 def extract_dl_t1w(caps_directory,
                    tsv,
                    working_directory=None,
@@ -68,10 +66,10 @@ def extract_dl_t1w(caps_directory,
     from clinica.utils.exceptions import ClinicaBIDSError, ClinicaException
     from clinica.utils.inputs import clinica_file_reader
     from clinica.utils.nipype import fix_join
-    from .T1_postprocessing_utils import (extract_slices,
-                                          extract_patches,
-                                          save_as_pt)
-    from .T1_extractdl_utils import (container_from_filename,
+    from .T1_preparedl_utils import (extract_slices,
+                                     extract_patches,
+                                     save_as_pt,
+                                     container_from_filename,
                                      get_data_datasink)
 
     T1W_LINEAR = {

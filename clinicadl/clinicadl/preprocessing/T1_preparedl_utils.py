@@ -1,48 +1,7 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Nov 06 14:17:41 2017
-
-@author: Junhao WEN
-"""
-
-__author__ = "Junhao Wen"
-__copyright__ = "Copyright 2018 The Aramis Lab Team"
-__credits__ = ["Junhao Wen"]
-__license__ = "See LICENSE.txt file"
-__version__ = "0.1.0"
-__maintainer__ = "Junhao Wen"
-__email__ = "junhao.wen89@gmail.com"
-__status__ = "Development"
-
-
-def get_caps_t1(caps_directory, tsv):
-    """
-    THis is a function to grab all the cropped files
-    :param caps_directory:
-    :param tsv:
-    :return:
-    """
-    import pandas as pd
-    import os
-
-    preprocessed_T1 = []
-    df = pd.read_csv(tsv, sep='\t')
-    if ('session_id' != list(df.columns.values)[1]) and (
-                'participant_id' != list(df.columns.values)[0]):
-        raise Exception('the data file is not in the correct format.')
-    img_list = list(df['participant_id'])
-    sess_list = list(df['session_id'])
-
-    for i in range(len(img_list)):
-        img_path = os.path.join(caps_directory, 'subjects', img_list[i], sess_list[i], 't1', 'preprocessing_dl', img_list[i] + '_' + sess_list[i] + '_space-MNI_res-1x1x1.nii.gz')
-        preprocessed_T1.append(img_path)
-
-    return preprocessed_T1
-
 
 def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
     """
-    This is to extract the slices from three directions
+    This function extracts the slices from three directions
     :param preprocessed_T1:
     :param slice_direction: which axis direction that the slices were extracted
     :return:
@@ -183,7 +142,7 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
 
 def extract_patches(preprocessed_T1, patch_size, stride_size):
     """
-    This is to extract the patches from three directions
+    This function extracts the patches from three directions
     :param preprocessed_T1:
     :return:
     """
@@ -222,7 +181,8 @@ def extract_patches(preprocessed_T1, patch_size, stride_size):
 
 def save_as_pt(input_img):
     """
-    This function is to transfer nii.gz file into .pt format, in order to train the classifiers model more efficient when loading the data.
+    This function transforms  nii.gz file into .pt format, in order to train
+    the classifiers model more efficient when loading the data.
     :param input_img:
     :return:
     """
@@ -240,3 +200,46 @@ def save_as_pt(input_img):
     torch.save(image_tensor.clone(), output_file)
 
     return output_file
+
+# Get containers to ptoduce the CAPS structure
+def container_from_filename(bids_or_caps_filename):
+    """Extract container from BIDS or CAPS file.
+    Args:
+       bids_or_caps_filename (str): full path to BIDS or CAPS filename.
+    Returns:
+       Container path of the form "subjects/<participant_id>/<session_id>"
+    Examples:
+       >>> from clinica.utils.nipype import container_from_filename
+       >>> container_from_filename('/path/to/bids/sub-CLNC01/ses-M00/anat/sub-CLNC01_ses-M00_T1w.nii.gz')
+               'subjects/sub-CLNC01/ses-M00'
+       >>> container_from_filename('caps/subjects/sub-CLNC01/ses-M00/dwi/preprocessing/sub-CLNC01_ses-M00_preproc.nii')
+               'subjects/sub-CLNC01/ses-M00'
+    """
+
+    from os.path import join
+    import re
+    m = re.search(r'(sub-[a-zA-Z0-9]+)/(ses-[a-zA-Z0-9]+)', bids_or_caps_filename)
+    if m is None:
+        raise ValueError('Input filename is not in a BIDS or CAPS compliant format.'
+                         'It does not contain the participant and session ID.')
+    subject = m.group(1)
+    session = m.group(2)
+    return join('subjects', subject, session)
+
+
+def get_data_datasink(image_id):
+    substitutions_ls = [  # registration
+            (image_id + '_T1w_corrected.nii.gz',
+                image_id + '_T1w_desc-BiasCorrected_T1w.nii.gz'),
+            (image_id + 'Warped_cropped_intensity_norm.nii.gz',
+                image_id + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_intensity_norm_T1w.nii.gz'),
+            (image_id + 'Warped_cropped.nii.gz',
+                image_id + '_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz'),
+            (image_id + '0GenericAffine.mat',
+                image_id + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_affine.mat'),
+            (image_id + 'Warped_cropped.pt',
+                image_id + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt'),
+            (image_id + 'Warped.nii.gz',
+                image_id + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz')
+            ]
+    return image_id, substitutions_ls
