@@ -87,29 +87,30 @@ Task to execute with clinicadl:
                         previously trained model.
 ```
 
-## Tasks performed by clinica dl
+## Tasks performed by `clinicadl`
 
 There are five kind of tasks that can be performed using the command line:
 
-* Generate a synthetic dataset useful to run functional tests.
+- *Generate a synthetic dataset.* Useful to run functional tests.
 
-* T1 MRI preprocessing. It processes a dataset of T1 images stored in BIDS
+- *T1 MRI preprocessing.* It processes a dataset of T1 images stored in BIDS
   format and prepares to extract the tensors (see paper for details on the
   preprocessing). Output is stored using the
   [CAPS](http://www.clinica.run/doc/CAPS/Introduction/) hierarchy.
 
-* T1 MRI tensor extraction. The `extract` option allows to create files in
+- *T1 MRI tensor extraction.* The `extract` option allows to create files in
   Pytorch format (`.pt`) with different options: the complete MRI, 2D slices
   and/or 3D patches. This files are also stored in the CAPS hierarchy.
 
-* Train neural networks. Tensors obtained are used to perform the training of CNN models.
+- *Train neural networks.* Tensors obtained are used to perform the training of CNN models.
 
-* MRI classification. Previously trained models can be used to performe the inference of a particular or a set of MRI.
+- *MRI classification.* Previously trained models can be used to performe the inference of a particular or a set of MRI.
 
 For detailed instructions and options of each task type  `clinica 'task' -h`.
 
 ## Some examples
 
+### Preprocessing
 Typical use for `preprocessing`:
 
 ```bash
@@ -118,6 +119,43 @@ clinicadl preprocessing --np 32 \
   $CAPS_DIR \
   $TSV_FILE \
   $WORKING_DIR
+```
+
+### Tensor extraction
+
+```
+usage: clinicadl extract [-h] [-psz PATCH_SIZE] [-ssz STRIDE_SIZE]
+                         [-sd SLICE_DIRECTION] [-sm {original,rgb}]
+                         [-np NPROC]
+                         caps_dir tsv_file working_dir {slice,patch,whole}
+
+positional arguments:
+  caps_dir              Data using CAPS structure.
+  tsv_file              tsv file with sujets/sessions to process.
+  working_dir           Working directory to save temporary file.
+  {slice,patch,whole}   Method used to extract features. Three options:
+                        'slice' to get 2D slices from the MRI, 'patch' to get
+                        3D volumetric patches or 'whole' to get the complete
+                        MRI.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -psz PATCH_SIZE, --patch_size PATCH_SIZE
+                        Patch size (only for 'patch' extraction) e.g:
+                        --patch_size 50
+  -ssz STRIDE_SIZE, --stride_size STRIDE_SIZE
+                        Stride size (only for 'patch' extraction) e.g.:
+                        --stride_size 50
+  -sd SLICE_DIRECTION, --slice_direction SLICE_DIRECTION
+                        Slice direction (only for 'slice' extraction). Three
+                        options: '0' -> Sagittal plane, '1' -> Coronal plane
+                        or '2' -> Axial plane
+  -sm {original,rgb}, --slice_mode {original,rgb}
+                        Slice mode (only for 'slice' extraction). Two options:
+                        'original' to save one single channel (intensity),
+                        'rgb' to saves three channel (with same intensity).
+  -np NPROC, --nproc NPROC
+                        Number of cores used for processing
 ```
 
 # Run testing.
