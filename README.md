@@ -91,20 +91,20 @@ Task to execute with clinicadl:
 
 There are five kind of tasks that can be performed using the command line:
 
-- *Generate a synthetic dataset.* Useful to run functional tests.
+- **Generate a synthetic dataset.** Useful to run functional tests.
 
-- *T1 MRI preprocessing.* It processes a dataset of T1 images stored in BIDS
+- **T1 MRI preprocessing.** It processes a dataset of T1 images stored in BIDS
   format and prepares to extract the tensors (see paper for details on the
   preprocessing). Output is stored using the
   [CAPS](http://www.clinica.run/doc/CAPS/Introduction/) hierarchy.
 
-- *T1 MRI tensor extraction.* The `extract` option allows to create files in
+- **T1 MRI tensor extraction.** The `extract` option allows to create files in
   Pytorch format (`.pt`) with different options: the complete MRI, 2D slices
   and/or 3D patches. This files are also stored in the CAPS hierarchy.
 
-- *Train neural networks.* Tensors obtained are used to perform the training of CNN models.
+- **Train neural networks.** Tensors obtained are used to perform the training of CNN models.
 
-- *MRI classification.* Previously trained models can be used to performe the inference of a particular or a set of MRI.
+- **MRI classification.** Previously trained models can be used to performe the inference of a particular or a set of MRI.
 
 For detailed instructions and options of each task type  `clinica 'task' -h`.
 
@@ -123,6 +123,7 @@ clinicadl preprocessing --np 32 \
 
 ### Tensor extraction
 
+These are the options available for the `extract` task:
 ```
 usage: clinicadl extract [-h] [-psz PATCH_SIZE] [-ssz STRIDE_SIZE]
                          [-sd SLICE_DIRECTION] [-sm {original,rgb}]
