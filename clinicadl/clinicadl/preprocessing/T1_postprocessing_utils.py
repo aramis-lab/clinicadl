@@ -61,7 +61,7 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
     output_file_original = []
     output_file_rgb = []
     if slice_direction == 0:
-        for index_slice in slice_list_sag:
+        for index_slice, index_slice_list in zip(slice_list_sag, range(len(slice_list_sag))):
             # for i in slice_list:
             # sagital
             slice_select_sag = image_tensor[index_slice, :, :]
@@ -85,10 +85,10 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
                             + '.pt'
                             )
                         )
-                torch.save(extracted_slice_original_sag.clone(), output_file_original[index_slice])
+                torch.save(extracted_slice_original_sag.clone(), output_file_original[index_slice_list])
             elif slice_mode == 'rgb':
                 output_file_rgb.append(
-                        os.path,join(
+                        os.path.join(
                             basedir,
                             os.path.basename(preprocessed_T1).split('.pt')[0]
                             + '_axis-sag_rgbslice-'
@@ -96,12 +96,12 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
                             + '.pt'
                             )
                         )
-                torch.save(extracted_slice_rgb_sag.clone(), output_file_rgb[index_slice])
+                torch.save(extracted_slice_rgb_sag.clone(), output_file_rgb[index_slice_list])
 
     elif slice_direction == 1:
         # cornal
         slice_list_cor = range(15, image_tensor.shape[1] - 15)  # delete the first 20 slice and last 15 slices
-        for index_slice in slice_list_cor:
+        for index_slice, index_slice_list in zip(slice_list_cor, range(len(slice_list_cor))):
             # for i in slice_list:
             # sagital
             slice_select_cor = image_tensor[:, index_slice, :]
@@ -124,24 +124,24 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
                             + str(index_slice)
                             + '.pt')
                         )
-                torch.save(extracted_slice_original_cor.clone(), output_file_original[index_slice])
+                torch.save(extracted_slice_original_cor.clone(), output_file_original[index_slice_list])
             elif slice_mode == 'rgb':
                 output_file_rgb.append(
                     os.path.join(
                         basedir,
                         os.path.basename(preprocessed_T1).split('.pt')[0]
-                        + '_axis-cor_rgblslice-'
+                        + '_axis-cor_rgbslice-'
                         + str(index_slice)
                         + '.pt'
                         )
                     )
-                torch.save(extracted_slice_rgb_cor.clone(), output_file_rgb[index_slice])
+                torch.save(extracted_slice_rgb_cor.clone(), output_file_rgb[index_slice_list])
 
     else:
 
         # axial
         slice_list_axi = range(15, image_tensor.shape[2] - 15)  # delete the first 20 slice and last 15 slices
-        for index_slice in slice_list_axi:
+        for index_slice, index_slice_list in zip(slice_list_axi, range(len(slice_list_axi))):
             # for i in slice_list:
             # sagital
             slice_select_axi = image_tensor[:, :, index_slice]
@@ -165,18 +165,18 @@ def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
                             + '.pt'
                             )
                         )
-                torch.save(extracted_slice_original_axi.clone(), output_file_original[index_slice])
+                torch.save(extracted_slice_original_axi.clone(), output_file_original[index_slice_list])
             elif slice_mode == 'rgb':
                 output_file_rgb.append(
                         os.path.join(
                             basedir,
                             os.path.basename(preprocessed_T1).split('.pt')[0]
-                            + '_axis-axi_rgblslice-'
+                            + '_axis-axi_rgbslice-'
                             + str(index_slice)
                             + '.pt'
                             )
                         )
-                torch.save(extracted_slice_rgb_axi.clone(), output_file_rgb[index_slice])
+                torch.save(extracted_slice_rgb_axi.clone(), output_file_rgb[index_slice_list])
 
     return output_file_rgb, output_file_original
 
