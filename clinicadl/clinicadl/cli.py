@@ -406,29 +406,35 @@ def parse_command_line():
             )
     extract_parser.add_argument(
             'extract_method',
-            help='''Method used to extract features. Three options: 'slice' 
-                 to get 2D slices from the MRI, 'patch' to get 3D volumetric 
-                 patches or 'whole' to get the complete MRI.''',
+            help='''Method used to extract features. Three options: 
+                 'slice' to get 2D slices from the MRI, 
+                 'patch' to get 3D volumetric patches or 
+                 'whole' to get the complete MRI.''',
             choices=['slice', 'patch', 'whole'], default='whole'
             )
     extract_parser.add_argument(
             '-psz', '--patch_size',
-            help='Patch size e.g: --patch_size 50',
+            help='''Patch size (only for 'patch' extraction) e.g: --patch_size 50''',
             type=int, default=50
             )
     extract_parser.add_argument(
             '-ssz', '--stride_size',
-            help='Stride size  e.g.: --stride_size 50',
+            help='''Stride size (only for 'patch' extraction) e.g.: --stride_size 50''',
             type=int, default=50
             )
     extract_parser.add_argument(
             '-sd', '--slice_direction',
-            help='Slice direction',
+            help='''Slice direction (only for 'slice' extraction). Three options: 
+                 '0' -> Sagittal plane,
+                 '1' -> Coronal plane or
+                 '2' -> Axial plane''',
             type=int, default=0
             )
     extract_parser.add_argument(
             '-sm', '--slice_mode',
-            help='Slice mode',
+            help='''Slice mode (only for 'slice' extraction). Two options:
+                 'original' to save one single channel (intensity),
+                 'rgb' to saves three channel (with same intensity).''',
             choices=['original', 'rgb'], default='rgb'
             )
     extract_parser.add_argument(
