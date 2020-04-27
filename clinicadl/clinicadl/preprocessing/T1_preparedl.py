@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
 
-def extract_DL_features_t1w(caps_directory,
-                            tsv,
-                            patch_size,
-                            stride_size,
-                            working_directory=None,
-                            extract_method='slice',
-                            slice_direction=0,
-                            slice_mode='original'):
+def extract_dl_t1w(caps_directory,
+                   tsv,
+                   working_directory=None,
+                   extract_method='whole',
+                   patch_size=50,
+                   stride_size=50,
+                   slice_direction=0,
+                   slice_mode='original'):
     """ This is a preprocessing pipeline to convert the MRIs in nii.gz format
     into tensor versions (using pytorch format). It also prepares the
     slice-level and patch-level data from the entire MRI and save them on disk.
@@ -26,13 +26,27 @@ def extract_DL_features_t1w(caps_directory,
       CAPS directory where stores the output of preprocessing.
     tsv: str
       TVS file with the subject list (participant_id and session_id).
+    extract_method: 
+      Select which extract method will be applied for the outputs: 
+      - 'slice' to get slices from the MRI, 
+      - 'patch' to get 3D patches from MRI, 
+      - 'whole' to get the complete MRI
     patch_size: int
-      Size for extracted 3D patches.
+      Size for extracted 3D patches (only 'patch' method).
     stride_size: int
-      Sliding size window of the slice feature.
+      Sliding size window of when extracting the patches (only 'patch' method).
+    slice_direction: int
+      Which direction the slices will be extracted (only 'slice' method):
+      - 0: Sagittal plane
+      - 1: Coronal plane
+      - 2: Axial plane
+    slice_mode: str
+      Mode how slices are stored (only 'slice' method):
+      - original: saves one single channel (intensity)
+      - rgb: saves with three channels (red, green, blue)
     working_directory: str
       Folder containing a temporary space to save intermediate results.
-
+    e
 
     Returns
     -------
@@ -45,19 +59,20 @@ def extract_DL_features_t1w(caps_directory,
     import nipype.interfaces.io as nio
     import nipype.interfaces.utility as nutil
     import nipype.pipeline.engine as npe
+    from nipype.interfaces.io import DataSink
+    from nipype import config
     import tempfile
     from clinica.utils.inputs import check_caps_folder
     from clinica.utils.filemanip import get_subject_id
     from clinica.utils.participant import get_subject_session_list
     from clinica.utils.exceptions import ClinicaBIDSError, ClinicaException
     from clinica.utils.inputs import clinica_file_reader
+    from clinica.utils.nipype import fix_join
     from .T1_postprocessing_utils import (extract_slices,
                                           extract_patches,
                                           save_as_pt)
     from .T1_extractdl_utils import (container_from_filename,
                                      get_data_datasink)
-    from nipype.interfaces.io import DataSink
-    from clinica.utils.nipype import fix_join
 
     T1W_LINEAR = {
             'pattern': '*space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz',
@@ -69,22 +84,22 @@ def extract_DL_features_t1w(caps_directory,
 
     check_caps_folder(caps_directory)
     is_bids_dir = False
+    use_session_tsv = False
 
     sessions, subjects = get_subject_session_list(
             caps_directory,
             tsv,
             is_bids_dir,
-            False,
+            use_session_tsv,
             working_directory
             )
 
     # Use hash instead of parameters for iterables folder names
     # Otherwise path will be too long and generate OSError
-    from nipype import config
     cfg = dict(execution={'parameterize_dirs': False})
     config.update_config(cfg)
 
-    # Inputs from anat/ folder
+    # Inputs from t1_linear folder
     # ========================
     # T1w file:
     try:
@@ -104,8 +119,6 @@ def extract_DL_features_t1w(caps_directory,
         A list of (string) input fields name.
         """
         return ['t1w']
-
-    print(t1w_files)
 
     # Read node
     # ----------------------
@@ -129,7 +142,7 @@ def extract_DL_features_t1w(caps_directory,
            name='ImageID'
            )
 
-    # The core (processing) nodes
+    # The processing nodes
 
     # Node to save MRI in nii.gz format into pytorch .pt format
     # ----------------------
@@ -154,7 +167,7 @@ def extract_DL_features_t1w(caps_directory,
                     'preprocessed_T1', 'slice_direction',
                     'slice_mode'
                     ],
-                output_names=['preprocessed_T1']
+                output_names=['output_file_rgb', 'output_file_original']
                 )
             )
 
@@ -169,7 +182,7 @@ def extract_DL_features_t1w(caps_directory,
             interface=nutil.Function(
                 function=extract_patches,
                 input_names=['preprocessed_T1', 'patch_size', 'stride_size'],
-                output_names=['preprocessed_T1']
+                output_names=['output_patch']
                 )
             )
 
@@ -214,48 +227,44 @@ def extract_DL_features_t1w(caps_directory,
     subfolder = 'image_based'
     wf = npe.Workflow(name='dl_prepare_data', base_dir=working_directory)
 
+    
     # Connections
     # ----------------------
     wf.connect([
         (read_node, image_id_node, [('t1w', 'bids_or_caps_file')]),
         (read_node, container_path, [('t1w', 'bids_or_caps_filename')]),
         (read_node, save_as_pt, [('t1w', 'input_img')]),
-        (container_path, write_node, [(
-            (
-                'container', fix_join,
-                'deeplearning_prepare_data', subfolder, 't1_linear'
-                ),
-            'container')]),
-
         (image_id_node, get_ids, [('image_id', 'image_id')]),
         # Connect to DataSink
         (get_ids, write_node, [('image_id_out', '@image_id')]),
-        (get_ids, write_node, [('subst_ls', 'substitutions')]),
+        (get_ids, write_node, [('subst_ls', 'substitutions')])
         ])
 
     if extract_method == 'slice':
         subfolder = 'slice_based'
         wf.connect([
             (save_as_pt, extract_slices, [('output_file', 'preprocessed_T1')]),
-            (extract_slices, write_node, [('preprocessed_T1', '@preprocessed_T1')]),
+            (extract_slices, write_node, [('output_file_rgb', '@slices_rgb_T1')]),
+            (extract_slices, write_node, [('output_file_original', '@slices_original_T1')])
             ])
     elif extract_method == 'patch':
         subfolder = 'patch_based'
         wf.connect([
             (save_as_pt, extract_patches, [('output_file', 'preprocessed_T1')]),
-            (extract_patches, write_node, [('preprocessed_T1', '@preprocessed_T1')]),
+            (extract_patches, write_node, [('output_patch', '@patches_T1')])
             ])
     else:
         wf.connect([
-            (save_as_pt, extract_slices, [('output_file', 'preprocessed_T1')]),
-            (extract_slices, write_node, [('preprocessed_T1', '@preprocessed_T1')]),
-
-            (save_as_pt, extract_patches, [('output_file', 'preprocessed_T1')]),
-            (extract_patches, write_node, [('preprocessed_T1', '@preprocessed_T1')]),
+            (save_as_pt, write_node, [('output_file', '@output_pt_file')
             ])
 
     wf.connect([
-        (save_as_pt, write_node, [('output_file', '@output_pt_file')])
+        (container_path, write_node, [(
+            (
+                'container', fix_join, 
+                'deeplearning_prepare_data', subfolder, 't1_linear'
+                ),
+            'container')])
         ])
 
     return wf
