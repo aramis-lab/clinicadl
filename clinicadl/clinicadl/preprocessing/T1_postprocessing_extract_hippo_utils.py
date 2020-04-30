@@ -14,6 +14,7 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
+
 def get_caps_t1(caps_directory, tsv):
     """
     THis is a function to grab all the cropped files
@@ -43,6 +44,7 @@ def get_caps_t1(caps_directory, tsv):
 
     return preprocessed_T1, cropped_hipp_file_name, participant_id, session_id, preprocessed_T1_folder
 
+
 def save_as_pt(input_img):
     """
     This function is to transfer nii.gz file into .pt format, in order to train the classifiers model more efficient when loading the data.
@@ -50,17 +52,19 @@ def save_as_pt(input_img):
     :return:
     """
 
-    import torch, os
+    import torch
+    import os
     import nibabel as nib
 
     image_array = nib.load(input_img).get_fdata()
     image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
-    ## make sure the tensor dtype is torch.float32
+    # make sure the tensor dtype is torch.float32
     output_file = os.path.join(os.path.dirname(input_img), input_img.split('.nii')[0] + '.pt')
     # save
     torch.save(image_tensor.clone(), output_file)
 
     return output_file
+
 
 def compress_nii(in_file, same_dir=True):
     """
@@ -90,6 +94,7 @@ def compress_nii(in_file, same_dir=True):
 
     return out_file
 
+
 def get_subid_sesid_datasink(participant_id, session_id, caps_directory, hemi):
     """
     This is to extract the base_directory for the DataSink including participant_id and sesion_id in CAPS directory, also the tuple_list for substitution
@@ -98,9 +103,10 @@ def get_subid_sesid_datasink(participant_id, session_id, caps_directory, hemi):
     """
     import os
 
-    ## for MapNode
-    base_directory = os.path.join(caps_directory, 'subjects', participant_id, session_id, 't1',
-                                          'preprocessing_dl')
+    # for MapNode
+    base_directory = os.path.join(
+            caps_directory, 'subjects', participant_id,
+            session_id, 't1', 'preprocessing_dl')
 
     subst_tuple_list = [
         (participant_id + '_' + session_id + '_space-MNI_res-1x1x1_hippocampus.nii.gz',
@@ -119,4 +125,3 @@ def get_subid_sesid_datasink(participant_id, session_id, caps_directory, hemi):
     ]
 
     return base_directory, subst_tuple_list, regexp_substitutions
-

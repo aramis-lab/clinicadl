@@ -5,7 +5,7 @@ setup(
     version = '0.0.1',
     description = 'Deep learning classification with clinica',
     url = '',
-    packages = ['clinicadl',],
+    packages = ['clinicadl', ],
     entry_points = {
         'console_scripts': [
             'clinicadl = clinicadl.main:main',

@@ -124,7 +124,3 @@ class Conv5_FC3_mni(nn.Module):
         x = self.classifier(x)
 
         return x
-
-
-
-

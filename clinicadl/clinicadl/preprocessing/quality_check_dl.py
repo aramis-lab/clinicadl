@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
     colmn_name = list(df.columns)
     colmn_name.extend(['pass_probability', 'qc'])
-    ### creat a new df to store the QC results.
+    # creat a new df to store the QC results.
     qc_df = pd.DataFrame(columns=colmn_name)
 
     for i in range(len(img_list)):

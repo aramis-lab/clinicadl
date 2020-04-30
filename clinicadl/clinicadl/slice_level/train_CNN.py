@@ -77,8 +77,8 @@ def train_slice(params):
                                   pin_memory=True)
 
         # chosen optimizer for back-propagation
-        optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
-                                                             params.learning_rate, weight_decay=params.weight_decay)
+        optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), params.learning_rate, weight_decay=params.weight_decay)
+
         model.load_state_dict(init_state)
 
         # Binary cross-entropy loss

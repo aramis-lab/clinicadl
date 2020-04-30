@@ -14,6 +14,7 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
+
 def quality_check_image_similarity(caps_directory, tsv, ref_template, working_directory=None):
     """
     This is a function to do a raw quality check for the preprocessed image. To mention, the preprocessing pipeline of DL includes:
@@ -28,7 +29,6 @@ def quality_check_image_similarity(caps_directory, tsv, ref_template, working_di
     Returns: A tsv with an order based on the intensity differences between each individual and the template.
 
     """
-
 
     import nipype.interfaces.utility as nutil
     import nipype.pipeline.engine as npe
@@ -47,30 +47,40 @@ def quality_check_image_similarity(caps_directory, tsv, ref_template, working_di
     inputnode.inputs.tsv = tsv
     inputnode.inputs.ref_template = ref_template
 
-    get_caps_list = npe.Node(name='get_caps_list',
-                               interface=nutil.Function(
-                                   function=get_caps_list,
-                                   input_names=['caps_directory', 'tsv'],
-                                   output_names=['caps_intensity_nor_list']))
+    get_caps_list = npe.Node(
+            name='get_caps_list',
+            interface=nutil.Function(
+                function=get_caps_list,
+                input_names=['caps_directory', 'tsv'],
+                output_names=['caps_intensity_nor_list']
+                )
+            )
 
-    #### get the mask of the template
-    bet_ref_img = npe.Node(name='bet_ref_img',
-                                 interface=BET())
-    bet_ref_img.inputs.frac=0.5
-    bet_ref_img.inputs.mask=True
-    bet_ref_img.inputs.robust=True
+    # get the mask of the template
+    bet_ref_img = npe.Node(
+            name='bet_ref_img',
+            interface=BET()
+            )
+    bet_ref_img.inputs.frac = 0.5
+    bet_ref_img.inputs.mask = True
+    bet_ref_img.inputs.robust = True
 
-    img_similarity = npe.MapNode(name='img_similarity',
-                                           iterfield=['volume1'],
-                                 interface=Similarity())
-    img_similarity.inputs.metric='cc'
+    img_similarity = npe.MapNode(
+            name='img_similarity',
+            iterfield=['volume1'],
+            interface=Similarity()
+            )
+    img_similarity.inputs.metric = 'cc'
 
-    ### rand the mean intensity
-    rank_mean = npe.Node(name='rank_mean',
-                               interface=nutil.Function(
-                                   function=rank_mean,
-                                   input_names=['similarity', 'tsv', 'caps_directory'],
-                                   output_names=['result_tsv']))
+    # rand the mean intensity
+    rank_mean = npe.Node(
+            name='rank_mean',
+            interface=nutil.Function(
+                function=rank_mean,
+                input_names=['similarity', 'tsv', 'caps_directory'],
+                output_names=['result_tsv']
+                )
+            )
 
     wf = npe.Workflow(name='quality_check_dl')
     wf.base_dir = working_directory
@@ -89,6 +99,5 @@ def quality_check_image_similarity(caps_directory, tsv, ref_template, working_di
                 (inputnode, rank_mean, [('caps_directory', 'caps_directory')]),
                 (img_similarity, rank_mean, [('similarity', 'similarity')])
                 ])
-
 
     return wf

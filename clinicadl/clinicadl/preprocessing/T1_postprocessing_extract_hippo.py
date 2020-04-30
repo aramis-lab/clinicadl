@@ -14,6 +14,7 @@ __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
 
+
 def postprocessing_t1w_extract_hippo(caps_directory, tsv, working_directory=None, hemi='right'):
     """
     This is a postprocessing pipeline to prepare the slice-level and patch-level data from the whole MRI and save them
@@ -46,41 +47,60 @@ def postprocessing_t1w_extract_hippo(caps_directory, tsv, working_directory=None
     inputnode.inputs.caps_directory = caps_directory
     inputnode.inputs.tsv = tsv
 
-    get_subject_session_list = npe.Node(name='get_subject_session_list',
-                               interface=nutil.Function(
-                                   function=get_caps_t1,
-                                   input_names=['caps_directory', 'tsv'],
-                                   output_names=['preprocessed_T1', 'cropped_hipp_file_name', 'participant_id', 'session_id', 'preprocessed_T1_folder']))
+    get_subject_session_list = npe.Node(
+            name='get_subject_session_list',
+            interface=nutil.Function(
+                function=get_caps_t1,
+                input_names=['caps_directory', 'tsv'],
+                output_names=[
+                    'preprocessed_T1',
+                    'cropped_hipp_file_name',
+                    'participant_id',
+                    'session_id',
+                    'preprocessed_T1_folder'
+                    ]
+                )
+            )
 
-    ## extract the hippocampus.
-    hippocampus_patches = npe.MapNode(name='hippocampus_patches',
-                                   iterfield=['in_file', 'out_file'],
-                                   interface=MRIConvert())
+    # extract the hippocampus.
+    hippocampus_patches = npe.MapNode(
+            name='hippocampus_patches',
+            iterfield=['in_file', 'out_file'],
+            interface=MRIConvert()
+            )
 
-    hippocampus_patches.inputs.out_type='nii'
+    hippocampus_patches.inputs.out_type = 'nii'
 
-    ## TODO, to decide the position of hippocampus of each hemisphere
+    # TODO, to decide the position of hippocampus of each hemisphere
     if hemi == 'left':
-        hippocampus_patches.inputs.crop_center=(61, 96, 68) ## the center of the right and left hippocampus
-        hippocampus_patches.inputs.crop_size=(50, 50, 50) ## the output cropped hippocampus size
+        hippocampus_patches.inputs.crop_center = (61, 96, 68)  # the center of the right and left hippocampus
+        hippocampus_patches.inputs.crop_size = (50, 50, 50)  # the output cropped hippocampus size
     else:
-        hippocampus_patches.inputs.crop_center=(109, 96, 68) ## the center of the right and right hippocampus
-        hippocampus_patches.inputs.crop_size=(50, 50, 50) ## the output cropped hippocampus size
+        hippocampus_patches.inputs.crop_center = (109, 96, 68)  # the center of the right and right hippocampus
+        hippocampus_patches.inputs.crop_size = (50, 50, 50)  # the output cropped hippocampus size
 
     # zip the result imgs
-    ###in the newest version of nipype for MRIConvert, it seems that they can be saved directly as nii.gz
-    zip_hippocampus = npe.MapNode(name='zip_hippocampus',
-                          interface=nutil.Function(input_names=['in_file'],
-                                                 output_names=['out_file'],
-                                                 function=compress_nii), iterfield=['in_file'])
+    # in the newest version of nipype for MRIConvert, it seems that they can be saved directly as nii.gz
+    zip_hippocampus = npe.MapNode(
+            name='zip_hippocampus',
+            interface=nutil.Function(
+                input_names=['in_file'],
+                output_names=['out_file'],
+                function=compress_nii
+                ),
+            iterfield=['in_file']
+            )
 
-    ## save nii.gz into classifiers .pt format.
-    save_as_pt = npe.MapNode(name='save_as_pt',
-                             iterfield=['input_img'],
-                             interface=nutil.Function(
-                                 function=save_as_pt,
-                                 input_names=['input_img'],
-                                 output_names=['output_file']))
+    # save nii.gz into classifiers .pt format.
+    save_as_pt = npe.MapNode(
+            name='save_as_pt',
+            iterfield=['input_img'],
+            interface=nutil.Function(
+                function=save_as_pt,
+                input_names=['input_img'],
+                output_names=['output_file']
+                )
+            )
 
     # get the information for datasinker.
     get_identifiers = npe.MapNode(nutil.Function(
@@ -89,13 +109,26 @@ def postprocessing_t1w_extract_hippo(caps_directory, tsv, working_directory=None
     get_identifiers.inputs.caps_directory = caps_directory
     get_identifiers.inputs.hemi = hemi
 
-    ### datasink
-    datasink = npe.MapNode(nio.DataSink(infields=['output_hippocampus_nii', 'output_hippocampus_pt']), name='datasinker',
-                          iterfield=['output_hippocampus_nii', 'output_hippocampus_pt', 'base_directory', 'substitutions', 'regexp_substitutions'])
+    # datasink
+    datasink = npe.MapNode(
+            nio.DataSink(
+                infields=['output_hippocampus_nii', 'output_hippocampus_pt']
+                ),
+            name='datasinker',
+            iterfield=[
+                'output_hippocampus_nii',
+                'output_hippocampus_pt',
+                'base_directory',
+                'substitutions',
+                'regexp_substitutions'
+                ]
+            )
 
-    outputnode = npe.Node(nutil.IdentityInterface(
-        fields=['output_hippocampus_nii', 'output_hippocampus_pt']),
-        name='outputnode')
+    outputnode = npe.Node(
+            nutil.IdentityInterface(
+                fields=['output_hippocampus_nii', 'output_hippocampus_pt']
+                ),
+            name='outputnode')
 
     wf = npe.Workflow(name='t1w_postprocessing_dl_extract_hippo')
     wf.base_dir = working_directory

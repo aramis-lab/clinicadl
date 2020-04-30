@@ -39,7 +39,8 @@ def train_patch_single_cnn(params):
 
     for fi in fold_iterator:
 
-        training_tsv, valid_tsv = load_data(params.tsv_path,
+        training_tsv, valid_tsv = load_data(
+                params.tsv_path,
                 params.diagnoses,
                 fi,
                 n_splits=params.n_splits,
@@ -50,20 +51,24 @@ def train_patch_single_cnn(params):
         if params.transfer_learning_path is not None:
             if params.transfer_learning_autoencoder:
                 print('Train the model with the weights from a pre-trained autoencoder.')
-                model, _ = load_model_after_ae(model, 
-                        os.path.join(params.transfer_learning_path, 
-                            'best_model_dir', 
-                            "fold_" + str(fi), 
-                            'ConvAutoencoder', 
-                            'Encoder'), 
+                model, _ = load_model_after_ae(
+                        model,
+                        os.path.join(
+                            params.transfer_learning_path,
+                            'best_model_dir',
+                            "fold_" + str(fi),
+                            'ConvAutoencoder',
+                            'Encoder'),
                         filename='model_best_encoder.pth.tar')
             else:
                 print('Train the model with the weights from a pre-trained CNN.')
-                model, _ = load_model_after_cnn(model, 
-                        os.path.join(params.transfer_learning_path, 
-                            'best_model_dir', 
-                            "fold_" + str(fi), 
-                            'CNN', 
+                model, _ = load_model_after_cnn(
+                        model,
+                        os.path.join(
+                            params.transfer_learning_path,
+                            'best_model_dir',
+                            "fold_" + str(fi),
+                            'CNN',
                             'best_acc'),
                         filename='model_best.pth.tar')
         else:
@@ -73,36 +78,46 @@ def train_patch_single_cnn(params):
         if params.hippocampus_roi:
             print("Only using hippocampus ROI")
 
-            data_train = MRIDataset_patch_hippocampus(params.input_dir,
+            data_train = MRIDataset_patch_hippocampus(
+                    params.input_dir,
                     training_tsv,
-                    transformations=transformations)
-            data_valid = MRIDataset_patch_hippocampus(params.input_dir,
+                    transformations=transformations
+                    )
+            data_valid = MRIDataset_patch_hippocampus(
+                    params.input_dir,
                     valid_tsv,
-                    transformations=transformations)
+                    transformations=transformations
+                    )
 
         else:
-            data_train = MRIDataset_patch(params.input_dir,
+            data_train = MRIDataset_patch(
+                    params.input_dir,
                     training_tsv,
                     params.patch_size,
                     params.patch_stride,
                     transformations=transformations,
-                    prepare_dl=params.prepare_dl)
-            data_valid = MRIDataset_patch(params.input_dir,
+                    prepare_dl=params.prepare_dl
+                    )
+            data_valid = MRIDataset_patch(
+                    params.input_dir,
                     valid_tsv,
                     params.patch_size,
                     params.patch_stride,
                     transformations=transformations,
-                    prepare_dl=params.prepare_dl)
+                    prepare_dl=params.prepare_dl
+                    )
 
         # Use argument load to distinguish training and testing
-        train_loader = DataLoader(data_train,
+        train_loader = DataLoader(
+                data_train,
                 batch_size=params.batch_size,
                 shuffle=True,
                 num_workers=params.num_workers,
                 pin_memory=True
                 )
 
-        valid_loader = DataLoader(data_valid,
+        valid_loader = DataLoader(
+                data_valid,
                 batch_size=params.batch_size,
                 shuffle=False,
                 num_workers=params.num_workers,
@@ -110,8 +125,8 @@ def train_patch_single_cnn(params):
                 )
 
         # Define loss and optimizer
-        optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
-                                                             params.learning_rate, weight_decay=params.weight_decay)
+        optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), params.learning_rate, weight_decay=params.weight_decay)
+
         loss = torch.nn.CrossEntropyLoss()
 
         print('Beginning the training task')
@@ -119,25 +134,65 @@ def train_patch_single_cnn(params):
         best_accuracy = 0.0
         best_loss_valid = np.inf
 
-        writer_train_batch = SummaryWriter(log_dir=(os.path.join(params.output_dir, "log_dir", "fold_" + str(fi),
-                                                                 "CNN", "train_batch")))
-        writer_train_all_data = SummaryWriter(log_dir=(os.path.join(params.output_dir, "log_dir", "fold_" + str(fi),
-                                                                    "CNN", "train_all_data")))
-        writer_valid = SummaryWriter(log_dir=(os.path.join(params.output_dir, "log_dir", "fold_" + str(fi),
-                                                           "CNN", "valid")))
+        writer_train_batch = SummaryWriter(
+                log_dir=(
+                    os.path.join(
+                        params.output_dir,
+                        "log_dir",
+                        "fold_" + str(fi),
+                        "CNN",
+                        "train_batch"
+                        )
+                    )
+                )
+
+        writer_train_all_data = SummaryWriter(
+                log_dir=(
+                    os.path.join(
+                        params.output_dir,
+                        "log_dir",
+                        "fold_" + str(fi),
+                        "CNN",
+                        "train_all_data"
+                        )
+                    )
+                )
+
+        writer_valid = SummaryWriter(
+                log_dir=(
+                    os.path.join(
+                        params.output_dir,
+                        "log_dir",
+                        "fold_" + str(fi),
+                        "CNN",
+                        "valid"
+                        )
+                    )
+                )
 
         # initialize the early stopping instance
-        early_stopping = EarlyStopping('min',
+        early_stopping = EarlyStopping(
+                'min',
                 min_delta=params.tolerance,
-                patience=params.patience)
+                patience=params.patience
+                )
 
         for epoch in range(params.epochs):
             print("At %s-th epoch." % str(epoch))
 
             # train the model
             train_df, acc_mean_train, loss_batch_mean_train, global_step \
-                = train(model, train_loader, params.gpu, loss, optimizer, writer_train_batch, epoch,
-                        model_mode='train', selection_threshold=params.selection_threshold)
+                = train(
+                        model,
+                        train_loader,
+                        params.gpu,
+                        loss,
+                        optimizer,
+                        writer_train_batch,
+                        epoch,
+                        model_mode='train',
+                        selection_threshold=params.selection_threshold
+                        )
 
             # calculate the training accuracy based on all the training data
             train_all_df, acc_mean_train_all, loss_batch_mean_train_all, _\
@@ -148,8 +203,18 @@ def train_patch_single_cnn(params):
 
             # at then end of each epoch, we validate one time for the model with the validation data
             valid_df, acc_mean_valid, loss_batch_mean_valid, _ \
-                = train(model, valid_loader, params.gpu, loss, optimizer, writer_valid, epoch,
-                        model_mode='valid', selection_threshold=params.selection_threshold)
+                = train(
+                        model,
+                        valid_loader,
+                        params.gpu,
+                        loss,
+                        optimizer,
+                        writer_valid,
+                        epoch,
+                        model_mode='valid',
+                        selection_threshold=params.selection_threshold
+                        )
+
             print("For validation, subject level balanced accuracy is %f at the end of epoch %d"
                   % (acc_mean_valid, epoch))
 
@@ -177,9 +242,17 @@ def train_patch_single_cnn(params):
 
         # Final evaluation for all criteria
         for selection in ['best_loss', 'best_acc']:
-            model, best_epoch = load_model(model, os.path.join(params.output_dir, 'best_model_dir', 'fold_%i' % fi,
-                                                               'CNN', selection),
-                                           gpu=params.gpu, filename='model_best.pth.tar')
+            model, best_epoch = load_model(
+                    model,
+                    os.path.join(
+                        params.output_dir,
+                        'best_model_dir',
+                        'fold_%i' % fi,
+                        'CNN',
+                        selection
+                        ),
+                    gpu=params.gpu,
+                    filename='model_best.pth.tar')
 
             train_df, metrics_train = test(model, train_loader, params.gpu, loss)
             valid_df, metrics_valid = test(model, valid_loader, params.gpu, loss)
@@ -195,4 +268,3 @@ def train_patch_single_cnn(params):
             soft_voting_to_tsvs(params.output_dir, fi, dataset='validation', selection=selection,
                                 selection_threshold=params.selection_threshold)
             torch.cuda.empty_cache()
-

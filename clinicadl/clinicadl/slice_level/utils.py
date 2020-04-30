@@ -164,7 +164,6 @@ def test(model, data_loader, use_cuda, loss_func):
 
 
 def evaluate_prediction(y, y_hat):
-
     """
     This is a function to calculate the different metrics based on the list of true label and predicted label
     :param y: list
