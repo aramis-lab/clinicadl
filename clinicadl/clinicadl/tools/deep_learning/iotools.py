@@ -18,44 +18,45 @@ class Parameters:
         self.input_dir = input_dir
         self.model = model
 
-    def write(self, 
-        pretrained_path: str = "", 
-        pretrained_difference: str = "",
-        preprocessing: str = "linear",
-        diagnoses: str = ["AD", "CN"],
-        baseline: bool = False,
-        minmaxnormalization: bool = False,
-        sampler: str = "random",
-        n_splits: int = 1,
-        split: int = 0,
-        accumulation_steps: int = 1,
-        epochs: int = 20, 
-        learning_rate: float = 1e-4,
-        patience: int = 10, 
-        tolerance: float = 0.05,
-        add_sigmoid: bool = False,
-        optimizer: str = "Adam",
-        weight_decay: float = 1e-4,
-        gpu: bool = False,
-        batch_size: int = 12,
-        evaluation_steps: int = 1,
-        num_workers: int = 1,
-        transfer_learning_path: str = None,
-        transfer_learning_autoencoder: str = None,
-        transfer_learning_multicnn: bool = False,
-        selection: str = "best_acc",
-        patch_size: int = 50,
-        patch_stride: int = 50,
-        hippocampus_roi: bool = False,
-        selection_threshold: float = 0.0,
-        num_cnn: int = 36, 
-        mri_plane: int = 0,
-        prepare_dl: bool = False,
-        visualization: bool = False):
-        """ 
+    def write(
+            self,
+            pretrained_path: str = "",
+            pretrained_difference: str = "",
+            preprocessing: str = "linear",
+            diagnoses: str = ["AD", "CN"],
+            baseline: bool = False,
+            minmaxnormalization: bool = False,
+            sampler: str = "random",
+            n_splits: int = 1,
+            split: int = 0,
+            accumulation_steps: int = 1,
+            epochs: int = 20,
+            learning_rate: float = 1e-4,
+            patience: int = 10,
+            tolerance: float = 0.05,
+            add_sigmoid: bool = False,
+            optimizer: str = "Adam",
+            weight_decay: float = 1e-4,
+            gpu: bool = False,
+            batch_size: int = 12,
+            evaluation_steps: int = 1,
+            num_workers: int = 1,
+            transfer_learning_path: str = None,
+            transfer_learning_autoencoder: str = None,
+            transfer_learning_multicnn: bool = False,
+            selection: str = "best_acc",
+            patch_size: int = 50,
+            patch_stride: int = 50,
+            hippocampus_roi: bool = False,
+            selection_threshold: float = 0.0,
+            num_cnn: int = 36,
+            mri_plane: int = 0,
+            prepare_dl: bool = False,
+            visualization: bool = False):
+        """
         Optional parameters used for training CNN.
         pretrained_path: Path to a pretrained model (can be of different size).
-        pretrained_difference: Difference of size between the pretrained 
+        pretrained_difference: Difference of size between the pretrained
                                autoencoder and the training.
         preprocessing: Type of preprocessing done. Choices: "linear" or "mni".
         diagnoses: Take all the subjects possible for autoencoder training.
@@ -73,7 +74,7 @@ class Parameters:
         add_sigmoid: Ad sigmoid function at the end of the decoder.
         optimizer: Optimizer of choice for training. (default=Adam).
                    Choices=["SGD", "Adadelta", "Adam"].
-        weight_decay: Weight decay of the optimizer. 
+        weight_decay: Weight decay of the optimizer.
         gpu: GPU usage if True.
         batch_size: Batch size for training. (default=1)
         evaluation_steps: Fix the number of batches to use before validation
@@ -88,20 +89,19 @@ class Parameters:
         num_cnn: How many CNNs we want to train in a patch-wise way.
                  By default, each patch is trained from all subjects for one CNN.
         mri_plane: Which coordinate axis to take for slicing the MRI.
-                   0 is for sagittal, 
-                   1 is for coronal and 
+                   0 is for sagittal,
+                   1 is for coronal and
                    2 is for axial direction
         prepare_dl: If True the outputs of preprocessing are used, else the
-                    whole MRI is loaded. 
-        transfer_learning_multicnn : If true use each model from the multicnn to 
+                    whole MRI is loaded.
+        transfer_learning_multicnn : If true use each model from the multicnn to
                                      initialize corresponding models.
         """
-        
 
         self.pretrained_path = pretrained_path
         self.pretrained_difference = pretrained_difference
         self.preprocessing = preprocessing
-        self.diagnoses = diagnoses        
+        self.diagnoses = diagnoses
         self.baseline = baseline
         self.minmaxnormalization = minmaxnormalization
         self.sampler = sampler
@@ -132,6 +132,7 @@ class Parameters:
         self.visualization = visualization
         self.selection_threshold = selection_threshold
 
+
 def check_and_clean(d):
     import shutil
     import os
@@ -144,11 +145,11 @@ def check_and_clean(d):
 def commandline_to_json(commandline, model_type):
     """
     This is a function to write the python argparse object into a json file.
-    This helps for DL when searching for hyperparameters 
-    
+    This helps for DL when searching for hyperparameters
+
     :param commandline: a tuple contain the output of
-                        `parser.parse_known_args()` 
-    
+                        `parser.parse_known_args()`
+
     :return:
     """
     import json

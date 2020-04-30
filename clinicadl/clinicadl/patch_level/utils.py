@@ -812,4 +812,3 @@ def extract_patch_from_mri(image_tensor, index_patch, patch_size, stride_size):
     extracted_patch = patches_tensor[index_patch, ...].unsqueeze_(0).clone()
 
     return extracted_patch
-

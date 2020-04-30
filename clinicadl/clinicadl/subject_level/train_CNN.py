@@ -11,8 +11,8 @@ from ..tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_dat
 from ..tools.deep_learning import create_model, commandline_to_json
 from ..tools.deep_learning.models import transfer_learning
 
+
 def train_cnn(params):
-    
     """
     This function trains a cnn network using the subject-level features
 
@@ -24,9 +24,9 @@ def train_cnn(params):
 
     Returns
     _______
-    
-    Models are stored in disk. 
-    
+
+    Models are stored in disk.
+
     """
 
     if params.evaluation_steps % params.accumulation_steps != 0 and params.evaluation_steps != 1:
@@ -47,13 +47,21 @@ def train_cnn(params):
 
     # Get the data.
     training_tsv, valid_tsv = load_data(params.tsv_path, params.diagnoses,
-                                        params.split, params.n_splits, 
+                                        params.split, params.n_splits,
                                         params.baseline)
 
-    data_train = MRIDataset(params.input_dir, training_tsv, 
-            params.preprocessing, transform=transformations)
-    data_valid = MRIDataset(params.input_dir, valid_tsv, 
-            params.preprocessing, transform=transformations)
+    data_train = MRIDataset(
+            params.input_dir,
+            training_tsv,
+            params.preprocessing,
+            transform=transformations
+            )
+    data_valid = MRIDataset(
+            params.input_dir,
+            valid_tsv,
+            params.preprocessing,
+            transform=transformations
+            )
 
     # Use argument load to distinguish training and testing
     train_loader = DataLoader(data_train,

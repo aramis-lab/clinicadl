@@ -61,7 +61,7 @@ def create_split(diagnosis, diagnosis_df, merged_df, n_test,
 
         n_try += 1
 
-    print("Split for diagnosis %s was found after %i trials" %(diagnosis, n_try))
+    print("Split for diagnosis %s was found after %i trials" % (diagnosis, n_try))
     return train_df, test_df
 
 
@@ -271,4 +271,3 @@ if __name__ == "__main__":
             MCI_complete_train_df = pd.concat([MCI_complete_train_df, subject_df])
 
         MCI_complete_train_df.to_csv(path.join(train_path, 'MCI.tsv'), sep='\t', index=False)
-

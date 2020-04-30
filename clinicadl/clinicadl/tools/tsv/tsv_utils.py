@@ -43,7 +43,7 @@ def last_session(session_list):
 def complementary_list(total_list, sub_list):
     result_list = []
     for element in total_list:
-        if not element in sub_list:
+        if element not in sub_list:
             result_list.append(element)
     return result_list
 

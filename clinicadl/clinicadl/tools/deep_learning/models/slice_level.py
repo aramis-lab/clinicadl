@@ -30,7 +30,7 @@ def resnet18(**kwargs):
         model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
     except Exception as err:
         print("Error is:", err)
-        #raise ConnectionError('The URL %s may not be functional anymore. Check if it still exists or '
+        # raise ConnectionError('The URL %s may not be functional anymore. Check if it still exists or '
         #                      'if it has been moved.' % model_urls['resnet18'])
     for p in model.parameters():
         p.requires_grad = False

@@ -82,7 +82,7 @@ class VB_KFold_DualSVM(base.MLWorkflow):
         self._algorithm.save_parameters(best_params, classifier_dir)
         self._validation.save_results(self._output_dir)
         self._input.save_weights_as_nifti(weights, classifier_dir)
-        ## save the model for each split only fitting with the training data
+        # save the model for each split only fitting with the training data
         for n_fold in range(self._n_folds):
             svc, _, train_index = apply_best_parameters_each_split(kernel, x, y, results, self._balanced, n_fold, self._diagnoses_tsv, self._output_dir)
             classifier_dir = path.join(self._output_dir, 'classifier', 'fold_' + str(n_fold))
@@ -90,5 +90,5 @@ class VB_KFold_DualSVM(base.MLWorkflow):
                 os.makedirs(classifier_dir)
             self._algorithm.save_classifier(svc, classifier_dir)
 
-            ## save the train index for recontruction purpose
+            # save the train index for recontruction purpose
             np.savetxt(path.join(classifier_dir, 'train_index.txt'), train_index)

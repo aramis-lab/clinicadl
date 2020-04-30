@@ -1,9 +1,9 @@
-from  clinicadl.preprocessing.T1_lineal import preprocessing_t1w
+from clinicadl.preprocessing.T1_lineal import preprocessing_t1w
 
-bids_dir = 
+bids_dir =
 caps_dir =
 tsv_file =
-working_dir = 
+working_dir =
 nproc = 2
 
 wf = preprocessing_t1w(args.bids_directory,

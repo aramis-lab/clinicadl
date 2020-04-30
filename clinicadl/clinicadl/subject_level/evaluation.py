@@ -82,10 +82,12 @@ if __name__ == "__main__":
         metrics_train, loss_train, train_df = test(best_model, train_loader, options.gpu, criterion, full_return=True)
         metrics_valid, loss_valid, valid_df = test(best_model, valid_loader, options.gpu, criterion, full_return=True)
 
-        acc_train, sen_train, spe_train = metrics_train['balanced_accuracy'] * 100, metrics_train['sensitivity'] * 100,\
-                                          metrics_train['specificity'] * 100
-        acc_valid, sen_valid, spe_valid = metrics_valid['balanced_accuracy'] * 100, metrics_valid['sensitivity'] * 100,\
-                                          metrics_valid['specificity'] * 100
+        acc_train = metrics_train['balanced_accuracy'] * 100
+        sen_train = metrics_train['sensitivity'] * 100
+        spe_train = metrics_train['specificity'] * 100
+        acc_valid = metrics_valid['balanced_accuracy'] * 100
+        sen_valid = metrics_valid['sensitivity'] * 100
+        spe_valid = metrics_valid['specificity'] * 100
         print("Training, acc %f, loss %f, sensibility %f, specificity %f"
               % (acc_train, loss_train, sen_train, spe_train))
         print("Validation, acc %f, loss %f, sensibility %f, specificity %f"
@@ -95,10 +97,20 @@ if __name__ == "__main__":
         if not path.exists(path.join(evaluation_path, options.selection)):
             os.makedirs(path.join(evaluation_path, options.selection))
 
-        train_df.to_csv(path.join(evaluation_path, options.selection, 'train_subject_level_result.tsv'),
-                        sep='\t', index=False)
-        valid_df.to_csv(path.join(evaluation_path, options.selection, 'valid_subject_level_result.tsv'),
-                        sep='\t', index=False)
+        train_df.to_csv(
+                path.join(
+                    evaluation_path,
+                    options.selection,
+                    'train_subject_level_result.tsv'
+                    ),
+                sep='\t', index=False)
+        valid_df.to_csv(
+                path.join(
+                    evaluation_path,
+                    options.selection,
+                    'valid_subject_level_result.tsv'
+                    ),
+                sep='\t', index=False)
 
         pd.DataFrame(metrics_train, index=[0]).to_csv(path.join(evaluation_path, options.selection,
                                                                 'train_subject_level_metrics.tsv'),
@@ -106,4 +118,3 @@ if __name__ == "__main__":
         pd.DataFrame(metrics_valid, index=[0]).to_csv(path.join(evaluation_path, options.selection,
                                                                 'valid_subject_level_metrics.tsv'),
                                                       sep='\t', index=False)
-

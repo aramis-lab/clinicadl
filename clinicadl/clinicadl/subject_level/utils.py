@@ -6,7 +6,7 @@ import warnings
 import pandas as pd
 from time import time
 
-from clinicadl.tools.deep_learning.iotools import check_and_clean, visualize_subject 
+from clinicadl.tools.deep_learning.iotools import check_and_clean, visualize_subject
 from clinicadl.tools.deep_learning import EarlyStopping, save_checkpoint
 
 
@@ -184,7 +184,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
 
 
 def evaluate_prediction(y, y_pred):
-
     """
     This is a function to calculate the different metrics based on the list of true label and predicted label
     :param y: list of labels
