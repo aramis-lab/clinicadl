@@ -10,6 +10,7 @@
 #SBATCH --error=./exp17/pytorch_job_%j.err
 #SBATCH --job-name=exp17_cnn
 #SBATCH --gres=gpu:1
+#SBATCH --array=0-4
 #SBATCH --mail-type=END
 #SBATCH --mail-user=mauricio.diaz@inria.fr
 
@@ -24,7 +25,7 @@ conda activate clinicadl_env_py37
 NETWORK="Conv4_FC3"
 NETWORK_TYPE="multi"
 COHORT="ADNI"
-DATE="reproducibility_results"
+DATE="reproducibility_results_2"
 NUM_CNN=36
 USE_EXTRACTED_PATCHES=1
 
@@ -41,7 +42,7 @@ GPU=1
 PREPROCESSING='linear'
 TASK='sMCI pMCI'
 SPLITS=5
-SPLIT=$1
+SPLIT=$SLURM_ARRAY_TASK_ID
 
 # Training arguments
 EPOCHS=200

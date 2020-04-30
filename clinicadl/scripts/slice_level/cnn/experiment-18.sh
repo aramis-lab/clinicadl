@@ -10,6 +10,7 @@
 #SBATCH --error=./exp18/pytorch_job_%j.err
 #SBATCH --job-name=exp18A_cnn
 #SBATCH --gres=gpu:1
+#SBATCH --array=0-4
 #SBATCH --mail-type=END
 #SBATCH --mail-user=mauricio.diaz@inria.fr
 
@@ -23,7 +24,7 @@ conda activate clinicadl_env_py37
 # Network structure
 NETWORK="resnet18"
 COHORT="ADNI"
-DATE="reproducibility_results"
+DATE="reproducibility_results_2"
 
 # Input arguments to clinicadl
 CAPS_DIR="$SCRATCH/../commun/datasets/${COHORT}_rerun"
@@ -39,7 +40,7 @@ PREPROCESSING='linear'
 DIAGNOSES="AD CN"
 MRI_PLANE=0
 SPLITS=5
-SPLIT=$1
+SPLIT=$SLURM_ARRAY_TASK_ID
 
 # Training arguments
 EPOCHS=50

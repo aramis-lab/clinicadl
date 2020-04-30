@@ -1,15 +1,16 @@
 #!/bin/bash
-#SBATCH --partition=gpu_gct3
+#SBATCH --partition=gpu_p1
 #SBATCH --time=20:00:00
 #SBATCH --mem=60G
 #SBATCH --cpus-per-task=10
 #SBATCH --threads-per-core=1        # on réserve des coeurs physiques et non logiques
 #SBATCH --ntasks=1
-#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/roi_based
+#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs2/AD-DL/train/roi_based
 #SBATCH --output=./exp8/pytorch_job_%j.out
 #SBATCH --error=./exp8/pytorch_job_%j.err
 #SBATCH --job-name=exp8_cnn
 #SBATCH --gres=gpu:1
+#SBATCH --array=0-4
 #SBATCH --mail-type=END
 #SBATCH --mail-user=mauricio.diaz@inria.fr
 
@@ -24,10 +25,10 @@ conda activate clinicadl_env_py37
 NETWORK="Conv4_FC3"
 NETWORK_TYPE="single"
 COHORT="ADNI"
-DATE="reproducibility_results"
+DATE="reproducibility_results_2"
 
 # Input arguments to clinicadl
-CAPS_DIR="$SCRATCH/../commun/datasets/${COHORT}_hippocampus"
+CAPS_DIR="$SCRATCH/../commun/datasets/${COHORT}_rerun"
 TSV_PATH="$HOME/code/AD-DL/data/$COHORT/lists_by_diagnosis/train"
 OUTPUT_DIR="$SCRATCH/results/$DATE/"
 
@@ -40,7 +41,7 @@ PREPROCESSING='linear'
 DIAGNOSES="AD CN"
 HIPPOCAMPUS_ROI=1
 SPLITS=5
-SPLIT=$1
+SPLIT=$SLURM_ARRAY_TASK_ID
 
 # Training arguments
 EPOCHS=200
