@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=gpu_gct3
+#SBATCH --partition=gpu_p1
 #SBATCH --time=20:00:00
 #SBATCH --mem=60G
 #SBATCH --cpus-per-task=10
@@ -10,6 +10,7 @@
 #SBATCH --error=./exp14/pytorch_job_%j.err
 #SBATCH --job-name=exp14_cnn
 #SBATCH --gres=gpu:1
+#SBATCH --array=0-4
 #SBATCH --mail-type=END
 #SBATCH --mail-user=mauricio.diaz@inria.fr
 
@@ -24,7 +25,7 @@ conda activate clinicadl_env_py37
 NETWORK="Conv4_FC3"
 NETWORK_TYPE="multi"
 COHORT="ADNI"
-DATE="reproducibility_results"
+DATE="reproducibility_results_2"
 NUM_CNN=36
 USE_EXTRACTED_PATCHES=1
 
@@ -41,7 +42,7 @@ GPU=1
 PREPROCESSING='linear'
 DIAGNOSES="AD CN"
 SPLITS=5
-SPLIT=$1
+SPLIT=$SLURM_ARRAY_TASK_ID
 
 # Training arguments
 EPOCHS=200

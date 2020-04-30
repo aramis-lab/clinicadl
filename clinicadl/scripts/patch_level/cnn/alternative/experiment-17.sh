@@ -6,11 +6,10 @@
 #SBATCH --threads-per-core=1        # on réserve des coeurs physiques et non logiques
 #SBATCH --ntasks=1
 #SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/patch_level/multi_cnn
-#SBATCH --output=./exp15/pytorch_job_%j.out
-#SBATCH --error=./exp15/pytorch_job_%j.err
-#SBATCH --job-name=exp15_cnn
+#SBATCH --output=./exp17/pytorch_job_%j.out
+#SBATCH --error=./exp17/pytorch_job_%j.err
+#SBATCH --job-name=exp17_cnn
 #SBATCH --gres=gpu:1
-#SBATCH --array=0-4
 #SBATCH --mail-type=END
 #SBATCH --mail-user=mauricio.diaz@inria.fr
 
@@ -25,7 +24,7 @@ conda activate clinicadl_env_py37
 NETWORK="Conv4_FC3"
 NETWORK_TYPE="multi"
 COHORT="ADNI"
-DATE="reproducibility_results_2"
+DATE="reproducibility_results"
 NUM_CNN=36
 USE_EXTRACTED_PATCHES=1
 
@@ -42,12 +41,12 @@ GPU=1
 PREPROCESSING='linear'
 TASK='sMCI pMCI'
 SPLITS=5
-SPLIT=$SLURM_ARRAY_TASK_ID
+SPLIT=$1
 
 # Training arguments
 EPOCHS=200
 BATCH=32
-BASELINE=1
+BASELINE=0
 ACCUMULATION=1
 EVALUATION=20
 LR=1e-5
@@ -59,7 +58,7 @@ PATIENCE=20
 
 # Pretraining
 T_BOOL=1
-T_PATH="patch3D_model-Conv4_FC3_preprocessing-linear_task-autoencoder_baseline-1_norm-1_multi-cnn_splits-5"
+T_PATH="patch3D_model-Conv4_FC3_preprocessing-linear_task-autoencoder_baseline-0_norm-1_multi-cnn_splits-5"
 T_PATH="$SCRATCH/results/$DATE/$T_PATH"
 T_DIFF=0
 
@@ -97,7 +96,7 @@ if [ $BASELINE = 1 ]; then
 fi
 echo $TASK_NAME
 
-NAME="patch3D_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-${TASK_NAME}_baseline-${BASELINE}_norm-${NORMALIZATION}_t-${T_BOOL}_${NETWORK_TYPE}-cnn"
+NAME="patch3D_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-${TASK_NAME}_baseline-${BASELINE}_norm-${NORMALIZATION}_t-${T_BOOL}_${NETWORK_TYPE}-cnn_selectionThreshold-0"
 
 if [ $SPLITS > 0 ]; then
 echo "Use of $SPLITS-fold cross validation, split $SPLIT"
@@ -126,5 +125,4 @@ clinicadl train \
   --learning_rate $LR \
   --weight_decay $WEIGHT_DECAY \
   --patience $PATIENCE \
-  --selection_threshold 0.7 \
   $OPTIONS

@@ -1,17 +1,18 @@
 #!/bin/bash
-#SBATCH --partition=gpu_gct3
+#SBATCH --partition=gpu_p1
 #SBATCH --time=20:00:00
 #SBATCH --mem=60G
 #SBATCH --cpus-per-task=10
 #SBATCH --threads-per-core=1        # on réserve des coeurs physiques et non logiques
 #SBATCH --ntasks=1
-#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/patch_level/autoencoder
+#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs2/AD-DL/train/patch_level/autoencoder
 #SBATCH --output=./exp6/pytorch_job_%j.out
 #SBATCH --error=./exp6/pytorch_job_%j.err
 #SBATCH --job-name=exp6_AE
 #SBATCH --gres=gpu:1
+#SBATCH --array=0-4
 #SBATCH --mail-type=END
-#SBATCH --mail-user=mauricio.diaz@inria.fr
+#SBATCH --mail-user=mauricio.diaz-melo@inria.fr
 
 #export http_proxy=http://10.10.2.1:8123
 #export https_proxy=http://10.10.2.1:8123
@@ -23,7 +24,7 @@ conda activate clinicadl_env_py37
 # Network structure
 NETWORK="Conv4_FC3"
 COHORT="ADNI"
-DATE="reproducibility_results"
+DATE="reproducibility_results_2"
 
 # Input arguments to clinicadl
 CAPS_DIR="$SCRATCH/../commun/datasets/${COHORT}_rerun"
@@ -38,7 +39,7 @@ GPU=1
 PREPROCESSING='linear'
 DIAGNOSES="AD CN MCI"
 SPLITS=5
-SPLIT=$1
+SPLIT=$SLURM_ARRAY_TASK_ID
 
 # Training arguments
 EPOCHS=15

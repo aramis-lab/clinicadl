@@ -3,63 +3,61 @@
 #SBATCH --time=20:00:00
 #SBATCH --mem=60G
 #SBATCH --cpus-per-task=10
-#SBATCH --threads-per-core=1        # on réserve des coeurs physiques et non logiques
+#SBATCH --threads-per-core=1
 #SBATCH --ntasks=1
-#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/patch_level/multi_cnn
-#SBATCH --output=./exp15/pytorch_job_%j.out
-#SBATCH --error=./exp15/pytorch_job_%j.err
-#SBATCH --job-name=exp15_cnn
+#SBATCH --nodes=1
+#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs2/AD-DL/tests/train/subject_level/cnn
+#SBATCH --output=./exp4/pytorch_job_%j.out
+#SBATCH --error=./exp4/pytorch_job_%j.err
+#SBATCH --job-name=3CNN_subject
 #SBATCH --gres=gpu:1
-#SBATCH --array=0-4
 #SBATCH --mail-type=END
-#SBATCH --mail-user=mauricio.diaz@inria.fr
+#SBATCH --array=0-4
+#SBATCH --mail-user=mauricio.diaz-melo@inria.fr
 
 #export http_proxy=http://10.10.2.1:8123
 #export https_proxy=http://10.10.2.1:8123
 
-# Experiment training autoencoder
+# Experiment taining CNN
 eval "$(conda shell.bash hook)"
 conda activate clinicadl_env_py37
 
 # Network structure
-NETWORK="Conv4_FC3"
-NETWORK_TYPE="multi"
-COHORT="ADNI"
-DATE="reproducibility_results_2"
-NUM_CNN=36
-USE_EXTRACTED_PATCHES=1
+NETWORK="Conv5_FC3"
+COHORT="OASIS_atrophy"
+DATE="trivial_tests_2"
 
 # Input arguments to clinicadl
-CAPS_DIR="$SCRATCH/../commun/datasets/${COHORT}_rerun"
+CAPS_DIR="$SCRATCH/../commun/datasets/${COHORT}"
 TSV_PATH="$HOME/code/AD-DL/data/$COHORT/lists_by_diagnosis/train"
 OUTPUT_DIR="$SCRATCH/results/$DATE/"
 
 # Computation ressources
-NUM_PROCESSORS=32
+NUM_PROCESSORS=8
 GPU=1
 
 # Dataset Management
 PREPROCESSING='linear'
-TASK='sMCI pMCI'
+TASK='AD CN'
+BASELINE=0
 SPLITS=5
 SPLIT=$SLURM_ARRAY_TASK_ID
 
 # Training arguments
-EPOCHS=200
-BATCH=32
-BASELINE=1
-ACCUMULATION=1
+EPOCHS=50
+BATCH=6
+ACCUMULATION=2
 EVALUATION=20
-LR=1e-5
-WEIGHT_DECAY=1e-3
-GREEDY_LEARNING=0
-SIGMOID=0
+SAMPLER="random"
+LR=1e-4
+WEIGHT_DECAY=0
 NORMALIZATION=1
-PATIENCE=20
+PATIENCE=5
+TOLERANCE=0
 
 # Pretraining
 T_BOOL=1
-T_PATH="patch3D_model-Conv4_FC3_preprocessing-linear_task-autoencoder_baseline-1_norm-1_multi-cnn_splits-5"
+T_PATH="subject_model-Conv5_FC3_preprocessing-linear_task-autoencoder_baseline-0_norm-1_splits-5"
 T_PATH="$SCRATCH/results/$DATE/$T_PATH"
 T_DIFF=0
 
@@ -67,27 +65,16 @@ T_DIFF=0
 OPTIONS=""
 
 if [ $GPU = 1 ]; then
-  OPTIONS="${OPTIONS} --use_gpu"
+OPTIONS="${OPTIONS} --use_gpu"
 fi
 
 if [ $NORMALIZATION = 1 ]; then
-  OPTIONS="${OPTIONS} --minmaxnormalization"
+OPTIONS="${OPTIONS} --minmaxnormalization"
 fi
 
 if [ $T_BOOL = 1 ]; then
-  OPTIONS="$OPTIONS --transfer_learning_path $T_PATH --transfer_learning_multicnn"
+OPTIONS="$OPTIONS --transfer_learning_autoencoder --transfer_learning_path $T_PATH"
 fi
-
-if [ $BASELINE = 1 ]; then
-  echo "using only baseline data"
-  OPTIONS="$OPTIONS --baseline"
-fi
-
-if [ $USE_EXTRACTED_PATCHES = 1 ]; then
-  echo "Using extracted slices/patches"
-  OPTIONS="$OPTIONS --use_extracted_patches"
-fi
-
 TASK_NAME="${TASK// /_}"
 
 if [ $BASELINE = 1 ]; then
@@ -97,7 +84,7 @@ if [ $BASELINE = 1 ]; then
 fi
 echo $TASK_NAME
 
-NAME="patch3D_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-${TASK_NAME}_baseline-${BASELINE}_norm-${NORMALIZATION}_t-${T_BOOL}_${NETWORK_TYPE}-cnn"
+NAME="subject_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-${TASK_NAME}_norm-${NORMALIZATION}_t-${T_BOOL}"
 
 if [ $SPLITS > 0 ]; then
 echo "Use of $SPLITS-fold cross validation, split $SPLIT"
@@ -108,23 +95,22 @@ echo $NAME
 
 # Run clinicadl
 clinicadl train \
-  patch \
+  subject \
   $CAPS_DIR \
   $TSV_PATH \
   $OUTPUT_DIR$NAME \
   $NETWORK \
-  --network_type $NETWORK_TYPE \
-  --num_cnn $NUM_CNN \
+  --diagnoses $TASK \
+  --nproc $NUM_PROCESSORS \
   --batch_size $BATCH \
   --evaluation_steps $EVALUATION \
   --preprocessing $PREPROCESSING \
-  --diagnoses $TASK \
   --n_splits $SPLITS \
   --split $SPLIT \
   --accumulation_steps $ACCUMULATION \
   --epochs $EPOCHS \
+  --sampler $SAMPLER \
   --learning_rate $LR \
   --weight_decay $WEIGHT_DECAY \
   --patience $PATIENCE \
-  --selection_threshold 0.7 \
   $OPTIONS

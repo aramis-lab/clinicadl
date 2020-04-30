@@ -5,12 +5,11 @@
 #SBATCH --cpus-per-task=10
 #SBATCH --threads-per-core=1        # on réserve des coeurs physiques et non logiques
 #SBATCH --ntasks=1
-#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/patch_level/multi_cnn
-#SBATCH --output=./exp15/pytorch_job_%j.out
-#SBATCH --error=./exp15/pytorch_job_%j.err
-#SBATCH --job-name=exp15_cnn
+#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs/AD-DL/train/patch_level/single_cnn
+#SBATCH --output=./exp13/pytorch_job_%j.out
+#SBATCH --error=./exp13/pytorch_job_%j.err
+#SBATCH --job-name=exp13_cnn
 #SBATCH --gres=gpu:1
-#SBATCH --array=0-4
 #SBATCH --mail-type=END
 #SBATCH --mail-user=mauricio.diaz@inria.fr
 
@@ -23,10 +22,9 @@ conda activate clinicadl_env_py37
 
 # Network structure
 NETWORK="Conv4_FC3"
-NETWORK_TYPE="multi"
+NETWORK_TYPE="single"
 COHORT="ADNI"
-DATE="reproducibility_results_2"
-NUM_CNN=36
+DATE="reproducibility_results"
 USE_EXTRACTED_PATCHES=1
 
 # Input arguments to clinicadl
@@ -40,14 +38,14 @@ GPU=1
 
 # Dataset Management
 PREPROCESSING='linear'
-TASK='sMCI pMCI'
+DIAGNOSES="AD CN"
 SPLITS=5
-SPLIT=$SLURM_ARRAY_TASK_ID
+SPLIT=$1
 
 # Training arguments
 EPOCHS=200
 BATCH=32
-BASELINE=1
+BASELINE=0
 ACCUMULATION=1
 EVALUATION=20
 LR=1e-5
@@ -59,7 +57,7 @@ PATIENCE=20
 
 # Pretraining
 T_BOOL=1
-T_PATH="patch3D_model-Conv4_FC3_preprocessing-linear_task-autoencoder_baseline-1_norm-1_multi-cnn_splits-5"
+T_PATH="patch3D_model-Conv4_FC3_preprocessing-linear_task-autoencoder_baseline-0_norm-1_splits-5"
 T_PATH="$SCRATCH/results/$DATE/$T_PATH"
 T_DIFF=0
 
@@ -67,20 +65,20 @@ T_DIFF=0
 OPTIONS=""
 
 if [ $GPU = 1 ]; then
-  OPTIONS="${OPTIONS} --use_gpu"
+OPTIONS="${OPTIONS} --use_gpu"
 fi
 
 if [ $NORMALIZATION = 1 ]; then
-  OPTIONS="${OPTIONS} --minmaxnormalization"
+OPTIONS="${OPTIONS} --minmaxnormalization"
 fi
 
 if [ $T_BOOL = 1 ]; then
-  OPTIONS="$OPTIONS --transfer_learning_path $T_PATH --transfer_learning_multicnn"
+OPTIONS="$OPTIONS --transfer_learning_autoencoder --transfer_learning_path $T_PATH"
 fi
 
 if [ $BASELINE = 1 ]; then
-  echo "using only baseline data"
-  OPTIONS="$OPTIONS --baseline"
+echo "using only baseline data"
+OPTIONS="$OPTIONS --baseline"
 fi
 
 if [ $USE_EXTRACTED_PATCHES = 1 ]; then
@@ -88,16 +86,7 @@ if [ $USE_EXTRACTED_PATCHES = 1 ]; then
   OPTIONS="$OPTIONS --use_extracted_patches"
 fi
 
-TASK_NAME="${TASK// /_}"
-
-if [ $BASELINE = 1 ]; then
-  echo "using only baseline data"
-  TASK_NAME="${TASK_NAME}_baseline"
-  OPTIONS="$OPTIONS --baseline"
-fi
-echo $TASK_NAME
-
-NAME="patch3D_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-${TASK_NAME}_baseline-${BASELINE}_norm-${NORMALIZATION}_t-${T_BOOL}_${NETWORK_TYPE}-cnn"
+NAME="patch3D_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-autoencoder_baseline-${BASELINE}_norm-${NORMALIZATION}_selectionThreshold-07"
 
 if [ $SPLITS > 0 ]; then
 echo "Use of $SPLITS-fold cross validation, split $SPLIT"
@@ -114,11 +103,10 @@ clinicadl train \
   $OUTPUT_DIR$NAME \
   $NETWORK \
   --network_type $NETWORK_TYPE \
-  --num_cnn $NUM_CNN \
   --batch_size $BATCH \
   --evaluation_steps $EVALUATION \
   --preprocessing $PREPROCESSING \
-  --diagnoses $TASK \
+  --diagnoses $DIAGNOSES \
   --n_splits $SPLITS \
   --split $SPLIT \
   --accumulation_steps $ACCUMULATION \
