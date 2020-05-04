@@ -1,8 +1,4 @@
-[![Build Status](https://ci.inria.fr/clinicadl/buildStatus/icon?job=AD-DL%2Fmaster)](https://ci.inria.fr/clinicadl/job/AD-DL/job/master/)
-
-
 <h1 align="center">
-  <br/>
   Clinica Deep Learning (clinicadl)
 </h1>
 
