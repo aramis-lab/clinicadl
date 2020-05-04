@@ -1,5 +1,5 @@
 <h1 align="center">
-  Clinica Deep Learning (clinicadl)
+  Clinica Deep Learning (<i>clinicadl</i>)
 </h1>
 
 <p align="center"><strong>for Alzheimer's Disease</strong></p>
