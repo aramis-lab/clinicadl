@@ -1,27 +1,52 @@
 [![Build Status](https://ci.inria.fr/clinicadl/buildStatus/icon?job=AD-DL%2Fmaster)](https://ci.inria.fr/clinicadl/job/AD-DL/job/master/)
 
-# Clinica Deep Learning AD
+
+<h1 align="center">
+  <br/>
+  Clinica Deep Learning (clinicadl)
+</h1>
+
+<p align="center"><strong>for Alzheimer's Disease</strong></p>
+
+<p align="center">
+  <a href="https://ci.inria.fr/clinicadl/job/AD-DL/job/master/">
+    <img src="https://ci.inria.fr/clinicadl/buildStatus/icon?job=AD-DL%2Fmaster" alt="Build Status">
+  </a>
+</p>
+
+<p align="center">
+  See also:
+  <a href="#related-repositories">AD-ML</a>,
+  <a href="#related-repositories">AD-DL</a>
+</p>
+
+
+## About the project
+
 This repository contains a software framework for reproducible experiments with
-convolutional neural networks (CNN) on automatic classification of Alzheimer's
-disease (AD) using anatomical MRI data from the publicly available dataset
-ADNI. It is developed by Junhao Wen, Elina Thibeau--Sutre and Mauricio Diaz.
-The preprint version of the corresponding paper may be found
-[here](https://arxiv.org/abs/1904.07773).
+convolutional neural networks (CNN) on **automatic classification of Alzheimer's
+disease (AD) using anatomical MRI data** from the publicly available dataset
+ADNI. 
+The journal version of the paper describing the algorithmes here implemented
+can be found [here](https://doi.org/10.1016/j.media.2020.101694).
 
 Automatic Classification of AD using a classical machine learning approach can
 be performed using the software available here:
 <https://github.com/aramis-lab/AD-ML>.
 
-This software is currently in *active development*.
+This software is currently in **active development**. If you find a problem
+when using it, please [open an
+issue](https://github.com/aramis-lab/ad-dl/issues).
+
 Pretrained models for the CNN networks can be obtained here:
 <https://zenodo.org/record/3491003>  
 
-# Bibliography
+## Bibliography
 All the papers described in the State of the art section of the manuscript may
 be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 
 
-# Dependencies:
+## Main dependencies:
 - Python >= 3.6
 - Clinica (needs only to perform preprocessing) >= 0.3.4
 - Numpy
@@ -32,9 +57,9 @@ be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 - Nipy
 - TensorBoardX
 
-# How to install `clinicadl` ?
+## How to install `clinicadl` ?
 
-## Create a conda environment with the corresponding dependencies:
+### Create a conda environment with the corresponding dependencies:
 Keep the following order of the installation instructions.
 It guaranties the right management of libraries depending on common packages:
 
@@ -48,14 +73,14 @@ cd AD-DL
 pip install -r requirements.txt
 ```
 
-## Install the package `clinicadl` as developer in the active conda environment:
+### Install the package `clinicadl` as developer in the active conda environment:
 
 ```
 cd clinicadl
 pip install -e .
 ```
 
-# How to use `clinicadl` ?
+## How to use `clinicadl` ?
 
 `clinicadl` is an utility to be used with the command line.
 
@@ -87,7 +112,7 @@ Task to execute with clinicadl:
                         previously trained model.
 ```
 
-## Tasks performed by `clinicadl`
+### Tasks that can be performed by `clinicadl`
 
 There are five kind of tasks that can be performed using the command line:
 
@@ -108,9 +133,9 @@ There are five kind of tasks that can be performed using the command line:
 
 For detailed instructions and options of each task type  `clinica 'task' -h`.
 
-## Some examples
+### Some examples
 
-### Preprocessing
+#### Preprocessing
 Typical use for `preprocessing`:
 
 ```bash
@@ -121,7 +146,7 @@ clinicadl preprocessing --np 32 \
   $WORKING_DIR
 ```
 
-### Tensor extraction
+#### Tensor extraction
 
 These are the options available for the `extract` task:
 ```
@@ -159,9 +184,9 @@ optional arguments:
                         Number of cores used for processing
 ```
 
-# Run testing.
+## Run testing.
 
-## Unit testing
+### Unit testing
 
 Be sure to have the `pytest` library in order to run the test suite.  This test
 suite includes unit testing to be launched using the command line: 
@@ -169,7 +194,7 @@ suite includes unit testing to be launched using the command line:
 pytest clinicadl/tests/
 ```
 
-## Model prediction tests
+### Model prediction tests
 
 For sanity check trivial datasets can be generated to train or test/validate
 the predictive models.
@@ -186,3 +211,9 @@ the tsv file given at
 The trivial dataset includes two labels:
 - AD corresponding to images with the left half of the brain with lower intensities,
 - CN corresponding to images with the right half of the brain with lower intensities.
+
+## Related Repositories
+
+- [Clinica: Software platform for clinical neuroimaging studies](https://github.com/aramis-lab/clinica)
+- [AD-ML: Framework for the reproducible classification of Alzheimer's disease using machine learning](https://github.com/aramis-lab/AD-ML)
+
