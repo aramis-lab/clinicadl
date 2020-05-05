@@ -1,3 +1,5 @@
+# coding: utf8
+
 """
 Check the absence of data leakage
     1) Baseline datasets contain only one scan per subject
