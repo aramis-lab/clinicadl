@@ -1,6 +1,6 @@
 #!/usr/bin/env groovy
 
-// Continuous Integration script for clinicadl
+// Continuous Integration script to build Jupyter-Book
 // Author: mauricio.diaz@inria.fr
 
 pipeline {
@@ -8,37 +8,31 @@ pipeline {
     stages {
       stage('Install') {
         parallel {
-          stage('Launch in Linux') {
+          stage('Clone Conda env') {
             agent { label 'linux' }
             environment {
                PATH = "$HOME/miniconda/bin:$PATH"
                }
             //when { changeset "requirements.txt" }   
             steps {
-              echo 'Installing clinicadl sources in Linux...'
+              echo 'Clone conda environment where clinicadl is installed...'
               echo 'My branch name is ${BRANCH_NAME}'
               sh 'echo "My branch name is ${BRANCH_NAME}"'
-              sh 'printenv'
               sh 'echo "Agent name: ${NODE_NAME}"'
               sh '''#!/usr/bin/env bash
                  set +x
                  source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
-                 conda activate clinicadl_env
-                 echo "Install clinicadl using pip..."
-                 cd AD-DL
-                 pip install -r requirements.txt
-                 cd clinicadl
-                 pip install -e .
-                 # Show clinicadl help message
-                 echo "Display clinicadl help message"
-                 clinicadl --help
+                 conda create --clone clinicadl_env --name clinicadl_course
+                 conda activate clinicadl_course
+                 conda installl jupyter
+                 pip install -U jupyter-book==0.7.0b2
                  conda deactivate
                  '''
             }
           }
         }
       }
-      stage('Tests') {
+      stage('Build') {
         parallel {
           stage('CLI test Linux') {
             agent { label 'linux' }
@@ -46,15 +40,13 @@ pipeline {
               PATH = "$HOME/miniconda/bin:$PATH"
               }
             steps {
-              echo 'Testing pipeline instantation...'
+              echo 'Building Jupyter-book...'
               sh 'echo "Agent name: ${NODE_NAME}"'
               sh '''#!/usr/bin/env bash
                  set +x
                  source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
-                 conda activate clinicadl_env
-                 pytest --verbose \
-                    --disable-warnings \
-                    $WORKSPACE/clinicadl/tests/test_cli.py
+                 conda activate clinicadl_course
+                 jupyter-book build .
                  conda deactivate
                  '''
             }
