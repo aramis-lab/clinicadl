@@ -1,4 +1,4 @@
-
+# coding: utf8
 
 def preprocessing_t1w(bids_directory,
                       caps_directory,

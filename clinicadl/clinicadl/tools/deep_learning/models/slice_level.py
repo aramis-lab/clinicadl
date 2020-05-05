@@ -1,3 +1,5 @@
+# coding: utf8
+
 import torch.utils.model_zoo as model_zoo
 from torchvision.models.resnet import BasicBlock
 from torch import nn

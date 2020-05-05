@@ -1,3 +1,5 @@
+# coding: utf8
+
 import argparse
 import torch
 from os import path

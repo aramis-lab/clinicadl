@@ -1,3 +1,5 @@
+# coding: utf8
+
 from torch import nn
 import torch
 from copy import deepcopy

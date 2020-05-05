@@ -1,3 +1,4 @@
+# coding: utf8
 
 class Parameters:
     """ Class to define and initialize parameters used in traning CNN networks"""

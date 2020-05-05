@@ -1,3 +1,5 @@
+# coding: utf8
+
 from clinicadl.preprocessing.T1_lineal import preprocessing_t1w
 
 bids_dir =
