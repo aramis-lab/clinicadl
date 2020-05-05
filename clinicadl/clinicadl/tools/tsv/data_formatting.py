@@ -1,3 +1,5 @@
+# coding: utf8
+
 """
 Source files can be obtained by running the following commands on a BIDS folder:
  - clinica iotools merge-tsv

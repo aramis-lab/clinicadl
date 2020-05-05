@@ -1,3 +1,5 @@
+# coding: utf8
+
 from .tsv_utils import baseline_df
 import shutil
 from sklearn.model_selection import StratifiedKFold

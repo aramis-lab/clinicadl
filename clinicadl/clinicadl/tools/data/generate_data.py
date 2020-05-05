@@ -1,3 +1,5 @@
+# coding: utf8
+
 """
 This file generates data for trivial or intractable (random) data for binary classification.
 """

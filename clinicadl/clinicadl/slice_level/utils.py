@@ -1,3 +1,5 @@
+# coding: utf8
+
 import torch
 from torch.utils.data import Dataset
 import os
