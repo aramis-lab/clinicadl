@@ -156,7 +156,7 @@ usage: clinicadl extract [-h] [-psz PATCH_SIZE] [-ssz STRIDE_SIZE]
 
 positional arguments:
   caps_dir              Data using CAPS structure.
-  tsv_file              tsv file with sujets/sessions to process.
+  tsv_file              tsv file with subjects/sessions to process.
   working_dir           Working directory to save temporary file.
   {slice,patch,whole}   Method used to extract features. Three options:
                         'slice' to get 2D slices from the MRI, 'patch' to get
