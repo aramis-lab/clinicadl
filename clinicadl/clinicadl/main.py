@@ -1,3 +1,5 @@
+# coding: utf8
+
 from . import cli
 from clinicadl.tools.deep_learning import commandline_to_json
 

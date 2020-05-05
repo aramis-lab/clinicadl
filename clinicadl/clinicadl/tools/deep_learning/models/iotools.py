@@ -1,3 +1,5 @@
+# coding: utf8
+
 """
 Script containing the iotools for model and optimizer serialization.
 """

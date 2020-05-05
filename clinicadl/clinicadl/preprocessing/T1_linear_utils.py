@@ -1,3 +1,4 @@
+# coding: utf8
 
 # Get containers to ptoduce the CAPS structure
 
