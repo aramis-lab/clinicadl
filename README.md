@@ -13,7 +13,7 @@
 <p align="center">
   See also:
   <a href="#related-repositories">AD-ML</a>,
-  <a href="#related-repositories">AD-DL</a>
+  <a href="#related-repositories">Clinica</a>
 </p>
 
 
@@ -22,8 +22,8 @@
 This repository contains a software framework for reproducible experiments with
 convolutional neural networks (CNN) on **automatic classification of Alzheimer's
 disease (AD) using anatomical MRI data** from the publicly available dataset
-ADNI. 
-The journal version of the paper describing the algorithmes here implemented
+ADNI.
+The journal version of the paper describing the algorithms here implemented
 can be found [here](https://doi.org/10.1016/j.media.2020.101694).
 
 Automatic Classification of AD using a classical machine learning approach can
@@ -42,7 +42,7 @@ All the papers described in the State of the art section of the manuscript may
 be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 
 
-## Main dependencies:
+## Main dependencies
 - Python >= 3.6
 - Clinica (needs only to perform preprocessing) >= 0.3.4
 - Numpy
@@ -80,9 +80,9 @@ pip install -e .
 
 `clinicadl` is an utility to be used with the command line.
 
-To have an overview of the general options proposed by the software type: 
+To have an overview of the general options proposed by the software type:
 
-```bash
+```text
 clinicadl -h
 
 usage: clinicadl [-h] [--verbose]
@@ -125,7 +125,7 @@ There are five kind of tasks that can be performed using the command line:
 
 - **Train neural networks.** Tensors obtained are used to perform the training of CNN models.
 
-- **MRI classification.** Previously trained models can be used to performe the inference of a particular or a set of MRI.
+- **MRI classification.** Previously trained models can be used to perform the inference of a particular or a set of MRI.
 
 For detailed instructions and options of each task type  `clinica 'task' -h`.
 
@@ -134,18 +134,21 @@ For detailed instructions and options of each task type  `clinica 'task' -h`.
 #### Preprocessing
 Typical use for `preprocessing`:
 
-```bash
-clinicadl preprocessing --np 32 \
-  $BIDS_DIR \
-  $CAPS_DIR \
-  $TSV_FILE \
-  $WORKING_DIR
+```text
+clinicadl preprocessing <bids_dir> <caps_dir> <working_dir> --np 32
 ```
+where:
+
+  - `bids_dir` is the input folder containing the dataset in a [BIDS](http://www.clinica.run/doc/BIDS/) hierarchy.
+  - `caps_dir` is the output folder containing the results in a [CAPS](http://www.clinica.run/doc/CAPS/Specifications/) hierarchy.
+  - `caps_dir` is the temporary directory to store pipelines intermediate results.
+  - `--np <N>` (optional) is the number of cores used to run in parallel (in the example, 32 cores are used).
+If you want to run the pipeline on a subset of your BIDS dataset, you can use the `-tsv` flag to specify in a TSV file the participants belonging to your subset.
 
 #### Tensor extraction
 
 These are the options available for the `extract` task:
-```
+```text
 usage: clinicadl extract [-h] [-psz PATCH_SIZE] [-ssz STRIDE_SIZE]
                          [-sd SLICE_DIRECTION] [-sm {original,rgb}]
                          [-np NPROC]
@@ -185,7 +188,7 @@ optional arguments:
 ### Unit testing
 
 Be sure to have the `pytest` library in order to run the test suite.  This test
-suite includes unit testing to be launched using the command line: 
+suite includes unit testing to be launched using the command line:
 ```
 pytest clinicadl/tests/
 ```
@@ -196,12 +199,12 @@ For sanity check trivial datasets can be generated to train or test/validate
 the predictive models.
 
 The follow command allow you to generate two kinds of synthetic datasets: fully
-separable (trivial) or intractable data (IRM with random noise added). 
-```
+separable (trivial) or intractable data (IRM with random noise added).
+```text
 python clinicadl generate {random,trivial} caps_directory tsv_path output_directory
 ```
 The intractable dataset will be made of noisy versions of the first image of
-the tsv file given at 
+the tsv file given at
 `tsv_path` associated to random labels.
 
 The trivial dataset includes two labels:
@@ -212,4 +215,3 @@ The trivial dataset includes two labels:
 
 - [Clinica: Software platform for clinical neuroimaging studies](https://github.com/aramis-lab/clinica)
 - [AD-ML: Framework for the reproducible classification of Alzheimer's disease using machine learning](https://github.com/aramis-lab/AD-ML)
-
