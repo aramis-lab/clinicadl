@@ -166,9 +166,19 @@ def commandline_to_json(commandline, model_type):
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
+    # remove these entries from the commandline log file
     if 'func' in commandline_arg_dic:
         del commandline_arg_dic['func']
 
+    if 'caps_dir' in commandline_arg_dic:
+        del commandline_arg_dic['caps_dir']
+   
+    if 'tsv_path' in commandline_arg_dic:
+        del commandline_arg_dic['tsv_path']
+
+    if 'output_dir' in commandline_arg_dic:
+        del commandline_arg_dic['output_dir']
+    
     # save to json file
     json = json.dumps(commandline_arg_dic, skipkeys=True)
     print("Path of json file:", os.path.join(log_dir, "commandline_" + model_type + ".json"))
