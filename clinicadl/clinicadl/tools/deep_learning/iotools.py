@@ -219,7 +219,7 @@ def read_json(options, model_type, json_path=None, test=False):
 
 
 def visualize_subject(decoder, dataloader, visualization_path, options, epoch=None, save_input=False, subject_index=0):
-    from os import path, makedirs
+    from os import path, makedirs, pardir
     import nibabel as nib
     import numpy as np
     import torch
@@ -231,7 +231,13 @@ def visualize_subject(decoder, dataloader, visualization_path, options, epoch=No
     dataset = dataloader.dataset
     data = dataset[subject_index]
     image_path = data['image_path']
-    nii_path, _ = path.splitext(image_path)
+    nii_path = path.join(
+        path.dirname(image_path),
+        pardir, pardir, pardir, 
+        't1_linear',
+        path.basename(image_path)
+        )
+    nii_path, _ = path.splitext(nii_path)
     nii_path += '.nii.gz'
 
     input_nii = nib.load(nii_path)

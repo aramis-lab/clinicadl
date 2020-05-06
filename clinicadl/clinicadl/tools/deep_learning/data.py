@@ -50,8 +50,8 @@ class MRIDataset(Dataset):
         # Not in BIDS but in CAPS
         if self.data_path == "linear":
             image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
-                                   't1', 'preprocessing_dl',
-                                   img_name + '_' + sess_name + '_space-MNI_res-1x1x1.pt')
+                                   'deeplearning_prepare_data', 'image_based', 't1_linear',
+                                   img_name + '_' + sess_name + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt')
         elif self.data_path == "mni":
             image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
                                    't1', 'spm', 'segmentation', 'normalized_space',
