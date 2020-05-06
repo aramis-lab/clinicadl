@@ -1,3 +1,5 @@
+# coding: utf8
+
 import argparse
 from os import path
 from time import time

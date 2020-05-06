@@ -1,3 +1,5 @@
+# coding: utf8
+
 from os import path
 import numpy as np
 import os

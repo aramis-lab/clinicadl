@@ -1,3 +1,5 @@
+# coding: utf8
+
 import pytest
 import clinicadl.cli as cli
 from clinicadl.tools.deep_learning.iotools import Parameters

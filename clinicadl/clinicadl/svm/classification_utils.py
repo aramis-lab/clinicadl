@@ -1,3 +1,5 @@
+# coding: utf8
+
 import abc
 import os
 import pandas as pd

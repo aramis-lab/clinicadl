@@ -1,3 +1,5 @@
+# coding: utf8
+
 """
 Script containing the models for the patch level experiments.
 """
