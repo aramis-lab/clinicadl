@@ -1,3 +1,5 @@
+# coding: utf8
+
 import argparse
 
 from clinicadl.tools.deep_learning.iotools import Parameters
@@ -287,7 +289,7 @@ def parse_command_line():
             )
     generate_parser.add_argument(
             'tsv_path',
-            help='tsv path with sujets/sessions to use for data generation.',
+            help='TSV path with subjects/sessions to use for data generation.',
             default=None
             )
     generate_parser.add_argument(
@@ -366,7 +368,7 @@ def parse_command_line():
             )
     preprocessing_parser.add_argument(
             'tsv_file',
-            help='tsv file with sujets/sessions to process.',
+            help='TSV file with subjects/sessions to process.',
             default=None
             )
     preprocessing_parser.add_argument(
@@ -396,7 +398,7 @@ def parse_command_line():
             )
     extract_parser.add_argument(
             'tsv_file',
-            help='tsv file with sujets/sessions to process.',
+            help='TSV file with subjects/sessions to process.',
             default=None
             )
     extract_parser.add_argument(
@@ -462,7 +464,7 @@ def parse_command_line():
             default=None)
     train_parser.add_argument(
             'tsv_path',
-            help='tsv path with sujets/sessions to process.',
+            help='TSV path with subjects/sessions to process.',
             default=None)
     train_parser.add_argument(
             'output_dir',
@@ -658,7 +660,7 @@ def parse_command_line():
             default=None)
     classify_parser.add_argument(
             'tsv_path',
-            help='tsv path with sujets/sessions to process.',
+            help='TSV path with subjects/sessions to process.',
             default=None)
     classify_parser.add_argument(
             'output_dir',

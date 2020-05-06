@@ -1,3 +1,5 @@
+# coding: utf8
+
 import argparse
 import os
 from .classification_utils import extract_indices_from_5_fold

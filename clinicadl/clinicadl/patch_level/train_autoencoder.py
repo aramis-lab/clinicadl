@@ -1,3 +1,5 @@
+# coding: utf8
+
 import argparse
 import copy
 import torch

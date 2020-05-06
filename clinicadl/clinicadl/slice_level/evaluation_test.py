@@ -1,3 +1,5 @@
+# coding: utf8
+
 import argparse
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader

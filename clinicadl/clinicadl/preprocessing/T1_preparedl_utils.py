@@ -1,3 +1,4 @@
+# coding: utf8
 
 def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
     """
