@@ -19,12 +19,12 @@
 
 ## About the project
 
-This repository contains a software framework for reproducible experiments with
-convolutional neural networks (CNN) on **automatic classification of Alzheimer's
-disease (AD) using anatomical MRI data** from the publicly available dataset
-ADNI.
-The journal version of the paper describing the algorithms here implemented
-can be found [here](https://doi.org/10.1016/j.media.2020.101694).
+This repository hosts the code source for reproducible experiments on
+**automatic classification of Alzheimer's disease (AD) using anatomical MRI
+data**.
+It allows to train convolutional neural networks (CNN) models.
+The journal version of the paper describing this work is available
+[here](https://doi.org/10.1016/j.media.2020.101694).
 
 Automatic Classification of AD using a classical machine learning approach can
 be performed using the software available here:
