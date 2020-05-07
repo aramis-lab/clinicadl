@@ -9,7 +9,7 @@ from scipy.ndimage.filters import gaussian_filter
 
 
 #################################
-# Datasets loaders 
+# Datasets loaders
 #################################
 
 class MRIDataset(Dataset):
@@ -147,9 +147,9 @@ class MRIDataset_patch(Dataset):
             patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
                     'deeplearning_prepare_data', 'patch_based', 't1_linear',
                     img_name + '_' + sess_name
-                    + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w' 
+                    + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w'
                     + '_patchsize-' + str(self.patch_size)
-                    + '_stride-' + str(self.stride_size) 
+                    + '_stride-' + str(self.stride_size)
                     + '_patch-' + str(patch_idx) + '.pt')
 
             patch = torch.load(patch_path)
@@ -432,7 +432,7 @@ class MRIDataset_slice_mixed(Dataset):
 
         sample = {'image_id': img_name + '_' + sess_name + '_slice' + str(slice_name),
                 'image': extracted_slice, 'label': label,
-                'participant_id': img_name, 'session_id': sess_name, 
+                'participant_id': img_name, 'session_id': sess_name,
                 'slice_id': slice_name}
 
         return sample

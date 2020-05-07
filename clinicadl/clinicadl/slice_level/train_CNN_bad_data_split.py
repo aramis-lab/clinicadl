@@ -10,9 +10,15 @@ import os
 import numpy as np
 from time import time
 
-from utils import mix_slices, MRIDataset_slice_mixed, train, test, slice_level_to_tsvs, soft_voting_to_tsvs
-from clinicadl.tools.deep_learning import EarlyStopping, create_model, save_checkpoint, load_model, commandline_to_json
-from clinicadl.tools.deep_learning.data import load_data, MinMaxNormalization
+from utils import mix_slices, train, test, slice_level_to_tsvs, soft_voting_to_tsvs
+from clinicadl.tools.deep_learning import (EarlyStopping,
+                                           create_model,
+                                           save_checkpoint,
+                                           load_model,
+                                           commandline_to_json)
+from clinicadl.tools.deep_learning.data import (load_data,
+                                                MinMaxNormalization,
+                                                MRIDataset_slice_mixed)
 
 
 __author__ = "Junhao Wen"

@@ -6,8 +6,12 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import torch
 
-from utils import MRIDataset_patch_hippocampus, test, patch_level_to_tsvs, soft_voting_to_tsvs, MRIDataset_patch
-from clinicadl.tools.deep_learning.data import MinMaxNormalization, load_data_test, load_data
+from utils import test, patch_level_to_tsvs, soft_voting_to_tsvs
+from clinicadl.tools.deep_learning.data import (MinMaxNormalization,
+                                                load_data_test,
+                                                load_data,
+                                                MRIDataset_patch,
+                                                MRIDataset_patch_hippocampus)
 from clinicadl.tools.deep_learning import create_model, load_model
 
 

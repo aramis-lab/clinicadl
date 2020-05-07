@@ -10,11 +10,18 @@ from tensorboardX import SummaryWriter
 import torchvision.transforms as transforms
 
 from .utils import load_model_after_ae, load_model_after_cnn
-from .utils import MRIDataset_patch, train, test, patch_level_to_tsvs, soft_voting_to_tsvs
+from .utils import train, test, patch_level_to_tsvs, soft_voting_to_tsvs
 
 from ..tools.deep_learning.iotools import Parameters
-from ..tools.deep_learning import EarlyStopping, save_checkpoint, commandline_to_json, create_model, load_model
-from ..tools.deep_learning.data import MinMaxNormalization, load_data
+from ..tools.deep_learning import (EarlyStopping,
+                                   save_checkpoint,
+                                   commandline_to_json,
+                                   create_model,
+                                   load_model)
+from ..tools.deep_learning.data import (MinMaxNormalization,
+                                        load_data,
+                                        MRIDataset_patch)
+
 
 __author__ = "Junhao Wen, Elina Thibeau-Sutre, Mauricio Diaz"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"

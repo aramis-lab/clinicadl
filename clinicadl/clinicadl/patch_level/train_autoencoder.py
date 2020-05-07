@@ -8,21 +8,14 @@ from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 import torchvision.transforms as transforms
 
-from .utils import MRIDataset_patch_hippocampus, MRIDataset_patch
 from .utils import stacked_ae_learning, visualize_ae
 
 from ..tools.deep_learning.iotools import Parameters
 from ..tools.deep_learning import commandline_to_json, create_model
-from ..tools.deep_learning.data import load_data, MinMaxNormalization
-
-__author__ = "Junhao Wen, Elina Thibeau-Sutre, Mauricio Diaz"
-__copyright__ = "Copyright 2018 The Aramis Lab Team"
-__credits__ = ["Junhao Wen", "Elina Thibeau-Sutre", "Mauricio Diaz"]
-__license__ = "See LICENSE.txt file"
-__version__ = "0.1.0"
-__maintainer__ = "Junhao Wen, Elina Thibeau-Sutre, Mauricio Diaz"
-__email__ = "junhao.wen89@gmail.com, mauricio.diaz@inria.fr"
-__status__ = "Development"
+from ..tools.deep_learning.data import (load_data,
+                                        MinMaxNormalization,
+                                        MRIDataset_patch,
+                                        MRIDataset_patch_hippocampus)
 
 
 def train_autoencoder_patch(params):
