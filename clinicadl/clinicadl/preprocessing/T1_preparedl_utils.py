@@ -1,5 +1,6 @@
 # coding: utf8
 
+
 def extract_slices(preprocessed_T1, slice_direction=0, slice_mode='original'):
     """
     This function extracts the slices from three directions
@@ -202,7 +203,9 @@ def save_as_pt(input_img):
 
     return output_file
 
-# Get containers to ptoduce the CAPS structure
+# Get containers to produce the CAPS structure
+
+
 def container_from_filename(bids_or_caps_filename):
     """Extract container from BIDS or CAPS file.
     Args:

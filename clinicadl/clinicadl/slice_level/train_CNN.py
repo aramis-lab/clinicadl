@@ -10,9 +10,15 @@ import os
 import numpy as np
 from time import time
 
-from .utils import MRIDataset_slice, train, test, slice_level_to_tsvs, soft_voting_to_tsvs
-from ..tools.deep_learning import EarlyStopping, save_checkpoint, commandline_to_json, create_model, load_model
-from ..tools.deep_learning.data import load_data, MinMaxNormalization
+from .utils import train, test, slice_level_to_tsvs, soft_voting_to_tsvs
+from ..tools.deep_learning import (EarlyStopping,
+                                   save_checkpoint,
+                                   commandline_to_json,
+                                   create_model,
+                                   load_model)
+from ..tools.deep_learning.data import (load_data, 
+                                        MinMaxNormalization,
+                                        MRIDataset_slice)
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018-2020 The Aramis Lab Team"

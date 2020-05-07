@@ -6,9 +6,12 @@ import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
-from utils import MRIDataset_patch, test, patch_level_to_tsvs, soft_voting_to_tsvs
+from utils import test, patch_level_to_tsvs, soft_voting_to_tsvs
 from clinicadl.tools.deep_learning.models import create_model, load_model
-from clinicadl.tools.deep_learning.data import MinMaxNormalization, load_data, load_data_test
+from clinicadl.tools.deep_learning.data import (MinMaxNormalization,
+                                                load_data,
+                                                load_data_test,
+                                                MRIDataset_patch)
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"

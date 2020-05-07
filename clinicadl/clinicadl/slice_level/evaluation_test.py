@@ -6,18 +6,15 @@ from torch.utils.data import DataLoader
 import torch
 import os
 
-from clinicadl.slice_level.utils import MRIDataset_slice, test, slice_level_to_tsvs, soft_voting_to_tsvs
+from clinicadl.slice_level.utils import (test,
+                                         slice_level_to_tsvs,
+                                         soft_voting_to_tsvs)
 from clinicadl.tools.deep_learning import create_model, load_model
-from clinicadl.tools.deep_learning.data import MinMaxNormalization, load_data_test, load_data
+from clinicadl.tools.deep_learning.data import (MinMaxNormalization,
+                                                load_data_test,
+                                                load_data,
+                                                MRIDataset_slice)
 
-__author__ = "Junhao Wen"
-__copyright__ = "Copyright 2018 The Aramis Lab Team"
-__credits__ = ["Junhao Wen"]
-__license__ = "See LICENSE.txt file"
-__version__ = "0.1.0"
-__maintainer__ = "Junhao Wen"
-__email__ = "junhao.wen89@gmail.com"
-__status__ = "Development"
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 2D slice-level CNN for test the trained classifiers")
 

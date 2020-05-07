@@ -1,5 +1,6 @@
 # coding: utf8
 
+
 class Parameters:
     """ Class to define and initialize parameters used in traning CNN networks"""
 
@@ -173,13 +174,13 @@ def commandline_to_json(commandline, model_type):
 
     if 'caps_dir' in commandline_arg_dic:
         del commandline_arg_dic['caps_dir']
-   
+
     if 'tsv_path' in commandline_arg_dic:
         del commandline_arg_dic['tsv_path']
 
     if 'output_dir' in commandline_arg_dic:
         del commandline_arg_dic['output_dir']
-    
+
     # save to json file
     json = json.dumps(commandline_arg_dic, skipkeys=True)
     print("Path of json file:", os.path.join(log_dir, "commandline_" + model_type + ".json"))
@@ -233,7 +234,7 @@ def visualize_subject(decoder, dataloader, visualization_path, options, epoch=No
     image_path = data['image_path']
     nii_path = path.join(
         path.dirname(image_path),
-        pardir, pardir, pardir, 
+        pardir, pardir, pardir,
         't1_linear',
         path.basename(image_path)
         )
