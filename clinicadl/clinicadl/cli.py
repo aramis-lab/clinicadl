@@ -252,8 +252,14 @@ def train_func(args):
 
 
 def classify_func(args):
-    pass
-
+    from .classify import inference_from_model
+    # from .preprocessing.T1_postprocessing import postprocessing_t1w
+    inference_from_model(
+            args.caps_dir,
+            args.tsv_file,
+            args.working_dir,
+            args.model_name,
+            )
 
 def parse_command_line():
     parser = argparse.ArgumentParser(
