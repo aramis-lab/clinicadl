@@ -252,7 +252,7 @@ def train_func(args):
 
 
 def classify_func(args):
-    from .classify import inference_from_model
+    from .classify.inference import inference_from_model
     # from .preprocessing.T1_postprocessing import postprocessing_t1w
     inference_from_model(
             args.caps_dir,
