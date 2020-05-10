@@ -257,7 +257,7 @@ def classify_func(args):
     inference_from_model(
             args.caps_dir,
             args.tsv_file,
-            args.working_dir,
+            args.output_dir,
             args.model_name,
             )
 
@@ -656,11 +656,6 @@ def parse_command_line():
             help='''Classify one image or a list of images with your previously
                  trained model.''')
     classify_parser.add_argument(
-            'mode',
-            help='Choose your mode (subject level, slice level, patch level, svm).',
-            choices=['subject', 'slice', 'patch', 'svm'],
-            default='subject')
-    classify_parser.add_argument(
             'caps_dir',
             help='Data using CAPS structure.',
             default=None)
@@ -673,9 +668,10 @@ def parse_command_line():
             help='Folder containing results of the training.',
             default=None)
     classify_parser.add_argument(
-            'network_dir',
-            help='Model to use during classification.',
-            default=None)
+            'model_name',
+            help='Model to use for classification.',
+            choices=['2D_slice', '3D_patch_1', '3D_patch_2', 'subject_1', 'subject_2'],
+            default='2D_slice')
 
     classify_parser.set_defaults(func=classify_func)
 

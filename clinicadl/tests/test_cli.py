@@ -8,6 +8,7 @@ from clinicadl.tools.deep_learning.iotools import Parameters
 @pytest.fixture(params=['preprocessing',
     'extract',
     'generate',
+    'classify',
     'train_subject',
     'train_slice',
     'train_patch'])
@@ -70,6 +71,21 @@ def generate_cli_commands(request):
               'preprocessing',
               'mean',
               'sigma']
+  
+  if request.param == 'classify':
+      test_input = [
+              'classify',
+              '/dir/caps',
+              '/dir/tsv_path/',
+              '/dir/output/',
+              '2D_slice']
+      keys_output = [
+              'task',
+              'caps_dir',
+              'tsv_path',
+              'output_dir',
+              'model_name']
+  
   if request.param == 'train_slice':
       test_input = [
               'train',
@@ -85,6 +101,7 @@ def generate_cli_commands(request):
               'tsv_path',
               'output_dir',
               'network']
+  
   if request.param == 'train_subject':
       test_input = [
               'train',

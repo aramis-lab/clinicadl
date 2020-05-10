@@ -1,6 +1,6 @@
 def inference_from_model(caps_dir,
                          tsv_file,
-                         working_dir,
+                         output_dir,
                          model_name)
     ''' arguments
     caps_dir: folder containing the tensor files (.pt version of MRI)
