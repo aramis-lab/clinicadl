@@ -52,7 +52,7 @@ pipeline {
                  set +x
                  source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
                  conda activate clinicadl_env
-                 pytest --verbose \
+                 pytest --junitxml=./test-reports/report.xml --verbose \
                     --disable-warnings \
                     $WORKSPACE/clinicadl/tests/test_cli.py
                  conda deactivate
@@ -63,6 +63,9 @@ pipeline {
       }
     }
     post {
+      always {
+        junit 'test-reports/*.xml'
+      }
       failure {
         mail to: 'clinicadl-ci@inria.fr',
           subject: "Failed Pipeline: ${currentBuild.fullDisplayName}",
