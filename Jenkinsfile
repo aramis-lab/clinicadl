@@ -4,7 +4,7 @@
 // Author: mauricio.diaz@inria.fr
 
 pipeline {
-  agent none
+  agent { label 'linux' }
     stages {
       stage('Install') {
         parallel {
