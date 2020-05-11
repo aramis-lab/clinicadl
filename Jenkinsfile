@@ -50,12 +50,14 @@ pipeline {
              conda deactivate
              '''
         }
+        post {
+          always {
+            junit 'test-reports/*.xml'
+          }
+        } 
       }
     }
     post {
-      always {
-        junit 'test-reports/*.xml'
-      }
       failure {
         mail to: 'clinicadl-ci@inria.fr',
           subject: "Failed Pipeline: ${currentBuild.fullDisplayName}",
