@@ -32,12 +32,14 @@ def preprocessing_t1w(bids_directory,
     from clinica.utils.exceptions import ClinicaBIDSError, ClinicaException
     from clinica.utils.inputs import clinica_file_reader
     from clinica.utils.input_files import T1W_NII
+    from clinica.utils.check_dependency import check_ants
     from clinicadl.tools.inputs.input import fetch_file
     from clinicadl.tools.inputs.input import RemoteFileStructure
     import nipype.pipeline.engine as npe
     import nipype.interfaces.utility as nutil
     from nipype.interfaces import ants
 
+    check_ants()
     check_bids_folder(bids_directory)
     input_dir = bids_directory
     is_bids_dir = True
