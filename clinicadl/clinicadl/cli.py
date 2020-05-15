@@ -669,7 +669,7 @@ def parse_command_line():
             default=None)
     classify_parser.add_argument(
             'model_name',
-            help='Model to use for classification.',
+            help='Model used for classification.',
             choices=['2D_slice', '3D_patch_1', '3D_patch_2', 'subject_1', 'subject_2'],
             default='2D_slice')
 
