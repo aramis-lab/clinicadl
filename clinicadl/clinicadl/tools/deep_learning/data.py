@@ -11,6 +11,11 @@ from scipy.ndimage.filters import gaussian_filter
 #################################
 # Datasets loaders
 #################################
+FILENAME_TYPE  = {
+        'full':  '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w',
+        'cropped': '_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w'
+        }
+
 
 class MRIDataset(Dataset):
     """Dataset of MRI organized in a CAPS folder."""
@@ -56,7 +61,7 @@ class MRIDataset(Dataset):
             image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
                                    'deeplearning_prepare_data', 'image_based', 't1_linear',
                                    img_name + '_' + sess_name
-                                   + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt')
+                                   + FILENAME_TYPE['cropped'] + '.pt')
         elif self.data_path == "mni":
             image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
                                    't1', 'spm', 'segmentation', 'normalized_space',
@@ -147,7 +152,7 @@ class MRIDataset_patch(Dataset):
             patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
                     'deeplearning_prepare_data', 'patch_based', 't1_linear',
                     img_name + '_' + sess_name
-                    + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w'
+                    + FILENAME_TYPE['cropped']
                     + '_patchsize-' + str(self.patch_size)
                     + '_stride-' + str(self.stride_size)
                     + '_patch-' + str(patch_idx) + '.pt')
@@ -157,7 +162,7 @@ class MRIDataset_patch(Dataset):
             image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
                     'deeplearning_prepare_data', 'image_based', 't1_linear',
                     img_name + '_' + sess_name
-                    + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt')
+                    + FILENAME_TYPE['cropped'] + '.pt')
             image = torch.load(image_path)
             patch = extract_patch_from_mri(image, patch_idx, self.patch_size, self.stride_size)
 
@@ -186,7 +191,7 @@ class MRIDataset_patch(Dataset):
         image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
                 'deeplearning_prepare_data', 'image_based', 't1_linear',
                 img_name + '_' + sess_name
-                + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt')
+                + FILENAME_TYPE['cropped'] + '.pt')
         image = torch.load(image_path)
 
         patches_tensor = image.unfold(1, self.patch_size, self.stride_size
@@ -328,14 +333,14 @@ class MRIDataset_slice(Dataset):
             slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
                     'deeplearning_prepare_data', 'slice_based', 't1_linear',
                     img_name + '_' + sess_name
-                    + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w' +
+                    + FILENAME_TYPE['cropped'] +
                     self.slice_direction + '_rgbslice-' + str(slice_idx + 20) + '.pt')
             extracted_slice = torch.load(slice_path)
         else:
             image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
                     'deeplearning_prepare_data', 'image_based', 't1_linear',
                     img_name + '_' + sess_name
-                    + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt')
+                    + FILENAME_TYPE['cropped'] + '.pt')
             image = torch.load(image_path)
             extracted_slice = extract_slice_from_mri(image, slice_idx + 20, self.mri_plane)
 
@@ -411,7 +416,7 @@ class MRIDataset_slice_mixed(Dataset):
             slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
                     'deeplearning_prepare_data', 'slice_based', 't1_linear',
                     img_name + '_' + sess_name
-                    + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w' +
+                    + FILENAME_TYPE['cropped'] +
                     self.slice_direction + '_rgbslice-' + str(slice_name) + '.pt')
             extracted_slice = torch.load(slice_path)
 
@@ -419,7 +424,7 @@ class MRIDataset_slice_mixed(Dataset):
             image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
                     'deeplearning_prepare_data', 'image_based', 't1_linear',
                     img_name + '_' + sess_name
-                    + '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt')
+                    + FILENAME_TYPE['cropped'] + '.pt')
             extracted_slice = extract_slice_from_mri(image, slice_name, self.mri_plane)
 
         # check if the slice has NaN value
