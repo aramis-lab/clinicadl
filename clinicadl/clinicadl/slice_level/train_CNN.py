@@ -16,7 +16,7 @@ from ..tools.deep_learning import (EarlyStopping,
                                    commandline_to_json,
                                    create_model,
                                    load_model)
-from ..tools.deep_learning.data import (load_data, 
+from ..tools.deep_learning.data import (load_data,
                                         MinMaxNormalization,
                                         MRIDataset_slice)
 

@@ -261,6 +261,7 @@ def classify_func(args):
             args.model_name,
             )
 
+
 def parse_command_line():
     parser = argparse.ArgumentParser(
             prog='clinicadl',
