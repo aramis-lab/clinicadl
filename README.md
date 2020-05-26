@@ -26,7 +26,7 @@ It allows to train convolutional neural networks (CNN) models.
 The journal version of the paper describing this work is available
 [here](https://doi.org/10.1016/j.media.2020.101694).
 
-Automatic Classification of AD using a classical machine learning approach can
+Automatic classification of AD using a classical machine learning approach can
 be performed using the software available here:
 <https://github.com/aramis-lab/AD-ML>.
 
