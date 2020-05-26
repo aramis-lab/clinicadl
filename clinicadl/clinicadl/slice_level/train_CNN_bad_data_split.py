@@ -132,6 +132,13 @@ parser.add_argument(
         help='weight decay (default: 1e-4)')
 
 parser.add_argument(
+        "--dropout",
+        default=0,
+        type=float,
+        help="Rate of dropout applied to dropout layers."
+)
+
+parser.add_argument(
         '--selection_threshold',
         default=None,
         type=float,
@@ -164,7 +171,7 @@ def train_CNN_bad_data_split(params):
     print('Do transfer learning with existed model trained on ImageNet!\n')
     print('The chosen network is %s !' % params.network)
 
-    model = create_model(params.network, params.gpu)
+    model = create_model(params.model, params.gpu, dropout=params.dropout)
     trg_size = (224, 224)  # most of the imagenet pretrained model has this input size
 
     # All pre-trained models expect input images normalized in the same way,
