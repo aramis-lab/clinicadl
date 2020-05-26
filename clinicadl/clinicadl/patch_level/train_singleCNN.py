@@ -36,7 +36,7 @@ __status__ = "Development"
 
 def train_patch_single_cnn(params):
 
-    model = create_model(params.model, params.gpu)
+    model = create_model(params.model, params.gpu, dropout=params.dropout)
     init_state = copy.deepcopy(model.state_dict())
     transformations = transforms.Compose([MinMaxNormalization()])
 

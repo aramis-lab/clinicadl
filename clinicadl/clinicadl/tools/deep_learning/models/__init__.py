@@ -5,7 +5,7 @@ from .patch_level import Conv4_FC3
 from .slice_level import resnet18
 
 
-def create_model(model_name, gpu=False):
+def create_model(model_name, gpu=False, **kwargs):
     """
     Creates model object from the model_name.
 
@@ -15,7 +15,7 @@ def create_model(model_name, gpu=False):
     """
 
     try:
-        model = eval(model_name)()
+        model = eval(model_name)(**kwargs)
     except NameError:
         raise NotImplementedError(
             'The model wanted %s has not been implemented.' % model_name)

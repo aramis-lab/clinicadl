@@ -216,6 +216,10 @@ def read_json(options, model_type, json_path=None, test=False):
         else:
             setattr(options, key, item)
 
+    # Retro-compatibility with runs of previous versions
+    if not hasattr(options, 'dropout'):
+        options.dropout = 0
+
     return options
 
 

@@ -585,6 +585,10 @@ def parse_command_line():
             help='Weight decay value used in optimization. (default=1e-4)',
             default=1e-4, type=float)
     train_parser.add_argument(
+            '--dropout',
+            help='rate of dropout that will be applied to dropout layers.',
+            default=0, type=float)
+    train_parser.add_argument(
             '--patience',
             help='Waiting time for early stopping.',
             type=int, default=10)
