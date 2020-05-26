@@ -78,6 +78,10 @@ def extract_dl_t1w(caps_directory,
             'pattern': '*space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz',
             'description': 'T1W Image registered using T1_Linear'
             }
+    T1W_LINEAR_CROPPED = {
+            'pattern': '*space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz',
+            'description': 'T1W Image registered using T1_Linear and cropped (matrix size 169×208×179, 1 mm isotropic voxels)'
+            }
 
     if working_directory is None:
         working_directory = tempfile.mkdtemp()
@@ -107,7 +111,7 @@ def extract_dl_t1w(caps_directory,
                 subjects,
                 sessions,
                 caps_directory,
-                T1W_LINEAR
+                T1W_LINEAR_CROPPED
                 )
     except ClinicaException as e:
         err = 'Clinica faced error(s) while trying to read files in your CAPS directory.\n' + str(e)
