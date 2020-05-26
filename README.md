@@ -144,7 +144,9 @@ where:
   - `<working_dir>` is the temporary directory to store pipelines intermediate results.
   - `--np <N>` (optional) is the number of cores used to run in parallel (in the example, 32 cores are used).
 
-If you want to run the pipeline on a subset of your BIDS dataset, you can use the `-tsv` flag to specify in a TSV file the participants belonging to your subset.
+If you want to run the pipeline on a subset of your BIDS dataset, you can use
+the `-tsv` flag to specify in a TSV file the participants belonging to your
+subset.
 
 #### Tensor extraction
 
