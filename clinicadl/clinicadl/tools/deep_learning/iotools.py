@@ -39,6 +39,7 @@ class Parameters:
             add_sigmoid: bool = False,
             optimizer: str = "Adam",
             weight_decay: float = 1e-4,
+            dropout: float = 0,
             gpu: bool = False,
             batch_size: int = 12,
             evaluation_steps: int = 1,
@@ -117,6 +118,7 @@ class Parameters:
         self.add_sigmoid = add_sigmoid
         self.optimizer = optimizer
         self.weight_decay = weight_decay
+        self.dropout = dropout
         self.gpu = gpu
         self.batch_size = batch_size
         self.evaluation_steps = evaluation_steps
