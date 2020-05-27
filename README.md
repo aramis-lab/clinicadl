@@ -26,7 +26,7 @@ It allows to train convolutional neural networks (CNN) models.
 The journal version of the paper describing this work is available
 [here](https://doi.org/10.1016/j.media.2020.101694).
 
-Automatic Classification of AD using a classical machine learning approach can
+Automatic classification of AD using a classical machine learning approach can
 be performed using the software available here:
 <https://github.com/aramis-lab/AD-ML>.
 
@@ -144,7 +144,9 @@ where:
   - `<working_dir>` is the temporary directory to store pipelines intermediate results.
   - `--np <N>` (optional) is the number of cores used to run in parallel (in the example, 32 cores are used).
 
-If you want to run the pipeline on a subset of your BIDS dataset, you can use the `-tsv` flag to specify in a TSV file the participants belonging to your subset.
+If you want to run the pipeline on a subset of your BIDS dataset, you can use
+the `-tsv` flag to specify in a TSV file the participants belonging to your
+subset.
 
 #### Tensor extraction
 
