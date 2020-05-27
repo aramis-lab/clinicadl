@@ -11,11 +11,8 @@ from scipy.ndimage.filters import gaussian_filter
 #################################
 # Datasets loaders
 #################################
-FILENAME_TYPE = {
-                'full': '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w',
-                'cropped': '_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w'
-                }
-
+FILENAME_TYPE = {'full': '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w',
+                 'cropped': '_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w'}
 
 class MRIDataset(Dataset):
     """Dataset of MRI organized in a CAPS folder."""
