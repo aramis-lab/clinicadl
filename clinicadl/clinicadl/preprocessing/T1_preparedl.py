@@ -74,10 +74,11 @@ def extract_dl_t1w(caps_directory,
                                      container_from_filename,
                                      get_data_datasink)
 
-    T1W_LINEAR = {
-            'pattern': '*space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz',
-            'description': 'T1W Image registered using T1_Linear'
-            }
+    T1W_LINEAR = {'pattern': '*space-MNI152NLin2009cSym_res-1x1x1_T1w.nii.gz',
+                  'description': 'T1W Image registered using T1_Linear'}
+    T1W_LINEAR_CROPPED = {'pattern': '*space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz',
+                          'description': 'T1W Image registered using T1_Linear and cropped'
+                                         '(matrix size 169×208×179, 1 mm isotropic voxels)'}
 
     if working_directory is None:
         working_directory = tempfile.mkdtemp()
@@ -107,7 +108,7 @@ def extract_dl_t1w(caps_directory,
                 subjects,
                 sessions,
                 caps_directory,
-                T1W_LINEAR
+                T1W_LINEAR_CROPPED
                 )
     except ClinicaException as e:
         err = 'Clinica faced error(s) while trying to read files in your CAPS directory.\n' + str(e)
@@ -174,7 +175,7 @@ def extract_dl_t1w(caps_directory,
     extract_slices.inputs.slice_direction = slice_direction
     extract_slices.inputs.slice_mode = slice_mode
 
-    # Extract patches node (options, patch size and stride size)
+    # Extract patches node (options: patch size and stride size)
     # ----------------------
     extract_patches = npe.MapNode(
             name='extract_patches',
@@ -196,15 +197,6 @@ def extract_dl_t1w(caps_directory,
                 fields=['preprocessed_T1']),
             name='outputnode'
             )
-
-    # Node
-    # ----------------------
-    get_ids = npe.Node(
-            interface=nutil.Function(
-                input_names=['image_id'],
-                output_names=['image_id_out', 'subst_ls'],
-                function=get_data_datasink),
-            name="GetIDs")
 
     # Find container path from t1w filename
     # ----------------------
@@ -233,10 +225,8 @@ def extract_dl_t1w(caps_directory,
         (read_node, image_id_node, [('t1w', 'bids_or_caps_file')]),
         (read_node, container_path, [('t1w', 'bids_or_caps_filename')]),
         (read_node, save_as_pt, [('t1w', 'input_img')]),
-        (image_id_node, get_ids, [('image_id', 'image_id')]),
+        (image_id_node, write_node, [('image_id', '@image_id')]),
         # Connect to DataSink
-        (get_ids, write_node, [('image_id_out', '@image_id')]),
-        (get_ids, write_node, [('subst_ls', 'substitutions')])
         ])
 
     if extract_method == 'slice':

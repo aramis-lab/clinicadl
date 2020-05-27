@@ -245,7 +245,7 @@ def visualize_subject(decoder, dataloader, visualization_path, options, epoch=No
         pardir, pardir, pardir,
         't1_linear',
         path.basename(image_path)
-        )
+    )
     nii_path, _ = path.splitext(nii_path)
     nii_path += '.nii.gz'
 
