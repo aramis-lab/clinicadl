@@ -85,7 +85,7 @@ class MRIDataset(Dataset):
 
             :param session: (str) the session wanted. Must be 'all' or 'ses-MXX'
             :return: (DataFrame) the dataset with the wanted sessions
-            """
+        """
         from copy import copy
 
         data_output = copy(self)

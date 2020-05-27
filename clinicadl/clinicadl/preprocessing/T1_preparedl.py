@@ -178,7 +178,7 @@ def extract_dl_t1w(caps_directory,
     extract_slices.inputs.slice_direction = slice_direction
     extract_slices.inputs.slice_mode = slice_mode
 
-    # Extract patches node (options, patch size and stride size)
+    # Extract patches node (options: patch size and stride size)
     # ----------------------
     extract_patches = npe.MapNode(
             name='extract_patches',
