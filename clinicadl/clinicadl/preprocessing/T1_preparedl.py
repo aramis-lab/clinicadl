@@ -201,15 +201,6 @@ def extract_dl_t1w(caps_directory,
             name='outputnode'
             )
 
-    # Node
-    # ----------------------
-    get_ids = npe.Node(
-            interface=nutil.Function(
-                input_names=['image_id'],
-                output_names=['image_id_out', 'subst_ls'],
-                function=get_data_datasink),
-            name="GetIDs")
-
     # Find container path from t1w filename
     # ----------------------
     container_path = npe.Node(
@@ -237,10 +228,8 @@ def extract_dl_t1w(caps_directory,
         (read_node, image_id_node, [('t1w', 'bids_or_caps_file')]),
         (read_node, container_path, [('t1w', 'bids_or_caps_filename')]),
         (read_node, save_as_pt, [('t1w', 'input_img')]),
-        (image_id_node, get_ids, [('image_id', 'image_id')]),
+        (image_id_node, write_node, [('image_id', '@image_id')]),
         # Connect to DataSink
-        (get_ids, write_node, [('image_id_out', '@image_id')]),
-        (get_ids, write_node, [('subst_ls', 'substitutions')])
         ])
 
     if extract_method == 'slice':
