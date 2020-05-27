@@ -238,7 +238,7 @@ def visualize_subject(decoder, dataloader, visualization_path, options, epoch=No
     dataset = dataloader.dataset
     data = dataset[subject_index]
     image_path = data['image_path']
-    
+
     # This case works only when pt file is stored following the CAPS structure
     # of T1_linear. If the pt file is at the same place than the nifti file, it
     # crashes. FIX ME!

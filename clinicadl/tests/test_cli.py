@@ -71,7 +71,7 @@ def generate_cli_commands(request):
               'preprocessing',
               'mean',
               'sigma']
-  
+
   if request.param == 'classify':
       test_input = [
               'classify',
@@ -85,7 +85,7 @@ def generate_cli_commands(request):
               'tsv_path',
               'output_dir',
               'model_name']
-  
+
   if request.param == 'train_slice':
       test_input = [
               'train',
@@ -101,7 +101,7 @@ def generate_cli_commands(request):
               'tsv_path',
               'output_dir',
               'network']
-  
+
   if request.param == 'train_subject':
       test_input = [
               'train',
