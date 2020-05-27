@@ -330,8 +330,8 @@ class MRIDataset_slice(Dataset):
             slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
                                       'deeplearning_prepare_data', 'slice_based', 't1_linear',
                                       img_name + '_' + sess_name
-                                      + FILENAME_TYPE['cropped'] +
-                                      self.slice_direction + '_rgbslice-' + str(slice_idx + 20) + '.pt')
+                                      + FILENAME_TYPE['cropped']
+                                      + self.slice_direction + '_rgbslice-' + str(slice_idx + 20) + '.pt')
             extracted_slice = torch.load(slice_path)
         else:
             image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
@@ -413,8 +413,8 @@ class MRIDataset_slice_mixed(Dataset):
             slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
                                       'deeplearning_prepare_data', 'slice_based', 't1_linear',
                                       img_name + '_' + sess_name
-                                      + FILENAME_TYPE['cropped'] +
-                                      self.slice_direction + '_rgbslice-' + str(slice_name) + '.pt')
+                                      + FILENAME_TYPE['cropped']
+                                      + self.slice_direction + '_rgbslice-' + str(slice_name) + '.pt')
             extracted_slice = torch.load(slice_path)
 
         else:
