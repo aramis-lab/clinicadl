@@ -241,7 +241,7 @@ def train_func(args):
                 train_patch_single_cnn(train_params_patch)
             else:
                 train_patch_multi_cnn(train_params_patch)
-    elif args.mode == 'svn':
+    elif args.mode == 'svm':
         pass
 
     else:
