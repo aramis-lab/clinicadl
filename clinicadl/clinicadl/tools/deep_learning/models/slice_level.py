@@ -54,7 +54,7 @@ def resnet18(**kwargs):
 
 class ResNetDesigner(nn.Module):
 
-    def __init__(self, block, layers, num_classes=1000):
+    def __init__(self, block, layers, num_classes=1000, **kwargs):
         self.inplanes = 64
         super(ResNetDesigner, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,

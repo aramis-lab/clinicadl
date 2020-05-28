@@ -5,6 +5,16 @@ import argparse
 from clinicadl.tools.deep_learning.iotools import Parameters
 
 
+def set_default_dropout(args):
+    if args.dropout is None:
+        if args.mode == 'subject':
+            args.dropout = 0.5
+        elif args.mode == 'slice':
+            args.dropout = 0.8
+        else:
+            args.dropout = 0
+
+
 def preprocessing_t1w_func(args):
     from .preprocessing.T1_linear import preprocessing_t1w
     wf = preprocessing_t1w(
@@ -67,6 +77,8 @@ def train_func(args):
     from .patch_level.train_autoencoder import train_autoencoder_patch
     from .patch_level.train_singleCNN import train_patch_single_cnn
     from .patch_level.train_multiCNN import train_patch_multi_cnn
+
+    set_default_dropout(args)
 
     if args.mode == 'subject':
         if args.train_autoencoder:
@@ -591,7 +603,7 @@ def parse_command_line():
     train_parser.add_argument(
             '--dropout',
             help='rate of dropout that will be applied to dropout layers.',
-            default=0, type=float)
+            default=None, type=float)
     train_parser.add_argument(
             '--patience',
             help='Waiting time for early stopping.',
