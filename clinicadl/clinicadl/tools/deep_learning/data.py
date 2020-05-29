@@ -146,7 +146,7 @@ class MRIDataset_patch(Dataset):
             patch_idx = self.patch_index
 
         if self.prepare_dl:
-            patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
+            patch_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
                                       'deeplearning_prepare_data', 'patch_based', 't1_linear',
                                       img_name + '_' + sess_name
                                       + FILENAME_TYPE['cropped']
@@ -156,7 +156,7 @@ class MRIDataset_patch(Dataset):
 
             patch = torch.load(patch_path)
         else:
-            image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
+            image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
                                       'deeplearning_prepare_data', 'image_based', 't1_linear',
                                       img_name + '_' + sess_name
                                       + FILENAME_TYPE['cropped'] + '.pt')
@@ -185,7 +185,7 @@ class MRIDataset_patch(Dataset):
         img_name = self.df.loc[0, 'participant_id']
         sess_name = self.df.loc[0, 'session_id']
 
-        image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
+        image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
                                   'deeplearning_prepare_data', 'image_based', 't1_linear',
                                   img_name + '_' + sess_name
                                   + FILENAME_TYPE['cropped'] + '.pt')
@@ -242,11 +242,11 @@ class MRIDataset_patch_hippocampus(Dataset):
         left_is_odd = idx % self.patchs_per_patient
 
         if left_is_odd == 1:
-            patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
+            patch_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
                                       't1', 'preprocessing_dl',
                                       img_name + '_' + sess_name + '_space-MNI_res-1x1x1_hippocampus_hemi-left.pt')
         else:
-            patch_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
+            patch_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
                                       't1', 'preprocessing_dl',
                                       img_name + '_' + sess_name + '_space-MNI_res-1x1x1_hippocampus_hemi-right.pt')
 
@@ -327,14 +327,14 @@ class MRIDataset_slice(Dataset):
 
         if self.prepare_dl:
             # read the slices directly
-            slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
+            slice_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
                                       'deeplearning_prepare_data', 'slice_based', 't1_linear',
                                       img_name + '_' + sess_name
                                       + FILENAME_TYPE['cropped']
                                       + self.slice_direction + '_rgbslice-' + str(slice_idx + 20) + '.pt')
             extracted_slice = torch.load(slice_path)
         else:
-            image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
+            image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
                                       'deeplearning_prepare_data', 'image_based', 't1_linear',
                                       img_name + '_' + sess_name
                                       + FILENAME_TYPE['cropped'] + '.pt')
@@ -410,7 +410,7 @@ class MRIDataset_slice_mixed(Dataset):
         label = self.diagnosis_code[img_label]
 
         if self.prepare_dl:
-            slice_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
+            slice_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
                                       'deeplearning_prepare_data', 'slice_based', 't1_linear',
                                       img_name + '_' + sess_name
                                       + FILENAME_TYPE['cropped']
@@ -418,7 +418,7 @@ class MRIDataset_slice_mixed(Dataset):
             extracted_slice = torch.load(slice_path)
 
         else:
-            image_path = os.path.join(self.caps_directory, 'subjects', img_name, sess_name,
+            image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
                                       'deeplearning_prepare_data', 'image_based', 't1_linear',
                                       img_name + '_' + sess_name
                                       + FILENAME_TYPE['cropped'] + '.pt')
