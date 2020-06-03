@@ -21,4 +21,3 @@ def oasis_restriction(merged_tsv, results_path):
     merged_df = pd.read_csv(merged_tsv, sep='\t')
     results_df = merged_df[merged_df.age_bl >= 62]
     results_df.to_csv(results_path, sep='\t', index=False)
-
