@@ -3,50 +3,32 @@
 from .tsv_utils import baseline_df
 import shutil
 from sklearn.model_selection import StratifiedKFold
-
+from os import path
+import os
+import pandas as pd
+import numpy as np
 
 sex_dict = {'M': 0, 'F': 1}
 
-if __name__ == "__main__":
 
-    import argparse
-    import pandas as pd
-    import os
-    from os import path
-    import numpy as np
-
-    parser = argparse.ArgumentParser(description="Argparser for data formatting")
-
-    # Mandatory arguments
-    parser.add_argument("formatted_data_path", type=str,
-                        help="Path to the folder containing formatted data.")
-
-    # Modality selection
-    parser.add_argument("--n_splits", type=int, default=5,
-                        help="Define the number of subjects to put in test set."
-                             "If 0, there is no training set and the whole dataset is considered as a test set.")
-    parser.add_argument("--MCI_sub_categories", action="store_true", default=False,
-                        help="Manage MCI sub-categories to avoid data leakage")
-    parser.add_argument("--subset_name", type=str, default="validation",
-                        help="Name of the subset that is complementary to train.")
-
-    args = parser.parse_args()
+def split_diagnoses(formatted_data_path,
+                    n_splits=5, subset_name="validation", MCI_sub_categories=True):
 
     # Read files
-    results_path = args.formatted_data_path
+    results_path = formatted_data_path
 
-    train_path = path.join(results_path, 'train_splits-' + str(args.n_splits))
+    train_path = path.join(results_path, 'train_splits-' + str(n_splits))
     if path.exists(train_path):
         shutil.rmtree(train_path)
     os.makedirs(train_path)
-    for i in range(args.n_splits):
+    for i in range(n_splits):
         os.mkdir(path.join(train_path, 'split-' + str(i)))
 
-    test_path = path.join(results_path, args.subset_name + '_splits-' + str(args.n_splits))
+    test_path = path.join(results_path, subset_name + '_splits-' + str(n_splits))
     if path.exists(test_path):
         shutil.rmtree(test_path)
     os.makedirs(test_path)
-    for i in range(args.n_splits):
+    for i in range(n_splits):
         os.mkdir(path.join(test_path, 'split-' + str(i)))
 
     diagnosis_df_paths = os.listdir(results_path)
@@ -55,7 +37,7 @@ if __name__ == "__main__":
 
     MCI_special_treatment = False
 
-    if args.MCI_sub_categories and 'MCI.tsv' in diagnosis_df_paths:
+    if MCI_sub_categories and 'MCI.tsv' in diagnosis_df_paths:
         diagnosis_df_paths.remove('MCI.tsv')
         MCI_special_treatment = True
 
@@ -72,7 +54,7 @@ if __name__ == "__main__":
         y = np.array(
             [unique.index(x) for x in diagnoses_list])  # There is one label per diagnosis depending on the order
 
-        splits = StratifiedKFold(n_splits=args.n_splits, shuffle=True, random_state=2)
+        splits = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=2)
 
         for i, indices in enumerate(splits.split(np.zeros(len(y)), y)):
 
@@ -137,7 +119,7 @@ if __name__ == "__main__":
         y = np.array(
             [unique.index(x) for x in diagnoses_list])  # There is one label per diagnosis depending on the order
 
-        splits = StratifiedKFold(n_splits=args.n_splits, shuffle=True, random_state=2)
+        splits = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=2)
 
         for i, indices in enumerate(splits.split(np.zeros(len(y)), y)):
 

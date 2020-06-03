@@ -307,12 +307,22 @@ def tsv_split_func(args):
     split_diagnoses(
         args.merged_tsv,
         args.formatted_data_path,
-        args.n_test,
-        args.subset_name,
-        args.MCI_sub_categories,
-        args.t_val_threshold,
-        args.p_val_threshold)
+        n_test=args.n_test,
+        subset_name=args.subset_name,
+        MCI_sub_categories=args.MCI_sub_categories,
+        t_val_threshold=args.t_val_threshold,
+        p_val_threshold=args.p_val_threshold)
 
+
+def tsv_kfold_func(args):
+    from .tools.tsv.kfold_split import split_diagnoses
+
+    split_diagnoses(
+        args.formatted_data_path,
+        n_splits=args.n_splits,
+        subset_name=args.subset_name,
+        MCI_sub_categories=args.MCI_sub_categories)
+    
 
 def parse_command_line():
     parser = argparse.ArgumentParser(
@@ -841,5 +851,31 @@ def parse_command_line():
         type=str, default="test")
 
     tsv_split_subparser.set_defaults(func=tsv_split_func)
+
+    tsv_kfold_subparser = tsv_subparser.add_parser(
+        'kfold',
+        help='Performs a k-fold split on participant level.')
+
+    tsv_kfold_subparser.add_argument(
+        "formatted_data_path",
+        help="Path to the folder containing formatted data.",
+        type=str)
+
+    # Optional arguments
+    tsv_kfold_subparser.add_argument(
+        "--n_splits",
+        help="Define the number of subjects to put in test set."
+             "If 0, there is no training set and the whole dataset is considered as a test set.",
+        type=int, default=5)
+    tsv_kfold_subparser.add_argument(
+        "--MCI_sub_categories",
+        help="Manage MCI sub-categories to avoid data leakage",
+        action="store_true", default=False)
+    tsv_kfold_subparser.add_argument(
+        "--subset_name",
+        help="Name of the subset that is complementary to train.",
+        type=str, default="validation")
+
+    tsv_kfold_subparser.set_defaults(func=tsv_kfold_func)
 
     return parser
