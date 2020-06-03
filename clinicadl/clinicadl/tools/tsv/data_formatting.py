@@ -314,7 +314,6 @@ def tsv_extraction(merged_tsv, missing_mods, results_path,
             missing_mods_dict[session] = missing_mods_df
 
     # Creating results path
-    results_path = path.join(results_path, 'lists_by_diagnosis')
     if not path.exists(results_path):
         os.makedirs(results_path)
 
