@@ -761,7 +761,7 @@ def parse_command_line():
         title='''Task to execute with tsv tool:''',
         description='''What kind of task do you want to use with tsv tool?
                 (restrict, extract, split, kfold, analysis).''',
-        dest='task',
+        dest='tsv_task',
         help='''****** Tasks proposed by clinicadl tsv tool ******''')
 
     tsv_subparser.required = True
@@ -891,7 +891,7 @@ def parse_command_line():
 
     tsv_analysis_subparser = tsv_subparser.add_parser(
         'analysis',
-        help='Performs a k-fold split on participant level.')
+        help='Produces a demographic analysis of the extracted labels.')
 
     tsv_analysis_subparser.add_argument(
         "merged_tsv",
