@@ -245,7 +245,7 @@ def visualize_subject(decoder, dataloader, visualization_path, options, epoch=No
     nii_path, _ = path.splitext(nii_path)
     nii_path += '.nii.gz'
 
-    if not path.exists(nii_path)
+    if not path.exists(nii_path):
         nii_path = path.join(
             path.dirname(image_path),
             pardir, pardir, pardir,
