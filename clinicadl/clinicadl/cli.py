@@ -277,6 +277,15 @@ def classify_func(args):
             )
 
 
+def tsv_restrict_func(args):
+    from .tools.tsv.restriction import aibl_restriction, oasis_restriction
+
+    if args.dataset == "AIBL":
+        aibl_restriction(args.merged_tsv, args.results_path)
+    elif args.dataset == "OASIS":
+        oasis_restriction(args.merged_tsv, args.results_path)
+
+
 def parse_command_line():
     parser = argparse.ArgumentParser(
             prog='clinicadl',
@@ -287,7 +296,7 @@ def parse_command_line():
     subparser = parser.add_subparsers(
             title='''Task to execute with clinicadl:''',
             description='''What kind of task do you want to use with clinicadl?
-            (preprocessing, extract, generate, train, validate, classify).''',
+            (tsvtool, preprocessing, extract, generate, train, validate, classify).''',
             dest='task',
             help='''****** Tasks proposed by clinicadl ******''')
 
@@ -694,6 +703,40 @@ def parse_command_line():
             default='2D_slice')
 
     classify_parser.set_defaults(func=classify_func)
+
+    tsv_parser = subparser.add_parser(
+        'tsvtool',
+        help='''Handles tsv files for preprocessing or postprocessing''')
+
+    tsv_subparser = tsv_parser.add_subparsers(
+        title='''Task to execute with tsv tool:''',
+        description='''What kind of task do you want to use with tsv tool?
+                (restrict, extract, split, kfold, analysis).''',
+        dest='task',
+        help='''****** Tasks proposed by clinicadl ******''')
+
+    tsv_subparser.required = True
+
+    tsv_restrict_subparser = tsv_subparser.add_parser(
+        'restrict',
+        help='Reproduce restrictions applied to AIBL and OASIS datasets')
+
+    tsv_restrict_subparser.add_argument(
+        "dataset",
+        help="dataset on which the restriction is performed.",
+        choices=["AIBL", "OASIS"],
+        type=str)
+
+    tsv_restrict_subparser.add_argument(
+        "merged_tsv",
+        help="Path to the file obtained by the command clinica iotools merge-tsv.",
+        type=str)
+    tsv_restrict_subparser.add_argument(
+        "results_path",
+        help="Path to the resulting tsv file (filename included).",
+        type=str)
+
+    tsv_restrict_subparser.set_defaults(func=tsv_restrict_func)
 
 #    args = parser.parse_args()
 #
