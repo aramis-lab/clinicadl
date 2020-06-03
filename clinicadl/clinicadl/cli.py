@@ -880,8 +880,8 @@ def parse_command_line():
         type=int, default=5)
     tsv_kfold_subparser.add_argument(
         "--MCI_sub_categories",
-        help="Manage MCI sub-categories to avoid data leakage",
-        action="store_true", default=False)
+        help="Deactivate default managing of MCI sub-categories to avoid data leakage",
+        action="store_false", default=True)
     tsv_kfold_subparser.add_argument(
         "--subset_name",
         help="Name of the subset that is complementary to train.",
