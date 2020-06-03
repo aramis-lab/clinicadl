@@ -301,6 +301,19 @@ def tsv_extract_func(args):
         args.time_horizon)
 
 
+def tsv_split_func(args):
+    from .tools.tsv.data_split import split_diagnoses
+
+    split_diagnoses(
+        args.merged_tsv,
+        args.formatted_data_path,
+        args.n_test,
+        args.subset_name,
+        args.MCI_sub_categories,
+        args.t_val_threshold,
+        args.p_val_threshold)
+
+
 def parse_command_line():
     parser = argparse.ArgumentParser(
             prog='clinicadl',
@@ -789,5 +802,44 @@ def parse_command_line():
         type=str, default=None)
 
     tsv_extract_subparser.set_defaults(func=tsv_extract_func)
+
+    tsv_split_subparser = tsv_subparser.add_parser(
+        'split',
+        help='Performs one stratified shuffle split on participant level.')
+
+    tsv_split_subparser.add_argument(
+        "merged_tsv",
+        help="Path to the file obtained by the command clinica iotools merge-tsv.",
+        type=str)
+    tsv_split_subparser.add_argument(
+        "formatted_data_path",
+        help="Path to the folder containing data extracted by clinicadl tsvtool extract.",
+        type=str)
+
+    # Optional arguments
+    tsv_split_subparser.add_argument(
+        "--n_test",
+        help="Define the number of subjects to put in test set."
+             "If < 1, proportion of subjects to put in the test set."
+             "If 0, there is no training set and the whole dataset is considered as a test set.",
+        type=float, default=100.)
+    tsv_split_subparser.add_argument(
+        "--MCI_sub_categories",
+        help="Deactivate default managing of MCI sub-categories to avoid data leakage",
+        action="store_false", default=True)
+    tsv_split_subparser.add_argument(
+        "--t_val_threshold", "-t",
+        help="The threshold used for the chi2 test on sex distributions.",
+        default=0.0642, type=float)
+    tsv_split_subparser.add_argument(
+        "--p_val_threshold", "-p",
+        help="The threshold used for the T-test on age distributions.",
+        default=0.80, type=float)
+    tsv_split_subparser.add_argument(
+        "--subset_name",
+        help="Name of the subset that is complementary to train.",
+        type=str, default="test")
+
+    tsv_split_subparser.set_defaults(func=tsv_split_func)
 
     return parser
