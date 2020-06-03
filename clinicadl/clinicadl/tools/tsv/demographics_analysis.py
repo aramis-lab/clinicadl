@@ -37,7 +37,7 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path,
     diagnosis_dict = dict.fromkeys(diagnoses)
     for diagnosis in diagnoses:
         diagnosis_dict[diagnosis] = {'age': [], 'MMSE': [], 'scans': []}
-        diagnosis_df = pd.read_csv(path.join(formatted_data_path, 'lists_by_diagnosis', diagnosis + '.tsv'),
+        diagnosis_df = pd.read_csv(path.join(formatted_data_path, diagnosis + '.tsv'),
                                    sep='\t')
         diagnosis_demographics_df = add_demographics(diagnosis_df, merged_df, diagnosis)
         diagnosis_demographics_df.set_index(['participant_id', 'session_id'], inplace=True)
