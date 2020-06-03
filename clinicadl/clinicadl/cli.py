@@ -322,7 +322,18 @@ def tsv_kfold_func(args):
         n_splits=args.n_splits,
         subset_name=args.subset_name,
         MCI_sub_categories=args.MCI_sub_categories)
-    
+
+
+def tsv_analysis_func(args):
+    from .tools.tsv.demographics_analysis import demographics_analysis
+
+    demographics_analysis(
+        args.merged_tsv,
+        args.formatted_data_path,
+        args.results_path,
+        diagnoses=args.diagnoses,
+        mmse_name=args.mmse_name)
+
 
 def parse_command_line():
     parser = argparse.ArgumentParser(
@@ -858,7 +869,7 @@ def parse_command_line():
 
     tsv_kfold_subparser.add_argument(
         "formatted_data_path",
-        help="Path to the folder containing formatted data.",
+        help="Path to the folder containing data extracted by clinicadl tsvtool extract.",
         type=str)
 
     # Optional arguments
@@ -877,5 +888,34 @@ def parse_command_line():
         type=str, default="validation")
 
     tsv_kfold_subparser.set_defaults(func=tsv_kfold_func)
+
+    tsv_analysis_subparser = tsv_subparser.add_parser(
+        'analysis',
+        help='Performs a k-fold split on participant level.')
+
+    tsv_analysis_subparser.add_argument(
+        "merged_tsv",
+        help="Path to the file obtained by the command clinica iotools merge-tsv.",
+        type=str)
+    tsv_analysis_subparser.add_argument(
+        "formatted_data_path",
+        help="Path to the folder containing data extracted by clinicadl tsvtool extract.",
+        type=str)
+    tsv_analysis_subparser.add_argument(
+        "results_path",
+        help="Path to the resulting tsv file (filename included).",
+        type=str)
+
+    # Modality selection
+    tsv_analysis_subparser.add_argument(
+        "--diagnoses",
+        help="Diagnosis that must be selected from the tsv file",
+        default=['AD', 'CN'], nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'])
+    tsv_analysis_subparser.add_argument(
+        "--mmse_name",
+        help="Name of the variable related to the MMSE score in the merged tsv file.",
+        type=str, default="MMS")
+
+    tsv_analysis_subparser.set_defaults(func=tsv_analysis_func)
 
     return parser
