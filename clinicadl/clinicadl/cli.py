@@ -755,7 +755,7 @@ def parse_command_line():
 
     tsv_parser = subparser.add_parser(
         'tsvtool',
-        help='''Handles tsv files for preprocessing or postprocessing''')
+        help='''Handle tsv files for metadata processing and data splits''')
 
     tsv_subparser = tsv_parser.add_subparsers(
         title='''Task to execute with tsv tool:''',
@@ -789,7 +789,7 @@ def parse_command_line():
 
     tsv_extract_subparser = tsv_subparser.add_parser(
         'extract',
-        help='Extract diagnoses in separate tsv files.')
+        help='Extract labels in separate tsv files.')
 
     tsv_extract_subparser.add_argument(
         "merged_tsv",

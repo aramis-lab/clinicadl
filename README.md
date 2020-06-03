@@ -98,8 +98,9 @@ Task to execute with clinicadl:
   What kind of task do you want to use with clinicadl? (preprocessing,
   extract, generate, train, validate, classify).
 
-    {generate,preprocessing,extract,train,classify}
+    {generate,tsvtool,preprocessing,extract,train,classify}
                         Tasks proposed by clinicadl
+    tsvtool             Handle tsv files for metadata processing and data splits.
     generate            Generate synthetic data for functional tests.
     preprocessing       Prepare data for training (needs clinica installed).
     extract             Create data (slices or patches) for training.
@@ -110,7 +111,11 @@ Task to execute with clinicadl:
 
 ### Tasks that can be performed by `clinicadl`
 
-There are five kind of tasks that can be performed using the command line:
+There are six kind of tasks that can be performed using the command line:
+
+- **Process tsv files**. ``tsvtool`` includes many functions to extract labels from BIDS, 
+perform k-fold or single splits, produce demographic analysis of extracted labels
+and reproduce the restrictions made on AIBL and OASIS in the original paper.
 
 - **Generate a synthetic dataset.** Useful to run functional tests.
 
@@ -130,6 +135,24 @@ There are five kind of tasks that can be performed using the command line:
 For detailed instructions and options of each task type  `clinica 'task' -h`.
 
 ### Some examples
+
+#### Labels extraction in tsv files
+
+Typical use for `tsvtool extract`:
+
+```text
+clinicadl tsvtool extract <merged_tsv> <missing_mods> <results_path> --restriction_path <restriction_path>
+```
+where:
+
+  - `<merged_tsv>` is the output file of `clinica iotools merge-tsv` command.
+  - `<missing_mods>` is the folder containing the outputs of `clinica iotools missing-mods` command.
+  - `<results_path>` is the path to the folder where tsv files are extracted.
+  - `--restriction_path <restriction_path>` is a path to a tsv file containing the list of sessions that should be used.
+  This argument is for example the result of a quality check procedure.
+  
+By default the labels extracted are only AD and CN, as OASIS database do not include
+MCI patients. To include them add `--diagnoses AD CN MCI sMCI pMCI` at the end of the command.
 
 #### Preprocessing
 Typical use for `preprocessing` ([ANTs](https://stnava.github.io/ANTs/) software needs to be installed):
