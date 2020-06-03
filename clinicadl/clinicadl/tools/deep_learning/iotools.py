@@ -144,13 +144,14 @@ def check_and_clean(d):
     os.makedirs(d)
 
 
-def commandline_to_json(commandline, model_type):
+def commandline_to_json(commandline, task_type):
     """
     This is a function to write the python argparse object into a json file.
     This helps for DL when searching for hyperparameters
 
     :param commandline: a tuple contain the output of
                         `parser.parse_known_args()`
+    :param task_type: task type (autoencoder, cnn)                   
 
     :return:
     """
@@ -183,13 +184,13 @@ def commandline_to_json(commandline, model_type):
 
     # save to json file
     json = json.dumps(commandline_arg_dic, skipkeys=True)
-    print("Path of json file:", os.path.join(log_dir, "commandline_" + model_type + ".json"))
-    f = open(os.path.join(log_dir, "commandline_" + model_type + ".json"), "w")
+    print("Path of json file:", os.path.join(log_dir, "commandline_" + task_type + ".json"))
+    f = open(os.path.join(log_dir, "commandline_" + task_type + ".json"), "w")
     f.write(json)
     f.close()
 
 
-def read_json(options, model_type, json_path=None, test=False):
+def read_json(options, task_type, json_path=None, test=False):
     """
     Read a json file to update python argparse Namespace.
 
@@ -201,7 +202,7 @@ def read_json(options, model_type, json_path=None, test=False):
 
     evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
     if json_path is None:
-        json_path = path.join(options.model_path, 'log_dir', 'commandline_' + model_type + '.json')
+        json_path = path.join(options.model_path, 'log_dir', 'commandline_' + task_type + '.json')
 
     with open(json_path, "r") as f:
         json_data = json.load(f)
