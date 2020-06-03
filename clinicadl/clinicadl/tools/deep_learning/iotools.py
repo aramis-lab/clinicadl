@@ -242,7 +242,7 @@ def visualize_subject(decoder, dataloader, visualization_path, options, epoch=No
 
     # Retrocompatibility with old version where the tensor is stored at the
     # same location with the nifti image
-    nii_path, _ = path.splitext(nii_path)
+    nii_path, _ = path.splitext(image_path)
     nii_path += '.nii.gz'
 
     if not path.exists(nii_path):
