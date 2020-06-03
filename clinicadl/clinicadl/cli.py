@@ -277,6 +277,8 @@ def classify_func(args):
             )
 
 
+# Functions to dispatch command line options from tsvtool to corresponding function
+
 def tsv_restrict_func(args):
     from .tools.tsv.restriction import aibl_restriction, oasis_restriction
 
@@ -284,6 +286,19 @@ def tsv_restrict_func(args):
         aibl_restriction(args.merged_tsv, args.results_path)
     elif args.dataset == "OASIS":
         oasis_restriction(args.merged_tsv, args.results_path)
+
+
+def tsv_extract_func(args):
+    from .tools.tsv.data_formatting import tsv_extraction
+
+    tsv_extraction(
+        args.merged_tsv,
+        args.missing_mods,
+        args.results_path,
+        args.diagnoses,
+        args.modality,
+        args.restriction_path,
+        args.time_horizon)
 
 
 def parse_command_line():
@@ -713,7 +728,7 @@ def parse_command_line():
         description='''What kind of task do you want to use with tsv tool?
                 (restrict, extract, split, kfold, analysis).''',
         dest='task',
-        help='''****** Tasks proposed by clinicadl ******''')
+        help='''****** Tasks proposed by clinicadl tsv tool ******''')
 
     tsv_subparser.required = True
 
@@ -738,17 +753,41 @@ def parse_command_line():
 
     tsv_restrict_subparser.set_defaults(func=tsv_restrict_func)
 
-#    args = parser.parse_args()
-#
-#    commandline = parser.parse_known_args()
-#
-#    if args.train_autoencoder:
-#      model_type = 'autoencoder'
-#    else:
-#      model_type = 'cnn'
-#
-#    commandline_to_json(commandline, model_type)
-#
-#    print(args)
+    tsv_extract_subparser = tsv_subparser.add_parser(
+        'extract',
+        help='Extract diagnoses in separate tsv files.')
+
+    tsv_extract_subparser.add_argument(
+        "merged_tsv",
+        help="Path to the file obtained by the command clinica iotools merge-tsv.",
+        type=str)
+    tsv_extract_subparser.add_argument(
+        "missing_mods",
+        help="Path to the folder where the outputs of clinica iotools missing-mods are.",
+        type=str)
+    tsv_extract_subparser.add_argument(
+        "results_path",
+        type=str,
+        help="Path to the folder where tsv files are extracted.")
+
+    # Optional arguments
+    tsv_extract_subparser.add_argument(
+        "--modality", "-mod",
+        help="Modality to select sessions.",
+        default="t1w", type=str)
+    tsv_extract_subparser.add_argument(
+        "--diagnoses",
+        help="Diagnosis that must be selected from the tsv file",
+        nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'], default=['AD', 'CN'])
+    tsv_extract_subparser.add_argument(
+        "--time_horizon",
+        help="Time horizon to analyse stability of MCI subjects.",
+        default=36, type=int)
+    tsv_extract_subparser.add_argument(
+        "--restriction_path",
+        help="Path to a tsv containing the sessions that can be included",
+        type=str, default=None)
+
+    tsv_extract_subparser.set_defaults(func=tsv_extract_func)
 
     return parser
