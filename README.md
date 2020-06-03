@@ -26,7 +26,7 @@ It allows to train convolutional neural networks (CNN) models.
 The journal version of the paper describing this work is available
 [here](https://doi.org/10.1016/j.media.2020.101694).
 
-Automatic Classification of AD using a classical machine learning approach can
+Automatic classification of AD using a classical machine learning approach can
 be performed using the software available here:
 <https://github.com/aramis-lab/AD-ML>.
 
@@ -44,7 +44,7 @@ be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 
 ## Main dependencies
 - Python >= 3.6
-- Clinica (needs only to perform preprocessing) >= 0.3.4
+- [Clinica](http://www.clinica.run/) >= 0.3.4 and [ANTs](https://stnava.github.io/ANTs/) (needs only to perform preprocessing)
 - Numpy
 - Pandas
 - Scikit-learn
@@ -132,18 +132,21 @@ For detailed instructions and options of each task type  `clinica 'task' -h`.
 ### Some examples
 
 #### Preprocessing
-Typical use for `preprocessing`:
+Typical use for `preprocessing` ([ANTs](https://stnava.github.io/ANTs/) software needs to be installed):
 
 ```text
 clinicadl preprocessing <bids_dir> <caps_dir> <working_dir> --np 32
 ```
 where:
 
-  - `bids_dir` is the input folder containing the dataset in a [BIDS](http://www.clinica.run/doc/BIDS/) hierarchy.
-  - `caps_dir` is the output folder containing the results in a [CAPS](http://www.clinica.run/doc/CAPS/Specifications/) hierarchy.
-  - `caps_dir` is the temporary directory to store pipelines intermediate results.
+  - `<bids_dir>` is the input folder containing the dataset in a [BIDS](http://www.clinica.run/doc/BIDS/) hierarchy.
+  - `<caps_dir>` is the output folder containing the results in a [CAPS](http://www.clinica.run/doc/CAPS/Specifications/) hierarchy.
+  - `<working_dir>` is the temporary directory to store pipelines intermediate results.
   - `--np <N>` (optional) is the number of cores used to run in parallel (in the example, 32 cores are used).
-If you want to run the pipeline on a subset of your BIDS dataset, you can use the `-tsv` flag to specify in a TSV file the participants belonging to your subset.
+
+If you want to run the pipeline on a subset of your BIDS dataset, you can use
+the `-tsv` flag to specify in a TSV file the participants belonging to your
+subset.
 
 #### Tensor extraction
 
@@ -185,12 +188,17 @@ optional arguments:
 
 ## Run testing.
 
-### Unit testing
+### Unit testing (WIP)
 
 Be sure to have the `pytest` library in order to run the test suite.  This test
-suite includes unit testing to be launched using the command line:
-```
-pytest clinicadl/tests/
+suite includes unit testing to be launched using the command line.
+
+For the moment only the CLI (command line interface) part is tested using
+`pytest`. We are planning to provide unit tests for the other tasks in the
+future. If you want to run successfully the tests maybe you can use a command
+like this one:
+```text
+pytest clinicadl/tests/test_cli.py
 ```
 
 ### Model prediction tests

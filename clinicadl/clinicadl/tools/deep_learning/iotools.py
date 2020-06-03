@@ -39,6 +39,7 @@ class Parameters:
             add_sigmoid: bool = False,
             optimizer: str = "Adam",
             weight_decay: float = 1e-4,
+            dropout: float = 0,
             gpu: bool = False,
             batch_size: int = 12,
             evaluation_steps: int = 1,
@@ -117,6 +118,7 @@ class Parameters:
         self.add_sigmoid = add_sigmoid
         self.optimizer = optimizer
         self.weight_decay = weight_decay
+        self.dropout = dropout
         self.gpu = gpu
         self.batch_size = batch_size
         self.evaluation_steps = evaluation_steps
@@ -217,6 +219,10 @@ def read_json(options, task_type, json_path=None, test=False):
         else:
             setattr(options, key, item)
 
+    # Retro-compatibility with runs of previous versions
+    if not hasattr(options, 'dropout'):
+        options.dropout = 0
+
     return options
 
 
@@ -233,15 +239,22 @@ def visualize_subject(decoder, dataloader, visualization_path, options, epoch=No
     dataset = dataloader.dataset
     data = dataset[subject_index]
     image_path = data['image_path']
-    nii_path = path.join(
-        path.dirname(image_path),
-        pardir, pardir, pardir,
-        't1_linear',
-        path.basename(image_path)
-        )
+
+    # Retrocompatibility with old version where the tensor is stored at the
+    # same location with the nifti image
     nii_path, _ = path.splitext(nii_path)
     nii_path += '.nii.gz'
 
+    if not path.exists(nii_path)
+        nii_path = path.join(
+            path.dirname(image_path),
+            pardir, pardir, pardir,
+            't1_linear',
+            path.basename(image_path)
+        )
+        nii_path, _ = path.splitext(nii_path)
+        nii_path += '.nii.gz'
+    
     input_nii = nib.load(nii_path)
     input_np = input_nii.get_data().astype(float)
     np.nan_to_num(input_np, copy=False)
