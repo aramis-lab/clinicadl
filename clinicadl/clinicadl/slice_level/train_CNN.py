@@ -16,7 +16,7 @@ from ..tools.deep_learning import (EarlyStopping,
                                    commandline_to_json,
                                    create_model,
                                    load_model)
-from ..tools.deep_learning.data import (load_data, 
+from ..tools.deep_learning.data import (load_data,
                                         MinMaxNormalization,
                                         MRIDataset_slice)
 
@@ -39,7 +39,7 @@ def train_slice(params):
     print('Do transfer learning with existed model trained on ImageNet!\n')
     print('The chosen network is %s !' % params.model)
 
-    model = create_model(params.model, params.gpu)
+    model = create_model(params.model, params.gpu, dropout=params.dropout)
     trg_size = (224, 224)  # most of the imagenet pretrained model has this input size
 
     # All pre-trained models expect input images normalized in the same way, i.e. mini-batches of 3-channel RGB

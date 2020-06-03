@@ -82,7 +82,7 @@ def train_cnn(params):
 
     # Initialize the model
     print('Initialization of the model')
-    model = create_model(params.model, params.gpu)
+    model = create_model(params.model, params.gpu, dropout=params.dropout)
     # Transfer learning function to review. Probably test if transfer learning path is given.
     model = transfer_learning(model, params.split, params.output_dir, source_path=params.transfer_learning_path,
                               transfer_learning_autoencoder=params.transfer_learning_autoencoder,

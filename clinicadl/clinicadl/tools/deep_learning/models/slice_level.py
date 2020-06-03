@@ -46,7 +46,7 @@ def resnet18(**kwargs):
         p.requires_grad = True
 
     # add a fc layer on top of the transfer_learning model and a softmax classifier
-    model.add_module('drop_out', nn.Dropout(p=0.8))
+    model.add_module('drop_out', nn.Dropout(p=kwargs["dropout"]))
     model.add_module('fc_out', nn.Linear(1000, 2))
 
     return model
@@ -54,7 +54,7 @@ def resnet18(**kwargs):
 
 class ResNetDesigner(nn.Module):
 
-    def __init__(self, block, layers, num_classes=1000):
+    def __init__(self, block, layers, num_classes=1000, **kwargs):
         self.inplanes = 64
         super(ResNetDesigner, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,

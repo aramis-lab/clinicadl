@@ -5,6 +5,16 @@ import argparse
 from clinicadl.tools.deep_learning.iotools import Parameters
 
 
+def set_default_dropout(args):
+    if args.dropout is None:
+        if args.mode == 'subject':
+            args.dropout = 0.5
+        elif args.mode == 'slice':
+            args.dropout = 0.8
+        else:
+            args.dropout = 0
+
+
 def preprocessing_t1w_func(args):
     from .preprocessing.T1_linear import preprocessing_t1w
     wf = preprocessing_t1w(
@@ -68,6 +78,8 @@ def train_func(args):
     from .patch_level.train_singleCNN import train_patch_single_cnn
     from .patch_level.train_multiCNN import train_patch_multi_cnn
 
+    set_default_dropout(args)
+
     if args.mode == 'subject':
         if args.train_autoencoder:
             train_params_autoencoder = Parameters(
@@ -125,6 +137,7 @@ def train_func(args):
                     add_sigmoid=args.add_sigmoid,
                     optimizer='Adam',
                     weight_decay=args.weight_decay,
+                    dropout=args.dropout,
                     gpu=args.use_gpu,
                     batch_size=args.batch_size,
                     evaluation_steps=args.evaluation_steps,
@@ -154,6 +167,7 @@ def train_func(args):
                 batch_size=args.batch_size,
                 optimizer='Adam',
                 weight_decay=args.weight_decay,
+                dropout=args.dropout,
                 gpu=args.use_gpu,
                 num_workers=args.nproc,
                 selection_threshold=args.selection_threshold,
@@ -222,6 +236,7 @@ def train_func(args):
                     add_sigmoid=args.add_sigmoid,
                     optimizer='Adam',
                     weight_decay=args.weight_decay,
+                    dropout=args.dropout,
                     gpu=args.use_gpu,
                     batch_size=args.batch_size,
                     evaluation_steps=args.evaluation_steps,
@@ -241,7 +256,7 @@ def train_func(args):
                 train_patch_single_cnn(train_params_patch)
             else:
                 train_patch_multi_cnn(train_params_patch)
-    elif args.mode == 'svn':
+    elif args.mode == 'svm':
         pass
 
     else:
@@ -252,7 +267,14 @@ def train_func(args):
 
 
 def classify_func(args):
-    pass
+    from .classify.inference import inference_from_model
+    # from .preprocessing.T1_postprocessing import postprocessing_t1w
+    inference_from_model(
+            args.caps_dir,
+            args.tsv_file,
+            args.output_dir,
+            args.model_name,
+            )
 
 
 def parse_command_line():
@@ -579,6 +601,10 @@ def parse_command_line():
             help='Weight decay value used in optimization. (default=1e-4)',
             default=1e-4, type=float)
     train_parser.add_argument(
+            '--dropout',
+            help='rate of dropout that will be applied to dropout layers.',
+            default=None, type=float)
+    train_parser.add_argument(
             '--patience',
             help='Waiting time for early stopping.',
             type=int, default=10)
@@ -650,11 +676,6 @@ def parse_command_line():
             help='''Classify one image or a list of images with your previously
                  trained model.''')
     classify_parser.add_argument(
-            'mode',
-            help='Choose your mode (subject level, slice level, patch level, svm).',
-            choices=['subject', 'slice', 'patch', 'svm'],
-            default='subject')
-    classify_parser.add_argument(
             'caps_dir',
             help='Data using CAPS structure.',
             default=None)
@@ -667,9 +688,10 @@ def parse_command_line():
             help='Folder containing results of the training.',
             default=None)
     classify_parser.add_argument(
-            'network_dir',
-            help='Model to use during classification.',
-            default=None)
+            'model_name',
+            help='Model used for classification.',
+            choices=['2D_slice', '3D_patch_1', '3D_patch_2', 'subject_1', 'subject_2'],
+            default='2D_slice')
 
     classify_parser.set_defaults(func=classify_func)
 
