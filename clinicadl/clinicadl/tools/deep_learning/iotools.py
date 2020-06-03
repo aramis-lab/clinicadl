@@ -239,18 +239,21 @@ def visualize_subject(decoder, dataloader, visualization_path, options, epoch=No
     data = dataset[subject_index]
     image_path = data['image_path']
 
-    # This case works only when pt file is stored following the CAPS structure
-    # of T1_linear. If the pt file is at the same place than the nifti file, it
-    # crashes. FIX ME!
-    nii_path = path.join(
-        path.dirname(image_path),
-        pardir, pardir, pardir,
-        't1_linear',
-        path.basename(image_path)
-    )
+    # Retrocompatibility with old version where the tensor is stored at the
+    # same location with the nifti image
     nii_path, _ = path.splitext(nii_path)
     nii_path += '.nii.gz'
 
+    if not path.exists(nii_path)
+        nii_path = path.join(
+            path.dirname(image_path),
+            pardir, pardir, pardir,
+            't1_linear',
+            path.basename(image_path)
+        )
+        nii_path, _ = path.splitext(nii_path)
+        nii_path += '.nii.gz'
+    
     input_nii = nib.load(nii_path)
     input_np = input_nii.get_data().astype(float)
     np.nan_to_num(input_np, copy=False)
