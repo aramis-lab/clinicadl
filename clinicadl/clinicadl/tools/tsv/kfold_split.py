@@ -13,6 +13,23 @@ sex_dict = {'M': 0, 'F': 1}
 
 def split_diagnoses(formatted_data_path,
                     n_splits=5, subset_name="validation", MCI_sub_categories=True):
+    """
+    Performs a k-fold split for each label independently on the subject level.
+    The train folder will contain two lists per fold per diagnosis (baseline and longitudinal),
+    whereas the test folder will only include the list of baseline sessions for each fold.
+
+    Args:
+        formatted_data_path (str): Path to the folder containing data extracted by clinicadl tsvtool getlabels.
+        n_splits (int): Number of folds in the k-fold split.
+        subset_name (str): Name of the subset that is complementary to train.
+        MCI_sub_categories (bool): If True, manages MCI sub-categories to avoid data leakage.
+
+    Returns:
+         writes three files per split per <label>.tsv file present in formatted_data_path:
+            - formatted_data_path/train_splits-<n_splits>/split-<split>/<label>.tsv
+            - formatted_data_path/train_splits-<n_splits>/split-<split>/<label>_baseline.tsv
+            - formatted_data_path/<subset_name>_splits-<n_splits>/split-<split>/<label>_baseline.tsv
+    """
 
     # Read files
     results_path = formatted_data_path
