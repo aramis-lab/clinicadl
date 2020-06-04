@@ -35,8 +35,12 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path,
         raise ValueError("The column corresponding to mmse is not labelled as %s. "
                          "Please change the parameters." % mmse_name)
 
-    columns = ['n_subjects', 'mean_age', 'std_age', 'min_age', 'max_age', 'sexF', 'sexM', 'mean_MMSE', 'std_MMSE',
-               'min_MMSE', 'max_MMSE', 'CDR_0', 'CDR_0.5', 'CDR_1', 'CDR_2', 'CDR_3', 'mean_scans', 'std_scans',
+    columns = ['n_subjects', 'mean_age', 'std_age',
+               'min_age', 'max_age', 'sexF',
+               'sexM', 'mean_MMSE', 'std_MMSE',
+               'min_MMSE', 'max_MMSE', 'CDR_0',
+               'CDR_0.5', 'CDR_1', 'CDR_2',
+               'CDR_3', 'mean_scans', 'std_scans',
                'n_scans']
     results_df = pd.DataFrame(index=diagnoses, columns=columns, data=np.zeros((len(diagnoses), len(columns))))
 
