@@ -113,7 +113,7 @@ Task to execute with clinicadl:
 
 There are six kind of tasks that can be performed using the command line:
 
-- **Process tsv files**. ``tsvtool`` includes many functions to extract labels from BIDS, 
+- **Process tsv files**. ``tsvtool`` includes many functions to get labels from BIDS, 
 perform k-fold or single splits, produce demographic analysis of extracted labels
 and reproduce the restrictions made on AIBL and OASIS in the original paper.
 
@@ -138,20 +138,20 @@ For detailed instructions and options of each task type  `clinica 'task' -h`.
 
 #### Labels extraction in tsv files
 
-Typical use for `tsvtool extract`:
+Typical use for `tsvtool getlabels`:
 
 ```text
-clinicadl tsvtool extract <merged_tsv> <missing_mods> <results_path> --restriction_path <restriction_path>
+clinicadl tsvtool getlabels <merged_tsv> <missing_mods> <results_path> --restriction_path <restriction_path>
 ```
 where:
 
   - `<merged_tsv>` is the output file of `clinica iotools merge-tsv` command.
   - `<missing_mods>` is the folder containing the outputs of `clinica iotools missing-mods` command.
-  - `<results_path>` is the path to the folder where tsv files are extracted.
+  - `<results_path>` is the path to the folder where tsv files are written.
   - `--restriction_path <restriction_path>` is a path to a tsv file containing the list of sessions that should be used.
   This argument is for example the result of a quality check procedure.
   
-By default the labels extracted are only AD and CN, as OASIS database do not include
+By default the extracted labels are only AD and CN, as OASIS database do not include
 MCI patients. To include them add `--diagnoses AD CN MCI sMCI pMCI` at the end of the command.
 
 #### Preprocessing
