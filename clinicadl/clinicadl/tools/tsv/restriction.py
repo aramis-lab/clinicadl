@@ -5,6 +5,16 @@ from copy import deepcopy
 
 
 def aibl_restriction(merged_tsv, results_path):
+    """
+    Writes a new file from which participants who do not have an examination date
+    in any of their sessions are removed.
+    This restriction was originally applied to AIBL dataset.
+
+    Args:
+        merged_tsv (str): Path to the file obtained by the command clinica iotools merge-tsv.
+        results_path (str): Path to the output tsv file (filename included).
+
+    """
     merged_df = pd.read_csv(merged_tsv, sep='\t')
     merged_df.set_index(['participant_id', 'session_id'], inplace=True)
     results_df = deepcopy(merged_df)
@@ -18,6 +28,15 @@ def aibl_restriction(merged_tsv, results_path):
 
 
 def oasis_restriction(merged_tsv, results_path):
+    """
+    Writes a new file from which participants who are 61 years old or younger are removed.
+    This restriction was originally applied to OASIS dataset
+
+    Args:
+        merged_tsv (str): Path to the file obtained by the command clinica iotools merge-tsv.
+        results_path (str): Path to the output tsv file (filename included).
+
+    """
     merged_df = pd.read_csv(merged_tsv, sep='\t')
     results_df = merged_df[merged_df.age_bl >= 62]
     results_df.to_csv(results_path, sep='\t', index=False)
