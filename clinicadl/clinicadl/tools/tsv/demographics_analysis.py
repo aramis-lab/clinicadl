@@ -42,7 +42,6 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path,
                'CDR_0.5', 'CDR_1', 'CDR_2',
                'CDR_3', 'mean_scans', 'std_scans',
                'n_scans']
-               'min_MMSE', 'max_MMSE', 'CDR_0', 'CDR_0.5', 'CDR_1', 'CDR_2', 'CDR_3', 'mean_scans', 'std_scans',
                'n_scans']
     results_df = pd.DataFrame(index=diagnoses, columns=columns, data=np.zeros((len(diagnoses), len(columns))))
 
