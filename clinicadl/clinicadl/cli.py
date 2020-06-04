@@ -783,7 +783,7 @@ def parse_command_line():
         type=str)
     tsv_restrict_subparser.add_argument(
         "results_path",
-        help="Path to the resulting tsv file (filename included).",
+        help="Path to the output tsv file (filename included).",
         type=str)
 
     tsv_restrict_subparser.set_defaults(func=tsv_restrict_func)
@@ -904,7 +904,7 @@ def parse_command_line():
         type=str)
     tsv_analysis_subparser.add_argument(
         "results_path",
-        help="Path to the resulting tsv file (filename included).",
+        help="Path to the output tsv file (filename included).",
         type=str)
 
     # Modality selection
