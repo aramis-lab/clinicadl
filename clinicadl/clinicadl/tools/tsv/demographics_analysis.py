@@ -18,6 +18,22 @@ import numpy as np
 
 def demographics_analysis(merged_tsv, formatted_data_path, results_path,
                           diagnoses, mmse_name="MMS", age_name="age"):
+    """
+    Produces a tsv file with rows corresponding to the labels defined by the diagnoses list,
+    and the columns being demographic statistics.
+
+    Args:
+        merged_tsv (str): Path to the file obtained by the command clinica iotools merge-tsv.
+        formatted_data_path (str): Path to the folder containing data extracted by clinicadl tsvtool getlabels.
+        results_path (str): Path to the output tsv file (filename included).
+        diagnoses (list): Labels selected for the demographic analysis.
+        mmse_name (str): Name of the variable related to the MMSE score in the merged_tsv file.
+        age_name (str): Name of the variable related to the age in the merged_tsv file.
+
+    Returns:
+        writes one tsv file at results_path containing the
+        demographic analysis of the tsv files in formatted_data_path.
+    """
 
     merged_df = pd.read_csv(merged_tsv, sep='\t')
     merged_df.set_index(['participant_id', 'session_id'], inplace=True)

@@ -72,7 +72,33 @@ def create_split(diagnosis, diagnosis_df, merged_df, n_test,
 
 
 def split_diagnoses(merged_tsv, formatted_data_path,
-                    n_test, subset_name, MCI_sub_categories, t_val_threshold, p_val_threshold):
+                    n_test=100, subset_name="test", MCI_sub_categories=True,
+                    t_val_threshold=0.0642, p_val_threshold=0.80):
+    """
+    Performs a single split for each label independently on the subject level.
+    The train folder will contain two lists per diagnosis (baseline and longitudinal),
+    whereas the test folder will only include the list of baseline sessions.
+
+    The age and sex distributions between the two sets must be non-significant (according to T-test and chi-square).
+
+    Args:
+        merged_tsv (str): Path to the file obtained by the command clinica iotools merge-tsv.
+        formatted_data_path (str): Path to the folder containing data extracted by clinicadl tsvtool getlabels.
+        n_test (float):
+            If > 1, number of subjects to put in set with name 'subset_name'.
+            If < 1, proportion of subjects to put in set with name 'subset_name'.
+            If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name'.
+        subset_name (str): Name of the subset that is complementary to train.
+        MCI_sub_categories (bool): If True, manages MCI sub-categories to avoid data leakage.
+        t_val_threshold (float): The threshold used for the chi2 test on sex distributions.
+        p_val_threshold (float): The threshold used for the T-test on age distributions.
+
+    Returns:
+        writes three files per <label>.tsv file present in formatted_data_path:
+            - formatted_data_path/train/<label>.tsv
+            - formatted_data_path/train/<label>_baseline.tsv
+            - formatted_data_path/<subset_name>/<label>_baseline.tsv
+    """
     # Read files
     merged_df = pd.read_csv(merged_tsv, sep='\t')
     merged_df.set_index(['participant_id', 'session_id'], inplace=True)

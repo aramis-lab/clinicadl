@@ -294,7 +294,23 @@ def apply_restriction(bids_df, restriction_path):
 
 
 def get_labels(merged_tsv, missing_mods, results_path,
-               diagnoses, modality, restriction_path, time_horizon):
+               diagnoses, modality="t1w", restriction_path=None,
+               time_horizon=36):
+    """
+    Writes one tsv file per label in diagnoses argument based on merged_tsv and missing_mods.
+
+    Args:
+        merged_tsv (str): Path to the file obtained by the command clinica iotools merge-tsv.
+        missing_mods (str): Path to the folder where the outputs of clinica iotools missing-mods are.
+        results_path (str): Path to the folder where tsv files are extracted.
+        diagnoses (list): Labels that must be extracted from merged_tsv.
+        modality (str): Modality to select sessions. Sessions which do not include the modality will be excluded.
+        restriction_path (str): Path to a tsv containing the sessions that can be included.
+        time_horizon (int): Time horizon to analyse stability of MCI subjects.
+
+    Returns:
+         writes one tsv file per label at results_path/<label>.tsv
+    """
     # Reading files
     bids_df = pd.read_csv(merged_tsv, sep='\t')
     bids_df.set_index(['participant_id', 'session_id'], inplace=True)

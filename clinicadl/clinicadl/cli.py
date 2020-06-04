@@ -808,11 +808,11 @@ def parse_command_line():
     # Optional arguments
     tsv_getlabels_subparser.add_argument(
         "--modality", "-mod",
-        help="Modality to select sessions.",
+        help="Modality to select sessions. Sessions which do not include the modality will be excluded.",
         default="t1w", type=str)
     tsv_getlabels_subparser.add_argument(
         "--diagnoses",
-        help="Diagnosis that must be selected from the tsv file",
+        help="Labels that must be extracted from merged_tsv.",
         nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'], default=['AD', 'CN'])
     tsv_getlabels_subparser.add_argument(
         "--time_horizon",
@@ -820,7 +820,7 @@ def parse_command_line():
         default=36, type=int)
     tsv_getlabels_subparser.add_argument(
         "--restriction_path",
-        help="Path to a tsv containing the sessions that can be included",
+        help="Path to a tsv containing the sessions that can be included.",
         type=str, default=None)
 
     tsv_getlabels_subparser.set_defaults(func=tsv_getlabels_func)
@@ -835,15 +835,15 @@ def parse_command_line():
         type=str)
     tsv_split_subparser.add_argument(
         "formatted_data_path",
-        help="Path to the folder containing data extracted by clinicadl tsvtool extract.",
+        help="Path to the folder containing data extracted by clinicadl tsvtool getlabels.",
         type=str)
 
     # Optional arguments
     tsv_split_subparser.add_argument(
         "--n_test",
-        help="If > 1, number of subjects to put in test set."
-             "If < 1, proportion of subjects to put in the test set."
-             "If 0, there is no training set and the whole dataset is considered as a test set.",
+        help="If > 1, number of subjects to put in set with name 'subset_name'. "
+             "If < 1, proportion of subjects to put set with name 'subset_name'. "
+             "If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name.",
         type=float, default=100.)
     tsv_split_subparser.add_argument(
         "--MCI_sub_categories",
@@ -870,13 +870,13 @@ def parse_command_line():
 
     tsv_kfold_subparser.add_argument(
         "formatted_data_path",
-        help="Path to the folder containing data extracted by clinicadl tsvtool extract.",
+        help="Path to the folder containing data extracted by clinicadl tsvtool getlabels.",
         type=str)
 
     # Optional arguments
     tsv_kfold_subparser.add_argument(
         "--n_splits",
-        help="Define the number of subjects to put in test set."
+        help="Number of folds in the k-fold split."
              "If 0, there is no training set and the whole dataset is considered as a test set.",
         type=int, default=5)
     tsv_kfold_subparser.add_argument(
@@ -900,7 +900,7 @@ def parse_command_line():
         type=str)
     tsv_analysis_subparser.add_argument(
         "formatted_data_path",
-        help="Path to the folder containing data extracted by clinicadl tsvtool extract.",
+        help="Path to the folder containing data extracted by clinicadl tsvtool getlabels.",
         type=str)
     tsv_analysis_subparser.add_argument(
         "results_path",
@@ -910,15 +910,15 @@ def parse_command_line():
     # Modality selection
     tsv_analysis_subparser.add_argument(
         "--diagnoses",
-        help="Diagnosis that must be selected from the tsv file",
+        help="Labels selected for the demographic analysis.",
         default=['AD', 'CN'], nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'])
     tsv_analysis_subparser.add_argument(
         "--mmse_name",
-        help="Name of the variable related to the MMSE score in the merged tsv file.",
+        help="Name of the variable related to the MMSE score in the merged_tsv file.",
         type=str, default="MMS")
     tsv_analysis_subparser.add_argument(
         "--age_name",
-        help="Name of the variable related to the age in the merged tsv file.",
+        help="Name of the variable related to the age in the merged_tsv file.",
         type=str, default="age_bl")
 
     tsv_analysis_subparser.set_defaults(func=tsv_analysis_func)
