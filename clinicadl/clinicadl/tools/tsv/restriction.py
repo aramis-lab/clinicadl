@@ -14,6 +14,8 @@ def aibl_restriction(merged_tsv, results_path):
         merged_tsv (str): Path to the file obtained by the command clinica iotools merge-tsv.
         results_path (str): Path to the output tsv file (filename included).
 
+    Returns:
+        writes a tsv path at results_path
     """
     merged_df = pd.read_csv(merged_tsv, sep='\t')
     merged_df.set_index(['participant_id', 'session_id'], inplace=True)
@@ -36,6 +38,8 @@ def oasis_restriction(merged_tsv, results_path):
         merged_tsv (str): Path to the file obtained by the command clinica iotools merge-tsv.
         results_path (str): Path to the output tsv file (filename included).
 
+    Returns:
+        writes a tsv path at results_path
     """
     merged_df = pd.read_csv(merged_tsv, sep='\t')
     results_df = merged_df[merged_df.age_bl >= 62]
