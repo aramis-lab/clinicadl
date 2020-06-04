@@ -295,10 +295,10 @@ def tsv_extract_func(args):
         args.merged_tsv,
         args.missing_mods,
         args.results_path,
-        args.diagnoses,
-        args.modality,
-        args.restriction_path,
-        args.time_horizon)
+        diagnoses=args.diagnoses,
+        modality=args.modality,
+        restriction_path=args.restriction_path,
+        time_horizon=args.time_horizon)
 
 
 def tsv_split_func(args):
@@ -332,7 +332,8 @@ def tsv_analysis_func(args):
         args.formatted_data_path,
         args.results_path,
         diagnoses=args.diagnoses,
-        mmse_name=args.mmse_name)
+        mmse_name=args.mmse_name,
+        age_name=args.age_name)
 
 
 def parse_command_line():
@@ -840,13 +841,13 @@ def parse_command_line():
     # Optional arguments
     tsv_split_subparser.add_argument(
         "--n_test",
-        help="Define the number of subjects to put in test set."
+        help="If > 1, number of subjects to put in test set."
              "If < 1, proportion of subjects to put in the test set."
              "If 0, there is no training set and the whole dataset is considered as a test set.",
         type=float, default=100.)
     tsv_split_subparser.add_argument(
         "--MCI_sub_categories",
-        help="Deactivate default managing of MCI sub-categories to avoid data leakage",
+        help="Deactivate default managing of MCI sub-categories to avoid data leakage.",
         action="store_false", default=True)
     tsv_split_subparser.add_argument(
         "--t_val_threshold", "-t",
@@ -880,7 +881,7 @@ def parse_command_line():
         type=int, default=5)
     tsv_kfold_subparser.add_argument(
         "--MCI_sub_categories",
-        help="Deactivate default managing of MCI sub-categories to avoid data leakage",
+        help="Deactivate default managing of MCI sub-categories to avoid data leakage.",
         action="store_false", default=True)
     tsv_kfold_subparser.add_argument(
         "--subset_name",
@@ -915,6 +916,10 @@ def parse_command_line():
         "--mmse_name",
         help="Name of the variable related to the MMSE score in the merged tsv file.",
         type=str, default="MMS")
+    tsv_analysis_subparser.add_argument(
+        "--age_name",
+        help="Name of the variable related to the age in the merged tsv file.",
+        type=str, default="age_bl")
 
     tsv_analysis_subparser.set_defaults(func=tsv_analysis_func)
 

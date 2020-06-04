@@ -9,7 +9,6 @@ __maintainer__ = "Elina Thibeau--Sutre"
 __email__ = "elina.ts@free.fr"
 __status__ = "Completed"
 
-import argparse
 import pandas as pd
 from .tsv_utils import first_session, next_session, add_demographics
 import os
@@ -18,7 +17,7 @@ import numpy as np
 
 
 def demographics_analysis(merged_tsv, formatted_data_path, results_path,
-                          diagnoses, mmse_name="MMS"):
+                          diagnoses, mmse_name="MMS", age_name="age"):
 
     merged_df = pd.read_csv(merged_tsv, sep='\t')
     merged_df.set_index(['participant_id', 'session_id'], inplace=True)
@@ -26,7 +25,15 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path,
     if not path.exists(parent_directory):
         os.makedirs(parent_directory)
 
-    fields_dict = {'age': 'age_bl', 'sex': 'sex', 'MMSE': mmse_name, 'CDR': 'cdr_global'}
+    fields_dict = {'age': age_name, 'sex': 'sex', 'MMSE': mmse_name, 'CDR': 'cdr_global'}
+
+    if age_name not in merged_tsv.columns.values:
+        raise ValueError("The column corresponding to age is not labelled as %s. "
+                         "Please change the parameters." % age_name)
+
+    if mmse_name not in merged_tsv.columns.values:
+        raise ValueError("The column corresponding to mmse is not labelled as %s. "
+                         "Please change the parameters." % mmse_name)
 
     columns = ['n_subjects', 'mean_age', 'std_age', 'min_age', 'max_age', 'sexF', 'sexM', 'mean_MMSE', 'std_MMSE',
                'min_MMSE', 'max_MMSE', 'CDR_0', 'CDR_0.5', 'CDR_1', 'CDR_2', 'CDR_3', 'mean_scans', 'std_scans',
