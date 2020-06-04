@@ -293,8 +293,8 @@ def apply_restriction(bids_df, restriction_path):
     return bids_copy_df
 
 
-def tsv_extraction(merged_tsv, missing_mods, results_path,
-                   diagnoses, modality, restriction_path, time_horizon):
+def get_labels(merged_tsv, missing_mods, results_path,
+               diagnoses, modality, restriction_path, time_horizon):
     # Reading files
     bids_df = pd.read_csv(merged_tsv, sep='\t')
     bids_df.set_index(['participant_id', 'session_id'], inplace=True)
