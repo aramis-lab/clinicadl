@@ -309,6 +309,7 @@ def tsv_split_func(args):
         args.formatted_data_path,
         n_test=args.n_test,
         subset_name=args.subset_name,
+        age_name=args.age_name,
         MCI_sub_categories=args.MCI_sub_categories,
         t_val_threshold=args.t_val_threshold,
         p_val_threshold=args.p_val_threshold)
@@ -333,7 +334,8 @@ def tsv_analysis_func(args):
         args.results_path,
         diagnoses=args.diagnoses,
         mmse_name=args.mmse_name,
-        age_name=args.age_name)
+        age_name=args.age_name,
+        baseline=args.baseline)
 
 
 def parse_command_line():
@@ -846,6 +848,10 @@ def parse_command_line():
              "If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name.",
         type=float, default=100.)
     tsv_split_subparser.add_argument(
+        "--age_name",
+        help="Name of the variable related to the age in the merged_tsv file.",
+        type=str, default="age_bl")
+    tsv_split_subparser.add_argument(
         "--MCI_sub_categories",
         help="Deactivate default managing of MCI sub-categories to avoid data leakage.",
         action="store_false", default=True)
@@ -920,6 +926,10 @@ def parse_command_line():
         "--age_name",
         help="Name of the variable related to the age in the merged_tsv file.",
         type=str, default="age_bl")
+    tsv_analysis_subparser.add_argument(
+        "--baseline",
+        help="Performs the analysis based on <label>_baseline.tsv files",
+        default=False, action="store_true")
 
     tsv_analysis_subparser.set_defaults(func=tsv_analysis_func)
 

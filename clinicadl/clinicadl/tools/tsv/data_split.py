@@ -11,7 +11,7 @@ import os
 sex_dict = {'M': 0, 'F': 1}
 
 
-def create_split(diagnosis, diagnosis_df, merged_df, n_test,
+def create_split(diagnosis, diagnosis_df, merged_df, n_test, age_name="age",
                  pval_threshold_ttest=0.80, t_val_chi2_threshold=0.0642):
     """
     Split data at the subject-level in training and test set with equivalent age and sex distributions
@@ -22,6 +22,7 @@ def create_split(diagnosis, diagnosis_df, merged_df, n_test,
     :param n_test: (float)
         If > 1 number of subjects to put in the test set.
         If < 1 proportion of subjects to put in the test set.
+    :param age_name: (str) label of the age column in the dataset.
     :param pval_threshold_ttest: (float) threshold for the t-test on age
     :param t_val_chi2_threshold:  (float) threshold for the chi2 test on sex
     :return:
@@ -38,7 +39,7 @@ def create_split(diagnosis, diagnosis_df, merged_df, n_test,
         n_test = int(n_test * len(diagnosis_baseline_df))
 
     sex = list(baseline_demographics_df.sex.values)
-    age = list(baseline_demographics_df.age)
+    age = list(baseline_demographics_df[age_name].values)
 
     idx = np.arange(len(diagnosis_baseline_df))
 
@@ -72,7 +73,7 @@ def create_split(diagnosis, diagnosis_df, merged_df, n_test,
 
 
 def split_diagnoses(merged_tsv, formatted_data_path,
-                    n_test=100, subset_name="test", MCI_sub_categories=True,
+                    n_test=100, age_name="age", subset_name="test", MCI_sub_categories=True,
                     t_val_threshold=0.0642, p_val_threshold=0.80):
     """
     Performs a single split for each label independently on the subject level.
@@ -88,6 +89,7 @@ def split_diagnoses(merged_tsv, formatted_data_path,
             If > 1, number of subjects to put in set with name 'subset_name'.
             If < 1, proportion of subjects to put in set with name 'subset_name'.
             If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name'.
+        age_name (str): Label of the age column in the dataset.
         subset_name (str): Name of the subset that is complementary to train.
         MCI_sub_categories (bool): If True, manages MCI sub-categories to avoid data leakage.
         t_val_threshold (float): The threshold used for the chi2 test on sex distributions.
@@ -132,7 +134,7 @@ def split_diagnoses(merged_tsv, formatted_data_path,
                                    sep='\t')
         diagnosis = diagnosis_df_path.split('.')[0]
         if n_test > 0:
-            train_df, test_df = create_split(diagnosis, diagnosis_df, merged_df,
+            train_df, test_df = create_split(diagnosis, diagnosis_df, merged_df, age_name=age_name,
                                              n_test=n_test, t_val_chi2_threshold=t_val_threshold,
                                              pval_threshold_ttest=p_val_threshold)
             # Save baseline splits
@@ -221,10 +223,10 @@ def split_diagnoses(merged_tsv, formatted_data_path,
             n_test = int(n_test * len(complete_diagnosis_baseline_df))
 
         sex = list(baseline_demographics_df.sex.values)
-        age = list(baseline_demographics_df.age)
+        age = list(baseline_demographics_df[age_name].values)
 
         sup_train_sex = list(supplementary_train_df.sex.values)
-        sup_train_age = list(supplementary_train_df.age.values)
+        sup_train_age = list(supplementary_train_df[age_name].values)
 
         sup_train_sex = [sex_dict[x] for x in sup_train_sex]
         sup_train_age = [float(x) for x in sup_train_age]
