@@ -17,7 +17,7 @@ import numpy as np
 
 
 def demographics_analysis(merged_tsv, formatted_data_path, results_path,
-                          diagnoses, mmse_name="MMS", age_name="age"):
+                          diagnoses, mmse_name="MMS", age_name="age", baseline=False):
     """
     Produces a tsv file with rows corresponding to the labels defined by the diagnoses list,
     and the columns being demographic statistics.
@@ -29,6 +29,7 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path,
         diagnoses (list): Labels selected for the demographic analysis.
         mmse_name (str): Name of the variable related to the MMSE score in the merged_tsv file.
         age_name (str): Name of the variable related to the age in the merged_tsv file.
+        baseline (bool): Performs the analysis based on <label>_baseline.tsv files.
 
     Returns:
         writes one tsv file at results_path containing the
@@ -43,11 +44,11 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path,
 
     fields_dict = {'age': age_name, 'sex': 'sex', 'MMSE': mmse_name, 'CDR': 'cdr_global'}
 
-    if age_name not in merged_tsv.columns.values:
+    if age_name not in merged_df.columns.values:
         raise ValueError("The column corresponding to age is not labelled as %s. "
                          "Please change the parameters." % age_name)
 
-    if mmse_name not in merged_tsv.columns.values:
+    if mmse_name not in merged_df.columns.values:
         raise ValueError("The column corresponding to mmse is not labelled as %s. "
                          "Please change the parameters." % mmse_name)
 
@@ -64,8 +65,11 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path,
     diagnosis_dict = dict.fromkeys(diagnoses)
     for diagnosis in diagnoses:
         diagnosis_dict[diagnosis] = {'age': [], 'MMSE': [], 'scans': []}
-        diagnosis_df = pd.read_csv(path.join(formatted_data_path, diagnosis + '.tsv'),
-                                   sep='\t')
+        if baseline:
+            diagnosis_path = path.join(formatted_data_path, diagnosis + '_baseline.tsv')
+        else:
+            diagnosis_path = path.join(formatted_data_path, diagnosis + '.tsv')
+        diagnosis_df = pd.read_csv(diagnosis_path, sep='\t')
         diagnosis_demographics_df = add_demographics(diagnosis_df, merged_df, diagnosis)
         diagnosis_demographics_df.set_index(['participant_id', 'session_id'], inplace=True)
         diagnosis_df.set_index(['participant_id', 'session_id'], inplace=True)
@@ -96,7 +100,7 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path,
             else:
                 raise ValueError('Patient %s has no sex' % subject)
 
-            cdr = merged_df.loc[(subject, first_session_id), fields_dict['CDR']]
+            cdr = merged_df.at[(subject, first_session_id), fields_dict['CDR']]
             if cdr == 0:
                 results_df.loc[diagnosis, 'CDR_0'] += 1
             elif cdr == 0.5:
@@ -122,6 +126,6 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path,
         results_df.loc[diagnosis, 'mean_scans'] = np.nanmean(diagnosis_dict[diagnosis]['scans'])
         results_df.loc[diagnosis, 'std_scans'] = np.nanstd(diagnosis_dict[diagnosis]['scans'])
 
-    print(results_df)
+    results_df.index.name = "diagnosis"
 
     results_df.to_csv(results_path, sep='\t')
