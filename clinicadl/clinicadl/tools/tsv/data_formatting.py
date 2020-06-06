@@ -11,6 +11,11 @@ in the OASIS dataset is not done in this script. Moreover a quality check may be
 pipelines, leading to the removal of some subjects.
 """
 from .tsv_utils import neighbour_session, last_session, after_end_screening
+import pandas as pd
+from os import path
+from copy import copy
+import numpy as np
+import os
 
 
 def cleaning_nan_diagnoses(bids_df):
@@ -288,58 +293,45 @@ def apply_restriction(bids_df, restriction_path):
     return bids_copy_df
 
 
-if __name__ == "__main__":
-    import argparse
-    import pandas as pd
-    import os
-    from os import path
-    from copy import copy
-    import numpy as np
+def get_labels(merged_tsv, missing_mods, results_path,
+               diagnoses, modality="t1w", restriction_path=None,
+               time_horizon=36):
+    """
+    Writes one tsv file per label in diagnoses argument based on merged_tsv and missing_mods.
 
-    parser = argparse.ArgumentParser(description="Argparser for data formatting")
+    Args:
+        merged_tsv (str): Path to the file obtained by the command clinica iotools merge-tsv.
+        missing_mods (str): Path to the folder where the outputs of clinica iotools missing-mods are.
+        results_path (str): Path to the folder where tsv files are extracted.
+        diagnoses (list): Labels that must be extracted from merged_tsv.
+        modality (str): Modality to select sessions. Sessions which do not include the modality will be excluded.
+        restriction_path (str): Path to a tsv containing the sessions that can be included.
+        time_horizon (int): Time horizon to analyse stability of MCI subjects.
 
-    # Mandatory arguments
-    parser.add_argument("merged_tsv", type=str,
-                        help="Path to the file obtained by the command clinica iotools merge-tsv.")
-    parser.add_argument("missing_mods", type=str,
-                        help="Path to the folder where the outputs of clinica iotools missing-mods are.")
-    parser.add_argument("results_path", type=str,
-                        help="Path to the folder where data is organized.")
-
-    # Modality selection
-    parser.add_argument("--modality", "-mod", default="t1w", type=str,
-                        help="Modality to select sessions.")
-    parser.add_argument("--diagnoses", nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'],
-                        default=['AD', 'CN'], help="Diagnosis that must be selected from the tsv file")
-    parser.add_argument("--time_horizon", default=36, type=int,
-                        help="Time horizon to analyse stability of MCI subjects.")
-    parser.add_argument("--restriction_path", type=str, default=None,
-                        help="Path to a tsv containing the sessions that can be included")
-
-    args = parser.parse_args()
-
+    Returns:
+         writes one tsv file per label at results_path/<label>.tsv
+    """
     # Reading files
-    bids_df = pd.read_csv(args.merged_tsv, sep='\t')
+    bids_df = pd.read_csv(merged_tsv, sep='\t')
     bids_df.set_index(['participant_id', 'session_id'], inplace=True)
 
-    list_files = os.listdir(args.missing_mods)
+    list_files = os.listdir(missing_mods)
     missing_mods_dict = {}
 
     for file in list_files:
         filename, fileext = path.splitext(file)
         if fileext == '.tsv':
             session = filename.split('_')[-1]
-            missing_mods_df = pd.read_csv(path.join(args.missing_mods, file), sep='\t')
+            missing_mods_df = pd.read_csv(path.join(missing_mods, file), sep='\t')
             if len(missing_mods_df) == 0:
-                raise ValueError("Empty DataFrame at path %s" % path.join(args.missing_mods, file))
+                raise ValueError("Empty DataFrame at path %s" % path.join(missing_mods, file))
 
             missing_mods_df.set_index('participant_id', drop=True, inplace=True)
             missing_mods_dict[session] = missing_mods_df
 
     # Creating results path
-    args.results_path = path.join(args.results_path, 'lists_by_diagnosis')
-    if not path.exists(args.results_path):
-        os.makedirs(args.results_path)
+    if not path.exists(results_path):
+        os.makedirs(results_path)
 
     # Adding the field diagnosis_bl
     if 'diagnosis_bl' not in bids_df.columns:
@@ -351,71 +343,70 @@ if __name__ == "__main__":
 
         bids_df = copy(bids_copy_df)
 
-    result_df = pd.DataFrame()
     MCI_df = None
-    if 'AD' in args.diagnoses:
+    if 'AD' in diagnoses:
         print('Beginning the selection of AD label')
         output_df = stable_selection(bids_df, diagnosis='AD')
-        output_df = mod_selection(output_df, missing_mods_dict, args.modality)
-        output_df = apply_restriction(output_df, args.restriction_path)
+        output_df = mod_selection(output_df, missing_mods_dict, modality)
+        output_df = apply_restriction(output_df, restriction_path)
 
         diagnosis_df = pd.DataFrame(output_df['diagnosis'], columns=['diagnosis'])
-        diagnosis_df.to_csv(path.join(args.results_path, 'AD.tsv'), sep='\t')
+        diagnosis_df.to_csv(path.join(results_path, 'AD.tsv'), sep='\t')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
         print('Found %s AD subjects for a total of %s sessions' % (len(sub_df), len(diagnosis_df)))
         print()
 
-    if 'CN' in args.diagnoses:
+    if 'CN' in diagnoses:
         print('Beginning the selection of CN label')
         output_df = stable_selection(bids_df, diagnosis='CN')
-        output_df = mod_selection(output_df, missing_mods_dict, args.modality)
-        output_df = apply_restriction(output_df, args.restriction_path)
+        output_df = mod_selection(output_df, missing_mods_dict, modality)
+        output_df = apply_restriction(output_df, restriction_path)
 
         diagnosis_df = pd.DataFrame(output_df['diagnosis'], columns=['diagnosis'])
-        diagnosis_df.to_csv(path.join(args.results_path, 'CN.tsv'), sep='\t')
+        diagnosis_df.to_csv(path.join(results_path, 'CN.tsv'), sep='\t')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
         print('Found %s CN subjects for a total of %s sessions' % (len(sub_df), len(diagnosis_df)))
         print()
 
-    if 'MCI' in args.diagnoses:
+    if 'MCI' in diagnoses:
         print('Beginning of the selection of MCI label')
-        MCI_df = mci_stability(bids_df, args.time_horizon)
+        MCI_df = mci_stability(bids_df, 10 ** 4)  # Remove rMCI independently from time horizon
         output_df = diagnosis_removal(MCI_df, diagnosis_list=['rMCI'])
-        output_df = mod_selection(output_df, missing_mods_dict, args.modality)
-        output_df = apply_restriction(output_df, args.restriction_path)
+        output_df = mod_selection(output_df, missing_mods_dict, modality)
+        output_df = apply_restriction(output_df, restriction_path)
 
         # Relabelling everything as MCI
         output_df.diagnosis = ['MCI'] * len(output_df)
 
         diagnosis_df = pd.DataFrame(output_df['diagnosis'], columns=['diagnosis'])
-        diagnosis_df.to_csv(path.join(args.results_path, 'MCI.tsv'), sep='\t')
+        diagnosis_df.to_csv(path.join(results_path, 'MCI.tsv'), sep='\t')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
         print('Found %s MCI subjects for a total of %s sessions' % (len(sub_df), len(diagnosis_df)))
         print()
 
-    if 'sMCI' in args.diagnoses:
+    if 'sMCI' in diagnoses:
         if MCI_df is None:
-            MCI_df = mci_stability(bids_df, args.time_horizon)
+            MCI_df = mci_stability(bids_df, time_horizon)
         output_df = diagnosis_removal(MCI_df, diagnosis_list=['rMCI', 'pMCI'])
         output_df = output_df[output_df.diagnosis == 'sMCI']
-        output_df = mod_selection(output_df, missing_mods_dict, args.modality)
-        output_df = apply_restriction(output_df, args.restriction_path)
+        output_df = mod_selection(output_df, missing_mods_dict, modality)
+        output_df = apply_restriction(output_df, restriction_path)
 
         diagnosis_df = pd.DataFrame(output_df['diagnosis'], columns=['diagnosis'])
-        diagnosis_df.to_csv(path.join(args.results_path, 'sMCI.tsv'), sep='\t')
+        diagnosis_df.to_csv(path.join(results_path, 'sMCI.tsv'), sep='\t')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
         print('Found %s sMCI subjects for a total of %s sessions' % (len(sub_df), len(diagnosis_df)))
         print()
 
-    if 'pMCI' in args.diagnoses:
+    if 'pMCI' in diagnoses:
         if MCI_df is None:
-            MCI_df = mci_stability(bids_df, args.time_horizon)
+            MCI_df = mci_stability(bids_df, time_horizon)
         output_df = MCI_df[MCI_df.diagnosis == 'pMCI']
-        output_df = mod_selection(output_df, missing_mods_dict, args.modality)
-        output_df = apply_restriction(output_df, args.restriction_path)
+        output_df = mod_selection(output_df, missing_mods_dict, modality)
+        output_df = apply_restriction(output_df, restriction_path)
 
         diagnosis_df = pd.DataFrame(output_df['diagnosis'], columns=['diagnosis'])
-        diagnosis_df.to_csv(path.join(args.results_path, 'pMCI.tsv'), sep='\t')
+        diagnosis_df.to_csv(path.join(results_path, 'pMCI.tsv'), sep='\t')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
         print('Found %s pMCI subjects for a total of %s sessions' % (len(sub_df), len(diagnosis_df)))
         print()

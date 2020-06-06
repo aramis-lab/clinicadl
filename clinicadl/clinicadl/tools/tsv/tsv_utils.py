@@ -118,7 +118,7 @@ def add_demographics(df, demographics_df, diagnosis):
     columns.insert(0, 'session_id')
     columns.insert(0, 'participant_id')
     for subject, session in df.index.values:
-        data = list(demographics_df.loc[(subject, session)].values)
+        data = list(demographics_df.loc[(subject, session)].values[0])
         data.insert(0, session)
         data.insert(0, subject)
         data = np.array(data).reshape(1, -1)

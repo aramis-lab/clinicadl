@@ -3,11 +3,15 @@
 from .tsv_utils import complementary_list, add_demographics, baseline_df, chi2
 from scipy.stats import ttest_ind
 import shutil
+import pandas as pd
+from os import path
+import numpy as np
+import os
 
 sex_dict = {'M': 0, 'F': 1}
 
 
-def create_split(diagnosis, diagnosis_df, merged_df, n_test,
+def create_split(diagnosis, diagnosis_df, merged_df, n_test, age_name="age",
                  pval_threshold_ttest=0.80, t_val_chi2_threshold=0.0642):
     """
     Split data at the subject-level in training and test set with equivalent age and sex distributions
@@ -18,6 +22,7 @@ def create_split(diagnosis, diagnosis_df, merged_df, n_test,
     :param n_test: (float)
         If > 1 number of subjects to put in the test set.
         If < 1 proportion of subjects to put in the test set.
+    :param age_name: (str) label of the age column in the dataset.
     :param pval_threshold_ttest: (float) threshold for the t-test on age
     :param t_val_chi2_threshold:  (float) threshold for the chi2 test on sex
     :return:
@@ -34,7 +39,7 @@ def create_split(diagnosis, diagnosis_df, merged_df, n_test,
         n_test = int(n_test * len(diagnosis_baseline_df))
 
     sex = list(baseline_demographics_df.sex.values)
-    age = list(baseline_demographics_df.age)
+    age = list(baseline_demographics_df[age_name].values)
 
     idx = np.arange(len(diagnosis_baseline_df))
 
@@ -67,48 +72,47 @@ def create_split(diagnosis, diagnosis_df, merged_df, n_test,
     return train_df, test_df
 
 
-if __name__ == "__main__":
-    import argparse
-    import pandas as pd
-    import os
-    from os import path
-    import numpy as np
+def split_diagnoses(merged_tsv, formatted_data_path,
+                    n_test=100, age_name="age", subset_name="test", MCI_sub_categories=True,
+                    t_val_threshold=0.0642, p_val_threshold=0.80):
+    """
+    Performs a single split for each label independently on the subject level.
+    The train folder will contain two lists per diagnosis (baseline and longitudinal),
+    whereas the test folder will only include the list of baseline sessions.
 
-    parser = argparse.ArgumentParser(description="Argparser for data formatting")
+    The age and sex distributions between the two sets must be non-significant (according to T-test and chi-square).
 
-    # Mandatory arguments
-    parser.add_argument("merged_tsv", type=str,
-                        help="Path to the file obtained by the command clinica iotools merge-tsv.")
-    parser.add_argument("formatted_data_path", type=str,
-                        help="Path to the folder containing formatted data.")
+    Args:
+        merged_tsv (str): Path to the file obtained by the command clinica iotools merge-tsv.
+        formatted_data_path (str): Path to the folder containing data extracted by clinicadl tsvtool getlabels.
+        n_test (float):
+            If > 1, number of subjects to put in set with name 'subset_name'.
+            If < 1, proportion of subjects to put in set with name 'subset_name'.
+            If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name'.
+        age_name (str): Label of the age column in the dataset.
+        subset_name (str): Name of the subset that is complementary to train.
+        MCI_sub_categories (bool): If True, manages MCI sub-categories to avoid data leakage.
+        t_val_threshold (float): The threshold used for the chi2 test on sex distributions.
+        p_val_threshold (float): The threshold used for the T-test on age distributions.
 
-    # Modality selection
-    parser.add_argument("--n_test", type=float, default=100.,
-                        help="Define the number of subjects to put in test set."
-                             "If 0, there is no training set and the whole dataset is considered as a test set.")
-    parser.add_argument("--MCI_sub_categories", action="store_true", default=False,
-                        help="Manage MCI sub-categories to avoid data leakage")
-    parser.add_argument("--t_val_threshold", "-t", default=0.0642, type=float,
-                        help="The threshold used for the chi2 test.")
-    parser.add_argument("--p_val_threshold", "-p", default=0.80, type=float,
-                        help="The threshold used for the T-test.")
-    parser.add_argument("--subset_name", type=str, default="test",
-                        help="Name of the subset that is complementary to train.")
-
-    args = parser.parse_args()
-
+    Returns:
+        writes three files per <label>.tsv file present in formatted_data_path:
+            - formatted_data_path/train/<label>.tsv
+            - formatted_data_path/train/<label>_baseline.tsv
+            - formatted_data_path/<subset_name>/<label>_baseline.tsv
+    """
     # Read files
-    merged_df = pd.read_csv(args.merged_tsv, sep='\t')
+    merged_df = pd.read_csv(merged_tsv, sep='\t')
     merged_df.set_index(['participant_id', 'session_id'], inplace=True)
-    results_path = args.formatted_data_path
+    results_path = formatted_data_path
 
     train_path = path.join(results_path, 'train')
     if path.exists(train_path):
         shutil.rmtree(train_path)
-    if args.n_test > 0:
+    if n_test > 0:
         os.makedirs(train_path)
 
-    test_path = path.join(results_path, args.subset_name)
+    test_path = path.join(results_path, subset_name)
     if path.exists(test_path):
         shutil.rmtree(test_path)
     os.makedirs(test_path)
@@ -119,7 +123,7 @@ if __name__ == "__main__":
 
     MCI_special_treatment = False
 
-    if args.MCI_sub_categories and 'MCI.tsv' in diagnosis_df_paths and args.n_test > 0:
+    if MCI_sub_categories and 'MCI.tsv' in diagnosis_df_paths and n_test > 0:
         diagnosis_df_paths.remove('MCI.tsv')
         MCI_special_treatment = True
 
@@ -129,10 +133,10 @@ if __name__ == "__main__":
         diagnosis_df = pd.read_csv(path.join(results_path, diagnosis_df_path),
                                    sep='\t')
         diagnosis = diagnosis_df_path.split('.')[0]
-        if args.n_test > 0:
-            train_df, test_df = create_split(diagnosis, diagnosis_df, merged_df,
-                                             n_test=args.n_test, t_val_chi2_threshold=args.t_val_threshold,
-                                             pval_threshold_ttest=args.p_val_threshold)
+        if n_test > 0:
+            train_df, test_df = create_split(diagnosis, diagnosis_df, merged_df, age_name=age_name,
+                                             n_test=n_test, t_val_chi2_threshold=t_val_threshold,
+                                             pval_threshold_ttest=p_val_threshold)
             # Save baseline splits
             train_df = train_df[['participant_id', 'session_id', 'diagnosis']]
             train_df.to_csv(path.join(train_path, str(diagnosis) + '_baseline.tsv'), sep='\t', index=False)
@@ -211,18 +215,18 @@ if __name__ == "__main__":
         MCI_df.reset_index(inplace=True)
         diagnosis_baseline_df = baseline_df(MCI_df, 'MCI')
         baseline_demographics_df = add_demographics(diagnosis_baseline_df, merged_df, 'MCI')
-        complete_diagnosis_basleine_df = baseline_df(diagnosis_df, 'MCI')
+        complete_diagnosis_baseline_df = baseline_df(diagnosis_df, 'MCI')
 
-        if args.n_test > 1:
-            n_test = int(args.n_test)
+        if n_test > 1:
+            n_test = int(n_test)
         else:
-            n_test = int(args.n_test * len(complete_diagnosis_basleine_df))
+            n_test = int(n_test * len(complete_diagnosis_baseline_df))
 
         sex = list(baseline_demographics_df.sex.values)
-        age = list(baseline_demographics_df.age)
+        age = list(baseline_demographics_df[age_name].values)
 
         sup_train_sex = list(supplementary_train_df.sex.values)
-        sup_train_age = list(supplementary_train_df.age.values)
+        sup_train_age = list(supplementary_train_df[age_name].values)
 
         sup_train_sex = [sex_dict[x] for x in sup_train_sex]
         sup_train_age = [float(x) for x in sup_train_age]
@@ -247,7 +251,7 @@ if __name__ == "__main__":
             t_age, p_age = ttest_ind(age_test, age_train)
             T_sex = chi2(sex_test, sex_train)
 
-            if T_sex < args.t_val_threshold and p_age > args.p_val_threshold:
+            if T_sex < t_val_threshold and p_age > p_val_threshold:
                 flag_selection = False
                 MCI_baseline_test_df = baseline_demographics_df.loc[idx_test]
                 train_df = baseline_demographics_df.loc[idx_train]

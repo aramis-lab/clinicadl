@@ -9,52 +9,67 @@ __maintainer__ = "Elina Thibeau--Sutre"
 __email__ = "elina.ts@free.fr"
 __status__ = "Completed"
 
-import argparse
 import pandas as pd
 from .tsv_utils import first_session, next_session, add_demographics
 import os
 from os import path
 import numpy as np
 
-if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description="Argparser for data formatting")
+def demographics_analysis(merged_tsv, formatted_data_path, results_path,
+                          diagnoses, mmse_name="MMS", age_name="age", baseline=False):
+    """
+    Produces a tsv file with rows corresponding to the labels defined by the diagnoses list,
+    and the columns being demographic statistics.
 
-    # Mandatory arguments
-    parser.add_argument("merged_tsv", type=str,
-                        help="Path to the file obtained by the command clinica iotools merge-tsv.")
-    parser.add_argument("formatted_data_path", type=str,
-                        help="Path to the folder containing formatted data.")
-    parser.add_argument("results_path", type=str,
-                        help="Path to the resulting tsv file (filename included).")
+    Args:
+        merged_tsv (str): Path to the file obtained by the command clinica iotools merge-tsv.
+        formatted_data_path (str): Path to the folder containing data extracted by clinicadl tsvtool getlabels.
+        results_path (str): Path to the output tsv file (filename included).
+        diagnoses (list): Labels selected for the demographic analysis.
+        mmse_name (str): Name of the variable related to the MMSE score in the merged_tsv file.
+        age_name (str): Name of the variable related to the age in the merged_tsv file.
+        baseline (bool): Performs the analysis based on <label>_baseline.tsv files.
 
-    # Modality selection
-    parser.add_argument("--diagnoses", nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'],
-                        default=['AD', 'CN'], help="Diagnosis that must be selected from the tsv file")
-    parser.add_argument("--mmse_name", type=str, default="MMS",
-                        help="Name of the variable related to the MMSE score in the merged tsv file.")
+    Returns:
+        writes one tsv file at results_path containing the
+        demographic analysis of the tsv files in formatted_data_path.
+    """
 
-    args = parser.parse_args()
-
-    merged_df = pd.read_csv(args.merged_tsv, sep='\t')
+    merged_df = pd.read_csv(merged_tsv, sep='\t')
     merged_df.set_index(['participant_id', 'session_id'], inplace=True)
-    parent_directory = path.abspath(path.join(args.results_path, os.pardir))
+    parent_directory = path.abspath(path.join(results_path, os.pardir))
     if not path.exists(parent_directory):
         os.makedirs(parent_directory)
 
-    fields_dict = {'age': 'age_bl', 'sex': 'sex', 'MMSE': args.mmse_name, 'CDR': 'cdr_global'}
+    fields_dict = {'age': age_name, 'sex': 'sex', 'MMSE': mmse_name, 'CDR': 'cdr_global'}
 
-    columns = ['n_subjects', 'mean_age', 'std_age', 'min_age', 'max_age', 'sexF', 'sexM', 'mean_MMSE', 'std_MMSE',
-               'min_MMSE', 'max_MMSE', 'CDR_0', 'CDR_0.5', 'CDR_1', 'CDR_2', 'CDR_3', 'mean_scans', 'std_scans',
+    if age_name not in merged_df.columns.values:
+        raise ValueError("The column corresponding to age is not labelled as %s. "
+                         "Please change the parameters." % age_name)
+
+    if mmse_name not in merged_df.columns.values:
+        raise ValueError("The column corresponding to mmse is not labelled as %s. "
+                         "Please change the parameters." % mmse_name)
+
+    columns = ['n_subjects', 'mean_age', 'std_age',
+               'min_age', 'max_age', 'sexF',
+               'sexM', 'mean_MMSE', 'std_MMSE',
+               'min_MMSE', 'max_MMSE', 'CDR_0',
+               'CDR_0.5', 'CDR_1', 'CDR_2',
+               'CDR_3', 'mean_scans', 'std_scans',
                'n_scans']
-    results_df = pd.DataFrame(index=args.diagnoses, columns=columns, data=np.zeros((len(args.diagnoses), len(columns))))
+    results_df = pd.DataFrame(index=diagnoses, columns=columns, data=np.zeros((len(diagnoses), len(columns))))
 
     # Need all values for mean and variance (age and MMSE)
-    diagnosis_dict = dict.fromkeys(args.diagnoses)
-    for diagnosis in args.diagnoses:
+    diagnosis_dict = dict.fromkeys(diagnoses)
+    for diagnosis in diagnoses:
         diagnosis_dict[diagnosis] = {'age': [], 'MMSE': [], 'scans': []}
-        diagnosis_df = pd.read_csv(path.join(args.formatted_data_path, 'lists_by_diagnosis', diagnosis + '.tsv'),
-                                   sep='\t')
+        if baseline:
+            diagnosis_path = path.join(formatted_data_path, diagnosis + '_baseline.tsv')
+        else:
+            diagnosis_path = path.join(formatted_data_path, diagnosis + '.tsv')
+        diagnosis_df = pd.read_csv(diagnosis_path, sep='\t')
         diagnosis_demographics_df = add_demographics(diagnosis_df, merged_df, diagnosis)
         diagnosis_demographics_df.set_index(['participant_id', 'session_id'], inplace=True)
         diagnosis_df.set_index(['participant_id', 'session_id'], inplace=True)
@@ -85,7 +100,7 @@ if __name__ == "__main__":
             else:
                 raise ValueError('Patient %s has no sex' % subject)
 
-            cdr = merged_df.loc[(subject, first_session_id), fields_dict['CDR']]
+            cdr = merged_df.at[(subject, first_session_id), fields_dict['CDR']]
             if cdr == 0:
                 results_df.loc[diagnosis, 'CDR_0'] += 1
             elif cdr == 0.5:
@@ -99,7 +114,7 @@ if __name__ == "__main__":
             else:
                 raise ValueError('Patient %s has CDR %f' % (subject, cdr))
 
-    for diagnosis in args.diagnoses:
+    for diagnosis in diagnoses:
         results_df.loc[diagnosis, 'mean_age'] = np.nanmean(diagnosis_dict[diagnosis]['age'])
         results_df.loc[diagnosis, 'std_age'] = np.nanstd(diagnosis_dict[diagnosis]['age'])
         results_df.loc[diagnosis, 'min_age'] = np.min(diagnosis_dict[diagnosis]['age'])
@@ -111,6 +126,6 @@ if __name__ == "__main__":
         results_df.loc[diagnosis, 'mean_scans'] = np.nanmean(diagnosis_dict[diagnosis]['scans'])
         results_df.loc[diagnosis, 'std_scans'] = np.nanstd(diagnosis_dict[diagnosis]['scans'])
 
-    print(results_df)
+    results_df.index.name = "diagnosis"
 
-    results_df.to_csv(args.results_path, sep='\t')
+    results_df.to_csv(results_path, sep='\t')
