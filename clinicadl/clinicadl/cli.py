@@ -277,6 +277,67 @@ def classify_func(args):
             )
 
 
+# Functions to dispatch command line options from tsvtool to corresponding function
+
+def tsv_restrict_func(args):
+    from .tools.tsv.restriction import aibl_restriction, oasis_restriction
+
+    if args.dataset == "AIBL":
+        aibl_restriction(args.merged_tsv, args.results_path)
+    elif args.dataset == "OASIS":
+        oasis_restriction(args.merged_tsv, args.results_path)
+
+
+def tsv_getlabels_func(args):
+    from .tools.tsv.data_formatting import get_labels
+
+    get_labels(
+        args.merged_tsv,
+        args.missing_mods,
+        args.results_path,
+        diagnoses=args.diagnoses,
+        modality=args.modality,
+        restriction_path=args.restriction_path,
+        time_horizon=args.time_horizon)
+
+
+def tsv_split_func(args):
+    from .tools.tsv.data_split import split_diagnoses
+
+    split_diagnoses(
+        args.merged_tsv,
+        args.formatted_data_path,
+        n_test=args.n_test,
+        subset_name=args.subset_name,
+        age_name=args.age_name,
+        MCI_sub_categories=args.MCI_sub_categories,
+        t_val_threshold=args.t_val_threshold,
+        p_val_threshold=args.p_val_threshold)
+
+
+def tsv_kfold_func(args):
+    from .tools.tsv.kfold_split import split_diagnoses
+
+    split_diagnoses(
+        args.formatted_data_path,
+        n_splits=args.n_splits,
+        subset_name=args.subset_name,
+        MCI_sub_categories=args.MCI_sub_categories)
+
+
+def tsv_analysis_func(args):
+    from .tools.tsv.demographics_analysis import demographics_analysis
+
+    demographics_analysis(
+        args.merged_tsv,
+        args.formatted_data_path,
+        args.results_path,
+        diagnoses=args.diagnoses,
+        mmse_name=args.mmse_name,
+        age_name=args.age_name,
+        baseline=args.baseline)
+
+
 def parse_command_line():
     parser = argparse.ArgumentParser(
             prog='clinicadl',
@@ -287,7 +348,7 @@ def parse_command_line():
     subparser = parser.add_subparsers(
             title='''Task to execute with clinicadl:''',
             description='''What kind of task do you want to use with clinicadl?
-            (preprocessing, extract, generate, train, validate, classify).''',
+            (tsvtool, preprocessing, extract, generate, train, validate, classify).''',
             dest='task',
             help='''****** Tasks proposed by clinicadl ******''')
 
@@ -695,17 +756,181 @@ def parse_command_line():
 
     classify_parser.set_defaults(func=classify_func)
 
-#    args = parser.parse_args()
-#
-#    commandline = parser.parse_known_args()
-#
-#    if args.train_autoencoder:
-#      model_type = 'autoencoder'
-#    else:
-#      model_type = 'cnn'
-#
-#    commandline_to_json(commandline, model_type)
-#
-#    print(args)
+    tsv_parser = subparser.add_parser(
+        'tsvtool',
+        help='''Handle tsv files for metadata processing and data splits''')
+
+    tsv_subparser = tsv_parser.add_subparsers(
+        title='''Task to execute with tsv tool:''',
+        description='''What kind of task do you want to use with tsv tool?
+                (restrict, getlabels, split, kfold, analysis).''',
+        dest='tsv_task',
+        help='''****** Tasks proposed by clinicadl tsv tool ******''')
+
+    tsv_subparser.required = True
+
+    tsv_restrict_subparser = tsv_subparser.add_parser(
+        'restrict',
+        help='Reproduce restrictions applied to AIBL and OASIS datasets')
+
+    tsv_restrict_subparser.add_argument(
+        "dataset",
+        help="dataset on which the restriction is performed.",
+        choices=["AIBL", "OASIS"],
+        type=str)
+
+    tsv_restrict_subparser.add_argument(
+        "merged_tsv",
+        help="Path to the file obtained by the command clinica iotools merge-tsv.",
+        type=str)
+    tsv_restrict_subparser.add_argument(
+        "results_path",
+        help="Path to the output tsv file (filename included).",
+        type=str)
+
+    tsv_restrict_subparser.set_defaults(func=tsv_restrict_func)
+
+    tsv_getlabels_subparser = tsv_subparser.add_parser(
+        'getlabels',
+        help='Get labels in separate tsv files.')
+
+    tsv_getlabels_subparser.add_argument(
+        "merged_tsv",
+        help="Path to the file obtained by the command clinica iotools merge-tsv.",
+        type=str)
+    tsv_getlabels_subparser.add_argument(
+        "missing_mods",
+        help="Path to the folder where the outputs of clinica iotools missing-mods are.",
+        type=str)
+    tsv_getlabels_subparser.add_argument(
+        "results_path",
+        type=str,
+        help="Path to the folder where tsv files are extracted.")
+
+    # Optional arguments
+    tsv_getlabels_subparser.add_argument(
+        "--modality", "-mod",
+        help="Modality to select sessions. Sessions which do not include the modality will be excluded.",
+        default="t1w", type=str)
+    tsv_getlabels_subparser.add_argument(
+        "--diagnoses",
+        help="Labels that must be extracted from merged_tsv.",
+        nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'], default=['AD', 'CN'])
+    tsv_getlabels_subparser.add_argument(
+        "--time_horizon",
+        help="Time horizon to analyse stability of MCI subjects.",
+        default=36, type=int)
+    tsv_getlabels_subparser.add_argument(
+        "--restriction_path",
+        help="Path to a tsv containing the sessions that can be included.",
+        type=str, default=None)
+
+    tsv_getlabels_subparser.set_defaults(func=tsv_getlabels_func)
+
+    tsv_split_subparser = tsv_subparser.add_parser(
+        'split',
+        help='Performs one stratified shuffle split on participant level.')
+
+    tsv_split_subparser.add_argument(
+        "merged_tsv",
+        help="Path to the file obtained by the command clinica iotools merge-tsv.",
+        type=str)
+    tsv_split_subparser.add_argument(
+        "formatted_data_path",
+        help="Path to the folder containing data extracted by clinicadl tsvtool getlabels.",
+        type=str)
+
+    # Optional arguments
+    tsv_split_subparser.add_argument(
+        "--n_test",
+        help="If > 1, number of subjects to put in set with name 'subset_name'. "
+             "If < 1, proportion of subjects to put set with name 'subset_name'. "
+             "If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name.",
+        type=float, default=100.)
+    tsv_split_subparser.add_argument(
+        "--age_name",
+        help="Name of the variable related to the age in the merged_tsv file.",
+        type=str, default="age_bl")
+    tsv_split_subparser.add_argument(
+        "--MCI_sub_categories",
+        help="Deactivate default managing of MCI sub-categories to avoid data leakage.",
+        action="store_false", default=True)
+    tsv_split_subparser.add_argument(
+        "--t_val_threshold", "-t",
+        help="The threshold used for the chi2 test on sex distributions.",
+        default=0.0642, type=float)
+    tsv_split_subparser.add_argument(
+        "--p_val_threshold", "-p",
+        help="The threshold used for the T-test on age distributions.",
+        default=0.80, type=float)
+    tsv_split_subparser.add_argument(
+        "--subset_name",
+        help="Name of the subset that is complementary to train.",
+        type=str, default="test")
+
+    tsv_split_subparser.set_defaults(func=tsv_split_func)
+
+    tsv_kfold_subparser = tsv_subparser.add_parser(
+        'kfold',
+        help='Performs a k-fold split on participant level.')
+
+    tsv_kfold_subparser.add_argument(
+        "formatted_data_path",
+        help="Path to the folder containing data extracted by clinicadl tsvtool getlabels.",
+        type=str)
+
+    # Optional arguments
+    tsv_kfold_subparser.add_argument(
+        "--n_splits",
+        help="Number of folds in the k-fold split."
+             "If 0, there is no training set and the whole dataset is considered as a test set.",
+        type=int, default=5)
+    tsv_kfold_subparser.add_argument(
+        "--MCI_sub_categories",
+        help="Deactivate default managing of MCI sub-categories to avoid data leakage.",
+        action="store_false", default=True)
+    tsv_kfold_subparser.add_argument(
+        "--subset_name",
+        help="Name of the subset that is complementary to train.",
+        type=str, default="validation")
+
+    tsv_kfold_subparser.set_defaults(func=tsv_kfold_func)
+
+    tsv_analysis_subparser = tsv_subparser.add_parser(
+        'analysis',
+        help='Produces a demographic analysis of the extracted labels.')
+
+    tsv_analysis_subparser.add_argument(
+        "merged_tsv",
+        help="Path to the file obtained by the command clinica iotools merge-tsv.",
+        type=str)
+    tsv_analysis_subparser.add_argument(
+        "formatted_data_path",
+        help="Path to the folder containing data extracted by clinicadl tsvtool getlabels.",
+        type=str)
+    tsv_analysis_subparser.add_argument(
+        "results_path",
+        help="Path to the output tsv file (filename included).",
+        type=str)
+
+    # Modality selection
+    tsv_analysis_subparser.add_argument(
+        "--diagnoses",
+        help="Labels selected for the demographic analysis.",
+        default=['AD', 'CN'], nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'])
+    tsv_analysis_subparser.add_argument(
+        "--mmse_name",
+        help="Name of the variable related to the MMSE score in the merged_tsv file.",
+        type=str, default="MMS")
+    tsv_analysis_subparser.add_argument(
+        "--age_name",
+        help="Name of the variable related to the age in the merged_tsv file.",
+        type=str, default="age_bl")
+    tsv_analysis_subparser.add_argument(
+        "--baseline",
+        help="Performs the analysis based on <label>_baseline.tsv files",
+        default=False, action="store_true")
+
+    tsv_analysis_subparser.set_defaults(func=tsv_analysis_func)
 
     return parser

@@ -18,11 +18,14 @@ def main():
 
     arguments = vars(args)
 
-    if (arguments['task'] != 'preprocessing') and (arguments['task'] != 'extract') and (arguments['task'] != 'generate'):
+    if (arguments['task'] != 'preprocessing') \
+            and (arguments['task'] != 'extract') \
+            and (arguments['task'] != 'generate') \
+            and (arguments['task'] != 'tsvtool'):
         commandline_to_json(commandline, task_type)
 
     args.func(args)
 
-
+    
 if __name__ == '__main__':
     main()
