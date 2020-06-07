@@ -30,9 +30,14 @@ Automatic classification of AD using a classical machine learning approach can
 be performed using the software available here:
 <https://github.com/aramis-lab/AD-ML>.
 
-This software is currently in **active development**. If you find a problem
-when using it, please [open an
-issue](https://github.com/aramis-lab/ad-dl/issues).
+**Disclaimer:** this software is in **going-on development**. Some features can
+change between different commits. A stable version is planned to be released
+soon.  The release v.0.0.1 corresponds to the date of submission of the
+publication but in the meanwhile important changes are being done to facilitate
+the use of the package. 
+
+If you find a problem when use it or if you want to provide us feedback, please
+[open an issue](https://github.com/aramis-lab/ad-dl/issues).
 
 Pretrained models for the CNN networks can be obtained here:
 <https://zenodo.org/record/3491003>  
