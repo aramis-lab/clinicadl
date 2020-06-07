@@ -7,6 +7,7 @@ import sys
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+from warnings import warn
 
 from .utils import ae_finetuning
 from ..tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data
@@ -18,6 +19,9 @@ def train_autoencoder(params):
     params: class from utils module containing all the parameters for training a
     CNN.
     """
+
+    if params.visualization:
+        warn("The visualization of 3D image-based autoencoders was not implemented.")
 
     if params.evaluation_steps % params.accumulation_steps != 0 and params.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %

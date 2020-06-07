@@ -107,7 +107,8 @@ def train_func(args):
                     gpu=args.use_gpu,
                     batch_size=args.batch_size,
                     evaluation_steps=args.evaluation_steps,
-                    num_workers=args.nproc
+                    num_workers=args.nproc,
+                    visualization=args.visualization
                     )
             train_autoencoder(train_params_autoencoder)
         else:
@@ -554,6 +555,32 @@ def parse_command_line():
             help='Tolerance value for the early stopping.',
             type=float, default=0.0)
 
+    # Transfer learning
+    transfer_learning_parent = argparse.ArgumentParser(add_help=False)
+    transfer_learning_group = transfer_learning_parent.add_argument_group("TRANSFER LEARNING")
+    transfer_learning_group.add_argument(
+            '--transfer_learning_path',
+            help="If an existing path is given, a pretrained model is used.",
+            type=str, default=None)
+    transfer_learning_group.add_argument(
+            '--transfer_learning_autoencoder',
+            help='''If specified, do transfer learning using an autoencoder else will look
+                 for a CNN model.''',
+            default=False, action="store_true")
+
+    # Autoencoder
+    autoencoder_parent = argparse.ArgumentParser(add_help=False)
+    autoencoder_group = autoencoder_parent.add_argument_group("AUTOENCODEUR SPECIFIC")
+    autoencoder_group.add_argument(
+        '--add_sigmoid',
+        help='Add sigmoid function at the end of the decoder.',
+        default=False, action="store_true")
+    autoencoder_group.add_argument(
+        '--visualization',
+        help='Save results in visualization folder.',
+        action="store_true",
+        default=False)
+
     ######################
     # IMAGE
     ######################
@@ -592,13 +619,10 @@ def parse_command_line():
 
     train_image_ae_parser = train_image_subparser.add_parser(
         "autoencoder",
-        parents=[train_parent_parser, train_image_parent],
+        parents=[train_parent_parser, train_image_parent, autoencoder_parent, transfer_learning_parent],
         help="Train a 3D-patch level autoencoder.")
-    train_image_ae_parser.add_argument(
-        '--add_sigmoid',
-        help='Add sigmoid function at the end of the decoder.',
-        default=False, action="store_true")
-    train_image_ae_parser.add_argument(
+    # /!\ If parents list is changed the arguments won't be in the right group anymore !
+    train_image_ae_parser._action_groups[-1].add_argument(
         '--transfer_learning_difference',
         help='''Difference of size between the pretrained autoencoder and
         the training one. If the new one is larger, difference will be
@@ -609,9 +633,10 @@ def parse_command_line():
 
     train_image_cnn_parser = train_image_subparser.add_parser(
         "cnn",
-        parents=[train_parent_parser, train_image_parent],
+        parents=[train_parent_parser, train_image_parent, transfer_learning_parent],
         help="Train a 3D-patch level CNN.")
-    train_image_cnn_parser.add_argument(
+    # /!\ If parents list is changed the arguments won't be in the right group anymore !
+    train_image_cnn_parser._action_groups[-1].add_argument(
             '--selection',
             help="If transfer_learning from CNN, chooses which best transfer model is selected.",
             type=str, default="best_acc", choices=["best_loss", "best_acc"])
@@ -685,44 +710,36 @@ def parse_command_line():
 
     train_patch_ae_parser = train_patch_subparser.add_parser(
         "autoencoder",
-        parents=[train_parent_parser, train_patch_parent],
+        parents=[train_parent_parser, train_patch_parent, autoencoder_parent],
         help="Train a 3D-patch level autoencoder.")
-
-    train_patch_ae_parser.add_argument(
-        '--add_sigmoid',
-        help='Add sigmoid function at the end of the decoder.',
-        default=False, action="store_true")
-    train_patch_ae_parser.add_argument(
-        '--visualization',
-        help='Save results in visualization folder.',
-        action="store_true",
-        default=False)
 
     train_patch_ae_parser.set_defaults(func=train_func)
 
     train_patch_cnn_parser = train_patch_subparser.add_parser(
         "cnn",
-        parents=[train_parent_parser, train_patch_parent],
+        parents=[train_parent_parser, train_patch_parent, transfer_learning_parent],
         help="Train a 3D-patch level CNN.")
+    # /!\ If parents list is changed the arguments won't be in the right group anymore !
+    train_patch_cnn_parser._action_groups[-1].add_argument(
+            '--selection',
+            help="If transfer_learning from CNN, chooses which best transfer model is selected.",
+            type=str, default="best_acc", choices=["best_loss", "best_acc"])
+    train_patch_cnn_parser._action_groups[-1].add_argument(
+            '--transfer_learning_multicnn',
+            help='''Specify if the transfer learning is from multi-CNNs to multi-CNNs.''',
+            default=False, action="store_true")
 
-    train_patch_cnn_parser.add_argument(
+    train_patch_cnn_group = train_patch_cnn_parser.add_argument_group("PATCH CNN ARGUMENTS")
+    train_patch_cnn_group.add_argument(
             '--network_type',
             help='Chose between single or multi CNN.',
             choices=['single', 'multi'], type=str,
             default='single')
-    train_patch_cnn_parser.add_argument(
+    train_patch_cnn_group.add_argument(
             '--num_cnn',
             help='''How many CNNs are trained in a patch-wise way.
             This argument is used only if network_type is 'multi'.''',
             default=36, type=int)
-    train_patch_cnn_parser.add_argument(
-            '--transfer_learning_multicnn',
-            help='''Specify if the transfer learning is from multi-CNNs to multi-CNNs.''',
-            default=False, action="store_true")
-    train_patch_cnn_parser.add_argument(
-            '--selection',
-            help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-            type=str, default="best_acc", choices=["best_loss", "best_acc"])
 
     train_patch_cnn_parser.set_defaults(func=train_func)
 
@@ -736,21 +753,8 @@ def parse_command_line():
 
     train_svm_parser.set_defaults(func=train_func)
 
-    # # Optional parameters
-    #
-    # # Transfer learning from other autoencoder/network
-    # train_parser.add_argument(
-    #         '--transfer_learning_path',
-    #         help="If an existing path is given, a pretrained autoencoder is used.",
-    #         type=str, default=None)
-    # train_parser.add_argument(
-    #         '--transfer_learning_autoencoder',
-    #         help='''If do transfer learning using an autoencoder else will look
-    #              for a CNN model.''',
-    #         default=False, action="store_true")
-
-    # Classify - Classify a subject or a list of tesv files with the CNN
-    # provieded as argument.
+    # Classify - Classify a subject or a list of tsv files with the CNN
+    # provided as argument.
     # classify_parser: get command line arguments and options
 
     classify_parser = subparser.add_parser(
