@@ -60,7 +60,7 @@ def train_autoencoder(params):
     text_file.write('Version of pytorch: %s \n' % torch.__version__)
     text_file.close()
 
-    decoder = create_autoencoder(params.model, params.pretrained_path,
+    decoder = create_autoencoder(params.model, params.transfer_learning_path,
                                  difference=params.pretrained_difference)
     optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
                                                         lr=params.learning_rate,

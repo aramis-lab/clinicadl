@@ -89,7 +89,6 @@ def train_func(args):
                     args.network
                     )
             train_params_autoencoder.write(
-                    args.pretrained_path,
                     args.pretrained_difference,
                     preprocessing=args.preprocessing,
                     diagnoses=args.diagnoses,
@@ -119,7 +118,6 @@ def train_func(args):
                     args.network
                     )
             train_params_cnn.write(
-                    args.pretrained_path,
                     args.pretrained_difference,
                     preprocessing=args.preprocessing,
                     diagnoses=args.diagnoses,
@@ -180,7 +178,6 @@ def train_func(args):
                     args.network
                     )
             train_params_autoencoder.write(
-                    args.pretrained_path,
                     args.pretrained_difference,
                     preprocessing=args.preprocessing,
                     diagnoses=args.diagnoses,
@@ -214,7 +211,6 @@ def train_func(args):
                     args.network
                     )
             train_params_patch.write(
-                    args.pretrained_path,
                     args.pretrained_difference,
                     preprocessing=args.preprocessing,
                     diagnoses=args.diagnoses,
@@ -740,10 +736,6 @@ def parse_command_line():
     # # Optional parameters
     #
     # # Transfer learning from other autoencoder/network
-    # train_parser.add_argument(
-    #         '--pretrained_path',
-    #         help='Path to a pretrained model (can be of different size).',
-    #         type=str, default=None)
     # train_parser.add_argument(
     #         '--pretrained_difference',
     #         help='''Difference of size between the pretrained autoencoder and
