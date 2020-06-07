@@ -83,33 +83,33 @@ def train_func(args):
     if args.mode == 'image':
         if args.mode_task == "autoencoder":
             train_params_autoencoder = Parameters(
-                    args.tsv_path,
-                    args.output_dir,
-                    args.caps_dir,
-                    args.network
-                    )
+                args.tsv_path,
+                args.output_dir,
+                args.caps_dir,
+                args.network
+            )
             train_params_autoencoder.write(
-                    transfer_learning_difference=args.transfer_learning_difference,
-                    preprocessing=args.preprocessing,
-                    diagnoses=args.diagnoses,
-                    baseline=args.baseline,
-                    minmaxnormalization=args.minmaxnormalization,
-                    n_splits=args.n_splits,
-                    split=args.split,
-                    accumulation_steps=args.accumulation_steps,
-                    epochs=args.epochs,
-                    learning_rate=args.learning_rate,
-                    patience=args.patience,
-                    tolerance=args.tolerance,
-                    add_sigmoid=args.add_sigmoid,
-                    optimizer='Adam',
-                    weight_decay=args.weight_decay,
-                    gpu=args.use_gpu,
-                    batch_size=args.batch_size,
-                    evaluation_steps=args.evaluation_steps,
-                    num_workers=args.nproc,
-                    visualization=args.visualization
-                    )
+                transfer_learning_difference=args.transfer_learning_difference,
+                preprocessing=args.preprocessing,
+                diagnoses=args.diagnoses,
+                baseline=args.baseline,
+                minmaxnormalization=args.minmaxnormalization,
+                n_splits=args.n_splits,
+                split=args.split,
+                accumulation_steps=args.accumulation_steps,
+                epochs=args.epochs,
+                learning_rate=args.learning_rate,
+                patience=args.patience,
+                tolerance=args.tolerance,
+                add_sigmoid=args.add_sigmoid,
+                optimizer='Adam',
+                weight_decay=args.weight_decay,
+                gpu=args.use_gpu,
+                batch_size=args.batch_size,
+                evaluation_steps=args.evaluation_steps,
+                num_workers=args.nproc,
+                visualization=args.visualization
+                )
             train_autoencoder(train_params_autoencoder)
         else:
             train_params_cnn = Parameters(
@@ -144,30 +144,30 @@ def train_func(args):
             train_cnn(train_params_cnn)
     elif args.mode == 'slice':
         train_params_slice = Parameters(
-                args.tsv_path,
-                args.output_dir,
-                args.caps_dir,
-                args.network
-                )
+            args.tsv_path,
+            args.output_dir,
+            args.caps_dir,
+            args.network
+            )
         train_params_slice.write(
-                mri_plane=args.slice_direction,
-                diagnoses=args.diagnoses,
-                baseline=args.baseline,
-                learning_rate=args.learning_rate,
-                patience=args.patience,
-                tolerance=args.tolerance,
-                n_splits=args.n_splits,
-                split=args.split,
-                epochs=args.epochs,
-                batch_size=args.batch_size,
-                optimizer='Adam',
-                weight_decay=args.weight_decay,
-                dropout=args.dropout,
-                gpu=args.use_gpu,
-                num_workers=args.nproc,
-                selection_threshold=args.selection_threshold,
-                prepare_dl=args.prepare_dl
-                )
+            mri_plane=args.slice_direction,
+            diagnoses=args.diagnoses,
+            baseline=args.baseline,
+            learning_rate=args.learning_rate,
+            patience=args.patience,
+            tolerance=args.tolerance,
+            n_splits=args.n_splits,
+            split=args.split,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            optimizer='Adam',
+            weight_decay=args.weight_decay,
+            dropout=args.dropout,
+            gpu=args.use_gpu,
+            num_workers=args.nproc,
+            selection_threshold=args.selection_threshold,
+            prepare_dl=args.prepare_dl
+            )
         train_slice(train_params_slice)
     elif args.mode == 'patch':
         if args.mode_task == "autoencoder":
@@ -483,35 +483,35 @@ def parse_command_line():
             choices=['slice', 'patch', 'whole'], default='whole'
             )
     extract_parser.add_argument(
-            '-ps', '--patch_size',
-            help='''Patch size (only for 'patch' extraction) e.g: --patch_size 50''',
-            type=int, default=50
-            )
+        '-ps', '--patch_size',
+        help='''Patch size (only for 'patch' extraction) e.g: --patch_size 50''',
+        type=int, default=50
+        )
     extract_parser.add_argument(
-            '-ss', '--stride_size',
-            help='''Stride size (only for 'patch' extraction) e.g.: --stride_size 50''',
-            type=int, default=50
-            )
+        '-ss', '--stride_size',
+        help='''Stride size (only for 'patch' extraction) e.g.: --stride_size 50''',
+        type=int, default=50
+        )
     extract_parser.add_argument(
-            '-sd', '--slice_direction',
-            help='''Slice direction (only for 'slice' extraction). Three options:
-                 '0' -> Sagittal plane,
-                 '1' -> Coronal plane or
-                 '2' -> Axial plane''',
-            type=int, default=0
-            )
+        '-sd', '--slice_direction',
+        help='''Slice direction (only for 'slice' extraction). Three options:
+             '0' -> Sagittal plane,
+             '1' -> Coronal plane or
+             '2' -> Axial plane''',
+        type=int, default=0
+        )
     extract_parser.add_argument(
-            '-sm', '--slice_mode',
-            help='''Slice mode (only for 'slice' extraction). Two options:
-                 'original' to save one single channel (intensity),
-                 'rgb' to saves three channel (with same intensity).''',
-            choices=['original', 'rgb'], default='rgb'
-            )
+        '-sm', '--slice_mode',
+        help='''Slice mode (only for 'slice' extraction). Two options:
+             'original' to save one single channel (intensity),
+             'rgb' to saves three channel (with same intensity).''',
+        choices=['original', 'rgb'], default='rgb'
+        )
     extract_parser.add_argument(
-            '-np', '--nproc',
-            help='Number of cores used for processing',
-            type=int, default=2
-            )
+        '-np', '--nproc',
+        help='Number of cores used for processing',
+        type=int, default=2
+        )
 
     extract_parser.set_defaults(func=extract_data_func)
 
@@ -652,25 +652,25 @@ def parse_command_line():
     train_image_parent = argparse.ArgumentParser(add_help=False)
     train_imageoptim_group = train_image_parent.add_argument_group("IMAGE-LEVEL OPTIMIZATION")
     train_imageoptim_group.add_argument(
-            '--evaluation_steps', '-esteps',
-            default=0, type=int,
-            help='Fix the number of batches to use before validation.')
+        '--evaluation_steps', '-esteps',
+        default=0, type=int,
+        help='Fix the number of batches to use before validation.')
     train_imageoptim_group.add_argument(
-            '--accumulation_steps', '-asteps',
-            help='Accumulates gradients in order to increase the size of the batch.',
-            default=1, type=int)
+        '--accumulation_steps', '-asteps',
+        help='Accumulates gradients in order to increase the size of the batch.',
+        default=1, type=int)
 
     train_imagedata_group = train_image_parent.add_argument_group("IMAGE-LEVEL DATA MANAGEMENT")
     train_imagedata_group.add_argument(
-            '--preprocessing',
-            help='Defines the type of preprocessing of CAPS data.',
-            choices=['linear', 'mni'], type=str,
-            default='linear')
+        '--preprocessing',
+        help='Defines the type of preprocessing of CAPS data.',
+        choices=['linear', 'mni'], type=str,
+        default='linear')
     train_imagedata_group.add_argument(
-            '--minmaxnormalization', '-n',
-            help='Performs MinMaxNormalization.',
-            action="store_true",
-            default=False)
+        '--minmaxnormalization', '-n',
+        help='Performs MinMaxNormalization.',
+        action="store_true",
+        default=False)
 
     train_image_subparser = train_image_parser.add_subparsers(
         title='''Task to be performed''',
@@ -714,17 +714,17 @@ def parse_command_line():
 
     train_slice_group = train_slice_parser.add_argument_group("SLICE PARAMETERS")
     train_slice_group.add_argument(
-            '--slice_direction', '-sd-',
-            help='''Which coordinate axis to take for slicing the MRI.
-                 0 for sagittal
-                 1 for coronal
-                 2 for axial direction.''',
-            default=0, type=int)
+        '--slice_direction', '-sd-',
+        help='''Which coordinate axis to take for slicing the MRI.
+             0 for sagittal
+             1 for coronal
+             2 for axial direction.''',
+        default=0, type=int)
     train_slice_group.add_argument(
-            '--prepare_dl',
-            help='''If True the outputs of extract preprocessing are used, else the whole
-                 MRI is loaded.''',
-            default=False, action="store_true")
+        '--prepare_dl',
+        help='''If True the outputs of extract preprocessing are used, else the whole
+             MRI is loaded.''',
+        default=False, action="store_true")
 
     train_slice_parser.set_defaults(func=train_func)
 
@@ -738,29 +738,29 @@ def parse_command_line():
     train_patch_parent = argparse.ArgumentParser(add_help=False)
     train_patch_group = train_patch_parent.add_argument_group("PATCH ARGUMENTS")
     train_patch_group.add_argument(
-            '-hroi', '--hippocampus_roi',
-            help='If true, use the hippocampus region.',
-            action="store_true",
-            default=False)
+        '-hroi', '--hippocampus_roi',
+        help='If true, use the hippocampus region.',
+        action="store_true",
+        default=False)
     train_patch_group.add_argument(
-            '-ps', '--patch_size',
-            help='Patch size',
-            type=int, default=50)
+        '-ps', '--patch_size',
+        help='Patch size',
+        type=int, default=50)
     train_patch_group.add_argument(
-            '-ss', '--stride_size',
-            help='Stride size',
-            type=int, default=50)
+        '-ss', '--stride_size',
+        help='Stride size',
+        type=int, default=50)
     train_patch_group.add_argument(
-            '--prepare_dl',
-            help='''If True the outputs of extract preprocessing are used, else the whole
-                 MRI is loaded.''',
-            default=False, action="store_true")
+        '--prepare_dl',
+        help='''If True the outputs of extract preprocessing are used, else the whole
+             MRI is loaded.''',
+        default=False, action="store_true")
     train_patch_group.add_argument(
-            '--selection_threshold',
-            help='''Threshold on the balanced accuracies to compute the
-                 subject-level performance.only based on patches with balanced
-                 accuracy > threshold.''',
-            type=float, default=0.0)
+        '--selection_threshold',
+        help='''Threshold on the balanced accuracies to compute the
+             subject-level performance.only based on patches with balanced
+             accuracy > threshold.''',
+        type=float, default=0.0)
 
     train_patch_subparser = train_patch_parser.add_subparsers(
         title='''Task to be performed''',
@@ -782,25 +782,25 @@ def parse_command_line():
         help="Train a 3D-patch level CNN.")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
     train_patch_cnn_parser._action_groups[-1].add_argument(
-            '--selection',
-            help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-            type=str, default="best_acc", choices=["best_loss", "best_acc"])
+        '--selection',
+        help="If transfer_learning from CNN, chooses which best transfer model is selected.",
+        type=str, default="best_acc", choices=["best_loss", "best_acc"])
     train_patch_cnn_parser._action_groups[-1].add_argument(
-            '--transfer_learning_multicnn',
-            help='''Specify if the transfer learning is from multi-CNNs to multi-CNNs.''',
-            default=False, action="store_true")
+        '--transfer_learning_multicnn',
+        help='''Specify if the transfer learning is from multi-CNNs to multi-CNNs.''',
+        default=False, action="store_true")
 
     train_patch_cnn_group = train_patch_cnn_parser.add_argument_group("PATCH CNN ARGUMENTS")
     train_patch_cnn_group.add_argument(
-            '--network_type',
-            help='Chose between single or multi CNN.',
-            choices=['single', 'multi'], type=str,
-            default='single')
+        '--network_type',
+        help='Chose between single or multi CNN.',
+        choices=['single', 'multi'], type=str,
+        default='single')
     train_patch_cnn_group.add_argument(
-            '--num_cnn',
-            help='''How many CNNs are trained in a patch-wise way.
-            This argument is used only if network_type is 'multi'.''',
-            default=36, type=int)
+        '--num_cnn',
+        help='''How many CNNs are trained in a patch-wise way.
+        This argument is used only if network_type is 'multi'.''',
+        default=36, type=int)
 
     train_patch_cnn_parser.set_defaults(func=train_func)
 
@@ -809,7 +809,7 @@ def parse_command_line():
     #########################
     train_svm_parser = train_subparser.add_parser(
         "svm",
-        # parents=[train_parent_parser],
+        parents=[train_parent_parser],
         help="Train a SVM.")
 
     train_svm_parser.set_defaults(func=train_func)
