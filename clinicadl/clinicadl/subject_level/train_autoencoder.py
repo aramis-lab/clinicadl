@@ -61,7 +61,7 @@ def train_autoencoder(params):
     text_file.close()
 
     decoder = create_autoencoder(params.model, params.transfer_learning_path,
-                                 difference=params.pretrained_difference)
+                                 difference=params.transfer_learning_difference)
     optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
                                                         lr=params.learning_rate,
                                                         weight_decay=params.weight_decay)
