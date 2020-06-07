@@ -109,7 +109,7 @@ def train_func(args):
                 evaluation_steps=args.evaluation_steps,
                 num_workers=args.nproc,
                 visualization=args.visualization
-                )
+            )
             train_autoencoder(train_params_autoencoder)
         else:
             train_params_cnn = Parameters(
@@ -117,7 +117,7 @@ def train_func(args):
                     args.output_dir,
                     args.caps_dir,
                     args.network
-                    )
+            )
             train_params_cnn.write(
                     preprocessing=args.preprocessing,
                     diagnoses=args.diagnoses,
@@ -140,7 +140,7 @@ def train_func(args):
                     transfer_learning_path=args.transfer_learning_path,
                     transfer_learning_autoencoder=args.transfer_learning_autoencoder,
                     selection=args.selection
-                    )
+            )
             train_cnn(train_params_cnn)
     elif args.mode == 'slice':
         train_params_slice = Parameters(
@@ -148,7 +148,7 @@ def train_func(args):
             args.output_dir,
             args.caps_dir,
             args.network
-            )
+        )
         train_params_slice.write(
             mri_plane=args.slice_direction,
             diagnoses=args.diagnoses,
@@ -167,7 +167,7 @@ def train_func(args):
             num_workers=args.nproc,
             selection_threshold=args.selection_threshold,
             prepare_dl=args.prepare_dl
-            )
+        )
         train_slice(train_params_slice)
     elif args.mode == 'patch':
         if args.mode_task == "autoencoder":
@@ -475,43 +475,37 @@ def parse_command_line():
             default=None
             )
     extract_parser.add_argument(
-            'extract_method',
-            help='''Method used to extract features. Three options:
-                 'slice' to get 2D slices from the MRI,
-                 'patch' to get 3D volumetric patches or
-                 'whole' to get the complete MRI.''',
-            choices=['slice', 'patch', 'whole'], default='whole'
-            )
+        'extract_method',
+        help='''Method used to extract features. Three options:
+             'slice' to get 2D slices from the MRI,
+             'patch' to get 3D volumetric patches or
+             'whole' to get the complete MRI.''',
+        choices=['slice', 'patch', 'whole'], default='whole')
     extract_parser.add_argument(
         '-ps', '--patch_size',
         help='''Patch size (only for 'patch' extraction) e.g: --patch_size 50''',
-        type=int, default=50
-        )
+        type=int, default=50)
     extract_parser.add_argument(
         '-ss', '--stride_size',
         help='''Stride size (only for 'patch' extraction) e.g.: --stride_size 50''',
-        type=int, default=50
-        )
+        type=int, default=50)
     extract_parser.add_argument(
         '-sd', '--slice_direction',
         help='''Slice direction (only for 'slice' extraction). Three options:
              '0' -> Sagittal plane,
              '1' -> Coronal plane or
              '2' -> Axial plane''',
-        type=int, default=0
-        )
+        type=int, default=0)
     extract_parser.add_argument(
         '-sm', '--slice_mode',
         help='''Slice mode (only for 'slice' extraction). Two options:
              'original' to save one single channel (intensity),
              'rgb' to saves three channel (with same intensity).''',
-        choices=['original', 'rgb'], default='rgb'
-        )
+        choices=['original', 'rgb'], default='rgb')
     extract_parser.add_argument(
         '-np', '--nproc',
         help='Number of cores used for processing',
-        type=int, default=2
-        )
+        type=int, default=2)
 
     extract_parser.set_defaults(func=extract_data_func)
 
