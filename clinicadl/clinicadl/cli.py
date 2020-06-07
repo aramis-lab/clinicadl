@@ -251,8 +251,7 @@ def train_func(args):
             else:
                 train_patch_multi_cnn(train_params_patch)
     elif args.mode == 'svm':
-        pass
-
+        raise NotImplementedError("The SVM commandline was not implement yet.")
     else:
         print('Mode not detected in clinicadl')
 
@@ -791,6 +790,16 @@ def parse_command_line():
             type=str, default="best_acc", choices=["best_loss", "best_acc"])
 
     train_patch_cnn_parser.set_defaults(func=train_func)
+
+    #########################
+    # SVM
+    #########################
+    train_svm_parser = train_subparser.add_parser(
+        "svm",
+        # parents=[train_parent_parser],
+        help="Train a SVM.")
+
+    train_svm_parser.set_defaults(func=train_func)
 
     # # Optional parameters
     #
