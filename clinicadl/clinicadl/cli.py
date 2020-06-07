@@ -81,7 +81,7 @@ def train_func(args):
     set_default_dropout(args)
 
     if args.mode == 'subject':
-        if args.train_autoencoder:
+        if args.mode_task == "autoencoder":
             train_params_autoencoder = Parameters(
                     args.tsv_path,
                     args.output_dir,
@@ -171,11 +171,11 @@ def train_func(args):
                 gpu=args.use_gpu,
                 num_workers=args.nproc,
                 selection_threshold=args.selection_threshold,
-                prepare_dl=args.use_extracted_patches
+                prepare_dl=args.prepare_dl
                 )
         train_slice(train_params_slice)
     elif args.mode == 'patch':
-        if args.train_autoencoder:
+        if args.mode_task == "autoencoder":
             train_params_autoencoder = Parameters(
                     args.tsv_path,
                     args.output_dir,
@@ -208,7 +208,7 @@ def train_func(args):
                     patch_stride=args.patch_stride,
                     hippocampus_roi=args.hippocampus_roi,
                     visualization=args.visualization,
-                    prepare_dl=args.use_extracted_patches
+                    prepare_dl=args.prepare_dl
                     )
             train_autoencoder_patch(train_params_autoencoder)
         else:
@@ -250,7 +250,7 @@ def train_func(args):
                     hippocampus_roi=args.hippocampus_roi,
                     selection_threshold=args.selection_threshold,
                     num_cnn=args.num_cnn,
-                    prepare_dl=args.use_extracted_patches
+                    prepare_dl=args.prepare_dl
                     )
             if args.network_type == 'single':
                 train_patch_single_cnn(train_params_patch)
@@ -536,197 +536,291 @@ def parse_command_line():
     train_parser = subparser.add_parser(
             'train',
             help='Train with your data and create a model.')
-    train_parser.add_argument(
-            'mode',
-            help='Choose your mode (subject level, slice level, patch level, svm).',
-            choices=['subject', 'slice', 'patch', 'svm'],
-            default='subject')
-    train_parser.add_argument(
-            'caps_dir',
-            help='Data using CAPS structure.',
-            default=None)
-    train_parser.add_argument(
-            'tsv_path',
-            help='TSV path with subjects/sessions to process.',
-            default=None)
-    train_parser.add_argument(
-            'output_dir',
-            help='Folder containing results of the training.',
-            default=None)
-    train_parser.add_argument(
-            'network',
-            help='CNN Model to be used during the training.',
-            default='Conv5_FC3')
 
-    # Optional parameters
+    train_subparser = train_parser.add_subparsers(
+        title='''Classifier to be trained''',
+        description='''What classifier do you want to train?
+                (subject, slice, patch, svm).''',
+        dest='mode',
+        help='''****** Tasks proposed by clinicadl ******''')
+
+    train_subparser.required = True
+
+    # Positional arguments
+    train_parent_parser = argparse.ArgumentParser(add_help=False)
+    train_pos_group = train_parent_parser.add_argument_group("POSITIONAL ARGUMENTS")
+    train_pos_group.add_argument(
+        'caps_dir',
+        help='Data using CAPS structure.',
+        default=None)
+    train_pos_group.add_argument(
+        'tsv_path',
+        help='TSV path with subjects/sessions to process.',
+        default=None)
+    train_pos_group.add_argument(
+        'output_dir',
+        help='Folder containing results of the training.',
+        default=None)
+    train_pos_group.add_argument(
+        'network',
+        help='CNN Model to be used during the training.',
+        default='Conv5_FC3')
+
     # Computational issues
-    train_parser.add_argument(
+    train_comput_group = train_parent_parser.add_argument_group("COMPUTATIONAL ISSUES")
+    train_comput_group.add_argument(
             '-gpu', '--use_gpu', action='store_true',
             help='Uses GPU instead of CPU if CUDA is available',
             default=False)
-    train_parser.add_argument(
+    train_comput_group.add_argument(
             '-np', '--nproc',
             help='Number of cores used during the training.',
             type=int, default=2)
-    train_parser.add_argument(
-            '--visualization',
-            help='Save results in visualization folder',
-            action="store_true",
-            default=False)
-    train_parser.add_argument(
+    train_comput_group.add_argument(
             '--batch_size',
             default=2, type=int,
-            help='Batch size for training. (default=2)',)
-    train_parser.add_argument(
-            '--evaluation_steps', '-esteps',
-            default=1, type=int,
-            help='Fix the number of batches to use before validation.')
+            help='Batch size for training. (default=2)')
 
-    # Data Management
-    train_parser.add_argument(
-            '--preprocessing',
-            help='Defines the type of preprocessing of CAPS data.',
-            choices=['linear', 'mni'], type=str,
-            default='linear')
-    train_parser.add_argument(
+    # Data management
+    train_data_group = train_parent_parser.add_argument_group("DATA MANAGEMENT")
+    train_data_group.add_argument(
             '--diagnoses', '-d',
             help='Take all the subjects possible for autoencoder training.',
             default=['AD', 'CN'], nargs='+', type=str)
-    train_parser.add_argument(
+    train_data_group.add_argument(
             '--baseline',
             help='if True only the baseline is used.',
             action="store_true",
             default=False)
-    train_parser.add_argument(
+    train_data_group.add_argument(
             '--minmaxnormalization', '-n',
             help='Performs MinMaxNormalization.',
             action="store_true",
             default=False)
 
     # Cross-validation
-    train_parser.add_argument(
+    train_cv_group = train_parent_parser.add_argument_group("CROSS-VALIDATION")
+    train_cv_group.add_argument(
             '--n_splits',
             help='If a value is given will load data of a k-fold CV.',
             type=int, default=None)
-    train_parser.add_argument(
+    train_cv_group.add_argument(
             '--split',
             help='Will load the specific split wanted.',
             type=int, default=0)
 
-    # Training arguments
-    train_parser.add_argument(
-            '--network_type',
-            help='Chose between sinlge or multi CNN (applies only for mode patch-level)',
-            choices=['single', 'multi'], type=str,
-            default='single')
-    train_parser.add_argument(
-            '-tAE', '--train_autoencoder',
-            help='Add this option if you want to train an autoencoder.',
-            action="store_true",
-            default=False)
-    train_parser.add_argument(
-            '-hroi', '--hippocampus_roi',
-            help='If true, use the hippocampus region.',
-            action="store_true",
-            default=False)
-    train_parser.add_argument(
-            '--num_cnn',
-            help='''How many CNNs we want to train in a patch-wise way.
-                 By default, we train each patch from all subjects for one CNN''',
-            default=36, type=int)
-    train_parser.add_argument(
+    # Optimization parameters
+    train_optim_group = train_parent_parser.add_argument_group("OPTIMIZATION PARAMETERS")
+    train_optim_group.add_argument(
+            '--epochs',
+            help='Epochs through the data. (default=20)',
+            default=20, type=int)
+    train_optim_group.add_argument(
+            '--learning_rate', '-lr',
+            help='Learning rate of the optimization. (default=0.01)',
+            default=1e-4, type=float)
+    train_optim_group.add_argument(
+            '--weight_decay', '-wd',
+            help='Weight decay value used in optimization. (default=1e-4)',
+            default=1e-4, type=float)
+    train_optim_group.add_argument(
+            '--dropout',
+            help='rate of dropout that will be applied to dropout layers.',
+            default=None, type=float)
+    train_optim_group.add_argument(
+            '--patience',
+            help='Waiting time for early stopping.',
+            type=int, default=10)
+    train_optim_group.add_argument(
+            '--tolerance',
+            help='Tolerance value for the early stopping.',
+            type=float, default=0.0)
+
+    ######################
+    # IMAGE
+    ######################
+    train_image_parser = train_subparser.add_parser(
+        "image",
+        parents=[train_parent_parser],
+        help="Train a 3D-image level CNN.")
+
+    train_image_parent = argparse.ArgumentParser(add_help=False)
+    train_imageoptim_group = train_image_parent.add_argument_group("IMAGE-LEVEL OPTIMIZATION")
+    train_imageoptim_group.add_argument(
+            '--evaluation_steps', '-esteps',
+            default=0, type=int,
+            help='Fix the number of batches to use before validation.')
+    train_imageoptim_group.add_argument(
+            '--accumulation_steps', '-asteps',
+            help='Accumulates gradients in order to increase the size of the batch.',
+            default=1, type=int)
+
+    train_imagedata_group = train_image_parent.add_argument_group("IMAGE-LEVEL DATA MANAGEMENT")
+    train_imagedata_group.add_argument(
+            '--preprocessing',
+            help='Defines the type of preprocessing of CAPS data.',
+            choices=['linear', 'mni'], type=str,
+            default='linear')
+
+    train_image_subparser = train_image_parser.add_subparsers(
+        title='''Task to be performed''',
+        description='''Autoencoder or cnn?''',
+        dest='mode_task',
+        help='''****** Choose between autoencoder or CNN training ******''')
+
+    train_image_ae_parser = train_image_subparser.add_parser(
+        "autoencoder",
+        parents=[train_parent_parser, train_image_parent],
+        help="Train a 3D-patch level autoencoder.")
+
+    train_image_ae_parser.set_defaults(func=train_func)
+
+    train_image_cnn_parser = train_image_subparser.add_parser(
+        "cnn",
+        parents=[train_parent_parser, train_image_parent],
+        help="Train a 3D-patch level CNN.")
+
+    train_image_cnn_parser.set_defaults(func=train_func)
+
+    #########################
+    # SLICE
+    #########################
+    train_slice_parser = train_subparser.add_parser(
+        "slice",
+        parents=[train_parent_parser],
+        help="Train a 2D-slice level CNN.")
+
+    train_slice_group = train_slice_parser.add_argument_group("SLICE PARAMETERS")
+    train_slice_group.add_argument(
             '--mri_plane',
             help='''Which coordinate axis to take for slicing the MRI.
                  0 for sagittal
                  1 for coronal
                  2 for axial direction.''',
             default=0, type=int)
-    train_parser.add_argument(
-            '--sampler', '-sm',
-            help='Sampler to be used.',
-            default='random', type=str)
-    train_parser.add_argument(
-            '--accumulation_steps', '-asteps',
-            help='Accumulates gradients in order to increase the size of the batch.',
-            default=1, type=int)
-    train_parser.add_argument(
-            '--epochs',
-            help='Epochs through the data. (default=20)',
-            default=20, type=int)
-    train_parser.add_argument(
-            '--learning_rate', '-lr',
-            help='Learning rate of the optimization. (default=0.01)',
-            default=1e-4, type=float)
-    train_parser.add_argument(
-            '--weight_decay', '-wd',
-            help='Weight decay value used in optimization. (default=1e-4)',
-            default=1e-4, type=float)
-    train_parser.add_argument(
-            '--dropout',
-            help='rate of dropout that will be applied to dropout layers.',
-            default=None, type=float)
-    train_parser.add_argument(
-            '--patience',
-            help='Waiting time for early stopping.',
-            type=int, default=10)
-    train_parser.add_argument(
-            '--tolerance',
-            help='Tolerance value for the early stopping.',
-            type=float, default=0.0)
-    train_parser.add_argument(
-            '--add_sigmoid',
-            help='Ad sigmoid function at the end of the decoder.',
+    train_slice_group.add_argument(
+            '--prepare_dl',
+            help='''If True the outputs of extract preprocessing are used, else the whole
+                 MRI is loaded.''',
             default=False, action="store_true")
-    train_parser.add_argument(
+
+    train_slice_parser.set_defaults(func=train_func)
+
+    #########################
+    # PATCH
+    #########################
+    train_patch_parser = train_subparser.add_parser(
+        "patch",
+        help="Train a 3D-patch level network.")
+
+    train_patch_parent = argparse.ArgumentParser(add_help=False)
+    train_patch_group = train_patch_parent.add_argument_group("PATCH ARGUMENTS")
+    train_patch_group.add_argument(
+            '-hroi', '--hippocampus_roi',
+            help='If true, use the hippocampus region.',
+            action="store_true",
+            default=False)
+    train_patch_group.add_argument(
             '-psz', '--patch_size',
             help='Patch size e.g: --patch_size 50',
             type=int, default=50)
-    train_parser.add_argument(
+    train_patch_group.add_argument(
             '-pst', '--patch_stride',
             help='Patch stride e.g: --patch_stride 50',
             type=int, default=50)
-
-    # Transfer learning from other autoencoder/network
-    train_parser.add_argument(
-            '--pretrained_path',
-            help='Path to a pretrained model (can be of different size).',
-            type=str, default=None)
-    train_parser.add_argument(
-            '--pretrained_difference',
-            help='''Difference of size between the pretrained autoencoder and
-                 the training one. If the new one is larger, difference will be
-                 positive.''',
-            type=int, default=0)
-    train_parser.add_argument(
-            '--transfer_learning_path',
-            help="If an existing path is given, a pretrained autoencoder is used.",
-            type=str, default=None)
-    train_parser.add_argument(
-            '--transfer_learning_autoencoder',
-            help='''If do transfer learning using an autoencoder else will look
-                 for a CNN model.''',
+    train_patch_group.add_argument(
+            '--prepare_dl',
+            help='''If True the outputs of extract preprocessing are used, else the whole
+                 MRI is loaded.''',
             default=False, action="store_true")
-    train_parser.add_argument(
-            '--transfer_learning_multicnn',
-            help='''If do transfer learning for multi-CNN initialize with
-                 multiple CNN models.''',
-            default=False, action="store_true")
-    train_parser.add_argument(
-            '--selection',
-            help="Allow to choose which model of the experiment is loaded.",
-            type=str, default="best_acc", choices=["best_loss", "best_acc"])
-    train_parser.add_argument(
+    train_patch_group.add_argument(
             '--selection_threshold',
             help='''Threshold on the balanced accuracies to compute the
                  subject_level performance.only based on patches with balanced
                  accuracy > threshold.''',
             type=float, default=0.0)
-    train_parser.add_argument(
-            '--use_extracted_patches',
-            help='''If True the outputs of preprocessing are used, else the whole
-                 MRI is loaded.''',
-            default=False, action="store_true")
-    train_parser.set_defaults(func=train_func)
+
+    train_patch_subparser = train_patch_parser.add_subparsers(
+        title='''Task to be performed''',
+        description='''Autoencoder or cnn?''',
+        dest='mode_task',
+        help='''****** Choose between autoencoder or CNN training ******''')
+    train_patch_subparser.required = True
+
+    train_patch_ae_parser = train_patch_subparser.add_parser(
+        "autoencoder",
+        parents=[train_parent_parser, train_patch_parent],
+        help="Train a 3D-patch level autoencoder.")
+
+    train_patch_ae_parser.add_argument(
+            '--visualization',
+            help='Save results in visualization folder.',
+            action="store_true",
+            default=False)
+
+    train_patch_ae_parser.set_defaults(func=train_func)
+
+    train_patch_cnn_parser = train_patch_subparser.add_parser(
+        "cnn",
+        parents=[train_parent_parser, train_patch_parent],
+        help="Train a 3D-patch level CNN.")
+
+    train_patch_cnn_parser.add_argument(
+            '--network_type',
+            help='Chose between single or multi CNN.',
+            choices=['single', 'multi'], type=str,
+            default='single')
+
+    train_patch_cnn_parser.add_argument(
+            '--num_cnn',
+            help='''How many CNNs are trained in a patch-wise way.
+            This argument is used only if network_type is 'multi'.''',
+            default=36, type=int)
+
+    train_patch_cnn_parser.set_defaults(func=train_func)
+
+    # # Optional parameters
+    #
+    # # Training arguments
+    # train_parser.add_argument(
+    #         '--sampler', '-sm',
+    #         help='Sampler to be used.',
+    #         default='random', type=str)
+    # train_parser.add_argument(
+    #         '--add_sigmoid',
+    #         help='Ad sigmoid function at the end of the decoder.',
+    #         default=False, action="store_true")
+    #
+    # # Transfer learning from other autoencoder/network
+    # train_parser.add_argument(
+    #         '--pretrained_path',
+    #         help='Path to a pretrained model (can be of different size).',
+    #         type=str, default=None)
+    # train_parser.add_argument(
+    #         '--pretrained_difference',
+    #         help='''Difference of size between the pretrained autoencoder and
+    #              the training one. If the new one is larger, difference will be
+    #              positive.''',
+    #         type=int, default=0)
+    # train_parser.add_argument(
+    #         '--transfer_learning_path',
+    #         help="If an existing path is given, a pretrained autoencoder is used.",
+    #         type=str, default=None)
+    # train_parser.add_argument(
+    #         '--transfer_learning_autoencoder',
+    #         help='''If do transfer learning using an autoencoder else will look
+    #              for a CNN model.''',
+    #         default=False, action="store_true")
+    # train_parser.add_argument(
+    #         '--transfer_learning_multicnn',
+    #         help='''If do transfer learning for multi-CNN initialize with
+    #              multiple CNN models.''',
+    #         default=False, action="store_true")
+    # train_parser.add_argument(
+    #         '--selection',
+    #         help="Allow to choose which model of the experiment is loaded.",
+    #         type=str, default="best_acc", choices=["best_loss", "best_acc"])
+    # train_parser.set_defaults(func=train_func)
 
     # Classify - Classify a subject or a list of tesv files with the CNN
     # provieded as argument.
