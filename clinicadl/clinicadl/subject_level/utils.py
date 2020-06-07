@@ -102,7 +102,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
                 del loss
 
                 # Evaluate the model only when no gradients are accumulated
-                if options.evaluation_steps != 0 and (i+1) % options.evaluation_steps == 0:
+                if options.evaluation_steps != 0 and (i + 1) % options.evaluation_steps == 0:
                     evaluation_flag = False
                     print('Iteration %d' % i)
 
@@ -378,7 +378,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
                 optimizer.zero_grad()
 
                 # Evaluate the decoder only when no gradients are accumulated
-                if options.evaluation_steps != 0 and (i+1) % options.evaluation_steps == 0:
+                if options.evaluation_steps != 0 and (i + 1) % options.evaluation_steps == 0:
                     evaluation_flag = False
                     print('Iteration %d' % i)
                     loss_train = test_ae(decoder, train_loader, options.gpu, criterion)
