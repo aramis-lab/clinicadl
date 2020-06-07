@@ -4,7 +4,7 @@ import torch
 import pandas as pd
 import numpy as np
 from os import path
-from torch.utils.data import Dataset, sampler
+from torch.utils.data import Dataset
 from scipy.ndimage.filters import gaussian_filter
 
 

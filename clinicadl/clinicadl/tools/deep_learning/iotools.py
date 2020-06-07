@@ -28,7 +28,6 @@ class Parameters:
             diagnoses: str = ["AD", "CN"],
             baseline: bool = False,
             minmaxnormalization: bool = False,
-            sampler: str = "random",
             n_splits: int = 1,
             split: int = 0,
             accumulation_steps: int = 1,
@@ -65,7 +64,6 @@ class Parameters:
         diagnoses: Take all the subjects possible for autoencoder training.
         baseline: Use only the baseline if True.
         minmaxnormalization: Performs MinMaxNormalization.
-        sampler: Sampler choice.
         n_splits: If a value is given will load data of a k-fold CV
         split: User can specify a chosen split.
         accumulation_steps: Accumulates gradients in order to increase the size
@@ -107,7 +105,6 @@ class Parameters:
         self.diagnoses = diagnoses
         self.baseline = baseline
         self.minmaxnormalization = minmaxnormalization
-        self.sampler = sampler
         self.n_splits = n_splits
         self.split = split
         self.accumulation_steps = accumulation_steps
