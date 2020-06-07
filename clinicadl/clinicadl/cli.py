@@ -772,12 +772,15 @@ def parse_command_line():
             help='Chose between single or multi CNN.',
             choices=['single', 'multi'], type=str,
             default='single')
-
     train_patch_cnn_parser.add_argument(
             '--num_cnn',
             help='''How many CNNs are trained in a patch-wise way.
             This argument is used only if network_type is 'multi'.''',
             default=36, type=int)
+    train_patch_cnn_parser.add_argument(
+            '--transfer_learning_multicnn',
+            help='''Specify if the transfer learning is from multi-CNNs to multi-CNNs.''',
+            default=False, action="store_true")
 
     train_patch_cnn_parser.set_defaults(func=train_func)
 
@@ -802,11 +805,6 @@ def parse_command_line():
     #         '--transfer_learning_autoencoder',
     #         help='''If do transfer learning using an autoencoder else will look
     #              for a CNN model.''',
-    #         default=False, action="store_true")
-    # train_parser.add_argument(
-    #         '--transfer_learning_multicnn',
-    #         help='''If do transfer learning for multi-CNN initialize with
-    #              multiple CNN models.''',
     #         default=False, action="store_true")
     # train_parser.add_argument(
     #         '--selection',
