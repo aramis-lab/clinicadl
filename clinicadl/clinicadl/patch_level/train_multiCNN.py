@@ -85,7 +85,7 @@ def train_patch_multi_cnn(params):
                                 model_folder,
                                 filename='model_best.pth.tar')
                     else:
-                        print('Train the model with the weights from a pre-trained CNN.')
+                        print('Train the each multiple CNN with the weights from the same pre-trained CNN.')
                         model_folder = os.path.join(
                                 params.transfer_learning_path,
                                 'best_model_dir',
