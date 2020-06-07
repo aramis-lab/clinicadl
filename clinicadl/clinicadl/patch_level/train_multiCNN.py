@@ -79,7 +79,7 @@ def train_patch_multi_cnn(params):
                                 'best_model_dir',
                                 "fold_" + str(fi),
                                 'cnn-' + str(i),
-                                'best_acc')
+                                params.selection)
                         model, _ = load_model_after_cnn(
                                 model,
                                 model_folder,
@@ -91,7 +91,7 @@ def train_patch_multi_cnn(params):
                                 'best_model_dir',
                                 "fold_" + str(fi),
                                 'CNN',
-                                'best_acc')
+                                params.selection)
                         model, _ = load_model_after_cnn(
                                 model,
                                 model_folder,
