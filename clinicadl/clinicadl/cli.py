@@ -95,7 +95,6 @@ def train_func(args):
                     diagnoses=args.diagnoses,
                     baseline=args.baseline,
                     minmaxnormalization=args.minmaxnormalization,
-                    sampler='random',
                     n_splits=args.n_splits,
                     split=args.split,
                     accumulation_steps=args.accumulation_steps,
@@ -126,7 +125,6 @@ def train_func(args):
                     diagnoses=args.diagnoses,
                     baseline=args.baseline,
                     minmaxnormalization=args.minmaxnormalization,
-                    sampler=args.sampler,
                     n_splits=args.n_splits,
                     split=args.split,
                     accumulation_steps=args.accumulation_steps,
@@ -189,7 +187,6 @@ def train_func(args):
                     diagnoses=args.diagnoses,
                     baseline=args.baseline,
                     minmaxnormalization=args.minmaxnormalization,
-                    sampler='random',
                     n_splits=args.n_splits,
                     split=args.split,
                     accumulation_steps=args.accumulation_steps,
@@ -225,7 +222,6 @@ def train_func(args):
                     diagnoses=args.diagnoses,
                     baseline=args.baseline,
                     minmaxnormalization=args.minmaxnormalization,
-                    sampler='random',
                     n_splits=args.n_splits,
                     split=args.split,
                     accumulation_steps=args.accumulation_steps,
@@ -781,11 +777,6 @@ def parse_command_line():
 
     # # Optional parameters
     #
-    # # Training arguments
-    # train_parser.add_argument(
-    #         '--sampler', '-sm',
-    #         help='Sampler to be used.',
-    #         default='random', type=str)
     # train_parser.add_argument(
     #         '--add_sigmoid',
     #         help='Ad sigmoid function at the end of the decoder.',
