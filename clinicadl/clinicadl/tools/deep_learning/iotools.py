@@ -22,7 +22,6 @@ class Parameters:
 
     def write(
             self,
-            pretrained_path: str = "",
             pretrained_difference: str = "",
             preprocessing: str = "linear",
             diagnoses: str = ["AD", "CN"],
@@ -57,7 +56,6 @@ class Parameters:
             visualization: bool = False):
         """
         Optional parameters used for training CNN.
-        pretrained_path: Path to a pretrained model (can be of different size).
         pretrained_difference: Difference of size between the pretrained
                                autoencoder and the training.
         preprocessing: Type of preprocessing done. Choices: "linear" or "mni".
@@ -99,7 +97,6 @@ class Parameters:
                                      initialize corresponding models.
         """
 
-        self.pretrained_path = pretrained_path
         self.pretrained_difference = pretrained_difference
         self.preprocessing = preprocessing
         self.diagnoses = diagnoses
