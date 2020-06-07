@@ -7,7 +7,7 @@ from clinicadl.tools.deep_learning.iotools import Parameters
 
 def set_default_dropout(args):
     if args.dropout is None:
-        if args.mode == 'subject':
+        if args.mode == 'image':
             args.dropout = 0.5
         elif args.mode == 'slice':
             args.dropout = 0.8
@@ -150,7 +150,7 @@ def train_func(args):
                 args.network
                 )
         train_params_slice.write(
-                mri_plane=args.mri_plane,
+                mri_plane=args.slice_direction,
                 diagnoses=args.diagnoses,
                 baseline=args.baseline,
                 learning_rate=args.learning_rate,
@@ -483,12 +483,12 @@ def parse_command_line():
             choices=['slice', 'patch', 'whole'], default='whole'
             )
     extract_parser.add_argument(
-            '-psz', '--patch_size',
+            '-ps', '--patch_size',
             help='''Patch size (only for 'patch' extraction) e.g: --patch_size 50''',
             type=int, default=50
             )
     extract_parser.add_argument(
-            '-ssz', '--stride_size',
+            '-ss', '--stride_size',
             help='''Stride size (only for 'patch' extraction) e.g.: --stride_size 50''',
             type=int, default=50
             )
@@ -525,7 +525,7 @@ def parse_command_line():
     train_subparser = train_parser.add_subparsers(
         title='''Classifier to be trained''',
         description='''What classifier do you want to train?
-                (subject, slice, patch, svm).''',
+                (image, slice, patch, svm).''',
         dest='mode',
         help='''****** Tasks proposed by clinicadl ******''')
 
@@ -714,7 +714,7 @@ def parse_command_line():
 
     train_slice_group = train_slice_parser.add_argument_group("SLICE PARAMETERS")
     train_slice_group.add_argument(
-            '--mri_plane',
+            '--slice_direction', '-sd-',
             help='''Which coordinate axis to take for slicing the MRI.
                  0 for sagittal
                  1 for coronal
@@ -743,12 +743,12 @@ def parse_command_line():
             action="store_true",
             default=False)
     train_patch_group.add_argument(
-            '-psz', '--patch_size',
-            help='Patch size e.g: --patch_size 50',
+            '-ps', '--patch_size',
+            help='Patch size',
             type=int, default=50)
     train_patch_group.add_argument(
-            '-pst', '--patch_stride',
-            help='Patch stride e.g: --patch_stride 50',
+            '-ss', '--stride_size',
+            help='Stride size',
             type=int, default=50)
     train_patch_group.add_argument(
             '--prepare_dl',
@@ -758,7 +758,7 @@ def parse_command_line():
     train_patch_group.add_argument(
             '--selection_threshold',
             help='''Threshold on the balanced accuracies to compute the
-                 subject_level performance.only based on patches with balanced
+                 subject-level performance.only based on patches with balanced
                  accuracy > threshold.''',
             type=float, default=0.0)
 
