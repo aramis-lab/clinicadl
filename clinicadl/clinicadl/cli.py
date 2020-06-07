@@ -80,7 +80,7 @@ def train_func(args):
 
     set_default_dropout(args)
 
-    if args.mode == 'subject':
+    if args.mode == 'image':
         if args.mode_task == "autoencoder":
             train_params_autoencoder = Parameters(
                     args.tsv_path,
@@ -185,7 +185,6 @@ def train_func(args):
                     preprocessing=args.preprocessing,
                     diagnoses=args.diagnoses,
                     baseline=args.baseline,
-                    minmaxnormalization=args.minmaxnormalization,
                     n_splits=args.n_splits,
                     split=args.split,
                     accumulation_steps=args.accumulation_steps,
@@ -220,7 +219,6 @@ def train_func(args):
                     preprocessing=args.preprocessing,
                     diagnoses=args.diagnoses,
                     baseline=args.baseline,
-                    minmaxnormalization=args.minmaxnormalization,
                     n_splits=args.n_splits,
                     split=args.split,
                     accumulation_steps=args.accumulation_steps,
@@ -585,11 +583,6 @@ def parse_command_line():
             help='if True only the baseline is used.',
             action="store_true",
             default=False)
-    train_data_group.add_argument(
-            '--minmaxnormalization', '-n',
-            help='Performs MinMaxNormalization.',
-            action="store_true",
-            default=False)
 
     # Cross-validation
     train_cv_group = train_parent_parser.add_argument_group("CROSS-VALIDATION")
@@ -653,6 +646,11 @@ def parse_command_line():
             help='Defines the type of preprocessing of CAPS data.',
             choices=['linear', 'mni'], type=str,
             default='linear')
+    train_imagedata_group.add_argument(
+            '--minmaxnormalization', '-n',
+            help='Performs MinMaxNormalization.',
+            action="store_true",
+            default=False)
 
     train_image_subparser = train_image_parser.add_subparsers(
         title='''Task to be performed''',
