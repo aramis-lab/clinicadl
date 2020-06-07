@@ -677,6 +677,10 @@ def parse_command_line():
         "cnn",
         parents=[train_parent_parser, train_image_parent],
         help="Train a 3D-patch level CNN.")
+    train_image_cnn_parser.add_argument(
+            '--selection',
+            help="If transfer_learning from CNN, chooses which best transfer model is selected.",
+            type=str, default="best_acc", choices=["best_loss", "best_acc"])
 
     train_image_cnn_parser.set_defaults(func=train_func)
 
@@ -781,6 +785,10 @@ def parse_command_line():
             '--transfer_learning_multicnn',
             help='''Specify if the transfer learning is from multi-CNNs to multi-CNNs.''',
             default=False, action="store_true")
+    train_patch_cnn_parser.add_argument(
+            '--selection',
+            help="If transfer_learning from CNN, chooses which best transfer model is selected.",
+            type=str, default="best_acc", choices=["best_loss", "best_acc"])
 
     train_patch_cnn_parser.set_defaults(func=train_func)
 
@@ -806,11 +814,6 @@ def parse_command_line():
     #         help='''If do transfer learning using an autoencoder else will look
     #              for a CNN model.''',
     #         default=False, action="store_true")
-    # train_parser.add_argument(
-    #         '--selection',
-    #         help="Allow to choose which model of the experiment is loaded.",
-    #         type=str, default="best_acc", choices=["best_loss", "best_acc"])
-    # train_parser.set_defaults(func=train_func)
 
     # Classify - Classify a subject or a list of tesv files with the CNN
     # provieded as argument.
