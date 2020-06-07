@@ -1,6 +1,5 @@
 # coding: utf8
 
-import argparse
 import copy
 import torch
 import os
@@ -10,8 +9,7 @@ import torchvision.transforms as transforms
 
 from .utils import stacked_ae_learning, visualize_ae
 
-from ..tools.deep_learning.iotools import Parameters
-from ..tools.deep_learning import commandline_to_json, create_model
+from ..tools.deep_learning import create_model
 from ..tools.deep_learning.data import (load_data,
                                         MinMaxNormalization,
                                         MRIDataset_patch,
@@ -75,16 +73,14 @@ def train_autoencoder_patch(params):
                 batch_size=params.batch_size,
                 shuffle=True,
                 num_workers=params.num_workers,
-                pin_memory=True
-                                  )
+                pin_memory=True)
 
         valid_loader = DataLoader(
                 data_valid,
                 batch_size=params.batch_size,
                 shuffle=False,
                 num_workers=params.num_workers,
-                pin_memory=True
-                                  )
+                pin_memory=True)
 
         model.load_state_dict(init_state)
 
