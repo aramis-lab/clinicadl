@@ -1,7 +1,6 @@
 # coding: utf8
 
 from __future__ import print_function
-import argparse
 from os import path
 from time import time
 import sys
@@ -10,9 +9,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from .utils import ae_finetuning
-from ..tools.deep_learning.iotools import Parameters
 from ..tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data
-from ..tools.deep_learning import create_autoencoder, commandline_to_json
+from ..tools.deep_learning import create_autoencoder
 
 
 def train_autoencoder(params):
@@ -44,20 +42,17 @@ def train_autoencoder(params):
 
     # Use argument load to distinguish training and testing
     train_loader = DataLoader(data_train,
-                              params.batch_size,
+                              batch_size=params.batch_size,
                               shuffle=True,
                               num_workers=params.num_workers,
-                              drop_last=True
-                              )
-
-    valid_loader = DataLoader(data_valid,
+                              pin_memory=True
                               )
 
     valid_loader = DataLoader(data_valid,
                               batch_size=params.batch_size,
                               shuffle=False,
                               num_workers=params.num_workers,
-                              drop_last=False
+                              pin_memory=True
                               )
 
     text_file = open(path.join(params.output_dir, 'python_version.txt'), 'w')
@@ -67,7 +62,9 @@ def train_autoencoder(params):
 
     decoder = create_autoencoder(params.model, params.pretrained_path,
                                  difference=params.pretrained_difference)
-    optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()), params.learning_rate, weight_decay=params.weight_decay)
+    optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
+                                                        lr=params.learning_rate,
+                                                        weight_decay=params.weight_decay)
 
     if params.add_sigmoid:
         if isinstance(decoder.decoder[-1], nn.ReLU):
@@ -78,14 +75,3 @@ def train_autoencoder(params):
 
     total_time = time() - total_time
     print('Total time', total_time)
-
-
-# if __name__ == "__main__":
-#    commandline = parser.parse_known_args()
-#    commandline_to_json(commandline, 'ConvAutoencoder')
-#    options = commandline[0]
-#    if commandline[1]:
-#        print("unknown arguments: %s" % parser.parse_known_args()[1])
-#    train_params_autoencoder = Parameters(tsv_path, output_dir, input_dir, model)
-#    train_params_autoencoder.write(options)
-#    train_autoencoder(train_parameters_autoencoder)
