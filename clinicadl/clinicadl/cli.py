@@ -573,7 +573,6 @@ def parse_command_line():
     ######################
     train_image_parser = train_subparser.add_parser(
         "image",
-        parents=[train_parent_parser],
         help="Train a 3D-image level CNN.")
 
     train_image_parent = argparse.ArgumentParser(add_help=False)
