@@ -89,7 +89,7 @@ def train_func(args):
                     args.network
                     )
             train_params_autoencoder.write(
-                    args.pretrained_difference,
+                    transfer_learning_difference=args.transfer_learning_difference,
                     preprocessing=args.preprocessing,
                     diagnoses=args.diagnoses,
                     baseline=args.baseline,
@@ -118,7 +118,6 @@ def train_func(args):
                     args.network
                     )
             train_params_cnn.write(
-                    args.pretrained_difference,
                     preprocessing=args.preprocessing,
                     diagnoses=args.diagnoses,
                     baseline=args.baseline,
@@ -178,7 +177,6 @@ def train_func(args):
                     args.network
                     )
             train_params_autoencoder.write(
-                    args.pretrained_difference,
                     preprocessing=args.preprocessing,
                     diagnoses=args.diagnoses,
                     baseline=args.baseline,
@@ -211,7 +209,6 @@ def train_func(args):
                     args.network
                     )
             train_params_patch.write(
-                    args.pretrained_difference,
                     preprocessing=args.preprocessing,
                     diagnoses=args.diagnoses,
                     baseline=args.baseline,
@@ -662,6 +659,12 @@ def parse_command_line():
         '--add_sigmoid',
         help='Add sigmoid function at the end of the decoder.',
         default=False, action="store_true")
+    train_image_ae_parser.add_argument(
+        '--transfer_learning_difference',
+        help='''Difference of size between the pretrained autoencoder and
+        the training one. If the new one is larger, difference will be
+        positive.''',
+        type=int, default=0)
 
     train_image_ae_parser.set_defaults(func=train_func)
 
@@ -797,12 +800,6 @@ def parse_command_line():
     # # Optional parameters
     #
     # # Transfer learning from other autoencoder/network
-    # train_parser.add_argument(
-    #         '--pretrained_difference',
-    #         help='''Difference of size between the pretrained autoencoder and
-    #              the training one. If the new one is larger, difference will be
-    #              positive.''',
-    #         type=int, default=0)
     # train_parser.add_argument(
     #         '--transfer_learning_path',
     #         help="If an existing path is given, a pretrained autoencoder is used.",
