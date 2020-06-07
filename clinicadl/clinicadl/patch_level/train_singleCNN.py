@@ -77,7 +77,7 @@ def train_patch_single_cnn(params):
                             'best_model_dir',
                             "fold_" + str(fi),
                             'CNN',
-                            'best_acc'),
+                            params.selection),
                         filename='model_best.pth.tar')
         else:
             print('The model is trained from scratch.')
