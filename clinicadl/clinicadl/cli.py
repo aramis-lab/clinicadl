@@ -132,7 +132,6 @@ def train_func(args):
                     learning_rate=args.learning_rate,
                     patience=args.patience,
                     tolerance=args.tolerance,
-                    add_sigmoid=args.add_sigmoid,
                     optimizer='Adam',
                     weight_decay=args.weight_decay,
                     dropout=args.dropout,
@@ -229,7 +228,6 @@ def train_func(args):
                     learning_rate=args.learning_rate,
                     patience=args.patience,
                     tolerance=args.tolerance,
-                    add_sigmoid=args.add_sigmoid,
                     optimizer='Adam',
                     weight_decay=args.weight_decay,
                     dropout=args.dropout,
@@ -668,6 +666,10 @@ def parse_command_line():
         "autoencoder",
         parents=[train_parent_parser, train_image_parent],
         help="Train a 3D-patch level autoencoder.")
+    train_image_ae_parser.add_argument(
+        '--add_sigmoid',
+        help='Add sigmoid function at the end of the decoder.',
+        default=False, action="store_true")
 
     train_image_ae_parser.set_defaults(func=train_func)
 
@@ -749,10 +751,14 @@ def parse_command_line():
         help="Train a 3D-patch level autoencoder.")
 
     train_patch_ae_parser.add_argument(
-            '--visualization',
-            help='Save results in visualization folder.',
-            action="store_true",
-            default=False)
+        '--add_sigmoid',
+        help='Add sigmoid function at the end of the decoder.',
+        default=False, action="store_true")
+    train_patch_ae_parser.add_argument(
+        '--visualization',
+        help='Save results in visualization folder.',
+        action="store_true",
+        default=False)
 
     train_patch_ae_parser.set_defaults(func=train_func)
 
@@ -776,11 +782,6 @@ def parse_command_line():
     train_patch_cnn_parser.set_defaults(func=train_func)
 
     # # Optional parameters
-    #
-    # train_parser.add_argument(
-    #         '--add_sigmoid',
-    #         help='Ad sigmoid function at the end of the decoder.',
-    #         default=False, action="store_true")
     #
     # # Transfer learning from other autoencoder/network
     # train_parser.add_argument(
