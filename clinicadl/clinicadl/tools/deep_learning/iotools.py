@@ -22,7 +22,7 @@ class Parameters:
 
     def write(
             self,
-            pretrained_difference: str = "",
+            transfer_learning_difference: int = 0,
             preprocessing: str = "linear",
             diagnoses: str = ["AD", "CN"],
             baseline: bool = False,
@@ -56,7 +56,7 @@ class Parameters:
             visualization: bool = False):
         """
         Optional parameters used for training CNN.
-        pretrained_difference: Difference of size between the pretrained
+        transfer_learning_difference: Difference of size between the pretrained
                                autoencoder and the training.
         preprocessing: Type of preprocessing done. Choices: "linear" or "mni".
         diagnoses: Take all the subjects possible for autoencoder training.
@@ -97,7 +97,7 @@ class Parameters:
                                      initialize corresponding models.
         """
 
-        self.pretrained_difference = pretrained_difference
+        self.transfer_learning_difference = transfer_learning_difference
         self.preprocessing = preprocessing
         self.diagnoses = diagnoses
         self.baseline = baseline
