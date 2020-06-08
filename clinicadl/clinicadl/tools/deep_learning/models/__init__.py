@@ -39,11 +39,14 @@ def create_autoencoder(model_name, gpu=False, transfer_learning_path=None, diffe
     :return: (Module) the model object
     """
     from .autoencoder import AutoEncoder, initialize_other_autoencoder
+    from os import path
 
     model = create_model(model_name, gpu)
     decoder = AutoEncoder(model)
 
     if transfer_learning_path is not None:
+        if path.splitext(transfer_learning_path) != ".pth.tar":
+            raise ValueError("The full path to the model must be given (filename included).")
         decoder = initialize_other_autoencoder(decoder, transfer_learning_path, difference)
 
     return decoder
