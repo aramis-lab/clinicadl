@@ -520,7 +520,7 @@ def parse_command_line():
     train_subparser = train_parser.add_subparsers(
         title='''Classifier to be trained''',
         description='''What classifier do you want to train?
-                (image, slice, patch, svm).''',
+                (image, slice, patch).''',
         dest='mode',
         help='''****** Tasks proposed by clinicadl ******''')
 
@@ -728,7 +728,7 @@ def parse_command_line():
     #########################
     train_patch_parser = train_subparser.add_parser(
         "patch",
-        help="Train a 3D-patch level network.")
+        help="Train a 3D-patch level CNN.")
 
     train_patch_parent = argparse.ArgumentParser(add_help=False)
     train_patch_group = train_patch_parent.add_argument_group("PATCH ARGUMENTS")
@@ -802,12 +802,12 @@ def parse_command_line():
     #########################
     # SVM
     #########################
-    train_svm_parser = train_subparser.add_parser(
-        "svm",
-        parents=[train_parent_parser],
-        help="Train a SVM.")
-
-    train_svm_parser.set_defaults(func=train_func)
+    # train_svm_parser = train_subparser.add_parser(
+    #     "svm",
+    #     parents=[train_parent_parser],
+    #     help="Train a SVM.")
+    #
+    # train_svm_parser.set_defaults(func=train_func)
 
     # Classify - Classify a subject or a list of tsv files with the CNN
     # provided as argument.
