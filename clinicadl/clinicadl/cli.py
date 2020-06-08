@@ -708,7 +708,7 @@ def parse_command_line():
 
     train_slice_group = train_slice_parser.add_argument_group("SLICE PARAMETERS")
     train_slice_group.add_argument(
-        '--slice_direction', '-sd-',
+        '--slice_direction', '-sd',
         help='''Which coordinate axis to take for slicing the MRI.
              0 for sagittal
              1 for coronal
