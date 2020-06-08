@@ -79,6 +79,7 @@ def train_func(args):
     from .patch_level.train_multiCNN import train_patch_multi_cnn
 
     set_default_dropout(args)
+    print("Enter train_func")
 
     if args.mode == 'image':
         if args.mode_task == "autoencoder":
@@ -564,8 +565,8 @@ def parse_command_line():
     train_data_group = train_parent_parser.add_argument_group("DATA MANAGEMENT")
     train_data_group.add_argument(
             '--diagnoses', '-d',
-            help='Take all the subjects possible for autoencoder training.',
-            default=['AD', 'CN'], nargs='+', type=str)
+            help='Diagnoses that will be selected for training.',
+            default=['AD', 'CN'], nargs='+', type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'])
     train_data_group.add_argument(
             '--baseline',
             help='if True only the baseline is used.',
@@ -749,12 +750,6 @@ def parse_command_line():
         help='''If True the outputs of extract preprocessing are used, else the whole
              MRI is loaded.''',
         default=False, action="store_true")
-    train_patch_group.add_argument(
-        '--selection_threshold',
-        help='''Threshold on the balanced accuracies to compute the
-             subject-level performance.only based on patches with balanced
-             accuracy > threshold.''',
-        type=float, default=0.0)
 
     train_patch_subparser = train_patch_parser.add_subparsers(
         title='''Task to be performed''',
@@ -795,6 +790,12 @@ def parse_command_line():
         help='''How many CNNs are trained in a patch-wise way.
         This argument is used only if network_type is 'multi'.''',
         default=36, type=int)
+    train_patch_cnn_group.add_argument(
+        '--selection_threshold',
+        help='''Threshold on the balanced accuracies to compute the
+             subject-level performance. Patches are selected if their balanced
+             accuracy > threshold. Default corresponds to no selection.''',
+        type=float, default=0.0)
 
     train_patch_cnn_parser.set_defaults(func=train_func)
 
