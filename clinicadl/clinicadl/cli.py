@@ -119,7 +119,7 @@ def train_func(args):
                 preprocessing=args.preprocessing,
                 diagnoses=args.diagnoses,
                 baseline=args.baseline,
-                minmaxnormalization=args.minmaxnormalization,
+                minmaxnormalization=not args.unnormalize,
                 n_splits=args.n_splits,
                 split=args.split,
                 accumulation_steps=args.accumulation_steps,
@@ -148,7 +148,7 @@ def train_func(args):
                     preprocessing=args.preprocessing,
                     diagnoses=args.diagnoses,
                     baseline=args.baseline,
-                    minmaxnormalization=args.minmaxnormalization,
+                    minmaxnormalization=not args.unnormalize,
                     n_splits=args.n_splits,
                     split=args.split,
                     accumulation_steps=args.accumulation_steps,
@@ -758,8 +758,8 @@ def parse_command_line():
         choices=['linear', 'mni'], type=str,
         default='linear')
     train_imagedata_group.add_argument(
-        '--minmaxnormalization', '-n',
-        help='Performs MinMaxNormalization.',
+        '--unnormalize', '-un',
+        help='Disable default MinMaxNormalization.',
         action="store_true",
         default=False)
 
