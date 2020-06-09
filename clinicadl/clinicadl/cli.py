@@ -3,6 +3,28 @@
 import argparse
 
 from clinicadl.tools.deep_learning.iotools import Parameters
+from colorama import Fore
+
+
+TRAIN_CATEGORIES = {
+    # General parent group
+    'POSITIONAL': '%sPositional arguments%s' % (Fore.BLUE, Fore.RESET),
+    'COMPUTATIONAL': '%sComputational issues%s' % (Fore.BLUE, Fore.RESET),
+    'DATA': '%sData management%s' % (Fore.BLUE, Fore.RESET),
+    'CROSS-VALIDATION': '%sCross-validation arguments%s' % (Fore.BLUE, Fore.RESET),
+    'OPTIMIZATION': '%sOptimization parameters%s' % (Fore.BLUE, Fore.RESET),
+    # Other parent groups
+    'TRANSFER LEARNING': '%sTransfer learning%s' % (Fore.BLUE, Fore.RESET),
+    'AUTOENCODER': '%sAutoencoder specific%s' % (Fore.BLUE, Fore.RESET),
+    # Image-level
+    'IMAGE OPTIMIZATION': '%sImage-level optimization parameters%s' % (Fore.BLUE, Fore.RESET),
+    'IMAGE DATA MANAGEMENT': '%sImage-level data management%s' % (Fore.BLUE, Fore.RESET),
+    # Slice-level
+    'SLICE': '%sSlice-level parameters%s' % (Fore.BLUE, Fore.RESET),
+    # Patch arguments
+    'PATCH': '%sPatch-level parameters%s' % (Fore.BLUE, Fore.RESET),
+    'PATCH CNN':  '%sPatch-level CNN parameters%s' % (Fore.BLUE, Fore.RESET),
+    }
 
 
 def set_default_dropout(args):
@@ -528,7 +550,7 @@ def parse_command_line():
 
     # Positional arguments
     train_parent_parser = argparse.ArgumentParser(add_help=False)
-    train_pos_group = train_parent_parser.add_argument_group("POSITIONAL ARGUMENTS")
+    train_pos_group = train_parent_parser.add_argument_group(TRAIN_CATEGORIES["POSITIONAL"])
     train_pos_group.add_argument(
         'caps_dir',
         help='Data using CAPS structure.',
@@ -547,7 +569,7 @@ def parse_command_line():
         default='Conv5_FC3')
 
     # Computational issues
-    train_comput_group = train_parent_parser.add_argument_group("COMPUTATIONAL ISSUES")
+    train_comput_group = train_parent_parser.add_argument_group(TRAIN_CATEGORIES["COMPUTATIONAL"])
     train_comput_group.add_argument(
             '-gpu', '--use_gpu', action='store_true',
             help='Uses GPU instead of CPU if CUDA is available',
@@ -562,7 +584,7 @@ def parse_command_line():
             help='Batch size for training. (default=2)')
 
     # Data management
-    train_data_group = train_parent_parser.add_argument_group("DATA MANAGEMENT")
+    train_data_group = train_parent_parser.add_argument_group(TRAIN_CATEGORIES["DATA"])
     train_data_group.add_argument(
             '--diagnoses', '-d',
             help='Diagnoses that will be selected for training.',
@@ -574,7 +596,7 @@ def parse_command_line():
             default=False)
 
     # Cross-validation
-    train_cv_group = train_parent_parser.add_argument_group("CROSS-VALIDATION")
+    train_cv_group = train_parent_parser.add_argument_group(TRAIN_CATEGORIES["CROSS-VALIDATION"])
     train_cv_group.add_argument(
             '--n_splits',
             help='If a value is given will load data of a k-fold CV.',
@@ -585,7 +607,7 @@ def parse_command_line():
             type=int, default=0)
 
     # Optimization parameters
-    train_optim_group = train_parent_parser.add_argument_group("OPTIMIZATION PARAMETERS")
+    train_optim_group = train_parent_parser.add_argument_group(TRAIN_CATEGORIES["OPTIMIZATION"])
     train_optim_group.add_argument(
             '--epochs',
             help='Epochs through the data. (default=20)',
@@ -613,7 +635,7 @@ def parse_command_line():
 
     # Transfer learning
     transfer_learning_parent = argparse.ArgumentParser(add_help=False)
-    transfer_learning_group = transfer_learning_parent.add_argument_group("TRANSFER LEARNING")
+    transfer_learning_group = transfer_learning_parent.add_argument_group(TRAIN_CATEGORIES["TRANSFER LEARNING"])
     transfer_learning_group.add_argument(
             '--transfer_learning_path',
             help="If an existing path is given, a pretrained model is used.",
@@ -626,7 +648,7 @@ def parse_command_line():
 
     # Autoencoder
     autoencoder_parent = argparse.ArgumentParser(add_help=False)
-    autoencoder_group = autoencoder_parent.add_argument_group("AUTOENCODEUR SPECIFIC")
+    autoencoder_group = autoencoder_parent.add_argument_group(TRAIN_CATEGORIES["AUTOENCODER"])
     autoencoder_group.add_argument(
         '--add_sigmoid',
         help='Add sigmoid function at the end of the decoder.',
@@ -645,7 +667,7 @@ def parse_command_line():
         help="Train a 3D-image level CNN.")
 
     train_image_parent = argparse.ArgumentParser(add_help=False)
-    train_imageoptim_group = train_image_parent.add_argument_group("IMAGE-LEVEL OPTIMIZATION")
+    train_imageoptim_group = train_image_parent.add_argument_group(TRAIN_CATEGORIES["IMAGE OPTIMIZATION"])
     train_imageoptim_group.add_argument(
         '--evaluation_steps', '-esteps',
         default=0, type=int,
@@ -655,7 +677,7 @@ def parse_command_line():
         help='Accumulates gradients in order to increase the size of the batch.',
         default=1, type=int)
 
-    train_imagedata_group = train_image_parent.add_argument_group("IMAGE-LEVEL DATA MANAGEMENT")
+    train_imagedata_group = train_image_parent.add_argument_group(TRAIN_CATEGORIES["IMAGE DATA MANAGEMENT"])
     train_imagedata_group.add_argument(
         '--preprocessing',
         help='Defines the type of preprocessing of CAPS data.',
@@ -707,7 +729,7 @@ def parse_command_line():
         parents=[train_parent_parser],
         help="Train a 2D-slice level CNN.")
 
-    train_slice_group = train_slice_parser.add_argument_group("SLICE PARAMETERS")
+    train_slice_group = train_slice_parser.add_argument_group(TRAIN_CATEGORIES["SLICE"])
     train_slice_group.add_argument(
         '--slice_direction', '-sd',
         help='''Which coordinate axis to take for slicing the MRI.
@@ -731,7 +753,7 @@ def parse_command_line():
         help="Train a 3D-patch level CNN.")
 
     train_patch_parent = argparse.ArgumentParser(add_help=False)
-    train_patch_group = train_patch_parent.add_argument_group("PATCH ARGUMENTS")
+    train_patch_group = train_patch_parent.add_argument_group(TRAIN_CATEGORIES["PATCH"])
     train_patch_group.add_argument(
         '-hroi', '--hippocampus_roi',
         help='If true, use the hippocampus region.',
@@ -779,7 +801,7 @@ def parse_command_line():
         help='''Specify if the transfer learning is from multi-CNNs to multi-CNNs.''',
         default=False, action="store_true")
 
-    train_patch_cnn_group = train_patch_cnn_parser.add_argument_group("PATCH CNN ARGUMENTS")
+    train_patch_cnn_group = train_patch_cnn_parser.add_argument_group(TRAIN_CATEGORIES["PATCH CNN"])
     train_patch_cnn_group.add_argument(
         '--network_type',
         help='Chose between single or multi CNN.',
