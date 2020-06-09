@@ -9,3 +9,4 @@ nilearn
 nipy
 tensorboardX
 pandas
+colorama
