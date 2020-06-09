@@ -24,6 +24,9 @@ TRAIN_CATEGORIES = {
     # Patch arguments
     'PATCH': '%sPatch-level parameters%s' % (Fore.BLUE, Fore.RESET),
     'PATCH CNN':  '%sPatch-level CNN parameters%s' % (Fore.BLUE, Fore.RESET),
+    # ROI-based argiments
+    'ROI': '%sROI-based parameters%s' % (Fore.BLUE, Fore.RESET),
+    'ROI CNN':  '%sROI-based CNN parameters%s' % (Fore.BLUE, Fore.RESET),
     }
 
 
@@ -220,7 +223,7 @@ def train_func(args):
                     num_workers=args.nproc,
                     patch_size=args.patch_size,
                     patch_stride=args.patch_stride,
-                    hippocampus_roi=args.hippocampus_roi,
+                    hippocampus_roi=False,
                     visualization=args.visualization,
                     prepare_dl=args.prepare_dl
                     )
@@ -256,7 +259,7 @@ def train_func(args):
                     selection=args.selection,
                     patch_size=args.patch_size,
                     patch_stride=args.patch_stride,
-                    hippocampus_roi=args.hippocampus_roi,
+                    hippocampus_roi=False,
                     selection_threshold=args.selection_threshold,
                     num_cnn=args.num_cnn,
                     prepare_dl=args.prepare_dl
@@ -265,6 +268,77 @@ def train_func(args):
                 train_patch_single_cnn(train_params_patch)
             else:
                 train_patch_multi_cnn(train_params_patch)
+    elif args.mode == 'roi':
+        if args.mode_task == "autoencoder":
+            train_params_autoencoder = Parameters(
+                    args.tsv_path,
+                    args.output_dir,
+                    args.caps_dir,
+                    args.network
+                    )
+            train_params_autoencoder.write(
+                    preprocessing=args.preprocessing,
+                    diagnoses=args.diagnoses,
+                    baseline=args.baseline,
+                    n_splits=args.n_splits,
+                    split=args.split,
+                    accumulation_steps=args.accumulation_steps,
+                    epochs=args.epochs,
+                    learning_rate=args.learning_rate,
+                    patience=args.patience,
+                    tolerance=args.tolerance,
+                    add_sigmoid=args.add_sigmoid,
+                    optimizer='Adam',
+                    weight_decay=args.weight_decay,
+                    gpu=args.use_gpu,
+                    batch_size=args.batch_size,
+                    evaluation_steps=args.evaluation_steps,
+                    num_workers=args.nproc,
+                    patch_size=args.patch_size,
+                    patch_stride=args.patch_stride,
+                    hippocampus_roi=True,
+                    visualization=args.visualization,
+                    prepare_dl=args.prepare_dl
+                    )
+            train_autoencoder_patch(train_params_autoencoder)
+        else:
+            train_params_patch = Parameters(
+                    args.tsv_path,
+                    args.output_dir,
+                    args.caps_dir,
+                    args.network
+                    )
+            train_params_patch.write(
+                    preprocessing=args.preprocessing,
+                    diagnoses=args.diagnoses,
+                    baseline=args.baseline,
+                    n_splits=args.n_splits,
+                    split=args.split,
+                    accumulation_steps=args.accumulation_steps,
+                    epochs=args.epochs,
+                    learning_rate=args.learning_rate,
+                    patience=args.patience,
+                    tolerance=args.tolerance,
+                    optimizer='Adam',
+                    weight_decay=args.weight_decay,
+                    dropout=args.dropout,
+                    gpu=args.use_gpu,
+                    batch_size=args.batch_size,
+                    evaluation_steps=args.evaluation_steps,
+                    num_workers=args.nproc,
+                    transfer_learning_path=args.transfer_learning_path,
+                    transfer_learning_autoencoder=args.transfer_learning_autoencoder,
+                    transfer_learning_multicnn=args.transfer_learning_multicnn,
+                    selection=args.selection,
+                    patch_size=args.patch_size,
+                    patch_stride=args.patch_stride,
+                    hippocampus_roi=True,
+                    selection_threshold=args.selection_threshold,
+                    num_cnn=args.num_cnn,
+                    prepare_dl=args.prepare_dl
+                    )
+            train_patch_single_cnn(train_params_patch)
+
     elif args.mode == 'svm':
         raise NotImplementedError("The SVM commandline was not implement yet.")
     else:
@@ -664,7 +738,7 @@ def parse_command_line():
     ######################
     train_image_parser = train_subparser.add_parser(
         "image",
-        help="Train a 3D-image level CNN.")
+        help="Train a 3D-image level network.")
 
     train_image_parent = argparse.ArgumentParser(add_help=False)
     train_imageoptim_group = train_image_parent.add_argument_group(TRAIN_CATEGORIES["IMAGE OPTIMIZATION"])
@@ -750,15 +824,10 @@ def parse_command_line():
     #########################
     train_patch_parser = train_subparser.add_parser(
         "patch",
-        help="Train a 3D-patch level CNN.")
+        help="Train a 3D-patch level network.")
 
     train_patch_parent = argparse.ArgumentParser(add_help=False)
     train_patch_group = train_patch_parent.add_argument_group(TRAIN_CATEGORIES["PATCH"])
-    train_patch_group.add_argument(
-        '-hroi', '--hippocampus_roi',
-        help='If true, use the hippocampus region.',
-        action="store_true",
-        default=False)
     train_patch_group.add_argument(
         '-ps', '--patch_size',
         help='Patch size',
@@ -820,6 +889,55 @@ def parse_command_line():
         type=float, default=0.0)
 
     train_patch_cnn_parser.set_defaults(func=train_func)
+
+    #########################
+    # ROI
+    #########################
+    train_roi_parser = train_subparser.add_parser(
+        "roi",
+        help="Train a ROI-based level network.")
+
+    train_roi_parent = argparse.ArgumentParser(add_help=False)
+    train_roi_group = train_roi_parent.add_argument_group(TRAIN_CATEGORIES["ROI"])
+    train_roi_group.add_argument(
+        '--prepare_dl',
+        help='''If True the outputs of extract preprocessing are used, else the whole
+             MRI is loaded.''',
+        default=False, action="store_true")
+
+    train_roi_subparser = train_roi_parser.add_subparsers(
+        title='''Task to be performed''',
+        description='''Autoencoder or cnn?''',
+        dest='mode_task',
+        help='''****** Choose between autoencoder or CNN training ******''')
+    train_roi_subparser.required = True
+
+    train_roi_ae_parser = train_roi_subparser.add_parser(
+        "autoencoder",
+        parents=[train_parent_parser, train_roi_parent, autoencoder_parent],
+        help="Train a 3D-patch level autoencoder.")
+
+    train_roi_ae_parser.set_defaults(func=train_func)
+
+    train_roi_cnn_parser = train_roi_subparser.add_parser(
+        "cnn",
+        parents=[train_parent_parser, train_roi_parent, transfer_learning_parent],
+        help="Train a 3D-patch level CNN.")
+    # /!\ If parents list is changed the arguments won't be in the right group anymore !
+    train_roi_cnn_parser._action_groups[-1].add_argument(
+        '--selection',
+        help="If transfer_learning from CNN, chooses which best transfer model is selected.",
+        type=str, default="best_acc", choices=["best_loss", "best_acc"])
+
+    train_roi_cnn_group = train_roi_cnn_parser.add_argument_group(TRAIN_CATEGORIES["ROI CNN"])
+    train_roi_cnn_group.add_argument(
+        '--selection_threshold',
+        help='''Threshold on the balanced accuracies to compute the
+             subject-level performance. ROIs are selected if their balanced
+             accuracy > threshold. Default corresponds to no selection.''',
+        type=float, default=0.0)
+
+    train_roi_cnn_group.set_defaults(func=train_func)
 
     #########################
     # SVM
