@@ -57,7 +57,7 @@ def generate_cli_commands(request):
             '/dir/tsv_path/',
             '/dir/output/',
             '--n_subjects', '10',
-            '--preprocessing', '0',
+            '--preprocessing', 't1-linear',
             '--mean', '0.5',
             '--sigma', '0.5']
         keys_output = [
@@ -104,7 +104,7 @@ def generate_cli_commands(request):
     if request.param == 'train_subject':
         test_input = [
             'train',
-            'subject',
+            'image',
             'cnn',
             '/dir/caps',
             '/dir/tsv_path/',
