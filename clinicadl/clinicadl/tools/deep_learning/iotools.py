@@ -239,6 +239,8 @@ def read_json(options, task_type, json_path=None, test=False):
 
     if options.mode == "subject":
         options.mode = "image"
+    if options.mode == "slice" and not hasattr(options, "mode_task"):
+        options.mode_task = "cnn"
 
     if not hasattr(options, "mode_task"):
         if hasattr(options, "train_autoencoder"):

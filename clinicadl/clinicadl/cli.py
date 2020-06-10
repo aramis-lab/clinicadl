@@ -43,11 +43,11 @@ def set_default_dropout(args):
 def preprocessing_t1w_func(args):
     from .preprocessing.T1_linear import preprocessing_t1w
     wf = preprocessing_t1w(
-            args.bids_dir,
-            args.caps_dir,
-            args.tsv_file,
-            args.working_dir
-            )
+        args.bids_dir,
+        args.caps_dir,
+        args.tsv_file,
+        args.working_dir
+    )
     wf.run(plugin='MultiProc', plugin_args={'n_procs': args.nproc})
 
 
@@ -55,15 +55,15 @@ def extract_data_func(args):
     from .preprocessing.T1_preparedl import extract_dl_t1w
 
     wf = extract_dl_t1w(
-            args.caps_dir,
-            args.tsv_file,
-            args.working_dir,
-            args.extract_method,
-            args.patch_size,
-            args.stride_size,
-            args.slice_direction,
-            args.slice_mode
-            )
+        args.caps_dir,
+        args.tsv_file,
+        args.working_dir,
+        args.extract_method,
+        args.patch_size,
+        args.stride_size,
+        args.slice_direction,
+        args.slice_mode
+    )
     wf.run(plugin='MultiProc', plugin_args={'n_procs': args.nproc})
 
 
@@ -104,7 +104,6 @@ def train_func(args):
     from .patch_level.train_multiCNN import train_patch_multi_cnn
 
     set_default_dropout(args)
-    print("Enter train_func")
 
     if args.mode == 'image':
         if args.mode_task == "autoencoder":
@@ -139,33 +138,33 @@ def train_func(args):
             train_autoencoder(train_params_autoencoder)
         else:
             train_params_cnn = Parameters(
-                    args.tsv_path,
-                    args.output_dir,
-                    args.caps_dir,
-                    args.network
+                args.tsv_path,
+                args.output_dir,
+                args.caps_dir,
+                args.network
             )
             train_params_cnn.write(
-                    preprocessing=args.preprocessing,
-                    diagnoses=args.diagnoses,
-                    baseline=args.baseline,
-                    minmaxnormalization=not args.unnormalize,
-                    n_splits=args.n_splits,
-                    split=args.split,
-                    accumulation_steps=args.accumulation_steps,
-                    epochs=args.epochs,
-                    learning_rate=args.learning_rate,
-                    patience=args.patience,
-                    tolerance=args.tolerance,
-                    optimizer='Adam',
-                    weight_decay=args.weight_decay,
-                    dropout=args.dropout,
-                    gpu=args.use_gpu,
-                    batch_size=args.batch_size,
-                    evaluation_steps=args.evaluation_steps,
-                    num_workers=args.nproc,
-                    transfer_learning_path=args.transfer_learning_path,
-                    transfer_learning_autoencoder=args.transfer_learning_autoencoder,
-                    selection=args.selection
+                preprocessing=args.preprocessing,
+                diagnoses=args.diagnoses,
+                baseline=args.baseline,
+                minmaxnormalization=not args.unnormalize,
+                n_splits=args.n_splits,
+                split=args.split,
+                accumulation_steps=args.accumulation_steps,
+                epochs=args.epochs,
+                learning_rate=args.learning_rate,
+                patience=args.patience,
+                tolerance=args.tolerance,
+                optimizer='Adam',
+                weight_decay=args.weight_decay,
+                dropout=args.dropout,
+                gpu=args.use_gpu,
+                batch_size=args.batch_size,
+                evaluation_steps=args.evaluation_steps,
+                num_workers=args.nproc,
+                transfer_learning_path=args.transfer_learning_path,
+                transfer_learning_autoencoder=args.transfer_learning_autoencoder,
+                selection=args.selection
             )
             train_cnn(train_params_cnn)
     elif args.mode == 'slice':
@@ -198,70 +197,70 @@ def train_func(args):
     elif args.mode == 'patch':
         if args.mode_task == "autoencoder":
             train_params_autoencoder = Parameters(
-                    args.tsv_path,
-                    args.output_dir,
-                    args.caps_dir,
-                    args.network
-                    )
+                args.tsv_path,
+                args.output_dir,
+                args.caps_dir,
+                args.network
+            )
             train_params_autoencoder.write(
-                    diagnoses=args.diagnoses,
-                    baseline=args.baseline,
-                    n_splits=args.n_splits,
-                    split=args.split,
-                    accumulation_steps=args.accumulation_steps,
-                    epochs=args.epochs,
-                    learning_rate=args.learning_rate,
-                    patience=args.patience,
-                    tolerance=args.tolerance,
-                    add_sigmoid=args.add_sigmoid,
-                    optimizer='Adam',
-                    weight_decay=args.weight_decay,
-                    gpu=args.use_gpu,
-                    batch_size=args.batch_size,
-                    evaluation_steps=args.evaluation_steps,
-                    num_workers=args.nproc,
-                    patch_size=args.patch_size,
-                    patch_stride=args.patch_stride,
-                    hippocampus_roi=False,
-                    visualization=args.visualization,
-                    prepare_dl=args.use_extracted_patches
-                    )
+                diagnoses=args.diagnoses,
+                baseline=args.baseline,
+                n_splits=args.n_splits,
+                split=args.split,
+                accumulation_steps=args.accumulation_steps,
+                epochs=args.epochs,
+                learning_rate=args.learning_rate,
+                patience=args.patience,
+                tolerance=args.tolerance,
+                add_sigmoid=args.add_sigmoid,
+                optimizer='Adam',
+                weight_decay=args.weight_decay,
+                gpu=args.use_gpu,
+                batch_size=args.batch_size,
+                evaluation_steps=args.evaluation_steps,
+                num_workers=args.nproc,
+                patch_size=args.patch_size,
+                patch_stride=args.patch_stride,
+                hippocampus_roi=False,
+                visualization=args.visualization,
+                prepare_dl=args.use_extracted_patches
+            )
             train_autoencoder_patch(train_params_autoencoder)
         else:
             train_params_patch = Parameters(
-                    args.tsv_path,
-                    args.output_dir,
-                    args.caps_dir,
-                    args.network
-                    )
+                args.tsv_path,
+                args.output_dir,
+                args.caps_dir,
+                args.network
+            )
             train_params_patch.write(
-                    diagnoses=args.diagnoses,
-                    baseline=args.baseline,
-                    n_splits=args.n_splits,
-                    split=args.split,
-                    accumulation_steps=args.accumulation_steps,
-                    epochs=args.epochs,
-                    learning_rate=args.learning_rate,
-                    patience=args.patience,
-                    tolerance=args.tolerance,
-                    optimizer='Adam',
-                    weight_decay=args.weight_decay,
-                    dropout=args.dropout,
-                    gpu=args.use_gpu,
-                    batch_size=args.batch_size,
-                    evaluation_steps=args.evaluation_steps,
-                    num_workers=args.nproc,
-                    transfer_learning_path=args.transfer_learning_path,
-                    transfer_learning_autoencoder=args.transfer_learning_autoencoder,
-                    transfer_learning_multicnn=args.transfer_learning_multicnn,
-                    selection=args.selection,
-                    patch_size=args.patch_size,
-                    patch_stride=args.patch_stride,
-                    hippocampus_roi=False,
-                    selection_threshold=args.selection_threshold,
-                    num_cnn=args.num_cnn,
-                    prepare_dl=args.use_extracted_patches
-                    )
+                diagnoses=args.diagnoses,
+                baseline=args.baseline,
+                n_splits=args.n_splits,
+                split=args.split,
+                accumulation_steps=args.accumulation_steps,
+                epochs=args.epochs,
+                learning_rate=args.learning_rate,
+                patience=args.patience,
+                tolerance=args.tolerance,
+                optimizer='Adam',
+                weight_decay=args.weight_decay,
+                dropout=args.dropout,
+                gpu=args.use_gpu,
+                batch_size=args.batch_size,
+                evaluation_steps=args.evaluation_steps,
+                num_workers=args.nproc,
+                transfer_learning_path=args.transfer_learning_path,
+                transfer_learning_autoencoder=args.transfer_learning_autoencoder,
+                transfer_learning_multicnn=args.transfer_learning_multicnn,
+                selection=args.selection,
+                patch_size=args.patch_size,
+                patch_stride=args.patch_stride,
+                hippocampus_roi=False,
+                selection_threshold=args.selection_threshold,
+                num_cnn=args.num_cnn,
+                prepare_dl=args.use_extracted_patches
+            )
             if args.network_type == 'single':
                 train_patch_single_cnn(train_params_patch)
             else:
@@ -269,70 +268,70 @@ def train_func(args):
     elif args.mode == 'roi':
         if args.mode_task == "autoencoder":
             train_params_autoencoder = Parameters(
-                    args.tsv_path,
-                    args.output_dir,
-                    args.caps_dir,
-                    args.network
-                    )
+                args.tsv_path,
+                args.output_dir,
+                args.caps_dir,
+                args.network
+            )
             train_params_autoencoder.write(
-                    diagnoses=args.diagnoses,
-                    baseline=args.baseline,
-                    n_splits=args.n_splits,
-                    split=args.split,
-                    accumulation_steps=args.accumulation_steps,
-                    epochs=args.epochs,
-                    learning_rate=args.learning_rate,
-                    patience=args.patience,
-                    tolerance=args.tolerance,
-                    add_sigmoid=args.add_sigmoid,
-                    optimizer='Adam',
-                    weight_decay=args.weight_decay,
-                    gpu=args.use_gpu,
-                    batch_size=args.batch_size,
-                    evaluation_steps=args.evaluation_steps,
-                    num_workers=args.nproc,
-                    patch_size=args.patch_size,
-                    patch_stride=args.patch_stride,
-                    hippocampus_roi=True,
-                    visualization=args.visualization,
-                    prepare_dl=args.use_extracted_roi
-                    )
+                diagnoses=args.diagnoses,
+                baseline=args.baseline,
+                n_splits=args.n_splits,
+                split=args.split,
+                accumulation_steps=args.accumulation_steps,
+                epochs=args.epochs,
+                learning_rate=args.learning_rate,
+                patience=args.patience,
+                tolerance=args.tolerance,
+                add_sigmoid=args.add_sigmoid,
+                optimizer='Adam',
+                weight_decay=args.weight_decay,
+                gpu=args.use_gpu,
+                batch_size=args.batch_size,
+                evaluation_steps=args.evaluation_steps,
+                num_workers=args.nproc,
+                patch_size=args.patch_size,
+                patch_stride=args.patch_stride,
+                hippocampus_roi=True,
+                visualization=args.visualization,
+                prepare_dl=args.use_extracted_roi
+            )
             train_autoencoder_patch(train_params_autoencoder)
         else:
             train_params_patch = Parameters(
-                    args.tsv_path,
-                    args.output_dir,
-                    args.caps_dir,
-                    args.network
-                    )
+                args.tsv_path,
+                args.output_dir,
+                args.caps_dir,
+                args.network
+            )
             train_params_patch.write(
-                    diagnoses=args.diagnoses,
-                    baseline=args.baseline,
-                    n_splits=args.n_splits,
-                    split=args.split,
-                    accumulation_steps=args.accumulation_steps,
-                    epochs=args.epochs,
-                    learning_rate=args.learning_rate,
-                    patience=args.patience,
-                    tolerance=args.tolerance,
-                    optimizer='Adam',
-                    weight_decay=args.weight_decay,
-                    dropout=args.dropout,
-                    gpu=args.use_gpu,
-                    batch_size=args.batch_size,
-                    evaluation_steps=args.evaluation_steps,
-                    num_workers=args.nproc,
-                    transfer_learning_path=args.transfer_learning_path,
-                    transfer_learning_autoencoder=args.transfer_learning_autoencoder,
-                    transfer_learning_multicnn=args.transfer_learning_multicnn,
-                    selection=args.selection,
-                    patch_size=args.patch_size,
-                    patch_stride=args.patch_stride,
-                    hippocampus_roi=True,
-                    selection_threshold=args.selection_threshold,
-                    num_cnn=args.num_cnn,
-                    prepare_dl=args.use_extracted_roi
-                    )
+                diagnoses=args.diagnoses,
+                baseline=args.baseline,
+                n_splits=args.n_splits,
+                split=args.split,
+                accumulation_steps=args.accumulation_steps,
+                epochs=args.epochs,
+                learning_rate=args.learning_rate,
+                patience=args.patience,
+                tolerance=args.tolerance,
+                optimizer='Adam',
+                weight_decay=args.weight_decay,
+                dropout=args.dropout,
+                gpu=args.use_gpu,
+                batch_size=args.batch_size,
+                evaluation_steps=args.evaluation_steps,
+                num_workers=args.nproc,
+                transfer_learning_path=args.transfer_learning_path,
+                transfer_learning_autoencoder=args.transfer_learning_autoencoder,
+                transfer_learning_multicnn=args.transfer_learning_multicnn,
+                selection=args.selection,
+                patch_size=args.patch_size,
+                patch_stride=args.patch_stride,
+                hippocampus_roi=True,
+                selection_threshold=args.selection_threshold,
+                num_cnn=args.num_cnn,
+                prepare_dl=args.use_extracted_roi
+            )
             train_patch_single_cnn(train_params_patch)
 
     elif args.mode == 'svm':
@@ -348,14 +347,15 @@ def classify_func(args):
     from .classify.inference import inference_from_model
 
     inference_from_model(
-            args.caps_dir,
-            args.tsv_file,
-            args.output_dir,
-            args.model_name,
-            )
+        args.caps_dir,
+        args.tsv_file,
+        args.output_dir,
+        args.model_name,
+    )
 
 
-# Functions to dispatch command line options from tsvtool to corresponding function
+# Functions to dispatch command line options from tsvtool to corresponding
+# function
 
 def tsv_restrict_func(args):
     from .tools.tsv.restriction import aibl_restriction, oasis_restriction
@@ -418,96 +418,96 @@ def tsv_analysis_func(args):
 
 def parse_command_line():
     parser = argparse.ArgumentParser(
-            prog='clinicadl',
-            description='Clinica Deep Learning.')
+        prog='clinicadl',
+        description='Clinica Deep Learning.')
 
     parser.add_argument('--verbose', '-v', action='count')
 
     subparser = parser.add_subparsers(
-            title='''Task to execute with clinicadl:''',
-            description='''What kind of task do you want to use with clinicadl?
+        title='''Task to execute with clinicadl:''',
+        description='''What kind of task do you want to use with clinicadl?
             (tsvtool, preprocessing, extract, generate, train, validate, classify).''',
-            dest='task',
-            help='''****** Tasks proposed by clinicadl ******''')
+        dest='task',
+        help='''****** Tasks proposed by clinicadl ******''')
 
     subparser.required = True
 
     # Generate synthetic data
     generate_parser = subparser.add_parser(
-            'generate',
-            help='Generate synthetic data for functional tests.'
-            )
+        'generate',
+        help='Generate synthetic data for functional tests.'
+    )
     generate_parser.add_argument(
-            'mode',
-            help='Choose which dataset is generated (random, trivial).',
-            choices=['random', 'trivial'],
-            default='random'
-            )
+        'mode',
+        help='Choose which dataset is generated (random, trivial).',
+        choices=['random', 'trivial'],
+        default='random'
+    )
     generate_parser.add_argument(
-            'caps_dir',
-            help='Data using CAPS structure.',
-            default=None
-            )
+        'caps_dir',
+        help='Data using CAPS structure.',
+        default=None
+    )
     generate_parser.add_argument(
-            'tsv_path',
-            help='TSV path with subjects/sessions to use for data generation.',
-            default=None
-            )
+        'tsv_path',
+        help='TSV path with subjects/sessions to use for data generation.',
+        default=None
+    )
     generate_parser.add_argument(
-            'output_dir',
-            help='Folder containing the synthetic dataset.',
-            default=None
-            )
+        'output_dir',
+        help='Folder containing the synthetic dataset.',
+        default=None
+    )
     generate_parser.add_argument(
-            '--n_subjects',
-            type=int,
-            default=300,
-            help="Number of subjects in each class of the synthetic dataset."
-            )
+        '--n_subjects',
+        type=int,
+        default=300,
+        help="Number of subjects in each class of the synthetic dataset."
+    )
     generate_parser.add_argument(
-            '--preprocessing',
-            type=str,
-            default='t1-linear',
-            choices=['t1-linear', 't1-volume'],
-            help="Preprocessing used to generate synthetic data."
-            )
+        '--preprocessing',
+        type=str,
+        default='linear',
+        choices=['linear', 't1-extensive'],
+        help="Preprocessing used to generate synthetic data."
+    )
     generate_parser.add_argument(
-            '--output_size',
-            type=int,
-            nargs="+",
-            default=None,
-            help="If a value is given, interpolation will be used to up/downsample the image."
-            )
+        '--output_size',
+        type=int,
+        nargs="+",
+        default=None,
+        help="If a value is given, interpolation will be used to up/downsample the image."
+    )
     generate_parser.add_argument(
-            '--mean',
-            type=float,
-            default=0,
-            help="Mean value of the noise added for the random dataset."
-            )
+        '--mean',
+        type=float,
+        default=0,
+        help="Mean value of the noise added for the random dataset."
+    )
     generate_parser.add_argument(
-            '--sigma',
-            type=float,
-            default=0.5,
-            help="Standard deviation of the noise added for the random dataset."
-            )
+        '--sigma',
+        type=float,
+        default=0.5,
+        help="Standard deviation of the noise added for the random dataset."
+    )
     generate_parser.add_argument(
-            '--mask_path',
-            type=str,
-            help='path to the extracted masks to generate the two labels.',
-            default=None
-            )
+        '--mask_path',
+        type=str,
+        help='path to the extracted masks to generate the two labels.',
+        default=None
+    )
     generate_parser.add_argument(
-            '--atrophy_percent',
-            type=float,
-            default=60,
-            help='percentage of atrophy applied'
-            )
+        '--atrophy_percent',
+        type=float,
+        default=60,
+        help='percentage of atrophy applied'
+    )
     generate_parser.add_argument(
-            '--group',
-            type=str,
-            default=None,
-            help="Specific argument for dartel preprocessing."
-            )
+        '--group',
+        type=str,
+        default=None,
+        help="Specific argument for dartel preprocessing."
+    )
 
     generate_parser.set_defaults(func=generate_data_func)
 
@@ -516,33 +516,33 @@ def parse_command_line():
     # preprocessing
 
     preprocessing_parser = subparser.add_parser(
-            'preprocessing',
-            help='Prepare data for training (needs clinica installed).')
+        'preprocessing',
+        help='Prepare data for training (needs clinica installed).')
     preprocessing_parser.add_argument(
-            'bids_dir',
-            help='Data using BIDS structure.',
-            default=None
-            )
+        'bids_dir',
+        help='Data using BIDS structure.',
+        default=None
+    )
     preprocessing_parser.add_argument(
-            'caps_dir',
-            help='Data using CAPS structure.',
-            default=None
-            )
+        'caps_dir',
+        help='Data using CAPS structure.',
+        default=None
+    )
     preprocessing_parser.add_argument(
-            'tsv_file',
-            help='TSV file with subjects/sessions to process.',
-            default=None
-            )
+        'tsv_file',
+        help='TSV file with subjects/sessions to process.',
+        default=None
+    )
     preprocessing_parser.add_argument(
-            'working_dir',
-            help='Working directory to save temporary file.',
-            default=None
-            )
+        'working_dir',
+        help='Working directory to save temporary file.',
+        default=None
+    )
     preprocessing_parser.add_argument(
-            '-np', '--nproc',
-            help='Number of cores used for processing (2 by default)',
-            type=int, default=2
-            )
+        '-np', '--nproc',
+        help='Number of cores used for processing (2 by default)',
+        type=int, default=2
+    )
 
     preprocessing_parser.set_defaults(func=preprocessing_t1w_func)
 
@@ -550,24 +550,24 @@ def parse_command_line():
     # extract_parser: get command line argument and options
 
     extract_parser = subparser.add_parser(
-            'extract',
-            help='Create data (slices or patches) for training.'
-            )
+        'extract',
+        help='Create data (slices or patches) for training.'
+    )
     extract_parser.add_argument(
-            'caps_dir',
-            help='Data using CAPS structure.',
-            default=None
-            )
+        'caps_dir',
+        help='Data using CAPS structure.',
+        default=None
+    )
     extract_parser.add_argument(
-            'tsv_file',
-            help='TSV file with subjects/sessions to process.',
-            default=None
-            )
+        'tsv_file',
+        help='TSV file with subjects/sessions to process.',
+        default=None
+    )
     extract_parser.add_argument(
-            'working_dir',
-            help='Working directory to save temporary file.',
-            default=None
-            )
+        'working_dir',
+        help='Working directory to save temporary file.',
+        default=None
+    )
     extract_parser.add_argument(
         'extract_method',
         help='''Method used to extract features. Three options:
@@ -607,8 +607,8 @@ def parse_command_line():
     # train_parser: get command line arguments and options
 
     train_parser = subparser.add_parser(
-            'train',
-            help='Train with your data and create a model.')
+        'train',
+        help='Train with your data and create a model.')
 
     train_subparser = train_parser.add_subparsers(
         title='''Classifier to be trained''',
@@ -621,7 +621,8 @@ def parse_command_line():
 
     # Positional arguments
     train_parent_parser = argparse.ArgumentParser(add_help=False)
-    train_pos_group = train_parent_parser.add_argument_group(TRAIN_CATEGORIES["POSITIONAL"])
+    train_pos_group = train_parent_parser.add_argument_group(
+        TRAIN_CATEGORIES["POSITIONAL"])
     train_pos_group.add_argument(
         'caps_dir',
         help='Data using CAPS structure.',
@@ -640,86 +641,92 @@ def parse_command_line():
         default='Conv5_FC3')
 
     # Computational issues
-    train_comput_group = train_parent_parser.add_argument_group(TRAIN_CATEGORIES["COMPUTATIONAL"])
+    train_comput_group = train_parent_parser.add_argument_group(
+        TRAIN_CATEGORIES["COMPUTATIONAL"])
     train_comput_group.add_argument(
-            '-gpu', '--use_gpu', action='store_true',
-            help='Uses GPU instead of CPU if CUDA is available',
-            default=False)
+        '-gpu', '--use_gpu', action='store_true',
+        help='Uses GPU instead of CPU if CUDA is available',
+        default=False)
     train_comput_group.add_argument(
-            '-np', '--nproc',
-            help='Number of cores used during the training.',
-            type=int, default=2)
+        '-np', '--nproc',
+        help='Number of cores used during the training.',
+        type=int, default=2)
     train_comput_group.add_argument(
-            '--batch_size',
-            default=2, type=int,
-            help='Batch size for training. (default=2)')
+        '--batch_size',
+        default=2, type=int,
+        help='Batch size for training. (default=2)')
 
     # Data management
-    train_data_group = train_parent_parser.add_argument_group(TRAIN_CATEGORIES["DATA"])
+    train_data_group = train_parent_parser.add_argument_group(
+        TRAIN_CATEGORIES["DATA"])
     train_data_group.add_argument(
-            '--diagnoses', '-d',
-            help='Diagnoses that will be selected for training.',
-            default=['AD', 'CN'], nargs='+', type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'])
+        '--diagnoses', '-d',
+        help='Diagnoses that will be selected for training.',
+        default=['AD', 'CN'], nargs='+', type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'])
     train_data_group.add_argument(
-            '--baseline',
-            help='if True only the baseline is used.',
-            action="store_true",
-            default=False)
+        '--baseline',
+        help='if True only the baseline is used.',
+        action="store_true",
+        default=False)
 
     # Cross-validation
-    train_cv_group = train_parent_parser.add_argument_group(TRAIN_CATEGORIES["CROSS-VALIDATION"])
+    train_cv_group = train_parent_parser.add_argument_group(
+        TRAIN_CATEGORIES["CROSS-VALIDATION"])
     train_cv_group.add_argument(
-            '--n_splits',
-            help='If a value is given will load data of a k-fold CV.',
-            type=int, default=None)
+        '--n_splits',
+        help='If a value is given will load data of a k-fold CV.',
+        type=int, default=None)
     train_cv_group.add_argument(
-            '--split',
-            help='Will load the specific split wanted.',
-            type=int, default=0)
+        '--split',
+        help='Will load the specific split wanted.',
+        type=int, default=0)
 
     # Optimization parameters
-    train_optim_group = train_parent_parser.add_argument_group(TRAIN_CATEGORIES["OPTIMIZATION"])
+    train_optim_group = train_parent_parser.add_argument_group(
+        TRAIN_CATEGORIES["OPTIMIZATION"])
     train_optim_group.add_argument(
-            '--epochs',
-            help='Epochs through the data. (default=20)',
-            default=20, type=int)
+        '--epochs',
+        help='Epochs through the data. (default=20)',
+        default=20, type=int)
     train_optim_group.add_argument(
-            '--learning_rate', '-lr',
-            help='Learning rate of the optimization. (default=0.01)',
-            default=1e-4, type=float)
+        '--learning_rate', '-lr',
+        help='Learning rate of the optimization. (default=0.01)',
+        default=1e-4, type=float)
     train_optim_group.add_argument(
-            '--weight_decay', '-wd',
-            help='Weight decay value used in optimization. (default=1e-4)',
-            default=1e-4, type=float)
+        '--weight_decay', '-wd',
+        help='Weight decay value used in optimization. (default=1e-4)',
+        default=1e-4, type=float)
     train_optim_group.add_argument(
-            '--dropout',
-            help='rate of dropout that will be applied to dropout layers.',
-            default=None, type=float)
+        '--dropout',
+        help='rate of dropout that will be applied to dropout layers.',
+        default=None, type=float)
     train_optim_group.add_argument(
-            '--patience',
-            help='Waiting time for early stopping.',
-            type=int, default=10)
+        '--patience',
+        help='Waiting time for early stopping.',
+        type=int, default=10)
     train_optim_group.add_argument(
-            '--tolerance',
-            help='Tolerance value for the early stopping.',
-            type=float, default=0.0)
+        '--tolerance',
+        help='Tolerance value for the early stopping.',
+        type=float, default=0.0)
 
     # Transfer learning
     transfer_learning_parent = argparse.ArgumentParser(add_help=False)
-    transfer_learning_group = transfer_learning_parent.add_argument_group(TRAIN_CATEGORIES["TRANSFER LEARNING"])
+    transfer_learning_group = transfer_learning_parent.add_argument_group(
+        TRAIN_CATEGORIES["TRANSFER LEARNING"])
     transfer_learning_group.add_argument(
-            '--transfer_learning_path',
-            help="If an existing path is given, a pretrained model is used.",
-            type=str, default=None)
+        '--transfer_learning_path',
+        help="If an existing path is given, a pretrained model is used.",
+        type=str, default=None)
     transfer_learning_group.add_argument(
-            '--transfer_learning_autoencoder',
-            help='''If specified, do transfer learning using an autoencoder else will look
+        '--transfer_learning_autoencoder',
+        help='''If specified, do transfer learning using an autoencoder else will look
                  for a CNN model.''',
-            default=False, action="store_true")
+        default=False, action="store_true")
 
     # Autoencoder
     autoencoder_parent = argparse.ArgumentParser(add_help=False)
-    autoencoder_group = autoencoder_parent.add_argument_group(TRAIN_CATEGORIES["AUTOENCODER"])
+    autoencoder_group = autoencoder_parent.add_argument_group(
+        TRAIN_CATEGORIES["AUTOENCODER"])
     autoencoder_group.add_argument(
         '--add_sigmoid',
         help='Add sigmoid function at the end of the decoder.',
@@ -738,7 +745,8 @@ def parse_command_line():
         help="Train a 3D-image level network.")
 
     train_image_parent = argparse.ArgumentParser(add_help=False)
-    train_imageoptim_group = train_image_parent.add_argument_group(TRAIN_CATEGORIES["IMAGE OPTIMIZATION"])
+    train_imageoptim_group = train_image_parent.add_argument_group(
+        TRAIN_CATEGORIES["IMAGE OPTIMIZATION"])
     train_imageoptim_group.add_argument(
         '--evaluation_steps', '-esteps',
         default=0, type=int,
@@ -748,7 +756,8 @@ def parse_command_line():
         help='Accumulates gradients in order to increase the size of the batch.',
         default=1, type=int)
 
-    train_imagedata_group = train_image_parent.add_argument_group(TRAIN_CATEGORIES["IMAGE DATA MANAGEMENT"])
+    train_imagedata_group = train_image_parent.add_argument_group(
+        TRAIN_CATEGORIES["IMAGE DATA MANAGEMENT"])
     train_imagedata_group.add_argument(
         '--preprocessing',
         help='Defines the type of preprocessing of CAPS data.',
@@ -768,7 +777,11 @@ def parse_command_line():
 
     train_image_ae_parser = train_image_subparser.add_parser(
         "autoencoder",
-        parents=[train_parent_parser, train_image_parent, autoencoder_parent, transfer_learning_parent],
+        parents=[
+            train_parent_parser,
+            train_image_parent,
+            autoencoder_parent,
+            transfer_learning_parent],
         help="Train a 3D-patch level autoencoder.")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
     train_image_ae_parser._action_groups[-1].add_argument(
@@ -782,13 +795,16 @@ def parse_command_line():
 
     train_image_cnn_parser = train_image_subparser.add_parser(
         "cnn",
-        parents=[train_parent_parser, train_image_parent, transfer_learning_parent],
+        parents=[
+            train_parent_parser,
+            train_image_parent,
+            transfer_learning_parent],
         help="Train a 3D-patch level CNN.")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
     train_image_cnn_parser._action_groups[-1].add_argument(
-            '--selection',
-            help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-            type=str, default="best_acc", choices=["best_loss", "best_acc"])
+        '--selection',
+        help="If transfer_learning from CNN, chooses which best transfer model is selected.",
+        type=str, default="best_acc", choices=["best_loss", "best_acc"])
 
     train_image_cnn_parser.set_defaults(func=train_func)
 
@@ -800,7 +816,8 @@ def parse_command_line():
         parents=[train_parent_parser],
         help="Train a 2D-slice level CNN.")
 
-    train_slice_group = train_slice_parser.add_argument_group(TRAIN_CATEGORIES["SLICE"])
+    train_slice_group = train_slice_parser.add_argument_group(
+        TRAIN_CATEGORIES["SLICE"])
     train_slice_group.add_argument(
         '--slice_direction', '-sd',
         help='''Which coordinate axis to take for slicing the MRI.
@@ -813,6 +830,12 @@ def parse_command_line():
         help='''If True the outputs of extract preprocessing are used, else the whole
              MRI is loaded.''',
         default=False, action="store_true")
+    train_slice_group.add_argument(
+        '--selection_threshold',
+        help='''Threshold on the balanced accuracies to compute the
+             subject-level performance. Slices are selected if their balanced
+             accuracy > threshold. Default corresponds to no selection.''',
+        type=float, default=0.0)
 
     train_slice_parser.set_defaults(func=train_func)
 
@@ -824,7 +847,8 @@ def parse_command_line():
         help="Train a 3D-patch level network.")
 
     train_patch_parent = argparse.ArgumentParser(add_help=False)
-    train_patch_group = train_patch_parent.add_argument_group(TRAIN_CATEGORIES["PATCH"])
+    train_patch_group = train_patch_parent.add_argument_group(
+        TRAIN_CATEGORIES["PATCH"])
     train_patch_group.add_argument(
         '-ps', '--patch_size',
         help='Patch size',
@@ -855,7 +879,10 @@ def parse_command_line():
 
     train_patch_cnn_parser = train_patch_subparser.add_parser(
         "cnn",
-        parents=[train_parent_parser, train_patch_parent, transfer_learning_parent],
+        parents=[
+            train_parent_parser,
+            train_patch_parent,
+            transfer_learning_parent],
         help="Train a 3D-patch level CNN.")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
     train_patch_cnn_parser._action_groups[-1].add_argument(
@@ -867,7 +894,8 @@ def parse_command_line():
         help='''Specify if the transfer learning is from multi-CNNs to multi-CNNs.''',
         default=False, action="store_true")
 
-    train_patch_cnn_group = train_patch_cnn_parser.add_argument_group(TRAIN_CATEGORIES["PATCH CNN"])
+    train_patch_cnn_group = train_patch_cnn_parser.add_argument_group(
+        TRAIN_CATEGORIES["PATCH CNN"])
     train_patch_cnn_group.add_argument(
         '--network_type',
         help='Chose between single or multi CNN.',
@@ -895,7 +923,8 @@ def parse_command_line():
         help="Train a ROI-based level network.")
 
     train_roi_parent = argparse.ArgumentParser(add_help=False)
-    train_roi_group = train_roi_parent.add_argument_group(TRAIN_CATEGORIES["ROI"])
+    train_roi_group = train_roi_parent.add_argument_group(
+        TRAIN_CATEGORIES["ROI"])
     train_roi_group.add_argument(
         '--use_extracted_roi',
         help='''If True the outputs of extract preprocessing are used, else the whole
@@ -918,7 +947,10 @@ def parse_command_line():
 
     train_roi_cnn_parser = train_roi_subparser.add_parser(
         "cnn",
-        parents=[train_parent_parser, train_roi_parent, transfer_learning_parent],
+        parents=[
+            train_parent_parser,
+            train_roi_parent,
+            transfer_learning_parent],
         help="Train a 3D-patch level CNN.")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
     train_roi_cnn_parser._action_groups[-1].add_argument(
@@ -926,7 +958,8 @@ def parse_command_line():
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
         type=str, default="best_acc", choices=["best_loss", "best_acc"])
 
-    train_roi_cnn_group = train_roi_cnn_parser.add_argument_group(TRAIN_CATEGORIES["ROI CNN"])
+    train_roi_cnn_group = train_roi_cnn_parser.add_argument_group(
+        TRAIN_CATEGORIES["ROI CNN"])
     train_roi_cnn_group.add_argument(
         '--selection_threshold',
         help='''Threshold on the balanced accuracies to compute the
@@ -951,26 +984,31 @@ def parse_command_line():
     # classify_parser: get command line arguments and options
 
     classify_parser = subparser.add_parser(
-            'classify',
-            help='''Classify one image or a list of images with your previously
+        'classify',
+        help='''Classify one image or a list of images with your previously
                  trained model.''')
     classify_parser.add_argument(
-            'caps_dir',
-            help='Data using CAPS structure.',
-            default=None)
+        'caps_dir',
+        help='Data using CAPS structure.',
+        default=None)
     classify_parser.add_argument(
-            'tsv_path',
-            help='TSV path with subjects/sessions to process.',
-            default=None)
+        'tsv_path',
+        help='TSV path with subjects/sessions to process.',
+        default=None)
     classify_parser.add_argument(
-            'output_dir',
-            help='Folder containing results of the training.',
-            default=None)
+        'output_dir',
+        help='Folder containing results of the training.',
+        default=None)
     classify_parser.add_argument(
-            'model_name',
-            help='Model used for classification.',
-            choices=['2D_slice', '3D_patch_1', '3D_patch_2', 'subject_1', 'subject_2'],
-            default='2D_slice')
+        'model_name',
+        help='Model used for classification.',
+        choices=[
+            '2D_slice',
+            '3D_patch_1',
+            '3D_patch_2',
+            'subject_1',
+            'subject_2'],
+        default='2D_slice')
 
     classify_parser.set_defaults(func=classify_func)
 
