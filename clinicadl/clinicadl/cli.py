@@ -23,11 +23,11 @@ TRAIN_CATEGORIES = {
     'SLICE': '%sSlice-level parameters%s' % (Fore.BLUE, Fore.RESET),
     # Patch arguments
     'PATCH': '%sPatch-level parameters%s' % (Fore.BLUE, Fore.RESET),
-    'PATCH CNN':  '%sPatch-level CNN parameters%s' % (Fore.BLUE, Fore.RESET),
-    # ROI-based argiments
+    'PATCH CNN': '%sPatch-level CNN parameters%s' % (Fore.BLUE, Fore.RESET),
+    # ROI-based arguments
     'ROI': '%sROI-based parameters%s' % (Fore.BLUE, Fore.RESET),
-    'ROI CNN':  '%sROI-based CNN parameters%s' % (Fore.BLUE, Fore.RESET),
-    }
+    'ROI CNN': '%sROI-based CNN parameters%s' % (Fore.BLUE, Fore.RESET),
+}
 
 
 def set_default_dropout(args):
