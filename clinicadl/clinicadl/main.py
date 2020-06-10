@@ -9,6 +9,9 @@ def main():
     parser = cli.parse_command_line()
     args = parser.parse_args()
 
+    if args.task == "train" and args.mode == "slice":
+        args.mode_task = "cnn"
+
     commandline = parser.parse_known_args()
 
     arguments = vars(args)
