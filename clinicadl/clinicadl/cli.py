@@ -192,7 +192,7 @@ def train_func(args):
             gpu=args.use_gpu,
             num_workers=args.nproc,
             selection_threshold=args.selection_threshold,
-            prepare_dl=args.prepare_dl
+            prepare_dl=args.use_extracted_slices
         )
         train_slice(train_params_slice)
     elif args.mode == 'patch':
@@ -224,7 +224,7 @@ def train_func(args):
                     patch_stride=args.patch_stride,
                     hippocampus_roi=False,
                     visualization=args.visualization,
-                    prepare_dl=args.prepare_dl
+                    prepare_dl=args.use_extracted_patches
                     )
             train_autoencoder_patch(train_params_autoencoder)
         else:
@@ -260,7 +260,7 @@ def train_func(args):
                     hippocampus_roi=False,
                     selection_threshold=args.selection_threshold,
                     num_cnn=args.num_cnn,
-                    prepare_dl=args.prepare_dl
+                    prepare_dl=args.use_extracted_patches
                     )
             if args.network_type == 'single':
                 train_patch_single_cnn(train_params_patch)
@@ -295,7 +295,7 @@ def train_func(args):
                     patch_stride=args.patch_stride,
                     hippocampus_roi=True,
                     visualization=args.visualization,
-                    prepare_dl=args.prepare_dl
+                    prepare_dl=args.use_extracted_roi
                     )
             train_autoencoder_patch(train_params_autoencoder)
         else:
@@ -331,7 +331,7 @@ def train_func(args):
                     hippocampus_roi=True,
                     selection_threshold=args.selection_threshold,
                     num_cnn=args.num_cnn,
-                    prepare_dl=args.prepare_dl
+                    prepare_dl=args.use_extracted_roi
                     )
             train_patch_single_cnn(train_params_patch)
 
@@ -809,7 +809,7 @@ def parse_command_line():
              2 for axial direction.''',
         default=0, type=int)
     train_slice_group.add_argument(
-        '--prepare_dl',
+        '--use_extracted_slices',
         help='''If True the outputs of extract preprocessing are used, else the whole
              MRI is loaded.''',
         default=False, action="store_true")
@@ -834,7 +834,7 @@ def parse_command_line():
         help='Stride size',
         type=int, default=50)
     train_patch_group.add_argument(
-        '--prepare_dl',
+        '--use_extracted_patches',
         help='''If True the outputs of extract preprocessing are used, else the whole
              MRI is loaded.''',
         default=False, action="store_true")
@@ -897,7 +897,7 @@ def parse_command_line():
     train_roi_parent = argparse.ArgumentParser(add_help=False)
     train_roi_group = train_roi_parent.add_argument_group(TRAIN_CATEGORIES["ROI"])
     train_roi_group.add_argument(
-        '--prepare_dl',
+        '--use_extracted_roi',
         help='''If True the outputs of extract preprocessing are used, else the whole
              MRI is loaded.''',
         default=False, action="store_true")
