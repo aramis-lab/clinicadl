@@ -240,6 +240,12 @@ def read_json(options, task_type, json_path=None, test=False):
     if options.mode == "subject":
         options.mode = "image"
 
+    if not hasattr(options, "mode_task"):
+        if hasattr(options, "train_autoencoder"):
+            options.mode_task = "autoencoder"
+        else:
+            options.mode_task = "cnn"
+
     return options
 
 
