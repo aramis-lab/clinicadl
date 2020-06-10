@@ -468,7 +468,7 @@ def parse_command_line():
         '--preprocessing',
         type=str,
         default='linear',
-        choices=['linear', 't1-extensive'],
+        choices=['linear', 'extensive'],
         help="Preprocessing used to generate synthetic data."
     )
     generate_parser.add_argument(

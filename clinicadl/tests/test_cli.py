@@ -57,7 +57,7 @@ def generate_cli_commands(request):
             '/dir/tsv_path/',
             '/dir/output/',
             '--n_subjects', '10',
-            '--preprocessing', 't1-linear',
+            '--preprocessing', 'linear',
             '--mean', '0.5',
             '--sigma', '0.5']
         keys_output = [
