@@ -11,18 +11,13 @@ def main():
 
     commandline = parser.parse_known_args()
 
-    if hasattr(args, 'train_autoencoder'):
-        task_type = 'autoencoder'
-    else:
-        task_type = 'cnn'
-
     arguments = vars(args)
 
     if (arguments['task'] != 'preprocessing') \
             and (arguments['task'] != 'extract') \
             and (arguments['task'] != 'generate') \
             and (arguments['task'] != 'tsvtool'):
-        commandline_to_json(commandline, task_type)
+        commandline_to_json(commandline, arguments["mode_task"])
 
     args.func(args)
 
