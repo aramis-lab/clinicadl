@@ -23,7 +23,7 @@ class Parameters:
     def write(
             self,
             transfer_learning_difference: int = 0,
-            preprocessing: str = "linear",
+            preprocessing: str = "t1-linear",
             diagnoses: str = ["AD", "CN"],
             baseline: bool = False,
             minmaxnormalization: bool = False,
@@ -58,7 +58,7 @@ class Parameters:
         Optional parameters used for training CNN.
         transfer_learning_difference: Difference of size between the pretrained
                                autoencoder and the training.
-        preprocessing: Type of preprocessing done. Choices: "linear" or "mni".
+        preprocessing: Type of preprocessing done. Choices: "t1-linear" or "t1-volume".
         diagnoses: Take all the subjects possible for autoencoder training.
         baseline: Use only the baseline if True.
         minmaxnormalization: Performs MinMaxNormalization.
