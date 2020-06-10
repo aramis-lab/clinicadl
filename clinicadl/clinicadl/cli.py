@@ -53,7 +53,7 @@ def preprocessing_t1w_func(args):
 
 def extract_data_func(args):
     from .preprocessing.T1_preparedl import extract_dl_t1w
-    # from .preprocessing.T1_postprocessing import postprocessing_t1w
+
     wf = extract_dl_t1w(
             args.caps_dir,
             args.tsv_file,
@@ -204,7 +204,6 @@ def train_func(args):
                     args.network
                     )
             train_params_autoencoder.write(
-                    preprocessing=args.preprocessing,
                     diagnoses=args.diagnoses,
                     baseline=args.baseline,
                     n_splits=args.n_splits,
@@ -236,7 +235,6 @@ def train_func(args):
                     args.network
                     )
             train_params_patch.write(
-                    preprocessing=args.preprocessing,
                     diagnoses=args.diagnoses,
                     baseline=args.baseline,
                     n_splits=args.n_splits,
@@ -277,7 +275,6 @@ def train_func(args):
                     args.network
                     )
             train_params_autoencoder.write(
-                    preprocessing=args.preprocessing,
                     diagnoses=args.diagnoses,
                     baseline=args.baseline,
                     n_splits=args.n_splits,
@@ -309,7 +306,6 @@ def train_func(args):
                     args.network
                     )
             train_params_patch.write(
-                    preprocessing=args.preprocessing,
                     diagnoses=args.diagnoses,
                     baseline=args.baseline,
                     n_splits=args.n_splits,
@@ -350,7 +346,7 @@ def train_func(args):
 
 def classify_func(args):
     from .classify.inference import inference_from_model
-    # from .preprocessing.T1_postprocessing import postprocessing_t1w
+
     inference_from_model(
             args.caps_dir,
             args.tsv_file,
@@ -471,7 +467,8 @@ def parse_command_line():
     generate_parser.add_argument(
             '--preprocessing',
             type=str,
-            default='linear',
+            default='t1-linear',
+            choices=['t1-linear', 't1-volume'],
             help="Preprocessing used to generate synthetic data."
             )
     generate_parser.add_argument(
@@ -755,8 +752,8 @@ def parse_command_line():
     train_imagedata_group.add_argument(
         '--preprocessing',
         help='Defines the type of preprocessing of CAPS data.',
-        choices=['linear', 'mni'], type=str,
-        default='linear')
+        choices=['t1-linear', 't1-volume'], type=str,
+        default='t1-linear')
     train_imagedata_group.add_argument(
         '--unnormalize', '-un',
         help='Disable default MinMaxNormalization.',

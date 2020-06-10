@@ -14,6 +14,7 @@ from scipy.ndimage.filters import gaussian_filter
 FILENAME_TYPE = {'full': '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w',
                  'cropped': '_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w'}
 
+
 class MRIDataset(Dataset):
     """Dataset of MRI organized in a CAPS folder."""
 
@@ -54,12 +55,12 @@ class MRIDataset(Dataset):
         img_label = self.df.loc[idx, 'diagnosis']
         sess_name = self.df.loc[idx, 'session_id']
         # Not in BIDS but in CAPS
-        if self.data_path == "linear":
+        if self.data_path == "t1-linear":
             image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
                                    'deeplearning_prepare_data', 'image_based', 't1_linear',
                                    img_name + '_' + sess_name
                                    + FILENAME_TYPE['cropped'] + '.pt')
-        elif self.data_path == "mni":
+        elif self.data_path == "t1-volume":
             image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
                                    't1', 'spm', 'segmentation', 'normalized_space',
                                    img_name + '_' + sess_name + '_space-Ixi549Space_T1w.pt')
