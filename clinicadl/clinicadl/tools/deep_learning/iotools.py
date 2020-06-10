@@ -197,6 +197,7 @@ def read_json(options, task_type, json_path=None, test=False):
     from os import path
 
     evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
+    prep_compatibility_dict = {"mni": "t1-volume", "linear": "t1-linear"}
     if json_path is None:
         json_path = path.join(options.model_path, 'log_dir', 'commandline_' + task_type + '.json')
 
@@ -216,6 +217,28 @@ def read_json(options, task_type, json_path=None, test=False):
     # Retro-compatibility with runs of previous versions
     if not hasattr(options, 'dropout'):
         options.dropout = 0
+
+    if options.preprocessing in prep_compatibility_dict.keys():
+        options.preprocessing = prep_compatibility_dict[options.preprocessing]
+
+    if hasattr(options, 'mri_plane'):
+        options.slice_direction = options.mri_plane
+        del options.mri_plane
+
+    if hasattr(options, "hippocampus_roi"):
+        options.mode = "roi"
+        del options.hippocampus_roi
+
+    if hasattr(options, "pretrained_path"):
+        options.transfer_learning_path = options.pretrained_path
+        del options.pretrained_path
+
+    if hasattr(options, "pretrained_difference"):
+        options.transfer_learning_difference = options.pretrained_difference
+        del options.pretrained_difference
+
+    if options.mode == "subject":
+        options.mode = "image"
 
     return options
 
