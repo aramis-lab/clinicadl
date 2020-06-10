@@ -246,6 +246,16 @@ def read_json(options, task_type, json_path=None, test=False):
         else:
             options.mode_task = "cnn"
 
+    if hasattr(options, "unnormalize"):
+        options.minmaxnormalization = not options.unnormalize
+
+    if hasattr(options, "use_extracted_slices"):
+        options.prepare_dl = options.use_extracted_slices
+    if hasattr(options, "use_extracted_patches"):
+        options.prepare_dl = options.use_extracted_patches
+    if hasattr(options, "use_extracted_roi"):
+        options.prepare_dl = options.use_extracted_roi
+
     return options
 
 
