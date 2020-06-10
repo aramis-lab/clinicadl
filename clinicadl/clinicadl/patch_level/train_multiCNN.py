@@ -133,7 +133,9 @@ def train_patch_multi_cnn(params):
                                       )
 
             # Define loss and optimizer
-            optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), params.learning_rate, weight_decay=params.weight_decay)
+            optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
+                                                                lr=params.learning_rate,
+                                                                weight_decay=params.weight_decay)
 
             loss = torch.nn.CrossEntropyLoss()
 
