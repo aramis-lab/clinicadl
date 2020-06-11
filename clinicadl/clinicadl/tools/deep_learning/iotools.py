@@ -241,6 +241,10 @@ def read_json(options, task_type, json_path=None, test=False):
         options.mode = "image"
     if options.mode == "slice" and not hasattr(options, "mode_task"):
         options.mode_task = "cnn"
+    if options.mode == "patch" and hasattr(options, "network_type"):
+        if options.network_type == "multi":
+            options.mode_task = "multicnn"
+        del options.network_type
 
     if not hasattr(options, "mode_task"):
         if hasattr(options, "train_autoencoder"):
