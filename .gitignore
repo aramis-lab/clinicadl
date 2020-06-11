@@ -24,7 +24,7 @@ crash*
 
 # Pytest files
 .pytest_cache/
-test/data
+clinicadl/tests/data
 
 # Notebook jupyter
 .ipynb_checkpoints/
