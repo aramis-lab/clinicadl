@@ -597,7 +597,7 @@ def parse_command_line():
     train_subparser = train_parser.add_subparsers(
         title='''Classifier to be trained''',
         description='''What classifier do you want to train?
-                (image, slice, patch).''',
+                (image, patch, roi, slice).''',
         dest='mode',
         help='''****** Tasks proposed by clinicadl ******''')
 
@@ -793,37 +793,6 @@ def parse_command_line():
     train_image_cnn_parser.set_defaults(func=train_func)
 
     #########################
-    # SLICE
-    #########################
-    train_slice_parser = train_subparser.add_parser(
-        "slice",
-        parents=[train_parent_parser],
-        help="Train a 2D-slice level CNN.")
-
-    train_slice_group = train_slice_parser.add_argument_group(
-        TRAIN_CATEGORIES["SLICE"])
-    train_slice_group.add_argument(
-        '--slice_direction', '-sd',
-        help='''Which coordinate axis to take for slicing the MRI.
-             0 for sagittal
-             1 for coronal
-             2 for axial direction.''',
-        default=0, type=int)
-    train_slice_group.add_argument(
-        '--use_extracted_slices',
-        help='''If True the outputs of extract preprocessing are used, else the whole
-             MRI is loaded.''',
-        default=False, action="store_true")
-    train_slice_group.add_argument(
-        '--selection_threshold',
-        help='''Threshold on the balanced accuracies to compute the
-             subject-level performance. Slices are selected if their balanced
-             accuracy > threshold. Default corresponds to no selection.''',
-        type=float, default=0.0)
-
-    train_slice_parser.set_defaults(func=train_func)
-
-    #########################
     # PATCH
     #########################
     train_patch_parser = train_subparser.add_parser(
@@ -943,6 +912,37 @@ def parse_command_line():
         type=float, default=0.0)
 
     train_roi_cnn_group.set_defaults(func=train_func)
+
+    #########################
+    # SLICE
+    #########################
+    train_slice_parser = train_subparser.add_parser(
+        "slice",
+        parents=[train_parent_parser],
+        help="Train a 2D-slice level CNN.")
+
+    train_slice_group = train_slice_parser.add_argument_group(
+        TRAIN_CATEGORIES["SLICE"])
+    train_slice_group.add_argument(
+        '--slice_direction', '-sd',
+        help='''Which coordinate axis to take for slicing the MRI.
+                 0 for sagittal
+                 1 for coronal
+                 2 for axial direction.''',
+        default=0, type=int)
+    train_slice_group.add_argument(
+        '--use_extracted_slices',
+        help='''If True the outputs of extract preprocessing are used, else the whole
+                 MRI is loaded.''',
+        default=False, action="store_true")
+    train_slice_group.add_argument(
+        '--selection_threshold',
+        help='''Threshold on the balanced accuracies to compute the
+                 subject-level performance. Slices are selected if their balanced
+                 accuracy > threshold. Default corresponds to no selection.''',
+        type=float, default=0.0)
+
+    train_slice_parser.set_defaults(func=train_func)
 
     #########################
     # SVM
