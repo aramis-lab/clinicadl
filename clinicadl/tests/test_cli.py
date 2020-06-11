@@ -10,7 +10,8 @@ import clinicadl.cli as cli
                         'classify',
                         'train_subject',
                         'train_slice',
-                        'train_patch'])
+                        'train_patch',
+                        'train_multipatch'])
 #    'classify'])
 def generate_cli_commands(request):
     if request.param == 'preprocessing':
@@ -123,6 +124,15 @@ def generate_cli_commands(request):
             'train',
             'patch',
             'cnn',
+            '/dir/caps',
+            '/dir/tsv_path/',
+            '/dir/output/',
+            'Conv5_FC3']
+    if request.param == 'train_multipatch':
+        test_input = [
+            'train',
+            'patch',
+            'multicnn',
             '/dir/caps',
             '/dir/tsv_path/',
             '/dir/output/',
