@@ -2,6 +2,7 @@
 
 from . import cli
 from clinicadl.tools.deep_learning import commandline_to_json
+import torch
 
 
 def main():
@@ -21,6 +22,9 @@ def main():
             and (arguments['task'] != 'generate') \
             and (arguments['task'] != 'tsvtool'):
         commandline_to_json(commandline, arguments["mode_task"])
+
+    if args.gpu and not torch.cuda.is_available():
+        raise ValueError("No GPU is available. Please add the -cpu flag to run on CPU.")
 
     args.func(args)
 
