@@ -881,13 +881,15 @@ def parse_command_line():
              accuracy > threshold. Default corresponds to no selection.''',
         type=float, default=0.0)
 
+    train_patch_cnn_parser.set_defaults(func=train_func)
+
     train_patch_multicnn_parser = train_patch_subparser.add_parser(
         "multicnn",
         parents=[
             train_parent_parser,
             train_patch_parent,
             transfer_learning_parent],
-        help="Train a 3D-patch level CNN.")
+        help="Train a 3D-patch level multi-CNN (one CNN is trained per patch location).")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
     train_patch_multicnn_parser._action_groups[-1].add_argument(
         '--selection',
@@ -912,7 +914,7 @@ def parse_command_line():
                  accuracy > threshold. Default corresponds to no selection.''',
         type=float, default=0.0)
 
-    train_patch_cnn_parser.set_defaults(func=train_func)
+    train_patch_multicnn_parser.set_defaults(func=train_func)
 
     #########################
     # ROI
