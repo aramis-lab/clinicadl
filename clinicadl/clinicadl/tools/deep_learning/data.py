@@ -202,17 +202,20 @@ class MRIDataset_patch(Dataset):
 
 class MRIDataset_patch_hippocampus(Dataset):
 
-    def __init__(self, caps_directory, data_file, transformations=None):
+    def __init__(self, caps_directory, data_file, transformations=None, prepare_dl=False):
         """
         Args:
             caps_directory (string): Directory of all the images.
             data_file (string): File name of the train/test split file.
             transformations (callable, optional): Optional transformations to be applied on a sample.
+            prepare_dl (bool): If True the outputs of extract preprocessing are used, else the whole
+            MRI is loaded.
 
         """
         self.caps_directory = caps_directory
         self.transformations = transformations
         self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
+        self.prepare_dl = prepare_dl
 
         # Check the format of the tsv file here
         if isinstance(data_file, str):
@@ -241,17 +244,24 @@ class MRIDataset_patch_hippocampus(Dataset):
 
         # 1 is left hippocampus, 0 is right
         left_is_odd = idx % self.patchs_per_patient
+        if self.prepare_dl:
+            if left_is_odd == 1:
+                patch_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
+                                          't1', 'preprocessing_dl',
+                                          img_name + '_' + sess_name + '_space-MNI_res-1x1x1_hippocampus_hemi-left.pt')
+            else:
+                patch_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
+                                          't1', 'preprocessing_dl',
+                                          img_name + '_' + sess_name + '_space-MNI_res-1x1x1_hippocampus_hemi-right.pt')
 
-        if left_is_odd == 1:
-            patch_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                      't1', 'preprocessing_dl',
-                                      img_name + '_' + sess_name + '_space-MNI_res-1x1x1_hippocampus_hemi-left.pt')
+            patch = torch.load(patch_path)
         else:
-            patch_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                      't1', 'preprocessing_dl',
-                                      img_name + '_' + sess_name + '_space-MNI_res-1x1x1_hippocampus_hemi-right.pt')
-
-        patch = torch.load(patch_path)
+            image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
+                                   'deeplearning_prepare_data', 'image_based', 't1_linear',
+                                   img_name + '_' + sess_name
+                                   + FILENAME_TYPE['cropped'] + '.pt')
+            image = torch.load(image_path)
+            patch = extract_roi_from_mri(image, left_is_odd)
 
         # check if the patch has NaN value
         if torch.isnan(patch).any():
@@ -487,6 +497,30 @@ def extract_patch_from_mri(image_tensor, index_patch, patch_size, stride_size):
     extracted_patch = patches_tensor[index_patch, ...].unsqueeze_(0).clone()
 
     return extracted_patch
+
+
+def extract_roi_from_mri(image_tensor, left_is_odd):
+    """
+
+    :param image_tensor: (Tensor) the tensor of the image.
+    :param left_is_odd: (int) if 1 the left hippocampus is extracted, else the right one.
+    :return: Tensor of the extracted hippocampus
+    """
+
+    if left_is_odd == 1:
+        crop_center = (61, 96, 68)  # the center of the left hippocampus
+    else:
+        crop_center = (109, 96, 68)  # the center of the right hippocampus
+    crop_size = (50, 50, 50)  # the output cropped hippocampus size
+
+    extracted_roi = image_tensor[
+                    :,
+                    crop_center[0] - crop_size[0] // 2: crop_center[0] + crop_size[0] // 2:,
+                    crop_center[1] - crop_size[1] // 2: crop_center[1] + crop_size[1] // 2:,
+                    crop_center[2] - crop_size[2] // 2: crop_center[2] + crop_size[2] // 2:
+    ]
+
+    return extracted_roi
 
 
 class GaussianSmoothing(object):

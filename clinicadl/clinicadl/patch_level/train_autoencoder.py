@@ -43,13 +43,17 @@ def train_autoencoder_patch(params):
             print("Only using hippocampus ROI")
 
             data_train = MRIDataset_patch_hippocampus(
-                    params.input_dir,
-                    training_tsv,
-                    transformations=transformations)
+                params.input_dir,
+                training_tsv,
+                transformations=transformations,
+                prepare_dl=params.prepare_dl
+            )
             data_valid = MRIDataset_patch_hippocampus(
-                    params.input_dir,
-                    valid_tsv,
-                    transformations=transformations)
+                params.input_dir,
+                valid_tsv,
+                transformations=transformations,
+                prepare_dl=params.prepare_dl
+            )
 
         else:
             data_train = MRIDataset_patch(
