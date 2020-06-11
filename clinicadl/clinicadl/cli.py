@@ -224,6 +224,38 @@ def train_func(args):
                 prepare_dl=args.use_extracted_patches
             )
             train_autoencoder_patch(train_params_autoencoder)
+        if args.mode_task == "cnn":
+            train_params_patch = Parameters(
+                args.tsv_path,
+                args.output_dir,
+                args.caps_dir,
+                args.network
+            )
+            train_params_patch.write(
+                diagnoses=args.diagnoses,
+                baseline=args.baseline,
+                n_splits=args.n_splits,
+                split=args.split,
+                epochs=args.epochs,
+                learning_rate=args.learning_rate,
+                patience=args.patience,
+                tolerance=args.tolerance,
+                optimizer='Adam',
+                weight_decay=args.weight_decay,
+                dropout=args.dropout,
+                gpu=args.use_gpu,
+                batch_size=args.batch_size,
+                num_workers=args.nproc,
+                transfer_learning_path=args.transfer_learning_path,
+                transfer_learning_autoencoder=args.transfer_learning_autoencoder,
+                selection=args.selection,
+                patch_size=args.patch_size,
+                stride_size=args.stride_size,
+                hippocampus_roi=False,
+                selection_threshold=args.selection_threshold,
+                prepare_dl=args.use_extracted_patches
+            )
+            train_patch_single_cnn(train_params_patch)
         else:
             train_params_patch = Parameters(
                 args.tsv_path,
@@ -257,10 +289,7 @@ def train_func(args):
                 num_cnn=args.num_cnn,
                 prepare_dl=args.use_extracted_patches
             )
-            if args.network_type == 'single':
-                train_patch_single_cnn(train_params_patch)
-            else:
-                train_patch_multi_cnn(train_params_patch)
+            train_patch_multi_cnn(train_params_patch)
     elif args.mode == 'roi':
         if args.mode_task == "autoencoder":
             train_params_autoencoder = Parameters(
@@ -842,28 +871,45 @@ def parse_command_line():
         '--selection',
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
         type=str, default="best_acc", choices=["best_loss", "best_acc"])
-    train_patch_cnn_parser._action_groups[-1].add_argument(
-        '--transfer_learning_multicnn',
-        help='''Specify if the transfer learning is from multi-CNNs to multi-CNNs.''',
-        default=False, action="store_true")
 
     train_patch_cnn_group = train_patch_cnn_parser.add_argument_group(
         TRAIN_CATEGORIES["PATCH CNN"])
-    train_patch_cnn_group.add_argument(
-        '--network_type',
-        help='Chose between single or multi CNN.',
-        choices=['single', 'multi'], type=str,
-        default='single')
-    train_patch_cnn_group.add_argument(
-        '--num_cnn',
-        help='''How many CNNs are trained in a patch-wise way.
-        This argument is used only if network_type is 'multi'.''',
-        default=36, type=int)
     train_patch_cnn_group.add_argument(
         '--selection_threshold',
         help='''Threshold on the balanced accuracies to compute the
              subject-level performance. Patches are selected if their balanced
              accuracy > threshold. Default corresponds to no selection.''',
+        type=float, default=0.0)
+
+    train_patch_multicnn_parser = train_patch_subparser.add_parser(
+        "multicnn",
+        parents=[
+            train_parent_parser,
+            train_patch_parent,
+            transfer_learning_parent],
+        help="Train a 3D-patch level CNN.")
+    # /!\ If parents list is changed the arguments won't be in the right group anymore !
+    train_patch_multicnn_parser._action_groups[-1].add_argument(
+        '--selection',
+        help="If transfer_learning from CNN, chooses which best transfer model is selected.",
+        type=str, default="best_acc", choices=["best_loss", "best_acc"])
+    train_patch_multicnn_parser._action_groups[-1].add_argument(
+        '--transfer_learning_multicnn',
+        help='''Specify if the transfer learning is from multi-CNNs to multi-CNNs.''',
+        default=False, action="store_true")
+
+    train_patch_multicnn_group = train_patch_multicnn_parser.add_argument_group(
+        TRAIN_CATEGORIES["PATCH CNN"])
+    train_patch_multicnn_group.add_argument(
+        '--num_cnn',
+        help='''How many CNNs are trained in a patch-wise way.
+            This argument is used only if network_type is 'multi'.''',
+        default=36, type=int)
+    train_patch_multicnn_group.add_argument(
+        '--selection_threshold',
+        help='''Threshold on the balanced accuracies to compute the
+                 subject-level performance. Patches are selected if their balanced
+                 accuracy > threshold. Default corresponds to no selection.''',
         type=float, default=0.0)
 
     train_patch_cnn_parser.set_defaults(func=train_func)

@@ -9,6 +9,7 @@ import shutil
     'train_slice',
     'train_image_cnn',
     'train_patch_cnn',
+    'train_patch_multicnn',
     'train_roi_cnn',
 ])
 def cli_commands(request):
@@ -43,6 +44,19 @@ def cli_commands(request):
             'train',
             'patch',
             'cnn',
+            'data/OASIS_test',
+            'data/labels_list',
+            'results',
+            'Conv4_FC3',
+            '--epochs', '1',
+            '--n_splits', '2',
+            '--split', '0',
+        ]
+    elif request.param == 'train_patch_multicnn':
+        test_input = [
+            'train',
+            'patch',
+            'multicnn',
             'data/OASIS_test',
             'data/labels_list',
             'results',
