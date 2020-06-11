@@ -45,8 +45,8 @@ def inference_from_model(caps_dir,
 
     # Load model from path
     best_model, best_epoch = load_model(
-            model, model_dir,
-            options.gpu, filename='model_best.pth.tar')
+        model, model_dir,
+        options.gpu, filename='model_best.pth.tar')
 
     if options.minmaxnormalization:
         transformations = MinMaxNormalization()
@@ -54,23 +54,23 @@ def inference_from_model(caps_dir,
         transformations = None
 
     data_to_test = MRIDataset(
-            options.caps_dir,
-            options.tsv_file,
-            options.preprocessing,
-            transform=transformations)
+        options.caps_dir,
+        options.tsv_file,
+        options.preprocessing,
+        transform=transformations)
 
     test_loader = DataLoader(
-            data_to_test,
-            batch_size=options.batch_size,
-            shuffle=False,
-            num_workers=options.num_workers,
-            pin_memory=True)
+        data_to_test,
+        batch_size=options.batch_size,
+        shuffle=False,
+        num_workers=options.num_workers,
+        pin_memory=True)
 
     metrics_test, loss_test, test_df = test(
-            best_model,
-            test_loader,
-            options.gpu,
-            criterion,
-            full_return=True)
+        best_model,
+        test_loader,
+        options.gpu,
+        criterion,
+        full_return=True)
 
     return testdf
