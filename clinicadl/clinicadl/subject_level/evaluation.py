@@ -12,25 +12,65 @@ from .utils import test
 from ..tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
 from ..tools.deep_learning import create_model, load_model, read_json
 
-parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
 
-# Mandatory arguments
-parser.add_argument("model_path", type=str,
-                    help="Path to the trained model folder.")
+def test_cnn(data_loader, subset_name, split, criterion, options):
 
-# Model selection
-parser.add_argument("--tsv_path", default=None, type=str)
-parser.add_argument("--selection", default="best_loss", type=str, choices=['best_loss', 'best_acc'],
-                    help="Loads the model selected on minimal loss or maximum accuracy on validation.")
+    best_model_dir = os.path.join(options.model_path, 'best_model_dir')
+    json_path = path.join(options.model_path, 'log_dir', 'fold_' + str(split), "commandline_cnn.json")
+    options = read_json(options, "cnn", json_path=json_path)
 
-# Computational resources
-parser.add_argument("--gpu", action="store_true", default=False,
-                    help="if True computes the visualization on GPU")
-parser.add_argument("--num_workers", '-w', default=8, type=int,
-                    help='the number of batch being loaded in parallel')
+    for selection in ["best_acc", "best_loss"]:
+
+        print("Evaluation %s fold %i" % (selection, split))
+        model = create_model(options.network)
+        fold_dir = "fold_%i" % split
+        model_dir = path.join(best_model_dir, fold_dir, 'CNN', selection)
+        best_model, best_epoch = load_model(model, model_dir, options.gpu,
+                                            filename='model_best.pth.tar')
+
+        metrics_dict, loss, results_df = test(best_model, data_loader, options.gpu, criterion, full_return=True)
+
+        acc = metrics_dict['balanced_accuracy'] * 100
+        sen = metrics_dict['sensitivity'] * 100
+        spe = metrics_dict['specificity'] * 100
+        print("%s, acc %f, loss %f, sensibility %f, specificity %f"
+              % (subset_name, acc, loss, sen, spe))
+
+        evaluation_path = path.join(options.model_path, 'performances', fold_dir)
+        if not path.exists(path.join(evaluation_path, selection)):
+            os.makedirs(path.join(evaluation_path, selection))
+
+        results_df.to_csv(
+            path.join(
+                evaluation_path,
+                selection,
+                subset_name + '_subject_level_result.tsv'
+            ),
+            sep='\t', index=False)
+
+        pd.DataFrame(metrics_dict, index=[0]).to_csv(path.join(evaluation_path, selection,
+                                                               subset_name + '_subject_level_metrics.tsv'),
+                                                     sep='\t', index=False)
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
+
+    # Mandatory arguments
+    parser.add_argument("model_path", type=str,
+                        help="Path to the trained model folder.")
+
+    # Model selection
+    parser.add_argument("--tsv_path", default=None, type=str)
+    parser.add_argument("--selection", default="best_loss", type=str, choices=['best_loss', 'best_acc'],
+                        help="Loads the model selected on minimal loss or maximum accuracy on validation.")
+
+    # Computational resources
+    parser.add_argument("--gpu", action="store_true", default=False,
+                        help="if True computes the visualization on GPU")
+    parser.add_argument("--num_workers", '-w', default=8, type=int,
+                        help='the number of batch being loaded in parallel')
+
     ret = parser.parse_known_args()
     options = ret[0]
     if ret[1]:
@@ -38,23 +78,14 @@ if __name__ == "__main__":
 
     # Loop on all folds trained
     best_model_dir = os.path.join(options.model_path, 'best_model_dir')
+    criterion = nn.CrossEntropyLoss()
     folds_dir = os.listdir(best_model_dir)
 
     for fold_dir in folds_dir:
         split = int(fold_dir[-1])
         options.split = split
-        json_path = path.join(options.model_path, 'log_dir', 'fold_' + str(split), "commandline_model_type.json")
-        options = read_json(options, "CNN", json_path=json_path)
 
-        print("Fold %i" % split)
-        model = create_model(options.network)
-
-        criterion = nn.CrossEntropyLoss()
-        model_dir = path.join(best_model_dir, fold_dir, 'CNN', options.selection)
-
-        best_model, best_epoch = load_model(model, model_dir, options.gpu,
-                                            filename='model_best.pth.tar')
-
+        # Data management
         training_tsv, valid_tsv = load_data(options.tsv_path, options.diagnoses,
                                             split, options.n_splits, options.baseline)
 
@@ -81,42 +112,5 @@ if __name__ == "__main__":
                                   pin_memory=True
                                   )
 
-        metrics_train, loss_train, train_df = test(best_model, train_loader, options.gpu, criterion, full_return=True)
-        metrics_valid, loss_valid, valid_df = test(best_model, valid_loader, options.gpu, criterion, full_return=True)
-
-        acc_train = metrics_train['balanced_accuracy'] * 100
-        sen_train = metrics_train['sensitivity'] * 100
-        spe_train = metrics_train['specificity'] * 100
-        acc_valid = metrics_valid['balanced_accuracy'] * 100
-        sen_valid = metrics_valid['sensitivity'] * 100
-        spe_valid = metrics_valid['specificity'] * 100
-        print("Training, acc %f, loss %f, sensibility %f, specificity %f"
-              % (acc_train, loss_train, sen_train, spe_train))
-        print("Validation, acc %f, loss %f, sensibility %f, specificity %f"
-              % (acc_valid, loss_valid, sen_valid, spe_valid))
-
-        evaluation_path = path.join(options.model_path, 'performances', fold_dir)
-        if not path.exists(path.join(evaluation_path, options.selection)):
-            os.makedirs(path.join(evaluation_path, options.selection))
-
-        train_df.to_csv(
-                path.join(
-                    evaluation_path,
-                    options.selection,
-                    'train_subject_level_result.tsv'
-                    ),
-                sep='\t', index=False)
-        valid_df.to_csv(
-                path.join(
-                    evaluation_path,
-                    options.selection,
-                    'valid_subject_level_result.tsv'
-                    ),
-                sep='\t', index=False)
-
-        pd.DataFrame(metrics_train, index=[0]).to_csv(path.join(evaluation_path, options.selection,
-                                                                'train_subject_level_metrics.tsv'),
-                                                      sep='\t', index=False)
-        pd.DataFrame(metrics_valid, index=[0]).to_csv(path.join(evaluation_path, options.selection,
-                                                                'valid_subject_level_metrics.tsv'),
-                                                      sep='\t', index=False)
+        test_cnn(train_loader, "train", split, criterion, options)
+        test_cnn(valid_loader, "validation", split, criterion, options)

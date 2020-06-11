@@ -56,14 +56,14 @@ def train_autoencoder_patch(params):
                     params.input_dir,
                     training_tsv,
                     params.patch_size,
-                    params.patch_stride,
+                    params.stride_size,
                     transformations=transformations,
                     prepare_dl=params.prepare_dl)
             data_valid = MRIDataset_patch(
                     params.input_dir,
                     valid_tsv,
                     params.patch_size,
-                    params.patch_stride,
+                    params.stride_size,
                     transformations=transformations,
                     prepare_dl=params.prepare_dl)
 

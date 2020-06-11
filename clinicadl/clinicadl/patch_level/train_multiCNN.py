@@ -101,7 +101,7 @@ def train_patch_multi_cnn(params):
                     params.input_dir,
                     training_tsv,
                     params.patch_size,
-                    params.patch_stride,
+                    params.stride_size,
                     transformations=transformations,
                     patch_index=i,
                     prepare_dl=params.prepare_dl
@@ -111,7 +111,7 @@ def train_patch_multi_cnn(params):
                     params.input_dir,
                     valid_tsv,
                     params.patch_size,
-                    params.patch_stride,
+                    params.stride_size,
                     transformations=transformations,
                     patch_index=i,
                     prepare_dl=params.prepare_dl

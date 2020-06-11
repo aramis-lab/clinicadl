@@ -48,7 +48,7 @@ parser.add_argument("--diagnoses", default=["sMCI", "pMCI"], type=str, nargs="+"
                     help="Labels based on binary classification.")
 parser.add_argument("--patch_size", default=50, type=int,
                     help="The patch size extracted from the MRI")
-parser.add_argument("--patch_stride", default=50, type=int,
+parser.add_argument("--stride_size", default=50, type=int,
                     help="The stride for the patch extract window from the MRI")
 parser.add_argument('--hippocampus_roi', default=False, action="store_true",
                     help="If train the model using only hippocampus ROI")
@@ -100,7 +100,7 @@ def main(options):
             data_test = MRIDataset_patch_hippocampus(options.caps_directory, test_df, transformations=transformations)
         else:
             data_test = MRIDataset_patch(options.caps_directory, test_df, options.patch_size,
-                                         options.patch_stride, transformations=transformations,
+                                         options.stride_size, transformations=transformations,
                                          prepare_dl=options.prepare_dl)
 
         test_loader = DataLoader(data_test,
