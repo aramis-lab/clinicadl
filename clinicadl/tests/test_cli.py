@@ -128,6 +128,14 @@ def generate_cli_commands(request):
             '/dir/tsv_path/',
             '/dir/output/',
             'Conv5_FC3']
+        keys_output = [
+            'task',
+            'mode',
+            'mode_task',
+            'caps_dir',
+            'tsv_path',
+            'output_dir',
+            'network']
     if request.param == 'train_multipatch':
         test_input = [
             'train',
