@@ -47,7 +47,7 @@ class Parameters:
             transfer_learning_multicnn: bool = False,
             selection: str = "best_acc",
             patch_size: int = 50,
-            patch_stride: int = 50,
+            stride_size: int = 50,
             hippocampus_roi: bool = False,
             selection_threshold: float = 0.0,
             num_cnn: int = 36,
@@ -81,7 +81,7 @@ class Parameters:
         selection: Allow to choose which model of the experiment is loaded .
                    choices ["best_loss", "best_acc"]
         patch_size: The patch size extracted from the MRI.
-        patch_stride: The stride for the patch extract window from the MRI
+        stride_size: The stride for the patch extract window from the MRI
         hippocampus_roi: If train the model using only hippocampus ROI.
         selection_threshold: Threshold on the balanced accuracies to compute
                              the subject_level performance.
@@ -122,7 +122,7 @@ class Parameters:
         self.transfer_learning_multicnn = transfer_learning_multicnn
         self.selection = selection
         self.patch_size = patch_size
-        self.patch_stride = patch_stride
+        self.stride_size = stride_size
         self.hippocampus_roi = hippocampus_roi
         self.num_cnn = num_cnn
         self.mri_plane = mri_plane
@@ -275,8 +275,7 @@ def visualize_subject(decoder, dataloader, visualization_path, options, epoch=No
     data = dataset[subject_index]
     image_path = data['image_path']
 
-    # Retrocompatibility with old version where the tensor is stored at the
-    # same location with the nifti image
+    # TODO: Change nifti path
     nii_path, _ = path.splitext(image_path)
     nii_path += '.nii.gz'
 

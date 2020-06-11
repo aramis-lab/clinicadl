@@ -7,6 +7,7 @@ from os import path
 from torch.utils.data import DataLoader
 
 from .utils import train
+from .evaluation import test_cnn
 from ..tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data
 from ..tools.deep_learning import create_model
 from ..tools.deep_learning.models import transfer_learning
@@ -94,6 +95,10 @@ def train_cnn(params):
 
     print('Beginning the training task')
     train(model, train_loader, valid_loader, criterion, optimizer, False, params)
+
+    params.model_path = params.output_dir
+    test_cnn(train_loader, "train", params.split, criterion, params)
+    test_cnn(valid_loader, "validation", params.split, criterion, params)
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)
