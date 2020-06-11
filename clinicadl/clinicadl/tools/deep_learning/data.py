@@ -245,16 +245,8 @@ class MRIDataset_patch_hippocampus(Dataset):
         # 1 is left hippocampus, 0 is right
         left_is_odd = idx % self.patchs_per_patient
         if self.prepare_dl:
-            if left_is_odd == 1:
-                patch_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                          't1', 'preprocessing_dl',
-                                          img_name + '_' + sess_name + '_space-MNI_res-1x1x1_hippocampus_hemi-left.pt')
-            else:
-                patch_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                          't1', 'preprocessing_dl',
-                                          img_name + '_' + sess_name + '_space-MNI_res-1x1x1_hippocampus_hemi-right.pt')
+            raise NotImplementedError('The extraction of ROIs prior to training is not implemented.')
 
-            patch = torch.load(patch_path)
         else:
             image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
                                    'deeplearning_prepare_data', 'image_based', 't1_linear',
@@ -518,7 +510,7 @@ def extract_roi_from_mri(image_tensor, left_is_odd):
                     crop_center[0] - crop_size[0] // 2: crop_center[0] + crop_size[0] // 2:,
                     crop_center[1] - crop_size[1] // 2: crop_center[1] + crop_size[1] // 2:,
                     crop_center[2] - crop_size[2] // 2: crop_center[2] + crop_size[2] // 2:
-    ]
+    ].clone()
 
     return extracted_roi
 

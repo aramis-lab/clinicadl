@@ -286,7 +286,6 @@ def train_func(args):
                 num_workers=args.nproc,
                 hippocampus_roi=True,
                 visualization=args.visualization,
-                prepare_dl=args.use_extracted_roi
             )
             train_autoencoder_patch(train_params_autoencoder)
         else:
@@ -316,7 +315,6 @@ def train_func(args):
                 selection=args.selection,
                 hippocampus_roi=True,
                 selection_threshold=args.selection_threshold,
-                prepare_dl=args.use_extracted_roi
             )
             train_patch_single_cnn(train_params_patch)
 
@@ -908,15 +906,6 @@ def parse_command_line():
         "roi",
         help="Train a ROI-based level network.")
 
-    train_roi_parent = argparse.ArgumentParser(add_help=False)
-    train_roi_group = train_roi_parent.add_argument_group(
-        TRAIN_CATEGORIES["ROI"])
-    train_roi_group.add_argument(
-        '--use_extracted_roi',
-        help='''If True the outputs of extract preprocessing are used, else the whole
-             MRI is loaded.''',
-        default=False, action="store_true")
-
     train_roi_subparser = train_roi_parser.add_subparsers(
         title='''Task to be performed''',
         description='''Autoencoder or cnn?''',
@@ -927,7 +916,6 @@ def parse_command_line():
     train_roi_ae_parser = train_roi_subparser.add_parser(
         "autoencoder",
         parents=[train_parent_parser,
-                 train_roi_parent,
                  autoencoder_parent],
         help="Train a 3D-patch level autoencoder.")
 
@@ -937,7 +925,6 @@ def parse_command_line():
         "cnn",
         parents=[
             train_parent_parser,
-            train_roi_parent,
             transfer_learning_parent],
         help="Train a 3D-patch level CNN.")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
