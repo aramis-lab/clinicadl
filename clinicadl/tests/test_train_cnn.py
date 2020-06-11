@@ -75,4 +75,4 @@ def test_train(cli_commands):
     os.system("clinicadl " + " ".join(test_input))
     performances_flag = os.path.exists(os.path.join("results", "performances", "fold_0", "best_loss"))
     assert performances_flag
-    #shutil.rmtree("results")
+    shutil.rmtree("results")
