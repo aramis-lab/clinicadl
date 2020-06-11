@@ -84,7 +84,7 @@ class Parameters:
         stride_size: The stride for the patch extract window from the MRI
         hippocampus_roi: If train the model using only hippocampus ROI.
         selection_threshold: Threshold on the balanced accuracies to compute
-                             the subject_level performance.
+                             the subject-level performance.
         num_cnn: How many CNNs we want to train in a patch-wise way.
                  By default, each patch is trained from all subjects for one CNN.
         mri_plane: Which coordinate axis to take for slicing the MRI.

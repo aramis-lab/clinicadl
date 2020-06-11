@@ -58,7 +58,7 @@ parser.add_argument("--num_cnn", default=36, type=int,
 parser.add_argument("--diagnoses", default=["sMCI", "pMCI"], type=str, nargs="+",
                     help="Labels based on binary classification.")
 parser.add_argument('--selection_threshold', default=None, type=float,
-                    help='Threshold on the balanced accuracies to compute the subject_level performance '
+                    help='Threshold on the balanced accuracies to compute the subject-level performance '
                          'only based on patches with balanced accuracy > threshold.')
 
 # Computational issues

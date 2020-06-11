@@ -96,8 +96,8 @@ def generate_data_func(args):
 
 # Function to dispatch training to corresponding function
 def train_func(args):
-    from .subject_level.train_autoencoder import train_autoencoder
-    from .subject_level.train_CNN import train_cnn
+    from .image_level.train_autoencoder import train_autoencoder
+    from .image_level.train_CNN import train_cnn
     from .slice_level.train_CNN import train_slice
     from .patch_level.train_autoencoder import train_autoencoder_patch
     from .patch_level.train_singleCNN import train_patch_single_cnn
