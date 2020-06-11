@@ -97,8 +97,7 @@ def main(options):
             test_df = load_data_test(options.diagnosis_tsv_path, options.diagnoses)
 
         if options.hippocampus_roi:
-            data_test = MRIDataset_patch_hippocampus(options.caps_directory, test_df, transformations=transformations,
-                                                     prepare_dl=options.prepare_dl)
+            data_test = MRIDataset_patch_hippocampus(options.caps_directory, test_df, transformations=transformations)
         else:
             data_test = MRIDataset_patch(options.caps_directory, test_df, options.patch_size,
                                          options.stride_size, transformations=transformations,

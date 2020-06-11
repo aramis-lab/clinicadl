@@ -45,14 +45,12 @@ def train_autoencoder_patch(params):
             data_train = MRIDataset_patch_hippocampus(
                 params.input_dir,
                 training_tsv,
-                transformations=transformations,
-                prepare_dl=params.prepare_dl
+                transformations=transformations
             )
             data_valid = MRIDataset_patch_hippocampus(
                 params.input_dir,
                 valid_tsv,
-                transformations=transformations,
-                prepare_dl=params.prepare_dl
+                transformations=transformations
             )
 
         else:
