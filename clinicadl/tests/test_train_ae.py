@@ -8,7 +8,7 @@ import shutil
 @pytest.fixture(params=[
     'train_image_ae',
     'train_patch_ae',
-    # 'train_roi_ae',
+    'train_roi_ae',
 ])
 def cli_commands(request):
     if request.param == 'train_image_ae':
