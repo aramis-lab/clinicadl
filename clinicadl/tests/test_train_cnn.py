@@ -84,7 +84,9 @@ def cli_commands(request):
             '-cpu'
         ]
     else:
-        raise NotImplementedError("Test %s is not implemented." % request.param)
+        raise NotImplementedError(
+            "Test %s is not implemented." %
+            request.param)
 
     return test_input
 
@@ -92,6 +94,7 @@ def cli_commands(request):
 def test_train(cli_commands):
     test_input = cli_commands
     os.system("clinicadl " + " ".join(test_input))
-    performances_flag = os.path.exists(os.path.join("results", "performances", "fold_0"))
+    performances_flag = os.path.exists(
+        os.path.join("results", "performances", "fold_0"))
     assert performances_flag
     shutil.rmtree("results")

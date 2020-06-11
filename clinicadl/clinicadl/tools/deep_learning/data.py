@@ -18,7 +18,8 @@ FILENAME_TYPE = {'full': '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w',
 class MRIDataset(Dataset):
     """Dataset of MRI organized in a CAPS folder."""
 
-    def __init__(self, img_dir, data_file, preprocessing='linear', transform=None):
+    def __init__(self, img_dir, data_file,
+                 preprocessing='t1-linear', transform=None):
         """
         Args:
             img_dir (string): Directory of all the images.
@@ -29,7 +30,13 @@ class MRIDataset(Dataset):
         """
         self.img_dir = img_dir
         self.transform = transform
-        self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1, 'unlabeled': -1}
+        self.diagnosis_code = {
+            'CN': 0,
+            'AD': 1,
+            'sMCI': 0,
+            'pMCI': 1,
+            'MCI': 1,
+            'unlabeled': -1}
         self.data_path = preprocessing
 
         # Check the format of the tsv file here
@@ -65,7 +72,9 @@ class MRIDataset(Dataset):
                                    't1', 'spm', 'segmentation', 'normalized_space',
                                    img_name + '_' + sess_name + '_space-Ixi549Space_T1w.pt')
         else:
-            raise NotImplementedError("The data path %s is not implemented" % self.data_path)
+            raise NotImplementedError(
+                "The data path %s is not implemented" %
+                self.data_path)
 
         image = torch.load(image_path)
         label = self.diagnosis_code[img_label]
@@ -94,7 +103,9 @@ class MRIDataset(Dataset):
             df_session.reset_index(drop=True, inplace=True)
             data_output.df = df_session
             if len(data_output) == 0:
-                raise Exception("The session %s doesn't exist for any of the subjects in the test data" % session)
+                raise Exception(
+                    "The session %s doesn't exist for any of the subjects in the test data" %
+                    session)
             return data_output
 
 
@@ -111,7 +122,12 @@ class MRIDataset_patch(Dataset):
         """
         self.caps_directory = caps_directory
         self.transformations = transformations
-        self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
+        self.diagnosis_code = {
+            'CN': 0,
+            'AD': 1,
+            'sMCI': 0,
+            'pMCI': 1,
+            'MCI': 1}
         self.patch_size = patch_size
         self.stride_size = stride_size
         self.prepare_dl = prepare_dl
@@ -148,25 +164,27 @@ class MRIDataset_patch(Dataset):
 
         if self.prepare_dl:
             patch_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                      'deeplearning_prepare_data', 'patch_based', 't1_linear',
-                                      img_name + '_' + sess_name
-                                      + FILENAME_TYPE['cropped']
-                                      + '_patchsize-' + str(self.patch_size)
-                                      + '_stride-' + str(self.stride_size)
-                                      + '_patch-' + str(patch_idx) + '.pt')
+                                   'deeplearning_prepare_data', 'patch_based', 't1_linear',
+                                   img_name + '_' + sess_name
+                                   + FILENAME_TYPE['cropped']
+                                   + '_patchsize-' + str(self.patch_size)
+                                   + '_stride-' + str(self.stride_size)
+                                   + '_patch-' + str(patch_idx) + '.pt')
 
             patch = torch.load(patch_path)
         else:
             image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                      'deeplearning_prepare_data', 'image_based', 't1_linear',
-                                      img_name + '_' + sess_name
-                                      + FILENAME_TYPE['cropped'] + '.pt')
+                                   'deeplearning_prepare_data', 'image_based', 't1_linear',
+                                   img_name + '_' + sess_name
+                                   + FILENAME_TYPE['cropped'] + '.pt')
             image = torch.load(image_path)
-            patch = extract_patch_from_mri(image, patch_idx, self.patch_size, self.stride_size)
+            patch = extract_patch_from_mri(
+                image, patch_idx, self.patch_size, self.stride_size)
 
         # check if the patch has NaN value
         if torch.isnan(patch).any():
-            print("Double check, this patch has NaN value: %s" % str(img_name + '_' + sess_name + str(patch_idx)))
+            print("Double check, this patch has NaN value: %s" %
+                  str(img_name + '_' + sess_name + str(patch_idx)))
             patch[torch.isnan(patch)] = 0
 
         if self.transformations:
@@ -187,22 +205,26 @@ class MRIDataset_patch(Dataset):
         sess_name = self.df.loc[0, 'session_id']
 
         image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                  'deeplearning_prepare_data', 'image_based', 't1_linear',
-                                  img_name + '_' + sess_name
-                                  + FILENAME_TYPE['cropped'] + '.pt')
+                               'deeplearning_prepare_data', 'image_based', 't1_linear',
+                               img_name + '_' + sess_name
+                               + FILENAME_TYPE['cropped'] + '.pt')
         image = torch.load(image_path)
 
         patches_tensor = image.unfold(1, self.patch_size, self.stride_size
                                       ).unfold(2, self.patch_size, self.stride_size
                                                ).unfold(3, self.patch_size, self.stride_size).contiguous()
-        patches_tensor = patches_tensor.view(-1, self.patch_size, self.patch_size, self.patch_size)
+        patches_tensor = patches_tensor.view(-1,
+                                             self.patch_size,
+                                             self.patch_size,
+                                             self.patch_size)
         num_patches = patches_tensor.shape[0]
         return num_patches
 
 
 class MRIDataset_patch_hippocampus(Dataset):
 
-    def __init__(self, caps_directory, data_file, transformations=None, prepare_dl=False):
+    def __init__(self, caps_directory, data_file,
+                 transformations=None, prepare_dl=False):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -214,7 +236,12 @@ class MRIDataset_patch_hippocampus(Dataset):
         """
         self.caps_directory = caps_directory
         self.transformations = transformations
-        self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
+        self.diagnosis_code = {
+            'CN': 0,
+            'AD': 1,
+            'sMCI': 0,
+            'pMCI': 1,
+            'MCI': 1}
         self.prepare_dl = prepare_dl
 
         # Check the format of the tsv file here
@@ -245,7 +272,8 @@ class MRIDataset_patch_hippocampus(Dataset):
         # 1 is left hippocampus, 0 is right
         left_is_odd = idx % self.patchs_per_patient
         if self.prepare_dl:
-            raise NotImplementedError('The extraction of ROIs prior to training is not implemented.')
+            raise NotImplementedError(
+                'The extraction of ROIs prior to training is not implemented.')
 
         else:
             image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
@@ -257,7 +285,8 @@ class MRIDataset_patch_hippocampus(Dataset):
 
         # check if the patch has NaN value
         if torch.isnan(patch).any():
-            print("Double check, this patch has NaN value: %s" % str(img_name + '_' + sess_name + str(left_is_odd)))
+            print("Double check, this patch has NaN value: %s" %
+                  str(img_name + '_' + sess_name + str(left_is_odd)))
             patch[torch.isnan(patch)] = 0
 
         if self.transformations:
@@ -280,7 +309,8 @@ class MRIDataset_slice(Dataset):
     Return: a Pytorch Dataset objective
     """
 
-    def __init__(self, caps_directory, data_file, transformations=None, mri_plane=0, prepare_dl=False):
+    def __init__(self, caps_directory, data_file,
+                 transformations=None, mri_plane=0, prepare_dl=False):
         """
         Args:
             caps_directory (string): the output folder of image processing pipeline.
@@ -294,7 +324,12 @@ class MRIDataset_slice(Dataset):
         """
         self.caps_directory = caps_directory
         self.transformations = transformations
-        self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
+        self.diagnosis_code = {
+            'CN': 0,
+            'AD': 1,
+            'sMCI': 0,
+            'pMCI': 1,
+            'MCI': 1}
         self.mri_plane = mri_plane
         self.prepare_dl = prepare_dl
 
@@ -306,7 +341,8 @@ class MRIDataset_slice(Dataset):
         else:
             raise Exception('The argument datafile is not of correct type.')
 
-        # This dimension is for the output of image processing pipeline of Raw: 169 * 208 * 179
+        # This dimension is for the output of image processing pipeline of Raw:
+        # 169 * 208 * 179
         if mri_plane == 0:
             self.slices_per_patient = 169 - 40
             self.slice_direction = 'sag'
@@ -331,22 +367,24 @@ class MRIDataset_slice(Dataset):
         if self.prepare_dl:
             # read the slices directly
             slice_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                      'deeplearning_prepare_data', 'slice_based', 't1_linear',
-                                      img_name + '_' + sess_name
-                                      + FILENAME_TYPE['cropped']
-                                      + self.slice_direction + '_rgbslice-' + str(slice_idx + 20) + '.pt')
+                                   'deeplearning_prepare_data', 'slice_based', 't1_linear',
+                                   img_name + '_' + sess_name
+                                   + FILENAME_TYPE['cropped']
+                                   + self.slice_direction + '_rgbslice-' + str(slice_idx + 20) + '.pt')
             extracted_slice = torch.load(slice_path)
         else:
             image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                      'deeplearning_prepare_data', 'image_based', 't1_linear',
-                                      img_name + '_' + sess_name
-                                      + FILENAME_TYPE['cropped'] + '.pt')
+                                   'deeplearning_prepare_data', 'image_based', 't1_linear',
+                                   img_name + '_' + sess_name
+                                   + FILENAME_TYPE['cropped'] + '.pt')
             image = torch.load(image_path)
-            extracted_slice = extract_slice_from_mri(image, slice_idx + 20, self.mri_plane)
+            extracted_slice = extract_slice_from_mri(
+                image, slice_idx + 20, self.mri_plane)
 
         # check if the slice has NaN value
         if torch.isnan(extracted_slice).any():
-            print("Slice %s has NaN values." % str(img_name + '_' + sess_name + '_' + str(slice_idx + 20)))
+            print("Slice %s has NaN values." %
+                  str(img_name + '_' + sess_name + '_' + str(slice_idx + 20)))
             extracted_slice[torch.isnan(extracted_slice)] = 0
 
         if self.transformations:
@@ -369,7 +407,8 @@ class MRIDataset_slice_mixed(Dataset):
     Return: a Pytorch Dataset objective
     """
 
-    def __init__(self, caps_directory, data_file, transformations=None, mri_plane=0, prepare_dl=False):
+    def __init__(self, caps_directory, data_file,
+                 transformations=None, mri_plane=0, prepare_dl=False):
         """
         Args:
             caps_directory (string): the output folder of image processing pipeline.
@@ -383,7 +422,12 @@ class MRIDataset_slice_mixed(Dataset):
         """
         self.caps_directory = caps_directory
         self.transformations = transformations
-        self.diagnosis_code = {'CN': 0, 'AD': 1, 'sMCI': 0, 'pMCI': 1, 'MCI': 1}
+        self.diagnosis_code = {
+            'CN': 0,
+            'AD': 1,
+            'sMCI': 0,
+            'pMCI': 1,
+            'MCI': 1}
         self.mri_plane = mri_plane
         self.prepare_dl = prepare_dl
 
@@ -414,22 +458,25 @@ class MRIDataset_slice_mixed(Dataset):
 
         if self.prepare_dl:
             slice_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                      'deeplearning_prepare_data', 'slice_based', 't1_linear',
-                                      img_name + '_' + sess_name
-                                      + FILENAME_TYPE['cropped']
-                                      + self.slice_direction + '_rgbslice-' + str(slice_name) + '.pt')
+                                   'deeplearning_prepare_data', 'slice_based', 't1_linear',
+                                   img_name + '_' + sess_name
+                                   + FILENAME_TYPE['cropped']
+                                   + self.slice_direction + '_rgbslice-' + str(slice_name) + '.pt')
             extracted_slice = torch.load(slice_path)
 
         else:
             image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                      'deeplearning_prepare_data', 'image_based', 't1_linear',
-                                      img_name + '_' + sess_name
-                                      + FILENAME_TYPE['cropped'] + '.pt')
-            extracted_slice = extract_slice_from_mri(image, slice_name, self.mri_plane)
+                                   'deeplearning_prepare_data', 'image_based', 't1_linear',
+                                   img_name + '_' + sess_name
+                                   + FILENAME_TYPE['cropped'] + '.pt')
+            image = torch.load(image_path)
+            extracted_slice = extract_slice_from_mri(
+                image, slice_name, self.mri_plane)
 
         # check if the slice has NaN value
         if torch.isnan(extracted_slice).any():
-            print("Slice %s has NaN values." % str(img_name + '_' + sess_name + '_' + str(slice_name)))
+            print("Slice %s has NaN values." %
+                  str(img_name + '_' + sess_name + '_' + str(slice_name)))
             extracted_slice[torch.isnan(extracted_slice)] = 0
 
         if self.transformations:
@@ -472,7 +519,8 @@ def extract_slice_from_mri(image, index_slice, view):
         slice_select = image_tensor[:, :, index_slice].clone()
 
     else:
-        raise ValueError("This view does not exist, please choose view in [0, 1, 2]")
+        raise ValueError(
+            "This view does not exist, please choose view in [0, 1, 2]")
 
     extracted_slice = torch.stack((slice_select, slice_select, slice_select))
 
@@ -485,7 +533,10 @@ def extract_patch_from_mri(image_tensor, index_patch, patch_size, stride_size):
     patches_tensor = image_tensor.unfold(1, patch_size, stride_size
                                          ).unfold(2, patch_size, stride_size
                                                   ).unfold(3, patch_size, stride_size).contiguous()
-    patches_tensor = patches_tensor.view(-1, patch_size, patch_size, patch_size)
+    patches_tensor = patches_tensor.view(-1,
+                                         patch_size,
+                                         patch_size,
+                                         patch_size)
     extracted_patch = patches_tensor[index_patch, ...].unsqueeze_(0).clone()
 
     return extracted_patch
@@ -506,10 +557,10 @@ def extract_roi_from_mri(image_tensor, left_is_odd):
     crop_size = (50, 50, 50)  # the output cropped hippocampus size
 
     extracted_roi = image_tensor[
-                    :,
-                    crop_center[0] - crop_size[0] // 2: crop_center[0] + crop_size[0] // 2:,
-                    crop_center[1] - crop_size[1] // 2: crop_center[1] + crop_size[1] // 2:,
-                    crop_center[2] - crop_size[2] // 2: crop_center[2] + crop_size[2] // 2:
+        :,
+        crop_center[0] - crop_size[0] // 2: crop_center[0] + crop_size[0] // 2:,
+        crop_center[1] - crop_size[1] // 2: crop_center[1] + crop_size[1] // 2:,
+        crop_center[2] - crop_size[2] // 2: crop_center[2] + crop_size[2] // 2:
     ].clone()
 
     return extracted_roi
@@ -546,7 +597,8 @@ class MinMaxNormalization(object):
         return (image - image.min()) / (image.max() - image.min())
 
 
-def load_data(train_val_path, diagnoses_list, split, n_splits=None, baseline=True):
+def load_data(train_val_path, diagnoses_list,
+              split, n_splits=None, baseline=True):
 
     train_df = pd.DataFrame()
     valid_df = pd.DataFrame()
@@ -567,11 +619,13 @@ def load_data(train_val_path, diagnoses_list, split, n_splits=None, baseline=Tru
     for diagnosis in diagnoses_list:
 
         if baseline:
-            train_diagnosis_path = path.join(train_path, diagnosis + '_baseline.tsv')
+            train_diagnosis_path = path.join(
+                train_path, diagnosis + '_baseline.tsv')
         else:
             train_diagnosis_path = path.join(train_path, diagnosis + '.tsv')
 
-        valid_diagnosis_path = path.join(valid_path, diagnosis + '_baseline.tsv')
+        valid_diagnosis_path = path.join(
+            valid_path, diagnosis + '_baseline.tsv')
 
         train_diagnosis_df = pd.read_csv(train_diagnosis_path, sep='\t')
         valid_diagnosis_df = pd.read_csv(valid_diagnosis_path, sep='\t')
