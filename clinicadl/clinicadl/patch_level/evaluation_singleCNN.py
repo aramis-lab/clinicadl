@@ -59,7 +59,7 @@ parser.add_argument("--n_splits", default=5, type=int,
 parser.add_argument("--split", default=None, type=int,
                     help="Default behaviour will run all splits, else only the splits specified will be run.")
 parser.add_argument('--selection_threshold', default=None, type=float,
-                    help='Threshold on the balanced accuracies to compute the subject_level performance '
+                    help='Threshold on the balanced accuracies to compute the subject-level performance '
                          'only based on patches with balanced accuracy > threshold.')
 
 

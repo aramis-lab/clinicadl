@@ -142,7 +142,7 @@ parser.add_argument(
         '--selection_threshold',
         default=None,
         type=float,
-        help='Threshold on the balanced accuracies to compute the subject_level '
+        help='Threshold on the balanced accuracies to compute the subject-level '
              'performance only based on patches with balanced accuracy > threshold.')
 
 parser.add_argument(
