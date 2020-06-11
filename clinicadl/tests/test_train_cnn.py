@@ -9,7 +9,7 @@ import shutil
     'train_slice',
     'train_image_cnn',
     'train_patch_cnn',
-    # 'train_roi_cnn',
+    'train_roi_cnn',
 ])
 def cli_commands(request):
 
