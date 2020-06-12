@@ -2,7 +2,6 @@
 
 import os
 import torch
-import argparse
 import copy
 import numpy as np
 from torch.utils.data import DataLoader
@@ -12,10 +11,8 @@ import torchvision.transforms as transforms
 from .utils import load_model_after_ae, load_model_after_cnn
 from .utils import train, test, patch_level_to_tsvs, soft_voting_to_tsvs
 
-from ..tools.deep_learning.iotools import Parameters
 from ..tools.deep_learning import (EarlyStopping,
                                    save_checkpoint,
-                                   commandline_to_json,
                                    create_model,
                                    load_model)
 from ..tools.deep_learning.data import (MinMaxNormalization,
@@ -77,7 +74,7 @@ def train_patch_single_cnn(params):
                             'best_model_dir',
                             "fold_" + str(fi),
                             'CNN',
-                            'best_acc'),
+                            params.selection),
                         filename='model_best.pth.tar')
         else:
             print('The model is trained from scratch.')
@@ -87,22 +84,22 @@ def train_patch_single_cnn(params):
             print("Only using hippocampus ROI")
 
             data_train = MRIDataset_patch_hippocampus(
-                    params.input_dir,
-                    training_tsv,
-                    transformations=transformations
-                    )
+                params.input_dir,
+                training_tsv,
+                transformations=transformations
+            )
             data_valid = MRIDataset_patch_hippocampus(
-                    params.input_dir,
-                    valid_tsv,
-                    transformations=transformations
-                    )
+                params.input_dir,
+                valid_tsv,
+                transformations=transformations
+            )
 
         else:
             data_train = MRIDataset_patch(
                     params.input_dir,
                     training_tsv,
                     params.patch_size,
-                    params.patch_stride,
+                    params.stride_size,
                     transformations=transformations,
                     prepare_dl=params.prepare_dl
                     )
@@ -110,7 +107,7 @@ def train_patch_single_cnn(params):
                     params.input_dir,
                     valid_tsv,
                     params.patch_size,
-                    params.patch_stride,
+                    params.stride_size,
                     transformations=transformations,
                     prepare_dl=params.prepare_dl
                     )
@@ -133,7 +130,9 @@ def train_patch_single_cnn(params):
                 )
 
         # Define loss and optimizer
-        optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), params.learning_rate, weight_decay=params.weight_decay)
+        optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
+                                                            lr=params.learning_rate,
+                                                            weight_decay=params.weight_decay)
 
         loss = torch.nn.CrossEntropyLoss()
 

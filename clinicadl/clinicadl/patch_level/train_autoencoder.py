@@ -1,6 +1,5 @@
 # coding: utf8
 
-import argparse
 import copy
 import torch
 import os
@@ -10,8 +9,7 @@ import torchvision.transforms as transforms
 
 from .utils import stacked_ae_learning, visualize_ae
 
-from ..tools.deep_learning.iotools import Parameters
-from ..tools.deep_learning import commandline_to_json, create_model
+from ..tools.deep_learning import create_model
 from ..tools.deep_learning.data import (load_data,
                                         MinMaxNormalization,
                                         MRIDataset_patch,
@@ -45,27 +43,29 @@ def train_autoencoder_patch(params):
             print("Only using hippocampus ROI")
 
             data_train = MRIDataset_patch_hippocampus(
-                    params.input_dir,
-                    training_tsv,
-                    transformations=transformations)
+                params.input_dir,
+                training_tsv,
+                transformations=transformations
+            )
             data_valid = MRIDataset_patch_hippocampus(
-                    params.input_dir,
-                    valid_tsv,
-                    transformations=transformations)
+                params.input_dir,
+                valid_tsv,
+                transformations=transformations
+            )
 
         else:
             data_train = MRIDataset_patch(
                     params.input_dir,
                     training_tsv,
                     params.patch_size,
-                    params.patch_stride,
+                    params.stride_size,
                     transformations=transformations,
                     prepare_dl=params.prepare_dl)
             data_valid = MRIDataset_patch(
                     params.input_dir,
                     valid_tsv,
                     params.patch_size,
-                    params.patch_stride,
+                    params.stride_size,
                     transformations=transformations,
                     prepare_dl=params.prepare_dl)
 
@@ -75,16 +75,14 @@ def train_autoencoder_patch(params):
                 batch_size=params.batch_size,
                 shuffle=True,
                 num_workers=params.num_workers,
-                pin_memory=True
-                                  )
+                pin_memory=True)
 
         valid_loader = DataLoader(
                 data_valid,
                 batch_size=params.batch_size,
                 shuffle=False,
                 num_workers=params.num_workers,
-                pin_memory=True
-                                  )
+                pin_memory=True)
 
         model.load_state_dict(init_state)
 
