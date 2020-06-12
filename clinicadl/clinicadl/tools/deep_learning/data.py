@@ -67,7 +67,7 @@ class MRIDataset(Dataset):
                                    'deeplearning_prepare_data', 'image_based', 't1_linear',
                                    img_name + '_' + sess_name
                                    + FILENAME_TYPE['cropped'] + '.pt')
-        elif self.data_path == "t1-volume":
+        elif self.data_path == "t1-extensive":
             image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
                                    't1', 'spm', 'segmentation', 'normalized_space',
                                    img_name + '_' + sess_name + '_space-Ixi549Space_T1w.pt')
@@ -112,7 +112,7 @@ class MRIDataset(Dataset):
 class MRIDataset_patch(Dataset):
 
     def __init__(self, caps_directory, data_file, patch_size, stride_size, transformations=None, prepare_dl=False,
-                 patch_index=None):
+                 patch_index=None, preprocessing="t1-linear"):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -122,6 +122,7 @@ class MRIDataset_patch(Dataset):
         """
         self.caps_directory = caps_directory
         self.transformations = transformations
+        self.preprocessing = preprocessing
         self.diagnosis_code = {
             'CN': 0,
             'AD': 1,
@@ -145,6 +146,10 @@ class MRIDataset_patch(Dataset):
            ('participant_id' not in list(self.df.columns.values)):
             raise Exception("the data file is not in the correct format."
                             "Columns should include ['participant_id', 'session_id', 'diagnosis']")
+
+        if self.preprocessing != "t1-linear":
+            raise NotImplementedError("The preprocessing %s was not implemented for patches. "
+                                      "Raise an issue on GitHub to propose it !" % self.preprocessing)
 
         self.patchs_per_patient = self.num_patches_per_session()
 
@@ -223,7 +228,7 @@ class MRIDataset_patch(Dataset):
 
 class MRIDataset_patch_hippocampus(Dataset):
 
-    def __init__(self, caps_directory, data_file,
+    def __init__(self, caps_directory, data_file, preprocessing="t1-linear",
                  transformations=None, prepare_dl=False):
         """
         Args:
@@ -236,6 +241,7 @@ class MRIDataset_patch_hippocampus(Dataset):
         """
         self.caps_directory = caps_directory
         self.transformations = transformations
+        self.preprocessing = preprocessing
         self.diagnosis_code = {
             'CN': 0,
             'AD': 1,
@@ -257,6 +263,9 @@ class MRIDataset_patch_hippocampus(Dataset):
             raise Exception("the data file is not in the correct format."
                             "Columns should include ['participant_id', 'session_id', 'diagnosis']")
 
+        if self.preprocessing != "t1-linear":
+            raise NotImplementedError("The preprocessing %s was not implemented for ROI. "
+                                      "Raise an issue on GitHub to propose it !" % self.preprocessing)
         self.patchs_per_patient = 2
 
     def __len__(self):
@@ -309,7 +318,7 @@ class MRIDataset_slice(Dataset):
     Return: a Pytorch Dataset objective
     """
 
-    def __init__(self, caps_directory, data_file,
+    def __init__(self, caps_directory, data_file, preprocessing="t1-linear",
                  transformations=None, mri_plane=0, prepare_dl=False):
         """
         Args:
@@ -324,6 +333,7 @@ class MRIDataset_slice(Dataset):
         """
         self.caps_directory = caps_directory
         self.transformations = transformations
+        self.preprocessing = preprocessing
         self.diagnosis_code = {
             'CN': 0,
             'AD': 1,
@@ -352,6 +362,10 @@ class MRIDataset_slice(Dataset):
         elif mri_plane == 2:
             self.slices_per_patient = 179 - 40
             self.slice_direction = 'axi'
+
+        if self.preprocessing != "t1-linear":
+            raise NotImplementedError("The preprocessing %s was not implemented for slices. "
+                                      "Raise an issue on GitHub to propose it !" % self.preprocessing)
 
     def __len__(self):
         return len(self.df) * self.slices_per_patient

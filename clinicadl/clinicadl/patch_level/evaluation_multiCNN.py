@@ -27,6 +27,9 @@ parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D patch-lev
 # Mandatory argument
 parser.add_argument("caps_directory", type=str,
                     help="Path to the caps of image processing pipeline of DL")
+parser.add_argument('preprocessing', type=str,
+                    help='Defines the type of preprocessing of CAPS data.',
+                    choices=['t1-linear', 't1-extensive'])
 parser.add_argument("diagnosis_tsv_path", type=str,
                     help="Path to the tsv containing all the test dataset")
 parser.add_argument("output_dir", type=str,
@@ -100,6 +103,7 @@ def main(options):
                     test_df,
                     options.patch_size,
                     options.stride_size,
+                    preprocessing=options.preprocessing,
                     transformations=transformations,
                     patch_index=n,
                     prepare_dl=options.prepare_dl)

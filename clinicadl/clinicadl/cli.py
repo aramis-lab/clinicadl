@@ -111,11 +111,11 @@ def train_func(args):
                 args.tsv_path,
                 args.output_dir,
                 args.caps_dir,
+                args.preprocessing,
                 args.network
             )
             train_params_autoencoder.write(
                 transfer_learning_difference=args.transfer_learning_difference,
-                preprocessing=args.preprocessing,
                 diagnoses=args.diagnoses,
                 baseline=args.baseline,
                 minmaxnormalization=not args.unnormalize,
@@ -141,10 +141,10 @@ def train_func(args):
                 args.tsv_path,
                 args.output_dir,
                 args.caps_dir,
+                args.preprocessing,
                 args.network
             )
             train_params_cnn.write(
-                preprocessing=args.preprocessing,
                 diagnoses=args.diagnoses,
                 baseline=args.baseline,
                 minmaxnormalization=not args.unnormalize,
@@ -172,6 +172,7 @@ def train_func(args):
             args.tsv_path,
             args.output_dir,
             args.caps_dir,
+            args.preprocessing,
             args.network
         )
         train_params_slice.write(
@@ -200,6 +201,7 @@ def train_func(args):
                 args.tsv_path,
                 args.output_dir,
                 args.caps_dir,
+                args.preprocessing,
                 args.network
             )
             train_params_autoencoder.write(
@@ -229,6 +231,7 @@ def train_func(args):
                 args.tsv_path,
                 args.output_dir,
                 args.caps_dir,
+                args.preprocessing,
                 args.network
             )
             train_params_patch.write(
@@ -261,6 +264,7 @@ def train_func(args):
                 args.tsv_path,
                 args.output_dir,
                 args.caps_dir,
+                args.preprocessing,
                 args.network
             )
             train_params_patch.write(
@@ -296,6 +300,7 @@ def train_func(args):
                 args.tsv_path,
                 args.output_dir,
                 args.caps_dir,
+                args.preprocessing,
                 args.network
             )
             train_params_autoencoder.write(
@@ -322,6 +327,7 @@ def train_func(args):
                 args.tsv_path,
                 args.output_dir,
                 args.caps_dir,
+                args.preprocessing,
                 args.network
             )
             train_params_patch.write(
@@ -641,6 +647,10 @@ def parse_command_line():
         help='Data using CAPS structure.',
         default=None)
     train_pos_group.add_argument(
+        'preprocessing',
+        help='Defines the type of preprocessing of CAPS data.',
+        choices=['t1-linear', 't1-extensive'], type=str)
+    train_pos_group.add_argument(
         'tsv_path',
         help='TSV path with subjects/sessions to process.',
         default=None)
@@ -771,11 +781,6 @@ def parse_command_line():
 
     train_imagedata_group = train_image_parent.add_argument_group(
         TRAIN_CATEGORIES["IMAGE DATA MANAGEMENT"])
-    train_imagedata_group.add_argument(
-        '--preprocessing',
-        help='Defines the type of preprocessing of CAPS data.',
-        choices=['t1-linear', 't1-volume'], type=str,
-        default='t1-linear')
     train_imagedata_group.add_argument(
         '--unnormalize', '-un',
         help='Disable default MinMaxNormalization.',
