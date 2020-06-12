@@ -363,7 +363,7 @@ def classify_func(args):
         args.caps_dir,
         args.tsv_file,
         args.output_dir,
-        args.model_name,
+        args.model_path,
     )
 
 
@@ -1023,15 +1023,9 @@ def parse_command_line():
         help='Folder containing results of the training.',
         default=None)
     classify_parser.add_argument(
-        'model_name',
-        help='Model used for classification.',
-        choices=[
-            '2D_slice',
-            '3D_patch_1',
-            '3D_patch_2',
-            'subject_1',
-            'subject_2'],
-        default='2D_slice')
+        'model_path',
+        help='Path to the folder where the model and the json file are stored.',
+        default=None)
 
     classify_parser.set_defaults(func=classify_func)
 
