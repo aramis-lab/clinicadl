@@ -12,7 +12,8 @@ from scipy.ndimage.filters import gaussian_filter
 # Datasets loaders
 #################################
 FILENAME_TYPE = {'full': '_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w',
-                 'cropped': '_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w'}
+                 'cropped': '_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w',
+                 'skull_stripped': 'des-skullstripped_space-Ixi549Space_T1w.pt'}
 
 
 class MRIDataset(Dataset):
@@ -70,7 +71,8 @@ class MRIDataset(Dataset):
         elif self.data_path == "t1-extensive":
             image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
                                    't1', 'spm', 'segmentation', 'normalized_space',
-                                   img_name + '_' + sess_name + '_space-Ixi549Space_T1w.pt')
+                                   img_name + '_' + sess_name
+                                   + FILENAME_TYPE['skull_stripped'] + '.pt')
         else:
             raise NotImplementedError(
                 "The data path %s is not implemented" %
