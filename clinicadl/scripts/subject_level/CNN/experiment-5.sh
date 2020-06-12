@@ -49,7 +49,6 @@ EPOCHS=50
 BATCH=6
 ACCUMULATION=2
 EVALUATION=20
-SAMPLER="random"
 LR=1e-4
 WEIGHT_DECAY=0
 NORMALIZATION=1
@@ -110,7 +109,6 @@ clinicadl train \
   --split $SPLIT \
   --accumulation_steps $ACCUMULATION \
   --epochs $EPOCHS \
-  --sampler $SAMPLER \
   --learning_rate $LR \
   --weight_decay $WEIGHT_DECAY \
   --patience $PATIENCE \
