@@ -142,7 +142,7 @@ parser.add_argument(
         '--selection_threshold',
         default=None,
         type=float,
-        help='Threshold on the balanced accuracies to compute the subject_level '
+        help='Threshold on the balanced accuracies to compute the subject-level '
              'performance only based on patches with balanced accuracy > threshold.')
 
 parser.add_argument(
@@ -244,7 +244,9 @@ def train_CNN_bad_data_split(params):
                 )
 
         # chosen optimizer for back-propagation
-        optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),  params.learning_rate, weight_decay=params.weight_decay)
+        optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
+                                                            lr=params.learning_rate,
+                                                            weight_decay=params.weight_decay)
 
         model.load_state_dict(init_state)
 

@@ -25,8 +25,7 @@ def postprocessing_t1w_extract_hippo(caps_directory, tsv, working_directory=None
 
     :param caps_directory: CAPS directory where stores the output of preprocessing
     :param tsv: subject list file containing the participant_id and session_id
-    :param patch_size: the size for extracted 3D patches
-    :param stride_size: the sliding siez of the 3D windows
+    :param hemi: chooses which hippocampus is extracted (left or right)
     :param working_directory: working directory to store the intermediate files
     :return:
     """
@@ -36,7 +35,7 @@ def postprocessing_t1w_extract_hippo(caps_directory, tsv, working_directory=None
     import nipype.pipeline.engine as npe
     import nipype.interfaces.io as nio
     import tempfile
-    from T1_postprocessing_extract_hippo_utils import get_caps_t1, save_as_pt, compress_nii, get_subid_sesid_datasink
+    from .T1_postprocessing_extract_hippo_utils import get_caps_t1, save_as_pt, compress_nii, get_subid_sesid_datasink
 
     if working_directory is None:
         working_directory = tempfile.mkdtemp()

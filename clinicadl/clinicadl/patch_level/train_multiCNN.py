@@ -1,6 +1,5 @@
 # coding: utf8
 
-import argparse
 import copy
 import os
 import torch
@@ -12,10 +11,8 @@ import torchvision.transforms as transforms
 from .utils import load_model_after_ae, load_model_after_cnn
 from .utils import train, test, patch_level_to_tsvs, soft_voting_to_tsvs
 
-from ..tools.deep_learning.iotools import Parameters
 from ..tools.deep_learning import (EarlyStopping,
                                    save_checkpoint,
-                                   commandline_to_json,
                                    create_model,
                                    load_model)
 from ..tools.deep_learning.data import (MinMaxNormalization,
@@ -79,19 +76,19 @@ def train_patch_multi_cnn(params):
                                 'best_model_dir',
                                 "fold_" + str(fi),
                                 'cnn-' + str(i),
-                                'best_acc')
+                                params.selection)
                         model, _ = load_model_after_cnn(
                                 model,
                                 model_folder,
                                 filename='model_best.pth.tar')
                     else:
-                        print('Train the model with the weights from a pre-trained CNN.')
+                        print('Train the each multiple CNN with the weights from the same pre-trained CNN.')
                         model_folder = os.path.join(
                                 params.transfer_learning_path,
                                 'best_model_dir',
                                 "fold_" + str(fi),
                                 'CNN',
-                                'best_acc')
+                                params.selection)
                         model, _ = load_model_after_cnn(
                                 model,
                                 model_folder,
@@ -104,7 +101,7 @@ def train_patch_multi_cnn(params):
                     params.input_dir,
                     training_tsv,
                     params.patch_size,
-                    params.patch_stride,
+                    params.stride_size,
                     transformations=transformations,
                     patch_index=i,
                     prepare_dl=params.prepare_dl
@@ -114,7 +111,7 @@ def train_patch_multi_cnn(params):
                     params.input_dir,
                     valid_tsv,
                     params.patch_size,
-                    params.patch_stride,
+                    params.stride_size,
                     transformations=transformations,
                     patch_index=i,
                     prepare_dl=params.prepare_dl
@@ -136,7 +133,9 @@ def train_patch_multi_cnn(params):
                                       )
 
             # Define loss and optimizer
-            optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), params.learning_rate, weight_decay=params.weight_decay)
+            optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
+                                                                lr=params.learning_rate,
+                                                                weight_decay=params.weight_decay)
 
             loss = torch.nn.CrossEntropyLoss()
 

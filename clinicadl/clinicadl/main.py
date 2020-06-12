@@ -2,6 +2,7 @@
 
 from . import cli
 from clinicadl.tools.deep_learning import commandline_to_json
+import torch
 
 
 def main():
@@ -9,12 +10,10 @@ def main():
     parser = cli.parse_command_line()
     args = parser.parse_args()
 
-    commandline = parser.parse_known_args()
+    if args.task == "train" and args.mode == "slice":
+        args.mode_task = "cnn"
 
-    if hasattr(args, 'train_autoencoder'):
-        task_type = 'autoencoder'
-    else:
-        task_type = 'cnn'
+    commandline = parser.parse_known_args()
 
     arguments = vars(args)
 
@@ -22,7 +21,10 @@ def main():
             and (arguments['task'] != 'extract') \
             and (arguments['task'] != 'generate') \
             and (arguments['task'] != 'tsvtool'):
-        commandline_to_json(commandline, task_type)
+        commandline_to_json(commandline, arguments["mode_task"])
+
+        if not args.use_cpu and not torch.cuda.is_available():
+            raise ValueError("No GPU is available. Please add the -cpu flag to run on CPU.")
 
     args.func(args)
 
