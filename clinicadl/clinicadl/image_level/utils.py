@@ -102,7 +102,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
                 del loss
 
                 # Evaluate the model only when no gradients are accumulated
-                if(i+1) % options.evaluation_steps == 0:
+                if options.evaluation_steps != 0 and (i + 1) % options.evaluation_steps == 0:
                     evaluation_flag = False
                     print('Iteration %d' % i)
 
@@ -135,7 +135,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
             raise Exception('The model has not been updated once in the epoch. The accumulation step may be too large.')
 
         # If no evaluation has been performed, warn the user
-        elif evaluation_flag:
+        elif evaluation_flag and options.evaluation_steps != 0:
             warnings.warn('Your evaluation steps are too big compared to the size of the dataset.'
                           'The model is evaluated only once at the end of the epoch')
 
@@ -378,7 +378,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
                 optimizer.zero_grad()
 
                 # Evaluate the decoder only when no gradients are accumulated
-                if (i+1) % options.evaluation_steps == 0:
+                if options.evaluation_steps != 0 and (i + 1) % options.evaluation_steps == 0:
                     evaluation_flag = False
                     print('Iteration %d' % i)
                     loss_train = test_ae(decoder, train_loader, options.gpu, criterion)
@@ -401,7 +401,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
             raise Exception('The model has not been updated once in the epoch. The accumulation step may be too large.')
 
         # If no evaluation has been performed, warn the user
-        if evaluation_flag:
+        if evaluation_flag and options.evaluation_steps != 0:
             warnings.warn('Your evaluation steps are too big compared to the size of the dataset.'
                           'The model is evaluated only once at the end of the epoch')
 
@@ -442,13 +442,10 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
                         best_model_dir,
                         filename='optimizer.pth.tar')
 
-        if epoch % 10 == 0:
-            visualize_subject(decoder, train_loader, visualization_path, options, epoch=epoch, save_input=first_visu)
-            first_visu = False
-
         epoch += 1
 
-    visualize_subject(decoder, train_loader, visualization_path, options, epoch=epoch, save_input=first_visu)
+    if options.visualization:
+        visualize_subject(decoder, train_loader, visualization_path, options, epoch=epoch, save_input=first_visu)
 
 
 def test_ae(model, dataloader, use_cuda, criterion):

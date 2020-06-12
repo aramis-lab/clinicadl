@@ -22,13 +22,11 @@ class Parameters:
 
     def write(
             self,
-            pretrained_path: str = "",
-            pretrained_difference: str = "",
-            preprocessing: str = "linear",
+            transfer_learning_difference: int = 0,
+            preprocessing: str = "t1-linear",
             diagnoses: str = ["AD", "CN"],
             baseline: bool = False,
             minmaxnormalization: bool = False,
-            sampler: str = "random",
             n_splits: int = 1,
             split: int = 0,
             accumulation_steps: int = 1,
@@ -49,7 +47,7 @@ class Parameters:
             transfer_learning_multicnn: bool = False,
             selection: str = "best_acc",
             patch_size: int = 50,
-            patch_stride: int = 50,
+            stride_size: int = 50,
             hippocampus_roi: bool = False,
             selection_threshold: float = 0.0,
             num_cnn: int = 36,
@@ -58,14 +56,12 @@ class Parameters:
             visualization: bool = False):
         """
         Optional parameters used for training CNN.
-        pretrained_path: Path to a pretrained model (can be of different size).
-        pretrained_difference: Difference of size between the pretrained
+        transfer_learning_difference: Difference of size between the pretrained
                                autoencoder and the training.
-        preprocessing: Type of preprocessing done. Choices: "linear" or "mni".
+        preprocessing: Type of preprocessing done. Choices: "t1-linear" or "t1-volume".
         diagnoses: Take all the subjects possible for autoencoder training.
         baseline: Use only the baseline if True.
         minmaxnormalization: Performs MinMaxNormalization.
-        sampler: Sampler choice.
         n_splits: If a value is given will load data of a k-fold CV
         split: User can specify a chosen split.
         accumulation_steps: Accumulates gradients in order to increase the size
@@ -85,10 +81,10 @@ class Parameters:
         selection: Allow to choose which model of the experiment is loaded .
                    choices ["best_loss", "best_acc"]
         patch_size: The patch size extracted from the MRI.
-        patch_stride: The stride for the patch extract window from the MRI
+        stride_size: The stride for the patch extract window from the MRI
         hippocampus_roi: If train the model using only hippocampus ROI.
         selection_threshold: Threshold on the balanced accuracies to compute
-                             the subject_level performance.
+                             the subject-level performance.
         num_cnn: How many CNNs we want to train in a patch-wise way.
                  By default, each patch is trained from all subjects for one CNN.
         mri_plane: Which coordinate axis to take for slicing the MRI.
@@ -101,13 +97,11 @@ class Parameters:
                                      initialize corresponding models.
         """
 
-        self.pretrained_path = pretrained_path
-        self.pretrained_difference = pretrained_difference
+        self.transfer_learning_difference = transfer_learning_difference
         self.preprocessing = preprocessing
         self.diagnoses = diagnoses
         self.baseline = baseline
         self.minmaxnormalization = minmaxnormalization
-        self.sampler = sampler
         self.n_splits = n_splits
         self.split = split
         self.accumulation_steps = accumulation_steps
@@ -128,7 +122,7 @@ class Parameters:
         self.transfer_learning_multicnn = transfer_learning_multicnn
         self.selection = selection
         self.patch_size = patch_size
-        self.patch_stride = patch_stride
+        self.stride_size = stride_size
         self.hippocampus_roi = hippocampus_roi
         self.num_cnn = num_cnn
         self.mri_plane = mri_plane
@@ -203,6 +197,7 @@ def read_json(options, task_type, json_path=None, test=False):
     from os import path
 
     evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
+    prep_compatibility_dict = {"mni": "t1-volume", "linear": "t1-linear"}
     if json_path is None:
         json_path = path.join(options.model_path, 'log_dir', 'commandline_' + task_type + '.json')
 
@@ -223,6 +218,53 @@ def read_json(options, task_type, json_path=None, test=False):
     if not hasattr(options, 'dropout'):
         options.dropout = 0
 
+    if options.preprocessing in prep_compatibility_dict.keys():
+        options.preprocessing = prep_compatibility_dict[options.preprocessing]
+
+    if hasattr(options, 'mri_plane'):
+        options.slice_direction = options.mri_plane
+        del options.mri_plane
+
+    if hasattr(options, "hippocampus_roi"):
+        options.mode = "roi"
+        del options.hippocampus_roi
+
+    if hasattr(options, "pretrained_path"):
+        options.transfer_learning_path = options.pretrained_path
+        del options.pretrained_path
+
+    if hasattr(options, "pretrained_difference"):
+        options.transfer_learning_difference = options.pretrained_difference
+        del options.pretrained_difference
+
+    if options.mode == "subject":
+        options.mode = "image"
+    if options.mode == "slice" and not hasattr(options, "mode_task"):
+        options.mode_task = "cnn"
+    if options.mode == "patch" and hasattr(options, "network_type"):
+        if options.network_type == "multi":
+            options.mode_task = "multicnn"
+        del options.network_type
+
+    if not hasattr(options, "mode_task"):
+        if hasattr(options, "train_autoencoder"):
+            options.mode_task = "autoencoder"
+        else:
+            options.mode_task = "cnn"
+
+    if hasattr(options, "use_cpu"):
+        options.use_gpu = not options.use_cpu
+
+    if hasattr(options, "unnormalize"):
+        options.minmaxnormalization = not options.unnormalize
+
+    if hasattr(options, "use_extracted_slices"):
+        options.prepare_dl = options.use_extracted_slices
+    if hasattr(options, "use_extracted_patches"):
+        options.prepare_dl = options.use_extracted_patches
+    if hasattr(options, "use_extracted_roi"):
+        options.prepare_dl = options.use_extracted_roi
+
     return options
 
 
@@ -240,8 +282,7 @@ def visualize_subject(decoder, dataloader, visualization_path, options, epoch=No
     data = dataset[subject_index]
     image_path = data['image_path']
 
-    # Retrocompatibility with old version where the tensor is stored at the
-    # same location with the nifti image
+    # TODO: Change nifti path
     nii_path, _ = path.splitext(image_path)
     nii_path += '.nii.gz'
 

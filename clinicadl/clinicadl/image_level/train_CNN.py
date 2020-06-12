@@ -1,6 +1,5 @@
 # coding: utf8
 
-import argparse
 import torch
 import sys
 from time import time
@@ -8,9 +7,9 @@ from os import path
 from torch.utils.data import DataLoader
 
 from .utils import train
-from ..tools.deep_learning.iotools import Parameters
+from .evaluation import test_cnn
 from ..tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data
-from ..tools.deep_learning import create_model, commandline_to_json
+from ..tools.deep_learning import create_model
 from ..tools.deep_learning.models import transfer_learning
 
 
@@ -90,10 +89,16 @@ def train_cnn(params):
 
     # Define criterion and optimizer
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()), params.learning_rate, weight_decay=params.weight_decay)
+    optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
+                                                        lr=params.learning_rate,
+                                                        weight_decay=params.weight_decay)
 
     print('Beginning the training task')
     train(model, train_loader, valid_loader, criterion, optimizer, False, params)
+
+    params.model_path = params.output_dir
+    test_cnn(train_loader, "train", params.split, criterion, params)
+    test_cnn(valid_loader, "validation", params.split, criterion, params)
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)

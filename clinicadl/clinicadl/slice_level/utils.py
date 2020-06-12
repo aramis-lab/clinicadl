@@ -373,6 +373,8 @@ def soft_voting(performance_df, validation_df, selection_threshold=None):
     # Add the weights to performance_df
     for idx in performance_df.index.values:
         slice_id = performance_df.loc[idx, 'slice_id']
+        print(weight_series)
+        print(slice_id)
         weight = weight_series.loc[slice_id]
         performance_df.loc[idx, 'weight'] = weight
 

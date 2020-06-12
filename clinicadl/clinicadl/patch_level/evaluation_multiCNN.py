@@ -37,7 +37,7 @@ parser.add_argument('--selection', default="best_acc", choices=["best_acc", "bes
                     help="Evaluate the model performance based on which criterior")
 parser.add_argument("--patch_size", default=50, type=int,
                     help="The patch size extracted from the MRI")
-parser.add_argument("--patch_stride", default=50, type=int,
+parser.add_argument("--stride_size", default=50, type=int,
                     help="The stride for the patch extract window from the MRI")
 parser.add_argument('--dataset', default="validation",
                     help="If the evaluation on the validation set is wanted, must be set to 'validation'. "
@@ -58,7 +58,7 @@ parser.add_argument("--num_cnn", default=36, type=int,
 parser.add_argument("--diagnoses", default=["sMCI", "pMCI"], type=str, nargs="+",
                     help="Labels based on binary classification.")
 parser.add_argument('--selection_threshold', default=None, type=float,
-                    help='Threshold on the balanced accuracies to compute the subject_level performance '
+                    help='Threshold on the balanced accuracies to compute the subject-level performance '
                          'only based on patches with balanced accuracy > threshold.')
 
 # Computational issues
@@ -99,7 +99,7 @@ def main(options):
                     options.caps_directory,
                     test_df,
                     options.patch_size,
-                    options.patch_stride,
+                    options.stride_size,
                     transformations=transformations,
                     patch_index=n,
                     prepare_dl=options.prepare_dl)
