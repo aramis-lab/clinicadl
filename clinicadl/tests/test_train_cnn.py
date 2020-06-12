@@ -19,7 +19,7 @@ def cli_commands(request):
             'train',
             'slice',
             'data/OASIS_test',
-            't1-linear'
+            't1-linear',
             'data/labels_list',
             'results',
             'resnet18',
@@ -49,7 +49,7 @@ def cli_commands(request):
             'patch',
             'cnn',
             'data/OASIS_test',
-            't1-linear'
+            't1-linear',
             'data/labels_list',
             'results',
             'Conv4_FC3',

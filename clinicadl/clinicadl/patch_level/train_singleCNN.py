@@ -102,7 +102,7 @@ def train_patch_single_cnn(params):
                     training_tsv,
                     params.patch_size,
                     params.stride_size,
-                    preprocessing=params.preprocesssing,
+                    preprocessing=params.preprocessing,
                     transformations=transformations,
                     prepare_dl=params.prepare_dl
                     )
