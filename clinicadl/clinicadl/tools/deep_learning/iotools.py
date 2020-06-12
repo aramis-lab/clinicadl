@@ -5,7 +5,7 @@ class Parameters:
     """ Class to define and initialize parameters used in traning CNN networks"""
 
     def __init__(self, tsv_path: str, output_dir: str, input_dir: str,
-                 model: str):
+                 preprocessing: str, model: str):
         """
         Parameters:
         tsv_path: Path to the folder containing the tsv files of the
@@ -13,17 +13,18 @@ class Parameters:
         session_id and diagnosis.
         output_dir: Folder containing the results.
         input_dir: Path to the input folder with MRI in CAPS format.
+        preprocessing: Type of preprocessing done. Choices: "t1-linear" or "t1-extensive".
         model: Neural network model.
         """
         self.tsv_path = tsv_path
         self.output_dir = output_dir
         self.input_dir = input_dir
+        self.preprocessing = preprocessing
         self.model = model
 
     def write(
             self,
             transfer_learning_difference: int = 0,
-            preprocessing: str = "t1-linear",
             diagnoses: str = ["AD", "CN"],
             baseline: bool = False,
             minmaxnormalization: bool = False,
@@ -58,7 +59,6 @@ class Parameters:
         Optional parameters used for training CNN.
         transfer_learning_difference: Difference of size between the pretrained
                                autoencoder and the training.
-        preprocessing: Type of preprocessing done. Choices: "t1-linear" or "t1-volume".
         diagnoses: Take all the subjects possible for autoencoder training.
         baseline: Use only the baseline if True.
         minmaxnormalization: Performs MinMaxNormalization.
@@ -98,7 +98,6 @@ class Parameters:
         """
 
         self.transfer_learning_difference = transfer_learning_difference
-        self.preprocessing = preprocessing
         self.diagnoses = diagnoses
         self.baseline = baseline
         self.minmaxnormalization = minmaxnormalization
@@ -197,7 +196,7 @@ def read_json(options, task_type, json_path=None, test=False):
     from os import path
 
     evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
-    prep_compatibility_dict = {"mni": "t1-volume", "linear": "t1-linear"}
+    prep_compatibility_dict = {"mni": "t1-extensive", "linear": "t1-linear"}
     if json_path is None:
         json_path = path.join(options.model_path, 'log_dir', 'commandline_' + task_type + '.json')
 
