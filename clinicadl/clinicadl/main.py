@@ -23,7 +23,7 @@ def main():
             and (arguments['task'] != 'tsvtool'):
         commandline_to_json(commandline, arguments["mode_task"])
 
-        if args.gpu and not torch.cuda.is_available():
+        if not args.use_cpu and not torch.cuda.is_available():
             raise ValueError("No GPU is available. Please add the -cpu flag to run on CPU.")
 
     args.func(args)
