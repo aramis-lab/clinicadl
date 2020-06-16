@@ -53,7 +53,7 @@ if __name__ == "__main__":
         split = int(fold_dir[-1])
         print("Fold %i" % split)
         model_options = argparse.Namespace()
-        json_path = path.join(options.model_path, 'log_dir', 'fold_' + str(split), "commandline_CNN.json")
+        json_path = path.join(options.model_path, "commandline_CNN.json")
         model_options = read_json(model_options, "CNN", json_path=json_path)
         model = create_model(model_options.network, options.gpu)
 
