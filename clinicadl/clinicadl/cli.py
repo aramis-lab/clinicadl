@@ -224,7 +224,7 @@ def train_func(args):
                 prepare_dl=args.use_extracted_patches
             )
             train_autoencoder_patch(train_params_autoencoder)
-        if args.mode_task == "cnn":
+        elif args.mode_task == "cnn":
             train_params_patch = Parameters(
                 args.tsv_path,
                 args.output_dir,
