@@ -255,7 +255,7 @@ def read_json(options, task_type, json_path=None, test=False):
             options.mode_task = "cnn"
 
     if hasattr(options, "use_cpu"):
-        options.use_gpu = not options.use_cpu
+        options.gpu = not options.use_cpu
 
     if hasattr(options, "unnormalize"):
         options.minmaxnormalization = not options.unnormalize
