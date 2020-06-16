@@ -63,13 +63,6 @@ def cli_commands(request):
 
 def test_train(cli_commands):
     test_input = cli_commands
-    os.system("clinicadl " + " ".join(test_input))
-    performances_flag = os.path.exists(
-        os.path.join(
-            "results",
-            "best_model_dir",
-            "fold_0",
-            "ConvAutoencoder",
-        ))
-    assert performances_flag
+    flag_error = not os.system("clinicadl " + " ".join(test_input))
+    assert flag_error
     shutil.rmtree("results")
