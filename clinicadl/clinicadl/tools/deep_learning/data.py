@@ -310,11 +310,13 @@ class MRIDataset_slice(Dataset):
     """
 
     def __init__(self, caps_directory, data_file,
-                 transformations=None, mri_plane=0, prepare_dl=False):
+                 transformations=None, mri_plane=0, prepare_dl=False,
+                 discarded_slices=20):
         """
         Args:
             caps_directory (string): the output folder of image processing pipeline.
             transformations (callable, optional): if the data sample should be done some transformations or not, such as resize the image.
+            discarded_slices (int or list): slices discarded at the beginning and the end of the volume.
 
         To note, for each view:
             Axial_view = "[:, :, slice_i]"
@@ -341,16 +343,22 @@ class MRIDataset_slice(Dataset):
         else:
             raise Exception('The argument datafile is not of correct type.')
 
+        if type(discarded_slices) is int:
+            discarded_slices = [discarded_slices, discarded_slices]
+        if type(discarded_slices) is list and len(discarded_slices) == 1:
+            discarded_slices = discarded_slices * 2
+        self.discarded_slices = discarded_slices
+
         # This dimension is for the output of image processing pipeline of Raw:
         # 169 * 208 * 179
         if mri_plane == 0:
-            self.slices_per_patient = 169 - 40
+            self.slices_per_patient = 169 - discarded_slices[0] - discarded_slices[1]
             self.slice_direction = 'sag'
         elif mri_plane == 1:
-            self.slices_per_patient = 208 - 40
+            self.slices_per_patient = 208 - discarded_slices[0] - discarded_slices[1]
             self.slice_direction = 'cor'
         elif mri_plane == 2:
-            self.slices_per_patient = 179 - 40
+            self.slices_per_patient = 179 - discarded_slices[0] - discarded_slices[1]
             self.slice_direction = 'axi'
 
     def __len__(self):
@@ -362,7 +370,7 @@ class MRIDataset_slice(Dataset):
         sess_name = self.df.loc[sub_idx, 'session_id']
         img_label = self.df.loc[sub_idx, 'diagnosis']
         label = self.diagnosis_code[img_label]
-        slice_idx = idx % self.slices_per_patient
+        slice_idx = idx % self.slices_per_patient + self.discarded_slices[0]
 
         if self.prepare_dl:
             # read the slices directly
@@ -370,7 +378,7 @@ class MRIDataset_slice(Dataset):
                                    'deeplearning_prepare_data', 'slice_based', 't1_linear',
                                    img_name + '_' + sess_name
                                    + FILENAME_TYPE['cropped']
-                                   + self.slice_direction + '_rgbslice-' + str(slice_idx + 20) + '.pt')
+                                   + self.slice_direction + '_rgbslice-%i.pt' % slice_idx)
             extracted_slice = torch.load(slice_path)
         else:
             image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
@@ -379,18 +387,18 @@ class MRIDataset_slice(Dataset):
                                    + FILENAME_TYPE['cropped'] + '.pt')
             image = torch.load(image_path)
             extracted_slice = extract_slice_from_mri(
-                image, slice_idx + 20, self.mri_plane)
+                image, slice_idx, self.mri_plane)
 
         # check if the slice has NaN value
         if torch.isnan(extracted_slice).any():
             print("Slice %s has NaN values." %
-                  str(img_name + '_' + sess_name + '_' + str(slice_idx + 20)))
+                  str(img_name + '_' + sess_name + '_%i' % slice_idx))
             extracted_slice[torch.isnan(extracted_slice)] = 0
 
         if self.transformations:
             extracted_slice = self.transformations(extracted_slice)
 
-        sample = {'image_id': img_name + '_' + sess_name + '_slice' + str(slice_idx + 20),
+        sample = {'image_id': img_name + '_' + sess_name + '_slice' + str(slice_idx),
                   'image': extracted_slice, 'label': label,
                   'participant_id': img_name, 'session_id': sess_name,
                   'slice_id': slice_idx + 20}
