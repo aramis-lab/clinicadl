@@ -1,17 +1,62 @@
-from ..tools.deep_learning import create_model, load_model, read_json
-from ..tools.deep_learning.data import MRIDataset, MinMaxNormalization
-from ..subject_level.utils import test
+# coding: utf8
+
+from clinicadl.tools.deep_learning import create_model, load_model, read_json
+from clinicadl.tools.deep_learning.data import MRIDataset, MinMaxNormalization
+from clinicadl.image_level.utils import test
 import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
+def classify(caps_dir, tsv_file, model_path, output_dir=None):
+    """
+    This function reads the command line parameters and point to inference
+
+    Parameters:
+
+    params : class clinicadl.tools.dee_learning.iotools.Parameters
+
+    Returns:
+
+    """
+    from os.path import isdir, join, abspath, exists
+    from os import strerror
+    import errno 
+    # Verify that paths exist
+    caps_dir = abspath(caps_dir)
+    model_path = abspath(model_path)
+    print(model_path)
+    tsv_file = abspath(tsv_file)
+
+    if not isdir(caps_dir):
+        print("Folder containing MRIs is not found, please verify its location")
+        raise FileNotFoundError(
+                errno.ENOENT, strerror(errno.ENOENT), caps_dir)
+        print("Folder containing MRIs is not found, please verify its location")
+    if not isdir(model_path):
+        print("A valid model in the path was not found. Donwload them from aramislab.inria.fr")
+        raise FileNotFoundError(
+                errno.ENOENT, strerror(errno.ENOENT), model_path)
+    if not exists(tsv_file):
+        raise FileNotFoundError(
+                errno.ENOENT, strerror(errno.ENOENT), tsv_file)
+    
+    # Infer json file from model_path (suppose that json file is at the same
+    # folder)
+
+    json_file = join(model_path, 'commandline_CNN.json')
+
+    if not exists(json_file):
+        print("Json file doesn't exist")
+        raise FileNotFoundError(
+                errno.ENOENT, strerror(errno.ENOENT), json_file)
+
+    inference_from_model(caps_dir, tsv_file, model_path, json_file)
+
 
 def inference_from_model(caps_dir,
                          tsv_file,
-                         output_dir,
-                         model_path,
-                         json_path,
-                         options):
+                         model_path=None,
+                         json_file=None):
     """
     Inference from trained model
 
@@ -21,10 +66,8 @@ def inference_from_model(caps_dir,
 
     caps_dir: folder containing the tensor files (.pt version of MRI)
     tsv_file: file with the name of the MRIs to process (single or multiple)
-    working_dir: folder containing temporary files
-    model_path: name of the model to use for classification
-    json_path: path to the json file describing the model
-    options: Namespace for the argparse object
+    model_path: file with the model (pth format).
+    json_file: file containing the training parameters.
 
     Returns:
 
@@ -34,19 +77,56 @@ def inference_from_model(caps_dir,
 
 
     """
+#    TODO: Implement a DataLoader using clinica_file_reader
+#
+#    from clinica.utils.inputs import clinica_file_reader
+#    from clinica.utils.exceptions import ClinicaBIDSError, ClinicaException
+#    from clinica.utils.paricipants import get_subject_session_list
+#
+#    T1W_LINEAR_CROPPED_TENSOR = {'pattern': '*space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt',
+#            'description': 'Tensor vesrion of the T1W image registered using t1-linear and cropped '
+#            '(matrix size 169×208×179, 1 mm isotropic voxels)',
+#            'needed_pipeline': 'deeplearning-prepare-data'}
+#
+#    FILE_TYPE = T1W_LINEAR_CROPPED_TENSOR
+#
+#    sessions, subjects = get_subject_session_list(caps_dir,
+#            tsv_file,
+#            is_bids_dir=False,
+#            use_session_tsv=False,
+#            tsv_dir=None)
+#
+#    try:
+#        t1w_files = clinica_file_reader(subjects,
+#                sessions,
+#                caps_dir,
+#                FILE_TYPE)
+#    except ClinicaException as e:
+#        err = 'Clinica faced error(s) while trying to read files in your CAPS directory.\n' + str(e)
+#        raise ClinicaBIDSError(err)
+
+    import argparse
 
     print("This is the inference phase")
-    options = read_json(options, "CNN", json_path=json_path)
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("model_path", type=str,
+            help="Path to the trained model folder.")
+    options = parser.parse_args([model_path])
+    options = read_json(options, "CNN", json_path=json_file)
+    print("Load model with these options")
+    print(options)
 
-    options.caps_dir = caps.dir
+    options.use_gpu=False
+
     # Recreate the model with the network described in the json file
     model = create_model(options.network)
     criterion = nn.CrossEntropyLoss()
 
     # Load model from path
     best_model, best_epoch = load_model(
-        model, model_dir,
-        options.gpu, filename='model_best.pth.tar')
+        model, model_path,
+        options.use_gpu, filename='model_best.pth.tar')
 
     if options.minmaxnormalization:
         transformations = MinMaxNormalization()
@@ -54,8 +134,8 @@ def inference_from_model(caps_dir,
         transformations = None
 
     data_to_test = MRIDataset(
-        options.caps_dir,
-        options.tsv_file,
+        caps_dir,
+        tsv_file,
         options.preprocessing,
         transform=transformations)
 
@@ -63,14 +143,16 @@ def inference_from_model(caps_dir,
         data_to_test,
         batch_size=options.batch_size,
         shuffle=False,
-        num_workers=options.num_workers,
+        num_workers=options.nproc,
         pin_memory=True)
 
     metrics_test, loss_test, test_df = test(
         best_model,
         test_loader,
-        options.gpu,
+        options.use_gpu,
         criterion,
         full_return=True)
+    
+    print(test_df)
 
-    return testdf
+    return test_df
