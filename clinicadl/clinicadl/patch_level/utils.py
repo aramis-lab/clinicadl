@@ -588,36 +588,18 @@ def soft_voting(performance_df, validation_df, selection_threshold=None):
         patch_accuracies[patch_accuracies < selection_threshold] = 0
     weight_series = patch_accuracies / patch_accuracies.sum()
 
-    # Add the weights to performance_df
-    for idx in performance_df.index.values:
-        patch_id = performance_df.loc[idx, 'patch_id']
-        weight = weight_series.loc[patch_id]
-        performance_df.loc[idx, 'weight'] = weight
+    # Sort patches to allow weighted average computation
+    performance_df.sort_values(['participant_id', 'session_id', 'patch_id'], inplace=True)
+    weight_series.sort_index(inplace=True)
 
-    # do soft majority vote
+    # Soft majority vote
     columns = ['participant_id', 'session_id', 'true_label', 'predicted_label']
     df_final = pd.DataFrame(columns=columns)
-    for subject_session, subject_df in performance_df.groupby(['participant_id', 'session_id']):
-        subject, session = subject_session
-        num_patch = len(subject_df.predicted_label)
-        p0_all = 0
-        p1_all = 0
-        # reindex the subject_df.probability
-        proba0_series_reindex = subject_df.proba0.reset_index()
-        proba1_series_reindex = subject_df.proba1.reset_index()
-        weight_series_reindex = subject_df.weight.reset_index()
-        y_series_reindex = subject_df.true_label.reset_index()
-        y = y_series_reindex.true_label[0]
-
-        for i in range(num_patch):
-
-            p0 = weight_series_reindex.weight[i] * float(proba0_series_reindex.proba0[i])
-            p1 = weight_series_reindex.weight[i] * float(proba1_series_reindex.proba1[i])
-
-            p0_all += p0
-            p1_all += p1
-
-        proba_list = [p0_all, p1_all]
+    for (subject, session), subject_df in performance_df.groupby(['participant_id', 'session_id']):
+        y = subject_df["true_label"].unique().item()
+        proba0 = np.average(subject_df["proba0"], weights=weight_series)
+        proba1 = np.average(subject_df["proba1"], weights=weight_series)
+        proba_list = [proba0, proba1]
         y_hat = proba_list.index(max(proba_list))
 
         row = [[subject, session, y, y_hat]]
