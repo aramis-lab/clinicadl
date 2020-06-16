@@ -582,9 +582,8 @@ def soft_voting(performance_df, validation_df, selection_threshold=None):
     """
 
     # Compute the patch accuracies on the validation set:
-    right_classified_df = validation_df[validation_df['true_label'] == validation_df['predicted_label']]
-    n_valid = len(validation_df.groupby(['participant_id', 'session_id']).nunique())
-    patch_accuracies = right_classified_df['patch_id'].value_counts() / n_valid
+    validation_df["accurate_prediction"] = validation_df.apply(lambda x: check_prediction(x), axis=1)
+    patch_accuracies = validation_df.groupby("patch_id")["accurate_prediction"].sum()
     if selection_threshold is not None:
         patch_accuracies[patch_accuracies < selection_threshold] = 0
     weight_series = patch_accuracies / patch_accuracies.sum()
@@ -621,8 +620,8 @@ def soft_voting(performance_df, validation_df, selection_threshold=None):
         proba_list = [p0_all, p1_all]
         y_hat = proba_list.index(max(proba_list))
 
-        row_array = np.array(list([subject, session, y, y_hat])).reshape(1, 4)
-        row_df = pd.DataFrame(row_array, columns=columns)
+        row = [[subject, session, y, y_hat]]
+        row_df = pd.DataFrame(row, columns=columns)
         df_final = df_final.append(row_df)
 
     results = evaluate_prediction(df_final.true_label.values.astype(int),
@@ -630,3 +629,10 @@ def soft_voting(performance_df, validation_df, selection_threshold=None):
     del results['confusion_matrix']
 
     return df_final, results
+
+
+def check_prediction(row):
+    if row["true_label"] == row["predicted_label"]:
+        return 1
+    else:
+        return 0
