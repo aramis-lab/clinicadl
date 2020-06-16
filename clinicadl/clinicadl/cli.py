@@ -355,17 +355,15 @@ def train_func(args):
 # Function to dispatch command line options from classify to corresponding
 # function
 
-
 def classify_func(args):
-    from .classify.inference import inference_from_model
+    from .classify.inference import classify 
 
-    inference_from_model(
+    classify(
         args.caps_dir,
         args.tsv_file,
-        args.output_dir,
         args.model_path,
+        args.output_dir
     )
-
 
 # Functions to dispatch command line options from tsvtool to corresponding
 # function
@@ -1015,16 +1013,16 @@ def parse_command_line():
         help='Data using CAPS structure.',
         default=None)
     classify_parser.add_argument(
-        'tsv_path',
-        help='TSV path with subjects/sessions to process.',
-        default=None)
-    classify_parser.add_argument(
-        'output_dir',
-        help='Folder containing results of the training.',
+        'tsv_file',
+        help='TSV file with subjects/sessions to process.',
         default=None)
     classify_parser.add_argument(
         'model_path',
         help='Path to the folder where the model and the json file are stored.',
+        default=None)
+    classify_parser.add_argument(
+        'output_dir',
+        help='Folder containing results of the training.',
         default=None)
 
     classify_parser.set_defaults(func=classify_func)
