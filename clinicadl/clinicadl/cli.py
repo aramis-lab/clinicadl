@@ -981,7 +981,7 @@ def parse_command_line():
         default=0, type=int)
     train_slice_group.add_argument(
         '--discarded_slices',
-        help='''Number of slices discarded from respectively the beginning and the end of the MRI volume. 
+        help='''Number of slices discarded from respectively the beginning and the end of the MRI volume.
         If only one argument is given, it will be used for both sides.''',
         default=20, type=int, nargs='+'
     )
