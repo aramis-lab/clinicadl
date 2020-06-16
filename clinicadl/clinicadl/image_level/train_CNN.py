@@ -60,17 +60,17 @@ def train_cnn(params):
                                             params.baseline)
 
         data_train = MRIDataset(
-                params.input_dir,
-                training_tsv,
-                params.preprocessing,
-                transform=transformations
-                )
+            params.input_dir,
+            training_tsv,
+            params.preprocessing,
+            transform=transformations
+        )
         data_valid = MRIDataset(
-                params.input_dir,
-                valid_tsv,
-                params.preprocessing,
-                transform=transformations
-                )
+            params.input_dir,
+            valid_tsv,
+            params.preprocessing,
+            transform=transformations
+        )
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,
