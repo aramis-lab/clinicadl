@@ -228,8 +228,9 @@ def read_json(options, task_type, json_path=None, test=False):
         del options.mri_plane
 
     if hasattr(options, "hippocampus_roi"):
-        options.mode = "roi"
-        del options.hippocampus_roi
+        if options.hippocampus_roi:
+            options.mode = "roi"
+            del options.hippocampus_roi
 
     if hasattr(options, "pretrained_path"):
         options.transfer_learning_path = options.pretrained_path
