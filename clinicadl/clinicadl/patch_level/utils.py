@@ -387,11 +387,11 @@ def test(model, dataloader, use_cuda, criterion):
 
             # Generate detailed DataFrame
             for idx, sub in enumerate(data['participant_id']):
-                row = [sub, data['session_id'][idx], data['patch_id'][idx].item(),
+                row = [[sub, data['session_id'][idx], data['patch_id'][idx].item(),
                        labels[idx].item(), predicted[idx].item(),
-                       normalized_output[idx, 0].item(), normalized_output[idx, 1].item()]
+                       normalized_output[idx, 0].item(), normalized_output[idx, 1].item()]]
 
-                row_df = pd.DataFrame(np.array(row).reshape(1, -1), columns=columns)
+                row_df = pd.DataFrame(row, columns=columns)
                 results_df = pd.concat([results_df, row_df])
 
             del imgs, labels, output
