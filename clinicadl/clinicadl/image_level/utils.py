@@ -16,7 +16,7 @@ from clinicadl.tools.deep_learning import EarlyStopping, save_checkpoint
 # CNN train / test  #
 #####################
 
-def train(model, train_loader, valid_loader, criterion, optimizer, resume, options):
+def train(model, train_loader, valid_loader, criterion, optimizer, resume, split, options):
     """
     Function used to train a CNN.
     The best model and checkpoint will be found in the 'best_model_dir' of options.output_dir.
@@ -27,14 +27,15 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, optio
     :param criterion: (loss) function to calculate the loss
     :param optimizer: (torch.optim) optimizer linked to model parameters
     :param resume: (bool) if True, a begun job is resumed
+    :param split: (int) Number of the split that is trained
     :param options: (Namespace) ensemble of other options given to the main script.
     """
     from tensorboardX import SummaryWriter
     from time import time
 
     columns = ['epoch', 'iteration', 'acc_train', 'mean_loss_train', 'acc_valid', 'mean_loss_valid', 'time']
-    log_dir = os.path.join(options.output_dir, 'log_dir', 'fold_' + str(options.split), 'CNN')
-    best_model_dir = os.path.join(options.output_dir, 'best_model_dir', 'fold_' + str(options.split), 'CNN')
+    log_dir = os.path.join(options.output_dir, 'log_dir', 'fold_%i' % split, 'CNN')
+    best_model_dir = os.path.join(options.output_dir, 'best_model_dir', 'fold_%i' % split, 'CNN')
     filename = os.path.join(log_dir, 'training.tsv')
 
     if not resume:
@@ -297,7 +298,7 @@ def test(model, dataloader, use_cuda, criterion, full_return=False):
 # AutoEncoder train / test  #
 #############################
 
-def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, resume, options):
+def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, resume, split, options):
     """
     Function used to train an autoencoder.
     The best autoencoder and checkpoint will be found in the 'best_model_dir' of options.output_dir.
@@ -308,13 +309,14 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
     :param criterion: (loss) function to calculate the loss.
     :param optimizer: (torch.optim) optimizer linked to model parameters.
     :param resume: (bool) if True, a begun job is resumed.
+    :param split: (int) Number of the split that is trained
     :param options: (Namespace) ensemble of other options given to the main script.
     """
     from tensorboardX import SummaryWriter
 
-    log_dir = os.path.join(options.output_dir, 'log_dir', 'fold_' + str(options.split), 'ConvAutoencoder')
-    visualization_path = os.path.join(options.output_dir, 'visualize', 'fold_' + str(options.split))
-    best_model_dir = os.path.join(options.output_dir, 'best_model_dir', 'fold_' + str(options.split), 'ConvAutoencoder')
+    log_dir = os.path.join(options.output_dir, 'log_dir', 'fold_%i' % split, 'ConvAutoencoder')
+    visualization_path = os.path.join(options.output_dir, 'visualize', 'fold_%i' % split)
+    best_model_dir = os.path.join(options.output_dir, 'best_model_dir', 'fold_%i' % split, 'ConvAutoencoder')
     filename = os.path.join(log_dir, 'training.tsv')
 
     if not resume:

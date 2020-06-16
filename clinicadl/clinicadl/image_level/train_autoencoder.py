@@ -35,47 +35,54 @@ def train_autoencoder(params):
     total_time = time()
     criterion = torch.nn.MSELoss()
 
-    training_tsv, valid_tsv = load_data(params.tsv_path, params.diagnoses,
-                                        params.split, params.n_splits,
-                                        params.baseline)
+    if params.split is None:
+        fold_iterator = range(params.n_splits)
+    else:
+        fold_iterator = params.split
 
-    data_train = MRIDataset(params.input_dir, training_tsv,
-                            params.preprocessing, transformations)
-    data_valid = MRIDataset(params.input_dir, valid_tsv,
-                            params.preprocessing, transformations)
+    for fold in fold_iterator:
 
-    # Use argument load to distinguish training and testing
-    train_loader = DataLoader(data_train,
-                              batch_size=params.batch_size,
-                              shuffle=True,
-                              num_workers=params.num_workers,
-                              pin_memory=True
-                              )
+        training_tsv, valid_tsv = load_data(params.tsv_path, params.diagnoses,
+                                            fold, params.n_splits,
+                                            params.baseline)
 
-    valid_loader = DataLoader(data_valid,
-                              batch_size=params.batch_size,
-                              shuffle=False,
-                              num_workers=params.num_workers,
-                              pin_memory=True
-                              )
+        data_train = MRIDataset(params.input_dir, training_tsv,
+                                params.preprocessing, transformations)
+        data_valid = MRIDataset(params.input_dir, valid_tsv,
+                                params.preprocessing, transformations)
 
-    text_file = open(path.join(params.output_dir, 'python_version.txt'), 'w')
-    text_file.write('Version of python: %s \n' % sys.version)
-    text_file.write('Version of pytorch: %s \n' % torch.__version__)
-    text_file.close()
+        # Use argument load to distinguish training and testing
+        train_loader = DataLoader(data_train,
+                                  batch_size=params.batch_size,
+                                  shuffle=True,
+                                  num_workers=params.num_workers,
+                                  pin_memory=True
+                                  )
 
-    decoder = create_autoencoder(params.model, params.transfer_learning_path,
-                                 difference=params.transfer_learning_difference)
-    optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
-                                                        lr=params.learning_rate,
-                                                        weight_decay=params.weight_decay)
+        valid_loader = DataLoader(data_valid,
+                                  batch_size=params.batch_size,
+                                  shuffle=False,
+                                  num_workers=params.num_workers,
+                                  pin_memory=True
+                                  )
 
-    if params.add_sigmoid:
-        if isinstance(decoder.decoder[-1], nn.ReLU):
-            decoder.decoder = nn.Sequential(*list(decoder.decoder)[:-1])
-        decoder.decoder.add_module("sigmoid", nn.Sigmoid())
+        text_file = open(path.join(params.output_dir, 'python_version.txt'), 'w')
+        text_file.write('Version of python: %s \n' % sys.version)
+        text_file.write('Version of pytorch: %s \n' % torch.__version__)
+        text_file.close()
 
-    ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, False, params)
+        decoder = create_autoencoder(params.model, params.transfer_learning_path,
+                                     difference=params.transfer_learning_difference)
+        optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
+                                                            lr=params.learning_rate,
+                                                            weight_decay=params.weight_decay)
+
+        if params.add_sigmoid:
+            if isinstance(decoder.decoder[-1], nn.ReLU):
+                decoder.decoder = nn.Sequential(*list(decoder.decoder)[:-1])
+            decoder.decoder.add_module("sigmoid", nn.Sigmoid())
+
+        ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, False, params)
 
     total_time = time() - total_time
     print('Total time', total_time)

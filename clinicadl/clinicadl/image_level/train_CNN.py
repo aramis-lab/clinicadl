@@ -46,59 +46,70 @@ def train_cnn(params):
     text_file.write('Version of pytorch: %s \n' % torch.__version__)
     text_file.close()
 
-    # Get the data.
-    training_tsv, valid_tsv = load_data(params.tsv_path, params.diagnoses,
-                                        params.split, params.n_splits,
-                                        params.baseline)
+    if params.split is None:
+        fold_iterator = range(params.n_splits)
+    else:
+        fold_iterator = params.split
 
-    data_train = MRIDataset(
-            params.input_dir,
-            training_tsv,
-            params.preprocessing,
-            transform=transformations
-            )
-    data_valid = MRIDataset(
-            params.input_dir,
-            valid_tsv,
-            params.preprocessing,
-            transform=transformations
-            )
+    for fold in fold_iterator:
+        print("Test 1, fold " + str(fold), params.dropout)
 
-    # Use argument load to distinguish training and testing
-    train_loader = DataLoader(data_train,
-                              batch_size=params.batch_size,
-                              shuffle=True,
-                              num_workers=params.num_workers,
-                              pin_memory=True
-                              )
+        # Get the data.
+        training_tsv, valid_tsv = load_data(params.tsv_path, params.diagnoses,
+                                            fold, params.n_splits,
+                                            params.baseline)
 
-    valid_loader = DataLoader(data_valid,
-                              batch_size=params.batch_size,
-                              shuffle=False,
-                              num_workers=params.num_workers,
-                              pin_memory=True
-                              )
+        data_train = MRIDataset(
+                params.input_dir,
+                training_tsv,
+                params.preprocessing,
+                transform=transformations
+                )
+        data_valid = MRIDataset(
+                params.input_dir,
+                valid_tsv,
+                params.preprocessing,
+                transform=transformations
+                )
 
-    # Initialize the model
-    print('Initialization of the model')
-    model = create_model(params.model, params.gpu, dropout=params.dropout)
-    # Transfer learning function to review. Probably test if transfer learning path is given.
-    model = transfer_learning(model, params.split, params.output_dir, source_path=params.transfer_learning_path,
-                              transfer_learning_autoencoder=params.transfer_learning_autoencoder,
-                              gpu=params.gpu, selection=params.selection)
+        # Use argument load to distinguish training and testing
+        train_loader = DataLoader(data_train,
+                                  batch_size=params.batch_size,
+                                  shuffle=True,
+                                  num_workers=params.num_workers,
+                                  pin_memory=True
+                                  )
 
-    # Define criterion and optimizer
-    criterion = torch.nn.CrossEntropyLoss()
-    optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
-                                                        lr=params.learning_rate,
-                                                        weight_decay=params.weight_decay)
+        valid_loader = DataLoader(data_valid,
+                                  batch_size=params.batch_size,
+                                  shuffle=False,
+                                  num_workers=params.num_workers,
+                                  pin_memory=True
+                                  )
 
-    print('Beginning the training task')
-    train(model, train_loader, valid_loader, criterion, optimizer, False, params)
+        # Initialize the model
+        print('Initialization of the model')
+        model = create_model(params.model, params.gpu, dropout=params.dropout)
+        # Transfer learning function to review. Probably test if transfer learning path is given.
+        model = transfer_learning(model, fold, params.output_dir, source_path=params.transfer_learning_path,
+                                  transfer_learning_autoencoder=params.transfer_learning_autoencoder,
+                                  gpu=params.gpu, selection=params.selection)
+        print("Test 2, fold " + str(fold), params.dropout)
 
-    params.model_path = params.output_dir
-    test_cnn(train_loader, "train", params.split, criterion, params)
-    test_cnn(valid_loader, "validation", params.split, criterion, params)
+        # Define criterion and optimizer
+        criterion = torch.nn.CrossEntropyLoss()
+        optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
+                                                            lr=params.learning_rate,
+                                                            weight_decay=params.weight_decay)
+        print("Test 3, fold " + str(fold), params.dropout)
+
+        print('Beginning the training task')
+        train(model, train_loader, valid_loader, criterion, optimizer, False, fold, params)
+
+        params.model_path = params.output_dir
+        test_cnn(train_loader, "train", fold, criterion, params)
+        test_cnn(valid_loader, "validation", fold, criterion, params)
+        print("Test 4, fold " + str(fold), params.dropout)
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)

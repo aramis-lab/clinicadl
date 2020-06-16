@@ -77,7 +77,7 @@ def main(options):
 
     print('Resuming the training task')
 
-    train(model, train_loader, valid_loader, criterion, optimizer, True, options)
+    train(model, train_loader, valid_loader, criterion, optimizer, True, options.split, options)
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)

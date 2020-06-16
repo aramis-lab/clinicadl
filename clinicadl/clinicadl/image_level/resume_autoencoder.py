@@ -79,7 +79,7 @@ def main(options):
 
     print('Resuming the training task')
 
-    ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, True, options)
+    ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, True, options.split, options)
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)
