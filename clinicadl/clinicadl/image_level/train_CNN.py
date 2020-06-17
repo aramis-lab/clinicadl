@@ -100,7 +100,11 @@ def train_cnn(params):
                                                             lr=params.learning_rate,
                                                             weight_decay=params.weight_decay)
 
-        train(model, train_loader, valid_loader, criterion, optimizer, False, fold, params)
+        # Define output directories
+        log_dir = path.join(params.output_dir, 'log_dir', 'fold_%i' % fold, 'CNN')
+        model_dir = path.join(params.output_dir, 'best_model_dir', 'fold_%i' % fold, 'CNN')
+
+        train(model, train_loader, valid_loader, criterion, optimizer, False, log_dir, model_dir, params)
 
         params.model_path = params.output_dir
         test_cnn(train_loader, "train", fold, criterion, params)

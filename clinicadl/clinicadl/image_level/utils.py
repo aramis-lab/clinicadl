@@ -16,7 +16,7 @@ from clinicadl.tools.deep_learning import EarlyStopping, save_checkpoint
 # CNN train / test  #
 #####################
 
-def train(model, train_loader, valid_loader, criterion, optimizer, resume, split, options):
+def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_dir, model_dir, options):
     """
     Function used to train a CNN.
     The best model and checkpoint will be found in the 'best_model_dir' of options.output_dir.
@@ -27,19 +27,18 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, split
     :param criterion: (loss) function to calculate the loss
     :param optimizer: (torch.optim) optimizer linked to model parameters
     :param resume: (bool) if True, a begun job is resumed
-    :param split: (int) Number of the split that is trained
+    :param log_dir: (str) path to the folder containing the logs
+    :param model_dir: (str) path to the folder containing the models weights and biases
     :param options: (Namespace) ensemble of other options given to the main script.
     """
     from tensorboardX import SummaryWriter
     from time import time
 
     columns = ['epoch', 'iteration', 'acc_train', 'mean_loss_train', 'acc_valid', 'mean_loss_valid', 'time']
-    log_dir = os.path.join(options.output_dir, 'log_dir', 'fold_%i' % split, 'CNN')
-    best_model_dir = os.path.join(options.output_dir, 'best_model_dir', 'fold_%i' % split, 'CNN')
     filename = os.path.join(log_dir, 'training.tsv')
 
     if not resume:
-        check_and_clean(best_model_dir)
+        check_and_clean(model_dir)
         check_and_clean(log_dir)
 
         results_df = pd.DataFrame(columns=columns)
@@ -173,14 +172,14 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, split
                          'epoch': epoch,
                          'valid_acc': acc_mean_valid},
                         accuracy_is_best, loss_is_best,
-                        best_model_dir)
+                        model_dir)
         # Save optimizer state_dict to be able to reload
         save_checkpoint({'optimizer': optimizer.state_dict(),
                          'epoch': epoch,
                          'name': options.optimizer,
                          },
                         False, False,
-                        best_model_dir,
+                        model_dir,
                         filename='optimizer.pth.tar')
 
         epoch += 1
@@ -298,7 +297,8 @@ def test(model, dataloader, use_cuda, criterion, full_return=False):
 # AutoEncoder train / test  #
 #############################
 
-def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, resume, split, options):
+def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, resume,
+                  log_dir, model_dir, visualization_dir, options):
     """
     Function used to train an autoencoder.
     The best autoencoder and checkpoint will be found in the 'best_model_dir' of options.output_dir.
@@ -309,19 +309,18 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
     :param criterion: (loss) function to calculate the loss.
     :param optimizer: (torch.optim) optimizer linked to model parameters.
     :param resume: (bool) if True, a begun job is resumed.
-    :param split: (int) Number of the split that is trained
+    :param log_dir: (str) path to the folder containing the logs.
+    :param model_dir: (str) path to the folder containing the models weights and biases.
+    :param visualization_dir: (str) path to the folder containing the reconstruction of images.
     :param options: (Namespace) ensemble of other options given to the main script.
     """
     from tensorboardX import SummaryWriter
 
-    log_dir = os.path.join(options.output_dir, 'log_dir', 'fold_%i' % split, 'ConvAutoencoder')
-    visualization_path = os.path.join(options.output_dir, 'visualize', 'fold_%i' % split)
-    best_model_dir = os.path.join(options.output_dir, 'best_model_dir', 'fold_%i' % split, 'ConvAutoencoder')
     filename = os.path.join(log_dir, 'training.tsv')
 
     if not resume:
-        check_and_clean(best_model_dir)
-        check_and_clean(visualization_path)
+        check_and_clean(model_dir)
+        check_and_clean(visualization_dir)
         check_and_clean(log_dir)
         columns = ['epoch', 'iteration', 'loss_train', 'mean_loss_train', 'loss_valid', 'mean_loss_valid']
         results_df = pd.DataFrame(columns=columns)
@@ -434,20 +433,20 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
                          'epoch': epoch,
                          'loss_valid': loss_valid},
                         False, is_best,
-                        best_model_dir)
+                        model_dir)
         # Save optimizer state_dict to be able to reload
         save_checkpoint({'optimizer': optimizer.state_dict(),
                          'epoch': epoch,
                          'name': options.optimizer,
                          },
                         False, False,
-                        best_model_dir,
+                        model_dir,
                         filename='optimizer.pth.tar')
 
         epoch += 1
 
     if options.visualization:
-        visualize_subject(decoder, train_loader, visualization_path, options, epoch=epoch, save_input=first_visu)
+        visualize_subject(decoder, train_loader, visualization_dir, options, epoch=epoch, save_input=first_visu)
 
 
 def test_ae(model, dataloader, use_cuda, criterion):
