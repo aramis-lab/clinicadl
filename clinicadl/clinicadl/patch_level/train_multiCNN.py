@@ -139,45 +139,18 @@ def train_patch_multi_cnn(params):
 
             loss = torch.nn.CrossEntropyLoss()
 
+            # Define output directories
+            model_dir = os.path.join(params.output_dir, "best_model_dir", "fold_%i" % fi, "cnn-%i" % i)
+            log_dir = os.path.join(params.output_dir, "log_dir", "fold_%i" % fi, "cnn-%i" % i,)
+
             print('Beginning the training task')
             # parameters used in training
             best_accuracy = 0.0
             best_loss_valid = np.inf
-            writer_train_batch = SummaryWriter(
-                    log_dir=(
-                        os.path.join(
-                            params.output_dir,
-                            "log_dir",
-                            "fold_%i" % fi,
-                            "cnn-%i" % i,
-                            "train_batch"
-                            )
-                        )
-                    )
 
-            writer_train_all_data = SummaryWriter(
-                    log_dir=(
-                        os.path.join(
-                            params.output_dir,
-                            "log_dir",
-                            "fold_%i" % fi,
-                            "cnn-%i" % i,
-                            "train_all_data"
-                            )
-                        )
-                    )
-
-            writer_valid = SummaryWriter(
-                    log_dir=(
-                        os.path.join(
-                            params.output_dir,
-                            "log_dir",
-                            "fold_%i" % fi,
-                            "cnn-%i" % i,
-                            "valid"
-                            )
-                        )
-                    )
+            writer_train_batch = SummaryWriter(os.path.join(log_dir, "train_batch"))
+            writer_train_all_data = SummaryWriter(os.path.join(log_dir, "train_all_data"))
+            writer_valid = SummaryWriter(os.path.join(log_dir, "valid"))
 
             # initialize the early stopping instance
             early_stopping = EarlyStopping(
@@ -232,23 +205,22 @@ def train_patch_multi_cnn(params):
                 loss_is_best = loss_batch_mean_valid < best_loss_valid
                 best_loss_valid = min(loss_batch_mean_valid, best_loss_valid)
 
-                save_checkpoint(
-                        {
-                            'epoch': epoch + 1,
-                            'model': model.state_dict(),
-                            'loss': loss_batch_mean_valid,
-                            'accuracy': acc_mean_valid,
-                            'optimizer': optimizer.state_dict(),
-                            'global_step': global_step
-                            },
-                        acc_is_best, loss_is_best,
-                        os.path.join(
-                            params.output_dir,
-                            "best_model_dir",
-                            "fold_%i" % fi,
-                            "cnn-%i" % i
-                            )
-                        )
+                save_checkpoint({
+                    'epoch': epoch,
+                    'model': model.state_dict(),
+                    'valid_loss': loss_batch_mean_valid,
+                    'valid_acc': acc_mean_valid},
+                    acc_is_best, loss_is_best,
+                    model_dir)
+
+                # Save optimizer state_dict to be able to reload
+                save_checkpoint({'optimizer': optimizer.state_dict(),
+                                 'epoch': epoch,
+                                 'name': params.optimizer,
+                                 },
+                                False, False,
+                                model_dir,
+                                filename='optimizer.pth.tar')
 
                 # try early stopping criterion
                 if early_stopping.step(loss_batch_mean_valid) or epoch == params.epochs - 1:
@@ -256,6 +228,9 @@ def train_patch_multi_cnn(params):
                           "the training is stopped at %d-th epoch" % epoch)
 
                     break
+
+            del optimizer
+            torch.cuda.empty_cache()
 
             for selection in ['best_acc', 'best_loss']:
                 # load the best trained model during the training
@@ -304,6 +279,9 @@ def train_patch_multi_cnn(params):
                         )
 
                 torch.cuda.empty_cache()
+
+            os.remove(os.path.join(model_dir, "optimizer.pth.tar"))
+            os.remove(os.path.join(model_dir, "checkpoint.pth.tar"))
 
         for selection in ['best_acc', 'best_loss']:
             soft_voting_to_tsvs(
