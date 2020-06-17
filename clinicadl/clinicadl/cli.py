@@ -692,8 +692,8 @@ def parse_command_line():
         type=int, default=None)
     train_cv_group.add_argument(
         '--split',
-        help='Will load the specific split wanted.',
-        type=int, default=0)
+        help='Train the list of given folds. By default train all folds.',
+        type=int, default=None, nargs='+')
 
     # Optimization parameters
     train_optim_group = train_parent_parser.add_argument_group(
