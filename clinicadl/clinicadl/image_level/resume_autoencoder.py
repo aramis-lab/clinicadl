@@ -77,9 +77,14 @@ def main(options):
     optimizer_path = path.join(options.model_path, 'optimizer.pth.tar')
     optimizer = load_optimizer(optimizer_path, decoder)
 
-    print('Resuming the training task')
+    # Define output directories
+    log_dir = path.join(options.output_dir, 'log_dir', 'fold_%i' % options.split, 'ConvAutoencoder')
+    visualization_dir = path.join(options.output_dir, 'visualize', 'fold_%i' % options.split)
+    model_dir = path.join(options.output_dir, 'best_model_dir', 'fold_%i' % options.split, 'ConvAutoencoder')
 
-    ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, True, options)
+    print('Resuming the training task')
+    ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, True,
+                  log_dir, model_dir, visualization_dir, options)
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)

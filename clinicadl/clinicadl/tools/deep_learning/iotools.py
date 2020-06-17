@@ -160,12 +160,8 @@ def commandline_to_json(commandline, task_type):
     commandline_arg_dic['unknown_arg'] = commandline[1]
 
     output_dir = commandline_arg_dic['output_dir']
-    if commandline_arg_dic['split'] is None:
-        log_dir = os.path.join(output_dir, 'log_dir')
-    else:
-        log_dir = os.path.join(output_dir, 'log_dir', 'fold_' + str(commandline_arg_dic['split']))
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
     # remove these entries from the commandline log file
     if 'func' in commandline_arg_dic:
@@ -182,8 +178,8 @@ def commandline_to_json(commandline, task_type):
 
     # save to json file
     json = json.dumps(commandline_arg_dic, skipkeys=True)
-    print("Path of json file:", os.path.join(log_dir, "commandline_" + task_type + ".json"))
-    f = open(os.path.join(log_dir, "commandline_" + task_type + ".json"), "w")
+    print("Path of json file:", os.path.join(output_dir, "commandline_" + task_type + ".json"))
+    f = open(os.path.join(output_dir, "commandline_" + task_type + ".json"), "w")
     f.write(json)
     f.close()
 
@@ -197,11 +193,12 @@ def read_json(options, task_type, json_path=None, test=False):
     """
     import json
     from os import path
+    from ...cli import set_default_dropout
 
     evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
     prep_compatibility_dict = {"mni": "t1-volume", "linear": "t1-linear"}
     if json_path is None:
-        json_path = path.join(options.model_path, 'log_dir', 'commandline_' + task_type + '.json')
+        json_path = path.join(options.model_path, 'commandline_' + task_type + '.json')
 
     with open(json_path, "r") as f:
         json_data = json.load(f)
@@ -218,7 +215,8 @@ def read_json(options, task_type, json_path=None, test=False):
 
     # Retro-compatibility with runs of previous versions
     if not hasattr(options, 'dropout'):
-        options.dropout = 0
+        options.dropout = None
+    set_default_dropout(options)
 
     if options.preprocessing in prep_compatibility_dict.keys():
         options.preprocessing = prep_compatibility_dict[options.preprocessing]
