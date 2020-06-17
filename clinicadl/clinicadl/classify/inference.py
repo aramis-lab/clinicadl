@@ -32,15 +32,15 @@ def classify(caps_dir, tsv_file, model_path, output_dir=None, gpu=True):
     if not isdir(caps_dir):
         print("Folder containing MRIs is not found, please verify its location")
         raise FileNotFoundError(
-                errno.ENOENT, strerror(errno.ENOENT), caps_dir)
+            errno.ENOENT, strerror(errno.ENOENT), caps_dir)
         print("Folder containing MRIs is not found, please verify its location")
     if not isdir(model_path):
         print("A valid model in the path was not found. Donwload them from aramislab.inria.fr")
         raise FileNotFoundError(
-                errno.ENOENT, strerror(errno.ENOENT), model_path)
+            errno.ENOENT, strerror(errno.ENOENT), model_path)
     if not exists(tsv_file):
         raise FileNotFoundError(
-                errno.ENOENT, strerror(errno.ENOENT), tsv_file)
+            errno.ENOENT, strerror(errno.ENOENT), tsv_file)
 
     # Infer json file from model_path (suppose that json file is at the same
     # folder)
@@ -50,7 +50,7 @@ def classify(caps_dir, tsv_file, model_path, output_dir=None, gpu=True):
     if not exists(json_file):
         print("Json file doesn't exist")
         raise FileNotFoundError(
-                errno.ENOENT, strerror(errno.ENOENT), json_file)
+            errno.ENOENT, strerror(errno.ENOENT), json_file)
 
     # Verify if a GPU is available
     if gpu:
@@ -59,11 +59,11 @@ def classify(caps_dir, tsv_file, model_path, output_dir=None, gpu=True):
             gpu = False
 
     results_df = inference_from_model(
-            caps_dir,
-            tsv_file,
-            model_path,
-            json_file,
-            gpu)
+        caps_dir,
+        tsv_file,
+        model_path,
+        json_file,
+        gpu)
 
     print(results_df)
 
@@ -322,17 +322,17 @@ def inference_from_patch_model(caps_dir, tsv_file, model_path, options):
         # Read/localize the data
         if options.hippocampus_roi:
             data_to_test = MRIDataset_patch_hippocampus(
-                    caps_directory,
-                    tsv_file,
-                    transformations=transformations)
+                caps_directory,
+                tsv_file,
+                transformations=transformations)
         else:
             data_to_test = MRIDataset_patch(
-                    caps_directory,
-                    tsv_file,
-                    options.patch_size,
-                    options.stride_size,
-                    transformations=transformations,
-                    prepare_dl=options.prepare_dl)
+                caps_directory,
+                tsv_file,
+                options.patch_size,
+                options.stride_size,
+                transformations=transformations,
+                prepare_dl=options.prepare_dl)
 
         # Load the data
         test_loader = DataLoader(
@@ -363,27 +363,27 @@ def inference_from_patch_model(caps_dir, tsv_file, model_path, options):
         for n in range(options.num_cnn):
 
             dataset = MRIDataset_patch(
-                    caps_dir,
-                    tsv_file,
-                    options.patch_size,
-                    options.stride_size,
-                    transformations=transformations,
-                    patch_index=n,
-                    prepare_dl=options.prepare_dl)
+                caps_dir,
+                tsv_file,
+                options.patch_size,
+                options.stride_size,
+                transformations=transformations,
+                patch_index=n,
+                prepare_dl=options.prepare_dl)
 
             test_loader = DataLoader(
-                    dataset,
-                    batch_size=options.batch_size,
-                    shuffle=False,
-                    num_workers=options.nproc,
-                    pin_memory=True)
+                dataset,
+                batch_size=options.batch_size,
+                shuffle=False,
+                num_workers=options.nproc,
+                pin_memory=True)
 
             # load the best trained model during the training
             model, best_epoch = load_model(
-                    model,
-                    join(model_path, 'cnn-%i' % n),
-                    gpu,
-                    filename='model_best.pth.tar')
+                model,
+                join(model_path, 'cnn-%i' % n),
+                gpu,
+                filename='model_best.pth.tar')
 
             results_df, metrics = test(model, test_loader, gpu, criterion)
             print("Patch level balanced accuracy is %f" % metrics['balanced_accuracy'])
