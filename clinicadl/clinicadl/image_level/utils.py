@@ -451,7 +451,7 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
 
     os.remove(os.path.join(model_dir, "optimizer.pth.tar"))
     os.remove(os.path.join(model_dir, "checkpoint.pth.tar"))
-    
+
     if options.visualization:
         visualize_subject(decoder, train_loader, visualization_dir, options, epoch=epoch, save_input=first_visu)
 
