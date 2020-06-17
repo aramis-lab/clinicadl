@@ -1,8 +1,7 @@
 # coding: utf8
 
 from clinicadl.tools.deep_learning import create_model, load_model, read_json
-from clinicadl.tools.deep_learning.data import MRIDataset, MinMaxNormalization
-from clinicadl.image_level.utils import test
+from clinicadl.tools.deep_learning.data import MinMaxNormalization
 import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -50,8 +49,9 @@ def classify(caps_dir, tsv_file, model_path, output_dir=None):
         raise FileNotFoundError(
                 errno.ENOENT, strerror(errno.ENOENT), json_file)
 
-    inference_from_model(caps_dir, tsv_file, model_path, json_file)
-
+    results_df = inference_from_model(caps_dir, tsv_file, model_path, json_file)
+    
+    print(results_df)
 
 def inference_from_model(caps_dir,
                          tsv_file,
@@ -71,7 +71,8 @@ def inference_from_model(caps_dir,
 
     Returns:
 
-    pd frame with the prediction results
+    Pandas data frame with a list of subjects and their infered clases
+    (predictions).
 
     Rises:
 
@@ -119,6 +120,41 @@ def inference_from_model(caps_dir,
 
     options.use_gpu=False
 
+    if (options.mode == 'image'):
+        infered_classes = inference_from_image_model(
+            caps_dir,
+            tsv_file,
+            model_path,
+            options)
+    elif (options.mode == 'slice'):
+        infered_clases = inference_from_slice_model(
+            caps_dir,
+            tsv_file,
+            model_path,
+            options)
+    elif (options.mode == 'patch'):
+        infered_clases = inference_from_patch_model(
+            caps_dir,
+            tsv_file,
+            model_path,
+            options)
+    elif (options.mode == 'roi'):
+        infered_clases = inference_from_roi_model()
+    else:
+        print("Inference for this image mode is not implemented")
+    
+    return infered_classes
+
+
+def inference_from_image_model(caps_dir, tsv_file, model_path, options):
+    '''
+    Inference for image/subject model
+
+
+
+    '''
+    from clinicadl.tools.deep_learning.data import MRIDataset
+    from clinicadl.image_level.utils import test
     # Recreate the model with the network described in the json file
     model = create_model(options.network)
     criterion = nn.CrossEntropyLoss()
@@ -133,12 +169,14 @@ def inference_from_model(caps_dir,
     else:
         transformations = None
 
+    # Read/localize the data
     data_to_test = MRIDataset(
         caps_dir,
         tsv_file,
         options.preprocessing,
         transform=transformations)
 
+    # Load the data
     test_loader = DataLoader(
         data_to_test,
         batch_size=options.batch_size,
@@ -146,6 +184,7 @@ def inference_from_model(caps_dir,
         num_workers=options.nproc,
         pin_memory=True)
 
+    # Run the model on the data
     metrics_test, loss_test, test_df = test(
         best_model,
         test_loader,
@@ -153,6 +192,70 @@ def inference_from_model(caps_dir,
         criterion,
         full_return=True)
     
-    print(test_df)
+    return test_df
 
+def inference_from_slice_model(caps_dir, tsv_file, model_path, options):
+    '''
+    Inference for slice model
+
+
+
+    '''
+    from clinicadl.tools.deep_learning.data import MRIDataset_slice
+    from clinicadl.slice_level.utils import test
+    # Initialize the model
+    print('Do transfer learning with existed model trained on ImageNet.')
+
+    model = create_model(options.network, options.gpu)
+    trg_size = (224, 224)  # most of the imagenet pretrained model has this input size
+
+    # All pre-trained models expect input images normalized in the same way,
+    # i.e. mini-batches of 3-channel RGB images of shape (3 x H x W), where H
+    # and W are expected to be at least 224. The images have to be loaded in to
+    # a range of [0, 1] and then normalized using mean = [0.485, 0.456, 0.406]
+    # and std = [0.229, 0.224, 0.225].
+    transformations = transforms.Compose([MinMaxNormalization(),
+        transforms.ToPILImage(),
+        transforms.Resize(trg_size),
+        transforms.ToTensor()])
+    # Define loss and optimizer
+    loss = torch.nn.CrossEntropyLoss()
+
+    # Load data
+    _, test_df = load_data(tsv_file, options.diagnoses, fi,
+            n_splits=options.n_splits, baseline=True)
+    
+    # Load model from path
+    best_model, best_epoch = load_model(
+        model, model_path,
+        options.use_gpu, filename='model_best.pth.tar')
+
+    if options.minmaxnormalization:
+        transformations = MinMaxNormalization()
+    else:
+        transformations = None
+
+    # Read/localize the data
+    data_to_test = MRIDataset_slice(
+        caps_dir,
+        tsv_file,
+        transform=transformations,
+        mri_plane=options.mri_plane,
+        prepare_dl=options.prepare_dl)
+
+    # Load the data
+    test_loader = DataLoader(
+        data_to_test,
+        batch_size=options.batch_size,
+        shuffle=False,
+        num_workers=options.nproc,
+        pin_memory=True)
+
+    # Run the model on the data
+    metrics_test, loss_test, test_df = test(
+        best_model,
+        test_loader,
+        options.use_gpu,
+        loss)
+    
     return test_df
