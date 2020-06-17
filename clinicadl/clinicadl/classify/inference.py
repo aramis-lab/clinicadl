@@ -6,7 +6,7 @@ import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-def classify(caps_dir, tsv_file, model_path, output_dir=None):
+def classify(caps_dir, tsv_file, model_path, output_dir=None, gpu=True):
     """
     This function reads the command line parameters and point to inference
 
@@ -20,6 +20,8 @@ def classify(caps_dir, tsv_file, model_path, output_dir=None):
     from os.path import isdir, join, abspath, exists
     from os import strerror
     import errno 
+    import torch
+
     # Verify that paths exist
     caps_dir = abspath(caps_dir)
     model_path = abspath(model_path)
@@ -49,14 +51,26 @@ def classify(caps_dir, tsv_file, model_path, output_dir=None):
         raise FileNotFoundError(
                 errno.ENOENT, strerror(errno.ENOENT), json_file)
 
-    results_df = inference_from_model(caps_dir, tsv_file, model_path, json_file)
+    # Verify if a GPU is available    
+    if gpu:
+        if not torch.cuda.is_available():
+            print("GPU classifing is not available in your system, it will use cpu.")
+            gpu=False
+
+    results_df = inference_from_model(
+            caps_dir,
+            tsv_file,
+            model_path,
+            json_file,
+            gpu)
     
     print(results_df)
 
 def inference_from_model(caps_dir,
                          tsv_file,
                          model_path=None,
-                         json_file=None):
+                         json_file=None,
+                         gpu=True):
     """
     Inference from trained model
 
@@ -68,6 +82,7 @@ def inference_from_model(caps_dir,
     tsv_file: file with the name of the MRIs to process (single or multiple)
     model_path: file with the model (pth format).
     json_file: file containing the training parameters.
+    gpu: if true, it uses gpu.
 
     Returns:
 
@@ -108,17 +123,22 @@ def inference_from_model(caps_dir,
 
     import argparse
 
-    print("This is the inference phase")
-    
     parser = argparse.ArgumentParser()
     parser.add_argument("model_path", type=str,
             help="Path to the trained model folder.")
     options = parser.parse_args([model_path])
     options = read_json(options, "CNN", json_path=json_file)
-    print("Load model with these options")
+    print("Load model with these options:")
     print(options)
 
-    options.use_gpu=False
+    # Retrocompatilibity with old json/models
+    if hasattr(options, 'slice_direction'):
+        options.mri_plane = options.slice_direction
+
+    if hasattr(options, 'use_gpu'):
+        options.use_cpu = not options.use_gpu
+    
+    options.use_cpu = not gpu
 
     if (options.mode == 'image'):
         infered_classes = inference_from_image_model(
@@ -155,14 +175,16 @@ def inference_from_image_model(caps_dir, tsv_file, model_path, options):
     '''
     from clinicadl.tools.deep_learning.data import MRIDataset
     from clinicadl.image_level.utils import test
+
+    gpu = not options.use_cpu
     # Recreate the model with the network described in the json file
-    model = create_model(options.network, options.use_gpu)
+    model = create_model(options.network, gpu)
     criterion = nn.CrossEntropyLoss()
 
     # Load model from path
     best_model, best_epoch = load_model(
         model, model_path,
-        options.use_gpu, filename='model_best.pth.tar')
+        gpu, filename='model_best.pth.tar')
 
     if options.minmaxnormalization:
         transformations = MinMaxNormalization()
@@ -188,7 +210,7 @@ def inference_from_image_model(caps_dir, tsv_file, model_path, options):
     metrics_test, loss_test, test_df = test(
         best_model,
         test_loader,
-        options.use_gpu,
+        gpu,
         criterion,
         full_return=True)
     
@@ -207,8 +229,11 @@ def inference_from_slice_model(caps_dir, tsv_file, model_path, options):
     # Initialize the model
     print('Do transfer learning with existed model trained on ImageNet.')
     
-    model = create_model(options.network, options.use_gpu, dropout=0.8)
+    gpu = not options.use_cpu
+    
+    model = create_model(options.network, gpu, dropout=0.8)
     trg_size = (224, 224)  # most of the imagenet pretrained model has this input size
+
 
     # All pre-trained models expect input images normalized in the same way,
     # i.e. mini-batches of 3-channel RGB images of shape (3 x H x W), where H
@@ -225,10 +250,7 @@ def inference_from_slice_model(caps_dir, tsv_file, model_path, options):
     # Load model from path
     best_model, best_epoch = load_model(
         model, model_path,
-        options.use_gpu, filename='model_best.pth.tar')
-
-    if hasattr(options, 'slice_direction'):
-        options.mri_plane = options.slice_direction
+        gpu, filename='model_best.pth.tar')
 
     # Read/localize the data
     data_to_test = MRIDataset_slice(
@@ -250,7 +272,57 @@ def inference_from_slice_model(caps_dir, tsv_file, model_path, options):
     results_df, results = test(
         best_model,
         test_loader,
-        options.use_gpu,
+        gpu,
         loss)
     
     return results_df
+
+def inference_from_patch_model(caps_dir, tsv_file, model_path, options):
+    '''
+    Inference using an image/subject CNN model
+
+
+
+    '''
+    from clinicadl.tools.deep_learning.data import MRIDataset
+    from clinicadl.patch_level.utils import test
+
+    gpu = not options.use_cpu
+    # Recreate the model with the network described in the json file
+    model = create_model(options.network, gpu)
+    criterion = nn.CrossEntropyLoss()
+
+    # Load model from path
+    best_model, best_epoch = load_model(
+        model, model_path,
+        gpu, filename='model_best.pth.tar')
+
+    if options.minmaxnormalization:
+        transformations = MinMaxNormalization()
+    else:
+        transformations = None
+
+    # Read/localize the data
+    data_to_test = MRIDataset(
+        caps_dir,
+        tsv_file,
+        options.preprocessing,
+        transform=transformations)
+
+    # Load the data
+    test_loader = DataLoader(
+        data_to_test,
+        batch_size=options.batch_size,
+        shuffle=False,
+        num_workers=options.nproc,
+        pin_memory=True)
+
+    # Run the model on the data
+    metrics_test, loss_test, test_df = test(
+        best_model,
+        test_loader,
+        gpu,
+        criterion,
+        full_return=True)
+    
+    return test_df
