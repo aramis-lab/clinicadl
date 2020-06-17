@@ -52,7 +52,6 @@ def train_cnn(params):
         fold_iterator = params.split
 
     for fold in fold_iterator:
-        print("Test 1, fold " + str(fold), params.dropout)
 
         # Get the data.
         training_tsv, valid_tsv = load_data(params.tsv_path, params.diagnoses,
@@ -94,22 +93,18 @@ def train_cnn(params):
         model = transfer_learning(model, fold, params.output_dir, source_path=params.transfer_learning_path,
                                   transfer_learning_autoencoder=params.transfer_learning_autoencoder,
                                   gpu=params.gpu, selection=params.selection)
-        print("Test 2, fold " + str(fold), params.dropout)
 
         # Define criterion and optimizer
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
                                                             lr=params.learning_rate,
                                                             weight_decay=params.weight_decay)
-        print("Test 3, fold " + str(fold), params.dropout)
 
-        print('Beginning the training task')
         train(model, train_loader, valid_loader, criterion, optimizer, False, fold, params)
 
         params.model_path = params.output_dir
         test_cnn(train_loader, "train", fold, criterion, params)
         test_cnn(valid_loader, "validation", fold, criterion, params)
-        print("Test 4, fold " + str(fold), params.dropout)
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)
