@@ -135,9 +135,20 @@ def inference_from_model(caps_dir,
     if hasattr(options, 'slice_direction'):
         options.mri_plane = options.slice_direction
 
+    if hasattr(options, 'patch_stride'):
+        options.stride_size =  options.patch_stride
+
     if hasattr(options, 'use_gpu'):
         options.use_cpu = not options.use_gpu
     
+    if hasattr(options, 'use_extracted_patches'):
+        options.prepare_dl = not options.use_extracted_patches
+
+    if options.mode == "patch" and hasattr(options, "network_type"):
+        if options.network_type == "multi":
+            options.mode_task = "multicnn"
+        del options.network_type
+
     options.use_cpu = not gpu
 
     if (options.mode == 'image'):
@@ -258,7 +269,7 @@ def inference_from_slice_model(caps_dir, tsv_file, model_path, options):
         tsv_file,
         transformations=transformations,
         mri_plane=options.mri_plane,
-        prepare_dl=not options.use_extracted_patches)
+        prepare_dl=not options.prepare_dl)
 
     # Load the data
     test_loader = DataLoader(
@@ -284,45 +295,102 @@ def inference_from_patch_model(caps_dir, tsv_file, model_path, options):
 
 
     '''
-    from clinicadl.tools.deep_learning.data import MRIDataset
+    from clinicadl.tools.deep_learning.data import MRIDataset_patch, MRIDataset_patch_hippocampus
     from clinicadl.patch_level.utils import test
+    import torchvision.transforms as transforms
+    from os.path import join
 
     gpu = not options.use_cpu
-    # Recreate the model with the network described in the json file
-    model = create_model(options.network, gpu)
-    criterion = nn.CrossEntropyLoss()
-
-    # Load model from path
-    best_model, best_epoch = load_model(
-        model, model_path,
-        gpu, filename='model_best.pth.tar')
-
-    if options.minmaxnormalization:
-        transformations = MinMaxNormalization()
-    else:
-        transformations = None
-
-    # Read/localize the data
-    data_to_test = MRIDataset(
-        caps_dir,
-        tsv_file,
-        options.preprocessing,
-        transform=transformations)
-
-    # Load the data
-    test_loader = DataLoader(
-        data_to_test,
-        batch_size=options.batch_size,
-        shuffle=False,
-        num_workers=options.nproc,
-        pin_memory=True)
-
-    # Run the model on the data
-    metrics_test, loss_test, test_df = test(
-        best_model,
-        test_loader,
-        gpu,
-        criterion,
-        full_return=True)
     
-    return test_df
+    if options.mode_task=='cnn':
+        # Recreate the model with the network described in the json file
+        # Initialize the model
+        model = create_model(options.network, gpu)
+        transformations = transforms.Compose([MinMaxNormalization()])
+        
+        # Define loss and optimizer
+        criterion = nn.CrossEntropyLoss()
+
+        # Load model from path
+        best_model, best_epoch = load_model(
+            model, model_path,
+            gpu, filename='model_best.pth.tar')
+
+
+        # Read/localize the data
+        if options.hippocampus_roi:
+            data_to_test = MRIDataset_patch_hippocampus(
+                    caps_directory, 
+                    tsv_file, 
+                    transformations=transformations)
+        else:
+            data_to_test = MRIDataset_patch(
+                    caps_directory,
+                    tsv_file,
+                    options.patch_size,
+                    options.stride_size,
+                    transformations=transformations,
+                    prepare_dl=options.prepare_dl)
+
+        # Load the data
+        test_loader = DataLoader(
+            data_to_test,
+            batch_size=options.batch_size,
+            shuffle=False,
+            num_workers=options.nproc,
+            pin_memory=True)
+
+        # Run the model on the data
+        results_df, metrics = test(
+            best_model,
+            test_loader,
+            gpu,
+            criterion,
+            full_return=True)
+
+    elif options.mode_task=='multicnn':
+        
+        # Recreate the model with the network described in the json file
+        # Initialize the model
+        model = create_model(options.network, gpu)
+        transformations = transforms.Compose([MinMaxNormalization()])
+        
+        # Define loss and optimizer
+        criterion = nn.CrossEntropyLoss()
+
+        
+        for n in range(options.num_cnn):
+
+            dataset = MRIDataset_patch(
+                    caps_dir,
+                    tsv_file,
+                    options.patch_size,
+                    options.stride_size,
+                    transformations=transformations,
+                    patch_index=n,
+                    prepare_dl=options.prepare_dl)
+
+            test_loader = DataLoader(
+                    dataset,
+                    batch_size=options.batch_size,
+                    shuffle=False,
+                    num_workers=options.nproc,
+                    pin_memory=True)
+
+            # load the best trained model during the training
+            model, best_epoch = load_model(
+                    model,
+                    join(model_path, 'cnn-%i' % n),
+                    gpu,
+                    filename='model_best.pth.tar')
+
+            results_df, metrics = test(model, test_loader, gpu, criterion)
+            print("Patch level balanced accuracy is %f" % metrics['balanced_accuracy'])
+
+
+    else:
+        print("Mode not defined")
+
+
+    
+    return results_df

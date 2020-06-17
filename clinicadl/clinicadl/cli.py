@@ -363,7 +363,8 @@ def classify_func(args):
         args.caps_dir,
         args.tsv_file,
         args.model_path,
-        args.output_dir
+        output_dir=args.output_dir,
+        gpu=not args.use_cpu
     )
 
 # Functions to dispatch command line options from tsvtool to corresponding
@@ -1031,6 +1032,10 @@ def parse_command_line():
         'output_dir',
         help='Folder containing results of the training.',
         default=None)
+    classify_parser.add_argument(
+        '-cpu', '--use_cpu', action='store_true',
+        help='Uses CPU instead of GPU.',
+        default=False)
 
     classify_parser.set_defaults(func=classify_func)
 
