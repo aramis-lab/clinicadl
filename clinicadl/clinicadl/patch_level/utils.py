@@ -13,7 +13,7 @@ from time import time
 #################################
 
 
-def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_train, writer_valid, options, fi):
+def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_train, writer_valid, options, model_dir):
     """
     This aims to train the stacked AEs together for autoencoder
     :param model:
@@ -34,11 +34,10 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_tra
     # if the model defined is not already constructed to an AE, then we convert the CNN into an AE
     ae = AutoEncoder(model)
 
-    ae_finetuning(ae, train_loader, valid_loader, criterion, writer_train, writer_valid, options, fi)
+    ae_finetuning(ae, train_loader, valid_loader, criterion, writer_train, writer_valid, options, model_dir)
 
     # Updating and setting weights of the convolutional layers
-    checkpoint_dir = path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder',
-                               'AutoEncoder', 'best_loss')
+    checkpoint_dir = path.join(model_dir, 'best_loss')
     best_autodecoder, best_epoch = load_model(ae, checkpoint_dir, options.gpu,  filename='model_best.pth.tar')
 
     del ae
@@ -48,7 +47,7 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_tra
     save_checkpoint({'model': model.state_dict(),
                      'epoch': best_epoch},
                     False, False,
-                    os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'Encoder'),
+                    os.path.join(model_dir, 'Encoder'),
                     filename='model_best_encoder.pth.tar')
 
     del best_epoch
@@ -57,18 +56,7 @@ def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_tra
 
 
 def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, writer_train_ft, writer_valid_ft, options,
-                  fi, global_step=0):
-    """
-    After training the AEs in a layer-wise way, we fine-tune the whole AEs
-    :param auto_encoder:
-    :param train_loader:
-    :param valid_loader:
-    :param criterion:
-    :param gpu:
-    :param results_path:
-    :param options:
-    :return:
-    """
+                  model_dir, global_step=0):
     from ..tools.deep_learning import save_checkpoint
 
     auto_encoder_all.train()
@@ -133,12 +121,10 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
         # Save best based on smallest loss
         best_loss_valid = min(loss_valid, best_loss_valid)
         save_checkpoint({'model': auto_encoder_all.state_dict(),
-                         'iteration': i,
                          'epoch': epoch,
-                         'best_loss': best_loss_valid},
+                         'valid_loss': mean_loss_valid},
                         False, is_best_loss,
-                        os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "ConvAutoencoder",
-                                     "AutoEncoder"))
+                        model_dir)
 
     del optimizer, auto_encoder_all
 
