@@ -9,7 +9,7 @@ from colorama import Fore
 TRAIN_CATEGORIES = {
     # General parent group
     'POSITIONAL': '%sPositional arguments%s' % (Fore.BLUE, Fore.RESET),
-    'COMPUTATIONAL': '%sComputational issues%s' % (Fore.BLUE, Fore.RESET),
+    'COMPUTATIONAL': '%sComputational resources%s' % (Fore.BLUE, Fore.RESET),
     'DATA': '%sData management%s' % (Fore.BLUE, Fore.RESET),
     'CROSS-VALIDATION': '%sCross-validation arguments%s' % (Fore.BLUE, Fore.RESET),
     'OPTIMIZATION': '%sOptimization parameters%s' % (Fore.BLUE, Fore.RESET),
@@ -654,7 +654,7 @@ def parse_command_line():
         help='CNN Model to be used during the training.',
         default='Conv5_FC3')
 
-    # Computational issues
+    # Computational resources
     train_comput_group = train_parent_parser.add_argument_group(
         TRAIN_CATEGORIES["COMPUTATIONAL"])
     train_comput_group.add_argument(
