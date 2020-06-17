@@ -192,7 +192,8 @@ def train_func(args):
             gpu=not args.use_cpu,
             num_workers=args.nproc,
             selection_threshold=args.selection_threshold,
-            prepare_dl=args.use_extracted_slices
+            prepare_dl=args.use_extracted_slices,
+            discarded_slices=args.discarded_slices
         )
         train_slice(train_params_slice)
     elif args.mode == 'patch':
@@ -226,7 +227,7 @@ def train_func(args):
                 prepare_dl=args.use_extracted_patches
             )
             train_autoencoder_patch(train_params_autoencoder)
-        if args.mode_task == "cnn":
+        elif args.mode_task == "cnn":
             train_params_patch = Parameters(
                 args.tsv_path,
                 args.output_dir,
@@ -983,6 +984,12 @@ def parse_command_line():
                  1 for coronal
                  2 for axial direction.''',
         default=0, type=int)
+    train_slice_group.add_argument(
+        '--discarded_slices',
+        help='''Number of slices discarded from respectively the beginning and the end of the MRI volume.
+        If only one argument is given, it will be used for both sides.''',
+        default=20, type=int, nargs='+'
+    )
     train_slice_group.add_argument(
         '--use_extracted_slices',
         help='''If True the outputs of extract preprocessing are used, else the whole

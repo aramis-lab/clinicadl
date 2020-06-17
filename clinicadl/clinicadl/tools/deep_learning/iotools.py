@@ -53,6 +53,7 @@ class Parameters:
             selection_threshold: float = 0.0,
             num_cnn: int = 36,
             mri_plane: int = 0,
+            discarded_slices: int = 20,
             prepare_dl: bool = False,
             visualization: bool = False):
         """
@@ -125,6 +126,7 @@ class Parameters:
         self.hippocampus_roi = hippocampus_roi
         self.num_cnn = num_cnn
         self.mri_plane = mri_plane
+        self.discarded_slices = discarded_slices
         self.prepare_dl = prepare_dl
         self.visualization = visualization
         self.selection_threshold = selection_threshold
@@ -252,7 +254,7 @@ def read_json(options, task_type, json_path=None, test=False):
             options.mode_task = "cnn"
 
     if hasattr(options, "use_cpu"):
-        options.use_gpu = not options.use_cpu
+        options.gpu = not options.use_cpu
 
     if hasattr(options, "unnormalize"):
         options.minmaxnormalization = not options.unnormalize
