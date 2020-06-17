@@ -311,7 +311,7 @@ def slice_level_to_tsvs(output_dir, results_df, results, fold, selection, datase
     if not os.path.exists(performance_dir):
         os.makedirs(performance_dir)
 
-    results_df.to_csv(os.path.join(performance_dir, dataset + '_slice_level_result-slice_index.tsv'), index=False,
+    results_df.to_csv(os.path.join(performance_dir, dataset + '_slice_level_result.tsv'), index=False,
                       sep='\t')
 
     del results['confusion_matrix']
@@ -322,7 +322,7 @@ def slice_level_to_tsvs(output_dir, results_df, results, fold, selection, datase
 def retrieve_slice_level_results(output_dir, fold, selection, dataset):
     """Retrieve performance_df for single or multi-CNN framework."""
     result_tsv = os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
-                              dataset + '_slice_level_result-slice_index.tsv')
+                              dataset + '_slice_level_result.tsv')
     performance_df = pd.read_csv(result_tsv, sep='\t')
 
     return performance_df
@@ -352,11 +352,11 @@ def soft_voting_to_tsvs(output_dir, fold, selection, dataset='test', selection_t
 
     df_final, metrics = soft_voting(test_df, validation_df, selection_threshold=selection_threshold)
 
-    df_final.to_csv(os.path.join(os.path.join(performance_path, dataset + '_image_level_result_soft_vote.tsv')),
+    df_final.to_csv(os.path.join(os.path.join(performance_path, dataset + '_image_level_result.tsv')),
                     index=False, sep='\t')
 
     pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
-                                                         dataset + '_image_level_metrics_soft_vote.tsv'),
+                                                         dataset + '_image_level_metrics.tsv'),
                                             index=False, sep='\t')
 
 

@@ -488,7 +488,7 @@ def patch_level_to_tsvs(output_dir, results_df, results, fold, selection, datase
     if not os.path.exists(performance_dir):
         os.makedirs(performance_dir)
 
-    results_df.to_csv(os.path.join(performance_dir, dataset + '_patch_level_result-patch_index.tsv'), index=False,
+    results_df.to_csv(os.path.join(performance_dir, dataset + '_patch_level_result.tsv'), index=False,
                       sep='\t')
 
     del results['confusion_matrix']
@@ -500,14 +500,14 @@ def retrieve_patch_level_results(output_dir, fold, selection, dataset, num_cnn):
     """Retrieve performance_df for single or multi-CNN framework."""
     if num_cnn is None:
         result_tsv = os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
-                                  dataset + '_patch_level_result-patch_index.tsv')
+                                  dataset + '_patch_level_result.tsv')
         performance_df = pd.read_csv(result_tsv, sep='\t')
 
     else:
         performance_df = pd.DataFrame()
         for cnn in range(num_cnn):
             tsv_path = os.path.join(output_dir, 'performances', 'fold_%i' % fold, 'cnn-%i' % cnn, selection,
-                                    dataset + '_patch_level_result-patch_index.tsv')
+                                    dataset + '_patch_level_result.tsv')
             cnn_df = pd.read_csv(tsv_path, sep='\t')
             performance_df = pd.concat([performance_df, cnn_df])
         performance_df.reset_index(drop=True, inplace=True)
@@ -544,11 +544,11 @@ def soft_voting_to_tsvs(output_dir, fold, selection, dataset='test', num_cnn=Non
 
     df_final, metrics = soft_voting(test_df, validation_df, selection_threshold=selection_threshold)
 
-    df_final.to_csv(os.path.join(os.path.join(performance_path, dataset + '_image_level_result_soft_vote.tsv')),
+    df_final.to_csv(os.path.join(os.path.join(performance_path, dataset + '_image_level_result.tsv')),
                     index=False, sep='\t')
 
     pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
-                                                         dataset + '_image_level_metrics_soft_vote.tsv'),
+                                                         dataset + '_image_level_metrics.tsv'),
                                             index=False, sep='\t')
 
 
