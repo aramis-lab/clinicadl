@@ -40,7 +40,7 @@ def train_patch_single_cnn(params):
     if params.split is None:
         fold_iterator = range(params.n_splits)
     else:
-        fold_iterator = [params.split]
+        fold_iterator = params.split
 
     for fi in fold_iterator:
 

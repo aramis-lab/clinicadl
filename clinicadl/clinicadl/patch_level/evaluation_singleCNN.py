@@ -84,7 +84,7 @@ def main(options):
     if options.split is None:
         fold_iterator = range(options.n_splits)
     else:
-        fold_iterator = [options.split]
+        fold_iterator = options.split
 
     # Loop on folds
     for fi in fold_iterator:
