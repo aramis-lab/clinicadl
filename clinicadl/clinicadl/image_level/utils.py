@@ -34,25 +34,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
     from tensorboardX import SummaryWriter
     from time import time
 
-    columns = ['epoch', 'iteration', 'acc_train', 'mean_loss_train', 'acc_valid', 'mean_loss_valid', 'time']
-    filename = os.path.join(log_dir, 'training.tsv')
-
     if not resume:
         check_and_clean(model_dir)
         check_and_clean(log_dir)
-
-        results_df = pd.DataFrame(columns=columns)
-        with open(filename, 'w') as f:
-            results_df.to_csv(f, index=False, sep='\t')
-        options.beginning_epoch = 0
-
-    else:
-        if not os.path.exists(filename):
-            raise ValueError('The training.tsv file of the resumed experiment does not exist.')
-        truncated_tsv = pd.read_csv(filename, sep='\t')
-        truncated_tsv.set_index(['epoch', 'iteration'], inplace=True)
-        truncated_tsv.drop(options.beginning_epoch, level=0, inplace=True)
-        truncated_tsv.to_csv(filename, index=True, sep='\t')
 
     # Create writers
     writer_train = SummaryWriter(os.path.join(log_dir, 'train'))
@@ -67,7 +51,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
 
     early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
     mean_loss_valid = None
-    t_beggining = time()
 
     while epoch < options.epochs and not early_stopping.step(mean_loss_valid):
         print("At %d-th epoch." % epoch)
@@ -120,13 +103,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                     print("Subject level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
                     print("Subject level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
-                    t_current = time() - t_beggining
-                    row = np.array([epoch, i, acc_mean_train, mean_loss_train, acc_mean_valid, mean_loss_valid,
-                                    t_current]).reshape(1, -1)
-                    row_df = pd.DataFrame(row, columns=columns)
-                    with open(filename, 'a') as f:
-                        row_df.to_csv(f, header=False, index=False, sep='\t')
-
             tend = time()
         print('Mean time per batch (train):', total_time / len(train_loader) * train_loader.batch_size)
 
@@ -157,12 +133,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
         print("Subject level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
         print("Subject level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
-        t_current = time() - t_beggining
-        row = np.array([epoch, i, acc_mean_train, mean_loss_train, acc_mean_valid, mean_loss_valid,
-                        t_current]).reshape(1, -1)
-        row_df = pd.DataFrame(row, columns=columns)
-        with open(filename, 'a') as f:
-            row_df.to_csv(f, header=False, index=False, sep='\t')
         accuracy_is_best = acc_mean_valid > best_valid_accuracy
         loss_is_best = mean_loss_valid < best_valid_loss
         best_valid_accuracy = max(acc_mean_valid, best_valid_accuracy)
@@ -320,25 +290,11 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
     """
     from tensorboardX import SummaryWriter
 
-    filename = os.path.join(log_dir, 'training.tsv')
-
     if not resume:
         check_and_clean(model_dir)
         check_and_clean(visualization_dir)
         check_and_clean(log_dir)
-        columns = ['epoch', 'iteration', 'loss_train', 'mean_loss_train', 'loss_valid', 'mean_loss_valid']
-        results_df = pd.DataFrame(columns=columns)
-        with open(filename, 'w') as f:
-            results_df.to_csv(f, index=False, sep='\t')
         options.beginning_epoch = 0
-
-    else:
-        if not os.path.exists(filename):
-            raise ValueError('The training.tsv file of the resumed experiment does not exist.')
-        truncated_tsv = pd.read_csv(filename, sep='\t')
-        truncated_tsv.set_index(['epoch', 'iteration'], inplace=True)
-        truncated_tsv.drop(options.beginning_epoch, level=0, inplace=True)
-        truncated_tsv.to_csv(filename, index=True, sep='\t')
 
     # Create writers
     writer_train = SummaryWriter(os.path.join(log_dir, 'train'))
@@ -396,10 +352,6 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
                     writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
                     writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
                     print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
-                    row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
-                    row_df = pd.DataFrame(row, columns=columns)
-                    with open(filename, 'a') as f:
-                        row_df.to_csv(f, header=False, index=False, sep='\t')
 
         # If no step has been performed, raise Exception
         if step_flag:
@@ -423,11 +375,6 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
         writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
         writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
         print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
-
-        row = np.array([epoch, i, loss_train, mean_loss_train, loss_valid, mean_loss_valid]).reshape(1, -1)
-        row_df = pd.DataFrame(row, columns=columns)
-        with open(filename, 'a') as f:
-            row_df.to_csv(f, header=False, index=False, sep='\t')
 
         is_best = loss_valid < best_loss_valid
         best_loss_valid = min(best_loss_valid, loss_valid)
