@@ -170,6 +170,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
 
         save_checkpoint({'model': model.state_dict(),
                          'epoch': epoch,
+                         'valid_loss': mean_loss_valid,
                          'valid_acc': acc_mean_valid},
                         accuracy_is_best, loss_is_best,
                         model_dir)
