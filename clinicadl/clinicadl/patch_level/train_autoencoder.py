@@ -91,28 +91,12 @@ def train_autoencoder_patch(params):
         model.load_state_dict(init_state)
 
         criterion = torch.nn.MSELoss()
-        writer_train = SummaryWriter(
-                log_dir=(
-                    os.path.join(
-                        params.output_dir,
-                        "log_dir",
-                        "fold_" + str(fi),
-                        "ConvAutoencoder",
-                        "train"
-                        )
-                    )
-                )
 
-        writer_valid = SummaryWriter(
-                log_dir=(
-                    os.path.join(
-                        params.output_dir,
-                        "log_dir",
-                        "fold_" + str(fi),
-                        "ConvAutoencoder", "valid"
-                        )
-                    )
-                )
+        # Define output directories
+        log_dir = os.path.join(params.output_dir, "log_dir", "fold_%i" % fi, "ConvAutoencoder")
+
+        writer_train = SummaryWriter(os.path.join(log_dir, "train"))
+        writer_valid = SummaryWriter(os.path.join(log_dir, "valid"))
 
         model, best_autodecoder = stacked_ae_learning(
                 model,
