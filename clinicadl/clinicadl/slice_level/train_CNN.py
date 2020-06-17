@@ -68,10 +68,12 @@ def train_slice(params):
 
         data_train = MRIDataset_slice(params.input_dir, training_tsv, transformations=transformations,
                                       preprocessing=params.preprocessing, mri_plane=params.mri_plane,
-                                      prepare_dl=params.prepare_dl)
+                                      prepare_dl=params.prepare_dl,
+                                      discarded_slices=params.discarded_slices)
         data_valid = MRIDataset_slice(params.input_dir, valid_tsv, transformations=transformations,
                                       preprocessing=params.preprocessing, mri_plane=params.mri_plane,
-                                      prepare_dl=params.prepare_dl)
+                                      prepare_dl=params.prepare_dl,
+                                      discarded_slices=params.discarded_slices)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(data_train,

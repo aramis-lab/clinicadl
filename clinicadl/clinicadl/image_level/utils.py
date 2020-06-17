@@ -275,8 +275,8 @@ def test(model, dataloader, use_cuda, criterion, full_return=False):
 
             # Generate detailed DataFrame
             for idx, sub in enumerate(data['participant_id']):
-                row = [sub, data['session_id'][idx], labels[idx].item(), predicted[idx].item()]
-                row_df = pd.DataFrame(np.array(row).reshape(1, -1), columns=columns)
+                row = [[sub, data['session_id'][idx], labels[idx].item(), predicted[idx].item()]]
+                row_df = pd.DataFrame(row, columns=columns)
                 results_df = pd.concat([results_df, row_df])
 
             del inputs, outputs, labels, loss
