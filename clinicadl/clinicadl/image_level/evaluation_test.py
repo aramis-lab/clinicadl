@@ -108,10 +108,10 @@ if __name__ == "__main__":
             os.makedirs(path.join(evaluation_path, options.selection))
 
         test_df.to_csv(path.join(evaluation_path, options.selection,
-                                 'test-' + options.cohort + '_subject_level_result.tsv'), sep='\t', index=False)
+                                 'test-' + options.cohort + '_image_level_result.tsv'), sep='\t', index=False)
 
         pd.DataFrame(metrics_test, index=[0]).to_csv(path.join(evaluation_path, options.selection,
-                                                               'test-' + options.cohort + '_subject_level_metrics.tsv'),
+                                                               'test-' + options.cohort + '_image_level_metrics.tsv'),
                                                      sep='\t', index=False)
 
         del model, best_model
