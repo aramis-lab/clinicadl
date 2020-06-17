@@ -357,7 +357,7 @@ def train_func(args):
 # function
 
 def classify_func(args):
-    from .classify.inference import classify 
+    from .classify.inference import classify
 
     classify(
         args.caps_dir,

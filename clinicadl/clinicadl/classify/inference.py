@@ -6,6 +6,7 @@ import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
+
 def classify(caps_dir, tsv_file, model_path, output_dir=None, gpu=True):
     """
     This function reads the command line parameters and point to inference
@@ -19,7 +20,7 @@ def classify(caps_dir, tsv_file, model_path, output_dir=None, gpu=True):
     """
     from os.path import isdir, join, abspath, exists
     from os import strerror
-    import errno 
+    import errno
     import torch
 
     # Verify that paths exist
@@ -40,7 +41,7 @@ def classify(caps_dir, tsv_file, model_path, output_dir=None, gpu=True):
     if not exists(tsv_file):
         raise FileNotFoundError(
                 errno.ENOENT, strerror(errno.ENOENT), tsv_file)
-    
+
     # Infer json file from model_path (suppose that json file is at the same
     # folder)
 
@@ -51,11 +52,11 @@ def classify(caps_dir, tsv_file, model_path, output_dir=None, gpu=True):
         raise FileNotFoundError(
                 errno.ENOENT, strerror(errno.ENOENT), json_file)
 
-    # Verify if a GPU is available    
+    # Verify if a GPU is available
     if gpu:
         if not torch.cuda.is_available():
             print("GPU classifing is not available in your system, it will use cpu.")
-            gpu=False
+            gpu = False
 
     results_df = inference_from_model(
             caps_dir,
@@ -63,8 +64,9 @@ def classify(caps_dir, tsv_file, model_path, output_dir=None, gpu=True):
             model_path,
             json_file,
             gpu)
-    
+
     print(results_df)
+
 
 def inference_from_model(caps_dir,
                          tsv_file,
@@ -125,7 +127,7 @@ def inference_from_model(caps_dir,
 
     parser = argparse.ArgumentParser()
     parser.add_argument("model_path", type=str,
-            help="Path to the trained model folder.")
+                        help="Path to the trained model folder.")
     options = parser.parse_args([model_path])
     options = read_json(options, "CNN", json_path=json_file)
     print("Load model with these options:")
@@ -136,11 +138,11 @@ def inference_from_model(caps_dir,
         options.mri_plane = options.slice_direction
 
     if hasattr(options, 'patch_stride'):
-        options.stride_size =  options.patch_stride
+        options.stride_size = options.patch_stride
 
     if hasattr(options, 'use_gpu'):
         options.use_cpu = not options.use_gpu
-    
+
     if hasattr(options, 'use_extracted_patches'):
         options.prepare_dl = not options.use_extracted_patches
 
@@ -173,7 +175,7 @@ def inference_from_model(caps_dir,
         infered_classes = inference_from_roi_model()
     else:
         print("Inference for this image mode is not implemented")
-    
+
     return infered_classes
 
 
@@ -224,8 +226,9 @@ def inference_from_image_model(caps_dir, tsv_file, model_path, options):
         gpu,
         criterion,
         full_return=True)
-    
+
     return test_df
+
 
 def inference_from_slice_model(caps_dir, tsv_file, model_path, options):
     '''
@@ -239,12 +242,11 @@ def inference_from_slice_model(caps_dir, tsv_file, model_path, options):
     import torchvision.transforms as transforms
     # Initialize the model
     print('Do transfer learning with existed model trained on ImageNet.')
-    
+
     gpu = not options.use_cpu
-    
+
     model = create_model(options.network, gpu, dropout=0.8)
     trg_size = (224, 224)  # most of the imagenet pretrained model has this input size
-
 
     # All pre-trained models expect input images normalized in the same way,
     # i.e. mini-batches of 3-channel RGB images of shape (3 x H x W), where H
@@ -252,9 +254,9 @@ def inference_from_slice_model(caps_dir, tsv_file, model_path, options):
     # a range of [0, 1] and then normalized using mean = [0.485, 0.456, 0.406]
     # and std = [0.229, 0.224, 0.225].
     transformations = transforms.Compose([MinMaxNormalization(),
-        transforms.ToPILImage(),
-        transforms.Resize(trg_size),
-        transforms.ToTensor()])
+                                          transforms.ToPILImage(),
+                                          transforms.Resize(trg_size),
+                                          transforms.ToTensor()])
     # Define loss and optimizer
     loss = nn.CrossEntropyLoss()
 
@@ -285,8 +287,9 @@ def inference_from_slice_model(caps_dir, tsv_file, model_path, options):
         test_loader,
         gpu,
         loss)
-    
+
     return results_df
+
 
 def inference_from_patch_model(caps_dir, tsv_file, model_path, options):
     '''
@@ -301,13 +304,13 @@ def inference_from_patch_model(caps_dir, tsv_file, model_path, options):
     from os.path import join
 
     gpu = not options.use_cpu
-    
-    if options.mode_task=='cnn':
+
+    if options.mode_task == 'cnn':
         # Recreate the model with the network described in the json file
         # Initialize the model
         model = create_model(options.network, gpu)
         transformations = transforms.Compose([MinMaxNormalization()])
-        
+
         # Define loss and optimizer
         criterion = nn.CrossEntropyLoss()
 
@@ -316,12 +319,11 @@ def inference_from_patch_model(caps_dir, tsv_file, model_path, options):
             model, model_path,
             gpu, filename='model_best.pth.tar')
 
-
         # Read/localize the data
         if options.hippocampus_roi:
             data_to_test = MRIDataset_patch_hippocampus(
-                    caps_directory, 
-                    tsv_file, 
+                    caps_directory,
+                    tsv_file,
                     transformations=transformations)
         else:
             data_to_test = MRIDataset_patch(
@@ -348,17 +350,16 @@ def inference_from_patch_model(caps_dir, tsv_file, model_path, options):
             criterion,
             full_return=True)
 
-    elif options.mode_task=='multicnn':
-        
+    elif options.mode_task == 'multicnn':
+
         # Recreate the model with the network described in the json file
         # Initialize the model
         model = create_model(options.network, gpu)
         transformations = transforms.Compose([MinMaxNormalization()])
-        
+
         # Define loss and optimizer
         criterion = nn.CrossEntropyLoss()
 
-        
         for n in range(options.num_cnn):
 
             dataset = MRIDataset_patch(
@@ -387,10 +388,7 @@ def inference_from_patch_model(caps_dir, tsv_file, model_path, options):
             results_df, metrics = test(model, test_loader, gpu, criterion)
             print("Patch level balanced accuracy is %f" % metrics['balanced_accuracy'])
 
-
     else:
         print("Mode not defined")
 
-
-    
     return results_df
