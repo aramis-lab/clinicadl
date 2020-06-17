@@ -71,7 +71,7 @@ def inference_from_model(caps_dir,
 
     Returns:
 
-    Pandas data frame with a list of subjects and their infered clases
+    Pandas data frame with a list of subjects and their infered classes
     (predictions).
 
     Rises:
@@ -127,19 +127,19 @@ def inference_from_model(caps_dir,
             model_path,
             options)
     elif (options.mode == 'slice'):
-        infered_clases = inference_from_slice_model(
+        infered_classes = inference_from_slice_model(
             caps_dir,
             tsv_file,
             model_path,
             options)
     elif (options.mode == 'patch'):
-        infered_clases = inference_from_patch_model(
+        infered_classes = inference_from_patch_model(
             caps_dir,
             tsv_file,
             model_path,
             options)
     elif (options.mode == 'roi'):
-        infered_clases = inference_from_roi_model()
+        infered_classes = inference_from_roi_model()
     else:
         print("Inference for this image mode is not implemented")
     
@@ -148,7 +148,7 @@ def inference_from_model(caps_dir,
 
 def inference_from_image_model(caps_dir, tsv_file, model_path, options):
     '''
-    Inference for image/subject model
+    Inference using an image/subject CNN model
 
 
 
@@ -156,7 +156,7 @@ def inference_from_image_model(caps_dir, tsv_file, model_path, options):
     from clinicadl.tools.deep_learning.data import MRIDataset
     from clinicadl.image_level.utils import test
     # Recreate the model with the network described in the json file
-    model = create_model(options.network)
+    model = create_model(options.network, options.use_gpu)
     criterion = nn.CrossEntropyLoss()
 
     # Load model from path
@@ -196,17 +196,18 @@ def inference_from_image_model(caps_dir, tsv_file, model_path, options):
 
 def inference_from_slice_model(caps_dir, tsv_file, model_path, options):
     '''
-    Inference for slice model
+    Inference using a slice CNN model
 
 
 
     '''
     from clinicadl.tools.deep_learning.data import MRIDataset_slice
     from clinicadl.slice_level.utils import test
+    import torchvision.transforms as transforms
     # Initialize the model
     print('Do transfer learning with existed model trained on ImageNet.')
-
-    model = create_model(options.network, options.gpu)
+    
+    model = create_model(options.network, options.use_gpu, dropout=0.8)
     trg_size = (224, 224)  # most of the imagenet pretrained model has this input size
 
     # All pre-trained models expect input images normalized in the same way,
@@ -219,29 +220,23 @@ def inference_from_slice_model(caps_dir, tsv_file, model_path, options):
         transforms.Resize(trg_size),
         transforms.ToTensor()])
     # Define loss and optimizer
-    loss = torch.nn.CrossEntropyLoss()
+    loss = nn.CrossEntropyLoss()
 
-    # Load data
-    _, test_df = load_data(tsv_file, options.diagnoses, fi,
-            n_splits=options.n_splits, baseline=True)
-    
     # Load model from path
     best_model, best_epoch = load_model(
         model, model_path,
         options.use_gpu, filename='model_best.pth.tar')
 
-    if options.minmaxnormalization:
-        transformations = MinMaxNormalization()
-    else:
-        transformations = None
+    if hasattr(options, 'slice_direction'):
+        options.mri_plane = options.slice_direction
 
     # Read/localize the data
     data_to_test = MRIDataset_slice(
         caps_dir,
         tsv_file,
-        transform=transformations,
+        transformations=transformations,
         mri_plane=options.mri_plane,
-        prepare_dl=options.prepare_dl)
+        prepare_dl=not options.use_extracted_patches)
 
     # Load the data
     test_loader = DataLoader(
@@ -252,10 +247,10 @@ def inference_from_slice_model(caps_dir, tsv_file, model_path, options):
         pin_memory=True)
 
     # Run the model on the data
-    metrics_test, loss_test, test_df = test(
+    results_df, results = test(
         best_model,
         test_loader,
         options.use_gpu,
         loss)
     
-    return test_df
+    return results_df
