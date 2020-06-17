@@ -185,6 +185,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
 
         epoch += 1
 
+    os.remove(os.path.join(model_dir, "optimizer.pth.tar"))
+    os.remove(os.path.join(model_dir, "checkpoint.pth.tar"))
+
 
 def evaluate_prediction(y, y_pred):
     """
@@ -446,6 +449,9 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
 
         epoch += 1
 
+    os.remove(os.path.join(model_dir, "optimizer.pth.tar"))
+    os.remove(os.path.join(model_dir, "checkpoint.pth.tar"))
+    
     if options.visualization:
         visualize_subject(decoder, train_loader, visualization_dir, options, epoch=epoch, save_input=first_visu)
 
