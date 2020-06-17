@@ -82,7 +82,13 @@ def train_autoencoder(params):
                 decoder.decoder = nn.Sequential(*list(decoder.decoder)[:-1])
             decoder.decoder.add_module("sigmoid", nn.Sigmoid())
 
-        ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, False, params)
+        # Define output directories
+        log_dir = path.join(params.output_dir, 'log_dir', 'fold_%i' % fold, 'ConvAutoencoder')
+        visualization_dir = path.join(params.output_dir, 'visualize', 'fold_%i' % fold)
+        model_dir = path.join(params.output_dir, 'best_model_dir', 'fold_%i' % fold, 'ConvAutoencoder')
+
+        ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, False,
+                      log_dir, model_dir, visualization_dir, params)
 
     total_time = time() - total_time
     print('Total time', total_time)
