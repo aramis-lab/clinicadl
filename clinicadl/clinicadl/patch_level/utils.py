@@ -558,11 +558,11 @@ def soft_voting_to_tsvs(output_dir, fold, selection, dataset='test', num_cnn=Non
 
     df_final, metrics = soft_voting(test_df, validation_df, selection_threshold=selection_threshold)
 
-    df_final.to_csv(os.path.join(os.path.join(performance_path, dataset + '_subject_level_result_soft_vote.tsv')),
+    df_final.to_csv(os.path.join(os.path.join(performance_path, dataset + '_image_level_result_soft_vote.tsv')),
                     index=False, sep='\t')
 
     pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
-                                                         dataset + '_subject_level_metrics_soft_vote.tsv'),
+                                                         dataset + '_image_level_metrics_soft_vote.tsv'),
                                             index=False, sep='\t')
 
 
