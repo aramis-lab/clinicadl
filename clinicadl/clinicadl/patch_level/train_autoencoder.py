@@ -1,16 +1,12 @@
 # coding: utf8
 
-import copy
 import torch
 import os
 from torch.utils.data import DataLoader
-from tensorboardX import SummaryWriter
 import torchvision.transforms as transforms
 
-from .utils import ae_finetuning, visualize_ae
-
-from ..tools.deep_learning import create_model, load_model
-from ..tools.deep_learning.models.autoencoder import AutoEncoder
+from ..tools.deep_learning.autoencoder_utils import train
+from ..tools.deep_learning import create_autoencoder
 from ..tools.deep_learning.data import (load_data,
                                         MinMaxNormalization,
                                         MRIDataset_patch,
@@ -19,9 +15,8 @@ from ..tools.deep_learning.data import (load_data,
 
 def train_autoencoder_patch(params):
 
-    model = create_model(params.model, params.gpu)
-    init_state = copy.deepcopy(model.state_dict())
     transformations = transforms.Compose([MinMaxNormalization()])
+    criterion = torch.nn.MSELoss()
 
     if params.split is None:
         fold_iterator = range(params.n_splits)
@@ -89,37 +84,22 @@ def train_autoencoder_patch(params):
                 num_workers=params.num_workers,
                 pin_memory=True)
 
-        model.load_state_dict(init_state)
-
-        criterion = torch.nn.MSELoss()
-
         # Define output directories
         log_dir = os.path.join(params.output_dir, "log_dir", "fold_%i" % fi, "ConvAutoencoder")
         model_dir = os.path.join(params.output_dir, "best_model_dir", "fold_%i" % fi, "ConvAutoencoder")
+        visualization_dir = os.path.join(params.output_dir, 'visualize', 'fold_%i' % fi)
 
-        writer_train = SummaryWriter(os.path.join(log_dir, "train"))
-        writer_valid = SummaryWriter(os.path.join(log_dir, "valid"))
+        # Hard-coded arguments for patch
+        setattr(params, "accumulation_steps", 1)
+        setattr(params, "evaluation_steps", 0)
 
-        ae = AutoEncoder(model)
-        ae_finetuning(ae, train_loader, valid_loader, criterion, writer_train, writer_valid, params, model_dir)
-        best_autodecoder, best_epoch = load_model(ae, os.path.join(model_dir, "best_loss"),
-                                                  params.gpu, filename='model_best.pth.tar')
-        del ae
+        decoder = create_autoencoder(params.model, gpu=params.gpu)
+        optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
+                                                            lr=params.learning_rate,
+                                                            weight_decay=params.weight_decay)
+
+        train(decoder, train_loader, valid_loader, criterion, optimizer, False,
+              log_dir, model_dir, visualization_dir, params)
+        del decoder
         torch.cuda.empty_cache()
 
-        if params.visualization:
-            example_batch = data_train[0]['image'].unsqueeze(0)
-            if params.gpu:
-                example_batch = example_batch.cuda()
-            visualize_ae(
-                    best_autodecoder,
-                    example_batch,
-                    os.path.join(
-                        params.output_dir,
-                        "visualize",
-                        "fold_%i" % fi
-                        )
-                    )
-
-        del best_autodecoder
-        torch.cuda.empty_cache()
