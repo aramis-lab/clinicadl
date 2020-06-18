@@ -112,4 +112,3 @@ def train_autoencoder_patch(params):
                             nb_images=num_patches)
         del decoder
         torch.cuda.empty_cache()
-

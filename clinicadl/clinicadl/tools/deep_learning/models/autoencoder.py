@@ -142,7 +142,7 @@ def transfer_learning(model, split, transfer_learning_autoencoder=True, source_p
             model = transfer_autoencoder_weights(model, source_path, split)
 
         else:
-            print("A pretrained model is loaded at path %s" % source_path)
+            print("A pretrained CNN is loaded at path %s" % source_path)
             model = transfer_cnn_weights(model, source_path, split, selection=selection, cnn_index=cnn_index)
 
     else:
