@@ -9,7 +9,7 @@ from colorama import Fore
 TRAIN_CATEGORIES = {
     # General parent group
     'POSITIONAL': '%sPositional arguments%s' % (Fore.BLUE, Fore.RESET),
-    'COMPUTATIONAL': '%sComputational issues%s' % (Fore.BLUE, Fore.RESET),
+    'COMPUTATIONAL': '%sComputational resources%s' % (Fore.BLUE, Fore.RESET),
     'DATA': '%sData management%s' % (Fore.BLUE, Fore.RESET),
     'CROSS-VALIDATION': '%sCross-validation arguments%s' % (Fore.BLUE, Fore.RESET),
     'OPTIMIZATION': '%sOptimization parameters%s' % (Fore.BLUE, Fore.RESET),
@@ -164,7 +164,7 @@ def train_func(args):
                 num_workers=args.nproc,
                 transfer_learning_path=args.transfer_learning_path,
                 transfer_learning_autoencoder=args.transfer_learning_autoencoder,
-                selection=args.selection
+                transfer_learning_selection=args.transfer_learning_selection
             )
             train_cnn(train_params_cnn)
     elif args.mode == 'slice':
@@ -252,7 +252,7 @@ def train_func(args):
                 num_workers=args.nproc,
                 transfer_learning_path=args.transfer_learning_path,
                 transfer_learning_autoencoder=args.transfer_learning_autoencoder,
-                selection=args.selection,
+                transfer_learning_selection=args.transfer_learning_selection,
                 patch_size=args.patch_size,
                 stride_size=args.stride_size,
                 hippocampus_roi=False,
@@ -285,8 +285,7 @@ def train_func(args):
                 num_workers=args.nproc,
                 transfer_learning_path=args.transfer_learning_path,
                 transfer_learning_autoencoder=args.transfer_learning_autoencoder,
-                transfer_learning_multicnn=args.transfer_learning_multicnn,
-                selection=args.selection,
+                transfer_learning_selection=args.transfer_learning_selection,
                 patch_size=args.patch_size,
                 stride_size=args.stride_size,
                 hippocampus_roi=False,
@@ -348,7 +347,7 @@ def train_func(args):
                 num_workers=args.nproc,
                 transfer_learning_path=args.transfer_learning_path,
                 transfer_learning_autoencoder=args.transfer_learning_autoencoder,
-                selection=args.selection,
+                transfer_learning_selection=args.transfer_learning_selection,
                 hippocampus_roi=True,
                 selection_threshold=args.selection_threshold,
             )
@@ -664,7 +663,7 @@ def parse_command_line():
         help='CNN Model to be used during the training.',
         default='Conv5_FC3')
 
-    # Computational issues
+    # Computational resources
     train_comput_group = train_parent_parser.add_argument_group(
         TRAIN_CATEGORIES["COMPUTATIONAL"])
     train_comput_group.add_argument(
@@ -821,7 +820,7 @@ def parse_command_line():
         help="Train a 3D-patch level CNN.")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
     train_image_cnn_parser._action_groups[-1].add_argument(
-        '--selection',
+        '--transfer_learning_selection',
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
         type=str, default="best_acc", choices=["best_loss", "best_acc"])
 
@@ -874,7 +873,7 @@ def parse_command_line():
         help="Train a 3D-patch level CNN.")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
     train_patch_cnn_parser._action_groups[-1].add_argument(
-        '--selection',
+        '--transfer_learning_selection',
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
         type=str, default="best_acc", choices=["best_loss", "best_acc"])
 
@@ -898,13 +897,9 @@ def parse_command_line():
         help="Train a 3D-patch level multi-CNN (one CNN is trained per patch location).")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
     train_patch_multicnn_parser._action_groups[-1].add_argument(
-        '--selection',
+        '--transfer_learning_selection',
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
         type=str, default="best_acc", choices=["best_loss", "best_acc"])
-    train_patch_multicnn_parser._action_groups[-1].add_argument(
-        '--transfer_learning_multicnn',
-        help='''Specify if the transfer learning is from multi-CNNs to multi-CNNs.''',
-        default=False, action="store_true")
 
     train_patch_multicnn_group = train_patch_multicnn_parser.add_argument_group(
         TRAIN_CATEGORIES["PATCH CNN"])
@@ -952,7 +947,7 @@ def parse_command_line():
         help="Train a 3D-patch level CNN.")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
     train_roi_cnn_parser._action_groups[-1].add_argument(
-        '--selection',
+        '--transfer_learning_selection',
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
         type=str, default="best_acc", choices=["best_loss", "best_acc"])
 

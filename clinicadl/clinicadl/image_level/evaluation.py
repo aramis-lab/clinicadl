@@ -44,12 +44,12 @@ def test_cnn(data_loader, subset_name, split, criterion, options):
             path.join(
                 evaluation_path,
                 selection,
-                subset_name + '_subject_level_result.tsv'
+                subset_name + '_image_level_result.tsv'
             ),
             sep='\t', index=False)
 
         pd.DataFrame(metrics_dict, index=[0]).to_csv(path.join(evaluation_path, selection,
-                                                               subset_name + '_subject_level_metrics.tsv'),
+                                                               subset_name + '_image_level_metrics.tsv'),
                                                      sep='\t', index=False)
 
 
