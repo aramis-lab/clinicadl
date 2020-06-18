@@ -8,7 +8,6 @@ from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 import torchvision.transforms as transforms
 
-from .utils import load_model_after_ae, load_model_after_cnn
 from .utils import train, test, patch_level_to_tsvs, soft_voting_to_tsvs
 from ..tools.deep_learning.models.autoencoder import transfer_learning
 from ..tools.deep_learning import (EarlyStopping,
