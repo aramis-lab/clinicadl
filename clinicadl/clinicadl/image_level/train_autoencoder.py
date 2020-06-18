@@ -9,7 +9,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from warnings import warn
 
-from .utils import ae_finetuning
+from ..tools.deep_learning.autoencoder_utils import train
 from ..tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data
 from ..tools.deep_learning import create_autoencoder
 
@@ -77,7 +77,7 @@ def train_autoencoder(params):
         else:
             transfer_learning_path = None
         decoder = create_autoencoder(params.model, transfer_learning_path=transfer_learning_path,
-                                     difference=params.transfer_learning_difference)
+                                     difference=params.transfer_learning_difference, gpu=params.gpu)
         optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
                                                             lr=params.learning_rate,
                                                             weight_decay=params.weight_decay)
@@ -92,8 +92,8 @@ def train_autoencoder(params):
         visualization_dir = path.join(params.output_dir, 'visualize', 'fold_%i' % fold)
         model_dir = path.join(params.output_dir, 'best_model_dir', 'fold_%i' % fold, 'ConvAutoencoder')
 
-        ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, False,
-                      log_dir, model_dir, visualization_dir, params)
+        train(decoder, train_loader, valid_loader, criterion, optimizer, False,
+              log_dir, model_dir, visualization_dir, params)
 
     total_time = time() - total_time
     print('Total time', total_time)
