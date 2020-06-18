@@ -67,10 +67,12 @@ def train_slice(params):
         print("Running for the %d-th fold" % fi)
 
         data_train = MRIDataset_slice(params.input_dir, training_tsv, transformations=transformations,
-                                      mri_plane=params.mri_plane, prepare_dl=params.prepare_dl,
+                                      preprocessing=params.preprocessing, mri_plane=params.mri_plane,
+                                      prepare_dl=params.prepare_dl,
                                       discarded_slices=params.discarded_slices)
         data_valid = MRIDataset_slice(params.input_dir, valid_tsv, transformations=transformations,
-                                      mri_plane=params.mri_plane, prepare_dl=params.prepare_dl,
+                                      preprocessing=params.preprocessing, mri_plane=params.mri_plane,
+                                      prepare_dl=params.prepare_dl,
                                       discarded_slices=params.discarded_slices)
 
         # Use argument load to distinguish training and testing
