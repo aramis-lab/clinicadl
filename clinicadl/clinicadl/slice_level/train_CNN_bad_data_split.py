@@ -10,7 +10,7 @@ import os
 import numpy as np
 from time import time
 
-from utils import mix_slices, train, test, slice_level_to_tsvs, soft_voting_to_tsvs
+from .utils import mix_slices, train, test, slice_level_to_tsvs, soft_voting_to_tsvs
 from clinicadl.tools.deep_learning import (EarlyStopping,
                                            create_model,
                                            save_checkpoint,
@@ -257,31 +257,13 @@ def train_CNN_bad_data_split(params):
         best_accuracy = 0.0
         best_loss_valid = np.inf
 
-        writer_train_batch = SummaryWriter(
-            log_dir=(os.path.join(
-                params.output_dir,
-                "log_dir",
-                "fold_" + str(fi),
-                "train_batch")
-                )
-            )
-        writer_train_all_data = SummaryWriter(
-            log_dir=(os.path.join(
-                params.output_dir,
-                "log_dir",
-                "fold_" + str(fi),
-                "train_all_data")
-                )
-            )
+        # Define output directories
+        model_dir = os.path.join(params.output_dir, "best_model_dir", "fold_%i" % fi, "CNN")
+        log_dir = os.path.join(params.output_dir, "log_dir", "fold_%i" % fi, "CNN")
 
-        writer_valid = SummaryWriter(
-                log_dir=(os.path.join(
-                    params.output_dir,
-                    "log_dir",
-                    "fold_" + str(fi),
-                    "valid")
-                    )
-                )
+        writer_train_batch = SummaryWriter(log_dir=os.path.join(log_dir, "train_batch"))
+        writer_train_all_data = SummaryWriter(log_dir=os.path.join(log_dir, "train_all_data"))
+        writer_valid = SummaryWriter(log_dir=os.path.join(log_dir, "valid"))
 
         # initialize the early stopping instance
         early_stopping = EarlyStopping(
@@ -321,7 +303,7 @@ def train_CNN_bad_data_split(params):
                         selection_threshold=params.selection_threshold
                         )
 
-            print("For training, subject level balanced accuracy is %f at the end of epoch %d" % (acc_mean_train_all, epoch))
+            print("For training, image level balanced accuracy is %f at the end of epoch %d" % (acc_mean_train_all, epoch))
 
             # at then end of each epoch, we validate one time for the model with the validation data
             valid_df, acc_mean_valid, loss_batch_mean_valid, _ \
@@ -337,7 +319,7 @@ def train_CNN_bad_data_split(params):
                         selection_threshold=params.selection_threshold
                         )
 
-            print("For validation, subject level balanced accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
+            print("For validation, image level balanced accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
 
             # save the best model based on the best loss and accuracy
             acc_is_best = acc_mean_valid > best_accuracy
@@ -346,14 +328,21 @@ def train_CNN_bad_data_split(params):
             best_loss_valid = min(loss_batch_mean_valid, best_loss_valid)
 
             save_checkpoint({
-                'epoch': epoch + 1,
+                'epoch': epoch,
                 'model': model.state_dict(),
-                'loss': loss_batch_mean_valid,
-                'accuracy': acc_mean_valid,
-                'optimizer': optimizer.state_dict(),
-                'global_step': global_step},
+                'valid_loss': loss_batch_mean_valid,
+                'valid_acc': acc_mean_valid},
                 acc_is_best, loss_is_best,
-                os.path.join(params.output_dir, "best_model_dir", "fold_" + str(fi), "CNN"))
+                model_dir)
+
+            # Save optimizer state_dict to be able to reload
+            save_checkpoint({'optimizer': optimizer.state_dict(),
+                             'epoch': epoch,
+                             'name': params.optimizer,
+                             },
+                            False, False,
+                            model_dir,
+                            filename='optimizer.pth.tar')
 
             # try early stopping criterion
             if early_stopping.step(loss_batch_mean_valid) or epoch == params.epochs - 1:
@@ -361,6 +350,9 @@ def train_CNN_bad_data_split(params):
                       "the training is stopped at %d-th epoch" % epoch)
 
                 break
+
+        del optimizer
+        torch.cuda.empty_cache()
 
         # Final evaluation for all criteria
         for selection in ['best_loss', 'best_acc']:
@@ -388,7 +380,9 @@ def train_CNN_bad_data_split(params):
                                 selection_threshold=params.selection_threshold)
             soft_voting_to_tsvs(params.output_dir, fi, dataset='validation', selection=selection,
                                 selection_threshold=params.selection_threshold)
-            torch.cuda.empty_cache()
+
+        os.remove(os.path.join(model_dir, "optimizer.pth.tar"))
+        os.remove(os.path.join(model_dir, "checkpoint.pth.tar"))
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)

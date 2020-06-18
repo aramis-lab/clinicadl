@@ -1,15 +1,12 @@
 # coding: utf8
 
-import copy
 import torch
 import os
 from torch.utils.data import DataLoader
-from tensorboardX import SummaryWriter
 import torchvision.transforms as transforms
 
-from .utils import stacked_ae_learning, visualize_ae
-
-from ..tools.deep_learning import create_model
+from ..tools.deep_learning.autoencoder_utils import train, visualize_image
+from ..tools.deep_learning import create_autoencoder, load_model
 from ..tools.deep_learning.data import (load_data,
                                         MinMaxNormalization,
                                         MRIDataset_patch,
@@ -18,14 +15,13 @@ from ..tools.deep_learning.data import (load_data,
 
 def train_autoencoder_patch(params):
 
-    model = create_model(params.model, params.gpu)
-    init_state = copy.deepcopy(model.state_dict())
     transformations = transforms.Compose([MinMaxNormalization()])
+    criterion = torch.nn.MSELoss()
 
     if params.split is None:
         fold_iterator = range(params.n_splits)
     else:
-        fold_iterator = [params.split]
+        fold_iterator = params.split
 
     for fi in fold_iterator:
 
@@ -45,11 +41,13 @@ def train_autoencoder_patch(params):
             data_train = MRIDataset_patch_hippocampus(
                 params.input_dir,
                 training_tsv,
+                preprocessing=params.preprocessing,
                 transformations=transformations
             )
             data_valid = MRIDataset_patch_hippocampus(
                 params.input_dir,
                 valid_tsv,
+                preprocessing=params.preprocessing,
                 transformations=transformations
             )
 
@@ -59,6 +57,7 @@ def train_autoencoder_patch(params):
                     training_tsv,
                     params.patch_size,
                     params.stride_size,
+                    preprocessing=params.preprocessing,
                     transformations=transformations,
                     prepare_dl=params.prepare_dl)
             data_valid = MRIDataset_patch(
@@ -66,6 +65,7 @@ def train_autoencoder_patch(params):
                     valid_tsv,
                     params.patch_size,
                     params.stride_size,
+                    preprocessing=params.preprocessing,
                     transformations=transformations,
                     prepare_dl=params.prepare_dl)
 
@@ -84,56 +84,31 @@ def train_autoencoder_patch(params):
                 num_workers=params.num_workers,
                 pin_memory=True)
 
-        model.load_state_dict(init_state)
+        # Define output directories
+        log_dir = os.path.join(params.output_dir, "log_dir", "fold_%i" % fi, "ConvAutoencoder")
+        model_dir = os.path.join(params.output_dir, "best_model_dir", "fold_%i" % fi, "ConvAutoencoder")
+        visualization_dir = os.path.join(params.output_dir, 'autoencoder_reconstruction', 'fold_%i' % fi)
 
-        criterion = torch.nn.MSELoss()
-        writer_train = SummaryWriter(
-                log_dir=(
-                    os.path.join(
-                        params.output_dir,
-                        "log_dir",
-                        "fold_" + str(fi),
-                        "ConvAutoencoder",
-                        "train"
-                        )
-                    )
-                )
+        # Hard-coded arguments for patch
+        setattr(params, "accumulation_steps", 1)
+        setattr(params, "evaluation_steps", 0)
 
-        writer_valid = SummaryWriter(
-                log_dir=(
-                    os.path.join(
-                        params.output_dir,
-                        "log_dir",
-                        "fold_" + str(fi),
-                        "ConvAutoencoder", "valid"
-                        )
-                    )
-                )
+        decoder = create_autoencoder(params.model, gpu=params.gpu)
+        optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
+                                                            lr=params.learning_rate,
+                                                            weight_decay=params.weight_decay)
 
-        model, best_autodecoder = stacked_ae_learning(
-                model,
-                train_loader,
-                valid_loader,
-                criterion,
-                writer_train,
-                writer_valid,
-                params,
-                fi
-                )
+        train(decoder, train_loader, valid_loader, criterion, optimizer, False,
+              log_dir, model_dir, params)
 
         if params.visualization:
-            example_batch = data_train[0]['image'].unsqueeze(0)
-            if params.gpu:
-                example_batch = example_batch.cuda()
-            visualize_ae(
-                    best_autodecoder,
-                    example_batch,
-                    os.path.join(
-                        params.output_dir,
-                        "visualize",
-                        "fold_%i" % fi
-                        )
-                    )
-
-        del best_autodecoder, train_loader, valid_loader
+            print("Visualization of autoencoder reconstruction")
+            best_decoder, _ = load_model(decoder, os.path.join(model_dir, "best_loss"),
+                                         params.gpu, filename='model_best.pth.tar')
+            num_patches = train_loader.dataset.patchs_per_patient
+            visualize_image(best_decoder, valid_loader, os.path.join(visualization_dir, "validation"),
+                            nb_images=num_patches)
+            visualize_image(best_decoder, train_loader, os.path.join(visualization_dir, "train"),
+                            nb_images=num_patches)
+        del decoder
         torch.cuda.empty_cache()

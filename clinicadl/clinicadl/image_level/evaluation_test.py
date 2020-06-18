@@ -53,7 +53,7 @@ if __name__ == "__main__":
         split = int(fold_dir[-1])
         print("Fold %i" % split)
         model_options = argparse.Namespace()
-        json_path = path.join(options.model_path, 'log_dir', 'fold_' + str(split), "commandline_CNN.json")
+        json_path = path.join(options.model_path, "commandline_CNN.json")
         model_options = read_json(model_options, "CNN", json_path=json_path)
         model = create_model(model_options.network, options.gpu)
 
@@ -108,10 +108,10 @@ if __name__ == "__main__":
             os.makedirs(path.join(evaluation_path, options.selection))
 
         test_df.to_csv(path.join(evaluation_path, options.selection,
-                                 'test-' + options.cohort + '_subject_level_result.tsv'), sep='\t', index=False)
+                                 'test-' + options.cohort + '_image_level_result.tsv'), sep='\t', index=False)
 
         pd.DataFrame(metrics_test, index=[0]).to_csv(path.join(evaluation_path, options.selection,
-                                                               'test-' + options.cohort + '_subject_level_metrics.tsv'),
+                                                               'test-' + options.cohort + '_image_level_metrics.tsv'),
                                                      sep='\t', index=False)
 
         del model, best_model

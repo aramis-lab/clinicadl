@@ -5,7 +5,7 @@ class Parameters:
     """ Class to define and initialize parameters used in traning CNN networks"""
 
     def __init__(self, tsv_path: str, output_dir: str, input_dir: str,
-                 model: str):
+                 preprocessing: str, model: str):
         """
         Parameters:
         tsv_path: Path to the folder containing the tsv files of the
@@ -13,17 +13,18 @@ class Parameters:
         session_id and diagnosis.
         output_dir: Folder containing the results.
         input_dir: Path to the input folder with MRI in CAPS format.
+        preprocessing: Type of preprocessing done. Choices: "t1-linear" or "t1-extensive".
         model: Neural network model.
         """
         self.tsv_path = tsv_path
         self.output_dir = output_dir
         self.input_dir = input_dir
+        self.preprocessing = preprocessing
         self.model = model
 
     def write(
             self,
             transfer_learning_difference: int = 0,
-            preprocessing: str = "t1-linear",
             diagnoses: str = ["AD", "CN"],
             baseline: bool = False,
             minmaxnormalization: bool = False,
@@ -44,8 +45,7 @@ class Parameters:
             num_workers: int = 1,
             transfer_learning_path: str = None,
             transfer_learning_autoencoder: str = None,
-            transfer_learning_multicnn: bool = False,
-            selection: str = "best_acc",
+            transfer_learning_selection: str = "best_acc",
             patch_size: int = 50,
             stride_size: int = 50,
             hippocampus_roi: bool = False,
@@ -59,7 +59,6 @@ class Parameters:
         Optional parameters used for training CNN.
         transfer_learning_difference: Difference of size between the pretrained
                                autoencoder and the training.
-        preprocessing: Type of preprocessing done. Choices: "t1-linear" or "t1-volume".
         diagnoses: Take all the subjects possible for autoencoder training.
         baseline: Use only the baseline if True.
         minmaxnormalization: Performs MinMaxNormalization.
@@ -79,8 +78,8 @@ class Parameters:
         batch_size: Batch size for training. (default=1)
         evaluation_steps: Fix the number of batches to use before validation
         num_workers:  Define the number of batch being loaded in parallel
-        selection: Allow to choose which model of the experiment is loaded .
-                   choices ["best_loss", "best_acc"]
+        transfer_learning_selection: Allow to choose from which model the weights are transferred.
+                    Choices ["best_loss", "best_acc"]
         patch_size: The patch size extracted from the MRI.
         stride_size: The stride for the patch extract window from the MRI
         hippocampus_roi: If train the model using only hippocampus ROI.
@@ -94,12 +93,10 @@ class Parameters:
                    2 is for axial direction
         prepare_dl: If True the outputs of preprocessing are used, else the
                     whole MRI is loaded.
-        transfer_learning_multicnn : If true use each model from the multicnn to
                                      initialize corresponding models.
         """
 
         self.transfer_learning_difference = transfer_learning_difference
-        self.preprocessing = preprocessing
         self.diagnoses = diagnoses
         self.baseline = baseline
         self.minmaxnormalization = minmaxnormalization
@@ -120,8 +117,7 @@ class Parameters:
         self.num_workers = num_workers
         self.transfer_learning_path = transfer_learning_path
         self.transfer_learning_autoencoder = transfer_learning_autoencoder
-        self.transfer_learning_multicnn = transfer_learning_multicnn
-        self.selection = selection
+        self.transfer_learning_selection = transfer_learning_selection
         self.patch_size = patch_size
         self.stride_size = stride_size
         self.hippocampus_roi = hippocampus_roi
@@ -160,12 +156,8 @@ def commandline_to_json(commandline, task_type):
     commandline_arg_dic['unknown_arg'] = commandline[1]
 
     output_dir = commandline_arg_dic['output_dir']
-    if commandline_arg_dic['split'] is None:
-        log_dir = os.path.join(output_dir, 'log_dir')
-    else:
-        log_dir = os.path.join(output_dir, 'log_dir', 'fold_' + str(commandline_arg_dic['split']))
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
     # remove these entries from the commandline log file
     if 'func' in commandline_arg_dic:
@@ -182,8 +174,8 @@ def commandline_to_json(commandline, task_type):
 
     # save to json file
     json = json.dumps(commandline_arg_dic, skipkeys=True)
-    print("Path of json file:", os.path.join(log_dir, "commandline_" + task_type + ".json"))
-    f = open(os.path.join(log_dir, "commandline_" + task_type + ".json"), "w")
+    print("Path of json file:", os.path.join(output_dir, "commandline_" + task_type + ".json"))
+    f = open(os.path.join(output_dir, "commandline_" + task_type + ".json"), "w")
     f.write(json)
     f.close()
 
@@ -197,11 +189,12 @@ def read_json(options, task_type, json_path=None, test=False):
     """
     import json
     from os import path
+    from ...cli import set_default_dropout
 
     evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
-    prep_compatibility_dict = {"mni": "t1-volume", "linear": "t1-linear"}
+    prep_compatibility_dict = {"mni": "t1-extensive", "linear": "t1-linear"}
     if json_path is None:
-        json_path = path.join(options.model_path, 'log_dir', 'commandline_' + task_type + '.json')
+        json_path = path.join(options.model_path, 'commandline_' + task_type + '.json')
 
     with open(json_path, "r") as f:
         json_data = json.load(f)
@@ -218,7 +211,8 @@ def read_json(options, task_type, json_path=None, test=False):
 
     # Retro-compatibility with runs of previous versions
     if not hasattr(options, 'dropout'):
-        options.dropout = 0
+        options.dropout = None
+    set_default_dropout(options)
 
     if options.preprocessing in prep_compatibility_dict.keys():
         options.preprocessing = prep_compatibility_dict[options.preprocessing]
@@ -261,6 +255,9 @@ def read_json(options, task_type, json_path=None, test=False):
     if hasattr(options, "unnormalize"):
         options.minmaxnormalization = not options.unnormalize
 
+    if hasattr(options, "selection"):
+        options.transfer_learning_selection = options.selection
+
     if hasattr(options, "use_extracted_slices"):
         options.prepare_dl = options.use_extracted_slices
     if hasattr(options, "use_extracted_patches"):
@@ -269,59 +266,6 @@ def read_json(options, task_type, json_path=None, test=False):
         options.prepare_dl = options.use_extracted_roi
 
     return options
-
-
-def visualize_subject(decoder, dataloader, visualization_path, options, epoch=None, save_input=False, subject_index=0):
-    from os import path, makedirs, pardir
-    import nibabel as nib
-    import numpy as np
-    import torch
-    from .data import MinMaxNormalization
-
-    if not path.exists(visualization_path):
-        makedirs(visualization_path)
-
-    dataset = dataloader.dataset
-    data = dataset[subject_index]
-    image_path = data['image_path']
-
-    # TODO: Change nifti path
-    nii_path, _ = path.splitext(image_path)
-    nii_path += '.nii.gz'
-
-    if not path.exists(nii_path):
-        nii_path = path.join(
-            path.dirname(image_path),
-            pardir, pardir, pardir,
-            't1_linear',
-            path.basename(image_path)
-        )
-        nii_path, _ = path.splitext(nii_path)
-        nii_path += '.nii.gz'
-    
-    input_nii = nib.load(nii_path)
-    input_np = input_nii.get_data().astype(float)
-    np.nan_to_num(input_np, copy=False)
-    input_pt = torch.from_numpy(input_np).unsqueeze(0).unsqueeze(0).float()
-    if options.minmaxnormalization:
-        transform = MinMaxNormalization()
-        input_pt = transform(input_pt)
-
-    if options.gpu:
-        input_pt = input_pt.cuda()
-
-    output_pt = decoder(input_pt)
-
-    output_np = output_pt.detach().cpu().numpy()[0][0]
-    output_nii = nib.Nifti1Image(output_np, affine=input_nii.affine)
-
-    if save_input:
-        nib.save(input_nii, path.join(visualization_path, 'input.nii'))
-
-    if epoch is None:
-        nib.save(output_nii, path.join(visualization_path, 'output.nii'))
-    else:
-        nib.save(output_nii, path.join(visualization_path, 'epoch-' + str(epoch) + '.nii'))
 
 
 def memReport():
