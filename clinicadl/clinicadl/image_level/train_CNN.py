@@ -89,8 +89,7 @@ def train_cnn(params):
         # Initialize the model
         print('Initialization of the model')
         model = create_model(params.model, params.gpu, dropout=params.dropout)
-        # Transfer learning function to review. Probably test if transfer learning path is given.
-        model = transfer_learning(model, fold, params.output_dir, source_path=params.transfer_learning_path,
+        model = transfer_learning(model, fold, source_path=params.transfer_learning_path,
                                   transfer_learning_autoencoder=params.transfer_learning_autoencoder,
                                   gpu=params.gpu, selection=params.selection)
 
@@ -99,6 +98,7 @@ def train_cnn(params):
         optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
                                                             lr=params.learning_rate,
                                                             weight_decay=params.weight_decay)
+        setattr(params, 'beginning_epoch', 0)
 
         # Define output directories
         log_dir = path.join(params.output_dir, 'log_dir', 'fold_%i' % fold, 'CNN')

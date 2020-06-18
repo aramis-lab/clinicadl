@@ -380,9 +380,8 @@ def ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, res
         best_loss_valid = min(best_loss_valid, loss_valid)
         # Always save the model at the end of the epoch and update best model
         save_checkpoint({'model': decoder.state_dict(),
-                         'iteration': i,
                          'epoch': epoch,
-                         'loss_valid': loss_valid},
+                         'valid_loss': loss_valid},
                         False, is_best,
                         model_dir)
         # Save optimizer state_dict to be able to reload

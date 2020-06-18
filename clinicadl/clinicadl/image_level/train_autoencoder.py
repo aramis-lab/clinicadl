@@ -71,7 +71,12 @@ def train_autoencoder(params):
         text_file.write('Version of pytorch: %s \n' % torch.__version__)
         text_file.close()
 
-        decoder = create_autoencoder(params.model, params.transfer_learning_path,
+        if params.transfer_learning_path is not None:
+            transfer_learning_path = path.join(params.transfer_learning_path, "best_model_dir", "fold_%i" % fold,
+                                               "ConvAutoencoder", "best_loss", "model_best.pth.tar")
+        else:
+            transfer_learning_path = None
+        decoder = create_autoencoder(params.model, transfer_learning_path=transfer_learning_path,
                                      difference=params.transfer_learning_difference)
         optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
                                                             lr=params.learning_rate,
