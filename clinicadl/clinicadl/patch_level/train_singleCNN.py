@@ -8,9 +8,8 @@ from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 import torchvision.transforms as transforms
 
-from .utils import load_model_after_ae, load_model_after_cnn
 from .utils import train, test, patch_level_to_tsvs, soft_voting_to_tsvs
-
+from ..tools.deep_learning.models.autoencoder import transfer_learning
 from ..tools.deep_learning import (EarlyStopping,
                                    save_checkpoint,
                                    create_model,
@@ -40,7 +39,7 @@ def train_patch_single_cnn(params):
     if params.split is None:
         fold_iterator = range(params.n_splits)
     else:
-        fold_iterator = [params.split]
+        fold_iterator = params.split
 
     for fi in fold_iterator:
 
@@ -52,33 +51,10 @@ def train_patch_single_cnn(params):
                 baseline=params.baseline)
 
         print("Running for the %d-th fold" % fi)
-
-        if params.transfer_learning_path is not None:
-            if params.transfer_learning_autoencoder:
-                print('Train the model with the weights from a pre-trained autoencoder.')
-                model, _ = load_model_after_ae(
-                        model,
-                        os.path.join(
-                            params.transfer_learning_path,
-                            'best_model_dir',
-                            "fold_" + str(fi),
-                            'ConvAutoencoder',
-                            'Encoder'),
-                        filename='model_best_encoder.pth.tar')
-            else:
-                print('Train the model with the weights from a pre-trained CNN.')
-                model, _ = load_model_after_cnn(
-                        model,
-                        os.path.join(
-                            params.transfer_learning_path,
-                            'best_model_dir',
-                            "fold_" + str(fi),
-                            'CNN',
-                            params.selection),
-                        filename='model_best.pth.tar')
-        else:
-            print('The model is trained from scratch.')
-            model.load_state_dict(init_state)
+        model.load_state_dict(init_state)
+        model = transfer_learning(model, fi, transfer_learning_autoencoder=params.transfer_learning_autoencoder,
+                                  source_path=params.transfer_learning_path, gpu=params.gpu,
+                                  selection=params.transfer_learning_selection)
 
         if params.hippocampus_roi:
             print("Only using hippocampus ROI")
@@ -86,11 +62,13 @@ def train_patch_single_cnn(params):
             data_train = MRIDataset_patch_hippocampus(
                 params.input_dir,
                 training_tsv,
+                preprocessing=params.preprocessing,
                 transformations=transformations
             )
             data_valid = MRIDataset_patch_hippocampus(
                 params.input_dir,
                 valid_tsv,
+                preprocessing=params.preprocessing,
                 transformations=transformations
             )
 
@@ -100,6 +78,7 @@ def train_patch_single_cnn(params):
                     training_tsv,
                     params.patch_size,
                     params.stride_size,
+                    preprocessing=params.preprocessing,
                     transformations=transformations,
                     prepare_dl=params.prepare_dl
                     )
@@ -108,6 +87,7 @@ def train_patch_single_cnn(params):
                     valid_tsv,
                     params.patch_size,
                     params.stride_size,
+                    preprocessing=params.preprocessing,
                     transformations=transformations,
                     prepare_dl=params.prepare_dl
                     )
@@ -136,46 +116,18 @@ def train_patch_single_cnn(params):
 
         loss = torch.nn.CrossEntropyLoss()
 
+        # Define output directories
+        model_dir = os.path.join(params.output_dir, "best_model_dir", "fold_%i" % fi, "CNN")
+        log_dir = os.path.join(params.output_dir, "log_dir", "fold_%i" % fi, "CNN")
+
         print('Beginning the training task')
         # parameters used in training
         best_accuracy = 0.0
         best_loss_valid = np.inf
 
-        writer_train_batch = SummaryWriter(
-                log_dir=(
-                    os.path.join(
-                        params.output_dir,
-                        "log_dir",
-                        "fold_" + str(fi),
-                        "CNN",
-                        "train_batch"
-                        )
-                    )
-                )
-
-        writer_train_all_data = SummaryWriter(
-                log_dir=(
-                    os.path.join(
-                        params.output_dir,
-                        "log_dir",
-                        "fold_" + str(fi),
-                        "CNN",
-                        "train_all_data"
-                        )
-                    )
-                )
-
-        writer_valid = SummaryWriter(
-                log_dir=(
-                    os.path.join(
-                        params.output_dir,
-                        "log_dir",
-                        "fold_" + str(fi),
-                        "CNN",
-                        "valid"
-                        )
-                    )
-                )
+        writer_train_batch = SummaryWriter(os.path.join(log_dir, "train_batch"))
+        writer_train_all_data = SummaryWriter(os.path.join(log_dir, "train_all_data"))
+        writer_valid = SummaryWriter(os.path.join(log_dir, "valid"))
 
         # initialize the early stopping instance
         early_stopping = EarlyStopping(
@@ -205,7 +157,7 @@ def train_patch_single_cnn(params):
             train_all_df, acc_mean_train_all, loss_batch_mean_train_all, _\
                 = train(model, train_loader, params.gpu, loss, optimizer, writer_train_all_data, epoch,
                         model_mode='valid', selection_threshold=params.selection_threshold)
-            print("For training, subject level balanced accuracy is %f at the end of epoch %d"
+            print("For training, image level balanced accuracy is %f at the end of epoch %d"
                   % (acc_mean_train_all, epoch))
 
             # at then end of each epoch, we validate one time for the model with the validation data
@@ -222,7 +174,7 @@ def train_patch_single_cnn(params):
                         selection_threshold=params.selection_threshold
                         )
 
-            print("For validation, subject level balanced accuracy is %f at the end of epoch %d"
+            print("For validation, image level balanced accuracy is %f at the end of epoch %d"
                   % (acc_mean_valid, epoch))
 
             # save the best model based on the best loss and accuracy
@@ -232,20 +184,30 @@ def train_patch_single_cnn(params):
             best_loss_valid = min(loss_batch_mean_valid, best_loss_valid)
 
             save_checkpoint({
-                'epoch': epoch + 1,
+                'epoch': epoch,
                 'model': model.state_dict(),
-                'loss': loss_batch_mean_valid,
-                'accuracy': acc_mean_valid,
-                'optimizer': optimizer.state_dict(),
-                'global_step': global_step},
+                'valid_loss': loss_batch_mean_valid,
+                'valid_acc': acc_mean_valid},
                 acc_is_best, loss_is_best,
-                os.path.join(params.output_dir, "best_model_dir", "fold_" + str(fi), "CNN"))
+                model_dir)
+
+            # Save optimizer state_dict to be able to reload
+            save_checkpoint({'optimizer': optimizer.state_dict(),
+                             'epoch': epoch,
+                             'name': params.optimizer,
+                             },
+                            False, False,
+                            model_dir,
+                            filename='optimizer.pth.tar')
 
             # try early stopping criterion
             if early_stopping.step(loss_batch_mean_valid) or epoch == params.epochs - 1:
                 print("By applying early stopping or at the last epoch defined by user, "
                       "the training is stopped at %d-th epoch" % epoch)
                 break
+
+        del optimizer
+        torch.cuda.empty_cache()
 
         # Final evaluation for all criteria
         for selection in ['best_loss', 'best_acc']:
@@ -275,3 +237,6 @@ def train_patch_single_cnn(params):
             soft_voting_to_tsvs(params.output_dir, fi, dataset='validation', selection=selection,
                                 selection_threshold=params.selection_threshold)
             torch.cuda.empty_cache()
+
+        os.remove(os.path.join(model_dir, "optimizer.pth.tar"))
+        os.remove(os.path.join(model_dir, "checkpoint.pth.tar"))

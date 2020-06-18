@@ -29,6 +29,9 @@ parser = argparse.ArgumentParser(description="Argparser for test of hippocampus 
 # Mandatory arguments
 parser.add_argument("caps_directory", type=str,
                     help="Path to the caps of image processing pipeline of DL")
+parser.add_argument('preprocessing', type=str,
+                    help='Defines the type of preprocessing of CAPS data.',
+                    choices=['t1-linear', 't1-extensive'])
 parser.add_argument("diagnosis_tsv_path", type=str,
                     help="Path to tsv file of the population based on the diagnosis tsv files."
                          "To note, the column name should be participant_id, session_id and diagnosis.")
@@ -84,7 +87,7 @@ def main(options):
     if options.split is None:
         fold_iterator = range(options.n_splits)
     else:
-        fold_iterator = [options.split]
+        fold_iterator = options.split
 
     # Loop on folds
     for fi in fold_iterator:
@@ -97,11 +100,12 @@ def main(options):
             test_df = load_data_test(options.diagnosis_tsv_path, options.diagnoses)
 
         if options.hippocampus_roi:
-            data_test = MRIDataset_patch_hippocampus(options.caps_directory, test_df, transformations=transformations)
+            data_test = MRIDataset_patch_hippocampus(options.caps_directory, test_df, transformations=transformations,
+                                                     preprocessing=options.preprocessing)
         else:
             data_test = MRIDataset_patch(options.caps_directory, test_df, options.patch_size,
-                                         options.stride_size, transformations=transformations,
-                                         prepare_dl=options.prepare_dl)
+                                         options.stride_size, preprocessing=options.preprocessing,
+                                         transformations=transformations, prepare_dl=options.prepare_dl)
 
         test_loader = DataLoader(data_test,
                                  batch_size=options.batch_size,

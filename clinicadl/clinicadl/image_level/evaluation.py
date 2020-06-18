@@ -16,7 +16,7 @@ from ..tools.deep_learning import create_model, load_model, read_json
 def test_cnn(data_loader, subset_name, split, criterion, options):
 
     best_model_dir = os.path.join(options.model_path, 'best_model_dir')
-    json_path = path.join(options.model_path, 'log_dir', 'fold_' + str(split), "commandline_cnn.json")
+    json_path = path.join(options.model_path, "commandline_cnn.json")
     options = read_json(options, "cnn", json_path=json_path)
 
     for selection in ["best_acc", "best_loss"]:
@@ -44,12 +44,12 @@ def test_cnn(data_loader, subset_name, split, criterion, options):
             path.join(
                 evaluation_path,
                 selection,
-                subset_name + '_subject_level_result.tsv'
+                subset_name + '_image_level_result.tsv'
             ),
             sep='\t', index=False)
 
         pd.DataFrame(metrics_dict, index=[0]).to_csv(path.join(evaluation_path, selection,
-                                                               subset_name + '_subject_level_metrics.tsv'),
+                                                               subset_name + '_image_level_metrics.tsv'),
                                                      sep='\t', index=False)
 
 

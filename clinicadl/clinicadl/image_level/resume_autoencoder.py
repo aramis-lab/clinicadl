@@ -44,8 +44,10 @@ def main(options):
     training_tsv, valid_tsv = load_data(options.diagnosis_path, options.diagnoses,
                                         options.split, options.n_splits, options.baseline)
 
-    data_train = MRIDataset(options.input_dir, training_tsv, transform=transformations)
-    data_valid = MRIDataset(options.input_dir, valid_tsv, transform=transformations)
+    data_train = MRIDataset(options.input_dir, training_tsv, transform=transformations,
+                            preprocessing=options.preprocessing)
+    data_valid = MRIDataset(options.input_dir, valid_tsv, transform=transformations,
+                            preprocessing=options.preprocessing)
 
     # Use argument load to distinguish training and testing
     train_loader = DataLoader(data_train,
@@ -77,9 +79,14 @@ def main(options):
     optimizer_path = path.join(options.model_path, 'optimizer.pth.tar')
     optimizer = load_optimizer(optimizer_path, decoder)
 
-    print('Resuming the training task')
+    # Define output directories
+    log_dir = path.join(options.output_dir, 'log_dir', 'fold_%i' % options.split, 'ConvAutoencoder')
+    visualization_dir = path.join(options.output_dir, 'visualize', 'fold_%i' % options.split)
+    model_dir = path.join(options.output_dir, 'best_model_dir', 'fold_%i' % options.split, 'ConvAutoencoder')
 
-    ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, True, options)
+    print('Resuming the training task')
+    ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, True,
+                  log_dir, model_dir, visualization_dir, options)
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)

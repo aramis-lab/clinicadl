@@ -75,9 +75,12 @@ def main(options):
     optimizer_path = path.join(options.model_path, 'optimizer.pth.tar')
     optimizer = load_optimizer(optimizer_path, model)
 
-    print('Resuming the training task')
+    # Define output directories
+    log_dir = path.join(options.output_dir, 'log_dir', 'fold_%i' % options.split, 'CNN')
+    model_dir = path.join(options.output_dir, 'best_model_dir', 'fold_%i' % options.split, 'CNN')
 
-    train(model, train_loader, valid_loader, criterion, optimizer, True, options)
+    print('Resuming the training task')
+    train(model, train_loader, valid_loader, criterion, optimizer, True, log_dir, model_dir, options)
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)
