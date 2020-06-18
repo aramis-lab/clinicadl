@@ -5,8 +5,8 @@ import os
 from torch.utils.data import DataLoader
 import torchvision.transforms as transforms
 
-from ..tools.deep_learning.autoencoder_utils import train
-from ..tools.deep_learning import create_autoencoder
+from ..tools.deep_learning.autoencoder_utils import train, visualize_image
+from ..tools.deep_learning import create_autoencoder, load_model
 from ..tools.deep_learning.data import (load_data,
                                         MinMaxNormalization,
                                         MRIDataset_patch,
@@ -87,7 +87,7 @@ def train_autoencoder_patch(params):
         # Define output directories
         log_dir = os.path.join(params.output_dir, "log_dir", "fold_%i" % fi, "ConvAutoencoder")
         model_dir = os.path.join(params.output_dir, "best_model_dir", "fold_%i" % fi, "ConvAutoencoder")
-        visualization_dir = os.path.join(params.output_dir, 'visualize', 'fold_%i' % fi)
+        visualization_dir = os.path.join(params.output_dir, 'autoencoder_reconstruction', 'fold_%i' % fi)
 
         # Hard-coded arguments for patch
         setattr(params, "accumulation_steps", 1)
@@ -99,7 +99,17 @@ def train_autoencoder_patch(params):
                                                             weight_decay=params.weight_decay)
 
         train(decoder, train_loader, valid_loader, criterion, optimizer, False,
-              log_dir, model_dir, visualization_dir, params)
+              log_dir, model_dir, params)
+
+        if params.visualization:
+            print("Visualization of autoencoder reconstruction")
+            best_decoder, _ = load_model(decoder, os.path.join(model_dir, "best_loss"),
+                                         params.gpu, filename='model_best.pth.tar')
+            num_patches = train_loader.dataset.patchs_per_patient
+            visualize_image(best_decoder, valid_loader, os.path.join(visualization_dir, "validation"),
+                            nb_images=num_patches)
+            visualize_image(best_decoder, train_loader, os.path.join(visualization_dir, "train"),
+                            nb_images=num_patches)
         del decoder
         torch.cuda.empty_cache()
 

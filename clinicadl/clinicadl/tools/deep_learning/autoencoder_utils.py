@@ -11,7 +11,7 @@ from clinicadl.tools.deep_learning import EarlyStopping, save_checkpoint
 #############################
 
 def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
-          log_dir, model_dir, visualization_dir, options):
+          log_dir, model_dir, options):
     """
     Function used to train an autoencoder.
     The best autoencoder and checkpoint will be found in the 'best_model_dir' of options.output_dir.
@@ -24,14 +24,12 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
     :param resume: (bool) if True, a begun job is resumed.
     :param log_dir: (str) path to the folder containing the logs.
     :param model_dir: (str) path to the folder containing the models weights and biases.
-    :param visualization_dir: (str) path to the folder containing the reconstruction of images.
     :param options: (Namespace) ensemble of other options given to the main script.
     """
     from tensorboardX import SummaryWriter
 
     if not resume:
         check_and_clean(model_dir)
-        check_and_clean(visualization_dir)
         check_and_clean(log_dir)
         options.beginning_epoch = 0
 
@@ -165,54 +163,25 @@ def test_ae(model, dataloader, use_cuda, criterion):
     return total_loss
 
 
-def visualize_subject(decoder, dataloader, visualization_path, options, epoch=None, save_input=True, subject_index=0):
-    from os import path, makedirs, pardir
+def visualize_image(decoder, dataloader, visualization_path, nb_images=1):
+    from os import path, makedirs
     import nibabel as nib
     import numpy as np
-    import torch
-    from .data import MinMaxNormalization
 
     if not path.exists(visualization_path):
         makedirs(visualization_path)
 
     dataset = dataloader.dataset
-    data = dataset[subject_index]
-    image_path = data['image_path']
+    decoder.eval()
 
-    # TODO: Change nifti path
-    nii_path, _ = path.splitext(image_path)
-    nii_path += '.nii.gz'
+    for image_index in range(nb_images):
+        data = dataset[image_index]
+        image = data["image"].unsqueeze(0)
+        output = decoder(image)
 
-    if not path.exists(nii_path):
-        nii_path = path.join(
-            path.dirname(image_path),
-            pardir, pardir, pardir,
-            't1_linear',
-            path.basename(image_path)
-        )
-        nii_path, _ = path.splitext(nii_path)
-        nii_path += '.nii.gz'
-
-    input_nii = nib.load(nii_path)
-    input_np = input_nii.get_data().astype(float)
-    np.nan_to_num(input_np, copy=False)
-    input_pt = torch.from_numpy(input_np).unsqueeze(0).unsqueeze(0).float()
-    if options.minmaxnormalization:
-        transform = MinMaxNormalization()
-        input_pt = transform(input_pt)
-
-    if options.gpu:
-        input_pt = input_pt.cuda()
-
-    output_pt = decoder(input_pt)
-
-    output_np = output_pt.detach().cpu().numpy()[0][0]
-    output_nii = nib.Nifti1Image(output_np, affine=input_nii.affine)
-
-    if save_input:
-        nib.save(input_nii, path.join(visualization_path, 'input.nii'))
-
-    if epoch is None:
-        nib.save(output_nii, path.join(visualization_path, 'output.nii'))
-    else:
-        nib.save(output_nii, path.join(visualization_path, 'epoch-' + str(epoch) + '.nii'))
+        output_np = output.squeeze(0).squeeze(0).cpu().detach().numpy()
+        input_np = image.squeeze(0).squeeze(0).cpu().detach().numpy()
+        output_nii = nib.Nifti1Image(output_np, np.eye(4))
+        input_nii = nib.Nifti1Image(input_np, np.eye(4))
+        nib.save(output_nii, os.path.join(visualization_path, 'output-%i.nii.gz' % image_index))
+        nib.save(input_nii, os.path.join(visualization_path, 'input-%i.nii.gz' % image_index))

@@ -9,9 +9,9 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from warnings import warn
 
-from ..tools.deep_learning.autoencoder_utils import train
+from ..tools.deep_learning.autoencoder_utils import train, visualize_image
 from ..tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data
-from ..tools.deep_learning import create_autoencoder
+from ..tools.deep_learning import create_autoencoder, load_model
 
 
 def train_autoencoder(params):
@@ -89,11 +89,20 @@ def train_autoencoder(params):
 
         # Define output directories
         log_dir = path.join(params.output_dir, 'log_dir', 'fold_%i' % fold, 'ConvAutoencoder')
-        visualization_dir = path.join(params.output_dir, 'visualize', 'fold_%i' % fold)
+        visualization_dir = path.join(params.output_dir, 'autoencoder_reconstruction', 'fold_%i' % fold)
         model_dir = path.join(params.output_dir, 'best_model_dir', 'fold_%i' % fold, 'ConvAutoencoder')
 
         train(decoder, train_loader, valid_loader, criterion, optimizer, False,
-              log_dir, model_dir, visualization_dir, params)
+              log_dir, model_dir, params)
+
+        if params.visualization:
+            print("Visualization of autoencoder reconstruction")
+            best_decoder, _ = load_model(decoder, path.join(model_dir, "best_loss"),
+                                         params.gpu, filename='model_best.pth.tar')
+            visualize_image(best_decoder, valid_loader, path.join(visualization_dir, "validation"), nb_images=5)
+            visualize_image(best_decoder, train_loader, path.join(visualization_dir, "train"), nb_images=5)
+        del decoder
+        torch.cuda.empty_cache()
 
     total_time = time() - total_time
     print('Total time', total_time)
