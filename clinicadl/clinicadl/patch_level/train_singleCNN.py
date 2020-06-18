@@ -10,7 +10,7 @@ import torchvision.transforms as transforms
 
 from .utils import load_model_after_ae, load_model_after_cnn
 from .utils import train, test, patch_level_to_tsvs, soft_voting_to_tsvs
-
+from ..tools.deep_learning.models.autoencoder import transfer_learning
 from ..tools.deep_learning import (EarlyStopping,
                                    save_checkpoint,
                                    create_model,
@@ -52,33 +52,10 @@ def train_patch_single_cnn(params):
                 baseline=params.baseline)
 
         print("Running for the %d-th fold" % fi)
-
-        if params.transfer_learning_path is not None:
-            if params.transfer_learning_autoencoder:
-                print('Train the model with the weights from a pre-trained autoencoder.')
-                model, _ = load_model_after_ae(
-                        model,
-                        os.path.join(
-                            params.transfer_learning_path,
-                            'best_model_dir',
-                            "fold_" + str(fi),
-                            'ConvAutoencoder',
-                            'Encoder'),
-                        filename='model_best_encoder.pth.tar')
-            else:
-                print('Train the model with the weights from a pre-trained CNN.')
-                model, _ = load_model_after_cnn(
-                        model,
-                        os.path.join(
-                            params.transfer_learning_path,
-                            'best_model_dir',
-                            "fold_" + str(fi),
-                            'CNN',
-                            params.selection),
-                        filename='model_best.pth.tar')
-        else:
-            print('The model is trained from scratch.')
-            model.load_state_dict(init_state)
+        model.load_state_dict(init_state)
+        model = transfer_learning(model, fi, transfer_learning_autoencoder=params.transfer_learning_autoencoder,
+                                  source_path=params.transfer_learning_path, gpu=params.gpu,
+                                  selection=params.selection)
 
         if params.hippocampus_roi:
             print("Only using hippocampus ROI")
