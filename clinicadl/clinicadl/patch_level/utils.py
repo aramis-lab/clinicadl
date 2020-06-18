@@ -149,63 +149,6 @@ def visualize_ae(ae, data, results_path):
 
 
 #################################
-# Transfer learning
-#################################
-
-def load_model_after_ae(model, checkpoint_dir, filename='checkpoint.pth.tar'):
-    """
-    Load and copy the weights and biases of a previously trained Encoder part of an autoencoder.
-
-    :param model: (nn.Module) the object in which the weights and biases are copied.
-    :param checkpoint_dir: (str) path to the directory in which the pretrained Autoencoder is saved.
-    :param filename: (str) name of the file in which the pretrained Autoencoder is saved.
-    :return:
-        - model_updated (nn.Module) model initialized with the pretrained CNN
-        - best_epoch (int) the number of the epoch at which the pretrained CNN corresponds
-    """
-    from copy import deepcopy
-
-    model_after_ae = deepcopy(model)
-    model_dict = model_after_ae.state_dict()
-    param_dict = torch.load(os.path.join(checkpoint_dir, filename))
-    ae_pretrained_dict = param_dict['model']
-    ae_pretrained_dict_copy = deepcopy(ae_pretrained_dict)
-
-    # remove the classifier's weight, only take the convolutional part.
-    for k in ae_pretrained_dict.keys():
-        if 'classifier' not in k:
-            pass
-        else:
-            del ae_pretrained_dict_copy[k]
-
-    model_dict.update(ae_pretrained_dict_copy)
-    model_after_ae.load_state_dict(model_dict)
-
-    return model_after_ae, param_dict['epoch']
-
-
-def load_model_after_cnn(model, checkpoint_dir, filename='checkpoint.pth.tar'):
-    """
-    Load and copy the weights and biases of a previously trained CNN.
-
-    :param model: (nn.Module) the object in which the weights and biases are copied.
-    :param checkpoint_dir: (str) path to the directory in which the pretrained CNN is saved.
-    :param filename: (str) name of the file in which the pretrained CNN is saved.
-    :return:
-        - model_updated (nn.Module) model initialized with the pretrained CNN
-        - best_epoch (int) the number of the epoch at which the pretrained CNN corresponds
-    """
-    from copy import deepcopy
-
-    model.eval()
-    model_updated = deepcopy(model)
-    param_dict = torch.load(os.path.join(checkpoint_dir, filename))
-    model_updated.load_state_dict(param_dict['model'])
-
-    return model_updated, param_dict['epoch']
-
-
-#################################
 # CNN train / test
 #################################
 
