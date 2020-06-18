@@ -164,12 +164,11 @@ def test_ae(model, dataloader, use_cuda, criterion):
 
 
 def visualize_image(decoder, dataloader, visualization_path, nb_images=1):
-    from os import path, makedirs
     import nibabel as nib
     import numpy as np
+    from .iotools import check_and_clean
 
-    if not path.exists(visualization_path):
-        makedirs(visualization_path)
+    check_and_clean(visualization_path)
 
     dataset = dataloader.dataset
     decoder.eval()
