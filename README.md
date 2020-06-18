@@ -66,7 +66,7 @@ Keep the following order of the installation instructions.
 It guaranties the right management of libraries depending on common packages:
 
 
-```
+```{.sourceCode .bash}
 conda create --name clinicadl_env python=3.6 pytorch torchvision -c pytorch
 
 conda activate clinicadl_env
@@ -77,7 +77,7 @@ pip install -r requirements.txt
 
 ### Install the package `clinicadl` as developer in the active conda environment:
 
-```
+```{.sourceCode .bash}
 cd clinicadl
 pip install -e .
 ```
@@ -158,15 +158,20 @@ subset.
 ### Tensor extraction
 
 These are the options available for the `extract` task:
-```text
-usage: clinicadl extract [-h] [-psz PATCH_SIZE] [-ssz STRIDE_SIZE]
+<details>
+<summary>
+clinicadl extract -h
+</summary>
+
+```{.sourceCode .bash}
+usage: clinicadl extract [-h] [-ps PATCH_SIZE] [-ss STRIDE_SIZE]
                          [-sd SLICE_DIRECTION] [-sm {original,rgb}]
                          [-np NPROC]
                          caps_dir tsv_file working_dir {slice,patch,whole}
 
 positional arguments:
   caps_dir              Data using CAPS structure.
-  tsv_file              tsv file with subjects/sessions to process.
+  tsv_file              TSV file with subjects/sessions to process.
   working_dir           Working directory to save temporary file.
   {slice,patch,whole}   Method used to extract features. Three options:
                         'slice' to get 2D slices from the MRI, 'patch' to get
@@ -175,10 +180,10 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  -psz PATCH_SIZE, --patch_size PATCH_SIZE
+  -ps PATCH_SIZE, --patch_size PATCH_SIZE
                         Patch size (only for 'patch' extraction) e.g:
                         --patch_size 50
-  -ssz STRIDE_SIZE, --stride_size STRIDE_SIZE
+  -ss STRIDE_SIZE, --stride_size STRIDE_SIZE
                         Stride size (only for 'patch' extraction) e.g.:
                         --stride_size 50
   -sd SLICE_DIRECTION, --slice_direction SLICE_DIRECTION
@@ -192,6 +197,8 @@ optional arguments:
   -np NPROC, --nproc NPROC
                         Number of cores used for processing
 ```
+
+</details>
 
 ## Testing
 
