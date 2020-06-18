@@ -10,7 +10,7 @@ import torchvision.transforms as transforms
 
 from .utils import load_model_after_ae, load_model_after_cnn
 from .utils import train, test, patch_level_to_tsvs, soft_voting_to_tsvs
-
+from ..tools.deep_learning.models.autoencoder import transfer_learning
 from ..tools.deep_learning import (EarlyStopping,
                                    save_checkpoint,
                                    create_model,
@@ -55,47 +55,10 @@ def train_patch_multi_cnn(params):
                     baseline=params.baseline)
 
             print("Running for the %d-th CNN" % i)
-            if params.transfer_learning_path is not None:
-                if params.transfer_learning_autoencoder:
-                    print('Train the model with the weights from a pre-trained autoencoder.')
-                    model_folder = os.path.join(
-                            params.transfer_learning_path,
-                            'best_model_dir',
-                            "fold_" + str(fi),
-                            'ConvAutoencoder',
-                            'Encoder')
-                    model, _ = load_model_after_ae(
-                            model,
-                            model_folder,
-                            filename='model_best_encoder.pth.tar')
-                else:
-                    if params.transfer_learning_multicnn:
-                        print('Train each of the models of multiple CNN with the weights from a pre-trained CNN.')
-                        model_folder = os.path.join(
-                                params.transfer_learning_path,
-                                'best_model_dir',
-                                "fold_" + str(fi),
-                                'cnn-' + str(i),
-                                params.selection)
-                        model, _ = load_model_after_cnn(
-                                model,
-                                model_folder,
-                                filename='model_best.pth.tar')
-                    else:
-                        print('Train the each multiple CNN with the weights from the same pre-trained CNN.')
-                        model_folder = os.path.join(
-                                params.transfer_learning_path,
-                                'best_model_dir',
-                                "fold_" + str(fi),
-                                'CNN',
-                                params.selection)
-                        model, _ = load_model_after_cnn(
-                                model,
-                                model_folder,
-                                filename='model_best.pth.tar')
-            else:
-                print('The model is trained from scratch.')
-                model.load_state_dict(init_state)
+            model.load_state_dict(init_state)
+            model = transfer_learning(model, fi, transfer_learning_autoencoder=params.transfer_learning_autoencoder,
+                                      source_path=params.transfer_learning_path, gpu=params.gpu,
+                                      selection=params.selection, cnn_index=i)
 
             data_train = MRIDataset_patch(
                     params.input_dir,
