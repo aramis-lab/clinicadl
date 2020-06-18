@@ -820,7 +820,7 @@ def parse_command_line():
         help="Train a 3D-patch level CNN.")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
     train_image_cnn_parser._action_groups[-1].add_argument(
-        '--tranfer_learning_selection',
+        '--transfer_learning_selection',
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
         type=str, default="best_acc", choices=["best_loss", "best_acc"])
 
