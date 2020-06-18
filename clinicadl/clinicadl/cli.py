@@ -285,7 +285,6 @@ def train_func(args):
                 num_workers=args.nproc,
                 transfer_learning_path=args.transfer_learning_path,
                 transfer_learning_autoencoder=args.transfer_learning_autoencoder,
-                transfer_learning_multicnn=args.transfer_learning_multicnn,
                 transfer_learning_selection=args.transfer_learning_selection,
                 patch_size=args.patch_size,
                 stride_size=args.stride_size,
@@ -901,10 +900,6 @@ def parse_command_line():
         '--transfer_learning_selection',
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
         type=str, default="best_acc", choices=["best_loss", "best_acc"])
-    train_patch_multicnn_parser._action_groups[-1].add_argument(
-        '--transfer_learning_multicnn',
-        help='''Specify if the transfer learning is from multi-CNNs to multi-CNNs.''',
-        default=False, action="store_true")
 
     train_patch_multicnn_group = train_patch_multicnn_parser.add_argument_group(
         TRAIN_CATEGORIES["PATCH CNN"])

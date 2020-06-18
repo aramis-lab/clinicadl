@@ -45,7 +45,6 @@ class Parameters:
             num_workers: int = 1,
             transfer_learning_path: str = None,
             transfer_learning_autoencoder: str = None,
-            transfer_learning_multicnn: bool = False,
             transfer_learning_selection: str = "best_acc",
             patch_size: int = 50,
             stride_size: int = 50,
@@ -94,7 +93,6 @@ class Parameters:
                    2 is for axial direction
         prepare_dl: If True the outputs of preprocessing are used, else the
                     whole MRI is loaded.
-        transfer_learning_multicnn : If true use each model from the multicnn to
                                      initialize corresponding models.
         """
 
@@ -119,7 +117,6 @@ class Parameters:
         self.num_workers = num_workers
         self.transfer_learning_path = transfer_learning_path
         self.transfer_learning_autoencoder = transfer_learning_autoencoder
-        self.transfer_learning_multicnn = transfer_learning_multicnn
         self.transfer_learning_selection = transfer_learning_selection
         self.patch_size = patch_size
         self.stride_size = stride_size
