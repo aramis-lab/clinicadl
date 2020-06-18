@@ -39,15 +39,18 @@ the use of the package.
 If you find a problem when use it or if you want to provide us feedback, please
 [open an issue](https://github.com/aramis-lab/ad-dl/issues).
 
-Pretrained models for the CNN networks can be obtained here:
-<https://zenodo.org/record/3491003>  
+## Table of Contents
+- [Installation](#installation)
+- [Overview](#overview)
+- [Examples](#examples)
+- [Testing](#testing)
+- [Pretrained Models](#models)
+- [Bibliography](#bibliography)
+- [Related repositories](#related-repositories)
 
-## Bibliography
-All the papers described in the State of the art section of the manuscript may
-be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
+## Installation
 
-
-## Main dependencies
+### Main dependencies
 - Python >= 3.6
 - [Clinica](http://www.clinica.run/) >= 0.3.4 and [ANTs](https://stnava.github.io/ANTs/) (needs only to perform preprocessing)
 - Numpy
@@ -57,8 +60,6 @@ be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 - Nilearn >= 0.5.3
 - Nipy
 - TensorBoardX
-
-## How to install `clinicadl` ?
 
 ### Create a conda environment with the corresponding dependencies:
 Keep the following order of the installation instructions.
@@ -81,48 +82,21 @@ cd clinicadl
 pip install -e .
 ```
 
-## How to use `clinicadl` ?
+## Overview
+
+### How to use `clinicadl` ?
 
 `clinicadl` is an utility to be used with the command line.
 
-To have an overview of the general options proposed by the software type:
-
-```text
-clinicadl -h
-
-usage: clinicadl [-h] [--verbose]
-{generate,preprocessing,extract,train,classify} ...
-
-Clinica Deep Learning.
-
-optional arguments:
--h, --help            show this help message and exit
---verbose, -v
-
-Task to execute with clinicadl:
-  What kind of task do you want to use with clinicadl? (preprocessing,
-  extract, generate, train, validate, classify).
-
-    {generate,tsvtool,preprocessing,extract,train,classify}
-                        Tasks proposed by clinicadl
-    tsvtool             Handle tsv files for metadata processing and data splits.
-    generate            Generate synthetic data for functional tests.
-    preprocessing       Prepare data for training (needs clinica installed).
-    extract             Create data (slices or patches) for training.
-    train               Train with your data and create a model.
-    classify            Classify one image or a list of images with your
-                        previously trained model.
-```
-
-### Tasks that can be performed by `clinicadl`
-
 There are six kind of tasks that can be performed using the command line:
 
-- **Process tsv files**. ``tsvtool`` includes many functions to get labels from BIDS, 
-perform k-fold or single splits, produce demographic analysis of extracted labels
-and reproduce the restrictions made on AIBL and OASIS in the original paper.
+- **Process tsv files**. ``tsvtool`` includes many functions to get labels from
+  BIDS, perform k-fold or single splits, produce demographic analysis of
+  extracted labels and reproduce the restrictions made on AIBL and OASIS in the
+  original paper.
 
-- **Generate a synthetic dataset.** Useful to run functional tests.
+- **Generate a synthetic dataset.** Useful to obtain synthetic datasets
+  frequently used in functional tests.
 
 - **T1 MRI preprocessing.** It processes a dataset of T1 images stored in BIDS
   format and prepares to extract the tensors (see paper for details on the
@@ -133,15 +107,20 @@ and reproduce the restrictions made on AIBL and OASIS in the original paper.
   Pytorch format (`.pt`) with different options: the complete MRI, 2D slices
   and/or 3D patches. This files are also stored in the CAPS hierarchy.
 
-- **Train neural networks.** Tensors obtained are used to perform the training of CNN models.
+- **Train neural networks.** The `train` task is designed to perform training
+  of CNN models using different kind of inputs, e.g., a full MRI (3D-image),
+  patches from a MRI (3D-patch), specific regions of a MRI (ROI-based) or
+  slices extracted from the MRI (2D-slices). Parameters used during the
+  training are configurable. This task allow also to train autoencoders.
 
-- **MRI classification.** Previously trained models can be used to perform the inference of a particular or a set of MRI.
+- **MRI classification.** The `classify` task uses previously trained models
+  to perform the inference of a particular or a set of MRI.
 
 For detailed instructions and options of each task type  `clinica 'task' -h`.
 
-### Some examples
+## Examples
 
-#### Labels extraction in tsv files
+### Labels extraction in tsv files
 
 Typical use for `tsvtool getlabels`:
 
@@ -159,7 +138,7 @@ where:
 By default the extracted labels are only AD and CN, as OASIS database do not include
 MCI patients. To include them add `--diagnoses AD CN MCI sMCI pMCI` at the end of the command.
 
-#### Preprocessing
+### Preprocessing
 Typical use for `preprocessing` ([ANTs](https://stnava.github.io/ANTs/) software needs to be installed):
 
 ```text
@@ -176,7 +155,7 @@ If you want to run the pipeline on a subset of your BIDS dataset, you can use
 the `-tsv` flag to specify in a TSV file the participants belonging to your
 subset.
 
-#### Tensor extraction
+### Tensor extraction
 
 These are the options available for the `extract` task:
 ```text
@@ -214,7 +193,7 @@ optional arguments:
                         Number of cores used for processing
 ```
 
-## Run testing.
+## Testing
 
 ### Unit testing (WIP)
 
@@ -236,6 +215,7 @@ the predictive models.
 
 The follow command allow you to generate two kinds of synthetic datasets: fully
 separable (trivial) or intractable data (IRM with random noise added).
+
 ```text
 python clinicadl generate {random,trivial} caps_directory tsv_path output_directory
 ```
@@ -244,8 +224,23 @@ the tsv file given at
 `tsv_path` associated to random labels.
 
 The trivial dataset includes two labels:
-- AD corresponding to images with the left half of the brain with lower intensities,
-- CN corresponding to images with the right half of the brain with lower intensities.
+- AD corresponding to images with the left half of the brain with lower
+  intensities,
+- CN corresponding to images with the right half of the brain with lower
+  intensities.
+
+## Pretrained models 
+
+Some of the pretained model for the CNN networks can be obtained here:
+<https://zenodo.org/record/3491003>  
+
+These models were obtained durnig the experiments for publication. 
+Updated versions of the models will be published soon.
+
+## Bibliography
+
+All the papers described in the State of the art section of the manuscript may
+be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 
 ## Related Repositories
 
