@@ -9,9 +9,9 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from warnings import warn
 
-from .utils import ae_finetuning
+from ..tools.deep_learning.autoencoder_utils import train, visualize_image
 from ..tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data
-from ..tools.deep_learning import create_autoencoder
+from ..tools.deep_learning import create_autoencoder, load_model
 
 
 def train_autoencoder(params):
@@ -71,8 +71,13 @@ def train_autoencoder(params):
         text_file.write('Version of pytorch: %s \n' % torch.__version__)
         text_file.close()
 
-        decoder = create_autoencoder(params.model, params.transfer_learning_path,
-                                     difference=params.transfer_learning_difference)
+        if params.transfer_learning_path is not None:
+            transfer_learning_path = path.join(params.transfer_learning_path, "best_model_dir", "fold_%i" % fold,
+                                               "ConvAutoencoder", "best_loss", "model_best.pth.tar")
+        else:
+            transfer_learning_path = None
+        decoder = create_autoencoder(params.model, transfer_learning_path=transfer_learning_path,
+                                     difference=params.transfer_learning_difference, gpu=params.gpu)
         optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
                                                             lr=params.learning_rate,
                                                             weight_decay=params.weight_decay)
@@ -84,11 +89,20 @@ def train_autoencoder(params):
 
         # Define output directories
         log_dir = path.join(params.output_dir, 'log_dir', 'fold_%i' % fold, 'ConvAutoencoder')
-        visualization_dir = path.join(params.output_dir, 'visualize', 'fold_%i' % fold)
+        visualization_dir = path.join(params.output_dir, 'autoencoder_reconstruction', 'fold_%i' % fold)
         model_dir = path.join(params.output_dir, 'best_model_dir', 'fold_%i' % fold, 'ConvAutoencoder')
 
-        ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, False,
-                      log_dir, model_dir, visualization_dir, params)
+        train(decoder, train_loader, valid_loader, criterion, optimizer, False,
+              log_dir, model_dir, params)
+
+        if params.visualization:
+            print("Visualization of autoencoder reconstruction")
+            best_decoder, _ = load_model(decoder, path.join(model_dir, "best_loss"),
+                                         params.gpu, filename='model_best.pth.tar')
+            visualize_image(best_decoder, valid_loader, path.join(visualization_dir, "validation"), nb_images=3)
+            visualize_image(best_decoder, train_loader, path.join(visualization_dir, "train"), nb_images=3)
+        del decoder
+        torch.cuda.empty_cache()
 
     total_time = time() - total_time
     print('Total time', total_time)

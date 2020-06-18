@@ -12,63 +12,8 @@ from time import time
 # AutoEncoder train / test
 #################################
 
-
-def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_train, writer_valid, options, fi):
-    """
-    This aims to train the stacked AEs together for autoencoder
-    :param model:
-    :param train_loader:
-    :param valid_loader:
-    :param criterion:
-    :param writer_train:
-    :param writer_valid:
-    :param options:
-    :return:
-        Return both the pretrained CNN for future use and also the stacked AEs
-    """
-    from os import path
-    from ..tools.deep_learning.models import AutoEncoder
-    from ..tools.deep_learning import save_checkpoint, load_model
-    from copy import deepcopy
-
-    # if the model defined is not already constructed to an AE, then we convert the CNN into an AE
-    ae = AutoEncoder(model)
-
-    ae_finetuning(ae, train_loader, valid_loader, criterion, writer_train, writer_valid, options, fi)
-
-    # Updating and setting weights of the convolutional layers
-    checkpoint_dir = path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder',
-                               'AutoEncoder', 'best_loss')
-    best_autodecoder, best_epoch = load_model(ae, checkpoint_dir, options.gpu,  filename='model_best.pth.tar')
-
-    del ae
-
-    # save the encoder part of the AEs, the best AEs has been saved in the ae_finetuning part
-    model.features = deepcopy(best_autodecoder.encoder)
-    save_checkpoint({'model': model.state_dict(),
-                     'epoch': best_epoch},
-                    False, False,
-                    os.path.join(options.output_dir, 'best_model_dir', "fold_" + str(fi), 'ConvAutoencoder', 'Encoder'),
-                    filename='model_best_encoder.pth.tar')
-
-    del best_epoch
-
-    return model, best_autodecoder
-
-
 def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, writer_train_ft, writer_valid_ft, options,
-                  fi, global_step=0):
-    """
-    After training the AEs in a layer-wise way, we fine-tune the whole AEs
-    :param auto_encoder:
-    :param train_loader:
-    :param valid_loader:
-    :param criterion:
-    :param gpu:
-    :param results_path:
-    :param options:
-    :return:
-    """
+                  model_dir, global_step=0):
     from ..tools.deep_learning import save_checkpoint
 
     auto_encoder_all.train()
@@ -79,13 +24,12 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
 
     # Initialize variables
     best_loss_valid = np.inf
-    print("Beginning fine-tuning")
+    print("Beginning autoencoder training")
 
     tend = time()
     total_time = 0
 
     for epoch in range(options.epochs):
-        print("Fine-tuning at %d-th epoch." % epoch)
 
         auto_encoder_all.zero_grad()
 
@@ -133,14 +77,21 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
         # Save best based on smallest loss
         best_loss_valid = min(loss_valid, best_loss_valid)
         save_checkpoint({'model': auto_encoder_all.state_dict(),
-                         'iteration': i,
                          'epoch': epoch,
-                         'best_loss': best_loss_valid},
+                         'valid_loss': mean_loss_valid},
                         False, is_best_loss,
-                        os.path.join(options.output_dir, "best_model_dir", "fold_" + str(fi), "ConvAutoencoder",
-                                     "AutoEncoder"))
+                        model_dir)
+        save_checkpoint({'optimizer': optimizer.state_dict(),
+                         'epoch': epoch,
+                         'name': options.optimizer},
+                        False, False,
+                        model_dir,
+                        filename="optimizer.pth.tar")
 
     del optimizer, auto_encoder_all
+
+    os.remove(os.path.join(model_dir, "optimizer.pth.tar"))
+    os.remove(os.path.join(model_dir, "checkpoint.pth.tar"))
 
 
 def test_ae(model, dataloader, gpu, criterion):
@@ -195,63 +146,6 @@ def visualize_ae(ae, data, results_path):
     input_nii = nib.Nifti1Image(data[0][0].cpu().detach().numpy(), np.eye(4))
     nib.save(reconstructed_nii, os.path.join(results_path, 'example_patch_reconstructed.nii.gz'))
     nib.save(input_nii, os.path.join(results_path, 'example_patch_original.nii.gz'))
-
-
-#################################
-# Transfer learning
-#################################
-
-def load_model_after_ae(model, checkpoint_dir, filename='checkpoint.pth.tar'):
-    """
-    Load and copy the weights and biases of a previously trained Encoder part of an autoencoder.
-
-    :param model: (nn.Module) the object in which the weights and biases are copied.
-    :param checkpoint_dir: (str) path to the directory in which the pretrained Autoencoder is saved.
-    :param filename: (str) name of the file in which the pretrained Autoencoder is saved.
-    :return:
-        - model_updated (nn.Module) model initialized with the pretrained CNN
-        - best_epoch (int) the number of the epoch at which the pretrained CNN corresponds
-    """
-    from copy import deepcopy
-
-    model_after_ae = deepcopy(model)
-    model_dict = model_after_ae.state_dict()
-    param_dict = torch.load(os.path.join(checkpoint_dir, filename))
-    ae_pretrained_dict = param_dict['model']
-    ae_pretrained_dict_copy = deepcopy(ae_pretrained_dict)
-
-    # remove the classifier's weight, only take the convolutional part.
-    for k in ae_pretrained_dict.keys():
-        if 'classifier' not in k:
-            pass
-        else:
-            del ae_pretrained_dict_copy[k]
-
-    model_dict.update(ae_pretrained_dict_copy)
-    model_after_ae.load_state_dict(model_dict)
-
-    return model_after_ae, param_dict['epoch']
-
-
-def load_model_after_cnn(model, checkpoint_dir, filename='checkpoint.pth.tar'):
-    """
-    Load and copy the weights and biases of a previously trained CNN.
-
-    :param model: (nn.Module) the object in which the weights and biases are copied.
-    :param checkpoint_dir: (str) path to the directory in which the pretrained CNN is saved.
-    :param filename: (str) name of the file in which the pretrained CNN is saved.
-    :return:
-        - model_updated (nn.Module) model initialized with the pretrained CNN
-        - best_epoch (int) the number of the epoch at which the pretrained CNN corresponds
-    """
-    from copy import deepcopy
-
-    model.eval()
-    model_updated = deepcopy(model)
-    param_dict = torch.load(os.path.join(checkpoint_dir, filename))
-    model_updated.load_state_dict(param_dict['model'])
-
-    return model_updated, param_dict['epoch']
 
 
 #################################
@@ -502,7 +396,7 @@ def patch_level_to_tsvs(output_dir, results_df, results, fold, selection, datase
     if not os.path.exists(performance_dir):
         os.makedirs(performance_dir)
 
-    results_df.to_csv(os.path.join(performance_dir, dataset + '_patch_level_result-patch_index.tsv'), index=False,
+    results_df.to_csv(os.path.join(performance_dir, dataset + '_patch_level_result.tsv'), index=False,
                       sep='\t')
 
     del results['confusion_matrix']
@@ -514,14 +408,14 @@ def retrieve_patch_level_results(output_dir, fold, selection, dataset, num_cnn):
     """Retrieve performance_df for single or multi-CNN framework."""
     if num_cnn is None:
         result_tsv = os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
-                                  dataset + '_patch_level_result-patch_index.tsv')
+                                  dataset + '_patch_level_result.tsv')
         performance_df = pd.read_csv(result_tsv, sep='\t')
 
     else:
         performance_df = pd.DataFrame()
         for cnn in range(num_cnn):
             tsv_path = os.path.join(output_dir, 'performances', 'fold_%i' % fold, 'cnn-%i' % cnn, selection,
-                                    dataset + '_patch_level_result-patch_index.tsv')
+                                    dataset + '_patch_level_result.tsv')
             cnn_df = pd.read_csv(tsv_path, sep='\t')
             performance_df = pd.concat([performance_df, cnn_df])
         performance_df.reset_index(drop=True, inplace=True)
@@ -558,11 +452,11 @@ def soft_voting_to_tsvs(output_dir, fold, selection, dataset='test', num_cnn=Non
 
     df_final, metrics = soft_voting(test_df, validation_df, selection_threshold=selection_threshold)
 
-    df_final.to_csv(os.path.join(os.path.join(performance_path, dataset + '_subject_level_result_soft_vote.tsv')),
+    df_final.to_csv(os.path.join(os.path.join(performance_path, dataset + '_image_level_result.tsv')),
                     index=False, sep='\t')
 
     pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
-                                                         dataset + '_subject_level_metrics_soft_vote.tsv'),
+                                                         dataset + '_image_level_metrics.tsv'),
                                             index=False, sep='\t')
 
 
@@ -577,8 +471,8 @@ def soft_voting(performance_df, validation_df, selection_threshold=None):
     :param selection_threshold: (float) if given, all patches for which the classification accuracy is below the
                                 threshold is removed.
     :return:
-        - df_final (DataFrame) the results on the subject level
-        - results (dict) the metrics on the subject level
+        - df_final (DataFrame) the results on the image level
+        - results (dict) the metrics on the image level
     """
 
     # Compute the patch accuracies on the validation set:
