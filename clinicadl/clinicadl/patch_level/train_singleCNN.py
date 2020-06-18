@@ -86,11 +86,13 @@ def train_patch_single_cnn(params):
             data_train = MRIDataset_patch_hippocampus(
                 params.input_dir,
                 training_tsv,
+                preprocessing=params.preprocessing,
                 transformations=transformations
             )
             data_valid = MRIDataset_patch_hippocampus(
                 params.input_dir,
                 valid_tsv,
+                preprocessing=params.preprocessing,
                 transformations=transformations
             )
 
@@ -100,6 +102,7 @@ def train_patch_single_cnn(params):
                     training_tsv,
                     params.patch_size,
                     params.stride_size,
+                    preprocessing=params.preprocessing,
                     transformations=transformations,
                     prepare_dl=params.prepare_dl
                     )
@@ -108,6 +111,7 @@ def train_patch_single_cnn(params):
                     valid_tsv,
                     params.patch_size,
                     params.stride_size,
+                    preprocessing=params.preprocessing,
                     transformations=transformations,
                     prepare_dl=params.prepare_dl
                     )

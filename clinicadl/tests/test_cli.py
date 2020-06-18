@@ -91,6 +91,7 @@ def generate_cli_commands(request):
             'train',
             'slice',
             '/dir/caps',
+            't1-linear',
             '/dir/tsv_path/',
             '/dir/output/',
             'Conv5_FC3']
@@ -98,6 +99,7 @@ def generate_cli_commands(request):
             'task',
             'mode',
             'caps_dir',
+            'preprocessing',
             'tsv_path',
             'output_dir',
             'network']
@@ -108,6 +110,7 @@ def generate_cli_commands(request):
             'image',
             'cnn',
             '/dir/caps',
+            't1-linear',
             '/dir/tsv_path/',
             '/dir/output/',
             'Conv5_FC3']
@@ -116,6 +119,7 @@ def generate_cli_commands(request):
             'mode',
             'mode_task',
             'caps_dir',
+            'preprocessing',
             'tsv_path',
             'output_dir',
             'network']
@@ -125,6 +129,7 @@ def generate_cli_commands(request):
             'patch',
             'cnn',
             '/dir/caps',
+            't1-linear',
             '/dir/tsv_path/',
             '/dir/output/',
             'Conv5_FC3']
@@ -133,6 +138,7 @@ def generate_cli_commands(request):
             'mode',
             'mode_task',
             'caps_dir',
+            'preprocessing',
             'tsv_path',
             'output_dir',
             'network']
@@ -142,6 +148,7 @@ def generate_cli_commands(request):
             'patch',
             'multicnn',
             '/dir/caps',
+            't1-linear',
             '/dir/tsv_path/',
             '/dir/output/',
             'Conv5_FC3']
@@ -150,6 +157,7 @@ def generate_cli_commands(request):
             'mode',
             'mode_task',
             'caps_dir',
+            'preprocessing',
             'tsv_path',
             'output_dir',
             'network']
