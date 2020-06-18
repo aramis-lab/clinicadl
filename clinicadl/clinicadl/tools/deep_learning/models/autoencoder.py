@@ -121,50 +121,53 @@ class AutoEncoder(nn.Module):
         return inv_layers
 
 
-def transfer_learning(model, split, target_path, transfer_learning_autoencoder=True, source_path=None, gpu=False,
-                      selection="best_acc"):
+def transfer_learning(model, split, transfer_learning_autoencoder=True, source_path=None, gpu=False,
+                      selection="best_acc", cnn_index=None):
     """
     Allows transfer learning from a CNN or an autoencoder to a CNN
 
     :param model: (nn.Module) the target CNN of the transfer learning.
     :param split: (int) the fold number (for serialization purpose).
-    :param target_path: (str) path to the target experiment.
     :param transfer_learning_autoencoder: (bool) If True (resp. False), the initialization is from an AE (resp. CNN)
     :param source_path: (str) path to the source experiment.
     :param gpu: (bool) If True a GPU is used.
     :param selection: (str) chooses on which criterion the source model is selected (ex: best_loss, best_acc)
+    :param cnn_index: (int) index of the CNN to be loaded (if transfer from a multi-CNN).
     :return: (nn.Module) the model after transfer learning.
     """
 
     if source_path is not None:
         if transfer_learning_autoencoder:
             print("A pretrained autoencoder is loaded at path %s" % source_path)
-            model_path = write_autoencoder_weights(model, source_path, target_path, split)
-            model, _ = load_model(model, model_path, gpu, filename='model_pretrained.pth.tar')
+            model = transfer_autoencoder_weights(model, source_path, split)
 
         else:
             print("A pretrained model is loaded at path %s" % source_path)
-            model_path = write_cnn_weights(model, source_path, target_path, split, selection=selection)
-            model, _ = load_model(model, model_path, gpu, filename='model_pretrained.pth.tar')
+            model = transfer_cnn_weights(model, source_path, split, selection=selection, cnn_index=cnn_index)
+
+    else:
+        print("The model is trained from scratch.")
+
+    if gpu:
+        model.cuda()
+    else:
+        model.cpu()
 
     return model
 
 
-def write_autoencoder_weights(model, source_path, target_path, split):
+def transfer_autoencoder_weights(model, source_path, split):
     """
-    Write the weights to be loaded in the model and return the corresponding path.
+    Set the weights of the model according to the autoencoder at source path.
     The encoder part of the autoencoder must exactly correspond to the convolutional part of the model.
 
     :param model: (Module) the model which must be initialized
     :param source_path: (str) path to the source task experiment
-    :param target_path: (str) path to the target task experiment
     :param split: (int) split number to load
     :return: (str) path to the written weights ready to be loaded
     """
     from copy import deepcopy
     import os
-    from .iotools import save_checkpoint
-    from ..iotools import check_and_clean
 
     decoder = AutoEncoder(model)
     model_path = os.path.join(source_path, "best_model_dir", "fold_" + str(split), "ConvAutoencoder",
@@ -177,54 +180,34 @@ def write_autoencoder_weights(model, source_path, target_path, split):
         if isinstance(layer, PadMaxPool3d):
             layer.set_new_return(False, False)
 
-    pretraining_path = os.path.join(target_path, 'best_model_dir', 'fold_' + str(split),
-                                    'ConvAutoencoder', 'Encoder')
-    check_and_clean(pretraining_path)
-
-    save_checkpoint({'model': model.state_dict(),
-                     'epoch': -1,
-                     'path': model_path},
-                    False, False,
-                    pretraining_path,
-                    filename='model_pretrained.pth.tar')
-
-    return pretraining_path
+    return model
 
 
-def write_cnn_weights(model, source_path, target_path, split, selection="best_acc"):
+def transfer_cnn_weights(model, source_path, split, selection="best_acc", cnn_index=None):
     """
-    Write the weights to be loaded in the model and return the corresponding path.
+    Set the weights of the model according to the CNN at source path.
 
     :param model: (Module) the model which must be initialized
     :param source_path: (str) path to the source task experiment
-    :param target_path: (str) path to the target task experiment
     :param split: (int) split number to load
     :param selection: (str) chooses on which criterion the source model is selected (ex: best_loss, best_acc)
+    :param cnn_index: (int) index of the CNN to be loaded (if transfer from a multi-CNN).
     :return: (str) path to the written weights ready to be loaded
     """
 
     import os
     import torch
 
-    from ..iotools import check_and_clean
-    from .iotools import save_checkpoint
-
-    model_path = os.path.join(source_path, "best_model_dir", "fold_" + str(split), "CNN",
+    model_path = os.path.join(source_path, "best_model_dir", "fold_%i" % split, "CNN",
                               selection, "model_best.pth.tar")
+    if cnn_index is not None and not os.path.exists(model_path):
+        print("Transfer learning from multi-CNN, cnn-%i" % cnn_index)
+        model_path = os.path.join(source_path, "best_model_dir", "fold_%i" % split, "cnn-%i" % cnn_index,
+                                  selection, "model_best.pth.tar")
     results = torch.load(model_path)
     model.load_state_dict(results['model'])
 
-    pretraining_path = os.path.join(target_path, 'best_model_dir', 'fold_' + str(split), 'CNN')
-    check_and_clean(pretraining_path)
-
-    save_checkpoint({'model': model.state_dict(),
-                     'epoch': -1,
-                     'path': model_path},
-                    False, False,
-                    pretraining_path,
-                    filename='model_pretrained.pth.tar')
-
-    return pretraining_path
+    return model
 
 
 def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, difference=0):

@@ -12,49 +12,6 @@ from time import time
 # AutoEncoder train / test
 #################################
 
-
-def stacked_ae_learning(model, train_loader, valid_loader, criterion, writer_train, writer_valid, options, model_dir):
-    """
-    This aims to train the stacked AEs together for autoencoder
-    :param model:
-    :param train_loader:
-    :param valid_loader:
-    :param criterion:
-    :param writer_train:
-    :param writer_valid:
-    :param options:
-    :return:
-        Return both the pretrained CNN for future use and also the stacked AEs
-    """
-    from os import path
-    from ..tools.deep_learning.models import AutoEncoder
-    from ..tools.deep_learning import save_checkpoint, load_model
-    from copy import deepcopy
-
-    # if the model defined is not already constructed to an AE, then we convert the CNN into an AE
-    ae = AutoEncoder(model)
-
-    ae_finetuning(ae, train_loader, valid_loader, criterion, writer_train, writer_valid, options, model_dir)
-
-    # Updating and setting weights of the convolutional layers
-    checkpoint_dir = path.join(model_dir, 'best_loss')
-    best_autodecoder, best_epoch = load_model(ae, checkpoint_dir, options.gpu,  filename='model_best.pth.tar')
-
-    del ae
-
-    # save the encoder part of the AEs, the best AEs has been saved in the ae_finetuning part
-    model.features = deepcopy(best_autodecoder.encoder)
-    save_checkpoint({'model': model.state_dict(),
-                     'epoch': best_epoch},
-                    False, False,
-                    os.path.join(model_dir, 'Encoder'),
-                    filename='model_best_encoder.pth.tar')
-
-    del best_epoch
-
-    return model, best_autodecoder
-
-
 def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, writer_train_ft, writer_valid_ft, options,
                   model_dir, global_step=0):
     from ..tools.deep_learning import save_checkpoint
@@ -67,13 +24,12 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
 
     # Initialize variables
     best_loss_valid = np.inf
-    print("Beginning fine-tuning")
+    print("Beginning autoencoder training")
 
     tend = time()
     total_time = 0
 
     for epoch in range(options.epochs):
-        print("Fine-tuning at %d-th epoch." % epoch)
 
         auto_encoder_all.zero_grad()
 
@@ -125,8 +81,17 @@ def ae_finetuning(auto_encoder_all, train_loader, valid_loader, criterion, write
                          'valid_loss': mean_loss_valid},
                         False, is_best_loss,
                         model_dir)
+        save_checkpoint({'optimizer': optimizer.state_dict(),
+                         'epoch': epoch,
+                         'name': options.optimizer},
+                        False, False,
+                        model_dir,
+                        filename="optimizer.pth.tar")
 
     del optimizer, auto_encoder_all
+
+    os.remove(os.path.join(model_dir, "optimizer.pth.tar"))
+    os.remove(os.path.join(model_dir, "checkpoint.pth.tar"))
 
 
 def test_ae(model, dataloader, gpu, criterion):

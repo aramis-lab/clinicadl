@@ -7,9 +7,10 @@ from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 import torchvision.transforms as transforms
 
-from .utils import stacked_ae_learning, visualize_ae
+from .utils import ae_finetuning, visualize_ae
 
-from ..tools.deep_learning import create_model
+from ..tools.deep_learning import create_model, load_model
+from ..tools.deep_learning.models.autoencoder import AutoEncoder
 from ..tools.deep_learning.data import (load_data,
                                         MinMaxNormalization,
                                         MRIDataset_patch,
@@ -94,20 +95,17 @@ def train_autoencoder_patch(params):
 
         # Define output directories
         log_dir = os.path.join(params.output_dir, "log_dir", "fold_%i" % fi, "ConvAutoencoder")
+        model_dir = os.path.join(params.output_dir, "best_model_dir", "fold_%i" % fi, "ConvAutoencoder")
 
         writer_train = SummaryWriter(os.path.join(log_dir, "train"))
         writer_valid = SummaryWriter(os.path.join(log_dir, "valid"))
 
-        model, best_autodecoder = stacked_ae_learning(
-                model,
-                train_loader,
-                valid_loader,
-                criterion,
-                writer_train,
-                writer_valid,
-                params,
-                fi
-                )
+        ae = AutoEncoder(model)
+        ae_finetuning(ae, train_loader, valid_loader, criterion, writer_train, writer_valid, params, model_dir)
+        best_autodecoder, best_epoch = load_model(ae, os.path.join(model_dir, "best_loss"),
+                                                  params.gpu, filename='model_best.pth.tar')
+        del ae
+        torch.cuda.empty_cache()
 
         if params.visualization:
             example_batch = data_train[0]['image'].unsqueeze(0)
@@ -123,5 +121,5 @@ def train_autoencoder_patch(params):
                         )
                     )
 
-        del best_autodecoder, train_loader, valid_loader
+        del best_autodecoder
         torch.cuda.empty_cache()
