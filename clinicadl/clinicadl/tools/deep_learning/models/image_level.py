@@ -12,7 +12,7 @@ class Conv5_FC3(nn.Module):
     """
     Classifier for a binary classification task
 
-    Subject level architecture used on Minimal preprocessing
+    Image level architecture used on Minimal preprocessing
     """
     def __init__(self, dropout=0.5):
         super(Conv5_FC3, self).__init__()
@@ -72,7 +72,7 @@ class Conv5_FC3_mni(nn.Module):
     """
     Classifier for a binary classification task
 
-    Subject level architecture used on Extensive preprocessing
+    Image level architecture used on Extensive preprocessing
     """
     def __init__(self, dropout=0.5):
         super(Conv5_FC3_mni, self).__init__()

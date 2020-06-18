@@ -121,17 +121,17 @@ def train_slice(params):
                 = train(model, train_loader, params.gpu, loss, optimizer, writer_train_batch, epoch,
                         model_mode='train', selection_threshold=params.selection_threshold)
 
-            # calculate the accuracy with the whole training data for subject level balanced accuracy
+            # calculate the accuracy with the whole training data for image level balanced accuracy
             train_all_df, acc_mean_train_all, loss_batch_mean_train_all, _\
                 = train(model, train_loader, params.gpu, loss, optimizer, writer_train_all_data, epoch,
                         model_mode='valid', selection_threshold=params.selection_threshold)
-            print("For training, subject level balanced accuracy is %f at the end of epoch %d" % (acc_mean_train_all, epoch))
+            print("For training, image level balanced accuracy is %f at the end of epoch %d" % (acc_mean_train_all, epoch))
 
             # at then end of each epoch, we validate one time for the model with the validation data
             valid_df, acc_mean_valid, loss_batch_mean_valid, _ =\
                 train(model, valid_loader, params.gpu, loss, optimizer, writer_valid, epoch,
                       model_mode='valid', selection_threshold=params.selection_threshold)
-            print("For validation, subject level balanced accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
+            print("For validation, image level balanced accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
 
             # save the best model based on the best loss and accuracy
             acc_is_best = acc_mean_valid > best_accuracy

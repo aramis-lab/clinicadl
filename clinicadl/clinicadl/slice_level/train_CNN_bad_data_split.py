@@ -303,7 +303,7 @@ def train_CNN_bad_data_split(params):
                         selection_threshold=params.selection_threshold
                         )
 
-            print("For training, subject level balanced accuracy is %f at the end of epoch %d" % (acc_mean_train_all, epoch))
+            print("For training, image level balanced accuracy is %f at the end of epoch %d" % (acc_mean_train_all, epoch))
 
             # at then end of each epoch, we validate one time for the model with the validation data
             valid_df, acc_mean_valid, loss_batch_mean_valid, _ \
@@ -319,7 +319,7 @@ def train_CNN_bad_data_split(params):
                         selection_threshold=params.selection_threshold
                         )
 
-            print("For validation, subject level balanced accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
+            print("For validation, image level balanced accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
 
             # save the best model based on the best loss and accuracy
             acc_is_best = acc_mean_valid > best_accuracy

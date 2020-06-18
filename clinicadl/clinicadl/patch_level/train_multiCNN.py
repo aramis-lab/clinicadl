@@ -147,7 +147,7 @@ def train_patch_multi_cnn(params):
                             writer_train_all_data,
                             epoch,
                             model_mode='valid')
-                print("For training, subject level balanced accuracy is %f at the end of epoch %d" % (acc_mean_train_all, epoch))
+                print("For training, image level balanced accuracy is %f at the end of epoch %d" % (acc_mean_train_all, epoch))
 
                 # at then end of each epoch, we validate one time for the model
                 # with the validation data
@@ -161,7 +161,7 @@ def train_patch_multi_cnn(params):
                             writer_valid,
                             epoch,
                             model_mode='valid')
-                print("For validation, subject level balanced accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
+                print("For validation, image level balanced accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
 
                 # save the best model based on the best loss and accuracy
                 acc_is_best = acc_mean_valid > best_accuracy

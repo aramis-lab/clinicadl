@@ -157,7 +157,7 @@ def train_patch_single_cnn(params):
             train_all_df, acc_mean_train_all, loss_batch_mean_train_all, _\
                 = train(model, train_loader, params.gpu, loss, optimizer, writer_train_all_data, epoch,
                         model_mode='valid', selection_threshold=params.selection_threshold)
-            print("For training, subject level balanced accuracy is %f at the end of epoch %d"
+            print("For training, image level balanced accuracy is %f at the end of epoch %d"
                   % (acc_mean_train_all, epoch))
 
             # at then end of each epoch, we validate one time for the model with the validation data
@@ -174,7 +174,7 @@ def train_patch_single_cnn(params):
                         selection_threshold=params.selection_threshold
                         )
 
-            print("For validation, subject level balanced accuracy is %f at the end of epoch %d"
+            print("For validation, image level balanced accuracy is %f at the end of epoch %d"
                   % (acc_mean_valid, epoch))
 
             # save the best model based on the best loss and accuracy

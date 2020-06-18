@@ -99,8 +99,8 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                     writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
                     writer_valid.add_scalar('balanced_accuracy', acc_mean_valid, i + epoch * len(train_loader))
                     writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
-                    print("Subject level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
-                    print("Subject level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
+                    print("Image level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
+                    print("Image level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
             tend = time()
         print('Mean time per batch (train):', total_time / len(train_loader) * train_loader.batch_size)
@@ -129,8 +129,8 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
         writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
         writer_valid.add_scalar('balanced_accuracy', acc_mean_valid, i + epoch * len(train_loader))
         writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
-        print("Subject level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
-        print("Subject level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
+        print("Image level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
+        print("Image level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
 
         accuracy_is_best = acc_mean_valid > best_valid_accuracy
         loss_is_best = mean_loss_valid < best_valid_loss
