@@ -46,7 +46,7 @@ class Parameters:
             transfer_learning_path: str = None,
             transfer_learning_autoencoder: str = None,
             transfer_learning_multicnn: bool = False,
-            selection: str = "best_acc",
+            transfer_learning_selection: str = "best_acc",
             patch_size: int = 50,
             stride_size: int = 50,
             hippocampus_roi: bool = False,
@@ -79,8 +79,8 @@ class Parameters:
         batch_size: Batch size for training. (default=1)
         evaluation_steps: Fix the number of batches to use before validation
         num_workers:  Define the number of batch being loaded in parallel
-        selection: Allow to choose which model of the experiment is loaded .
-                   choices ["best_loss", "best_acc"]
+        transfer_learning_selection: Allow to choose from which model the weights are transferred.
+                    Choices ["best_loss", "best_acc"]
         patch_size: The patch size extracted from the MRI.
         stride_size: The stride for the patch extract window from the MRI
         hippocampus_roi: If train the model using only hippocampus ROI.
@@ -120,7 +120,7 @@ class Parameters:
         self.transfer_learning_path = transfer_learning_path
         self.transfer_learning_autoencoder = transfer_learning_autoencoder
         self.transfer_learning_multicnn = transfer_learning_multicnn
-        self.selection = selection
+        self.transfer_learning_selection = transfer_learning_selection
         self.patch_size = patch_size
         self.stride_size = stride_size
         self.hippocampus_roi = hippocampus_roi
@@ -256,6 +256,9 @@ def read_json(options, task_type, json_path=None, test=False):
 
     if hasattr(options, "unnormalize"):
         options.minmaxnormalization = not options.unnormalize
+
+    if hasattr(options, "selection"):
+        options.transfer_learning_selection = options.selection
 
     if hasattr(options, "use_extracted_slices"):
         options.prepare_dl = options.use_extracted_slices
