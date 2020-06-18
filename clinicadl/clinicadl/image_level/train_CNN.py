@@ -91,7 +91,7 @@ def train_cnn(params):
         model = create_model(params.model, params.gpu, dropout=params.dropout)
         model = transfer_learning(model, fold, source_path=params.transfer_learning_path,
                                   transfer_learning_autoencoder=params.transfer_learning_autoencoder,
-                                  gpu=params.gpu, selection=params.selection)
+                                  gpu=params.gpu, selection=params.transfer_learning_selection)
 
         # Define criterion and optimizer
         criterion = torch.nn.CrossEntropyLoss()

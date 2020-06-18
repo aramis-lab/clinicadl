@@ -58,7 +58,7 @@ def train_patch_multi_cnn(params):
             model.load_state_dict(init_state)
             model = transfer_learning(model, fi, transfer_learning_autoencoder=params.transfer_learning_autoencoder,
                                       source_path=params.transfer_learning_path, gpu=params.gpu,
-                                      selection=params.selection, cnn_index=i)
+                                      selection=params.transfer_learning_selection, cnn_index=i)
 
             data_train = MRIDataset_patch(
                     params.input_dir,

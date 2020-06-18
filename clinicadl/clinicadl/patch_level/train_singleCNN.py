@@ -55,7 +55,7 @@ def train_patch_single_cnn(params):
         model.load_state_dict(init_state)
         model = transfer_learning(model, fi, transfer_learning_autoencoder=params.transfer_learning_autoencoder,
                                   source_path=params.transfer_learning_path, gpu=params.gpu,
-                                  selection=params.selection)
+                                  selection=params.transfer_learning_selection)
 
         if params.hippocampus_roi:
             print("Only using hippocampus ROI")
