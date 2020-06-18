@@ -471,8 +471,8 @@ def soft_voting(performance_df, validation_df, selection_threshold=None):
     :param selection_threshold: (float) if given, all patches for which the classification accuracy is below the
                                 threshold is removed.
     :return:
-        - df_final (DataFrame) the results on the subject level
-        - results (dict) the metrics on the subject level
+        - df_final (DataFrame) the results on the image level
+        - results (dict) the metrics on the image level
     """
 
     # Compute the patch accuracies on the validation set:
