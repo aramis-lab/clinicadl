@@ -35,7 +35,7 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
 
     # Create writers
     writer_train = SummaryWriter(os.path.join(log_dir, 'train'))
-    writer_valid = SummaryWriter(os.path.join(log_dir, 'valid'))
+    writer_valid = SummaryWriter(os.path.join(log_dir, 'validation'))
 
     decoder.train()
     print(decoder)
