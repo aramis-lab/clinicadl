@@ -30,7 +30,7 @@ Automatic classification of AD using a classical machine learning approach can
 be performed using the software available here:
 <https://github.com/aramis-lab/AD-ML>.
 
-**Disclaimer:** this software is in **going-on development**. Some features can
+> **Disclaimer:** this software is in **going-on development**. Some features can
 change between different commits. A stable version is planned to be released
 soon.  The release v.0.0.1 corresponds to the date of submission of the
 publication but in the meanwhile important changes are being done to facilitate
@@ -39,15 +39,23 @@ the use of the package.
 If you find a problem when use it or if you want to provide us feedback, please
 [open an issue](https://github.com/aramis-lab/ad-dl/issues).
 
-Pretrained models for the CNN networks can be obtained here:
-<https://zenodo.org/record/3491003>  
+## Table of Contents
+- [Installation](#installation)
+- [Overview](#overview)
+- [Examples](#examples)
+  * [Labels extraction in tsv files](#labels-extraction-in-tsv-files)
+  * [Preprocessing](#preprocessing)
+  * [Tensor extraction](#tensor-extraction)
+  * [Training a new model](#training-a-new-model)
+  * [Using a pretrained model](#using-a-pretrained-model)
+- [Testing](#testing)
+- [Pretrained Models](#models)
+- [Bibliography](#bibliography)
+- [Related repositories](#related-repositories)
 
-## Bibliography
-All the papers described in the State of the art section of the manuscript may
-be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
+## Installation
 
-
-## Main dependencies
+### Main dependencies
 - Python >= 3.6
 - [Clinica](http://www.clinica.run/) >= 0.3.4 and [ANTs](https://stnava.github.io/ANTs/) (needs only to perform preprocessing)
 - Numpy
@@ -58,14 +66,12 @@ be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 - Nipy
 - TensorBoardX
 
-## How to install `clinicadl` ?
-
 ### Create a conda environment with the corresponding dependencies:
 Keep the following order of the installation instructions.
 It guaranties the right management of libraries depending on common packages:
 
 
-```
+```{.sourceCode .bash}
 conda create --name clinicadl_env python=3.6 pytorch torchvision -c pytorch
 
 conda activate clinicadl_env
@@ -76,72 +82,50 @@ pip install -r requirements.txt
 
 ### Install the package `clinicadl` as developer in the active conda environment:
 
-```
+```{.sourceCode .bash}
 cd clinicadl
 pip install -e .
 ```
 
-## How to use `clinicadl` ?
+## Overview
+
+### How to use `clinicadl` ?
 
 `clinicadl` is an utility to be used with the command line.
 
-To have an overview of the general options proposed by the software type:
-
-```text
-clinicadl -h
-
-usage: clinicadl [-h] [--verbose]
-{generate,preprocessing,extract,train,classify} ...
-
-Clinica Deep Learning.
-
-optional arguments:
--h, --help            show this help message and exit
---verbose, -v
-
-Task to execute with clinicadl:
-  What kind of task do you want to use with clinicadl? (preprocessing,
-  extract, generate, train, validate, classify).
-
-    {generate,tsvtool,preprocessing,extract,train,classify}
-                        Tasks proposed by clinicadl
-    tsvtool             Handle tsv files for metadata processing and data splits.
-    generate            Generate synthetic data for functional tests.
-    preprocessing       Prepare data for training (needs clinica installed).
-    extract             Create data (slices or patches) for training.
-    train               Train with your data and create a model.
-    classify            Classify one image or a list of images with your
-                        previously trained model.
-```
-
-### Tasks that can be performed by `clinicadl`
-
 There are six kind of tasks that can be performed using the command line:
 
-- **Process tsv files**. ``tsvtool`` includes many functions to get labels from BIDS, 
-perform k-fold or single splits, produce demographic analysis of extracted labels
-and reproduce the restrictions made on AIBL and OASIS in the original paper.
+- **Process tsv files**. ``tsvtool`` includes many functions to get labels from
+  BIDS, perform k-fold or single splits, produce demographic analysis of
+  extracted labels and reproduce the restrictions made on AIBL and OASIS in the
+  original paper.
 
-- **Generate a synthetic dataset.** Useful to run functional tests.
+- **Generate a synthetic dataset.** Useful to obtain synthetic datasets
+  frequently used in functional tests.
 
-- **T1 MRI preprocessing.** It processes a dataset of T1 images stored in BIDS
-  format and prepares to extract the tensors (see paper for details on the
-  preprocessing). Output is stored using the
+- **T1 MRI preprocessing.** The `preprocessing` task processes a dataset of T1
+  images stored in BIDS format and prepares to extract the tensors (see paper
+  for details on the preprocessing). Output is stored using the
   [CAPS](http://www.clinica.run/doc/CAPS/Introduction/) hierarchy.
 
 - **T1 MRI tensor extraction.** The `extract` option allows to create files in
   Pytorch format (`.pt`) with different options: the complete MRI, 2D slices
   and/or 3D patches. This files are also stored in the CAPS hierarchy.
 
-- **Train neural networks.** Tensors obtained are used to perform the training of CNN models.
+- **Train neural networks.** The `train` task is designed to perform training
+  of CNN models using different kind of inputs, e.g., a full MRI (3D-image),
+  patches from a MRI (3D-patch), specific regions of a MRI (ROI-based) or
+  slices extracted from the MRI (2D-slices). Parameters used during the
+  training are configurable. This task allow also to train autoencoders.
 
-- **MRI classification.** Previously trained models can be used to perform the inference of a particular or a set of MRI.
+- **MRI classification.** The `classify` task uses previously trained models
+  to perform the inference of a particular or a set of MRI.
 
 For detailed instructions and options of each task type  `clinica 'task' -h`.
 
-### Some examples
+## Examples
 
-#### Labels extraction in tsv files
+### Labels extraction in tsv files
 
 Typical use for `tsvtool getlabels`:
 
@@ -159,7 +143,42 @@ where:
 By default the extracted labels are only AD and CN, as OASIS database do not include
 MCI patients. To include them add `--diagnoses AD CN MCI sMCI pMCI` at the end of the command.
 
-#### Preprocessing
+
+<details>
+<summary>
+The full list of options available to obtain labels from tsv files.
+</summary>
+
+```{.sourceCode .bash}
+usage: clinicadl tsvtool getlabels [-h] [--modality MODALITY]
+                                   [--diagnoses {AD,CN,MCI,sMCI,pMCI} [{AD,CN,MCI,sMCI,pMCI} ...]]
+                                   [--time_horizon TIME_HORIZON]
+                                   [--restriction_path RESTRICTION_PATH]
+                                   merged_tsv missing_mods results_path
+
+positional arguments:
+  merged_tsv            Path to the file obtained by the command clinica
+                        iotools merge-tsv.
+  missing_mods          Path to the folder where the outputs of clinica
+                        iotools missing-mods are.
+  results_path          Path to the folder where tsv files are extracted.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --modality MODALITY, -mod MODALITY
+                        Modality to select sessions. Sessions which do not
+                        include the modality will be excluded.
+  --diagnoses {AD,CN,MCI,sMCI,pMCI} [{AD,CN,MCI,sMCI,pMCI} ...]
+                        Labels that must be extracted from merged_tsv.
+  --time_horizon TIME_HORIZON
+                        Time horizon to analyse stability of MCI subjects.
+  --restriction_path RESTRICTION_PATH
+                        Path to a tsv containing the sessions that can be
+                        included.
+```
+</details>
+
+### Preprocessing
 Typical use for `preprocessing` ([ANTs](https://stnava.github.io/ANTs/) software needs to be installed):
 
 ```text
@@ -176,18 +195,52 @@ If you want to run the pipeline on a subset of your BIDS dataset, you can use
 the `-tsv` flag to specify in a TSV file the participants belonging to your
 subset.
 
-#### Tensor extraction
+A description of the arguments for the `preprocessing` task is presented below:
+<details>
+<summary>
+Here is a description of the arguments present for the preprocessing task.
+</summary>
 
-These are the options available for the `extract` task:
-```text
-usage: clinicadl extract [-h] [-psz PATCH_SIZE] [-ssz STRIDE_SIZE]
+  ```{.sourceCode .bash}
+usage: clinicadl preprocessing [-h] [-np NPROC]
+                               bids_dir caps_dir tsv_file working_dir
+
+positional arguments:
+  bids_dir              Data using BIDS structure.
+  caps_dir              Data using CAPS structure.
+  tsv_file              TSV file with subjects/sessions to process.
+  working_dir           Working directory to save temporary file.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -np NPROC, --nproc NPROC
+                        Number of cores used for processing (2 by default)
+```
+</details>
+
+### Tensor extraction
+
+Once the images are preprocessed they must be converted in tensors. Tensors
+consists of `.pt` files that can be loaded with PyTorch.  Using `clinicadl`
+these files are stored in a specific folder structure, keeping relevant
+information about the original image.  This step can be also run using the
+Clinica [`DeepLearning-prepare-data`
+pipeline](http://www.clinica.run/doc/Pipelines). Results are equivalent.
+
+<details>
+<summary>
+The full list of options available for tensor extraction.
+</summary>
+
+```{.sourceCode .bash}
+usage: clinicadl extract [-h] [-ps PATCH_SIZE] [-ss STRIDE_SIZE]
                          [-sd SLICE_DIRECTION] [-sm {original,rgb}]
                          [-np NPROC]
                          caps_dir tsv_file working_dir {slice,patch,whole}
 
 positional arguments:
   caps_dir              Data using CAPS structure.
-  tsv_file              tsv file with subjects/sessions to process.
+  tsv_file              TSV file with subjects/sessions to process.
   working_dir           Working directory to save temporary file.
   {slice,patch,whole}   Method used to extract features. Three options:
                         'slice' to get 2D slices from the MRI, 'patch' to get
@@ -196,10 +249,10 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  -psz PATCH_SIZE, --patch_size PATCH_SIZE
+  -ps PATCH_SIZE, --patch_size PATCH_SIZE
                         Patch size (only for 'patch' extraction) e.g:
                         --patch_size 50
-  -ssz STRIDE_SIZE, --stride_size STRIDE_SIZE
+  -ss STRIDE_SIZE, --stride_size STRIDE_SIZE
                         Stride size (only for 'patch' extraction) e.g.:
                         --stride_size 50
   -sd SLICE_DIRECTION, --slice_direction SLICE_DIRECTION
@@ -214,20 +267,165 @@ optional arguments:
                         Number of cores used for processing
 ```
 
-## Run testing.
+</details>
 
-### Unit testing (WIP)
+### Training a new model
+
+Different kind of networks are trained using `clinicadl train`:
+
+* `image`: uses the full 3D MRIs to train a network.
+* `patch`: uses 3D patches (from specific patch size) extracted from the 3D image.
+* `roi`: extract a specific 3D region from the MRI.
+* `slice`: uses 2D slices to train a CNN.
+
+For each mode, different options are presented, in order to control different
+parameters used during the training phase.
+
+<details>
+<summary>
+E.g., this is the list of options available when training a CNN network using
+3D patches:
+</summary>
+
+```{.sourceCode .bash}
+usage: clinicadl train patch cnn [-h] [-cpu] [-np NPROC]
+                                 [--batch_size BATCH_SIZE]
+                                 [--diagnoses {AD,CN,MCI,sMCI,pMCI} [{AD,CN,MCI,sMCI,pMCI} ...]]
+                                 [--baseline] [--n_splits N_SPLITS]
+                                 [--split SPLIT [SPLIT ...]] [--epochs EPOCHS]
+                                 [--learning_rate LEARNING_RATE]
+                                 [--weight_decay WEIGHT_DECAY]
+                                 [--dropout DROPOUT] [--patience PATIENCE]
+                                 [--tolerance TOLERANCE] [-ps PATCH_SIZE]
+                                 [-ss STRIDE_SIZE] [--use_extracted_patches]
+                                 [--transfer_learning_path TRANSFER_LEARNING_PATH]
+                                 [--transfer_learning_autoencoder]
+                                 [--transfer_learning_selection {best_loss,best_acc}]
+                                 [--selection_threshold SELECTION_THRESHOLD]
+                                 caps_dir {t1-linear,t1-extensive} tsv_path
+                                 output_dir network
+
+optional arguments:
+  -h, --help            show this help message and exit
+
+Positional arguments:
+  caps_dir              Data using CAPS structure.
+  {t1-linear,t1-extensive}
+                        Defines the type of preprocessing of CAPS data.
+  tsv_path              TSV path with subjects/sessions to process.
+  output_dir            Folder containing results of the training.
+  network               CNN Model to be used during the training.
+
+Computational resources:
+  -cpu, --use_cpu       Uses CPU instead of GPU.
+  -np NPROC, --nproc NPROC
+                        Number of cores used during the training.
+  --batch_size BATCH_SIZE
+                        Batch size for training. (default=2)
+
+Data management:
+  --diagnoses {AD,CN,MCI,sMCI,pMCI} [{AD,CN,MCI,sMCI,pMCI} ...], -d {AD,CN,MCI,sMCI,pMCI} [{AD,CN,MCI,sMCI,pMCI} ...]
+                        Diagnoses that will be selected for training.
+  --baseline            if True only the baseline is used.
+
+Cross-validation arguments:
+  --n_splits N_SPLITS   If a value is given will load data of a k-fold CV.
+  --split SPLIT [SPLIT ...]
+                        Train the list of given folds. By default train all
+                        folds.
+
+Optimization parameters:
+  --epochs EPOCHS       Epochs through the data. (default=20)
+  --learning_rate LEARNING_RATE, -lr LEARNING_RATE
+                        Learning rate of the optimization. (default=0.01)
+  --weight_decay WEIGHT_DECAY, -wd WEIGHT_DECAY
+                        Weight decay value used in optimization.
+                        (default=1e-4)
+  --dropout DROPOUT     rate of dropout that will be applied to dropout
+                        layers.
+  --patience PATIENCE   Waiting time for early stopping.
+  --tolerance TOLERANCE
+                        Tolerance value for the early stopping.
+
+Patch-level parameters:
+  -ps PATCH_SIZE, --patch_size PATCH_SIZE
+                        Patch size
+  -ss STRIDE_SIZE, --stride_size STRIDE_SIZE
+                        Stride size
+  --use_extracted_patches
+                        If True the outputs of extract preprocessing are used,
+                        else the whole MRI is loaded.
+
+Transfer learning:
+  --transfer_learning_path TRANSFER_LEARNING_PATH
+                        If an existing path is given, a pretrained model is
+                        used.
+  --transfer_learning_autoencoder
+                        If specified, do transfer learning using an
+                        autoencoder else will look for a CNN model.
+  --transfer_learning_selection {best_loss,best_acc}
+                        If transfer_learning from CNN, chooses which best
+                        transfer model is selected.
+
+Patch-level CNN parameters:
+  --selection_threshold SELECTION_THRESHOLD
+                        Threshold on the balanced accuracies to compute the
+                        subject-level performance. Patches are selected if
+                        their balanced accuracy > threshold. Default
+                        corresponds to no selection.
+
+```
+</details>
+
+### Using a pretrained model
+The tool `clinicadl classify` is used to perform the inference step using a
+previously trained model on simple/multiple image.
+
+<details>
+<summary>
+These are the options available for this taskL
+</summary>
+
+```{.sourceCode .bash}
+usage: clinicadl classify [-h] [-cpu] caps_dir tsv_file model_path output_dir
+
+positional arguments:
+  caps_dir         Data using CAPS structure.
+  tsv_file         TSV file with subjects/sessions to process.
+  model_path       Path to the folder where the model and the json file are
+                   stored.
+  output_dir       Folder containing results of the training.
+
+optional arguments:
+  -h, --help       show this help message and exit
+  -cpu, --use_cpu  Uses CPU instead of GPU.
+```
+</details>
+
+## Testing
 
 Be sure to have the `pytest` library in order to run the test suite.  This test
 suite includes unit testing to be launched using the command line.
 
-For the moment only the CLI (command line interface) part is tested using
-`pytest`. We are planning to provide unit tests for the other tasks in the
-future. If you want to run successfully the tests maybe you can use a command
-like this one:
-```text
+### Unit testing (WIP)
+
+The CLI (command line interface) part is tested using `pytest`. We are planning
+to provide unit tests for the other tasks in the future. If you want to run
+successfully the tests maybe you can use a command like this one:
+
+```{.sourceCode .bash}
 pytest clinicadl/tests/test_cli.py
 ```
+
+### Functional testing
+
+Training task are tested using synthetic data created from MRI extracted of the OASIS dataset.
+To run them, go to the test folder and type the following command in the terminal:
+
+```{.sourceCode .bash}
+pytest ./test_train_cnn.py
+```
+Please, be sure to previously create the right dataset.
 
 ### Model prediction tests
 
@@ -236,6 +434,7 @@ the predictive models.
 
 The follow command allow you to generate two kinds of synthetic datasets: fully
 separable (trivial) or intractable data (IRM with random noise added).
+
 ```text
 python clinicadl generate {random,trivial} caps_directory tsv_path output_directory
 ```
@@ -244,8 +443,23 @@ the tsv file given at
 `tsv_path` associated to random labels.
 
 The trivial dataset includes two labels:
-- AD corresponding to images with the left half of the brain with lower intensities,
-- CN corresponding to images with the right half of the brain with lower intensities.
+- AD corresponding to images with the left half of the brain with lower
+  intensities,
+- CN corresponding to images with the right half of the brain with lower
+  intensities.
+
+## Pretrained models 
+
+Some of the pretained model for the CNN networks can be obtained here:
+<https://zenodo.org/record/3491003>  
+
+These models were obtained durnig the experiments for publication. 
+Updated versions of the models will be published soon.
+
+## Bibliography
+
+All the papers described in the State of the art section of the manuscript may
+be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 
 ## Related Repositories
 
