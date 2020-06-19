@@ -76,7 +76,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
 
             del imgs, labels
 
-            if (i+1) % options.accumulation_steps == 0:
+            if (i + 1) % options.accumulation_steps == 0:
                 step_flag = False
                 optimizer.step()
                 optimizer.zero_grad()
