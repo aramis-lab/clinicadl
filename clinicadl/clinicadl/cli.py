@@ -16,8 +16,6 @@ TRAIN_CATEGORIES = {
     # Other parent groups
     'TRANSFER LEARNING': '%sTransfer learning%s' % (Fore.BLUE, Fore.RESET),
     'AUTOENCODER': '%sAutoencoder specific%s' % (Fore.BLUE, Fore.RESET),
-    # Image-level
-    'IMAGE DATA MANAGEMENT': '%sImage-level data management%s' % (Fore.BLUE, Fore.RESET),
     # Slice-level
     'SLICE': '%sSlice-level parameters%s' % (Fore.BLUE, Fore.RESET),
     # Patch arguments
@@ -95,12 +93,7 @@ def generate_data_func(args):
 
 # Function to dispatch training to corresponding function
 def train_func(args):
-    from .image_level.train_autoencoder import train_autoencoder
-    from .image_level.train_CNN import train_cnn
-    from .slice_level.train_CNN import train_slice
-    from .patch_level.train_autoencoder import train_autoencoder_patch
-    from .patch_level.train_singleCNN import train_patch_single_cnn
-    from .patch_level.train_multiCNN import train_patch_multi_cnn
+    from .train import train_autoencoder, train_multi_cnn, train_single_cnn
 
     set_default_dropout(args)
 
@@ -167,7 +160,7 @@ def train_func(args):
                 transfer_learning_autoencoder=args.transfer_learning_autoencoder,
                 transfer_learning_selection=args.transfer_learning_selection
             )
-            train_cnn(train_params_cnn)
+            train_single_cnn(train_params_cnn)
     elif args.mode == 'slice':
         train_params_slice = Parameters(
             args.mode,
@@ -181,6 +174,7 @@ def train_func(args):
             mri_plane=args.slice_direction,
             diagnoses=args.diagnoses,
             baseline=args.baseline,
+            minmaxnormalization=not args.unnormalize,
             learning_rate=args.learning_rate,
             patience=args.patience,
             tolerance=args.tolerance,
@@ -199,7 +193,7 @@ def train_func(args):
             prepare_dl=args.use_extracted_slices,
             discarded_slices=args.discarded_slices
         )
-        train_slice(train_params_slice)
+        train_single_cnn(train_params_slice)
     elif args.mode == 'patch':
         if args.mode_task == "autoencoder":
             train_params_autoencoder = Parameters(
@@ -213,6 +207,7 @@ def train_func(args):
             train_params_autoencoder.write(
                 diagnoses=args.diagnoses,
                 baseline=args.baseline,
+                minmaxnormalization=not args.unnormalize,
                 n_splits=args.n_splits,
                 split=args.split,
                 accumulation_steps=args.accumulation_steps,
@@ -233,7 +228,7 @@ def train_func(args):
                 visualization=args.visualization,
                 prepare_dl=args.use_extracted_patches
             )
-            train_autoencoder_patch(train_params_autoencoder)
+            train_autoencoder(train_params_autoencoder)
         elif args.mode_task == "cnn":
             train_params_patch = Parameters(
                 args.mode,
@@ -246,6 +241,7 @@ def train_func(args):
             train_params_patch.write(
                 diagnoses=args.diagnoses,
                 baseline=args.baseline,
+                minmaxnormalization=not args.unnormalize,
                 n_splits=args.n_splits,
                 split=args.split,
                 accumulation_steps=args.accumulation_steps,
@@ -269,7 +265,7 @@ def train_func(args):
                 selection_threshold=args.selection_threshold,
                 prepare_dl=args.use_extracted_patches
             )
-            train_patch_single_cnn(train_params_patch)
+            train_single_cnn(train_params_patch)
         else:
             train_params_patch = Parameters(
                 args.mode,
@@ -282,6 +278,7 @@ def train_func(args):
             train_params_patch.write(
                 diagnoses=args.diagnoses,
                 baseline=args.baseline,
+                minmaxnormalization=not args.unnormalize,
                 n_splits=args.n_splits,
                 split=args.split,
                 accumulation_steps=args.accumulation_steps,
@@ -306,7 +303,7 @@ def train_func(args):
                 num_cnn=args.num_cnn,
                 prepare_dl=args.use_extracted_patches
             )
-            train_patch_multi_cnn(train_params_patch)
+            train_multi_cnn(train_params_patch)
     elif args.mode == 'roi':
         if args.mode_task == "autoencoder":
             train_params_autoencoder = Parameters(
@@ -320,6 +317,7 @@ def train_func(args):
             train_params_autoencoder.write(
                 diagnoses=args.diagnoses,
                 baseline=args.baseline,
+                minmaxnormalization=not args.unnormalize,
                 n_splits=args.n_splits,
                 split=args.split,
                 accumulation_steps=args.accumulation_steps,
@@ -337,7 +335,7 @@ def train_func(args):
                 hippocampus_roi=True,
                 visualization=args.visualization,
             )
-            train_autoencoder_patch(train_params_autoencoder)
+            train_autoencoder(train_params_autoencoder)
         else:
             train_params_patch = Parameters(
                 args.mode,
@@ -350,6 +348,7 @@ def train_func(args):
             train_params_patch.write(
                 diagnoses=args.diagnoses,
                 baseline=args.baseline,
+                minmaxnormalization=not args.unnormalize,
                 n_splits=args.n_splits,
                 split=args.split,
                 accumulation_steps=args.accumulation_steps,
@@ -370,7 +369,7 @@ def train_func(args):
                 hippocampus_roi=True,
                 selection_threshold=args.selection_threshold,
             )
-            train_patch_single_cnn(train_params_patch)
+            train_single_cnn(train_params_patch)
 
     elif args.mode == 'svm':
         raise NotImplementedError("The SVM commandline was not implement yet.")
@@ -710,6 +709,11 @@ def parse_command_line():
         help='if True only the baseline is used.',
         action="store_true",
         default=False)
+    train_data_group.add_argument(
+        '--unnormalize', '-un',
+        help='Disable default MinMaxNormalization.',
+        action="store_true",
+        default=False)
 
     # Cross-validation
     train_cv_group = train_parent_parser.add_argument_group(
@@ -794,15 +798,6 @@ def parse_command_line():
         "image",
         help="Train a 3D-image level network.")
 
-    train_image_parent = argparse.ArgumentParser(add_help=False)
-    train_imagedata_group = train_image_parent.add_argument_group(
-        TRAIN_CATEGORIES["IMAGE DATA MANAGEMENT"])
-    train_imagedata_group.add_argument(
-        '--unnormalize', '-un',
-        help='Disable default MinMaxNormalization.',
-        action="store_true",
-        default=False)
-
     train_image_subparser = train_image_parser.add_subparsers(
         title='''Task to be performed''',
         description='''Autoencoder or cnn?''',
@@ -813,7 +808,6 @@ def parse_command_line():
         "autoencoder",
         parents=[
             train_parent_parser,
-            train_image_parent,
             autoencoder_parent,
             transfer_learning_parent],
         help="Train a 3D-patch level autoencoder.")
@@ -831,7 +825,6 @@ def parse_command_line():
         "cnn",
         parents=[
             train_parent_parser,
-            train_image_parent,
             transfer_learning_parent],
         help="Train a 3D-patch level CNN.")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
