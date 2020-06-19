@@ -32,13 +32,13 @@ def test_cnn(data_loader, subset_name, split, criterion, options):
 
     for selection in ["best_acc", "best_loss"]:
         # load the best trained model during the training
-        model = create_model(options.network, options.gpu)
+        model = create_model(options.model, options.gpu)
         model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', "fold_%i" % split,
                                                            'CNN', selection),
                                        gpu=options.gpu, filename='model_best.pth.tar')
 
         results_df, metrics = test(model, data_loader, options.gpu, criterion, options.mode)
-        print("Patch level balanced accuracy is %f" % metrics['balanced_accuracy'])
+        print("Slice level balanced accuracy is %f" % metrics['balanced_accuracy'])
 
         sub_level_to_tsvs(options.output_dir, results_df, metrics, split, selection, options.mode, dataset=subset_name)
 
@@ -182,7 +182,7 @@ def train_CNN_bad_data_split(params):
 
     # Initialize the model
     print('Do transfer learning with existed model trained on ImageNet!\n')
-    print('The chosen network is %s !' % params.network)
+    print('The chosen network is %s !' % params.model)
 
     model = create_model(params.model, params.gpu, dropout=params.dropout)
     trg_size = (224, 224)  # most of the imagenet pretrained model has this input size

@@ -475,8 +475,7 @@ def evaluate_prediction(y, y_hat):
                'sensitivity': sensitivity,
                'specificity': specificity,
                'ppv': ppv,
-               'npv': npv,
-               'confusion_matrix': {'tp': len(tp), 'tn': len(tn), 'fp': len(fp), 'fn': len(fn)}
+               'npv': npv
                }
 
     return results

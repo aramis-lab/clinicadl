@@ -92,6 +92,7 @@ def train_autoencoder(params):
         visualization_dir = path.join(params.output_dir, 'autoencoder_reconstruction', 'fold_%i' % fold)
         model_dir = path.join(params.output_dir, 'best_model_dir', 'fold_%i' % fold, 'ConvAutoencoder')
 
+        print('Beginning the training task')
         train(decoder, train_loader, valid_loader, criterion, optimizer, False,
               log_dir, model_dir, params)
 

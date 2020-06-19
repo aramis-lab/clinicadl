@@ -2,7 +2,7 @@
 
 
 class Parameters:
-    """ Class to define and initialize parameters used in traning CNN networks"""
+    """ Class to define and initialize parameters used in training CNN networks"""
 
     def __init__(self, mode: str, tsv_path: str, output_dir: str, input_dir: str,
                  preprocessing: str, model: str):
@@ -43,7 +43,7 @@ class Parameters:
             dropout: float = 0,
             gpu: bool = False,
             batch_size: int = 12,
-            evaluation_steps: int = 1,
+            evaluation_steps: int = 0,
             num_workers: int = 1,
             transfer_learning_path: str = None,
             transfer_learning_autoencoder: str = None,
@@ -212,6 +212,10 @@ def read_json(options, task_type, json_path=None, test=False):
             setattr(options, key, item)
 
     # Retro-compatibility with runs of previous versions
+    if not hasattr(options, "model"):
+        options.model = options.network
+        del options.network
+
     if not hasattr(options, 'dropout'):
         options.dropout = None
     set_default_dropout(options)
