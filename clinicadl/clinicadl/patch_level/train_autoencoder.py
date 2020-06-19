@@ -89,10 +89,6 @@ def train_autoencoder_patch(params):
         model_dir = os.path.join(params.output_dir, "best_model_dir", "fold_%i" % fi, "ConvAutoencoder")
         visualization_dir = os.path.join(params.output_dir, 'autoencoder_reconstruction', 'fold_%i' % fi)
 
-        # Hard-coded arguments for patch
-        setattr(params, "accumulation_steps", 1)
-        setattr(params, "evaluation_steps", 0)
-
         decoder = create_autoencoder(params.model, gpu=params.gpu)
         optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
                                                             lr=params.learning_rate,
