@@ -133,24 +133,6 @@ def inference_from_model(caps_dir,
     print("Load model with these options:")
     print(options)
 
-    # Retrocompatilibity with old json/models
-    if hasattr(options, 'slice_direction'):
-        options.mri_plane = options.slice_direction
-
-    if hasattr(options, 'patch_stride'):
-        options.stride_size = options.patch_stride
-
-    if hasattr(options, 'use_gpu'):
-        options.use_cpu = not options.use_gpu
-
-    if hasattr(options, 'use_extracted_patches'):
-        options.prepare_dl = not options.use_extracted_patches
-
-    if options.mode == "patch" and hasattr(options, "network_type"):
-        if options.network_type == "multi":
-            options.mode_task = "multicnn"
-        del options.network_type
-
     options.use_cpu = not gpu
 
     if (options.mode == 'image'):
