@@ -9,7 +9,7 @@ from ..tools.deep_learning.data import (get_transforms,
                                         load_data,
                                         return_dataset)
 from ..tools.deep_learning.cnn_utils import train
-from .evaluation_singleCNN import test_cnn
+from clinicadl.test.test_singleCNN import test_cnn
 
 
 __author__ = "Junhao Wen, Elina Thibeau-Sutre, Mauricio Diaz"
@@ -22,7 +22,7 @@ __email__ = "junhao.wen89@gmail.com, mauricio.diaz@inria.fr"
 __status__ = "Development"
 
 
-def train_patch_single_cnn(params):
+def train_single_cnn(params):
 
     init_path = os.path.join(params.output_dir, 'best_model_dir', 'CNN', 'init.pth.tar')
     save_initialization(params, init_path)

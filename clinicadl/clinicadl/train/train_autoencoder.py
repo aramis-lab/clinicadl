@@ -3,19 +3,17 @@
 import torch
 import os
 from torch.utils.data import DataLoader
-import torchvision.transforms as transforms
 
 from ..tools.deep_learning.autoencoder_utils import train, visualize_image
 from ..tools.deep_learning import create_autoencoder, load_model
 from ..tools.deep_learning.data import (load_data,
-                                        MinMaxNormalization,
-                                        MRIDataset_patch,
-                                        MRIDataset_patch_hippocampus)
+                                        get_transforms,
+                                        return_dataset)
 
 
-def train_autoencoder_patch(params):
+def train_autoencoder(params):
 
-    transformations = transforms.Compose([MinMaxNormalization()])
+    transformations = get_transforms(params.mode, params.minmaxnormalization)
     criterion = torch.nn.MSELoss()
 
     if params.split is None:
@@ -25,7 +23,7 @@ def train_autoencoder_patch(params):
 
     for fi in fold_iterator:
 
-        training_tsv, valid_tsv = load_data(
+        training_df, valid_df = load_data(
                 params.tsv_path,
                 params.diagnoses,
                 fi,
@@ -35,39 +33,10 @@ def train_autoencoder_patch(params):
 
         print("Running for the %d-th fold" % fi)
 
-        if params.hippocampus_roi:
-            print("Only using hippocampus ROI")
-
-            data_train = MRIDataset_patch_hippocampus(
-                params.input_dir,
-                training_tsv,
-                preprocessing=params.preprocessing,
-                transformations=transformations
-            )
-            data_valid = MRIDataset_patch_hippocampus(
-                params.input_dir,
-                valid_tsv,
-                preprocessing=params.preprocessing,
-                transformations=transformations
-            )
-
-        else:
-            data_train = MRIDataset_patch(
-                    params.input_dir,
-                    training_tsv,
-                    params.patch_size,
-                    params.stride_size,
-                    preprocessing=params.preprocessing,
-                    transformations=transformations,
-                    prepare_dl=params.prepare_dl)
-            data_valid = MRIDataset_patch(
-                    params.input_dir,
-                    valid_tsv,
-                    params.patch_size,
-                    params.stride_size,
-                    preprocessing=params.preprocessing,
-                    transformations=transformations,
-                    prepare_dl=params.prepare_dl)
+        data_train = return_dataset(params.mode, params.input_dir, training_df, params.preprocessing,
+                                    transformations, params)
+        data_valid = return_dataset(params.mode, params.input_dir, valid_df, params.preprocessing,
+                                    transformations, params)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(

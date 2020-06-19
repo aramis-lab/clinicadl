@@ -85,7 +85,7 @@ if __name__ == "__main__":
         print("Fold %i" % split)
 
         dataset = return_dataset(model_options.mode, options.input_dir, test_df, options.preprocessing,
-                                 transformations, options, cnn_index=cnn_index)
+                                 transformations, model_options)
 
         test_loader = DataLoader(
             dataset,
