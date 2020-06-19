@@ -138,11 +138,11 @@ where:
 By default the extracted labels are only AD and CN, as OASIS database do not include
 MCI patients. To include them add `--diagnoses AD CN MCI sMCI pMCI` at the end of the command.
 
-The full list of options available for `tsvtool getlabels` is here:
 
 <details>
 <summary>
-clinicadl tsvtool getlabels -h
+The full list of options available for `tsvtool getlabels` can be available
+with this command: `clinicadl tsvtool getlabels -h`
 </summary>
 
 ```{.sourceCode .bash}
@@ -194,9 +194,11 @@ subset.
 A description of the arguments for the `preprocessing` task is presented below:
 <details>
 <summary>
-clinicadl preprocessing -h
+Here is a description of the arguments present for the `preprocessing` task:
+`clinicadl preprocessing -h`
 </summary>
-```{.sourceCode .bash}
+
+  ```{.sourceCode .bash}
 usage: clinicadl preprocessing [-h] [-np NPROC]
                                bids_dir caps_dir tsv_file working_dir
 
@@ -215,12 +217,12 @@ optional arguments:
 
 ### Tensor extraction
 
-These are the options available for the `extract` task:
 
 <details>
 <summary>
-clinicadl extract -h
+The full list of options available for `tsvtool getlabels` is here: `clinicadl extract -h`
 </summary>
+
 ```{.sourceCode .bash}
 usage: clinicadl extract [-h] [-ps PATCH_SIZE] [-ss STRIDE_SIZE]
                          [-sd SLICE_DIRECTION] [-sm {original,rgb}]
