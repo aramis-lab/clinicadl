@@ -303,7 +303,7 @@ usage: clinicadl train patch cnn [-h] [-cpu] [-np NPROC]
 optional arguments:
   -h, --help            show this help message and exit
 
-[34mPositional arguments[39m:
+Positional arguments:
   caps_dir              Data using CAPS structure.
   {t1-linear,t1-extensive}
                         Defines the type of preprocessing of CAPS data.
@@ -311,25 +311,25 @@ optional arguments:
   output_dir            Folder containing results of the training.
   network               CNN Model to be used during the training.
 
-[34mComputational resources[39m:
+Computational resources:
   -cpu, --use_cpu       Uses CPU instead of GPU.
   -np NPROC, --nproc NPROC
                         Number of cores used during the training.
   --batch_size BATCH_SIZE
                         Batch size for training. (default=2)
 
-[34mData management[39m:
+Data management:
   --diagnoses {AD,CN,MCI,sMCI,pMCI} [{AD,CN,MCI,sMCI,pMCI} ...], -d {AD,CN,MCI,sMCI,pMCI} [{AD,CN,MCI,sMCI,pMCI} ...]
                         Diagnoses that will be selected for training.
   --baseline            if True only the baseline is used.
 
-[34mCross-validation arguments[39m:
+Cross-validation arguments:
   --n_splits N_SPLITS   If a value is given will load data of a k-fold CV.
   --split SPLIT [SPLIT ...]
                         Train the list of given folds. By default train all
                         folds.
 
-[34mOptimization parameters[39m:
+Optimization parameters:
   --epochs EPOCHS       Epochs through the data. (default=20)
   --learning_rate LEARNING_RATE, -lr LEARNING_RATE
                         Learning rate of the optimization. (default=0.01)
@@ -342,7 +342,7 @@ optional arguments:
   --tolerance TOLERANCE
                         Tolerance value for the early stopping.
 
-[34mPatch-level parameters[39m:
+Patch-level parameters:
   -ps PATCH_SIZE, --patch_size PATCH_SIZE
                         Patch size
   -ss STRIDE_SIZE, --stride_size STRIDE_SIZE
@@ -351,7 +351,7 @@ optional arguments:
                         If True the outputs of extract preprocessing are used,
                         else the whole MRI is loaded.
 
-[34mTransfer learning[39m:
+Transfer learning:
   --transfer_learning_path TRANSFER_LEARNING_PATH
                         If an existing path is given, a pretrained model is
                         used.
@@ -362,7 +362,7 @@ optional arguments:
                         If transfer_learning from CNN, chooses which best
                         transfer model is selected.
 
-[34mPatch-level CNN parameters[39m:
+Patch-level CNN parameters:
   --selection_threshold SELECTION_THRESHOLD
                         Threshold on the balanced accuracies to compute the
                         subject-level performance. Patches are selected if
@@ -395,6 +395,8 @@ optional arguments:
   -h, --help       show this help message and exit
   -cpu, --use_cpu  Uses CPU instead of GPU.
 ```
+</details>
+
 ## Testing
 
 Be sure to have the `pytest` library in order to run the test suite.  This test
