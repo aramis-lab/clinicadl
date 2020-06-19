@@ -106,7 +106,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                           % (results_valid["balanced_accuracy"], i))
 
             tend = time()
-        print('Mean time per batch (train):', total_time / len(train_loader) * train_loader.batch_size)
+        print('Mean time per batch loading (train):', total_time / len(train_loader) * train_loader.batch_size)
 
         # If no step has been performed, raise Exception
         if step_flag:
@@ -236,6 +236,7 @@ def test(model, dataloader, use_cuda, criterion, mode="image"):
     softmax = torch.nn.Softmax(dim=1)
     results_df = pd.DataFrame(columns=columns)
     total_loss = 0
+    total_time = 0
     tend = time()
     with torch.no_grad():
         for i, data in enumerate(dataloader, 0):
@@ -265,7 +266,7 @@ def test(model, dataloader, use_cuda, criterion, mode="image"):
 
             del inputs, outputs, labels, loss
             tend = time()
-        print('Mean time per batch (test):', total_time / len(dataloader) * dataloader.batch_size)
+        print('Mean time per batch loading (test):', total_time / len(dataloader) * dataloader.batch_size)
         results_df.reset_index(inplace=True, drop=True)
 
         # calculate the balanced accuracy

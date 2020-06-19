@@ -4,10 +4,11 @@
 class Parameters:
     """ Class to define and initialize parameters used in traning CNN networks"""
 
-    def __init__(self, tsv_path: str, output_dir: str, input_dir: str,
+    def __init__(self, mode: str, tsv_path: str, output_dir: str, input_dir: str,
                  preprocessing: str, model: str):
         """
         Parameters:
+        mode: type if input used by the network (image, patch, roi, slice)
         tsv_path: Path to the folder containing the tsv files of the
         population. To note, the column name should be participant_id,
         session_id and diagnosis.
@@ -16,6 +17,7 @@ class Parameters:
         preprocessing: Type of preprocessing done. Choices: "t1-linear" or "t1-extensive".
         model: Neural network model.
         """
+        self.mode = mode
         self.tsv_path = tsv_path
         self.output_dir = output_dir
         self.input_dir = input_dir

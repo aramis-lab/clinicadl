@@ -17,7 +17,6 @@ TRAIN_CATEGORIES = {
     'TRANSFER LEARNING': '%sTransfer learning%s' % (Fore.BLUE, Fore.RESET),
     'AUTOENCODER': '%sAutoencoder specific%s' % (Fore.BLUE, Fore.RESET),
     # Image-level
-    'IMAGE OPTIMIZATION': '%sImage-level optimization parameters%s' % (Fore.BLUE, Fore.RESET),
     'IMAGE DATA MANAGEMENT': '%sImage-level data management%s' % (Fore.BLUE, Fore.RESET),
     # Slice-level
     'SLICE': '%sSlice-level parameters%s' % (Fore.BLUE, Fore.RESET),
@@ -138,6 +137,7 @@ def train_func(args):
             train_autoencoder(train_params_autoencoder)
         else:
             train_params_cnn = Parameters(
+                args.mode,
                 args.tsv_path,
                 args.output_dir,
                 args.caps_dir,
@@ -169,6 +169,7 @@ def train_func(args):
             train_cnn(train_params_cnn)
     elif args.mode == 'slice':
         train_params_slice = Parameters(
+            args.mode,
             args.tsv_path,
             args.output_dir,
             args.caps_dir,
@@ -199,6 +200,7 @@ def train_func(args):
     elif args.mode == 'patch':
         if args.mode_task == "autoencoder":
             train_params_autoencoder = Parameters(
+                args.mode,
                 args.tsv_path,
                 args.output_dir,
                 args.caps_dir,
@@ -229,6 +231,7 @@ def train_func(args):
             train_autoencoder_patch(train_params_autoencoder)
         elif args.mode_task == "cnn":
             train_params_patch = Parameters(
+                args.mode,
                 args.tsv_path,
                 args.output_dir,
                 args.caps_dir,
@@ -262,6 +265,7 @@ def train_func(args):
             train_patch_single_cnn(train_params_patch)
         else:
             train_params_patch = Parameters(
+                args.mode,
                 args.tsv_path,
                 args.output_dir,
                 args.caps_dir,
@@ -297,6 +301,7 @@ def train_func(args):
     elif args.mode == 'roi':
         if args.mode_task == "autoencoder":
             train_params_autoencoder = Parameters(
+                args.mode,
                 args.tsv_path,
                 args.output_dir,
                 args.caps_dir,
@@ -324,6 +329,7 @@ def train_func(args):
             train_autoencoder_patch(train_params_autoencoder)
         else:
             train_params_patch = Parameters(
+                args.mode,
                 args.tsv_path,
                 args.output_dir,
                 args.caps_dir,
@@ -731,6 +737,14 @@ def parse_command_line():
         '--tolerance',
         help='Tolerance value for the early stopping.',
         type=float, default=0.0)
+    train_optim_group.add_argument(
+        '--evaluation_steps', '-esteps',
+        default=0, type=int,
+        help='Fix the number of batches to use before validation.')
+    train_optim_group.add_argument(
+        '--accumulation_steps', '-asteps',
+        help='Accumulates gradients in order to increase the size of the batch.',
+        default=1, type=int)
 
     # Transfer learning
     transfer_learning_parent = argparse.ArgumentParser(add_help=False)
@@ -768,17 +782,6 @@ def parse_command_line():
         help="Train a 3D-image level network.")
 
     train_image_parent = argparse.ArgumentParser(add_help=False)
-    train_imageoptim_group = train_image_parent.add_argument_group(
-        TRAIN_CATEGORIES["IMAGE OPTIMIZATION"])
-    train_imageoptim_group.add_argument(
-        '--evaluation_steps', '-esteps',
-        default=0, type=int,
-        help='Fix the number of batches to use before validation.')
-    train_imageoptim_group.add_argument(
-        '--accumulation_steps', '-asteps',
-        help='Accumulates gradients in order to increase the size of the batch.',
-        default=1, type=int)
-
     train_imagedata_group = train_image_parent.add_argument_group(
         TRAIN_CATEGORIES["IMAGE DATA MANAGEMENT"])
     train_imagedata_group.add_argument(
