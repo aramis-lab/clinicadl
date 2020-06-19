@@ -2,16 +2,12 @@
 
 import os
 import torch
-import copy
 from torch.utils.data import DataLoader
-import torchvision.transforms as transforms
 
-from ..tools.deep_learning.models.autoencoder import transfer_learning
-from ..tools.deep_learning import create_model
-from ..tools.deep_learning.data import (MinMaxNormalization,
+from ..tools.deep_learning.models import transfer_learning, save_initialization, init_model
+from ..tools.deep_learning.data import (get_transforms,
                                         load_data,
-                                        MRIDataset_patch,
-                                        MRIDataset_patch_hippocampus)
+                                        return_dataset)
 from ..tools.deep_learning.cnn_utils import train
 from .evaluation_singleCNN import test_cnn
 
@@ -28,9 +24,9 @@ __status__ = "Development"
 
 def train_patch_single_cnn(params):
 
-    model = create_model(params.model, params.gpu, dropout=params.dropout)
-    init_state = copy.deepcopy(model.state_dict())
-    transformations = transforms.Compose([MinMaxNormalization()])
+    init_path = os.path.join(params.output_dir, 'best_model_dir', 'CNN', 'init.pth.tar')
+    save_initialization(params, init_path)
+    transformations = get_transforms(params.mode, params.minmaxnormalization)
 
     if params.split is None:
         fold_iterator = range(params.n_splits)
@@ -39,48 +35,17 @@ def train_patch_single_cnn(params):
 
     for fi in fold_iterator:
 
-        training_tsv, valid_tsv = load_data(
+        training_df, valid_df = load_data(
                 params.tsv_path,
                 params.diagnoses,
                 fi,
                 n_splits=params.n_splits,
                 baseline=params.baseline)
 
-        if params.hippocampus_roi:
-            print("Only using hippocampus ROI")
-
-            data_train = MRIDataset_patch_hippocampus(
-                params.input_dir,
-                training_tsv,
-                preprocessing=params.preprocessing,
-                transformations=transformations
-            )
-            data_valid = MRIDataset_patch_hippocampus(
-                params.input_dir,
-                valid_tsv,
-                preprocessing=params.preprocessing,
-                transformations=transformations
-            )
-
-        else:
-            data_train = MRIDataset_patch(
-                    params.input_dir,
-                    training_tsv,
-                    params.patch_size,
-                    params.stride_size,
-                    preprocessing=params.preprocessing,
-                    transformations=transformations,
-                    prepare_dl=params.prepare_dl
-                    )
-            data_valid = MRIDataset_patch(
-                    params.input_dir,
-                    valid_tsv,
-                    params.patch_size,
-                    params.stride_size,
-                    preprocessing=params.preprocessing,
-                    transformations=transformations,
-                    prepare_dl=params.prepare_dl
-                    )
+        data_train = return_dataset(params.mode, params.input_dir, training_df, params.preprocessing,
+                                    transformations, params)
+        data_valid = return_dataset(params.mode, params.input_dir, valid_df, params.preprocessing,
+                                    transformations, params)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(
@@ -101,7 +66,7 @@ def train_patch_single_cnn(params):
 
         # Initialize the model
         print('Initialization of the model')
-        model.load_state_dict(init_state)
+        model = init_model(params.model, init_path, params.init_state, gpu=params.gpu, dropout=params.dropout)
         model = transfer_learning(model, fi, source_path=params.transfer_learning_path,
                                   transfer_learning_autoencoder=params.transfer_learning_autoencoder,
                                   gpu=params.gpu, selection=params.transfer_learning_selection)

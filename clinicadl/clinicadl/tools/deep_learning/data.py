@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 from os import path
 from torch.utils.data import Dataset
+import torchvision.transforms as transforms
 
 
 #################################
@@ -589,6 +590,48 @@ def extract_roi_from_mri(image_tensor, left_is_odd):
     return extracted_roi
 
 
+def return_dataset(mode, input_dir, data_df, preprocessing, transformations, params, cnn_index=None):
+
+    if cnn_index is not None and mode in ["image", "roi", "slice"]:
+        raise ValueError("Multi-CNN is not implemented for %s mode." % mode)
+
+    if mode == "image":
+        return MRIDataset(
+            input_dir,
+            data_df,
+            preprocessing,
+            transform=transformations
+        )
+    if mode == "patch":
+        return MRIDataset_patch(
+            input_dir,
+            data_df,
+            params.patch_size,
+            params.stride_size,
+            preprocessing=preprocessing,
+            transformations=transformations,
+            prepare_dl=params.prepare_dl,
+            patch_index=cnn_index
+        )
+    elif mode == "roi":
+        return MRIDataset_patch_hippocampus(
+            input_dir,
+            data_df,
+            preprocessing=preprocessing,
+            transformations=transformations
+        )
+    elif mode == "slice":
+        return MRIDataset_slice(
+            input_dir,
+            data_df,
+            preprocessing=preprocessing,
+            transformations=transformations,
+            mri_plane=params.mri_plane,
+            prepare_dl=params.prepare_dl,
+            discarded_slices=params.discarded_slices)
+    else:
+        raise ValueError("Mode %s is not implemented." % mode)
+
 ##################################
 # Transformations
 ##################################
@@ -624,6 +667,29 @@ class MinMaxNormalization(object):
 
     def __call__(self, image):
         return (image - image.min()) / (image.max() - image.min())
+
+
+def get_transforms(mode, minmaxnormalization=True):
+    if mode in ["image", "patch", "roi"]:
+        if minmaxnormalization:
+            transformations = MinMaxNormalization()
+        else:
+            transformations = None
+    elif mode == "slice":
+        trg_size = (224, 224)
+        if minmaxnormalization:
+            transformations = transforms.Compose([MinMaxNormalization(),
+                                                  transforms.ToPILImage(),
+                                                  transforms.Resize(trg_size),
+                                                  transforms.ToTensor()])
+        else:
+            transformations = transforms.Compose([transforms.ToPILImage(),
+                                                  transforms.Resize(trg_size),
+                                                  transforms.ToTensor()])
+    else:
+        raise ValueError("Transforms for mode %s are not implemented." % mode)
+
+    return transformations
 
 
 ################################
