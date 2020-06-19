@@ -24,7 +24,7 @@ __status__ = "Development"
 
 def train_multi_cnn(params):
 
-    init_path = os.path.join(params.output_dir, 'best_model_dir', 'CNN', 'init.pth.tar')
+    init_path = os.path.join(params.output_dir, 'best_model_dir', 'CNN')
     save_initialization(params.model, init_path, init_state=params.init_state, dropout=params.dropout)
     transformations = get_transforms(params.mode, params.minmaxnormalization)
 
@@ -87,8 +87,8 @@ def train_multi_cnn(params):
             print('Beginning the training task')
             train(model, train_loader, valid_loader, criterion, optimizer, False, log_dir, model_dir, params)
 
-            test_cnn(train_loader, "train", fi, criterion, cnn_index, params)
-            test_cnn(valid_loader, "validation", fi, criterion, cnn_index, params)
+            test_cnn(params.output_dir, train_loader, "train", fi, criterion, cnn_index, params, gpu=params.gpu)
+            test_cnn(params.output_dir, valid_loader, "validation", fi, criterion, cnn_index, params, gpu=params.gpu)
 
         for selection in ['best_acc', 'best_loss']:
             soft_voting_to_tsvs(
