@@ -141,8 +141,7 @@ MCI patients. To include them add `--diagnoses AD CN MCI sMCI pMCI` at the end o
 
 <details>
 <summary>
-The full list of options available for `tsvtool getlabels` can be available
-with this command: `clinicadl tsvtool getlabels -h`
+The full list of options available to obtain labels from tsv files.
 </summary>
 
 ```{.sourceCode .bash}
@@ -194,8 +193,7 @@ subset.
 A description of the arguments for the `preprocessing` task is presented below:
 <details>
 <summary>
-Here is a description of the arguments present for the `preprocessing` task:
-`clinicadl preprocessing -h`
+Here is a description of the arguments present for the preprocessing task
 </summary>
 
   ```{.sourceCode .bash}
@@ -220,7 +218,7 @@ optional arguments:
 
 <details>
 <summary>
-The full list of options available for `tsvtool getlabels` is here: `clinicadl extract -h`
+The full list of options available for tensor extraction.
 </summary>
 
 ```{.sourceCode .bash}
