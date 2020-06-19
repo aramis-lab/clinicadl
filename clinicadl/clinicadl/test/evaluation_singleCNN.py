@@ -4,113 +4,72 @@ from __future__ import print_function
 import argparse
 import os
 from os import path
-import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from clinicadl.tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
-from clinicadl.tools.deep_learning import create_model, load_model, read_json
-from clinicadl.tools.deep_learning.cnn_utils import test
+from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, load_data
+from clinicadl.tools.deep_learning import read_json
+from .test_singleCNN import test_cnn
 
 
-def test_cnn(data_loader, subset_name, split, criterion, options):
+parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
 
-    best_model_dir = os.path.join(options.model_path, 'best_model_dir')
-    json_path = path.join(options.model_path, "commandline_cnn.json")
-    options = read_json(options, "cnn", json_path=json_path)
+# Mandatory arguments
+parser.add_argument("model_path", type=str,
+                    help="Path to the trained model folder.")
 
-    for selection in ["best_acc", "best_loss"]:
-
-        print("Evaluation %s fold %i" % (selection, split))
-        model = create_model(options.model, options.gpu, dropout=options.dropout)
-        fold_dir = "fold_%i" % split
-        model_dir = path.join(best_model_dir, fold_dir, 'CNN', selection)
-        best_model, best_epoch = load_model(model, model_dir, options.gpu,
-                                            filename='model_best.pth.tar')
-
-        results_df, metrics_dict = test(best_model, data_loader, options.gpu, criterion)
-
-        acc = metrics_dict['balanced_accuracy'] * 100
-        sen = metrics_dict['sensitivity'] * 100
-        spe = metrics_dict['specificity'] * 100
-        print("%s, acc %f, loss %f, sensibility %f, specificity %f"
-              % (subset_name, acc, metrics_dict["total_loss"], sen, spe))
-
-        evaluation_path = path.join(options.model_path, 'performances', fold_dir)
-        if not path.exists(path.join(evaluation_path, selection)):
-            os.makedirs(path.join(evaluation_path, selection))
-
-        results_df.to_csv(
-            path.join(
-                evaluation_path,
-                selection,
-                subset_name + '_image_level_result.tsv'
-            ),
-            sep='\t', index=False)
-
-        pd.DataFrame(metrics_dict, index=[0]).to_csv(path.join(evaluation_path, selection,
-                                                               subset_name + '_image_level_metrics.tsv'),
-                                                     sep='\t', index=False)
+# Computational resources
+parser.add_argument("--gpu", action="store_true", default=False,
+                    help="if True computes the visualization on GPU")
+parser.add_argument("--num_workers", '-w', default=8, type=int,
+                    help='the number of batch being loaded in parallel')
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
-
-    # Mandatory arguments
-    parser.add_argument("model_path", type=str,
-                        help="Path to the trained model folder.")
-
-    # Model selection
-    parser.add_argument("--tsv_path", default=None, type=str)
-    parser.add_argument("--selection", default="best_loss", type=str, choices=['best_loss', 'best_acc'],
-                        help="Loads the model selected on minimal loss or maximum accuracy on validation.")
-
-    # Computational resources
-    parser.add_argument("--gpu", action="store_true", default=False,
-                        help="if True computes the visualization on GPU")
-    parser.add_argument("--num_workers", '-w', default=8, type=int,
-                        help='the number of batch being loaded in parallel')
-
     ret = parser.parse_known_args()
     options = ret[0]
     if ret[1]:
         print("unknown arguments: %s" % parser.parse_known_args()[1])
 
+    # Read json
+    model_options = argparse.Namespace()
+    json_path = path.join(options.model_path, "commandline_cnn.json")
+    model_options = read_json(model_options, "cnn", json_path=json_path)
+
+    transformations = get_transforms(model_options.mode, model_options.minmaxnormalization)
+    criterion = nn.CrossEntropyLoss()
+
     # Loop on all folds trained
     best_model_dir = os.path.join(options.model_path, 'best_model_dir')
-    criterion = nn.CrossEntropyLoss()
     folds_dir = os.listdir(best_model_dir)
 
     for fold_dir in folds_dir:
         split = int(fold_dir[-1])
-        options.split = split
+        print("Fold %i" % split)
 
         # Data management
-        training_tsv, valid_tsv = load_data(options.tsv_path, options.diagnoses,
-                                            split, options.n_splits, options.baseline)
+        training_df, valid_df = load_data(model_options.tsv_path, model_options.diagnoses,
+                                          split, model_options.n_splits, model_options.baseline)
 
-        if options.minmaxnormalization:
-            transformations = MinMaxNormalization()
-        else:
-            transformations = None
+        data_train = return_dataset(model_options.mode, model_options.input_dir, training_df,
+                                    model_options.preprocessing, transformations, model_options)
+        data_valid = return_dataset(model_options.mode, model_options.input_dir, valid_df,
+                                    model_options.preprocessing, transformations, model_options)
 
-        data_train = MRIDataset(options.caps_dir, training_tsv, options.preprocessing, transform=transformations)
-        data_valid = MRIDataset(options.caps_dir, valid_tsv, options.preprocessing, transform=transformations)
+        train_loader = DataLoader(
+            data_train,
+            batch_size=options.batch_size,
+            shuffle=False,
+            num_workers=options.num_workers,
+            pin_memory=True)
+        valid_loader = DataLoader(
+            data_valid,
+            batch_size=options.batch_size,
+            shuffle=False,
+            num_workers=options.num_workers,
+            pin_memory=True)
 
-        # Use argument load to distinguish training and testing
-        train_loader = DataLoader(data_train,
-                                  batch_size=options.batch_size,
-                                  shuffle=False,
-                                  num_workers=options.num_workers,
-                                  pin_memory=True
-                                  )
-
-        valid_loader = DataLoader(data_valid,
-                                  batch_size=options.batch_size,
-                                  shuffle=False,
-                                  num_workers=options.num_workers,
-                                  pin_memory=True
-                                  )
-
-        test_cnn(train_loader, "train", split, criterion, options)
-        test_cnn(valid_loader, "validation", split, criterion, options)
+        test_cnn(options.model_path, train_loader, "train", split, criterion,
+                 model_options, options.gpu)
+        test_cnn(options.model_path, valid_loader, "validation", split, criterion,
+                 model_options, options.gpu)

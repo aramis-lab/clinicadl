@@ -6,9 +6,9 @@ from os import path
 from time import time
 from torch.utils.data import DataLoader
 
-from ..tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
-from ..tools.deep_learning import load_model, create_autoencoder, load_optimizer, read_json
-from ..tools.deep_learning.autoencoder_utils import train, visualize_image
+from clinicadl.tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
+from clinicadl.tools.deep_learning import load_model, create_autoencoder, load_optimizer, read_json
+from clinicadl.tools.deep_learning.autoencoder_utils import train, visualize_image
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 

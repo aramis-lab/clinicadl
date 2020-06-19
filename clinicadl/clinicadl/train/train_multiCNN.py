@@ -1,6 +1,5 @@
 # coding: utf8
 
-import copy
 import os
 import torch
 from torch.utils.data import DataLoader
@@ -10,7 +9,7 @@ from ..tools.deep_learning.data import (get_transforms,
                                         load_data,
                                         return_dataset)
 from ..tools.deep_learning.cnn_utils import train, soft_voting_to_tsvs
-from .test_multiCNN import test_cnn
+from clinicadl.test.test_multiCNN import test_cnn
 
 
 __author__ = "Junhao Wen, Elina Thibeau-Sutre, Mauricio Diaz"
@@ -23,7 +22,7 @@ __email__ = "junhao.wen89@gmail.com, mauricio.diaz@inria.fr"
 __status__ = "Development"
 
 
-def train_patch_multi_cnn(params):
+def train_multi_cnn(params):
 
     init_path = os.path.join(params.output_dir, 'best_model_dir', 'CNN', 'init.pth.tar')
     save_initialization(params, init_path)
