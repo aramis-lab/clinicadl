@@ -193,7 +193,7 @@ subset.
 A description of the arguments for the `preprocessing` task is presented below:
 <details>
 <summary>
-Here is a description of the arguments present for the preprocessing task
+Here is a description of the arguments present for the preprocessing task.
 </summary>
 
   ```{.sourceCode .bash}
@@ -215,6 +215,12 @@ optional arguments:
 
 ### Tensor extraction
 
+Once the images are preprocessed they must be converted in tensors. Tensors
+consists of `.pt` files that can be loaded with PyTorch.  Using `clinicadl`
+these files are stored in a specific folder structure, keeping relevant
+information about the original image.  This step can be also run using the
+Clinica [`DeepLearning-prepare-data`
+pipeline](http://www.clinica.run/doc/Pipelines). Results are equivalent.
 
 <details>
 <summary>
@@ -258,6 +264,126 @@ optional arguments:
 
 </details>
 
+### Training a new model
+
+Different kind of networks are trained using `clinicadl train`:
+
+* `image`: uses the full 3D MRIs to train a network.
+* `patch`: uses 3D patches (from specific patch size) extracted from the 3D image.
+* `roi`: extract a specific 3D region from the MRI.
+* `slice`: uses 2D slices to train a CNN.
+
+For each mode, different options are presented, in order to control different
+parameters used during the training phase.
+
+<details>
+<summary>
+E.g., this is the list of options available when training a CNN network using
+3D patches:
+</summary>
+
+```{.sourceCode .bash}
+usage: clinicadl train patch cnn [-h] [-cpu] [-np NPROC]
+                                 [--batch_size BATCH_SIZE]
+                                 [--diagnoses {AD,CN,MCI,sMCI,pMCI} [{AD,CN,MCI,sMCI,pMCI} ...]]
+                                 [--baseline] [--n_splits N_SPLITS]
+                                 [--split SPLIT [SPLIT ...]] [--epochs EPOCHS]
+                                 [--learning_rate LEARNING_RATE]
+                                 [--weight_decay WEIGHT_DECAY]
+                                 [--dropout DROPOUT] [--patience PATIENCE]
+                                 [--tolerance TOLERANCE] [-ps PATCH_SIZE]
+                                 [-ss STRIDE_SIZE] [--use_extracted_patches]
+                                 [--transfer_learning_path TRANSFER_LEARNING_PATH]
+                                 [--transfer_learning_autoencoder]
+                                 [--transfer_learning_selection {best_loss,best_acc}]
+                                 [--selection_threshold SELECTION_THRESHOLD]
+                                 caps_dir {t1-linear,t1-extensive} tsv_path
+                                 output_dir network
+
+optional arguments:
+  -h, --help            show this help message and exit
+
+[34mPositional arguments[39m:
+  caps_dir              Data using CAPS structure.
+  {t1-linear,t1-extensive}
+                        Defines the type of preprocessing of CAPS data.
+  tsv_path              TSV path with subjects/sessions to process.
+  output_dir            Folder containing results of the training.
+  network               CNN Model to be used during the training.
+
+[34mComputational resources[39m:
+  -cpu, --use_cpu       Uses CPU instead of GPU.
+  -np NPROC, --nproc NPROC
+                        Number of cores used during the training.
+  --batch_size BATCH_SIZE
+                        Batch size for training. (default=2)
+
+[34mData management[39m:
+  --diagnoses {AD,CN,MCI,sMCI,pMCI} [{AD,CN,MCI,sMCI,pMCI} ...], -d {AD,CN,MCI,sMCI,pMCI} [{AD,CN,MCI,sMCI,pMCI} ...]
+                        Diagnoses that will be selected for training.
+  --baseline            if True only the baseline is used.
+
+[34mCross-validation arguments[39m:
+  --n_splits N_SPLITS   If a value is given will load data of a k-fold CV.
+  --split SPLIT [SPLIT ...]
+                        Train the list of given folds. By default train all
+                        folds.
+
+[34mOptimization parameters[39m:
+  --epochs EPOCHS       Epochs through the data. (default=20)
+  --learning_rate LEARNING_RATE, -lr LEARNING_RATE
+                        Learning rate of the optimization. (default=0.01)
+  --weight_decay WEIGHT_DECAY, -wd WEIGHT_DECAY
+                        Weight decay value used in optimization.
+                        (default=1e-4)
+  --dropout DROPOUT     rate of dropout that will be applied to dropout
+                        layers.
+  --patience PATIENCE   Waiting time for early stopping.
+  --tolerance TOLERANCE
+                        Tolerance value for the early stopping.
+
+[34mPatch-level parameters[39m:
+  -ps PATCH_SIZE, --patch_size PATCH_SIZE
+                        Patch size
+  -ss STRIDE_SIZE, --stride_size STRIDE_SIZE
+                        Stride size
+  --use_extracted_patches
+                        If True the outputs of extract preprocessing are used,
+                        else the whole MRI is loaded.
+
+[34mTransfer learning[39m:
+  --transfer_learning_path TRANSFER_LEARNING_PATH
+                        If an existing path is given, a pretrained model is
+                        used.
+  --transfer_learning_autoencoder
+                        If specified, do transfer learning using an
+                        autoencoder else will look for a CNN model.
+  --transfer_learning_selection {best_loss,best_acc}
+                        If transfer_learning from CNN, chooses which best
+                        transfer model is selected.
+
+[34mPatch-level CNN parameters[39m:
+  --selection_threshold SELECTION_THRESHOLD
+                        Threshold on the balanced accuracies to compute the
+                        subject-level performance. Patches are selected if
+                        their balanced accuracy > threshold. Default
+                        corresponds to no selection.
+
+```
+</details>
+
+### Using an pretrained-model
+The tool `clinicadl classify` is used to perform the inference step using a
+previously trained model on simple/multiple image.
+
+<details>
+<summary>
+These are the options available for this taskL
+</summary>
+
+```{.sourceCode .bash}
+
+```
 ## Testing
 
 ### Unit testing (WIP)
