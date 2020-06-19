@@ -173,10 +173,10 @@ class MRIDataset_patch(Dataset):
             patch_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
                                    'deeplearning_prepare_data', 'patch_based', 't1_linear',
                                    img_name + '_' + sess_name
-                                   + FILENAME_TYPE['cropped']
+                                   + FILENAME_TYPE['cropped'][0:-4]
                                    + '_patchsize-' + str(self.patch_size)
                                    + '_stride-' + str(self.stride_size)
-                                   + '_patch-' + str(patch_idx) + '.pt')
+                                   + '_patch-' + str(patch_idx) + '_T1w.pt')
 
             patch = torch.load(patch_path)
         else:
@@ -393,8 +393,9 @@ class MRIDataset_slice(Dataset):
             slice_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
                                    'deeplearning_prepare_data', 'slice_based', 't1_linear',
                                    img_name + '_' + sess_name
-                                   + FILENAME_TYPE['cropped']
-                                   + self.slice_direction + '_rgbslice-%i.pt' % slice_idx)
+                                   + FILENAME_TYPE['cropped'][0:-4]
+                                   + '_axis-' + self.slice_direction
+                                   + '_channel-rgb_slice-%i_T1w.pt' % slice_idx)
             extracted_slice = torch.load(slice_path)
         else:
             image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
@@ -484,8 +485,9 @@ class MRIDataset_slice_mixed(Dataset):
             slice_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
                                    'deeplearning_prepare_data', 'slice_based', 't1_linear',
                                    img_name + '_' + sess_name
-                                   + FILENAME_TYPE['cropped']
-                                   + self.slice_direction + '_rgbslice-' + str(slice_name) + '.pt')
+                                   + FILENAME_TYPE['cropped'][0:-4]
+                                   + '_axis-' + self.slice_direction
+                                   + '_channel-rgb_slice-' + str(slice_name) + '_T1w.pt')
             extracted_slice = torch.load(slice_path)
 
         else:
