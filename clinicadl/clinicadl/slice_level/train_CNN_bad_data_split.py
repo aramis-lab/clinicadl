@@ -2,23 +2,20 @@
 
 import argparse
 import torchvision.transforms as transforms
-from tensorboardX import SummaryWriter
 from torch.utils.data import DataLoader
 import copy
 import torch
 import os
-import numpy as np
 from time import time
 
-from .utils import mix_slices, train, test, slice_level_to_tsvs, soft_voting_to_tsvs
-from clinicadl.tools.deep_learning import (EarlyStopping,
-                                           create_model,
-                                           save_checkpoint,
+from clinicadl.tools.deep_learning import (create_model,
                                            load_model,
                                            commandline_to_json)
 from clinicadl.tools.deep_learning.data import (load_data,
                                                 MinMaxNormalization,
-                                                MRIDataset_slice_mixed)
+                                                MRIDataset_slice_mixed,
+                                                mix_slices)
+from clinicadl.tools.deep_learning.cnn_utils import train, test, sub_level_to_tsvs
 
 
 __author__ = "Junhao Wen"
@@ -29,6 +26,22 @@ __version__ = "0.1.0"
 __maintainer__ = "Junhao Wen, Elina Thibeau-Sutre, Mauricio Diaz"
 __email__ = "junhao.wen89@gmail.com, mauricio.diaz@inria.fr"
 __status__ = "Development"
+
+
+def test_cnn(data_loader, subset_name, split, criterion, options):
+
+    for selection in ["best_acc", "best_loss"]:
+        # load the best trained model during the training
+        model = create_model(options.network, options.gpu)
+        model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', "fold_%i" % split,
+                                                           'CNN', selection),
+                                       gpu=options.gpu, filename='model_best.pth.tar')
+
+        results_df, metrics = test(model, data_loader, options.gpu, criterion, options.mode)
+        print("Patch level balanced accuracy is %f" % metrics['balanced_accuracy'])
+
+        sub_level_to_tsvs(options.output_dir, results_df, metrics, split, selection, options.mode, dataset=subset_name)
+
 
 # Train 2D CNN - Slice level network
 # The input MRI's dimension is 169*208*179 after cropping"
@@ -243,146 +256,26 @@ def train_CNN_bad_data_split(params):
                 pin_memory=True
                 )
 
-        # chosen optimizer for back-propagation
+        # Initialize the model
+        print('Initialization of the model')
+        model.load_state_dict(init_state)
+
+        # Define criterion and optimizer
+        criterion = torch.nn.CrossEntropyLoss()
         optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
                                                             lr=params.learning_rate,
                                                             weight_decay=params.weight_decay)
-
-        model.load_state_dict(init_state)
-
-        # Binary cross-entropy loss
-        loss = torch.nn.CrossEntropyLoss()
-
-        # parameters used in training
-        best_accuracy = 0.0
-        best_loss_valid = np.inf
+        setattr(params, 'beginning_epoch', 0)
 
         # Define output directories
-        model_dir = os.path.join(params.output_dir, "best_model_dir", "fold_%i" % fi, "CNN")
         log_dir = os.path.join(params.output_dir, "log_dir", "fold_%i" % fi, "CNN")
+        model_dir = os.path.join(params.output_dir, "best_model_dir", "fold_%i" % fi, "CNN")
 
-        writer_train_batch = SummaryWriter(log_dir=os.path.join(log_dir, "train_batch"))
-        writer_train_all_data = SummaryWriter(log_dir=os.path.join(log_dir, "train_all_data"))
-        writer_valid = SummaryWriter(log_dir=os.path.join(log_dir, "valid"))
+        print('Beginning the training task')
+        train(model, train_loader, valid_loader, criterion, optimizer, False, log_dir, model_dir, params)
 
-        # initialize the early stopping instance
-        early_stopping = EarlyStopping(
-                'min',
-                min_delta=params.tolerance,
-                patience=params.patience
-                )
-
-        for epoch in range(params.epochs):
-            print("At %i-th epoch." % epoch)
-
-            # train the model
-            train_df, acc_mean_train, loss_batch_mean_train, global_step \
-                = train(
-                        model,
-                        train_loader,
-                        params,
-                        loss,
-                        optimizer,
-                        writer_train_batch,
-                        epoch,
-                        model_mode='train',
-                        selection_threshold=params.selection_threshold
-                        )
-
-            # calculate the accuracy with the whole training data to monitor overfitting
-            train_all_df, acc_mean_train_all, loss_batch_mean_train_all, _\
-                = train(
-                        model,
-                        train_loader,
-                        params.gpu,
-                        loss,
-                        optimizer,
-                        writer_train_all_data,
-                        epoch,
-                        model_mode='valid',
-                        selection_threshold=params.selection_threshold
-                        )
-
-            print("For training, image level balanced accuracy is %f at the end of epoch %d" % (acc_mean_train_all, epoch))
-
-            # at then end of each epoch, we validate one time for the model with the validation data
-            valid_df, acc_mean_valid, loss_batch_mean_valid, _ \
-                = train(
-                        model,
-                        valid_loader,
-                        params.gpu,
-                        loss,
-                        optimizer,
-                        writer_valid,
-                        epoch,
-                        model_mode='valid',
-                        selection_threshold=params.selection_threshold
-                        )
-
-            print("For validation, image level balanced accuracy is %f at the end of epoch %d" % (acc_mean_valid, epoch))
-
-            # save the best model based on the best loss and accuracy
-            acc_is_best = acc_mean_valid > best_accuracy
-            best_accuracy = max(best_accuracy, acc_mean_valid)
-            loss_is_best = loss_batch_mean_valid < best_loss_valid
-            best_loss_valid = min(loss_batch_mean_valid, best_loss_valid)
-
-            save_checkpoint({
-                'epoch': epoch,
-                'model': model.state_dict(),
-                'valid_loss': loss_batch_mean_valid,
-                'valid_acc': acc_mean_valid},
-                acc_is_best, loss_is_best,
-                model_dir)
-
-            # Save optimizer state_dict to be able to reload
-            save_checkpoint({'optimizer': optimizer.state_dict(),
-                             'epoch': epoch,
-                             'name': params.optimizer,
-                             },
-                            False, False,
-                            model_dir,
-                            filename='optimizer.pth.tar')
-
-            # try early stopping criterion
-            if early_stopping.step(loss_batch_mean_valid) or epoch == params.epochs - 1:
-                print("By applying early stopping or at the last epoch defined by user, "
-                      "the training is stopped at %d-th epoch" % epoch)
-
-                break
-
-        del optimizer
-        torch.cuda.empty_cache()
-
-        # Final evaluation for all criteria
-        for selection in ['best_loss', 'best_acc']:
-            model, best_epoch = load_model(
-                    model,
-                    os.path.join(params.output_dir,
-                                 'best_model_dir',
-                                 'fold_%i' % fi,
-                                 'CNN',
-                                 str(selection)),
-                    gpu=params.gpu,
-                    filename='model_best.pth.tar'
-                    )
-
-            train_df, metrics_train = test(model, train_loader, params.gpu, loss)
-            valid_df, metrics_valid = test(model, valid_loader, params.gpu, loss)
-
-            # write the information of subjects and performances into tsv files.
-            slice_level_to_tsvs(params.output_dir, train_df, metrics_train, fi,
-                                dataset='train', selection=selection)
-            slice_level_to_tsvs(params.output_dir, valid_df, metrics_valid, fi,
-                                dataset='validation', selection=selection)
-
-            soft_voting_to_tsvs(params.output_dir, fi, dataset='train', selection=selection,
-                                selection_threshold=params.selection_threshold)
-            soft_voting_to_tsvs(params.output_dir, fi, dataset='validation', selection=selection,
-                                selection_threshold=params.selection_threshold)
-
-        os.remove(os.path.join(model_dir, "optimizer.pth.tar"))
-        os.remove(os.path.join(model_dir, "checkpoint.pth.tar"))
+        test_cnn(train_loader, "train", fi, criterion, options)
+        test_cnn(valid_loader, "validation", fi, criterion, options)
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)

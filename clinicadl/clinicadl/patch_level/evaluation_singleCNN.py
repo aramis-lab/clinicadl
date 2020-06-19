@@ -6,13 +6,13 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import torch
 
-from utils import test, patch_level_to_tsvs, soft_voting_to_tsvs
 from clinicadl.tools.deep_learning.data import (MinMaxNormalization,
                                                 load_data_test,
                                                 load_data,
                                                 MRIDataset_patch,
                                                 MRIDataset_patch_hippocampus)
 from clinicadl.tools.deep_learning import create_model, load_model
+from ..tools.deep_learning.cnn_utils import test, sub_level_to_tsvs, soft_voting_to_tsvs
 
 
 __author__ = "Junhao Wen"
@@ -23,6 +23,26 @@ __version__ = "0.1.0"
 __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
+
+
+def test_cnn(data_loader, subset_name, split, criterion, options):
+
+    for selection in ["best_acc", "best_loss"]:
+        # load the best trained model during the training
+        model = create_model(options.network, options.gpu)
+        model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', "fold_%i" % split,
+                                                           'CNN', selection),
+                                       gpu=options.gpu, filename='model_best.pth.tar')
+
+        results_df, metrics = test(model, data_loader, options.gpu, criterion, options.mode)
+        print("Patch level balanced accuracy is %f" % metrics['balanced_accuracy'])
+
+        sub_level_to_tsvs(options.output_dir, results_df, metrics, split, selection, options.mode, dataset=subset_name)
+
+        # Soft voting
+        soft_voting_to_tsvs(options.output_dir, split, selection=selection, mode=options.mode, dataset=subset_name,
+                            selection_threshold=options.selection_threshold)
+
 
 parser = argparse.ArgumentParser(description="Argparser for test of hippocampus approach")
 
@@ -42,8 +62,6 @@ parser.add_argument("output_dir", type=str,
 parser.add_argument("--network", default="Conv4_FC3",
                     help="Autoencoder network type. (default=Conv_4_FC_3). "
                          "Also, you can try training from scratch using VoxResNet and AllConvNet3D")
-parser.add_argument('--selection', default="best_acc", choices=["best_acc", "best_loss"],
-                    help="Evaluate the model performance based on which criterior")
 parser.add_argument('--dataset', default="validation",
                     help="If the evaluation on the validation set is wanted, must be set to 'validation'. "
                          "Otherwise must be named with the form 'test-cohort_name'.")
@@ -77,12 +95,8 @@ parser.add_argument('--gpu', default=False, action='store_true',
 
 def main(options):
 
-    # Initialize the model
-    model = create_model(options.network, options.gpu)
     transformations = transforms.Compose([MinMaxNormalization()])
-
-    # Define loss and optimizer
-    loss = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.CrossEntropyLoss()
 
     if options.split is None:
         fold_iterator = range(options.n_splits)
@@ -113,19 +127,7 @@ def main(options):
                                  num_workers=options.num_workers,
                                  pin_memory=True)
 
-        # load the best trained model during the training
-        model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', "fold_%i" % fi,
-                                                           'CNN', str(options.selection)),
-                                       gpu=options.gpu, filename='model_best.pth.tar')
-
-        results_df, metrics = test(model, test_loader, options.gpu, loss)
-        print("Patch level balanced accuracy is %f" % metrics['balanced_accuracy'])
-
-        patch_level_to_tsvs(options.output_dir, results_df, metrics, fi, options.selection, dataset=options.dataset)
-
-        # Soft voting
-        soft_voting_to_tsvs(options.output_dir, fi, selection=options.selection, dataset=options.dataset,
-                            selection_threshold=options.selection_threshold)
+        test_cnn(test_loader, options.dataset, fi, criterion, options)
 
 
 if __name__ == "__main__":

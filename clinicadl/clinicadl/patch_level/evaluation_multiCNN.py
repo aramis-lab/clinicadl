@@ -6,12 +6,12 @@ import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
-from utils import test, patch_level_to_tsvs, soft_voting_to_tsvs
 from clinicadl.tools.deep_learning.models import create_model, load_model
 from clinicadl.tools.deep_learning.data import (MinMaxNormalization,
                                                 load_data,
                                                 load_data_test,
                                                 MRIDataset_patch)
+from clinicadl.tools.deep_learning.cnn_utils import test, sub_level_to_tsvs, soft_voting_to_tsvs
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -21,6 +21,22 @@ __version__ = "0.1.0"
 __maintainer__ = "Junhao Wen"
 __email__ = "junhao.wen89@gmail.com"
 __status__ = "Development"
+
+
+def test_cnn(data_loader, subset_name, split, criterion, cnn_index, options):
+    for selection in ["best_acc", "best_loss"]:
+        # load the best trained model during the training
+        model = create_model(options.network, options.gpu)
+        model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', "fold_%i" % split,
+                                                           'cnn-%i' % cnn_index, selection),
+                                       gpu=options.gpu, filename='model_best.pth.tar')
+
+        results_df, metrics = test(model, data_loader, options.gpu, criterion, options.mode)
+        print("Patch level balanced accuracy is %f" % metrics['balanced_accuracy'])
+
+        sub_level_to_tsvs(options.output_dir, results_df, metrics, split, selection, options.mode,
+                          dataset=subset_name, cnn_index=cnn_index)
+
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D patch-level multi-CNN for test the trained classifiers")
 
@@ -36,8 +52,6 @@ parser.add_argument("output_dir", type=str,
                     help="Path to store the classification outputs and the tsv files containing the performances.")
 
 # Data management
-parser.add_argument('--selection', default="best_acc", choices=["best_acc", "best_loss"],
-                    help="Evaluate the model performance based on which criterior")
 parser.add_argument("--patch_size", default=50, type=int,
                     help="The patch size extracted from the MRI")
 parser.add_argument("--stride_size", default=50, type=int,
@@ -74,12 +88,9 @@ parser.add_argument("--gpu", default=False, action='store_true',
 
 
 def main(options):
-    # Initialize the model
-    model = create_model(options.network, options.gpu)
-    transformations = transforms.Compose([MinMaxNormalization()])
 
-    # Define loss and optimizer
-    loss = torch.nn.CrossEntropyLoss()
+    transformations = transforms.Compose([MinMaxNormalization()])
+    criterion = torch.nn.CrossEntropyLoss()
 
     if options.split is None:
         fold_iterator = range(options.n_splits)
@@ -115,39 +126,18 @@ def main(options):
                     num_workers=options.num_workers,
                     pin_memory=True)
 
-            # load the best trained model during the training
-            model, best_epoch = load_model(
-                    model,
-                    os.path.join(
-                        options.output_dir,
-                        'best_model_dir',
-                        "fold_%i" % fi,
-                        'cnn-%i' % n,
-                        options.selection),
-                    options.gpu,
-                    filename='model_best.pth.tar')
+            test_cnn(test_loader, options.dataset, fi, criterion, n, options)
 
-            results_df, metrics = test(model, test_loader, options.gpu, loss)
-            print("Patch level balanced accuracy is %f" % metrics['balanced_accuracy'])
-
-            # write the test results into the tsv files
-            patch_level_to_tsvs(
-                    options.output_dir,
-                    results_df,
-                    metrics,
-                    fi,
-                    options.selection,
-                    dataset=options.dataset,
-                    cnn_index=n)
-
-        print("Selection threshold: ", options.selection_threshold)
-        soft_voting_to_tsvs(
+        for selection in ['best_acc', 'best_loss']:
+            soft_voting_to_tsvs(
                 options.output_dir,
                 fi,
-                options.selection,
+                selection,
+                mode="patch",
                 dataset=options.dataset,
                 num_cnn=options.num_cnn,
-                selection_threshold=options.selection_threshold)
+                selection_threshold=options.selection_threshold
+            )
 
 
 if __name__ == "__main__":
