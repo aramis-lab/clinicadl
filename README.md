@@ -382,22 +382,43 @@ These are the options available for this taskL
 </summary>
 
 ```{.sourceCode .bash}
+usage: clinicadl classify [-h] [-cpu] caps_dir tsv_file model_path output_dir
 
+positional arguments:
+  caps_dir         Data using CAPS structure.
+  tsv_file         TSV file with subjects/sessions to process.
+  model_path       Path to the folder where the model and the json file are
+                   stored.
+  output_dir       Folder containing results of the training.
+
+optional arguments:
+  -h, --help       show this help message and exit
+  -cpu, --use_cpu  Uses CPU instead of GPU.
 ```
 ## Testing
-
-### Unit testing (WIP)
 
 Be sure to have the `pytest` library in order to run the test suite.  This test
 suite includes unit testing to be launched using the command line.
 
-For the moment only the CLI (command line interface) part is tested using
-`pytest`. We are planning to provide unit tests for the other tasks in the
-future. If you want to run successfully the tests maybe you can use a command
-like this one:
-```text
+### Unit testing (WIP)
+
+The CLI (command line interface) part is tested using `pytest`. We are planning
+to provide unit tests for the other tasks in the future. If you want to run
+successfully the tests maybe you can use a command like this one:
+
+```{.sourceCode .bash}
 pytest clinicadl/tests/test_cli.py
 ```
+
+### Functional testing
+
+Training task are tested using synthetic data created from MRI extracted of the OASIS dataset.
+To run them, go to the test folder and type the following command in the terminal:
+
+```{.sourceCode .bash}
+pytest ./test_train_cnn.py
+```
+Please, be sure to previously create the right dataset.
 
 ### Model prediction tests
 
