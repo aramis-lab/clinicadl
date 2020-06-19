@@ -39,7 +39,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
 
     # Create writers
     writer_train = SummaryWriter(os.path.join(log_dir, 'train'))
-    writer_valid = SummaryWriter(os.path.join(log_dir, 'valid'))
+    writer_valid = SummaryWriter(os.path.join(log_dir, 'validation'))
 
     # Initialize variables
     best_valid_accuracy = 0.0
@@ -88,19 +88,22 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                     evaluation_flag = False
                     print('Iteration %d' % i)
 
-                    acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
-                    mean_loss_train = total_loss_train / (len(train_loader) * train_loader.batch_size)
+                    _, results_train = test(model, train_loader, options.gpu, criterion)
+                    mean_loss_train = results_train["total_loss"] / (len(train_loader) * train_loader.batch_size)
 
-                    acc_mean_valid, total_loss_valid = test(model, valid_loader, options.gpu, criterion)
-                    mean_loss_valid = total_loss_valid / (len(valid_loader) * valid_loader.batch_size)
+                    _, results_valid = test(model, valid_loader, options.gpu, criterion)
+                    mean_loss_valid = results_valid["total_loss"] / (len(valid_loader) * valid_loader.batch_size)
                     model.train()
 
-                    writer_train.add_scalar('balanced_accuracy', acc_mean_train, i + epoch * len(train_loader))
-                    writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
-                    writer_valid.add_scalar('balanced_accuracy', acc_mean_valid, i + epoch * len(train_loader))
-                    writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
-                    print("Image level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
-                    print("Image level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
+                    global_step = i + epoch * len(train_loader)
+                    writer_train.add_scalar('balanced_accuracy', results_train["balanced_accuracy"], global_step)
+                    writer_train.add_scalar('loss', mean_loss_train, global_step)
+                    writer_valid.add_scalar('balanced_accuracy', results_valid["balanced_accuracy"], global_step)
+                    writer_valid.add_scalar('loss', mean_loss_valid, global_step)
+                    print("Image level training accuracy is %f at the end of iteration %d"
+                          % (results_train["balanced_accuracy"], i))
+                    print("Image level validation accuracy is %f at the end of iteration %d"
+                          % (results_valid["balanced_accuracy"], i))
 
             tend = time()
         print('Mean time per batch (train):', total_time / len(train_loader) * train_loader.batch_size)
@@ -118,29 +121,32 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
         model.zero_grad()
         print('Last checkpoint at the end of the epoch %d' % epoch)
 
-        acc_mean_train, total_loss_train = test(model, train_loader, options.gpu, criterion)
-        mean_loss_train = total_loss_train / (len(train_loader) * train_loader.batch_size)
+        _, results_train = test(model, train_loader, options.gpu, criterion)
+        mean_loss_train = results_train["total_loss"] / (len(train_loader) * train_loader.batch_size)
 
-        acc_mean_valid, total_loss_valid = test(model, valid_loader, options.gpu, criterion)
-        mean_loss_valid = total_loss_valid / (len(valid_loader) * valid_loader.batch_size)
+        _, results_valid = test(model, valid_loader, options.gpu, criterion)
+        mean_loss_valid = results_valid["total_loss"] / (len(valid_loader) * valid_loader.batch_size)
         model.train()
 
-        writer_train.add_scalar('balanced_accuracy', acc_mean_train, i + epoch * len(train_loader))
-        writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
-        writer_valid.add_scalar('balanced_accuracy', acc_mean_valid, i + epoch * len(train_loader))
-        writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
-        print("Image level training accuracy is %f at the end of iteration %d" % (acc_mean_train, i))
-        print("Image level validation accuracy is %f at the end of iteration %d" % (acc_mean_valid, i))
+        global_step = (epoch + 1) * len(train_loader)
+        writer_train.add_scalar('balanced_accuracy', results_train["balanced_accuracy"], global_step)
+        writer_train.add_scalar('loss', mean_loss_train, global_step)
+        writer_valid.add_scalar('balanced_accuracy', results_valid["balanced_accuracy"], global_step)
+        writer_valid.add_scalar('loss', mean_loss_valid, global_step)
+        print("Image level training accuracy is %f at the end of iteration %d"
+              % (results_train["balanced_accuracy"], len(train_loader)))
+        print("Image level validation accuracy is %f at the end of iteration %d"
+              % (results_valid["balanced_accuracy"], len(train_loader)))
 
-        accuracy_is_best = acc_mean_valid > best_valid_accuracy
+        accuracy_is_best = results_valid["balanced_accuracy"] > best_valid_accuracy
         loss_is_best = mean_loss_valid < best_valid_loss
-        best_valid_accuracy = max(acc_mean_valid, best_valid_accuracy)
+        best_valid_accuracy = max(results_valid["balanced_accuracy"], best_valid_accuracy)
         best_valid_loss = min(mean_loss_valid, best_valid_loss)
 
         save_checkpoint({'model': model.state_dict(),
                          'epoch': epoch,
                          'valid_loss': mean_loss_valid,
-                         'valid_acc': acc_mean_valid},
+                         'valid_acc': results_valid["balanced_accuracy"]},
                         accuracy_is_best, loss_is_best,
                         model_dir)
         # Save optimizer state_dict to be able to reload
@@ -206,7 +212,7 @@ def evaluate_prediction(y, y_pred):
     return results
 
 
-def test(model, dataloader, use_cuda, criterion, full_return=False):
+def test(model, dataloader, use_cuda, criterion, mode="image"):
     """
     Computes the balanced accuracy of the model
 
@@ -214,23 +220,21 @@ def test(model, dataloader, use_cuda, criterion, full_return=False):
     :param dataloader: a DataLoader wrapping a dataset
     :param use_cuda: if True a gpu is used
     :param criterion: (loss) function to calculate the loss
-    :param full_return: if True also returns the sensitivities and specificities for a multiclass problem
     :return:
-    if full_return
-        (dict) ensemble of metrics
-        (float) total loss
         (DataFrame) results of each session
-    else
-        (float) balanced accuracy
-        (float) total loss
-
+        (dict) ensemble of metrics + total loss
     """
     model.eval()
 
-    columns = ["participant_id", "session_id", "true_label", "predicted_label"]
-    results_df = pd.DataFrame(columns=columns)
+    if mode == "image":
+        columns = ["participant_id", "session_id", "true_label", "predicted_label"]
+    elif mode in ["patch", "roi", "slice"]:
+        columns = ['participant_id', 'session_id', '%s_id' % mode, 'true_label', 'predicted_label', 'proba0', 'proba1']
+    else:
+        raise ValueError("The mode %s is invalid." % mode)
 
-    total_time = 0
+    softmax = torch.nn.Softmax(dim=1)
+    results_df = pd.DataFrame(columns=columns)
     total_loss = 0
     tend = time()
     with torch.no_grad():
@@ -248,7 +252,14 @@ def test(model, dataloader, use_cuda, criterion, full_return=False):
 
             # Generate detailed DataFrame
             for idx, sub in enumerate(data['participant_id']):
-                row = [[sub, data['session_id'][idx], labels[idx].item(), predicted[idx].item()]]
+                if mode == "image":
+                    row = [[sub, data['session_id'][idx], labels[idx].item(), predicted[idx].item()]]
+                else:
+                    normalized_output = softmax(outputs)
+                    row = [[sub, data['session_id'][idx], data['%s_id' % mode][idx].item(),
+                            labels[idx].item(), predicted[idx].item(),
+                            normalized_output[idx, 0].item(), normalized_output[idx, 1].item()]]
+
                 row_df = pd.DataFrame(row, columns=columns)
                 results_df = pd.concat([results_df, row_df])
 
@@ -257,10 +268,158 @@ def test(model, dataloader, use_cuda, criterion, full_return=False):
         print('Mean time per batch (test):', total_time / len(dataloader) * dataloader.batch_size)
         results_df.reset_index(inplace=True, drop=True)
 
+        # calculate the balanced accuracy
         results = evaluate_prediction(results_df.true_label.values.astype(int),
                                       results_df.predicted_label.values.astype(int))
+        results_df.reset_index(inplace=True, drop=True)
+        results['total_loss'] = total_loss
+        torch.cuda.empty_cache()
 
-    if full_return:
-        return results, total_loss, results_df
+    return results_df, results
 
-    return results['balanced_accuracy'], total_loss
+
+#################################
+# Voting systems
+#################################
+
+def sub_level_to_tsvs(output_dir, results_df, results, fold, selection, mode, dataset='train', cnn_index=None):
+    """
+    Save the outputs of the test function to tsv files.
+
+    :param output_dir: (str) path to the output directory.
+    :param results_df: (DataFrame) the individual results per patch.
+    :param results: (dict) the performances obtained on a series of metrics.
+    :param fold: (int) the fold for which the performances were obtained.
+    :param selection: (str) the metrics on which the model was selected (best_acc, best_loss)
+    :param mode: (str) input category level on which the classification is performed (patch, roi, slice).
+    :param dataset: (str) the dataset on which the evaluation was performed.
+    :param cnn_index: (int) provide the cnn_index only for a multi-cnn framework.
+    :return:
+    """
+    if cnn_index is None:
+        performance_dir = os.path.join(output_dir, 'performances', 'fold_' + str(fold), selection)
+    else:
+        performance_dir = os.path.join(output_dir, 'performances', 'fold_' + str(fold), 'cnn-' + str(cnn_index),
+                                       selection)
+
+    if not os.path.exists(performance_dir):
+        os.makedirs(performance_dir)
+
+    results_df.to_csv(os.path.join(performance_dir, '%s_%s_level_result.tsv' % (dataset, mode)), index=False,
+                      sep='\t')
+
+    del results['confusion_matrix']
+    pd.DataFrame(results, index=[0]).to_csv(os.path.join(performance_dir, '%s_%s_level_metrics.tsv' % (dataset, mode)),
+                                            index=False, sep='\t')
+
+
+def retrieve_sub_level_results(output_dir, fold, selection, mode, dataset, num_cnn):
+    """Retrieve performance_df for single or multi-CNN framework."""
+    if num_cnn is None:
+        result_tsv = os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
+                                  dataset + '_%s_level_result.tsv' % mode)
+        performance_df = pd.read_csv(result_tsv, sep='\t')
+
+    else:
+        performance_df = pd.DataFrame()
+        for cnn in range(num_cnn):
+            tsv_path = os.path.join(output_dir, 'performances', 'fold_%i' % fold, 'cnn-%i' % cnn, selection,
+                                    dataset + '_%s_level_result.tsv' % mode)
+            cnn_df = pd.read_csv(tsv_path, sep='\t')
+            performance_df = pd.concat([performance_df, cnn_df])
+        performance_df.reset_index(drop=True, inplace=True)
+
+    return performance_df
+
+
+def soft_voting_to_tsvs(output_dir, fold, selection, mode, dataset='test', num_cnn=None, selection_threshold=None):
+    """
+    Save soft voting results to tsv files.
+
+    :param output_dir: (str) path to the output directory.
+    :param fold: (int) Fold number of the cross-validation.
+    :param selection: (str) criterion on which the model is selected (either best_loss or best_acc)
+    :param mode: (str) input category level on which the classification is performed (patch, roi, slice).
+    :param dataset: (str) name of the dataset for which the soft-voting is performed. If different from training or
+                    validation, the weights of soft voting will be computed on validation accuracies.
+    :param num_cnn: (int) if given load the patch level results of a multi-CNN framework.
+    :param selection_threshold: (float) all patches for which the classification accuracy is below the
+                                threshold is removed.
+
+    """
+
+    # Choose which dataset is used to compute the weights of soft voting.
+    if dataset in ['train', 'validation']:
+        validation_dataset = dataset
+    else:
+        validation_dataset = 'validation'
+    test_df = retrieve_sub_level_results(output_dir, fold, selection, mode, dataset, num_cnn)
+    validation_df = retrieve_sub_level_results(output_dir, fold, selection, mode, validation_dataset, num_cnn)
+
+    performance_path = os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection)
+    if not os.path.exists(performance_path):
+        os.makedirs(performance_path)
+
+    df_final, metrics = soft_voting(test_df, validation_df, mode, selection_threshold=selection_threshold)
+
+    df_final.to_csv(os.path.join(os.path.join(performance_path, dataset + '_image_level_result.tsv')),
+                    index=False, sep='\t')
+
+    pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
+                                                         dataset + '_image_level_metrics.tsv'),
+                                            index=False, sep='\t')
+
+
+def soft_voting(performance_df, validation_df, mode, selection_threshold=None):
+    """
+    Computes soft voting based on the probabilities in performance_df. Weights are computed based on the accuracies
+    of validation_df.
+
+    ref: S. Raschka. Python Machine Learning., 2015
+    :param performance_df: (DataFrame) results on patch level of the set on which the combination is made.
+    :param validation_df: (DataFrame) results on patch level of the set used to compute the weights.
+    :param mode: (str) input category level on which the classification is performed (patch, roi, slice).
+    :param selection_threshold: (float) if given, all patches for which the classification accuracy is below the
+                                threshold is removed.
+    :return:
+        - df_final (DataFrame) the results on the image level
+        - results (dict) the metrics on the image level
+    """
+
+    # Compute the sub-level accuracies on the validation set:
+    validation_df["accurate_prediction"] = validation_df.apply(lambda x: check_prediction(x), axis=1)
+    sub_level_accuracies = validation_df.groupby("%s_id" % mode)["accurate_prediction"].sum()
+    if selection_threshold is not None:
+        sub_level_accuracies[sub_level_accuracies < selection_threshold] = 0
+    weight_series = sub_level_accuracies / sub_level_accuracies.sum()
+
+    # Sort to allow weighted average computation
+    performance_df.sort_values(['participant_id', 'session_id', '%s_id' % mode], inplace=True)
+    weight_series.sort_index(inplace=True)
+
+    # Soft majority vote
+    columns = ['participant_id', 'session_id', 'true_label', 'predicted_label']
+    df_final = pd.DataFrame(columns=columns)
+    for (subject, session), subject_df in performance_df.groupby(['participant_id', 'session_id']):
+        y = subject_df["true_label"].unique().item()
+        proba0 = np.average(subject_df["proba0"], weights=weight_series)
+        proba1 = np.average(subject_df["proba1"], weights=weight_series)
+        proba_list = [proba0, proba1]
+        y_hat = proba_list.index(max(proba_list))
+
+        row = [[subject, session, y, y_hat]]
+        row_df = pd.DataFrame(row, columns=columns)
+        df_final = df_final.append(row_df)
+
+    results = evaluate_prediction(df_final.true_label.values.astype(int),
+                                  df_final.predicted_label.values.astype(int))
+    del results['confusion_matrix']
+
+    return df_final, results
+
+
+def check_prediction(row):
+    if row["true_label"] == row["predicted_label"]:
+        return 1
+    else:
+        return 0

@@ -4,14 +4,12 @@ from __future__ import print_function
 import argparse
 import os
 from os import path
-import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from clinicadl.tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data_test
 from clinicadl.tools.deep_learning import create_model, load_model, read_json
-from ..tools.deep_learning.cnn_utils import test
-
+from .evaluation import test_cnn
 parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")
 
 # Mandatory arguments
@@ -27,8 +25,6 @@ parser.add_argument("cohort", type=str,
 # Data Management
 parser.add_argument("--diagnoses", default=None, type=str, nargs='+',
                     help='Default will load the same diagnoses used in training.')
-parser.add_argument("--selection", default="best_loss", type=str, choices=['best_loss', 'best_acc'],
-                    help="Loads the model selected on minimal loss or maximum accuracy on validation.")
 
 # Computational resources
 parser.add_argument("--batch_size", default=16, type=int,
@@ -53,15 +49,10 @@ if __name__ == "__main__":
         split = int(fold_dir[-1])
         print("Fold %i" % split)
         model_options = argparse.Namespace()
-        json_path = path.join(options.model_path, "commandline_CNN.json")
-        model_options = read_json(model_options, "CNN", json_path=json_path)
-        model = create_model(model_options.network, options.gpu)
+        json_path = path.join(options.model_path, "commandline_cnn.json")
+        model_options = read_json(model_options, "cnn", json_path=json_path)
 
         criterion = nn.CrossEntropyLoss()
-
-        model_dir = os.path.join(best_model_dir, fold_dir, 'CNN', options.selection)
-        best_model, best_epoch = load_model(model, model_dir, options.gpu,
-                                            filename='model_best.pth.tar')
 
         # Load test data
         if options.diagnoses is None:
@@ -89,29 +80,6 @@ if __name__ == "__main__":
                 pin_memory=True
                 )
 
-        # Run test
-        metrics_test, loss_test, test_df = test(
-                best_model,
-                test_loader,
-                options.gpu,
-                criterion,
-                full_return=True)
+        subset_name = 'test-%s' % options.cohort
 
-        acc_test = metrics_test['balanced_accuracy'] * 100
-        sen_test = metrics_test['sensitivity'] * 100
-        spe_test = metrics_test['specificity'] * 100
-        print("Test, acc %f, loss %f, sensibility %f, specificity %f"
-              % (acc_test, loss_test, sen_test, spe_test))
-
-        evaluation_path = path.join(options.model_path, 'performances', fold_dir)
-        if not path.exists(path.join(evaluation_path, options.selection)):
-            os.makedirs(path.join(evaluation_path, options.selection))
-
-        test_df.to_csv(path.join(evaluation_path, options.selection,
-                                 'test-' + options.cohort + '_image_level_result.tsv'), sep='\t', index=False)
-
-        pd.DataFrame(metrics_test, index=[0]).to_csv(path.join(evaluation_path, options.selection,
-                                                               'test-' + options.cohort + '_image_level_metrics.tsv'),
-                                                     sep='\t', index=False)
-
-        del model, best_model
+        test_cnn(test_loader, subset_name, split, criterion, options)

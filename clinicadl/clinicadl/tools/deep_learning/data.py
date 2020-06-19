@@ -5,7 +5,6 @@ import pandas as pd
 import numpy as np
 from os import path
 from torch.utils.data import Dataset
-from scipy.ndimage.filters import gaussian_filter
 
 
 #################################
@@ -306,7 +305,7 @@ class MRIDataset_patch_hippocampus(Dataset):
         sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(left_is_odd),
                   'image': patch, 'label': label,
                   'participant_id': img_name, 'session_id': sess_name,
-                  'patch_id': left_is_odd}
+                  'roi_id': left_is_odd}
 
         return sample
 
@@ -590,12 +589,18 @@ def extract_roi_from_mri(image_tensor, left_is_odd):
     return extracted_roi
 
 
+##################################
+# Transformations
+##################################
+
 class GaussianSmoothing(object):
 
     def __init__(self, sigma):
         self.sigma = sigma
 
     def __call__(self, sample):
+        from scipy.ndimage.filters import gaussian_filter
+
         image = sample['image']
         np.nan_to_num(image, copy=False)
         smoothed_image = gaussian_filter(image, sigma=self.sigma)
@@ -620,6 +625,10 @@ class MinMaxNormalization(object):
     def __call__(self, image):
         return (image - image.min()) / (image.max() - image.min())
 
+
+################################
+# tsv files loaders
+################################
 
 def load_data(train_val_path, diagnoses_list,
               split, n_splits=None, baseline=True):
@@ -676,3 +685,55 @@ def load_data_test(test_path, diagnoses_list):
     test_df.reset_index(inplace=True, drop=True)
 
     return test_df
+
+
+def mix_slices(df_training, df_validation, mri_plane=0, val_size=0.15):
+    """
+    This is a function to gather the training and validation tsv together, then do the bad data split by slice.
+    :param training_tsv:
+    :param validation_tsv:
+    :return:
+    """
+    from sklearn.model_selection import StratifiedShuffleSplit
+
+    df_all = pd.concat([df_training, df_validation])
+    df_all = df_all.reset_index(drop=True)
+
+    if mri_plane == 0:
+        slices_per_patient = 169 - 40
+        slice_index = list(np.arange(20, 169 - 20))
+    elif mri_plane == 1:
+        slices_per_patient = 208 - 40
+        slice_index = list(np.arange(20, 208 - 20))
+    else:
+        slices_per_patient = 179 - 40
+        slice_index = list(np.arange(20, 179 - 20))
+
+    participant_list = list(df_all['participant_id'])
+    session_list = list(df_all['session_id'])
+    label_list = list(df_all['diagnosis'])
+
+    slice_participant_list = [ele for ele in participant_list for _ in range(slices_per_patient)]
+    slice_session_list = [ele for ele in session_list for _ in range(slices_per_patient)]
+    slice_label_list = [ele for ele in label_list for _ in range(slices_per_patient)]
+    slice_index_list = slice_index * len(label_list)
+
+    df_final = pd.DataFrame(columns=['participant_id', 'session_id', 'slice_id', 'diagnosis'])
+    df_final['participant_id'] = np.array(slice_participant_list)
+    df_final['session_id'] = np.array(slice_session_list)
+    df_final['slice_id'] = np.array(slice_index_list)
+    df_final['diagnosis'] = np.array(slice_label_list)
+
+    y = np.array(slice_label_list)
+    # split the train data into training and validation set
+    skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size, random_state=10000)
+    indices = next(skf_2.split(np.zeros(len(y)), y))
+    train_ind, valid_ind = indices
+
+    df_sub_train = df_final.iloc[train_ind]
+    df_sub_valid = df_final.iloc[valid_ind]
+
+    df_sub_train.reset_index(inplace=True, drop=True)
+    df_sub_valid.reset_index(inplace=True, drop=True)
+
+    return df_sub_train, df_sub_valid

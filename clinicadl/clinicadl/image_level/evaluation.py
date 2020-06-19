@@ -28,13 +28,13 @@ def test_cnn(data_loader, subset_name, split, criterion, options):
         best_model, best_epoch = load_model(model, model_dir, options.gpu,
                                             filename='model_best.pth.tar')
 
-        metrics_dict, loss, results_df = test(best_model, data_loader, options.gpu, criterion, full_return=True)
+        results_df, metrics_dict = test(best_model, data_loader, options.gpu, criterion)
 
         acc = metrics_dict['balanced_accuracy'] * 100
         sen = metrics_dict['sensitivity'] * 100
         spe = metrics_dict['specificity'] * 100
         print("%s, acc %f, loss %f, sensibility %f, specificity %f"
-              % (subset_name, acc, loss, sen, spe))
+              % (subset_name, acc, metrics_dict["total_loss"], sen, spe))
 
         evaluation_path = path.join(options.model_path, 'performances', fold_dir)
         if not path.exists(path.join(evaluation_path, selection)):
