@@ -42,7 +42,7 @@ def extract_dl_t1w(caps_directory,
       - 2: Axial plane
     slice_mode: str
       Mode how slices are stored (only 'slice' method):
-      - single: saves the slice in a single channel, 
+      - single: saves the slice in a single channel,
       - rgb: saves the slice in three identical  channels (red, green, blue)
     working_directory: str
       Folder containing a temporary space to save intermediate results.
