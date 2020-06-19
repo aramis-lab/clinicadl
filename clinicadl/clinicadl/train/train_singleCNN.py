@@ -25,7 +25,7 @@ __status__ = "Development"
 def train_single_cnn(params):
 
     init_path = os.path.join(params.output_dir, 'best_model_dir', 'CNN', 'init.pth.tar')
-    save_initialization(params, init_path)
+    save_initialization(params.model, init_path, init_state=params.init_state, dropout=params.dropout)
     transformations = get_transforms(params.mode, params.minmaxnormalization)
 
     if params.split is None:
