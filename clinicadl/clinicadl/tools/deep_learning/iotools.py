@@ -234,6 +234,18 @@ def read_json(options, task_type, json_path=None, test=False):
         options.transfer_learning_difference = options.pretrained_difference
         del options.pretrained_difference
 
+    if hasattr(options, 'slice_direction'):
+        options.mri_plane = options.slice_direction
+
+    if hasattr(options, 'patch_stride'):
+        options.stride_size = options.patch_stride
+
+    if hasattr(options, 'use_gpu'):
+        options.use_cpu = not options.use_gpu
+
+    if hasattr(options, 'use_extracted_patches'):
+        options.prepare_dl = not options.use_extracted_patches
+    
     if options.mode == "subject":
         options.mode = "image"
     if options.mode == "slice" and not hasattr(options, "mode_task"):
