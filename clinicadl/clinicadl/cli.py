@@ -108,7 +108,6 @@ def train_func(args):
                 args.model
             )
             train_params_autoencoder.write(
-                transfer_learning_difference=args.transfer_learning_difference,
                 diagnoses=args.diagnoses,
                 baseline=args.baseline,
                 minmaxnormalization=not args.unnormalize,
@@ -808,16 +807,8 @@ def parse_command_line():
         "autoencoder",
         parents=[
             train_parent_parser,
-            autoencoder_parent,
-            transfer_learning_parent],
+            autoencoder_parent],
         help="Train a 3D-patch level autoencoder.")
-    # /!\ If parents list is changed the arguments won't be in the right group anymore !
-    train_image_ae_parser._action_groups[-1].add_argument(
-        '--transfer_learning_difference',
-        help='''Difference of size between the pretrained autoencoder and
-        the training one. If the new one is larger, difference will be
-        positive.''',
-        type=int, default=0)
 
     train_image_ae_parser.set_defaults(func=train_func)
 
