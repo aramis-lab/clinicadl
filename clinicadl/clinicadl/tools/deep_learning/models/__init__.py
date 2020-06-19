@@ -53,7 +53,7 @@ def create_autoencoder(model_name, gpu=False, transfer_learning_path=None, diffe
     return decoder
 
 
-def save_initialization(model_name, init_dir, init_state="random", **kwargs):
+def save_initialization(model_name, init_dir, init_state="random", autoencoder=False, **kwargs):
     """
     Saves the parameters initialization of a random model created from options and initial_shape.
 
@@ -66,6 +66,8 @@ def save_initialization(model_name, init_dir, init_state="random", **kwargs):
 
     if init_state == 'same' and not path.exists(path.join(init_dir, "init.pth.tar")):
         model = create_model(model_name, **kwargs)
+        if autoencoder:
+            model = AutoEncoder(model)
         print(model.state_dict())
         init_dict = {"model": model.state_dict(),
                      "epoch": -1,
@@ -74,9 +76,11 @@ def save_initialization(model_name, init_dir, init_state="random", **kwargs):
         save_checkpoint(init_dict, False, False, init_dir, filename="init.pth.tar")
 
 
-def init_model(model_name, init_dir, init_state="random", gpu=False, **kwargs):
+def init_model(model_name, init_dir, init_state="random", autoencoder=False, gpu=False, **kwargs):
 
     model = create_model(model_name, gpu=gpu, **kwargs)
+    if autoencoder:
+        model = AutoEncoder(model)
 
     if init_state == 'same':
         model, _ = load_model(model, init_dir, gpu, filename="init.pth.tar")
