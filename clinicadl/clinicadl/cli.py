@@ -590,10 +590,10 @@ def parse_command_line():
     extract_parser.add_argument(
         'extract_method',
         help='''Method used to extract features. Three options:
-             'slice' to get 2D slices from the MRI,
-             'patch' to get 3D volumetric patches or
-             'whole' to get the complete MRI.''',
-        choices=['slice', 'patch', 'whole'], default='whole')
+             'image' to conver to PyTorch tensor the complete 3D image,
+             'patch' to extract 3D volumetric patches or
+             'slice' to get 2D slices from the image.''',
+        choices=['image', 'patch', 'slice'], default='image')
     extract_parser.add_argument(
         '-ps', '--patch_size',
         help='''Patch size (only for 'patch' extraction) e.g: --patch_size 50''',
@@ -612,9 +612,9 @@ def parse_command_line():
     extract_parser.add_argument(
         '-sm', '--slice_mode',
         help='''Slice mode (only for 'slice' extraction). Two options:
-             'original' to save one single channel (intensity),
-             'rgb' to saves three channel (with same intensity).''',
-        choices=['original', 'rgb'], default='rgb')
+             'single' to save the slice in one single channel,
+             'rgb' to save the slice in three identical channel.''',
+        choices=['single', 'rgb'], default='rgb')
     extract_parser.add_argument(
         '-np', '--nproc',
         help='Number of cores used for processing',

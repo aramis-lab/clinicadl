@@ -4,11 +4,11 @@
 def extract_dl_t1w(caps_directory,
                    tsv,
                    working_directory=None,
-                   extract_method='whole',
+                   extract_method='image',
                    patch_size=50,
                    stride_size=50,
                    slice_direction=0,
-                   slice_mode='original'):
+                   slice_mode='single'):
     """ This is a preprocessing pipeline to convert the MRIs in nii.gz format
     into tensor versions (using pytorch format). It also prepares the
     slice-level and patch-level data from the entire MRI and save them on disk.
@@ -28,9 +28,9 @@ def extract_dl_t1w(caps_directory,
       TVS file with the subject list (participant_id and session_id).
     extract_method:
       Select which extract method will be applied for the outputs:
-      - 'slice' to get slices from the MRI,
-      - 'patch' to get 3D patches from MRI,
-      - 'whole' to get the complete MRI
+      - 'image' to convert to PyTorch tensor the complete 3D image,
+      - 'patch' to extract 3D volumetric patches and
+      - 'slice' to extract 2D slices from the image
     patch_size: int
       Size for extracted 3D patches (only 'patch' method).
     stride_size: int
@@ -42,8 +42,8 @@ def extract_dl_t1w(caps_directory,
       - 2: Axial plane
     slice_mode: str
       Mode how slices are stored (only 'slice' method):
-      - original: saves one single channel (intensity)
-      - rgb: saves with three channels (red, green, blue)
+      - single: saves the slice in a single channel, 
+      - rgb: saves the slice in three identical  channels (red, green, blue)
     working_directory: str
       Folder containing a temporary space to save intermediate results.
     e
