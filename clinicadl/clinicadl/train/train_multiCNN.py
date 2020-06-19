@@ -10,7 +10,7 @@ from ..tools.deep_learning.data import (get_transforms,
                                         load_data,
                                         return_dataset)
 from ..tools.deep_learning.cnn_utils import train, soft_voting_to_tsvs
-from .evaluation_test_multiCNN import test_cnn
+from .test_multiCNN import test_cnn
 
 
 __author__ = "Junhao Wen, Elina Thibeau-Sutre, Mauricio Diaz"
@@ -46,12 +46,6 @@ def train_patch_multi_cnn(params):
                     fi,
                     n_splits=params.n_splits,
                     baseline=params.baseline)
-
-            print("Running for the %d-th CNN" % cnn_index)
-            model = init_model(params.model, init_path, params.init_state, gpu=params.gpu, dropout=params.dropout)
-            model = transfer_learning(model, fi, source_path=params.transfer_learning_path,
-                                      transfer_learning_autoencoder=params.transfer_learning_autoencoder,
-                                      gpu=params.gpu, selection=params.transfer_learning_selection)
 
             data_train = return_dataset(params.mode, params.input_dir, training_df, params.preprocessing,
                                         transformations, params, cnn_index=cnn_index)

@@ -8,9 +8,9 @@ import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from ..tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
-from ..tools.deep_learning import create_model, load_model, read_json
-from ..tools.deep_learning.cnn_utils import test
+from clinicadl.tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
+from clinicadl.tools.deep_learning import create_model, load_model, read_json
+from clinicadl.tools.deep_learning.cnn_utils import test
 
 
 def test_cnn(data_loader, subset_name, split, criterion, options):
