@@ -68,7 +68,6 @@ def save_initialization(model_name, init_dir, init_state="random", autoencoder=F
         model = create_model(model_name, **kwargs)
         if autoencoder:
             model = AutoEncoder(model)
-        print(model.state_dict())
         init_dict = {"model": model.state_dict(),
                      "epoch": -1,
                      "valid_acc": None,
