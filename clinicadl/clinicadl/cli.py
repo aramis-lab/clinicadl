@@ -107,11 +107,12 @@ def train_func(args):
     if args.mode == 'image':
         if args.mode_task == "autoencoder":
             train_params_autoencoder = Parameters(
+                args.mode,
                 args.tsv_path,
                 args.output_dir,
                 args.caps_dir,
                 args.preprocessing,
-                args.network
+                args.model
             )
             train_params_autoencoder.write(
                 transfer_learning_difference=args.transfer_learning_difference,
@@ -142,7 +143,7 @@ def train_func(args):
                 args.output_dir,
                 args.caps_dir,
                 args.preprocessing,
-                args.network
+                args.model
             )
             train_params_cnn.write(
                 diagnoses=args.diagnoses,
@@ -174,7 +175,7 @@ def train_func(args):
             args.output_dir,
             args.caps_dir,
             args.preprocessing,
-            args.network
+            args.model
         )
         train_params_slice.write(
             mri_plane=args.slice_direction,
@@ -205,7 +206,7 @@ def train_func(args):
                 args.output_dir,
                 args.caps_dir,
                 args.preprocessing,
-                args.network
+                args.model
             )
             train_params_autoencoder.write(
                 diagnoses=args.diagnoses,
@@ -236,7 +237,7 @@ def train_func(args):
                 args.output_dir,
                 args.caps_dir,
                 args.preprocessing,
-                args.network
+                args.model
             )
             train_params_patch.write(
                 diagnoses=args.diagnoses,
@@ -270,7 +271,7 @@ def train_func(args):
                 args.output_dir,
                 args.caps_dir,
                 args.preprocessing,
-                args.network
+                args.model
             )
             train_params_patch.write(
                 diagnoses=args.diagnoses,
@@ -306,7 +307,7 @@ def train_func(args):
                 args.output_dir,
                 args.caps_dir,
                 args.preprocessing,
-                args.network
+                args.model
             )
             train_params_autoencoder.write(
                 diagnoses=args.diagnoses,
@@ -334,7 +335,7 @@ def train_func(args):
                 args.output_dir,
                 args.caps_dir,
                 args.preprocessing,
-                args.network
+                args.model
             )
             train_params_patch.write(
                 diagnoses=args.diagnoses,
@@ -665,7 +666,7 @@ def parse_command_line():
         help='Folder containing results of the training.',
         default=None)
     train_pos_group.add_argument(
-        'network',
+        'model',
         help='CNN Model to be used during the training.',
         default='Conv5_FC3')
 

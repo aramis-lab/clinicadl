@@ -26,13 +26,13 @@ __status__ = "Development"
 def test_cnn(data_loader, subset_name, split, criterion, cnn_index, options):
     for selection in ["best_acc", "best_loss"]:
         # load the best trained model during the training
-        model = create_model(options.network, options.gpu)
+        model = create_model(options.model, options.gpu, dropout=options.dropout)
         model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', "fold_%i" % split,
                                                            'cnn-%i' % cnn_index, selection),
                                        gpu=options.gpu, filename='model_best.pth.tar')
 
         results_df, metrics = test(model, data_loader, options.gpu, criterion, options.mode)
-        print("Patch level balanced accuracy is %f" % metrics['balanced_accuracy'])
+        print("%s level balanced accuracy is %f" % (options.mode, metrics['balanced_accuracy']))
 
         sub_level_to_tsvs(options.output_dir, results_df, metrics, split, selection, options.mode,
                           dataset=subset_name, cnn_index=cnn_index)
@@ -69,6 +69,8 @@ parser.add_argument('--prepare_dl', default=False, action="store_true",
 # test arguments
 parser.add_argument("--network", default="Conv4_FC3",
                     help="Architecture of the network.")
+parser.add_argument('--dropout', default=0, type=float,
+                    help='rate of dropout that will be applied to dropout layers.')
 parser.add_argument("--num_cnn", default=36, type=int,
                     help="How many CNNs we want to train in a patch-wise way."
                          "By default, we train each patch from all subjects for one CNN.")

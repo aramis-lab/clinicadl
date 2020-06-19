@@ -104,6 +104,7 @@ def train_cnn(params):
         log_dir = path.join(params.output_dir, 'log_dir', 'fold_%i' % fold, 'CNN')
         model_dir = path.join(params.output_dir, 'best_model_dir', 'fold_%i' % fold, 'CNN')
 
+        print('Beginning the training task')
         train(model, train_loader, valid_loader, criterion, optimizer, False, log_dir, model_dir, params)
 
         params.model_path = params.output_dir

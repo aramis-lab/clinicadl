@@ -22,7 +22,7 @@ def test_cnn(data_loader, subset_name, split, criterion, options):
     for selection in ["best_acc", "best_loss"]:
 
         print("Evaluation %s fold %i" % (selection, split))
-        model = create_model(options.network)
+        model = create_model(options.model, options.gpu, dropout=options.dropout)
         fold_dir = "fold_%i" % split
         model_dir = path.join(best_model_dir, fold_dir, 'CNN', selection)
         best_model, best_epoch = load_model(model, model_dir, options.gpu,

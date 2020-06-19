@@ -100,10 +100,10 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                     writer_train.add_scalar('loss', mean_loss_train, global_step)
                     writer_valid.add_scalar('balanced_accuracy', results_valid["balanced_accuracy"], global_step)
                     writer_valid.add_scalar('loss', mean_loss_valid, global_step)
-                    print("Image level training accuracy is %f at the end of iteration %d"
-                          % (results_train["balanced_accuracy"], i))
-                    print("Image level validation accuracy is %f at the end of iteration %d"
-                          % (results_valid["balanced_accuracy"], i))
+                    print("%s level training accuracy is %f at the end of iteration %d"
+                          % (options.mode, results_train["balanced_accuracy"], i))
+                    print("%s level validation accuracy is %f at the end of iteration %d"
+                          % (options.mode, results_valid["balanced_accuracy"], i))
 
             tend = time()
         print('Mean time per batch loading (train):', total_time / len(train_loader) * train_loader.batch_size)
@@ -133,10 +133,10 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
         writer_train.add_scalar('loss', mean_loss_train, global_step)
         writer_valid.add_scalar('balanced_accuracy', results_valid["balanced_accuracy"], global_step)
         writer_valid.add_scalar('loss', mean_loss_valid, global_step)
-        print("Image level training accuracy is %f at the end of iteration %d"
-              % (results_train["balanced_accuracy"], len(train_loader)))
-        print("Image level validation accuracy is %f at the end of iteration %d"
-              % (results_valid["balanced_accuracy"], len(train_loader)))
+        print("%s level training accuracy is %f at the end of iteration %d"
+              % (options.mode, results_train["balanced_accuracy"], len(train_loader)))
+        print("%s level validation accuracy is %f at the end of iteration %d"
+              % (options.mode, results_valid["balanced_accuracy"], len(train_loader)))
 
         accuracy_is_best = results_valid["balanced_accuracy"] > best_valid_accuracy
         loss_is_best = mean_loss_valid < best_valid_loss
@@ -309,7 +309,6 @@ def sub_level_to_tsvs(output_dir, results_df, results, fold, selection, mode, da
     results_df.to_csv(os.path.join(performance_dir, '%s_%s_level_result.tsv' % (dataset, mode)), index=False,
                       sep='\t')
 
-    del results['confusion_matrix']
     pd.DataFrame(results, index=[0]).to_csv(os.path.join(performance_dir, '%s_%s_level_metrics.tsv' % (dataset, mode)),
                                             index=False, sep='\t')
 
@@ -414,7 +413,6 @@ def soft_voting(performance_df, validation_df, mode, selection_threshold=None):
 
     results = evaluate_prediction(df_final.true_label.values.astype(int),
                                   df_final.predicted_label.values.astype(int))
-    del results['confusion_matrix']
 
     return df_final, results
 
