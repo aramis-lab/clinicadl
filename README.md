@@ -195,7 +195,6 @@ If you want to run the pipeline on a subset of your BIDS dataset, you can use
 the `-tsv` flag to specify in a TSV file the participants belonging to your
 subset.
 
-A description of the arguments for the `preprocessing` task is presented below:
 <details>
 <summary>
 Here is a description of the arguments present for the preprocessing task.
