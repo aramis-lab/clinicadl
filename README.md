@@ -144,6 +144,7 @@ The full list of options available for `tsvtool getlabels` is here:
 <summary>
 clinicadl tsvtool getlabels -h
 </summary>
+
 ```{.sourceCode .bash}
 usage: clinicadl tsvtool getlabels [-h] [--modality MODALITY]
                                    [--diagnoses {AD,CN,MCI,sMCI,pMCI} [{AD,CN,MCI,sMCI,pMCI} ...]]
@@ -211,7 +212,6 @@ optional arguments:
                         Number of cores used for processing (2 by default)
 ```
 </details>
-
 
 ### Tensor extraction
 
