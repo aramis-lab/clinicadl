@@ -136,7 +136,7 @@ class Parameters:
     def set_default_init_state(self):
         """Sets init state according to experiments performed in AD-DL"""
         if self.init_state is None:
-            if self.mode in ["patch", "roi", "slice"]:
+            if self.mode in ["patch", "roi"]:
                 self.init_state = "same"
             else:
                 self.init_state = "random"
