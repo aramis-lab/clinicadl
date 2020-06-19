@@ -98,9 +98,9 @@ There are six kind of tasks that can be performed using the command line:
 - **Generate a synthetic dataset.** Useful to obtain synthetic datasets
   frequently used in functional tests.
 
-- **T1 MRI preprocessing.** It processes a dataset of T1 images stored in BIDS
-  format and prepares to extract the tensors (see paper for details on the
-  preprocessing). Output is stored using the
+- **T1 MRI preprocessing.** The `preprocessing` task processes a dataset of T1
+  images stored in BIDS format and prepares to extract the tensors (see paper
+  for details on the preprocessing). Output is stored using the
   [CAPS](http://www.clinica.run/doc/CAPS/Introduction/) hierarchy.
 
 - **T1 MRI tensor extraction.** The `extract` option allows to create files in
@@ -138,6 +138,41 @@ where:
 By default the extracted labels are only AD and CN, as OASIS database do not include
 MCI patients. To include them add `--diagnoses AD CN MCI sMCI pMCI` at the end of the command.
 
+The full list of options available for `tsvtool getlabels` is here:
+
+<details>
+<summary>
+clinicadl tsvtool getlabels -h
+</summary>
+```{.sourceCode .bash}
+usage: clinicadl tsvtool getlabels [-h] [--modality MODALITY]
+                                   [--diagnoses {AD,CN,MCI,sMCI,pMCI} [{AD,CN,MCI,sMCI,pMCI} ...]]
+                                   [--time_horizon TIME_HORIZON]
+                                   [--restriction_path RESTRICTION_PATH]
+                                   merged_tsv missing_mods results_path
+
+positional arguments:
+  merged_tsv            Path to the file obtained by the command clinica
+                        iotools merge-tsv.
+  missing_mods          Path to the folder where the outputs of clinica
+                        iotools missing-mods are.
+  results_path          Path to the folder where tsv files are extracted.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --modality MODALITY, -mod MODALITY
+                        Modality to select sessions. Sessions which do not
+                        include the modality will be excluded.
+  --diagnoses {AD,CN,MCI,sMCI,pMCI} [{AD,CN,MCI,sMCI,pMCI} ...]
+                        Labels that must be extracted from merged_tsv.
+  --time_horizon TIME_HORIZON
+                        Time horizon to analyse stability of MCI subjects.
+  --restriction_path RESTRICTION_PATH
+                        Path to a tsv containing the sessions that can be
+                        included.
+```
+</details>
+
 ### Preprocessing
 Typical use for `preprocessing` ([ANTs](https://stnava.github.io/ANTs/) software needs to be installed):
 
@@ -155,14 +190,37 @@ If you want to run the pipeline on a subset of your BIDS dataset, you can use
 the `-tsv` flag to specify in a TSV file the participants belonging to your
 subset.
 
+A description of the arguments for the `preprocessing` task is presented below:
+<details>
+<summary>
+clinicadl preprocessing -h
+</summary>
+```{.sourceCode .bash}
+usage: clinicadl preprocessing [-h] [-np NPROC]
+                               bids_dir caps_dir tsv_file working_dir
+
+positional arguments:
+  bids_dir              Data using BIDS structure.
+  caps_dir              Data using CAPS structure.
+  tsv_file              TSV file with subjects/sessions to process.
+  working_dir           Working directory to save temporary file.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -np NPROC, --nproc NPROC
+                        Number of cores used for processing (2 by default)
+```
+</details>
+
+
 ### Tensor extraction
 
 These are the options available for the `extract` task:
+
 <details>
 <summary>
 clinicadl extract -h
 </summary>
-
 ```{.sourceCode .bash}
 usage: clinicadl extract [-h] [-ps PATCH_SIZE] [-ss STRIDE_SIZE]
                          [-sd SLICE_DIRECTION] [-sm {original,rgb}]
