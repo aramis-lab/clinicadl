@@ -245,7 +245,7 @@ def read_json(options, task_type, json_path=None, test=False):
 
     if hasattr(options, 'use_extracted_patches'):
         options.prepare_dl = not options.use_extracted_patches
-    
+
     if options.mode == "subject":
         options.mode = "image"
     if options.mode == "slice" and not hasattr(options, "mode_task"):
