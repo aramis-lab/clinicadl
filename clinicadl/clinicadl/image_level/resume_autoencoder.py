@@ -6,9 +6,9 @@ from os import path
 from time import time
 from torch.utils.data import DataLoader
 
-from .utils import ae_finetuning
 from ..tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
 from ..tools.deep_learning import load_model, create_autoencoder, load_optimizer, read_json
+from ..tools.deep_learning.autoencoder_utils import train, visualize_image
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 
@@ -85,13 +85,20 @@ def main(options):
     model_dir = path.join(options.output_dir, 'best_model_dir', 'fold_%i' % options.split, 'ConvAutoencoder')
 
     print('Resuming the training task')
-    ae_finetuning(decoder, train_loader, valid_loader, criterion, optimizer, True,
-                  log_dir, model_dir, visualization_dir, options)
+    train(decoder, train_loader, valid_loader, criterion, optimizer, False,
+          log_dir, model_dir, options)
+
+    if options.visualization:
+        print("Visualization of autoencoder reconstruction")
+        best_decoder, _ = load_model(decoder, path.join(model_dir, "best_loss"),
+                                     options.gpu, filename='model_best.pth.tar')
+        visualize_image(best_decoder, valid_loader, path.join(visualization_dir, "validation"), nb_images=3)
+        visualize_image(best_decoder, train_loader, path.join(visualization_dir, "train"), nb_images=3)
+    del decoder
+    torch.cuda.empty_cache()
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)
-    text_file = open(path.join(options.log_dir, 'model_output.txt'), 'w')
-    text_file.write('Time of training: %d s \n' % total_time)
 
 
 if __name__ == "__main__":

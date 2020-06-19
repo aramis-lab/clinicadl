@@ -6,11 +6,11 @@ from time import time
 from os import path
 from torch.utils.data import DataLoader
 
-from .utils import train
 from .evaluation import test_cnn
 from ..tools.deep_learning.data import MinMaxNormalization, MRIDataset, load_data
 from ..tools.deep_learning import create_model
 from ..tools.deep_learning.models import transfer_learning
+from ..tools.deep_learning.cnn_utils import train
 
 
 def train_cnn(params):
