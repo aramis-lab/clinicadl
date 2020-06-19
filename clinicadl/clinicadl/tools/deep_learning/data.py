@@ -394,7 +394,7 @@ class MRIDataset_slice(Dataset):
                                    'deeplearning_prepare_data', 'slice_based', 't1_linear',
                                    img_name + '_' + sess_name
                                    + FILENAME_TYPE['cropped'][0:-4]
-                                   + '_axis-' + self.slice_direction 
+                                   + '_axis-' + self.slice_direction
                                    + '_channel-rgb_slice-%i_T1w.pt' % slice_idx)
             extracted_slice = torch.load(slice_path)
         else:
@@ -486,7 +486,7 @@ class MRIDataset_slice_mixed(Dataset):
                                    'deeplearning_prepare_data', 'slice_based', 't1_linear',
                                    img_name + '_' + sess_name
                                    + FILENAME_TYPE['cropped'][0:-4]
-                                   + '_axis-' + self.slice_direction 
+                                   + '_axis-' + self.slice_direction
                                    + '_channel-rgb_slice-' + str(slice_name) + '_T1w.pt')
             extracted_slice = torch.load(slice_path)
 
