@@ -4,15 +4,13 @@ import copy
 import os
 import torch
 from torch.utils.data import DataLoader
-import torchvision.transforms as transforms
 
-from ..tools.deep_learning.models.autoencoder import transfer_learning
-from ..tools.deep_learning import create_model
-from ..tools.deep_learning.data import (MinMaxNormalization,
+from ..tools.deep_learning.models import transfer_learning, save_initialization, init_model
+from ..tools.deep_learning.data import (get_transforms,
                                         load_data,
-                                        MRIDataset_patch)
+                                        return_dataset)
 from ..tools.deep_learning.cnn_utils import train, soft_voting_to_tsvs
-from .evaluation_multiCNN import test_cnn
+from .evaluation_test_multiCNN import test_cnn
 
 
 __author__ = "Junhao Wen, Elina Thibeau-Sutre, Mauricio Diaz"
@@ -27,9 +25,9 @@ __status__ = "Development"
 
 def train_patch_multi_cnn(params):
 
-    model = create_model(params.model, params.gpu, dropout=params.dropout)
-    init_state = copy.deepcopy(model.state_dict())
-    transformations = transforms.Compose([MinMaxNormalization()])
+    init_path = os.path.join(params.output_dir, 'best_model_dir', 'CNN', 'init.pth.tar')
+    save_initialization(params, init_path)
+    transformations = get_transforms(params.mode, params.minmaxnormalization)
 
     if params.split is None:
         fold_iterator = range(params.n_splits)
@@ -42,7 +40,7 @@ def train_patch_multi_cnn(params):
 
         for cnn_index in range(params.num_cnn):
 
-            training_tsv, valid_tsv = load_data(
+            training_df, valid_df = load_data(
                     params.tsv_path,
                     params.diagnoses,
                     fi,
@@ -50,32 +48,15 @@ def train_patch_multi_cnn(params):
                     baseline=params.baseline)
 
             print("Running for the %d-th CNN" % cnn_index)
-            model.load_state_dict(init_state)
-            model = transfer_learning(model, fi, transfer_learning_autoencoder=params.transfer_learning_autoencoder,
-                                      source_path=params.transfer_learning_path, gpu=params.gpu,
-                                      selection=params.transfer_learning_selection, cnn_index=cnn_index)
+            model = init_model(params.model, init_path, params.init_state, gpu=params.gpu, dropout=params.dropout)
+            model = transfer_learning(model, fi, source_path=params.transfer_learning_path,
+                                      transfer_learning_autoencoder=params.transfer_learning_autoencoder,
+                                      gpu=params.gpu, selection=params.transfer_learning_selection)
 
-            data_train = MRIDataset_patch(
-                    params.input_dir,
-                    training_tsv,
-                    params.patch_size,
-                    params.stride_size,
-                    preprocessing=params.preprocessing,
-                    transformations=transformations,
-                    patch_index=cnn_index,
-                    prepare_dl=params.prepare_dl
-                    )
-
-            data_valid = MRIDataset_patch(
-                    params.input_dir,
-                    valid_tsv,
-                    params.patch_size,
-                    params.stride_size,
-                    preprocessing=params.preprocessing,
-                    transformations=transformations,
-                    patch_index=cnn_index,
-                    prepare_dl=params.prepare_dl
-                    )
+            data_train = return_dataset(params.mode, params.input_dir, training_df, params.preprocessing,
+                                        transformations, params, cnn_index=cnn_index)
+            data_valid = return_dataset(params.mode, params.input_dir, valid_df, params.preprocessing,
+                                        transformations, params, cnn_index=cnn_index)
 
             # Use argument load to distinguish training and testing
             train_loader = DataLoader(data_train,
@@ -94,7 +75,7 @@ def train_patch_multi_cnn(params):
 
             # Initialize the model
             print('Initialization of the model')
-            model.load_state_dict(init_state)
+            model = init_model(params.model, init_path, params.init_state, gpu=params.gpu, dropout=params.dropout)
             model = transfer_learning(model, fi, source_path=params.transfer_learning_path,
                                       transfer_learning_autoencoder=params.transfer_learning_autoencoder,
                                       gpu=params.gpu, selection=params.transfer_learning_selection)
