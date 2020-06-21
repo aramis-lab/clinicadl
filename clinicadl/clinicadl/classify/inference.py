@@ -7,7 +7,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 
-def classify(caps_dir, tsv_path, model_path, output_dir=None, gpu=True):
+def classify(caps_dir, tsv_path, model_path, output_dir=None, gpu=True, prepare_dl=False):
     """
     This function reads the command line parameters and point to inference
 
@@ -63,7 +63,8 @@ def classify(caps_dir, tsv_path, model_path, output_dir=None, gpu=True):
         tsv_path,
         model_path,
         json_file,
-        gpu)
+        gpu,
+        prepare_dl)
 
     print(results_df)
 
@@ -72,7 +73,8 @@ def inference_from_model(caps_dir,
                          tsv_path,
                          model_path=None,
                          json_file=None,
-                         gpu=True):
+                         gpu=True,
+                         prepare_dl=False):
     """
     Inference from trained model
 
@@ -85,6 +87,8 @@ def inference_from_model(caps_dir,
     model_path: file with the model (pth format).
     json_file: file containing the training parameters.
     gpu: if true, it uses gpu.
+    prepare_dl: if true, uses extracted patches/slices otherwise extract them
+    on-the-fly.
 
     Returns:
 
@@ -134,6 +138,7 @@ def inference_from_model(caps_dir,
     print(options)
 
     options.use_cpu = not gpu
+    options.prepare_dl = prepare_dl
 
     if (options.mode == 'image'):
         infered_classes = inference_from_image_model(
@@ -253,7 +258,7 @@ def inference_from_slice_model(caps_dir, tsv_path, model_path, options):
         tsv_path,
         transformations=transformations,
         mri_plane=options.mri_plane,
-        prepare_dl=not options.prepare_dl)
+        prepare_dl=options.prepare_dl)
 
     # Load the data
     test_loader = DataLoader(
