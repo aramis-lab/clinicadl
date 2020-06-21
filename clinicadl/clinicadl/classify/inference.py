@@ -7,7 +7,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 
-def classify(caps_dir, tsv_file, model_path, output_dir=None, gpu=True):
+def classify(caps_dir, tsv_path, model_path, output_dir=None, gpu=True):
     """
     This function reads the command line parameters and point to inference
 
@@ -27,7 +27,7 @@ def classify(caps_dir, tsv_file, model_path, output_dir=None, gpu=True):
     caps_dir = abspath(caps_dir)
     model_path = abspath(model_path)
     print(model_path)
-    tsv_file = abspath(tsv_file)
+    tsv_path = abspath(tsv_path)
 
     if not isdir(caps_dir):
         print("Folder containing MRIs is not found, please verify its location")
@@ -38,9 +38,9 @@ def classify(caps_dir, tsv_file, model_path, output_dir=None, gpu=True):
         print("A valid model in the path was not found. Donwload them from aramislab.inria.fr")
         raise FileNotFoundError(
             errno.ENOENT, strerror(errno.ENOENT), model_path)
-    if not exists(tsv_file):
+    if not exists(tsv_path):
         raise FileNotFoundError(
-            errno.ENOENT, strerror(errno.ENOENT), tsv_file)
+            errno.ENOENT, strerror(errno.ENOENT), tsv_path)
 
     # Infer json file from model_path (suppose that json file is at the same
     # folder)
@@ -60,7 +60,7 @@ def classify(caps_dir, tsv_file, model_path, output_dir=None, gpu=True):
 
     results_df = inference_from_model(
         caps_dir,
-        tsv_file,
+        tsv_path,
         model_path,
         json_file,
         gpu)
@@ -69,7 +69,7 @@ def classify(caps_dir, tsv_file, model_path, output_dir=None, gpu=True):
 
 
 def inference_from_model(caps_dir,
-                         tsv_file,
+                         tsv_path,
                          model_path=None,
                          json_file=None,
                          gpu=True):
@@ -81,7 +81,7 @@ def inference_from_model(caps_dir,
     Args:
 
     caps_dir: folder containing the tensor files (.pt version of MRI)
-    tsv_file: file with the name of the MRIs to process (single or multiple)
+    tsv_path: file with the name of the MRIs to process (single or multiple)
     model_path: file with the model (pth format).
     json_file: file containing the training parameters.
     gpu: if true, it uses gpu.
@@ -109,7 +109,7 @@ def inference_from_model(caps_dir,
 #    FILE_TYPE = T1W_LINEAR_CROPPED_TENSOR
 #
 #    sessions, subjects = get_subject_session_list(caps_dir,
-#            tsv_file,
+#            tsv_path,
 #            is_bids_dir=False,
 #            use_session_tsv=False,
 #            tsv_dir=None)
@@ -138,19 +138,19 @@ def inference_from_model(caps_dir,
     if (options.mode == 'image'):
         infered_classes = inference_from_image_model(
             caps_dir,
-            tsv_file,
+            tsv_path,
             model_path,
             options)
     elif (options.mode == 'slice'):
         infered_classes = inference_from_slice_model(
             caps_dir,
-            tsv_file,
+            tsv_path,
             model_path,
             options)
     elif (options.mode == 'patch'):
         infered_classes = inference_from_patch_model(
             caps_dir,
-            tsv_file,
+            tsv_path,
             model_path,
             options)
     elif (options.mode == 'roi'):
@@ -161,7 +161,7 @@ def inference_from_model(caps_dir,
     return infered_classes
 
 
-def inference_from_image_model(caps_dir, tsv_file, model_path, options):
+def inference_from_image_model(caps_dir, tsv_path, model_path, options):
     '''
     Inference using an image/subject CNN model
 
@@ -189,7 +189,7 @@ def inference_from_image_model(caps_dir, tsv_file, model_path, options):
     # Read/localize the data
     data_to_test = MRIDataset(
         caps_dir,
-        tsv_file,
+        tsv_path,
         options.preprocessing,
         transform=transformations)
 
@@ -212,7 +212,7 @@ def inference_from_image_model(caps_dir, tsv_file, model_path, options):
     return test_df
 
 
-def inference_from_slice_model(caps_dir, tsv_file, model_path, options):
+def inference_from_slice_model(caps_dir, tsv_path, model_path, options):
     '''
     Inference using a slice CNN model
 
@@ -250,7 +250,7 @@ def inference_from_slice_model(caps_dir, tsv_file, model_path, options):
     # Read/localize the data
     data_to_test = MRIDataset_slice(
         caps_dir,
-        tsv_file,
+        tsv_path,
         transformations=transformations,
         mri_plane=options.mri_plane,
         prepare_dl=not options.prepare_dl)
@@ -273,7 +273,7 @@ def inference_from_slice_model(caps_dir, tsv_file, model_path, options):
     return results_df
 
 
-def inference_from_patch_model(caps_dir, tsv_file, model_path, options):
+def inference_from_patch_model(caps_dir, tsv_path, model_path, options):
     '''
     Inference using an image/subject CNN model
 
@@ -305,12 +305,12 @@ def inference_from_patch_model(caps_dir, tsv_file, model_path, options):
         if options.hippocampus_roi:
             data_to_test = MRIDataset_patch_hippocampus(
                 caps_directory,
-                tsv_file,
+                tsv_path,
                 transformations=transformations)
         else:
             data_to_test = MRIDataset_patch(
                 caps_directory,
-                tsv_file,
+                tsv_path,
                 options.patch_size,
                 options.stride_size,
                 transformations=transformations,
@@ -346,7 +346,7 @@ def inference_from_patch_model(caps_dir, tsv_file, model_path, options):
 
             dataset = MRIDataset_patch(
                 caps_dir,
-                tsv_file,
+                tsv_path,
                 options.patch_size,
                 options.stride_size,
                 transformations=transformations,

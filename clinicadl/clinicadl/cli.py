@@ -365,10 +365,10 @@ def classify_func(args):
     from .classify.inference import classify
 
     classify(
-        args.caps_dir,
-        args.tsv_file,
+        args.caps_directory,
+        args.tsv_path,
         args.model_path,
-        output_dir=args.output_dir,
+        output_dir=args.output_directory,
         gpu=not args.use_cpu
     )
 
@@ -1017,11 +1017,11 @@ def parse_command_line():
         help='''Classify one image or a list of images with your previously
                  trained model.''')
     classify_parser.add_argument(
-        'caps_dir',
+        'caps_directory',
         help='Data using CAPS structure.',
         default=None)
     classify_parser.add_argument(
-        'tsv_file',
+        'tsv_path',
         help='TSV file with subjects/sessions to process.',
         default=None)
     classify_parser.add_argument(
@@ -1029,7 +1029,7 @@ def parse_command_line():
         help='Path to the folder where the model and the json file are stored.',
         default=None)
     classify_parser.add_argument(
-        'output_dir',
+        'output_directory',
         help='Folder containing results of the training.',
         default=None)
     classify_parser.add_argument(
