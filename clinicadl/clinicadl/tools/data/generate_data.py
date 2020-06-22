@@ -15,12 +15,12 @@ from ..tsv.tsv_utils import baseline_df
 from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
 
 
-def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0, 
+def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
                             sigma=0.5, preprocessing="linear", output_size=None):
 
     """
     Generates a random dataset.
-    
+
     Creates a random dataset for intractable classification task from the first
     subject of the tsv file (other subjects/sessions different from the first
     one are ignored. Degree of noise can be parameterized.
@@ -29,7 +29,7 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
         caps_dir: (str) Path to the (input) CAPS directory.
         tsv_path: (str) path to tsv file of list of subjects/sessions.
         output_dir: (str) folder containing the synthetic dataset in (output)
-            CAPS format.  
+            CAPS format.
         n_subjects: (int) number of subjects in each class of the
             synthetic dataset
         mean: (float) mean of the gaussian noise
@@ -37,7 +37,7 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
         preprocessing: (str) preprocessing performed. Must be in ['linear', 'extensive'].
         output_size: (tuple[int]) size of the output. If None no interpolation
              will be performed.
-    
+
     Returns:
         A folder written on the output_dir location (in CAPS format), also a
         tsv file describing this output
@@ -96,7 +96,7 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
     half of the image is processed using a mask to oclude a specific region.
     This procedure creates a dataset fully separable (images with half-right
     processed and image with half-left processed)
-    
+
     Args:
         caps_dir: (str) path to the CAPS directory.
         tsv_path: (str) path to tsv file of list of subjects/sessions.
@@ -109,11 +109,11 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
         output_size: (tuple[int]) size of the output. If None no interpolation
             will be performed.
         group: (str) group used for dartel preprocessing.
-        
+
     Returns:
         Folder structure where images are stored in CAPS format.
-    
-    Raises:    
+
+    Raises:
     """
 
     # Read DataFrame
