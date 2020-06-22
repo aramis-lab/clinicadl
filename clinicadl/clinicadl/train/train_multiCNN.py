@@ -40,11 +40,11 @@ def train_multi_cnn(params):
         for cnn_index in range(params.num_cnn):
 
             training_df, valid_df = load_data(
-                    params.tsv_path,
-                    params.diagnoses,
-                    fi,
-                    n_splits=params.n_splits,
-                    baseline=params.baseline)
+                params.tsv_path,
+                params.diagnoses,
+                fi,
+                n_splits=params.n_splits,
+                baseline=params.baseline)
 
             data_train = return_dataset(params.mode, params.input_dir, training_df, params.preprocessing,
                                         transformations, params, cnn_index=cnn_index)

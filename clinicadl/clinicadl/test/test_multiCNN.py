@@ -83,11 +83,11 @@ def main(options):
                                      transformations, options, cnn_index=cnn_index)
 
             test_loader = DataLoader(
-                    dataset,
-                    batch_size=options.batch_size,
-                    shuffle=False,
-                    num_workers=options.num_workers,
-                    pin_memory=True)
+                dataset,
+                batch_size=options.batch_size,
+                shuffle=False,
+                num_workers=options.num_workers,
+                pin_memory=True)
 
             test_cnn(options.model_path, test_loader, options.dataset, split, criterion, cnn_index,
                      model_options, options.gpu)
