@@ -4,12 +4,12 @@ This file contains all methods needed to perform the quality check procedure aft
 from os import path
 import torch
 import pandas as pd
+from torch.utils.data import DataLoader
 
-from clinicadl.quality_check.utils import load_nifti_images, resnet_qc_18
+from clinicadl.quality_check.utils import QCDataset, resnet_qc_18
 
 
-def quality_check(caps_dir, tsv_path, output_path, threshold=0.5):
-
+def quality_check(caps_dir, tsv_path, output_path, threshold=0.5, batch_size=1, num_workers=0, gpu=True):
     if path.splitext(output_path)[1] != ".tsv":
         raise ValueError("Please provide an output path to a tsv file")
 
@@ -18,6 +18,8 @@ def quality_check(caps_dir, tsv_path, output_path, threshold=0.5):
     model = resnet_qc_18()
     model.load_state_dict(torch.load(path.join(script_dir, "model", "resnet18.pth")))
     model.eval()
+    if gpu:
+        model.cuda()
 
     # Load DataFrame
     df = pd.read_csv(tsv_path, sep='\t')
@@ -25,30 +27,28 @@ def quality_check(caps_dir, tsv_path, output_path, threshold=0.5):
             'participant_id' not in list(df.columns.values)):
         raise Exception("the data file is not in the correct format."
                         "Columns should include ['participant_id', 'session_id']")
+    dataset = QCDataset(caps_dir, df)
+    dataloader = DataLoader(
+        dataset,
+        num_workers=num_workers,
+        batch_size=batch_size,
+        pin_memory=True
+    )
 
     columns = ['participant_id', 'session_id', 'pass_probability', 'pass']
     qc_df = pd.DataFrame(columns=columns)
     softmax = torch.nn.Softmax(dim=1)
 
-    for _, row in df.iterrows():
-        subject = row['participant_id']
-        session = row['session_id']
-        img_path = path.join(caps_dir, 'subjects', subject, session, 't1', 'preprocessing_dl',
-                             '%s_%s_space-MNI_res-1x1x1.nii.gz'
-                             % (subject, session))
-
-        inputs = load_nifti_images(img_path)
-        inputs = torch.cat(inputs).unsqueeze_(0)
-
+    for data in dataloader:
+        inputs = data['image']
+        if gpu:
+            inputs = inputs.cuda()
         outputs = softmax.forward(model(inputs))
-        pass_prob = outputs.data[0, 1]
 
-        if pass_prob >= threshold:
-            row = [[subject, session, pass_prob.item(), True]]
-        else:
-            row = [[subject, session, pass_prob.item(), False]]
-
-        row_df = pd.DataFrame(row, columns=columns)
-        qc_df = qc_df.append(row_df)
+        for idx, sub in enumerate(data['participant_id']):
+            pass_probability = outputs[idx, 1].item()
+            row = [[sub, data['session_id'][idx], pass_probability, pass_probability > threshold]]
+            row_df = pd.DataFrame(row, columns=columns)
+            qc_df = qc_df.append(row_df)
 
     qc_df.to_csv(output_path, sep='\t', index=False)

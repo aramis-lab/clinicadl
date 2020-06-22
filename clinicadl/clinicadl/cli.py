@@ -74,7 +74,10 @@ def qc_func(args):
         args.caps_dir,
         args.tsv_path,
         args.output_path,
-        threshold=args.threshold
+        threshold=args.threshold,
+        batch_size=args.batch_size,
+        num_workers=args.nproc,
+        gpu=not args.use_cpu
     )
 
 
@@ -650,6 +653,16 @@ def parse_command_line():
     qc_parser.add_argument("--threshold",
                            help='The threshold on the output probability to decide if the image passed or failed.',
                            type=float, default=0.5)
+    qc_parser.add_argument('--batch_size',
+                           help='Batch size used in DataLoader (default=1).',
+                           default=1, type=int)
+    qc_parser.add_argument("-np", "--nproc",
+                           help='Number of cores used the quality check.',
+                           type=int, default=2)
+    qc_parser.add_argument('-cpu', '--use_cpu', action='store_true',
+                           help='Uses CPU instead of GPU.',
+                           default=False)
+
     qc_parser.set_defaults(func=qc_func)
 
     # Train - Train CNN model with preprocessed  data
