@@ -68,7 +68,7 @@ def extract_data_func(args):
 
 
 def qc_func(args):
-    from .preprocessing.quality_check import quality_check
+    from clinicadl.quality_check.quality_check import quality_check
 
     quality_check(
         args.caps_dir,
@@ -636,6 +636,7 @@ def parse_command_line():
     qc_parser = subparser.add_parser(
         'quality_check',
         help='Performs quality check procedure for t1-linear pipeline.'
+             'Original code can be found at https://github.com/vfonov/deep-qc'
     )
     qc_parser.add_argument("caps_dir",
                            help='Data using CAPS structure.',

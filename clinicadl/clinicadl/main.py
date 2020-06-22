@@ -20,7 +20,8 @@ def main():
     if (arguments['task'] != 'preprocessing') \
             and (arguments['task'] != 'extract') \
             and (arguments['task'] != 'generate') \
-            and (arguments['task'] != 'tsvtool'):
+            and (arguments['task'] != 'tsvtool') \
+            and (arguments['task'] != 'quality_check'):
         commandline_to_json(commandline, arguments["mode_task"])
 
         if not args.use_cpu and not torch.cuda.is_available():
