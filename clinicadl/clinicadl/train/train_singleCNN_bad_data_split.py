@@ -15,7 +15,7 @@ from clinicadl.tools.deep_learning.data import (load_data,
                                                 MinMaxNormalization,
                                                 MRIDataset_slice_mixed,
                                                 mix_slices)
-from clinicadl.tools.deep_learning.cnn_utils import train, test, sub_level_to_tsvs
+from clinicadl.tools.deep_learning.cnn_utils import train, test, mode_level_to_tsvs
 
 
 __author__ = "Junhao Wen"
@@ -40,7 +40,7 @@ def test_cnn(data_loader, subset_name, split, criterion, options):
         results_df, metrics = test(model, data_loader, options.gpu, criterion, options.mode)
         print("Slice level balanced accuracy is %f" % metrics['balanced_accuracy'])
 
-        sub_level_to_tsvs(options.output_dir, results_df, metrics, split, selection, options.mode, dataset=subset_name)
+        mode_level_to_tsvs(options.output_dir, results_df, metrics, split, selection, options.mode, dataset=subset_name)
 
 
 # Train 2D CNN - Slice level network

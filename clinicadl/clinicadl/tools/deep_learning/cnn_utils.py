@@ -20,15 +20,16 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
     Function used to train a CNN.
     The best model and checkpoint will be found in the 'best_model_dir' of options.output_dir.
 
-    :param model: (Module) CNN to be trained
-    :param train_loader: (DataLoader) wrapper of the training dataset
-    :param valid_loader: (DataLoader) wrapper of the validation dataset
-    :param criterion: (loss) function to calculate the loss
-    :param optimizer: (torch.optim) optimizer linked to model parameters
-    :param resume: (bool) if True, a begun job is resumed
-    :param log_dir: (str) path to the folder containing the logs
-    :param model_dir: (str) path to the folder containing the models weights and biases
-    :param options: (Namespace) ensemble of other options given to the main script.
+    Args:
+        model: (Module) CNN to be trained
+        train_loader: (DataLoader) wrapper of the training dataset
+        valid_loader: (DataLoader) wrapper of the validation dataset
+        criterion: (loss) function to calculate the loss
+        optimizer: (torch.optim) optimizer linked to model parameters
+        resume: (bool) if True, a begun job is resumed
+        log_dir: (str) path to the folder containing the logs
+        model_dir: (str) path to the folder containing the models weights and biases
+        options: (Namespace) ensemble of other options given to the main script.
     """
     from tensorboardX import SummaryWriter
     from time import time
@@ -166,10 +167,14 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
 
 def evaluate_prediction(y, y_pred):
     """
-    This is a function to calculate the different metrics based on the list of true label and predicted label
-    :param y: list of labels
-    :param y_pred: list of predictions
-    :return: (dict) ensemble of metrics
+    Evaluates different metrics based on the list of true labels and predicted labels.
+
+    Args:
+        y: (list) true labels
+        y_pred: (list) corresponding predictions
+
+    Returns:
+        (dict) ensemble of metrics
     """
 
     true_positive = np.sum((y_pred == 1) & (y == 1))
@@ -214,15 +219,17 @@ def evaluate_prediction(y, y_pred):
 
 def test(model, dataloader, use_cuda, criterion, mode="image"):
     """
-    Computes the balanced accuracy of the model
+    Computes the predictions and evaluation metrics.
 
-    :param model: the network (subclass of nn.Module)
-    :param dataloader: a DataLoader wrapping a dataset
-    :param use_cuda: if True a gpu is used
-    :param criterion: (loss) function to calculate the loss
-    :return:
-        (DataFrame) results of each session
-        (dict) ensemble of metrics + total loss
+    Args:
+        model: (Module) CNN to be tested.
+        dataloader: (DataLoader) wrapper of a dataset.
+        use_cuda: (bool) if True a gpu is used.
+        criterion: (loss) function to calculate the loss.
+        mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
+    Returns
+        (DataFrame) results of each input.
+        (dict) ensemble of metrics + total loss on mode level.
     """
     model.eval()
 
@@ -283,19 +290,19 @@ def test(model, dataloader, use_cuda, criterion, mode="image"):
 # Voting systems
 #################################
 
-def sub_level_to_tsvs(output_dir, results_df, results, fold, selection, mode, dataset='train', cnn_index=None):
+def mode_level_to_tsvs(output_dir, results_df, results, fold, selection, mode, dataset='train', cnn_index=None):
     """
-    Save the outputs of the test function to tsv files.
+    Writes the outputs of the test function in tsv files.
 
-    :param output_dir: (str) path to the output directory.
-    :param results_df: (DataFrame) the individual results per patch.
-    :param results: (dict) the performances obtained on a series of metrics.
-    :param fold: (int) the fold for which the performances were obtained.
-    :param selection: (str) the metrics on which the model was selected (best_acc, best_loss)
-    :param mode: (str) input category level on which the classification is performed (patch, roi, slice).
-    :param dataset: (str) the dataset on which the evaluation was performed.
-    :param cnn_index: (int) provide the cnn_index only for a multi-cnn framework.
-    :return:
+    Args:
+        output_dir: (str) path to the output directory.
+        results_df: (DataFrame) the individual results per patch.
+        results: (dict) the performances obtained on a series of metrics.
+        fold: (int) the fold for which the performances were obtained.
+        selection: (str) the metrics on which the model was selected (best_acc, best_loss)
+        mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
+        dataset: (str) the dataset on which the evaluation was performed.
+        cnn_index: (int) provide the cnn_index only for a multi-cnn framework.
     """
     if cnn_index is None:
         performance_dir = os.path.join(output_dir, 'performances', 'fold_' + str(fold), selection)
@@ -334,18 +341,18 @@ def retrieve_sub_level_results(output_dir, fold, selection, mode, dataset, num_c
 
 def soft_voting_to_tsvs(output_dir, fold, selection, mode, dataset='test', num_cnn=None, selection_threshold=None):
     """
-    Save soft voting results to tsv files.
+    Writes soft voting results in tsv files.
 
-    :param output_dir: (str) path to the output directory.
-    :param fold: (int) Fold number of the cross-validation.
-    :param selection: (str) criterion on which the model is selected (either best_loss or best_acc)
-    :param mode: (str) input category level on which the classification is performed (patch, roi, slice).
-    :param dataset: (str) name of the dataset for which the soft-voting is performed. If different from training or
-                    validation, the weights of soft voting will be computed on validation accuracies.
-    :param num_cnn: (int) if given load the patch level results of a multi-CNN framework.
-    :param selection_threshold: (float) all patches for which the classification accuracy is below the
-                                threshold is removed.
-
+    Args:
+        output_dir: (str) path to the output directory.
+        fold: (int) Fold number of the cross-validation.
+        selection: (str) criterion on which the model is selected (either best_loss or best_acc)
+        mode: (str) input used by the network. Chosen from ['patch', 'roi', 'slice'].
+        dataset: (str) name of the dataset for which the soft-voting is performed. If different from training or
+            validation, the weights of soft voting will be computed on validation accuracies.
+        num_cnn: (int) if given load the patch level results of a multi-CNN framework.
+        selection_threshold: (float) all patches for which the classification accuracy is below the
+            threshold is removed.
     """
 
     # Choose which dataset is used to compute the weights of soft voting.
@@ -376,14 +383,17 @@ def soft_voting(performance_df, validation_df, mode, selection_threshold=None):
     of validation_df.
 
     ref: S. Raschka. Python Machine Learning., 2015
-    :param performance_df: (DataFrame) results on patch level of the set on which the combination is made.
-    :param validation_df: (DataFrame) results on patch level of the set used to compute the weights.
-    :param mode: (str) input category level on which the classification is performed (patch, roi, slice).
-    :param selection_threshold: (float) if given, all patches for which the classification accuracy is below the
-                                threshold is removed.
-    :return:
-        - df_final (DataFrame) the results on the image level
-        - results (dict) the metrics on the image level
+
+    Args:
+        performance_df: (DataFrame) results on patch level of the set on which the combination is made.
+        validation_df: (DataFrame) results on patch level of the set used to compute the weights.
+        mode: (str) input used by the network. Chosen from ['patch', 'roi', 'slice'].
+        selection_threshold: (float) if given, all patches for which the classification accuracy is below the
+            threshold is removed.
+
+    Returns:
+        df_final (DataFrame) the results on the image level
+        results (dict) the metrics on the image level
     """
 
     # Compute the sub-level accuracies on the validation set:

@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 
 from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, load_data_test
 from clinicadl.tools.deep_learning import read_json, create_model, load_model
-from clinicadl.tools.deep_learning.cnn_utils import test, sub_level_to_tsvs, soft_voting_to_tsvs
+from clinicadl.tools.deep_learning.cnn_utils import test, mode_level_to_tsvs, soft_voting_to_tsvs
 
 
 def test_cnn(output_dir, data_loader, subset_name, split, criterion, model_options, gpu=False):
@@ -24,7 +24,7 @@ def test_cnn(output_dir, data_loader, subset_name, split, criterion, model_optio
         results_df, metrics = test(model, data_loader, gpu, criterion, model_options.mode)
         print("%s level balanced accuracy is %f" % (model_options.mode, metrics['balanced_accuracy']))
 
-        sub_level_to_tsvs(output_dir, results_df, metrics, split, selection, model_options.mode, dataset=subset_name)
+        mode_level_to_tsvs(output_dir, results_df, metrics, split, selection, model_options.mode, dataset=subset_name)
 
         # Soft voting
         if model_options.mode in ["patch", "roi", "slice"]:
