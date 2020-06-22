@@ -25,7 +25,8 @@ __status__ = "Development"
 def train_single_cnn(params):
 
     init_path = os.path.join(params.output_dir, 'best_model_dir', 'CNN')
-    save_initialization(params.model, init_path, init_state=params.init_state, dropout=params.dropout)
+    save_initialization(params.model, init_path,
+                        init_state=params.init_state, dropout=params.dropout)
     transformations = get_transforms(params.mode, params.minmaxnormalization)
 
     if params.split is None:
@@ -36,11 +37,11 @@ def train_single_cnn(params):
     for fi in fold_iterator:
 
         training_df, valid_df = load_data(
-                params.tsv_path,
-                params.diagnoses,
-                fi,
-                n_splits=params.n_splits,
-                baseline=params.baseline)
+            params.tsv_path,
+            params.diagnoses,
+            fi,
+            n_splits=params.n_splits,
+            baseline=params.baseline)
 
         data_train = return_dataset(params.mode, params.input_dir, training_df, params.preprocessing,
                                     transformations, params)
@@ -49,24 +50,25 @@ def train_single_cnn(params):
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(
-                data_train,
-                batch_size=params.batch_size,
-                shuffle=True,
-                num_workers=params.num_workers,
-                pin_memory=True
-                )
+            data_train,
+            batch_size=params.batch_size,
+            shuffle=True,
+            num_workers=params.num_workers,
+            pin_memory=True
+        )
 
         valid_loader = DataLoader(
-                data_valid,
-                batch_size=params.batch_size,
-                shuffle=False,
-                num_workers=params.num_workers,
-                pin_memory=True
-                )
+            data_valid,
+            batch_size=params.batch_size,
+            shuffle=False,
+            num_workers=params.num_workers,
+            pin_memory=True
+        )
 
         # Initialize the model
         print('Initialization of the model')
-        model = init_model(params.model, init_path, params.init_state, gpu=params.gpu, dropout=params.dropout)
+        model = init_model(params.model, init_path, params.init_state,
+                           gpu=params.gpu, dropout=params.dropout)
         model = transfer_learning(model, fi, source_path=params.transfer_learning_path,
                                   transfer_learning_autoencoder=params.transfer_learning_autoencoder,
                                   gpu=params.gpu, selection=params.transfer_learning_selection)
@@ -79,12 +81,17 @@ def train_single_cnn(params):
         setattr(params, 'beginning_epoch', 0)
 
         # Define output directories
-        log_dir = os.path.join(params.output_dir, 'log_dir', 'fold_%i' % fi, 'CNN')
-        model_dir = os.path.join(params.output_dir, 'best_model_dir', 'fold_%i' % fi, 'CNN')
+        log_dir = os.path.join(
+            params.output_dir, 'log_dir', 'fold_%i' % fi, 'CNN')
+        model_dir = os.path.join(
+            params.output_dir, 'best_model_dir', 'fold_%i' % fi, 'CNN')
 
         print('Beginning the training task')
-        train(model, train_loader, valid_loader, criterion, optimizer, False, log_dir, model_dir, params)
+        train(model, train_loader, valid_loader, criterion,
+              optimizer, False, log_dir, model_dir, params)
 
         params.model_path = params.output_dir
-        test_cnn(params.output_dir, train_loader, "train", fi, criterion, params, gpu=params.gpu)
-        test_cnn(params.output_dir, valid_loader, "validation", fi, criterion, params, gpu=params.gpu)
+        test_cnn(params.output_dir, train_loader, "train",
+                 fi, criterion, params, gpu=params.gpu)
+        test_cnn(params.output_dir, valid_loader, "validation",
+                 fi, criterion, params, gpu=params.gpu)
