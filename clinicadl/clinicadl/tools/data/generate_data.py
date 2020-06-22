@@ -15,19 +15,35 @@ from ..tsv.tsv_utils import baseline_df
 from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
 
 
-def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0, sigma=0.5,
-                            preprocessing="linear", output_size=None):
-    """
-    Generates a random dataset for intractable classification task from the first subject of the tsv file.
+def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0, 
+                            sigma=0.5, preprocessing="linear", output_size=None):
 
-    :param caps_dir: (str) path to the CAPS directory.
-    :param tsv_path: (str) path to tsv file of list of subjects/sessions.
-    :param output_dir: (str) folder containing the synthetic dataset in CAPS format
-    :param n_subjects: (int) number of subjects in each class of the synthetic dataset
-    :param mean: (float) mean of the gaussian noise
-    :param sigma: (float) standard deviation of the gaussian noise
-    :param preprocessing: (str) preprocessing performed. Must be in ['linear', 'extensive'].
-    :param output_size: (tuple[int]) size of the output. If None no interpolation will be performed.
+    """
+    Generates a random dataset.
+    
+    Creates a random dataset for intractable classification task from the first
+    subject of the tsv file (other subjects/sessions different from the first
+    one are ignored. Degree of noise can be parameterized.
+
+    Args:
+        caps_dir: (str) Path to the (input) CAPS directory.
+        tsv_path: (str) path to tsv file of list of subjects/sessions.
+        output_dir: (str) folder containing the synthetic dataset in (output)
+            CAPS format.  
+        n_subjects: (int) number of subjects in each class of the
+            synthetic dataset
+        mean: (float) mean of the gaussian noise
+        sigma: (float) standard deviation of the gaussian noise
+        preprocessing: (str) preprocessing performed. Must be in ['linear', 'extensive'].
+        output_size: (tuple[int]) size of the output. If None no interpolation
+             will be performed.
+    
+    Returns:
+        A folder written on the output_dir location (in CAPS format), also a
+        tsv file describing this output
+
+    Raises:
+
     """
     # Read DataFrame
     data_df = pd.read_csv(tsv_path, sep='\t')
@@ -76,15 +92,28 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
     """
     Generates a fully separable dataset.
 
-    :param caps_dir: (str) path to the CAPS directory.
-    :param tsv_path: (str) path to tsv file of list of subjects/sessions.
-    :param output_dir: (str) folder containing the synthetic dataset in CAPS format.
-    :param n_subjects: (int) number of subjects in each class of the synthetic dataset
-    :param preprocessing: (str) preprocessing performed. Must be in ['linear', 'extensive'].
-    :param mask_path: (str) path to the extracted masks to generate the two labels
-    :param atrophy_percent: (float) percentage of atrophy applied
-    :param output_size: (tuple[int]) size of the output. If None no interpolation will be performed.
-    :param group: (str) group used for dartel preprocessing.
+    Generates a dataset, based on the images of the CAPS directory, where a
+    half of the image is processed using a mask to oclude a specific region.
+    This procedure creates a dataset fully separable (images with half-right
+    processed and image with half-left processed)
+    
+    Args:
+        caps_dir: (str) path to the CAPS directory.
+        tsv_path: (str) path to tsv file of list of subjects/sessions.
+        output_dir: (str) folder containing the synthetic dataset in CAPS format.
+        n_subjects: (int) number of subjects in each class of the synthetic
+            dataset.
+        preprocessing: (str) preprocessing performed. Must be in ['linear', 'extensive'].
+        mask_path: (str) path to the extracted masks to generate the two labels.
+        atrophy_percent: (float) percentage of atrophy applied.
+        output_size: (tuple[int]) size of the output. If None no interpolation
+            will be performed.
+        group: (str) group used for dartel preprocessing.
+        
+    Returns:
+        Folder structure where images are stored in CAPS format.
+    
+    Raises:    
     """
 
     # Read DataFrame
