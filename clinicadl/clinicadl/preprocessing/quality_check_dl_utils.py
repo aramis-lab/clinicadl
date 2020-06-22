@@ -1,14 +1,9 @@
 # -*- coding: utf-8 -*-
 
-
-import sqlite3
-import os
-from skimage import io, transform
+from skimage import transform
 import torch
-from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import nibabel as nib
-from matplotlib.pyplot import imshow
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
