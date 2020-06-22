@@ -2,12 +2,13 @@
 
 
 class Parameters:
-    """ Class to define and initialize parameters used in traning CNN networks"""
+    """ Class to define and initialize parameters used in training CNN networks"""
 
-    def __init__(self, tsv_path: str, output_dir: str, input_dir: str,
+    def __init__(self, mode: str, tsv_path: str, output_dir: str, input_dir: str,
                  preprocessing: str, model: str):
         """
         Parameters:
+        mode: type if input used by the network (image, patch, roi, slice)
         tsv_path: Path to the folder containing the tsv files of the
         population. To note, the column name should be participant_id,
         session_id and diagnosis.
@@ -16,6 +17,7 @@ class Parameters:
         preprocessing: Type of preprocessing done. Choices: "t1-linear" or "t1-extensive".
         model: Neural network model.
         """
+        self.mode = mode
         self.tsv_path = tsv_path
         self.output_dir = output_dir
         self.input_dir = input_dir
@@ -41,7 +43,7 @@ class Parameters:
             dropout: float = 0,
             gpu: bool = False,
             batch_size: int = 12,
-            evaluation_steps: int = 1,
+            evaluation_steps: int = 0,
             num_workers: int = 1,
             transfer_learning_path: str = None,
             transfer_learning_autoencoder: str = None,
@@ -54,7 +56,8 @@ class Parameters:
             mri_plane: int = 0,
             discarded_slices: int = 20,
             prepare_dl: bool = False,
-            visualization: bool = False):
+            visualization: bool = False,
+            init_state: str = None):
         """
         Optional parameters used for training CNN.
         transfer_learning_difference: Difference of size between the pretrained
@@ -127,6 +130,16 @@ class Parameters:
         self.prepare_dl = prepare_dl
         self.visualization = visualization
         self.selection_threshold = selection_threshold
+        self.init_state = init_state
+        self.set_default_init_state()
+
+    def set_default_init_state(self):
+        """Sets init state according to experiments performed in AD-DL"""
+        if self.init_state is None:
+            if self.mode in ["patch", "roi"]:
+                self.init_state = "same"
+            else:
+                self.init_state = "random"
 
 
 def check_and_clean(d):
@@ -210,6 +223,10 @@ def read_json(options, task_type, json_path=None, test=False):
             setattr(options, key, item)
 
     # Retro-compatibility with runs of previous versions
+    if not hasattr(options, "model"):
+        options.model = options.network
+        del options.network
+
     if not hasattr(options, 'dropout'):
         options.dropout = None
     set_default_dropout(options)
