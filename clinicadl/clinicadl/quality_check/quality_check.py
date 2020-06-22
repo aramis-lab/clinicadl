@@ -52,5 +52,3 @@ def quality_check(caps_dir, tsv_path, output_path, threshold=0.5):
         qc_df = qc_df.append(row_df)
 
     qc_df.to_csv(output_path, sep='\t', index=False)
-
-
