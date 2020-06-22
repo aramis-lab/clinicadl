@@ -12,6 +12,7 @@ import torch.nn.functional as F
 import torch
 from .utils import im_loss_roi_gaussian_distribution, find_image_path
 from ..tsv.tsv_utils import baseline_df
+from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
 
 
 def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0, sigma=0.5,
@@ -63,8 +64,8 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0, 
             noisy_image_pt = F.interpolate(noisy_image_pt, output_size)
             noisy_image = noisy_image_pt.numpy()[0, 0, :, :, :]
         noisy_image_nii = nib.Nifti1Image(noisy_image, header=image_nii.header, affine=image_nii.affine)
-        noisy_image_nii_path = path.join(output_dir, 'subjects', participant_id, 'ses-M00', 't1', 'preprocessing_dl')
-        noisy_image_nii_filename = participant_id + '_ses-M00_space-MNI_res-1x1x1.nii.gz'
+        noisy_image_nii_path = path.join(output_dir, 'subjects', participant_id, 'ses-M00', 't1_linear')
+        noisy_image_nii_filename = participant_id + '_ses-M00' + FILENAME_TYPE['cropped'] + '.nii.gz'
         if not path.exists(noisy_image_nii_path):
             os.makedirs(noisy_image_nii_path)
         nib.save(noisy_image_nii, path.join(noisy_image_nii_path, noisy_image_nii_filename))
@@ -109,8 +110,8 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
 
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
-        filename = 'sub-TRIV%i_ses-M00_space-MNI_res-1x1x1.nii.gz' % i
-        path_image = os.path.join(output_dir, 'subjects', 'sub-TRIV%i' % i, 'ses-M00', 't1', 'preprocessing_dl')
+        filename = ['sub-TRIV%i' + FILENAME_TYPE['cropped'] + '.nii.gz'] % i
+        path_image = os.path.join(output_dir, 'subjects', 'sub-TRIV%i' % i, 'ses-M00', 't1_linear')
 
         if not os.path.exists(path_image):
             os.makedirs(path_image)
