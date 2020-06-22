@@ -19,7 +19,8 @@ def quality_check(caps_dir, tsv_path, output_path, threshold=0.5):
 
     # Load DataFrame
     df = pd.read_csv(tsv_path, sep='\t')
-    if ('session_id' not in list(df.columns.values)) or ('participant_id' not in list(df.columns.values)):
+    if ('session_id' not in list(df.columns.values)) or (
+            'participant_id' not in list(df.columns.values)):
         raise Exception("the data file is not in the correct format."
                         "Columns should include ['participant_id', 'session_id']")
 
@@ -63,12 +64,12 @@ def load_nifti_images(image_path):
     # normalize input
     _min = np.min(sample)
     _max = np.max(sample)
-    sample = (sample-_min)*(1.0/(_max-_min))-0.5
+    sample = (sample - _min) * (1.0 / (_max - _min)) - 0.5
     sz = sample.shape
     input_images = [
-        sample[:, :, int(sz[2]/2)],
+        sample[:, :, int(sz[2] / 2)],
         sample[int(sz[0] / 2), :, :],
-        sample[:, int(sz[1]/2), :]
+        sample[:, int(sz[1] / 2), :]
     ]
 
     output_images = [
@@ -80,7 +81,9 @@ def load_nifti_images(image_path):
     # flip, resize and crop
     for i in range(3):
         # try the dimension of input_image[i]
-        # rotate the slice with 90 degree, I don't know why, but read from nifti file, the img has been rotated, thus we do not have the same direction with the pretrained model
+        # rotate the slice with 90 degree, I don't know why, but read from
+        # nifti file, the img has been rotated, thus we do not have the same
+        # direction with the pretrained model
 
         if len(input_images[i].shape) == 3:
             slice = np.reshape(
@@ -88,7 +91,7 @@ def load_nifti_images(image_path):
         else:
             slice = input_images[i]
 
-        _scale = min(256.0/slice.shape[0], 256.0/slice.shape[1])
+        _scale = min(256.0 / slice.shape[0], 256.0 / slice.shape[1])
         # slice[::-1, :] is to flip the first axis of image
         slice = transform.rescale(
             slice[::-1, :], _scale, mode='constant', clip=False)
@@ -96,11 +99,12 @@ def load_nifti_images(image_path):
         sz = slice.shape
         # pad image
         dummy = np.zeros((256, 256),)
-        dummy[int((256-sz[0])/2): int((256-sz[0])/2)+sz[0],
-              int((256-sz[1])/2): int((256-sz[1])/2)+sz[1]] = slice
+        dummy[int((256 - sz[0]) / 2): int((256 - sz[0]) / 2) + sz[0],
+              int((256 - sz[1]) / 2): int((256 - sz[1]) / 2) + sz[1]] = slice
 
         # rotate and flip the image back to the right direction for each view, if the MRI was read by nibabel
-        # it seems that this will rotate the image 90 degree with counter-clockwise direction and then flip it horizontally
+        # it seems that this will rotate the image 90 degree with
+        # counter-clockwise direction and then flip it horizontally
         output_images[i] = np.flip(
             np.rot90(dummy[16:240, 16:240]), axis=1).copy()
 
