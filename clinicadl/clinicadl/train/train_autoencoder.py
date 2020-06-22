@@ -12,6 +12,17 @@ from ..tools.deep_learning.data import (load_data,
 
 
 def train_autoencoder(params):
+    """
+    Trains an autoencoder and writes:
+        - logs obtained with Tensorboard during training,
+        - best models obtained according to the validation loss,
+        - for patch and roi modes, the initialization state is saved as it is identical across all folds,
+        - autoencoder reconstructions in nifti files at the end of the training.
+
+    If the training crashes it is possible to relaunch the training process from the checkpoint.pth.tar and
+    optimizer.pth.tar files which respectively contains the state of the model and the optimizer at the end
+    of the last epoch that was completed before the crash.
+    """
 
     init_path = os.path.join(params.output_dir, 'best_model_dir', 'ConvAutoencoder')
     save_initialization(params.model, init_path, init_state=params.init_state, autoencoder=True, dropout=params.dropout)

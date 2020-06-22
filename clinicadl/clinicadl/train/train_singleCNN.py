@@ -13,6 +13,17 @@ from clinicadl.test.test_singleCNN import test_cnn
 
 
 def train_single_cnn(params):
+    """
+    Trains a single CNN and writes:
+        - logs obtained with Tensorboard during training,
+        - best models obtained according to two metrics on the validation set (loss and balanced accuracy),
+        - for patch and roi modes, the initialization state is saved as it is identical across all folds,
+        - final performances at the end of the training.
+
+    If the training crashes it is possible to relaunch the training process from the checkpoint.pth.tar and
+    optimizer.pth.tar files which respectively contains the state of the model and the optimizer at the end
+    of the last epoch that was completed before the crash.
+    """
 
     init_path = os.path.join(params.output_dir, 'best_model_dir', 'CNN')
     save_initialization(params.model, init_path,

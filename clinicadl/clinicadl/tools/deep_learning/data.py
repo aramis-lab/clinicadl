@@ -593,6 +593,21 @@ def extract_roi_from_mri(image_tensor, left_is_odd):
 
 
 def return_dataset(mode, input_dir, data_df, preprocessing, transformations, params, cnn_index=None):
+    """
+    Return appropriate Dataset according to given options.
+
+    Args:
+        mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
+        input_dir: (str) path to a directory containing a CAPS structure.
+        data_df: (DataFrame) List subjects, sessions and diagnoses.
+        preprocessing: (str) type of preprocessing wanted ('t1-linear' or 't1-extensive')
+        transformations: (transforms) list of transformations performed on-the-fly.
+        params: (Namespace) options used by specific modes.
+        cnn_index: (int) Index of the CNN in a multi-CNN paradigm (optional).
+
+    Returns:
+         (Dataset) the corresponding dataset.
+    """
 
     if cnn_index is not None and mode in ["image", "roi", "slice"]:
         raise ValueError("Multi-CNN is not implemented for %s mode." % mode)
