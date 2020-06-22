@@ -10,3 +10,6 @@ nipy
 tensorboardX
 pandas
 colorama
+
+# Requirement for quality check
+scikit-image
