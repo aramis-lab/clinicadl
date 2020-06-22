@@ -11,7 +11,7 @@ from clinicadl.tools.deep_learning.models import create_model, load_model
 from clinicadl.tools.deep_learning.data import (get_transforms,
                                                 load_data_test,
                                                 return_dataset)
-from clinicadl.tools.deep_learning.cnn_utils import test, sub_level_to_tsvs, soft_voting_to_tsvs
+from clinicadl.tools.deep_learning.cnn_utils import test, mode_level_to_tsvs, soft_voting_to_tsvs
 
 
 def test_cnn(output_dir, data_loader, subset_name, split, criterion, cnn_index, model_options, gpu=False):
@@ -25,8 +25,8 @@ def test_cnn(output_dir, data_loader, subset_name, split, criterion, cnn_index, 
         results_df, metrics = test(model, data_loader, gpu, criterion, model_options.mode)
         print("%s level balanced accuracy is %f" % (model_options.mode, metrics['balanced_accuracy']))
 
-        sub_level_to_tsvs(output_dir, results_df, metrics, split, selection, model_options.mode,
-                          dataset=subset_name, cnn_index=cnn_index)
+        mode_level_to_tsvs(output_dir, results_df, metrics, split, selection, model_options.mode,
+                           dataset=subset_name, cnn_index=cnn_index)
 
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D patch-level multi-CNN for test the trained classifiers")
