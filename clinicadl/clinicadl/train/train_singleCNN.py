@@ -12,16 +12,6 @@ from ..tools.deep_learning.cnn_utils import train
 from clinicadl.test.test_singleCNN import test_cnn
 
 
-__author__ = "Junhao Wen, Elina Thibeau-Sutre, Mauricio Diaz"
-__copyright__ = "Copyright 2018 The Aramis Lab Team"
-__credits__ = ["Junhao Wen", "Elina Thibeau-Sutre", "Mauricio Diaz"]
-__license__ = "See LICENSE.txt file"
-__version__ = "0.1.0"
-__maintainer__ = "Junhao Wen, Elina Thibeau-Sutre, Mauricio Diaz"
-__email__ = "junhao.wen89@gmail.com, mauricio.diaz@inria.fr"
-__status__ = "Development"
-
-
 def train_single_cnn(params):
 
     init_path = os.path.join(params.output_dir, 'best_model_dir', 'CNN')
