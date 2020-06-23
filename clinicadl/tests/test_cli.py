@@ -102,7 +102,7 @@ def generate_cli_commands(request):
             'preprocessing',
             'tsv_path',
             'output_dir',
-            'network']
+            'model']
 
     if request.param == 'train_subject':
         test_input = [
@@ -122,7 +122,7 @@ def generate_cli_commands(request):
             'preprocessing',
             'tsv_path',
             'output_dir',
-            'network']
+            'model']
     if request.param == 'train_patch':
         test_input = [
             'train',
@@ -141,7 +141,7 @@ def generate_cli_commands(request):
             'preprocessing',
             'tsv_path',
             'output_dir',
-            'network']
+            'model']
     if request.param == 'train_multipatch':
         test_input = [
             'train',
@@ -160,7 +160,7 @@ def generate_cli_commands(request):
             'preprocessing',
             'tsv_path',
             'output_dir',
-            'network']
+            'model']
 
     return test_input, keys_output
 

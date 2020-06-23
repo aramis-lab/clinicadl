@@ -3,19 +3,30 @@
 import torch
 import os
 from torch.utils.data import DataLoader
-import torchvision.transforms as transforms
 
 from ..tools.deep_learning.autoencoder_utils import train, visualize_image
-from ..tools.deep_learning import create_autoencoder, load_model
+from ..tools.deep_learning.models import init_model, load_model, save_initialization
 from ..tools.deep_learning.data import (load_data,
-                                        MinMaxNormalization,
-                                        MRIDataset_patch,
-                                        MRIDataset_patch_hippocampus)
+                                        get_transforms,
+                                        return_dataset)
 
 
-def train_autoencoder_patch(params):
+def train_autoencoder(params):
+    """
+    Trains an autoencoder and writes:
+        - logs obtained with Tensorboard during training,
+        - best models obtained according to the validation loss,
+        - for patch and roi modes, the initialization state is saved as it is identical across all folds,
+        - autoencoder reconstructions in nifti files at the end of the training.
 
-    transformations = transforms.Compose([MinMaxNormalization()])
+    If the training crashes it is possible to relaunch the training process from the checkpoint.pth.tar and
+    optimizer.pth.tar files which respectively contains the state of the model and the optimizer at the end
+    of the last epoch that was completed before the crash.
+    """
+
+    init_path = os.path.join(params.output_dir, 'best_model_dir', 'ConvAutoencoder')
+    save_initialization(params.model, init_path, init_state=params.init_state, autoencoder=True, dropout=params.dropout)
+    transformations = get_transforms(params.mode, params.minmaxnormalization)
     criterion = torch.nn.MSELoss()
 
     if params.split is None:
@@ -25,7 +36,7 @@ def train_autoencoder_patch(params):
 
     for fi in fold_iterator:
 
-        training_tsv, valid_tsv = load_data(
+        training_df, valid_df = load_data(
                 params.tsv_path,
                 params.diagnoses,
                 fi,
@@ -35,39 +46,10 @@ def train_autoencoder_patch(params):
 
         print("Running for the %d-th fold" % fi)
 
-        if params.hippocampus_roi:
-            print("Only using hippocampus ROI")
-
-            data_train = MRIDataset_patch_hippocampus(
-                params.input_dir,
-                training_tsv,
-                preprocessing=params.preprocessing,
-                transformations=transformations
-            )
-            data_valid = MRIDataset_patch_hippocampus(
-                params.input_dir,
-                valid_tsv,
-                preprocessing=params.preprocessing,
-                transformations=transformations
-            )
-
-        else:
-            data_train = MRIDataset_patch(
-                    params.input_dir,
-                    training_tsv,
-                    params.patch_size,
-                    params.stride_size,
-                    preprocessing=params.preprocessing,
-                    transformations=transformations,
-                    prepare_dl=params.prepare_dl)
-            data_valid = MRIDataset_patch(
-                    params.input_dir,
-                    valid_tsv,
-                    params.patch_size,
-                    params.stride_size,
-                    preprocessing=params.preprocessing,
-                    transformations=transformations,
-                    prepare_dl=params.prepare_dl)
+        data_train = return_dataset(params.mode, params.input_dir, training_df, params.preprocessing,
+                                    transformations, params)
+        data_valid = return_dataset(params.mode, params.input_dir, valid_df, params.preprocessing,
+                                    transformations, params)
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(
@@ -89,11 +71,8 @@ def train_autoencoder_patch(params):
         model_dir = os.path.join(params.output_dir, "best_model_dir", "fold_%i" % fi, "ConvAutoencoder")
         visualization_dir = os.path.join(params.output_dir, 'autoencoder_reconstruction', 'fold_%i' % fi)
 
-        # Hard-coded arguments for patch
-        setattr(params, "accumulation_steps", 1)
-        setattr(params, "evaluation_steps", 0)
-
-        decoder = create_autoencoder(params.model, gpu=params.gpu)
+        decoder = init_model(params.model, init_path, params.init_state, gpu=params.gpu,
+                             autoencoder=True, dropout=params.dropout)
         optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
                                                             lr=params.learning_rate,
                                                             weight_decay=params.weight_decay)

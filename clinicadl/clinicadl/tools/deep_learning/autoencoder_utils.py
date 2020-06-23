@@ -14,17 +14,18 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
           log_dir, model_dir, options):
     """
     Function used to train an autoencoder.
-    The best autoencoder and checkpoint will be found in the 'best_model_dir' of options.output_dir.
+    The best autoencoder will be found in the 'best_model_dir' of options.output_dir.
 
-    :param decoder: (Autoencoder) Autoencoder constructed from a CNN with the Autoencoder class.
-    :param train_loader: (DataLoader) wrapper of the training dataset.
-    :param valid_loader: (DataLoader) wrapper of the validation dataset.
-    :param criterion: (loss) function to calculate the loss.
-    :param optimizer: (torch.optim) optimizer linked to model parameters.
-    :param resume: (bool) if True, a begun job is resumed.
-    :param log_dir: (str) path to the folder containing the logs.
-    :param model_dir: (str) path to the folder containing the models weights and biases.
-    :param options: (Namespace) ensemble of other options given to the main script.
+    Args:
+        decoder: (Autoencoder) Autoencoder constructed from a CNN with the Autoencoder class.
+        train_loader: (DataLoader) wrapper of the training dataset.
+        valid_loader: (DataLoader) wrapper of the validation dataset.
+        criterion: (loss) function to calculate the loss.
+        optimizer: (torch.optim) optimizer linked to model parameters.
+        resume: (bool) if True, a begun job is resumed.
+        log_dir: (str) path to the folder containing the logs.
+        model_dir: (str) path to the folder containing the models weights and biases.
+        options: (Namespace) ensemble of other options given to the main script.
     """
     from tensorboardX import SummaryWriter
 
@@ -35,7 +36,7 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
 
     # Create writers
     writer_train = SummaryWriter(os.path.join(log_dir, 'train'))
-    writer_valid = SummaryWriter(os.path.join(log_dir, 'valid'))
+    writer_valid = SummaryWriter(os.path.join(log_dir, 'validation'))
 
     decoder.train()
     print(decoder)
@@ -135,17 +136,20 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
     os.remove(os.path.join(model_dir, "checkpoint.pth.tar"))
 
 
-def test_ae(model, dataloader, use_cuda, criterion):
+def test_ae(decoder, dataloader, use_cuda, criterion):
     """
-    Computes the loss of the model
+    Computes the total loss of a given autoencoder and dataset wrapped by DataLoader.
 
-    :param model: the network (subclass of nn.Module)
-    :param dataloader: a DataLoader wrapping a dataset
-    :param use_cuda: if True a gpu is used
-    :param criterion: (loss) function to calculate the loss
-    :return: loss of the model (float)
+    Args:
+        decoder: (Autoencoder) Autoencoder constructed from a CNN with the Autoencoder class.
+        dataloader: (DataLoader) wrapper of the dataset.
+        use_cuda: (bool) if True a gpu is used.
+        criterion: (loss) function to calculate the loss.
+
+    Returns:
+        (float) total loss of the model
     """
-    model.eval()
+    decoder.eval()
 
     total_loss = 0
     for i, data in enumerate(dataloader, 0):
@@ -154,7 +158,7 @@ def test_ae(model, dataloader, use_cuda, criterion):
         else:
             inputs = data['image']
 
-        outputs = model(inputs)
+        outputs = decoder(inputs)
         loss = criterion(outputs, inputs)
         total_loss += loss.item()
 
@@ -164,6 +168,15 @@ def test_ae(model, dataloader, use_cuda, criterion):
 
 
 def visualize_image(decoder, dataloader, visualization_path, nb_images=1):
+    """
+    Writes the nifti files of images and their reconstructions by an autoencoder.
+
+    Args:
+        decoder: (Autoencoder) Autoencoder constructed from a CNN with the Autoencoder class.
+        dataloader: (DataLoader) wrapper of the dataset.
+        visualization_path: (str) directory in which the inputs and reconstructions will be stored.
+        nb_images: (int) number of images to reconstruct.
+    """
     import nibabel as nib
     import numpy as np
     from .iotools import check_and_clean
