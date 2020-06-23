@@ -8,6 +8,8 @@ import nibabel as nib
 from os import path
 import torch
 
+from ..tools.deep_learning.data import FILENAME_TYPE
+
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
@@ -177,14 +179,15 @@ class QCDataset(Dataset):
         session = self.df.loc[idx, 'session_id']
 
         if self.use_extracted_tensors:
-            image_path = path.join(self.img_dir, 'subjects', subject, session, 't1', 'preprocessing_dl',
-                                   '%s_%s_space-MNI_res-1x1x1.pt' % (subject, session))
+            image_path = path.join(self.img_dir, 'subjects', subject, session, 'deeplearning_prepare_data',
+                                   'image_based', 't1_linear',
+                                   '%s_%s%s.pt' % (subject, session, FILENAME_TYPE["full"]))
 
             image = torch.load(image_path)
             image = self.pt_transform(image)
         else:
-            image_path = path.join(self.img_dir, 'subjects', subject, session, 't1', 'preprocessing_dl',
-                                   '%s_%s_space-MNI_res-1x1x1.nii.gz' % (subject, session))
+            image_path = path.join(self.img_dir, 'subjects', subject, session, 't1_linear',
+                                   '%s_%s%s.nii.gz' % (subject, session, FILENAME_TYPE["full"]))
 
             image = nib.load(image_path)
             image = self.nii_transform(image)
