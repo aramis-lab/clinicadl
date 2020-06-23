@@ -6,14 +6,16 @@ This file generates data for trivial or intractable (random) data for binary cla
 import pandas as pd
 import numpy as np
 import nibabel as nib
-from os import path
-import os
+from os.path import dirname, join, abspath, split, exists
+from os import pardir, makedirs
 import torch.nn.functional as F
 import torch
 from .utils import im_loss_roi_gaussian_distribution, find_image_path
 from ..tsv.tsv_utils import baseline_df
 from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
-
+from clinicadl.tools.inputs.input import fetch_file
+from clinicadl.tools.inputs.input import RemoteFileStructure
+import tarfile
 
 def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
                             sigma=0.5, preprocessing="linear", output_size=None):
@@ -49,8 +51,8 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
     data_df = pd.read_csv(tsv_path, sep='\t')
 
     # Create subjects dir
-    if not path.exists(path.join(output_dir, 'subjects')):
-        os.makedirs(path.join(output_dir, 'subjects'))
+    if not path.exists(join(output_dir, 'subjects')):
+        makedirs(join(output_dir, 'subjects'))
 
     # Retrieve image of first subject
     participant_id = data_df.loc[0, 'participant_id']
@@ -69,7 +71,7 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
     output_df = pd.DataFrame(data, columns=['participant_id', 'session_id', 'diagnosis'])
     output_df['age'] = 60
     output_df['sex'] = 'F'
-    output_df.to_csv(path.join(output_dir, 'data.tsv'), sep='\t', index=False)
+    output_df.to_csv(join(output_dir, 'data.tsv'), sep='\t', index=False)
 
     for i in range(2 * n_subjects):
         gauss = np.random.normal(mean, sigma, image.shape)
@@ -80,11 +82,11 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
             noisy_image_pt = F.interpolate(noisy_image_pt, output_size)
             noisy_image = noisy_image_pt.numpy()[0, 0, :, :, :]
         noisy_image_nii = nib.Nifti1Image(noisy_image, header=image_nii.header, affine=image_nii.affine)
-        noisy_image_nii_path = path.join(output_dir, 'subjects', participant_id, 'ses-M00', 't1_linear')
+        noisy_image_nii_path = join(output_dir, 'subjects', participant_id, 'ses-M00', 't1_linear')
         noisy_image_nii_filename = participant_id + '_ses-M00' + FILENAME_TYPE['cropped'] + '.nii.gz'
-        if not path.exists(noisy_image_nii_path):
-            os.makedirs(noisy_image_nii_path)
-        nib.save(noisy_image_nii, path.join(noisy_image_nii_path, noisy_image_nii_filename))
+        if not exists(noisy_image_nii_path):
+            makedirs(noisy_image_nii_path)
+        nib.save(noisy_image_nii, join(noisy_image_nii_path, noisy_image_nii_filename))
 
 
 def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preprocessing="linear",
@@ -120,13 +122,38 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
     data_df = pd.read_csv(tsv_path, sep='\t')
     data_df = baseline_df(data_df, "None")
 
+    
+    root = dirname(abspath(join(abspath(__file__), pardir, pardir)))
+    path_to_masks = join(root, 'resources', 'masks')
+    url_aramis = 'https://aramislab.paris.inria.fr/files/data/masks/'
+    FILE1 = RemoteFileStructure(
+            filename='AAL2.tar.gz',
+            url=url_aramis,
+            checksum='2bcd99a30776b2a0bc950c632e1a55c9a6a6a27dbf4bb92580e4b4747b0901fa'
+            )
+    AAL2_masks_path = join(path_to_masks, FILE1.filename)
+    
     if n_subjects > len(data_df):
         raise ValueError("The number of subjects %i cannot be higher than the number of subjects in the baseline "
                          "DataFrame extracted from %s" % (n_subjects, tsv_path))
 
     if mask_path is None:
-        raise ValueError('Please provide a path to masks. Such masks are available at '
-                         'clinicadl/tools/data/AAL2.')
+        try:
+            print('Try to download AAL2 masks')
+            mask_path_tar = fetch_file(FILE1, path_to_masks)
+            tar_file = tarfile.open(mask_path_tar)
+            print('File: ' + mask_path_tar)
+            try:
+                tar_file.extractall(path_to_masks)
+                tar_file.close()
+                mask_path = join(path_to_masks, 'AAL2')
+            except RuntimeError:
+                print('Unable to extract donwloaded files')
+        except IOError as err:
+            print('Unable to download required templates:', err)
+            raise ValueError('''Unable to download masks, please donwload them 
+                              manually at https://aramislab.paris.inria.fr/files/data/masks/
+                              and provide a valid path.''')
 
     # Output tsv file
     columns = ['participant_id', 'session_id', 'diagnosis', 'age', 'sex']
@@ -139,17 +166,17 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
 
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
-        filename = ['sub-TRIV%i' + FILENAME_TYPE['cropped'] + '.nii.gz'] % i
-        path_image = os.path.join(output_dir, 'subjects', 'sub-TRIV%i' % i, 'ses-M00', 't1_linear')
+        filename = 'sub-TRIV%i' % i + FILENAME_TYPE['cropped'] + '.nii.gz'
+        path_image = join(output_dir, 'subjects', 'sub-TRIV%i' % i, 'ses-M00', 't1_linear')
 
-        if not os.path.exists(path_image):
-            os.makedirs(path_image)
+        if not exists(path_image):
+            makedirs(path_image)
 
         image_path = find_image_path(caps_dir, participant_id, session_id, preprocessing, group)
         image_nii = nib.load(image_path)
         image = image_nii.get_data()
 
-        atlas_to_mask = nib.load(os.path.join(mask_path, 'mask-%i.nii' % (label + 1))).get_data()
+        atlas_to_mask = nib.load(join(mask_path, 'mask-%i.nii' % (label + 1))).get_data()
 
         # Create atrophied image
         trivial_image = im_loss_roi_gaussian_distribution(image, atlas_to_mask, atrophy_percent)
@@ -158,11 +185,11 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
             trivial_image_pt = F.interpolate(trivial_image_pt, output_size)
             trivial_image = trivial_image_pt.numpy()[0, 0, :, :, :]
         trivial_image_nii = nib.Nifti1Image(trivial_image, affine=image_nii.affine)
-        trivial_image_nii.to_filename(os.path.join(path_image, filename))
+        trivial_image_nii.to_filename(join(path_image, filename))
 
         # Append row to output tsv
         row = ['sub-TRIV%i' % i, 'ses-M00', diagnosis_list[label], 60, 'F']
         row_df = pd.DataFrame([row], columns=columns)
         output_df = output_df.append(row_df)
 
-    output_df.to_csv(path.join(output_dir, 'data.tsv'), sep='\t', index=False)
+    output_df.to_csv(join(output_dir, 'data.tsv'), sep='\t', index=False)
