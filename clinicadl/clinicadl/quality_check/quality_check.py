@@ -9,14 +9,15 @@ from torch.utils.data import DataLoader
 from clinicadl.quality_check.utils import QCDataset, resnet_qc_18
 
 
-def quality_check(caps_dir, tsv_path, output_path, threshold=0.5, batch_size=1, num_workers=0, gpu=True):
+def quality_check(caps_dir, tsv_path, output_path, threshold=0.5, batch_size=1, num_workers=0, gpu=True,
+                  use_extracted_tensors=False):
     if path.splitext(output_path)[1] != ".tsv":
         raise ValueError("Please provide an output path to a tsv file")
 
     # Load QC model
     script_dir = path.dirname(path.realpath(__file__))
     model = resnet_qc_18()
-    model.load_state_dict(torch.load(path.join(script_dir, "model", "resnet18.pth")))
+    model.load_state_dict(torch.load(path.join(script_dir, "model", "old_resnet18.pth.tar")))
     model.eval()
     if gpu:
         model.cuda()
@@ -27,7 +28,7 @@ def quality_check(caps_dir, tsv_path, output_path, threshold=0.5, batch_size=1, 
             'participant_id' not in list(df.columns.values)):
         raise Exception("the data file is not in the correct format."
                         "Columns should include ['participant_id', 'session_id']")
-    dataset = QCDataset(caps_dir, df)
+    dataset = QCDataset(caps_dir, df, use_extracted_tensors=use_extracted_tensors)
     dataloader = DataLoader(
         dataset,
         num_workers=num_workers,

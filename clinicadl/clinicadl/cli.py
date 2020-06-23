@@ -662,6 +662,10 @@ def parse_command_line():
     qc_parser.add_argument('-cpu', '--use_cpu', action='store_true',
                            help='Uses CPU instead of GPU.',
                            default=False)
+    qc_parser.add_argument('--use_extracted_tensors',
+                           help="Default will use nifti files. If enabled, extracted tensors are used."
+                                "Results might be slightly different.",
+                           action="store_true", default=False)
 
     qc_parser.set_defaults(func=qc_func)
 
