@@ -237,7 +237,6 @@ class QCDataset(Dataset):
                 slice[::-1, :], _scale, mode='constant', clip=False)
 
             sz = slice.shape
-            print("Size post resize", sz)
             # pad image
             dummy = np.zeros((256, 256),)
             dummy[int((256 - sz[0]) / 2): int((256 - sz[0]) / 2) + sz[0],
@@ -271,13 +270,10 @@ class QCDataset(Dataset):
             scale = min(256.0 / slice.shape[0], 256.0 / slice.shape[1])
             # slice[::-1, :] is to flip the first axis of image
             slice = interpolate(torch.flip(slice, (0,)).unsqueeze(0).unsqueeze(0), scale_factor=scale)
-            print("Size post resize", slice.shape)
             slice = slice[0, 0, :, :]
 
             padding = self.get_padding(slice)
-            print(padding)
             slice = pad(slice, padding)
-            print("Size post pad", slice.shape)
 
             # rotate and flip the image back to the right direction for each view, if the MRI was read by nibabel
             # it seems that this will rotate the image 90 degree with
