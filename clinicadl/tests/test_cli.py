@@ -7,7 +7,7 @@ import clinicadl.cli as cli
 @pytest.fixture(params=['preprocessing',
                         'extract',
                         'generate',
-                        'quality_check'
+                        'quality_check',
                         'classify',
                         'train_subject',
                         'train_slice',
