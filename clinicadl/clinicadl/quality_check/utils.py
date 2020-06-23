@@ -6,6 +6,7 @@ import torch.nn as nn
 from torch.utils.data import Dataset
 import nibabel as nib
 from os import path
+import torch
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -156,6 +157,7 @@ class QCDataset(Dataset):
             data_df (DataFrame): Subject and session list.
 
         """
+        from ..tools.deep_learning.data import MinMaxNormalization
 
         self.img_dir = img_dir
         self.df = data_df
@@ -163,6 +165,8 @@ class QCDataset(Dataset):
         if ('session_id' not in list(self.df.columns.values)) or ('participant_id' not in list(self.df.columns.values)):
             raise Exception("the data file is not in the correct format."
                             "Columns should include ['participant_id', 'session_id']")
+
+        self.normalization = MinMaxNormalization()
 
     def __len__(self):
         return len(self.df)
@@ -172,10 +176,10 @@ class QCDataset(Dataset):
         session = self.df.loc[idx, 'session_id']
 
         image_path = path.join(self.img_dir, 'subjects', subject, session, 't1', 'preprocessing_dl',
-                               '%s_%s_space-MNI_res-1x1x1.nii.gz' % (subject, session))
+                               '%s_%s_space-MNI_res-1x1x1.pt' % (subject, session))
 
-        image = nib.load(image_path)
-        image = self.transform(image)
+        image = torch.load(image_path)
+        image = self.pt_transform(image)
 
         sample = {'image': image, 'participant_id': subject, 'session_id': session}
 
@@ -225,6 +229,7 @@ class QCDataset(Dataset):
                 slice[::-1, :], _scale, mode='constant', clip=False)
 
             sz = slice.shape
+            print("Size post resize", sz)
             # pad image
             dummy = np.zeros((256, 256),)
             dummy[int((256 - sz[0]) / 2): int((256 - sz[0]) / 2) + sz[0],
@@ -237,3 +242,55 @@ class QCDataset(Dataset):
                 np.rot90(dummy[16:240, 16:240]), axis=1).copy()
 
         return torch.cat([torch.from_numpy(i).float().unsqueeze_(0) for i in output_images]).unsqueeze_(0)
+
+    def pt_transform(self, image):
+        from torch.nn.functional import interpolate, pad
+
+        image = self.normalization(image) - 0.5
+        image = image[0, :, :, :]
+        sz = image.shape
+        input_images = [
+            image[:, :, int(sz[2] / 2)],
+            image[int(sz[0] / 2), :, :],
+            image[:, int(sz[1] / 2), :]
+        ]
+
+        output_images = list()
+
+        # flip, resize and crop
+        for slice in input_images:
+
+            scale = min(256.0 / slice.shape[0], 256.0 / slice.shape[1])
+            # slice[::-1, :] is to flip the first axis of image
+            slice = interpolate(torch.flip(slice, (0,)).unsqueeze(0).unsqueeze(0), scale_factor=scale)
+            print("Size post resize", slice.shape)
+            slice = slice[0, 0, :, :]
+
+            padding = self.get_padding(slice)
+            print(padding)
+            slice = pad(slice, padding)
+            print("Size post pad", slice.shape)
+
+            # rotate and flip the image back to the right direction for each view, if the MRI was read by nibabel
+            # it seems that this will rotate the image 90 degree with
+            # counter-clockwise direction and then flip it horizontally
+            output_images.append(torch.flip(torch.rot90(slice[16:240, 16:240], 1, [0, 1]), [1, ]).clone())
+
+        return torch.cat([image.float().unsqueeze_(0) for image in output_images]).unsqueeze_(0)
+
+    @staticmethod
+    def get_padding(image):
+        max_w = 256
+        max_h = 256
+
+        imsize = image.shape
+        h_padding = (max_w - imsize[1]) / 2
+        v_padding = (max_h - imsize[0]) / 2
+        l_pad = h_padding if h_padding % 1 == 0 else h_padding + 0.5
+        t_pad = v_padding if v_padding % 1 == 0 else v_padding + 0.5
+        r_pad = h_padding if h_padding % 1 == 0 else h_padding - 0.5
+        b_pad = v_padding if v_padding % 1 == 0 else v_padding - 0.5
+
+        padding = (int(l_pad), int(r_pad), int(t_pad), int(b_pad))
+
+        return padding
