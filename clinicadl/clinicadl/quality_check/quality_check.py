@@ -51,4 +51,5 @@ def quality_check(caps_dir, tsv_path, output_path, threshold=0.5, batch_size=1, 
             row_df = pd.DataFrame(row, columns=columns)
             qc_df = qc_df.append(row_df)
 
+    qc_df.sort_values("pass_probability", axis=1)
     qc_df.to_csv(output_path, sep='\t', index=False)
