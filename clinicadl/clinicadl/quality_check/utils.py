@@ -150,7 +150,7 @@ def resnet_qc_18(**kwargs):
 class QCDataset(Dataset):
     """Dataset of MRI organized in a CAPS folder."""
 
-    def __init__(self, img_dir, data_df):
+    def __init__(self, img_dir, data_df, use_extracted_tensors=False):
         """
         Args:
             img_dir (string): Directory of all the images.
@@ -161,6 +161,7 @@ class QCDataset(Dataset):
 
         self.img_dir = img_dir
         self.df = data_df
+        self.use_extracted_tensors = use_extracted_tensors
 
         if ('session_id' not in list(self.df.columns.values)) or ('participant_id' not in list(self.df.columns.values)):
             raise Exception("the data file is not in the correct format."
@@ -175,18 +176,25 @@ class QCDataset(Dataset):
         subject = self.df.loc[idx, 'participant_id']
         session = self.df.loc[idx, 'session_id']
 
-        image_path = path.join(self.img_dir, 'subjects', subject, session, 't1', 'preprocessing_dl',
-                               '%s_%s_space-MNI_res-1x1x1.pt' % (subject, session))
+        if self.use_extracted_tensors:
+            image_path = path.join(self.img_dir, 'subjects', subject, session, 't1', 'preprocessing_dl',
+                                   '%s_%s_space-MNI_res-1x1x1.pt' % (subject, session))
 
-        image = torch.load(image_path)
-        image = self.pt_transform(image)
+            image = torch.load(image_path)
+            image = self.pt_transform(image)
+        else:
+            image_path = path.join(self.img_dir, 'subjects', subject, session, 't1', 'preprocessing_dl',
+                                   '%s_%s_space-MNI_res-1x1x1.nii.gz' % (subject, session))
+
+            image = nib.load(image_path)
+            image = self.nii_transform(image)
 
         sample = {'image': image, 'participant_id': subject, 'session_id': session}
 
         return sample
 
     @staticmethod
-    def transform(image):
+    def nii_transform(image):
         import numpy as np
         import torch
         from skimage import transform
