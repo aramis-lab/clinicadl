@@ -54,6 +54,7 @@ class MRIDataset(Dataset):
                             "Columns should include ['participant_id', 'session_id', 'diagnosis']")
 
         self.size = self[0]['image'].numpy().size
+        self.elem_per_image = 1
 
     def __len__(self):
         return len(self.df)
@@ -153,19 +154,19 @@ class MRIDataset_patch(Dataset):
             raise NotImplementedError("The preprocessing %s was not implemented for patches. "
                                       "Raise an issue on GitHub to propose it !" % self.preprocessing)
 
-        self.patchs_per_patient = self.num_patches_per_session()
+        self.elem_per_image = self.num_patches_per_session()
 
     def __len__(self):
-        return len(self.df) * self.patchs_per_patient
+        return len(self.df) * self.elem_per_image
 
     def __getitem__(self, idx):
-        sub_idx = idx // self.patchs_per_patient
+        sub_idx = idx // self.elem_per_image
         img_name = self.df.loc[sub_idx, 'participant_id']
         sess_name = self.df.loc[sub_idx, 'session_id']
         img_label = self.df.loc[sub_idx, 'diagnosis']
         label = self.diagnosis_code[img_label]
         if self.patch_index is None:
-            patch_idx = idx % self.patchs_per_patient
+            patch_idx = idx % self.elem_per_image
         else:
             patch_idx = self.patch_index
 
@@ -268,20 +269,20 @@ class MRIDataset_patch_hippocampus(Dataset):
         if self.preprocessing != "t1-linear":
             raise NotImplementedError("The preprocessing %s was not implemented for ROI. "
                                       "Raise an issue on GitHub to propose it !" % self.preprocessing)
-        self.patchs_per_patient = 2
+        self.elem_per_image = 2
 
     def __len__(self):
-        return len(self.df) * self.patchs_per_patient
+        return len(self.df) * self.elem_per_image
 
     def __getitem__(self, idx):
-        sub_idx = idx // self.patchs_per_patient
+        sub_idx = idx // self.elem_per_image
         img_name = self.df.loc[sub_idx, 'participant_id']
         sess_name = self.df.loc[sub_idx, 'session_id']
         img_label = self.df.loc[sub_idx, 'diagnosis']
         label = self.diagnosis_code[img_label]
 
         # 1 is left hippocampus, 0 is right
-        left_is_odd = idx % self.patchs_per_patient
+        left_is_odd = idx % self.elem_per_image
         if self.prepare_dl:
             raise NotImplementedError(
                 'The extraction of ROIs prior to training is not implemented.')
@@ -364,13 +365,13 @@ class MRIDataset_slice(Dataset):
         # This dimension is for the output of image processing pipeline of Raw:
         # 169 * 208 * 179
         if mri_plane == 0:
-            self.slices_per_patient = 169 - discarded_slices[0] - discarded_slices[1]
+            self.elem_per_image = 169 - discarded_slices[0] - discarded_slices[1]
             self.slice_direction = 'sag'
         elif mri_plane == 1:
-            self.slices_per_patient = 208 - discarded_slices[0] - discarded_slices[1]
+            self.elem_per_image = 208 - discarded_slices[0] - discarded_slices[1]
             self.slice_direction = 'cor'
         elif mri_plane == 2:
-            self.slices_per_patient = 179 - discarded_slices[0] - discarded_slices[1]
+            self.elem_per_image = 179 - discarded_slices[0] - discarded_slices[1]
             self.slice_direction = 'axi'
 
         if self.preprocessing != "t1-linear":
@@ -378,15 +379,15 @@ class MRIDataset_slice(Dataset):
                                       "Raise an issue on GitHub to propose it !" % self.preprocessing)
 
     def __len__(self):
-        return len(self.df) * self.slices_per_patient
+        return len(self.df) * self.elem_per_image
 
     def __getitem__(self, idx):
-        sub_idx = idx // self.slices_per_patient
+        sub_idx = idx // self.elem_per_image
         img_name = self.df.loc[sub_idx, 'participant_id']
         sess_name = self.df.loc[sub_idx, 'session_id']
         img_label = self.df.loc[sub_idx, 'diagnosis']
         label = self.diagnosis_code[img_label]
-        slice_idx = idx % self.slices_per_patient + self.discarded_slices[0]
+        slice_idx = idx % self.elem_per_image + self.discarded_slices[0]
 
         if self.prepare_dl:
             # read the slices directly
@@ -648,6 +649,22 @@ def return_dataset(mode, input_dir, data_df, preprocessing, transformations, par
             discarded_slices=params.discarded_slices)
     else:
         raise ValueError("Mode %s is not implemented." % mode)
+
+
+def compute_num_cnn(options, data="train"):
+
+    transformations = get_transforms(options.mode, options.minmaxnormalization)
+
+    if data == "train":
+        example_df, _ = load_data(options.tsv_path, options.diagnoses, 0, options.n_splits, options.baseline)
+    else:
+        example_df = load_data_test(options.tsv_path, options.diagnoses)
+
+    full_dataset = return_dataset(options.mode, options.input_dir, example_df,
+                                  options.preprocessing, transformations, options)
+
+    return full_dataset.elem_per_image
+
 
 ##################################
 # Transformations
