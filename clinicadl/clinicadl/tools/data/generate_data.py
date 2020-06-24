@@ -125,11 +125,10 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
     root = dirname(abspath(join(abspath(__file__), pardir, pardir)))
     path_to_masks = join(root, 'resources', 'masks')
     url_aramis = 'https://aramislab.paris.inria.fr/files/data/masks/'
-    FILE1 = RemoteFileStructure(
-        filename='AAL2.tar.gz',
-        url=url_aramis,
-        checksum='2bcd99a30776b2a0bc950c632e1a55c9a6a6a27dbf4bb92580e4b4747b0901fa'
-        )
+    FILE1 = RemoteFileStructure(filename='AAL2.tar.gz',
+                                url=url_aramis,
+                                checksum='2bcd99a30776b2a0bc950c632e1a55c9a6a6a27dbf4bb92580e4b4747b0901fa'
+                                )
     AAL2_masks_path = join(path_to_masks, FILE1.filename)
 
     if n_subjects > len(data_df):
