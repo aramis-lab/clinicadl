@@ -2,6 +2,7 @@
 
 from clinicadl.tools.deep_learning import create_model, load_model, read_json
 from clinicadl.tools.deep_learning.data import MinMaxNormalization
+from clinicadl.tools.deep_learning.cnn_utils import test
 import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -99,34 +100,6 @@ def inference_from_model(caps_dir,
 
 
     """
-#    TODO: Implement a DataLoader using clinica_file_reader
-#
-#    from clinica.utils.inputs import clinica_file_reader
-#    from clinica.utils.exceptions import ClinicaBIDSError, ClinicaException
-#    from clinica.utils.paricipants import get_subject_session_list
-#
-#    T1W_LINEAR_CROPPED_TENSOR = {'pattern': '*space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt',
-#            'description': 'Tensor vesrion of the T1W image registered using t1-linear and cropped '
-#            '(matrix size 169×208×179, 1 mm isotropic voxels)',
-#            'needed_pipeline': 'deeplearning-prepare-data'}
-#
-#    FILE_TYPE = T1W_LINEAR_CROPPED_TENSOR
-#
-#    sessions, subjects = get_subject_session_list(caps_dir,
-#            tsv_path,
-#            is_bids_dir=False,
-#            use_session_tsv=False,
-#            tsv_dir=None)
-#
-#    try:
-#        t1w_files = clinica_file_reader(subjects,
-#                sessions,
-#                caps_dir,
-#                FILE_TYPE)
-#    except ClinicaException as e:
-#        err = 'Clinica faced error(s) while trying to read files in your CAPS directory.\n' + str(e)
-#        raise ClinicaBIDSError(err)
-
     import argparse
 
     parser = argparse.ArgumentParser()
@@ -166,7 +139,7 @@ def inference_from_model(caps_dir,
     return infered_classes
 
 
-def inference_from_image_model(caps_dir, tsv_path, model_path, options):
+def inference_from_image_model(caps_dir, tsv_path, model_path, model_options):
     '''
     Inference using an image/subject CNN model
 
@@ -174,11 +147,10 @@ def inference_from_image_model(caps_dir, tsv_path, model_path, options):
 
     '''
     from clinicadl.tools.deep_learning.data import MRIDataset
-    from clinicadl.image_level.utils import test
 
-    gpu = not options.use_cpu
+    gpu = not model_options.use_cpu
     # Recreate the model with the network described in the json file
-    model = create_model(options.network, gpu)
+    model = create_model(model_options.model, gpu, dropout=model_options.dropout)
     criterion = nn.CrossEntropyLoss()
 
     # Load model from path
@@ -186,7 +158,7 @@ def inference_from_image_model(caps_dir, tsv_path, model_path, options):
         model, model_path,
         gpu, filename='model_best.pth.tar')
 
-    if options.minmaxnormalization:
+    if model_options.minmaxnormalization:
         transformations = MinMaxNormalization()
     else:
         transformations = None
@@ -195,29 +167,29 @@ def inference_from_image_model(caps_dir, tsv_path, model_path, options):
     data_to_test = MRIDataset(
         caps_dir,
         tsv_path,
-        options.preprocessing,
+        preprocessing=model_options.preprocessing,
         transform=transformations)
 
     # Load the data
     test_loader = DataLoader(
         data_to_test,
-        batch_size=options.batch_size,
+        batch_size=model_options.batch_size,
         shuffle=False,
-        num_workers=options.nproc,
+        num_workers=model_options.nproc,
         pin_memory=True)
 
     # Run the model on the data
-    metrics_test, loss_test, test_df = test(
+    results_df, results = test(
         best_model,
         test_loader,
         gpu,
         criterion,
-        full_return=True)
+        model_options.mode)
 
-    return test_df
+    return results_df 
 
 
-def inference_from_slice_model(caps_dir, tsv_path, model_path, options):
+def inference_from_slice_model(caps_dir, tsv_path, model_path, model_options):
     '''
     Inference using a slice CNN model
 
@@ -225,14 +197,13 @@ def inference_from_slice_model(caps_dir, tsv_path, model_path, options):
 
     '''
     from clinicadl.tools.deep_learning.data import MRIDataset_slice
-    from clinicadl.slice_level.utils import test
     import torchvision.transforms as transforms
     # Initialize the model
     print('Do transfer learning with existed model trained on ImageNet.')
 
-    gpu = not options.use_cpu
+    gpu = not model_options.use_cpu
 
-    model = create_model(options.network, gpu, dropout=0.8)
+    model = create_model(model_options.model, gpu, dropout=0.8)
     trg_size = (224, 224)  # most of the imagenet pretrained model has this input size
 
     # All pre-trained models expect input images normalized in the same way,
@@ -256,16 +227,17 @@ def inference_from_slice_model(caps_dir, tsv_path, model_path, options):
     data_to_test = MRIDataset_slice(
         caps_dir,
         tsv_path,
+        preprocessing=model_options.preprocessing,
         transformations=transformations,
-        mri_plane=options.mri_plane,
-        prepare_dl=options.prepare_dl)
+        mri_plane=model_options.mri_plane,
+        prepare_dl=model_options.prepare_dl)
 
     # Load the data
     test_loader = DataLoader(
         data_to_test,
-        batch_size=options.batch_size,
+        batch_size=model_options.batch_size,
         shuffle=False,
-        num_workers=options.nproc,
+        num_workers=model_options.nproc,
         pin_memory=True)
 
     # Run the model on the data
@@ -273,12 +245,13 @@ def inference_from_slice_model(caps_dir, tsv_path, model_path, options):
         best_model,
         test_loader,
         gpu,
-        loss)
+        loss,
+        model_options.mode)
 
     return results_df
 
 
-def inference_from_patch_model(caps_dir, tsv_path, model_path, options):
+def inference_from_patch_model(caps_dir, tsv_path, model_path, model_options):
     '''
     Inference using an image/subject CNN model
 
@@ -286,16 +259,15 @@ def inference_from_patch_model(caps_dir, tsv_path, model_path, options):
 
     '''
     from clinicadl.tools.deep_learning.data import MRIDataset_patch, MRIDataset_patch_hippocampus
-    from clinicadl.patch_level.utils import test
     import torchvision.transforms as transforms
     from os.path import join
 
-    gpu = not options.use_cpu
+    gpu = not model_options.use_cpu
 
-    if options.mode_task == 'cnn':
+    if model_options.mode_task == 'cnn':
         # Recreate the model with the network described in the json file
         # Initialize the model
-        model = create_model(options.network, gpu)
+        model = create_model(model_options.model, gpu)
         transformations = transforms.Compose([MinMaxNormalization()])
 
         # Define loss and optimizer
@@ -307,26 +279,29 @@ def inference_from_patch_model(caps_dir, tsv_path, model_path, options):
             gpu, filename='model_best.pth.tar')
 
         # Read/localize the data
-        if options.hippocampus_roi:
+        if model_options.hippocampus_roi:
             data_to_test = MRIDataset_patch_hippocampus(
                 caps_directory,
                 tsv_path,
+                preprocessing=model_options.preprocessing,
                 transformations=transformations)
         else:
             data_to_test = MRIDataset_patch(
                 caps_directory,
                 tsv_path,
-                options.patch_size,
-                options.stride_size,
+                model_options.patch_size,
+                model_options.stride_size,
                 transformations=transformations,
-                prepare_dl=options.prepare_dl)
+                prepare_dl=model_options.prepare_dl,
+                patch_index=None,
+                preprocessing=model_options.preprocessing)
 
         # Load the data
         test_loader = DataLoader(
             data_to_test,
-            batch_size=options.batch_size,
+            batch_size=model_options.batch_size,
             shuffle=False,
-            num_workers=options.nproc,
+            num_workers=model_options.nproc,
             pin_memory=True)
 
         # Run the model on the data
@@ -337,32 +312,33 @@ def inference_from_patch_model(caps_dir, tsv_path, model_path, options):
             criterion,
             full_return=True)
 
-    elif options.mode_task == 'multicnn':
+    elif model_options.mode_task == 'multicnn':
 
         # Recreate the model with the network described in the json file
         # Initialize the model
-        model = create_model(options.network, gpu)
+        model = create_model(model_options.model, gpu)
         transformations = transforms.Compose([MinMaxNormalization()])
 
         # Define loss and optimizer
         criterion = nn.CrossEntropyLoss()
 
-        for n in range(options.num_cnn):
+        for n in range(model_options.num_cnn):
 
             dataset = MRIDataset_patch(
                 caps_dir,
                 tsv_path,
-                options.patch_size,
-                options.stride_size,
+                model_options.patch_size,
+                model_options.stride_size,
                 transformations=transformations,
                 patch_index=n,
-                prepare_dl=options.prepare_dl)
+                prepare_dl=model_options.prepare_dl,
+                preprocessing=model_options.preprocessing)
 
             test_loader = DataLoader(
                 dataset,
-                batch_size=options.batch_size,
+                batch_size=model_options.batch_size,
                 shuffle=False,
-                num_workers=options.nproc,
+                num_workers=model_options.nproc,
                 pin_memory=True)
 
             # load the best trained model during the training
