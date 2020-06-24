@@ -52,7 +52,6 @@ class Parameters:
             stride_size: int = 50,
             hippocampus_roi: bool = False,
             selection_threshold: float = 0.0,
-            num_cnn: int = 36,
             mri_plane: int = 0,
             discarded_slices: int = 20,
             prepare_dl: bool = False,
@@ -88,8 +87,6 @@ class Parameters:
         hippocampus_roi: If train the model using only hippocampus ROI.
         selection_threshold: Threshold on the balanced accuracies to compute
                              the subject-level performance.
-        num_cnn: How many CNNs we want to train in a patch-wise way.
-                 By default, each patch is trained from all subjects for one CNN.
         mri_plane: Which coordinate axis to take for slicing the MRI.
                    0 is for sagittal,
                    1 is for coronal and
@@ -124,7 +121,6 @@ class Parameters:
         self.patch_size = patch_size
         self.stride_size = stride_size
         self.hippocampus_roi = hippocampus_roi
-        self.num_cnn = num_cnn
         self.mri_plane = mri_plane
         self.discarded_slices = discarded_slices
         self.prepare_dl = prepare_dl
