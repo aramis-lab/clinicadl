@@ -17,9 +17,9 @@ from clinicadl.tools.inputs.input import fetch_file
 from clinicadl.tools.inputs.input import RemoteFileStructure
 import tarfile
 
+
 def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
                             sigma=0.5, preprocessing="linear", output_size=None):
-
     """
     Generates a random dataset.
 
@@ -122,17 +122,16 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
     data_df = pd.read_csv(tsv_path, sep='\t')
     data_df = baseline_df(data_df, "None")
 
-    
     root = dirname(abspath(join(abspath(__file__), pardir, pardir)))
     path_to_masks = join(root, 'resources', 'masks')
     url_aramis = 'https://aramislab.paris.inria.fr/files/data/masks/'
     FILE1 = RemoteFileStructure(
-            filename='AAL2.tar.gz',
-            url=url_aramis,
-            checksum='2bcd99a30776b2a0bc950c632e1a55c9a6a6a27dbf4bb92580e4b4747b0901fa'
-            )
+        filename='AAL2.tar.gz',
+        url=url_aramis,
+        checksum='2bcd99a30776b2a0bc950c632e1a55c9a6a6a27dbf4bb92580e4b4747b0901fa'
+        )
     AAL2_masks_path = join(path_to_masks, FILE1.filename)
-    
+
     if n_subjects > len(data_df):
         raise ValueError("The number of subjects %i cannot be higher than the number of subjects in the baseline "
                          "DataFrame extracted from %s" % (n_subjects, tsv_path))
@@ -151,7 +150,7 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
                 print('Unable to extract donwloaded files')
         except IOError as err:
             print('Unable to download required templates:', err)
-            raise ValueError('''Unable to download masks, please donwload them 
+            raise ValueError('''Unable to download masks, please donwload them
                               manually at https://aramislab.paris.inria.fr/files/data/masks/
                               and provide a valid path.''')
 
