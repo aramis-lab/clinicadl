@@ -14,7 +14,7 @@ def cli_commands(request):
 
     if request.param == 'classify_image':
         test_input = [
-            'classify',    
+            'classify',
             'data/OASIS_test',
             'data/OASIS_test/data.tsv',
             'data/models/3D_subject/baseline/AD_CN/fold_0/',
@@ -23,7 +23,7 @@ def cli_commands(request):
         ]
     elif request.param == 'classify_slice':
         test_input = [
-            'classify',    
+            'classify',
             'data/OASIS_test',
             'data/OASIS_test/data.tsv',
             'data/models/2D_slice/baseline/AD_CN/best_model/fold_0/',
@@ -32,7 +32,7 @@ def cli_commands(request):
         ]
     elif request.param == 'classify_patch':
         test_input = [
-            'classify',    
+            'classify',
             'data/OASIS_test',
             'data/OASIS_test/data.tsv',
             'data/models/3D_patch/baseline/AD_CN/best_model/fold_0/',
@@ -49,7 +49,7 @@ def cli_commands(request):
 
 def test_train(cli_commands):
     test_input = cli_commands
-    
+
     flag_error = not os.system("clinicadl " + " ".join(test_input))
-    
+
     assert flag_error

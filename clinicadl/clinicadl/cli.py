@@ -1047,7 +1047,7 @@ def parse_command_line():
                  MRI is loaded.''',
         default=False, action="store_true")
     classify_parser.set_defaults(func=classify_func)
-    
+
     tsv_parser = subparser.add_parser(
         'tsvtool',
         help='''Handle tsv files for metadata processing and data splits''')

@@ -186,7 +186,7 @@ def inference_from_image_model(caps_dir, tsv_path, model_path, model_options):
         criterion,
         model_options.mode)
 
-    return results_df 
+    return results_df
 
 
 def inference_from_slice_model(caps_dir, tsv_path, model_path, model_options):
