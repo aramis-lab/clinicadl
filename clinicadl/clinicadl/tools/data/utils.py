@@ -5,12 +5,12 @@ from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
 
 def find_image_path(caps_dir, participant_id, session_id, preprocessing, group=None):
     from os import path
-    if preprocessing == "linear":
+    if preprocessing == "t1-linear":
         image_path = path.join(caps_dir, 'subjects', participant_id, session_id,
                                't1_linear',
                                participant_id + '_' + session_id +
                                FILENAME_TYPE['cropped'] + '.nii.gz')
-    elif preprocessing == "extensive":
+    elif preprocessing == "t1-extensive":
         image_path = path.join(caps_dir, 'subjects', participant_id, session_id,
                                't1', 'spm', 'segmentation', 'normalized_space',
                                participant_id + '_' + session_id +
