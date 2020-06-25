@@ -127,7 +127,7 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
     url_aramis = 'https://aramislab.paris.inria.fr/files/data/masks/'
     FILE1 = RemoteFileStructure(filename='AAL2.tar.gz',
                                 url=url_aramis,
-                                checksum='2bcd99a30776b2a0bc950c632e1a55c9a6a6a27dbf4bb92580e4b4747b0901fa'
+                                checksum='89427970921674792481bffd2de095c8fbf49509d615e7e09e4bc6f0e0564471'
                                 )
     AAL2_masks_path = join(path_to_masks, FILE1.filename)
 
