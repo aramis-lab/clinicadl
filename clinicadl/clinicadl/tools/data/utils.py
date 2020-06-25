@@ -1,28 +1,21 @@
 # coding: utf8
 
 import numpy as np
+from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
 
 
-def find_image_path(caps_dir, participant_id, session_id, preprocessing, group=None):
+def find_image_path(caps_dir, participant_id, session_id, preprocessing):
     from os import path
-    if preprocessing == "linear":
+    if preprocessing == "t1-linear":
         image_path = path.join(caps_dir, 'subjects', participant_id, session_id,
-                               't1', 'preprocessing_dl',
+                               't1_linear',
                                participant_id + '_' + session_id +
-                               '_space-MNI_res-1x1x1.nii.gz')
-    elif preprocessing == "extensive":
+                               FILENAME_TYPE['cropped'] + '.nii.gz')
+    elif preprocessing == "t1-extensive":
         image_path = path.join(caps_dir, 'subjects', participant_id, session_id,
                                't1', 'spm', 'segmentation', 'normalized_space',
                                participant_id + '_' + session_id +
                                '_T1w_segm-graymatter_space-Ixi549Space_modulated-off_probability.nii.gz')
-
-    elif preprocessing == "dartel":
-        if group is None:
-            raise ValueError("A group value must be given with dartel preprocessing")
-        image_path = path.join(caps_dir, 'subjects', participant_id, session_id,
-                               't1', 'spm', 'dartel', group,
-                               participant_id + '_' + session_id +
-                               '_T1w_segm-graymatter_space-Ixi549Space_modulated-on_probability.nii.gz')
     else:
         raise ValueError("Preprocessing %s must be in ['linear', 'extensive']." % preprocessing)
 
