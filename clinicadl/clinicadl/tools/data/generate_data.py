@@ -51,7 +51,7 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
     data_df = pd.read_csv(tsv_path, sep='\t')
 
     # Create subjects dir
-    if not path.exists(join(output_dir, 'subjects')):
+    if not exists(join(output_dir, 'subjects')):
         makedirs(join(output_dir, 'subjects'))
 
     # Retrieve image of first subject
@@ -136,22 +136,25 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
                          "DataFrame extracted from %s" % (n_subjects, tsv_path))
 
     if mask_path is None:
-        try:
-            print('Try to download AAL2 masks')
-            mask_path_tar = fetch_file(FILE1, path_to_masks)
-            tar_file = tarfile.open(mask_path_tar)
-            print('File: ' + mask_path_tar)
+        if not exists(join(path_to_masks, 'AAL2')):
             try:
-                tar_file.extractall(path_to_masks)
-                tar_file.close()
-                mask_path = join(path_to_masks, 'AAL2')
-            except RuntimeError:
-                print('Unable to extract donwloaded files')
-        except IOError as err:
-            print('Unable to download required templates:', err)
-            raise ValueError('''Unable to download masks, please donwload them
-                              manually at https://aramislab.paris.inria.fr/files/data/masks/
-                              and provide a valid path.''')
+                print('Try to download AAL2 masks')
+                mask_path_tar = fetch_file(FILE1, path_to_masks)
+                tar_file = tarfile.open(mask_path_tar)
+                print('File: ' + mask_path_tar)
+                try:
+                    tar_file.extractall(path_to_masks)
+                    tar_file.close()
+                    mask_path = join(path_to_masks, 'AAL2')
+                except RuntimeError:
+                    print('Unable to extract donwloaded files')
+            except IOError as err:
+                print('Unable to download required templates:', err)
+                raise ValueError('''Unable to download masks, please donwload them
+                                  manually at https://aramislab.paris.inria.fr/files/data/masks/
+                                  and provide a valid path.''')
+        else:
+            mask_path = join(path_to_masks, 'AAL2')
 
     # Output tsv file
     columns = ['participant_id', 'session_id', 'diagnosis', 'age', 'sex']
