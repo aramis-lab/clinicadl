@@ -19,7 +19,7 @@ import tarfile
 
 
 def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
-                            sigma=0.5, preprocessing="linear", output_size=None):
+                            sigma=0.5, preprocessing="t1-linear"):
     """
     Generates a random dataset.
 
@@ -36,9 +36,7 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
             synthetic dataset
         mean: (float) mean of the gaussian noise
         sigma: (float) standard deviation of the gaussian noise
-        preprocessing: (str) preprocessing performed. Must be in ['linear', 'extensive'].
-        output_size: (tuple[int]) size of the output. If None no interpolation
-             will be performed.
+        preprocessing: (str) preprocessing performed. Must be in ['t1-linear', 't1-extensive'].
 
     Returns:
         A folder written on the output_dir location (in CAPS format), also a
@@ -77,10 +75,6 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
         gauss = np.random.normal(mean, sigma, image.shape)
         participant_id = 'sub-RAND%i' % i
         noisy_image = image + gauss
-        if output_size is not None:
-            noisy_image_pt = torch.Tensor(noisy_image[np.newaxis, np.newaxis, :])
-            noisy_image_pt = F.interpolate(noisy_image_pt, output_size)
-            noisy_image = noisy_image_pt.numpy()[0, 0, :, :, :]
         noisy_image_nii = nib.Nifti1Image(noisy_image, header=image_nii.header, affine=image_nii.affine)
         noisy_image_nii_path = join(output_dir, 'subjects', participant_id, 'ses-M00', 't1_linear')
         noisy_image_nii_filename = participant_id + '_ses-M00' + FILENAME_TYPE['cropped'] + '.nii.gz'
@@ -90,7 +84,7 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
 
 
 def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preprocessing="linear",
-                             mask_path=None, atrophy_percent=60, output_size=None, group=None):
+                             mask_path=None, atrophy_percent=60):
     """
     Generates a fully separable dataset.
 
@@ -108,9 +102,6 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
         preprocessing: (str) preprocessing performed. Must be in ['linear', 'extensive'].
         mask_path: (str) path to the extracted masks to generate the two labels.
         atrophy_percent: (float) percentage of atrophy applied.
-        output_size: (tuple[int]) size of the output. If None no interpolation
-            will be performed.
-        group: (str) group used for dartel preprocessing.
 
     Returns:
         Folder structure where images are stored in CAPS format.
@@ -173,7 +164,7 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
         if not exists(path_image):
             makedirs(path_image)
 
-        image_path = find_image_path(caps_dir, participant_id, session_id, preprocessing, group)
+        image_path = find_image_path(caps_dir, participant_id, session_id, preprocessing)
         image_nii = nib.load(image_path)
         image = image_nii.get_data()
 
@@ -181,10 +172,6 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
 
         # Create atrophied image
         trivial_image = im_loss_roi_gaussian_distribution(image, atlas_to_mask, atrophy_percent)
-        if output_size is not None:
-            trivial_image_pt = torch.Tensor(trivial_image[np.newaxis, np.newaxis, :])
-            trivial_image_pt = F.interpolate(trivial_image_pt, output_size)
-            trivial_image = trivial_image_pt.numpy()[0, 0, :, :, :]
         trivial_image_nii = nib.Nifti1Image(trivial_image, affine=image_nii.affine)
         trivial_image_nii.to_filename(join(path_image, filename))
 
