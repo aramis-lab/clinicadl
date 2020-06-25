@@ -66,7 +66,11 @@ def classify(caps_dir, tsv_path, model_path, output_dir=None, gpu=True, prepare_
         json_file,
         gpu,
         prepare_dl)
-
+    # Save tsv file with prediction result into output_dir
+    results_df.to_csv(join(output_dir, 'level_result.tsv'),
+                      index=False,
+                      sep='\t')
+                     
     print(results_df)
 
 
