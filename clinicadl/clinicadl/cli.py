@@ -75,8 +75,7 @@ def generate_data_func(args):
             n_subjects=args.n_subjects,
             mean=args.mean,
             sigma=args.sigma,
-            preprocessing=args.preprocessing,
-            output_size=args.output_size)
+            preprocessing=args.preprocessing)
     else:
         generate_trivial_dataset(
             caps_dir=args.caps_dir,
@@ -84,10 +83,8 @@ def generate_data_func(args):
             output_dir=args.output_dir,
             n_subjects=args.n_subjects,
             preprocessing=args.preprocessing,
-            output_size=args.output_size,
             mask_path=args.mask_path,
             atrophy_percent=args.atrophy_percent,
-            group=args.group
         )
 
 
@@ -503,16 +500,9 @@ def parse_command_line():
     generate_parser.add_argument(
         '--preprocessing',
         type=str,
-        default='linear',
-        choices=['linear', 'extensive'],
+        default='t1-linear',
+        choices=['t1-linear', 't1-extensive'],
         help="Preprocessing used to generate synthetic data."
-    )
-    generate_parser.add_argument(
-        '--output_size',
-        type=int,
-        nargs="+",
-        default=None,
-        help="If a value is given, interpolation will be used to up/downsample the image."
     )
     generate_parser.add_argument(
         '--mean',
@@ -537,12 +527,6 @@ def parse_command_line():
         type=float,
         default=60,
         help='percentage of atrophy applied'
-    )
-    generate_parser.add_argument(
-        '--group',
-        type=str,
-        default=None,
-        help="Specific argument for dartel preprocessing."
     )
 
     generate_parser.set_defaults(func=generate_data_func)
