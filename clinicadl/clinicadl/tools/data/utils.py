@@ -3,6 +3,7 @@
 import numpy as np
 from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
 
+
 def find_image_path(caps_dir, participant_id, session_id, preprocessing):
     from os import path
     if preprocessing == "t1-linear":
