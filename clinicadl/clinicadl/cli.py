@@ -118,7 +118,6 @@ def train_func(args):
                 learning_rate=args.learning_rate,
                 patience=args.patience,
                 tolerance=args.tolerance,
-                add_sigmoid=args.add_sigmoid,
                 optimizer='Adam',
                 weight_decay=args.weight_decay,
                 gpu=not args.use_cpu,
@@ -214,7 +213,6 @@ def train_func(args):
                 learning_rate=args.learning_rate,
                 patience=args.patience,
                 tolerance=args.tolerance,
-                add_sigmoid=args.add_sigmoid,
                 optimizer='Adam',
                 weight_decay=args.weight_decay,
                 gpu=not args.use_cpu,
@@ -323,7 +321,6 @@ def train_func(args):
                 learning_rate=args.learning_rate,
                 patience=args.patience,
                 tolerance=args.tolerance,
-                add_sigmoid=args.add_sigmoid,
                 optimizer='Adam',
                 weight_decay=args.weight_decay,
                 gpu=not args.use_cpu,
@@ -779,10 +776,6 @@ def parse_command_line():
     autoencoder_parent = argparse.ArgumentParser(add_help=False)
     autoencoder_group = autoencoder_parent.add_argument_group(
         TRAIN_CATEGORIES["AUTOENCODER"])
-    autoencoder_group.add_argument(
-        '--add_sigmoid',
-        help='Add sigmoid function at the end of the decoder.',
-        default=False, action="store_true")
     autoencoder_group.add_argument(
         '--visualization',
         help='Save results in visualization folder.',

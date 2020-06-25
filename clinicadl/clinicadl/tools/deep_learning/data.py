@@ -283,6 +283,7 @@ class MRIDatasetSlice(MRIDataset):
 
         """
         # Rename MRI plane
+        self.mri_plane = mri_plane
         if mri_plane == 0:
             self.slice_direction = 'sag'
         elif mri_plane == 1:

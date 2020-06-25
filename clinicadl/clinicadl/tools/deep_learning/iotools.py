@@ -37,7 +37,6 @@ class Parameters:
             learning_rate: float = 1e-4,
             patience: int = 10,
             tolerance: float = 0.05,
-            add_sigmoid: bool = False,
             optimizer: str = "Adam",
             weight_decay: float = 1e-4,
             dropout: float = 0,
@@ -72,7 +71,6 @@ class Parameters:
         learning_rate: Learning rate of the optimization. (default=0.01).
         patience: Waiting time for early stopping.
         tolerance: Tolerance value for the early stopping.
-        add_sigmoid: Ad sigmoid function at the end of the decoder.
         optimizer: Optimizer of choice for training. (default=Adam).
                    Choices=["SGD", "Adadelta", "Adam"].
         weight_decay: Weight decay of the optimizer.
@@ -107,7 +105,6 @@ class Parameters:
         self.learning_rate = learning_rate
         self.patience = patience
         self.tolerance = tolerance
-        self.add_sigmoid = add_sigmoid
         self.optimizer = optimizer
         self.weight_decay = weight_decay
         self.dropout = dropout
