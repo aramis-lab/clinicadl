@@ -418,8 +418,9 @@ pytest clinicadl/tests/test_cli.py
 
 ### Functional testing
 
-Training task are tested using synthetic data created from MRI extracted of the OASIS dataset.
-To run them, go to the test folder and type the following command in the terminal:
+Training task are tested using synthetic data created from MRI extracted of the
+OASIS dataset.  To run them, go to the test folder and type the following
+command in the terminal:
 
 ```{.sourceCode .bash}
 pytest ./test_train_cnn.py
@@ -434,8 +435,9 @@ the predictive models.
 The follow command allow you to generate two kinds of synthetic datasets: fully
 separable (trivial) or intractable data (IRM with random noise added).
 
-```text
-python clinicadl generate {random,trivial} caps_directory tsv_path output_directory
+```{.sourceCode .bash}
+clinicadl generate {random,trivial} caps_directory tsv_path output_directory
+--n_subjects N_SUBJECTS
 ```
 The intractable dataset will be made of noisy versions of the first image of
 the tsv file given at
