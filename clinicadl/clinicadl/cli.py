@@ -383,7 +383,9 @@ def classify_func(args):
         args.tsv_path,
         args.model_path,
         output_dir=args.output_directory,
-        gpu=not args.use_cpu
+        no_labels=args.no_labels,
+        gpu=not args.use_cpu,
+        prepare_dl=not args.use_extracted_features
     )
 
 # Functions to dispatch command line options from tsvtool to corresponding
@@ -1013,22 +1015,21 @@ def parse_command_line():
         help='Path to the folder where the model and the json file are stored.',
         default=None)
     classify_parser.add_argument(
-        'output_directory',
+        '--output_directory',
         help='Folder containing results of the training.',
         default=None)
+    classify_parser.add_argument(
+        '--no_label', action='store_true',
+        help='Add this flag if your dataset does not contain a ground truth.',
+        default=False)
     classify_parser.add_argument(
         '-cpu', '--use_cpu', action='store_true',
         help='Uses CPU instead of GPU.',
         default=False)
     classify_parser.add_argument(
-        '--use_extracted_slices',
-        help='''If True the extract slices are used, otherwise the whole
-                 MRI is loaded.''',
-        default=False, action="store_true")
-    classify_parser.add_argument(
-        '--use_extracted_patches',
-        help='''If True the extracted patches are used, otherwise the whole
-                 MRI is loaded.''',
+        '--use_extracted_features',
+        help='''If True the extract slices or patche are used, otherwise the they
+                 will be extracted on the fly (if necessary).''',
         default=False, action="store_true")
     classify_parser.set_defaults(func=classify_func)
 
