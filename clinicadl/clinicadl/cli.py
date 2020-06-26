@@ -966,8 +966,9 @@ def parse_command_line():
         default=0, type=int)
     train_slice_group.add_argument(
         '--discarded_slices',
-        help='''Number of slices discarded from respectively the beginning and the end of the MRI volume.
-        If only one argument is given, it will be used for both sides.''',
+        help='''Number of slices discarded from respectively the beginning and
+        the end of the MRI volume.  If only one argument is given, it will be
+        used for both sides.''',
         default=20, type=int, nargs='+'
     )
     train_slice_group.add_argument(
@@ -1012,25 +1013,26 @@ def parse_command_line():
         default=None)
     classify_parser.add_argument(
         'model_path',
-        help='Path to the folder where the model and the json file are stored.',
+        help='''Path to the folder where the model is stored. Folder structure
+                should be the same obtained during the training.''',
         default=None)
     classify_parser.add_argument(
         '--output_directory',
-        help='Folder containing results of the training.',
+        help='Folder containing results of the prediction.',
         default=None)
     classify_parser.add_argument(
         '--no_label', action='store_true',
         help='Add this flag if your dataset does not contain a ground truth.',
         default=False)
     classify_parser.add_argument(
+        '--use_extracted_features',
+        help='''If True the extract slices or patche are used, otherwise the they
+                will be extracted on the fly (if necessary).''',
+        default=False, action="store_true")
+    classify_parser.add_argument(
         '-cpu', '--use_cpu', action='store_true',
         help='Uses CPU instead of GPU.',
         default=False)
-    classify_parser.add_argument(
-        '--use_extracted_features',
-        help='''If True the extract slices or patche are used, otherwise the they
-                 will be extracted on the fly (if necessary).''',
-        default=False, action="store_true")
     classify_parser.set_defaults(func=classify_func)
 
     tsv_parser = subparser.add_parser(
