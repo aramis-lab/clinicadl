@@ -1,5 +1,10 @@
 # coding: utf8
 
+from os.path import isdir, join, abspath, exists
+from os import strerror, makedirs
+import errno
+import torch
+import pathlib
 from clinicadl.tools.deep_learning import create_model, load_model, read_json
 from clinicadl.tools.deep_learning.data import MinMaxNormalization
 from clinicadl.tools.deep_learning.cnn_utils import test
@@ -19,10 +24,6 @@ def classify(caps_dir, tsv_path, model_path, output_dir=None, gpu=True, prepare_
     Returns:
 
     """
-    from os.path import isdir, join, abspath, exists
-    from os import strerror
-    import errno
-    import torch
 
     # Verify that paths exist
     caps_dir = abspath(caps_dir)
@@ -46,7 +47,7 @@ def classify(caps_dir, tsv_path, model_path, output_dir=None, gpu=True, prepare_
     # Infer json file from model_path (suppose that json file is at the same
     # folder)
 
-    json_file = join(model_path, 'commandline_CNN.json')
+    json_file = join(model_path, 'commandline.json')
 
     if not exists(json_file):
         print("Json file doesn't exist")
@@ -67,11 +68,11 @@ def classify(caps_dir, tsv_path, model_path, output_dir=None, gpu=True, prepare_
         gpu,
         prepare_dl)
     # Save tsv file with prediction result into output_dir
-    results_df.to_csv(join(output_dir, 'level_result.tsv'),
-                      index=False,
-                      sep='\t')
+    #results_df.to_csv(join(output_dir, 'level_result.tsv'),
+    #                  index=False,
+    #                  sep='\t')
                      
-    print(results_df)
+    #print(results_df)
 
 
 def inference_from_model(caps_dir,
@@ -113,32 +114,62 @@ def inference_from_model(caps_dir,
     options = read_json(options, "CNN", json_path=json_file)
     print("Load model with these options:")
     print(options)
-
+    
+    # Overwrite options with user input
     options.use_cpu = not gpu
     options.prepare_dl = prepare_dl
+    # define the path
+    currentDirectory = pathlib.Path(model_path)
+    # search for 'fold_*' pattern
+    currentPattern = "fold_*"
 
-    if (options.mode == 'image'):
-        infered_classes = inference_from_image_model(
-            caps_dir,
-            tsv_path,
-            model_path,
-            options)
-    elif (options.mode == 'slice'):
-        infered_classes = inference_from_slice_model(
-            caps_dir,
-            tsv_path,
-            model_path,
-            options)
-    elif (options.mode == 'patch'):
-        infered_classes = inference_from_patch_model(
-            caps_dir,
-            tsv_path,
-            model_path,
-            options)
-    elif (options.mode == 'roi'):
-        infered_classes = inference_from_roi_model()
-    else:
-        print("Inference for this image mode is not implemented")
+    best_model = {
+            'best_acc': 'best_balanced_accuracy',
+            'best_loss': 'best_loss'
+            }
+
+
+    # loop depending the number of folds found in the model folder
+    for fold_number in currentDirectory.glob(currentPattern):
+        model_fold_path = join(model_path, fold_number)    
+        full_model_path = join(model_fold_path, 'models', best_model['best_acc'])
+        if not exists(join(full_model_path, 'model_best.pth.tar')):
+            raise FileNotFoundError(
+                errno.ENOENT, strerror(errno.ENOENT), joint(full_model_path, 'model_best.pth.tar'))
+        
+        output_dir = join(model_fold_path, 'cnn_classification', best_model['best_acc'])
+        if not exists(output_dir):
+            makedirs(join(model_fold_path, 'cnn_classification', best_model['best_acc']))
+
+
+        if (options.mode == 'image'):
+            infered_classes = inference_from_image_model(
+                caps_dir,
+                tsv_path,
+                full_model_path,
+                options)
+        elif (options.mode == 'slice'):
+            infered_classes = inference_from_slice_model(
+                caps_dir,
+                tsv_path,
+                full_model_path,
+                options)
+        elif (options.mode == 'patch'):
+            infered_classes = inference_from_patch_model(
+                caps_dir,
+                tsv_path,
+                full_model_path,
+                options)
+        elif (options.mode == 'roi'):
+            infered_classes = inference_from_roi_model()
+        else:
+            print("Inference for this image mode is not implemented")
+       
+        usr_prefix = 'DB-1'
+        print(infered_classes)
+        output_filename = join(output_dir, usr_prefix + '_image_level_prediction.tsv')
+        print("Preditions for your image inputs are stored in: %s", output_filename)
+        infered_classes.to_csv(output_filename, index=False, sep='\t')
 
     return infered_classes
 
