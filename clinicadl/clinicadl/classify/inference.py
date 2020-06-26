@@ -67,12 +67,6 @@ def classify(caps_dir, tsv_path, model_path, output_dir=None, gpu=True, prepare_
         json_file,
         gpu,
         prepare_dl)
-    # Save tsv file with prediction result into output_dir
-    #results_df.to_csv(join(output_dir, 'level_result.tsv'),
-    #                  index=False,
-    #                  sep='\t')
-                     
-    #print(results_df)
 
 
 def inference_from_model(caps_dir,
@@ -114,7 +108,7 @@ def inference_from_model(caps_dir,
     options = read_json(options, "CNN", json_path=json_file)
     print("Load model with these options:")
     print(options)
-    
+
     # Overwrite options with user input
     options.use_cpu = not gpu
     options.prepare_dl = prepare_dl
@@ -128,19 +122,17 @@ def inference_from_model(caps_dir,
             'best_loss': 'best_loss'
             }
 
-
     # loop depending the number of folds found in the model folder
     for fold_number in currentDirectory.glob(currentPattern):
-        model_fold_path = join(model_path, fold_number)    
+        model_fold_path = join(model_path, fold_number)
         full_model_path = join(model_fold_path, 'models', best_model['best_acc'])
         if not exists(join(full_model_path, 'model_best.pth.tar')):
             raise FileNotFoundError(
                 errno.ENOENT, strerror(errno.ENOENT), joint(full_model_path, 'model_best.pth.tar'))
-        
+
         output_dir = join(model_fold_path, 'cnn_classification', best_model['best_acc'])
         if not exists(output_dir):
             makedirs(join(model_fold_path, 'cnn_classification', best_model['best_acc']))
-
 
         if (options.mode == 'image'):
             infered_classes = inference_from_image_model(
@@ -164,7 +156,7 @@ def inference_from_model(caps_dir,
             infered_classes = inference_from_roi_model()
         else:
             print("Inference for this image mode is not implemented")
-       
+
         usr_prefix = 'DB-1'
         print(infered_classes)
         output_filename = join(output_dir, usr_prefix + '_image_level_prediction.tsv')
