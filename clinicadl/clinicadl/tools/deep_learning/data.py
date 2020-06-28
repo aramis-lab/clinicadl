@@ -32,6 +32,11 @@ class MRIDataset(Dataset):
             'unlabeled': -1}
         self.preprocessing = preprocessing
 
+        if not hasattr(self, 'elem_idx'):
+            raise ValueError("Child class of MRIDataset must set elem_idx attribute.")
+        if not hasattr(self, 'mode'):
+            raise ValueError("Child class of MRIDataset must set mode attribute.")
+
         # Check the format of the tsv file here
         if isinstance(data_file, str):
             self.df = pd.read_csv(data_file, sep='\t')
@@ -40,14 +45,15 @@ class MRIDataset(Dataset):
         else:
             raise Exception('The argument data_file is not of correct type.')
 
-        if ('diagnosis' not in list(self.df.columns.values)) or ('session_id' not in list(self.df.columns.values)) or \
-           ('participant_id' not in list(self.df.columns.values)):
+        mandatory_col = {"participant_id", "session_id",  "diagnosis"}
+        if self.elem_index == "mixed":
+            mandatory_col.add("%s_id" % self.mode)
+
+        if not mandatory_col.issubset(set(self.df.columns.values)):
             raise Exception("the data file is not in the correct format."
-                            "Columns should include ['participant_id', 'session_id', 'diagnosis']")
+                            "Columns should include %s" % mandatory_col)
 
         self.elem_per_image = self.num_elem_per_image()
-        if not hasattr(self, 'elem_idx'):
-            raise ValueError("Child class of MRIDataset must set elem_idx attribute.")
 
     def __len__(self):
         return len(self.df) * self.elem_per_image
@@ -72,7 +78,7 @@ class MRIDataset(Dataset):
 
         return image_path
 
-    def _get_meta_data(self, idx, mode="slice"):
+    def _get_meta_data(self, idx):
         image_idx = idx // self.elem_per_image
         participant = self.df.loc[image_idx, 'participant_id']
         session = self.df.loc[image_idx, 'session_id']
@@ -80,7 +86,7 @@ class MRIDataset(Dataset):
         if self.elem_index is None:
             elem_idx = idx % self.elem_per_image
         elif self.elem_index == "mixed":
-            elem_idx = self.df.loc[image_idx, '%s_id' % mode]
+            elem_idx = self.df.loc[image_idx, '%s_id' % self.mode]
         else:
             elem_idx = self.elem_index
 
@@ -106,12 +112,13 @@ class MRIDatasetImage(MRIDataset):
         """
         Args:
             caps_directory (string): Directory of all the images.
-            data_file (string): File name of the train/test split file.
-            preprocessing (string): Defines the path to the data in CAPS
-            transform (callable, optional): Optional transform to be applied on a sample.
+            data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
+            preprocessing (string): Defines the path to the data in CAPS.
+            transformations (callable, optional): Optional transform to be applied on a sample.
 
         """
         self.elem_index = None
+        self.mode = "image"
         super().__init__(caps_directory, data_file, preprocessing, transformations)
 
     def __getitem__(self, idx):
@@ -138,13 +145,20 @@ class MRIDatasetPatch(MRIDataset):
         """
         Args:
             caps_directory (string): Directory of all the images.
-            data_file (string): File name of the train/test split file.
-            transformations (callable, optional): Optional transformations to be applied on a sample.
+            data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
+            preprocessing (string): Defines the path to the data in CAPS.
+            transformations (callable, optional): Optional transform to be applied on a sample.
+            prepare_dl (bool): If true pre-extracted patches will be loaded.
+            patch_index (int, optional): If a value is given the same patch location will be extracted for each image.
+                else the dataset will load all the patches possible for one image.
+            patch_size (int): size of the regular cubic patch.
+            stride_size (int): length between the centers of two patches.
 
         """
         self.patch_size = patch_size
         self.stride_size = stride_size
         self.elem_index = patch_index
+        self.mode = "patch"
         super().__init__(caps_directory, data_file, preprocessing, transformations)
         self.prepare_dl = prepare_dl
 
@@ -209,13 +223,14 @@ class MRIDatasetRoi(MRIDataset):
         """
         Args:
             caps_directory (string): Directory of all the images.
-            data_file (string): File name of the train/test split file.
-            transformations (callable, optional): Optional transformations to be applied on a sample.
-            prepare_dl (bool): If True the outputs of extract preprocessing are used, else the whole
-            MRI is loaded.
+            data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
+            preprocessing (string): Defines the path to the data in CAPS.
+            transformations (callable, optional): Optional transform to be applied on a sample.
+            prepare_dl (bool): If true pre-extracted patches will be loaded.
 
         """
         self.elem_index = None
+        self.mode = "roi"
         super().__init__(caps_directory, data_file, preprocessing, transformations)
         self.prepare_dl = prepare_dl
 
@@ -272,28 +287,22 @@ class MRIDatasetRoi(MRIDataset):
 
 
 class MRIDatasetSlice(MRIDataset):
-    """
-    This class reads the CAPS of image processing pipeline of DL
-
-    To note, this class processes the MRI to be RGB for transfer learning.
-
-    Return: a Pytorch Dataset objective
-    """
 
     def __init__(self, caps_directory, data_file, preprocessing="t1-linear",
                  transformations=None, mri_plane=0, prepare_dl=False,
                  discarded_slices=20, mixed=False):
         """
         Args:
-            caps_directory (string): the output folder of image processing pipeline.
-            transformations (callable, optional): if the data sample should be done some transformations or not, such as resize the image.
-            discarded_slices (int or list): slices discarded at the beginning and the end of the volume.
-
-        To note, for each view:
-            Axial_view = "[:, :, slice_i]"
-            Coronal_veiw = "[:, slice_i, :]"
-            Saggital_view= "[slice_i, :, :]"
-
+            caps_directory (string): Directory of all the images.
+            data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
+            preprocessing (string): Defines the path to the data in CAPS.
+            transformations (callable, optional): Optional transform to be applied on a sample.
+            prepare_dl (bool): If true pre-extracted patches will be loaded.
+            mri_plane (int): Defines which mri plane is used for slice extraction.
+            discarded_slices (int or list): number of slices discarded at the beginning and the end of the image.
+                If one single value is given, the same amount is discarded at the beginning and at the end.
+            mixed (bool): If True will look for a 'slice_id' column in the input DataFrame to load each slice
+                independently.
         """
         # Rename MRI plane
         self.mri_plane = mri_plane
@@ -313,11 +322,12 @@ class MRIDatasetSlice(MRIDataset):
         else:
             self.elem_index = None
 
+        self.mode = "slice"
         super().__init__(caps_directory, data_file, preprocessing, transformations)
         self.prepare_dl = prepare_dl
 
     def __getitem__(self, idx):
-        participant, session, slice_idx, label = self._get_meta_data(idx, mode="slice")
+        participant, session, slice_idx, label = self._get_meta_data(idx)
         slice_idx = slice_idx + self.discarded_slices[0]
 
         if self.prepare_dl:
