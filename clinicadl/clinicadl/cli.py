@@ -385,7 +385,7 @@ def classify_func(args):
         output_dir=args.output_directory,
         no_labels=args.no_labels,
         gpu=not args.use_cpu,
-        prepare_dl=not args.use_extracted_features
+        prepare_dl=args.use_extracted_features
     )
 
 # Functions to dispatch command line options from tsvtool to corresponding
@@ -1021,7 +1021,7 @@ def parse_command_line():
         help='Folder containing results of the prediction.',
         default=None)
     classify_parser.add_argument(
-        '--no_label', action='store_true',
+        '--no_labels', action='store_true',
         help='Add this flag if your dataset does not contain a ground truth.',
         default=False)
     classify_parser.add_argument(
