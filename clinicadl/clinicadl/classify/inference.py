@@ -1,19 +1,25 @@
 # coding: utf8
 
 from os.path import isdir, join, abspath, exists
-from os import strerror, makedirs
+from os import strerror, makedirs, listdir
 import errno
 import torch
 import pathlib
 from clinicadl.tools.deep_learning import create_model, load_model, read_json
 from clinicadl.tools.deep_learning.data import MinMaxNormalization
-from clinicadl.tools.deep_learning.cnn_utils import test
+from clinicadl.tools.deep_learning.cnn_utils import test, soft_voting
 import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
 
-def classify(caps_dir, tsv_path, model_path, output_dir=None, gpu=True, prepare_dl=False):
+def classify(caps_dir,
+             tsv_path,
+             model_path,
+             output_dir=None,
+             no_labels=False,
+             gpu=True, 
+             prepare_dl=True):
     """
     This function reads the command line parameters and point to inference
 
@@ -32,7 +38,7 @@ def classify(caps_dir, tsv_path, model_path, output_dir=None, gpu=True, prepare_
     tsv_path = abspath(tsv_path)
 
     if not isdir(caps_dir):
-        print("Folder containing MRIs is not found, please verify its location")
+        print("Folder containing MRIs was not found, please verify its location")
         raise FileNotFoundError(
             errno.ENOENT, strerror(errno.ENOENT), caps_dir)
         print("Folder containing MRIs is not found, please verify its location")
@@ -65,6 +71,8 @@ def classify(caps_dir, tsv_path, model_path, output_dir=None, gpu=True, prepare_
         tsv_path,
         model_path,
         json_file,
+        output_dir,
+        no_labels,
         gpu,
         prepare_dl)
 
@@ -73,6 +81,8 @@ def inference_from_model(caps_dir,
                          tsv_path,
                          model_path=None,
                          json_file=None,
+                         output_dir=None,
+                         no_labels=False,
                          gpu=True,
                          prepare_dl=False):
     """
@@ -86,6 +96,10 @@ def inference_from_model(caps_dir,
     tsv_path: file with the name of the MRIs to process (single or multiple)
     model_path: file with the model (pth format).
     json_file: file containing the training parameters.
+    output_dir: folder where results are stored. If None it uses current 
+    structure.
+    no_labels: by default is false. In that case, output writes a file named 
+    measurements.tsv
     gpu: if true, it uses gpu.
     prepare_dl: if true, uses extracted patches/slices otherwise extract them
     on-the-fly.
@@ -95,7 +109,9 @@ def inference_from_model(caps_dir,
     Pandas data frame with a list of subjects and their infered classes
     (predictions).
 
-    Rises:
+    Files stored in user-defined or default folders.
+
+    Raises:
 
 
     """
@@ -123,45 +139,75 @@ def inference_from_model(caps_dir,
             }
 
     # loop depending the number of folds found in the model folder
-    for fold_number in currentDirectory.glob(currentPattern):
-        model_fold_path = join(model_path, fold_number)
+    for fold_dir in currentDirectory.glob(currentPattern):
+        print(type(str(fold_dir)[-1]))
+        split = int(str(fold_dir)[-1])
+        model_fold_path = join(model_path, fold_dir)
         full_model_path = join(model_fold_path, 'models', best_model['best_acc'])
-        if not exists(join(full_model_path, 'model_best.pth.tar')):
+        if not exists(join(full_model_path, 'model_best.pth.tar')) and not options.mode == 'patch':
             raise FileNotFoundError(
-                errno.ENOENT, strerror(errno.ENOENT), joint(full_model_path, 'model_best.pth.tar'))
+                errno.ENOENT, strerror(errno.ENOENT), join(full_model_path, 'model_best.pth.tar'))
+        
+        if options.mode == 'patch':
+            for cnn_dir in listdir(full_model_path):
+                if not exists(join(full_model_path, cnn_dir, 'model_best.pth.tar')):
+                    raise FileNotFoundError(
+                            errno.ENOENT, strerror(errno.ENOENT), join(full_model_path, cnn_dir, 'model_best.pth.tar'))
 
-        output_dir = join(model_fold_path, 'cnn_classification', best_model['best_acc'])
-        if not exists(output_dir):
-            makedirs(join(model_fold_path, 'cnn_classification', best_model['best_acc']))
 
+        if output_dir==None:
+            output_dir = join(model_fold_path, 'cnn_classification', best_model['best_acc'])
+            if not exists(output_dir):
+                makedirs(join(model_fold_path, 'cnn_classification', best_model['best_acc']))
+        else:
+            if not exists(output_dir):
+                raise FileNotFoundError(
+                    errno.ENOENT, strerror(errno.ENOENT), output_dir)
+
+        print("Results are saved in: %s" % output_dir)
+        
         if (options.mode == 'image'):
-            infered_classes = inference_from_image_model(
+            infered_classes, metrics = inference_from_image_model(
                 caps_dir,
                 tsv_path,
                 full_model_path,
                 options)
         elif (options.mode == 'slice'):
-            infered_classes = inference_from_slice_model(
+            infered_classes, metrics = inference_from_slice_model(
                 caps_dir,
                 tsv_path,
                 full_model_path,
                 options)
         elif (options.mode == 'patch'):
-            infered_classes = inference_from_patch_model(
+            infered_classes, metrics = inference_from_patch_model(
                 caps_dir,
                 tsv_path,
                 full_model_path,
                 options)
         elif (options.mode == 'roi'):
-            infered_classes = inference_from_roi_model()
+            infered_classes, metrics = inference_from_roi_model()
         else:
             print("Inference for this image mode is not implemented")
 
         usr_prefix = 'DB-1'
         print(infered_classes)
-        output_filename = join(output_dir, usr_prefix + '_image_level_prediction.tsv')
-        print("Preditions for your image inputs are stored in: %s", output_filename)
+        output_filename = join(output_dir, usr_prefix + '_%s_level_predictions.tsv' % options.mode)
+        
+        print("%s level balanced accuracy is %f" % (options.mode, metrics['balanced_accuracy']))
+        print("Predictions for your image inputs are stored in: %s" % output_filename)
         infered_classes.to_csv(output_filename, index=False, sep='\t')
+
+        # Soft voting
+        if options.mode in ["patch", "roi", "slice"]:
+            result_tsv = join(output_dir, 'validation_%s_level_result.tsv' % options.mode)
+                    
+            validation_df = pd.read_csv(result_tsv, sep='\t')
+
+            df_final, metrics = soft_voting(infered_classes, validation_df,
+                    options.mode, selection_threshold=0.7)
+            df_final.to_csv(join(output_dir, usr_prefix + '_image_level_result.tsv'),
+                    index=False, sep='\t')
+
 
     return infered_classes
 
@@ -206,14 +252,14 @@ def inference_from_image_model(caps_dir, tsv_path, model_path, model_options):
         pin_memory=True)
 
     # Run the model on the data
-    results_df, results = test(
+    predictions_df, measures = test(
         best_model,
         test_loader,
         gpu,
         criterion,
         model_options.mode)
 
-    return results_df
+    return predictions_df, measures
 
 
 def inference_from_slice_model(caps_dir, tsv_path, model_path, model_options):
@@ -268,14 +314,14 @@ def inference_from_slice_model(caps_dir, tsv_path, model_path, model_options):
         pin_memory=True)
 
     # Run the model on the data
-    results_df, results = test(
+    predictions_df, mesures = test(
         best_model,
         test_loader,
         gpu,
         loss,
         model_options.mode)
 
-    return results_df
+    return predictions_df, mesures
 
 
 def inference_from_patch_model(caps_dir, tsv_path, model_path, model_options):
@@ -332,7 +378,7 @@ def inference_from_patch_model(caps_dir, tsv_path, model_path, model_options):
             pin_memory=True)
 
         # Run the model on the data
-        results_df, metrics = test(
+        predictions_df, measures = test(
             best_model,
             test_loader,
             gpu,
@@ -348,6 +394,9 @@ def inference_from_patch_model(caps_dir, tsv_path, model_path, model_options):
 
         # Define loss and optimizer
         criterion = nn.CrossEntropyLoss()
+
+        predictions_df = pd.DataFrame()
+        metrics = []
 
         for n in range(model_options.num_cnn):
 
@@ -375,10 +424,16 @@ def inference_from_patch_model(caps_dir, tsv_path, model_path, model_options):
                 gpu,
                 filename='model_best.pth.tar')
 
-            results_df, metrics = test(model, test_loader, gpu, criterion)
-            print("Patch level balanced accuracy is %f" % metrics['balanced_accuracy'])
+            cnn_df, cnn_metrics = test(model, test_loader, gpu, criterion)
+            print("Patch level balanced accuracy is %f" % cnn_metrics['balanced_accuracy'])
+            predictions_df =  pd.concat([predictions_df, cnn_df])
+            print(type(cnn_metrics))
+            metrics.append(cnn_metrics)
+        
+        predictions_df.reset_index(drop=True, inplace=True)
+        # metrics.rest_index(drop=True, inplace=True)
 
     else:
         print("Mode not defined")
 
-    return results_df
+    return predictions_df, metrics
