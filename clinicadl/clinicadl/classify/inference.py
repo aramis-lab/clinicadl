@@ -16,6 +16,7 @@ from torch.utils.data import DataLoader
 def classify(caps_dir,
              tsv_path,
              model_path,
+             prefix_output='prefix_DB',
              output_dir=None,
              no_labels=False,
              gpu=True, 
@@ -71,6 +72,7 @@ def classify(caps_dir,
         tsv_path,
         model_path,
         json_file,
+        prefix_output,
         output_dir,
         no_labels,
         gpu,
@@ -81,6 +83,7 @@ def inference_from_model(caps_dir,
                          tsv_path,
                          model_path=None,
                          json_file=None,
+                         prefix=None,
                          output_dir=None,
                          no_labels=False,
                          gpu=True,
@@ -189,7 +192,7 @@ def inference_from_model(caps_dir,
         else:
             print("Inference for this image mode is not implemented")
 
-        usr_prefix = 'DB-1'
+        usr_prefix = str(prefix)
         print(infered_classes)
         output_filename = join(output_dir, usr_prefix + '_%s_level_predictions.tsv' % options.mode)
         
