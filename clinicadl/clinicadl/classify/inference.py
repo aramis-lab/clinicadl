@@ -200,14 +200,21 @@ def inference_from_model(caps_dir,
         print("Predictions for your image inputs are stored in: %s" % output_filename)
         infered_classes.to_csv(output_filename, index=False, sep='\t')
 
+        
         # Soft voting
+        if hasattr(options, 'selection_threshold')
+            selection_thresh = options.selection_threshold
+        else:
+            selection_thresh = 0.8
+
+        
         if options.mode in ["patch", "roi", "slice"]:
             result_tsv = join(output_dir, 'validation_%s_level_result.tsv' % options.mode)
                     
             validation_df = pd.read_csv(result_tsv, sep='\t')
 
             df_final, metrics = soft_voting(infered_classes, validation_df,
-                    options.mode, selection_threshold=0.7)
+                    options.mode, selection_threshold=selection_thresh)
             df_final.to_csv(join(output_dir, usr_prefix + '_image_level_result.tsv'),
                     index=False, sep='\t')
 
