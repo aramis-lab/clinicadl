@@ -17,8 +17,9 @@ def cli_commands(request):
             'classify',
             'data/OASIS_test',
             'data/OASIS_test/data.tsv',
-            'data/models/3D_subject/baseline/AD_CN/fold_0/',
-            'data/output/',
+            'data/models/image/baseline/AD_CN_one_fold/',
+            '--output_directory', 'data/output/',
+            '--prefix_output', 'DB-XXXX',
             '-cpu'
         ]
     elif request.param == 'classify_slice':
@@ -26,8 +27,8 @@ def cli_commands(request):
             'classify',
             'data/OASIS_test',
             'data/OASIS_test/data.tsv',
-            'data/models/2D_slice/baseline/AD_CN/best_model/fold_0/',
-            'data/output/',
+            'data/models/slice/baseline/AD_CN/',
+            '--prefix_output', 'DB-XXXX',
             '-cpu'
         ]
     elif request.param == 'classify_patch':
@@ -35,8 +36,8 @@ def cli_commands(request):
             'classify',
             'data/OASIS_test',
             'data/OASIS_test/data.tsv',
-            'data/models/3D_patch/baseline/AD_CN/best_model/fold_0/',
-            'data/output/',
+            'data/models/patch/baseline/AD_CN/',
+            '--prefix_output', 'DB-XXXX',
             '-cpu'
         ]
     else:
