@@ -233,7 +233,7 @@ def read_json(options, task_type, json_path=None, test=False):
 
     if not hasattr(options, 'discarded_sliced'):
         options.discarded_slices = 20
-    
+
     if options.preprocessing in prep_compatibility_dict.keys():
         options.preprocessing = prep_compatibility_dict[options.preprocessing]
 
