@@ -142,9 +142,9 @@ def inference_from_model(caps_dir,
     currentPattern = "fold_*"
 
     best_model = {
-            'best_acc': 'best_balanced_accuracy',
+        'best_acc': 'best_balanced_accuracy',
             'best_loss': 'best_loss'
-            }
+    }
 
     # loop depending the number of folds found in the model folder
     for fold_dir in currentDirectory.glob(currentPattern):
@@ -163,13 +163,13 @@ def inference_from_model(caps_dir,
             for cnn_dir in listdir(models_path):
                 if not exists(join(models_path, cnn_dir, best_model['best_acc'], 'model_best.pth.tar')):
                     raise FileNotFoundError(
-                            errno.ENOENT,
-                            strerror(errno.ENOENT),
-                            join(models_path,
+                        errno.ENOENT,
+                        strerror(errno.ENOENT),
+                        join(models_path,
                                  cnn_dir,
                                  best_model['best_acc'],
                                  'model_best.pth.tar')
-                            )
+                    )
 
         if output_dir_arg is None:
             output_dir = join(fold_path, 'cnn_classification', best_model['best_acc'])
@@ -238,8 +238,8 @@ def inference_from_model(caps_dir,
                 validation_df.reset_index(drop=True, inplace=True)
             else:
                 result_tsv = join(
-                        output_dir,
-                        'validation_%s_level_result.tsv' % options.mode)
+                    output_dir,
+                    'validation_%s_level_result.tsv' % options.mode)
                 validation_df = pd.read_csv(result_tsv, sep='\t')
 
             df_final, metrics = soft_voting(infered_classes, validation_df,
