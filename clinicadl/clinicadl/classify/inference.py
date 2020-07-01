@@ -6,7 +6,8 @@ import errno
 import torch
 import pathlib
 from clinicadl.tools.deep_learning import create_model, load_model, read_json
-from clinicadl.tools.deep_learning.data import MinMaxNormalization
+from clinicadl.tools.deep_learning.data import (MinMaxNormalization,
+                                                return_dataset, get_transforms)
 from clinicadl.tools.deep_learning.cnn_utils import test, soft_voting
 import pandas as pd
 import torch.nn as nn
@@ -19,10 +20,11 @@ def classify(caps_dir,
              prefix_output='prefix_DB',
              output_dir=None,
              no_labels=False,
-             gpu=True, 
+             gpu=True,
              prepare_dl=True):
     """
-    This function reads the command line parameters and point to inference
+    This function verify the input folders, and the existance of the json file
+    then it launch the inference stage from a specific model.
 
     Parameters:
 
@@ -35,11 +37,10 @@ def classify(caps_dir,
     # Verify that paths exist
     caps_dir = abspath(caps_dir)
     model_path = abspath(model_path)
-    print(model_path)
     tsv_path = abspath(tsv_path)
 
     if not isdir(caps_dir):
-        print("Folder containing MRIs was not found, please verify its location")
+        print("Folder containing MRIs was not found, please verify its location.")
         raise FileNotFoundError(
             errno.ENOENT, strerror(errno.ENOENT), caps_dir)
         print("Folder containing MRIs is not found, please verify its location")
@@ -84,14 +85,19 @@ def inference_from_model(caps_dir,
                          model_path=None,
                          json_file=None,
                          prefix=None,
-                         output_dir=None,
+                         output_dir_arg=None,
                          no_labels=False,
                          gpu=True,
                          prepare_dl=False):
     """
-    Inference from trained model
+    Inference from previously trained model.
 
-    This functions uses a previously trained model to classify the input
+    This functions uses a previously trained model to classify the input(s).
+    The model is stored in the variable model_path and it assumes the folder
+    structure given by the training stage. Particullary to have a prediction at
+    image level, it assumes that results of the validation set are stored in
+    the model_path folder in order to perform soft-voiting at the slice/patch
+    level and also for multicnn.
 
     Args:
 
@@ -99,9 +105,9 @@ def inference_from_model(caps_dir,
     tsv_path: file with the name of the MRIs to process (single or multiple)
     model_path: file with the model (pth format).
     json_file: file containing the training parameters.
-    output_dir: folder where results are stored. If None it uses current 
+    output_dir_arg: folder where results are stored. If None it uses current
     structure.
-    no_labels: by default is false. In that case, output writes a file named 
+    no_labels: by default is false. In that case, output writes a file named
     measurements.tsv
     gpu: if true, it uses gpu.
     prepare_dl: if true, uses extracted patches/slices otherwise extract them
@@ -109,10 +115,9 @@ def inference_from_model(caps_dir,
 
     Returns:
 
-    Pandas data frame with a list of subjects and their infered classes
-    (predictions).
-
-    Files stored in user-defined or default folders.
+    Files written in the output folder with prediction results and metrics. By
+    default the output folder is named cnn_classification and it is inside the
+    model_folder.
 
     Raises:
 
@@ -131,9 +136,9 @@ def inference_from_model(caps_dir,
     # Overwrite options with user input
     options.use_cpu = not gpu
     options.prepare_dl = prepare_dl
-    # define the path
+    # Define the path
     currentDirectory = pathlib.Path(model_path)
-    # search for 'fold_*' pattern
+    # Search for 'fold_*' pattern
     currentPattern = "fold_*"
 
     best_model = {
@@ -143,282 +148,147 @@ def inference_from_model(caps_dir,
 
     # loop depending the number of folds found in the model folder
     for fold_dir in currentDirectory.glob(currentPattern):
-        print(type(str(fold_dir)[-1]))
         split = int(str(fold_dir)[-1])
-        model_fold_path = join(model_path, fold_dir)
-        full_model_path = join(model_fold_path, 'models', best_model['best_acc'])
+        fold_path = join(model_path, fold_dir)
+        models_path = join(fold_path, 'models')
+        full_model_path = join(models_path, best_model['best_acc'])
         if not exists(join(full_model_path, 'model_best.pth.tar')) and not options.mode == 'patch':
             raise FileNotFoundError(
-                errno.ENOENT, strerror(errno.ENOENT), join(full_model_path, 'model_best.pth.tar'))
-        
-        if options.mode == 'patch':
-            for cnn_dir in listdir(full_model_path):
-                if not exists(join(full_model_path, cnn_dir, 'model_best.pth.tar')):
+                errno.ENOENT,
+                strerror(errno.ENOENT),
+                join(full_model_path, 'model_best.pth.tar'))
+
+        if options.mode == 'patch' and options.mode_task == 'multicnn':
+            full_model_path = models_path
+            for cnn_dir in listdir(models_path):
+                if not exists(join(models_path, cnn_dir, best_model['best_acc'], 'model_best.pth.tar')):
                     raise FileNotFoundError(
-                            errno.ENOENT, strerror(errno.ENOENT), join(full_model_path, cnn_dir, 'model_best.pth.tar'))
+                            errno.ENOENT,
+                            strerror(errno.ENOENT),
+                            join(models_path,
+                                 cnn_dir,
+                                 best_model['best_acc'],
+                                 'model_best.pth.tar')
+                            )
 
-
-        if output_dir==None:
-            output_dir = join(model_fold_path, 'cnn_classification', best_model['best_acc'])
+        if output_dir_arg is None:
+            output_dir = join(fold_path, 'cnn_classification', best_model['best_acc'])
             if not exists(output_dir):
-                makedirs(join(model_fold_path, 'cnn_classification', best_model['best_acc']))
+                makedirs(join(fold_path, 'cnn_classification', best_model['best_acc']))
         else:
+            output_dir = output_dir_arg
             if not exists(output_dir):
                 raise FileNotFoundError(
                     errno.ENOENT, strerror(errno.ENOENT), output_dir)
 
-        print("Results are saved in: %s" % output_dir)
-        
+        # It launch the corresponding function, depending on the mode.
         if (options.mode == 'image'):
-            infered_classes, metrics = inference_from_image_model(
+            infered_classes, metrics = inference_from_model_generic(
                 caps_dir,
                 tsv_path,
                 full_model_path,
                 options)
         elif (options.mode == 'slice'):
-            infered_classes, metrics = inference_from_slice_model(
+            infered_classes, metrics = inference_from_model_generic(
                 caps_dir,
                 tsv_path,
                 full_model_path,
                 options)
         elif (options.mode == 'patch'):
-            infered_classes, metrics = inference_from_patch_model(
+            infered_classes, metrics = inference_from_model_generic(
                 caps_dir,
                 tsv_path,
                 full_model_path,
                 options)
         elif (options.mode == 'roi'):
-            infered_classes, metrics = inference_from_roi_model()
+            infered_classes, metrics = inference_from_model_generic()
         else:
             print("Inference for this image mode is not implemented")
 
+        # Prepare outputs
         usr_prefix = str(prefix)
-        print(infered_classes)
-        output_filename = join(output_dir, usr_prefix + '_%s_level_predictions.tsv' % options.mode)
-        
-        print("%s level balanced accuracy is %f" % (options.mode, metrics['balanced_accuracy']))
-        print("Predictions for your image inputs are stored in: %s" % output_filename)
-        infered_classes.to_csv(output_filename, index=False, sep='\t')
 
-        
+        # Write output files at %mode level
+        print("Prediction results and metrics are written in files in the"
+              "following folder: %s" % output_dir)
+
+        output_filename = join(output_dir,
+                               usr_prefix + '_%s_level_predictions.tsv' % options.mode)
+        output_metrics_filename = join(output_dir,
+                                       usr_prefix + '_%s_level_metrics.tsv' % options.mode)
+        infered_classes.to_csv(output_filename, index=False, sep='\t')
+        metrics.to_csv(output_metrics_filename, index=False, sep='\t')
+
         # Soft voting
-        if hasattr(options, 'selection_threshold')
+        if hasattr(options, 'selection_threshold'):
             selection_thresh = options.selection_threshold
         else:
             selection_thresh = 0.8
 
-        
+        # Write files at the image level (for patch, roi and slice).
+        # It assumes the existance of validation files to perform soft-voting
         if options.mode in ["patch", "roi", "slice"]:
-            result_tsv = join(output_dir, 'validation_%s_level_result.tsv' % options.mode)
-                    
-            validation_df = pd.read_csv(result_tsv, sep='\t')
+            if options.mode_task == 'multicnn':
+                validation_df = pd.DataFrame()
+                for cnn in range(options.num_cnn):
+                    tsv_path = join(fold_path, 'cnn_classification', 'cnn-%i' % cnn, best_model['best_acc'],
+                                    'validation_%s_level_result.tsv' % options.mode)
+                    cnn_df = pd.read_csv(tsv_path, sep='\t')
+                    validation_df = pd.concat([validation_df, cnn_df])
+                validation_df.reset_index(drop=True, inplace=True)
+            else:
+                result_tsv = join(
+                        output_dir,
+                        'validation_%s_level_result.tsv' % options.mode)
+                validation_df = pd.read_csv(result_tsv, sep='\t')
 
             df_final, metrics = soft_voting(infered_classes, validation_df,
-                    options.mode, selection_threshold=selection_thresh)
-            df_final.to_csv(join(output_dir, usr_prefix + '_image_level_result.tsv'),
-                    index=False, sep='\t')
-
+                                            options.mode,
+                                            selection_threshold=selection_thresh)
+            df_final.to_csv(join(output_dir, usr_prefix + '_image_level_predictions.tsv'),
+                            index=False, sep='\t')
+            pd.DataFrame(metrics, index=[0]).to_csv(join(
+                output_dir, usr_prefix + '_image_level_metrics.tsv'),
+                index=False, sep='\t')
 
     return infered_classes
 
 
-def inference_from_image_model(caps_dir, tsv_path, model_path, model_options):
+def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options):
     '''
     Inference using an image/subject CNN model
 
 
-
     '''
-    from clinicadl.tools.deep_learning.data import MRIDataset
-
-    gpu = not model_options.use_cpu
-    # Recreate the model with the network described in the json file
-    model = create_model(model_options.model, gpu, dropout=model_options.dropout)
-    criterion = nn.CrossEntropyLoss()
-
-    # Load model from path
-    best_model, best_epoch = load_model(
-        model, model_path,
-        gpu, filename='model_best.pth.tar')
-
-    if model_options.minmaxnormalization:
-        transformations = MinMaxNormalization()
-    else:
-        transformations = None
-
-    # Read/localize the data
-    data_to_test = MRIDataset(
-        caps_dir,
-        tsv_path,
-        preprocessing=model_options.preprocessing,
-        transform=transformations)
-
-    # Load the data
-    test_loader = DataLoader(
-        data_to_test,
-        batch_size=model_options.batch_size,
-        shuffle=False,
-        num_workers=model_options.nproc,
-        pin_memory=True)
-
-    # Run the model on the data
-    predictions_df, measures = test(
-        best_model,
-        test_loader,
-        gpu,
-        criterion,
-        model_options.mode)
-
-    return predictions_df, measures
-
-
-def inference_from_slice_model(caps_dir, tsv_path, model_path, model_options):
-    '''
-    Inference using a slice CNN model
-
-
-
-    '''
-    from clinicadl.tools.deep_learning.data import MRIDataset_slice
-    import torchvision.transforms as transforms
-    # Initialize the model
-    print('Do transfer learning with existed model trained on ImageNet.')
-
-    gpu = not model_options.use_cpu
-
-    model = create_model(model_options.model, gpu, dropout=0.8)
-    trg_size = (224, 224)  # most of the imagenet pretrained model has this input size
-
-    # All pre-trained models expect input images normalized in the same way,
-    # i.e. mini-batches of 3-channel RGB images of shape (3 x H x W), where H
-    # and W are expected to be at least 224. The images have to be loaded in to
-    # a range of [0, 1] and then normalized using mean = [0.485, 0.456, 0.406]
-    # and std = [0.229, 0.224, 0.225].
-    transformations = transforms.Compose([MinMaxNormalization(),
-                                          transforms.ToPILImage(),
-                                          transforms.Resize(trg_size),
-                                          transforms.ToTensor()])
-    # Define loss and optimizer
-    loss = nn.CrossEntropyLoss()
-
-    # Load model from path
-    best_model, best_epoch = load_model(
-        model, model_path,
-        gpu, filename='model_best.pth.tar')
-
-    # Read/localize the data
-    data_to_test = MRIDataset_slice(
-        caps_dir,
-        tsv_path,
-        preprocessing=model_options.preprocessing,
-        transformations=transformations,
-        mri_plane=model_options.mri_plane,
-        prepare_dl=model_options.prepare_dl)
-
-    # Load the data
-    test_loader = DataLoader(
-        data_to_test,
-        batch_size=model_options.batch_size,
-        shuffle=False,
-        num_workers=model_options.nproc,
-        pin_memory=True)
-
-    # Run the model on the data
-    predictions_df, mesures = test(
-        best_model,
-        test_loader,
-        gpu,
-        loss,
-        model_options.mode)
-
-    return predictions_df, mesures
-
-
-def inference_from_patch_model(caps_dir, tsv_path, model_path, model_options):
-    '''
-    Inference using an image/subject CNN model
-
-
-
-    '''
-    from clinicadl.tools.deep_learning.data import MRIDataset_patch, MRIDataset_patch_hippocampus
-    import torchvision.transforms as transforms
     from os.path import join
 
     gpu = not model_options.use_cpu
 
-    if model_options.mode_task == 'cnn':
-        # Recreate the model with the network described in the json file
-        # Initialize the model
-        model = create_model(model_options.model, gpu)
-        transformations = transforms.Compose([MinMaxNormalization()])
+    # Recreate the model with the network described in the json file
+    # Initialize the model
+    model = create_model(model_options.model,
+                         gpu, dropout=model_options.dropout)
+    transformations = get_transforms(model_options.mode,
+                                     model_options.minmaxnormalization)
 
-        # Define loss and optimizer
-        criterion = nn.CrossEntropyLoss()
+    # Define loss and optimizer
+    criterion = nn.CrossEntropyLoss()
 
-        # Load model from path
-        best_model, best_epoch = load_model(
-            model, model_path,
-            gpu, filename='model_best.pth.tar')
-
-        # Read/localize the data
-        if model_options.hippocampus_roi:
-            data_to_test = MRIDataset_patch_hippocampus(
-                caps_directory,
-                tsv_path,
-                preprocessing=model_options.preprocessing,
-                transformations=transformations)
-        else:
-            data_to_test = MRIDataset_patch(
-                caps_directory,
-                tsv_path,
-                model_options.patch_size,
-                model_options.stride_size,
-                transformations=transformations,
-                prepare_dl=model_options.prepare_dl,
-                patch_index=None,
-                preprocessing=model_options.preprocessing)
-
-        # Load the data
-        test_loader = DataLoader(
-            data_to_test,
-            batch_size=model_options.batch_size,
-            shuffle=False,
-            num_workers=model_options.nproc,
-            pin_memory=True)
-
-        # Run the model on the data
-        predictions_df, measures = test(
-            best_model,
-            test_loader,
-            gpu,
-            criterion,
-            full_return=True)
-
-    elif model_options.mode_task == 'multicnn':
-
-        # Recreate the model with the network described in the json file
-        # Initialize the model
-        model = create_model(model_options.model, gpu)
-        transformations = transforms.Compose([MinMaxNormalization()])
-
-        # Define loss and optimizer
-        criterion = nn.CrossEntropyLoss()
+    if model_options.mode_task == 'multicnn':
 
         predictions_df = pd.DataFrame()
-        metrics = []
+        metrics_df = pd.DataFrame()
 
         for n in range(model_options.num_cnn):
 
-            dataset = MRIDataset_patch(
+            dataset = return_dataset(
+                model_options.mode,
                 caps_dir,
                 tsv_path,
-                model_options.patch_size,
-                model_options.stride_size,
-                transformations=transformations,
-                patch_index=n,
-                prepare_dl=model_options.prepare_dl,
-                preprocessing=model_options.preprocessing)
+                model_options.preprocessing,
+                transformations,
+                model_options,
+                cnn_index=n)
 
             test_loader = DataLoader(
                 dataset,
@@ -430,20 +300,55 @@ def inference_from_patch_model(caps_dir, tsv_path, model_path, model_options):
             # load the best trained model during the training
             model, best_epoch = load_model(
                 model,
-                join(model_path, 'cnn-%i' % n),
+                join(model_path, 'cnn-%i' % n, 'best_balanced_accuracy'),
                 gpu,
                 filename='model_best.pth.tar')
 
-            cnn_df, cnn_metrics = test(model, test_loader, gpu, criterion)
-            print("Patch level balanced accuracy is %f" % cnn_metrics['balanced_accuracy'])
-            predictions_df =  pd.concat([predictions_df, cnn_df])
-            print(type(cnn_metrics))
-            metrics.append(cnn_metrics)
-        
+            cnn_df, cnn_metrics = test(
+                model,
+                test_loader,
+                gpu,
+                criterion,
+                mode=model_options.mode)
+
+            predictions_df = pd.concat([predictions_df, cnn_df])
+            metrics_df = pd.concat([metrics_df, pd.DataFrame(cnn_metrics, index=[0])])
+
         predictions_df.reset_index(drop=True, inplace=True)
-        # metrics.rest_index(drop=True, inplace=True)
+        metrics_df.reset_index(drop=True, inplace=True)
 
     else:
-        print("Mode not defined")
 
-    return predictions_df, metrics
+        # Load model from path
+        best_model, best_epoch = load_model(
+            model, model_path,
+            gpu, filename='model_best.pth.tar')
+
+        # Read/localize the data
+        data_to_test = return_dataset(
+            model_options.mode,
+            caps_dir,
+            tsv_path,
+            model_options.preprocessing,
+            transformations,
+            model_options)
+
+        # Load the data
+        test_loader = DataLoader(
+            data_to_test,
+            batch_size=model_options.batch_size,
+            shuffle=False,
+            num_workers=model_options.nproc,
+            pin_memory=True)
+
+        # Run the model on the data
+        predictions_df, metrics = test(
+            best_model,
+            test_loader,
+            gpu,
+            criterion,
+            mode=model_options.mode)
+
+        metrics_df = pd.DataFrame(metrics, index=[0])
+
+    return predictions_df, metrics_df
