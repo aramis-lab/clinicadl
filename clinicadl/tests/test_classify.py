@@ -48,7 +48,7 @@ def cli_commands(request):
     return test_input
 
 
-def test_train(cli_commands):
+def test_classify(cli_commands):
     test_input = cli_commands
 
     flag_error = not os.system("clinicadl " + " ".join(test_input))
