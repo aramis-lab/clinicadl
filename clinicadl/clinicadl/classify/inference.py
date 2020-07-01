@@ -143,7 +143,7 @@ def inference_from_model(caps_dir,
 
     best_model = {
         'best_acc': 'best_balanced_accuracy',
-            'best_loss': 'best_loss'
+        'best_loss': 'best_loss'
     }
 
     # loop depending the number of folds found in the model folder
@@ -166,9 +166,9 @@ def inference_from_model(caps_dir,
                         errno.ENOENT,
                         strerror(errno.ENOENT),
                         join(models_path,
-                                 cnn_dir,
-                                 best_model['best_acc'],
-                                 'model_best.pth.tar')
+                             cnn_dir,
+                             best_model['best_acc'],
+                             'model_best.pth.tar')
                     )
 
         if output_dir_arg is None:
