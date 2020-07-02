@@ -46,7 +46,6 @@ class Parameters:
             evaluation_steps: int = 0,
             num_workers: int = 1,
             transfer_learning_path: str = None,
-            transfer_learning_autoencoder: str = None,
             transfer_learning_selection: str = "best_acc",
             patch_size: int = 50,
             stride_size: int = 50,
@@ -119,7 +118,6 @@ class Parameters:
         self.evaluation_steps = evaluation_steps
         self.num_workers = num_workers
         self.transfer_learning_path = transfer_learning_path
-        self.transfer_learning_autoencoder = transfer_learning_autoencoder
         self.transfer_learning_selection = transfer_learning_selection
         self.patch_size = patch_size
         self.stride_size = stride_size

@@ -67,7 +67,6 @@ def train_single_cnn(params):
         print('Initialization of the model')
         model = init_model(params.model, gpu=params.gpu, dropout=params.dropout)
         model = transfer_learning(model, fi, source_path=params.transfer_learning_path,
-                                  transfer_learning_autoencoder=params.transfer_learning_autoencoder,
                                   gpu=params.gpu, selection=params.transfer_learning_selection)
 
         # Define criterion and optimizer
