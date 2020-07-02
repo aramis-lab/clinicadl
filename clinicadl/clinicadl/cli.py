@@ -115,7 +115,6 @@ def train_func(args):
                 learning_rate=args.learning_rate,
                 patience=args.patience,
                 tolerance=args.tolerance,
-                add_sigmoid=args.add_sigmoid,
                 optimizer='Adam',
                 weight_decay=args.weight_decay,
                 gpu=not args.use_cpu,
@@ -210,7 +209,6 @@ def train_func(args):
                 learning_rate=args.learning_rate,
                 patience=args.patience,
                 tolerance=args.tolerance,
-                add_sigmoid=args.add_sigmoid,
                 optimizer='Adam',
                 weight_decay=args.weight_decay,
                 gpu=not args.use_cpu,
@@ -293,7 +291,6 @@ def train_func(args):
                 stride_size=args.stride_size,
                 hippocampus_roi=False,
                 selection_threshold=args.selection_threshold,
-                num_cnn=args.num_cnn,
                 prepare_dl=args.use_extracted_patches
             )
             train_multi_cnn(train_params_patch)
@@ -318,7 +315,6 @@ def train_func(args):
                 learning_rate=args.learning_rate,
                 patience=args.patience,
                 tolerance=args.tolerance,
-                add_sigmoid=args.add_sigmoid,
                 optimizer='Adam',
                 weight_decay=args.weight_decay,
                 gpu=not args.use_cpu,
@@ -758,10 +754,6 @@ def parse_command_line():
     autoencoder_group = autoencoder_parent.add_argument_group(
         TRAIN_CATEGORIES["AUTOENCODER"])
     autoencoder_group.add_argument(
-        '--add_sigmoid',
-        help='Add sigmoid function at the end of the decoder.',
-        default=False, action="store_true")
-    autoencoder_group.add_argument(
         '--visualization',
         help='Save results in visualization folder.',
         action="store_true",
@@ -880,11 +872,6 @@ def parse_command_line():
 
     train_patch_multicnn_group = train_patch_multicnn_parser.add_argument_group(
         TRAIN_CATEGORIES["PATCH CNN"])
-    train_patch_multicnn_group.add_argument(
-        '--num_cnn',
-        help='''How many CNNs are trained in a patch-wise way.
-            This argument is used only if network_type is 'multi'.''',
-        default=36, type=int)
     train_patch_multicnn_group.add_argument(
         '--selection_threshold',
         help='''Threshold on the balanced accuracies to compute the

@@ -11,7 +11,7 @@ from clinicadl.tools.deep_learning import commandline_to_json
 from clinicadl.tools.deep_learning.models import load_model, init_model
 from clinicadl.tools.deep_learning.data import (load_data,
                                                 MinMaxNormalization,
-                                                MRIDataset_slice_mixed,
+                                                MRIDatasetSliceMixed,
                                                 mix_slices)
 from clinicadl.tools.deep_learning.cnn_utils import train, test, mode_level_to_tsvs
 
@@ -234,21 +234,21 @@ def train_CNN_bad_data_split(params):
             mri_plane=params.mri_plane
         )
 
-        data_train = MRIDataset_slice_mixed(
-            params.caps_directory,
-            training_df,
-            transformations=transformations,
-            mri_plane=params.mri_plane,
-            prepare_dl=params.prepare_dl
-        )
+        data_train = MRIDatasetSliceMixed(
+                params.caps_directory,
+                training_df,
+                transformations=transformations,
+                mri_plane=params.mri_plane,
+                prepare_dl=params.prepare_dl
+                )
 
-        data_valid = MRIDataset_slice_mixed(
-            params.caps_directory,
-            valid_df,
-            transformations=transformations,
-            mri_plane=params.mri_plane,
-            prepare_dl=params.prepare_dl
-        )
+        data_valid = MRIDatasetSliceMixed(
+                params.caps_directory,
+                valid_df,
+                transformations=transformations,
+                mri_plane=params.mri_plane,
+                prepare_dl=params.prepare_dl
+                )
 
         # Use argument load to distinguish training and testing
         train_loader = DataLoader(
