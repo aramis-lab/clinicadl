@@ -4,7 +4,7 @@ import os
 import torch
 from torch.utils.data import DataLoader
 
-from ..tools.deep_learning.models import transfer_learning, save_initialization, init_model
+from ..tools.deep_learning.models import transfer_learning, init_model
 from ..tools.deep_learning.data import (get_transforms,
                                         load_data,
                                         return_dataset)
@@ -26,8 +26,6 @@ def train_multi_cnn(params):
     of the last epoch that was completed before the crash.
     """
 
-    init_path = os.path.join(params.output_dir, 'best_model_dir', 'CNN')
-    save_initialization(params.model, init_path, init_state=params.init_state, dropout=params.dropout)
     transformations = get_transforms(params.mode, params.minmaxnormalization)
 
     if params.split is None:
@@ -70,7 +68,7 @@ def train_multi_cnn(params):
 
             # Initialize the model
             print('Initialization of the model')
-            model = init_model(params.model, init_path, params.init_state, gpu=params.gpu, dropout=params.dropout)
+            model = init_model(params.model, gpu=params.gpu, dropout=params.dropout)
             model = transfer_learning(model, fi, source_path=params.transfer_learning_path,
                                       transfer_learning_autoencoder=params.transfer_learning_autoencoder,
                                       gpu=params.gpu, selection=params.transfer_learning_selection)

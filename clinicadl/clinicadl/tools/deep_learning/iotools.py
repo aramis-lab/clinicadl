@@ -56,8 +56,8 @@ class Parameters:
             mri_plane: int = 0,
             discarded_slices: int = 20,
             prepare_dl: bool = False,
-            visualization: bool = False,
-            init_state: str = None):
+            visualization: bool = False
+    ):
         """
         Optional parameters used for training CNN.
         transfer_learning_difference: Difference of size between the pretrained
@@ -130,16 +130,6 @@ class Parameters:
         self.prepare_dl = prepare_dl
         self.visualization = visualization
         self.selection_threshold = selection_threshold
-        self.init_state = init_state
-        self.set_default_init_state()
-
-    def set_default_init_state(self):
-        """Sets init state according to experiments performed in AD-DL"""
-        if self.init_state is None:
-            if self.mode in ["patch", "roi"]:
-                self.init_state = "same"
-            else:
-                self.init_state = "random"
 
 
 def check_and_clean(d):
