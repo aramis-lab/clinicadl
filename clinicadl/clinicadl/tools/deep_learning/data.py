@@ -6,7 +6,9 @@ import numpy as np
 from os import path
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
+import abc
 from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
+
 
 #################################
 # Datasets loaders
@@ -14,20 +16,10 @@ from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
 
 
 class MRIDataset(Dataset):
-    """Dataset of MRI organized in a CAPS folder."""
-
-    def __init__(self, img_dir, data_file,
-                 preprocessing='t1-linear', transform=None):
-        """
-        Args:
-            img_dir (string): Directory of all the images.
-            data_file (string): File name of the train/test split file.
-            preprocessing (string): Defines the path to the data in CAPS
-            transform (callable, optional): Optional transform to be applied on a sample.
-
-        """
-        self.img_dir = img_dir
-        self.transform = transform
+    """Abstract class for all derived MRIDatasets."""
+    def __init__(self, caps_directory, data_file, preprocessing, transformations=None):
+        self.caps_directory = caps_directory
+        self.transformations = transformations
         self.diagnosis_code = {
             'CN': 0,
             'AD': 1,
@@ -35,7 +27,7 @@ class MRIDataset(Dataset):
             'pMCI': 1,
             'MCI': 1,
             'unlabeled': -1}
-        self.data_path = preprocessing
+        self.preprocessing = preprocessing
 
         # Check the format of the tsv file here
         if isinstance(data_file, str):
@@ -43,72 +35,76 @@ class MRIDataset(Dataset):
         elif isinstance(data_file, pd.DataFrame):
             self.df = data_file
         else:
-            raise Exception('The argument datafile is not of correct type.')
+            raise Exception('The argument data_file is not of correct type.')
 
         if ('diagnosis' not in list(self.df.columns.values)) or ('session_id' not in list(self.df.columns.values)) or \
            ('participant_id' not in list(self.df.columns.values)):
             raise Exception("the data file is not in the correct format."
                             "Columns should include ['participant_id', 'session_id', 'diagnosis']")
 
-        self.size = self[0]['image'].numpy().size
+        self.elem_per_image = self.num_elem_per_image()
 
     def __len__(self):
-        return len(self.df)
+        return len(self.df) * self.elem_per_image
+
+    @abc.abstractmethod
+    def __getitem__(self, idx):
+        pass
+
+    @abc.abstractmethod
+    def num_elem_per_image(self):
+        pass
+
+
+class MRIDatasetImage(MRIDataset):
+    """Dataset of MRI organized in a CAPS folder."""
+
+    def __init__(self, caps_directory, data_file,
+                 preprocessing='t1-linear', transformations=None):
+        """
+        Args:
+            caps_directory (string): Directory of all the images.
+            data_file (string): File name of the train/test split file.
+            preprocessing (string): Defines the path to the data in CAPS
+            transform (callable, optional): Optional transform to be applied on a sample.
+
+        """
+        super().__init__(caps_directory, data_file, preprocessing, transformations)
 
     def __getitem__(self, idx):
         img_name = self.df.loc[idx, 'participant_id']
         img_label = self.df.loc[idx, 'diagnosis']
         sess_name = self.df.loc[idx, 'session_id']
         # Not in BIDS but in CAPS
-        if self.data_path == "t1-linear":
-            image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
+        if self.preprocessing == "t1-linear":
+            image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
                                    'deeplearning_prepare_data', 'image_based', 't1_linear',
                                    img_name + '_' + sess_name
                                    + FILENAME_TYPE['cropped'] + '.pt')
-        elif self.data_path == "t1-extensive":
-            image_path = path.join(self.img_dir, 'subjects', img_name, sess_name,
+        elif self.preprocessing == "t1-extensive":
+            image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
                                    't1', 'spm', 'segmentation', 'normalized_space',
                                    img_name + '_' + sess_name
                                    + FILENAME_TYPE['skull_stripped'] + '.pt')
         else:
             raise NotImplementedError(
-                "The data path %s is not implemented" %
-                self.data_path)
+                "The path to preprocessing %s is not implemented" % self.preprocessing)
 
         image = torch.load(image_path)
         label = self.diagnosis_code[img_label]
 
-        if self.transform:
-            image = self.transform(image)
+        if self.transformations:
+            image = self.transformations(image)
         sample = {'image': image, 'label': label, 'participant_id': img_name, 'session_id': sess_name,
                   'image_path': image_path}
 
         return sample
 
-    def session_restriction(self, session):
-        """
-            Allows to generate a new MRIDataset using some specific sessions only (mostly used for evaluation of test)
-
-            :param session: (str) the session wanted. Must be 'all' or 'ses-MXX'
-            :return: (DataFrame) the dataset with the wanted sessions
-        """
-        from copy import copy
-
-        data_output = copy(self)
-        if session == "all":
-            return data_output
-        else:
-            df_session = self.df[self.df.session_id == session]
-            df_session.reset_index(drop=True, inplace=True)
-            data_output.df = df_session
-            if len(data_output) == 0:
-                raise Exception(
-                    "The session %s doesn't exist for any of the subjects in the test data" %
-                    session)
-            return data_output
+    def num_elem_per_image(self):
+        return 1
 
 
-class MRIDataset_patch(Dataset):
+class MRIDatasetPatch(MRIDataset):
 
     def __init__(self, caps_directory, data_file, patch_size, stride_size, transformations=None, prepare_dl=False,
                  patch_index=None, preprocessing="t1-linear"):
@@ -119,50 +115,24 @@ class MRIDataset_patch(Dataset):
             transformations (callable, optional): Optional transformations to be applied on a sample.
 
         """
-        self.caps_directory = caps_directory
-        self.transformations = transformations
-        self.preprocessing = preprocessing
-        self.diagnosis_code = {
-            'CN': 0,
-            'AD': 1,
-            'sMCI': 0,
-            'pMCI': 1,
-            'MCI': 1}
         self.patch_size = patch_size
         self.stride_size = stride_size
-        self.prepare_dl = prepare_dl
         self.patch_index = patch_index
-
-        # Check the format of the tsv file here
-        if isinstance(data_file, str):
-            self.df = pd.read_csv(data_file, sep='\t')
-        elif isinstance(data_file, pd.DataFrame):
-            self.df = data_file
-        else:
-            raise Exception('The argument datafile is not of correct type.')
-
-        if ('diagnosis' not in list(self.df.columns.values)) or ('session_id' not in list(self.df.columns.values)) or \
-           ('participant_id' not in list(self.df.columns.values)):
-            raise Exception("the data file is not in the correct format."
-                            "Columns should include ['participant_id', 'session_id', 'diagnosis']")
+        super().__init__(caps_directory, data_file, preprocessing, transformations)
+        self.prepare_dl = prepare_dl
 
         if self.preprocessing != "t1-linear":
             raise NotImplementedError("The preprocessing %s was not implemented for patches. "
                                       "Raise an issue on GitHub to propose it !" % self.preprocessing)
 
-        self.patchs_per_patient = self.num_patches_per_session()
-
-    def __len__(self):
-        return len(self.df) * self.patchs_per_patient
-
     def __getitem__(self, idx):
-        sub_idx = idx // self.patchs_per_patient
+        sub_idx = idx // self.elem_per_image
         img_name = self.df.loc[sub_idx, 'participant_id']
         sess_name = self.df.loc[sub_idx, 'session_id']
         img_label = self.df.loc[sub_idx, 'diagnosis']
         label = self.diagnosis_code[img_label]
         if self.patch_index is None:
-            patch_idx = idx % self.patchs_per_patient
+            patch_idx = idx % self.elem_per_image
         else:
             patch_idx = self.patch_index
 
@@ -201,7 +171,7 @@ class MRIDataset_patch(Dataset):
 
         return sample
 
-    def num_patches_per_session(self):
+    def num_elem_per_image(self):
         if self.patch_index is not None:
             return 1
 
@@ -225,7 +195,7 @@ class MRIDataset_patch(Dataset):
         return num_patches
 
 
-class MRIDataset_patch_hippocampus(Dataset):
+class MRIDatasetRoi(MRIDataset):
 
     def __init__(self, caps_directory, data_file, preprocessing="t1-linear",
                  transformations=None, prepare_dl=False):
@@ -238,47 +208,22 @@ class MRIDataset_patch_hippocampus(Dataset):
             MRI is loaded.
 
         """
-        self.caps_directory = caps_directory
-        self.transformations = transformations
-        self.preprocessing = preprocessing
-        self.diagnosis_code = {
-            'CN': 0,
-            'AD': 1,
-            'sMCI': 0,
-            'pMCI': 1,
-            'MCI': 1}
+        super().__init__(caps_directory, data_file, preprocessing, transformations)
         self.prepare_dl = prepare_dl
-
-        # Check the format of the tsv file here
-        if isinstance(data_file, str):
-            self.df = pd.read_csv(data_file, sep='\t')
-        elif isinstance(data_file, pd.DataFrame):
-            self.df = data_file
-        else:
-            raise Exception('The argument datafile is not of correct type.')
-
-        if ('diagnosis' not in list(self.df.columns.values)) or ('session_id' not in list(self.df.columns.values)) or \
-           ('participant_id' not in list(self.df.columns.values)):
-            raise Exception("the data file is not in the correct format."
-                            "Columns should include ['participant_id', 'session_id', 'diagnosis']")
 
         if self.preprocessing != "t1-linear":
             raise NotImplementedError("The preprocessing %s was not implemented for ROI. "
                                       "Raise an issue on GitHub to propose it !" % self.preprocessing)
-        self.patchs_per_patient = 2
-
-    def __len__(self):
-        return len(self.df) * self.patchs_per_patient
 
     def __getitem__(self, idx):
-        sub_idx = idx // self.patchs_per_patient
+        sub_idx = idx // self.elem_per_image
         img_name = self.df.loc[sub_idx, 'participant_id']
         sess_name = self.df.loc[sub_idx, 'session_id']
         img_label = self.df.loc[sub_idx, 'diagnosis']
         label = self.diagnosis_code[img_label]
 
         # 1 is left hippocampus, 0 is right
-        left_is_odd = idx % self.patchs_per_patient
+        left_is_odd = idx % self.elem_per_image
         if self.prepare_dl:
             raise NotImplementedError(
                 'The extraction of ROIs prior to training is not implemented.')
@@ -307,8 +252,11 @@ class MRIDataset_patch_hippocampus(Dataset):
 
         return sample
 
+    def num_elem_per_image(self):
+        return 2
 
-class MRIDataset_slice(Dataset):
+
+class MRIDatasetSlice(MRIDataset):
     """
     This class reads the CAPS of image processing pipeline of DL
 
@@ -332,58 +280,36 @@ class MRIDataset_slice(Dataset):
             Saggital_view= "[slice_i, :, :]"
 
         """
-        self.caps_directory = caps_directory
-        self.transformations = transformations
-        self.preprocessing = preprocessing
-        self.diagnosis_code = {
-            'CN': 0,
-            'AD': 1,
-            'sMCI': 0,
-            'pMCI': 1,
-            'MCI': 1}
+        # Rename MRI plane
         self.mri_plane = mri_plane
-        self.prepare_dl = prepare_dl
+        if mri_plane == 0:
+            self.slice_direction = 'sag'
+        elif mri_plane == 1:
+            self.slice_direction = 'cor'
+        elif mri_plane == 2:
+            self.slice_direction = 'axi'
 
-        # Check the format of the tsv file here
-        if isinstance(data_file, str):
-            self.df = pd.read_csv(data_file, sep='\t')
-        elif isinstance(data_file, pd.DataFrame):
-            self.df = data_file
-        else:
-            raise Exception('The argument datafile is not of correct type.')
-
+        # Manage discarded_slices
         if type(discarded_slices) is int:
             discarded_slices = [discarded_slices, discarded_slices]
         if type(discarded_slices) is list and len(discarded_slices) == 1:
             discarded_slices = discarded_slices * 2
         self.discarded_slices = discarded_slices
 
-        # This dimension is for the output of image processing pipeline of Raw:
-        # 169 * 208 * 179
-        if mri_plane == 0:
-            self.slices_per_patient = 169 - discarded_slices[0] - discarded_slices[1]
-            self.slice_direction = 'sag'
-        elif mri_plane == 1:
-            self.slices_per_patient = 208 - discarded_slices[0] - discarded_slices[1]
-            self.slice_direction = 'cor'
-        elif mri_plane == 2:
-            self.slices_per_patient = 179 - discarded_slices[0] - discarded_slices[1]
-            self.slice_direction = 'axi'
+        super().__init__(caps_directory, data_file, preprocessing, transformations)
+        self.prepare_dl = prepare_dl
 
         if self.preprocessing != "t1-linear":
             raise NotImplementedError("The preprocessing %s was not implemented for slices. "
                                       "Raise an issue on GitHub to propose it !" % self.preprocessing)
 
-    def __len__(self):
-        return len(self.df) * self.slices_per_patient
-
     def __getitem__(self, idx):
-        sub_idx = idx // self.slices_per_patient
+        sub_idx = idx // self.elem_per_image
         img_name = self.df.loc[sub_idx, 'participant_id']
         sess_name = self.df.loc[sub_idx, 'session_id']
         img_label = self.df.loc[sub_idx, 'diagnosis']
         label = self.diagnosis_code[img_label]
-        slice_idx = idx % self.slices_per_patient + self.discarded_slices[0]
+        slice_idx = idx % self.elem_per_image + self.discarded_slices[0]
 
         if self.prepare_dl:
             # read the slices directly
@@ -419,8 +345,16 @@ class MRIDataset_slice(Dataset):
 
         return sample
 
+    def num_elem_per_image(self):
+        if self.slice_direction == 'sag':
+            return 169 - self.discarded_slices[0] - self.discarded_slices[1]
+        elif self.slice_direction == 'cor':
+            return 208 - self.discarded_slices[0] - self.discarded_slices[1]
+        elif self.slice_direction == 'axi':
+            return 179 - self.discarded_slices[0] - self.discarded_slices[1]
 
-class MRIDataset_slice_mixed(Dataset):
+
+class MRIDatasetSliceMixed(MRIDataset):
     """
     This class reads the CAPS of image processing pipeline of DL. However, this is used for the bad data split strategy
 
@@ -442,24 +376,9 @@ class MRIDataset_slice_mixed(Dataset):
             Saggital_view= "[slice_i, :, :]"
 
         """
-        self.caps_directory = caps_directory
-        self.transformations = transformations
-        self.diagnosis_code = {
-            'CN': 0,
-            'AD': 1,
-            'sMCI': 0,
-            'pMCI': 1,
-            'MCI': 1}
+        super().__init__(caps_directory, data_file, 't1-linear', transformations)
         self.mri_plane = mri_plane
         self.prepare_dl = prepare_dl
-
-        # Check the format of the tsv file here
-        if isinstance(data_file, str):
-            self.df = pd.read_csv(data_file, sep='\t')
-        elif isinstance(data_file, pd.DataFrame):
-            self.df = data_file
-        else:
-            raise Exception('The argument datafile is not of correct type.')
 
         if mri_plane == 0:
             self.slice_direction = 'sag'
@@ -468,8 +387,9 @@ class MRIDataset_slice_mixed(Dataset):
         elif mri_plane == 2:
             self.slice_direction = 'axi'
 
-    def __len__(self):
-        return len(self.df)
+        if self.preprocessing != "t1-linear":
+            raise NotImplementedError("The preprocessing %s was not implemented for mixed slices. "
+                                      "Raise an issue on GitHub to propose it !" % self.preprocessing)
 
     def __getitem__(self, idx):
         img_name = self.df.loc[idx, 'participant_id']
@@ -511,6 +431,9 @@ class MRIDataset_slice_mixed(Dataset):
                   'slice_id': slice_name}
 
         return sample
+
+    def num_elem_per_image(self):
+        return 1
 
 
 def extract_slice_from_mri(image, index_slice, view):
@@ -610,14 +533,14 @@ def return_dataset(mode, input_dir, data_df, preprocessing, transformations, par
         raise ValueError("Multi-CNN is not implemented for %s mode." % mode)
 
     if mode == "image":
-        return MRIDataset(
+        return MRIDatasetImage(
             input_dir,
             data_df,
             preprocessing,
-            transform=transformations
+            transformations=transformations
         )
     if mode == "patch":
-        return MRIDataset_patch(
+        return MRIDatasetPatch(
             input_dir,
             data_df,
             params.patch_size,
@@ -628,14 +551,14 @@ def return_dataset(mode, input_dir, data_df, preprocessing, transformations, par
             patch_index=cnn_index
         )
     elif mode == "roi":
-        return MRIDataset_patch_hippocampus(
+        return MRIDatasetRoi(
             input_dir,
             data_df,
             preprocessing=preprocessing,
             transformations=transformations
         )
     elif mode == "slice":
-        return MRIDataset_slice(
+        return MRIDatasetSlice(
             input_dir,
             data_df,
             preprocessing=preprocessing,
@@ -645,6 +568,22 @@ def return_dataset(mode, input_dir, data_df, preprocessing, transformations, par
             discarded_slices=params.discarded_slices)
     else:
         raise ValueError("Mode %s is not implemented." % mode)
+
+
+def compute_num_cnn(options, data="train"):
+
+    transformations = get_transforms(options.mode, options.minmaxnormalization)
+
+    if data == "train":
+        example_df, _ = load_data(options.tsv_path, options.diagnoses, 0, options.n_splits, options.baseline)
+    else:
+        example_df = load_data_test(options.tsv_path, options.diagnoses)
+
+    full_dataset = return_dataset(options.mode, options.input_dir, example_df,
+                                  options.preprocessing, transformations, options)
+
+    return full_dataset.elem_per_image
+
 
 ##################################
 # Transformations
