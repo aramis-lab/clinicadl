@@ -28,7 +28,7 @@ parser.add_argument("--num_workers", '-w', default=1, type=int,
 
 def main(options):
 
-    options = read_json(options, "CNN")
+    options = read_json(options)
 
     if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
