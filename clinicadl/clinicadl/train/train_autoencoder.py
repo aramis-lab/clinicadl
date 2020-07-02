@@ -67,9 +67,9 @@ def train_autoencoder(params):
                 pin_memory=True)
 
         # Define output directories
-        log_dir = os.path.join(params.output_dir, "log_dir", "fold_%i" % fi, "ConvAutoencoder")
-        model_dir = os.path.join(params.output_dir, "best_model_dir", "fold_%i" % fi, "ConvAutoencoder")
-        visualization_dir = os.path.join(params.output_dir, 'autoencoder_reconstruction', 'fold_%i' % fi)
+        log_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'tensorboard_logs')
+        model_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'models')
+        visualization_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'autoencoder_reconstruction')
 
         decoder = init_model(params.model, init_path, params.init_state, gpu=params.gpu,
                              autoencoder=True, dropout=params.dropout)

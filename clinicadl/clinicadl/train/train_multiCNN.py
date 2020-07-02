@@ -83,8 +83,8 @@ def train_multi_cnn(params):
             setattr(params, 'beginning_epoch', 0)
 
             # Define output directories
-            log_dir = os.path.join(params.output_dir, "log_dir", "fold_%i" % fi, "cnn-%i" % cnn_index,)
-            model_dir = os.path.join(params.output_dir, "best_model_dir", "fold_%i" % fi, "cnn-%i" % cnn_index)
+            log_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'tensorboard_logs', "cnn-%i" % cnn_index,)
+            model_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'models', "cnn-%i" % cnn_index)
 
             print('Beginning the training task')
             train(model, train_loader, valid_loader, criterion, optimizer, False, log_dir, model_dir, params)
@@ -92,7 +92,7 @@ def train_multi_cnn(params):
             test_cnn(params.output_dir, train_loader, "train", fi, criterion, cnn_index, params, gpu=params.gpu)
             test_cnn(params.output_dir, valid_loader, "validation", fi, criterion, cnn_index, params, gpu=params.gpu)
 
-        for selection in ['best_acc', 'best_loss']:
+        for selection in ['best_balanced_accuracy', 'best_loss']:
             soft_voting_to_tsvs(
                 params.output_dir,
                 fi,

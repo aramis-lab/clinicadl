@@ -151,14 +151,13 @@ def check_and_clean(d):
     os.makedirs(d)
 
 
-def commandline_to_json(commandline, task_type):
+def commandline_to_json(commandline):
     """
     This is a function to write the python argparse object into a json file.
     This helps for DL when searching for hyperparameters
 
     :param commandline: a tuple contain the output of
                         `parser.parse_known_args()`
-    :param task_type: task type (autoencoder, cnn)                   
 
     :return:
     """
@@ -187,8 +186,8 @@ def commandline_to_json(commandline, task_type):
 
     # save to json file
     json = json.dumps(commandline_arg_dic, skipkeys=True)
-    print("Path of json file:", os.path.join(output_dir, "commandline_" + task_type + ".json"))
-    f = open(os.path.join(output_dir, "commandline_" + task_type + ".json"), "w")
+    print("Path of json file:", os.path.join(output_dir, "commandline.json"))
+    f = open(os.path.join(output_dir, "commandline.json"), "w")
     f.write(json)
     f.close()
 
