@@ -182,34 +182,17 @@ def inference_from_model(caps_dir,
                     errno.ENOENT, strerror(errno.ENOENT), output_dir)
 
         # It launch the corresponding function, depending on the mode.
-        if (options.mode == 'image'):
-            infered_classes, metrics = inference_from_model_generic(
-                caps_dir,
-                tsv_path,
-                full_model_path,
-                options)
-        elif (options.mode == 'slice'):
-            infered_classes, metrics = inference_from_model_generic(
-                caps_dir,
-                tsv_path,
-                full_model_path,
-                options)
-        elif (options.mode == 'patch'):
-            infered_classes, metrics = inference_from_model_generic(
-                caps_dir,
-                tsv_path,
-                full_model_path,
-                options)
-        elif (options.mode == 'roi'):
-            infered_classes, metrics = inference_from_model_generic()
-        else:
-            print("Inference for this image mode is not implemented")
+        infered_classes, metrics = inference_from_model_generic(
+            caps_dir,
+            tsv_path,
+            full_model_path,
+            options)
 
         # Prepare outputs
         usr_prefix = str(prefix)
 
         # Write output files at %mode level
-        print("Prediction results and metrics are written in files in the"
+        print("Prediction results and metrics are written in the"
               "following folder: %s" % output_dir)
 
         output_filename = join(output_dir,
