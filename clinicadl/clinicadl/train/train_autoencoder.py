@@ -68,6 +68,7 @@ def train_autoencoder(params):
         log_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'tensorboard_logs')
         model_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'models')
         visualization_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'autoencoder_reconstruction')
+        print(model_dir)
 
         decoder = init_model(params.model, gpu=params.gpu, autoencoder=True, dropout=params.dropout)
         optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
