@@ -231,6 +231,9 @@ def read_json(options, task_type, json_path=None, test=False):
         options.dropout = None
     set_default_dropout(options)
 
+    if not hasattr(options, 'discarded_sliced'):
+        options.discarded_slices = 20
+
     if options.preprocessing in prep_compatibility_dict.keys():
         options.preprocessing = prep_compatibility_dict[options.preprocessing]
 
@@ -239,8 +242,9 @@ def read_json(options, task_type, json_path=None, test=False):
         del options.mri_plane
 
     if hasattr(options, "hippocampus_roi"):
-        options.mode = "roi"
-        del options.hippocampus_roi
+        if options.hippocampus_roi:
+            options.mode = "roi"
+            del options.hippocampus_roi
 
     if hasattr(options, "pretrained_path"):
         options.transfer_learning_path = options.pretrained_path
@@ -249,6 +253,18 @@ def read_json(options, task_type, json_path=None, test=False):
     if hasattr(options, "pretrained_difference"):
         options.transfer_learning_difference = options.pretrained_difference
         del options.pretrained_difference
+
+    if hasattr(options, 'slice_direction'):
+        options.mri_plane = options.slice_direction
+
+    if hasattr(options, 'patch_stride'):
+        options.stride_size = options.patch_stride
+
+    if hasattr(options, 'use_gpu'):
+        options.use_cpu = not options.use_gpu
+
+    if hasattr(options, 'use_extracted_patches'):
+        options.prepare_dl = not options.use_extracted_patches
 
     if options.mode == "subject":
         options.mode = "image"

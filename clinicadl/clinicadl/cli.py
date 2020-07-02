@@ -375,17 +375,19 @@ def train_func(args):
 # Function to dispatch command line options from classify to corresponding
 # function
 
-
 def classify_func(args):
-    from .classify.inference import inference_from_model
+    from .classify.inference import classify
 
-    inference_from_model(
-        args.caps_dir,
-        args.tsv_file,
-        args.output_dir,
-        args.model_name,
+    classify(
+        args.caps_directory,
+        args.tsv_path,
+        args.model_path,
+        args.prefix_output,
+        output_dir=args.output_directory,
+        no_labels=args.no_labels,
+        gpu=not args.use_cpu,
+        prepare_dl=args.use_extracted_features
     )
-
 
 # Functions to dispatch command line options from tsvtool to corresponding
 # function
@@ -965,8 +967,9 @@ def parse_command_line():
         default=0, type=int)
     train_slice_group.add_argument(
         '--discarded_slices',
-        help='''Number of slices discarded from respectively the beginning and the end of the MRI volume.
-        If only one argument is given, it will be used for both sides.''',
+        help='''Number of slices discarded from respectively the beginning and
+        the end of the MRI volume.  If only one argument is given, it will be
+        used for both sides.''',
         default=20, type=int, nargs='+'
     )
     train_slice_group.add_argument(
@@ -1002,28 +1005,39 @@ def parse_command_line():
         help='''Classify one image or a list of images with your previously
                  trained model.''')
     classify_parser.add_argument(
-        'caps_dir',
+        'caps_directory',
         help='Data using CAPS structure.',
         default=None)
     classify_parser.add_argument(
         'tsv_path',
-        help='TSV path with subjects/sessions to process.',
+        help='TSV file with subjects/sessions to process.',
         default=None)
     classify_parser.add_argument(
-        'output_dir',
-        help='Folder containing results of the training.',
+        'model_path',
+        help='''Path to the folder where the model is stored. Folder structure
+                should be the same obtained during the training.''',
         default=None)
     classify_parser.add_argument(
-        'model_name',
-        help='Model used for classification.',
-        choices=[
-            '2D_slice',
-            '3D_patch_1',
-            '3D_patch_2',
-            'subject_1',
-            'subject_2'],
-        default='2D_slice')
-
+        '-pre', '--prefix_output',
+        help='Prefix to name the files resulting from the classify task.',
+        type=str, default='prefix_DB')
+    classify_parser.add_argument(
+        '-out_dir', '--output_directory',
+        help='Folder containing results of the prediction.',
+        default=None)
+    classify_parser.add_argument(
+        '-nl', '--no_labels', action='store_true',
+        help='Add this flag if your dataset does not contain a ground truth.',
+        default=False)
+    classify_parser.add_argument(
+        '--use_extracted_features',
+        help='''If True the extract slices or patche are used, otherwise the they
+                will be extracted on the fly (if necessary).''',
+        default=False, action="store_true")
+    classify_parser.add_argument(
+        '-cpu', '--use_cpu', action='store_true',
+        help='Uses CPU instead of GPU.',
+        default=False)
     classify_parser.set_defaults(func=classify_func)
 
     tsv_parser = subparser.add_parser(
