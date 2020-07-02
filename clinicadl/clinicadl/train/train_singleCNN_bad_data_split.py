@@ -3,14 +3,12 @@
 import argparse
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
-import copy
 import torch
 import os
 from time import time
 
-from clinicadl.tools.deep_learning import (create_model,
-                                           load_model,
-                                           commandline_to_json)
+from clinicadl.tools.deep_learning import commandline_to_json
+from clinicadl.tools.deep_learning.models import load_model, init_model
 from clinicadl.tools.deep_learning.data import (load_data,
                                                 MinMaxNormalization,
                                                 MRIDataset_slice_mixed,
@@ -32,7 +30,7 @@ def test_cnn(data_loader, subset_name, split, criterion, options):
 
     for selection in ["best_acc", "best_loss"]:
         # load the best trained model during the training
-        model = create_model(options.model, options.gpu)
+        model = init_model(options.model, gpu=options.gpu, dropout=options.dropout)
         model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', "fold_%i" % split,
                                                            'CNN', selection),
                                        gpu=options.gpu, filename='model_best.pth.tar')
@@ -79,7 +77,7 @@ parser.add_argument(
 
 # train argument
 parser.add_argument(
-        "--network",
+        "--model",
         default="resnet18",
         help="Deep network type. Only ResNet was designed for training from scratch.")
 
@@ -184,7 +182,6 @@ def train_CNN_bad_data_split(params):
     print('Do transfer learning with existed model trained on ImageNet!\n')
     print('The chosen network is %s !' % params.model)
 
-    model = create_model(params.model, params.gpu, dropout=params.dropout)
     trg_size = (224, 224)  # most of the imagenet pretrained model has this input size
 
     # All pre-trained models expect input images normalized in the same way,
@@ -196,9 +193,9 @@ def train_CNN_bad_data_split(params):
                                           transforms.ToPILImage(),
                                           transforms.Resize(trg_size),
                                           transforms.ToTensor()])
+    params.dropout = 0.8
 
     total_time = time()
-    init_state = copy.deepcopy(model.state_dict())
 
     if params.split is None:
         fold_iterator = range(params.n_splits)
@@ -258,7 +255,7 @@ def train_CNN_bad_data_split(params):
 
         # Initialize the model
         print('Initialization of the model')
-        model.load_state_dict(init_state)
+        model = init_model(params.model, gpu=params.gpu, dropout=params.dropout)
 
         # Define criterion and optimizer
         criterion = torch.nn.CrossEntropyLoss()
