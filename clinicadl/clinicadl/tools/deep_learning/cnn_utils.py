@@ -305,9 +305,9 @@ def mode_level_to_tsvs(output_dir, results_df, results, fold, selection, mode, d
         cnn_index: (int) provide the cnn_index only for a multi-cnn framework.
     """
     if cnn_index is None:
-        performance_dir = os.path.join(output_dir, 'performances', 'fold_' + str(fold), selection)
+        performance_dir = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', selection)
     else:
-        performance_dir = os.path.join(output_dir, 'performances', 'fold_' + str(fold), 'cnn-' + str(cnn_index),
+        performance_dir = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', 'cnn-' + str(cnn_index),
                                        selection)
 
     if not os.path.exists(performance_dir):
@@ -323,14 +323,14 @@ def mode_level_to_tsvs(output_dir, results_df, results, fold, selection, mode, d
 def retrieve_sub_level_results(output_dir, fold, selection, mode, dataset, num_cnn):
     """Retrieve performance_df for single or multi-CNN framework."""
     if num_cnn is None:
-        result_tsv = os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
+        result_tsv = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', selection,
                                   dataset + '_%s_level_result.tsv' % mode)
         performance_df = pd.read_csv(result_tsv, sep='\t')
 
     else:
         performance_df = pd.DataFrame()
         for cnn in range(num_cnn):
-            tsv_path = os.path.join(output_dir, 'performances', 'fold_%i' % fold, 'cnn-%i' % cnn, selection,
+            tsv_path = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', 'cnn-%i' % cnn, selection,
                                     dataset + '_%s_level_result.tsv' % mode)
             cnn_df = pd.read_csv(tsv_path, sep='\t')
             performance_df = pd.concat([performance_df, cnn_df])
@@ -363,7 +363,7 @@ def soft_voting_to_tsvs(output_dir, fold, selection, mode, dataset='test', num_c
     test_df = retrieve_sub_level_results(output_dir, fold, selection, mode, dataset, num_cnn)
     validation_df = retrieve_sub_level_results(output_dir, fold, selection, mode, validation_dataset, num_cnn)
 
-    performance_path = os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection)
+    performance_path = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', selection)
     if not os.path.exists(performance_path):
         os.makedirs(performance_path)
 
@@ -372,8 +372,7 @@ def soft_voting_to_tsvs(output_dir, fold, selection, mode, dataset='test', num_c
     df_final.to_csv(os.path.join(os.path.join(performance_path, dataset + '_image_level_result.tsv')),
                     index=False, sep='\t')
 
-    pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
-                                                         dataset + '_image_level_metrics.tsv'),
+    pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(performance_path, dataset + '_image_level_metrics.tsv'),
                                             index=False, sep='\t')
 
 

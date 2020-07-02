@@ -23,8 +23,8 @@ def main():
             and (arguments['task'] != 'extract') \
             and (arguments['task'] != 'generate') \
             and (arguments['task'] != 'tsvtool'):
-        commandline_to_json(commandline, arguments["mode_task"])
-        text_file = open(path.join(args.output_dir, 'python_version.txt'), 'w')
+        commandline_to_json(commandline)
+        text_file = open(path.join(args.output_dir, 'environment.txt'), 'w')
         text_file.write('Version of python: %s \n' % sys.version)
         text_file.write('Version of pytorch: %s \n' % torch.__version__)
         text_file.close()
