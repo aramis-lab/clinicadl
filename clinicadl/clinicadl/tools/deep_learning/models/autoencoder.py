@@ -170,8 +170,7 @@ def transfer_autoencoder_weights(model, source_path, split):
     import os
 
     decoder = AutoEncoder(model)
-    model_path = os.path.join(source_path, "best_model_dir", "fold_" + str(split), "ConvAutoencoder",
-                              "best_loss", "model_best.pth.tar")
+    model_path = os.path.join(source_path, 'fold-%i' % split, 'models', "best_loss", "model_best.pth.tar")
 
     initialize_other_autoencoder(decoder, model_path, difference=0)
 
@@ -198,11 +197,10 @@ def transfer_cnn_weights(model, source_path, split, selection="best_acc", cnn_in
     import os
     import torch
 
-    model_path = os.path.join(source_path, "best_model_dir", "fold_%i" % split, "CNN",
-                              selection, "model_best.pth.tar")
+    model_path = os.path.join(source_path, "fold-%i" % split, "models", selection, "model_best.pth.tar")
     if cnn_index is not None and not os.path.exists(model_path):
         print("Transfer learning from multi-CNN, cnn-%i" % cnn_index)
-        model_path = os.path.join(source_path, "best_model_dir", "fold_%i" % split, "cnn-%i" % cnn_index,
+        model_path = os.path.join(source_path, "fold_%i" % split, "models", "cnn-%i" % cnn_index,
                                   selection, "model_best.pth.tar")
     results = torch.load(model_path)
     model.load_state_dict(results['model'])
