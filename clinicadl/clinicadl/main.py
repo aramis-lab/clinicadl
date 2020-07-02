@@ -25,7 +25,7 @@ def main():
             and (arguments['task'] != 'tsvtool') \
             and (arguments['task'] != 'classify'):
         commandline_to_json(commandline)
-        text_file = open(path.join(args.output_dir, 'python_version.txt'), 'w')
+        text_file = open(path.join(args.output_dir, 'environment.txt'), 'w')
         text_file.write('Version of python: %s \n' % sys.version)
         text_file.write('Version of pytorch: %s \n' % torch.__version__)
         text_file.close()
