@@ -7,7 +7,8 @@ from torch.utils.data import DataLoader
 from ..tools.deep_learning.models import transfer_learning, init_model
 from ..tools.deep_learning.data import (get_transforms,
                                         load_data,
-                                        return_dataset)
+                                        return_dataset,
+                                        compute_num_cnn)
 from ..tools.deep_learning.cnn_utils import train, soft_voting_to_tsvs
 from clinicadl.test.test_multiCNN import test_cnn
 
@@ -28,6 +29,8 @@ def train_multi_cnn(params):
 
     transformations = get_transforms(params.mode, params.minmaxnormalization)
 
+    num_cnn = compute_num_cnn(params, data="train")
+
     if params.split is None:
         fold_iterator = range(params.n_splits)
     else:
@@ -37,7 +40,7 @@ def train_multi_cnn(params):
     for fi in fold_iterator:
         print("Fold %i" % fi)
 
-        for cnn_index in range(params.num_cnn):
+        for cnn_index in range(num_cnn):
 
             training_df, valid_df = load_data(
                 params.tsv_path,
@@ -96,7 +99,7 @@ def train_multi_cnn(params):
                 selection,
                 mode=params.mode,
                 dataset='train',
-                num_cnn=params.num_cnn,
+                num_cnn=num_cnn,
                 selection_threshold=params.selection_threshold)
             soft_voting_to_tsvs(
                 params.output_dir,
@@ -104,5 +107,5 @@ def train_multi_cnn(params):
                 selection,
                 mode=params.mode,
                 dataset='validation',
-                num_cnn=params.num_cnn,
+                num_cnn=num_cnn,
                 selection_threshold=params.selection_threshold)

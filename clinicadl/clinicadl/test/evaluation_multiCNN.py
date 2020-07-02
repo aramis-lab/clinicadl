@@ -7,7 +7,7 @@ from os import path
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, load_data
+from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, load_data, compute_num_cnn
 from clinicadl.tools.deep_learning import read_json
 from .test_multiCNN import test_cnn
 from clinicadl.tools.deep_learning.cnn_utils import soft_voting_to_tsvs
@@ -36,6 +36,7 @@ if __name__ == "__main__":
     model_options = argparse.Namespace()
     json_path = path.join(options.model_path, "commandline_cnn.json")
     model_options = read_json(model_options, json_path=json_path)
+    num_cnn = compute_num_cnn(model_options, data="train")
 
     transformations = get_transforms(model_options.mode, model_options.minmaxnormalization)
     criterion = nn.CrossEntropyLoss()
@@ -52,7 +53,7 @@ if __name__ == "__main__":
         training_df, valid_df = load_data(model_options.tsv_path, model_options.diagnoses,
                                           split, model_options.n_splits, model_options.baseline)
 
-        for cnn_index in range(options.num_cnn):
+        for cnn_index in range(num_cnn):
             data_train = return_dataset(model_options.mode, model_options.input_dir, training_df,
                                         model_options.preprocessing, transformations, model_options,
                                         cnn_index=cnn_index)
@@ -80,11 +81,11 @@ if __name__ == "__main__":
 
         for selection in ['best_acc', 'best_loss']:
             soft_voting_to_tsvs(
-                options.output_dir,
+                options.model_path,
                 split,
                 selection,
                 mode=options.mode,
                 dataset=options.dataset,
-                num_cnn=model_options.num_cnn,
+                num_cnn=num_cnn,
                 selection_threshold=model_options.selection_threshold
             )

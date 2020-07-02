@@ -10,7 +10,8 @@ from clinicadl.tools.deep_learning import read_json
 from clinicadl.tools.deep_learning.models import create_model, load_model
 from clinicadl.tools.deep_learning.data import (get_transforms,
                                                 load_data_test,
-                                                return_dataset)
+                                                return_dataset,
+                                                compute_num_cnn)
 from clinicadl.tools.deep_learning.cnn_utils import test, mode_level_to_tsvs, soft_voting_to_tsvs
 
 
@@ -36,7 +37,7 @@ parser.add_argument("model_path", type=str,
                     help="Path to the trained model folder.")
 parser.add_argument("input_dir", type=str,
                     help="Path to input dir of the MRI (preprocessed CAPS_dir).")
-parser.add_argument("diagnosis_tsv_path", type=str,
+parser.add_argument("tsv_path", type=str,
                     help="Path to the folder containing the tsv files of the population.")
 parser.add_argument("dataset", type=str,
                     help="Name of the dataset on which the classification is performed.")
@@ -60,6 +61,7 @@ def main(options):
     model_options = argparse.Namespace()
     json_path = path.join(options.model_path, "commandline_cnn.json")
     model_options = read_json(model_options, json_path=json_path)
+    num_cnn = compute_num_cnn(model_options, data="test")
 
     # Load test data
     if options.diagnoses is None:
@@ -78,7 +80,7 @@ def main(options):
         split = int(fold_dir[-1])
         print("Fold %i" % split)
 
-        for cnn_index in range(options.num_cnn):
+        for cnn_index in range(num_cnn):
             dataset = return_dataset(model_options.mode, options.input_dir, test_df, options.preprocessing,
                                      transformations, options, cnn_index=cnn_index)
 
@@ -94,12 +96,12 @@ def main(options):
 
         for selection in ['best_acc', 'best_loss']:
             soft_voting_to_tsvs(
-                options.output_dir,
+                options.model_path,
                 split,
                 selection,
                 mode=options.mode,
                 dataset=options.dataset,
-                num_cnn=model_options.num_cnn,
+                num_cnn=num_cnn,
                 selection_threshold=model_options.selection_threshold
             )
 
