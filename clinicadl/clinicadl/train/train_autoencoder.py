@@ -5,7 +5,7 @@ import os
 from torch.utils.data import DataLoader
 
 from ..tools.deep_learning.autoencoder_utils import train, visualize_image
-from ..tools.deep_learning.models import init_model, load_model, save_initialization
+from ..tools.deep_learning.models import init_model, load_model
 from ..tools.deep_learning.data import (load_data,
                                         get_transforms,
                                         return_dataset)
@@ -24,8 +24,6 @@ def train_autoencoder(params):
     of the last epoch that was completed before the crash.
     """
 
-    init_path = os.path.join(params.output_dir, 'best_model_dir', 'ConvAutoencoder')
-    save_initialization(params.model, init_path, init_state=params.init_state, autoencoder=True, dropout=params.dropout)
     transformations = get_transforms(params.mode, params.minmaxnormalization)
     criterion = torch.nn.MSELoss()
 
@@ -71,8 +69,7 @@ def train_autoencoder(params):
         model_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'models')
         visualization_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'autoencoder_reconstruction')
 
-        decoder = init_model(params.model, init_path, params.init_state, gpu=params.gpu,
-                             autoencoder=True, dropout=params.dropout)
+        decoder = init_model(params.model, gpu=params.gpu, autoencoder=True, dropout=params.dropout)
         optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
                                                             lr=params.learning_rate,
                                                             weight_decay=params.weight_decay)
