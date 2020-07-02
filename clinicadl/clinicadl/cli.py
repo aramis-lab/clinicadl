@@ -808,7 +808,7 @@ def parse_command_line():
     train_image_cnn_parser._action_groups[-1].add_argument(
         '--transfer_learning_selection',
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-        type=str, default="best_acc", choices=["best_loss", "best_acc"])
+        type=str, default="best_balanced_accuracy", choices=["best_loss", "best_balanced_accuracy"])
 
     train_image_cnn_parser.set_defaults(func=train_func)
 
@@ -861,7 +861,7 @@ def parse_command_line():
     train_patch_cnn_parser._action_groups[-1].add_argument(
         '--transfer_learning_selection',
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-        type=str, default="best_acc", choices=["best_loss", "best_acc"])
+        type=str, default="best_balanced_accuracy", choices=["best_loss", "best_balanced_accuracy"])
 
     train_patch_cnn_group = train_patch_cnn_parser.add_argument_group(
         TRAIN_CATEGORIES["PATCH CNN"])
@@ -885,7 +885,7 @@ def parse_command_line():
     train_patch_multicnn_parser._action_groups[-1].add_argument(
         '--transfer_learning_selection',
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-        type=str, default="best_acc", choices=["best_loss", "best_acc"])
+        type=str, default="best_balanced_accuracy", choices=["best_loss", "best_balanced_accuracy"])
 
     train_patch_multicnn_group = train_patch_multicnn_parser.add_argument_group(
         TRAIN_CATEGORIES["PATCH CNN"])

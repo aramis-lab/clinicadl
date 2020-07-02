@@ -122,7 +122,7 @@ class AutoEncoder(nn.Module):
 
 
 def transfer_learning(model, split, transfer_learning_autoencoder=True, source_path=None, gpu=False,
-                      selection="best_acc", cnn_index=None):
+                      selection="best_balanced_accuracy", cnn_index=None):
     """
     Allows transfer learning from a CNN or an autoencoder to a CNN
 
@@ -182,7 +182,7 @@ def transfer_autoencoder_weights(model, source_path, split):
     return model
 
 
-def transfer_cnn_weights(model, source_path, split, selection="best_acc", cnn_index=None):
+def transfer_cnn_weights(model, source_path, split, selection="best_balanced_accuracy", cnn_index=None):
     """
     Set the weights of the model according to the CNN at source path.
 
