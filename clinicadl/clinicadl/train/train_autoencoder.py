@@ -84,10 +84,12 @@ def train_autoencoder(params):
             print("Visualization of autoencoder reconstruction")
             best_decoder, _ = load_model(decoder, os.path.join(model_dir, "best_loss"),
                                          params.gpu, filename='model_best.pth.tar')
-            num_patches = train_loader.dataset.patchs_per_patient
+            nb_images = train_loader.dataset.elem_per_image
+            if nb_images <= 2:
+                nb_images *= 3
             visualize_image(best_decoder, valid_loader, os.path.join(visualization_dir, "validation"),
-                            nb_images=num_patches)
+                            nb_images=nb_images)
             visualize_image(best_decoder, train_loader, os.path.join(visualization_dir, "train"),
-                            nb_images=num_patches)
+                            nb_images=nb_images)
         del decoder
         torch.cuda.empty_cache()
