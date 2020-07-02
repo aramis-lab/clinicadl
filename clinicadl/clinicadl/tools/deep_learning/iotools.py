@@ -166,7 +166,7 @@ def commandline_to_json(commandline):
         del commandline_arg_dic['output_dir']
 
     # save to json file
-    json = json.dumps(commandline_arg_dic, skipkeys=True)
+    json = json.dumps(commandline_arg_dic, skipkeys=True, indent=4)
     print("Path of json file:", os.path.join(output_dir, "commandline.json"))
     f = open(os.path.join(output_dir, "commandline.json"), "w")
     f.write(json)
