@@ -182,12 +182,16 @@ def commandline_to_json(commandline):
     f.close()
 
 
-def read_json(options, task_type, json_path=None, test=False):
+def read_json(options, json_path=None, test=False):
     """
     Read a json file to update python argparse Namespace.
 
-    :param options: (argparse.Namespace) options of the model
-    :return: options (args.Namespace) options of the model updated
+    Args:
+        options: (argparse.Namespace) options of the model.
+        json_path: (str) If given path to the json file, else found with options.model_path.
+        test: (bool) If given the reader will ignore some options specific to data.
+    Returns:
+        options (args.Namespace) options of the model updated
     """
     import json
     from os import path
@@ -196,7 +200,7 @@ def read_json(options, task_type, json_path=None, test=False):
     evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
     prep_compatibility_dict = {"mni": "t1-extensive", "linear": "t1-linear"}
     if json_path is None:
-        json_path = path.join(options.model_path, 'commandline_' + task_type + '.json')
+        json_path = path.join(options.model_path, 'commandline.json')
 
     with open(json_path, "r") as f:
         json_data = json.load(f)

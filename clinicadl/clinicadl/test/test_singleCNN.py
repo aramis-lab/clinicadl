@@ -65,7 +65,7 @@ if __name__ == "__main__":
     # Read json
     model_options = argparse.Namespace()
     json_path = path.join(options.model_path, "commandline_cnn.json")
-    model_options = read_json(model_options, "cnn", json_path=json_path)
+    model_options = read_json(model_options, json_path=json_path)
 
     # Load test data
     if options.diagnoses is None:
