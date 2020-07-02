@@ -83,9 +83,9 @@ def train_single_cnn(params):
 
         # Define output directories
         log_dir = os.path.join(
-            params.output_dir, 'log_dir', 'fold_%i' % fi, 'CNN')
+            params.output_dir, 'fold-%i' % fi, 'tensorboard_logs')
         model_dir = os.path.join(
-            params.output_dir, 'best_model_dir', 'fold_%i' % fi, 'CNN')
+            params.output_dir, 'fold-%i' % fi, 'models')
 
         print('Beginning the training task')
         train(model, train_loader, valid_loader, criterion,
