@@ -43,7 +43,6 @@ def classify(caps_dir,
         print("Folder containing MRIs was not found, please verify its location.")
         raise FileNotFoundError(
             errno.ENOENT, strerror(errno.ENOENT), caps_dir)
-        print("Folder containing MRIs is not found, please verify its location")
     if not isdir(model_path):
         print("A valid model in the path was not found. Donwload them from aramislab.inria.fr")
         raise FileNotFoundError(
@@ -129,7 +128,7 @@ def inference_from_model(caps_dir,
     parser.add_argument("model_path", type=str,
                         help="Path to the trained model folder.")
     options = parser.parse_args([model_path])
-    options = read_json(options, "CNN", json_path=json_file)
+    options = read_json(options, json_path=json_file)
     print("Load model with these options:")
     print(options)
 
@@ -138,8 +137,8 @@ def inference_from_model(caps_dir,
     options.prepare_dl = prepare_dl
     # Define the path
     currentDirectory = pathlib.Path(model_path)
-    # Search for 'fold_*' pattern
-    currentPattern = "fold_*"
+    # Search for 'fold-*' pattern
+    currentPattern = "fold-*"
 
     best_model = {
         'best_acc': 'best_balanced_accuracy',
@@ -148,7 +147,6 @@ def inference_from_model(caps_dir,
 
     # loop depending the number of folds found in the model folder
     for fold_dir in currentDirectory.glob(currentPattern):
-        split = int(str(fold_dir)[-1])
         fold_path = join(model_path, fold_dir)
         models_path = join(fold_path, 'models')
         full_model_path = join(models_path, best_model['best_acc'])
