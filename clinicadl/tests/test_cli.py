@@ -12,7 +12,6 @@ import clinicadl.cli as cli
                         'train_slice',
                         'train_patch',
                         'train_multipatch'])
-#    'classify'])
 def generate_cli_commands(request):
     if request.param == 'preprocessing':
         test_input = [
@@ -58,7 +57,7 @@ def generate_cli_commands(request):
             '/dir/tsv_path/',
             '/dir/output/',
             '--n_subjects', '10',
-            '--preprocessing', 'linear',
+            '--preprocessing', 't1-linear',
             '--mean', '0.5',
             '--sigma', '0.5']
         keys_output = [
@@ -76,15 +75,17 @@ def generate_cli_commands(request):
         test_input = [
             'classify',
             '/dir/caps',
-            '/dir/tsv_path/',
-            '/dir/output/',
-            '2D_slice']
+            '/dir/tsv_file',
+            '/dir/model_path/',
+            '--prefix_output', 'DB_XXXXX',
+            '--output_directory', '/dir/output/']
         keys_output = [
             'task',
-            'caps_dir',
+            'caps_directory',
             'tsv_path',
-            'output_dir',
-            'model_name']
+            'model_path',
+            'prefix_output',
+            'output_directory']
 
     if request.param == 'train_slice':
         test_input = [
