@@ -576,6 +576,8 @@ def compute_num_cnn(input_dir, tsv_path, options, data="train"):
 
     if data == "train":
         example_df, _ = load_data(tsv_path, options.diagnoses, 0, options.n_splits, options.baseline)
+    elif data == "classify":
+        example_df = pd.read_csv(tsv_path, sep='\t')
     else:
         example_df = load_data_test(tsv_path, options.diagnoses)
 
