@@ -570,16 +570,18 @@ def return_dataset(mode, input_dir, data_df, preprocessing, transformations, par
         raise ValueError("Mode %s is not implemented." % mode)
 
 
-def compute_num_cnn(options, data="train"):
+def compute_num_cnn(input_dir, tsv_path, options, data="train"):
 
     transformations = get_transforms(options.mode, options.minmaxnormalization)
 
     if data == "train":
-        example_df, _ = load_data(options.tsv_path, options.diagnoses, 0, options.n_splits, options.baseline)
+        example_df, _ = load_data(tsv_path, options.diagnoses, 0, options.n_splits, options.baseline)
+    elif data == "classify":
+        example_df = pd.read_csv(tsv_path, sep='\t')
     else:
-        example_df = load_data_test(options.tsv_path, options.diagnoses)
+        example_df = load_data_test(tsv_path, options.diagnoses)
 
-    full_dataset = return_dataset(options.mode, options.input_dir, example_df,
+    full_dataset = return_dataset(options.mode, input_dir, example_df,
                                   options.preprocessing, transformations, options)
 
     return full_dataset.elem_per_image

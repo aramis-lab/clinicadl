@@ -29,7 +29,7 @@ def train_multi_cnn(params):
 
     transformations = get_transforms(params.mode, params.minmaxnormalization)
 
-    num_cnn = compute_num_cnn(params, data="train")
+    num_cnn = compute_num_cnn(params.input_dir, params.tsv_path, params, data="train")
 
     if params.split is None:
         fold_iterator = range(params.n_splits)
@@ -70,7 +70,7 @@ def train_multi_cnn(params):
                                       )
 
             # Initialize the model
-            print('Initialization of the model')
+            print('Initialization of the model %i' % cnn_index)
             model = init_model(params.model, gpu=params.gpu, dropout=params.dropout)
             model = transfer_learning(model, fi, source_path=params.transfer_learning_path,
                                       gpu=params.gpu, selection=params.transfer_learning_selection)
