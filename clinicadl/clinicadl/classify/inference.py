@@ -17,7 +17,6 @@ def classify(caps_dir,
              tsv_path,
              model_path,
              prefix_output='prefix_DB',
-             output_dir=None,
              no_labels=False,
              gpu=True,
              prepare_dl=True):
@@ -72,7 +71,6 @@ def classify(caps_dir,
         model_path,
         json_file,
         prefix_output,
-        output_dir,
         no_labels,
         gpu,
         prepare_dl)
@@ -83,7 +81,6 @@ def inference_from_model(caps_dir,
                          model_path=None,
                          json_file=None,
                          prefix=None,
-                         output_dir_arg=None,
                          no_labels=False,
                          gpu=True,
                          prepare_dl=False):
@@ -171,15 +168,9 @@ def inference_from_model(caps_dir,
                     strerror(errno.ENOENT),
                     join(full_model_path, 'model_best.pth.tar'))
 
-        if output_dir_arg is None:
-            output_dir = join(fold_path, 'cnn_classification', best_model['best_acc'])
-            if not exists(output_dir):
-                makedirs(join(fold_path, 'cnn_classification', best_model['best_acc']))
-        else:
-            output_dir = output_dir_arg
-            if not exists(output_dir):
-                raise FileNotFoundError(
-                    errno.ENOENT, strerror(errno.ENOENT), output_dir)
+        performance_dir = join(fold_path, 'cnn_classification', best_model['best_acc'])
+        if not exists(performance_dir):
+            makedirs(performance_dir)
 
         # It launch the corresponding function, depending on the mode.
         infered_classes, metrics = inference_from_model_generic(
