@@ -149,26 +149,27 @@ def inference_from_model(caps_dir,
     for fold_dir in currentDirectory.glob(currentPattern):
         fold = int(str(fold_dir).split("-")[-1])
         fold_path = join(model_path, fold_dir)
-        models_path = join(fold_path, 'models')
-        full_model_path = join(models_path, best_model['best_acc'])
-        if not exists(join(full_model_path, 'model_best.pth.tar')) and not options.mode == 'patch':
-            raise FileNotFoundError(
-                errno.ENOENT,
-                strerror(errno.ENOENT),
-                join(full_model_path, 'model_best.pth.tar'))
+        model_path = join(fold_path, 'models')
 
-        if options.mode == 'patch' and options.mode_task == 'multicnn':
-            full_model_path = models_path
-            for cnn_dir in listdir(models_path):
-                if not exists(join(models_path, cnn_dir, best_model['best_acc'], 'model_best.pth.tar')):
+        if options.mode_task == 'multicnn':
+            for cnn_dir in listdir(model_path):
+                if not exists(join(model_path, cnn_dir, best_model['best_acc'], 'model_best.pth.tar')):
                     raise FileNotFoundError(
                         errno.ENOENT,
                         strerror(errno.ENOENT),
-                        join(models_path,
+                        join(model_path,
                              cnn_dir,
                              best_model['best_acc'],
                              'model_best.pth.tar')
                     )
+
+        else:
+            full_model_path = join(model_path, best_model['best_acc'])
+            if not exists(join(full_model_path, 'model_best.pth.tar')):
+                raise FileNotFoundError(
+                    errno.ENOENT,
+                    strerror(errno.ENOENT),
+                    join(full_model_path, 'model_best.pth.tar'))
 
         if output_dir_arg is None:
             output_dir = join(fold_path, 'cnn_classification', best_model['best_acc'])
@@ -184,7 +185,7 @@ def inference_from_model(caps_dir,
         infered_classes, metrics = inference_from_model_generic(
             caps_dir,
             tsv_path,
-            full_model_path,
+            model_path,
             options,
             num_cnn=num_cnn
         )
@@ -212,7 +213,8 @@ def inference_from_model(caps_dir,
                                 usr_prefix, num_cnn=num_cnn, selection_threshold=selection_thresh)
 
 
-def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options, num_cnn=None):
+def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
+                                 num_cnn=None, selection="best_balanced_accuracy"):
     '''
     Inference using an image/subject CNN model
 
@@ -258,7 +260,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options, 
             # load the best trained model during the training
             model, best_epoch = load_model(
                 model,
-                join(model_path, 'cnn-%i' % n, 'best_balanced_accuracy'),
+                join(model_path, 'cnn-%i' % n, selection),
                 gpu,
                 filename='model_best.pth.tar')
 
@@ -279,7 +281,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options, 
 
         # Load model from path
         best_model, best_epoch = load_model(
-            model, model_path,
+            model, join(model_path, selection),
             gpu, filename='model_best.pth.tar')
 
         # Read/localize the data
