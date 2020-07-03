@@ -7,7 +7,7 @@ import torch
 import pathlib
 from clinicadl.tools.deep_learning import create_model, load_model, read_json
 from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, compute_num_cnn
-from clinicadl.tools.deep_learning.cnn_utils import test, soft_voting_to_tsvs
+from clinicadl.tools.deep_learning.cnn_utils import test, soft_voting_to_tsvs, mode_level_to_tsvs
 import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -66,7 +66,7 @@ def classify(caps_dir,
             print("GPU classifing is not available in your system, it will use cpu.")
             gpu = False
 
-    results_df = inference_from_model(
+    inference_from_model(
         caps_dir,
         tsv_path,
         model_path,
@@ -147,7 +147,8 @@ def inference_from_model(caps_dir,
 
     # loop depending the number of folds found in the model folder
     for fold_dir in currentDirectory.glob(currentPattern):
-        fold = int(fold_dir.split("-")[1])
+        fold = int("%s".split("-")[1] % fold_dir)
+        print(fold)
         fold_path = join(model_path, fold_dir)
         models_path = join(fold_path, 'models')
         full_model_path = join(models_path, best_model['best_acc'])
@@ -196,12 +197,8 @@ def inference_from_model(caps_dir,
         print("Prediction results and metrics are written in the"
               "following folder: %s" % output_dir)
 
-        output_filename = join(output_dir,
-                               usr_prefix + '_%s_level_prediction.tsv' % options.mode)
-        output_metrics_filename = join(output_dir,
-                                       usr_prefix + '_%s_level_metrics.tsv' % options.mode)
-        infered_classes.to_csv(output_filename, index=False, sep='\t')
-        metrics.to_csv(output_metrics_filename, index=False, sep='\t')
+        mode_level_to_tsvs(currentDirectory, infered_classes, metrics, fold, best_model['best_acc'], options.mode,
+                           dataset=usr_prefix)
 
         # Soft voting
         if hasattr(options, 'selection_threshold'):
@@ -214,8 +211,6 @@ def inference_from_model(caps_dir,
         if options.mode in ["patch", "roi", "slice"]:
             soft_voting_to_tsvs(currentDirectory, fold, best_model["best_acc"], options.mode,
                                 usr_prefix, num_cnn=num_cnn, selection_threshold=selection_thresh)
-
-    return infered_classes
 
 
 def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options, num_cnn=None):
