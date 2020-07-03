@@ -6,9 +6,8 @@ import errno
 import torch
 import pathlib
 from clinicadl.tools.deep_learning import create_model, load_model, read_json
-from clinicadl.tools.deep_learning.data import (MinMaxNormalization,
-                                                return_dataset, get_transforms)
-from clinicadl.tools.deep_learning.cnn_utils import test, soft_voting
+from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, compute_num_cnn
+from clinicadl.tools.deep_learning.cnn_utils import test, soft_voting_to_tsvs
 import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -129,6 +128,7 @@ def inference_from_model(caps_dir,
                         help="Path to the trained model folder.")
     options = parser.parse_args([model_path])
     options = read_json(options, json_path=json_file)
+    num_cnn = compute_num_cnn(caps_dir, tsv_path, options, "test")
     print("Load model with these options:")
     print(options)
 
@@ -147,6 +147,7 @@ def inference_from_model(caps_dir,
 
     # loop depending the number of folds found in the model folder
     for fold_dir in currentDirectory.glob(currentPattern):
+        fold = int(fold_dir.split("-")[1])
         fold_path = join(model_path, fold_dir)
         models_path = join(fold_path, 'models')
         full_model_path = join(models_path, best_model['best_acc'])
@@ -184,7 +185,9 @@ def inference_from_model(caps_dir,
             caps_dir,
             tsv_path,
             full_model_path,
-            options)
+            options,
+            num_cnn=num_cnn
+        )
 
         # Prepare outputs
         usr_prefix = str(prefix)
@@ -194,7 +197,7 @@ def inference_from_model(caps_dir,
               "following folder: %s" % output_dir)
 
         output_filename = join(output_dir,
-                               usr_prefix + '_%s_level_predictions.tsv' % options.mode)
+                               usr_prefix + '_%s_level_prediction.tsv' % options.mode)
         output_metrics_filename = join(output_dir,
                                        usr_prefix + '_%s_level_metrics.tsv' % options.mode)
         infered_classes.to_csv(output_filename, index=False, sep='\t')
@@ -209,33 +212,13 @@ def inference_from_model(caps_dir,
         # Write files at the image level (for patch, roi and slice).
         # It assumes the existance of validation files to perform soft-voting
         if options.mode in ["patch", "roi", "slice"]:
-            if options.mode_task == 'multicnn':
-                validation_df = pd.DataFrame()
-                for cnn in range(options.num_cnn):
-                    tsv_path = join(fold_path, 'cnn_classification', 'cnn-%i' % cnn, best_model['best_acc'],
-                                    'validation_%s_level_result.tsv' % options.mode)
-                    cnn_df = pd.read_csv(tsv_path, sep='\t')
-                    validation_df = pd.concat([validation_df, cnn_df])
-                validation_df.reset_index(drop=True, inplace=True)
-            else:
-                result_tsv = join(
-                    output_dir,
-                    'validation_%s_level_result.tsv' % options.mode)
-                validation_df = pd.read_csv(result_tsv, sep='\t')
-
-            df_final, metrics = soft_voting(infered_classes, validation_df,
-                                            options.mode,
-                                            selection_threshold=selection_thresh)
-            df_final.to_csv(join(output_dir, usr_prefix + '_image_level_predictions.tsv'),
-                            index=False, sep='\t')
-            pd.DataFrame(metrics, index=[0]).to_csv(join(
-                output_dir, usr_prefix + '_image_level_metrics.tsv'),
-                index=False, sep='\t')
+            soft_voting_to_tsvs(currentDirectory, fold, best_model["best_acc"], options.mode,
+                                usr_prefix, num_cnn=num_cnn, selection_threshold=selection_thresh)
 
     return infered_classes
 
 
-def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options):
+def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options, num_cnn=None):
     '''
     Inference using an image/subject CNN model
 
@@ -260,7 +243,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options):
         predictions_df = pd.DataFrame()
         metrics_df = pd.DataFrame()
 
-        for n in range(model_options.num_cnn):
+        for n in range(num_cnn):
 
             dataset = return_dataset(
                 model_options.mode,
