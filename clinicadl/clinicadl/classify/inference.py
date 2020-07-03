@@ -128,7 +128,7 @@ def inference_from_model(caps_dir,
                         help="Path to the trained model folder.")
     options = parser.parse_args([model_path])
     options = read_json(options, json_path=json_file)
-    num_cnn = compute_num_cnn(caps_dir, tsv_path, options, "test")
+    num_cnn = compute_num_cnn(caps_dir, tsv_path, options, "classify")
     print("Load model with these options:")
     print(options)
 
@@ -147,8 +147,7 @@ def inference_from_model(caps_dir,
 
     # loop depending the number of folds found in the model folder
     for fold_dir in currentDirectory.glob(currentPattern):
-        fold = int("%s".split("-")[1] % fold_dir)
-        print(fold)
+        fold = int(str(fold_dir).split("-")[-1])
         fold_path = join(model_path, fold_dir)
         models_path = join(fold_path, 'models')
         full_model_path = join(models_path, best_model['best_acc'])
@@ -194,7 +193,7 @@ def inference_from_model(caps_dir,
         usr_prefix = str(prefix)
 
         # Write output files at %mode level
-        print("Prediction results and metrics are written in the"
+        print("Prediction results and metrics are written in the "
               "following folder: %s" % output_dir)
 
         mode_level_to_tsvs(currentDirectory, infered_classes, metrics, fold, best_model['best_acc'], options.mode,
