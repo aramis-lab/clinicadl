@@ -186,7 +186,7 @@ def inference_from_model(caps_dir,
 
         # Write output files at %mode level
         print("Prediction results and metrics are written in the "
-              "following folder: %s" % output_dir)
+              "following folder: %s" % performance_dir)
 
         mode_level_to_tsvs(currentDirectory, infered_classes, metrics, fold, best_model['best_acc'], options.mode,
                            dataset=usr_prefix)
