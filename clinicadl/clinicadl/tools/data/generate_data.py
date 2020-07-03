@@ -6,34 +6,51 @@ This file generates data for trivial or intractable (random) data for binary cla
 import pandas as pd
 import numpy as np
 import nibabel as nib
-from os import path
-import os
+from os.path import dirname, join, abspath, split, exists
+from os import pardir, makedirs
 import torch.nn.functional as F
 import torch
 from .utils import im_loss_roi_gaussian_distribution, find_image_path
 from ..tsv.tsv_utils import baseline_df
+from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
+from clinicadl.tools.inputs.input import fetch_file
+from clinicadl.tools.inputs.input import RemoteFileStructure
+import tarfile
 
 
-def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0, sigma=0.5,
-                            preprocessing="linear", output_size=None):
+def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
+                            sigma=0.5, preprocessing="t1-linear"):
     """
-    Generates a random dataset for intractable classification task from the first subject of the tsv file.
+    Generates a random dataset.
 
-    :param caps_dir: (str) path to the CAPS directory.
-    :param tsv_path: (str) path to tsv file of list of subjects/sessions.
-    :param output_dir: (str) folder containing the synthetic dataset in CAPS format
-    :param n_subjects: (int) number of subjects in each class of the synthetic dataset
-    :param mean: (float) mean of the gaussian noise
-    :param sigma: (float) standard deviation of the gaussian noise
-    :param preprocessing: (str) preprocessing performed. Must be in ['linear', 'extensive'].
-    :param output_size: (tuple[int]) size of the output. If None no interpolation will be performed.
+    Creates a random dataset for intractable classification task from the first
+    subject of the tsv file (other subjects/sessions different from the first
+    one are ignored. Degree of noise can be parameterized.
+
+    Args:
+        caps_dir: (str) Path to the (input) CAPS directory.
+        tsv_path: (str) path to tsv file of list of subjects/sessions.
+        output_dir: (str) folder containing the synthetic dataset in (output)
+            CAPS format.
+        n_subjects: (int) number of subjects in each class of the
+            synthetic dataset
+        mean: (float) mean of the gaussian noise
+        sigma: (float) standard deviation of the gaussian noise
+        preprocessing: (str) preprocessing performed. Must be in ['t1-linear', 't1-extensive'].
+
+    Returns:
+        A folder written on the output_dir location (in CAPS format), also a
+        tsv file describing this output
+
+    Raises:
+
     """
     # Read DataFrame
     data_df = pd.read_csv(tsv_path, sep='\t')
 
     # Create subjects dir
-    if not path.exists(path.join(output_dir, 'subjects')):
-        os.makedirs(path.join(output_dir, 'subjects'))
+    if not exists(join(output_dir, 'subjects')):
+        makedirs(join(output_dir, 'subjects'))
 
     # Retrieve image of first subject
     participant_id = data_df.loc[0, 'participant_id']
@@ -52,51 +69,83 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0, 
     output_df = pd.DataFrame(data, columns=['participant_id', 'session_id', 'diagnosis'])
     output_df['age'] = 60
     output_df['sex'] = 'F'
-    output_df.to_csv(path.join(output_dir, 'data.tsv'), sep='\t', index=False)
+    output_df.to_csv(join(output_dir, 'data.tsv'), sep='\t', index=False)
 
     for i in range(2 * n_subjects):
         gauss = np.random.normal(mean, sigma, image.shape)
         participant_id = 'sub-RAND%i' % i
         noisy_image = image + gauss
-        if output_size is not None:
-            noisy_image_pt = torch.Tensor(noisy_image[np.newaxis, np.newaxis, :])
-            noisy_image_pt = F.interpolate(noisy_image_pt, output_size)
-            noisy_image = noisy_image_pt.numpy()[0, 0, :, :, :]
         noisy_image_nii = nib.Nifti1Image(noisy_image, header=image_nii.header, affine=image_nii.affine)
-        noisy_image_nii_path = path.join(output_dir, 'subjects', participant_id, 'ses-M00', 't1', 'preprocessing_dl')
-        noisy_image_nii_filename = participant_id + '_ses-M00_space-MNI_res-1x1x1.nii.gz'
-        if not path.exists(noisy_image_nii_path):
-            os.makedirs(noisy_image_nii_path)
-        nib.save(noisy_image_nii, path.join(noisy_image_nii_path, noisy_image_nii_filename))
+        noisy_image_nii_path = join(output_dir, 'subjects', participant_id, 'ses-M00', 't1_linear')
+        noisy_image_nii_filename = participant_id + '_ses-M00' + FILENAME_TYPE['cropped'] + '.nii.gz'
+        if not exists(noisy_image_nii_path):
+            makedirs(noisy_image_nii_path)
+        nib.save(noisy_image_nii, join(noisy_image_nii_path, noisy_image_nii_filename))
 
 
 def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preprocessing="linear",
-                             mask_path=None, atrophy_percent=60, output_size=None, group=None):
+                             mask_path=None, atrophy_percent=60):
     """
     Generates a fully separable dataset.
 
-    :param caps_dir: (str) path to the CAPS directory.
-    :param tsv_path: (str) path to tsv file of list of subjects/sessions.
-    :param output_dir: (str) folder containing the synthetic dataset in CAPS format.
-    :param n_subjects: (int) number of subjects in each class of the synthetic dataset
-    :param preprocessing: (str) preprocessing performed. Must be in ['linear', 'extensive'].
-    :param mask_path: (str) path to the extracted masks to generate the two labels
-    :param atrophy_percent: (float) percentage of atrophy applied
-    :param output_size: (tuple[int]) size of the output. If None no interpolation will be performed.
-    :param group: (str) group used for dartel preprocessing.
+    Generates a dataset, based on the images of the CAPS directory, where a
+    half of the image is processed using a mask to oclude a specific region.
+    This procedure creates a dataset fully separable (images with half-right
+    processed and image with half-left processed)
+
+    Args:
+        caps_dir: (str) path to the CAPS directory.
+        tsv_path: (str) path to tsv file of list of subjects/sessions.
+        output_dir: (str) folder containing the synthetic dataset in CAPS format.
+        n_subjects: (int) number of subjects in each class of the synthetic
+            dataset.
+        preprocessing: (str) preprocessing performed. Must be in ['linear', 'extensive'].
+        mask_path: (str) path to the extracted masks to generate the two labels.
+        atrophy_percent: (float) percentage of atrophy applied.
+
+    Returns:
+        Folder structure where images are stored in CAPS format.
+
+    Raises:
     """
 
     # Read DataFrame
     data_df = pd.read_csv(tsv_path, sep='\t')
     data_df = baseline_df(data_df, "None")
 
+    root = dirname(abspath(join(abspath(__file__), pardir, pardir)))
+    path_to_masks = join(root, 'resources', 'masks')
+    url_aramis = 'https://aramislab.paris.inria.fr/files/data/masks/'
+    FILE1 = RemoteFileStructure(filename='AAL2.tar.gz',
+                                url=url_aramis,
+                                checksum='89427970921674792481bffd2de095c8fbf49509d615e7e09e4bc6f0e0564471'
+                                )
+    AAL2_masks_path = join(path_to_masks, FILE1.filename)
+
     if n_subjects > len(data_df):
         raise ValueError("The number of subjects %i cannot be higher than the number of subjects in the baseline "
                          "DataFrame extracted from %s" % (n_subjects, tsv_path))
 
     if mask_path is None:
-        raise ValueError('Please provide a path to masks. Such masks are available at '
-                         'clinicadl/tools/data/AAL2.')
+        if not exists(join(path_to_masks, 'AAL2')):
+            try:
+                print('Try to download AAL2 masks')
+                mask_path_tar = fetch_file(FILE1, path_to_masks)
+                tar_file = tarfile.open(mask_path_tar)
+                print('File: ' + mask_path_tar)
+                try:
+                    tar_file.extractall(path_to_masks)
+                    tar_file.close()
+                    mask_path = join(path_to_masks, 'AAL2')
+                except RuntimeError:
+                    print('Unable to extract donwloaded files')
+            except IOError as err:
+                print('Unable to download required templates:', err)
+                raise ValueError('''Unable to download masks, please donwload them
+                                  manually at https://aramislab.paris.inria.fr/files/data/masks/
+                                  and provide a valid path.''')
+        else:
+            mask_path = join(path_to_masks, 'AAL2')
 
     # Output tsv file
     columns = ['participant_id', 'session_id', 'diagnosis', 'age', 'sex']
@@ -109,30 +158,26 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
 
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
-        filename = 'sub-TRIV%i_ses-M00_space-MNI_res-1x1x1.nii.gz' % i
-        path_image = os.path.join(output_dir, 'subjects', 'sub-TRIV%i' % i, 'ses-M00', 't1', 'preprocessing_dl')
+        filename = 'sub-TRIV%i' % i + FILENAME_TYPE['cropped'] + '.nii.gz'
+        path_image = join(output_dir, 'subjects', 'sub-TRIV%i' % i, 'ses-M00', 't1_linear')
 
-        if not os.path.exists(path_image):
-            os.makedirs(path_image)
+        if not exists(path_image):
+            makedirs(path_image)
 
-        image_path = find_image_path(caps_dir, participant_id, session_id, preprocessing, group)
+        image_path = find_image_path(caps_dir, participant_id, session_id, preprocessing)
         image_nii = nib.load(image_path)
         image = image_nii.get_data()
 
-        atlas_to_mask = nib.load(os.path.join(mask_path, 'mask-%i.nii' % (label + 1))).get_data()
+        atlas_to_mask = nib.load(join(mask_path, 'mask-%i.nii' % (label + 1))).get_data()
 
         # Create atrophied image
         trivial_image = im_loss_roi_gaussian_distribution(image, atlas_to_mask, atrophy_percent)
-        if output_size is not None:
-            trivial_image_pt = torch.Tensor(trivial_image[np.newaxis, np.newaxis, :])
-            trivial_image_pt = F.interpolate(trivial_image_pt, output_size)
-            trivial_image = trivial_image_pt.numpy()[0, 0, :, :, :]
         trivial_image_nii = nib.Nifti1Image(trivial_image, affine=image_nii.affine)
-        trivial_image_nii.to_filename(os.path.join(path_image, filename))
+        trivial_image_nii.to_filename(join(path_image, filename))
 
         # Append row to output tsv
         row = ['sub-TRIV%i' % i, 'ses-M00', diagnosis_list[label], 60, 'F']
         row_df = pd.DataFrame([row], columns=columns)
         output_df = output_df.append(row_df)
 
-    output_df.to_csv(path.join(output_dir, 'data.tsv'), sep='\t', index=False)
+    output_df.to_csv(join(output_dir, 'data.tsv'), sep='\t', index=False)

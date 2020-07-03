@@ -2,12 +2,13 @@
 
 
 class Parameters:
-    """ Class to define and initialize parameters used in traning CNN networks"""
+    """ Class to define and initialize parameters used in training CNN networks"""
 
-    def __init__(self, tsv_path: str, output_dir: str, input_dir: str,
+    def __init__(self, mode: str, tsv_path: str, output_dir: str, input_dir: str,
                  preprocessing: str, model: str):
         """
         Parameters:
+        mode: type if input used by the network (image, patch, roi, slice)
         tsv_path: Path to the folder containing the tsv files of the
         population. To note, the column name should be participant_id,
         session_id and diagnosis.
@@ -16,6 +17,7 @@ class Parameters:
         preprocessing: Type of preprocessing done. Choices: "t1-linear" or "t1-extensive".
         model: Neural network model.
         """
+        self.mode = mode
         self.tsv_path = tsv_path
         self.output_dir = output_dir
         self.input_dir = input_dir
@@ -35,26 +37,24 @@ class Parameters:
             learning_rate: float = 1e-4,
             patience: int = 10,
             tolerance: float = 0.05,
-            add_sigmoid: bool = False,
             optimizer: str = "Adam",
             weight_decay: float = 1e-4,
             dropout: float = 0,
             gpu: bool = False,
             batch_size: int = 12,
-            evaluation_steps: int = 1,
+            evaluation_steps: int = 0,
             num_workers: int = 1,
             transfer_learning_path: str = None,
-            transfer_learning_autoencoder: str = None,
             transfer_learning_selection: str = "best_acc",
             patch_size: int = 50,
             stride_size: int = 50,
             hippocampus_roi: bool = False,
             selection_threshold: float = 0.0,
-            num_cnn: int = 36,
             mri_plane: int = 0,
             discarded_slices: int = 20,
             prepare_dl: bool = False,
-            visualization: bool = False):
+            visualization: bool = False
+    ):
         """
         Optional parameters used for training CNN.
         transfer_learning_difference: Difference of size between the pretrained
@@ -70,7 +70,6 @@ class Parameters:
         learning_rate: Learning rate of the optimization. (default=0.01).
         patience: Waiting time for early stopping.
         tolerance: Tolerance value for the early stopping.
-        add_sigmoid: Ad sigmoid function at the end of the decoder.
         optimizer: Optimizer of choice for training. (default=Adam).
                    Choices=["SGD", "Adadelta", "Adam"].
         weight_decay: Weight decay of the optimizer.
@@ -85,8 +84,6 @@ class Parameters:
         hippocampus_roi: If train the model using only hippocampus ROI.
         selection_threshold: Threshold on the balanced accuracies to compute
                              the subject-level performance.
-        num_cnn: How many CNNs we want to train in a patch-wise way.
-                 By default, each patch is trained from all subjects for one CNN.
         mri_plane: Which coordinate axis to take for slicing the MRI.
                    0 is for sagittal,
                    1 is for coronal and
@@ -107,7 +104,6 @@ class Parameters:
         self.learning_rate = learning_rate
         self.patience = patience
         self.tolerance = tolerance
-        self.add_sigmoid = add_sigmoid
         self.optimizer = optimizer
         self.weight_decay = weight_decay
         self.dropout = dropout
@@ -116,12 +112,10 @@ class Parameters:
         self.evaluation_steps = evaluation_steps
         self.num_workers = num_workers
         self.transfer_learning_path = transfer_learning_path
-        self.transfer_learning_autoencoder = transfer_learning_autoencoder
         self.transfer_learning_selection = transfer_learning_selection
         self.patch_size = patch_size
         self.stride_size = stride_size
         self.hippocampus_roi = hippocampus_roi
-        self.num_cnn = num_cnn
         self.mri_plane = mri_plane
         self.discarded_slices = discarded_slices
         self.prepare_dl = prepare_dl
@@ -138,14 +132,13 @@ def check_and_clean(d):
     os.makedirs(d)
 
 
-def commandline_to_json(commandline, task_type):
+def commandline_to_json(commandline):
     """
     This is a function to write the python argparse object into a json file.
     This helps for DL when searching for hyperparameters
 
     :param commandline: a tuple contain the output of
                         `parser.parse_known_args()`
-    :param task_type: task type (autoencoder, cnn)                   
 
     :return:
     """
@@ -173,19 +166,23 @@ def commandline_to_json(commandline, task_type):
         del commandline_arg_dic['output_dir']
 
     # save to json file
-    json = json.dumps(commandline_arg_dic, skipkeys=True)
-    print("Path of json file:", os.path.join(output_dir, "commandline_" + task_type + ".json"))
-    f = open(os.path.join(output_dir, "commandline_" + task_type + ".json"), "w")
+    json = json.dumps(commandline_arg_dic, skipkeys=True, indent=4)
+    print("Path of json file:", os.path.join(output_dir, "commandline.json"))
+    f = open(os.path.join(output_dir, "commandline.json"), "w")
     f.write(json)
     f.close()
 
 
-def read_json(options, task_type, json_path=None, test=False):
+def read_json(options, json_path=None, test=False):
     """
     Read a json file to update python argparse Namespace.
 
-    :param options: (argparse.Namespace) options of the model
-    :return: options (args.Namespace) options of the model updated
+    Args:
+        options: (argparse.Namespace) options of the model.
+        json_path: (str) If given path to the json file, else found with options.model_path.
+        test: (bool) If given the reader will ignore some options specific to data.
+    Returns:
+        options (args.Namespace) options of the model updated
     """
     import json
     from os import path
@@ -194,7 +191,7 @@ def read_json(options, task_type, json_path=None, test=False):
     evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
     prep_compatibility_dict = {"mni": "t1-extensive", "linear": "t1-linear"}
     if json_path is None:
-        json_path = path.join(options.model_path, 'commandline_' + task_type + '.json')
+        json_path = path.join(options.model_path, 'commandline.json')
 
     with open(json_path, "r") as f:
         json_data = json.load(f)
@@ -210,9 +207,16 @@ def read_json(options, task_type, json_path=None, test=False):
             setattr(options, key, item)
 
     # Retro-compatibility with runs of previous versions
+    if not hasattr(options, "model"):
+        options.model = options.network
+        del options.network
+
     if not hasattr(options, 'dropout'):
         options.dropout = None
     set_default_dropout(options)
+
+    if not hasattr(options, 'discarded_sliced'):
+        options.discarded_slices = 20
 
     if options.preprocessing in prep_compatibility_dict.keys():
         options.preprocessing = prep_compatibility_dict[options.preprocessing]
@@ -222,8 +226,9 @@ def read_json(options, task_type, json_path=None, test=False):
         del options.mri_plane
 
     if hasattr(options, "hippocampus_roi"):
-        options.mode = "roi"
-        del options.hippocampus_roi
+        if options.hippocampus_roi:
+            options.mode = "roi"
+            del options.hippocampus_roi
 
     if hasattr(options, "pretrained_path"):
         options.transfer_learning_path = options.pretrained_path
@@ -232,6 +237,18 @@ def read_json(options, task_type, json_path=None, test=False):
     if hasattr(options, "pretrained_difference"):
         options.transfer_learning_difference = options.pretrained_difference
         del options.pretrained_difference
+
+    if hasattr(options, 'slice_direction'):
+        options.mri_plane = options.slice_direction
+
+    if hasattr(options, 'patch_stride'):
+        options.stride_size = options.patch_stride
+
+    if hasattr(options, 'use_gpu'):
+        options.use_cpu = not options.use_gpu
+
+    if hasattr(options, 'use_extracted_patches'):
+        options.prepare_dl = not options.use_extracted_patches
 
     if options.mode == "subject":
         options.mode = "image"
