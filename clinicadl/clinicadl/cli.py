@@ -375,7 +375,6 @@ def classify_func(args):
         args.tsv_path,
         args.model_path,
         args.prefix_output,
-        output_dir=args.output_directory,
         no_labels=args.no_labels,
         gpu=not args.use_cpu,
         prepare_dl=args.use_extracted_features
@@ -999,10 +998,6 @@ def parse_command_line():
         '-pre', '--prefix_output',
         help='Prefix to name the files resulting from the classify task.',
         type=str, default='prefix_DB')
-    classify_parser.add_argument(
-        '-out_dir', '--output_directory',
-        help='Folder containing results of the prediction.',
-        default=None)
     classify_parser.add_argument(
         '-nl', '--no_labels', action='store_true',
         help='Add this flag if your dataset does not contain a ground truth.',
