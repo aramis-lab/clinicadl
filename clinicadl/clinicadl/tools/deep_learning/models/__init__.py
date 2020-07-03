@@ -50,3 +50,12 @@ def create_autoencoder(model_name, gpu=False, transfer_learning_path=None, diffe
         decoder = initialize_other_autoencoder(decoder, transfer_learning_path, difference)
 
     return decoder
+
+
+def init_model(model_name, autoencoder=False, gpu=False, **kwargs):
+
+    model = create_model(model_name, gpu=gpu, **kwargs)
+    if autoencoder:
+        model = AutoEncoder(model)
+
+    return model

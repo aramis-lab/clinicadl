@@ -13,7 +13,6 @@ import clinicadl.cli as cli
                         'train_slice',
                         'train_patch',
                         'train_multipatch'])
-#    'classify'])
 def generate_cli_commands(request):
     if request.param == 'preprocessing':
         test_input = [
@@ -75,7 +74,7 @@ def generate_cli_commands(request):
             '/dir/tsv_path/',
             '/dir/output/',
             '--n_subjects', '10',
-            '--preprocessing', 'linear',
+            '--preprocessing', 't1-linear',
             '--mean', '0.5',
             '--sigma', '0.5']
         keys_output = [
@@ -93,15 +92,17 @@ def generate_cli_commands(request):
         test_input = [
             'classify',
             '/dir/caps',
-            '/dir/tsv_path/',
-            '/dir/output/',
-            '2D_slice']
+            '/dir/tsv_file',
+            '/dir/model_path/',
+            '--prefix_output', 'DB_XXXXX'
+        ]
         keys_output = [
             'task',
-            'caps_dir',
+            'caps_directory',
             'tsv_path',
-            'output_dir',
-            'model_name']
+            'model_path',
+            'prefix_output'
+        ]
 
     if request.param == 'train_slice':
         test_input = [
@@ -119,7 +120,7 @@ def generate_cli_commands(request):
             'preprocessing',
             'tsv_path',
             'output_dir',
-            'network']
+            'model']
 
     if request.param == 'train_subject':
         test_input = [
@@ -139,7 +140,7 @@ def generate_cli_commands(request):
             'preprocessing',
             'tsv_path',
             'output_dir',
-            'network']
+            'model']
     if request.param == 'train_patch':
         test_input = [
             'train',
@@ -158,7 +159,7 @@ def generate_cli_commands(request):
             'preprocessing',
             'tsv_path',
             'output_dir',
-            'network']
+            'model']
     if request.param == 'train_multipatch':
         test_input = [
             'train',
@@ -177,7 +178,7 @@ def generate_cli_commands(request):
             'preprocessing',
             'tsv_path',
             'output_dir',
-            'network']
+            'model']
 
     return test_input, keys_output
 

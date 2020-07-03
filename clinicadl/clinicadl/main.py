@@ -3,6 +3,8 @@
 from . import cli
 from clinicadl.tools.deep_learning import commandline_to_json
 import torch
+from os import path
+import sys
 
 
 def main():
@@ -21,8 +23,13 @@ def main():
             and (arguments['task'] != 'extract') \
             and (arguments['task'] != 'generate') \
             and (arguments['task'] != 'tsvtool') \
-            and (arguments['task'] != 'quality_check'):
-        commandline_to_json(commandline, arguments["mode_task"])
+            and (arguments['task'] != 'quality_check') \
+            and (arguments['task'] != 'classify'):
+        commandline_to_json(commandline)
+        text_file = open(path.join(args.output_dir, 'environment.txt'), 'w')
+        text_file.write('Version of python: %s \n' % sys.version)
+        text_file.write('Version of pytorch: %s \n' % torch.__version__)
+        text_file.close()
 
     if arguments['task'] in ['train', 'quality_check']:
         if not args.use_cpu and not torch.cuda.is_available():
