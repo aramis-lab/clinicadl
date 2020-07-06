@@ -6,7 +6,7 @@ import errno
 import torch
 import pathlib
 from clinicadl.tools.deep_learning import create_model, load_model, read_json
-from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, compute_num_cnn
+from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, compute_num_cnn, load_data_test
 from clinicadl.tools.deep_learning.cnn_utils import test, soft_voting_to_tsvs, mode_level_to_tsvs
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -21,7 +21,8 @@ def classify(caps_dir,
              num_workers=0,
              batch_size=1,
              prepare_dl=True,
-             selection_metrics=None):
+             selection_metrics=None,
+             diagnoses=None):
     """
     This function verifies the input folders, and the existence of the json file
     then it launch the inference stage from a specific model.
@@ -40,6 +41,7 @@ def classify(caps_dir,
         prepare_dl: if true, uses extracted patches/slices otherwise extract them
         on-the-fly.
         selection_metrics: list of metrics to find best models to be evaluated.
+        diagnoses: list of diagnoses to be tested if tsv_path is a folder.
 
     """
 
@@ -87,7 +89,8 @@ def classify(caps_dir,
         num_workers,
         batch_size,
         prepare_dl,
-        selection_metrics
+        selection_metrics,
+        diagnoses
     )
 
 
@@ -101,7 +104,8 @@ def inference_from_model(caps_dir,
                          num_workers=0,
                          batch_size=1,
                          prepare_dl=False,
-                         selection_metrics=None):
+                         selection_metrics=None,
+                         diagnoses=None):
     """
     Inference from previously trained model.
 
@@ -126,6 +130,7 @@ def inference_from_model(caps_dir,
         prepare_dl: if true, uses extracted patches/slices otherwise extract them
         on-the-fly.
         selection_metrics: list of metrics to find best models to be evaluated.
+        diagnoses: list of diagnoses to be tested if tsv_path is a folder.
 
     Returns:
         Files written in the output folder with prediction results and metrics. By
@@ -143,10 +148,6 @@ def inference_from_model(caps_dir,
                         help="Path to the trained model folder.")
     options = parser.parse_args([model_path])
     options = read_json(options, json_path=json_file)
-    if options.mode_task == "multicnn":
-        num_cnn = compute_num_cnn(caps_dir, tsv_path, options, "classify")
-    else:
-        num_cnn = None
 
     print("Load model with these options:")
     print(options)
@@ -156,15 +157,17 @@ def inference_from_model(caps_dir,
     options.nproc = num_workers
     options.batch_size = batch_size
     options.prepare_dl = prepare_dl
+    if diagnoses is not None:
+        options.diagnoses = diagnoses
+
+    if options.mode_task == "multicnn":
+        num_cnn = compute_num_cnn(caps_dir, tsv_path, options, "test")
+    else:
+        num_cnn = None
     # Define the path
     currentDirectory = pathlib.Path(model_path)
     # Search for 'fold-*' pattern
     currentPattern = "fold-*"
-
-    best_model = {
-        'best_acc': 'best_balanced_accuracy',
-        'best_loss': 'best_loss'
-    }
 
     # loop depending the number of folds found in the model folder
     for fold_dir in currentDirectory.glob(currentPattern):
@@ -243,6 +246,8 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
     transformations = get_transforms(model_options.mode,
                                      model_options.minmaxnormalization)
 
+    test_df = load_data_test(tsv_path, model_options.diagnoses)
+
     # Define loss and optimizer
     criterion = nn.CrossEntropyLoss()
 
@@ -250,10 +255,10 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
 
         for n in range(num_cnn):
 
-            dataset = return_dataset(
+            test_dataset = return_dataset(
                 model_options.mode,
                 caps_dir,
-                tsv_path,
+                test_df,
                 model_options.preprocessing,
                 transformations,
                 model_options,
@@ -262,7 +267,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
             )
 
             test_loader = DataLoader(
-                dataset,
+                test_dataset,
                 batch_size=model_options.batch_size,
                 shuffle=False,
                 num_workers=model_options.nproc,
@@ -295,10 +300,10 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
             gpu, filename='model_best.pth.tar')
 
         # Read/localize the data
-        data_to_test = return_dataset(
+        test_dataset = return_dataset(
             model_options.mode,
             caps_dir,
-            tsv_path,
+            test_df,
             model_options.preprocessing,
             transformations,
             model_options,
@@ -307,7 +312,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
 
         # Load the data
         test_loader = DataLoader(
-            data_to_test,
+            test_dataset,
             batch_size=model_options.batch_size,
             shuffle=False,
             num_workers=model_options.nproc,
