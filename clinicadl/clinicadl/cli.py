@@ -152,7 +152,6 @@ def train_func(args):
                 evaluation_steps=args.evaluation_steps,
                 num_workers=args.nproc,
                 transfer_learning_path=args.transfer_learning_path,
-                transfer_learning_autoencoder=args.transfer_learning_autoencoder,
                 transfer_learning_selection=args.transfer_learning_selection
             )
             train_single_cnn(train_params_cnn)
@@ -251,7 +250,6 @@ def train_func(args):
                 evaluation_steps=args.evaluation_steps,
                 num_workers=args.nproc,
                 transfer_learning_path=args.transfer_learning_path,
-                transfer_learning_autoencoder=args.transfer_learning_autoencoder,
                 transfer_learning_selection=args.transfer_learning_selection,
                 patch_size=args.patch_size,
                 stride_size=args.stride_size,
@@ -288,7 +286,6 @@ def train_func(args):
                 evaluation_steps=args.evaluation_steps,
                 num_workers=args.nproc,
                 transfer_learning_path=args.transfer_learning_path,
-                transfer_learning_autoencoder=args.transfer_learning_autoencoder,
                 transfer_learning_selection=args.transfer_learning_selection,
                 patch_size=args.patch_size,
                 stride_size=args.stride_size,
@@ -356,7 +353,6 @@ def train_func(args):
                 evaluation_steps=args.evaluation_steps,
                 num_workers=args.nproc,
                 transfer_learning_path=args.transfer_learning_path,
-                transfer_learning_autoencoder=args.transfer_learning_autoencoder,
                 transfer_learning_selection=args.transfer_learning_selection,
                 hippocampus_roi=True,
                 selection_threshold=args.selection_threshold,
@@ -379,7 +375,6 @@ def classify_func(args):
         args.tsv_path,
         args.model_path,
         args.prefix_output,
-        output_dir=args.output_directory,
         no_labels=args.no_labels,
         gpu=not args.use_cpu,
         prepare_dl=args.use_extracted_features
@@ -752,11 +747,6 @@ def parse_command_line():
         '--transfer_learning_path',
         help="If an existing path is given, a pretrained model is used.",
         type=str, default=None)
-    transfer_learning_group.add_argument(
-        '--transfer_learning_autoencoder',
-        help='''If specified, do transfer learning using an autoencoder else will look
-                 for a CNN model.''',
-        default=False, action="store_true")
 
     # Autoencoder
     autoencoder_parent = argparse.ArgumentParser(add_help=False)
@@ -800,7 +790,7 @@ def parse_command_line():
     train_image_cnn_parser._action_groups[-1].add_argument(
         '--transfer_learning_selection',
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-        type=str, default="best_acc", choices=["best_loss", "best_acc"])
+        type=str, default="best_balanced_accuracy", choices=["best_loss", "best_balanced_accuracy"])
 
     train_image_cnn_parser.set_defaults(func=train_func)
 
@@ -853,7 +843,7 @@ def parse_command_line():
     train_patch_cnn_parser._action_groups[-1].add_argument(
         '--transfer_learning_selection',
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-        type=str, default="best_acc", choices=["best_loss", "best_acc"])
+        type=str, default="best_balanced_accuracy", choices=["best_loss", "best_balanced_accuracy"])
 
     train_patch_cnn_group = train_patch_cnn_parser.add_argument_group(
         TRAIN_CATEGORIES["PATCH CNN"])
@@ -877,7 +867,7 @@ def parse_command_line():
     train_patch_multicnn_parser._action_groups[-1].add_argument(
         '--transfer_learning_selection',
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-        type=str, default="best_acc", choices=["best_loss", "best_acc"])
+        type=str, default="best_balanced_accuracy", choices=["best_loss", "best_balanced_accuracy"])
 
     train_patch_multicnn_group = train_patch_multicnn_parser.add_argument_group(
         TRAIN_CATEGORIES["PATCH CNN"])
@@ -922,7 +912,7 @@ def parse_command_line():
     train_roi_cnn_parser._action_groups[-1].add_argument(
         '--transfer_learning_selection',
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-        type=str, default="best_acc", choices=["best_loss", "best_acc"])
+        type=str, default="best_balanced_accuracy", choices=["best_loss", "best_balanced_accuracy"])
 
     train_roi_cnn_group = train_roi_cnn_parser.add_argument_group(
         TRAIN_CATEGORIES["ROI CNN"])
@@ -1008,10 +998,6 @@ def parse_command_line():
         '-pre', '--prefix_output',
         help='Prefix to name the files resulting from the classify task.',
         type=str, default='prefix_DB')
-    classify_parser.add_argument(
-        '-out_dir', '--output_directory',
-        help='Folder containing results of the prediction.',
-        default=None)
     classify_parser.add_argument(
         '-nl', '--no_labels', action='store_true',
         help='Add this flag if your dataset does not contain a ground truth.',

@@ -6,7 +6,7 @@ Script containing the iotools for model and optimizer serialization.
 
 
 def save_checkpoint(state, accuracy_is_best, loss_is_best, checkpoint_dir, filename='checkpoint.pth.tar',
-                    best_accuracy='best_acc', best_loss='best_loss'):
+                    best_accuracy='best_balanced_accuracy', best_loss='best_loss'):
     import torch
     import os
     import shutil
