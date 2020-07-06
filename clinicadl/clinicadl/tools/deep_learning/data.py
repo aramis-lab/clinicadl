@@ -484,8 +484,6 @@ def compute_num_cnn(input_dir, tsv_path, options, data="train"):
 
     if data == "train":
         example_df, _ = load_data(tsv_path, options.diagnoses, 0, options.n_splits, options.baseline)
-    elif data == "classify":
-        example_df = pd.read_csv(tsv_path, sep='\t')
     else:
         example_df = load_data_test(tsv_path, options.diagnoses)
 
@@ -602,6 +600,9 @@ def load_data(train_val_path, diagnoses_list,
 
 
 def load_data_test(test_path, diagnoses_list):
+
+    if test_path.endswith('.tsv'):
+        return pd.read_csv(test_path, sep='\t')
 
     test_df = pd.DataFrame()
 
