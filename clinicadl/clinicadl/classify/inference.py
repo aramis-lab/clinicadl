@@ -18,7 +18,10 @@ def classify(caps_dir,
              prefix_output,
              labels=True,
              gpu=True,
-             prepare_dl=True):
+             num_workers=0,
+             batch_size=1,
+             prepare_dl=True,
+             selection_metrics=None):
     """
     This function verifies the input folders, and the existence of the json file
     then it launch the inference stage from a specific model.
@@ -32,8 +35,11 @@ def classify(caps_dir,
         prefix_output: prefix of all classification outputs.
         labels: by default is True. If False no metrics tsv files will be written.
         gpu: if true, it uses gpu.
+        num_workers: num_workers used in DataLoader
+        batch_size: batch size of the DataLoader
         prepare_dl: if true, uses extracted patches/slices otherwise extract them
         on-the-fly.
+        selection_metrics: list of metrics to find best models to be evaluated.
 
     """
 
@@ -78,6 +84,8 @@ def classify(caps_dir,
         prefix_output,
         labels,
         gpu,
+        num_workers,
+        batch_size,
         prepare_dl)
 
 
@@ -88,6 +96,8 @@ def inference_from_model(caps_dir,
                          prefix=None,
                          labels=True,
                          gpu=True,
+                         num_workers=0,
+                         batch_size=1,
                          prepare_dl=False):
     """
     Inference from previously trained model.
@@ -108,6 +118,8 @@ def inference_from_model(caps_dir,
         labels: by default is True. If False no metrics tsv files will be written.
         measurements.tsv
         gpu: if true, it uses gpu.
+        num_workers: num_workers used in DataLoader
+        batch_size: batch size of the DataLoader
         prepare_dl: if true, uses extracted patches/slices otherwise extract them
         on-the-fly.
 
@@ -137,6 +149,8 @@ def inference_from_model(caps_dir,
 
     # Overwrite options with user input
     options.use_cpu = not gpu
+    options.nproc = num_workers
+    options.batch_size = batch_size
     options.prepare_dl = prepare_dl
     # Define the path
     currentDirectory = pathlib.Path(model_path)
