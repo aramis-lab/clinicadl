@@ -24,8 +24,8 @@ TRAIN_CATEGORIES = {
     # ROI-based arguments
     'ROI': '%sROI-based parameters%s' % (Fore.BLUE, Fore.RESET),
     'ROI CNN': '%sROI-based CNN parameters%s' % (Fore.BLUE, Fore.RESET),
-    # Classify
-    'CLASSIFY': '%sClassify specific arguments%s' % (Fore.BLUE, Fore.RESET),
+    # Other optional arguments
+    'OPTIONAL': '%sOther options%s' % (Fore.BLUE, Fore.RESET),
 }
 
 
@@ -380,7 +380,8 @@ def classify_func(args):
         labels=not args.no_labels,
         gpu=not args.use_cpu,
         prepare_dl=args.use_extracted_features,
-        selection_metrics=args.selection_metrics
+        selection_metrics=args.selection_metrics,
+        diagnoses=args.diagnoses
     )
 
 
@@ -966,16 +967,6 @@ def parse_command_line():
 
     train_slice_parser.set_defaults(func=train_func)
 
-    #########################
-    # SVM
-    #########################
-    # train_svm_parser = train_subparser.add_parser(
-    #     "svm",
-    #     parents=[train_parent_parser],
-    #     help="Train a SVM.")
-    #
-    # train_svm_parser.set_defaults(func=train_func)
-
     # Classify - Classify a subject or a list of tsv files with the CNN
     # provided as argument.
     # classify_parser: get command line arguments and options
@@ -992,7 +983,9 @@ def parse_command_line():
         default=None)
     classify_pos_group.add_argument(
         'tsv_path',
-        help='TSV file with subjects/sessions to process.',
+        help='''Path to the file with subjects/sessions to process.
+        If it includes the filename will load the tsv file directly.
+        Else will load the baseline tsv files of wanted diagnoses produced by tsvtool.''',
         default=None)
     classify_pos_group.add_argument(
         'model_path',
@@ -1022,7 +1015,7 @@ def parse_command_line():
 
     # Specific classification arguments
     classify_specific_group = classify_parser.add_argument_group(
-        TRAIN_CATEGORIES["CLASSIFY"]
+        TRAIN_CATEGORIES["OPTIONAL"]
     )
     classify_specific_group.add_argument(
         '-nl', '--no_labels', action='store_true',
@@ -1036,11 +1029,15 @@ def parse_command_line():
     classify_specific_group.add_argument(
         '--selection_metrics',
         help='''List of metrics to find the best models to evaluate. Default will
-        load all models available''',
+        classify best model based on balanced accuracy.''',
         choices=['loss', 'balanced_accuracy'],
         default=['balanced_accuracy'],
         nargs='+'
     )
+    classify_specific_group.add_argument(
+        "--diagnoses",
+        help="Labels that must be extracted from merged_tsv.",
+        nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'], default=None)
 
     classify_parser.set_defaults(func=classify_func)
 
