@@ -86,7 +86,9 @@ def classify(caps_dir,
         gpu,
         num_workers,
         batch_size,
-        prepare_dl)
+        prepare_dl,
+        selection_metrics
+    )
 
 
 def inference_from_model(caps_dir,
@@ -98,7 +100,8 @@ def inference_from_model(caps_dir,
                          gpu=True,
                          num_workers=0,
                          batch_size=1,
-                         prepare_dl=False):
+                         prepare_dl=False,
+                         selection_metrics=None):
     """
     Inference from previously trained model.
 
@@ -122,6 +125,7 @@ def inference_from_model(caps_dir,
         batch_size: batch size of the DataLoader
         prepare_dl: if true, uses extracted patches/slices otherwise extract them
         on-the-fly.
+        selection_metrics: list of metrics to find best models to be evaluated.
 
     Returns:
         Files written in the output folder with prediction results and metrics. By
@@ -168,59 +172,61 @@ def inference_from_model(caps_dir,
         fold_path = join(model_path, fold_dir)
         model_path = join(fold_path, 'models')
 
-        if options.mode_task == 'multicnn':
-            for cnn_dir in listdir(model_path):
-                if not exists(join(model_path, cnn_dir, best_model['best_acc'], 'model_best.pth.tar')):
+        for selection_metric in selection_metrics:
+
+            if options.mode_task == 'multicnn':
+                for cnn_dir in listdir(model_path):
+                    if not exists(join(model_path, cnn_dir, "best_%s" % selection_metric, 'model_best.pth.tar')):
+                        raise FileNotFoundError(
+                            errno.ENOENT,
+                            strerror(errno.ENOENT),
+                            join(model_path,
+                                 cnn_dir,
+                                 "best_%s" % selection_metric,
+                                 'model_best.pth.tar')
+                        )
+
+            else:
+                full_model_path = join(model_path, "best_%s" % selection_metric)
+                if not exists(join(full_model_path, 'model_best.pth.tar')):
                     raise FileNotFoundError(
                         errno.ENOENT,
                         strerror(errno.ENOENT),
-                        join(model_path,
-                             cnn_dir,
-                             best_model['best_acc'],
-                             'model_best.pth.tar')
-                    )
+                        join(full_model_path, 'model_best.pth.tar'))
 
-        else:
-            full_model_path = join(model_path, best_model['best_acc'])
-            if not exists(join(full_model_path, 'model_best.pth.tar')):
-                raise FileNotFoundError(
-                    errno.ENOENT,
-                    strerror(errno.ENOENT),
-                    join(full_model_path, 'model_best.pth.tar'))
+            performance_dir = join(fold_path, 'cnn_classification', 'best_%s' % selection_metric)
+            if not exists(performance_dir):
+                makedirs(performance_dir)
 
-        performance_dir = join(fold_path, 'cnn_classification', best_model['best_acc'])
-        if not exists(performance_dir):
-            makedirs(performance_dir)
+            # It launch the corresponding function, depending on the mode.
+            inference_from_model_generic(
+                caps_dir,
+                tsv_path,
+                model_path,
+                options,
+                prefix,
+                currentDirectory,
+                fold,
+                "best_%s" % selection_metric,
+                labels=labels,
+                num_cnn=num_cnn
+            )
 
-        # It launch the corresponding function, depending on the mode.
-        inference_from_model_generic(
-            caps_dir,
-            tsv_path,
-            model_path,
-            options,
-            prefix,
-            currentDirectory,
-            fold,
-            best_model['best_acc'],
-            labels=labels,
-            num_cnn=num_cnn
-        )
+            # Soft voting
+            if hasattr(options, 'selection_threshold'):
+                selection_thresh = options.selection_threshold
+            else:
+                selection_thresh = 0.8
 
-        # Soft voting
-        if hasattr(options, 'selection_threshold'):
-            selection_thresh = options.selection_threshold
-        else:
-            selection_thresh = 0.8
+            # Write files at the image level (for patch, roi and slice).
+            # It assumes the existance of validation files to perform soft-voting
+            if options.mode in ["patch", "roi", "slice"]:
+                soft_voting_to_tsvs(currentDirectory, fold, "best_%s" % selection_metric, options.mode,
+                                    prefix, num_cnn=num_cnn, selection_threshold=selection_thresh,
+                                    use_labels=labels)
 
-        # Write files at the image level (for patch, roi and slice).
-        # It assumes the existance of validation files to perform soft-voting
-        if options.mode in ["patch", "roi", "slice"]:
-            soft_voting_to_tsvs(currentDirectory, fold, best_model["best_acc"], options.mode,
-                                prefix, num_cnn=num_cnn, selection_threshold=selection_thresh,
-                                use_labels=labels)
-
-        print("Prediction results and metrics are written in the "
-              "following folder: %s" % performance_dir)
+            print("Prediction results and metrics are written in the "
+                  "following folder: %s" % performance_dir)
 
 
 def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
