@@ -22,7 +22,8 @@ def main():
     if (arguments['task'] != 'preprocessing') \
             and (arguments['task'] != 'extract') \
             and (arguments['task'] != 'generate') \
-            and (arguments['task'] != 'tsvtool'):
+            and (arguments['task'] != 'tsvtool') \
+            and (arguments['task'] != 'classify'):
         commandline_to_json(commandline, arguments["mode_task"])
         text_file = open(path.join(args.output_dir, 'python_version.txt'), 'w')
         text_file.write('Version of python: %s \n' % sys.version)
