@@ -121,7 +121,8 @@ def train_func(args):
                 batch_size=args.batch_size,
                 evaluation_steps=args.evaluation_steps,
                 num_workers=args.nproc,
-                visualization=args.visualization
+                visualization=args.visualization,
+                verbosity=args.verbose
             )
             train_autoencoder(train_params_autoencoder)
         else:
@@ -152,7 +153,8 @@ def train_func(args):
                 evaluation_steps=args.evaluation_steps,
                 num_workers=args.nproc,
                 transfer_learning_path=args.transfer_learning_path,
-                transfer_learning_selection=args.transfer_learning_selection
+                transfer_learning_selection=args.transfer_learning_selection,
+                verbosity=args.verbose
             )
             train_single_cnn(train_params_cnn)
     elif args.mode == 'slice':
@@ -185,7 +187,8 @@ def train_func(args):
             num_workers=args.nproc,
             selection_threshold=args.selection_threshold,
             prepare_dl=args.use_extracted_slices,
-            discarded_slices=args.discarded_slices
+            discarded_slices=args.discarded_slices,
+            verbosity=args.verbose
         )
         train_single_cnn(train_params_slice)
     elif args.mode == 'patch':
@@ -219,7 +222,8 @@ def train_func(args):
                 stride_size=args.stride_size,
                 hippocampus_roi=False,
                 visualization=args.visualization,
-                prepare_dl=args.use_extracted_patches
+                prepare_dl=args.use_extracted_patches,
+                verbosity=args.verbose
             )
             train_autoencoder(train_params_autoencoder)
         elif args.mode_task == "cnn":
@@ -255,7 +259,8 @@ def train_func(args):
                 stride_size=args.stride_size,
                 hippocampus_roi=False,
                 selection_threshold=args.selection_threshold,
-                prepare_dl=args.use_extracted_patches
+                prepare_dl=args.use_extracted_patches,
+                verbosity=args.verbose
             )
             train_single_cnn(train_params_patch)
         else:
@@ -291,7 +296,8 @@ def train_func(args):
                 stride_size=args.stride_size,
                 hippocampus_roi=False,
                 selection_threshold=args.selection_threshold,
-                prepare_dl=args.use_extracted_patches
+                prepare_dl=args.use_extracted_patches,
+                verbosity=args.verbose
             )
             train_multi_cnn(train_params_patch)
     elif args.mode == 'roi':
@@ -323,6 +329,7 @@ def train_func(args):
                 num_workers=args.nproc,
                 hippocampus_roi=True,
                 visualization=args.visualization,
+                verbosity=args.verbose
             )
             train_autoencoder(train_params_autoencoder)
         else:
@@ -356,6 +363,7 @@ def train_func(args):
                 transfer_learning_selection=args.transfer_learning_selection,
                 hippocampus_roi=True,
                 selection_threshold=args.selection_threshold,
+                verbosity=args.verbose,
             )
             train_single_cnn(train_params_patch)
 
@@ -446,8 +454,6 @@ def parse_command_line():
     parser = argparse.ArgumentParser(
         prog='clinicadl',
         description='Clinica Deep Learning.')
-
-    parser.add_argument('--verbose', '-v', action='count')
 
     subparser = parser.add_subparsers(
         title='''Task to execute with clinicadl:''',
@@ -634,6 +640,7 @@ def parse_command_line():
 
     # Positional arguments
     train_parent_parser = argparse.ArgumentParser(add_help=False)
+    train_parent_parser.add_argument('--verbose', '-v', action='count', default=0)
     train_pos_group = train_parent_parser.add_argument_group(
         TRAIN_CATEGORIES["POSITIONAL"])
     train_pos_group.add_argument(
