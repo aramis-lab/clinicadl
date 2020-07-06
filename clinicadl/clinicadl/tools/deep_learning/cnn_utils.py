@@ -318,7 +318,6 @@ def mode_level_to_tsvs(output_dir, results_df, metrics, fold, selection, mode, d
     if not os.path.exists(performance_dir):
         os.makedirs(performance_dir)
 
-    print("Writes %s/%s_%s_level_prediction.tsv" % (performance_dir, dataset, mode))
     results_df.to_csv(os.path.join(performance_dir, '%s_%s_level_prediction.tsv' % (dataset, mode)), index=False,
                       sep='\t')
 
@@ -367,7 +366,6 @@ def retrieve_sub_level_results(output_dir, fold, selection, mode, dataset, num_c
     If the results of the multi-CNN were not concatenated it will be done here."""
     result_tsv = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', selection,
                               '%s_%s_level_prediction.tsv' % (dataset, mode))
-    print(result_tsv)
     if os.path.exists(result_tsv):
         performance_df = pd.read_csv(result_tsv, sep='\t')
 
