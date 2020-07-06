@@ -18,7 +18,9 @@ from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
 
 class MRIDataset(Dataset):
     """Abstract class for all derived MRIDatasets."""
-    def __init__(self, caps_directory, data_file, preprocessing, transformations=None):
+
+    def __init__(self, caps_directory, data_file,
+                 preprocessing, transformations=None):
         self.caps_directory = caps_directory
         self.transformations = transformations
         self.diagnosis_code = {
@@ -31,9 +33,11 @@ class MRIDataset(Dataset):
         self.preprocessing = preprocessing
 
         if not hasattr(self, 'elem_idx'):
-            raise ValueError("Child class of MRIDataset must set elem_idx attribute.")
+            raise ValueError(
+                "Child class of MRIDataset must set elem_idx attribute.")
         if not hasattr(self, 'mode'):
-            raise ValueError("Child class of MRIDataset must set mode attribute.")
+            raise ValueError(
+                "Child class of MRIDataset must set mode attribute.")
 
         # Check the format of the tsv file here
         if isinstance(data_file, str):
@@ -43,7 +47,7 @@ class MRIDataset(Dataset):
         else:
             raise Exception('The argument data_file is not of correct type.')
 
-        mandatory_col = {"participant_id", "session_id",  "diagnosis"}
+        mandatory_col = {"participant_id", "session_id", "diagnosis"}
         if self.elem_index == "mixed":
             mandatory_col.add("%s_id" % self.mode)
 
@@ -103,7 +107,11 @@ class MRIDataset(Dataset):
         except FileNotFoundError:
             participant_id = self.df.loc[0, 'participant_id']
             session_id = self.df.loc[0, 'session_id']
-            image_path = get_nii_path(self.caps_directory, participant_id, session_id, preprocessing=self.preprocessing)
+            image_path = get_nii_path(
+                self.caps_directory,
+                participant_id,
+                session_id,
+                preprocessing=self.preprocessing)
             image_nii = nib.load(image_path)
             image_np = image_nii.get_fdata()
             image = ToTensor()(image_np)
@@ -225,7 +233,8 @@ class MRIDatasetPatch(MRIDataset):
                                              self.patch_size,
                                              self.patch_size,
                                              self.patch_size)
-        extracted_patch = patches_tensor[index_patch, ...].unsqueeze_(0).clone()
+        extracted_patch = patches_tensor[index_patch, ...].unsqueeze_(
+            0).clone()
 
         return extracted_patch
 
@@ -282,20 +291,22 @@ class MRIDatasetRoi(MRIDataset):
 
         if self.preprocessing == "t1-linear":
             if left_is_odd == 1:
-                crop_center = (61, 96, 68)  # the center of the left hippocampus
+                # the center of the left hippocampus
+                crop_center = (61, 96, 68)
             else:
-                crop_center = (109, 96, 68)  # the center of the right hippocampus
+                # the center of the right hippocampus
+                crop_center = (109, 96, 68)
         else:
             raise NotImplementedError("The extraction of hippocampi was not implemented for "
                                       "preprocessing %s" % self.preprocessing)
         crop_size = (50, 50, 50)  # the output cropped hippocampus size
 
         extracted_roi = image_tensor[
-                        :,
-                        crop_center[0] - crop_size[0] // 2: crop_center[0] + crop_size[0] // 2:,
-                        crop_center[1] - crop_size[1] // 2: crop_center[1] + crop_size[1] // 2:,
-                        crop_center[2] - crop_size[2] // 2: crop_center[2] + crop_size[2] // 2:
-                        ].clone()
+            :,
+            crop_center[0] - crop_size[0] // 2: crop_center[0] + crop_size[0] // 2:,
+            crop_center[1] - crop_size[1] // 2: crop_center[1] + crop_size[1] // 2:,
+            crop_center[2] - crop_size[2] // 2: crop_center[2] + crop_size[2] // 2:
+        ].clone()
 
         return extracted_roi
 
@@ -322,12 +333,15 @@ class MRIDatasetSlice(MRIDataset):
         self.mri_plane = mri_plane
         self.direction_list = ['sag', 'cor', 'axi']
         if self.mri_plane >= len(self.direction_list):
-            raise ValueError("mri_plane value %i > %i" % (self.mri_plane, len(self.direction_list)))
+            raise ValueError(
+                "mri_plane value %i > %i" %
+                (self.mri_plane, len(
+                    self.direction_list)))
 
         # Manage discarded_slices
-        if type(discarded_slices) is int:
+        if isinstance(discarded_slices, int):
             discarded_slices = [discarded_slices, discarded_slices]
-        if type(discarded_slices) is list and len(discarded_slices) == 1:
+        if isinstance(discarded_slices, list) and len(discarded_slices) == 1:
             discarded_slices = discarded_slices * 2
         self.discarded_slices = discarded_slices
 
@@ -369,7 +383,8 @@ class MRIDatasetSlice(MRIDataset):
             return 1
 
         image = self._get_full_image()
-        return image.size(self.mri_plane + 1) - self.discarded_slices[0] - self.discarded_slices[1]
+        return image.size(self.mri_plane + 1) - \
+            self.discarded_slices[0] - self.discarded_slices[1]
 
     def extract_slice_from_mri(self, image, index_slice):
         """
@@ -389,7 +404,8 @@ class MRIDatasetSlice(MRIDataset):
         return triple_slice
 
 
-def return_dataset(mode, input_dir, data_df, preprocessing, transformations, params, cnn_index=None):
+def return_dataset(mode, input_dir, data_df, preprocessing,
+                   transformations, params, cnn_index=None):
     """
     Return appropriate Dataset according to given options.
 
@@ -452,7 +468,8 @@ def compute_num_cnn(options, data="train"):
     transformations = get_transforms(options.mode, options.minmaxnormalization)
 
     if data == "train":
-        example_df, _ = load_data(options.tsv_path, options.diagnoses, 0, options.n_splits, options.baseline)
+        example_df, _ = load_data(
+            options.tsv_path, options.diagnoses, 0, options.n_splits, options.baseline)
     else:
         example_df = load_data_test(options.tsv_path, options.diagnoses)
 
@@ -609,12 +626,20 @@ def mix_slices(df_training, df_validation, mri_plane=0, val_size=0.15):
     session_list = list(df_all['session_id'])
     label_list = list(df_all['diagnosis'])
 
-    slice_participant_list = [ele for ele in participant_list for _ in range(slices_per_patient)]
-    slice_session_list = [ele for ele in session_list for _ in range(slices_per_patient)]
-    slice_label_list = [ele for ele in label_list for _ in range(slices_per_patient)]
+    slice_participant_list = [
+        ele for ele in participant_list for _ in range(slices_per_patient)]
+    slice_session_list = [
+        ele for ele in session_list for _ in range(slices_per_patient)]
+    slice_label_list = [
+        ele for ele in label_list for _ in range(slices_per_patient)]
     slice_index_list = slice_index * len(label_list)
 
-    df_final = pd.DataFrame(columns=['participant_id', 'session_id', 'slice_id', 'diagnosis'])
+    df_final = pd.DataFrame(
+        columns=[
+            'participant_id',
+            'session_id',
+            'slice_id',
+            'diagnosis'])
     df_final['participant_id'] = np.array(slice_participant_list)
     df_final['session_id'] = np.array(slice_session_list)
     df_final['slice_id'] = np.array(slice_index_list)
@@ -622,7 +647,10 @@ def mix_slices(df_training, df_validation, mri_plane=0, val_size=0.15):
 
     y = np.array(slice_label_list)
     # split the train data into training and validation set
-    skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size, random_state=10000)
+    skf_2 = StratifiedShuffleSplit(
+        n_splits=1,
+        test_size=val_size,
+        random_state=10000)
     indices = next(skf_2.split(np.zeros(len(y)), y))
     train_ind, valid_ind = indices
 
