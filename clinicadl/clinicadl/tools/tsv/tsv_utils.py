@@ -113,17 +113,13 @@ def chi2(x_test, x_train):
 
 def add_demographics(df, demographics_df, diagnosis):
     out_df = pd.DataFrame()
-    df = df.set_index(['participant_id', 'session_id'])
-    columns = list(demographics_df.columns.values)
-    columns.insert(0, 'session_id')
-    columns.insert(0, 'participant_id')
-    for subject, session in df.index.values:
-        data = list(demographics_df.loc[(subject, session)].values[0])
-        data.insert(0, session)
-        data.insert(0, subject)
-        data = np.array(data).reshape(1, -1)
-        session_df = pd.DataFrame(data, columns=columns)
-        out_df = pd.concat([out_df, session_df])
+    tmp_demo_df = copy(demographics_df)
+    tmp_demo_df.reset_index(inplace=True)
+    for idx in df.index.values:
+        participant = df.loc[idx, "participant_id"]
+        session = df.loc[idx, "session_id"]
+        row_df = tmp_demo_df[(tmp_demo_df.participant_id == participant) & (tmp_demo_df.session_id == session)]
+        out_df = pd.concat([out_df, row_df])
     out_df.reset_index(inplace=True, drop=True)
     out_df.diagnosis = [diagnosis] * len(out_df)
     return out_df
