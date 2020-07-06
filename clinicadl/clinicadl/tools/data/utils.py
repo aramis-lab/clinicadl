@@ -15,7 +15,7 @@ def find_image_path(caps_dir, participant_id, session_id, preprocessing):
         image_path = path.join(caps_dir, 'subjects', participant_id, session_id,
                                't1', 'spm', 'segmentation', 'normalized_space',
                                participant_id + '_' + session_id +
-                               '_T1w_segm-graymatter_space-Ixi549Space_modulated-off_probability.nii.gz')
+                               FILENAME_TYPE['skull_stripped'] + '.nii.gz')
     else:
         raise ValueError("Preprocessing %s must be in ['t1-linear', 't1-extensive']." % preprocessing)
 
