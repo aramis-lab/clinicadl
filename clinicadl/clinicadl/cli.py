@@ -375,7 +375,7 @@ def classify_func(args):
         args.tsv_path,
         args.model_path,
         args.prefix_output,
-        no_labels=args.no_labels,
+        labels=not args.no_labels,
         gpu=not args.use_cpu,
         prepare_dl=args.use_extracted_features
     )

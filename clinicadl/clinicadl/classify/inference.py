@@ -8,7 +8,6 @@ import pathlib
 from clinicadl.tools.deep_learning import create_model, load_model, read_json
 from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, compute_num_cnn
 from clinicadl.tools.deep_learning.cnn_utils import test, soft_voting_to_tsvs, mode_level_to_tsvs
-import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
@@ -17,7 +16,7 @@ def classify(caps_dir,
              tsv_path,
              model_path,
              prefix_output,
-             no_labels=False,
+             labels=True,
              gpu=True,
              prepare_dl=True):
     """
@@ -31,8 +30,7 @@ def classify(caps_dir,
         tsv_path: file with the name of the MRIs to process (single or multiple)
         model_path: file with the model (pth format).
         prefix_output: prefix of all classification outputs.
-        no_labels: by default is false. In that case, output writes a file named
-        measurements.tsv
+        labels: by default is True. If False no metrics tsv files will be written.
         gpu: if true, it uses gpu.
         prepare_dl: if true, uses extracted patches/slices otherwise extract them
         on-the-fly.
@@ -78,7 +76,7 @@ def classify(caps_dir,
         model_path,
         json_file,
         prefix_output,
-        no_labels,
+        labels,
         gpu,
         prepare_dl)
 
@@ -88,7 +86,7 @@ def inference_from_model(caps_dir,
                          model_path=None,
                          json_file=None,
                          prefix=None,
-                         no_labels=False,
+                         labels=True,
                          gpu=True,
                          prepare_dl=False):
     """
@@ -107,7 +105,7 @@ def inference_from_model(caps_dir,
         model_path: file with the model (pth format).
         json_file: file containing the training parameters.
         prefix: prefix of all classification outputs.
-        no_labels: by default is false. In that case, output writes a file named
+        labels: by default is True. If False no metrics tsv files will be written.
         measurements.tsv
         gpu: if true, it uses gpu.
         prepare_dl: if true, uses extracted patches/slices otherwise extract them
@@ -129,7 +127,11 @@ def inference_from_model(caps_dir,
                         help="Path to the trained model folder.")
     options = parser.parse_args([model_path])
     options = read_json(options, json_path=json_file)
-    num_cnn = compute_num_cnn(caps_dir, tsv_path, options, "classify")
+    if options.mode_task == "multicnn":
+        num_cnn = compute_num_cnn(caps_dir, tsv_path, options, "classify")
+    else:
+        num_cnn = None
+
     print("Load model with these options:")
     print(options)
 
@@ -177,23 +179,18 @@ def inference_from_model(caps_dir,
             makedirs(performance_dir)
 
         # It launch the corresponding function, depending on the mode.
-        infered_classes, metrics = inference_from_model_generic(
+        inference_from_model_generic(
             caps_dir,
             tsv_path,
             model_path,
             options,
+            prefix,
+            currentDirectory,
+            fold,
+            best_model['best_acc'],
+            labels=labels,
             num_cnn=num_cnn
         )
-
-        # Prepare outputs
-        usr_prefix = str(prefix)
-
-        # Write output files at %mode level
-        print("Prediction results and metrics are written in the "
-              "following folder: %s" % performance_dir)
-
-        mode_level_to_tsvs(currentDirectory, infered_classes, metrics, fold, best_model['best_acc'], options.mode,
-                           dataset=usr_prefix)
 
         # Soft voting
         if hasattr(options, 'selection_threshold'):
@@ -205,16 +202,16 @@ def inference_from_model(caps_dir,
         # It assumes the existance of validation files to perform soft-voting
         if options.mode in ["patch", "roi", "slice"]:
             soft_voting_to_tsvs(currentDirectory, fold, best_model["best_acc"], options.mode,
-                                usr_prefix, num_cnn=num_cnn, selection_threshold=selection_thresh)
+                                prefix, num_cnn=num_cnn, selection_threshold=selection_thresh,
+                                use_labels=labels)
+
+        print("Prediction results and metrics are written in the "
+              "following folder: %s" % performance_dir)
 
 
 def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
-                                 num_cnn=None, selection="best_balanced_accuracy"):
-    '''
-    Inference using an image/subject CNN model
-
-
-    '''
+                                 prefix, output_dir, fold, selection,
+                                 labels=True, num_cnn=None):
     from os.path import join
 
     gpu = not model_options.use_cpu
@@ -231,9 +228,6 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
 
     if model_options.mode_task == 'multicnn':
 
-        predictions_df = pd.DataFrame()
-        metrics_df = pd.DataFrame()
-
         for n in range(num_cnn):
 
             dataset = return_dataset(
@@ -243,7 +237,9 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
                 model_options.preprocessing,
                 transformations,
                 model_options,
-                cnn_index=n)
+                cnn_index=n,
+                labels=labels
+            )
 
             test_loader = DataLoader(
                 dataset,
@@ -264,13 +260,12 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
                 test_loader,
                 gpu,
                 criterion,
-                mode=model_options.mode)
+                mode=model_options.mode,
+                use_labels=labels
+            )
 
-            predictions_df = pd.concat([predictions_df, cnn_df])
-            metrics_df = pd.concat([metrics_df, pd.DataFrame(cnn_metrics, index=[0])])
-
-        predictions_df.reset_index(drop=True, inplace=True)
-        metrics_df.reset_index(drop=True, inplace=True)
+            mode_level_to_tsvs(output_dir, cnn_df, cnn_metrics, fold, selection, model_options.mode,
+                               dataset=prefix, cnn_index=n)
 
     else:
 
@@ -286,7 +281,9 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
             tsv_path,
             model_options.preprocessing,
             transformations,
-            model_options)
+            model_options,
+            labels=labels
+        )
 
         # Load the data
         test_loader = DataLoader(
@@ -302,8 +299,9 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
             test_loader,
             gpu,
             criterion,
-            mode=model_options.mode)
+            mode=model_options.mode,
+            use_labels=labels
+        )
 
-        metrics_df = pd.DataFrame(metrics, index=[0])
-
-    return predictions_df, metrics_df
+        mode_level_to_tsvs(output_dir, predictions_df, metrics, fold, selection, model_options.mode,
+                           dataset=prefix)
