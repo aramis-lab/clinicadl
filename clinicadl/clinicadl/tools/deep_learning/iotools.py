@@ -1,4 +1,22 @@
 # coding: utf8
+import logging
+
+LOG_LEVELS = [logging.WARNING, logging.INFO, logging.DEBUG]
+
+
+def return_logger(verbosity, name_fn):
+    logger = logging.getLogger(name_fn)
+    logger.setLevel(LOG_LEVELS[verbosity])
+    ch = logging.StreamHandler()
+    ch.setLevel(LOG_LEVELS[verbosity])
+    # create formatter
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(message)s")
+    # add formatter to ch
+    ch.setFormatter(formatter)
+    # add ch to logger
+    logger.addHandler(ch)
+
+    return logger
 
 
 class Parameters:
@@ -53,7 +71,8 @@ class Parameters:
             mri_plane: int = 0,
             discarded_slices: int = 20,
             prepare_dl: bool = False,
-            visualization: bool = False
+            visualization: bool = False,
+            verbosity: int = 0
     ):
         """
         Optional parameters used for training CNN.
@@ -91,6 +110,7 @@ class Parameters:
         prepare_dl: If True the outputs of preprocessing are used, else the
                     whole MRI is loaded.
                                      initialize corresponding models.
+        verbosity: level of verbosity of the train and test functions.
         """
 
         self.transfer_learning_difference = transfer_learning_difference
@@ -121,6 +141,7 @@ class Parameters:
         self.prepare_dl = prepare_dl
         self.visualization = visualization
         self.selection_threshold = selection_threshold
+        self.verbosity = verbosity
 
 
 def check_and_clean(d):

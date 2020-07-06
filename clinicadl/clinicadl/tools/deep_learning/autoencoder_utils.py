@@ -11,7 +11,7 @@ from clinicadl.tools.deep_learning import EarlyStopping, save_checkpoint
 #############################
 
 def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
-          log_dir, model_dir, options):
+          log_dir, model_dir, options, logger):
     """
     Function used to train an autoencoder.
     The best autoencoder will be found in the 'best_model_dir' of options.output_dir.
@@ -39,7 +39,7 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
     writer_valid = SummaryWriter(os.path.join(log_dir, 'validation'))
 
     decoder.train()
-    print(decoder)
+    logger.debug(decoder)
 
     if options.gpu:
         decoder.cuda()
@@ -51,9 +51,9 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
     loss_valid = None
     epoch = options.beginning_epoch
 
-    print("Beginning training")
+    logger.debug("Beginning training")
     while epoch < options.epochs and not early_stopping.step(loss_valid):
-        print("At %d-th epoch." % epoch)
+        logger.info("Beginning epoch %i." % epoch)
 
         decoder.zero_grad()
         evaluation_flag = True
@@ -78,7 +78,6 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
                 # Evaluate the decoder only when no gradients are accumulated
                 if options.evaluation_steps != 0 and (i + 1) % options.evaluation_steps == 0:
                     evaluation_flag = False
-                    print('Iteration %d' % i)
                     loss_train = test_ae(decoder, train_loader, options.gpu, criterion)
                     mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
 
@@ -88,7 +87,10 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
 
                     writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
                     writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
-                    print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
+                    logger.info("%s level training loss is %f at the end of iteration %d"
+                                % (options.mode, mean_loss_train, i))
+                    logger.info("%s level validation loss is %f at the end of iteration %d"
+                                % (options.mode, mean_loss_valid, i))
 
         # If no step has been performed, raise Exception
         if step_flag:
@@ -100,7 +102,7 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
                           'The model is evaluated only once at the end of the epoch')
 
         # Always test the results and save them once at the end of the epoch
-        print('Last checkpoint at the end of the epoch %d' % epoch)
+        logger.debug('Last checkpoint at the end of the epoch %d' % epoch)
 
         loss_train = test_ae(decoder, train_loader, options.gpu, criterion)
         mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
@@ -111,7 +113,10 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
 
         writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
         writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
-        print("Scan level validation loss is %f at the end of iteration %d" % (loss_valid, i))
+        logger.info("%s level training loss is %f at the end of iteration %d"
+                    % (options.mode, mean_loss_train, i))
+        logger.info("%s level validation loss is %f at the end of iteration %d"
+                    % (options.mode, mean_loss_valid, i))
 
         is_best = loss_valid < best_loss_valid
         best_loss_valid = min(best_loss_valid, loss_valid)
