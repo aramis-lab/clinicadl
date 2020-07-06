@@ -32,9 +32,9 @@ class MRIDataset(Dataset):
             'unlabeled': -1}
         self.preprocessing = preprocessing
 
-        if not hasattr(self, 'elem_idx'):
+        if not hasattr(self, 'elem_index'):
             raise ValueError(
-                "Child class of MRIDataset must set elem_idx attribute.")
+                "Child class of MRIDataset must set elem_index attribute.")
         if not hasattr(self, 'mode'):
             raise ValueError(
                 "Child class of MRIDataset must set mode attribute.")
