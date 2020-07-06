@@ -290,14 +290,14 @@ def test(model, dataloader, use_cuda, criterion, mode="image"):
 # Voting systems
 #################################
 
-def mode_level_to_tsvs(output_dir, results_df, results, fold, selection, mode, dataset='train', cnn_index=None):
+def mode_level_to_tsvs(output_dir, results_df, metrics, fold, selection, mode, dataset='train', cnn_index=None):
     """
     Writes the outputs of the test function in tsv files.
 
     Args:
         output_dir: (str) path to the output directory.
         results_df: (DataFrame) the individual results per patch.
-        results: (dict) the performances obtained on a series of metrics.
+        metrics: (dict or DataFrame) the performances obtained on a series of metrics.
         fold: (int) the fold for which the performances were obtained.
         selection: (str) the metrics on which the model was selected (best_acc, best_loss)
         mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
@@ -305,36 +305,67 @@ def mode_level_to_tsvs(output_dir, results_df, results, fold, selection, mode, d
         cnn_index: (int) provide the cnn_index only for a multi-cnn framework.
     """
     if cnn_index is None:
-        performance_dir = os.path.join(output_dir, 'performances', 'fold_' + str(fold), selection)
+        performance_dir = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', selection)
     else:
-        performance_dir = os.path.join(output_dir, 'performances', 'fold_' + str(fold), 'cnn-' + str(cnn_index),
+        performance_dir = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', 'cnn-%i' % cnn_index,
                                        selection)
+        metrics["%s_id" % mode] = cnn_index
 
     if not os.path.exists(performance_dir):
         os.makedirs(performance_dir)
 
-    results_df.to_csv(os.path.join(performance_dir, '%s_%s_level_result.tsv' % (dataset, mode)), index=False,
+    results_df.to_csv(os.path.join(performance_dir, '%s_%s_level_prediction.tsv' % (dataset, mode)), index=False,
                       sep='\t')
 
-    pd.DataFrame(results, index=[0]).to_csv(os.path.join(performance_dir, '%s_%s_level_metrics.tsv' % (dataset, mode)),
-                                            index=False, sep='\t')
+    if isinstance(metrics, dict):
+        pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(performance_dir, '%s_%s_level_metrics.tsv' % (dataset, mode)),
+                                                index=False, sep='\t')
+    elif isinstance(metrics, pd.DataFrame):
+        metrics.to_csv(os.path.join(performance_dir, '%s_%s_level_metrics.tsv' % (dataset, mode)),
+                       index=False, sep='\t')
+    else:
+        raise ValueError("Bad type for metrics: %s. Must be dict or DataFrame." % type(metrics).__name__)
+
+
+def concat_multi_cnn_results(output_dir, fold, selection, mode, dataset, num_cnn):
+    """Concatenate the tsv files of a multi-CNN framework"""
+    prediction_df = pd.DataFrame()
+    metrics_df = pd.DataFrame()
+    for cnn_index in range(num_cnn):
+        cnn_dir = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', 'cnn-%i' % cnn_index)
+        performance_dir = os.path.join(cnn_dir, selection)
+        cnn_pred_path = os.path.join(performance_dir, '%s_%s_level_prediction.tsv' % (dataset, mode))
+        cnn_metrics_path = os.path.join(performance_dir, '%s_%s_level_metrics.tsv' % (dataset, mode))
+
+        cnn_pred_df = pd.read_csv(cnn_pred_path, sep='\t')
+        cnn_metrics_df = pd.read_csv(cnn_metrics_path, sep='\t')
+        prediction_df = pd.concat([prediction_df, cnn_pred_df])
+        metrics_df = pd.concat([metrics_df, cnn_metrics_df])
+
+        # Clean unused files
+        os.remove(cnn_pred_path)
+        os.remove(cnn_metrics_path)
+        if len(os.listdir(performance_dir)) == 0:
+            os.rmdir(performance_dir)
+        if len(os.listdir(cnn_dir)) == 0:
+            os.rmdir(cnn_dir)
+
+    prediction_df.reset_index(drop=True, inplace=True)
+    metrics_df.reset_index(drop=True, inplace=True)
+    mode_level_to_tsvs(output_dir, prediction_df, metrics_df, fold, selection, mode, dataset)
 
 
 def retrieve_sub_level_results(output_dir, fold, selection, mode, dataset, num_cnn):
-    """Retrieve performance_df for single or multi-CNN framework."""
-    if num_cnn is None:
-        result_tsv = os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
-                                  dataset + '_%s_level_result.tsv' % mode)
+    """Retrieve performance_df for single or multi-CNN framework.
+    If the results of the multi-CNN were not concatenated it will be done here."""
+    result_tsv = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', selection,
+                              '%s_%s_level_prediction.tsv' % (dataset, mode))
+    if os.path.exists(result_tsv):
         performance_df = pd.read_csv(result_tsv, sep='\t')
 
     else:
-        performance_df = pd.DataFrame()
-        for cnn in range(num_cnn):
-            tsv_path = os.path.join(output_dir, 'performances', 'fold_%i' % fold, 'cnn-%i' % cnn, selection,
-                                    dataset + '_%s_level_result.tsv' % mode)
-            cnn_df = pd.read_csv(tsv_path, sep='\t')
-            performance_df = pd.concat([performance_df, cnn_df])
-        performance_df.reset_index(drop=True, inplace=True)
+        concat_multi_cnn_results(output_dir, fold, selection, mode, dataset, num_cnn)
+        performance_df = pd.read_csv(result_tsv, sep='\t')
 
     return performance_df
 
@@ -363,17 +394,16 @@ def soft_voting_to_tsvs(output_dir, fold, selection, mode, dataset='test', num_c
     test_df = retrieve_sub_level_results(output_dir, fold, selection, mode, dataset, num_cnn)
     validation_df = retrieve_sub_level_results(output_dir, fold, selection, mode, validation_dataset, num_cnn)
 
-    performance_path = os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection)
+    performance_path = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', selection)
     if not os.path.exists(performance_path):
         os.makedirs(performance_path)
 
     df_final, metrics = soft_voting(test_df, validation_df, mode, selection_threshold=selection_threshold)
 
-    df_final.to_csv(os.path.join(os.path.join(performance_path, dataset + '_image_level_result.tsv')),
+    df_final.to_csv(os.path.join(os.path.join(performance_path, '%s_image_level_prediction.tsv' % dataset)),
                     index=False, sep='\t')
 
-    pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(output_dir, 'performances', 'fold_%i' % fold, selection,
-                                                         dataset + '_image_level_metrics.tsv'),
+    pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(performance_path, '%s_image_level_metrics.tsv' % dataset),
                                             index=False, sep='\t')
 
 
