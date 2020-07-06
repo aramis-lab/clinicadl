@@ -17,7 +17,9 @@ from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
 
 class MRIDataset(Dataset):
     """Abstract class for all derived MRIDatasets."""
-    def __init__(self, caps_directory, data_file, preprocessing, transformations=None):
+
+    def __init__(self, caps_directory, data_file,
+                 preprocessing, transformations=None):
         self.caps_directory = caps_directory
         self.transformations = transformations
         self.diagnosis_code = {
@@ -29,6 +31,13 @@ class MRIDataset(Dataset):
             'unlabeled': -1}
         self.preprocessing = preprocessing
 
+        if not hasattr(self, 'elem_index'):
+            raise ValueError(
+                "Child class of MRIDataset must set elem_index attribute.")
+        if not hasattr(self, 'mode'):
+            raise ValueError(
+                "Child class of MRIDataset must set mode attribute.")
+
         # Check the format of the tsv file here
         if isinstance(data_file, str):
             self.df = pd.read_csv(data_file, sep='\t')
@@ -37,15 +46,75 @@ class MRIDataset(Dataset):
         else:
             raise Exception('The argument data_file is not of correct type.')
 
-        if ('diagnosis' not in list(self.df.columns.values)) or ('session_id' not in list(self.df.columns.values)) or \
-           ('participant_id' not in list(self.df.columns.values)):
+        mandatory_col = {"participant_id", "session_id", "diagnosis"}
+        if self.elem_index == "mixed":
+            mandatory_col.add("%s_id" % self.mode)
+
+        if not mandatory_col.issubset(set(self.df.columns.values)):
             raise Exception("the data file is not in the correct format."
-                            "Columns should include ['participant_id', 'session_id', 'diagnosis']")
+                            "Columns should include %s" % mandatory_col)
 
         self.elem_per_image = self.num_elem_per_image()
 
     def __len__(self):
         return len(self.df) * self.elem_per_image
+
+    def _get_path(self, participant, session, mode="image"):
+
+        if self.preprocessing == "t1-linear":
+            image_path = path.join(self.caps_directory, 'subjects', participant, session,
+                                   'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
+                                   participant + '_' + session
+                                   + FILENAME_TYPE['cropped'] + '.pt')
+        elif self.preprocessing == "t1-extensive":
+            image_path = path.join(self.caps_directory, 'subjects', participant, session,
+                                   'deeplearning_prepare_data', '%s_based' % mode, 't1_extensive',
+                                   participant + '_' + session
+                                   + FILENAME_TYPE['skull_stripped'] + '.pt')
+        else:
+            raise NotImplementedError(
+                "The path to preprocessing %s is not implemented" % self.preprocessing)
+
+        return image_path
+
+    def _get_meta_data(self, idx):
+        image_idx = idx // self.elem_per_image
+        participant = self.df.loc[image_idx, 'participant_id']
+        session = self.df.loc[image_idx, 'session_id']
+
+        if self.elem_index is None:
+            elem_idx = idx % self.elem_per_image
+        elif self.elem_index == "mixed":
+            elem_idx = self.df.loc[image_idx, '%s_id' % self.mode]
+        else:
+            elem_idx = self.elem_index
+
+        diagnosis = self.df.loc[image_idx, 'diagnosis']
+        label = self.diagnosis_code[diagnosis]
+
+        return participant, session, elem_idx, label
+
+    def _get_full_image(self):
+        from ..data.utils import find_image_path as get_nii_path
+        import nibabel as nib
+
+        participant_id = self.df.loc[0, 'participant_id']
+        session_id = self.df.loc[0, 'session_id']
+
+        try:
+            image_path = self._get_path(participant_id, session_id, "image")
+            image = torch.load(image_path)
+        except FileNotFoundError:
+            image_path = get_nii_path(
+                self.caps_directory,
+                participant_id,
+                session_id,
+                preprocessing=self.preprocessing)
+            image_nii = nib.load(image_path)
+            image_np = image_nii.get_fdata()
+            image = ToTensor()(image_np)
+
+        return image
 
     @abc.abstractmethod
     def __getitem__(self, idx):
@@ -64,38 +133,24 @@ class MRIDatasetImage(MRIDataset):
         """
         Args:
             caps_directory (string): Directory of all the images.
-            data_file (string): File name of the train/test split file.
-            preprocessing (string): Defines the path to the data in CAPS
-            transform (callable, optional): Optional transform to be applied on a sample.
+            data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
+            preprocessing (string): Defines the path to the data in CAPS.
+            transformations (callable, optional): Optional transform to be applied on a sample.
 
         """
+        self.elem_index = None
+        self.mode = "image"
         super().__init__(caps_directory, data_file, preprocessing, transformations)
 
     def __getitem__(self, idx):
-        img_name = self.df.loc[idx, 'participant_id']
-        img_label = self.df.loc[idx, 'diagnosis']
-        sess_name = self.df.loc[idx, 'session_id']
-        # Not in BIDS but in CAPS
-        if self.preprocessing == "t1-linear":
-            image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                   'deeplearning_prepare_data', 'image_based', 't1_linear',
-                                   img_name + '_' + sess_name
-                                   + FILENAME_TYPE['cropped'] + '.pt')
-        elif self.preprocessing == "t1-extensive":
-            image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                   't1', 'spm', 'segmentation', 'normalized_space',
-                                   img_name + '_' + sess_name
-                                   + FILENAME_TYPE['skull_stripped'] + '.pt')
-        else:
-            raise NotImplementedError(
-                "The path to preprocessing %s is not implemented" % self.preprocessing)
+        participant, session, _, label = self._get_meta_data(idx)
 
+        image_path = self._get_path(participant, session, "image")
         image = torch.load(image_path)
-        label = self.diagnosis_code[img_label]
 
         if self.transformations:
             image = self.transformations(image)
-        sample = {'image': image, 'label': label, 'participant_id': img_name, 'session_id': sess_name,
+        sample = {'image': image, 'label': label, 'participant_id': participant, 'session_id': session,
                   'image_path': image_path}
 
         return sample
@@ -111,78 +166,51 @@ class MRIDatasetPatch(MRIDataset):
         """
         Args:
             caps_directory (string): Directory of all the images.
-            data_file (string): File name of the train/test split file.
-            transformations (callable, optional): Optional transformations to be applied on a sample.
+            data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
+            preprocessing (string): Defines the path to the data in CAPS.
+            transformations (callable, optional): Optional transform to be applied on a sample.
+            prepare_dl (bool): If true pre-extracted patches will be loaded.
+            patch_index (int, optional): If a value is given the same patch location will be extracted for each image.
+                else the dataset will load all the patches possible for one image.
+            patch_size (int): size of the regular cubic patch.
+            stride_size (int): length between the centers of two patches.
 
         """
         self.patch_size = patch_size
         self.stride_size = stride_size
-        self.patch_index = patch_index
+        self.elem_index = patch_index
+        self.mode = "patch"
         super().__init__(caps_directory, data_file, preprocessing, transformations)
         self.prepare_dl = prepare_dl
 
-        if self.preprocessing != "t1-linear":
-            raise NotImplementedError("The preprocessing %s was not implemented for patches. "
-                                      "Raise an issue on GitHub to propose it !" % self.preprocessing)
-
     def __getitem__(self, idx):
-        sub_idx = idx // self.elem_per_image
-        img_name = self.df.loc[sub_idx, 'participant_id']
-        sess_name = self.df.loc[sub_idx, 'session_id']
-        img_label = self.df.loc[sub_idx, 'diagnosis']
-        label = self.diagnosis_code[img_label]
-        if self.patch_index is None:
-            patch_idx = idx % self.elem_per_image
-        else:
-            patch_idx = self.patch_index
+        participant, session, patch_idx, label = self._get_meta_data(idx)
 
         if self.prepare_dl:
-            patch_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                   'deeplearning_prepare_data', 'patch_based', 't1_linear',
-                                   img_name + '_' + sess_name
-                                   + FILENAME_TYPE['cropped'][0:-4]
+            patch_path = path.join(self._get_path(participant, session, "patch")[0:-7]
                                    + '_patchsize-' + str(self.patch_size)
                                    + '_stride-' + str(self.stride_size)
                                    + '_patch-' + str(patch_idx) + '_T1w.pt')
 
-            patch = torch.load(patch_path)
+            image = torch.load(patch_path)
         else:
-            image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                   'deeplearning_prepare_data', 'image_based', 't1_linear',
-                                   img_name + '_' + sess_name
-                                   + FILENAME_TYPE['cropped'] + '.pt')
-            image = torch.load(image_path)
-            patch = extract_patch_from_mri(
-                image, patch_idx, self.patch_size, self.stride_size)
-
-        # check if the patch has NaN value
-        if torch.isnan(patch).any():
-            print("Double check, this patch has NaN value: %s" %
-                  str(img_name + '_' + sess_name + str(patch_idx)))
-            patch[torch.isnan(patch)] = 0
+            image_path = self._get_path(participant, session, "image")
+            full_image = torch.load(image_path)
+            image = self.extract_patch_from_mri(full_image, patch_idx)
 
         if self.transformations:
-            patch = self.transformations(patch)
+            image = self.transformations(image)
 
-        sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(patch_idx),
-                  'image': patch, 'label': label,
-                  'participant_id': img_name, 'session_id': sess_name,
-                  'patch_id': patch_idx}
+        sample = {'image': image, 'label': label,
+                  'participant_id': participant, 'session_id': session, 'patch_id': patch_idx}
 
         return sample
 
     def num_elem_per_image(self):
-        if self.patch_index is not None:
+        if self.elem_index is not None:
             return 1
 
-        img_name = self.df.loc[0, 'participant_id']
-        sess_name = self.df.loc[0, 'session_id']
-
-        image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                               'deeplearning_prepare_data', 'image_based', 't1_linear',
-                               img_name + '_' + sess_name
-                               + FILENAME_TYPE['cropped'] + '.pt')
-        image = torch.load(image_path)
+        image = self._get_full_image()
 
         patches_tensor = image.unfold(1, self.patch_size, self.stride_size
                                       ).unfold(2, self.patch_size, self.stride_size
@@ -194,6 +222,20 @@ class MRIDatasetPatch(MRIDataset):
         num_patches = patches_tensor.shape[0]
         return num_patches
 
+    def extract_patch_from_mri(self, image_tensor, index_patch):
+
+        patches_tensor = image_tensor.unfold(1, self.patch_size, self.stride_size
+                                             ).unfold(2, self.patch_size, self.stride_size
+                                                      ).unfold(3, self.patch_size, self.stride_size).contiguous()
+        patches_tensor = patches_tensor.view(-1,
+                                             self.patch_size,
+                                             self.patch_size,
+                                             self.patch_size)
+        extracted_patch = patches_tensor[index_patch, ...].unsqueeze_(
+            0).clone()
+
+        return extracted_patch
+
 
 class MRIDatasetRoi(MRIDataset):
 
@@ -202,317 +244,166 @@ class MRIDatasetRoi(MRIDataset):
         """
         Args:
             caps_directory (string): Directory of all the images.
-            data_file (string): File name of the train/test split file.
-            transformations (callable, optional): Optional transformations to be applied on a sample.
-            prepare_dl (bool): If True the outputs of extract preprocessing are used, else the whole
-            MRI is loaded.
+            data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
+            preprocessing (string): Defines the path to the data in CAPS.
+            transformations (callable, optional): Optional transform to be applied on a sample.
+            prepare_dl (bool): If true pre-extracted patches will be loaded.
 
         """
+        self.elem_index = None
+        self.mode = "roi"
         super().__init__(caps_directory, data_file, preprocessing, transformations)
         self.prepare_dl = prepare_dl
 
-        if self.preprocessing != "t1-linear":
-            raise NotImplementedError("The preprocessing %s was not implemented for ROI. "
-                                      "Raise an issue on GitHub to propose it !" % self.preprocessing)
-
     def __getitem__(self, idx):
-        sub_idx = idx // self.elem_per_image
-        img_name = self.df.loc[sub_idx, 'participant_id']
-        sess_name = self.df.loc[sub_idx, 'session_id']
-        img_label = self.df.loc[sub_idx, 'diagnosis']
-        label = self.diagnosis_code[img_label]
+        participant, session, roi_idx, label = self._get_meta_data(idx)
 
-        # 1 is left hippocampus, 0 is right
-        left_is_odd = idx % self.elem_per_image
         if self.prepare_dl:
             raise NotImplementedError(
                 'The extraction of ROIs prior to training is not implemented.')
 
         else:
-            image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                   'deeplearning_prepare_data', 'image_based', 't1_linear',
-                                   img_name + '_' + sess_name
-                                   + FILENAME_TYPE['cropped'] + '.pt')
+            image_path = self._get_path(participant, session, "image")
             image = torch.load(image_path)
-            patch = extract_roi_from_mri(image, left_is_odd)
-
-        # check if the patch has NaN value
-        if torch.isnan(patch).any():
-            print("Double check, this patch has NaN value: %s" %
-                  str(img_name + '_' + sess_name + str(left_is_odd)))
-            patch[torch.isnan(patch)] = 0
+            patch = self.extract_roi_from_mri(image, roi_idx)
 
         if self.transformations:
             patch = self.transformations(patch)
 
-        sample = {'image_id': img_name + '_' + sess_name + '_patch' + str(left_is_odd),
-                  'image': patch, 'label': label,
-                  'participant_id': img_name, 'session_id': sess_name,
-                  'roi_id': left_is_odd}
+        sample = {'image': patch, 'label': label,
+                  'participant_id': participant, 'session_id': session,
+                  'roi_id': roi_idx}
 
         return sample
 
     def num_elem_per_image(self):
         return 2
 
+    def extract_roi_from_mri(self, image_tensor, left_is_odd):
+        """
+
+        :param image_tensor: (Tensor) the tensor of the image.
+        :param left_is_odd: (int) if 1 the left hippocampus is extracted, else the right one.
+        :return: Tensor of the extracted hippocampus
+        """
+
+        if self.preprocessing == "t1-linear":
+            if left_is_odd == 1:
+                # the center of the left hippocampus
+                crop_center = (61, 96, 68)
+            else:
+                # the center of the right hippocampus
+                crop_center = (109, 96, 68)
+        else:
+            raise NotImplementedError("The extraction of hippocampi was not implemented for "
+                                      "preprocessing %s" % self.preprocessing)
+        crop_size = (50, 50, 50)  # the output cropped hippocampus size
+
+        extracted_roi = image_tensor[
+            :,
+            crop_center[0] - crop_size[0] // 2: crop_center[0] + crop_size[0] // 2:,
+            crop_center[1] - crop_size[1] // 2: crop_center[1] + crop_size[1] // 2:,
+            crop_center[2] - crop_size[2] // 2: crop_center[2] + crop_size[2] // 2:
+        ].clone()
+
+        return extracted_roi
+
 
 class MRIDatasetSlice(MRIDataset):
-    """
-    This class reads the CAPS of image processing pipeline of DL
-
-    To note, this class processes the MRI to be RGB for transfer learning.
-
-    Return: a Pytorch Dataset objective
-    """
 
     def __init__(self, caps_directory, data_file, preprocessing="t1-linear",
                  transformations=None, mri_plane=0, prepare_dl=False,
-                 discarded_slices=20):
+                 discarded_slices=20, mixed=False):
         """
         Args:
-            caps_directory (string): the output folder of image processing pipeline.
-            transformations (callable, optional): if the data sample should be done some transformations or not, such as resize the image.
-            discarded_slices (int or list): slices discarded at the beginning and the end of the volume.
-
-        To note, for each view:
-            Axial_view = "[:, :, slice_i]"
-            Coronal_veiw = "[:, slice_i, :]"
-            Saggital_view= "[slice_i, :, :]"
-
+            caps_directory (string): Directory of all the images.
+            data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
+            preprocessing (string): Defines the path to the data in CAPS.
+            transformations (callable, optional): Optional transform to be applied on a sample.
+            prepare_dl (bool): If true pre-extracted patches will be loaded.
+            mri_plane (int): Defines which mri plane is used for slice extraction.
+            discarded_slices (int or list): number of slices discarded at the beginning and the end of the image.
+                If one single value is given, the same amount is discarded at the beginning and at the end.
+            mixed (bool): If True will look for a 'slice_id' column in the input DataFrame to load each slice
+                independently.
         """
         # Rename MRI plane
         self.mri_plane = mri_plane
-        if mri_plane == 0:
-            self.slice_direction = 'sag'
-        elif mri_plane == 1:
-            self.slice_direction = 'cor'
-        elif mri_plane == 2:
-            self.slice_direction = 'axi'
+        self.direction_list = ['sag', 'cor', 'axi']
+        if self.mri_plane >= len(self.direction_list):
+            raise ValueError(
+                "mri_plane value %i > %i" %
+                (self.mri_plane, len(
+                    self.direction_list)))
 
         # Manage discarded_slices
-        if type(discarded_slices) is int:
+        if isinstance(discarded_slices, int):
             discarded_slices = [discarded_slices, discarded_slices]
-        if type(discarded_slices) is list and len(discarded_slices) == 1:
+        if isinstance(discarded_slices, list) and len(discarded_slices) == 1:
             discarded_slices = discarded_slices * 2
         self.discarded_slices = discarded_slices
 
+        if mixed:
+            self.elem_index = "mixed"
+        else:
+            self.elem_index = None
+
+        self.mode = "slice"
         super().__init__(caps_directory, data_file, preprocessing, transformations)
         self.prepare_dl = prepare_dl
 
-        if self.preprocessing != "t1-linear":
-            raise NotImplementedError("The preprocessing %s was not implemented for slices. "
-                                      "Raise an issue on GitHub to propose it !" % self.preprocessing)
-
     def __getitem__(self, idx):
-        sub_idx = idx // self.elem_per_image
-        img_name = self.df.loc[sub_idx, 'participant_id']
-        sess_name = self.df.loc[sub_idx, 'session_id']
-        img_label = self.df.loc[sub_idx, 'diagnosis']
-        label = self.diagnosis_code[img_label]
-        slice_idx = idx % self.elem_per_image + self.discarded_slices[0]
+        participant, session, slice_idx, label = self._get_meta_data(idx)
+        slice_idx = slice_idx + self.discarded_slices[0]
 
         if self.prepare_dl:
             # read the slices directly
-            slice_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                   'deeplearning_prepare_data', 'slice_based', 't1_linear',
-                                   img_name + '_' + sess_name
-                                   + FILENAME_TYPE['cropped'][0:-4]
-                                   + '_axis-' + self.slice_direction
+            slice_path = path.join(self._get_path(participant, session, "slice")[0:-7]
+                                   + '_axis-%s' % self.direction_list[self.mri_plane]
                                    + '_channel-rgb_slice-%i_T1w.pt' % slice_idx)
-            extracted_slice = torch.load(slice_path)
+            image = torch.load(slice_path)
         else:
-            image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                   'deeplearning_prepare_data', 'image_based', 't1_linear',
-                                   img_name + '_' + sess_name
-                                   + FILENAME_TYPE['cropped'] + '.pt')
-            image = torch.load(image_path)
-            extracted_slice = extract_slice_from_mri(
-                image, slice_idx, self.mri_plane)
-
-        # check if the slice has NaN value
-        if torch.isnan(extracted_slice).any():
-            print("Slice %s has NaN values." %
-                  str(img_name + '_' + sess_name + '_%i' % slice_idx))
-            extracted_slice[torch.isnan(extracted_slice)] = 0
+            image_path = self._get_path(participant, session, "image")
+            full_image = torch.load(image_path)
+            image = self.extract_slice_from_mri(full_image, slice_idx)
 
         if self.transformations:
-            extracted_slice = self.transformations(extracted_slice)
+            image = self.transformations(image)
 
-        sample = {'image_id': img_name + '_' + sess_name + '_slice' + str(slice_idx),
-                  'image': extracted_slice, 'label': label,
-                  'participant_id': img_name, 'session_id': sess_name,
-                  'slice_id': slice_idx + 20}
+        sample = {'image': image, 'label': label,
+                  'participant_id': participant, 'session_id': session,
+                  'slice_id': slice_idx}
 
         return sample
 
     def num_elem_per_image(self):
-        if self.slice_direction == 'sag':
-            return 169 - self.discarded_slices[0] - self.discarded_slices[1]
-        elif self.slice_direction == 'cor':
-            return 208 - self.discarded_slices[0] - self.discarded_slices[1]
-        elif self.slice_direction == 'axi':
-            return 179 - self.discarded_slices[0] - self.discarded_slices[1]
+        if self.elem_index == "mixed":
+            return 1
 
+        image = self._get_full_image()
+        return image.size(self.mri_plane + 1) - \
+            self.discarded_slices[0] - self.discarded_slices[1]
 
-class MRIDatasetSliceMixed(MRIDataset):
-    """
-    This class reads the CAPS of image processing pipeline of DL. However, this is used for the bad data split strategy
-
-    To note, this class processes the MRI to be RGB for transfer learning.
-
-    Return: a Pytorch Dataset objective
-    """
-
-    def __init__(self, caps_directory, data_file,
-                 transformations=None, mri_plane=0, prepare_dl=False):
+    def extract_slice_from_mri(self, image, index_slice):
         """
-        Args:
-            caps_directory (string): the output folder of image processing pipeline.
-            transformations (callable, optional): if the data sample should be done some transformations or not, such as resize the image.
-
+        This is a function to grab one slice in each view and create a rgb image for transferring learning: duplicate the slices into R, G, B channel
+        :param image: (tensor)
+        :param index_slice: (int) index of the wanted slice
+        :return:
         To note, for each view:
-            Axial_view = "[:, :, slice_i]"
-            Coronal_veiw = "[:, slice_i, :]"
-            Saggital_view= "[slice_i, :, :]"
-
+        Axial_view = "[:, :, slice_i]"
+        Coronal_view = "[:, slice_i, :]"
+        Sagittal_view= "[slice_i, :, :]"
         """
-        super().__init__(caps_directory, data_file, 't1-linear', transformations)
-        self.mri_plane = mri_plane
-        self.prepare_dl = prepare_dl
+        image = image.squeeze(0)
+        simple_slice = image[(slice(None),) * self.mri_plane + (index_slice,)]
+        triple_slice = torch.stack((simple_slice, simple_slice, simple_slice))
 
-        if mri_plane == 0:
-            self.slice_direction = 'sag'
-        elif mri_plane == 1:
-            self.slice_direction = 'cor'
-        elif mri_plane == 2:
-            self.slice_direction = 'axi'
-
-        if self.preprocessing != "t1-linear":
-            raise NotImplementedError("The preprocessing %s was not implemented for mixed slices. "
-                                      "Raise an issue on GitHub to propose it !" % self.preprocessing)
-
-    def __getitem__(self, idx):
-        img_name = self.df.loc[idx, 'participant_id']
-        sess_name = self.df.loc[idx, 'session_id']
-        slice_name = self.df.loc[idx, 'slice_id']
-        img_label = self.df.loc[idx, 'diagnosis']
-        label = self.diagnosis_code[img_label]
-
-        if self.prepare_dl:
-            slice_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                   'deeplearning_prepare_data', 'slice_based', 't1_linear',
-                                   img_name + '_' + sess_name
-                                   + FILENAME_TYPE['cropped'][0:-4]
-                                   + '_axis-' + self.slice_direction
-                                   + '_channel-rgb_slice-' + str(slice_name) + '_T1w.pt')
-            extracted_slice = torch.load(slice_path)
-
-        else:
-            image_path = path.join(self.caps_directory, 'subjects', img_name, sess_name,
-                                   'deeplearning_prepare_data', 'image_based', 't1_linear',
-                                   img_name + '_' + sess_name
-                                   + FILENAME_TYPE['cropped'] + '.pt')
-            image = torch.load(image_path)
-            extracted_slice = extract_slice_from_mri(
-                image, slice_name, self.mri_plane)
-
-        # check if the slice has NaN value
-        if torch.isnan(extracted_slice).any():
-            print("Slice %s has NaN values." %
-                  str(img_name + '_' + sess_name + '_' + str(slice_name)))
-            extracted_slice[torch.isnan(extracted_slice)] = 0
-
-        if self.transformations:
-            extracted_slice = self.transformations(extracted_slice)
-
-        sample = {'image_id': img_name + '_' + sess_name + '_slice' + str(slice_name),
-                  'image': extracted_slice, 'label': label,
-                  'participant_id': img_name, 'session_id': sess_name,
-                  'slice_id': slice_name}
-
-        return sample
-
-    def num_elem_per_image(self):
-        return 1
+        return triple_slice
 
 
-def extract_slice_from_mri(image, index_slice, view):
-    """
-    This is a function to grab one slice in each view and create a rgb image for transferring learning: duplicate the slices into R, G, B channel
-    :param image: (tensor)
-    :param index_slice: (int) index of the wanted slice
-    :param view:
-    :return:
-    To note, for each view:
-    Axial_view = "[:, :, slice_i]"
-    Coronal_view = "[:, slice_i, :]"
-    Sagittal_view= "[slice_i, :, :]"
-    """
-
-    # reshape the tensor, delete the first dimension for slice-level
-    image_tensor = image.squeeze(0)
-
-    # sagittal
-    if view == 0:
-        slice_select = image_tensor[index_slice, :, :].clone()
-
-    # coronal
-    elif view == 1:
-        slice_select = image_tensor[:, index_slice, :].clone()
-
-    # axial
-    elif view == 2:
-        slice_select = image_tensor[:, :, index_slice].clone()
-
-    else:
-        raise ValueError(
-            "This view does not exist, please choose view in [0, 1, 2]")
-
-    extracted_slice = torch.stack((slice_select, slice_select, slice_select))
-
-    return extracted_slice
-
-
-def extract_patch_from_mri(image_tensor, index_patch, patch_size, stride_size):
-
-    # use classifiers tensor.upfold to crop the patch.
-    patches_tensor = image_tensor.unfold(1, patch_size, stride_size
-                                         ).unfold(2, patch_size, stride_size
-                                                  ).unfold(3, patch_size, stride_size).contiguous()
-    patches_tensor = patches_tensor.view(-1,
-                                         patch_size,
-                                         patch_size,
-                                         patch_size)
-    extracted_patch = patches_tensor[index_patch, ...].unsqueeze_(0).clone()
-
-    return extracted_patch
-
-
-def extract_roi_from_mri(image_tensor, left_is_odd):
-    """
-
-    :param image_tensor: (Tensor) the tensor of the image.
-    :param left_is_odd: (int) if 1 the left hippocampus is extracted, else the right one.
-    :return: Tensor of the extracted hippocampus
-    """
-
-    if left_is_odd == 1:
-        crop_center = (61, 96, 68)  # the center of the left hippocampus
-    else:
-        crop_center = (109, 96, 68)  # the center of the right hippocampus
-    crop_size = (50, 50, 50)  # the output cropped hippocampus size
-
-    extracted_roi = image_tensor[
-        :,
-        crop_center[0] - crop_size[0] // 2: crop_center[0] + crop_size[0] // 2:,
-        crop_center[1] - crop_size[1] // 2: crop_center[1] + crop_size[1] // 2:,
-        crop_center[2] - crop_size[2] // 2: crop_center[2] + crop_size[2] // 2:
-    ].clone()
-
-    return extracted_roi
-
-
-def return_dataset(mode, input_dir, data_df, preprocessing, transformations, params, cnn_index=None):
+def return_dataset(mode, input_dir, data_df, preprocessing,
+                   transformations, params, cnn_index=None):
     """
     Return appropriate Dataset according to given options.
 
@@ -734,12 +625,20 @@ def mix_slices(df_training, df_validation, mri_plane=0, val_size=0.15):
     session_list = list(df_all['session_id'])
     label_list = list(df_all['diagnosis'])
 
-    slice_participant_list = [ele for ele in participant_list for _ in range(slices_per_patient)]
-    slice_session_list = [ele for ele in session_list for _ in range(slices_per_patient)]
-    slice_label_list = [ele for ele in label_list for _ in range(slices_per_patient)]
+    slice_participant_list = [
+        ele for ele in participant_list for _ in range(slices_per_patient)]
+    slice_session_list = [
+        ele for ele in session_list for _ in range(slices_per_patient)]
+    slice_label_list = [
+        ele for ele in label_list for _ in range(slices_per_patient)]
     slice_index_list = slice_index * len(label_list)
 
-    df_final = pd.DataFrame(columns=['participant_id', 'session_id', 'slice_id', 'diagnosis'])
+    df_final = pd.DataFrame(
+        columns=[
+            'participant_id',
+            'session_id',
+            'slice_id',
+            'diagnosis'])
     df_final['participant_id'] = np.array(slice_participant_list)
     df_final['session_id'] = np.array(slice_session_list)
     df_final['slice_id'] = np.array(slice_index_list)
@@ -747,7 +646,10 @@ def mix_slices(df_training, df_validation, mri_plane=0, val_size=0.15):
 
     y = np.array(slice_label_list)
     # split the train data into training and validation set
-    skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size, random_state=10000)
+    skf_2 = StratifiedShuffleSplit(
+        n_splits=1,
+        test_size=val_size,
+        random_state=10000)
     indices = next(skf_2.split(np.zeros(len(y)), y))
     train_ind, valid_ind = indices
 
