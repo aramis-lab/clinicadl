@@ -6,9 +6,8 @@ import errno
 import torch
 import pathlib
 from clinicadl.tools.deep_learning import create_model, load_model, read_json
-from clinicadl.tools.deep_learning.data import (MinMaxNormalization,
-                                                return_dataset, get_transforms)
-from clinicadl.tools.deep_learning.cnn_utils import test, soft_voting
+from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, compute_num_cnn
+from clinicadl.tools.deep_learning.cnn_utils import test, soft_voting_to_tsvs, mode_level_to_tsvs
 import pandas as pd
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -18,7 +17,6 @@ def classify(caps_dir,
              tsv_path,
              model_path,
              prefix_output='prefix_DB',
-             output_dir=None,
              no_labels=False,
              gpu=True,
              prepare_dl=True):
@@ -43,7 +41,6 @@ def classify(caps_dir,
         print("Folder containing MRIs was not found, please verify its location.")
         raise FileNotFoundError(
             errno.ENOENT, strerror(errno.ENOENT), caps_dir)
-        print("Folder containing MRIs is not found, please verify its location")
     if not isdir(model_path):
         print("A valid model in the path was not found. Donwload them from aramislab.inria.fr")
         raise FileNotFoundError(
@@ -68,13 +65,12 @@ def classify(caps_dir,
             print("GPU classifing is not available in your system, it will use cpu.")
             gpu = False
 
-    results_df = inference_from_model(
+    inference_from_model(
         caps_dir,
         tsv_path,
         model_path,
         json_file,
         prefix_output,
-        output_dir,
         no_labels,
         gpu,
         prepare_dl)
@@ -85,7 +81,6 @@ def inference_from_model(caps_dir,
                          model_path=None,
                          json_file=None,
                          prefix=None,
-                         output_dir_arg=None,
                          no_labels=False,
                          gpu=True,
                          prepare_dl=False):
@@ -129,7 +124,8 @@ def inference_from_model(caps_dir,
     parser.add_argument("model_path", type=str,
                         help="Path to the trained model folder.")
     options = parser.parse_args([model_path])
-    options = read_json(options, "CNN", json_path=json_file)
+    options = read_json(options, json_path=json_file)
+    num_cnn = compute_num_cnn(caps_dir, tsv_path, options, "classify")
     print("Load model with these options:")
     print(options)
 
@@ -138,8 +134,8 @@ def inference_from_model(caps_dir,
     options.prepare_dl = prepare_dl
     # Define the path
     currentDirectory = pathlib.Path(model_path)
-    # Search for 'fold_*' pattern
-    currentPattern = "fold_*"
+    # Search for 'fold-*' pattern
+    currentPattern = "fold-*"
 
     best_model = {
         'best_acc': 'best_balanced_accuracy',
@@ -148,59 +144,52 @@ def inference_from_model(caps_dir,
 
     # loop depending the number of folds found in the model folder
     for fold_dir in currentDirectory.glob(currentPattern):
-        split = int(str(fold_dir)[-1])
+        fold = int(str(fold_dir).split("-")[-1])
         fold_path = join(model_path, fold_dir)
-        models_path = join(fold_path, 'models')
-        full_model_path = join(models_path, best_model['best_acc'])
-        if not exists(join(full_model_path, 'model_best.pth.tar')) and not options.mode == 'patch':
-            raise FileNotFoundError(
-                errno.ENOENT,
-                strerror(errno.ENOENT),
-                join(full_model_path, 'model_best.pth.tar'))
+        model_path = join(fold_path, 'models')
 
-        if options.mode == 'patch' and options.mode_task == 'multicnn':
-            full_model_path = models_path
-            for cnn_dir in listdir(models_path):
-                if not exists(join(models_path, cnn_dir, best_model['best_acc'], 'model_best.pth.tar')):
+        if options.mode_task == 'multicnn':
+            for cnn_dir in listdir(model_path):
+                if not exists(join(model_path, cnn_dir, best_model['best_acc'], 'model_best.pth.tar')):
                     raise FileNotFoundError(
                         errno.ENOENT,
                         strerror(errno.ENOENT),
-                        join(models_path,
+                        join(model_path,
                              cnn_dir,
                              best_model['best_acc'],
                              'model_best.pth.tar')
                     )
 
-        if output_dir_arg is None:
-            output_dir = join(fold_path, 'cnn_classification', best_model['best_acc'])
-            if not exists(output_dir):
-                makedirs(join(fold_path, 'cnn_classification', best_model['best_acc']))
         else:
-            output_dir = output_dir_arg
-            if not exists(output_dir):
+            full_model_path = join(model_path, best_model['best_acc'])
+            if not exists(join(full_model_path, 'model_best.pth.tar')):
                 raise FileNotFoundError(
-                    errno.ENOENT, strerror(errno.ENOENT), output_dir)
+                    errno.ENOENT,
+                    strerror(errno.ENOENT),
+                    join(full_model_path, 'model_best.pth.tar'))
+
+        performance_dir = join(fold_path, 'cnn_classification', best_model['best_acc'])
+        if not exists(performance_dir):
+            makedirs(performance_dir)
 
         # It launch the corresponding function, depending on the mode.
         infered_classes, metrics = inference_from_model_generic(
             caps_dir,
             tsv_path,
-            full_model_path,
-            options)
+            model_path,
+            options,
+            num_cnn=num_cnn
+        )
 
         # Prepare outputs
         usr_prefix = str(prefix)
 
         # Write output files at %mode level
-        print("Prediction results and metrics are written in the"
-              "following folder: %s" % output_dir)
+        print("Prediction results and metrics are written in the "
+              "following folder: %s" % performance_dir)
 
-        output_filename = join(output_dir,
-                               usr_prefix + '_%s_level_predictions.tsv' % options.mode)
-        output_metrics_filename = join(output_dir,
-                                       usr_prefix + '_%s_level_metrics.tsv' % options.mode)
-        infered_classes.to_csv(output_filename, index=False, sep='\t')
-        metrics.to_csv(output_metrics_filename, index=False, sep='\t')
+        mode_level_to_tsvs(currentDirectory, infered_classes, metrics, fold, best_model['best_acc'], options.mode,
+                           dataset=usr_prefix)
 
         # Soft voting
         if hasattr(options, 'selection_threshold'):
@@ -211,33 +200,12 @@ def inference_from_model(caps_dir,
         # Write files at the image level (for patch, roi and slice).
         # It assumes the existance of validation files to perform soft-voting
         if options.mode in ["patch", "roi", "slice"]:
-            if options.mode_task == 'multicnn':
-                validation_df = pd.DataFrame()
-                for cnn in range(options.num_cnn):
-                    tsv_path = join(fold_path, 'cnn_classification', 'cnn-%i' % cnn, best_model['best_acc'],
-                                    'validation_%s_level_result.tsv' % options.mode)
-                    cnn_df = pd.read_csv(tsv_path, sep='\t')
-                    validation_df = pd.concat([validation_df, cnn_df])
-                validation_df.reset_index(drop=True, inplace=True)
-            else:
-                result_tsv = join(
-                    output_dir,
-                    'validation_%s_level_result.tsv' % options.mode)
-                validation_df = pd.read_csv(result_tsv, sep='\t')
-
-            df_final, metrics = soft_voting(infered_classes, validation_df,
-                                            options.mode,
-                                            selection_threshold=selection_thresh)
-            df_final.to_csv(join(output_dir, usr_prefix + '_image_level_predictions.tsv'),
-                            index=False, sep='\t')
-            pd.DataFrame(metrics, index=[0]).to_csv(join(
-                output_dir, usr_prefix + '_image_level_metrics.tsv'),
-                index=False, sep='\t')
-
-    return infered_classes
+            soft_voting_to_tsvs(currentDirectory, fold, best_model["best_acc"], options.mode,
+                                usr_prefix, num_cnn=num_cnn, selection_threshold=selection_thresh)
 
 
-def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options):
+def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
+                                 num_cnn=None, selection="best_balanced_accuracy"):
     '''
     Inference using an image/subject CNN model
 
@@ -262,7 +230,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options):
         predictions_df = pd.DataFrame()
         metrics_df = pd.DataFrame()
 
-        for n in range(model_options.num_cnn):
+        for n in range(num_cnn):
 
             dataset = return_dataset(
                 model_options.mode,
@@ -283,7 +251,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options):
             # load the best trained model during the training
             model, best_epoch = load_model(
                 model,
-                join(model_path, 'cnn-%i' % n, 'best_balanced_accuracy'),
+                join(model_path, 'cnn-%i' % n, selection),
                 gpu,
                 filename='model_best.pth.tar')
 
@@ -304,7 +272,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options):
 
         # Load model from path
         best_model, best_epoch = load_model(
-            model, model_path,
+            model, join(model_path, selection),
             gpu, filename='model_best.pth.tar')
 
         # Read/localize the data

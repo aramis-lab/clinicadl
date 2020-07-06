@@ -45,7 +45,6 @@ class Parameters:
             evaluation_steps: int = 0,
             num_workers: int = 1,
             transfer_learning_path: str = None,
-            transfer_learning_autoencoder: str = None,
             transfer_learning_selection: str = "best_acc",
             patch_size: int = 50,
             stride_size: int = 50,
@@ -54,8 +53,8 @@ class Parameters:
             mri_plane: int = 0,
             discarded_slices: int = 20,
             prepare_dl: bool = False,
-            visualization: bool = False,
-            init_state: str = None):
+            visualization: bool = False
+    ):
         """
         Optional parameters used for training CNN.
         transfer_learning_difference: Difference of size between the pretrained
@@ -113,7 +112,6 @@ class Parameters:
         self.evaluation_steps = evaluation_steps
         self.num_workers = num_workers
         self.transfer_learning_path = transfer_learning_path
-        self.transfer_learning_autoencoder = transfer_learning_autoencoder
         self.transfer_learning_selection = transfer_learning_selection
         self.patch_size = patch_size
         self.stride_size = stride_size
@@ -123,16 +121,6 @@ class Parameters:
         self.prepare_dl = prepare_dl
         self.visualization = visualization
         self.selection_threshold = selection_threshold
-        self.init_state = init_state
-        self.set_default_init_state()
-
-    def set_default_init_state(self):
-        """Sets init state according to experiments performed in AD-DL"""
-        if self.init_state is None:
-            if self.mode in ["patch", "roi"]:
-                self.init_state = "same"
-            else:
-                self.init_state = "random"
 
 
 def check_and_clean(d):
@@ -144,14 +132,13 @@ def check_and_clean(d):
     os.makedirs(d)
 
 
-def commandline_to_json(commandline, task_type):
+def commandline_to_json(commandline):
     """
     This is a function to write the python argparse object into a json file.
     This helps for DL when searching for hyperparameters
 
     :param commandline: a tuple contain the output of
                         `parser.parse_known_args()`
-    :param task_type: task type (autoencoder, cnn)                   
 
     :return:
     """
@@ -179,19 +166,23 @@ def commandline_to_json(commandline, task_type):
         del commandline_arg_dic['output_dir']
 
     # save to json file
-    json = json.dumps(commandline_arg_dic, skipkeys=True)
-    print("Path of json file:", os.path.join(output_dir, "commandline_" + task_type + ".json"))
-    f = open(os.path.join(output_dir, "commandline_" + task_type + ".json"), "w")
+    json = json.dumps(commandline_arg_dic, skipkeys=True, indent=4)
+    print("Path of json file:", os.path.join(output_dir, "commandline.json"))
+    f = open(os.path.join(output_dir, "commandline.json"), "w")
     f.write(json)
     f.close()
 
 
-def read_json(options, task_type, json_path=None, test=False):
+def read_json(options, json_path=None, test=False):
     """
     Read a json file to update python argparse Namespace.
 
-    :param options: (argparse.Namespace) options of the model
-    :return: options (args.Namespace) options of the model updated
+    Args:
+        options: (argparse.Namespace) options of the model.
+        json_path: (str) If given path to the json file, else found with options.model_path.
+        test: (bool) If given the reader will ignore some options specific to data.
+    Returns:
+        options (args.Namespace) options of the model updated
     """
     import json
     from os import path
@@ -200,7 +191,7 @@ def read_json(options, task_type, json_path=None, test=False):
     evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
     prep_compatibility_dict = {"mni": "t1-extensive", "linear": "t1-linear"}
     if json_path is None:
-        json_path = path.join(options.model_path, 'commandline_' + task_type + '.json')
+        json_path = path.join(options.model_path, 'commandline.json')
 
     with open(json_path, "r") as f:
         json_data = json.load(f)

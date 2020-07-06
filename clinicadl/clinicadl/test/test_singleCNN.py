@@ -14,11 +14,10 @@ from clinicadl.tools.deep_learning.cnn_utils import test, mode_level_to_tsvs, so
 
 def test_cnn(output_dir, data_loader, subset_name, split, criterion, model_options, gpu=False):
 
-    for selection in ["best_acc", "best_loss"]:
+    for selection in ["best_balanced_accuracy", "best_loss"]:
         # load the best trained model during the training
         model = create_model(model_options.model, gpu, dropout=model_options.dropout)
-        model, best_epoch = load_model(model, os.path.join(output_dir, 'best_model_dir', "fold_%i" % split,
-                                                           'CNN', selection),
+        model, best_epoch = load_model(model, os.path.join(output_dir, 'fold-%i' % split, 'models', selection),
                                        gpu=gpu, filename='model_best.pth.tar')
 
         results_df, metrics = test(model, data_loader, gpu, criterion, model_options.mode)
@@ -66,7 +65,7 @@ if __name__ == "__main__":
     # Read json
     model_options = argparse.Namespace()
     json_path = path.join(options.model_path, "commandline_cnn.json")
-    model_options = read_json(model_options, "cnn", json_path=json_path)
+    model_options = read_json(model_options, json_path=json_path)
 
     # Load test data
     if options.diagnoses is None:

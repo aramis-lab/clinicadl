@@ -5,7 +5,6 @@ import torch
 from copy import deepcopy
 
 from .modules import PadMaxPool3d, CropMaxUnpool3d, Flatten, Reshape
-from .iotools import load_model
 
 
 class AutoEncoder(nn.Module):
@@ -121,23 +120,27 @@ class AutoEncoder(nn.Module):
         return inv_layers
 
 
-def transfer_learning(model, split, transfer_learning_autoencoder=True, source_path=None, gpu=False,
-                      selection="best_acc", cnn_index=None):
+def transfer_learning(model, split, source_path=None, gpu=False,
+                      selection="best_balanced_accuracy", cnn_index=None):
     """
     Allows transfer learning from a CNN or an autoencoder to a CNN
 
     :param model: (nn.Module) the target CNN of the transfer learning.
     :param split: (int) the fold number (for serialization purpose).
-    :param transfer_learning_autoencoder: (bool) If True (resp. False), the initialization is from an AE (resp. CNN)
     :param source_path: (str) path to the source experiment.
     :param gpu: (bool) If True a GPU is used.
     :param selection: (str) chooses on which criterion the source model is selected (ex: best_loss, best_acc)
     :param cnn_index: (int) index of the CNN to be loaded (if transfer from a multi-CNN).
     :return: (nn.Module) the model after transfer learning.
     """
+    import argparse
+    from os import path
+    from .. import read_json
 
     if source_path is not None:
-        if transfer_learning_autoencoder:
+        source_commandline = argparse.Namespace()
+        source_commandline = read_json(source_commandline, json_path=path.join(source_path, "commandline.json"))
+        if source_commandline.mode_task == "autoencoder":
             print("A pretrained autoencoder is loaded at path %s" % source_path)
             model = transfer_autoencoder_weights(model, source_path, split)
 
@@ -170,8 +173,7 @@ def transfer_autoencoder_weights(model, source_path, split):
     import os
 
     decoder = AutoEncoder(model)
-    model_path = os.path.join(source_path, "best_model_dir", "fold_" + str(split), "ConvAutoencoder",
-                              "best_loss", "model_best.pth.tar")
+    model_path = os.path.join(source_path, 'fold-%i' % split, 'models', "best_loss", "model_best.pth.tar")
 
     initialize_other_autoencoder(decoder, model_path, difference=0)
 
@@ -183,7 +185,7 @@ def transfer_autoencoder_weights(model, source_path, split):
     return model
 
 
-def transfer_cnn_weights(model, source_path, split, selection="best_acc", cnn_index=None):
+def transfer_cnn_weights(model, source_path, split, selection="best_balanced_accuracy", cnn_index=None):
     """
     Set the weights of the model according to the CNN at source path.
 
@@ -198,11 +200,10 @@ def transfer_cnn_weights(model, source_path, split, selection="best_acc", cnn_in
     import os
     import torch
 
-    model_path = os.path.join(source_path, "best_model_dir", "fold_%i" % split, "CNN",
-                              selection, "model_best.pth.tar")
+    model_path = os.path.join(source_path, "fold-%i" % split, "models", selection, "model_best.pth.tar")
     if cnn_index is not None and not os.path.exists(model_path):
         print("Transfer learning from multi-CNN, cnn-%i" % cnn_index)
-        model_path = os.path.join(source_path, "best_model_dir", "fold_%i" % split, "cnn-%i" % cnn_index,
+        model_path = os.path.join(source_path, "fold_%i" % split, "models", "cnn-%i" % cnn_index,
                                   selection, "model_best.pth.tar")
     results = torch.load(model_path)
     model.load_state_dict(results['model'])

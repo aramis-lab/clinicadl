@@ -11,7 +11,6 @@ def create_model(model_name, gpu=False, **kwargs):
 
     :param model_name: (str) the name of the model (corresponding exactly to the name of the class).
     :param gpu: (bool) if True a gpu is used.
-    :param init_state: (str) If 'same' will load
     :return: (Module) the model object
     """
 
@@ -53,35 +52,10 @@ def create_autoencoder(model_name, gpu=False, transfer_learning_path=None, diffe
     return decoder
 
 
-def save_initialization(model_name, init_dir, init_state="random", autoencoder=False, **kwargs):
-    """
-    Saves the parameters initialization of a random model created from options and initial_shape.
-
-    :param model_name: (str) the name of the model (corresponding exactly to the name of the class).
-    :param init_dir: (str) path to the parent directory containing initialization state of the model.
-    :param init_state: (str) If 'same' a state will be saved to be loaded at each training.
-    :return: None
-    """
-    from os import path
-
-    if init_state == 'same' and not path.exists(path.join(init_dir, "init.pth.tar")):
-        model = create_model(model_name, **kwargs)
-        if autoencoder:
-            model = AutoEncoder(model)
-        init_dict = {"model": model.state_dict(),
-                     "epoch": -1,
-                     "valid_acc": None,
-                     "valid_loss": None}
-        save_checkpoint(init_dict, False, False, init_dir, filename="init.pth.tar")
-
-
-def init_model(model_name, init_dir, init_state="random", autoencoder=False, gpu=False, **kwargs):
+def init_model(model_name, autoencoder=False, gpu=False, **kwargs):
 
     model = create_model(model_name, gpu=gpu, **kwargs)
     if autoencoder:
         model = AutoEncoder(model)
-
-    if init_state == 'same':
-        model, _ = load_model(model, init_dir, gpu, filename="init.pth.tar")
 
     return model
