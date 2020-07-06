@@ -364,9 +364,9 @@ def train_func(args):
     else:
         print('Mode not detected in clinicadl')
 
+
 # Function to dispatch command line options from classify to corresponding
 # function
-
 def classify_func(args):
     from .classify.inference import classify
 
@@ -380,9 +380,9 @@ def classify_func(args):
         prepare_dl=args.use_extracted_features
     )
 
+
 # Functions to dispatch command line options from tsvtool to corresponding
 # function
-
 def tsv_restrict_func(args):
     from .tools.tsv.restriction import aibl_restriction, oasis_restriction
 
@@ -995,9 +995,9 @@ def parse_command_line():
                 should be the same obtained during the training.''',
         default=None)
     classify_parser.add_argument(
-        '-pre', '--prefix_output',
+        'prefix_output',
         help='Prefix to name the files resulting from the classify task.',
-        type=str, default='prefix_DB')
+        type=str)
     classify_parser.add_argument(
         '-nl', '--no_labels', action='store_true',
         help='Add this flag if your dataset does not contain a ground truth.',
