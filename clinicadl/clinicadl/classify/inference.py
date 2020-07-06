@@ -21,14 +21,21 @@ def classify(caps_dir,
              gpu=True,
              prepare_dl=True):
     """
-    This function verify the input folders, and the existance of the json file
+    This function verifies the input folders, and the existence of the json file
     then it launch the inference stage from a specific model.
 
-    Parameters:
+    It writes the outputs in <model_path>/fold-<fold>/cnn_classification.
 
-    params : class clinicadl.tools.dee_learning.iotools.Parameters
-
-    Returns:
+    Args:
+        caps_dir: folder containing the tensor files (.pt version of MRI)
+        tsv_path: file with the name of the MRIs to process (single or multiple)
+        model_path: file with the model (pth format).
+        prefix_output: prefix of all classification outputs.
+        no_labels: by default is false. In that case, output writes a file named
+        measurements.tsv
+        gpu: if true, it uses gpu.
+        prepare_dl: if true, uses extracted patches/slices otherwise extract them
+        on-the-fly.
 
     """
 
@@ -95,24 +102,21 @@ def inference_from_model(caps_dir,
     level and also for multicnn.
 
     Args:
-
-    caps_dir: folder containing the tensor files (.pt version of MRI)
-    tsv_path: file with the name of the MRIs to process (single or multiple)
-    model_path: file with the model (pth format).
-    json_file: file containing the training parameters.
-    output_dir_arg: folder where results are stored. If None it uses current
-    structure.
-    no_labels: by default is false. In that case, output writes a file named
-    measurements.tsv
-    gpu: if true, it uses gpu.
-    prepare_dl: if true, uses extracted patches/slices otherwise extract them
-    on-the-fly.
+        caps_dir: folder containing the tensor files (.pt version of MRI)
+        tsv_path: file with the name of the MRIs to process (single or multiple)
+        model_path: file with the model (pth format).
+        json_file: file containing the training parameters.
+        prefix: prefix of all classification outputs.
+        no_labels: by default is false. In that case, output writes a file named
+        measurements.tsv
+        gpu: if true, it uses gpu.
+        prepare_dl: if true, uses extracted patches/slices otherwise extract them
+        on-the-fly.
 
     Returns:
-
-    Files written in the output folder with prediction results and metrics. By
-    default the output folder is named cnn_classification and it is inside the
-    model_folder.
+        Files written in the output folder with prediction results and metrics. By
+        default the output folder is named cnn_classification and it is inside the
+        model_folder.
 
     Raises:
 
