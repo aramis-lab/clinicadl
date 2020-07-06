@@ -35,8 +35,8 @@ if __name__ == "__main__":
     # Read json
     model_options = argparse.Namespace()
     json_path = path.join(options.model_path, "commandline_cnn.json")
-    model_options = read_json(model_options, "cnn", json_path=json_path)
-    num_cnn = compute_num_cnn(model_options, data="train")
+    model_options = read_json(model_options, json_path=json_path)
+    num_cnn = compute_num_cnn(model_options.input_dir, model_options.tsv_path, model_options, data="train")
 
     transformations = get_transforms(model_options.mode, model_options.minmaxnormalization)
     criterion = nn.CrossEntropyLoss()

@@ -4,7 +4,7 @@ import os
 import torch
 from torch.utils.data import DataLoader
 
-from ..tools.deep_learning.models import transfer_learning, save_initialization, init_model
+from ..tools.deep_learning.models import transfer_learning, init_model
 from ..tools.deep_learning.data import (get_transforms,
                                         load_data,
                                         return_dataset,
@@ -27,11 +27,9 @@ def train_multi_cnn(params):
     of the last epoch that was completed before the crash.
     """
 
-    init_path = os.path.join(params.output_dir, 'best_model_dir', 'CNN')
-    save_initialization(params.model, init_path, init_state=params.init_state, dropout=params.dropout)
     transformations = get_transforms(params.mode, params.minmaxnormalization)
 
-    num_cnn = compute_num_cnn(params, data="train")
+    num_cnn = compute_num_cnn(params.input_dir, params.tsv_path, params, data="train")
 
     if params.split is None:
         fold_iterator = range(params.n_splits)
@@ -72,10 +70,9 @@ def train_multi_cnn(params):
                                       )
 
             # Initialize the model
-            print('Initialization of the model')
-            model = init_model(params.model, init_path, params.init_state, gpu=params.gpu, dropout=params.dropout)
+            print('Initialization of the model %i' % cnn_index)
+            model = init_model(params.model, gpu=params.gpu, dropout=params.dropout)
             model = transfer_learning(model, fi, source_path=params.transfer_learning_path,
-                                      transfer_learning_autoencoder=params.transfer_learning_autoencoder,
                                       gpu=params.gpu, selection=params.transfer_learning_selection)
 
             # Define criterion and optimizer
@@ -86,8 +83,8 @@ def train_multi_cnn(params):
             setattr(params, 'beginning_epoch', 0)
 
             # Define output directories
-            log_dir = os.path.join(params.output_dir, "log_dir", "fold_%i" % fi, "cnn-%i" % cnn_index,)
-            model_dir = os.path.join(params.output_dir, "best_model_dir", "fold_%i" % fi, "cnn-%i" % cnn_index)
+            log_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'tensorboard_logs', "cnn-%i" % cnn_index,)
+            model_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'models', "cnn-%i" % cnn_index)
 
             print('Beginning the training task')
             train(model, train_loader, valid_loader, criterion, optimizer, False, log_dir, model_dir, params)
@@ -95,7 +92,7 @@ def train_multi_cnn(params):
             test_cnn(params.output_dir, train_loader, "train", fi, criterion, cnn_index, params, gpu=params.gpu)
             test_cnn(params.output_dir, valid_loader, "validation", fi, criterion, cnn_index, params, gpu=params.gpu)
 
-        for selection in ['best_acc', 'best_loss']:
+        for selection in ['best_balanced_accuracy', 'best_loss']:
             soft_voting_to_tsvs(
                 params.output_dir,
                 fi,

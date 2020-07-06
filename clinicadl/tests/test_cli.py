@@ -77,15 +77,15 @@ def generate_cli_commands(request):
             '/dir/caps',
             '/dir/tsv_file',
             '/dir/model_path/',
-            '--prefix_output', 'DB_XXXXX',
-            '--output_directory', '/dir/output/']
+            '--prefix_output', 'DB_XXXXX'
+        ]
         keys_output = [
             'task',
             'caps_directory',
             'tsv_path',
             'model_path',
-            'prefix_output',
-            'output_directory']
+            'prefix_output'
+        ]
 
     if request.param == 'train_slice':
         test_input = [
