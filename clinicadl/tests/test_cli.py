@@ -77,7 +77,7 @@ def generate_cli_commands(request):
             '/dir/caps',
             '/dir/tsv_file',
             '/dir/model_path/',
-            '--prefix_output', 'DB_XXXXX'
+            'DB_XXXXX'
         ]
         keys_output = [
             'task',
