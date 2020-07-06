@@ -7,7 +7,7 @@ import warnings
 import pandas as pd
 from time import time
 
-from clinicadl.tools.deep_learning.iotools import check_and_clean
+from clinicadl.tools.deep_learning.iotools import check_and_clean, return_logger
 from clinicadl.tools.deep_learning import EarlyStopping, save_checkpoint
 
 
@@ -15,7 +15,7 @@ from clinicadl.tools.deep_learning import EarlyStopping, save_checkpoint
 # CNN train / test  #
 #####################
 
-def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_dir, model_dir, options):
+def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_dir, model_dir, options, logger):
     """
     Function used to train a CNN.
     The best model and checkpoint will be found in the 'best_model_dir' of options.output_dir.
@@ -53,7 +53,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
     mean_loss_valid = None
 
     while epoch < options.epochs and not early_stopping.step(mean_loss_valid):
-        print("At %d-th epoch." % epoch)
+        logger.info("Beginning epoch %i." % epoch)
 
         model.zero_grad()
         evaluation_flag = True
@@ -87,7 +87,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                 # Evaluate the model only when no gradients are accumulated
                 if options.evaluation_steps != 0 and (i + 1) % options.evaluation_steps == 0:
                     evaluation_flag = False
-                    print('Iteration %d' % i)
 
                     _, results_train = test(model, train_loader, options.gpu, criterion)
                     mean_loss_train = results_train["total_loss"] / (len(train_loader) * train_loader.batch_size)
@@ -101,13 +100,14 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                     writer_train.add_scalar('loss', mean_loss_train, global_step)
                     writer_valid.add_scalar('balanced_accuracy', results_valid["balanced_accuracy"], global_step)
                     writer_valid.add_scalar('loss', mean_loss_valid, global_step)
-                    print("%s level training accuracy is %f at the end of iteration %d"
-                          % (options.mode, results_train["balanced_accuracy"], i))
-                    print("%s level validation accuracy is %f at the end of iteration %d"
-                          % (options.mode, results_valid["balanced_accuracy"], i))
+                    logger.info("%s level training accuracy is %f at the end of iteration %d"
+                                % (options.mode, results_train["balanced_accuracy"], i))
+                    logger.info("%s level validation accuracy is %f at the end of iteration %d"
+                                % (options.mode, results_valid["balanced_accuracy"], i))
 
             tend = time()
-        print('Mean time per batch loading (train):', total_time / len(train_loader) * train_loader.batch_size)
+        logger.debug('Mean time per batch loading: %.10f s'
+                     % (total_time / len(train_loader) * train_loader.batch_size))
 
         # If no step has been performed, raise Exception
         if step_flag:
@@ -120,7 +120,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
 
         # Always test the results and save them once at the end of the epoch
         model.zero_grad()
-        print('Last checkpoint at the end of the epoch %d' % epoch)
+        logger.debug('Last checkpoint at the end of the epoch %d' % epoch)
 
         _, results_train = test(model, train_loader, options.gpu, criterion)
         mean_loss_train = results_train["total_loss"] / (len(train_loader) * train_loader.batch_size)
@@ -134,10 +134,10 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
         writer_train.add_scalar('loss', mean_loss_train, global_step)
         writer_valid.add_scalar('balanced_accuracy', results_valid["balanced_accuracy"], global_step)
         writer_valid.add_scalar('loss', mean_loss_valid, global_step)
-        print("%s level training accuracy is %f at the end of iteration %d"
-              % (options.mode, results_train["balanced_accuracy"], len(train_loader)))
-        print("%s level validation accuracy is %f at the end of iteration %d"
-              % (options.mode, results_valid["balanced_accuracy"], len(train_loader)))
+        logger.info("%s level training accuracy is %f at the end of iteration %d"
+                    % (options.mode, results_train["balanced_accuracy"], len(train_loader)))
+        logger.info("%s level validation accuracy is %f at the end of iteration %d"
+                    % (options.mode, results_valid["balanced_accuracy"], len(train_loader)))
 
         accuracy_is_best = results_valid["balanced_accuracy"] > best_valid_accuracy
         loss_is_best = mean_loss_valid < best_valid_loss
@@ -275,7 +275,6 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
 
             del inputs, outputs, labels
             tend = time()
-        print('Mean time per batch loading (test):', total_time / len(dataloader) * dataloader.batch_size)
         results_df.reset_index(inplace=True, drop=True)
 
     if not use_labels:
@@ -380,8 +379,8 @@ def retrieve_sub_level_results(output_dir, fold, selection, mode, dataset, num_c
     return performance_df
 
 
-def soft_voting_to_tsvs(output_dir, fold, selection, mode, dataset='test', num_cnn=None, selection_threshold=None,
-                        use_labels=True):
+def soft_voting_to_tsvs(output_dir, fold, logger, selection, mode, dataset='test', num_cnn=None,
+                        selection_threshold=None, use_labels=True):
     """
     Writes soft voting results in tsv files.
 
@@ -397,7 +396,6 @@ def soft_voting_to_tsvs(output_dir, fold, selection, mode, dataset='test', num_c
             threshold is removed.
         use_labels: (bool) If True the labels are added to the final tsv
     """
-
     # Choose which dataset is used to compute the weights of soft voting.
     if dataset in ['train', 'validation']:
         validation_dataset = dataset
@@ -412,6 +410,9 @@ def soft_voting_to_tsvs(output_dir, fold, selection, mode, dataset='test', num_c
 
     df_final, metrics = soft_voting(test_df, validation_df, mode, selection_threshold=selection_threshold,
                                     use_labels=use_labels)
+
+    logger.info("image level %s balanced accuracy is %f for model selected on %s"
+                % (dataset, metrics["balanced_accuracy"], selection))
 
     df_final.to_csv(os.path.join(os.path.join(performance_path, '%s_image_level_prediction.tsv' % dataset)),
                     index=False, sep='\t')
