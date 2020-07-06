@@ -1,5 +1,4 @@
 # coding: utf8
-from abc import ABCMeta
 
 import torch
 import pandas as pd
@@ -60,9 +59,7 @@ class MRIDataset(Dataset):
     def __len__(self):
         return len(self.df) * self.elem_per_image
 
-    def _get_path(self, idx, mode="image"):
-        participant = self.df.loc[idx, 'participant_id']
-        session = self.df.loc[idx, 'session_id']
+    def _get_path(self, participant, session, mode="image"):
 
         if self.preprocessing == "t1-linear":
             image_path = path.join(self.caps_directory, 'subjects', participant, session,
@@ -92,7 +89,7 @@ class MRIDataset(Dataset):
         else:
             elem_idx = self.elem_index
 
-        diagnosis = self.df.loc[idx, 'diagnosis']
+        diagnosis = self.df.loc[image_idx, 'diagnosis']
         label = self.diagnosis_code[diagnosis]
 
         return participant, session, elem_idx, label
@@ -101,12 +98,13 @@ class MRIDataset(Dataset):
         from ..data.utils import find_image_path as get_nii_path
         import nibabel as nib
 
+        participant_id = self.df.loc[0, 'participant_id']
+        session_id = self.df.loc[0, 'session_id']
+
         try:
-            image_path = self._get_path(0, "image")
+            image_path = self._get_path(participant_id, session_id, "image")
             image = torch.load(image_path)
         except FileNotFoundError:
-            participant_id = self.df.loc[0, 'participant_id']
-            session_id = self.df.loc[0, 'session_id']
             image_path = get_nii_path(
                 self.caps_directory,
                 participant_id,
@@ -147,7 +145,7 @@ class MRIDatasetImage(MRIDataset):
     def __getitem__(self, idx):
         participant, session, _, label = self._get_meta_data(idx)
 
-        image_path = self._get_path(idx, "image")
+        image_path = self._get_path(participant, session, "image")
         image = torch.load(image_path)
 
         if self.transformations:
@@ -189,14 +187,14 @@ class MRIDatasetPatch(MRIDataset):
         participant, session, patch_idx, label = self._get_meta_data(idx)
 
         if self.prepare_dl:
-            patch_path = path.join(self._get_path(idx, "patch")[0:-7]
+            patch_path = path.join(self._get_path(participant, session, "patch")[0:-7]
                                    + '_patchsize-' + str(self.patch_size)
                                    + '_stride-' + str(self.stride_size)
                                    + '_patch-' + str(patch_idx) + '_T1w.pt')
 
             image = torch.load(patch_path)
         else:
-            image_path = self._get_path(idx, "image")
+            image_path = self._get_path(participant, session, "image")
             full_image = torch.load(image_path)
             image = self.extract_patch_from_mri(full_image, patch_idx)
 
@@ -265,7 +263,7 @@ class MRIDatasetRoi(MRIDataset):
                 'The extraction of ROIs prior to training is not implemented.')
 
         else:
-            image_path = self._get_path(idx, "image")
+            image_path = self._get_path(participant, session, "image")
             image = torch.load(image_path)
             patch = self.extract_roi_from_mri(image, roi_idx)
 
@@ -360,12 +358,12 @@ class MRIDatasetSlice(MRIDataset):
 
         if self.prepare_dl:
             # read the slices directly
-            slice_path = path.join(self._get_path(idx, "slice")[0:-7]
+            slice_path = path.join(self._get_path(participant, session, "slice")[0:-7]
                                    + '_axis-%s' % self.direction_list[self.mri_plane]
                                    + '_channel-rgb_slice-%i_T1w.pt' % slice_idx)
             image = torch.load(slice_path)
         else:
-            image_path = self._get_path(idx, "image")
+            image_path = self._get_path(participant, session, "image")
             full_image = torch.load(image_path)
             image = self.extract_slice_from_mri(full_image, slice_idx)
 
