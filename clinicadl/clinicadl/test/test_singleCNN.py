@@ -12,7 +12,7 @@ from clinicadl.tools.deep_learning import read_json, create_model, load_model
 from clinicadl.tools.deep_learning.cnn_utils import test, mode_level_to_tsvs, soft_voting_to_tsvs
 
 
-def test_cnn(output_dir, data_loader, subset_name, split, criterion, model_options, gpu=False):
+def test_cnn(output_dir, data_loader, subset_name, split, criterion, model_options, logger, gpu=False):
 
     for selection in ["best_balanced_accuracy", "best_loss"]:
         # load the best trained model during the training
@@ -21,14 +21,15 @@ def test_cnn(output_dir, data_loader, subset_name, split, criterion, model_optio
                                        gpu=gpu, filename='model_best.pth.tar')
 
         results_df, metrics = test(model, data_loader, gpu, criterion, model_options.mode)
-        print("%s level balanced accuracy is %f" % (model_options.mode, metrics['balanced_accuracy']))
+        logger.info("%s level %s balanced accuracy is %f for model selected on %s"
+                    % (model_options.mode, subset_name, metrics["balanced_accuracy"], selection))
 
         mode_level_to_tsvs(output_dir, results_df, metrics, split, selection, model_options.mode, dataset=subset_name)
 
         # Soft voting
         if model_options.mode in ["patch", "roi", "slice"]:
-            soft_voting_to_tsvs(output_dir, split, selection=selection, mode=model_options.mode, dataset=subset_name,
-                                selection_threshold=model_options.selection_threshold)
+            soft_voting_to_tsvs(output_dir, split, logger, selection=selection, mode=model_options.mode,
+                                dataset=subset_name, selection_threshold=model_options.selection_threshold)
 
 
 parser = argparse.ArgumentParser(description="Argparser for evaluation of classifiers")

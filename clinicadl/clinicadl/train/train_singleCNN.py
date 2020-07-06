@@ -9,6 +9,7 @@ from ..tools.deep_learning.data import (get_transforms,
                                         load_data,
                                         return_dataset)
 from ..tools.deep_learning.cnn_utils import train
+from ..tools.deep_learning.iotools import return_logger
 from clinicadl.test.test_singleCNN import test_cnn
 
 
@@ -25,6 +26,9 @@ def train_single_cnn(params):
     of the last epoch that was completed before the crash.
     """
 
+    main_logger = return_logger(params.verbosity, "main process")
+    train_logger = return_logger(params.verbosity, "train")
+    eval_logger = return_logger(params.verbosity, "final evaluation")
     transformations = get_transforms(params.mode, params.minmaxnormalization)
 
     if params.split is None:
@@ -39,7 +43,9 @@ def train_single_cnn(params):
             params.diagnoses,
             fi,
             n_splits=params.n_splits,
-            baseline=params.baseline)
+            baseline=params.baseline,
+            logger=main_logger
+        )
 
         data_train = return_dataset(params.mode, params.input_dir, training_df, params.preprocessing,
                                     transformations, params)
@@ -64,10 +70,11 @@ def train_single_cnn(params):
         )
 
         # Initialize the model
-        print('Initialization of the model')
+        main_logger.info('Initialization of the model')
         model = init_model(params.model, gpu=params.gpu, dropout=params.dropout)
         model = transfer_learning(model, fi, source_path=params.transfer_learning_path,
-                                  gpu=params.gpu, selection=params.transfer_learning_selection)
+                                  gpu=params.gpu, selection=params.transfer_learning_selection,
+                                  verbosity=params.verbosity)
 
         # Define criterion and optimizer
         criterion = torch.nn.CrossEntropyLoss()
@@ -82,12 +89,13 @@ def train_single_cnn(params):
         model_dir = os.path.join(
             params.output_dir, 'fold-%i' % fi, 'models')
 
-        print('Beginning the training task')
+        main_logger.debug('Beginning the training task')
         train(model, train_loader, valid_loader, criterion,
-              optimizer, False, log_dir, model_dir, params)
+              optimizer, False, log_dir, model_dir, params, train_logger)
 
         params.model_path = params.output_dir
+
         test_cnn(params.output_dir, train_loader, "train",
-                 fi, criterion, params, gpu=params.gpu)
+                 fi, criterion, params, eval_logger, gpu=params.gpu)
         test_cnn(params.output_dir, valid_loader, "validation",
-                 fi, criterion, params, gpu=params.gpu)
+                 fi, criterion, params, eval_logger, gpu=params.gpu)
