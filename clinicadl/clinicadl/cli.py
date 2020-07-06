@@ -1038,7 +1038,7 @@ def parse_command_line():
         help='''List of metrics to find the best models to evaluate. Default will
         load all models available''',
         choices=['loss', 'balanced_accuracy'],
-        default=None,
+        default=['balanced_accuracy'],
         nargs='+'
     )
 
