@@ -24,7 +24,7 @@ def find_image_path(caps_dir, participant_id, session_id, preprocessing, group=N
                                participant_id + '_' + session_id +
                                '_T1w_segm-graymatter_space-Ixi549Space_modulated-on_probability.nii.gz')
     else:
-        raise ValueError("Preprocessing %s must be in ['linear', 'extensive']." % preprocessing)
+        raise ValueError("Preprocessing %s must be in ['t1-linear', 't1-extensive']." % preprocessing)
 
     return image_path
 

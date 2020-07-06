@@ -95,6 +95,23 @@ class MRIDataset(Dataset):
 
         return participant, session, elem_idx, label
 
+    def _get_full_image(self):
+        from ..data.utils import find_image_path as get_nii_path
+        import nibabel as nib
+
+        try:
+            image_path = self._get_path(0, "image")
+            image = torch.load(image_path)
+        except FileNotFoundError:
+            participant_id = self.df.loc[0, 'participant_id']
+            session_id = self.df.loc[0, 'session_id']
+            image_path = get_nii_path(self.caps_directory, participant_id, session_id, preprocessing=self.preprocessing)
+            image_nii = nib.load(image_path)
+            image_np = image_nii.get_fdata()
+            image = ToTensor()(image_np)
+
+        return image
+
     @abc.abstractmethod
     def __getitem__(self, idx):
         pass
@@ -189,8 +206,7 @@ class MRIDatasetPatch(MRIDataset):
         if self.elem_index is not None:
             return 1
 
-        image_path = self._get_path(0, "image")
-        image = torch.load(image_path)
+        image = self._get_full_image()
 
         patches_tensor = image.unfold(1, self.patch_size, self.stride_size
                                       ).unfold(2, self.patch_size, self.stride_size
@@ -354,8 +370,7 @@ class MRIDatasetSlice(MRIDataset):
         if self.elem_index == "mixed":
             return 1
 
-        image_path = self._get_path(0, "image")
-        image = torch.load(image_path)
+        image = self._get_full_image()
         return image.size(self.mri_plane + 1) - self.discarded_slices[0] - self.discarded_slices[1]
 
     def extract_slice_from_mri(self, image, index_slice):
