@@ -19,9 +19,10 @@ class MRIDataset(Dataset):
     """Abstract class for all derived MRIDatasets."""
 
     def __init__(self, caps_directory, data_file,
-                 preprocessing, transformations=None):
+                 preprocessing, transformations, labels):
         self.caps_directory = caps_directory
         self.transformations = transformations
+        self.labels = labels
         self.diagnosis_code = {
             'CN': 0,
             'AD': 1,
@@ -46,7 +47,9 @@ class MRIDataset(Dataset):
         else:
             raise Exception('The argument data_file is not of correct type.')
 
-        mandatory_col = {"participant_id", "session_id", "diagnosis"}
+        mandatory_col = {"participant_id", "session_id"}
+        if self.labels:
+            mandatory_col.add("diagnosis")
         if self.elem_index == "mixed":
             mandatory_col.add("%s_id" % self.mode)
 
@@ -89,8 +92,11 @@ class MRIDataset(Dataset):
         else:
             elem_idx = self.elem_index
 
-        diagnosis = self.df.loc[image_idx, 'diagnosis']
-        label = self.diagnosis_code[diagnosis]
+        if self.labels:
+            diagnosis = self.df.loc[image_idx, 'diagnosis']
+            label = self.diagnosis_code[diagnosis]
+        else:
+            label = self.diagnosis_code['unlabeled']
 
         return participant, session, elem_idx, label
 
@@ -129,18 +135,20 @@ class MRIDatasetImage(MRIDataset):
     """Dataset of MRI organized in a CAPS folder."""
 
     def __init__(self, caps_directory, data_file,
-                 preprocessing='t1-linear', transformations=None):
+                 preprocessing='t1-linear', transformations=None,
+                 labels=True):
         """
         Args:
             caps_directory (string): Directory of all the images.
             data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
             preprocessing (string): Defines the path to the data in CAPS.
             transformations (callable, optional): Optional transform to be applied on a sample.
+            labels (bool): If True the diagnosis will be extracted from the given DataFrame.
 
         """
         self.elem_index = None
         self.mode = "image"
-        super().__init__(caps_directory, data_file, preprocessing, transformations)
+        super().__init__(caps_directory, data_file, preprocessing, transformations, labels)
 
     def __getitem__(self, idx):
         participant, session, _, label = self._get_meta_data(idx)
@@ -162,7 +170,7 @@ class MRIDatasetImage(MRIDataset):
 class MRIDatasetPatch(MRIDataset):
 
     def __init__(self, caps_directory, data_file, patch_size, stride_size, transformations=None, prepare_dl=False,
-                 patch_index=None, preprocessing="t1-linear"):
+                 patch_index=None, preprocessing="t1-linear", labels=True):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -174,13 +182,14 @@ class MRIDatasetPatch(MRIDataset):
                 else the dataset will load all the patches possible for one image.
             patch_size (int): size of the regular cubic patch.
             stride_size (int): length between the centers of two patches.
+            labels (bool): If True the diagnosis will be extracted from the given DataFrame.
 
         """
         self.patch_size = patch_size
         self.stride_size = stride_size
         self.elem_index = patch_index
         self.mode = "patch"
-        super().__init__(caps_directory, data_file, preprocessing, transformations)
+        super().__init__(caps_directory, data_file, preprocessing, transformations, labels)
         self.prepare_dl = prepare_dl
 
     def __getitem__(self, idx):
@@ -240,7 +249,7 @@ class MRIDatasetPatch(MRIDataset):
 class MRIDatasetRoi(MRIDataset):
 
     def __init__(self, caps_directory, data_file, preprocessing="t1-linear",
-                 transformations=None, prepare_dl=False):
+                 transformations=None, prepare_dl=False, labels=True):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -248,11 +257,12 @@ class MRIDatasetRoi(MRIDataset):
             preprocessing (string): Defines the path to the data in CAPS.
             transformations (callable, optional): Optional transform to be applied on a sample.
             prepare_dl (bool): If true pre-extracted patches will be loaded.
+            labels (bool): If True the diagnosis will be extracted from the given DataFrame.
 
         """
         self.elem_index = None
         self.mode = "roi"
-        super().__init__(caps_directory, data_file, preprocessing, transformations)
+        super().__init__(caps_directory, data_file, preprocessing, transformations, labels)
         self.prepare_dl = prepare_dl
 
     def __getitem__(self, idx):
@@ -313,7 +323,7 @@ class MRIDatasetSlice(MRIDataset):
 
     def __init__(self, caps_directory, data_file, preprocessing="t1-linear",
                  transformations=None, mri_plane=0, prepare_dl=False,
-                 discarded_slices=20, mixed=False):
+                 discarded_slices=20, mixed=False, labels=True):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -326,6 +336,7 @@ class MRIDatasetSlice(MRIDataset):
                 If one single value is given, the same amount is discarded at the beginning and at the end.
             mixed (bool): If True will look for a 'slice_id' column in the input DataFrame to load each slice
                 independently.
+            labels (bool): If True the diagnosis will be extracted from the given DataFrame.
         """
         # Rename MRI plane
         self.mri_plane = mri_plane
@@ -349,7 +360,7 @@ class MRIDatasetSlice(MRIDataset):
             self.elem_index = None
 
         self.mode = "slice"
-        super().__init__(caps_directory, data_file, preprocessing, transformations)
+        super().__init__(caps_directory, data_file, preprocessing, transformations, labels)
         self.prepare_dl = prepare_dl
 
     def __getitem__(self, idx):
@@ -403,7 +414,7 @@ class MRIDatasetSlice(MRIDataset):
 
 
 def return_dataset(mode, input_dir, data_df, preprocessing,
-                   transformations, params, cnn_index=None):
+                   transformations, params, cnn_index=None, labels=True):
     """
     Return appropriate Dataset according to given options.
 
@@ -415,6 +426,7 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
         transformations: (transforms) list of transformations performed on-the-fly.
         params: (Namespace) options used by specific modes.
         cnn_index: (int) Index of the CNN in a multi-CNN paradigm (optional).
+        labels (bool): If True the diagnosis will be extracted from the given DataFrame.
 
     Returns:
          (Dataset) the corresponding dataset.
@@ -428,7 +440,8 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             input_dir,
             data_df,
             preprocessing,
-            transformations=transformations
+            transformations=transformations,
+            labels=labels
         )
     if mode == "patch":
         return MRIDatasetPatch(
@@ -439,14 +452,16 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             preprocessing=preprocessing,
             transformations=transformations,
             prepare_dl=params.prepare_dl,
-            patch_index=cnn_index
+            patch_index=cnn_index,
+            labels=labels
         )
     elif mode == "roi":
         return MRIDatasetRoi(
             input_dir,
             data_df,
             preprocessing=preprocessing,
-            transformations=transformations
+            transformations=transformations,
+            labels=labels
         )
     elif mode == "slice":
         return MRIDatasetSlice(
@@ -456,7 +471,9 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             transformations=transformations,
             mri_plane=params.mri_plane,
             prepare_dl=params.prepare_dl,
-            discarded_slices=params.discarded_slices)
+            discarded_slices=params.discarded_slices,
+            labels=labels
+        )
     else:
         raise ValueError("Mode %s is not implemented." % mode)
 
