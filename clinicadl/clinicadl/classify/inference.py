@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader
 def classify(caps_dir,
              tsv_path,
              model_path,
-             prefix_output='prefix_DB',
+             prefix_output,
              no_labels=False,
              gpu=True,
              prepare_dl=True):
