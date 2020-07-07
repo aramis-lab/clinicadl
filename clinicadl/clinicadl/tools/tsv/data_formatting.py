@@ -343,7 +343,7 @@ def get_labels(merged_tsv, missing_mods, results_path,
 
         bids_df = copy(bids_copy_df)
 
-    MCI_df = None
+    time_MCI_df = None
     if 'AD' in diagnoses:
         print('Beginning the selection of AD label')
         output_df = stable_selection(bids_df, diagnosis='AD')
@@ -385,9 +385,8 @@ def get_labels(merged_tsv, missing_mods, results_path,
         print()
 
     if 'sMCI' in diagnoses:
-        if MCI_df is None:
-            MCI_df = mci_stability(bids_df, time_horizon)
-        output_df = diagnosis_removal(MCI_df, diagnosis_list=['rMCI', 'pMCI'])
+        time_MCI_df = mci_stability(bids_df, time_horizon)
+        output_df = diagnosis_removal(time_MCI_df, diagnosis_list=['rMCI', 'pMCI'])
         output_df = output_df[output_df.diagnosis == 'sMCI']
         output_df = mod_selection(output_df, missing_mods_dict, modality)
         output_df = apply_restriction(output_df, restriction_path)
@@ -399,9 +398,9 @@ def get_labels(merged_tsv, missing_mods, results_path,
         print()
 
     if 'pMCI' in diagnoses:
-        if MCI_df is None:
-            MCI_df = mci_stability(bids_df, time_horizon)
-        output_df = MCI_df[MCI_df.diagnosis == 'pMCI']
+        if time_MCI_df is None:
+            time_MCI_df = mci_stability(bids_df, time_horizon)
+        output_df = time_MCI_df[time_MCI_df.diagnosis == 'pMCI']
         output_df = mod_selection(output_df, missing_mods_dict, modality)
         output_df = apply_restriction(output_df, restriction_path)
 
