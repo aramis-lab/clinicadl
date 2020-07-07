@@ -20,7 +20,7 @@ def classify_commands(request):
             'data/classify/OASIS_test',
             'data/classify/OASIS_test/data.tsv',
             data_folder,
-            '--prefix_output', 'DB-TEST',
+            'test-OASIS',
             '-cpu'
         ]
         output_files = join(data_folder, out_filename)
@@ -31,7 +31,7 @@ def classify_commands(request):
             'data/classify/OASIS_test',
             'data/classify/OASIS_test/data.tsv',
             data_folder,
-            '--prefix_output', 'DB-TEST',
+            'test-OASIS',
             '-cpu'
         ]
         output_files = join(data_folder, out_filename)
@@ -42,8 +42,9 @@ def classify_commands(request):
             'data/classify/OASIS_test',
             'data/classify/OASIS_test/data.tsv',
             data_folder,
-            '--prefix_output', 'DB-TEST',
-            '-cpu'
+            'test-OASIS',
+            '-cpu',
+            '-nl'
         ]
         output_files = join(data_folder, out_filename)
     else:
