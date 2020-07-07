@@ -28,7 +28,7 @@ def test_cnn(output_dir, data_loader, subset_name, split, criterion, model_optio
 
         # Soft voting
         if model_options.mode in ["patch", "roi", "slice"]:
-            soft_voting_to_tsvs(output_dir, split, logger, selection=selection, mode=model_options.mode,
+            soft_voting_to_tsvs(output_dir, split, logger=logger, selection=selection, mode=model_options.mode,
                                 dataset=subset_name, selection_threshold=model_options.selection_threshold)
 
 

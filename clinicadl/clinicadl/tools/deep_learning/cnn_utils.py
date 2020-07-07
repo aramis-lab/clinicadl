@@ -6,8 +6,9 @@ import os
 import warnings
 import pandas as pd
 from time import time
+import logging
 
-from clinicadl.tools.deep_learning.iotools import check_and_clean, return_logger
+from clinicadl.tools.deep_learning.iotools import check_and_clean
 from clinicadl.tools.deep_learning import EarlyStopping, save_checkpoint
 
 
@@ -15,7 +16,7 @@ from clinicadl.tools.deep_learning import EarlyStopping, save_checkpoint
 # CNN train / test  #
 #####################
 
-def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_dir, model_dir, options, logger):
+def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_dir, model_dir, options, logger=None):
     """
     Function used to train a CNN.
     The best model and checkpoint will be found in the 'best_model_dir' of options.output_dir.
@@ -33,6 +34,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
     """
     from tensorboardX import SummaryWriter
     from time import time
+
+    if logger is None:
+        logger = logging
 
     if not resume:
         check_and_clean(model_dir)
@@ -379,8 +383,8 @@ def retrieve_sub_level_results(output_dir, fold, selection, mode, dataset, num_c
     return performance_df
 
 
-def soft_voting_to_tsvs(output_dir, fold, logger, selection, mode, dataset='test', num_cnn=None,
-                        selection_threshold=None, use_labels=True):
+def soft_voting_to_tsvs(output_dir, fold, selection, mode, dataset='test', num_cnn=None,
+                        selection_threshold=None, logger=None, use_labels=True):
     """
     Writes soft voting results in tsv files.
 
@@ -396,6 +400,9 @@ def soft_voting_to_tsvs(output_dir, fold, logger, selection, mode, dataset='test
             threshold is removed.
         use_labels: (bool) If True the labels are added to the final tsv
     """
+    if logger is None:
+        logger = logging
+
     # Choose which dataset is used to compute the weights of soft voting.
     if dataset in ['train', 'validation']:
         validation_dataset = dataset
