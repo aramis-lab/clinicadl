@@ -1,20 +1,39 @@
 # coding: utf8
 import logging
+import sys
 
 LOG_LEVELS = [logging.WARNING, logging.INFO, logging.DEBUG]
 
 
+class StdLevelFilter(logging.Filter):
+    def __init__(self, err=False):
+        super().__init__()
+        self.err = err
+
+    def filter(self, record):
+        if record.levelno <= logging.INFO:
+            return not self.err
+        return self.err
+
+
 def return_logger(verbosity, name_fn):
     logger = logging.getLogger(name_fn)
-    logger.setLevel(LOG_LEVELS[verbosity])
-    ch = logging.StreamHandler()
-    ch.setLevel(LOG_LEVELS[verbosity])
+    if verbosity < len(LOG_LEVELS):
+        logger.setLevel(LOG_LEVELS[verbosity])
+    else:
+        logger.setLevel(logging.DEBUG)
+    stdout = logging.StreamHandler(sys.stdout)
+    stdout.addFilter(StdLevelFilter())
+    stderr = logging.StreamHandler(sys.stderr)
+    stderr.addFilter(StdLevelFilter(err=True))
     # create formatter
     formatter = logging.Formatter("%(asctime)s - %(name)s - %(message)s")
     # add formatter to ch
-    ch.setFormatter(formatter)
+    stdout.setFormatter(formatter)
+    stderr.setFormatter(formatter)
     # add ch to logger
-    logger.addHandler(ch)
+    logger.addHandler(stdout)
+    logger.addHandler(stderr)
 
     return logger
 
