@@ -1180,6 +1180,7 @@ def parse_command_line():
 
     tsv_split_subparser = tsv_subparser.add_parser(
         'split',
+        parents=[parent_parser],
         help='Performs one stratified shuffle split on participant level.')
 
     tsv_split_subparser.add_argument(
