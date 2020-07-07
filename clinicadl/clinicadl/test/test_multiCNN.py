@@ -4,6 +4,7 @@ import argparse
 import os
 from os import path
 import torch
+import logging
 from torch.utils.data import DataLoader
 
 from clinicadl.tools.deep_learning import read_json
@@ -13,12 +14,12 @@ from clinicadl.tools.deep_learning.data import (get_transforms,
                                                 return_dataset,
                                                 compute_num_cnn)
 from clinicadl.tools.deep_learning.cnn_utils import test, mode_level_to_tsvs, soft_voting_to_tsvs
-from clinicadl.tools.deep_learning.iotools import return_logger
 
 
-def test_cnn(output_dir, data_loader, subset_name, split, criterion, cnn_index, model_options, gpu=False, verbosity=0):
+def test_cnn(output_dir, data_loader, subset_name, split, criterion, cnn_index, model_options, gpu=False, logger=None):
 
-    logger = return_logger(verbosity, "final evaluation")
+    if logger is None:
+        logger = logging
     for selection in ["best_balanced_accuracy", "best_loss"]:
         # load the best trained model during the training
         model = create_model(model_options.model, gpu, dropout=model_options.dropout)
