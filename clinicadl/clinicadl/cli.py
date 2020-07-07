@@ -417,7 +417,9 @@ def tsv_getlabels_func(args):
         diagnoses=args.diagnoses,
         modality=args.modality,
         restriction_path=args.restriction_path,
-        time_horizon=args.time_horizon)
+        time_horizon=args.time_horizon,
+        verbosity=args.verbose
+    )
 
 
 def tsv_split_func(args):
@@ -461,6 +463,9 @@ def parse_command_line():
     parser = argparse.ArgumentParser(
         prog='clinicadl',
         description='Deep learning software for neuroimaging datasets')
+
+    parent_parser = argparse.ArgumentParser(add_help=False)
+    parent_parser.add_argument('--verbose', '-v', action='count', default=0)
 
     subparser = parser.add_subparsers(
         title='''Task to execute with clinicadl:''',
@@ -685,7 +690,6 @@ def parse_command_line():
 
     # Positional arguments
     train_parent_parser = argparse.ArgumentParser(add_help=False)
-    train_parent_parser.add_argument('--verbose', '-v', action='count', default=0)
     train_pos_group = train_parent_parser.add_argument_group(
         TRAIN_CATEGORIES["POSITIONAL"])
     train_pos_group.add_argument(
@@ -828,6 +832,7 @@ def parse_command_line():
     train_image_ae_parser = train_image_subparser.add_parser(
         "autoencoder",
         parents=[
+            parent_parser,
             train_parent_parser,
             autoencoder_parent],
         help="Train an image-level autoencoder.")
@@ -837,6 +842,7 @@ def parse_command_line():
     train_image_cnn_parser = train_image_subparser.add_parser(
         "cnn",
         parents=[
+            parent_parser,
             train_parent_parser,
             transfer_learning_parent],
         help="Train an image-level CNN.")
@@ -882,7 +888,7 @@ def parse_command_line():
 
     train_patch_ae_parser = train_patch_subparser.add_parser(
         "autoencoder",
-        parents=[train_parent_parser, train_patch_parent, autoencoder_parent],
+        parents=[parent_parser, train_parent_parser, train_patch_parent, autoencoder_parent],
         help="Train a 3D patch-level autoencoder.")
 
     train_patch_ae_parser.set_defaults(func=train_func)
@@ -890,6 +896,7 @@ def parse_command_line():
     train_patch_cnn_parser = train_patch_subparser.add_parser(
         "cnn",
         parents=[
+            parent_parser,
             train_parent_parser,
             train_patch_parent,
             transfer_learning_parent],
@@ -914,6 +921,7 @@ def parse_command_line():
     train_patch_multicnn_parser = train_patch_subparser.add_parser(
         "multicnn",
         parents=[
+            parent_parser,
             train_parent_parser,
             train_patch_parent,
             transfer_learning_parent],
@@ -952,8 +960,10 @@ def parse_command_line():
 
     train_roi_ae_parser = train_roi_subparser.add_parser(
         "autoencoder",
-        parents=[train_parent_parser,
-                 autoencoder_parent],
+        parents=[
+            parent_parser,
+            train_parent_parser,
+            autoencoder_parent],
         help="Train a ROI-based autoencoder.")
 
     train_roi_ae_parser.set_defaults(func=train_func)
@@ -961,6 +971,7 @@ def parse_command_line():
     train_roi_cnn_parser = train_roi_subparser.add_parser(
         "cnn",
         parents=[
+            parent_parser,
             train_parent_parser,
             transfer_learning_parent],
         help="Train a ROI-based CNN.")
@@ -987,7 +998,7 @@ def parse_command_line():
     #########################
     train_slice_parser = train_subparser.add_parser(
         "slice",
-        parents=[train_parent_parser],
+        parents=[parent_parser, train_parent_parser],
         help="Train a 2D slice-level CNN.")
 
     train_slice_group = train_slice_parser.add_argument_group(
@@ -1131,6 +1142,7 @@ def parse_command_line():
 
     tsv_getlabels_subparser = tsv_subparser.add_parser(
         'getlabels',
+        parents=[parent_parser],
         help='Get labels in separate tsv files.')
 
     tsv_getlabels_subparser.add_argument(
