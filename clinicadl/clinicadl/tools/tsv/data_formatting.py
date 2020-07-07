@@ -55,8 +55,8 @@ def cleaning_nan_diagnoses(bids_df, logger):
             if isinstance(diagnosis, float):
                 missing_diag += 1
 
-    logger.debug('Missing diagnoses:', missing_diag)
-    logger.debug('Missing diagnoses not found:', missing_diag - found_diag)
+    logger.debug('Missing diagnoses: %i' % missing_diag)
+    logger.debug('Missing diagnoses not found: %i' % (missing_diag - found_diag))
 
     return bids_copy_df
 
@@ -94,7 +94,7 @@ def infer_or_drop_diagnosis(bids_df, logger):
                     else:
                         bids_copy_df.drop((subject, session), inplace=True)
 
-    logger.debug('Inferred diagnosis:', found_diag_interpol)
+    logger.debug('Inferred diagnosis: %i' % found_diag_interpol)
 
     return bids_copy_df
 
@@ -154,7 +154,7 @@ def stable_selection(bids_df, diagnosis='AD', logger=None):
         if subject_drop:
             bids_copy_df.drop(subject, inplace=True)
     bids_df = copy(bids_copy_df)
-    logger.debug('Number of unstable subjects dropped:', n_subjects)
+    logger.debug('Number of unstable subjects dropped: %i' % n_subjects)
 
     bids_df = infer_or_drop_diagnosis(bids_df, logger)
     return bids_df
@@ -202,7 +202,7 @@ def mci_stability(bids_df, horizon_time=36, logger=None):
             nb_subjects += 1
             bids_copy_df.drop(subject, inplace=True)
 
-    logger.debug('Dropped subjects: ', nb_subjects)
+    logger.debug('Dropped subjects: %i' % nb_subjects)
     bids_df = copy(bids_copy_df)
 
     # Stability of sessions
