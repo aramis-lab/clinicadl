@@ -36,6 +36,7 @@ def train_autoencoder(params):
         fold_iterator = params.split
 
     for fi in fold_iterator:
+        main_logger.info("Fold %i" % fi)
 
         training_df, valid_df = load_data(
             params.tsv_path,

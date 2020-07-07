@@ -37,6 +37,7 @@ def train_single_cnn(params):
         fold_iterator = params.split
 
     for fi in fold_iterator:
+        main_logger.info("Fold %i" % fi)
 
         training_df, valid_df = load_data(
             params.tsv_path,
@@ -74,7 +75,7 @@ def train_single_cnn(params):
         model = init_model(params.model, gpu=params.gpu, dropout=params.dropout)
         model = transfer_learning(model, fi, source_path=params.transfer_learning_path,
                                   gpu=params.gpu, selection=params.transfer_learning_selection,
-                                  verbosity=params.verbosity)
+                                  logger=main_logger)
 
         # Define criterion and optimizer
         criterion = torch.nn.CrossEntropyLoss()

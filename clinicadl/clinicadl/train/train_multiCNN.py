@@ -42,7 +42,7 @@ def train_multi_cnn(params):
 
     # Loop on folds
     for fi in fold_iterator:
-        print("Fold %i" % fi)
+        main_logger.info("Fold %i" % fi)
 
         for cnn_index in range(num_cnn):
 
@@ -98,16 +98,16 @@ def train_multi_cnn(params):
                   logger=train_logger)
 
             test_cnn(params.output_dir, train_loader, "train", fi, criterion, cnn_index, params,
-                     gpu=params.gpu, verbosity=params.verbosity)
+                     gpu=params.gpu, logger=eval_logger)
             test_cnn(params.output_dir, valid_loader, "validation", fi, criterion, cnn_index, params,
-                     gpu=params.gpu, verbosity=params.verbosity)
+                     gpu=params.gpu, logger=eval_logger)
 
         for selection in ['best_balanced_accuracy', 'best_loss']:
             soft_voting_to_tsvs(
                 params.output_dir,
                 fi,
-                eval_logger,
                 selection,
+                logger=eval_logger,
                 mode=params.mode,
                 dataset='train',
                 num_cnn=num_cnn,
@@ -116,8 +116,8 @@ def train_multi_cnn(params):
             soft_voting_to_tsvs(
                 params.output_dir,
                 fi,
-                eval_logger,
                 selection,
+                logger=eval_logger,
                 mode=params.mode,
                 dataset='validation',
                 num_cnn=num_cnn,
