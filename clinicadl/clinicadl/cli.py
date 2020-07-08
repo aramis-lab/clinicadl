@@ -122,6 +122,7 @@ def train_func(args):
                 evaluation_steps=args.evaluation_steps,
                 num_workers=args.nproc,
                 visualization=args.visualization,
+                transfer_learning_path=args.transfer_learning_path,
                 verbosity=args.verbose
             )
             train_autoencoder(train_params_autoencoder)
@@ -218,6 +219,7 @@ def train_func(args):
                 batch_size=args.batch_size,
                 evaluation_steps=args.evaluation_steps,
                 num_workers=args.nproc,
+                transfer_learning_path=args.transfer_learning_path,
                 patch_size=args.patch_size,
                 stride_size=args.stride_size,
                 hippocampus_roi=False,
@@ -327,6 +329,7 @@ def train_func(args):
                 batch_size=args.batch_size,
                 evaluation_steps=args.evaluation_steps,
                 num_workers=args.nproc,
+                transfer_learning_path=args.transfer_learning_path,
                 hippocampus_roi=True,
                 visualization=args.visualization,
                 verbosity=args.verbose
@@ -857,7 +860,9 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
-            autoencoder_parent],
+            autoencoder_parent,
+            transfer_learning_parent
+        ],
         help="Train an image-level autoencoder.")
 
     train_image_ae_parser.set_defaults(func=train_func)
@@ -911,7 +916,7 @@ def parse_command_line():
 
     train_patch_ae_parser = train_patch_subparser.add_parser(
         "autoencoder",
-        parents=[parent_parser, train_parent_parser, train_patch_parent, autoencoder_parent],
+        parents=[parent_parser, train_parent_parser, train_patch_parent, autoencoder_parent, transfer_learning_parent],
         help="Train a 3D patch-level autoencoder.")
 
     train_patch_ae_parser.set_defaults(func=train_func)
@@ -986,7 +991,8 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
-            autoencoder_parent],
+            autoencoder_parent,
+                 transfer_learning_parent],
         help="Train a ROI-based autoencoder.")
 
     train_roi_ae_parser.set_defaults(func=train_func)
