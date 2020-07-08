@@ -8,7 +8,7 @@ import os
 from time import time
 
 from clinicadl.tools.deep_learning import commandline_to_json
-from clinicadl.tools.deep_learning.models import load_model, init_model
+from clinicadl.tools.deep_learning.models import load_model, create_model
 from clinicadl.tools.deep_learning.data import (load_data,
                                                 MinMaxNormalization,
                                                 MRIDatasetSlice,
@@ -271,7 +271,7 @@ def train_CNN_bad_data_split(params):
 
         # Initialize the model
         print('Initialization of the model')
-        model = init_model(
+        model = create_model(
             params.model,
             gpu=params.gpu,
             dropout=params.dropout)
