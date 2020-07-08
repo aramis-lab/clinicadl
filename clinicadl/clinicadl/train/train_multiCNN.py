@@ -4,7 +4,7 @@ import os
 import torch
 from torch.utils.data import DataLoader
 
-from ..tools.deep_learning.models import transfer_learning, init_model, create_model, load_model
+from ..tools.deep_learning.models import transfer_learning, init_model, load_model
 from ..tools.deep_learning.data import (get_transforms,
                                         load_data,
                                         return_dataset,
