@@ -1,10 +1,8 @@
 # coding: utf8
 
 from . import cli
-from clinicadl.tools.deep_learning import commandline_to_json
+from clinicadl.tools.deep_learning import commandline_to_json, write_requirements_version
 import torch
-from os import path
-import sys
 
 
 def main():
@@ -25,10 +23,7 @@ def main():
             and (arguments['task'] != 'tsvtool') \
             and (arguments['task'] != 'classify'):
         commandline_to_json(commandline)
-        text_file = open(path.join(args.output_dir, 'environment.txt'), 'w')
-        text_file.write('Version of python: %s \n' % sys.version)
-        text_file.write('Version of pytorch: %s \n' % torch.__version__)
-        text_file.close()
+        write_requirements_version(args.output_dir)
 
         if not args.use_cpu and not torch.cuda.is_available():
             raise ValueError("No GPU is available. Please add the -cpu flag to run on CPU.")
