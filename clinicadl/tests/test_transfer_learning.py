@@ -1,0 +1,150 @@
+import pytest
+import os
+import shutil
+
+
+# Everything is tested on roi except for cnn --> multicnn (patch) as multicnn is not implemented for roi.
+@pytest.fixture(params=[
+    'transfer_ae_ae',
+    'transfer_ae_cnn',
+    'transfer_cnn_cnn',
+    'transfer_cnn_multicnn',
+])
+def cli_commands(request):
+
+    if request.param == 'transfer_ae_ae':
+        source_task = [
+            'train',
+            'roi',
+            'autoencoder',
+            'data/OASIS_test',
+            't1-linear',
+            'data/labels_list',
+            'results_source',
+            'Conv4_FC3',
+            '--epochs', '1',
+            '--n_splits', '2',
+            '--split', '0',
+            '-cpu'
+        ]
+        target_task = [
+            'train',
+            'roi',
+            'autoencoder',
+            'data/OASIS_test',
+            't1-linear',
+            'data/labels_list',
+            'results_target',
+            'Conv4_FC3',
+            '--epochs', '1',
+            '--n_splits', '2',
+            '--split', '0',
+            '--transfer_learning_path', 'results_source',
+            '-cpu'
+        ]
+    elif request.param == 'transfer_ae_cnn':
+        source_task = [
+            'train',
+            'roi',
+            'autoencoder',
+            'data/OASIS_test',
+            't1-linear',
+            'data/labels_list',
+            'results_source',
+            'Conv4_FC3',
+            '--epochs', '1',
+            '--n_splits', '2',
+            '--split', '0',
+            '-cpu'
+        ]
+        target_task = [
+            'train',
+            'roi',
+            'cnn',
+            'data/OASIS_test',
+            't1-linear',
+            'data/labels_list',
+            'results_target',
+            'Conv4_FC3',
+            '--epochs', '1',
+            '--n_splits', '2',
+            '--split', '0',
+            '--transfer_learning_path', 'results_source',
+            '-cpu'
+        ]
+    elif request.param == 'transfer_cnn_cnn':
+        source_task = [
+            'train',
+            'roi',
+            'cnn',
+            'data/OASIS_test',
+            't1-linear',
+            'data/labels_list',
+            'results_source',
+            'Conv4_FC3',
+            '--epochs', '1',
+            '--n_splits', '2',
+            '--split', '0',
+            '-cpu'
+        ]
+        target_task = [
+            'train',
+            'roi',
+            'cnn',
+            'data/OASIS_test',
+            't1-linear',
+            'data/labels_list',
+            'results_target',
+            'Conv4_FC3',
+            '--epochs', '1',
+            '--n_splits', '2',
+            '--split', '0',
+            '--transfer_learning_path', 'results_source',
+            '-cpu'
+        ]
+    elif request.param == 'transfer_cnn_multicnn':
+        source_task = [
+            'train',
+            'patch',
+            'cnn',
+            'data/OASIS_test',
+            't1-linear',
+            'data/labels_list',
+            'results_source',
+            'Conv4_FC3',
+            '--epochs', '1',
+            '--n_splits', '2',
+            '--split', '0',
+            '-cpu'
+        ]
+        target_task = [
+            'train',
+            'patch',
+            'multicnn',
+            'data/OASIS_test',
+            't1-linear',
+            'data/labels_list',
+            'results_target',
+            'Conv4_FC3',
+            '--epochs', '1',
+            '--n_splits', '2',
+            '--split', '0',
+            '--transfer_learning_path', 'results_source',
+            '-cpu'
+        ]
+    else:
+        raise NotImplementedError(
+            "Test %s is not implemented." %
+            request.param)
+
+    return source_task, target_task
+
+
+def test_transfer(cli_commands):
+    source_task, target_task = cli_commands
+    flag_source = not os.system("clinicadl " + " ".join(source_task))
+    flag_target = not os.system("clinicadl " + " ".join(target_task))
+    assert flag_source
+    assert flag_target
+    shutil.rmtree("results_source")
+    shutil.rmtree("results_target")
