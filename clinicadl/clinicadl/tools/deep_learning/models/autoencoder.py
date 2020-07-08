@@ -121,7 +121,7 @@ class AutoEncoder(nn.Module):
 
 
 def transfer_learning(model, split, source_path=None, gpu=False,
-                      selection="best_balanced_accuracy", cnn_index=None):
+                      selection="best_loss", cnn_index=None):
     """
     Allows transfer learning from a CNN or an autoencoder to a CNN
 
@@ -172,15 +172,20 @@ def transfer_autoencoder_weights(model, source_path, split):
     from copy import deepcopy
     import os
 
-    decoder = AutoEncoder(model)
+    if not isinstance(model, AutoEncoder):
+        decoder = AutoEncoder(model)
+    else:
+        decoder = model
+
     model_path = os.path.join(source_path, 'fold-%i' % split, 'models', "best_loss", "model_best.pth.tar")
 
     initialize_other_autoencoder(decoder, model_path, difference=0)
 
-    model.features = deepcopy(decoder.encoder)
-    for layer in model.features:
-        if isinstance(layer, PadMaxPool3d):
-            layer.set_new_return(False, False)
+    if not isinstance(model, AutoEncoder):
+        model.features = deepcopy(decoder.encoder)
+        for layer in model.features:
+            if isinstance(layer, PadMaxPool3d):
+                layer.set_new_return(False, False)
 
     return model
 
@@ -199,6 +204,9 @@ def transfer_cnn_weights(model, source_path, split, selection="best_balanced_acc
 
     import os
     import torch
+
+    if isinstance(model, AutoEncoder):
+        raise ValueError('Transfer learning from CNN to autoencoder was not implemented.')
 
     model_path = os.path.join(source_path, "fold-%i" % split, "models", selection, "model_best.pth.tar")
     if cnn_index is not None and not os.path.exists(model_path):
@@ -228,6 +236,7 @@ def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, differenc
 
     for key in parameters_dict.keys():
         section, number, spec = key.split('.')
+        print(section, number, spec)
         number = int(number)
         if section == 'encoder' and number < len(decoder.encoder):
             data_ptr = eval('decoder.' + section + '[number].' + spec + '.data')
