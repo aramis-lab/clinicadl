@@ -14,7 +14,7 @@ diagnoses = "AD CN MCI pMCI sMCI"
 def test_getlabels():
     """Checks that getlabels is working and that it is coherent with previous version in reference_path"""
     output_path = "data/tsvtool_test"
-    flag_getlabels = not os.system("clinicadl tsvtool getlabels %s %s %s --diagnoses %s"
+    flag_getlabels = not os.system("clinicadl tsvtool getlabels %s %s %s --diagnoses %s -vvv"
                                    % (merged_tsv, missing_mods, output_path, diagnoses))
     assert flag_getlabels
     for file in os.listdir(output_path):
@@ -32,9 +32,9 @@ def test_split():
      -  no data leakage is introduced in split and kfold.
      """
     n_splits = 5
-    flag_split = not os.system("clinicadl tsvtool split %s %s --age_name age"
+    flag_split = not os.system("clinicadl tsvtool split %s %s --age_name age -vvv"
                                % (merged_tsv, reference_path))
-    flag_kfold = not os.system("clinicadl tsvtool kfold %s --n_splits %i"
+    flag_kfold = not os.system("clinicadl tsvtool kfold %s --n_splits %i -vvv"
                                % (path.join(reference_path, "train"), n_splits))
     assert flag_split
     assert flag_kfold
