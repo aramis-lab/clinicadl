@@ -5,7 +5,7 @@ import os
 from torch.utils.data import DataLoader
 
 from ..tools.deep_learning.autoencoder_utils import train, visualize_image
-from ..tools.deep_learning.models import init_model, load_model
+from ..tools.deep_learning.models import create_model, load_model, transfer_learning
 from ..tools.deep_learning.data import (load_data,
                                         get_transforms,
                                         return_dataset)
@@ -72,7 +72,9 @@ def train_autoencoder(params):
         model_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'models')
         visualization_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'autoencoder_reconstruction')
 
-        decoder = init_model(params.model, gpu=params.gpu, autoencoder=True, dropout=params.dropout)
+        decoder = create_model(params.model, gpu=params.gpu, ae_from_model=True)
+        decoder = transfer_learning(decoder, fi, source_path=params.transfer_learning_path,
+                                    gpu=params.gpu, selection=params.transfer_learning_selection)
         optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
                                                             lr=params.learning_rate,
                                                             weight_decay=params.weight_decay)
