@@ -7,6 +7,8 @@ import pandas as pd
 from torch.utils.data import DataLoader
 
 from clinicadl.quality_check.utils import QCDataset, resnet_qc_18
+from clinicadl.tools.inputs.input import fetch_file
+from clinicadl.tools.inputs.input import RemoteFileStructure
 
 
 def quality_check(caps_dir, tsv_path, output_path, threshold=0.5, batch_size=1, num_workers=0, gpu=True):
@@ -28,8 +30,7 @@ def quality_check(caps_dir, tsv_path, output_path, threshold=0.5, batch_size=1, 
         try:
             ref_template = fetch_file(FILE1, path_to_model)
         except IOError as err:
-            print('Unable to download required model for QC process:', err
-
+            print('Unable to download required model for QC process:', err)
 
     # Load QC model
     model = resnet_qc_18()
