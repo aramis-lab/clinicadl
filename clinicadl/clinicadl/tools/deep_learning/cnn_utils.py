@@ -221,7 +221,7 @@ def evaluate_prediction(y, y_pred):
     return results
 
 
-def test(model, dataloader, use_cuda, criterion, mode="image"):
+def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
     """
     Computes the predictions and evaluation metrics.
 
@@ -231,6 +231,7 @@ def test(model, dataloader, use_cuda, criterion, mode="image"):
         use_cuda: (bool) if True a gpu is used.
         criterion: (loss) function to calculate the loss.
         mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
+        use_labels (bool): If True the true_label will be written in output DataFrame and metrics dict will be created.
     Returns
         (DataFrame) results of each input.
         (dict) ensemble of metrics + total loss on mode level.
@@ -258,8 +259,9 @@ def test(model, dataloader, use_cuda, criterion, mode="image"):
             else:
                 inputs, labels = data['image'], data['label']
             outputs = model(inputs)
-            loss = criterion(outputs, labels)
-            total_loss += loss.item()
+            if use_labels:
+                loss = criterion(outputs, labels)
+                total_loss += loss.item()
             _, predicted = torch.max(outputs.data, 1)
 
             # Generate detailed DataFrame
@@ -275,18 +277,20 @@ def test(model, dataloader, use_cuda, criterion, mode="image"):
                 row_df = pd.DataFrame(row, columns=columns)
                 results_df = pd.concat([results_df, row_df])
 
-            del inputs, outputs, labels, loss
+            del inputs, outputs, labels
             tend = time()
         results_df.reset_index(inplace=True, drop=True)
 
-        # calculate the balanced accuracy
-        results = evaluate_prediction(results_df.true_label.values.astype(int),
-                                      results_df.predicted_label.values.astype(int))
-        results_df.reset_index(inplace=True, drop=True)
-        results['total_loss'] = total_loss
-        torch.cuda.empty_cache()
+    if not use_labels:
+        results_df = results_df.drop("true_label", axis=1)
+        metrics_dict = None
+    else:
+        metrics_dict = evaluate_prediction(results_df.true_label.values.astype(int),
+                                           results_df.predicted_label.values.astype(int))
+        metrics_dict['total_loss'] = total_loss
+    torch.cuda.empty_cache()
 
-    return results_df, results
+    return results_df, metrics_dict
 
 
 #################################
@@ -320,7 +324,9 @@ def mode_level_to_tsvs(output_dir, results_df, metrics, fold, selection, mode, d
     results_df.to_csv(os.path.join(performance_dir, '%s_%s_level_prediction.tsv' % (dataset, mode)), index=False,
                       sep='\t')
 
-    if isinstance(metrics, dict):
+    if metrics is None:
+        pass
+    elif isinstance(metrics, dict):
         pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(performance_dir, '%s_%s_level_metrics.tsv' % (dataset, mode)),
                                                 index=False, sep='\t')
     elif isinstance(metrics, pd.DataFrame):
@@ -374,7 +380,7 @@ def retrieve_sub_level_results(output_dir, fold, selection, mode, dataset, num_c
 
 
 def soft_voting_to_tsvs(output_dir, fold, selection, mode, dataset='test', num_cnn=None,
-                        selection_threshold=None, logger=None):
+                        selection_threshold=None, logger=None, use_labels=True):
     """
     Writes soft voting results in tsv files.
 
@@ -388,6 +394,7 @@ def soft_voting_to_tsvs(output_dir, fold, selection, mode, dataset='test', num_c
         num_cnn: (int) if given load the patch level results of a multi-CNN framework.
         selection_threshold: (float) all patches for which the classification accuracy is below the
             threshold is removed.
+        use_labels: (bool) If True the labels are added to the final tsv
     """
     if logger is None:
         logger = logging
@@ -404,19 +411,20 @@ def soft_voting_to_tsvs(output_dir, fold, selection, mode, dataset='test', num_c
     if not os.path.exists(performance_path):
         os.makedirs(performance_path)
 
-    df_final, metrics = soft_voting(test_df, validation_df, mode, selection_threshold=selection_threshold)
+    df_final, metrics = soft_voting(test_df, validation_df, mode, selection_threshold=selection_threshold,
+                                    use_labels=use_labels)
 
     logger.info("image level %s balanced accuracy is %f for model selected on %s"
                 % (dataset, metrics["balanced_accuracy"], selection))
 
     df_final.to_csv(os.path.join(os.path.join(performance_path, '%s_image_level_prediction.tsv' % dataset)),
                     index=False, sep='\t')
+    if use_labels:
+        pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(performance_path, '%s_image_level_metrics.tsv' % dataset),
+                                                index=False, sep='\t')
 
-    pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(performance_path, '%s_image_level_metrics.tsv' % dataset),
-                                            index=False, sep='\t')
 
-
-def soft_voting(performance_df, validation_df, mode, selection_threshold=None):
+def soft_voting(performance_df, validation_df, mode, selection_threshold=None, use_labels=True):
     """
     Computes soft voting based on the probabilities in performance_df. Weights are computed based on the accuracies
     of validation_df.
@@ -447,21 +455,30 @@ def soft_voting(performance_df, validation_df, mode, selection_threshold=None):
     weight_series.sort_index(inplace=True)
 
     # Soft majority vote
-    columns = ['participant_id', 'session_id', 'true_label', 'predicted_label']
+    if use_labels:
+        columns = ['participant_id', 'session_id', 'true_label', 'predicted_label']
+    else:
+        columns = ['participant_id', 'session_id', 'predicted_label']
     df_final = pd.DataFrame(columns=columns)
     for (subject, session), subject_df in performance_df.groupby(['participant_id', 'session_id']):
-        y = subject_df["true_label"].unique().item()
         proba0 = np.average(subject_df["proba0"], weights=weight_series)
         proba1 = np.average(subject_df["proba1"], weights=weight_series)
         proba_list = [proba0, proba1]
         y_hat = proba_list.index(max(proba_list))
 
-        row = [[subject, session, y, y_hat]]
+        if use_labels:
+            y = subject_df["true_label"].unique().item()
+            row = [[subject, session, y, y_hat]]
+        else:
+            row = [[subject, session, y_hat]]
         row_df = pd.DataFrame(row, columns=columns)
         df_final = df_final.append(row_df)
 
-    results = evaluate_prediction(df_final.true_label.values.astype(int),
-                                  df_final.predicted_label.values.astype(int))
+    if use_labels:
+        results = evaluate_prediction(df_final.true_label.values.astype(int),
+                                      df_final.predicted_label.values.astype(int))
+    else:
+        results = None
 
     return df_final, results
 
