@@ -24,6 +24,8 @@ TRAIN_CATEGORIES = {
     # ROI-based arguments
     'ROI': '%sROI-based parameters%s' % (Fore.BLUE, Fore.RESET),
     'ROI CNN': '%sROI-based CNN parameters%s' % (Fore.BLUE, Fore.RESET),
+    # Other optional arguments
+    'OPTIONAL': '%sOther options%s' % (Fore.BLUE, Fore.RESET),
 }
 
 
@@ -353,9 +355,9 @@ def train_func(args):
     else:
         print('Mode not detected in clinicadl')
 
+
 # Function to dispatch command line options from classify to corresponding
 # function
-
 def classify_func(args):
     from .classify.inference import classify
 
@@ -364,14 +366,16 @@ def classify_func(args):
         args.tsv_path,
         args.model_path,
         args.prefix_output,
-        no_labels=args.no_labels,
+        labels=not args.no_labels,
         gpu=not args.use_cpu,
-        prepare_dl=args.use_extracted_features
+        prepare_dl=args.use_extracted_features,
+        selection_metrics=args.selection_metrics,
+        diagnoses=args.diagnoses
     )
+
 
 # Functions to dispatch command line options from tsvtool to corresponding
 # function
-
 def tsv_restrict_func(args):
     from .tools.tsv.restriction import aibl_restriction, oasis_restriction
 
@@ -944,16 +948,6 @@ def parse_command_line():
 
     train_slice_parser.set_defaults(func=train_func)
 
-    #########################
-    # SVM
-    #########################
-    # train_svm_parser = train_subparser.add_parser(
-    #     "svm",
-    #     parents=[train_parent_parser],
-    #     help="Train a SVM.")
-    #
-    # train_svm_parser.set_defaults(func=train_func)
-
     # Classify - Classify a subject or a list of tsv files with the CNN
     # provided as argument.
     # classify_parser: get command line arguments and options
@@ -962,36 +956,70 @@ def parse_command_line():
         'classify',
         help='''Classify one image or a list of images with your previously
                  trained model.''')
-    classify_parser.add_argument(
+    classify_pos_group = classify_parser.add_argument_group(
+        TRAIN_CATEGORIES["POSITIONAL"])
+    classify_pos_group.add_argument(
         'caps_directory',
         help='Data using CAPS structure.',
         default=None)
-    classify_parser.add_argument(
+    classify_pos_group.add_argument(
         'tsv_path',
-        help='TSV file with subjects/sessions to process.',
+        help='''Path to the file with subjects/sessions to process.
+        If it includes the filename will load the tsv file directly.
+        Else will load the baseline tsv files of wanted diagnoses produced by tsvtool.''',
         default=None)
-    classify_parser.add_argument(
+    classify_pos_group.add_argument(
         'model_path',
         help='''Path to the folder where the model is stored. Folder structure
                 should be the same obtained during the training.''',
         default=None)
-    classify_parser.add_argument(
-        '-pre', '--prefix_output',
+    classify_pos_group.add_argument(
+        'prefix_output',
         help='Prefix to name the files resulting from the classify task.',
-        type=str, default='prefix_DB')
-    classify_parser.add_argument(
+        type=str)
+
+    # Computational resources
+    classify_comput_group = classify_parser.add_argument_group(
+        TRAIN_CATEGORIES["COMPUTATIONAL"])
+    classify_comput_group.add_argument(
+        '-cpu', '--use_cpu', action='store_true',
+        help='Uses CPU instead of GPU.',
+        default=False)
+    classify_comput_group.add_argument(
+        '-np', '--nproc',
+        help='Number of cores used during the task.',
+        type=int, default=2)
+    classify_comput_group.add_argument(
+        '--batch_size',
+        default=2, type=int,
+        help='Batch size for data loading. (default=2)')
+
+    # Specific classification arguments
+    classify_specific_group = classify_parser.add_argument_group(
+        TRAIN_CATEGORIES["OPTIONAL"]
+    )
+    classify_specific_group.add_argument(
         '-nl', '--no_labels', action='store_true',
         help='Add this flag if your dataset does not contain a ground truth.',
         default=False)
-    classify_parser.add_argument(
+    classify_specific_group.add_argument(
         '--use_extracted_features',
         help='''If True the extract slices or patche are used, otherwise the they
                 will be extracted on the fly (if necessary).''',
         default=False, action="store_true")
-    classify_parser.add_argument(
-        '-cpu', '--use_cpu', action='store_true',
-        help='Uses CPU instead of GPU.',
-        default=False)
+    classify_specific_group.add_argument(
+        '--selection_metrics',
+        help='''List of metrics to find the best models to evaluate. Default will
+        classify best model based on balanced accuracy.''',
+        choices=['loss', 'balanced_accuracy'],
+        default=['balanced_accuracy'],
+        nargs='+'
+    )
+    classify_specific_group.add_argument(
+        "--diagnoses",
+        help="Labels that must be extracted from merged_tsv.",
+        nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'], default=None)
+
     classify_parser.set_defaults(func=classify_func)
 
     tsv_parser = subparser.add_parser(
