@@ -392,7 +392,8 @@ def classify_func(args):
         gpu=not args.use_cpu,
         prepare_dl=args.use_extracted_features,
         selection_metrics=args.selection_metrics,
-        diagnoses=args.diagnoses
+        diagnoses=args.diagnoses,
+        verbosity=args.verbose
     )
 
 
@@ -1038,6 +1039,7 @@ def parse_command_line():
 
     classify_parser = subparser.add_parser(
         'classify',
+        parents=[parent_parser],
         help='''Classify one image or a list of images with your previously
                  trained model.''')
     classify_pos_group = classify_parser.add_argument_group(

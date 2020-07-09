@@ -6,6 +6,7 @@ import errno
 import torch
 import pathlib
 from clinicadl.tools.deep_learning import create_model, load_model, read_json
+from clinicadl.tools.deep_learning.iotools import return_logger
 from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, compute_num_cnn, load_data_test
 from clinicadl.tools.deep_learning.cnn_utils import test, soft_voting_to_tsvs, mode_level_to_tsvs
 import torch.nn as nn
@@ -22,7 +23,8 @@ def classify(caps_dir,
              batch_size=1,
              prepare_dl=True,
              selection_metrics=None,
-             diagnoses=None):
+             diagnoses=None,
+             verbosity=0):
     """
     This function verifies the input folders, and the existence of the json file
     then it launch the inference stage from a specific model.
@@ -42,8 +44,10 @@ def classify(caps_dir,
         on-the-fly.
         selection_metrics: list of metrics to find best models to be evaluated.
         diagnoses: list of diagnoses to be tested if tsv_path is a folder.
+        verbosity: level of verbosity.
 
     """
+    logger = return_logger(verbosity, "classify")
 
     # Verify that paths exist
     caps_dir = abspath(caps_dir)
@@ -51,11 +55,11 @@ def classify(caps_dir,
     tsv_path = abspath(tsv_path)
 
     if not isdir(caps_dir):
-        print("Folder containing MRIs was not found, please verify its location.")
+        logger.error("Folder containing MRIs was not found, please verify its location.")
         raise FileNotFoundError(
             errno.ENOENT, strerror(errno.ENOENT), caps_dir)
     if not isdir(model_path):
-        print("A valid model in the path was not found. Donwload them from aramislab.inria.fr")
+        logger.error("A valid model in the path was not found. Donwload them from aramislab.inria.fr")
         raise FileNotFoundError(
             errno.ENOENT, strerror(errno.ENOENT), model_path)
     if not exists(tsv_path):
@@ -68,14 +72,14 @@ def classify(caps_dir,
     json_file = join(model_path, 'commandline.json')
 
     if not exists(json_file):
-        print("Json file doesn't exist")
+        logger.error("Json file doesn't exist")
         raise FileNotFoundError(
             errno.ENOENT, strerror(errno.ENOENT), json_file)
 
     # Verify if a GPU is available
     if gpu:
         if not torch.cuda.is_available():
-            print("GPU classifing is not available in your system, it will use cpu.")
+            logger.warn("GPU is not available in your system, it will use cpu.")
             gpu = False
 
     inference_from_model(
@@ -90,7 +94,8 @@ def classify(caps_dir,
         batch_size,
         prepare_dl,
         selection_metrics,
-        diagnoses
+        diagnoses,
+        logger
     )
 
 
@@ -105,7 +110,8 @@ def inference_from_model(caps_dir,
                          batch_size=1,
                          prepare_dl=False,
                          selection_metrics=None,
-                         diagnoses=None):
+                         diagnoses=None,
+                         logger=None):
     """
     Inference from previously trained model.
 
@@ -131,6 +137,7 @@ def inference_from_model(caps_dir,
         on-the-fly.
         selection_metrics: list of metrics to find best models to be evaluated.
         diagnoses: list of diagnoses to be tested if tsv_path is a folder.
+        logger: Logger instance.
 
     Returns:
         Files written in the output folder with prediction results and metrics. By
@@ -142,6 +149,10 @@ def inference_from_model(caps_dir,
 
     """
     import argparse
+    import logging
+
+    if logger is None:
+        logger = logging
 
     parser = argparse.ArgumentParser()
     parser.add_argument("model_path", type=str,
@@ -149,8 +160,8 @@ def inference_from_model(caps_dir,
     options = parser.parse_args([model_path])
     options = read_json(options, json_path=json_file)
 
-    print("Load model with these options:")
-    print(options)
+    logger.debug("Load model with these options:")
+    logger.debug(options)
 
     # Overwrite options with user input
     options.use_cpu = not gpu
@@ -212,7 +223,8 @@ def inference_from_model(caps_dir,
                 fold,
                 "best_%s" % selection_metric,
                 labels=labels,
-                num_cnn=num_cnn
+                num_cnn=num_cnn,
+                logger=logger
             )
 
             # Soft voting
@@ -226,16 +238,20 @@ def inference_from_model(caps_dir,
             if options.mode in ["patch", "roi", "slice"]:
                 soft_voting_to_tsvs(currentDirectory, fold, "best_%s" % selection_metric, options.mode,
                                     prefix, num_cnn=num_cnn, selection_threshold=selection_thresh,
-                                    use_labels=labels)
+                                    use_labels=labels, logger=logger)
 
-            print("Prediction results and metrics are written in the "
-                  "following folder: %s" % performance_dir)
+            logger.info("Prediction results and metrics are written in the "
+                        "following folder: %s" % performance_dir)
 
 
 def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
                                  prefix, output_dir, fold, selection,
-                                 labels=True, num_cnn=None):
+                                 labels=True, num_cnn=None, logger=None):
     from os.path import join
+    import logging
+
+    if logger is None:
+        logger = logging
 
     gpu = not model_options.use_cpu
 
@@ -289,6 +305,9 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
                 use_labels=labels
             )
 
+            logger.info("%s balanced accuracy is %f for %s %i and model selected on %s"
+                        % (prefix, cnn_metrics["balanced_accuracy"], model_options.mode, n, selection))
+
             mode_level_to_tsvs(output_dir, cnn_df, cnn_metrics, fold, selection, model_options.mode,
                                dataset=prefix, cnn_index=n)
 
@@ -327,6 +346,9 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
             mode=model_options.mode,
             use_labels=labels
         )
+
+        logger.info("%s level %s balanced accuracy is %f for model selected on %s"
+                    % (model_options.mode, prefix, metrics["balanced_accuracy"], selection))
 
         mode_level_to_tsvs(output_dir, predictions_df, metrics, fold, selection, model_options.mode,
                            dataset=prefix)
