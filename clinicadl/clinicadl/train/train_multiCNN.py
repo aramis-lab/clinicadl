@@ -4,14 +4,13 @@ import os
 import torch
 from torch.utils.data import DataLoader
 
-from ..tools.deep_learning.models import transfer_learning, init_model
+from ..tools.deep_learning.models import transfer_learning, init_model, create_model, load_model
 from ..tools.deep_learning.data import (get_transforms,
                                         load_data,
                                         return_dataset,
                                         compute_num_cnn)
-from ..tools.deep_learning.cnn_utils import train, soft_voting_to_tsvs
+from ..tools.deep_learning.cnn_utils import train, test, mode_level_to_tsvs, soft_voting_to_tsvs
 from ..tools.deep_learning.iotools import return_logger
-from clinicadl.test.test_multiCNN import test_cnn
 
 
 def train_multi_cnn(params):
@@ -97,9 +96,9 @@ def train_multi_cnn(params):
             train(model, train_loader, valid_loader, criterion, optimizer, False, log_dir, model_dir, params,
                   logger=train_logger)
 
-            test_cnn(params.output_dir, train_loader, "train", fi, criterion, cnn_index, params,
+            test_cnn(model, params.output_dir, train_loader, "train", fi, criterion, cnn_index, mode=params.mode,
                      gpu=params.gpu, logger=eval_logger)
-            test_cnn(params.output_dir, valid_loader, "validation", fi, criterion, cnn_index, params,
+            test_cnn(model, params.output_dir, valid_loader, "validation", fi, criterion, cnn_index, mode=params.mode,
                      gpu=params.gpu, logger=eval_logger)
 
         for selection in ['best_balanced_accuracy', 'best_loss']:
@@ -123,3 +122,20 @@ def train_multi_cnn(params):
                 num_cnn=num_cnn,
                 selection_threshold=params.selection_threshold,
             )
+
+
+def test_cnn(model, output_dir, data_loader, subset_name, split, criterion, cnn_index, mode, logger, gpu=False):
+
+    for selection in ["best_balanced_accuracy", "best_loss"]:
+        # load the best trained model during the training
+        model, best_epoch = load_model(model, os.path.join(output_dir, 'fold-%i' % split, 'models',
+                                                           'cnn-%i' % cnn_index, selection),
+                                       gpu=gpu, filename='model_best.pth.tar')
+
+        results_df, metrics = test(model, data_loader, gpu, criterion, mode)
+
+        logger.info("%s level %s balanced accuracy is %f for model selected on %s"
+                    % (mode, subset_name, metrics["balanced_accuracy"], selection))
+
+        mode_level_to_tsvs(output_dir, results_df, metrics, split, selection, mode,
+                           dataset=subset_name, cnn_index=cnn_index)
