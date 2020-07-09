@@ -134,8 +134,8 @@ def test_cnn(model, output_dir, data_loader, subset_name, split, criterion, cnn_
 
         results_df, metrics = test(model, data_loader, gpu, criterion, mode)
 
-        logger.info("%s level %s balanced accuracy is %f for model selected on %s"
-                    % (mode, subset_name, metrics["balanced_accuracy"], selection))
+        logger.info("%s balanced accuracy is %f for %s %i and model selected on %s"
+                    % (subset_name, metrics["balanced_accuracy"], mode, cnn_index, selection))
 
         mode_level_to_tsvs(output_dir, results_df, metrics, split, selection, mode,
                            dataset=subset_name, cnn_index=cnn_index)
