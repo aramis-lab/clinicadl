@@ -69,7 +69,7 @@ def qc_func(args):
 
     quality_check(
         args.caps_dir,
-        args.tsv_path,
+        args.tsv_file,
         args.output_path,
         threshold=args.threshold,
         batch_size=args.batch_size,
