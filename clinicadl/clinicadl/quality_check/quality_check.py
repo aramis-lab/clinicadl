@@ -20,10 +20,10 @@ def quality_check(caps_dir, tsv_path, output_path, threshold=0.5, batch_size=1, 
     path_to_model = join(root, 'resources', 'models')
     url_aramis = 'https://aramislab.paris.inria.fr/files/data/models/dl/qc/'
     FILE1 = RemoteFileStructure(
-            filename='resnet18.pth.tar',
-            url=url_aramis,
-            checksum='a97a781be3820b06424fe891ec405c78b87ad51a27b6b81614dbdb996ce60104'
-            )
+        filename='resnet18.pth.tar',
+        url=url_aramis,
+        checksum='a97a781be3820b06424fe891ec405c78b87ad51a27b6b81614dbdb996ce60104'
+    )
     ref_crop = join(path_to_model, FILE1.filename)
 
     if not(exists(ref_template)):
