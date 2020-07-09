@@ -178,8 +178,9 @@ def transfer_autoencoder_weights(model, source_path, split):
         decoder = model
 
     model_path = os.path.join(source_path, 'fold-%i' % split, 'models', "best_loss", "model_best.pth.tar")
+    source_dict = torch.load(model_path)
 
-    initialize_other_autoencoder(decoder, model_path, difference=0)
+    initialize_other_autoencoder(decoder, source_dict)
 
     if not isinstance(model, AutoEncoder):
         model.features = deepcopy(decoder.encoder)
@@ -219,37 +220,52 @@ def transfer_cnn_weights(model, source_path, split, selection="best_balanced_acc
     return model
 
 
-def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, difference=0):
+def initialize_other_autoencoder(decoder, source_dict):
     """
     Initialize an autoencoder with another one values even if they have different sizes.
 
     :param decoder: (Autoencoder) Autoencoder constructed from a CNN with the Autoencoder class.
-    :param pretrained_autoencoder_path: (str) path to a pretrained autoencoder weights and biases.
-    :param difference: (int) difference of depth between the pretrained encoder and the new one.
+    :param source_dict: (dict) The result dict produced by save_checkpoint.
     :return: (Autoencoder) initialized autoencoder
     """
 
-    result_dict = torch.load(pretrained_autoencoder_path)
-    parameters_dict = result_dict['model']
-    module_length = int(len(decoder) / decoder.level)
-    difference = difference * module_length
+    try:
+        decoder.load_state_dict(source_dict['model'])
+    except RuntimeError:
+        print("The source and target autoencoders do not have the same size."
+              "The transfer learning task may not work correctly for custom models.")
 
-    for key in parameters_dict.keys():
-        section, number, spec = key.split('.')
-        print(section, number, spec)
-        number = int(number)
-        if section == 'encoder' and number < len(decoder.encoder):
-            data_ptr = eval('decoder.' + section + '[number].' + spec + '.data')
-            data_ptr = parameters_dict[key]
-        elif section == 'decoder':
-            # Deeper autoencoder
-            if difference >= 0:
-                data_ptr = eval('decoder.' + section + '[number + difference].' + spec + '.data')
-                data_ptr = parameters_dict[key]
-            # More shallow autoencoder
-            elif difference < 0 and number < len(decoder.decoder):
-                data_ptr = eval('decoder.' + section + '[number].' + spec + '.data')
-                new_key = '.'.join(['decoder', str(number + difference), spec])
-                data_ptr = parameters_dict[new_key]
+        parameters_dict = source_dict['model']
+        difference = find_maximum_layer(decoder.state_dict()) - find_maximum_layer(parameters_dict)
+
+        for key in parameters_dict.keys():
+            section, number, spec = key.split('.')
+            number = int(number)
+            if section == 'encoder' and number < len(decoder.encoder):
+                data = getattr(getattr(decoder, section)[number], spec).data
+                assert data.shape == parameters_dict[key].shape
+                getattr(getattr(decoder, section)[number], spec).data = parameters_dict[key]
+            elif section == 'decoder':
+                # Deeper target autoencoder
+                if difference >= 0:
+                    data = getattr(getattr(decoder, section)[number + difference], spec).data
+                    assert data.shape == parameters_dict[key].shape
+                    getattr(getattr(decoder, section)[number + difference], spec).data = parameters_dict[key]
+                # More shallow target autoencoder
+                elif difference < 0 and number < len(decoder.decoder):
+                    data = getattr(getattr(decoder, section)[number], spec).data
+                    new_key = '.'.join(['decoder', str(number + abs(difference)), spec])
+                    assert data.shape == parameters_dict[new_key].shape
+                    getattr(getattr(decoder, section)[number], spec).data = parameters_dict[new_key]
 
     return decoder
+
+
+def find_maximum_layer(state_dict):
+    max_layer = 0
+    for key in state_dict.keys():
+        _, num, _ = key.split(".")
+        num = int(num)
+        if num > max_layer:
+            max_layer = num
+    return max_layer
