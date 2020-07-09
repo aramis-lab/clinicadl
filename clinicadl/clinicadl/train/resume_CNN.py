@@ -6,7 +6,7 @@ from time import time
 import torch
 from torch.utils.data import DataLoader
 
-from clinicadl.test.evaluation_singleCNN import test_cnn
+from .train_singleCNN import test_single_cnn
 from clinicadl.tools.deep_learning.data import MRIDataset, MinMaxNormalization, load_data
 from clinicadl.tools.deep_learning import create_model, load_model, load_optimizer, read_json
 from clinicadl.tools.deep_learning.cnn_utils import train
@@ -84,8 +84,8 @@ def main(options):
     train(model, train_loader, valid_loader, criterion, optimizer, True, log_dir, model_dir, options)
 
     options.model_path = options.output_dir
-    test_cnn(train_loader, "train", options.split, criterion, options)
-    test_cnn(valid_loader, "validation", options.split, criterion, options)
+    test_single_cnn(train_loader, "train", options.split, criterion, options)
+    test_single_cnn(valid_loader, "validation", options.split, criterion, options)
 
     total_time = time() - total_time
     print("Total time of computation: %d s" % total_time)
