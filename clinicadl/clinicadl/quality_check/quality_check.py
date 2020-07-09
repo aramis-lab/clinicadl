@@ -28,7 +28,7 @@ def quality_check(caps_dir, tsv_path, output_path, threshold=0.5, batch_size=1, 
         try:
             ref_template = fetch_file(FILE1, path_to_model)
         except IOError as err:
-            print('Unable to download required template (mni_icbm152) for processing:', err
+            print('Unable to download required model for QC process:', err
 
 
     # Load QC model
