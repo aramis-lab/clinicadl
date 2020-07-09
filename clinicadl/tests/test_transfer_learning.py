@@ -5,14 +5,46 @@ import shutil
 
 # Everything is tested on roi except for cnn --> multicnn (patch) as multicnn is not implemented for roi.
 @pytest.fixture(params=[
+    'transfer_smallAE_largeAE'
     'transfer_ae_ae',
+    'transfer_smallAE_largeCNN',
     'transfer_ae_cnn',
     'transfer_cnn_cnn',
     'transfer_cnn_multicnn',
 ])
 def cli_commands(request):
 
-    if request.param == 'transfer_ae_ae':
+    if request.param == 'transfer_smallAE_largeAE':
+        source_task = [
+            'train',
+            'roi',
+            'autoencoder',
+            'data/OASIS_test',
+            't1-linear',
+            'data/labels_list',
+            'results_source',
+            'Conv5_FC3',
+            '--epochs', '1',
+            '--n_splits', '2',
+            '--split', '0',
+            '-cpu'
+        ]
+        target_task = [
+            'train',
+            'image',
+            'autoencoder',
+            'data/OASIS_test',
+            't1-linear',
+            'data/labels_list',
+            'results_target',
+            'Conv6_FC3',
+            '--epochs', '1',
+            '--n_splits', '2',
+            '--split', '0',
+            '--transfer_learning_path', 'results_source',
+            '-cpu'
+        ]
+    elif request.param == 'transfer_ae_ae':
         source_task = [
             'train',
             'roi',
@@ -36,6 +68,36 @@ def cli_commands(request):
             'data/labels_list',
             'results_target',
             'Conv4_FC3',
+            '--epochs', '1',
+            '--n_splits', '2',
+            '--split', '0',
+            '--transfer_learning_path', 'results_source',
+            '-cpu'
+        ]
+    elif request.param == 'transfer_smallAE_largeCNN':
+        source_task = [
+            'train',
+            'roi',
+            'autoencoder',
+            'data/OASIS_test',
+            't1-linear',
+            'data/labels_list',
+            'results_source',
+            'Conv5_FC3',
+            '--epochs', '1',
+            '--n_splits', '2',
+            '--split', '0',
+            '-cpu'
+        ]
+        target_task = [
+            'train',
+            'image',
+            'cnn',
+            'data/OASIS_test',
+            't1-linear',
+            'data/labels_list',
+            'results_target',
+            'Conv6_FC3',
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
