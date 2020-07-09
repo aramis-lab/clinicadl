@@ -187,6 +187,6 @@ class Conv6_FC3(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-            x = self.classifier(x)
+        x = self.classifier(x)
 
         return x
