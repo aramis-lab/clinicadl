@@ -64,6 +64,20 @@ def extract_data_func(args):
     wf.run(plugin='MultiProc', plugin_args={'n_procs': args.nproc})
 
 
+def qc_func(args):
+    from clinicadl.quality_check.quality_check import quality_check
+
+    quality_check(
+        args.caps_dir,
+        args.tsv_file,
+        args.output_path,
+        threshold=args.threshold,
+        batch_size=args.batch_size,
+        num_workers=args.nproc,
+        gpu=not args.use_cpu
+    )
+
+
 def generate_data_func(args):
     from .tools.data.generate_data import generate_random_dataset, generate_trivial_dataset
 
@@ -615,6 +629,35 @@ def parse_command_line():
         type=int, default=2)
 
     extract_parser.set_defaults(func=extract_data_func)
+
+    qc_parser = subparser.add_parser(
+        'quality_check',
+        help='Performs quality check procedure for t1-linear pipeline.'
+             'Original code can be found at https://github.com/vfonov/deep-qc'
+    )
+    qc_parser.add_argument("caps_dir",
+                           help='Data using CAPS structure.',
+                           type=str)
+    qc_parser.add_argument("tsv_file",
+                           help='TSV path with subjects/sessions to process.',
+                           type=str)
+    qc_parser.add_argument("output_path",
+                           help="Path to the output tsv file (filename included).",
+                           type=str)
+    qc_parser.add_argument("--threshold",
+                           help='The threshold on the output probability to decide if the image passed or failed.',
+                           type=float, default=0.5)
+    qc_parser.add_argument('--batch_size',
+                           help='Batch size used in DataLoader (default=1).',
+                           default=1, type=int)
+    qc_parser.add_argument("-np", "--nproc",
+                           help='Number of cores used the quality check.',
+                           type=int, default=2)
+    qc_parser.add_argument('-cpu', '--use_cpu', action='store_true',
+                           help='Uses CPU instead of GPU.',
+                           default=False)
+
+    qc_parser.set_defaults(func=qc_func)
 
     # Train - Train CNN model with preprocessed  data
     # train_parser: get command line arguments and options
