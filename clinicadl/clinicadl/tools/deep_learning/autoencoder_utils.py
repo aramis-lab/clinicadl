@@ -33,15 +33,6 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
     if logger is None:
         logger = logging
 
-    if not resume:
-        check_and_clean(model_dir)
-        check_and_clean(log_dir)
-        options.beginning_epoch = 0
-
-    # Create writers
-    writer_train = SummaryWriter(os.path.join(log_dir, 'train'))
-    writer_valid = SummaryWriter(os.path.join(log_dir, 'validation'))
-
     decoder.train()
     logger.debug(decoder)
 
@@ -54,6 +45,16 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
     early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
     loss_valid = None
     epoch = options.beginning_epoch
+
+    if resume:
+        early_stopping.num_bad_epochs = options.num_bad_epochs
+    else:
+        check_and_clean(model_dir)
+        check_and_clean(log_dir)
+
+    # Create writers
+    writer_train = SummaryWriter(os.path.join(log_dir, 'train'))
+    writer_valid = SummaryWriter(os.path.join(log_dir, 'validation'))
 
     logger.debug("Beginning training")
     while epoch < options.epochs and not early_stopping.step(loss_valid):
@@ -127,7 +128,9 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
         # Always save the model at the end of the epoch and update best model
         save_checkpoint({'model': decoder.state_dict(),
                          'epoch': epoch,
-                         'valid_loss': loss_valid},
+                         'valid_loss': loss_valid,
+                         'num_bad_epochs': early_stopping.num_bad_epochs,
+                         },
                         False, is_best,
                         model_dir)
         # Save optimizer state_dict to be able to reload

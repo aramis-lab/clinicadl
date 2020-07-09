@@ -45,11 +45,14 @@ def load_model(model, checkpoint_dir, gpu, filename='model_best.pth.tar'):
     best_model = deepcopy(model)
     param_dict = torch.load(os.path.join(checkpoint_dir, filename), map_location="cpu")
     best_model.load_state_dict(param_dict['model'])
+    num_bad_epochs = None
+    if 'num_bad_epochs' in param_dict:
+        num_bad_epochs = param_dict['num_bad_epochs']
 
     if gpu:
         best_model = best_model.cuda()
 
-    return best_model, param_dict['epoch']
+    return best_model, param_dict['epoch'], num_bad_epochs
 
 
 def load_optimizer(optimizer_path, model):
@@ -70,3 +73,5 @@ def load_optimizer(optimizer_path, model):
     name = optimizer_dict["name"]
     optimizer = eval("torch.optim." + name)(filter(lambda x: x.requires_grad, model.parameters()))
     optimizer.load_state_dict(optimizer_dict["optimizer"])
+
+    return optimizer

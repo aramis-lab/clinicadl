@@ -283,7 +283,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
                 pin_memory=True)
 
             # load the best trained model during the training
-            model, best_epoch = load_model(
+            model, best_epoch, _ = load_model(
                 model,
                 join(model_path, 'cnn-%i' % n, selection),
                 gpu,
@@ -308,7 +308,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
     else:
 
         # Load model from path
-        best_model, best_epoch = load_model(
+        best_model, best_epoch, _ = load_model(
             model, join(model_path, selection),
             gpu, filename='model_best.pth.tar')
 

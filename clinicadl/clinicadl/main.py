@@ -17,12 +17,7 @@ def main():
 
     arguments = vars(args)
 
-    if (arguments['task'] != 'preprocessing') \
-            and (arguments['task'] != 'extract') \
-            and (arguments['task'] != 'generate') \
-            and (arguments['task'] != 'tsvtool') \
-            and (arguments['task'] != 'quality_check') \
-            and (arguments['task'] != 'classify'):
+    if arguments['task'] == 'train':
         commandline_to_json(commandline)
         write_requirements_version(args.output_dir)
 

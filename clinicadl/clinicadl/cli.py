@@ -373,6 +373,13 @@ def train_func(args):
         print('Mode not detected in clinicadl')
 
 
+# Function to dispatch command line options from resume
+def resume_func(args):
+    from .resume import resume
+
+    resume(params=args)
+
+
 # Function to dispatch command line options from classify to corresponding
 # function
 def classify_func(args):
@@ -1054,6 +1061,35 @@ def parse_command_line():
         type=float, default=0.0)
 
     train_slice_parser.set_defaults(func=train_func)
+
+    # TODO add verbose parent when merged
+    resume_parser = subparser.add_parser(
+        'resume',
+        help='Resume a stopped experiment.')
+
+    resume_pos_group = resume_parser.add_argument_group(
+        TRAIN_CATEGORIES["POSITIONAL"])
+    resume_pos_group.add_argument(
+        'model_path',
+        help='Path to the experiment to be resumed.',
+        type=str)
+
+    resume_comput_group = resume_parser.add_argument_group(
+        TRAIN_CATEGORIES["COMPUTATIONAL"])
+    resume_comput_group.add_argument(
+        '-cpu', '--use_cpu', action='store_true',
+        help='Uses CPU instead of GPU.',
+        default=False)
+    resume_comput_group.add_argument(
+        '-np', '--nproc',
+        help='Number of cores used during the training.',
+        type=int, default=2)
+    resume_comput_group.add_argument(
+        '--evaluation_steps', '-esteps',
+        default=0, type=int,
+        help='Fix the number of batches to use before validation.')
+
+    resume_parser.set_defaults(func=resume_func)
 
     # Classify - Classify a subject or a list of tsv files with the CNN
     # provided as argument.
