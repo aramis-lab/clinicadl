@@ -13,10 +13,27 @@ def quality_check(caps_dir, tsv_path, output_path, threshold=0.5, batch_size=1, 
     if path.splitext(output_path)[1] != ".tsv":
         raise ValueError("Please provide an output path to a tsv file")
 
+    # Fecth QC model
+    root = dirname(abspath(join(abspath(__file__), pardir)))
+    path_to_model = join(root, 'resources', 'models')
+    url_aramis = 'https://aramislab.paris.inria.fr/files/data/models/dl/qc/'
+    FILE1 = RemoteFileStructure(
+            filename='resnet18.pth.tar',
+            url=url_aramis,
+            checksum='a97a781be3820b06424fe891ec405c78b87ad51a27b6b81614dbdb996ce60104'
+            )
+    ref_crop = join(path_to_model, FILE1.filename)
+
+    if not(exists(ref_template)):
+        try:
+            ref_template = fetch_file(FILE1, path_to_model)
+        except IOError as err:
+            print('Unable to download required template (mni_icbm152) for processing:', err
+
+
     # Load QC model
-    script_dir = path.dirname(path.realpath(__file__))
     model = resnet_qc_18()
-    model.load_state_dict(torch.load(path.join(script_dir, "model", "resnet18.pth.tar")))
+    model.load_state_dict(torch.load(path.join(path_to_model, "resnet18.pth.tar")))
     model.eval()
     if gpu:
         model.cuda()
