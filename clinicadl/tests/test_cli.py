@@ -16,16 +16,14 @@ def generate_cli_commands(request):
     if request.param == 'preprocessing':
         test_input = [
             'preprocessing',
+            't1-linear',
             '/dir/bids/',
-            '/dir/caps/',
-            '/dir/file.tsv',
-            '/dir/workdir/']
+            '/dir/caps/']
         keys_output = [
             'task',
-            'bids_dir',
-            'caps_dir',
-            'tsv_file',
-            'working_dir']
+            'preprocessing',
+            'bids_directory',
+            'caps_directory']
 
     if request.param == 'extract':
         test_input = [
