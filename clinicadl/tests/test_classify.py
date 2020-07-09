@@ -18,8 +18,7 @@ def cli_commands(request):
             'data/OASIS_test',
             'data/OASIS_test/data.tsv',
             'data/models/image/baseline/AD_CN_one_fold/',
-            '--output_directory', 'data/output/',
-            '--prefix_output', 'DB-XXXX',
+            'test-OASIS',
             '-cpu'
         ]
     elif request.param == 'classify_slice':
@@ -28,7 +27,7 @@ def cli_commands(request):
             'data/OASIS_test',
             'data/OASIS_test/data.tsv',
             'data/models/slice/baseline/AD_CN/',
-            '--prefix_output', 'DB-XXXX',
+            'test-OASIS',
             '-cpu'
         ]
     elif request.param == 'classify_patch':
@@ -37,8 +36,9 @@ def cli_commands(request):
             'data/OASIS_test',
             'data/OASIS_test/data.tsv',
             'data/models/patch/baseline/AD_CN/',
-            '--prefix_output', 'DB-XXXX',
-            '-cpu'
+            'test-OASIS',
+            '-cpu',
+            '-nl'
         ]
     else:
         raise NotImplementedError(
