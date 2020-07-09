@@ -5,7 +5,7 @@ import shutil
 
 # Everything is tested on roi except for cnn --> multicnn (patch) as multicnn is not implemented for roi.
 @pytest.fixture(params=[
-    'transfer_smallAE_largeAE'
+    'transfer_smallAE_largeAE',
     'transfer_ae_ae',
     'transfer_smallAE_largeCNN',
     'transfer_ae_cnn',
