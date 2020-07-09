@@ -1,0 +1,67 @@
+# Project information
+site_name: ClinicaDL Documentation
+site_author: ClinicaDL contributors
+site_url: http://www.clinica.run/clinicadl
+site_description: >-
+  Framework for the reproducible classification of Alzheimer's disease
+  using deep learning
+
+# Repository
+repo_name: aramislab/AD-DL
+repo_url: https://github.com/aramis-lab/AD-DL
+#edit_uri: master/edit/doc
+
+# Copyright
+copyright: Copyright &copy; 2020 ClinicaDL contributors
+
+# Google Analytics
+google_analytics:
+  - UA-106080699-1
+  - auto
+
+# Configuration
+theme:
+  name: material
+  icon:
+    repo: material/github
+  language: en
+  palette:
+    primary: green
+    accent: green
+
+# Customization
+extra:
+  feature:
+    tabs: true
+  social:
+    - icon: material/github
+      link: https://github.com/aramis-lab/
+    - icon: material/twitter
+      link: https://twitter.com/clinica_run
+    - icon: material/earth
+      link: http://www.aramislab.fr
+
+# Extensions
+markdown_extensions:
+  - admonition
+  - codehilite
+  - footnotes
+  - toc:
+      permalink: True
+
+# Page tree
+nav:
+  - Home: index.md
+  - Installation: Installation.md
+  - Generate: Generate.md
+  - Preprocessing: Preprocessing.md
+  - Quality Check: QualityCheck.md
+  - Extract: Extract.md
+  - Train:
+    - Introduction: Train/Introduction.md
+    - Image-based: Train/Image.md
+    - Patch-based: Train/Patch.md
+    - Slice-based: Train/Slice.md
+    - ROI-based: Train/ROI.md
+  - Classify: Classify.md
+  - TSV Tools: TSVTools.md
