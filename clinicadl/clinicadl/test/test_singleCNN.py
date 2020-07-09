@@ -17,7 +17,7 @@ def test_cnn(output_dir, data_loader, subset_name, split, criterion, model_optio
     for selection in ["best_balanced_accuracy", "best_loss"]:
         # load the best trained model during the training
         model = create_model(model_options.model, gpu, dropout=model_options.dropout)
-        model, best_epoch = load_model(model, os.path.join(output_dir, 'fold-%i' % split, 'models', selection),
+        model, best_epoch, _ = load_model(model, os.path.join(output_dir, 'fold-%i' % split, 'models', selection),
                                        gpu=gpu, filename='model_best.pth.tar')
 
         results_df, metrics = test(model, data_loader, gpu, criterion, model_options.mode)

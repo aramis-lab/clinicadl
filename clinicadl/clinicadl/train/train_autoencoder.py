@@ -74,13 +74,15 @@ def train_autoencoder(params):
                                                             lr=params.learning_rate,
                                                             weight_decay=params.weight_decay)
 
+        params.beginning_epoch = 0
+
         train(decoder, train_loader, valid_loader, criterion, optimizer, False,
               log_dir, model_dir, params)
 
         if params.visualization:
             print("Visualization of autoencoder reconstruction")
-            best_decoder, _ = load_model(decoder, os.path.join(model_dir, "best_loss"),
-                                         params.gpu, filename='model_best.pth.tar')
+            best_decoder, _, _ = load_model(decoder, os.path.join(model_dir, "best_loss"),
+                                            params.gpu, filename='model_best.pth.tar')
             nb_images = train_loader.dataset.elem_per_image
             if nb_images <= 2:
                 nb_images *= 3

@@ -34,7 +34,7 @@ def test_cnn(data_loader, subset_name, split, criterion, options):
             options.model,
             gpu=options.gpu,
             dropout=options.dropout)
-        model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', "fold_%i" % split,
+        model, best_epoch, _ = load_model(model, os.path.join(options.output_dir, 'best_model_dir', "fold_%i" % split,
                                                            'CNN', selection),
                                        gpu=options.gpu, filename='model_best.pth.tar')
 

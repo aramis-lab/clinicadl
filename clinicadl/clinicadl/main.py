@@ -19,17 +19,14 @@ def main():
 
     arguments = vars(args)
 
-    if (arguments['task'] != 'preprocessing') \
-            and (arguments['task'] != 'extract') \
-            and (arguments['task'] != 'generate') \
-            and (arguments['task'] != 'tsvtool') \
-            and (arguments['task'] != 'classify'):
+    if arguments['task'] == 'train':
         commandline_to_json(commandline)
         text_file = open(path.join(args.output_dir, 'environment.txt'), 'w')
         text_file.write('Version of python: %s \n' % sys.version)
         text_file.write('Version of pytorch: %s \n' % torch.__version__)
         text_file.close()
 
+    if arguments['task'] in ['train', 'classify', 'resume']:
         if not args.use_cpu and not torch.cuda.is_available():
             raise ValueError("No GPU is available. Please add the -cpu flag to run on CPU.")
 

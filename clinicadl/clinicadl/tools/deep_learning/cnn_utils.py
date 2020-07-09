@@ -34,14 +34,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
     from tensorboardX import SummaryWriter
     from time import time
 
-    if not resume:
-        check_and_clean(model_dir)
-        check_and_clean(log_dir)
-
-    # Create writers
-    writer_train = SummaryWriter(os.path.join(log_dir, 'train'))
-    writer_valid = SummaryWriter(os.path.join(log_dir, 'validation'))
-
     # Initialize variables
     best_valid_accuracy = 0.0
     best_valid_loss = np.inf
@@ -51,6 +43,16 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
 
     early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
     mean_loss_valid = None
+
+    if resume:
+        early_stopping.num_bad_epochs = options.num_bad_epochs
+    else:
+        check_and_clean(model_dir)
+        check_and_clean(log_dir)
+
+    # Create writers
+    writer_train = SummaryWriter(os.path.join(log_dir, 'train'))
+    writer_valid = SummaryWriter(os.path.join(log_dir, 'validation'))
 
     while epoch < options.epochs and not early_stopping.step(mean_loss_valid):
         print("At %d-th epoch." % epoch)
@@ -147,7 +149,8 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
         save_checkpoint({'model': model.state_dict(),
                          'epoch': epoch,
                          'valid_loss': mean_loss_valid,
-                         'valid_acc': results_valid["balanced_accuracy"]},
+                         'valid_acc': results_valid["balanced_accuracy"],
+                         'num_bad_epochs': early_stopping.num_bad_epochs},
                         accuracy_is_best, loss_is_best,
                         model_dir)
         # Save optimizer state_dict to be able to reload

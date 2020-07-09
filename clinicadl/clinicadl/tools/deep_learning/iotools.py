@@ -145,28 +145,26 @@ def commandline_to_json(commandline):
     import json
     import os
 
-    commandline_arg_dic = vars(commandline[0])
-    commandline_arg_dic['unknown_arg'] = commandline[1]
+    commandline_arg_dict = vars(commandline[0])
+    commandline_arg_dict['unknown_arg'] = commandline[1]
 
-    output_dir = commandline_arg_dic['output_dir']
+    output_dir = commandline_arg_dict['output_dir']
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     # remove these entries from the commandline log file
-    if 'func' in commandline_arg_dic:
-        del commandline_arg_dic['func']
+    if 'func' in commandline_arg_dict:
+        del commandline_arg_dict['func']
 
-    if 'caps_dir' in commandline_arg_dic:
-        del commandline_arg_dic['caps_dir']
+    if 'output_dir' in commandline_arg_dict:
+        del commandline_arg_dict['output_dir']
 
-    if 'tsv_path' in commandline_arg_dic:
-        del commandline_arg_dic['tsv_path']
-
-    if 'output_dir' in commandline_arg_dic:
-        del commandline_arg_dic['output_dir']
+    # Reproduce hard-coded optimizer
+    if 'optimizer' not in commandline_arg_dict:
+        commandline_arg_dict['optimizer'] = 'Adam'
 
     # save to json file
-    json = json.dumps(commandline_arg_dic, skipkeys=True, indent=4)
+    json = json.dumps(commandline_arg_dict, skipkeys=True, indent=4)
     print("Path of json file:", os.path.join(output_dir, "commandline.json"))
     f = open(os.path.join(output_dir, "commandline.json"), "w")
     f.write(json)
@@ -198,7 +196,7 @@ def read_json(options, json_path=None, test=False):
 
     for key, item in json_data.items():
         # We do not change computational options
-        if key in ['gpu', 'num_workers', 'num_threads']:
+        if key in ['gpu', 'num_workers', 'evaluation_steps']:
             pass
         # If used for evaluation, some parameters were already given
         if test and key in evaluation_parameters:
