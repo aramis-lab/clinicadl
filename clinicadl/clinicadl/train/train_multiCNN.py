@@ -11,6 +11,7 @@ from ..tools.deep_learning.data import (get_transforms,
                                         compute_num_cnn)
 from ..tools.deep_learning.cnn_utils import train, test, mode_level_to_tsvs, soft_voting_to_tsvs
 from ..tools.deep_learning.iotools import return_logger
+from ..tools.deep_learning.iotools import check_and_clean
 
 
 def train_multi_cnn(params):
@@ -41,6 +42,9 @@ def train_multi_cnn(params):
 
     # Loop on folds
     for fi in fold_iterator:
+        check_and_clean(os.path.join(params.output_dir, 'fold-%i' % fi))
+        ended_file = open(os.path.join(params.output_dir, 'fold-%i' % fi, '.ended'), 'w')
+        ended_file.close()
         main_logger.info("Fold %i" % fi)
 
         for cnn_index in range(num_cnn):
@@ -101,6 +105,9 @@ def train_multi_cnn(params):
             test_cnn(model, params.output_dir, valid_loader, "validation", fi, criterion, cnn_index, mode=params.mode,
                      gpu=params.gpu, logger=eval_logger)
 
+            with open(os.path.join(params.output_dir, 'fold-%i' % fi, '.ended'), 'a') as ended_file:
+                ended_file.write("cnn-%i\n" % cnn_index)
+
         for selection in ['best_balanced_accuracy', 'best_loss']:
             soft_voting_to_tsvs(
                 params.output_dir,
@@ -122,6 +129,9 @@ def train_multi_cnn(params):
                 num_cnn=num_cnn,
                 selection_threshold=params.selection_threshold,
             )
+
+        with open(os.path.join(params.output_dir, 'fold-%i' % fi, '.ended'), 'a') as ended_file:
+            ended_file.write("final evaluation\n")
 
 
 def test_cnn(model, output_dir, data_loader, subset_name, split, criterion, cnn_index, mode, logger, gpu=False):

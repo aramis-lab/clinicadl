@@ -6,13 +6,11 @@ from torch.utils.data import DataLoader
 from warnings import warn
 
 from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, load_data
-from clinicadl.tools.deep_learning import load_model, create_autoencoder, load_optimizer, read_json
+from clinicadl.tools.deep_learning import load_model, create_autoencoder, load_optimizer
 from clinicadl.tools.deep_learning.autoencoder_utils import train, visualize_image
 
 
 def resume_autoencoder(params):
-
-    params = read_json(params)
 
     if params.evaluation_steps % params.accumulation_steps != 0 and params.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
@@ -21,12 +19,7 @@ def resume_autoencoder(params):
     transformations = get_transforms(params.mode, params.minmaxnormalization)
     criterion = torch.nn.MSELoss()
 
-    if params.split is None:
-        fold_iterator = range(params.n_splits)
-    else:
-        fold_iterator = params.split
-
-    for fi in fold_iterator:
+    for fi in params.split:
         training_df, valid_df = load_data(
             params.tsv_path,
             params.diagnoses,
@@ -94,5 +87,9 @@ def resume_autoencoder(params):
                             nb_images=nb_images)
             visualize_image(best_decoder, train_loader, os.path.join(visualization_dir, "train"),
                             nb_images=nb_images)
+
+        ended_file = open(os.path.join(params.output_dir, "fold-%i" % fi, ".ended"), 'w')
+        ended_file.close()
+        
         del decoder
         torch.cuda.empty_cache()

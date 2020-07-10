@@ -97,6 +97,8 @@ def train_single_cnn(params):
                         fi, criterion, params.mode, eval_logger, params.selection_threshold, gpu=params.gpu)
         test_single_cnn(model, params.output_dir, valid_loader, "validation",
                         fi, criterion, params.mode, eval_logger, params.selection_threshold, gpu=params.gpu)
+        ended_file = open(os.path.join(params.output_dir, "fold-%i" % fi, ".ended"), 'w')
+        ended_file.close()
 
 
 def test_single_cnn(model, output_dir, data_loader, subset_name, split, criterion, mode, logger, selection_threshold,
