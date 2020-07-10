@@ -90,5 +90,9 @@ def train_autoencoder(params):
                             nb_images=nb_images)
             visualize_image(best_decoder, train_loader, os.path.join(visualization_dir, "train"),
                             nb_images=nb_images)
+
+        ended_file = open(os.path.join(params.output_dir, "fold-%i" % fi, ".ended"), 'w')
+        ended_file.close()
+
         del decoder
         torch.cuda.empty_cache()

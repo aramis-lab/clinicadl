@@ -91,3 +91,5 @@ def train_single_cnn(params):
                  fi, criterion, params, gpu=params.gpu)
         test_cnn(params.output_dir, valid_loader, "validation",
                  fi, criterion, params, gpu=params.gpu)
+        ended_file = open(os.path.join(params.output_dir, "fold-%i" % fi, ".ended"), 'w')
+        ended_file.close()

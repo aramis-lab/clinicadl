@@ -6,14 +6,12 @@ from warnings import warn
 from torch.utils.data import DataLoader
 
 from clinicadl.tools.deep_learning.data import get_transforms, return_dataset, load_data
-from clinicadl.tools.deep_learning import create_model, load_model, load_optimizer, read_json
+from clinicadl.tools.deep_learning import create_model, load_model, load_optimizer
 from clinicadl.tools.deep_learning.cnn_utils import train
 from clinicadl.test.test_singleCNN import test_cnn
 
 
 def resume_single_cnn(params):
-
-    params = read_json(params)
 
     if params.evaluation_steps % params.accumulation_steps != 0 and params.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
@@ -22,12 +20,7 @@ def resume_single_cnn(params):
     transformations = get_transforms(params.mode, params.minmaxnormalization)
     criterion = nn.CrossEntropyLoss()
 
-    if params.split is None:
-        fold_iterator = range(params.n_splits)
-    else:
-        fold_iterator = params.split
-
-    for fi in fold_iterator:
+    for fi in params.split:
         training_df, valid_df = load_data(
             params.tsv_path,
             params.diagnoses,
@@ -86,3 +79,5 @@ def resume_single_cnn(params):
                  fi, criterion, params, gpu=params.gpu)
         test_cnn(params.output_dir, valid_loader, "validation",
                  fi, criterion, params, gpu=params.gpu)
+        ended_file = open(os.path.join(params.output_dir, "fold-%i" % fi, ".ended"), 'w')
+        ended_file.close()
