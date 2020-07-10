@@ -8,7 +8,7 @@ def resume(params):
     if not hasattr(params, "tsv_path"):
         raise ValueError("You are trying to resume a job trained with an older version of clinicadl "
                          "that is not supported with resume.")
-    
+
     # Translate parameters
     params.input_dir = params.caps_dir
     params.num_workers = params.nproc

@@ -86,7 +86,7 @@ def resume_autoencoder(params):
         if params.visualization:
             print("Visualization of autoencoder reconstruction")
             best_decoder, _, _ = load_model(decoder, os.path.join(model_dir, "best_loss"),
-                                         params.gpu, filename='model_best.pth.tar')
+                                            params.gpu, filename='model_best.pth.tar')
             nb_images = train_loader.dataset.elem_per_image
             if nb_images <= 2:
                 nb_images *= 3
