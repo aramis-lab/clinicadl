@@ -90,6 +90,6 @@ def resume_autoencoder(params):
 
         ended_file = open(os.path.join(params.output_dir, "fold-%i" % fi, ".ended"), 'w')
         ended_file.close()
-        
+
         del decoder
         torch.cuda.empty_cache()
