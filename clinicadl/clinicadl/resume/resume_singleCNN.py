@@ -86,4 +86,3 @@ def resume_single_cnn(params):
                  fi, criterion, params, gpu=params.gpu)
         test_cnn(params.output_dir, valid_loader, "validation",
                  fi, criterion, params, gpu=params.gpu)
-
