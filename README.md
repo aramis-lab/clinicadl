@@ -32,60 +32,38 @@ be performed using the software available here:
 
 > **Disclaimer:** this software is in **going-on development**. Some features can
 change between different commits. A stable version is planned to be released
-soon.  The release v.0.0.1 corresponds to the date of submission of the
+soon. The release v.0.0.1 corresponds to the date of submission of the
 publication but in the meanwhile important changes are being done to facilitate
-the use of the package. 
+the use of the package.
 
 If you find a problem when use it or if you want to provide us feedback, please
 [open an issue](https://github.com/aramis-lab/ad-dl/issues).
 
-## Table of Contents
-- [Installation](#installation)
-- [Overview](#overview)
-- [Examples](#examples)
-  * [Labels extraction in tsv files](#labels-extraction-in-tsv-files)
-  * [Preprocessing](#preprocessing)
-  * [Tensor extraction](#tensor-extraction)
-  * [Training a new model](#training-a-new-model)
-  * [Using a pretrained model](#using-a-pretrained-model)
-- [Testing](#testing)
-- [Pretrained Models](#models)
-- [Bibliography](#bibliography)
-- [Related repositories](#related-repositories)
+## Getting Started
+> Full instructions for installation and additional information can be found in
+the [user documentation](http://www.clinica.run/clinicadl).
 
-## Installation
+ClinicaDL currently supports macOS and Linux.
 
-### Main dependencies
-- Python >= 3.6
-- [Clinica](http://www.clinica.run/) >= 0.3.4 and [ANTs](https://stnava.github.io/ANTs/) (needs only to perform preprocessing)
-- Numpy
-- Pandas
-- Scikit-learn
-- Pytorch => 1.1
-- Nilearn >= 0.5.3
-- Nipy
-- TensorBoardX
-
-### Create a conda environment with the corresponding dependencies:
-Keep the following order of the installation instructions.
+We recommend to use `conda` for the installation of ClinicaDL.
 It guaranties the right management of libraries depending on common packages:
 
-
 ```{.sourceCode .bash}
-conda create --name clinicadl_env python=3.6 pytorch torchvision -c pytorch
+conda create --name ClinicaDL python=3.6 pytorch torchvision -c pytorch
 
-conda activate clinicadl_env
+conda activate ClinicaDL
 git clone git@github.com:aramis-lab/AD-DL.git
 cd AD-DL
 pip install -r requirements.txt
 ```
 
-### Install the package `clinicadl` as developer in the active conda environment:
+Once done, install the package `clinicadl` as developer in the active conda environment:
 
 ```{.sourceCode .bash}
 cd clinicadl
 pip install -e .
 ```
+
 
 ## Overview
 
@@ -139,7 +117,7 @@ where:
   - `<results_path>` is the path to the folder where tsv files are written.
   - `--restriction_path <restriction_path>` is a path to a tsv file containing the list of sessions that should be used.
   This argument is for example the result of a quality check procedure.
-  
+
 By default the extracted labels are only AD and CN, as OASIS database do not include
 MCI patients. To include them add `--diagnoses AD CN MCI sMCI pMCI` at the end of the command.
 
@@ -449,12 +427,12 @@ The trivial dataset includes two labels:
 - CN corresponding to images with the right half of the brain with lower
   intensities.
 
-## Pretrained models 
+## Pretrained models
 
 Some of the pretained model for the CNN networks can be obtained here:
 <https://zenodo.org/record/3491003>  
 
-These models were obtained durnig the experiments for publication. 
+These models were obtained durnig the experiments for publication.
 Updated versions of the models will be published soon.
 
 ## Bibliography
