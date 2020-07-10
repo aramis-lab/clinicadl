@@ -13,6 +13,7 @@ with open(join(this_directory, pardir,  'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 install_reqs = parse_requirements(join(this_directory, pardir, 'requirements.txt'), session='hack')
+print(install_reqs)
 reqs = [str(ir.req) for ir in install_reqs]
 
 setup(
@@ -26,7 +27,7 @@ setup(
         author = 'ARAMIS Lab',
         maintainer = 'Mauricio DIAZ',
         maintainer_email = 'mauricio.diaz@inria.fr',
-        packages = ['clinicadl', ],
+        packages = find_packages(exclude=('tests', 'tests.*')),
         include_package_data=True,
         zip_safe=False,
         entry_points = {
