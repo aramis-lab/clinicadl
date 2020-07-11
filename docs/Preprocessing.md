@@ -9,8 +9,8 @@ This pipeline needs the installation of **ANTs** on your computer. You can find 
 
 ### Running the pipeline
 The pipeline can be run with the following command line:
-```Text
-clinicadl run t1-linear <bids_directory> caps_directory
+```{.sourceCode .bash}
+clinicadl preprocessing t1-linear <bids_directory> caps_directory
 ```
 where:
 
@@ -18,6 +18,11 @@ where:
 - `caps_directory` is the output folder containing the results in a [CAPS](http://www.clinica.run/doc/CAPS/Introduction) hierarchy.
 
 On default, cropped images (matrix size 169×208×179, 1 mm isotropic voxels) are generated to reduce the computing power required when training deep learning models. Use `--uncropped_image` flag if you do not want to crop the image.
+
+!!! tip
+    This step can be also run with Clinica by typing
+    [`clinica run t1-linear` pipeline](http://www.clinica.run/doc/Pipelines/T1_Linear). 
+    Results are equivalent.
 
 ### Outputs
 Results are stored in the following folder of the [CAPS hierarchy](http://www.clinica.run/doc/CAPS/Specifications/#t1-linear-affine-registration-of-t1w-images-to-the-mni-standard-space): `subjects/sub-<participant_label>/ses-<session_label>/t1_linear` with the following outputs:

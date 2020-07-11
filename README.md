@@ -156,58 +156,6 @@ optional arguments:
 ```
 </details>
 
-
-### Tensor extraction
-
-Once the images are preprocessed they must be converted in tensors. Tensors
-consists of `.pt` files that can be loaded with PyTorch.  Using `clinicadl`
-these files are stored in a specific folder structure, keeping relevant
-information about the original image.  This step can be also run using the
-Clinica [`DeepLearning-prepare-data`
-pipeline](http://www.clinica.run/doc/Pipelines). Results are equivalent.
-
-<details>
-<summary>
-The full list of options available for tensor extraction.
-</summary>
-
-```{.sourceCode .bash}
-usage: clinicadl extract [-h] [-ps PATCH_SIZE] [-ss STRIDE_SIZE]
-                         [-sd SLICE_DIRECTION] [-sm {original,rgb}]
-                         [-np NPROC]
-                         caps_dir tsv_file working_dir {slice,patch,whole}
-
-positional arguments:
-  caps_dir              Data using CAPS structure.
-  tsv_file              TSV file with subjects/sessions to process.
-  working_dir           Working directory to save temporary file.
-  {slice,patch,whole}   Method used to extract features. Three options:
-                        'slice' to get 2D slices from the MRI, 'patch' to get
-                        3D volumetric patches or 'whole' to get the complete
-                        MRI.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -ps PATCH_SIZE, --patch_size PATCH_SIZE
-                        Patch size (only for 'patch' extraction) e.g:
-                        --patch_size 50
-  -ss STRIDE_SIZE, --stride_size STRIDE_SIZE
-                        Stride size (only for 'patch' extraction) e.g.:
-                        --stride_size 50
-  -sd SLICE_DIRECTION, --slice_direction SLICE_DIRECTION
-                        Slice direction (only for 'slice' extraction). Three
-                        options: '0' -> Sagittal plane, '1' -> Coronal plane
-                        or '2' -> Axial plane
-  -sm {original,rgb}, --slice_mode {original,rgb}
-                        Slice mode (only for 'slice' extraction). Two options:
-                        'original' to save one single channel (intensity),
-                        'rgb' to saves three channel (with same intensity).
-  -np NPROC, --nproc NPROC
-                        Number of cores used for processing
-```
-
-</details>
-
 ### Training a new model
 
 Different kind of networks are trained using `clinicadl train`:
