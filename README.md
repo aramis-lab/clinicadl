@@ -73,21 +73,21 @@ pip install -e .
 
 There are six kind of tasks that can be performed using the command line:
 
-- **Process tsv files**. ``tsvtool`` includes many functions to get labels from
+- **Process TSV files**. `tsvtool` includes many functions to get labels from
   BIDS, perform k-fold or single splits, produce demographic analysis of
   extracted labels and reproduce the restrictions made on AIBL and OASIS in the
   original paper.
 
-- **Generate a synthetic dataset.** Useful to obtain synthetic datasets
-  frequently used in functional tests.
+- **Generate a synthetic dataset.** The `generate` task is useful to obtain
+  synthetic datasets frequently used in functional tests.
 
-- **T1 MRI preprocessing.** The `preprocessing` task processes a dataset of T1
+- **T1w-weighted images preprocessing.** The `preprocessing` task processes a dataset of T1
   images stored in BIDS format and prepares to extract the tensors (see paper
   for details on the preprocessing). Output is stored using the
   [CAPS](http://www.clinica.run/doc/CAPS/Introduction/) hierarchy.
 
-- **T1 MRI tensor extraction.** The `extract` option allows to create files in
-  Pytorch format (`.pt`) with different options: the complete MRI, 2D slices
+- **T1 MRI tensor extraction.** The `extract` task allows to create files in
+  PyTorch format (`.pt`) with different options: the complete MRI, 2D slices
   and/or 3D patches. This files are also stored in the CAPS hierarchy.
 
 - **Train neural networks.** The `train` task is designed to perform training
@@ -107,7 +107,7 @@ For detailed instructions and options of each task type  `clinica 'task' -h`.
 
 Typical use for `tsvtool getlabels`:
 
-```text
+```{.sourceCode .bash}
 clinicadl tsvtool getlabels <merged_tsv> <missing_mods> <results_path> --restriction_path <restriction_path>
 ```
 where:
@@ -156,44 +156,6 @@ optional arguments:
 ```
 </details>
 
-### Preprocessing
-Typical use for `preprocessing` ([ANTs](https://stnava.github.io/ANTs/) software needs to be installed):
-
-```text
-clinicadl preprocessing <bids_dir> <caps_dir> <working_dir> --np 32
-```
-where:
-
-  - `<bids_dir>` is the input folder containing the dataset in a [BIDS](http://www.clinica.run/doc/BIDS/) hierarchy.
-  - `<caps_dir>` is the output folder containing the results in a [CAPS](http://www.clinica.run/doc/CAPS/Specifications/) hierarchy.
-  - `<working_dir>` is the temporary directory to store pipelines intermediate results.
-  - `--np <N>` (optional) is the number of cores used to run in parallel (in the example, 32 cores are used).
-
-If you want to run the pipeline on a subset of your BIDS dataset, you can use
-the `-tsv` flag to specify in a TSV file the participants belonging to your
-subset.
-
-<details>
-<summary>
-Here is a description of the arguments present for the preprocessing task.
-</summary>
-
-  ```{.sourceCode .bash}
-usage: clinicadl preprocessing [-h] [-np NPROC]
-                               bids_dir caps_dir tsv_file working_dir
-
-positional arguments:
-  bids_dir              Data using BIDS structure.
-  caps_dir              Data using CAPS structure.
-  tsv_file              TSV file with subjects/sessions to process.
-  working_dir           Working directory to save temporary file.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -np NPROC, --nproc NPROC
-                        Number of cores used for processing (2 by default)
-```
-</details>
 
 ### Tensor extraction
 
@@ -432,7 +394,7 @@ The trivial dataset includes two labels:
 Some of the pretained model for the CNN networks can be obtained here:
 <https://zenodo.org/record/3491003>  
 
-These models were obtained durnig the experiments for publication.
+These models were obtained during the experiments for publication.
 Updated versions of the models will be published soon.
 
 ## Bibliography
