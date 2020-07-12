@@ -11,19 +11,19 @@ if you encounter any issues.
 
 ### Python environment
 You will need a Python environment to run Clinica. We advise you to
-use [Miniconda](http://conda.pydata.org/miniconda.html).
+use [Miniconda](https://docs.conda.io/en/latest/miniconda.html).
 Miniconda allows you to install, run, and update Python packages and their
 dependencies. It can also create environments to isolate your libraries.
 To install Miniconda, open a new terminal and type the following commands:
 
 - If you are on Linux:
-```bash
+```{.sourceCode .bash}
 curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/miniconda-installer.sh
 bash /tmp/miniconda-installer.sh
 ```
 
 - If you are on Mac:
-```bash
+```{.sourceCode .bash}
 curl https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -o /tmp/miniconda-installer.sh
 bash /tmp/miniconda-installer.sh
 ```
@@ -60,7 +60,7 @@ conda activate ClinicaDL
 ```
 
 !!! success
-    Congratulations, you have installed Clinica! At this point, you can try the
+    Congratulations, you have installed ClinicaDL! At this point, you can try the
     basic `clinicadl -h` command and get the help screen:
     ```Text
     (ClinicaDL)$ clinicadl -h
@@ -90,7 +90,7 @@ conda activate ClinicaDL
     ```
 
 
-#### Deactivation of the Clinica environment
+#### Deactivation of the ClinicaDL environment
 At the end of your session, remember to deactivate your Conda environment:
 ```bash
 conda deactivate
