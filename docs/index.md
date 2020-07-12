@@ -26,7 +26,7 @@ We assume that users installing and using ClinicaDL are comfortable with using t
 ClinicaDL is distributed under the terms of the MIT license given [here](https://github.com/aramis-lab/AD-DL/blob/dev/LICENSE.txt).
 
 ## Citing ClinicaDL
-For publications or communications using ClinicaDL, please cite ([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)) as well as the references mentioned on the wiki page of the pipelines you used (for example, citing PyTorch when using the `t1-volume` pipeline).
+For publications or communications using ClinicaDL, please cite ([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)) as well as the references mentioned on the wiki page of the pipelines you used (for example, citing PyTorch when using the `extract` pipeline).
 
 !!! info "Disclaimer"
     ClinicaDL is a software for research studies. It is not intended for use in medical routine
