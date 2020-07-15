@@ -66,4 +66,4 @@ nav:
     - Slice-based: Train/Slice.md
     - ROI-based: Train/ROI.md
   - Classify: Classify.md
-  - TSV Tools: TSVTools.md
+  - Tools for metadata: TSVTools.md
