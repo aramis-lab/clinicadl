@@ -43,6 +43,7 @@ pipeline {
              set +x
              source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
              conda activate clinicadl_test
+             pip install pytest
              pytest --junitxml=./test-reports/report_test_cli.xml --verbose \
                 --disable-warnings \
                 $WORKSPACE/clinicadl/tests/test_cli.py
