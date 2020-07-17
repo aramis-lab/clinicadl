@@ -1,20 +1,12 @@
 from os.path import dirname, join, abspath, pardir
 from setuptools import setup, find_packages
-try: # for pip >= 10
-    from pip._internal.req import parse_requirements
-except ImportError: # for pip <= 9.0.3
-    from pip.req import parse_requirements
 
 with open(join(dirname(__file__), 'clinicadl/VERSION'), 'rb') as f:
     version = f.read().decode('ascii').strip()
 
 this_directory = abspath(dirname(__file__))
-with open(join(this_directory, pardir,  'README.md'), encoding='utf-8') as f:
+with open(join(this_directory, pardir, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
-
-install_reqs = parse_requirements(join(this_directory, pardir, 'requirements.txt'), session='hack')
-print(install_reqs)
-reqs = [str(ir.req) for ir in install_reqs]
 
 setup(
         name = 'clinicadl',
@@ -43,5 +35,6 @@ setup(
             'Intended Audience :: Developers',
             'Programming Language :: Python',
             ],
-        install_requires=reqs
+        install_requires=["clinica>=0.3.4", "tensorboardX"],
+        python_requires='>=3.6',
         )
