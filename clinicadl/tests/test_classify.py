@@ -15,8 +15,8 @@ def cli_commands(request):
     if request.param == 'classify_image':
         test_input = [
             'classify',
-            'data/OASIS_test',
-            'data/OASIS_test/data.tsv',
+            'data/classify/OASIS_test',
+            'data/classify/OASIS_test/data.tsv',
             'data/models/image/baseline/AD_CN_one_fold/',
             '--output_directory', 'data/output/',
             '--prefix_output', 'DB-XXXX',
@@ -25,19 +25,19 @@ def cli_commands(request):
     elif request.param == 'classify_slice':
         test_input = [
             'classify',
-            'data/OASIS_test',
-            'data/OASIS_test/data.tsv',
+            'data/classify/OASIS_test',
+            'data/classify/OASIS_test/data.tsv',
             'data/models/slice/baseline/AD_CN/',
-            '--prefix_output', 'DB-XXXX',
+            '--prefix_output', 'DB-TEST',
             '-cpu'
         ]
     elif request.param == 'classify_patch':
         test_input = [
             'classify',
-            'data/OASIS_test',
-            'data/OASIS_test/data.tsv',
+            'data/classify/OASIS_test',
+            'data/classify/OASIS_test/data.tsv',
             'data/models/patch/baseline/AD_CN/',
-            '--prefix_output', 'DB-XXXX',
+            '--prefix_output', 'DB-TEST',
             '-cpu'
         ]
     else:
