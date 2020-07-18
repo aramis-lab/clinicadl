@@ -18,8 +18,7 @@ def classify_commands(request):
             'data/classify/OASIS_test',
             'data/classify/OASIS_test/data.tsv',
             'data/models/image_model_baseline_AD_CN_single_fold/',
-            '--output_directory', 'data/output/',
-            '--prefix_output', 'DB-XXXX',
+            '--prefix_output', 'DB-TEST',
             '-cpu'
         ]
     elif request.param == 'classify_slice':
