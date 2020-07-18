@@ -67,9 +67,13 @@ pipeline {
              set +x
              source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
              conda activate clinicadl_test
-             pytest --junitxml=./test-reports/report_test_classify.xml --verbose \
+             cd $WORKSPACE/clinicadl/tests
+             ln -s /mnt/data/data_CI ./data 
+             pytest \
+                --junitxml=./test-reports/report_test_classify.xml \
+                --verbose \
                 --disable-warnings \
-                $WORKSPACE/clinicadl/tests/test_classify.py
+                test_classify.py
              conda deactivate
              '''
         }
