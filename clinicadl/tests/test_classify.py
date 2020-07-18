@@ -10,14 +10,14 @@ import shutil
     'classify_slice',
     'classify_patch'
 ])
-def cli_commands(request):
+def classify_commands(request):
 
     if request.param == 'classify_image':
         test_input = [
             'classify',
             'data/classify/OASIS_test',
             'data/classify/OASIS_test/data.tsv',
-            'data/models/image/baseline/AD_CN_one_fold/',
+            'data/models/image_model_baseline_AD_CN_single_fold/',
             '--output_directory', 'data/output/',
             '--prefix_output', 'DB-XXXX',
             '-cpu'
@@ -27,7 +27,7 @@ def cli_commands(request):
             'classify',
             'data/classify/OASIS_test',
             'data/classify/OASIS_test/data.tsv',
-            'data/models/slice/baseline/AD_CN/',
+            'data/models/slice_model_baseline_AD_CN_single_fold/',
             '--prefix_output', 'DB-TEST',
             '-cpu'
         ]
@@ -36,7 +36,7 @@ def cli_commands(request):
             'classify',
             'data/classify/OASIS_test',
             'data/classify/OASIS_test/data.tsv',
-            'data/models/patch/baseline/AD_CN/',
+            'data/models/patch_model_baseline_AD_CN_multicnn_single_fold/',
             '--prefix_output', 'DB-TEST',
             '-cpu'
         ]
@@ -48,8 +48,8 @@ def cli_commands(request):
     return test_input
 
 
-def test_classify(cli_commands):
-    test_input = cli_commands
+def test_classify(classify_commands):
+    test_input = classify_commands
 
     flag_error = not os.system("clinicadl " + " ".join(test_input))
 
