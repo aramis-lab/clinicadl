@@ -70,10 +70,11 @@ pipeline {
              cd $WORKSPACE/clinicadl/tests
              ln -s /mnt/data/data_CI ./data 
              pytest \
-                --junitxml=./test-reports/report_test_classify.xml \
+                --junitxml=../../test-reports/report_test_classify.xml \
                 --verbose \
                 --disable-warnings \
                 test_classify.py
+             find ./data/models/ -name 'DB-TEST_*' -type f -delete
              conda deactivate
              '''
         }
