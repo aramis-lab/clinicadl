@@ -74,7 +74,7 @@ pipeline {
                 --verbose \
                 --disable-warnings \
                 test_classify.py
-             find ./data/models/ -name 'DB-TEST_*' -type f -delete
+             # find ./data/models/ -name 'DB-TEST_*' -type f -delete
              conda deactivate
              '''
         }
