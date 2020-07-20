@@ -1,6 +1,7 @@
 # coding: utf8
 
 import pytest
+import os
 from os.path import join, exists
 
 
