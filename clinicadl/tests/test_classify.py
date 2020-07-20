@@ -53,7 +53,6 @@ def test_classify(classify_commands):
     flag_error = not os.system("clinicadl " + " ".join(test_input))
     output_file_img = exists(join('data/models/image_model_baseline_AD_CN_single_fold/fold-0/cnn_classification/best_balanced_accuracy/', 'DB-TEST_image_level_prediction.tsv'))
     output_file_patch = exists(join('data/models/patch_model_baseline_AD_CN_multicnn_single_fold/fold-0/cnn_classification/best_balanced_accuracy/', 'DB-TEST_image_level_prediction.tsv'))
-
     output_file_slice = exists(join('data/models/slice_model_baseline_AD_CN_single_fold//fold-0/cnn_classification/best_balanced_accuracy/', 'DB-TEST_image_level_prediction.tsv'))
 
     assert flag_error
