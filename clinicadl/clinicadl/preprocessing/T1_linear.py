@@ -64,7 +64,6 @@ def preprocessing_t1w(bids_directory,
     if not(exists(cache_clinicadl)):
         makedirs(cache_clinicadl)
 
-
     ref_template = join(cache_clinicadl, FILE2.filename)
     ref_crop = join(cache_clinicadl, FILE1.filename)
 

@@ -26,10 +26,10 @@ def quality_check(caps_dir, tsv_path, output_path, threshold=0.5, batch_size=1, 
         url=url_aramis,
         checksum='a97a781be3820b06424fe891ec405c78b87ad51a27b6b81614dbdb996ce60104'
     )
-    
+
     if not(exists(cache_clinicadl)):
         makedirs(cache_clinicadl)
-    
+
     model_file = join(cache_clinicadl, FILE1.filename)
 
     if not(exists(model_file)):
