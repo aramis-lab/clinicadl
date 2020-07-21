@@ -56,7 +56,7 @@ def classify_commands(request):
 
 def test_classify(classify_commands):
     test_input = classify_commands[0]
-    ouput_files = classify_commands[1]
+    output_files = classify_commands[1]
 
     flag_error = not os.system("clinicadl " + " ".join(test_input))
 
