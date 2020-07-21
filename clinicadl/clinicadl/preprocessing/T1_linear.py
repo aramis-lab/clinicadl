@@ -47,10 +47,8 @@ def preprocessing_t1w(bids_directory,
     is_bids_dir = True
     base_dir = abspath(working_directory)
 
-    root = dirname(abspath(join(abspath(__file__), pardir)))
     home = str(Path.home())
-    cache_clinicadl = join(home, 'clinicadl', 'ressources', 'mask')
-    path_to_mask = join(root, 'resources', 'masks')
+    cache_clinicadl = join(home, '.cache', 'clinicadl', 'ressources', 'masks')
     url_aramis = 'https://aramislab.paris.inria.fr/files/data/img_t1_linear/'
     FILE1 = RemoteFileStructure(
             filename='ref_cropped_template.nii.gz',
