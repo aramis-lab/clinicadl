@@ -108,35 +108,39 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
 
     Raises:
     """
+    from pathlib import Path
 
     # Read DataFrame
     data_df = pd.read_csv(tsv_path, sep='\t')
     data_df = baseline_df(data_df, "None")
 
-    root = dirname(abspath(join(abspath(__file__), pardir, pardir)))
-    path_to_masks = join(root, 'resources', 'masks')
+    home = str(Path.home())
+    cache_clinicadl = join(home, '.cache', 'clinicadl', 'ressources', 'masks')
     url_aramis = 'https://aramislab.paris.inria.fr/files/data/masks/'
     FILE1 = RemoteFileStructure(filename='AAL2.tar.gz',
                                 url=url_aramis,
                                 checksum='89427970921674792481bffd2de095c8fbf49509d615e7e09e4bc6f0e0564471'
                                 )
-    AAL2_masks_path = join(path_to_masks, FILE1.filename)
+    if not(exists(cache_clinicadl)):
+        makedirs(cache_clinicadl)
+    
+    AAL2_masks_path = join(cache_clinicadl, FILE1.filename)
 
     if n_subjects > len(data_df):
         raise ValueError("The number of subjects %i cannot be higher than the number of subjects in the baseline "
                          "DataFrame extracted from %s" % (n_subjects, tsv_path))
 
     if mask_path is None:
-        if not exists(join(path_to_masks, 'AAL2')):
+        if not exists(join(cache_clinicadl, 'AAL2')):
             try:
                 print('Try to download AAL2 masks')
-                mask_path_tar = fetch_file(FILE1, path_to_masks)
+                mask_path_tar = fetch_file(FILE1, cache_clinicadl)
                 tar_file = tarfile.open(mask_path_tar)
                 print('File: ' + mask_path_tar)
                 try:
-                    tar_file.extractall(path_to_masks)
+                    tar_file.extractall(cache_clinicadl)
                     tar_file.close()
-                    mask_path = join(path_to_masks, 'AAL2')
+                    mask_path = join(cache_clinicadl, 'AAL2')
                 except RuntimeError:
                     print('Unable to extract donwloaded files')
             except IOError as err:
@@ -145,7 +149,7 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
                                   manually at https://aramislab.paris.inria.fr/files/data/masks/
                                   and provide a valid path.''')
         else:
-            mask_path = join(path_to_masks, 'AAL2')
+            mask_path = join(cache_clinicadl, 'AAL2')
 
     # Output tsv file
     columns = ['participant_id', 'session_id', 'diagnosis', 'age', 'sex']
