@@ -123,7 +123,7 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
                                 )
     if not(exists(cache_clinicadl)):
         makedirs(cache_clinicadl)
-    
+
     AAL2_masks_path = join(cache_clinicadl, FILE1.filename)
 
     if n_subjects > len(data_df):
