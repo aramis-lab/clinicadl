@@ -41,9 +41,10 @@ def preprocessing_t1w(bids_directory,
 
     check_ants()
     check_bids_folder(bids_directory)
-    input_dir = bids_directory
+    input_dir = abspath(bids_directory)
+    caps_directory = abspath(caps_directory)
     is_bids_dir = True
-    base_dir = working_directory
+    base_dir = abspath(working_directory)
 
     root = dirname(abspath(join(abspath(__file__), pardir)))
     path_to_mask = join(root, 'resources', 'masks')
