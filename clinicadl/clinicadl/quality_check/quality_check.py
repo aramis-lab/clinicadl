@@ -3,6 +3,7 @@ This file contains all methods needed to perform the quality check procedure aft
 """
 from os import pardir
 from os.path import dirname, join, abspath, split, exists, splitext
+from pathlib import Path
 import torch
 import pandas as pd
 from torch.utils.data import DataLoader
@@ -17,19 +18,23 @@ def quality_check(caps_dir, tsv_path, output_path, threshold=0.5, batch_size=1, 
         raise ValueError("Please provide an output path to a tsv file")
 
     # Fecth QC model
-    root = dirname(abspath(join(abspath(__file__), pardir)))
-    path_to_model = join(root, 'resources', 'models')
+    home = str(Path.home())
+    cache_clinicadl = join(home, '.cache', 'clinicadl', 'models')
     url_aramis = 'https://aramislab.paris.inria.fr/files/data/models/dl/qc/'
     FILE1 = RemoteFileStructure(
         filename='resnet18.pth.tar',
         url=url_aramis,
         checksum='a97a781be3820b06424fe891ec405c78b87ad51a27b6b81614dbdb996ce60104'
     )
-    model_file = join(path_to_model, FILE1.filename)
+    
+    if not(exists(cache_clinicadl)):
+        makedirs(cache_clinicadl)
+    
+    model_file = join(cache_clinicadl, FILE1.filename)
 
     if not(exists(model_file)):
         try:
-            model_file = fetch_file(FILE1, path_to_model)
+            model_file = fetch_file(FILE1, cache_clinicadl)
         except IOError as err:
             print('Unable to download required model for QC process:', err)
 
