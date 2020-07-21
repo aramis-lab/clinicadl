@@ -25,7 +25,8 @@ def preprocessing_t1w(bids_directory,
     """
 
     from os.path import dirname, join, abspath, split, exists
-    from os import pardir
+    from os import pardir, makedirs
+    from pathlib import Path
     from clinica.utils.inputs import check_bids_folder
     from clinica.utils.participant import get_subject_session_list
     from clinica.utils.filemanip import get_subject_id
@@ -47,6 +48,8 @@ def preprocessing_t1w(bids_directory,
     base_dir = abspath(working_directory)
 
     root = dirname(abspath(join(abspath(__file__), pardir)))
+    home = str(Path.home())
+    cache_clinicadl = join(home, 'clinicadl', 'ressources', 'mask')
     path_to_mask = join(root, 'resources', 'masks')
     url_aramis = 'https://aramislab.paris.inria.fr/files/data/img_t1_linear/'
     FILE1 = RemoteFileStructure(
@@ -60,18 +63,22 @@ def preprocessing_t1w(bids_directory,
             checksum='93359ab97c1c027376397612a9b6c30e95406c15bf8695bd4a8efcb2064eaa34'
             )
 
-    ref_template = join(path_to_mask, FILE2.filename)
-    ref_crop = join(path_to_mask, FILE1.filename)
+    if not(exists(cache_clinicadl)):
+        makedirs(cache_clinicadl)
+
+
+    ref_template = join(cache_clinicadl, FILE2.filename)
+    ref_crop = join(cache_clinicadl, FILE1.filename)
 
     if not(exists(ref_template)):
         try:
-            ref_template = fetch_file(FILE2, path_to_mask)
+            ref_template = fetch_file(FILE2, cache_clinicadl)
         except IOError as err:
             print('Unable to download required template (mni_icbm152) for processing:', err)
 
     if not(exists(ref_crop)):
         try:
-            ref_crop = fetch_file(FILE1, path_to_mask)
+            ref_crop = fetch_file(FILE1, cache_clinicadl)
         except IOError as err:
             print('Unable to download required template (ref_crop) for processing:', err)
 
