@@ -20,11 +20,10 @@ pipeline {
           sh '''#!/usr/bin/env bash
              set +x
              source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
-             conda activate clinicadl_env
+             conda create -y -n clinicadl_test python=3.7
+             conda activate clinicadl_test
              echo "Install clinicadl using pip..."
-             cd AD-DL
-             pip install -r requirements.txt
-             cd clinicadl
+             cd $WORKSPACE/clinicadl
              pip install -e .
              # Show clinicadl help message
              echo "Display clinicadl help message"
@@ -43,10 +42,39 @@ pipeline {
           sh '''#!/usr/bin/env bash
              set +x
              source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
-             conda activate clinicadl_env
-             pytest --junitxml=./test-reports/report.xml --verbose \
+             conda activate clinicadl_test
+             pip install pytest
+             pytest --junitxml=./test-reports/report_test_cli.xml --verbose \
                 --disable-warnings \
                 $WORKSPACE/clinicadl/tests/test_cli.py
+             conda deactivate
+             '''
+        }
+        post {
+          always {
+            junit 'test-reports/*.xml'
+          }
+        } 
+      }
+      stage('Classify test Linux') {
+        environment {
+          PATH = "$HOME/miniconda/bin:$PATH"
+          }
+        steps {
+          echo 'Testing classify...'
+          sh 'echo "Agent name: ${NODE_NAME}"'
+          sh '''#!/usr/bin/env bash
+             set +x
+             source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
+             conda activate clinicadl_test
+             cd $WORKSPACE/clinicadl/tests
+             ln -s /mnt/data/data_CI ./data 
+             pytest \
+                --junitxml=../../test-reports/report_test_classify.xml \
+                --verbose \
+                --disable-warnings \
+                test_classify.py
+             find ./data/models/ -name 'DB-TEST_*' -type f -delete
              conda deactivate
              '''
         }
