@@ -41,7 +41,7 @@ def classify_commands(request):
             'classify',
             'data/classify/OASIS_test',
             'data/classify/OASIS_test/data.tsv',
-            data_folder, 
+            data_folder,
             '--prefix_output', 'DB-TEST',
             '-cpu'
         ]
