@@ -12,15 +12,17 @@ You need to have performed the [`t1-linear` pipeline](../Preprocessing) on your 
 ## Running the pipeline
 The pipeline can be run with the following command line:
 ```Text
-clinica run deeplearning-prepare-data <caps_directory> <tensor_format>
+clinicadl extract <caps_directory> <tsv_file> <working_dir> <tensor_format>
 ```
 
-<!--where:
+where:
 
 - `caps_directory` is the folder containing the results of the [`t1-linear` pipeline](../Preprocessing) and the output of the present command, both in a [CAPS hierarchy](http://www.clinica.run/doc/CAPS/Introduction).
+- `tsv_file` is the TSV file with subjects/sessions to process.
+- `working_dir` is the working directory to save temporary file.
 - `tensor_format` is the format of the extracted tensors. You can choose between `image` to convert to PyTorch tensor the whole 3D image, `patch` to extract 3D patches and `slice` to extract 2D slices from the image.
 
-By default the features are extracted from the cropped image (see the documentation of the [`t1-linear` pipeline](../T1_Linear)). You can deactivate this behaviour with the `--use_uncropped_image` flag.
+<!--By default the features are extracted from the cropped image (see the documentation of the [`t1-linear` pipeline](../T1_Linear)). You can deactivate this behaviour with the `--use_uncropped_image` flag.
 
 Pipeline options if you use `patch` extraction:
 
