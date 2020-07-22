@@ -875,7 +875,7 @@ def parse_command_line():
     train_patch_ae_parser = train_patch_subparser.add_parser(
         "autoencoder",
         parents=[train_parent_parser, train_patch_parent, autoencoder_parent],
-        help="Train a 3D-patch level autoencoder.")
+        help="Train a 3D patch-level autoencoder.")
 
     train_patch_ae_parser.set_defaults(func=train_func)
 
@@ -885,7 +885,7 @@ def parse_command_line():
             train_parent_parser,
             train_patch_parent,
             transfer_learning_parent],
-        help="Train a 3D-patch level CNN.")
+        help="Train a 3D patch-level CNN.")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
     train_patch_cnn_parser._action_groups[-1].add_argument(
         '--transfer_learning_selection',
@@ -909,7 +909,7 @@ def parse_command_line():
             train_parent_parser,
             train_patch_parent,
             transfer_learning_parent],
-        help="Train a 3D-patch level multi-CNN (one CNN is trained per patch location).")
+        help="Train a 3D patch-level multi-CNN (one CNN is trained per patch location).")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
     train_patch_multicnn_parser._action_groups[-1].add_argument(
         '--transfer_learning_selection',
@@ -980,7 +980,7 @@ def parse_command_line():
     train_slice_parser = train_subparser.add_parser(
         "slice",
         parents=[train_parent_parser],
-        help="Train a 2D-slice level CNN.")
+        help="Train a 2D slice-level CNN.")
 
     train_slice_group = train_slice_parser.add_argument_group(
         TRAIN_CATEGORIES["SLICE"])
