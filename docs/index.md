@@ -8,15 +8,37 @@ We assume that users installing and using ClinicaDL are comfortable with using t
 
 - [Installation](./Installation)
 
-## User documentation
+## User documentation (`clinicadl`)
 
-### [Generate synthetic data for functional tests (`clinicadl generate`)](./Generate)
-### [Prepare data for training (`clinicadl preprocessing`)](./Preprocessing)
-### [Create data (3D images, 3D pathches or 2D slices) for training (`clinicadl extract`)](./Generate)
-### [Handle TSV files for metadata processing and data splits (`clinicadl tsvtool`)](./TSVTools)
-### [Train with your data and create a model (`clinicadl train`)](./Train/Introduction)
-### [Classify one image or a list of images with your previously trained model (`clinicadl classify`)](./Classify)
+### Prepare your imaging data
+- `clinicadl preprocessing` - [Preprocessing pipelines](Run/Introduction)
+    - `t1-linear` - [Linear processing of T1w MR images](Run/T1_Linear): affine registration to the MNI standard space
+    - `t1-extensive` - ['Extensive' processing of T1w MR images](Run/T1_Extensive): non linear registration to the MNI standard space
+- `clinicadl extract` - [Prepare input data for deep learning with PyTorch](./Extract)
 
+
+### Train & test your classifier
+- `clinicadl train` - [Train with your data and create a model](/Train/Introduction)
+- `clinicadl classify` - [Classify one image or a list of images with your previously trained model](./Classify)
+
+### Utilitaries <!--used for the preparation of imaging data and/or training your classifier-->
+
+- `clinicadl generate` - [Generate synthetic data for functional tests](./Generate)
+- `clinicadl tsvtool` - [Handle TSV files for metadata processing and data splits](./TSVTools)
+
+
+## Pretrained models
+
+Some of the pretained model for the CNN networks can be obtained here:
+<https://zenodo.org/record/3491003>  
+
+These models were obtained during the experiments for publication.
+Updated versions of the models will be published soon.
+
+## Bibliography
+
+All the papers described in the State of the art section of the manuscript may
+be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 
 ## Support
 - [Report an issue on GitHub](https://github.com/aramis-lab/AD-DL/issues)
