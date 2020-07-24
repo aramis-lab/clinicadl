@@ -1,10 +1,10 @@
-# ClinicaDL Documentation
+# `clinicadl` Documentation
 
 ## Installation
 
-ClinicaDL can be installed on Mac OS X and Linux machines, and possibly on Windows computers with a Linux Virtual Machine.
+`clinicadl` can be installed on Mac OS X and Linux machines, and possibly on Windows computers with a Linux Virtual Machine.
 
-We assume that users installing and using ClinicaDL are comfortable with using the command line.
+We assume that users installing and using `clinicadl` are comfortable with using the command line.
 
 - [Installation](./Installation)
 
@@ -20,16 +20,16 @@ We assume that users installing and using ClinicaDL are comfortable with using t
 
 ## Support
 - [Report an issue on GitHub](https://github.com/aramis-lab/AD-DL/issues)
-- Use the [ClinicaDL Google Group](https://groups.google.com/forum/#!forum/clinica-user) to ask for help!
+- Use the [`clinicadl` Google Group](https://groups.google.com/forum/#!forum/clinica-user) to ask for help!
 
 ## License
-ClinicaDL is distributed under the terms of the MIT license given [here](https://github.com/aramis-lab/AD-DL/blob/dev/LICENSE.txt).
+`clinicadl` is distributed under the terms of the MIT license given [here](https://github.com/aramis-lab/AD-DL/blob/dev/LICENSE.txt).
 
-## Citing ClinicaDL
-For publications or communications using ClinicaDL, please cite ([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)) as well as the references mentioned on the wiki page of the pipelines you used (for example, citing PyTorch when using the `extract` pipeline).
+## Citing `clinicadl`
+For publications or communications using `clinicadl`, please cite ([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)) as well as the references mentioned on the wiki page of the pipelines you used (for example, citing PyTorch when using the `extract` pipeline).
 
 !!! info "Disclaimer"
-    ClinicaDL is a software for research studies. It is not intended for use in medical routine
+    `clinicadl` is a software for research studies. It is not intended for use in medical routine
 
 ---
 
