@@ -47,7 +47,7 @@ If you find a problem when use it or if you want to provide us feedback, please
 
 ## Getting Started
 > Full instructions for installation and additional information can be found in
-the [user documentation](http://www.clinica.run/clinicadl).
+the [user documentation](https://clinicadl.readthedocs.io/en/latest).
 
 `clinicadl` currently supports macOS and Linux.
 
