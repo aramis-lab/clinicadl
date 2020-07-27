@@ -616,18 +616,18 @@ def parse_command_line():
     extract_parser.set_defaults(func=extract_data_func)
 
     qc_parser = subparser.add_parser(
-        'quality_check',
+        'quality-check',
         help='Performs quality check procedure for t1-linear pipeline.'
              'Original code can be found at https://github.com/vfonov/deep-qc'
     )
     qc_parser.add_argument("caps_dir",
                            help='Data using CAPS structure.',
                            type=str)
-    qc_parser.add_argument("tsv_file",
-                           help='TSV path with subjects/sessions to process.',
-                           type=str)
     qc_parser.add_argument("output_path",
                            help="Path to the output tsv file (filename included).",
+                           type=str)
+    qc_parser.add_argument("--subjects_sessions_tsv", "-tsv",
+                           help='TSV file containing a list of subjects with their sessions.',
                            type=str)
     qc_parser.add_argument("--threshold",
                            help='The threshold on the output probability to decide if the image passed or failed. '
