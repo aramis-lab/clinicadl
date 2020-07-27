@@ -389,7 +389,6 @@ def classify_func(args):
         args.tsv_path,
         args.model_path,
         args.prefix_output,
-        no_labels=args.no_labels,
         gpu=not args.use_cpu,
         prepare_dl=args.use_extracted_features
     )
@@ -1048,10 +1047,6 @@ def parse_command_line():
         '-pre', '--prefix_output',
         help='Prefix to name the files resulting from the classify task.',
         type=str, default='prefix_DB')
-    classify_parser.add_argument(
-        '-nl', '--no_labels', action='store_true',
-        help='Add this flag if your dataset does not contain a ground truth.',
-        default=False)
     classify_parser.add_argument(
         '--use_extracted_features',
         help='''If True the extract slices or patche are used, otherwise the they
