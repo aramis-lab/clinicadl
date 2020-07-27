@@ -12,7 +12,7 @@ from os.path import join, exists
 ])
 def classify_commands(request):
 
-    out_filename = 'fold-0/cnn_classification/best_balanced_accuracy/DB-TEST_image_level_prediction.tsv'
+    out_filename = 'fold-0/cnn_classification/best_balanced_accuracy/test-OASIS_image_level_prediction.tsv'
     if request.param == 'classify_image':
         data_folder = 'data/models/image_model_baseline_AD_CN_single_fold/'
         test_input = [
