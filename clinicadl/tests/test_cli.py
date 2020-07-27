@@ -69,9 +69,8 @@ def generate_cli_commands(request):
             'preprocessing_task',
             'preprocessing',
             'caps_dir',
-            'tsv_file',
-            'subjects_sessions_tsv',
             'output_path',
+            'subjects_sessions_tsv',
             'threshold',
             'batch_size']
 
