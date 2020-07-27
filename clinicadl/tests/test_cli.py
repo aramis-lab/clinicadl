@@ -7,6 +7,7 @@ import clinicadl.cli as cli
 @pytest.fixture(params=['preprocessing',
                         'extract',
                         'generate',
+                        'quality_check',
                         'classify',
                         'train_subject',
                         'train_slice',
@@ -46,6 +47,22 @@ def generate_cli_commands(request):
             'stride_size',
             'slice_direction',
             'slice_mode']
+
+    if request.param == 'quality_check':
+        test_input = [
+            'quality_check',
+            '/dir/caps',
+            '/dir/tsv.file',
+            '/dir/res.tsv',
+            '--threshold', '0.5',
+            '--batch_size', '8']
+        keys_output = [
+            'task',
+            'caps_dir',
+            'tsv_file',
+            'output_path',
+            'threshold',
+            'batch_size']
 
     if request.param == 'generate':
         test_input = [

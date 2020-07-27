@@ -443,7 +443,7 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             transformations=transformations,
             labels=labels
         )
-    if mode == "patch":
+    elif mode == "patch":
         return MRIDatasetPatch(
             input_dir,
             data_df,

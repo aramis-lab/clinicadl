@@ -1,0 +1,1 @@
+The model was obtained by executing https://github.com/vfonov/deep-qc/blob/master/download_minimal_results_python.sh.

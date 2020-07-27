@@ -313,7 +313,6 @@ def mode_level_to_tsvs(output_dir, results_df, metrics, fold, selection, mode, d
     else:
         performance_dir = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', 'cnn-%i' % cnn_index,
                                        selection)
-        metrics["%s_id" % mode] = cnn_index
 
     if not os.path.exists(performance_dir):
         os.makedirs(performance_dir)
@@ -321,16 +320,16 @@ def mode_level_to_tsvs(output_dir, results_df, metrics, fold, selection, mode, d
     results_df.to_csv(os.path.join(performance_dir, '%s_%s_level_prediction.tsv' % (dataset, mode)), index=False,
                       sep='\t')
 
-    if metrics is None:
-        pass
-    elif isinstance(metrics, dict):
-        pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(performance_dir, '%s_%s_level_metrics.tsv' % (dataset, mode)),
-                                                index=False, sep='\t')
-    elif isinstance(metrics, pd.DataFrame):
-        metrics.to_csv(os.path.join(performance_dir, '%s_%s_level_metrics.tsv' % (dataset, mode)),
-                       index=False, sep='\t')
-    else:
-        raise ValueError("Bad type for metrics: %s. Must be dict or DataFrame." % type(metrics).__name__)
+    if metrics is not None:
+        metrics["%s_id" % mode] = cnn_index
+        if isinstance(metrics, dict):
+            pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(performance_dir, '%s_%s_level_metrics.tsv' % (dataset, mode)),
+                                                    index=False, sep='\t')
+        elif isinstance(metrics, pd.DataFrame):
+            metrics.to_csv(os.path.join(performance_dir, '%s_%s_level_metrics.tsv' % (dataset, mode)),
+                           index=False, sep='\t')
+        else:
+            raise ValueError("Bad type for metrics: %s. Must be dict or DataFrame." % type(metrics).__name__)
 
 
 def concat_multi_cnn_results(output_dir, fold, selection, mode, dataset, num_cnn):
@@ -344,20 +343,25 @@ def concat_multi_cnn_results(output_dir, fold, selection, mode, dataset, num_cnn
         cnn_metrics_path = os.path.join(performance_dir, '%s_%s_level_metrics.tsv' % (dataset, mode))
 
         cnn_pred_df = pd.read_csv(cnn_pred_path, sep='\t')
-        cnn_metrics_df = pd.read_csv(cnn_metrics_path, sep='\t')
         prediction_df = pd.concat([prediction_df, cnn_pred_df])
-        metrics_df = pd.concat([metrics_df, cnn_metrics_df])
+        os.remove(cnn_pred_path)
+
+        if os.path.exists(cnn_metrics_path):
+            cnn_metrics_df = pd.read_csv(cnn_metrics_path, sep='\t')
+            metrics_df = pd.concat([metrics_df, cnn_metrics_df])
+            os.remove(cnn_metrics_path)
 
         # Clean unused files
-        os.remove(cnn_pred_path)
-        os.remove(cnn_metrics_path)
         if len(os.listdir(performance_dir)) == 0:
             os.rmdir(performance_dir)
         if len(os.listdir(cnn_dir)) == 0:
             os.rmdir(cnn_dir)
 
     prediction_df.reset_index(drop=True, inplace=True)
-    metrics_df.reset_index(drop=True, inplace=True)
+    if len(metrics_df) == 0:
+        metrics_df = None
+    else:
+        metrics_df.reset_index(drop=True, inplace=True)
     mode_level_to_tsvs(output_dir, prediction_df, metrics_df, fold, selection, mode, dataset)
 
 
