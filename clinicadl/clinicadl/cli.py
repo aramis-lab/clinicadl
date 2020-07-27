@@ -552,7 +552,7 @@ def parse_command_line():
         help='Preprocess T1w-weighted images with t1-linear or t1-extensive pipelines.'
     )
     run_parser._positionals.title = ('%sclinicadl preprocessing expects one of the following pipelines%s'
-                                               % (Fore.GREEN, Fore.RESET))
+                                     % (Fore.GREEN, Fore.RESET))
 
     def preprocessing_help(args):
         print('%sNo pipeline was specified. Type clinica preprocessing -h for details%s' %
