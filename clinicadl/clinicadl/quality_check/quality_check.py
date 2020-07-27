@@ -7,17 +7,18 @@ from pathlib import Path
 import torch
 import pandas as pd
 from torch.utils.data import DataLoader
+from clinica.iotools.utils.data_handling import create_subs_sess_list
 
 from clinicadl.quality_check.utils import QCDataset, resnet_qc_18
 from clinicadl.tools.inputs.input import fetch_file
 from clinicadl.tools.inputs.input import RemoteFileStructure
 
 
-def quality_check(caps_dir, tsv_path, output_path, threshold=0.5, batch_size=1, num_workers=0, gpu=True):
+def quality_check(caps_dir, output_path, tsv_path=None, threshold=0.5, batch_size=1, num_workers=0, gpu=True):
     if splitext(output_path)[1] != ".tsv":
         raise ValueError("Please provide an output path to a tsv file")
 
-    # Fecth QC model
+    # Fetch QC model
     home = str(Path.home())
     cache_clinicadl = join(home, '.cache', 'clinicadl', 'models')
     url_aramis = 'https://aramislab.paris.inria.fr/files/data/models/dl/qc/'
@@ -46,11 +47,16 @@ def quality_check(caps_dir, tsv_path, output_path, threshold=0.5, batch_size=1, 
         model.cuda()
 
     # Load DataFrame
-    df = pd.read_csv(tsv_path, sep='\t')
-    if ('session_id' not in list(df.columns.values)) or (
-            'participant_id' not in list(df.columns.values)):
-        raise Exception("the data file is not in the correct format."
-                        "Columns should include ['participant_id', 'session_id']")
+    if tsv_path is not None:
+        df = pd.read_csv(tsv_path, sep='\t')
+        if ('session_id' not in list(df.columns.values)) or (
+                'participant_id' not in list(df.columns.values)):
+            raise Exception("the data file is not in the correct format."
+                            "Columns should include ['participant_id', 'session_id']")
+    else:
+        create_subs_sess_list(caps_dir, output_path, is_bids_dir=False, use_session_tsv=False)
+        df = pd.read_csv(join(output_path, 'subjects_sessions_list.tsv'), sep="\t")
+
     dataset = QCDataset(caps_dir, df)
     dataloader = DataLoader(
         dataset,
