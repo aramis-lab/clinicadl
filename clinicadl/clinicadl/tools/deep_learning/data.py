@@ -7,6 +7,7 @@ from os import path
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 import abc
+import warnings
 from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
 
 
@@ -56,6 +57,15 @@ class MRIDataset(Dataset):
         if not mandatory_col.issubset(set(self.df.columns.values)):
             raise Exception("the data file is not in the correct format."
                             "Columns should include %s" % mandatory_col)
+
+        unique_diagnoses = set(self.df.diagnosis)
+        unique_codes = set()
+        for diagnosis in unique_diagnoses:
+            unique_codes.add(self.diagnosis_code[diagnosis])
+        if len(unique_codes) == 1:
+            warnings.warn("The diagnoses found in the DataFrame %s only corresponds to one class %s. "
+                          "If you want to run a binary classification please change the labels involved."
+                          % (unique_diagnoses, unique_codes))
 
         self.elem_per_image = self.num_elem_per_image()
 
