@@ -7,6 +7,7 @@ from pathlib import Path
 import torch
 import pandas as pd
 from torch.utils.data import DataLoader
+from clinica.iotools.utils.data_handling import create_subs_sess_list
 
 from clinicadl.quality_check.utils import QCDataset, resnet_qc_18
 from clinicadl.tools.inputs.input import fetch_file
