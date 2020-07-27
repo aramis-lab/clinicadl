@@ -445,8 +445,8 @@ def tsv_analysis_func(args):
         args.results_path,
         diagnoses=args.diagnoses,
         mmse_name=args.mmse_name,
-        age_name=args.age_name,
-        baseline=args.baseline)
+        age_name=args.age_name
+    )
 
 
 def parse_command_line():
@@ -1258,10 +1258,6 @@ def parse_command_line():
         "--age_name",
         help="Name of the variable related to the age in the merged_tsv file.",
         type=str, default="age_bl")
-    tsv_analysis_subparser.add_argument(
-        "--baseline",
-        help="Performs the analysis based on <label>_baseline.tsv files",
-        default=False, action="store_true")
 
     tsv_analysis_subparser.set_defaults(func=tsv_analysis_func)
 
