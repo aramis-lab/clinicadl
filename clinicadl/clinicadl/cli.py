@@ -482,14 +482,14 @@ def parse_command_line():
         default=None
     )
     generate_parser.add_argument(
-        'tsv_path',
-        help='TSV path with subjects/sessions to use for data generation.',
-        default=None
-    )
-    generate_parser.add_argument(
         'output_dir',
         help='Folder containing the synthetic dataset.',
         default=None
+    )
+    generate_parser.add_argument(
+        "--subjects_sessions_tsv", "-tsv",
+        help='TSV file containing a list of subjects with their sessions.',
+        type=str, default=None
     )
     generate_parser.add_argument(
         '--n_subjects',
@@ -628,7 +628,7 @@ def parse_command_line():
                            type=str)
     qc_parser.add_argument("--subjects_sessions_tsv", "-tsv",
                            help='TSV file containing a list of subjects with their sessions.',
-                           type=str)
+                           type=str, default=None)
     qc_parser.add_argument("--threshold",
                            help='The threshold on the output probability to decide if the image passed or failed. '
                                 '(default=0.5)',

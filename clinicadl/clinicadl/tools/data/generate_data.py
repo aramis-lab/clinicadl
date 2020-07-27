@@ -6,11 +6,10 @@ This file generates data for trivial or intractable (random) data for binary cla
 import pandas as pd
 import numpy as np
 import nibabel as nib
-from os.path import dirname, join, abspath, split, exists
-from os import pardir, makedirs
-import torch.nn.functional as F
-import torch
-from .utils import im_loss_roi_gaussian_distribution, find_image_path
+from os.path import join, exists
+from os import makedirs
+
+from .utils import im_loss_roi_gaussian_distribution, find_image_path, load_and_check_tsv
 from ..tsv.tsv_utils import baseline_df
 from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
 from clinicadl.tools.inputs.input import fetch_file
@@ -18,7 +17,7 @@ from clinicadl.tools.inputs.input import RemoteFileStructure
 import tarfile
 
 
-def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
+def generate_random_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, mean=0,
                             sigma=0.5, preprocessing="t1-linear"):
     """
     Generates a random dataset.
@@ -29,11 +28,11 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
 
     Args:
         caps_dir: (str) Path to the (input) CAPS directory.
-        tsv_path: (str) path to tsv file of list of subjects/sessions.
         output_dir: (str) folder containing the synthetic dataset in (output)
             CAPS format.
         n_subjects: (int) number of subjects in each class of the
             synthetic dataset
+        tsv_path: (str) path to tsv file of list of subjects/sessions.
         mean: (float) mean of the gaussian noise
         sigma: (float) standard deviation of the gaussian noise
         preprocessing: (str) preprocessing performed. Must be in ['t1-linear', 't1-extensive'].
@@ -46,7 +45,7 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
 
     """
     # Read DataFrame
-    data_df = pd.read_csv(tsv_path, sep='\t')
+    data_df = load_and_check_tsv(tsv_path, caps_dir, output_dir)
 
     # Create subjects dir
     if not exists(join(output_dir, 'subjects')):
@@ -83,7 +82,7 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
         nib.save(noisy_image_nii, join(noisy_image_nii_path, noisy_image_nii_filename))
 
 
-def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preprocessing="linear",
+def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, preprocessing="linear",
                              mask_path=None, atrophy_percent=60):
     """
     Generates a fully separable dataset.
@@ -95,10 +94,10 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
 
     Args:
         caps_dir: (str) path to the CAPS directory.
-        tsv_path: (str) path to tsv file of list of subjects/sessions.
         output_dir: (str) folder containing the synthetic dataset in CAPS format.
         n_subjects: (int) number of subjects in each class of the synthetic
             dataset.
+        tsv_path: (str) path to tsv file of list of subjects/sessions.
         preprocessing: (str) preprocessing performed. Must be in ['linear', 'extensive'].
         mask_path: (str) path to the extracted masks to generate the two labels.
         atrophy_percent: (float) percentage of atrophy applied.
@@ -111,7 +110,7 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
     from pathlib import Path
 
     # Read DataFrame
-    data_df = pd.read_csv(tsv_path, sep='\t')
+    data_df = load_and_check_tsv(tsv_path, caps_dir, output_dir)
     data_df = baseline_df(data_df, "None")
 
     home = str(Path.home())
