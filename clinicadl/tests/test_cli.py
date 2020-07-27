@@ -60,8 +60,8 @@ def generate_cli_commands(request):
             'quality-check',
             't1-linear',
             '/dir/caps',
-            '/dir/tsv.file',
             '/dir/res.tsv',
+            '-tsv', '/dir/tsv.file',
             '--threshold', '0.5',
             '--batch_size', '8']
         keys_output = [
@@ -70,6 +70,7 @@ def generate_cli_commands(request):
             'preprocessing',
             'caps_dir',
             'tsv_file',
+            'subjects_sessions_tsv',
             'output_path',
             'threshold',
             'batch_size']
