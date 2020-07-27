@@ -459,7 +459,7 @@ def parse_command_line():
     subparser = parser.add_subparsers(
         title='''Task to execute with clinicadl:''',
         description='''What kind of task do you want to use with clinicadl?
-            (tsvtool, preprocessing, extract, generate, train, validate, classify).''',
+            (tsvtool, preprocessing, generate, train, classify).''',
         dest='task',
         help='''****** Tasks proposed by clinicadl ******''')
 
@@ -531,39 +531,51 @@ def parse_command_line():
 
     generate_parser.set_defaults(func=generate_data_func)
 
-    # Preprocessing 1
-    # preprocessing_parser: get command line arguments and options for
-    # preprocessing
+    # Preprocessing
     from clinica.pipelines.t1_linear.t1_linear_cli import T1LinearCLI
     from clinica.engine.cmdparser import init_cmdparser_objects
     preprocessing_parser = subparser.add_parser(
         'preprocessing',
         help='Preprocess T1w-weighted images with t1-linear or t1-extensive pipelines'
     )
-    preprocessing_parser._positionals.title = ('%sclinicadl preprocessing expects one of the following pipelines%s'
+
+    preprocessing_subparser = preprocessing_parser.add_subparsers(
+        title='''Preprocessing task to execute with clinicadl:''',
+        description='''What kind of task do you want to perform with clinicadl?
+                (run, quality-check, extract-tensor).''',
+        dest='preprocessing_task',
+        help='''****** Tasks proposed by clinicadl ******''')
+    preprocessing_subparser.required = True
+
+    run_parser = preprocessing_subparser.add_parser(
+        'run',
+        help='Preprocess T1w-weighted images with t1-linear or t1-extensive pipelines.'
+    )
+    run_parser._positionals.title = ('%sclinicadl preprocessing expects one of the following pipelines%s'
                                                % (Fore.GREEN, Fore.RESET))
 
     def preprocessing_help(args):
         print('%sNo pipeline was specified. Type clinica preprocessing -h for details%s' %
               (Fore.RED, Fore.RESET))
 
-    preprocessing_parser.set_defaults(func=preprocessing_help)
+    run_parser.set_defaults(func=preprocessing_help)
 
     init_cmdparser_objects(
         parser,
-        preprocessing_parser.add_subparsers(dest='preprocessing'),
+        run_parser.add_subparsers(dest='preprocessing'),
         [
             T1LinearCLI(),
         ]
     )
 
-
-    # Preprocessing 2 - Extract data: slices or patches
-    # extract_parser: get command line argument and options
-
-    extract_parser = subparser.add_parser(
-        'extract',
-        help='Create data (slices or patches) for training.'
+    extract_parser = preprocessing_subparser.add_parser(
+        'extract-tensor',
+        help='Create tensors from nifti files (image, patches or slices).'
+    )
+    extract_parser.add_argument(
+        'preprocessing',
+        help='Preprocessing pipeline on which extraction is performed.',
+        choices=['t1-linear']
     )
     extract_parser.add_argument(
         'caps_dir',
@@ -615,11 +627,15 @@ def parse_command_line():
 
     extract_parser.set_defaults(func=extract_data_func)
 
-    qc_parser = subparser.add_parser(
+    qc_parser = preprocessing_subparser.add_parser(
         'quality-check',
         help='Performs quality check procedure for t1-linear pipeline.'
              'Original code can be found at https://github.com/vfonov/deep-qc'
     )
+    qc_parser.add_argument("preprocessing",
+                           help="Pipeline on which quality check procedure is performed.",
+                           type=str,
+                           choices=["t1-linear"])
     qc_parser.add_argument("caps_dir",
                            help='Data using CAPS structure.',
                            type=str)
