@@ -7,11 +7,11 @@ from pathlib import Path
 import torch
 import pandas as pd
 from torch.utils.data import DataLoader
-from clinica.iotools.utils.data_handling import create_subs_sess_list
 
 from clinicadl.quality_check.utils import QCDataset, resnet_qc_18
 from clinicadl.tools.inputs.input import fetch_file
 from clinicadl.tools.inputs.input import RemoteFileStructure
+from clinicadl.tools.data.utils import load_and_check_tsv
 
 
 def quality_check(caps_dir, output_path, tsv_path=None, threshold=0.5, batch_size=1, num_workers=0, gpu=True):
@@ -47,15 +47,7 @@ def quality_check(caps_dir, output_path, tsv_path=None, threshold=0.5, batch_siz
         model.cuda()
 
     # Load DataFrame
-    if tsv_path is not None:
-        df = pd.read_csv(tsv_path, sep='\t')
-        if ('session_id' not in list(df.columns.values)) or (
-                'participant_id' not in list(df.columns.values)):
-            raise Exception("the data file is not in the correct format."
-                            "Columns should include ['participant_id', 'session_id']")
-    else:
-        create_subs_sess_list(caps_dir, output_path, is_bids_dir=False, use_session_tsv=False)
-        df = pd.read_csv(join(output_path, 'subjects_sessions_list.tsv'), sep="\t")
+    df = load_and_check_tsv(tsv_path, caps_dir, output_path)
 
     dataset = QCDataset(caps_dir, df)
     dataloader = DataLoader(
