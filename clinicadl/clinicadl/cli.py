@@ -60,8 +60,8 @@ def qc_func(args):
 
     quality_check(
         args.caps_dir,
-        args.tsv_file,
         args.output_path,
+        tsv_path=args.subjects_sessions_tsv,
         threshold=args.threshold,
         batch_size=args.batch_size,
         num_workers=args.nproc,
@@ -75,7 +75,7 @@ def generate_data_func(args):
     if args.mode == "random":
         generate_random_dataset(
             caps_dir=args.caps_dir,
-            tsv_path=args.tsv_path,
+            tsv_path=args.subjects_sessions_tsv,
             output_dir=args.output_dir,
             n_subjects=args.n_subjects,
             mean=args.mean,
@@ -84,7 +84,7 @@ def generate_data_func(args):
     else:
         generate_trivial_dataset(
             caps_dir=args.caps_dir,
-            tsv_path=args.tsv_path,
+            tsv_path=args.subjects_sessions_tsv,
             output_dir=args.output_dir,
             n_subjects=args.n_subjects,
             preprocessing=args.preprocessing,
