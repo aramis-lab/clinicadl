@@ -14,6 +14,7 @@ We assume that users installing and using `clinicadl` are comfortable with using
 - `clinicadl preprocessing` - [Preprocessing pipelines](Run/Introduction)
     - `t1-linear` - [Linear processing of T1w MR images](Run/T1_Linear): affine registration to the MNI standard space
     - `t1-extensive` - ['Extensive' processing of T1w MR images](Run/T1_Extensive): non linear registration to the MNI standard space
+- `clinicadl quality_check` - [Quality control of preprocessed data](./QualityCheck): use a pretrained network [(Fonov et al, 2018)](https://www.biorxiv.org/content/10.1101/303487v1) to classify adequately registered images.
 - `clinicadl extract` - [Prepare input data for deep learning with PyTorch](./Extract)
 - `clinicadl quality_check` - [Evaluate registration quality](./QualityCheck.md)
 
