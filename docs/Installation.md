@@ -95,3 +95,30 @@ At the end of your session, remember to deactivate your Conda environment:
 ```bash
 conda deactivate
 ```
+
+
+## Testing
+
+Be sure to have the `pytest` library in order to run the test suite.  This test
+suite includes unit testing to be launched using the command line.
+
+### Unit testing (WIP)
+
+The CLI (command line interface) part is tested using `pytest`. We are planning
+to provide unit tests for the other tasks in the future. If you want to run
+successfully the tests maybe you can use a command like this one:
+
+```{.sourceCode .bash}
+pytest clinicadl/tests/test_cli.py
+```
+
+### Functional testing
+
+Training task are tested using synthetic data created from MRI extracted of the
+OASIS dataset. To run them, go to the test folder and type the following
+command in the terminal:
+
+```{.sourceCode .bash}
+pytest ./test_train_cnn.py
+```
+Please, be sure to previously create the right dataset.
