@@ -20,7 +20,7 @@ their sessions) were removed.
 
 ### Command line
 
-```{.sourceCode .bash}
+```bash
 clinicadl tsvtool restrict dataset merged_tsv results_path
 ```
 
@@ -54,7 +54,7 @@ never progressed to dementia nor converted back to cognitively normal status.
 
 ### Command line
 
-```{.sourceCode .bash}
+```bash
 clinicadl tsvtool getlabels merged_tsv missing_mods results_path
 ```
 where:
@@ -79,14 +79,14 @@ Options:
 ### Output tree
 
 The command will output one tsv file per label.
-```
-└── <results_path>
+<pre>
+└── &lt;results_path&gt;
     ├── AD.tsv
     ├── CN.tsv
     ├── MCI.tsv
     ├── sMCI.tsv
     └── pMCI.tsv
-```
+</pre>
 
 Each tsv file comprises the `participant_id` and `session_id` values of all the sessions that correspond to the label.
 The last column `diagnosis` is always equal to the label name.
@@ -106,7 +106,7 @@ with similar demographics for these labels.
 
 ### Command line
 
-```{.sourceCode .bash}
+```bash
 clinicadl tsvtool split merged_tsv formatted_data_path
 ```
 where:
@@ -173,7 +173,7 @@ with similar demographics for these labels.
 
 ### Command line
 
-```{.sourceCode .bash}
+```bash
 clinicadl tsvtool kfold formatted_data_path
 ```
 where `formatted_data_path` (str) is a folder containing one tsv file per label
@@ -197,7 +197,7 @@ The command will generate the following output tree.
     ├── label-1.tsv
     ├── ...
     ├── label-n.tsv
-    ├── <b>train_splits-&lt;n_splits&gt;</b>
+    ├── <b>train_splits-&lt&lt;n_splits&gt</b>
     |   ├── <b>split-0</b>
     |   ├── ...
     |   └── <b>split-&lt;n_splits-1&gt;</b>
@@ -233,7 +233,7 @@ The variables of interest are: the age, sex, mini-mental state examination (MMSE
 
 ### Command line
 
-```{.sourceCode .bash}
+```bash
 clinicadl tsvtool analysis merged_tsv formatted_data_path results_path
 ```
 where:
