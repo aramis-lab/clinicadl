@@ -21,7 +21,7 @@ their sessions) were removed.
 ### Command line
 
 ```bash
-clinicadl tsvtool restrict dataset merged_tsv results_path
+clinicadl tsvtool restrict <dataset> <merged_tsv> <results_path>
 ```
 
 where:
@@ -55,7 +55,7 @@ never progressed to dementia nor converted back to cognitively normal status.
 ### Command line
 
 ```bash
-clinicadl tsvtool getlabels merged_tsv missing_mods results_path
+clinicadl tsvtool getlabels <merged_tsv> <missing_mods> <results_path>
 ```
 where:
 
@@ -107,7 +107,7 @@ with similar demographics for these labels.
 ### Command line
 
 ```bash
-clinicadl tsvtool split merged_tsv formatted_data_path
+clinicadl tsvtool split <merged_tsv> <formatted_data_path>
 ```
 where:
 
@@ -174,7 +174,7 @@ with similar demographics for these labels.
 ### Command line
 
 ```bash
-clinicadl tsvtool kfold formatted_data_path
+clinicadl tsvtool kfold <formatted_data_path>
 ```
 where `formatted_data_path` (str) is a folder containing one tsv file per label
 (output of `clinicadl tsvtool getlabels|split|kfold`).
@@ -234,7 +234,7 @@ The variables of interest are: the age, sex, mini-mental state examination (MMSE
 ### Command line
 
 ```bash
-clinicadl tsvtool analysis merged_tsv formatted_data_path results_path
+clinicadl tsvtool analysis <merged_tsv> <formatted_data_path> <results_path>
 ```
 where:
 
