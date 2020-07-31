@@ -1,105 +1,161 @@
-# `train` - Train neural networks using CNN models
+# `train` - Train deep learning networks for neuroimaging classification
 
-* `image`: uses the full 3D MRIs to train a network.
-* `patch`: uses 3D patches (from specific patch size) extracted from the 3D image.
-* `roi`: extract a specific 3D region from the MRI.
-* `slice`: uses 2D slices to train a CNN.
+This pipeline enables the training of a convolutional neural network (CNN) classifiers using different formats of inputs 
+(whole 3D images, 3D patches or 2D slices), as defined in ([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)). 
+It mainly relies on the PyTorch deep learning library 
+([Paszke et al., 2019](https://papers.nips.cc/paper/9015-pytorch-an-imperative-style-high-performance-deep-learning-library)).
 
-For each mode, different options are presented, in order to control different
-parameters used during the training phase.
+## Prerequisites
+You need to execute the [`clinicadl tsvtool getlabels` and `clinicadl tsvtool {split|kfold}` pipelines](../TSVTools) 
+prior to running this pipeline to have the correct TSV file organization.
+Moreover, there should be a CAPS, obtained running the `t1-linear` pipeline of ClinicaDL 
+or the `t1-extensive` preprocessing pipeline of `clinicadl` (to be implemented).
 
-<details>
-<summary>
-E.g., this is the list of options available when training a CNN network using
-3D patches:
-</summary>
-
-```{.sourceCode .bash}
-usage: clinicadl train patch cnn [-h] [-cpu] [-np NPROC]
-                                 [--batch_size BATCH_SIZE]
-                                 [--diagnoses {AD,CN,MCI,sMCI,pMCI} [{AD,CN,MCI,sMCI,pMCI} ...]]
-                                 [--baseline] [--n_splits N_SPLITS]
-                                 [--split SPLIT [SPLIT ...]] [--epochs EPOCHS]
-                                 [--learning_rate LEARNING_RATE]
-                                 [--weight_decay WEIGHT_DECAY]
-                                 [--dropout DROPOUT] [--patience PATIENCE]
-                                 [--tolerance TOLERANCE] [-ps PATCH_SIZE]
-                                 [-ss STRIDE_SIZE] [--use_extracted_patches]
-                                 [--transfer_learning_path TRANSFER_LEARNING_PATH]
-                                 [--transfer_learning_autoencoder]
-                                 [--transfer_learning_selection {best_loss,best_acc}]
-                                 [--selection_threshold SELECTION_THRESHOLD]
-                                 caps_dir {t1-linear,t1-extensive} tsv_path
-                                 output_dir network
-
-optional arguments:
-  -h, --help            show this help message and exit
-
-Positional arguments:
-  caps_dir              Data using CAPS structure.
-  {t1-linear,t1-extensive}
-                        Defines the type of preprocessing of CAPS data.
-  tsv_path              TSV path with subjects/sessions to process.
-  output_dir            Folder containing results of the training.
-  network               CNN Model to be used during the training.
-
-Computational resources:
-  -cpu, --use_cpu       Uses CPU instead of GPU.
-  -np NPROC, --nproc NPROC
-                        Number of cores used during the training.
-  --batch_size BATCH_SIZE
-                        Batch size for training. (default=2)
-
-Data management:
-  --diagnoses {AD,CN,MCI,sMCI,pMCI} [{AD,CN,MCI,sMCI,pMCI} ...], -d {AD,CN,MCI,sMCI,pMCI} [{AD,CN,MCI,sMCI,pMCI} ...]
-                        Diagnoses that will be selected for training.
-  --baseline            if True only the baseline is used.
-
-Cross-validation arguments:
-  --n_splits N_SPLITS   If a value is given will load data of a k-fold CV.
-  --split SPLIT [SPLIT ...]
-                        Train the list of given folds. By default train all
-                        folds.
-
-Optimization parameters:
-  --epochs EPOCHS       Epochs through the data. (default=20)
-  --learning_rate LEARNING_RATE, -lr LEARNING_RATE
-                        Learning rate of the optimization. (default=0.01)
-  --weight_decay WEIGHT_DECAY, -wd WEIGHT_DECAY
-                        Weight decay value used in optimization.
-                        (default=1e-4)
-  --dropout DROPOUT     rate of dropout that will be applied to dropout
-                        layers.
-  --patience PATIENCE   Waiting time for early stopping.
-  --tolerance TOLERANCE
-                        Tolerance value for the early stopping.
-
-Patch-level parameters:
-  -ps PATCH_SIZE, --patch_size PATCH_SIZE
-                        Patch size
-  -ss STRIDE_SIZE, --stride_size STRIDE_SIZE
-                        Stride size
-  --use_extracted_patches
-                        If True the outputs of extract preprocessing are used,
-                        else the whole MRI is loaded.
-
-Transfer learning:
-  --transfer_learning_path TRANSFER_LEARNING_PATH
-                        If an existing path is given, a pretrained model is
-                        used.
-  --transfer_learning_autoencoder
-                        If specified, do transfer learning using an
-                        autoencoder else will look for a CNN model.
-  --transfer_learning_selection {best_loss,best_acc}
-                        If transfer_learning from CNN, chooses which best
-                        transfer model is selected.
-
-Patch-level CNN parameters:
-  --selection_threshold SELECTION_THRESHOLD
-                        Threshold on the balanced accuracies to compute the
-                        subject-level performance. Patches are selected if
-                        their balanced accuracy > threshold. Default
-                        corresponds to no selection.
-
+## Running the pipeline
+The pipeline can be run with the following command line:
 ```
-</details>
+clinicadl train <input_type> <network_type> <caps_directory> \
+                <preprocessing> <tsv_path> <output_directory> <architecture>
+```
+where mandatory arguments are:
+
+- `mode` (str) is the type of input used. Must be chosen between `image`, `patch`, `roi` and `slice`.
+- `network_type` (str) is the type of network used. 
+The options depend on the type of input used, but at most it can be chosen between `autoencoder`, `cnn` and `multicnn`.
+- `caps_directory` (str) is the input folder containing the neuroimaging data in a [CAPS](http://www.clinica.run/doc/CAPS/Introduction/) hierarchy.
+- `preprocessing` (str) corresponds to the preprocessing pipeline whose outputs will be used for training. 
+The current version only supports `t1-linear`, but `t1-extensive` will be implemented in next versions of `clinicadl`.
+- `tsv_path` (str) is the input folder of a TSV file tree generated by `clinicadl tsvtool {split|kfold}`.
+- `output_directory` (str) is the folder where the results are stored.
+- `architecture` (str) is the name of the architecture used (e.g. `Conv5_FC3`). 
+It must correspond to a class that inherits from `nn.Module` imported in `tools/deep_learning/models/__init__.py`.
+
+Options shared among all pipelines are organized in groups:
+
+- **Computational resources**
+    - `--use_cpu` (bool) forces to use CPU. Default behaviour is to try to use a GPU and to raise an error if it is not found.
+    - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
+    - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
+- **Data management**
+    - `--diagnoses` (list of str) is the list of the labels that will be used for training. 
+    These labels must be chosen from {AD,CN,MCI,sMCI,pMCI}. Default will use AD and CN labels.
+    - `--baseline` (bool) is a flag to perform the load only _baseline.tsv files instead of .tsv files comprising all the sessions. Default: `False`.
+    - `--unnormalize` (bool) is a flag to disable min-max normalization that is performed by default. Default: `False`.
+- **Cross-validation arguments**
+    - `--n_splits` (int) is a number of splits k to load in the case of a k-fold cross-validation. Default will load a single-split.
+    - `--split` (list of int) is a subset of folds that will be used for training. By default all splits available are used. 
+- **Optimization parameters**
+    - `--epochs` (int) is the maximum number of epochs. Default: `20`.
+    - `--learning_rate` (float) is the learning rate used to perform weights update. Default: `1e-4`.
+    - `--weight_decay` (float) is the weight decay used by Adam optimizer. Default: `1e-4`.
+    - `--dropout` (float) is the rate of dropout applied in dropout layers. Default will reproduce the dropout rates used in 
+    ([Wen et al.](https://doi.org/10.1016/j.media.2020.101694)).
+    - `--patience` (int) is the number of epochs for early stopping patience. Default: `10`.
+    - `--tolerance` (float) is the value used for early stopping tolerance. Default: `0`.
+    - `--evaluation_steps` (int) gives the number of iterations to perform an evaluation internal to an epoch. 
+    Default will only perform one evaluation at the end of each epoch.
+    - `--accumulation_steps` (int) gives the number of iterations during which gradients are accumulated before performing the weights update. 
+    This allows to virtually increase the size of the batch. Default: `1`.
+
+!!! note
+    Other pipeline options are highly dependent on the input and the type of network used. 
+    Please refer to the corresponding sections for more information.
+
+The available network types depend on the mode:
+
+- `image` and `roi` can train `autoencoder` and `cnn`,
+- `patch` can train `autoencoder` `cnn` and `multicnn`.
+
+Other pipeline options also depend on the mode (`image`, `patch`, `roi` or `slice`).
+
+!!! tip
+    Typing `clinicadl train {image|patch|roi|slice} --help` will show you the networks that are available for training in this category.
+
+## Outputs
+
+At the first level of the file system, all pipeline outputs are identical.
+Below is an example of the output file system for a network trained with data split between train and validation sets 
+corresponding to a 5-fold cross-validation.
+
+<pre>
+results
+├── commandline.json
+├── environment.txt
+├── <b>fold-0</b>
+├── <b>fold-1</b>
+├── <b>fold-2</b>
+├── <b>fold-3</b>
+└── <b>fold-4</b>
+</pre>
+
+where:
+
+- `commandline.json` is a file containing all the arguments necessary to reproduce the experiment,
+- `environment.txt` contains the version of `python` and `pytorch` used to run the experiment,
+- `fold-<i>` is a folder containing the result of the run on the `i`-th split of the 5-fold cross-validation.
+
+!!! note
+    A run of `clinicadl train` is necessarily associated to a TSV file system defining a series of data splits (k-fold cross-validation or single split). 
+    In the case of a single split the `results` folder will only contain a folder named `fold-0`.
+
+The structure of the `fold-<i>` folders partly depends on the type of network trained. They may contain the following folders:
+
+- `models` is the folder containing checkpoints saved at the end of each epoch, 
+as well as the best model according to a specific metric on the validation set. 
+The selection of a best model is only performed at the end of an epoch (a model cannot be selected based on internal evaluations in an epoch).
+- `tensorboard_logs` contains logs that can be visualized with [TensorBoard](https://www.tensorflow.org/tensorboard).
+- `cnn_classification` *specific to `(multi)cnn`* contains TSV files corresponding to the evaluation of the best models as saved in `models`.
+- `autoencoder_reconstruction` *specific to `autoencoder`* contains reconstructions of the best model selected on the validation loss.
+
+## Architectures implemented in `clinicadl`
+
+Some architectures were implemented in `clinicadl` and corresponds to the ones used in ([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)). 
+These architectures present some specificites described here.
+
+### Adaptative padding in pooling layers
+
+Pooling layers reduce the size of their input feature maps. 
+There are no learnable parameters in this layer, the kernel outputting the maximum value of the part of the feature map its kernels is covering.
+
+Here is a 2D example of the standard layer of pytorch `nn.MaxPool2d`:
+
+<img src="https://drive.google.com/uc?id=1qh9M9r9mfpZeSD1VjOGQAl8zWqBLmcKz" style="height: 200px;" alt="animation of classical max pooling">
+
+The last column may not be used depending on the size of the kernel/input and stride value. 
+To avoid this, pooling layers with adaptive padding `PadMaxPool3d` were implemented in `clinicadl` to exploit information from the whole feature map.
+
+<img src="https://drive.google.com/uc?id=14R_LCTiV0N6ZXm-3wQCj_Gtc1LsXdQq_" style="height: 200px;" alt="animation of max pooling with adaptive pooling">
+
+!!! note
+    To avoid this problem, deep learners often choose to resize their input to have sizes 
+    equal to 2<sup>n</sup> with maxpooling layers of size and stride of 2.
+
+### Autoencoders construction from CNN architectures
+
+In `clinicadl`, autoencoder architectures are derived from a CNN architecture:
+
+- the encoder corresponds to the convolutional part of the CNN,
+- the decoder is composed of the transposed version of the operations used in the encoder.
+
+![Transfer learning from autoencoders to CNNs](../images/transfer_learning.png)
+
+The list of the transposed version of modules can be found below:
+
+- `Conv3d` → `ConvTranspose3d`
+- `PadMaxPool3d` → `CropMaxUnpool3d` 
+(specific module of `clinicadl` used to reconstruct the feature map produced by pooling layers with adaptive padding)
+- `MaxPool3d` → `MaxUnpool3d`
+- `Linear` → `Linear` with an inversion in `in_features` and `out_features`,
+- `Flatten` → `Reshape`
+- `LeakyReLU` → `LeakyReLU` with the inverse value of alpha,
+- other → copy of itself
+
+### Implementation of a custom model
+
+Custom CNN architectures can be added to clinicadl by adding a model class in `clinicadl/tools/deep_learning/models` 
+and importing it in `clinicadl/tools/deep_learning/models/__init__.py`.
+
+There are two rules to follow to convert this CNN architecture into an autoencoder:
+Implement the convolutional part in `features` and the fully-connected layer in `classifier`. See predefined models as examples.
+Check that all the modules used in your architecture are in the list of modules transposed by the autoencoder 
+or that the invert version of this module is itself (it is the case for activation layers).
