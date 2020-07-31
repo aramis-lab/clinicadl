@@ -14,7 +14,7 @@ from `source task` to `target task`:
 (convolutions and batch normalization layers) take the values of the trainable parameters of the encoder part of the source autoencoder,
 - `cnn` to `cnn`: all the trainable parameters are transferred between the two models.
 
-!!! note
+!!! info "Common options"
     Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-pipeline)
 
 ## `train roi autoencoder` - Train autoencoders using ROI
@@ -30,7 +30,7 @@ There is one specific option for this pipeline:
 the validation sets and their corresponding reconstructions are written in `autoencoder_reconstruction`.
 Inputs are reconstructed based on the model that obtained the best validation loss.
 
-!!! note
+??? note "Model selection"
     The selection of a best model is only performed at the end of an epoch 
     (a model cannot be selected based on internal evaluations in an epoch).
 
@@ -90,7 +90,7 @@ Choices are `best_loss` and `bset_balanced_accuracy`.  Default: `best_balanced_a
 - `--selection_threshold` (float) threshold on the balanced accuracies to compute the image-level performance. 
 regions are selected if their balanced accuracy > threshold. Default corresponds to no selection.
 
-!!! note
+??? note "Model selection"
     The selection of a best model is only performed at the end of an epoch 
     (a model cannot be selected based on internal evaluations in an epoch).
 
@@ -128,7 +128,7 @@ results
               └── events.out.tfevents.XXXX
 </pre>
 
-!!! note
+!!! note "Level of performance"
     The performances are obtained at two different levels: region-based and image-level.
     Region-based performance corresponds to an evaluation in which both ROI are considered to be independent.
     However it is not the case, and what is more interesting is the evaluation on the image-level, 

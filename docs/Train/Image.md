@@ -1,7 +1,7 @@
 # `train image` - Train deep learning networks using whole 3D images
 
 This option allows training a network on the whole 3D images (as opposed to 3D patches and 2D slices).
-Two network types can be trained with the `image` input type:
+Two network types can be trained with the `image` mode:
 
 - `autoencoder`, that learns to reconstruct the input images,
 - `cnn`, that learns to differentiate two labels assigned to input images. 
@@ -12,7 +12,7 @@ It is possible to transfer trainable parameters between models. In the following
 (convolutions and batch normalization layers) take the values of the trainable parameters of the encoder part of the source autoencoder,
 - `cnn` to `cnn`: all the trainable parameters are transferred between the two models. 
 
-!!! note
+!!! info "Common options"
     Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-pipeline)
 
 ## `train image autoencoder` - Train autoencoders using whole 3D images
@@ -28,8 +28,9 @@ There is one specific option for this pipeline:
 the validation sets and their corresponding reconstructions are written in `autoencoder_reconstruction`.
 Inputs are reconstructed based on the model that obtained the best validation loss.
 
-!!! note
-    The selection of a best model is only performed at the end of an epoch (a model cannot be selected based on internal evaluations in an epoch).
+??? note "Model selection"
+    The selection of a best model is only performed at the end of an epoch 
+    (a model cannot be selected based on internal evaluations in an epoch).
 
 The complete output file system is the following (the folder `autoencoder_reconstruction` is created only if the 
 flag `--visualization` was given):
@@ -64,7 +65,7 @@ results
               └── events.out.tfevents.XXXX
 </pre>
 
-`autoencoder_reconstruction` contains the reconstructions of the first three first participants of the dataset.
+`autoencoder_reconstruction` contains the reconstructions of the three first participants of the dataset.
 
 ## `train image cnn` - Train classification CNN using whole 3D images
 
@@ -82,11 +83,12 @@ The options specific to this pipeline are the following:
 The best model of this folder will be used to initialize the network as explained in the [introduction](./Image.md). 
 If nothing is given the initialization will be random.
 - `--transfer_learning_selection` (str) corresponds to the metric according to which the best model of `transfer_learning_path` will be loaded. 
-This argument will only be taken into account if the source network is a CNN. Choices are `best_loss` and `bset_balanced_accuracy`.  
+This argument will only be taken into account if the source network is a CNN. Choices are `best_loss` and `best_balanced_accuracy`.  
 Default: `best_balanced_accuracy`.
 
-!!! note
-    The selection of a best model is only performed at the end of an epoch (a model cannot be selected based on internal evaluations in an epoch).
+??? note "Model selection"
+    The selection of a best model is only performed at the end of an epoch 
+    (a model cannot be selected based on internal evaluations in an epoch).
 
 The complete output file system is the following:
 

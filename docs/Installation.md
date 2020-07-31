@@ -37,6 +37,7 @@ python environment. E.g.,
 ```{.sourceCode .bash}
 conda create --name clinicadl_env python=3.7
 conda activate clinicadl_env
+pip install numpy==1.17
 pip install clinicadl
 ```
 
@@ -49,6 +50,7 @@ conda activate clinicadl_env
 git clone git@github.com:aramis-lab/AD-DL.git
 cd AD-DL
 cd clinicadl
+pip install numpy==1.17
 pip install -e .
 ```
 
@@ -65,11 +67,11 @@ conda activate clinicadl_env
     Congratulations, you have installed ClinicaDL! At this point, you can try the
     basic `clinicadl -h` command and get the help screen:
     ```Text
-    (ClinicaDL)$ clinicadl -h
+    (clinicadl_env)$ clinicadl -h
     usage: clinicadl [-h] [--verbose]
                      {generate,preprocessing,extract,train,classify,tsvtool} ...
 
-    Clinica Deep Learning.
+    Deep learning software for neuroimaging datasets
 
     optional arguments:
       -h, --help            show this help message and exit
@@ -92,7 +94,7 @@ conda activate clinicadl_env
                             previously trained model.
         tsvtool             Handle tsv files for metadata processing and data
                             splits
-```
+    ```
 
 
 #### Deactivation of the ClinicaDL environment
@@ -104,14 +106,14 @@ conda deactivate
 
 ## Testing
 
-Be sure to have the `pytest` library in order to run the test suite.  This test
-suite includes unit testing to be launched using the command line.
+Be sure to have the `pytest` library in order to run the test suite.
+This test suite includes unit testing to be launched using the command line.
 
 ### Unit testing (WIP)
 
 The CLI (command line interface) part is tested using `pytest`. We are planning
-to provide unit tests for the other tasks in the future. If you want to run
-successfully the tests maybe you can use a command like this one:
+to provide unit tests for other tasks in the future. If you want to run
+successfully the CLI tests you can use the following command line:
 
 ```{.sourceCode .bash}
 pytest clinicadl/tests/test_cli.py
@@ -119,11 +121,17 @@ pytest clinicadl/tests/test_cli.py
 
 ### Functional testing
 
-Training task are tested using synthetic data created from MRI extracted of the
-OASIS dataset. To run them, go to the test folder and type the following
-command in the terminal:
+Metadata processing, training and classification tasks can be tested. 
+To run these tests, go to the test folder and type the following
+commands in the terminal:
 
 ```{.sourceCode .bash}
+pytest ./test_classify.py
+pytest ./test_train_ae.py
 pytest ./test_train_cnn.py
+pytest ./test_tsvtool.py
 ```
-Please, be sure to previously create the right dataset.
+
+!!! warning
+    Data for testing is not currently provided, 
+    but release of anonymized datasets for testing is planned for future versions.

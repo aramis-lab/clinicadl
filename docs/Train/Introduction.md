@@ -1,12 +1,13 @@
 # `train` - Train deep learning networks for neuroimaging classification
 
-This pipeline enables the training of a convolutional neural network (CNN) classifiers using different formats of inputs 
+This pipeline enables the training of a convolutional neural network (CNN) classifier using different formats of inputs 
 (whole 3D images, 3D patches or 2D slices), as defined in ([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)). 
 It mainly relies on the PyTorch deep learning library 
 ([Paszke et al., 2019](https://papers.nips.cc/paper/9015-pytorch-an-imperative-style-high-performance-deep-learning-library)).
 
 ## Prerequisites
-You need to execute the [`clinicadl tsvtool getlabels` and `clinicadl tsvtool {split|kfold}` pipelines](../TSVTools) 
+You need to execute the [`clinicadl tsvtool getlabels`](../TSVTools.md#getlabels-extract-labels-specific-to-alzheimers-disease) 
+and [`clinicadl tsvtool {split|kfold}`](../TSVTools.md#split-single-split-observing-similar-age-and-sex-distributions) pipelines
 prior to running this pipeline to have the correct TSV file organization.
 Moreover, there should be a CAPS, obtained running the `t1-linear` pipeline of ClinicaDL 
 or the `t1-extensive` preprocessing pipeline of `clinicadl` (to be implemented).
@@ -14,7 +15,7 @@ or the `t1-extensive` preprocessing pipeline of `clinicadl` (to be implemented).
 ## Running the pipeline
 The pipeline can be run with the following command line:
 ```
-clinicadl train <input_type> <network_type> <caps_directory> \
+clinicadl train <mode> <network_type> <caps_directory> \
                 <preprocessing> <tsv_path> <output_directory> <architecture>
 ```
 where mandatory arguments are:
@@ -61,13 +62,6 @@ Options shared among all pipelines are organized in groups:
     Other pipeline options are highly dependent on the input and the type of network used. 
     Please refer to the corresponding sections for more information.
 
-The available network types depend on the mode:
-
-- `image` and `roi` can train `autoencoder` and `cnn`,
-- `patch` can train `autoencoder` `cnn` and `multicnn`.
-
-Other pipeline options also depend on the mode (`image`, `patch`, `roi` or `slice`).
-
 !!! tip
     Typing `clinicadl train {image|patch|roi|slice} --help` will show you the networks that are available for training in this category.
 
@@ -112,7 +106,7 @@ The selection of a best model is only performed at the end of an epoch (a model 
 Some architectures were implemented in `clinicadl` and corresponds to the ones used in ([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)). 
 These architectures present some specificites described here.
 
-### Adaptative padding in pooling layers
+### Adaptive padding in pooling layers
 
 Pooling layers reduce the size of their input feature maps. 
 There are no learnable parameters in this layer, the kernel outputting the maximum value of the part of the feature map its kernels is covering.
@@ -132,7 +126,7 @@ To avoid this, pooling layers with adaptive padding `PadMaxPool3d` were implemen
 
 ### Autoencoders construction from CNN architectures
 
-In `clinicadl`, autoencoder architectures are derived from a CNN architecture:
+In `clinicadl`, an autoencoder is derived from a CNN architecture:
 
 - the encoder corresponds to the convolutional part of the CNN,
 - the decoder is composed of the transposed version of the operations used in the encoder.
@@ -152,7 +146,7 @@ The list of the transposed version of modules can be found below:
 
 ## Implementation of a custom experiment
 
-The aim of `clinicadl` is not only to use the tools provided, but to add your own in the framework.
+The aim of `clinicadl` is not to provide a collection of tools, but to allow users to add their own in the framework.
 Before starting, please fork and clone the [github repo](https://github.com/aramis-lab/AD-DL]).
 
 !!! tip
@@ -175,9 +169,10 @@ or that the invert version of this module is itself (it is the case for activati
 
 Input types that are already provided in `clinicadl` are `image`, `patch`, `roi` and `slice`. To add a custom input type, 
 please follow the steps detailed below:
-* Choose a mode name for this input type (for example default ones are image, patch, roi and slice). 
-* Add your dataset class in `clinicadl/tools/deep_learning/data.py` as a child class of the abstract class `MRIDataset`.
-* Create your dataset in `return_dataset` by adding:
+
+- Choose a mode name for this input type (for example default ones are image, patch, roi and slice). 
+- Add your dataset class in `clinicadl/tools/deep_learning/data.py` as a child class of the abstract class `MRIDataset`.
+- Create your dataset in `return_dataset` by adding:
 ```
 elif mode==<mode_name>:
     return <dataset_class>(
@@ -188,16 +183,18 @@ elif mode==<mode_name>:
         <custom_args>
     )
 ```
-* Add your custom subparser to `train` and complete `train_func` in `clinicadl/cli.py`.
+- Add your custom subparser to `train` and complete `train_func` in `clinicadl/cli.py`.
 
 ### Custom preprocessing
 Define the path of your new preprocessing in the `_get_path` method of `MRIDataset` in `clinicadl/tools/deep_learning/data.py`. 
+
 You will also have to add the name of your preprocessing pipeline in the general command line by modifying the possible choices 
 of the `preprocessing` argument of `train_pos_group` in `cli.py`.
 
 ### Custom labels
 You can launch a classification task with clinicadl using any labels. 
 The input tsv files must include the columns `participant_id`, `session_id` and `diagnosis`. 
+
 If the column `diagnosis` does not contain the labels described the 
 [dedicated section](../TSVTools.md#getlabels-extract-labels-specific-to-alzheimers-disease) (AD, CN, MCI, sMCI or pMCI), 
 you can add your own label name associated to a class value in the `diagnosis_code` of the class `MRIDataset` 

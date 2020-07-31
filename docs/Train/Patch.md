@@ -17,7 +17,7 @@ It is possible to transfer trainable parameters between models. In the following
 - `cnn` to `multicnn`: each CNN of the `multicnn` run is initialized with the weights of the source CNN.
 - `multicnn` to `multicnn`: each CNN is initialized with the weights of the corresponding one in the source experiment.
 
-!!! note
+!!! info "Common options"
     Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-pipeline)
 
 ## `train patch autoencoder` - Train autoencoders using 3D patches
@@ -37,8 +37,9 @@ Else the whole 3D MR volumes are loaded and patches are extracted on-the-fly.
 the validation sets and their corresponding reconstructions are written in `autoencoder_reconstruction`.
 Inputs are reconstructed based on the model that obtained the best validation loss.
 
-!!! note
-    The selection of a best model is only performed at the end of an epoch (a model cannot be selected based on internal evaluations in an epoch).
+??? note "Model selection"
+    The selection of a best model is only performed at the end of an epoch 
+    (a model cannot be selected based on internal evaluations in an epoch).
 
 The complete output file system is the following (the folder `autoencoder_reconstruction` is created only if the 
 flag `--visualization` was given):
@@ -101,7 +102,7 @@ Choices are `best_loss` and `bset_balanced_accuracy`.  Default: `best_balanced_a
 - `--selection_threshold` (float) threshold on the balanced accuracies to compute the image-level performance. 
 Patches are selected if their balanced accuracy > threshold. Default corresponds to no selection.
 
-!!! note
+??? note "Model selection"
     The selection of a best model is only performed at the end of an epoch 
     (a model cannot be selected based on internal evaluations in an epoch).
 
@@ -136,7 +137,7 @@ results
               └── events.out.tfevents.XXXX
 </pre>
 
-!!! note
+!!! note "Level of performance"
     The performances are obtained at two different levels: patch-level and image-level. 
     Patch-level performance corresponds to an evaluation in which all patches are considered to be independent. 
     However it is not the case, and what is more interesting is the evaluation on the image-level, 
@@ -161,7 +162,7 @@ If nothing is given the initialization will be random.
 This argument will only be taken into account if the source network is a CNN. Choices are `best_loss` and `bset_balanced_accuracy`.  
 Default: `best_balanced_accuracy`.
 
-!!! note
+??? note "Model selection"
     The selection of a best model is only performed at the end of an epoch 
     (a model cannot be selected based on internal evaluations in an epoch).
 
@@ -213,7 +214,7 @@ results
 `models` and `tensorboard_logs` contain one output per CNN trained. 
 The number of networks (equals to the number of patches) `N` depends on the `patch_size` and the `stride_size`.
 
-!!! note
+!!! note "Level of performance"
     The performances are obtained at two different levels: patch-level and image-level. 
     Patch-level performance corresponds to the concatenation of the performances of all CNNs. 
     The evaluation on the image-level is obtained by assembling the predictions of all the CNNs.
