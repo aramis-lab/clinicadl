@@ -1,7 +1,7 @@
 # Installation
 
-You will find below the steps for installing ClinicaDL on Linux or Mac. Please do
-not hesitate to contact us on the
+You will find below the steps for installing `clinicadl` on Linux or Mac.
+Please do not hesitate to contact us on the
 [forum](https://groups.google.com/forum/#!forum/clinica-user) or
 [GitHub](https://github.com/aramis-lab/AD-DL/issues)
 if you encounter any issues.
@@ -28,35 +28,37 @@ curl https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -o /
 bash /tmp/miniconda-installer.sh
 ```
 
-#### Installation of ClinicaDL
+#### Installation of clinicadl
 
 
-We recommend to use `conda` for the installation of ClinicaDL.
-It guaranties the right management of libraries depending on common packages:
+We recommend to use `conda` or `virtualenv` to  install clinicadl inside a
+python environment. E.g.,
 
 ```{.sourceCode .bash}
-conda create --name ClinicaDL python=3.6 pytorch torchvision -c pytorch
-
-conda activate ClinicaDL
-git clone git@github.com:aramis-lab/AD-DL.git
-cd AD-DL
-pip install -r requirements.txt
+conda create --name clinicadl_env python=3.7
+conda activate clinicadl_env
+pip install clinicadl
 ```
 
-Once done, install the package `clinicadl` as developer in the active conda environment:
+You can also install the developer version from the repository:
+the active conda environment:
 
 ```{.sourceCode .bash}
+conda create --name clinicadl_env python=3.7
+conda activate clinicadl_env
+git clone git@github.com:aramis-lab/AD-DL.git
+cd AD-DL
 cd clinicadl
 pip install -e .
 ```
 
-### Running the ClinicaDL environment
-#### Activation of the ClinicaDL environment
+### Running the clinicadl environment
+#### Activation of the clinicadl environment
 
-Now that you have created the Clinica environment, you can activate it:
+Now that you have created the clinicadl environment, you can activate it:
 
 ```bash
-conda activate ClinicaDL
+conda activate clinicadl_env
 ```
 
 !!! success
@@ -73,21 +75,24 @@ conda activate ClinicaDL
       -h, --help            show this help message and exit
       --verbose, -v
 
-    Task to execute with clinicadl:
+    Task to execute with clinicadl::
       What kind of task do you want to use with clinicadl? (tsvtool,
       preprocessing, extract, generate, train, validate, classify).
 
-      {generate,preprocessing,extract,train,classify,tsvtool}
+      {generate,preprocessing,extract,quality_check,train,classify,tsvtool}
                             ****** Tasks proposed by clinicadl ******
         generate            Generate synthetic data for functional tests.
         preprocessing       Prepare data for training (needs clinica installed).
         extract             Create data (slices or patches) for training.
+        quality_check       Performs quality check procedure for t1-linear
+                            pipeline.Original code can be found at
+                            https://github.com/vfonov/deep-qc
         train               Train with your data and create a model.
         classify            Classify one image or a list of images with your
                             previously trained model.
         tsvtool             Handle tsv files for metadata processing and data
                             splits
-    ```
+```
 
 
 #### Deactivation of the ClinicaDL environment

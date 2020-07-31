@@ -8,6 +8,12 @@
   <a href="https://ci.inria.fr/clinicadl/job/AD-DL/job/master/">
     <img src="https://ci.inria.fr/clinicadl/buildStatus/icon?job=AD-DL%2Fmaster" alt="Build Status">
   </a>
+  <a href="https://badge.fury.io/py/clinicadl">
+    <img src="https://badge.fury.io/py/clinicadl.svg" alt="PyPI version">
+  </a>
+  <a href='https://clinicadl.readthedocs.io/en/latest/?badge=latest'>
+    <img src='https://readthedocs.org/projects/clinicadl/badge/?version=latest' alt='Documentation Status' />
+  </a>
 </p>
 
 <p align="center">
@@ -41,29 +47,18 @@ If you find a problem when use it or if you want to provide us feedback, please
 
 ## Getting Started
 > Full instructions for installation and additional information can be found in
-the [user documentation](http://www.clinica.run/clinicadl).
+the [user documentation](https://clinicadl.readthedocs.io/en/latest).
 
-ClinicaDL currently supports macOS and Linux.
+`clinicadl` currently supports macOS and Linux.
 
-We recommend to use `conda` for the installation of ClinicaDL.
-It guaranties the right management of libraries depending on common packages:
-
-```{.sourceCode .bash}
-conda create --name ClinicaDL python=3.6 pytorch torchvision -c pytorch
-
-conda activate ClinicaDL
-git clone git@github.com:aramis-lab/AD-DL.git
-cd AD-DL
-pip install -r requirements.txt
-```
-
-Once done, install the package `clinicadl` as developer in the active conda environment:
+We recommend to use `conda` or `virtualenv` to create an environment and install
+inside clinicadl:
 
 ```{.sourceCode .bash}
-cd clinicadl
-pip install -e .
+conda create --name clinicadl_env python=3.6
+conda activate clinicadl_env
+pip install clinicadl
 ```
-
 
 ## Overview
 
