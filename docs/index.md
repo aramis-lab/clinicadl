@@ -15,6 +15,7 @@ We assume that users installing and using `clinicadl` are comfortable with using
     - `t1-linear` - [Linear processing of T1w MR images](Run/T1_Linear): affine registration to the MNI standard space
     - `t1-extensive` - ['Extensive' processing of T1w MR images](Run/T1_Extensive): non linear registration to the MNI standard space
 - `clinicadl extract` - [Prepare input data for deep learning with PyTorch](./Extract)
+- `clinicadl quality_check` - [Evaluate registration quality](./QualityCheck.md)
 
 
 ### Train & test your classifier
@@ -29,16 +30,12 @@ We assume that users installing and using `clinicadl` are comfortable with using
 
 ## Pretrained models
 
-Some of the pretained model for the CNN networks can be obtained here:
+Pretrained models for the CNN networks implemented in ClinicaDL can be obtained here:
 <https://zenodo.org/record/3491003>  
 
 These models were obtained during the experiments for publication.
+They correspond to a previous version of ClinicaDL, hence their file system is not compatible with the current version.
 Updated versions of the models will be published soon.
-
-## Bibliography
-
-All the papers described in the State of the art section of the manuscript may
-be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 
 ## Support
 - [Report an issue on GitHub](https://github.com/aramis-lab/AD-DL/issues)
@@ -48,7 +45,9 @@ be found at this URL address: <https://www.zotero.org/groups/2337160/ad-dl>.
 `clinicadl` is distributed under the terms of the MIT license given [here](https://github.com/aramis-lab/AD-DL/blob/dev/LICENSE.txt).
 
 ## Citing `clinicadl`
-For publications or communications using `clinicadl`, please cite ([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)) as well as the references mentioned on the wiki page of the pipelines you used (for example, citing PyTorch when using the `extract` pipeline).
+For publications or communications using `clinicadl`, please cite ([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)) 
+as well as the references mentioned on the wiki page of the pipelines you used 
+(for example, citing PyTorch when using the `extract` pipeline).
 
 !!! info "Disclaimer"
     `clinicadl` is a software for research studies. It is not intended for use in medical routine

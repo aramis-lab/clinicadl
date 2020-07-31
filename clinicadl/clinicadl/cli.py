@@ -459,7 +459,7 @@ def tsv_analysis_func(args):
 def parse_command_line():
     parser = argparse.ArgumentParser(
         prog='clinicadl',
-        description='Clinica Deep Learning.')
+        description='Deep learning software for neuroimaging datasets')
 
     parser.add_argument('--verbose', '-v', action='count')
 

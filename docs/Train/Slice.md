@@ -3,7 +3,7 @@
 This option allows training a network on 2D slices. For more information on slices please refer to [tensor extraction](../Extract.md).
 There is no network type choice for `slice` as the only network type is the single-CNN.
 
-!!! note
+!!! info "Common options"
     Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-pipeline)
 
 The objective of this unique CNN is to learn to predict labels associated to images.
@@ -28,7 +28,7 @@ Else the whole 3D MR volumes are loaded and slices are extracted on-the-fly.
 - `--selection_threshold` (float) threshold on the balanced accuracies to compute the image-level performance. 
 Slices are selected if their balanced accuracy > threshold. Default corresponds to no selection.
 
-!!! note
+??? note "Model selection"
     The selection of a best model is only performed at the end of an epoch 
     (a model cannot be selected based on internal evaluations in an epoch).
 
@@ -63,7 +63,7 @@ results
               └── events.out.tfevents.XXXX
 </pre>
 
-!!! note
+!!! note "Level of performance"
     The performances are obtained at two different levels: slice-level and image-level. 
     Slice-level performance corresponds to an evaluation in which all slices are considered to be independent. 
     However it is not the case, and what is more interesting is the evaluation on the image-level, 
