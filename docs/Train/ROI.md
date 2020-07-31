@@ -1,6 +1,10 @@
 # `train roi` - Train deep learning networks using predefined Regions of Interest (ROI)
 
-This option allows training a network on Regions of Interest.
+This option allows training a network on two Regions of Interest (ROI).
+ROI inputs correspond to two patches of size 50x50x50 manually centered on each hippocampus.
+This manual centering has only been done for `t1-linear` preprocessing.
+
+![Coronal view of ROI patches](../images/hippocampi.png)
 
 Two network types can be trained with the `roi` input type:
 
