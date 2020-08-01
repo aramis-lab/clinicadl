@@ -6,6 +6,9 @@ This manual centering has only been done for `t1-linear` pipeline.
 
 ![Coronal view of ROI patches](../images/hippocampi.png)
 
+!!! warning
+    Contrary to `patch` and `slice`, `roi` inputs cannot be extracted with `clinicadl extract`.
+
 One architecture is implemented in `clinicadl` for the `roi` mode: 
 `Conv4_FC3`, adapted to `t1-linear` pipeline outputs.
 
@@ -123,9 +126,6 @@ regions are selected if their balanced accuracy > threshold. Default corresponds
 ??? note "Model selection"
     The selection of a best model is only performed at the end of an epoch 
     (a model cannot be selected based on internal evaluations in an epoch).
-
-!!! warning
-    Contrary to `patch` and `slice`, `roi` inputs cannot be extracted with `clinicadl extract`.
 
 ### Outputs
 
