@@ -9,8 +9,7 @@ It mainly relies on the PyTorch deep learning library
 You need to execute the [`clinicadl tsvtool getlabels`](../TSVTools.md#getlabels-extract-labels-specific-to-alzheimers-disease) 
 and [`clinicadl tsvtool {split|kfold}`](../TSVTools.md#split-single-split-observing-similar-age-and-sex-distributions) pipelines
 prior to running this pipeline to have the correct TSV file organization.
-Moreover, there should be a CAPS, obtained running the `t1-linear` pipeline of ClinicaDL 
-or the `t1-extensive` preprocessing pipeline of `clinicadl` (to be implemented).
+Moreover, there should be a CAPS, obtained running the `t1-linear` pipeline of ClinicaDL.
 
 ## Running the pipeline
 The pipeline can be run with the following command line:
@@ -58,7 +57,7 @@ Options shared among all pipelines are organized in groups:
     - `--accumulation_steps` (int) gives the number of iterations during which gradients are accumulated before performing the weights update. 
     This allows to virtually increase the size of the batch. Default: `1`.
 
-!!! note
+!!! note "Specific options"
     Other pipeline options are highly dependent on the input and the type of network used. 
     Please refer to the corresponding sections for more information.
 
@@ -88,7 +87,7 @@ where:
 - `environment.txt` contains the version of `python` and `pytorch` used to run the experiment,
 - `fold-<i>` is a folder containing the result of the run on the `i`-th split of the 5-fold cross-validation.
 
-!!! note
+!!! note "Validation procedure"
     A run of `clinicadl train` is necessarily associated to a TSV file system defining a series of data splits (k-fold cross-validation or single split). 
     In the case of a single split the `results` folder will only contain a folder named `fold-0`.
 
@@ -120,7 +119,7 @@ To avoid this, pooling layers with adaptive padding `PadMaxPool3d` were implemen
 
 <img src="https://drive.google.com/uc?id=14R_LCTiV0N6ZXm-3wQCj_Gtc1LsXdQq_" style="height: 200px;" alt="animation of max pooling with adaptive pooling">
 
-!!! note
+!!! note "Adapt the padding... or the input!"
     To avoid this problem, deep learners often choose to resize their input to have sizes 
     equal to 2<sup>n</sup> with maxpooling layers of size and stride of 2.
 
@@ -143,6 +142,19 @@ The list of the transposed version of modules can be found below:
 - `Flatten` → `Reshape`
 - `LeakyReLU` → `LeakyReLU` with the inverse value of alpha,
 - other → copy of itself
+
+### Transfer learning
+
+It is possible to transfer trainable parameters between models. In the following list the weights are transferred from `source task` to `target task`:
+
+- `autoencoder` to `cnn`: the trainable parameters of the convolutional part of the `cnn` 
+(convolutions and batch normalization layers) take the values of the trainable parameters of the encoder part of the source autoencoder,
+- `cnn` to `cnn`: all the trainable parameters are transferred between the two models.
+- `autoencoder` to `multicnn`: the convolutional part of each CNN of the `multicnn` run is initialized
+ with the weights of the encoder of the source autoencoder.
+- `cnn` to `multicnn`: each CNN of the `multicnn` run is initialized with the weights of the source CNN.
+- `multicnn` to `multicnn`: each CNN is initialized with the weights of the corresponding one in the source experiment.
+
 
 ## Implementation of a custom experiment
 
