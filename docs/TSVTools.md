@@ -66,7 +66,7 @@ Options:
 
   - `--modality` (str) Modality for which the sessions are selected. 
   Sessions which do not include the modality will be excluded from the outputs.
-  The names of the modality must correspond to a column of the tsv files in `missing_mods`.
+  The name of the modality must correspond to a column of the tsv files in `missing_mods`.
   Default value: `t1w`.
   - `--diagnoses` (list of str) is the list of the labels that will be extracted.
    These labels must be chosen from {AD,CN,MCI,sMCI,pMCI}. Default will only process AD and CN labels.
@@ -88,7 +88,7 @@ The command will output one tsv file per label:
 </pre>
 
 Each tsv file comprises the `participant_id` and `session_id` values of all the sessions that correspond to the label.
-The last column `diagnosis` is always be equal to the label name.
+The values of the last column `diagnosis` are equal to the label name.
 
 ## `split` - Single split observing similar age and sex distributions
 
@@ -165,10 +165,6 @@ the session closest to baseline if the latter does not exist).
 ### Description
 
 This tool independently splits each label to perform a k-fold cross-validation.
-
-By default, there is a special treatment of the MCI set and its subsets (sMCI and pMCI) to avoid
-data leakage. However if there is too few patients, this can prevent finding a split
-with similar demographics for these labels.
 
 ### Command line
 
@@ -248,6 +244,6 @@ Options:
   Default value: `age_bl`.
   - `--mmse_name` (str) is the name of the column containing the MMSE values in `merged_tsv`.
   Default value: `MMS`.
-  - `--baseline` (bool) is a flag to perform the analysis on <label>_baseline.tsv files
-  instead of <label>.tsv files comprising all the sessions.
+  - `--baseline` (bool) is a flag to perform the analysis on `<label>_baseline.tsv` files
+  instead of `<label>.tsv` files comprising all the sessions.
   Default: `False`.
