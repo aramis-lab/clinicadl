@@ -26,7 +26,7 @@ so that voxels in corresponding positions contain comparable information.
 
 ## Available pipelines
 
-For the experiments of ([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)), two preprocessing pipelines were developed:
+For the experiments of [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)], two preprocessing pipelines were developed:
 
 - [`t1-linear` pipeline](Run/T1_Linear) (called "Minimal" preprocessing in the paper) 
 where an **affine** registration to the MNI standard space is performed with the [ANTs](http://stnava.github.io/ANTs/) software.
@@ -35,5 +35,5 @@ where an **affine** registration to the MNI standard space is performed with the
 where **non linear** registration to the MNI standard space is performed with the [SPM](http://www.fil.ion.ucl.ac.uk/spm/) software.
 
 !!! info "Which preprocessing is adapted to my network?"
-    In ([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)), `t1-linear` showed similar results to 
+    In [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)], `t1-linear` showed similar results to 
     `t1-extensive`, although it is simpler.

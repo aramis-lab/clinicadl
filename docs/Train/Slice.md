@@ -9,7 +9,7 @@ of a ResNet-18 trained on ImageNet.
 
 !!! info "Adding a custom architecture"
     It is possible to add custom architecture and train it with `clinicadl`.
-    Detailed instructions can be found [here](./Introduction.md#implementation-of-a-custom-experiment).
+    Detailed instructions can be found [here](./Custom.md).
 
 ## Introduction
 

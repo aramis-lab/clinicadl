@@ -13,7 +13,7 @@ Two architectures are implemented in `clinicadl` for the `image` mode:
 
 !!! info "Adding a custom architecture"
     It is possible to add custom architecture and train it with `clinicadl`.
-    Detailed instructions can be found [here](./Introduction.md#implementation-of-a-custom-experiment).
+    Detailed instructions can be found [here](./Custom.md).
 
 ## `train image autoencoder` - Train autoencoders using whole 3D images
 

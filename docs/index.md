@@ -45,7 +45,7 @@ Updated versions of the models will be published soon.
 `clinicadl` is distributed under the terms of the MIT license given [here](https://github.com/aramis-lab/AD-DL/blob/dev/LICENSE.txt).
 
 ## Citing `clinicadl`
-For publications or communications using `clinicadl`, please cite ([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)) 
+For publications or communications using `clinicadl`, please cite [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)] 
 as well as the references mentioned on the wiki page of the pipelines you used 
 (for example, citing PyTorch when using the `extract` pipeline).
 
