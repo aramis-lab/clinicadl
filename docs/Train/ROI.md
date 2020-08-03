@@ -158,4 +158,4 @@ results
     The performances are obtained at two different levels: region-based and image-level.
     Region-based performance corresponds to an evaluation in which both ROI are considered to be independent.
     However it is not the case, and what is more interesting is the evaluation on the image-level, 
-    for which the predictions of the two regions were assembled.
+    for which the predictions of the two regions were [assembled](./Introduction.md#soft-voting).

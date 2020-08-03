@@ -165,7 +165,7 @@ results
     The performances are obtained at two different levels: patch-level and image-level. 
     Patch-level performance corresponds to an evaluation in which all patches are considered to be independent. 
     However it is not the case, and what is more interesting is the evaluation on the image-level, 
-    for which the predictions of patch-level were assembled.
+    for which the predictions of patch-level were [assembled](./Introduction.md#soft-voting).
 
 ## `train patch multicnn` - Train one classification CNN per patche location
 
@@ -260,4 +260,4 @@ The number of networks (equals to the number of patches) `N` depends on the `pat
 !!! note "Level of performance"
     The performances are obtained at two different levels: patch-level and image-level. 
     Patch-level performance corresponds to the concatenation of the performances of all CNNs. 
-    The evaluation on the image-level is obtained by assembling the predictions of all the CNNs.
+    The evaluation on the image-level is obtained by [assembling](./Introduction.md#soft-voting) the predictions of all the CNNs.

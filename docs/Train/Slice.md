@@ -88,4 +88,4 @@ results
     The performances are obtained at two different levels: slice-level and image-level. 
     Slice-level performance corresponds to an evaluation in which all slices are considered to be independent. 
     However it is not the case, and what is more interesting is the evaluation on the image-level, 
-    for which the predictions of slice-level were assembled.
+    for which the predictions of slice-level were [assembled](./Introduction.md#soft-voting).
