@@ -69,6 +69,7 @@ nav:
     - Slice-based: Train/Slice.md
     - ROI-based: Train/ROI.md
     - Custom experiment: Train/Custom.md
+    - Implementation details: Train/Details.md
   - Classify: Classify.md
   - Generate: Generate.md
   - TSV Tools: TSVTools.md
