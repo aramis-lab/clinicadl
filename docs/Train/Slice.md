@@ -48,7 +48,7 @@ If only one argument is given, it will be used for both sides. Default: `20`.
 - `--use_extracted_slices` (bool) if this flag is given, the outputs of `clinicadl extract` are used.
 Else the whole 3D MR volumes are loaded and slices are extracted on-the-fly.
 - `--selection_threshold` (float) threshold on the balanced accuracies to compute the 
-[image-level performance](./Introduction.md#soft-voting). 
+[image-level performance](./Details.md#soft-voting). 
 Patches are selected if their balanced accuracy > threshold. Default corresponds to no selection.
 
 ## Outputs
@@ -88,4 +88,4 @@ results
     The performances are obtained at two different levels: slice-level and image-level. 
     Slice-level performance corresponds to an evaluation in which all slices are considered to be independent. 
     However it is not the case, and what is more interesting is the evaluation on the image-level, 
-    for which the predictions of slice-level were [assembled](./Introduction.md#soft-voting).
+    for which the predictions of slice-level were [assembled](./Details.md#soft-voting).

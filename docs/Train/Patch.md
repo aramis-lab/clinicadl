@@ -19,7 +19,7 @@ One architecture is implemented in `clinicadl` for the `patch` mode:
 The objective of an autoencoder is to learn to reconstruct images given in input while performing a dimension reduction. 
 
 The difference between the input and the output image is given by the mean squared error.
-In clinicadl, autoencoders are designed [based on a CNN architecture](./Introduction.md#autoencoders-construction-from-cnn-architectures). 
+In clinicadl, autoencoders are designed [based on a CNN architecture](./Details.md#autoencoders-construction-from-cnn-architectures). 
 
 ### Running the pipeline
 
@@ -45,7 +45,7 @@ The options specific to this pipeline are the following:
 Else the whole 3D MR volumes are loaded and patches are extracted on-the-fly.
 - `--visualization` (bool) if this flag is given, inputs of the train and
 the validation sets and their corresponding reconstructions are written in `autoencoder_reconstruction`.
-Inputs are reconstructed based on the model that obtained the [best validation loss](./Introduction.md#model-selection).
+Inputs are reconstructed based on the model that obtained the [best validation loss](./Details.md#model-selection).
 
 ### Outputs
 
@@ -118,14 +118,14 @@ The options specific to this pipeline are the following:
 Else the whole 3D MR volumes are loaded and patches are extracted on-the-fly.
 - `--transfer_learning_path` (str) is the path to a results folder (output of `clinicadl train`). 
 The best model of this folder will be used to initialize the network as 
-explained in the [implementation details](./Introduction.md#transfer-learning). 
+explained in the [implementation details](./Details.md#transfer-learning). 
 If nothing is given the initialization will be random.
 - `--transfer_learning_selection` (str) corresponds to the metric according to which the 
-[best model](./Introduction.md#model-selection) of `transfer_learning_path` will be loaded. 
+[best model](./Details.md#model-selection) of `transfer_learning_path` will be loaded. 
 This argument will only be taken into account if the source network is a CNN. 
 Choices are `best_loss` and `best_balanced_accuracy`. Default: `best_balanced_accuracy`.
 - `--selection_threshold` (float) threshold on the balanced accuracies to compute the 
-[image-level performance](./Introduction.md#soft-voting). 
+[image-level performance](./Details.md#soft-voting). 
 Patches are selected if their balanced accuracy > threshold. Default corresponds to no selection.
 
 ### Outputs
@@ -165,7 +165,7 @@ results
     The performances are obtained at two different levels: patch-level and image-level. 
     Patch-level performance corresponds to an evaluation in which all patches are considered to be independent. 
     However it is not the case, and what is more interesting is the evaluation on the image-level, 
-    for which the predictions of patch-level were [assembled](./Introduction.md#soft-voting).
+    for which the predictions of patch-level were [assembled](./Details.md#soft-voting).
 
 ## `train patch multicnn` - Train one classification CNN per patche location
 
@@ -197,14 +197,14 @@ The options specific to this pipeline are the following:
 
 - `--transfer_learning_path` (str) is the path to a results folder (output of `clinicadl train`). 
 The best model of this folder will be used to initialize the network as 
-explained in the [implementation details](./Introduction.md#transfer-learning). 
+explained in the [implementation details](./Details.md#transfer-learning). 
 If nothing is given the initialization will be random.
 - `--transfer_learning_selection` (str) corresponds to the metric according to which the 
-[best model](./Introduction.md#model-selection) of `transfer_learning_path` will be loaded. 
+[best model](./Details.md#model-selection) of `transfer_learning_path` will be loaded. 
 This argument will only be taken into account if the source network is a CNN. 
 Choices are `best_loss` and `best_balanced_accuracy`. Default: `best_balanced_accuracy`.
 - `--selection_threshold` (float) threshold on the balanced accuracies to compute the 
-[image-level performance](./Introduction.md#soft-voting). 
+[image-level performance](./Details.md#soft-voting). 
 Patches are selected if their balanced accuracy > threshold. Default corresponds to no selection.
 
 ### Outputs
@@ -260,4 +260,4 @@ The number of networks (equals to the number of patches) `N` depends on the `pat
 !!! note "Level of performance"
     The performances are obtained at two different levels: patch-level and image-level. 
     Patch-level performance corresponds to the concatenation of the performances of all CNNs. 
-    The evaluation on the image-level is obtained by [assembling](./Introduction.md#soft-voting) the predictions of all the CNNs.
+    The evaluation on the image-level is obtained by [assembling](./Details.md#soft-voting) the predictions of all the CNNs.
