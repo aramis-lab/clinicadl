@@ -121,14 +121,12 @@ pytest clinicadl/tests/test_cli.py
 
 ### Functional testing
 
-Metadata processing, training and classification tasks can be tested. 
+Metadata processing and classification tasks can be tested. 
 To run these tests, go to the test folder and type the following
 commands in the terminal:
 
 ```{.sourceCode .bash}
 pytest ./test_classify.py
-pytest ./test_train_ae.py
-pytest ./test_train_cnn.py
 pytest ./test_tsvtool.py
 ```
 
