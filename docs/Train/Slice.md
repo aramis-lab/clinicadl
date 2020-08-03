@@ -47,12 +47,9 @@ The options specific to this pipeline are the following:
 If only one argument is given, it will be used for both sides. Default: `20`.
 - `--use_extracted_slices` (bool) if this flag is given, the outputs of `clinicadl extract` are used.
 Else the whole 3D MR volumes are loaded and slices are extracted on-the-fly.
-- `--selection_threshold` (float) threshold on the balanced accuracies to compute the image-level performance. 
-Slices are selected if their balanced accuracy > threshold. Default corresponds to no selection.
-
-??? note "Model selection"
-    The selection of a best model is only performed at the end of an epoch 
-    (a model cannot be selected based on internal evaluations in an epoch).
+- `--selection_threshold` (float) threshold on the balanced accuracies to compute the 
+[image-level performance](./Introduction.md#soft-voting). 
+Patches are selected if their balanced accuracy > threshold. Default corresponds to no selection.
 
 ## Outputs
 

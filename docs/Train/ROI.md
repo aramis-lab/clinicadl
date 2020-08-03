@@ -42,11 +42,7 @@ There is one specific option for this pipeline:
 
 - `--visualization` (bool) if this flag is given, inputs of the train and
 the validation sets and their corresponding reconstructions are written in `autoencoder_reconstruction`.
-Inputs are reconstructed based on the model that obtained the best validation loss.
-
-??? note "Model selection"
-    The selection of a best model is only performed at the end of an epoch 
-    (a model cannot be selected based on internal evaluations in an epoch).
+Inputs are reconstructed based on the model that obtained the [best validation loss](./Introduction.md#model-selection).
 
 ### Outputs
 
@@ -117,15 +113,13 @@ The options specific to this pipeline are the following:
 The best model of this folder will be used to initialize the network as 
 explained in the [implementation details](./Introduction.md#transfer-learning). 
 If nothing is given the initialization will be random.
-- `--transfer_learning_selection` (str) corresponds to the metric according to which the best model of `transfer_learning_path` will be loaded. 
+- `--transfer_learning_selection` (str) corresponds to the metric according to which the 
+[best model](./Introduction.md#model-selection) of `transfer_learning_path` will be loaded. 
 This argument will only be taken into account if the source network is a CNN. 
-Choices are `best_loss` and `bset_balanced_accuracy`.  Default: `best_balanced_accuracy`.
-- `--selection_threshold` (float) threshold on the balanced accuracies to compute the image-level performance. 
-regions are selected if their balanced accuracy > threshold. Default corresponds to no selection.
-
-??? note "Model selection"
-    The selection of a best model is only performed at the end of an epoch 
-    (a model cannot be selected based on internal evaluations in an epoch).
+Choices are `best_loss` and `best_balanced_accuracy`. Default: `best_balanced_accuracy`.
+- `--selection_threshold` (float) threshold on the balanced accuracies to compute the 
+[image-level performance](./Introduction.md#soft-voting). 
+Patches are selected if their balanced accuracy > threshold. Default corresponds to no selection.
 
 ### Outputs
 
