@@ -752,7 +752,7 @@ def parse_command_line():
         TRAIN_CATEGORIES["OPTIMIZATION"])
     train_optim_group.add_argument(
         '--epochs',
-        help='Epochs through the data. (default=20)',
+        help='Maximum number of epochs. (default=20)',
         default=20, type=int)
     train_optim_group.add_argument(
         '--learning_rate', '-lr',
