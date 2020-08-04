@@ -41,7 +41,7 @@ The list of the transposed version of modules can be found below:
 - `LeakyReLU` → `LeakyReLU` with the inverse value of alpha,
 - other → copy of itself
 
-### Transfer learning
+## Transfer learning
 
 It is possible to transfer trainable parameters between models. In the following list the weights are transferred from `source task` to `target task`:
 
