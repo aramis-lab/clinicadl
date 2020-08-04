@@ -28,7 +28,7 @@ In `clinicadl`, an autoencoder is derived from a CNN architecture:
 - the encoder corresponds to the convolutional part of the CNN,
 - the decoder is composed of the transposed version of the operations used in the encoder.
 
-![Transfer learning from autoencoders to CNNs](../images/transfer_learning.png)
+![Illustration of a CNN and the corresponding autoencoder](../images/transfer_learning.png)
 
 The list of the transposed version of modules can be found below:
 
