@@ -126,7 +126,7 @@ and optionally cropped.
 
 !!! cite "Example of paragraph"
     These results have been obtained using the `deeplearning-prepare-data` pipeline of Clinica
-    [[Routier et al](https://hal.inria.fr/hal-02308126/); [Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)].
+    [[Routier et al.](https://hal.inria.fr/hal-02308126/); [Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)].
     More precisely,
 
     - 3D images

@@ -11,7 +11,7 @@ Then the images are randomly distributed between the two labels.
 ![Schemes of trivial and random data](./images/generate.png)
 
 Both variants were used for functional testing of the final models proposed in 
-[[Wen et al, 2020](https://www.sciencedirect.com/science/article/abs/pii/S1361841520300591)].
+[[Wen et al., 2020](https://www.sciencedirect.com/science/article/abs/pii/S1361841520300591)].
 Moreover, trivial data are useful for debugging a framework: hyper parameters can be more easily tested as 
 fewer data samples are required and convergence should be reached faster as the classification task is simpler.
 
