@@ -1,8 +1,8 @@
-# `train roi` - Train deep learning networks using predefined Regions of Interest (ROI)
+# `train roi` - Train deep learning networks using predefined regions of interest (ROI)
 
-This option allows training a network on two Regions of Interest (ROI).
-ROI inputs correspond to two patches of size 50x50x50 manually centered on each hippocampus.
-This manual centering has only been done for `t1-linear` pipeline.
+This option allows training a network on two regions of interest (ROI).
+ROI inputs correspond to two patches of size 50x50x50 voxels manually centered on each hippocampus.
+This manual centering has only been done for the `t1-linear` pipeline.
 
 ![Coronal view of ROI patches](../images/hippocampi.png)
 
@@ -13,7 +13,7 @@ One architecture is implemented in `clinicadl` for the `roi` mode:
 `Conv4_FC3`, adapted to `t1-linear` pipeline outputs.
 
 !!! info "Adding a custom architecture"
-    It is possible to add custom architecture and train it with `clinicadl`.
+    It is possible to add a custom architecture and train it with `clinicadl`.
     Detailed instructions can be found [here](./Custom.md).
 
 ## `train roi autoencoder` - Train autoencoders using ROI
@@ -36,7 +36,7 @@ where mandatory arguments are:
 - `output_directory` (str) is the folder where the results are stored.
 
 !!! info "Common options"
-    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-pipeline)
+    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-pipeline).
 
 There is one specific option for this pipeline: 
 
@@ -79,7 +79,7 @@ results
               └── events.out.tfevents.XXXX
 </pre>
 
-`autoencoder_reconstruction` contains the reconstructions of the two regions of the three first participants of the dataset.
+`autoencoder_reconstruction` contains the reconstructions of the two regions of the first three participants of the dataset.
 
 ## `train roi cnn` - Train classification CNN using ROI
 
@@ -104,12 +104,12 @@ where mandatory arguments are:
 - `output_directory` (str) is the folder where the results are stored.
 
 !!! info "Common options"
-    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-pipeline)
+    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-pipeline).
 
 
 The options specific to this pipeline are the following:
 
-- `--transfer_learning_path` (str) is the path to a results folder (output of `clinicadl train`). 
+- `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
 The best model of this folder will be used to initialize the network as 
 explained in the [implementation details](./Details.md#transfer-learning). 
 If nothing is given the initialization will be random.
@@ -119,7 +119,7 @@ This argument will only be taken into account if the source network is a CNN.
 Choices are `best_loss` and `best_balanced_accuracy`. Default: `best_balanced_accuracy`.
 - `--selection_threshold` (float) threshold on the balanced accuracies to compute the 
 [image-level performance](./Details.md#soft-voting). 
-Patches are selected if their balanced accuracy > threshold. Default corresponds to no selection.
+Patches are selected if their balanced accuracy is greather than the threshold. Default corresponds to no selection.
 
 ### Outputs
 
@@ -155,7 +155,7 @@ results
 </pre>
 
 !!! note "Level of performance"
-    The performances are obtained at two different levels: region-based and image-level.
-    Region-based performance corresponds to an evaluation in which both ROI are considered to be independent.
-    However it is not the case, and what is more interesting is the evaluation on the image-level, 
+    The performance metrics are obtained at two different levels: region-level and image-level.
+    Region-level performance corresponds to an evaluation in which both ROI are considered to be independent.
+    However it is not the case, and what is more interesting is the evaluation at the image-level, 
     for which the predictions of the two regions were [assembled](./Details.md#soft-voting).
