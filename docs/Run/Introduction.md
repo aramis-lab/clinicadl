@@ -18,11 +18,11 @@ In the context of brain disease classification, MR image preprocessing procedure
 
 ## Available pipelines
 
-For the experiments of ([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)), two preprocessing pipelines were developed:
+For the experiments of [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)], two preprocessing pipelines were developed:
 
 - [`t1-linear` pipeline](Run/T1_Linear) (called "Minimal" preprocessing in the paper) where bias field correction and an **affine** registration to the MNI standard space are performed with the [ANTs](http://stnava.github.io/ANTs/) software.
 
 - [`t1-extensive` pipeline](Run/T1_Extensive) (called "Extensive" preprocessing in the paper) where bias field correction, **non linear** registration to the MNI standard space and skull stripping are performed with the [SPM](http://www.fil.ion.ucl.ac.uk/spm/) software.
 
 !!! info "Which pipeline should I use?"
-    In ([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)) we showed that the “Minimal” and “Extensive” procedures led to comparable classification accuracies in the context of Alzheimer's disease. Our advice would be to use the `t1-linear` pipeline for its simplicity.
+    In [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)] we showed that the “Minimal” and “Extensive” procedures led to comparable classification accuracies in the context of Alzheimer's disease. Our advice would be to use the `t1-linear` pipeline for its simplicity.
