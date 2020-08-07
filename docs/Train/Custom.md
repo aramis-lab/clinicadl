@@ -18,7 +18,7 @@ There are two rules to follow to convert this CNN architecture into an autoencod
 
 1. Implement the convolutional part in `features` and the fully-connected layer in `classifier`. See predefined models as examples.
 2. Check that all the modules used in your architecture are in the [list of modules](./Introduction.md#autoencoders-construction-from-cnn-architectures)
- transposed by the autoencoder  or that the invert version of this module is itself (it is the case for activation layers).
+ transposed by the autoencoder or that the invert version of this module is itself (it is the case for activation layers).
 
 ## Custom input type
 
@@ -47,10 +47,10 @@ You will also have to add the name of your preprocessing pipeline in the general
 of the `preprocessing` argument of `train_pos_group` in `cli.py`.
 
 ## Custom labels
-You can launch a classification task with clinicadl using any labels. 
+You can launch a classification task with clinicadl using any label. 
 The input tsv files must include the columns `participant_id`, `session_id` and `diagnosis`. 
 
-If the column `diagnosis` does not contain the labels described the 
+If the column `diagnosis` does not contain the labels described in the 
 [dedicated section](../TSVTools.md#getlabels-extract-labels-specific-to-alzheimers-disease) (AD, CN, MCI, sMCI or pMCI), 
 you can add your own label name associated to a class value in the `diagnosis_code` of the class `MRIDataset` 
 in `clinicadl/tools/deep_learning/data.py`.
