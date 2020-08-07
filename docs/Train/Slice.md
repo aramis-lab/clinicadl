@@ -8,7 +8,7 @@ If this architecture is chosen, the network is automatically initialized with th
 of a ResNet-18 trained on ImageNet.
 
 !!! info "Adding a custom architecture"
-    It is possible to add custom architecture and train it with `clinicadl`.
+    It is possible to add a custom architecture and train it with `clinicadl`.
     Detailed instructions can be found [here](./Custom.md).
 
 ## Introduction
@@ -17,7 +17,7 @@ The objective of this unique CNN is to learn to predict labels associated to ima
 The set of images used corresponds to all the possible slice locations in MR volumes.
 Slices at the beginning or at the end of the volume may be excluded using the `discarded_slices` argument.
 
-The output of the CNN is a vector of size equals to the number of classes in this dataset.
+The output of the CNN is a vector of size equal to the number of classes in this dataset.
 This vector can be preprocessed by the [softmax function](https://pytorch.org/docs/master/generated/torch.nn.Softmax.html) 
 to produce a probability for each class. During training, the CNN is optimized according to the cross-entropy loss, 
 which becomes null for a subset of images if the CNN outputs 100% probability for the true class of each image of the subset.
@@ -35,21 +35,21 @@ where mandatory arguments are:
 - `output_directory` (str) is the folder where the results are stored.
 
 !!! info "Common options"
-    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-pipeline)
+    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-pipeline).
 
 The options specific to this pipeline are the following:
 
 - `--slice_direction` (int) axis along which the MR volume is sliced. Default: `0`.
-    - 0 corresponds to sagittal plane,
-    - 1 corresponds to coronal plane,
-    - 2 corresponds to axial plane.
+    - 0 corresponds to the sagittal plane,
+    - 1 corresponds to the coronal plane,
+    - 2 corresponds to the axial plane.
 - `--discarded_slices` (list of int) number of slices discarded from respectively the beginning and the end of the MRI volume. 
 If only one argument is given, it will be used for both sides. Default: `20`.
 - `--use_extracted_slices` (bool) if this flag is given, the outputs of `clinicadl extract` are used.
-Else the whole 3D MR volumes are loaded and slices are extracted on-the-fly.
+Otherwise, the whole 3D MR volumes are loaded and slices are extracted on-the-fly.
 - `--selection_threshold` (float) threshold on the balanced accuracies to compute the 
 [image-level performance](./Details.md#soft-voting). 
-Patches are selected if their balanced accuracy > threshold. Default corresponds to no selection.
+Slices are selected if their balanced accuracy is greater than the threshold. Default corresponds to no selection.
 
 ## Outputs
 
@@ -85,7 +85,7 @@ results
 </pre>
 
 !!! note "Level of performance"
-    The performances are obtained at two different levels: slice-level and image-level. 
+    The performance metrics are obtained at two different levels: slice-level and image-level. 
     Slice-level performance corresponds to an evaluation in which all slices are considered to be independent. 
-    However it is not the case, and what is more interesting is the evaluation on the image-level, 
+    However it is not the case, and what is more interesting is the evaluation at the image-level, 
     for which the predictions of slice-level were [assembled](./Details.md#soft-voting).
