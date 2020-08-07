@@ -170,7 +170,8 @@ results
 ## `train patch multicnn` - Train one classification CNN per patch location
 
 Contrary to the preceding pipeline in which all patch locations were used as input of a unique CNN, with this option
-a CNN is trained per patch location. Then the result **@TODO**
+a CNN is trained per patch location. Then the predictions of the CNNs are [assembled](./Details.md#soft-voting) to determine
+the label at the image level.
 
 The output of each CNN is a vector of size equals to the number of classes in this dataset.
 This vector can be preprocessed by the [softmax function](https://pytorch.org/docs/master/generated/torch.nn.Softmax.html) 
