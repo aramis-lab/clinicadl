@@ -1,6 +1,6 @@
 # `train image` - Train deep learning networks using whole 3D images
 
-This option allows training a network on the whole 3D images (as opposed to 3D patches and 2D slices).
+This option allows training a network on whole 3D images (as opposed to 3D patches and 2D slices).
 Two network types can be trained with the `image` mode:
 
 - `autoencoder`, that learns to reconstruct the input images,
@@ -8,11 +8,11 @@ Two network types can be trained with the `image` mode:
 
 Two architectures are implemented in `clinicadl` for the `image` mode:
 
-- `Conv5_FC3`, adapted to `t1-linear` pipeline outputs
-- `Conv5_FC3_mni`, adapted to `t1-extensive` pipeline outputs
+- `Conv5_FC3`, adapted to `t1-linear` pipeline outputs,
+- `Conv5_FC3_mni`, adapted to `t1-extensive` pipeline outputs.
 
 !!! info "Adding a custom architecture"
-    It is possible to add custom architecture and train it with `clinicadl`.
+    It is possible to add a custom architecture and train it with `clinicadl`.
     Detailed instructions can be found [here](./Custom.md).
 
 ## `train image autoencoder` - Train autoencoders using whole 3D images
@@ -35,7 +35,7 @@ where mandatory arguments are:
 - `output_directory` (str) is the folder where the results are stored.
 
 !!! info "Common options"
-    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-pipeline)
+    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-pipeline).
 
 There is one specific option for this pipeline: 
 
@@ -78,13 +78,13 @@ results
               └── events.out.tfevents.XXXX
 </pre>
 
-`autoencoder_reconstruction` contains the reconstructions of the three first participants of the dataset.
+`autoencoder_reconstruction` contains the reconstructions of the first three participants of the dataset.
 
 ## `train image cnn` - Train classification CNN using whole 3D images
 
 The objective of a CNN is to learn to predict labels associated to images. 
 
-The output of a CNN is a vector of size equals to the number of classes in this dataset. 
+The output of a CNN is a vector of size equal to the number of classes in this dataset. 
 This vector can be preprocessed by the [softmax function](https://pytorch.org/docs/master/generated/torch.nn.Softmax.html) 
 to produce a probability for each class. 
 During training, the CNN is optimized according to the cross-entropy loss, which becomes null for a subset of images 
@@ -103,11 +103,11 @@ where mandatory arguments are:
 - `output_directory` (str) is the folder where the results are stored.
 
 !!! info "Common options"
-    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-pipeline)
+    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-pipeline).
 
 The options specific to this pipeline are the following:
 
-- `--transfer_learning_path` (str) is the path to a results folder (output of `clinicadl train`). 
+- `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
 The best model of this folder will be used to initialize the network as 
 explained in the [implementation details](./Details.md#transfer-learning). 
 If nothing is given the initialization will be random.
