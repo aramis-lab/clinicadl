@@ -78,7 +78,7 @@ It is possible to perform inner epoch evaluations by setting the value of `evalu
 weight updates before evaluation. Inner epoch evaluations allow better evaluating the progression of the network
 during training. 
 
-!!! warning "Computation time'
+!!! warning "Computation time"
     Setting `evaluation_steps` to a small value may considerably increase computation time.
 
 ## Model selection
