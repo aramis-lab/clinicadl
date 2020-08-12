@@ -6,10 +6,7 @@ Please do not hesitate to contact us on the
 [GitHub](https://github.com/aramis-lab/AD-DL/issues)
 if you encounter any issues.
 
-
-## Quick start
-
-### Python environment
+## Prepare your Python environment
 You will need a Python environment to run ClinicaDL. We advise you to
 use [Miniconda](https://docs.conda.io/en/latest/miniconda.html).
 Miniconda allows you to install, run, and update Python packages and their
@@ -28,7 +25,7 @@ curl https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -o /
 bash /tmp/miniconda-installer.sh
 ```
 
-### Installation of ClinicaDL
+## Install ClinicaDL
 
 The latest release of Clinica can be installed using `pip` as follows:
 
@@ -38,7 +35,7 @@ conda activate clinicadlEnv
 pip install clinicadl
 ```
 
-### Running the ClinicaDL environment
+## Run the ClinicaDL environment
 #### Activation of the ClinicaDL environment
 
 Now that you have created the ClinicaDL environment, you can activate it:
@@ -81,14 +78,14 @@ conda activate clinicadlEnv
     ```
 
 
-#### Deactivation of the ClinicaDL environment
+### Deactivation of the ClinicaDL environment
 At the end of your session, remember to deactivate your Conda environment:
 ```{.sourceCode .bash}
 conda deactivate
 ```
 
 
-## Developer installation
+<!--## Developer installation
 
 If you plan to contribute to ClinicaDL or if you want to have the current development
 version, you can either:
@@ -129,9 +126,9 @@ conda deactivate
 ```
 
 Remember that ClinicaDL will be only available inside your Conda environment.
+-->
 
-
-## Testing
+## Test ClinicaDL
 
 <!--Be sure to have the `pytest` library in order to run the test suite.
 This test suite includes unit testing to be launched using the command line.
