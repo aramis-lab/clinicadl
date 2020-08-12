@@ -17,7 +17,7 @@ specific restrictions were applied to datasets used for testing:
 - in **OASIS**, cognitively normal subjects who were younger than the youngest demented patient (62 years old) were removed,
 - in **AIBL**, subjects whose age could not be retrieved (because it is missing for all their sessions) were removed.
 
-### Command line
+### Running the task
 
 ```bash
 clinicadl tsvtool restrict <dataset> <merged_tsv> <results_path>
@@ -51,7 +51,7 @@ and progressed to dementia during the `time_horizon` period following the curren
 remained stable during the 36 months `time_horizon` period following the current visit and 
 never progressed to dementia nor converted back to the cognitively normal status.
 
-### Command line
+### Running the task
 
 ```bash
 clinicadl tsvtool getlabels <merged_tsv> <missing_mods> <results_path>
@@ -103,7 +103,7 @@ By default, there is a special treatment of the MCI set and its subsets (sMCI an
 data leakage. However if there are too few patients, this can prevent finding a split
 with similar demographics for these labels.
 
-### Command line
+### Running the task
 
 ```bash
 clinicadl tsvtool split <merged_tsv> <formatted_data_path>
@@ -166,7 +166,7 @@ the session closest to baseline if the latter does not exist).
 
 This tool independently splits each label to perform a k-fold cross-validation.
 
-### Command line
+### Running the task
 
 ```bash
 clinicadl tsvtool kfold <formatted_data_path>
@@ -225,7 +225,7 @@ Continuous variables are described with statistics (mean, standard deviation, mi
 whereas categorical values are grouped by categories.
 The variables of interest are: age, sex, mini-mental state examination (MMSE) and global clinical dementia rating (CDR).
 
-### Command line
+### Running the task
 
 ```bash
 clinicadl tsvtool analysis <merged_tsv> <formatted_data_path> <results_path>

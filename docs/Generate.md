@@ -24,7 +24,7 @@ Future versions will include the possibility to perform `generate` on the tensor
     The `trivial` option can synthesize at most a number of images per label that is equal to the total number of images 
     in the input CAPS , while the `random` option can synthesize as many images as wanted with only one input image.
 
-## Running the pipeline
+## Running the task
 The pipeline can be run with the following command line:
 ```
 clinicadl generate <dataset> <caps_directory> <tsv_path> <output_dir>

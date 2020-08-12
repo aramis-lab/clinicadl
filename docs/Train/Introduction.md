@@ -11,7 +11,7 @@ and [`clinicadl tsvtool {split|kfold}`](../TSVTools.md#split---single-split-obse
 prior to running this pipeline to have the correct TSV file organization.
 Moreover, there should be a CAPS, obtained running the `t1-linear` pipeline of ClinicaDL.
 
-## Running the pipeline
+## Running the task
 The pipeline can be run with the following command line:
 ```
 clinicadl train <mode> <network_type> <caps_directory> \
