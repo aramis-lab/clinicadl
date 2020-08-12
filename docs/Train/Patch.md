@@ -23,7 +23,7 @@ In clinicadl, autoencoders are designed [based on a CNN architecture](./Details.
 
 ### Running the task
 
-Here is the command line to run the pipeline on `t1-linear` outputs with the predefined architecture of ClinicaDL: 
+Here is the command line to train an autoencoder on `t1-linear` outputs with the predefined architecture of ClinicaDL: 
 ```
 clinicadl train patch autoencoder <caps_directory> t1-linear <tsv_path> <output_directory> Conv4_FC3
 ```
@@ -34,10 +34,10 @@ where mandatory arguments are:
 - `output_directory` (str) is the folder where the results are stored.
 
 !!! info "Common options"
-    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-task).
+    Options that are common to all `train` input and network types can be found in the introduction of 
+    [`clinicadl train`](./Introduction.md#running-the-task).
 
-
-The options specific to this pipeline are the following: 
+The options specific to this task are the following: 
 
 - `--patch_size` (int) size of the patches in voxels. Default: `50`.
 - `--stride_size` (int) length between the centers of successive patches in voxels. Default: `50`.
@@ -97,7 +97,7 @@ which becomes null for a subset of images if the CNN outputs 100% probability fo
 
 ### Running the task
 
-Here is the command line to run the pipeline on `t1-linear` outputs with the predefined architecture of ClinicaDL: 
+Here is the command line to train a single-CNN on `t1-linear` outputs with the predefined architecture of ClinicaDL: 
 ```
 clinicadl train patch cnn <caps_directory> t1-linear <tsv_path> <output_directory> Conv4_FC3
 ```
@@ -108,9 +108,10 @@ where mandatory arguments are:
 - `output_directory` (str) is the folder where the results are stored.
 
 !!! info "Common options"
-    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-task).
+    Options that are common to all `train` input and network types can be found in the introduction of 
+    [`clinicadl train`](./Introduction.md#running-the-task).
 
-The options specific to this pipeline are the following:
+The options specific to this task are the following:
 
 - `--patch_size` (int) size of the patches in voxels. Default: `50`.
 - `--stride_size` (int) length between the centers of successive patches in voxels. Default: `50`.
@@ -169,7 +170,7 @@ results
 
 ## `train patch multicnn` - Train one classification CNN per patch location
 
-Contrary to the preceding pipeline in which all patch locations were used as input of a unique CNN, with this option
+Contrary to the preceding network in which all patch locations were used as input of a unique CNN, with this option
 a CNN is trained per patch location. Then the predictions of the CNNs are [assembled](./Details.md#soft-voting) to determine
 the label at the image level.
 
@@ -180,7 +181,7 @@ which becomes null for a subset of images if the CNN outputs 100% probability fo
 
 ### Running the task
 
-Here is the command line to run the pipeline on `t1-linear` outputs with the predefined architecture of ClinicaDL: 
+Here is the command line to train a multi-CNN on `t1-linear` outputs with the predefined architecture of ClinicaDL: 
 ```
 clinicadl train patch multicnn <caps_directory> t1-linear <tsv_path> <output_directory> Conv4_FC3
 ```
@@ -191,10 +192,10 @@ where mandatory arguments are:
 - `output_directory` (str) is the folder where the results are stored.
 
 !!! info "Common options"
-    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-task).
+    Options that are common to all `train` input and network types can be found in the introduction of 
+    [`clinicadl train`](./Introduction.md#running-the-task).
 
-
-The options specific to this pipeline are the following:
+The options specific to this task are the following:
 
 - `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
 The best model of this folder will be used to initialize the network as 

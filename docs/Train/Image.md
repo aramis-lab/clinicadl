@@ -24,7 +24,7 @@ In clinicadl, autoencoders are designed [based on a CNN architecture](./Details.
 
 ### Running the task
 
-Here is the command line to run the pipeline on `t1-linear` outputs with the predefined architecture of ClinicaDL: 
+Here is the command line to train an autoencoder on `t1-linear` outputs with the predefined architecture of ClinicaDL: 
 ```
 clinicadl train image autoencoder <caps_directory> t1-linear <tsv_path> <output_directory> Conv5_FC3
 ```
@@ -35,9 +35,12 @@ where mandatory arguments are:
 - `output_directory` (str) is the folder where the results are stored.
 
 !!! info "Common options"
-    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-task).
+    Options that are common to all `train` input and network types can be found in the introduction of 
+    [`clinicadl train`](./Introduction.md#running-the-task).s"
+    Options that are common to all `train` input and network types can be found in the introduction of 
+    [`clinicadl train`](./Introduction.md#running-the-task).
 
-There is one specific option for this pipeline: 
+There is one specific option for this task: 
 
 - `--visualization` (bool) if this flag is given, inputs of the train and
 the validation sets and their corresponding reconstructions are written in `autoencoder_reconstruction`.
@@ -92,7 +95,7 @@ if the CNN outputs 100% probability for the true class of each image of the subs
 
 ### Running the task
 
-Here is the command line to run the pipeline on `t1-linear` outputs with the predefined architecture of ClinicaDL: 
+Here is the command line to train a CNN on `t1-linear` outputs with the predefined architecture of ClinicaDL: 
 ```
 clinicadl train image autoencoder <caps_directory> t1-linear <tsv_path> <output_directory> Conv5_FC3
 ```
@@ -103,9 +106,10 @@ where mandatory arguments are:
 - `output_directory` (str) is the folder where the results are stored.
 
 !!! info "Common options"
-    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-task).
+    Options that are common to all `train` input and network types can be found in the introduction of 
+    [`clinicadl train`](./Introduction.md#running-the-task).
 
-The options specific to this pipeline are the following:
+The options specific to this task are the following:
 
 - `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
 The best model of this folder will be used to initialize the network as 
