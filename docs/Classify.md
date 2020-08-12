@@ -2,7 +2,7 @@
 
 This functionality performs image classification using models trained with
 [`clinicadl train`](./Train/Introduction.md) task. It can also use pretrained
-models if their folder structure is similar to the struture created by the
+models if their folder structure is similar to the structure created by the
 command `clinicadl train`.  At the top level of each model folder there are two
 files:
 
@@ -18,7 +18,7 @@ validation balanced accuracy (.pth.tar file).
     For `patch`, `roi` and `slice` models, the predictions of the models on the
     validation set are needed to perform unbiased soft-voting and find the
     prediction on the image level.  If the tsv files in
-    `cnn_classification/best_balanced_accuracy` were erased the pipeline cannot
+    `cnn_classification/best_balanced_accuracy` were erased the task cannot
     be run.
 
 ## Prerequisites

@@ -14,10 +14,10 @@ Their original code can be found on [GitHub](https://github.com/vfonov/deep-qc).
 
 
 ## Prerequisites
-You need to execute the `clinicadl preprocessing` and `clinicadl extract` pipelines prior to running this pipeline.
+You need to execute the `clinicadl preprocessing` and `clinicadl extract` pipelines prior to running this task.
 
 ## Running the task
-The pipeline can be run with the following command line:
+The task can be run with the following command line:
 ```
 clinicadl quality_check <caps_directory> <tsv_path> <output_path>
 ```
@@ -29,7 +29,7 @@ and the output of the present command, both in a [CAPS hierarchy](http://www.cli
 - `output_path` (str) is the path to the output TSV file (filename included).
 
 
-Pipeline options:
+Options:
 
 - `--threshold` (float) is the threshold applied to the output probability when deciding if the image passed or failed. 
 Default value: `0.5`.
@@ -39,7 +39,7 @@ Default value: `0.5`.
 
 ## Outputs
 
-The output of the pipeline is a TSV file in which all the sessions (identified with their `participant_id` and `session_id`) 
+The output of the quality check is a TSV file in which all the sessions (identified with their `participant_id` and `session_id`) 
 are associated with a `pass_probability` value and a True/False `pass` value depending on the chosen threshold. 
 An example of TSV file is:
 

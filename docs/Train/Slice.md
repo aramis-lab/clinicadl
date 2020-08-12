@@ -24,7 +24,7 @@ which becomes null for a subset of images if the CNN outputs 100% probability fo
 
 ## Running the task
 
-Here is the command line to run the pipeline on `t1-linear` outputs with the predefined architecture of ClinicaDL: 
+Here is the command line to train a CNN on `t1-linear` outputs with the predefined architecture of ClinicaDL: 
 ```
 clinicadl train slice <caps_directory> t1-linear <tsv_path> <output_directory> resnet18
 ```
@@ -35,9 +35,10 @@ where mandatory arguments are:
 - `output_directory` (str) is the folder where the results are stored.
 
 !!! info "Common options"
-    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-task).
+    Options that are common to all `train` input and network types can be found in the introduction of 
+    [`clinicadl train`](./Introduction.md#running-the-task).
 
-The options specific to this pipeline are the following:
+The options specific to this task are the following:
 
 - `--slice_direction` (int) axis along which the MR volume is sliced. Default: `0`.
     - 0 corresponds to the sagittal plane,

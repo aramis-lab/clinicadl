@@ -1,18 +1,18 @@
 # `train` - Train deep learning networks for neuroimaging classification
 
-This pipeline enables the training of a convolutional neural network (CNN) classifier using different formats of inputs 
+This task enables the training of a convolutional neural network (CNN) classifier using different formats of inputs 
 (whole 3D images, 3D patches or 2D slices), as defined in [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)]. 
 It mainly relies on the PyTorch deep learning library 
 [[Paszke et al., 2019](https://papers.nips.cc/paper/9015-pytorch-an-imperative-style-high-performance-deep-learning-library)].
 
 ## Prerequisites
 You need to execute the [`clinicadl tsvtool getlabels`](../TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease) 
-and [`clinicadl tsvtool {split|kfold}`](../TSVTools.md#split---single-split-observing-similar-age-and-sex-distributions) pipelines
-prior to running this pipeline to have the correct TSV file organization.
+and [`clinicadl tsvtool {split|kfold}`](../TSVTools.md#split---single-split-observing-similar-age-and-sex-distributions) commands
+prior to running this task to have the correct TSV file organization.
 Moreover, there should be a CAPS, obtained running the `t1-linear` pipeline of ClinicaDL.
 
 ## Running the task
-The pipeline can be run with the following command line:
+The training task can be run with the following command line:
 ```
 clinicadl train <mode> <network_type> <caps_directory> \
                 <preprocessing> <tsv_path> <output_directory> <architecture>
@@ -30,7 +30,7 @@ The current version only supports `t1-linear`, but `t1-extensive` will be implem
 - `architecture` (str) is the name of the architecture used (e.g. `Conv5_FC3`). 
 It must correspond to a class that inherits from `nn.Module` imported in `tools/deep_learning/models/__init__.py`.
 
-Options shared among all pipelines are organized in groups:
+Options shared for all values of `mode` are organized in groups:
 
 - **Computational resources**
     - `--use_cpu` (bool) forces to use CPU. Default behaviour is to try to use a GPU and to raise an error if it is not found.
@@ -58,7 +58,7 @@ Options shared among all pipelines are organized in groups:
     This allows to virtually increase the size of the batch. Default: `1`.
 
 !!! note "Specific options"
-    Other pipeline options are highly dependent on the input and the type of network used. 
+    Other options are highly dependent on the input and the type of network used. 
     Please refer to the corresponding sections for more information.
 
 !!! tip
@@ -66,7 +66,7 @@ Options shared among all pipelines are organized in groups:
 
 ## Outputs
 
-At the first level of the file system, all pipeline outputs are identical.
+At the first level of the file system, outputs are identical regardless of the `mode` and `network_type`.
 Below is an example of the output file system for a network trained with data split between train and validation sets 
 corresponding to a 5-fold cross-validation.
 

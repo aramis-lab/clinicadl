@@ -1,6 +1,6 @@
 # `generate` - Produce synthetic data for debugging & functional tests
 
-This pipeline generates a synthetic dataset for a binary classification task from a CAPS-formatted dataset. 
+This command generates a synthetic dataset for a binary classification task from a CAPS-formatted dataset. 
 It produces a new CAPS containing either `trivial` or `random` data:
 
 - Trivial data should be perfectly classified by a classifier. Each label corresponds to images whose intensities of 
@@ -16,7 +16,7 @@ Moreover, trivial data are useful for debugging a framework: hyper parameters ca
 fewer data samples are required and convergence should be reached faster as the classification task is simpler.
 
 ## Prerequisites
-You need to execute the `clinicadl preprocessing` and `clinicadl extract` pipelines prior to running this pipeline.
+You need to execute the `clinicadl preprocessing` and `clinicadl extract` pipelines prior to running this task.
 Future versions will include the possibility to perform `generate` on the tensors extracted from another preprocessing pipeline, 
 `t1-extensive`.
 
@@ -25,7 +25,7 @@ Future versions will include the possibility to perform `generate` on the tensor
     in the input CAPS , while the `random` option can synthesize as many images as wanted with only one input image.
 
 ## Running the task
-The pipeline can be run with the following command line:
+The task can be run with the following command line:
 ```
 clinicadl generate <dataset> <caps_directory> <tsv_path> <output_dir>
 ```
@@ -37,7 +37,7 @@ where:
 - `output_dir` (str) is the folder where the synthetic CAPS is stored.
 
 
-Pipeline options:
+Options:
 
 - `--n_subjects` (int) number of subjects per label in the synthetic dataset. Default value: `300`.
 - `--preprocessing` (str) preprocessing pipeline used in the input `caps_directory`. Must be `t1-linear` 
