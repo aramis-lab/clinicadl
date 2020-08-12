@@ -2,10 +2,15 @@
 
 This functionality performs image classification using models trained with
 [`clinicadl train`](./Train/Introduction.md) task. It can also use pretrained
-models if their folder structure is similar to the struture created by the command `clinicadl train`.
-At the top level of each model folder there are two files:
-- `environment.txt` describes the Python and Pytorch version used during the training.
-- `commandline.json` describes the training parameters used to create the model.
+models if their folder structure is similar to the struture created by the
+command `clinicadl train`.  At the top level of each model folder there are two
+files:
+
+- `environment.txt` describes the Python and Pytorch version used during the
+  training.
+- `commandline.json` describes the training parameters used to create the
+  model.
+
 This two files allow `clinicadl` to load the model(s) that led to the best
 validation balanced accuracy (.pth.tar file).
 
