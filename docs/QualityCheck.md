@@ -16,7 +16,7 @@ Their original code can be found on [GitHub](https://github.com/vfonov/deep-qc).
 ## Prerequisites
 You need to execute the `clinicadl preprocessing` and `clinicadl extract` pipelines prior to running this pipeline.
 
-## Running the pipeline
+## Running the task
 The pipeline can be run with the following command line:
 ```
 clinicadl quality_check <caps_directory> <tsv_path> <output_path>

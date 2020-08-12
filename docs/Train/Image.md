@@ -22,7 +22,7 @@ The objective of an autoencoder is to learn to reconstruct images given in input
 The difference between the input and the output image is given by the mean squared error.
 In clinicadl, autoencoders are designed [based on a CNN architecture](./Details.md#autoencoders-construction-from-cnn-architectures). 
 
-### Running the pipeline
+### Running the task
 
 Here is the command line to run the pipeline on `t1-linear` outputs with the predefined architecture of ClinicaDL: 
 ```
@@ -35,7 +35,7 @@ where mandatory arguments are:
 - `output_directory` (str) is the folder where the results are stored.
 
 !!! info "Common options"
-    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-pipeline).
+    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-task).
 
 There is one specific option for this pipeline: 
 
@@ -90,7 +90,7 @@ to produce a probability for each class.
 During training, the CNN is optimized according to the cross-entropy loss, which becomes null for a subset of images 
 if the CNN outputs 100% probability for the true class of each image of the subset.
 
-### Running the pipeline
+### Running the task
 
 Here is the command line to run the pipeline on `t1-linear` outputs with the predefined architecture of ClinicaDL: 
 ```
@@ -103,7 +103,7 @@ where mandatory arguments are:
 - `output_directory` (str) is the folder where the results are stored.
 
 !!! info "Common options"
-    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-pipeline).
+    Options that are common to all pipelines can be found in the introduction of [`clinicadl train`](./Introduction.md#running-the-task).
 
 The options specific to this pipeline are the following:
 
