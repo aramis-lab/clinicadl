@@ -16,6 +16,13 @@
   <a href="https://ci.inria.fr/clinicadl/job/AD-DL/job/master/">
     <img src="https://ci.inria.fr/clinicadl/buildStatus/icon?job=AD-DL%2Fmaster" alt="Build Status">
   </a>
+  <a href="https://badge.fury.io/py/clinicadl">
+    <img src="https://badge.fury.io/py/clinicadl.svg" alt="PyPI version">
+  </a>
+  <a href='https://clinicadl.readthedocs.io/en/latest/?badge=latest'>
+    <img src='https://readthedocs.org/projects/clinicadl/badge/?version=latest' alt='Documentation Status' />
+  </a>
+
 </p>
 
 <p align="center">
