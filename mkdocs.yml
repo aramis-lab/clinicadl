@@ -1,7 +1,7 @@
 # Project information
 site_name: ClinicaDL Documentation
 site_author: ClinicaDL contributors
-site_url: http://www.clinica.run/clinicadl
+site_url: https://clinicadl.readthedocs.io/
 site_description: >-
   Framework for the reproducible classification of Alzheimer's disease
   using deep learning
@@ -55,15 +55,21 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Installation: Installation.md
-  - Generate: Generate.md
-  - Preprocessing: Preprocessing.md
-  - Quality Check: QualityCheck.md
-  - Extract: Extract.md
+  - Prepare your imaging data:
+    - Preprocessing pipelines:
+      - Introduction: Run/Introduction.md
+      - t1-linear pipeline: Run/T1_Linear.md
+      - t1-extensive pipeline: Run/T1_Extensive.md
+    - Quality Check: QualityCheck.md
+    - Extract: Extract.md
   - Train:
     - Introduction: Train/Introduction.md
     - Image-based: Train/Image.md
     - Patch-based: Train/Patch.md
     - Slice-based: Train/Slice.md
     - ROI-based: Train/ROI.md
+    - Custom experiment: Train/Custom.md
+    - Implementation details: Train/Details.md
   - Classify: Classify.md
+  - Generate: Generate.md
   - TSV Tools: TSVTools.md
