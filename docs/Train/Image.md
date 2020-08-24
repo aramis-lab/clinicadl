@@ -36,8 +36,6 @@ where mandatory arguments are:
 
 !!! info "Common options"
     Options that are common to all `train` input and network types can be found in the introduction of 
-    [`clinicadl train`](./Introduction.md#running-the-task).s"
-    Options that are common to all `train` input and network types can be found in the introduction of 
     [`clinicadl train`](./Introduction.md#running-the-task).
 
 There is one specific option for this task: 
