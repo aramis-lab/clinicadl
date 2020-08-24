@@ -6,17 +6,37 @@
 
 We assume that users installing and using `clinicadl` are comfortable with using the command line.
 
-- [Installation](./Installation)
+- [Installation](./Installation.md)
 
-## User documentation
+## User documentation (`clinicadl`)
 
-### [Generate synthetic data for functional tests (`clinicadl generate`)](./Generate)
-### [Prepare data for training (`clinicadl preprocessing`)](./Preprocessing)
-### [Create data (3D images, 3D pathches or 2D slices) for training (`clinicadl extract`)](./Generate)
-### [Handle TSV files for metadata processing and data splits (`clinicadl tsvtool`)](./TSVTools)
-### [Train with your data and create a model (`clinicadl train`)](./Train/Introduction)
-### [Classify one image or a list of images with your previously trained model (`clinicadl classify`)](./Classify)
+### Prepare your imaging data
+- `clinicadl preprocessing` - [Preprocessing pipelines](Run/Introduction.md)
+    - `t1-linear` - [Linear processing of T1w MR images](Run/T1_Linear.md): affine registration to the MNI standard space
+    - `t1-extensive` - ['Extensive' processing of T1w MR images](Run/T1_Extensive.md): non linear registration to the MNI standard space
+- `clinicadl quality_check` - [Quality control of preprocessed data](./QualityCheck.md): use a pretrained network [[Fonov et al., 2018](https://www.biorxiv.org/content/10.1101/303487v1)] to classify adequately registered images.
+- `clinicadl extract` - [Prepare input data for deep learning with PyTorch](./Extract.md)
+- `clinicadl quality_check` - [Evaluate registration quality](./QualityCheck.md)
 
+
+### Train & test your classifier
+- `clinicadl train` - [Train with your data and create a model](./Train/Introduction.md)
+- `clinicadl classify` - [Classify one image or a list of images with your previously trained model](./Classify.md)
+
+### Utilitaries <!--used for the preparation of imaging data and/or training your classifier-->
+
+- `clinicadl generate` - [Generate synthetic data for functional tests](./Generate.md)
+- `clinicadl tsvtool` - [Handle TSV files for metadata processing and data splits](./TSVTools.md)
+
+
+## Pretrained models
+
+Pretrained models for the CNN networks implemented in ClinicaDL can be obtained here:
+<https://zenodo.org/record/3491003>  
+
+These models were obtained during the experiments for publication.
+They correspond to a previous version of ClinicaDL, hence their file system is not compatible with the current version.
+Updated versions of the models will be published soon.
 
 ## Support
 - [Report an issue on GitHub](https://github.com/aramis-lab/AD-DL/issues)
@@ -26,10 +46,12 @@ We assume that users installing and using `clinicadl` are comfortable with using
 `clinicadl` is distributed under the terms of the MIT license given [here](https://github.com/aramis-lab/AD-DL/blob/dev/LICENSE.txt).
 
 ## Citing `clinicadl`
-For publications or communications using `clinicadl`, please cite ([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)) as well as the references mentioned on the wiki page of the pipelines you used (for example, citing PyTorch when using the `extract` pipeline).
+For publications or communications using `clinicadl`, please cite [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)] 
+as well as the references mentioned on the wiki page of the pipelines you used 
+(for example, citing PyTorch when using the `extract` pipeline).
 
 !!! info "Disclaimer"
-    `clinicadl` is a software for research studies. It is not intended for use in medical routine
+    `clinicadl` is a software for research studies. It is not intended for use in medical routine.
 
 ---
 
