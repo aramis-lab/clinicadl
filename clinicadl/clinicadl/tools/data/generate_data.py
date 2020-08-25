@@ -82,6 +82,17 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
             makedirs(noisy_image_nii_path)
         nib.save(noisy_image_nii, join(noisy_image_nii_path, noisy_image_nii_filename))
 
+    missing_path = path.join(output_dir, "missing_mods")
+    if not path.exists(missing_path):
+        os.makedirs(missing_path)
+
+    sessions = data_df.session_id.unique()
+    for session in sessions:
+        session_df = data_df[data_df.session_id == session]
+        out_df = copy(session_df[["participant_id"]])
+        out_df["synthetic"] = [1] * len(out_df)
+        out_df.to_csv(path.join(missing_path, "missing_mods_%s.tsv" % session), sep="\t", index=False)
+
 
 def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preprocessing="linear",
                              mask_path=None, atrophy_percent=60):
@@ -185,3 +196,14 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
         output_df = output_df.append(row_df)
 
     output_df.to_csv(join(output_dir, 'data.tsv'), sep='\t', index=False)
+
+    missing_path = path.join(output_dir, "missing_mods")
+    if not path.exists(missing_path):
+        os.makedirs(missing_path)
+
+    sessions = data_df.session_id.unique()
+    for session in sessions:
+        session_df = data_df[data_df.session_id == session]
+        out_df = copy(session_df[["participant_id"]])
+        out_df["synthetic"] = [1] * len(out_df)
+        out_df.to_csv(path.join(missing_path, "missing_mods_%s.tsv" % session), sep="\t", index=False)
