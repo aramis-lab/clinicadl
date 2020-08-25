@@ -6,10 +6,9 @@ This file generates data for trivial or intractable (random) data for binary cla
 import pandas as pd
 import numpy as np
 import nibabel as nib
-from os.path import dirname, join, abspath, split, exists
-from os import pardir, makedirs
-import torch.nn.functional as F
-import torch
+from os.path import join, exists
+from os import makedirs
+from copy import copy
 from .utils import im_loss_roi_gaussian_distribution, find_image_path
 from ..tsv.tsv_utils import baseline_df
 from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
@@ -67,7 +66,7 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
     data = np.array([participant_id_list, session_id_list, diagnosis_list])
     data = data.T
     output_df = pd.DataFrame(data, columns=['participant_id', 'session_id', 'diagnosis'])
-    output_df['age'] = 60
+    output_df['age_bl'] = 60
     output_df['sex'] = 'F'
     output_df.to_csv(join(output_dir, 'data.tsv'), sep='\t', index=False)
 
@@ -82,16 +81,16 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
             makedirs(noisy_image_nii_path)
         nib.save(noisy_image_nii, join(noisy_image_nii_path, noisy_image_nii_filename))
 
-    missing_path = path.join(output_dir, "missing_mods")
-    if not path.exists(missing_path):
-        os.makedirs(missing_path)
+    missing_path = join(output_dir, "missing_mods")
+    if not exists(missing_path):
+        makedirs(missing_path)
 
     sessions = data_df.session_id.unique()
     for session in sessions:
         session_df = data_df[data_df.session_id == session]
         out_df = copy(session_df[["participant_id"]])
         out_df["synthetic"] = [1] * len(out_df)
-        out_df.to_csv(path.join(missing_path, "missing_mods_%s.tsv" % session), sep="\t", index=False)
+        out_df.to_csv(join(missing_path, "missing_mods_%s.tsv" % session), sep="\t", index=False)
 
 
 def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preprocessing="linear",
@@ -163,7 +162,7 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
             mask_path = join(cache_clinicadl, 'AAL2')
 
     # Output tsv file
-    columns = ['participant_id', 'session_id', 'diagnosis', 'age', 'sex']
+    columns = ['participant_id', 'session_id', 'diagnosis', 'age_bl', 'sex']
     output_df = pd.DataFrame(columns=columns)
     diagnosis_list = ["AD", "CN"]
 
@@ -197,13 +196,13 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
 
     output_df.to_csv(join(output_dir, 'data.tsv'), sep='\t', index=False)
 
-    missing_path = path.join(output_dir, "missing_mods")
-    if not path.exists(missing_path):
-        os.makedirs(missing_path)
+    missing_path = join(output_dir, "missing_mods")
+    if not exists(missing_path):
+        makedirs(missing_path)
 
     sessions = data_df.session_id.unique()
     for session in sessions:
         session_df = data_df[data_df.session_id == session]
         out_df = copy(session_df[["participant_id"]])
         out_df["synthetic"] = [1] * len(out_df)
-        out_df.to_csv(path.join(missing_path, "missing_mods_%s.tsv" % session), sep="\t", index=False)
+        out_df.to_csv(join(missing_path, "missing_mods_%s.tsv" % session), sep="\t", index=False)
