@@ -51,15 +51,22 @@ def create_split(diagnosis, diagnosis_df, merged_df, n_test, age_name="age",
         idx_test.sort()
         idx_train = complementary_list(idx, idx_test)
 
-        # Find the value for different demographical values (age, MMSE, sex)
-        age_test = [float(age[idx]) for idx in idx_test]
-        age_train = [float(age[idx]) for idx in idx_train]
+        # Find the a similar distribution for the age variable
+        if len(set(age)) != 1:
+            age_test = [float(age[idx]) for idx in idx_test]
+            age_train = [float(age[idx]) for idx in idx_train]
 
-        sex_test = [sex_dict[sex[idx]] for idx in idx_test]
-        sex_train = [sex_dict[sex[idx]] for idx in idx_train]
+            t_age, p_age = ttest_ind(age_test, age_train)
+        else:
+            p_age = 1
 
-        t_age, p_age = ttest_ind(age_test, age_train)
-        T_sex = chi2(sex_test, sex_train)
+        # Find the a similar distribution for the sex variable
+        if len(set(sex)) != 1:
+            sex_test = [sex_dict[sex[idx]] for idx in idx_test]
+            sex_train = [sex_dict[sex[idx]] for idx in idx_train]
+            T_sex = chi2(sex_test, sex_train)
+        else:
+            T_sex = 0
 
         if T_sex < t_val_chi2_threshold and p_age > pval_threshold_ttest:
             flag_selection = False
