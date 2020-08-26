@@ -172,7 +172,7 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
 
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
-        filename = 'sub-TRIV%i' % i + FILENAME_TYPE['cropped'] + '.nii.gz'
+        filename = 'sub-TRIV%i_ses-M00' % i + FILENAME_TYPE['cropped'] + '.nii.gz'
         path_image = join(output_dir, 'subjects', 'sub-TRIV%i' % i, 'ses-M00', 't1_linear')
 
         if not exists(path_image):
