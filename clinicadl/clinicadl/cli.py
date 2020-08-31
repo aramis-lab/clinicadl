@@ -39,6 +39,17 @@ def set_default_dropout(args):
             args.dropout = 0
 
 
+def extract_tensors(args):
+    import sys
+    from clinica.utils.stream import FilterOut
+    from clinica.pipelines.deeplearning_prepare_data.deeplearning_prepare_data_cli import DeepLearningPrepareDataCLI
+
+    sys.stdout = FilterOut(sys.stdout)
+
+    dl_prepare_data_cli = DeepLearningPrepareDataCLI()
+    dl_prepare_data_cli.run_command(args)
+
+
 def qc_func(args):
     from clinicadl.quality_check.quality_check import quality_check
 
@@ -553,7 +564,7 @@ def parse_command_line():
     clinica_comp.add_argument("extract_method",
                               help='''Format of the extracted features. Three options:
             'image' to convert to PyTorch tensor the complete 3D image,
-            'patch' to extract 3D volumetric patches and 
+            'patch' to extract 3D volumetric patches and
             'slice' to extract 2D slices from the image.
             By default the features are extracted from the cropped image.''',
                               choices=['image', 'slice', 'patch'], default='image'
@@ -616,8 +627,7 @@ def parse_command_line():
         help='Number of cores used to run in parallel.'
     )
 
-    from clinica.pipelines.deeplearning_prepare_data.deeplearning_prepare_data_cli import DeepLearningPrepareDataCLI
-    extract_parser.set_defaults(func=DeepLearningPrepareDataCLI.run_command)
+    extract_parser.set_defaults(func=extract_tensors)
 
     qc_parser = subparser.add_parser(
         'quality_check',
