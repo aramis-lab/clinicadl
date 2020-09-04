@@ -1,6 +1,15 @@
 # coding: utf8
 
 
+def write_requirements_version(output_path):
+    import subprocess
+    from os import path
+
+    env_variables = subprocess.check_output("pip freeze", shell=True).decode("utf-8")
+    with open(path.join(output_path, "environment.txt"), "w") as file:
+        file.write(env_variables)
+
+
 class Parameters:
     """ Class to define and initialize parameters used in training CNN networks"""
 
