@@ -78,6 +78,12 @@ pipeline {
              conda deactivate
              '''
         }
+        post {
+          always {
+            junit 'test-reports/*.xml'
+          }
+        } 
+      }
       stage('Train tests Linux') {
         environment {
           PATH = "$HOME/miniconda/bin:$PATH"
@@ -99,6 +105,12 @@ pipeline {
              conda deactivate
              '''
         }
+        post {
+          always {
+            junit 'test-reports/*.xml'
+          }
+        } 
+      }
       stage('Generate tests Linux') {
         environment {
           PATH = "$HOME/miniconda/bin:$PATH"
