@@ -111,7 +111,7 @@ pipeline {
           always {
             junit 'test-reports/test_classify_report.xml'
           }
-        } 
+        }
       }
       stage('Classify tests Linux') {
         environment {
@@ -136,7 +136,7 @@ pipeline {
         }
         post {
           always {
-            junit 'test-reports/test_train_report.xml'
+            junit 'test-reports/*.xml'
           }
         }
       }
@@ -204,6 +204,12 @@ pipeline {
              conda deactivate
              '''
         }
+        post {
+          always {
+            junit 'test-reports/*.xml'
+          }
+        }
+      }
       stage('Generate tests Linux') {
         environment {
           PATH = "$HOME/miniconda/bin:$PATH"
