@@ -200,7 +200,7 @@ pipeline {
                 --junitxml=../../test-reports/report_test_train.xml \
                 --verbose \
                 --disable-warnings \
-                -k 'test_train*'
+                -k "test_train"
              conda deactivate
              '''
         }
