@@ -78,6 +78,43 @@ pipeline {
              conda deactivate
              '''
         }
+      stage('Train tests Linux') {
+        environment {
+          PATH = "$HOME/miniconda/bin:$PATH"
+          }
+        steps {
+          echo 'Testing train task...'
+          sh 'echo "Agent name: ${NODE_NAME}"'
+          sh '''#!/usr/bin/env bash
+             set +x
+             source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
+             conda activate clinicadl_test
+             cd $WORKSPACE/clinicadl/tests
+             ln -s /mnt/data/data_CI ./data 
+             pytest \
+                --junitxml=../../test-reports/report_test_train.xml \
+                --verbose \
+                --disable-warnings \
+                -k 'test_train*'
+             conda deactivate
+             '''
+        }
+      stage('Generate tests Linux') {
+        environment {
+          PATH = "$HOME/miniconda/bin:$PATH"
+          }
+        steps {
+          echo 'Testing generate task...'
+          sh 'echo "Agent name: ${NODE_NAME}"'
+          sh '''#!/usr/bin/env bash
+             set +x
+             source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
+             conda activate clinicadl_test
+             cd $WORKSPACE/clinicadl/tests
+             ln -s /mnt/data/data_CI ./data 
+             conda deactivate
+             '''
+        }
         post {
           always {
             junit 'test-reports/*.xml'
