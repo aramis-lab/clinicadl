@@ -10,7 +10,7 @@ pipeline {
         environment {
            PATH = "$HOME/miniconda/bin:$PATH"
            }
-        //when { changeset "requirements.txt" }   
+        //when { changeset "requirements.txt" }
         steps {
           echo 'Installing clinicadl sources in Linux...'
           echo 'My branch name is ${BRANCH_NAME}'
@@ -68,7 +68,7 @@ pipeline {
             source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
             conda activate clinicadl_test
             cd $WORKSPACE/clinicadl/tests
-            ln -s /mnt/data/data_CI ./data 
+            ln -s /mnt/data/data_CI ./data
             pytest \
             --junitxml=../../test-reports/test_generate_report.xml \
             --verbose \
@@ -83,7 +83,7 @@ pipeline {
             junit 'test-reports/test_generate_report.xml'
               sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset/trivial_example'
           }
-        } 
+        }
       }
       stage('Classify tests Linux') {
         environment {
@@ -97,7 +97,7 @@ pipeline {
              source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
              conda activate clinicadl_test
              cd $WORKSPACE/clinicadl/tests
-             ln -s /mnt/data/data_CI ./data 
+             ln -s /mnt/data/data_CI ./data
              pytest \
                 --junitxml=../../test-reports/test_classify_report.xml \
                 --verbose \
@@ -113,7 +113,7 @@ pipeline {
           }
         } 
       }
-      stage('Train tests Linux') {
+      stage('Classify tests Linux') {
         environment {
           PATH = "$HOME/miniconda/bin:$PATH"
           }
@@ -125,7 +125,7 @@ pipeline {
              source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
              conda activate clinicadl_test
              cd $WORKSPACE/clinicadl/tests
-             ln -s /mnt/data/data_CI ./data 
+             ln -s /mnt/data/data_CI ./data
              pytest \
                 --junitxml=../../test-reports/test_train_report.xml \
                 --verbose \
@@ -138,7 +138,7 @@ pipeline {
           always {
             junit 'test-reports/test_train_report.xml'
           }
-        } 
+        }
       }
       stage('Train tests Linux') {
         environment {
@@ -152,7 +152,7 @@ pipeline {
              source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
              conda activate clinicadl_test
              cd $WORKSPACE/clinicadl/tests
-             ln -s /mnt/data/data_CI ./data 
+             ln -s /mnt/data/data_CI ./data
              pytest \
                 --junitxml=../../test-reports/report_test_train.xml \
                 --verbose \
@@ -165,7 +165,7 @@ pipeline {
           always {
             junit 'test-reports/*.xml'
           }
-        } 
+        }
       }
       stage('Generate tests Linux') {
         environment {
@@ -179,7 +179,44 @@ pipeline {
              source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
              conda activate clinicadl_test
              cd $WORKSPACE/clinicadl/tests
-             ln -s /mnt/data/data_CI ./data 
+             ln -s /mnt/data/data_CI ./data
+             conda deactivate
+             '''
+        }
+      stage('Train tests Linux') {
+        environment {
+          PATH = "$HOME/miniconda/bin:$PATH"
+          }
+        steps {
+          echo 'Testing train task...'
+          sh 'echo "Agent name: ${NODE_NAME}"'
+          sh '''#!/usr/bin/env bash
+             set +x
+             source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
+             conda activate clinicadl_test
+             cd $WORKSPACE/clinicadl/tests
+             ln -s /mnt/data/data_CI ./data
+             pytest \
+                --junitxml=../../test-reports/report_test_train.xml \
+                --verbose \
+                --disable-warnings \
+                -k 'test_train*'
+             conda deactivate
+             '''
+        }
+      stage('Generate tests Linux') {
+        environment {
+          PATH = "$HOME/miniconda/bin:$PATH"
+          }
+        steps {
+          echo 'Testing generate task...'
+          sh 'echo "Agent name: ${NODE_NAME}"'
+          sh '''#!/usr/bin/env bash
+             set +x
+             source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
+             conda activate clinicadl_test
+             cd $WORKSPACE/clinicadl/tests
+             ln -s /mnt/data/data_CI ./data
              conda deactivate
              '''
         }
@@ -187,7 +224,7 @@ pipeline {
           always {
             junit 'test-reports/*.xml'
           }
-        } 
+        }
       }
     }
     post {
