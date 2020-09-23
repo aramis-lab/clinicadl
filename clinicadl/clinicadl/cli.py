@@ -1175,7 +1175,7 @@ def parse_command_line():
     # Optional arguments
     tsv_split_subparser.add_argument(
         "--n_test",
-        help="If > 1, number of subjects to put in set with name 'subset_name'. "
+        help="If >= 1, number of subjects to put in set with name 'subset_name'. "
              "If < 1, proportion of subjects to put set with name 'subset_name'. "
              "If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name.",
         type=float, default=100.)
