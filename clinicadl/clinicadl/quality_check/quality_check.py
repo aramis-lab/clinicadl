@@ -11,13 +11,19 @@ from torch.utils.data import DataLoader
 from clinicadl.quality_check.utils import QCDataset, resnet_qc_18
 from clinicadl.tools.inputs.input import fetch_file
 from clinicadl.tools.inputs.input import RemoteFileStructure
+from clinicadl.tools.data.utils import load_and_check_tsv
 
 
-def quality_check(caps_dir, tsv_path, output_path, threshold=0.5, batch_size=1, num_workers=0, gpu=True):
+def quality_check(caps_dir, output_path, preprocessing,
+                  tsv_path=None, threshold=0.5, batch_size=1, num_workers=0, gpu=True):
+    if preprocessing != "t1-linear":
+        raise NotImplementedError("The quality check procedure implemented in clinicadl is meant to be run "
+                                  "on t1-linear preprocessing only.")
+
     if splitext(output_path)[1] != ".tsv":
         raise ValueError("Please provide an output path to a tsv file")
 
-    # Fecth QC model
+    # Fetch QC model
     home = str(Path.home())
     cache_clinicadl = join(home, '.cache', 'clinicadl', 'models')
     url_aramis = 'https://aramislab.paris.inria.fr/files/data/models/dl/qc/'
@@ -46,11 +52,8 @@ def quality_check(caps_dir, tsv_path, output_path, threshold=0.5, batch_size=1, 
         model.cuda()
 
     # Load DataFrame
-    df = pd.read_csv(tsv_path, sep='\t')
-    if ('session_id' not in list(df.columns.values)) or (
-            'participant_id' not in list(df.columns.values)):
-        raise Exception("the data file is not in the correct format."
-                        "Columns should include ['participant_id', 'session_id']")
+    df = load_and_check_tsv(tsv_path, caps_dir, output_path)
+
     dataset = QCDataset(caps_dir, df)
     dataloader = DataLoader(
         dataset,

@@ -1,4 +1,4 @@
-# `quality_check` - Evaluate registration quality
+# `quality-check` - Evaluate registration quality
 
 The quality check procedure relies on a pretrained network that learned to classify images 
 that are adequately registered to a template from others for which the registration failed. 
@@ -19,18 +19,20 @@ You need to execute the `clinicadl preprocessing` and `clinicadl extract` pipeli
 ## Running the task
 The task can be run with the following command line:
 ```
-clinicadl quality_check <caps_directory> <tsv_path> <output_path>
+clinicadl preprocessing quality-check <preprocessing> <caps_directory> <output_path>
 ```
 where:
 
-- `caps_directory`(str) is the folder containing the results of the [`t1-linear` pipeline](./Run/T1_Linear.md) 
+- `preprocessing` (str) corresponds to the preprocessing pipeline whose outputs will be checked.
+- `caps_directory`(str) is the folder containing the results of the [`t1-linear` pipeline](T1_Linear.md) 
 and the output of the present command, both in a [CAPS hierarchy](http://www.clinica.run/doc/CAPS/Introduction).
-- `tsv_path` (str) is the path to a TSV file containing the subjects/sessions list to process (filename included).
 - `output_path` (str) is the path to the output TSV file (filename included).
 
 
 Options:
 
+- `--subjects_sessions_tsv` (str) is the path to a TSV file containing the subjects/sessions list to check (filename included).
+Default will process all sessions available in `caps_directory`.
 - `--threshold` (float) is the threshold applied to the output probability when deciding if the image passed or failed. 
 Default value: `0.5`.
 - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `1`.
