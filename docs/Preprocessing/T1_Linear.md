@@ -20,7 +20,7 @@ This pipeline needs the installation of **ANTs** on your computer. You can find 
 ### Running the pipeline
 The pipeline can be run with the following command line:
 ```{.sourceCode .bash}
-clinicadl preprocessing t1-linear <bids_directory> caps_directory
+clinicadl preprocessing run t1-linear <bids_directory> caps_directory
 ```
 where:
 

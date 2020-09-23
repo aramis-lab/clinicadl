@@ -17,7 +17,7 @@ import numpy as np
 
 
 def demographics_analysis(merged_tsv, formatted_data_path, results_path,
-                          diagnoses, mmse_name="MMS", age_name="age", baseline=False):
+                          diagnoses, mmse_name="MMS", age_name="age"):
     """
     Produces a tsv file with rows corresponding to the labels defined by the diagnoses list,
     and the columns being demographic statistics.
@@ -29,7 +29,6 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path,
         diagnoses (list): Labels selected for the demographic analysis.
         mmse_name (str): Name of the variable related to the MMSE score in the merged_tsv file.
         age_name (str): Name of the variable related to the age in the merged_tsv file.
-        baseline (bool): Performs the analysis based on <label>_baseline.tsv files.
 
     Returns:
         writes one tsv file at results_path containing the
@@ -65,10 +64,11 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path,
     diagnosis_dict = dict.fromkeys(diagnoses)
     for diagnosis in diagnoses:
         diagnosis_dict[diagnosis] = {'age': [], 'MMSE': [], 'scans': []}
-        if baseline:
+        diagnosis_path = path.join(formatted_data_path, diagnosis + '.tsv')
+        if not path.exists(diagnosis_path):
+            print("TSV file with all sessions was not found for diagnosis %s. "
+                  "Loads baseline version instead." % diagnosis)
             diagnosis_path = path.join(formatted_data_path, diagnosis + '_baseline.tsv')
-        else:
-            diagnosis_path = path.join(formatted_data_path, diagnosis + '.tsv')
         diagnosis_df = pd.read_csv(diagnosis_path, sep='\t')
         diagnosis_demographics_df = add_demographics(diagnosis_df, merged_df, diagnosis)
         diagnosis_demographics_df.set_index(['participant_id', 'session_id'], inplace=True)

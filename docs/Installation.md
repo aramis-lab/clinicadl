@@ -27,7 +27,7 @@ bash /tmp/miniconda-installer.sh
 
 ## Install ClinicaDL
 
-The latest release of Clinica can be installed using `pip` as follows:
+The latest release of ClinicaDL can be installed using `pip` as follows:
 
 ```{.sourceCode .bash}
 conda create --name clinicadlEnv python=3.7
