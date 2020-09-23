@@ -4,6 +4,24 @@ import numpy as np
 from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
 
 
+def load_and_check_tsv(tsv_path, caps_dir, output_path):
+    import pandas as pd
+    from os.path import join
+    from clinica.iotools.utils.data_handling import create_subs_sess_list
+
+    if tsv_path is not None:
+        df = pd.read_csv(tsv_path, sep='\t')
+        if ('session_id' not in list(df.columns.values)) or (
+                'participant_id' not in list(df.columns.values)):
+            raise Exception("the data file is not in the correct format."
+                            "Columns should include ['participant_id', 'session_id']")
+    else:
+        create_subs_sess_list(caps_dir, output_path, is_bids_dir=False, use_session_tsv=False)
+        df = pd.read_csv(join(output_path, 'subjects_sessions_list.tsv'), sep="\t")
+
+    return df
+
+
 def find_image_path(caps_dir, participant_id, session_id, preprocessing):
     from os import path
     if preprocessing == "t1-linear":
