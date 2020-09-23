@@ -1,6 +1,6 @@
 # `train patch` - Train deep learning networks using 3D patches
 
-This option allows training a network on 3D patches. For more information on patches please refer to [tensor extraction](../Extract.md).
+This option allows training a network on 3D patches. For more information on patches please refer to [tensor extraction](../Preprocessing/Extract.md).
 Three network types can be trained with the `patch` input type:
 
 - `autoencoder`, that trains one autoencoder on all patch locations,
