@@ -56,12 +56,11 @@ nav:
   - Home: index.md
   - Installation: Installation.md
   - Prepare your imaging data:
-    - Preprocessing pipelines:
-      - Introduction: Preprocessing/Introduction.md
-      - t1-linear pipeline: Preprocessing/T1_Linear.md
-      - t1-extensive pipeline: Preprocessing/T1_Extensive.md
-      - extract tensors: Preprocessing/Extract.md
-      - check preprocessing: Preprocessing/QualityCheck.md
+    - Introduction: Preprocessing/Introduction.md
+    - t1-linear pipeline: Preprocessing/T1_Linear.md
+    - t1-extensive pipeline: Preprocessing/T1_Extensive.md
+    - extract tensors: Preprocessing/Extract.md
+    - check preprocessing: Preprocessing/QualityCheck.md
   - Train:
     - Introduction: Train/Introduction.md
     - Image-based: Train/Image.md
