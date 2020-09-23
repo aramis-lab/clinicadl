@@ -17,18 +17,22 @@ def generate_cli_commands(request):
     if request.param == 'preprocessing':
         test_input = [
             'preprocessing',
+            'run',
             't1-linear',
             '/dir/bids/',
             '/dir/caps/']
         keys_output = [
             'task',
+            'preprocessing_task',
             'preprocessing',
             'bids_directory',
             'caps_directory']
 
     if request.param == 'extract':
         test_input = [
-            'extract',
+            'preprocessing',
+            'extract-tensor',
+            't1-linear',
             '/dir/caps',
             '/dir/tsv.file',
             '/dir/work/dir',
@@ -39,6 +43,8 @@ def generate_cli_commands(request):
             '-sm', 'rgb']
         keys_output = [
             'task',
+            'preprocessing_task',
+            'preprocessing',
             'caps_dir',
             'tsv_file',
             'working_dir',
@@ -50,17 +56,21 @@ def generate_cli_commands(request):
 
     if request.param == 'quality_check':
         test_input = [
-            'quality_check',
+            'preprocessing',
+            'quality-check',
+            't1-linear',
             '/dir/caps',
-            '/dir/tsv.file',
             '/dir/res.tsv',
+            '-tsv', '/dir/tsv.file',
             '--threshold', '0.5',
             '--batch_size', '8']
         keys_output = [
             'task',
+            'preprocessing_task',
+            'preprocessing',
             'caps_dir',
-            'tsv_file',
             'output_path',
+            'subjects_sessions_tsv',
             'threshold',
             'batch_size']
 
@@ -69,7 +79,6 @@ def generate_cli_commands(request):
             'generate',
             'random',
             '/dir/caps',
-            '/dir/tsv_path/',
             '/dir/output/',
             '--n_subjects', '10',
             '--preprocessing', 't1-linear',
@@ -79,7 +88,6 @@ def generate_cli_commands(request):
             'task',
             'mode',
             'caps_dir',
-            'tsv_path',
             'output_dir',
             'n_subjects',
             'preprocessing',
