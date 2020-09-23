@@ -1067,7 +1067,7 @@ def parse_command_line():
     )
     classify_specific_group.add_argument(
         "--diagnoses",
-        help="Labels that must be extracted from merged_tsv.",
+        help="List of participants that will be classified.",
         nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'], default=None)
 
     classify_parser.set_defaults(func=classify_func)

@@ -84,7 +84,7 @@ results
 where:
 
 - `commandline.json` is a file containing all the arguments necessary to reproduce the experiment,
-- `environment.txt` contains the version of `python` and `pytorch` used to run the experiment,
+- `environment.txt` contains description of the environment used for the experiment,
 - `fold-<i>` is a folder containing the result of the run on the `i`-th split of the 5-fold cross-validation.
 
 !!! note "Validation procedure"
