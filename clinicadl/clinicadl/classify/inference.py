@@ -298,8 +298,9 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
                 use_labels=labels
             )
 
-            logger.info("%s balanced accuracy is %f for %s %i and model selected on %s"
-                        % (prefix, cnn_metrics["balanced_accuracy"], model_options.mode, n, selection))
+            if labels:
+                logger.info("%s balanced accuracy is %f for %s %i and model selected on %s"
+                            % (prefix, cnn_metrics["balanced_accuracy"], model_options.mode, n, selection))
 
             mode_level_to_tsvs(output_dir, cnn_df, cnn_metrics, fold, selection, model_options.mode,
                                dataset=prefix, cnn_index=n)
@@ -340,8 +341,9 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
             use_labels=labels
         )
 
-        logger.info("%s level %s balanced accuracy is %f for model selected on %s"
-                    % (model_options.mode, prefix, metrics["balanced_accuracy"], selection))
+        if labels:
+            logger.info("%s level %s balanced accuracy is %f for model selected on %s"
+                        % (model_options.mode, prefix, metrics["balanced_accuracy"], selection))
 
         mode_level_to_tsvs(output_dir, predictions_df, metrics, fold, selection, model_options.mode,
                            dataset=prefix)
