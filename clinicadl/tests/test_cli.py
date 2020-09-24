@@ -34,26 +34,29 @@ def generate_cli_commands(request):
             'extract-tensor',
             't1-linear',
             '/dir/caps',
-            '/dir/tsv.file',
-            '/dir/work/dir',
             'slice',
             '-ps', '50',
             '-ss', '50',
             '-sd', '0',
-            '-sm', 'rgb']
+            '-sm', 'rgb',
+            '-tsv', '/dir/tsv.file',
+            '-wd', '/dir/work/dir',
+            '-np', '1',
+        ]
         keys_output = [
             'task',
             'preprocessing_task',
             'preprocessing',
-            'caps_dir',
-            'tsv_file',
-            'working_dir',
+            'caps_directory',
             'extract_method',
             'patch_size',
             'stride_size',
             'slice_direction',
-            'slice_mode']
-
+            'slice_mode',
+            'subjects_sessions_tsv',
+            'working_directory',
+            'n_procs',
+        ]
     if request.param == 'quality_check':
         test_input = [
             'preprocessing',

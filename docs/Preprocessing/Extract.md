@@ -6,6 +6,11 @@ Three types of tensors are proposed: 3D images, 3D patches or 2D slices.
 
 Currently, only outputs from the [`t1-linear` pipeline](T1_Linear.md) can be processed.
 
+!!! tip
+    This pipeline can be also run with Clinica by typing
+    [`clinica run deeplearning-prepare-data` pipeline](http://www.clinica.run/doc/Pipelines/DeepLearning_PrepareData/).
+    Results are equivalent.
+
 ## Prerequisites
 <!-- Depending on the type of feature or the type of modality you want to use, you will need to execute either the [`t1-linear` pipeline](../T1_Linear) , the [`t1-volume` pipeline](../T1_Volume) and/or the [`pet-volume` pipeline](../PET_Volume)  prior to running this pipeline. -->
 
@@ -13,22 +18,20 @@ You need to have performed the [`t1-linear` pipeline](T1_Linear.md) on your T1-w
 
 ## Running the pipeline
 The pipeline can be run with the following command line:
-```Text
+```{.sourceCode .bash}
 clinicadl preprocessing extract-tensor <preprocessing> <caps_directory> <tsv_file> <working_dir> <tensor_format>
 ```
 
 where:
 
-- `preprocessing` (str) corresponds to the preprocessing pipeline whose outputs will be formatted.
+- `preprocessing` (str) corresponds to the preprocessing pipeline whose outputs will be formatted. Currently, only `t1-linear` pipeline is available.
 - `caps_directory` (str) is the folder containing the results of the [`t1-linear` pipeline](T1_Linear.md)
 and the output of the present command, both in a [CAPS hierarchy](http://www.clinica.run/doc/CAPS/Introduction).
-- `tsv_file` (str) is the TSV file with subjects/sessions to process.
-- `working_dir` (str) is the working directory to save temporary file.
 - `tensor_format` (str) is the format of the extracted tensors.
 You can choose between `image` to convert to PyTorch tensor the whole 3D image,
 `patch` to extract 3D patches and `slice` to extract 2D slices from the image.
 
-<!--By default the features are extracted from the cropped image (see the documentation of the [`t1-linear` pipeline](../T1_Linear)). You can deactivate this behaviour with the `--use_uncropped_image` flag.
+By default the features are extracted from the cropped image (see the documentation of the [`t1-linear` pipeline](T1_Linear.md). You can deactivate this behaviour with the `--use_uncropped_image` flag.
 
 Pipeline options if you use `patch` extraction:
 
@@ -37,56 +40,16 @@ Pipeline options if you use `patch` extraction:
 
 Pipeline options if you use `slice` extraction:
 
-- `--slice_direction`: (int) slice direction. 
-You can choose between `0` (sagittal plane), `1`(coronal plane) or `2` (axial plane). 
+- `--slice_direction`: (int) slice direction.
+You can choose between `0` (sagittal plane), `1`(coronal plane) or `2` (axial plane).
 Default value: `0`.
-- `--slice_mode`: (str) slice mode. 
-You can choose between `rgb` (will save the slice in three identical channels) 
-or `single` (will save the slice in a single channel). Default value: `rgb`.-->
+- `--slice_mode`: (str) slice mode.
+You can choose between `rgb` (will save the slice in three identical channels)
+or `single` (will save the slice in a single channel). Default value: `rgb`.
 
 !!! note "Regarding the default values"
 	When using patch or slice extraction, default values were set according to [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)].
 
-??? info "The full list of options available for tensor extraction"
-    ```{.sourceCode .bash}
-
-    usage: clinicadl preprocessing extract-tensor [-h] [-ps PATCH_SIZE]
-                                              [-ss STRIDE_SIZE]
-                                              [-sd SLICE_DIRECTION]
-                                              [-sm {single,rgb}] [-np NPROC]
-                                              {t1-linear} caps_dir tsv_file
-                                              working_dir {image,patch,slice}
-
-    positional arguments:
-      {t1-linear}           Preprocessing pipeline on which extraction is
-                            performed.
-      caps_dir              Data using CAPS structure.
-      tsv_file              TSV file with subjects/sessions to process.
-      working_dir           Working directory to save temporary file.
-      {image,patch,slice}   Method used to extract features. Three options:
-                            'image' to conver to PyTorch tensor the complete 3D
-                            image, 'patch' to extract 3D volumetric patches or
-                            'slice' to get 2D slices from the image.
-
-    optional arguments:
-      -h, --help            show this help message and exit
-      -ps PATCH_SIZE, --patch_size PATCH_SIZE
-                            Patch size (only for 'patch' extraction) e.g:
-                            --patch_size 50
-      -ss STRIDE_SIZE, --stride_size STRIDE_SIZE
-                            Stride size (only for 'patch' extraction) e.g.:
-                            --stride_size 50
-      -sd SLICE_DIRECTION, --slice_direction SLICE_DIRECTION
-                            Slice direction (only for 'slice' extraction). Three
-                            options: '0' -> Sagittal plane, '1' -> Coronal plane
-                            or '2' -> Axial plane
-      -sm {single,rgb}, --slice_mode {single,rgb}
-                            Slice mode (only for 'slice' extraction). Two options:
-                            'single' to save the slice in one single channel,
-                            'rgb' to save the slice in three identical channel.
-      -np NPROC, --nproc NPROC
-                            Number of cores used for processing
-    ```
 
 ## Outputs
 In the following subsections, files with the `.pt` extension denote tensors in PyTorch format.
@@ -129,19 +92,3 @@ tensor version of the `<i>`-th 2D slice in `sag`ittal, `cor`onal or `axi`al plan
 or one channel (`single`). Each slice is extracted from the T1w image registered to the
 [`MNI152NLin2009cSym` template](https://bids-specification.readthedocs.io/en/stable/99-appendices/08-coordinate-systems.html)
 and optionally cropped.
-
-
-## Describing this pipeline in your paper
-
-!!! cite "Example of paragraph"
-    These results have been obtained using the `deeplearning-prepare-data` pipeline of Clinica
-    [[Routier et al.](https://hal.inria.fr/hal-02308126/); [Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)].
-    More precisely,
-
-    - 3D images
-
-    - 3D patches with patch size of `<patch_size>` and stride size of `<stride_size>`
-
-    - 2D slices in {sagittal | coronal | axial} plane and saved in {three identical channels | a single channel}
-
-    were extracted and converted to PyTorch tensors [[Paszke et al., 2019](https://papers.nips.cc/paper/9015-pytorch-an-imperative-style-high-performance-deep-learning-library)].
