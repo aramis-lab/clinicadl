@@ -3,7 +3,6 @@
 from os.path import isdir, join, abspath, exists
 from os import strerror, makedirs, listdir
 import errno
-import torch
 import pathlib
 from clinicadl.tools.deep_learning import create_model, load_model, read_json
 from clinicadl.tools.deep_learning.iotools import return_logger
@@ -75,12 +74,6 @@ def classify(caps_dir,
         logger.error("Json file doesn't exist")
         raise FileNotFoundError(
             errno.ENOENT, strerror(errno.ENOENT), json_file)
-
-    # Verify if a GPU is available
-    if gpu:
-        if not torch.cuda.is_available():
-            logger.warn("GPU is not available in your system, it will use cpu.")
-            gpu = False
 
     inference_from_model(
         caps_dir,

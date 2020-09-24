@@ -26,7 +26,7 @@ def main():
         commandline_to_json(commandline)
         write_requirements_version(args.output_dir)
 
-    if arguments['task'] in ['train', 'quality_check']:
+    if hasattr(args, "use_cpu"):
         if not args.use_cpu and not torch.cuda.is_available():
             raise ValueError("No GPU is available. Please add the -cpu flag to run on CPU.")
 
