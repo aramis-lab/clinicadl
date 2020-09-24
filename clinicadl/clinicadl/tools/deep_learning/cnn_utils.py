@@ -420,14 +420,13 @@ def soft_voting_to_tsvs(output_dir, fold, selection, mode, dataset='test', num_c
     df_final, metrics = soft_voting(test_df, validation_df, mode, selection_threshold=selection_threshold,
                                     use_labels=use_labels)
 
-    logger.info("image level %s balanced accuracy is %f for model selected on %s"
-                % (dataset, metrics["balanced_accuracy"], selection))
-
     df_final.to_csv(os.path.join(os.path.join(performance_path, '%s_image_level_prediction.tsv' % dataset)),
                     index=False, sep='\t')
     if use_labels:
         pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(performance_path, '%s_image_level_metrics.tsv' % dataset),
                                                 index=False, sep='\t')
+        logger.info("image level %s balanced accuracy is %f for model selected on %s"
+                    % (dataset, metrics["balanced_accuracy"], selection))
 
 
 def soft_voting(performance_df, validation_df, mode, selection_threshold=None, use_labels=True):
