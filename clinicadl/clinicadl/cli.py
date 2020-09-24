@@ -444,7 +444,9 @@ def tsv_kfold_func(args):
         args.formatted_data_path,
         n_splits=args.n_splits,
         subset_name=args.subset_name,
-        MCI_sub_categories=args.MCI_sub_categories)
+        MCI_sub_categories=args.MCI_sub_categories,
+        verbosity=args.verbose
+    )
 
 
 def tsv_analysis_func(args):
@@ -1226,6 +1228,7 @@ def parse_command_line():
 
     tsv_kfold_subparser = tsv_subparser.add_parser(
         'kfold',
+        parents=[parent_parser],
         help='Performs a k-fold split on participant level.')
 
     tsv_kfold_subparser.add_argument(

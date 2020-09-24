@@ -1,6 +1,7 @@
 # coding: utf8
 
 from .tsv_utils import baseline_df
+from ..deep_learning.iotools import return_logger
 import shutil
 from sklearn.model_selection import StratifiedKFold
 from os import path
@@ -12,7 +13,8 @@ sex_dict = {'M': 0, 'F': 1}
 
 
 def split_diagnoses(formatted_data_path,
-                    n_splits=5, subset_name="validation", MCI_sub_categories=True):
+                    n_splits=5, subset_name="validation", MCI_sub_categories=True,
+                    verbosity=0):
     """
     Performs a k-fold split for each label independently on the subject level.
     The train folder will contain two lists per fold per diagnosis (baseline and longitudinal),
@@ -23,6 +25,7 @@ def split_diagnoses(formatted_data_path,
         n_splits (int): Number of folds in the k-fold split.
         subset_name (str): Name of the subset that is complementary to train.
         MCI_sub_categories (bool): If True, manages MCI sub-categories to avoid data leakage.
+        verbosity (int): level of verbosity.
 
     Returns:
          writes three files per split per <label>.tsv file present in formatted_data_path:
@@ -30,6 +33,7 @@ def split_diagnoses(formatted_data_path,
             - formatted_data_path/train_splits-<n_splits>/split-<split>/<label>_baseline.tsv
             - formatted_data_path/<subset_name>_splits-<n_splits>/split-<split>/<label>_baseline.tsv
     """
+    logger = return_logger(verbosity, 'k-fold split')
 
     # Read files
     results_path = formatted_data_path
@@ -54,15 +58,17 @@ def split_diagnoses(formatted_data_path,
 
     MCI_special_treatment = False
 
-    if MCI_sub_categories and 'MCI.tsv' in diagnosis_df_paths:
-        diagnosis_df_paths.remove('MCI.tsv')
-        MCI_special_treatment = True
+    if 'MCI.tsv' in diagnosis_df_paths:
+        if MCI_sub_categories:
+            diagnosis_df_paths.remove('MCI.tsv')
+            MCI_special_treatment = True
+        elif 'sMCI.tsv' in diagnosis_df_paths or 'pMCI.tsv' in diagnosis_df_paths:
+            logger.warning("MCI special treatment was deactivated though MCI subgroups were found."
+                           "Be aware that it may cause data leakage in transfer learning tasks.")
 
     # The baseline session must be kept before or we are taking all the sessions to mix them
     for diagnosis_df_path in diagnosis_df_paths:
-        print(diagnosis_df_path)
         diagnosis = diagnosis_df_path.split('.')[0]
-        print(diagnosis)
 
         diagnosis_df = pd.read_csv(path.join(results_path, diagnosis_df_path), sep='\t')
         diagnosis_baseline_df = baseline_df(diagnosis_df, diagnosis)
@@ -93,6 +99,8 @@ def split_diagnoses(formatted_data_path,
             test_df.to_csv(
                 path.join(test_path, 'split-' + str(i), str(diagnosis) + '_baseline.tsv'), sep='\t', index=False)
 
+    logger.info("K-fold split for diagnosis %s is done" % diagnosis)
+
     if MCI_special_treatment:
 
         # Extraction of MCI subjects without intersection with the sMCI / pMCI train
@@ -100,9 +108,9 @@ def split_diagnoses(formatted_data_path,
         MCI_df = diagnosis_df.set_index(['participant_id', 'session_id'])
         supplementary_diagnoses = []
 
-        print('Before subjects removal')
+        logger.debug('Before subjects removal')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
-        print('%i subjects, %i scans' % (len(sub_df), len(diagnosis_df)))
+        logger.debug('%i subjects, %i scans' % (len(sub_df), len(diagnosis_df)))
 
         if 'sMCI.tsv' in diagnosis_df_paths:
             sMCI_baseline_df = pd.read_csv(path.join(results_path, 'sMCI_baseline.tsv'), sep='\t')
@@ -111,9 +119,9 @@ def split_diagnoses(formatted_data_path,
                 MCI_df.drop(subject, inplace=True, level=0)
             supplementary_diagnoses.append('sMCI')
 
-            print('Removed %i subjects' % len(sMCI_baseline_df))
+            logger.debug('Removed %i subjects based on sMCI label' % len(sMCI_baseline_df))
             sub_df = MCI_df.reset_index().groupby('participant_id')['session_id'].nunique()
-            print('%i subjects, %i scans' % (len(sub_df), len(MCI_df)))
+            logger.debug('%i subjects, %i scans' % (len(sub_df), len(MCI_df)))
 
         if 'pMCI.tsv' in diagnosis_df_paths:
             pMCI_baseline_df = pd.read_csv(path.join(results_path, 'pMCI_baseline.tsv'), sep='\t')
@@ -122,9 +130,9 @@ def split_diagnoses(formatted_data_path,
                 MCI_df.drop(subject, inplace=True, level=0)
             supplementary_diagnoses.append('pMCI')
 
-            print('Removed %i subjects' % len(pMCI_baseline_df))
+            logger.debug('Removed %i subjects based on pMCI label' % len(pMCI_baseline_df))
             sub_df = MCI_df.reset_index().groupby('participant_id')['session_id'].nunique()
-            print('%i subjects, %i scans' % (len(sub_df), len(MCI_df)))
+            logger.debug('%i subjects, %i scans' % (len(sub_df), len(MCI_df)))
 
         if len(supplementary_diagnoses) == 0:
             raise ValueError('The MCI_sub_categories flag is not needed as there are no intersections with'
@@ -172,3 +180,5 @@ def split_diagnoses(formatted_data_path,
                 path.join(train_path, 'split-' + str(i), 'MCI_baseline.tsv'), sep='\t', index=False)
             test_df.to_csv(
                 path.join(test_path, 'split-' + str(i), 'MCI_baseline.tsv'), sep='\t', index=False)
+
+        logger.info("K-fold split for diagnosis MCI is done")
