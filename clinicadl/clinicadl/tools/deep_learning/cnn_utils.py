@@ -31,6 +31,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
         log_dir: (str) path to the folder containing the logs
         model_dir: (str) path to the folder containing the models weights and biases
         options: (Namespace) ensemble of other options given to the main script.
+        logger: (logging object) writer to stdout and stderr
     """
     from tensorboardX import SummaryWriter
     from time import time
@@ -398,6 +399,7 @@ def soft_voting_to_tsvs(output_dir, fold, selection, mode, dataset='test', num_c
         num_cnn: (int) if given load the patch level results of a multi-CNN framework.
         selection_threshold: (float) all patches for which the classification accuracy is below the
             threshold is removed.
+        logger: (logging object) writer to stdout and stderr
         use_labels: (bool) If True the labels are added to the final tsv
     """
     if logger is None:

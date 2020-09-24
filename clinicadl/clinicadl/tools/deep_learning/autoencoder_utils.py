@@ -1,6 +1,6 @@
 import numpy as np
 import os
-import warnings
+import logging
 
 from clinicadl.tools.deep_learning.iotools import check_and_clean
 from clinicadl.tools.deep_learning import EarlyStopping, save_checkpoint
@@ -11,7 +11,7 @@ from clinicadl.tools.deep_learning import EarlyStopping, save_checkpoint
 #############################
 
 def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
-          log_dir, model_dir, options, logger):
+          log_dir, model_dir, options, logger=None):
     """
     Function used to train an autoencoder.
     The best autoencoder will be found in the 'best_model_dir' of options.output_dir.
@@ -26,8 +26,12 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
         log_dir: (str) path to the folder containing the logs.
         model_dir: (str) path to the folder containing the models weights and biases.
         options: (Namespace) ensemble of other options given to the main script.
+        logger: (logging object) writer to stdout and stderr
     """
     from tensorboardX import SummaryWriter
+
+    if logger is None:
+        logger = logging
 
     if not resume:
         check_and_clean(model_dir)
@@ -98,8 +102,8 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
 
         # If no evaluation has been performed, warn the user
         if evaluation_flag and options.evaluation_steps != 0:
-            warnings.warn('Your evaluation steps are too big compared to the size of the dataset.'
-                          'The model is evaluated only once at the end of the epoch')
+            logger.warning('Your evaluation steps are too big compared to the size of the dataset.'
+                           'The model is evaluated only once at the end of the epoch')
 
         # Always test the results and save them once at the end of the epoch
         logger.debug('Last checkpoint at the end of the epoch %d' % epoch)
