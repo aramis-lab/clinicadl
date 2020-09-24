@@ -94,9 +94,9 @@ def train_single_cnn(params):
               optimizer, False, log_dir, model_dir, params, train_logger)
 
         test_single_cnn(model, params.output_dir, train_loader, "train",
-                        fi, criterion, params, eval_logger, params.selection_threshold, gpu=params.gpu)
+                        fi, criterion, params.mode, eval_logger, params.selection_threshold, gpu=params.gpu)
         test_single_cnn(model, params.output_dir, valid_loader, "validation",
-                        fi, criterion, params, eval_logger, params.selection_threshold, gpu=params.gpu)
+                        fi, criterion, params.mode, eval_logger, params.selection_threshold, gpu=params.gpu)
 
 
 def test_single_cnn(model, output_dir, data_loader, subset_name, split, criterion, mode, logger, selection_threshold,
