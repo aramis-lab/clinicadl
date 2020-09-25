@@ -7,6 +7,7 @@ from os import path
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 import abc
+import logging
 import warnings
 from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
 
@@ -568,7 +569,11 @@ def get_transforms(mode, minmaxnormalization=True):
 ################################
 
 def load_data(train_val_path, diagnoses_list,
-              split, n_splits=None, baseline=True):
+              split, n_splits=None, baseline=True,
+              logger=None):
+
+    if logger is None:
+        logger = logging
 
     train_df = pd.DataFrame()
     valid_df = pd.DataFrame()
@@ -583,8 +588,8 @@ def load_data(train_val_path, diagnoses_list,
         valid_path = path.join(train_val_path, 'validation_splits-' + str(n_splits),
                                'split-' + str(split))
 
-    print("Train", train_path)
-    print("Valid", valid_path)
+    logger.debug("Train path %s" % train_path)
+    logger.debug("Valid path %s" % valid_path)
 
     for diagnosis in diagnoses_list:
 

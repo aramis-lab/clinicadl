@@ -310,7 +310,7 @@ def train_CNN_bad_data_split(params):
 
 if __name__ == "__main__":
     commandline = parser.parse_known_args()
-    commandline_to_json(commandline, "CNN")
+    commandline_to_json(commandline)
     options = commandline[0]
     if commandline[1]:
         raise Exception(
