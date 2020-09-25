@@ -1,4 +1,4 @@
-from .models import create_autoencoder, create_model, load_model, load_optimizer, save_checkpoint
+from .models import create_model, load_model, load_optimizer, save_checkpoint
 from .iotools import read_json, commandline_to_json, write_requirements_version
 
 

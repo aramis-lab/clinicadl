@@ -864,7 +864,6 @@ def parse_command_line():
             transfer_learning_parent
         ],
         help="Train an image-level autoencoder.")
-
     train_image_ae_parser.set_defaults(func=train_func)
 
     train_image_cnn_parser = train_image_subparser.add_parser(
@@ -992,7 +991,7 @@ def parse_command_line():
             parent_parser,
             train_parent_parser,
             autoencoder_parent,
-                 transfer_learning_parent],
+            transfer_learning_parent],
         help="Train a ROI-based autoencoder.")
 
     train_roi_ae_parser.set_defaults(func=train_func)
