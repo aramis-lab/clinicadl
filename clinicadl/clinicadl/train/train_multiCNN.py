@@ -4,7 +4,7 @@ import os
 import torch
 from torch.utils.data import DataLoader
 
-from ..tools.deep_learning.models import transfer_learning, init_model, load_model
+from ..tools.deep_learning.models import transfer_learning, create_model, load_model
 from ..tools.deep_learning.data import (get_transforms,
                                         load_data,
                                         return_dataset,
@@ -76,7 +76,7 @@ def train_multi_cnn(params):
 
             # Initialize the model
             main_logger.info('Initialization of the model %i' % cnn_index)
-            model = init_model(params.model, gpu=params.gpu, dropout=params.dropout)
+            model = create_model(params.model, gpu=params.gpu, dropout=params.dropout)
             model = transfer_learning(model, fi, source_path=params.transfer_learning_path,
                                       gpu=params.gpu, selection=params.transfer_learning_selection,
                                       logger=main_logger)
