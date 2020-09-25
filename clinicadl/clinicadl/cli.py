@@ -1062,9 +1062,9 @@ def parse_command_line():
 
     train_slice_parser.set_defaults(func=train_func)
 
-    # TODO add verbose parent when merged
     resume_parser = subparser.add_parser(
         'resume',
+        parents=[parent_parser],
         help='Resume a stopped experiment.')
 
     resume_pos_group = resume_parser.add_argument_group(

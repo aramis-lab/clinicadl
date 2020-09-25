@@ -10,6 +10,7 @@ from clinicadl.tools.deep_learning.data import get_transforms, return_dataset, l
 from clinicadl.tools.deep_learning.models import transfer_learning, create_model, load_model, load_optimizer
 from clinicadl.tools.deep_learning.cnn_utils import train, soft_voting_to_tsvs
 from clinicadl.train.train_multiCNN import test_cnn
+from clinicadl.tools.deep_learning.iotools import return_logger
 from . import file_len
 
 
@@ -19,11 +20,17 @@ def resume_multi_cnn(params):
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
                         (params.evaluation_steps, params.accumulation_steps))
 
+    main_logger = return_logger(params.verbosity, "main process")
+    train_logger = return_logger(params.verbosity, "train")
+    eval_logger = return_logger(params.verbosity, "final evaluation")
+
     transformations = get_transforms(params.mode, params.minmaxnormalization)
     criterion = nn.CrossEntropyLoss()
     num_cnn = compute_num_cnn(params.input_dir, params.tsv_path, params)
 
     for fi in params.split:
+        main_logger.info("Fold %i" % fi)
+
         training_df, valid_df = load_data(
             params.tsv_path,
             params.diagnoses,
@@ -65,7 +72,7 @@ def resume_multi_cnn(params):
             # Check here that the checkpoint is present
             if path.exists(path.join(params.output_dir, 'fold-%i' % fi, 'models', 'cnn-%i' % cnn_index,
                            'checkpoint.pth.tar')):
-                print('Initialization of the model %i' % cnn_index)
+                main_logger.debug('Initialization of the model %i' % cnn_index)
                 model, current_epoch, num_bad_epochs = load_model(
                     model,
                     model_dir,
@@ -83,19 +90,21 @@ def resume_multi_cnn(params):
                 else:
                     params.num_bad_epochs = num_bad_epochs
 
-                print('Resuming the training task')
+                main_logger.debug('Resuming the training task')
                 train(model, train_loader, valid_loader, criterion, optimizer, True,
-                      log_dir, model_dir, params)
+                      log_dir, model_dir, params, logger=train_logger)
 
-                test_cnn(params.output_dir, train_loader, "train", fi, criterion, cnn_index, params, gpu=params.gpu)
-                test_cnn(params.output_dir, valid_loader, "validation", fi, criterion, cnn_index, params,
-                         gpu=params.gpu)
+                test_cnn(model, params.output_dir, train_loader, "train", fi, criterion, cnn_index, mode=params.mode,
+                         gpu=params.gpu, logger=eval_logger)
+                test_cnn(model, params.output_dir, valid_loader, "validation", fi, criterion, cnn_index,
+                         mode=params.mode,
+                         gpu=params.gpu, logger=eval_logger)
 
                 with open(os.path.join(params.output_dir, 'fold-%i' % fi, '.ended'), 'a') as ended_file:
                     ended_file.write("cnn-%i\n" % cnn_index)
 
             else:
-                print('Initialization of the model %i' % cnn_index)
+                main_logger.debug('Initialization of the model %i' % cnn_index)
                 model = transfer_learning(model, fi, source_path=params.transfer_learning_path,
                                           gpu=params.gpu, selection=params.transfer_learning_selection)
 
@@ -109,33 +118,40 @@ def resume_multi_cnn(params):
                 log_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'tensorboard_logs', "cnn-%i" % cnn_index, )
                 model_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'models', "cnn-%i" % cnn_index)
 
-                print('Beginning the training task')
-                train(model, train_loader, valid_loader, criterion, optimizer, False, log_dir, model_dir, params)
+                main_logger.debug('Beginning the training task')
+                train(model, train_loader, valid_loader, criterion, optimizer, False, log_dir, model_dir, params,
+                      logger=train_logger)
 
-                test_cnn(params.output_dir, train_loader, "train", fi, criterion, cnn_index, params, gpu=params.gpu)
-                test_cnn(params.output_dir, valid_loader, "validation", fi, criterion, cnn_index, params,
-                         gpu=params.gpu)
+                test_cnn(model, params.output_dir, train_loader, "train", fi, criterion, cnn_index, mode=params.mode,
+                         gpu=params.gpu, logger=eval_logger)
+                test_cnn(model, params.output_dir, valid_loader, "validation", fi, criterion, cnn_index,
+                         mode=params.mode,
+                         gpu=params.gpu, logger=eval_logger)
 
                 with open(os.path.join(params.output_dir, 'fold-%i' % fi, '.ended'), 'a') as ended_file:
                     ended_file.write("cnn-%i\n" % cnn_index)
 
-        for selection in ['best_balanced_accuracy', 'best_loss']:
-            soft_voting_to_tsvs(
-                params.output_dir,
-                fi,
-                selection,
-                mode=params.mode,
-                dataset='train',
-                num_cnn=num_cnn,
-                selection_threshold=params.selection_threshold)
-            soft_voting_to_tsvs(
-                params.output_dir,
-                fi,
-                selection,
-                mode=params.mode,
-                dataset='validation',
-                num_cnn=num_cnn,
-                selection_threshold=params.selection_threshold)
+            for selection in ['best_balanced_accuracy', 'best_loss']:
+                soft_voting_to_tsvs(
+                    params.output_dir,
+                    fi,
+                    selection,
+                    logger=eval_logger,
+                    mode=params.mode,
+                    dataset='train',
+                    num_cnn=num_cnn,
+                    selection_threshold=params.selection_threshold,
+                )
+                soft_voting_to_tsvs(
+                    params.output_dir,
+                    fi,
+                    selection,
+                    logger=eval_logger,
+                    mode=params.mode,
+                    dataset='validation',
+                    num_cnn=num_cnn,
+                    selection_threshold=params.selection_threshold,
+                )
 
-        with open(os.path.join(params.output_dir, 'fold-%i' % fi, '.ended'), 'a') as ended_file:
-            ended_file.write("final evaluation\n")
+            with open(os.path.join(params.output_dir, 'fold-%i' % fi, '.ended'), 'a') as ended_file:
+                ended_file.write("final evaluation\n")

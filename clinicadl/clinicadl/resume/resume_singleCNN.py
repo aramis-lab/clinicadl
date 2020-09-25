@@ -8,7 +8,8 @@ from torch.utils.data import DataLoader
 from clinicadl.tools.deep_learning.data import get_transforms, return_dataset, load_data
 from clinicadl.tools.deep_learning import create_model, load_model, load_optimizer
 from clinicadl.tools.deep_learning.cnn_utils import train
-from clinicadl.test.test_singleCNN import test_cnn
+from clinicadl.train.train_singleCNN import test_single_cnn
+from clinicadl.tools.deep_learning.iotools import return_logger
 
 
 def resume_single_cnn(params):
@@ -17,10 +18,16 @@ def resume_single_cnn(params):
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
                         (params.evaluation_steps, params.accumulation_steps))
 
+    main_logger = return_logger(params.verbosity, "main process")
+    train_logger = return_logger(params.verbosity, "train")
+    eval_logger = return_logger(params.verbosity, "final evaluation")
+
     transformations = get_transforms(params.mode, params.minmaxnormalization)
     criterion = nn.CrossEntropyLoss()
 
     for fi in params.split:
+        main_logger.info("Fold %i" % fi)
+
         training_df, valid_df = load_data(
             params.tsv_path,
             params.diagnoses,
@@ -29,7 +36,6 @@ def resume_single_cnn(params):
             baseline=params.baseline
         )
 
-        print("Running for the %d-th fold" % fi)
         data_train = return_dataset(params.mode, params.input_dir, training_df, params.preprocessing,
                                     transformations, params)
         data_valid = return_dataset(params.mode, params.input_dir, valid_df, params.preprocessing,
@@ -71,13 +77,13 @@ def resume_single_cnn(params):
         else:
             params.num_bad_epochs = num_bad_epochs
 
-        print('Resuming the training task')
+        main_logger.debug('Resuming the training task')
         train(model, train_loader, valid_loader, criterion, optimizer, True,
-              log_dir, model_dir, params)
+              log_dir, model_dir, params, logger=train_logger)
 
-        test_cnn(params.output_dir, train_loader, "train",
-                 fi, criterion, params, gpu=params.gpu)
-        test_cnn(params.output_dir, valid_loader, "validation",
-                 fi, criterion, params, gpu=params.gpu)
+        test_single_cnn(model, params.output_dir, train_loader, "train",
+                        fi, criterion, params.mode, eval_logger, params.selection_threshold, gpu=params.gpu)
+        test_single_cnn(model, params.output_dir, valid_loader, "validation",
+                        fi, criterion, params.mode, eval_logger, params.selection_threshold, gpu=params.gpu)
         ended_file = open(os.path.join(params.output_dir, "fold-%i" % fi, ".ended"), 'w')
         ended_file.close()

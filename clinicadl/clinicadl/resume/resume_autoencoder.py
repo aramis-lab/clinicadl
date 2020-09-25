@@ -8,6 +8,7 @@ from warnings import warn
 from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, load_data
 from clinicadl.tools.deep_learning import load_model, create_autoencoder, load_optimizer
 from clinicadl.tools.deep_learning.autoencoder_utils import train, visualize_image
+from clinicadl.tools.deep_learning.iotools import return_logger
 
 
 def resume_autoencoder(params):
@@ -16,10 +17,15 @@ def resume_autoencoder(params):
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
                         (params.evaluation_steps, params.accumulation_steps))
 
+    main_logger = return_logger(params.verbosity, "main process")
+    train_logger = return_logger(params.verbosity, "train")
+
     transformations = get_transforms(params.mode, params.minmaxnormalization)
     criterion = torch.nn.MSELoss()
 
     for fi in params.split:
+        main_logger.info("Fold %i" % fi)
+
         training_df, valid_df = load_data(
             params.tsv_path,
             params.diagnoses,
@@ -28,7 +34,6 @@ def resume_autoencoder(params):
             baseline=params.baseline
         )
 
-        print("Running for the %d-th fold" % fi)
         data_train = return_dataset(params.mode, params.input_dir, training_df, params.preprocessing,
                                     transformations, params)
         data_valid = return_dataset(params.mode, params.input_dir, valid_df, params.preprocessing,
@@ -72,12 +77,12 @@ def resume_autoencoder(params):
         else:
             params.num_bad_epochs = num_bad_epochs
 
-        print('Resuming the training task')
+        main_logger.debug('Resuming the training task')
         train(decoder, train_loader, valid_loader, criterion, optimizer, True,
-              log_dir, model_dir, params)
+              log_dir, model_dir, params, logger=train_logger)
 
         if params.visualization:
-            print("Visualization of autoencoder reconstruction")
+            main_logger.debug("Visualization of autoencoder reconstruction")
             best_decoder, _, _ = load_model(decoder, os.path.join(model_dir, "best_loss"),
                                             params.gpu, filename='model_best.pth.tar')
             nb_images = train_loader.dataset.elem_per_image
