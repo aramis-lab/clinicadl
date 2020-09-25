@@ -4,12 +4,12 @@ import os
 import torch
 from torch.utils.data import DataLoader
 
-from ..tools.deep_learning.models import transfer_learning, init_model
+from ..tools.deep_learning.models import transfer_learning, init_model, create_model, load_model
 from ..tools.deep_learning.data import (get_transforms,
                                         load_data,
                                         return_dataset)
-from ..tools.deep_learning.cnn_utils import train
-from clinicadl.test.test_singleCNN import test_cnn
+from ..tools.deep_learning.cnn_utils import train, test, mode_level_to_tsvs, soft_voting_to_tsvs
+from ..tools.deep_learning.iotools import return_logger
 
 
 def train_single_cnn(params):
@@ -25,6 +25,9 @@ def train_single_cnn(params):
     of the last epoch that was completed before the crash.
     """
 
+    main_logger = return_logger(params.verbosity, "main process")
+    train_logger = return_logger(params.verbosity, "train")
+    eval_logger = return_logger(params.verbosity, "final evaluation")
     transformations = get_transforms(params.mode, params.minmaxnormalization)
 
     if params.split is None:
@@ -33,13 +36,16 @@ def train_single_cnn(params):
         fold_iterator = params.split
 
     for fi in fold_iterator:
+        main_logger.info("Fold %i" % fi)
 
         training_df, valid_df = load_data(
             params.tsv_path,
             params.diagnoses,
             fi,
             n_splits=params.n_splits,
-            baseline=params.baseline)
+            baseline=params.baseline,
+            logger=main_logger
+        )
 
         data_train = return_dataset(params.mode, params.input_dir, training_df, params.preprocessing,
                                     transformations, params)
@@ -64,10 +70,11 @@ def train_single_cnn(params):
         )
 
         # Initialize the model
-        print('Initialization of the model')
+        main_logger.info('Initialization of the model')
         model = init_model(params.model, gpu=params.gpu, dropout=params.dropout)
         model = transfer_learning(model, fi, source_path=params.transfer_learning_path,
-                                  gpu=params.gpu, selection=params.transfer_learning_selection)
+                                  gpu=params.gpu, selection=params.transfer_learning_selection,
+                                  logger=main_logger)
 
         # Define criterion and optimizer
         criterion = torch.nn.CrossEntropyLoss()
@@ -82,12 +89,31 @@ def train_single_cnn(params):
         model_dir = os.path.join(
             params.output_dir, 'fold-%i' % fi, 'models')
 
-        print('Beginning the training task')
+        main_logger.debug('Beginning the training task')
         train(model, train_loader, valid_loader, criterion,
-              optimizer, False, log_dir, model_dir, params)
+              optimizer, False, log_dir, model_dir, params, train_logger)
 
-        params.model_path = params.output_dir
-        test_cnn(params.output_dir, train_loader, "train",
-                 fi, criterion, params, gpu=params.gpu)
-        test_cnn(params.output_dir, valid_loader, "validation",
-                 fi, criterion, params, gpu=params.gpu)
+        test_single_cnn(model, params.output_dir, train_loader, "train",
+                        fi, criterion, params.mode, eval_logger, params.selection_threshold, gpu=params.gpu)
+        test_single_cnn(model, params.output_dir, valid_loader, "validation",
+                        fi, criterion, params.mode, eval_logger, params.selection_threshold, gpu=params.gpu)
+
+
+def test_single_cnn(model, output_dir, data_loader, subset_name, split, criterion, mode, logger, selection_threshold,
+                    gpu=False):
+
+    for selection in ["best_balanced_accuracy", "best_loss"]:
+        # load the best trained model during the training
+        model, best_epoch = load_model(model, os.path.join(output_dir, 'fold-%i' % split, 'models', selection),
+                                       gpu=gpu, filename='model_best.pth.tar')
+
+        results_df, metrics = test(model, data_loader, gpu, criterion, mode)
+        logger.info("%s level %s balanced accuracy is %f for model selected on %s"
+                    % (mode, subset_name, metrics["balanced_accuracy"], selection))
+
+        mode_level_to_tsvs(output_dir, results_df, metrics, split, selection, mode, dataset=subset_name)
+
+        # Soft voting
+        if mode in ["patch", "roi", "slice"]:
+            soft_voting_to_tsvs(output_dir, split, logger=logger, selection=selection, mode=mode,
+                                dataset=subset_name, selection_threshold=selection_threshold)
