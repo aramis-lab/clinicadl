@@ -108,6 +108,9 @@ def train_multi_cnn(params):
             with open(os.path.join(params.output_dir, 'fold-%i' % fi, '.ended'), 'a') as ended_file:
                 ended_file.write("cnn-%i\n" % cnn_index)
 
+            with open(os.path.join(params.output_dir, 'fold-%i' % fi, '.ended'), 'a') as ended_file:
+                ended_file.write("cnn-%i\n" % cnn_index)
+
         for selection in ['best_balanced_accuracy', 'best_loss']:
             soft_voting_to_tsvs(
                 params.output_dir,
@@ -149,3 +152,6 @@ def test_cnn(model, output_dir, data_loader, subset_name, split, criterion, cnn_
 
         mode_level_to_tsvs(output_dir, results_df, metrics, split, selection, mode,
                            dataset=subset_name, cnn_index=cnn_index)
+
+        with open(os.path.join(params.output_dir, 'fold-%i' % fi, '.ended'), 'a') as ended_file:
+            ended_file.write("final evaluation\n")
