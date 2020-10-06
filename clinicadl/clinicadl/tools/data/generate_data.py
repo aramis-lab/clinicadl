@@ -161,6 +161,10 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
         else:
             mask_path = join(cache_clinicadl, 'AAL2')
 
+    # Create subjects dir
+    if not exists(join(output_dir, 'subjects')):
+        makedirs(join(output_dir, 'subjects'))
+    
     # Output tsv file
     columns = ['participant_id', 'session_id', 'diagnosis', 'age_bl', 'sex']
     output_df = pd.DataFrame(columns=columns)
