@@ -10,6 +10,7 @@ from os.path import join, exists
     'classify_roi',
     'classify_slice',
     'classify_patch'])
+
 def classify_commands(request):
     out_filename = 'fold-0/cnn_classification/best_balanced_accuracy/test-RANDOM_image_level_prediction.tsv'
     if request.param == 'classify_image':
