@@ -73,14 +73,14 @@ pipeline {
                 --verbose \
                 --disable-warnings \
                 test_generate.py
-             find ./data/models/ -name 'DB-TEST_*' -type f -delete
+             clinica run deeplearning-prepare-data ./data/dataset/random_example image --n_procs 3
              conda deactivate
              '''
         }
         post {
           always {
             junit 'test-reports/test_generate_report.xml'
-            sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset/random_example'
+            sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset/trivial_example'
           }
         } 
       }
@@ -103,7 +103,7 @@ pipeline {
                 --verbose \
                 --disable-warnings \
                 test_classify.py
-             find ./data/models/ -name 'DB-TEST_*' -type f -delete
+             find ./data/models/ -name 'test-RANDOM*' -type f -delete
              conda deactivate
              '''
         }
