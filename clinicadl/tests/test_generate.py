@@ -8,7 +8,6 @@ from os.path import join, exists, abspath
 @pytest.fixture(params=[
     'generate_trivial',
     'generate_random'])
-
 def generate_commands(request):
     if request.param == 'generate_trivial':
         data_caps_folder = 'data/dataset/OasisCaps_example/'
