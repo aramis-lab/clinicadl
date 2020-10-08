@@ -140,18 +140,19 @@ cloned from the main repository).
 
 Tests run for every commit/PR in our Continuos Integration setup, it should
 take around 10 min.  The following test are launched:
-* Test command line interface (`test_cli.py`): it verifies main arguments on
+
+- Test command line interface (`test_cli.py`): it verifies main arguments on
   the CLI interface. 
-* Test **generate** task (`test_generate.py`): it creates trivial and random
+- Test **generate** task (`test_generate.py`): it creates trivial and random
   datasets based on 4 preprocessed MRIs obtained from OASIS dataset (testing
   dataset). The latter one can be [downloaded
   here](https://aramislab.paris.inria.fr/files/data/databases/tuto/OasisCaps2.tar.gz). 
-* Test **classify** task (`test_classify.py`): this test classifies synthetic
+- Test **classify** task (`test_classify.py`): this test classifies synthetic
   (random) MRI obtained in previous test. It verifies that the output file
   exists. (This test needs to download [the previoulsy trained models,
   available
   here](https://aramislab.paris.inria.fr/files/data/models/dl/models_v002/)).
-* Test **train** task (`test_train.py`): it run training over the synthetic
+- Test **train** task (`test_train.py`): it run training over the synthetic
   dataset and verifies that output folder structure was created.
 
 To run each of these tests, a folder called `./data/` must contain the
