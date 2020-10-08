@@ -130,31 +130,42 @@ Remember that ClinicaDL will be only available inside your Conda environment.
 
 ## Test ClinicaDL
 
-<!--Be sure to have the `pytest` library in order to run the test suite.
-This test suite includes unit testing to be launched using the command line.
-
-### Unit testing (WIP)
-
-The CLI (command line interface) part is tested using `pytest`. We are planning
-to provide unit tests for other tasks in the future. If you want to run
-successfully the CLI tests you can use the following command line:
-
-```{.sourceCode .bash}
-pytest clinicadl/tests/test_cli.py
-```
-
-### Functional testing
-
-Metadata processing and classification tasks can be tested.
-To run these tests, go to the test folder and type the following
-commands in the terminal:
-
-```{.sourceCode .bash}
-pytest ./test_classify.py
-pytest ./test_tsvtool.py
-```
--->
-
 !!! warning
-    Data for testing is not currently provided,
-    but release of anonymized datasets for testing is planned for future versions.
+    Data for testing must be manually downloaded (see below). Be sure to install
+    pytest inside your developement environment.
+
+Main functionalities of ClinicaDL can be tested using the testing provided in
+the `tests` folder (this folder is not included in the package but it can be
+cloned from the main repository).
+
+Tests run for every commit/PR in our Continuos Integration setup, it should
+take around 10 min.  The following test are launched:
+* Test command line interface (`test_cli.py`): it verifies main arguments on
+  the CLI interface. 
+* Test **generate** task (`test_generate.py`): it creates trivial and random
+  datasets based on 4 preprocessed MRIs obtained from OASIS dataset (testing
+  dataset). The latter one can be [downloaded
+  here](https://aramislab.paris.inria.fr/files/data/databases/tuto/OasisCaps2.tar.gz). 
+* Test **classify** task (`test_classify.py`): this test classifies synthetic
+  (random) MRI obtained in previous test. It verifies that the output file
+  exists. (This test needs to download [the previoulsy trained models,
+  available
+  here](https://aramislab.paris.inria.fr/files/data/models/dl/models_v002/)).
+* Test **train** task (`test_train.py`): it run training over the synthetic
+  dataset and verifies that output folder structure was created.
+
+To run each of these tests, a folder called `./data/` must contain the
+previously downloaded data.  This folder should be located inside the `tests`
+folder (you can use a symbolic link).
+
+Finally, be sure to have installed  the `pytest` library in order to run the
+test suite (it's not a requirement of the main package).  Once everything is on
+place, each of these test can be run using the following command:
+
+```
+pytest  --verbose test_cli.py
+```
+
+to launch the _command line interface_ test. The same for the other tests.  (Be
+sure to run them in order because `classify` and `train` tests depend on
+artifacts previously created by other tests).
