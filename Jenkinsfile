@@ -109,7 +109,7 @@ pipeline {
         post {
           always {
             junit 'test-reports/test_classify_report.xml'
-            sh 'find ./data/models/ -name "test-RANDOM*" -type f -delete'
+            sh 'find $WORKSPACE/clinicadl/tests/data/models/ -name "test-RANDOM*" -type f -delete'
           }
         } 
       }
