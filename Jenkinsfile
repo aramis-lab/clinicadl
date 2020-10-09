@@ -81,7 +81,7 @@ pipeline {
         post {
           always {
             junit 'test-reports/test_generate_report.xml'
-              sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset/trivial_example'
+            sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset/trivial_example'
           }
         } 
       }
@@ -110,33 +110,6 @@ pipeline {
           always {
             junit 'test-reports/test_classify_report.xml'
             sh 'find ./data/models/ -name 'test-RANDOM*' -type f -delete'
-          }
-        } 
-      }
-      stage('Train tests Linux') {
-        environment {
-          PATH = "$HOME/miniconda/bin:$PATH"
-          }
-        steps {
-          echo 'Testing train task...'
-          sh 'echo "Agent name: ${NODE_NAME}"'
-          sh '''#!/usr/bin/env bash
-             set +x
-             source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
-             conda activate clinicadl_test
-             cd $WORKSPACE/clinicadl/tests
-             ln -s /mnt/data/data_CI ./data 
-             pytest \
-                --junitxml=../../test-reports/test_train_report.xml \
-                --verbose \
-                --disable-warnings \
-                -k "test_train"
-             conda deactivate
-             '''
-        }
-        post {
-          always {
-            junit 'test-reports/test_train_report.xml'
           }
         } 
       }
