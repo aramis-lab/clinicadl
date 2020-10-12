@@ -142,11 +142,11 @@ Tests run for every commit/PR in our Continuos Integration setup, it should
 take around 10 min.  The following test are launched:
 
 - Test command line interface (`test_cli.py`): it verifies main arguments on
-  the CLI interface.
+  the CLI interface. 
 - Test **generate** task (`test_generate.py`): it creates trivial and random
   datasets based on 4 preprocessed MRIs obtained from OASIS dataset (testing
   dataset). The latter one can be [downloaded
-  here](https://aramislab.paris.inria.fr/files/data/databases/tuto/OasisCaps2.tar.gz).
+  here](https://aramislab.paris.inria.fr/files/data/databases/tuto/OasisCaps2.tar.gz). 
 - Test **classify** task (`test_classify.py`): this test classifies synthetic
   (random) MRI obtained in previous test. It verifies that the output file
   exists. (This test needs to download [the previoulsy trained models,
