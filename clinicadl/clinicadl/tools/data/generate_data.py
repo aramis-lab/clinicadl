@@ -9,11 +9,10 @@ import nibabel as nib
 from os.path import join, exists
 from os import makedirs
 from copy import copy
+from clinica.utils.inputs import fetch_file, RemoteFileStructure
 from .utils import im_loss_roi_gaussian_distribution, find_image_path, load_and_check_tsv
 from ..tsv.tsv_utils import baseline_df
 from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
-from clinicadl.tools.inputs.input import fetch_file
-from clinicadl.tools.inputs.input import RemoteFileStructure
 import tarfile
 
 
