@@ -23,7 +23,7 @@ def cli_commands(request):
             'Conv5_FC3',
             '--epochs', '1',
             '--n_splits', '2',
-            '--split', '0',
+            '--split', '0'
         ]
     elif request.param == 'train_patch_ae':
         test_input = [
@@ -37,7 +37,7 @@ def cli_commands(request):
             'Conv4_FC3',
             '--epochs', '1',
             '--n_splits', '2',
-            '--split', '0',
+            '--split', '0'
         ]
     elif request.param == 'train_roi_ae':
         test_input = [
@@ -51,7 +51,7 @@ def cli_commands(request):
             'Conv4_FC3',
             '--epochs', '1',
             '--n_splits', '2',
-            '--split', '0',
+            '--split', '0'
         ]
     else:
         raise NotImplementedError(
