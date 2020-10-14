@@ -29,6 +29,7 @@ if [ "$ENV_EXISTS" = 0 ]; then
   source $CONDA_PREFIX/etc/profile.d/conda.sh
   conda activate $CLINICA_ENV_BRANCH
   pip install -e ./clinicadl/
+  pip install -r requirements-dev.txt
   echo "ClinicaDL has been installed in  $CLINICA_ENV_BRANCH."
   conda deactivate
 fi

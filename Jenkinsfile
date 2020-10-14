@@ -25,6 +25,7 @@ pipeline {
              echo "Install clinicadl using pip..."
              cd $WORKSPACE/clinicadl
              pip install -e .
+             pip install -r requirements-dev.txt
              # Show clinicadl help message
              echo "Display clinicadl help message"
              clinicadl --help
