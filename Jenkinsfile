@@ -132,7 +132,8 @@ pipeline {
               sh 'echo "Agent name: ${NODE_NAME}"'
               sh '''#!/usr/bin/env bash
                  set +x
-                 source $HOME/miniconda/etc/profile.d/conda.sh
+                 eval "$(conda shell.bash hook)"
+                 #source $HOME/miniconda/etc/profile.d/conda.sh
                  source ./.jenkins/scripts/find_env.sh
                  conda activate clinicadl_test
                  cd $WORKSPACE/clinicadl/tests
