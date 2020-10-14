@@ -26,7 +26,7 @@ if [ "$ENV_EXISTS" = 0 ]; then
   echo "Conda env $CLINICA_ENV_BRANCH not found... Creating"
   conda create -y -n $CLINICA_ENV_BRANCH python=3.7
   echo "Conda env $CLINICA_ENV_BRANCH was created."
-  source $CONDA_PREFIX/etc/profile.d/conda.sh
+  #source $CONDA_PREFIX/etc/profile.d/conda.sh
   conda activate $CLINICA_ENV_BRANCH
   pip install -e ./clinicadl/
   pip install -r requirements-dev.txt
