@@ -125,14 +125,14 @@ pipeline {
           stage('Train tests Linux') {
             agent { label 'gpu' }
             environment {
-              PATH = "$HOME/miniconda/bin:$PATH"
+              PATH = "$HOME/miniconda3/bin:$PATH"
               }
             steps {
               echo 'Testing train task...'
               sh 'echo "Agent name: ${NODE_NAME}"'
               sh '''#!/usr/bin/env bash
                  set +x
-                 source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
+                 source $HOME/miniconda/etc/profile.d/conda.sh
                  source ./.jenkins/scripts/find_env.sh
                  conda activate clinicadl_test
                  cd $WORKSPACE/clinicadl/tests
