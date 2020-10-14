@@ -60,8 +60,8 @@ pipeline {
       }
       stage('Fonctional tests') {
         parallel {
-          stages {
-            stage('Generate and Classify') {
+          stage('Generate and Classify') {
+            stages{
               stage('Generate tests Linux') {
                 environment {
                   PATH = "$HOME/miniconda/bin:$PATH"
@@ -125,8 +125,8 @@ pipeline {
                   }
                 } 
               }
-            }  
-          }
+            }
+          }  
           stage('Train tests Linux') {
             agent { label 'gpu' }
             environment {
