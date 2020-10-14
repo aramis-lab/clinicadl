@@ -40,9 +40,10 @@ pipeline {
         steps {
           echo 'Testing pipeline instantation...'
             sh 'echo "Agent name: ${NODE_NAME}"'
+            sh 'conda env remove --name "clinicadl_test"'
             sh '''#!/usr/bin/env bash
             set +x
-            source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
+            eval "$(conda shell.bash hook)"
             source ./.jenkins/scripts/find_env.sh
             conda activate clinicadl_test
             pip install pytest
@@ -69,9 +70,10 @@ pipeline {
                 steps {
                   echo 'Testing generate task...'
                     sh 'echo "Agent name: ${NODE_NAME}"'
+                    sh 'conda env remove --name "clinicadl_test"'
                     sh '''#!/usr/bin/env bash
                       set +x
-                      source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
+                      eval "$(conda shell.bash hook)"
                       source ./.jenkins/scripts/find_env.sh
                       conda activate clinicadl_test
                       cd $WORKSPACE/clinicadl/tests
@@ -97,13 +99,14 @@ pipeline {
               stage('Classify tests Linux') {
                 environment {
                   PATH = "$HOME/miniconda/bin:$PATH"
-                  }
+                }  
                 steps {
                   echo 'Testing classify...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
+                  sh 'conda env remove --name "clinicadl_test"'
                   sh '''#!/usr/bin/env bash
                      set +x
-                     source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
+                     eval "$(conda shell.bash hook)"
                      source ./.jenkins/scripts/find_env.sh
                      conda activate clinicadl_test
                      cd $WORKSPACE/clinicadl/tests
@@ -131,10 +134,11 @@ pipeline {
             agent { label 'gpu' }
             environment {
               PATH = "$HOME/miniconda3/bin:$PATH"
-              }
+            }
             steps {
               echo 'Testing train task...'
               sh 'echo "Agent name: ${NODE_NAME}"'
+              sh 'conda env remove --name "clinicadl_test"'
               sh '''#!/usr/bin/env bash
                  set +x
                  eval "$(conda shell.bash hook)"
