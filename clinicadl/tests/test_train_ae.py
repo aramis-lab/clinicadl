@@ -24,7 +24,6 @@ def cli_commands(request):
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
         ]
     elif request.param == 'train_patch_ae':
         test_input = [
@@ -39,7 +38,6 @@ def cli_commands(request):
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
         ]
     elif request.param == 'train_roi_ae':
         test_input = [
@@ -54,7 +52,6 @@ def cli_commands(request):
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
         ]
     else:
         raise NotImplementedError(

@@ -26,7 +26,6 @@ def cli_commands(request):
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
         ]
     elif request.param == 'train_image_cnn':
         test_input = [
@@ -41,7 +40,6 @@ def cli_commands(request):
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
         ]
     elif request.param == 'train_patch_cnn':
         test_input = [
@@ -56,7 +54,6 @@ def cli_commands(request):
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
         ]
     elif request.param == 'train_patch_multicnn':
         test_input = [
@@ -71,7 +68,6 @@ def cli_commands(request):
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
         ]
     elif request.param == 'train_roi_cnn':
         test_input = [
@@ -86,8 +82,6 @@ def cli_commands(request):
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
-        ]
     else:
         raise NotImplementedError(
             "Test %s is not implemented." %

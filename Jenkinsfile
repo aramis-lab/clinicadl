@@ -57,46 +57,46 @@ pipeline {
           }
         }
       }
-      stage('Generate tests Linux') {
-        environment {
-          PATH = "$HOME/miniconda/bin:$PATH"
-        }
-        steps {
-          echo 'Testing generate task...'
-            sh 'echo "Agent name: ${NODE_NAME}"'
-            sh '''#!/usr/bin/env bash
-              set +x
-              source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
-              source ./.jenkins/scripts/find_env.sh
-              conda activate clinicadl_test
-              cd $WORKSPACE/clinicadl/tests
-              ln -s /mnt/data/data_CI ./data 
-              pytest \
-              --junitxml=../../test-reports/test_generate_report.xml \
-              --verbose \
-              --disable-warnings \
-              test_generate.py
-              clinica run deeplearning-prepare-data ./data/dataset/random_example image --n_procs 3
-              conda deactivate
-              '''
-            stash(name: 'dataset_generate', includes: 'clinicadl/tests/data/dataset/random_example/**')
-        }
-        post {
-          always {
-            junit 'test-reports/test_generate_report.xml'
-            sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset/trivial_example'
-          }
-        } 
-      }
       stage('Fonctional tests') {
         parallel {
+          stage('Generate tests Linux') {
+            environment {
+              PATH = "$HOME/miniconda/bin:$PATH"
+            }
+            steps {
+              echo 'Testing generate task...'
+                sh 'echo "Agent name: ${NODE_NAME}"'
+                sh '''#!/usr/bin/env bash
+                  set +x
+                  source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
+                  source ./.jenkins/scripts/find_env.sh
+                  conda activate clinicadl_test
+                  cd $WORKSPACE/clinicadl/tests
+                  mkdir -p ./data/dataset
+                  tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
+                  pytest \
+                    --junitxml=../../test-reports/test_generate_report.xml \
+                    --verbose \
+                    --disable-warnings \
+                    test_generate.py
+                  conda deactivate
+                  '''
+            }
+            post {
+              always {
+                junit 'test-reports/test_generate_report.xml'
+                sh '''
+                  rm -rf $WORKSPACE/clinicadl/tests/data/
+                  '''
+              }
+            } 
+          }
           stage('Classify tests Linux') {
             environment {
               PATH = "$HOME/miniconda/bin:$PATH"
               }
             steps {
               echo 'Testing classify...'
-              unstash(name: 'dataset_generate')
               sh 'echo "Agent name: ${NODE_NAME}"'
               sh '''#!/usr/bin/env bash
                  set +x
@@ -104,7 +104,9 @@ pipeline {
                  source ./.jenkins/scripts/find_env.sh
                  conda activate clinicadl_test
                  cd $WORKSPACE/clinicadl/tests
-                 ln -s /mnt/data/data_CI ./data 
+                 mkdir -p ./data/dataset
+                 tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
+                 ln -s /mnt/data/data_CI/models data/models
                  pytest \
                     --junitxml=../../test-reports/test_classify_report.xml \
                     --verbose \
@@ -116,7 +118,7 @@ pipeline {
             post {
               always {
                 junit 'test-reports/test_classify_report.xml'
-                sh 'find $WORKSPACE/clinicadl/tests/data/models/ -name "test-RANDOM*" -type f -delete'
+                sh 'rm -rf  $WORKSPACE/clinicadl/tests/data/'
               }
             } 
           }
@@ -135,7 +137,9 @@ pipeline {
                  source ./.jenkins/scripts/find_env.sh
                  conda activate clinicadl_test
                  cd $WORKSPACE/clinicadl/tests
-                 ln -s /mnt/data/data_CI ./data 
+                 mkdir -p ./data/dataset
+                 tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
+                 cp -r /mnt/data/data_CI/labels_list ./data/
                  pytest \
                     --junitxml=../../test-reports/test_train_report.xml \
                     --verbose \
@@ -147,6 +151,7 @@ pipeline {
             post {
               always {
                 junit 'test-reports/test_train_report.xml'
+                sh 'rm -rf  $WORKSPACE/clinicadl/tests/data/'
               }
             } 
           }
