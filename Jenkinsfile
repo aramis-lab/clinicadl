@@ -88,66 +88,68 @@ pipeline {
           }
         } 
       }
-      parallel {
-        stage('Classify tests Linux') {
-          environment {
-            PATH = "$HOME/miniconda/bin:$PATH"
+      stage('Fonctional tests') {
+        parallel {
+          stage('Classify tests Linux') {
+            environment {
+              PATH = "$HOME/miniconda/bin:$PATH"
+              }
+            steps {
+              echo 'Testing classify...'
+              unstash(name: 'dataset_generate')
+              sh 'echo "Agent name: ${NODE_NAME}"'
+              sh '''#!/usr/bin/env bash
+                 set +x
+                 source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
+                 source ./.jenkins/scripts/find_env.sh
+                 conda activate clinicadl_test
+                 cd $WORKSPACE/clinicadl/tests
+                 ln -s /mnt/data/data_CI ./data 
+                 pytest \
+                    --junitxml=../../test-reports/test_classify_report.xml \
+                    --verbose \
+                    --disable-warnings \
+                    test_classify.py
+                 conda deactivate
+                 '''
             }
-          steps {
-            echo 'Testing classify...'
-            unstash(name: 'dataset_generate')
-            sh 'echo "Agent name: ${NODE_NAME}"'
-            sh '''#!/usr/bin/env bash
-               set +x
-               source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
-               source ./.jenkins/scripts/find_env.sh
-               conda activate clinicadl_test
-               cd $WORKSPACE/clinicadl/tests
-               ln -s /mnt/data/data_CI ./data 
-               pytest \
-                  --junitxml=../../test-reports/test_classify_report.xml \
-                  --verbose \
-                  --disable-warnings \
-                  test_classify.py
-               conda deactivate
-               '''
+            post {
+              always {
+                junit 'test-reports/test_classify_report.xml'
+                sh 'find $WORKSPACE/clinicadl/tests/data/models/ -name "test-RANDOM*" -type f -delete'
+              }
+            } 
           }
-          post {
-            always {
-              junit 'test-reports/test_classify_report.xml'
-              sh 'find $WORKSPACE/clinicadl/tests/data/models/ -name "test-RANDOM*" -type f -delete'
+          stage('Train tests Linux') {
+            agent { label 'gpu' }
+            environment {
+              PATH = "$HOME/miniconda/bin:$PATH"
+              }
+            steps {
+              echo 'Testing train task...'
+              unstash(name: 'dataset_generate')
+              sh 'echo "Agent name: ${NODE_NAME}"'
+              sh '''#!/usr/bin/env bash
+                 set +x
+                 source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
+                 source ./.jenkins/scripts/find_env.sh
+                 conda activate clinicadl_test
+                 cd $WORKSPACE/clinicadl/tests
+                 ln -s /mnt/data/data_CI ./data 
+                 pytest \
+                    --junitxml=../../test-reports/test_train_report.xml \
+                    --verbose \
+                    --disable-warnings \
+                    -k "test_train"
+                 conda deactivate
+                 '''
             }
-          } 
-        }
-        stage('Train tests Linux') {
-          agent { label 'gpu' }
-          environment {
-            PATH = "$HOME/miniconda/bin:$PATH"
-            }
-          steps {
-            echo 'Testing train task...'
-            unstash(name: 'dataset_generate')
-            sh 'echo "Agent name: ${NODE_NAME}"'
-            sh '''#!/usr/bin/env bash
-               set +x
-               source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
-               source ./.jenkins/scripts/find_env.sh
-               conda activate clinicadl_test
-               cd $WORKSPACE/clinicadl/tests
-               ln -s /mnt/data/data_CI ./data 
-               pytest \
-                  --junitxml=../../test-reports/test_train_report.xml \
-                  --verbose \
-                  --disable-warnings \
-                  -k "test_train"
-               conda deactivate
-               '''
+            post {
+              always {
+                junit 'test-reports/test_train_report.xml'
+              }
+            } 
           }
-          post {
-            always {
-              junit 'test-reports/test_train_report.xml'
-            }
-          } 
         }
       }
     }
