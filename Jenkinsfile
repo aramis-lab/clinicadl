@@ -129,7 +129,6 @@ pipeline {
               }
             steps {
               echo 'Testing train task...'
-              unstash(name: 'dataset_generate')
               sh 'echo "Agent name: ${NODE_NAME}"'
               sh '''#!/usr/bin/env bash
                  set +x
