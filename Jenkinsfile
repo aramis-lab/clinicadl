@@ -134,9 +134,9 @@ pipeline {
               sh '''#!/usr/bin/env bash
                  set +x
                  eval "$(conda shell.bash hook)"
-                 #source $HOME/miniconda/etc/profile.d/conda.sh
                  source ./.jenkins/scripts/find_env.sh
                  conda activate clinicadl_test
+                 clinicadl --help
                  cd $WORKSPACE/clinicadl/tests
                  mkdir -p ./data/dataset
                  tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
