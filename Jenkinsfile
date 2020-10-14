@@ -60,69 +60,71 @@ pipeline {
       }
       stage('Fonctional tests') {
         parallel {
-          stage('Generate tests Linux') {
-            environment {
-              PATH = "$HOME/miniconda/bin:$PATH"
+          stage('Generate and Classify') {
+            stage('Generate tests Linux') {
+              environment {
+                PATH = "$HOME/miniconda/bin:$PATH"
+              }
+              steps {
+                echo 'Testing generate task...'
+                  sh 'echo "Agent name: ${NODE_NAME}"'
+                  sh '''#!/usr/bin/env bash
+                    set +x
+                    source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
+                    source ./.jenkins/scripts/find_env.sh
+                    conda activate clinicadl_test
+                    cd $WORKSPACE/clinicadl/tests
+                    mkdir -p ./data/dataset
+                    tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
+                    pytest \
+                      --junitxml=../../test-reports/test_generate_report.xml \
+                      --verbose \
+                      --disable-warnings \
+                      test_generate.py
+                    conda deactivate
+                    '''
+              }
+              post {
+                always {
+                  junit 'test-reports/test_generate_report.xml'
+                  sh '''
+                    rm -rf $WORKSPACE/clinicadl/tests/data/
+                    '''
+                }
+              } 
             }
-            steps {
-              echo 'Testing generate task...'
+            stage('Classify tests Linux') {
+              environment {
+                PATH = "$HOME/miniconda/bin:$PATH"
+                }
+              steps {
+                echo 'Testing classify...'
                 sh 'echo "Agent name: ${NODE_NAME}"'
                 sh '''#!/usr/bin/env bash
-                  set +x
-                  source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
-                  source ./.jenkins/scripts/find_env.sh
-                  conda activate clinicadl_test
-                  cd $WORKSPACE/clinicadl/tests
-                  mkdir -p ./data/dataset
-                  tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
-                  pytest \
-                    --junitxml=../../test-reports/test_generate_report.xml \
-                    --verbose \
-                    --disable-warnings \
-                    test_generate.py
-                  conda deactivate
-                  '''
+                   set +x
+                   source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
+                   source ./.jenkins/scripts/find_env.sh
+                   conda activate clinicadl_test
+                   cd $WORKSPACE/clinicadl/tests
+                   mkdir -p ./data/dataset
+                   tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
+                   ln -s /mnt/data/data_CI/models data/models
+                   pytest \
+                      --junitxml=../../test-reports/test_classify_report.xml \
+                      --verbose \
+                      --disable-warnings \
+                      test_classify.py
+                   conda deactivate
+                   '''
+              }
+              post {
+                always {
+                  junit 'test-reports/test_classify_report.xml'
+                  sh 'rm -rf  $WORKSPACE/clinicadl/tests/data/'
+                }
+              } 
             }
-            post {
-              always {
-                junit 'test-reports/test_generate_report.xml'
-                sh '''
-                  rm -rf $WORKSPACE/clinicadl/tests/data/
-                  '''
-              }
-            } 
-          }
-          stage('Classify tests Linux') {
-            environment {
-              PATH = "$HOME/miniconda/bin:$PATH"
-              }
-            steps {
-              echo 'Testing classify...'
-              sh 'echo "Agent name: ${NODE_NAME}"'
-              sh '''#!/usr/bin/env bash
-                 set +x
-                 source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
-                 source ./.jenkins/scripts/find_env.sh
-                 conda activate clinicadl_test
-                 cd $WORKSPACE/clinicadl/tests
-                 mkdir -p ./data/dataset
-                 tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
-                 ln -s /mnt/data/data_CI/models data/models
-                 pytest \
-                    --junitxml=../../test-reports/test_classify_report.xml \
-                    --verbose \
-                    --disable-warnings \
-                    test_classify.py
-                 conda deactivate
-                 '''
-            }
-            post {
-              always {
-                junit 'test-reports/test_classify_report.xml'
-                sh 'rm -rf  $WORKSPACE/clinicadl/tests/data/'
-              }
-            } 
-          }
+          }  
           stage('Train tests Linux') {
             agent { label 'gpu' }
             environment {
