@@ -19,7 +19,7 @@ pipeline {
           sh 'echo "Agent name: ${NODE_NAME}"'
           sh '''#!/usr/bin/env bash
              set +x
-             source $WORKSPACE/../../miniconda/etc/profile.d/conda.sh
+             eval "$(conda shell.bash hook)"
              conda create -y -n clinicadl_test python=3.7
              conda activate clinicadl_test
              echo "Install clinicadl using pip..."
@@ -40,15 +40,16 @@ pipeline {
         steps {
           echo 'Testing pipeline instantation...'
             sh 'echo "Agent name: ${NODE_NAME}"'
-            sh 'conda env remove --name "clinicadl_test"'
+            //sh 'conda env remove --name "clinicadl_test"'
             sh '''#!/usr/bin/env bash
             set +x
             eval "$(conda shell.bash hook)"
             source ./.jenkins/scripts/find_env.sh
             conda activate clinicadl_test
-            pip install pytest
-            pytest --junitxml=./test-reports/test_cli_report.xml --verbose \
-            --disable-warnings \
+            pytest \
+              --junitxml=./test-reports/test_cli_report.xml \
+              --verbose \
+              --disable-warnings \
             $WORKSPACE/clinicadl/tests/test_cli.py
             conda deactivate
             '''
@@ -66,13 +67,12 @@ pipeline {
         steps {
           echo 'Testing tsvtool tasks...'
             sh 'echo "Agent name: ${NODE_NAME}"'
-            sh 'conda env remove --name "clinicadl_test"'
+            //sh 'conda env remove --name "clinicadl_test"'
             sh '''#!/usr/bin/env bash
             set +x
             eval "$(conda shell.bash hook)"
             source ./.jenkins/scripts/find_env.sh
             conda activate clinicadl_test
-            pip install pytest
             pytest --junitxml=./test-reports/test_tsvtool_report.xml --verbose \
             --disable-warnings \
             $WORKSPACE/clinicadl/tests/test_tsvtool.py
@@ -96,7 +96,7 @@ pipeline {
                 steps {
                   echo 'Testing generate task...'
                     sh 'echo "Agent name: ${NODE_NAME}"'
-                    sh 'conda env remove --name "clinicadl_test"'
+                    //sh 'conda env remove --name "clinicadl_test"'
                     sh '''#!/usr/bin/env bash
                       set +x
                       eval "$(conda shell.bash hook)"
@@ -116,9 +116,6 @@ pipeline {
                 post {
                   always {
                     junit 'test-reports/test_generate_report.xml'
-                    sh '''
-                      rm -rf $WORKSPACE/clinicadl/tests/data/
-                      '''
                   }
                 } 
               }
@@ -129,7 +126,7 @@ pipeline {
                 steps {
                   echo 'Testing classify...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  sh 'conda env remove --name "clinicadl_test"'
+                  //sh 'conda env remove --name "clinicadl_test"'
                   sh '''#!/usr/bin/env bash
                      set +x
                      eval "$(conda shell.bash hook)"
@@ -150,7 +147,6 @@ pipeline {
                 post {
                   always {
                     junit 'test-reports/test_classify_report.xml'
-                    sh 'rm -rf  $WORKSPACE/clinicadl/tests/data/'
                   }
                 } 
               }
@@ -186,7 +182,6 @@ pipeline {
             post {
               always {
                 junit 'test-reports/test_train_report.xml'
-                sh 'rm -rf  $WORKSPACE/clinicadl/tests/data/'
               }
             } 
           }
@@ -194,15 +189,15 @@ pipeline {
       }
     }
     post {
-//      failure {
-//        mail to: 'clinicadl-ci@inria.fr',
-//          subject: "Failed Pipeline: ${currentBuild.fullDisplayName}",
-//          body: "Something is wrong with ${env.BUILD_URL}",
-//       }
-       failure {
-         mattermostSend 
-           color: "#FF0000",
-           message: "CLinicaDL Build FAILED:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
+      failure {
+        mail to: 'clinicadl-ci@inria.fr',
+          subject: "Failed Pipeline: ${currentBuild.fullDisplayName}",
+          body: "Something is wrong with ${env.BUILD_URL}",
        }
+//       failure {
+//         mattermostSend 
+//           color: "#FF0000",
+//           message: "CLinicaDL Build FAILED:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
+//       }
     }
   }
