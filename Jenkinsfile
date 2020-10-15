@@ -201,7 +201,7 @@ pipeline {
 //       }
        failure {
        mattermostSend 
-          color: ""#FF0000,
+          color: "#FF0000",
           message: "CLinicaDL Build FAILED:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
       }
     }
