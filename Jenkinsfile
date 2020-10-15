@@ -73,9 +73,12 @@ pipeline {
             eval "$(conda shell.bash hook)"
             source ./.jenkins/scripts/find_env.sh
             conda activate clinicadl_test
-            pytest --junitxml=./test-reports/test_tsvtool_report.xml --verbose \
-            --disable-warnings \
-            $WORKSPACE/clinicadl/tests/test_tsvtool.py
+            cd $WORKSPACE/clinicadl/tests
+            pytest \
+              --junitxml=./test-reports/test_tsvtool_report.xml 
+              --verbose \
+              --disable-warnings \
+              test_tsvtool.py
             conda deactivate
             '''
         }
