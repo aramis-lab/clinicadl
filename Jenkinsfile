@@ -192,7 +192,7 @@ pipeline {
       failure {
         mail to: 'clinicadl-ci@inria.fr',
           subject: "Failed Pipeline: ${currentBuild.fullDisplayName}",
-          body: "Something is wrong with ${env.BUILD_URL}",
+          body: "Something is wrong with ${env.BUILD_URL}"
        }
 //       failure {
 //         mattermostSend 
