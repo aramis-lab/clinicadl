@@ -5,9 +5,9 @@ from os import path
 from clinicadl.tools.deep_learning.data import load_data, load_data_test
 from clinicadl.tools.tsv.test import run_test_suite
 
-merged_tsv = "data/ADNI_BIDS.tsv"
-missing_mods = "data/ADNI_missing_mods"
-reference_path = "data/tsvtool_ref"
+merged_tsv = "data/tsvtool/anonymous_BIDS.tsv"
+missing_mods = "data/tsvtool/anonymous_missing_mods"
+reference_path = "data/tsvtool/anonymous_reference"
 diagnoses = "AD CN MCI pMCI sMCI"
 
 
@@ -56,8 +56,13 @@ def test_split():
 
 def test_analysis():
     """Checks that analysis can be performed"""
-    results_path = "data/analysis.tsv"
-    flag_analysis = not os.system("clinicadl tsvtool analysis %s %s %s --age_name age --mmse_name MMSE"
+    results_path = path.join("data", "tsvtool", "analysis.tsv")
+    ref_analysis_path = path.join("data", "tsvtool", "anonymous_analysis.tsv")
+    flag_analysis = not os.system("clinicadl tsvtool analysis %s %s %s --age_name age --mmse_name MMSE "
+                                  "--diagnoses AD CN MCI sMCI pMCI"
                                   % (merged_tsv, reference_path, results_path))
     assert flag_analysis
+    ref_df = pd.read_csv(ref_analysis_path, sep="\t")
+    out_df = pd.read_csv(results_path, sep="\t")
+    assert out_df.equals(ref_df)
     os.remove(results_path)
