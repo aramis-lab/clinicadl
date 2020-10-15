@@ -75,7 +75,7 @@ pipeline {
             conda activate clinicadl_test
             cd $WORKSPACE/clinicadl/tests
             pytest \
-              --junitxml=./test-reports/test_tsvtool_report.xml 
+              --junitxml=./test-reports/test_tsvtool_report.xml \
               --verbose \
               --disable-warnings \
               test_tsvtool.py
