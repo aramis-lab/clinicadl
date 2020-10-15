@@ -81,11 +81,11 @@ pipeline {
         }
         post {
           always {
-            junit 'test-reports/test_cli_report.xml'
+            junit 'test-reports/test_tsvtool_report.xml'
           }
         }
       }
-      stage('Fonctional tests') {
+      stage('Functional tests') {
         parallel {
           stage('Generate and Classify') {
             stages{
