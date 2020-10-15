@@ -154,6 +154,11 @@ take around 10 min.  The following test are launched:
   here](https://aramislab.paris.inria.fr/files/data/models/dl/models_v002/)).
 - Test **train** task (`test_train.py`): it run training over the synthetic
   dataset and verifies that output folder structure was created.
+- Test several **tsvtool** functionalities (`test_tsvtool.py`). This test needs no data download 
+as it is provided in the repo (`clinicadl/tests/data/tsvtool`). It test checks that:
+    - the same label lists are found on an anonymized version of ADNI (`getlabels`),
+    - data splits do not lead to data leakage and can correctly be found by loading functions (`split` and `kfold`),
+    - the analysis tool runs and gives the same result as before on an anonimyzed version of ADNI (`analysis`).
 
 To run each of these tests, a folder called `./data/` must contain the
 previously downloaded data.  This folder should be located inside the `tests`
