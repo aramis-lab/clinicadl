@@ -63,7 +63,7 @@ pipeline {
       stage('TSVTOOL tests Linux') {
         agent { label 'gpu' }
         environment {
-          PATH = "$HOME/miniconda/bin:$PATH"
+          PATH = "$HOME/miniconda3/bin:$PATH"
         }
         steps {
           echo 'Testing tsvtool tasks...'
