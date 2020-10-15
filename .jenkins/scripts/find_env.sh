@@ -30,7 +30,7 @@ if [ "$ENV_EXISTS" = 0 ]; then
   conda activate $CLINICA_ENV_BRANCH
   cd $WORKSPACE/clinicadl
   pip install -e .
-  pip install -r requirements-dev.txt
+  pip install -r ../requirements-dev.txt
   echo "ClinicaDL has been installed in  $CLINICA_ENV_BRANCH."
   conda deactivate
   cd $WORKSPACE
