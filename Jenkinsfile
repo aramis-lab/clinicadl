@@ -59,6 +59,32 @@ pipeline {
           }
         }
       }
+      stage('TSVTOOL tests Linux') {
+        environment {
+          PATH = "$HOME/miniconda/bin:$PATH"
+        }
+        steps {
+          echo 'Testing tsvtool tasks...'
+            sh 'echo "Agent name: ${NODE_NAME}"'
+            sh 'conda env remove --name "clinicadl_test"'
+            sh '''#!/usr/bin/env bash
+            set +x
+            eval "$(conda shell.bash hook)"
+            source ./.jenkins/scripts/find_env.sh
+            conda activate clinicadl_test
+            pip install pytest
+            pytest --junitxml=./test-reports/test_tsvtool_report.xml --verbose \
+            --disable-warnings \
+            $WORKSPACE/clinicadl/tests/test_tsvtool.py
+            conda deactivate
+            '''
+        }
+        post {
+          always {
+            junit 'test-reports/test_cli_report.xml'
+          }
+        }
+      }
       stage('Fonctional tests') {
         parallel {
           stage('Generate and Classify') {
