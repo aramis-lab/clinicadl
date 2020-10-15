@@ -198,10 +198,11 @@ pipeline {
         mail to: 'clinicadl-ci@inria.fr',
           subject: "Failed Pipeline: ${currentBuild.fullDisplayName}",
           body: "Something is wrong with ${env.BUILD_URL}",
-        mattermostSend (
+       }
+       failure {
+       mattermostSend 
           color: "danger",
           message: "CLinicaDL Build FAILED:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
-          )
       }
     }
   }
