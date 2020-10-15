@@ -33,58 +33,61 @@ pipeline {
              '''
         }
       }
-      stage('CLI tests Linux') {
-        environment {
-          PATH = "$HOME/miniconda/bin:$PATH"
-        }
-        steps {
-          echo 'Testing pipeline instantation...'
-            sh 'echo "Agent name: ${NODE_NAME}"'
-            //sh 'conda env remove --name "clinicadl_test"'
-            sh '''#!/usr/bin/env bash
-            set +x
-            eval "$(conda shell.bash hook)"
-            source ./.jenkins/scripts/find_env.sh
-            conda activate clinicadl_test
-            pytest \
-              --junitxml=./test-reports/test_cli_report.xml \
-              --verbose \
-              --disable-warnings \
-            $WORKSPACE/clinicadl/tests/test_cli.py
-            conda deactivate
-            '''
-        }
-        post {
-          always {
-            junit 'test-reports/test_cli_report.xml'
+      parallel {
+        stage('CLI tests Linux') {
+          environment {
+            PATH = "$HOME/miniconda/bin:$PATH"
+          }
+          steps {
+            echo 'Testing pipeline instantation...'
+              sh 'echo "Agent name: ${NODE_NAME}"'
+              //sh 'conda env remove --name "clinicadl_test"'
+              sh '''#!/usr/bin/env bash
+              set +x
+              eval "$(conda shell.bash hook)"
+              source ./.jenkins/scripts/find_env.sh
+              conda activate clinicadl_test
+              pytest \
+                --junitxml=./test-reports/test_cli_report.xml \
+                --verbose \
+                --disable-warnings \
+              $WORKSPACE/clinicadl/tests/test_cli.py
+              conda deactivate
+              '''
+          }
+          post {
+            always {
+              junit 'test-reports/test_cli_report.xml'
+            }
           }
         }
-      }
-      stage('TSVTOOL tests Linux') {
-        environment {
-          PATH = "$HOME/miniconda/bin:$PATH"
-        }
-        steps {
-          echo 'Testing tsvtool tasks...'
-            sh 'echo "Agent name: ${NODE_NAME}"'
-            //sh 'conda env remove --name "clinicadl_test"'
-            sh '''#!/usr/bin/env bash
-            set +x
-            eval "$(conda shell.bash hook)"
-            source ./.jenkins/scripts/find_env.sh
-            conda activate clinicadl_test
-            cd $WORKSPACE/clinicadl/tests
-            pytest \
-              --junitxml=../../test-reports/test_tsvtool_report.xml \
-              --verbose \
-              --disable-warnings \
-              test_tsvtool.py
-            conda deactivate
-            '''
-        }
-        post {
-          always {
-            junit 'test-reports/test_tsvtool_report.xml'
+        stage('TSVTOOL tests Linux') {
+          agent { label 'gpu' }
+          environment {
+            PATH = "$HOME/miniconda/bin:$PATH"
+          }
+          steps {
+            echo 'Testing tsvtool tasks...'
+              sh 'echo "Agent name: ${NODE_NAME}"'
+              //sh 'conda env remove --name "clinicadl_test"'
+              sh '''#!/usr/bin/env bash
+              set +x
+              eval "$(conda shell.bash hook)"
+              source ./.jenkins/scripts/find_env.sh
+              conda activate clinicadl_test
+              cd $WORKSPACE/clinicadl/tests
+              pytest \
+                --junitxml=../../test-reports/test_tsvtool_report.xml \
+                --verbose \
+                --disable-warnings \
+                test_tsvtool.py
+              conda deactivate
+              '''
+          }
+          post {
+            always {
+              junit 'test-reports/test_tsvtool_report.xml'
+            }
           }
         }
       }
