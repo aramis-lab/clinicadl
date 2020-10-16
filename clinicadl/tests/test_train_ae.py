@@ -16,45 +16,42 @@ def cli_commands(request):
             'train',
             'image',
             'autoencoder',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results',
             'Conv5_FC3',
             '--epochs', '1',
             '--n_splits', '2',
-            '--split', '0',
-            '-cpu'
+            '--split', '0'
         ]
     elif request.param == 'train_patch_ae':
         test_input = [
             'train',
             'patch',
             'autoencoder',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results',
             'Conv4_FC3',
             '--epochs', '1',
             '--n_splits', '2',
-            '--split', '0',
-            '-cpu'
+            '--split', '0'
         ]
     elif request.param == 'train_roi_ae':
         test_input = [
             'train',
             'roi',
             'autoencoder',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results',
             'Conv4_FC3',
             '--epochs', '1',
             '--n_splits', '2',
-            '--split', '0',
-            '-cpu'
+            '--split', '0'
         ]
     else:
         raise NotImplementedError(

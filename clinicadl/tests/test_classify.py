@@ -7,46 +7,57 @@ from os.path import join, exists
 
 @pytest.fixture(params=[
     'classify_image',
+    'classify_roi',
     'classify_slice',
-    'classify_patch'
-])
+    'classify_patch'])
 def classify_commands(request):
-
-    out_filename = 'fold-0/cnn_classification/best_balanced_accuracy/test-OASIS_image_level_prediction.tsv'
+    out_filename = 'fold-0/cnn_classification/best_balanced_accuracy/test-RANDOM_image_level_prediction.tsv'
     if request.param == 'classify_image':
-        data_folder = 'data/models/image_model_baseline_AD_CN_single_fold/'
+        model_folder = 'data/models/model_exp3_splits_1/'
         test_input = [
             'classify',
-            'data/classify/OASIS_test',
-            'data/classify/OASIS_test/data.tsv',
-            data_folder,
-            'test-OASIS',
+            'data/dataset/random_example',
+            'data/dataset/random_example/data.tsv',
+            model_folder,
+            'test-RANDOM',
             '-cpu'
         ]
-        output_files = join(data_folder, out_filename)
+        output_files = join(model_folder, out_filename)
     elif request.param == 'classify_slice':
-        data_folder = 'data/models/slice_model_baseline_AD_CN_single_fold/'
+        model_folder = 'data/models/model_exp18_splits_1/'
         test_input = [
             'classify',
-            'data/classify/OASIS_test',
-            'data/classify/OASIS_test/data.tsv',
-            data_folder,
-            'test-OASIS',
+            'data/dataset/random_example',
+            'data/dataset/random_example/data.tsv',
+            model_folder,
+            'test-RANDOM',
             '-cpu'
         ]
-        output_files = join(data_folder, out_filename)
+        output_files = join(model_folder, out_filename)
     elif request.param == 'classify_patch':
-        data_folder = 'data/models/patch_model_baseline_AD_CN_multicnn_single_fold/'
+        model_folder = 'data/models/model_exp14_splits_1/'
         test_input = [
             'classify',
-            'data/classify/OASIS_test',
-            'data/classify/OASIS_test/data.tsv',
-            data_folder,
-            'test-OASIS',
+            'data/dataset/random_example',
+            'data/dataset/random_example/data.tsv',
+            model_folder,
+            'test-RANDOM',
             '-cpu',
             '-nl'
         ]
-        output_files = join(data_folder, out_filename)
+        output_files = join(model_folder, out_filename)
+    elif request.param == 'classify_roi':
+        model_folder = 'data/models/model_exp8_splits_1/'
+        test_input = [
+            'classify',
+            'data/dataset/random_example',
+            'data/dataset/random_example/data.tsv',
+            model_folder,
+            'test-RANDOM',
+            '-cpu',
+            '-nl'
+        ]
+        output_files = join(model_folder, out_filename)
     else:
         raise NotImplementedError(
             "Test %s is not implemented." %
