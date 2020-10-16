@@ -36,8 +36,12 @@
 
 ## About the project
 
-This repository hosts the source code of a **framework for the reproducible evaluation of deep learning classification experiments using anatomical MRI
-data for the computer-aided diagnosis of Alzheimer's disease (AD)**. This work has been published in [Medical Image Analysis](https://doi.org/10.1016/j.media.2020.101694) and is also available on [arXiv](https://arxiv.org/abs/1904.07773).
+This repository hosts the source code of a **framework for the reproducible
+evaluation of deep learning classification experiments using anatomical MRI
+data for the computer-aided diagnosis of Alzheimer's disease (AD)**. This work
+has been published in [Medical Image
+Analysis](https://doi.org/10.1016/j.media.2020.101694) and is also available on
+[arXiv](https://arxiv.org/abs/1904.07773).
 
 Automatic classification of AD using classical machine learning approaches can
 be performed using the framework available here:
@@ -51,15 +55,16 @@ the use of the package.
 
 The complete documentation of the project can be found on 
 this [page](https://clinicadl.readthedocs.io/). 
-If you find a problem when using it or if you want to provide us feedback, please
-[open an issue](https://github.com/aramis-lab/ad-dl/issues) or write on the 
-[forum](https://groups.google.com/forum/#!forum/clinica-user).
+If you find a problem when using it or if you want to provide us feedback,
+please [open an issue](https://github.com/aramis-lab/ad-dl/issues) or write on
+the [forum](https://groups.google.com/forum/#!forum/clinica-user).
 
 ## Getting started
 ClinicaDL currently supports macOS and Linux.
 
-We recommend to use `conda` or `virtualenv` for the installation of ClinicaDL as it guarantees 
-the correct management of libraries depending on common packages:
+We recommend to use `conda` or `virtualenv` for the installation of ClinicaDL
+as it guarantees the correct management of libraries depending on common
+packages:
 
 ```{.sourceCode .bash}
 conda create --name ClinicaDL python=3.7
@@ -67,40 +72,49 @@ conda activate ClinicaDL
 pip install clinicadl
 ```
 
+:reminder_ribbon: Visit our [tutorial web
+site](https://aramislab.paris.inria.fr/clinicadl/tuto/intro.html) to start
+using **ClinicaDL** directly in a Google Colab instance!
 
 ## Overview
 
 ### How to use ClinicaDL?
 
-`clinicadl` is an utility that is used through the command line. Several tasks can be performed:
+`clinicadl` is an utility that is used through the command line. Several tasks
+can be performed:
 
 - **Preparation of your imaging data**
-    * **T1w-weighted MR image preprocessing.** The `preprocessing` task processes a dataset of T1
-      images stored in BIDS format and prepares to extract the tensors (see paper
-  for details on the preprocessing). Output is stored using the
-  [CAPS](http://www.clinica.run/doc/CAPS/Introduction/) hierarchy.
-    * **Quality check of preprocessed data.** The `quality_check` task uses 
-      a pretrained network [(Fonov et al, 2018)](https://www.biorxiv.org/content/10.1101/303487v1) 
-      to classify adequately registered images.
-    * **Tensor extraction from preprocessed data.** The `extract` task allows to create files in
-      PyTorch format (`.pt`) with different options: the complete MRI, 2D slices
-      and/or 3D patches. This files are also stored in the [CAPS](http://www.clinica.run/doc/CAPS/Introduction/) hierarchy.
+    * **T1w-weighted MR image preprocessing.** The `preprocessing` task
+      processes a dataset of T1 images stored in BIDS format and prepares to
+      extract the tensors (see paper for details on the preprocessing). Output
+      is stored using the [CAPS](http://www.clinica.run/doc/CAPS/Introduction/)
+      hierarchy.
+    * **Quality check of preprocessed data.** The `quality_check` task uses a
+      pretrained network [(Fonov et al,
+      2018)](https://www.biorxiv.org/content/10.1101/303487v1) to classify
+      adequately registered images.
+    * **Tensor extraction from preprocessed data.** The `extract` task allows
+      to create files in PyTorch format (`.pt`) with different options: the
+      complete MRI, 2D slices and/or 3D patches. This files are also stored in
+      the [CAPS](http://www.clinica.run/doc/CAPS/Introduction/) hierarchy.
 
 - **Train & test your classifier**
-    * **Train neural networks.** The `train` task is designed to perform training
-      of CNN models using different kind of inputs, e.g., a full MRI (3D-image),
-      patches from a MRI (3D-patch), specific regions of a MRI (ROI-based) or
-      slices extracted from the MRI (2D-slices). Parameters used during the
-      training are configurable. This task allow also to train autoencoders.
+    * **Train neural networks.** The `train` task is designed to perform
+      training of CNN models using different kind of inputs, e.g., a full MRI
+      (3D-image), patches from a MRI (3D-patch), specific regions of a MRI
+      (ROI-based) or slices extracted from the MRI (2D-slices). Parameters used
+      during the training are configurable. This task allow also to train
+      autoencoders.
     * **MRI classification.** The `classify` task uses previously trained models
       to perform the inference of a particular or a set of MRI.
 
 
-- **Utilitaries used for the preparation of imaging data and/or training your classifier**
-    * **Process TSV files**. `tsvtool` includes many functions to get labels from
-      BIDS, perform k-fold or single splits, produce demographic analysis of
-      extracted labels and reproduce the restrictions made on AIBL and OASIS in the
-      original paper.
+- **Utilitaries used for the preparation of imaging data and/or training your
+  classifier**
+    * **Process TSV files**. `tsvtool` includes many functions to get labels
+      from BIDS, perform k-fold or single splits, produce demographic analysis
+      of extracted labels and reproduce the restrictions made on AIBL and OASIS
+      in the original paper.
     * **Generate a synthetic dataset.** The `generate` task is useful to obtain
       synthetic datasets frequently used in functional tests.
 
