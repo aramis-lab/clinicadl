@@ -4,7 +4,7 @@
 // Author: mauricio.diaz@inria.fr
 
 pipeline {
-  agent { label 'linux' }
+  agent any
     stages {
       stage('Build Env') {
         environment {
@@ -61,7 +61,7 @@ pipeline {
         }
       }
       stage('TSVTOOL tests Linux') {
-        agent { label 'gpu' }
+        agent { label 'linux && gpu' }
         environment {
           PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
         }
@@ -159,7 +159,7 @@ pipeline {
             }
           }  
           stage('Train tests Linux') {
-            agent { label 'gpu' }
+            agent { label 'linux && gpu' }
             environment {
               PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
             }
@@ -201,11 +201,10 @@ pipeline {
         mail to: 'clinicadl-ci@inria.fr',
           subject: "Failed Pipeline: ${currentBuild.fullDisplayName}",
           body: "Something is wrong with ${env.BUILD_URL}"
-       }
-//       failure {
-//         mattermostSend 
-//           color: "#FF0000",
-//           message: "CLinicaDL Build FAILED:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
-//       }
+        mattermostSend( 
+          color: "#FF0000",
+          message: "CLinicaDL Build FAILED:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
+        )
+      }
     }
   }
