@@ -120,6 +120,7 @@ pipeline {
                 post {
                   always {
                     junit 'test-reports/test_generate_report.xml'
+                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
                   }
                 } 
               }
@@ -151,6 +152,7 @@ pipeline {
                 post {
                   always {
                     junit 'test-reports/test_classify_report.xml'
+                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
                   }
                 } 
               }
@@ -186,6 +188,8 @@ pipeline {
             post {
               always {
                 junit 'test-reports/test_train_report.xml'
+                sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
+                sh 'rm -rf $WORKSPACE/clinicadl/tests/data/labels_list'
               }
             } 
           }
