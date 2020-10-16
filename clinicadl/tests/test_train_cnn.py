@@ -18,75 +18,70 @@ def cli_commands(request):
         test_input = [
             'train',
             'slice',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results',
             'resnet18',
             '--epochs', '1',
             '--n_splits', '2',
-            '--split', '0',
-            '-cpu'
+            '--split', '0'
         ]
     elif request.param == 'train_image_cnn':
         test_input = [
             'train',
             'image',
             'cnn',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results',
             'Conv5_FC3',
             '--epochs', '1',
             '--n_splits', '2',
-            '--split', '0',
-            '-cpu'
+            '--split', '0'
         ]
     elif request.param == 'train_patch_cnn':
         test_input = [
             'train',
             'patch',
             'cnn',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results',
             'Conv4_FC3',
             '--epochs', '1',
             '--n_splits', '2',
-            '--split', '0',
-            '-cpu'
+            '--split', '0'
         ]
     elif request.param == 'train_patch_multicnn':
         test_input = [
             'train',
             'patch',
             'multicnn',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results',
             'Conv4_FC3',
             '--epochs', '1',
             '--n_splits', '2',
-            '--split', '0',
-            '-cpu'
+            '--split', '0'
         ]
     elif request.param == 'train_roi_cnn':
         test_input = [
             'train',
             'roi',
             'cnn',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results',
             'Conv4_FC3',
             '--epochs', '1',
             '--n_splits', '2',
-            '--split', '0',
-            '-cpu'
+            '--split', '0'
         ]
     else:
         raise NotImplementedError(
