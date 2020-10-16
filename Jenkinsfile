@@ -8,7 +8,7 @@ pipeline {
     stages {
       stage('Build Env') {
         environment {
-           PATH = "$HOME/miniconda/bin:$PATH"
+           PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
            }
         //when { changeset "requirements.txt" }   
         steps {
@@ -35,7 +35,7 @@ pipeline {
       }
       stage('CLI tests Linux') {
         environment {
-          PATH = "$HOME/miniconda/bin:$PATH"
+          PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
         }
         steps {
           echo 'Testing pipeline instantation...'
@@ -63,7 +63,7 @@ pipeline {
       stage('TSVTOOL tests Linux') {
         agent { label 'gpu' }
         environment {
-          PATH = "$HOME/miniconda3/bin:$PATH"
+          PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
         }
         steps {
           echo 'Testing tsvtool tasks...'
@@ -95,7 +95,7 @@ pipeline {
             stages{
               stage('Generate tests Linux') {
                 environment {
-                  PATH = "$HOME/miniconda/bin:$PATH"
+                  PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
                 }
                 steps {
                   echo 'Testing generate task...'
@@ -126,7 +126,7 @@ pipeline {
               }
               stage('Classify tests Linux') {
                 environment {
-                  PATH = "$HOME/miniconda/bin:$PATH"
+                  PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
                 }  
                 steps {
                   echo 'Testing classify...'
@@ -161,7 +161,7 @@ pipeline {
           stage('Train tests Linux') {
             agent { label 'gpu' }
             environment {
-              PATH = "$HOME/miniconda3/bin:$PATH"
+              PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
             }
             steps {
               echo 'Testing train task...'
