@@ -166,7 +166,7 @@ pipeline {
             steps {
               echo 'Testing train task...'
               sh 'echo "Agent name: ${NODE_NAME}"'
-              sh 'conda env remove --name "clinicadl_test"'
+              //sh 'conda env remove --name "clinicadl_test"'
               sh '''#!/usr/bin/env bash
                  set +x
                  eval "$(conda shell.bash hook)"
