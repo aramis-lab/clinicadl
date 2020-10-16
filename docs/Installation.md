@@ -131,10 +131,10 @@ Remember that ClinicaDL will be only available inside your Conda environment.
 ## Testing ClinicaDL
 
 !!! warning
-    Data for testing must be manually downloaded (see below). Be sure to
-    install pytest & co (see the
-    [requirements-dev.txt](https://github.com/aramis-lab/AD-DL/blob/master/requirements-dev.txt)
-    file) inside your developement environment.
+    Data for testing must be manually downloaded (see below). Make sure you
+    have installed pytest & Co (`pip install -r
+    https://raw.githubusercontent.com/aramis-lab/AD-DL/dev/requirements-dev.txt`)
+    inside your developement environment.
 
 Main functionalities of ClinicaDL can be tested using the functions provided in
 the `tests` folder (this folder is not included in the package but it can be
