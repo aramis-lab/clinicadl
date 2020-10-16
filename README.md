@@ -27,6 +27,7 @@
 
 <p align="center">
   <a href="https://clinicadl.readthedocs.io/">Documentation</a> |
+  <a href="https://aramislab.paris.inria.fr/clinicadl/tuto/intro.html">Tutorial</a> |
   <a href="https://groups.google.com/forum/#!forum/clinica-user">Forum</a> |
   See also:
   <a href="#related-repositories">AD-ML</a>,
