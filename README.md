@@ -72,7 +72,8 @@ conda activate ClinicaDL
 pip install clinicadl
 ```
 
-:reminder_ribbon: Visit our [tutorial web
+### **NEW** 
+> :reminder_ribbon: Visit our [hands-on tutorial web
 site](https://aramislab.paris.inria.fr/clinicadl/tuto/intro.html) to start
 using **ClinicaDL** directly in a Google Colab instance!
 
