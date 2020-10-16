@@ -97,14 +97,14 @@ def test_generate(generate_commands):
 
 
 def compare_folder_with_files(folder1, list_of_files):
-    ''' Compare file existing in two folders
+    """Compare file existing in two folders
 
     Args:
         folder1: first folder to compare
         list_of_files: list of files in a second folder to compare
 
     Output: list of files not present in folder1
-    '''
+    """
 
     files1 = []
     for root, dirs, files in os.walk(folder1):
