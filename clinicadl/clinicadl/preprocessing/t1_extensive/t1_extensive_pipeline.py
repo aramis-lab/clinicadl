@@ -157,33 +157,11 @@ class T1Extensive(cpe.Pipeline):
         import nipype.pipeline.engine as npe
         import nipype.interfaces.utility as nutil
         from clinica.utils.inputs import RemoteFileStructure
-        from .t1_extensive_utils import get_caps_filename, apply_binary_mask
-
-        def get_file_from_server(remote_file, cache_path=None):
-            import os
-            from pathlib import Path
-            from clinica.utils.stream import cprint
-            from clinica.utils.inputs import fetch_file
-
-            home = str(Path.home())
-            if cache_path:
-                cache_clinica = os.path.join(home, ".cache", cache_path)
-            else:
-                cache_clinica = os.path.join(home, ".cache", "clinica", "data")
-            if not (os.path.exists(cache_clinica)):
-                os.makedirs(cache_clinica)
-
-            local_file = os.path.join(cache_clinica, remote_file.filename)
-
-            if not (os.path.exists(local_file)):
-                try:
-                    local_file = fetch_file(remote_file, cache_clinica)
-                except IOError as err:
-                    cprint(
-                        f"Unable to download {remote_file.filename} from {remote_file.url}: {err}"
-                    )
-
-            return local_file
+        from .t1_extensive_utils import (
+            get_caps_filename,
+            apply_binary_mask,
+            get_file_from_server
+        )
 
         # CAPS File names Generation
         # ===============
