@@ -25,7 +25,7 @@ parser.add_argument("--baseline", default=False, action="store_true",
 parser.add_argument("--n_splits", type=int, default=5,
                     help="Load the data of the corresponding k-fold CV")
 parser.add_argument("--group_id", type=str, default='ADNIbl',
-                    help="Select the group to load the correspondin data in CAPS.")
+                    help="Select the group to load the corresponding data in CAPS.")
 
 # Computational issues
 parser.add_argument("--num_workers", '-w', default=1, type=int,
@@ -34,8 +34,7 @@ parser.add_argument("--num_workers", '-w', default=1, type=int,
 
 def main(options):
 
-    if not os.path.exists(options.output_dir):
-        os.makedirs(options.output_dir)
+    os.makedirs(options.output_dir, exist_ok=True)
 
     splits_indices, diagnosis_tsv = extract_indices_from_5_fold(options.diagnosis_path, options.n_splits,
                                                                 options.output_dir, baseline=options.baseline,

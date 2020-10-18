@@ -38,8 +38,7 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path,
     merged_df = pd.read_csv(merged_tsv, sep='\t')
     merged_df.set_index(['participant_id', 'session_id'], inplace=True)
     parent_directory = path.abspath(path.join(results_path, os.pardir))
-    if not path.exists(parent_directory):
-        os.makedirs(parent_directory)
+    os.makedirs(parent_directory, exist_ok=True)
 
     fields_dict = {'age': age_name, 'sex': 'sex', 'MMSE': mmse_name, 'CDR': 'cdr_global'}
 

@@ -198,8 +198,7 @@ def commandline_to_json(commandline):
     commandline_arg_dic['unknown_arg'] = commandline[1]
 
     output_dir = commandline_arg_dic['output_dir']
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
 
     # remove these entries from the commandline log file
     if 'func' in commandline_arg_dic:

@@ -202,8 +202,8 @@ def inference_from_model(caps_dir,
                         join(full_model_path, 'model_best.pth.tar'))
 
             performance_dir = join(fold_path, 'cnn_classification', 'best_%s' % selection_metric)
-            if not exists(performance_dir):
-                makedirs(performance_dir)
+
+            makedirs(performance_dir, exist_ok=True)
 
             # It launch the corresponding function, depending on the mode.
             inference_from_model_generic(

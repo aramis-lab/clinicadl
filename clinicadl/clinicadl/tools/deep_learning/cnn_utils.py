@@ -318,8 +318,7 @@ def mode_level_to_tsvs(output_dir, results_df, metrics, fold, selection, mode, d
         performance_dir = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', 'cnn-%i' % cnn_index,
                                        selection)
 
-    if not os.path.exists(performance_dir):
-        os.makedirs(performance_dir)
+    os.makedirs(performance_dir, exist_ok=True)
 
     results_df.to_csv(os.path.join(performance_dir, '%s_%s_level_prediction.tsv' % (dataset, mode)), index=False,
                       sep='\t')
@@ -414,8 +413,7 @@ def soft_voting_to_tsvs(output_dir, fold, selection, mode, dataset='test', num_c
     validation_df = retrieve_sub_level_results(output_dir, fold, selection, mode, validation_dataset, num_cnn)
 
     performance_path = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', selection)
-    if not os.path.exists(performance_path):
-        os.makedirs(performance_path)
+    os.makedirs(performance_path, exist_ok=True)
 
     df_final, metrics = soft_voting(test_df, validation_df, mode, selection_threshold=selection_threshold,
                                     use_labels=use_labels)
