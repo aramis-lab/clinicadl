@@ -126,8 +126,8 @@ class T1Extensive(cpe.Pipeline):
         import nipype.interfaces.io as nio
         from clinica.utils.nipype import fix_join, container_from_filename
 
-        # Find container path from DWI filename
-        # =====================================
+        # Find container path from filename
+        # =================================
         container_path = npe.Node(
             nutil.Function(
                 input_names=["bids_or_caps_filename"],
@@ -137,8 +137,8 @@ class T1Extensive(cpe.Pipeline):
             name="container_path",
         )
 
-        # Writing results into CAPS
-        # =========================
+        # Write results into CAPS
+        # =======================
         write_node = npe.Node(name="write_results", interface=nio.DataSink())
         write_node.inputs.base_directory = self.caps_directory
         write_node.inputs.parameterization = False
@@ -163,10 +163,10 @@ class T1Extensive(cpe.Pipeline):
             get_file_from_server
         )
 
-        # CAPS File names Generation
-        # ===============
+        # Get CAPS Filename
+        # =================
         caps_filename = npe.Node(
-            name="CAPSFilenamesGeneration",
+            name="0-GetCapsFilename",
             interface=nutil.Function(
                 input_names="norm_t1w",
                 output_names=self.get_output_fields(),
@@ -183,7 +183,7 @@ class T1Extensive(cpe.Pipeline):
         )
 
         skull_stripping = npe.Node(
-            name="skull_stripping",
+            name="1-SkullStripping",
             interface=nutil.Function(
                 input_names=["input_img", "binary_img", "output_filename"],
                 output_names=["masked_image_path"],
