@@ -201,7 +201,7 @@ pipeline {
           PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
         }
         steps {
-          echo 'Testing train task...'
+          echo 'Create ClinicaDL package and upload to Pypi...'
           sh 'echo "Agent name: ${NODE_NAME}"'
           //sh 'conda env remove --name "clinicadl_test"'
           sh '''#!/usr/bin/env bash
