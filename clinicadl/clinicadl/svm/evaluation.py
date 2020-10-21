@@ -48,8 +48,7 @@ def main(options):
 
     folder_name = options.set + '_' + '_'.join(options.diagnoses)
     result_dir = path.join(options.output_dir, folder_name)
-    if not path.exists(result_dir):
-        os.makedirs(result_dir)
+    os.makedirs(result_dir, exist_ok=True)
 
     res_final = pd.DataFrame()
     for fi in range(options.n_splits):
