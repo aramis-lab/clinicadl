@@ -24,6 +24,8 @@ TRAIN_CATEGORIES = {
     # ROI-based arguments
     'ROI': '%sROI-based parameters%s' % (Fore.BLUE, Fore.RESET),
     'ROI CNN': '%sROI-based CNN parameters%s' % (Fore.BLUE, Fore.RESET),
+    # Other optional arguments
+    'OPTIONAL': '%sOther options%s' % (Fore.BLUE, Fore.RESET),
 }
 
 
@@ -37,31 +39,15 @@ def set_default_dropout(args):
             args.dropout = 0
 
 
-def preprocessing_t1w_func(args):
-    from .preprocessing.T1_linear import preprocessing_t1w
-    wf = preprocessing_t1w(
-        args.bids_dir,
-        args.caps_dir,
-        args.tsv_file,
-        args.working_dir
-    )
-    wf.run(plugin='MultiProc', plugin_args={'n_procs': args.nproc})
+def extract_tensors(args):
+    import sys
+    from clinica.utils.stream import FilterOut
+    from clinica.pipelines.deeplearning_prepare_data.deeplearning_prepare_data_cli import DeepLearningPrepareDataCLI
 
+    sys.stdout = FilterOut(sys.stdout)
 
-def extract_data_func(args):
-    from .preprocessing.T1_preparedl import extract_dl_t1w
-
-    wf = extract_dl_t1w(
-        args.caps_dir,
-        args.tsv_file,
-        args.working_dir,
-        args.extract_method,
-        args.patch_size,
-        args.stride_size,
-        args.slice_direction,
-        args.slice_mode
-    )
-    wf.run(plugin='MultiProc', plugin_args={'n_procs': args.nproc})
+    dl_prepare_data_cli = DeepLearningPrepareDataCLI()
+    dl_prepare_data_cli.run_command(args)
 
 
 def qc_func(args):
@@ -69,8 +55,8 @@ def qc_func(args):
 
     quality_check(
         args.caps_dir,
-        args.tsv_file,
         args.output_path,
+        tsv_path=args.subjects_sessions_tsv,
         threshold=args.threshold,
         batch_size=args.batch_size,
         num_workers=args.nproc,
@@ -84,7 +70,7 @@ def generate_data_func(args):
     if args.mode == "random":
         generate_random_dataset(
             caps_dir=args.caps_dir,
-            tsv_path=args.tsv_path,
+            tsv_path=args.subjects_sessions_tsv,
             output_dir=args.output_dir,
             n_subjects=args.n_subjects,
             mean=args.mean,
@@ -93,7 +79,7 @@ def generate_data_func(args):
     else:
         generate_trivial_dataset(
             caps_dir=args.caps_dir,
-            tsv_path=args.tsv_path,
+            tsv_path=args.subjects_sessions_tsv,
             output_dir=args.output_dir,
             n_subjects=args.n_subjects,
             preprocessing=args.preprocessing,
@@ -135,7 +121,8 @@ def train_func(args):
                 batch_size=args.batch_size,
                 evaluation_steps=args.evaluation_steps,
                 num_workers=args.nproc,
-                visualization=args.visualization
+                visualization=args.visualization,
+                verbosity=args.verbose
             )
             train_autoencoder(train_params_autoencoder)
         else:
@@ -166,7 +153,8 @@ def train_func(args):
                 evaluation_steps=args.evaluation_steps,
                 num_workers=args.nproc,
                 transfer_learning_path=args.transfer_learning_path,
-                transfer_learning_selection=args.transfer_learning_selection
+                transfer_learning_selection=args.transfer_learning_selection,
+                verbosity=args.verbose
             )
             train_single_cnn(train_params_cnn)
     elif args.mode == 'slice':
@@ -199,7 +187,8 @@ def train_func(args):
             num_workers=args.nproc,
             selection_threshold=args.selection_threshold,
             prepare_dl=args.use_extracted_slices,
-            discarded_slices=args.discarded_slices
+            discarded_slices=args.discarded_slices,
+            verbosity=args.verbose
         )
         train_single_cnn(train_params_slice)
     elif args.mode == 'patch':
@@ -233,7 +222,8 @@ def train_func(args):
                 stride_size=args.stride_size,
                 hippocampus_roi=False,
                 visualization=args.visualization,
-                prepare_dl=args.use_extracted_patches
+                prepare_dl=args.use_extracted_patches,
+                verbosity=args.verbose
             )
             train_autoencoder(train_params_autoencoder)
         elif args.mode_task == "cnn":
@@ -269,7 +259,8 @@ def train_func(args):
                 stride_size=args.stride_size,
                 hippocampus_roi=False,
                 selection_threshold=args.selection_threshold,
-                prepare_dl=args.use_extracted_patches
+                prepare_dl=args.use_extracted_patches,
+                verbosity=args.verbose
             )
             train_single_cnn(train_params_patch)
         else:
@@ -305,7 +296,8 @@ def train_func(args):
                 stride_size=args.stride_size,
                 hippocampus_roi=False,
                 selection_threshold=args.selection_threshold,
-                prepare_dl=args.use_extracted_patches
+                prepare_dl=args.use_extracted_patches,
+                verbosity=args.verbose
             )
             train_multi_cnn(train_params_patch)
     elif args.mode == 'roi':
@@ -337,6 +329,7 @@ def train_func(args):
                 num_workers=args.nproc,
                 hippocampus_roi=True,
                 visualization=args.visualization,
+                verbosity=args.verbose
             )
             train_autoencoder(train_params_autoencoder)
         else:
@@ -370,6 +363,7 @@ def train_func(args):
                 transfer_learning_selection=args.transfer_learning_selection,
                 hippocampus_roi=True,
                 selection_threshold=args.selection_threshold,
+                verbosity=args.verbose,
             )
             train_single_cnn(train_params_patch)
 
@@ -378,9 +372,9 @@ def train_func(args):
     else:
         print('Mode not detected in clinicadl')
 
+
 # Function to dispatch command line options from classify to corresponding
 # function
-
 def classify_func(args):
     from .classify.inference import classify
 
@@ -389,13 +383,17 @@ def classify_func(args):
         args.tsv_path,
         args.model_path,
         args.prefix_output,
+        labels=not args.no_labels,
         gpu=not args.use_cpu,
-        prepare_dl=args.use_extracted_features
+        prepare_dl=args.use_extracted_features,
+        selection_metrics=args.selection_metrics,
+        diagnoses=args.diagnoses,
+        verbosity=args.verbose
     )
+
 
 # Functions to dispatch command line options from tsvtool to corresponding
 # function
-
 def tsv_restrict_func(args):
     from .tools.tsv.restriction import aibl_restriction, oasis_restriction
 
@@ -415,7 +413,9 @@ def tsv_getlabels_func(args):
         diagnoses=args.diagnoses,
         modality=args.modality,
         restriction_path=args.restriction_path,
-        time_horizon=args.time_horizon)
+        time_horizon=args.time_horizon,
+        verbosity=args.verbose
+    )
 
 
 def tsv_split_func(args):
@@ -439,7 +439,9 @@ def tsv_kfold_func(args):
         args.formatted_data_path,
         n_splits=args.n_splits,
         subset_name=args.subset_name,
-        MCI_sub_categories=args.MCI_sub_categories)
+        MCI_sub_categories=args.MCI_sub_categories,
+        verbosity=args.verbose
+    )
 
 
 def tsv_analysis_func(args):
@@ -451,8 +453,8 @@ def tsv_analysis_func(args):
         args.results_path,
         diagnoses=args.diagnoses,
         mmse_name=args.mmse_name,
-        age_name=args.age_name,
-        baseline=args.baseline)
+        age_name=args.age_name
+    )
 
 
 def parse_command_line():
@@ -460,12 +462,13 @@ def parse_command_line():
         prog='clinicadl',
         description='Deep learning software for neuroimaging datasets')
 
-    parser.add_argument('--verbose', '-v', action='count')
+    parent_parser = argparse.ArgumentParser(add_help=False)
+    parent_parser.add_argument('--verbose', '-v', action='count', default=0)
 
     subparser = parser.add_subparsers(
         title='''Task to execute with clinicadl:''',
         description='''What kind of task do you want to use with clinicadl?
-            (tsvtool, preprocessing, extract, generate, train, validate, classify).''',
+            (tsvtool, preprocessing, generate, train, classify).''',
         dest='task',
         help='''****** Tasks proposed by clinicadl ******''')
 
@@ -488,14 +491,14 @@ def parse_command_line():
         default=None
     )
     generate_parser.add_argument(
-        'tsv_path',
-        help='TSV path with subjects/sessions to use for data generation.',
-        default=None
-    )
-    generate_parser.add_argument(
         'output_dir',
         help='Folder containing the synthetic dataset.',
         default=None
+    )
+    generate_parser.add_argument(
+        "--subjects_sessions_tsv", "-tsv",
+        help='TSV file containing a list of subjects with their sessions.',
+        type=str, default=None
     )
     generate_parser.add_argument(
         '--n_subjects',
@@ -537,112 +540,145 @@ def parse_command_line():
 
     generate_parser.set_defaults(func=generate_data_func)
 
-    # Preprocessing 1
-    # preprocessing_parser: get command line arguments and options for
-    # preprocessing
-
+    # Preprocessing
+    from clinica.pipelines.t1_linear.t1_linear_cli import T1LinearCLI
+    from clinica.engine.cmdparser import init_cmdparser_objects
     preprocessing_parser = subparser.add_parser(
         'preprocessing',
-        help='Prepare data for training (needs clinica installed).')
-    preprocessing_parser.add_argument(
-        'bids_dir',
-        help='Data using BIDS structure.',
-        default=None
-    )
-    preprocessing_parser.add_argument(
-        'caps_dir',
-        help='Data using CAPS structure.',
-        default=None
-    )
-    preprocessing_parser.add_argument(
-        'tsv_file',
-        help='TSV file with subjects/sessions to process.',
-        default=None
-    )
-    preprocessing_parser.add_argument(
-        'working_dir',
-        help='Working directory to save temporary file.',
-        default=None
-    )
-    preprocessing_parser.add_argument(
-        '-np', '--nproc',
-        help='Number of cores used for processing (2 by default)',
-        type=int, default=2
+        help='Preprocess T1w-weighted images with t1-linear or t1-extensive pipelines'
     )
 
-    preprocessing_parser.set_defaults(func=preprocessing_t1w_func)
+    preprocessing_subparser = preprocessing_parser.add_subparsers(
+        title='''Preprocessing task to execute with clinicadl:''',
+        description='''What kind of task do you want to perform with clinicadl?
+                (run, quality-check, extract-tensor).''',
+        dest='preprocessing_task',
+        help='''****** Tasks proposed by clinicadl ******''')
+    preprocessing_subparser.required = True
 
-    # Preprocessing 2 - Extract data: slices or patches
-    # extract_parser: get command line argument and options
+    run_parser = preprocessing_subparser.add_parser(
+        'run',
+        help='Preprocess T1w-weighted images with t1-linear or t1-extensive pipelines.'
+    )
+    run_parser._positionals.title = ('%sclinicadl preprocessing expects one of the following pipelines%s'
+                                     % (Fore.GREEN, Fore.RESET))
 
-    extract_parser = subparser.add_parser(
-        'extract',
-        help='Create data (slices or patches) for training.'
+    def preprocessing_help(args):
+        print('%sNo pipeline was specified. Type clinica preprocessing -h for details%s' %
+              (Fore.RED, Fore.RESET))
+
+    run_parser.set_defaults(func=preprocessing_help)
+
+    init_cmdparser_objects(
+        parser,
+        run_parser.add_subparsers(dest='preprocessing'),
+        [
+            T1LinearCLI(),
+        ]
     )
-    extract_parser.add_argument(
-        'caps_dir',
-        help='Data using CAPS structure.',
-        default=None
+
+    extract_parser = preprocessing_subparser.add_parser(
+        'extract-tensor',
+        help='Prepare data generated Clinica for PyTorch with Tensor extraction (image, patches or slices).'
     )
-    extract_parser.add_argument(
-        'tsv_file',
-        help='TSV file with subjects/sessions to process.',
-        default=None
+    clinica_comp = extract_parser.add_argument_group('%sClinica mandatory arguments%s' % (Fore.BLUE, Fore.RESET))
+    clinica_comp.add_argument(
+        'preprocessing',
+        help='Preprocessing pipeline on which extraction is performed.',
+        choices=['t1-linear']
     )
-    extract_parser.add_argument(
-        'working_dir',
-        help='Working directory to save temporary file.',
-        default=None
+    clinica_comp.add_argument(
+        "caps_directory",
+        help='Path to the CAPS directory.'
     )
-    extract_parser.add_argument(
-        'extract_method',
-        help='''Method used to extract features. Three options:
-             'image' to conver to PyTorch tensor the complete 3D image,
-             'patch' to extract 3D volumetric patches or
-             'slice' to get 2D slices from the image.''',
-        choices=['image', 'patch', 'slice'], default='image')
-    extract_parser.add_argument(
+    clinica_comp.add_argument(
+        "extract_method",
+        help='''Format of the extracted features. Three options:
+        'image' to convert to PyTorch tensor the complete 3D image,
+        'patch' to extract 3D volumetric patches and
+        'slice' to extract 2D slices from the image.
+        By default the features are extracted from the cropped image.''',
+        choices=['image', 'slice', 'patch'],
+        default='image'
+    )
+
+    optional = extract_parser.add_argument_group('%sPipeline options%s' % (Fore.BLUE, Fore.RESET))
+    optional.add_argument(
+        '-uui', '--use_uncropped_image',
+        help='''Use the uncropped image instead of the
+        cropped image generated by t1-linear.''',
+        default=False, action="store_true"
+    )
+
+    optional_patch = extract_parser.add_argument_group(
+        "%sPipeline options if you chose ‘patch’ extraction%s" % (Fore.BLUE, Fore.RESET)
+    )
+    optional_patch.add_argument(
         '-ps', '--patch_size',
-        help='''Patch size (only for 'patch' extraction) e.g: --patch_size 50''',
-        type=int, default=50)
-    extract_parser.add_argument(
+        help='''Patch size (default: --patch_size 50).''',
+        type=int, default=50
+    )
+    optional_patch.add_argument(
         '-ss', '--stride_size',
-        help='''Stride size (only for 'patch' extraction) e.g.: --stride_size 50''',
-        type=int, default=50)
-    extract_parser.add_argument(
+        help='''Stride size (default: --stride_size 50).''',
+        type=int, default=50
+    )
+    optional_slice = extract_parser.add_argument_group(
+        "%sPipeline options if you chose ‘slice’ extraction%s" % (Fore.BLUE, Fore.RESET)
+    )
+    optional_slice.add_argument(
         '-sd', '--slice_direction',
-        help='''Slice direction (only for 'slice' extraction). Three options:
-             '0' -> Sagittal plane,
-             '1' -> Coronal plane or
-             '2' -> Axial plane''',
-        type=int, default=0)
-    extract_parser.add_argument(
+        help='''Slice direction. Three options:
+            '0' -> Sagittal plane,
+            '1' -> Coronal plane or
+            '2' -> Axial plane
+            (default: sagittal plane i.e. --slice_direction 0)''',
+        type=int, default=0
+    )
+    optional_slice.add_argument(
         '-sm', '--slice_mode',
-        help='''Slice mode (only for 'slice' extraction). Two options:
-             'single' to save the slice in one single channel,
-             'rgb' to save the slice in three identical channel.''',
-        choices=['single', 'rgb'], default='rgb')
-    extract_parser.add_argument(
-        '-np', '--nproc',
-        help='Number of cores used for processing',
-        type=int, default=2)
+        help='''Slice mode. Two options: 'rgb' to save the slice in
+            three identical channels, ‘single’ to save the slice in a
+            single channel (default: --slice_mode rgb).''',
+        choices=['rgb', 'single'], default='rgb'
+    )
 
-    extract_parser.set_defaults(func=extract_data_func)
+    # Clinica standard arguments (e.g. --n_procs)
+    clinica_standard_options = extract_parser.add_argument_group('%sClinica standard options%s' % (Fore.BLUE, Fore.RESET))
+    clinica_standard_options.add_argument(
+        "-tsv", "--subjects_sessions_tsv",
+        help='TSV file containing a list of subjects with their sessions.'
+    )
+    clinica_standard_options.add_argument(
+        "-wd", "--working_directory",
+        help='Temporary directory to store pipelines intermediate results.'
+    )
+    clinica_standard_options.add_argument(
+        "-np", "--n_procs",
+        metavar='N', type=int,
+        help='Number of cores used to run in parallel.'
+    )
 
-    qc_parser = subparser.add_parser(
-        'quality_check',
+    extract_parser.set_defaults(func=extract_tensors)
+
+    qc_parser = preprocessing_subparser.add_parser(
+        'quality-check',
         help='Performs quality check procedure for t1-linear pipeline.'
              'Original code can be found at https://github.com/vfonov/deep-qc'
     )
+    qc_parser.add_argument("preprocessing",
+                           help="Pipeline on which quality check procedure is performed.",
+                           type=str,
+                           choices=["t1-linear"])
     qc_parser.add_argument("caps_dir",
                            help='Data using CAPS structure.',
-                           type=str)
-    qc_parser.add_argument("tsv_file",
-                           help='TSV path with subjects/sessions to process.',
                            type=str)
     qc_parser.add_argument("output_path",
                            help="Path to the output tsv file (filename included).",
                            type=str)
+    qc_parser.add_argument("--subjects_sessions_tsv", "-tsv",
+                           help='TSV file containing a list of subjects with their sessions.',
+                           type=str, default=None)
     qc_parser.add_argument("--threshold",
                            help='The threshold on the output probability to decide if the image passed or failed. '
                                 '(default=0.5)',
@@ -819,6 +855,7 @@ def parse_command_line():
     train_image_ae_parser = train_image_subparser.add_parser(
         "autoencoder",
         parents=[
+            parent_parser,
             train_parent_parser,
             autoencoder_parent],
         help="Train an image-level autoencoder.")
@@ -828,6 +865,7 @@ def parse_command_line():
     train_image_cnn_parser = train_image_subparser.add_parser(
         "cnn",
         parents=[
+            parent_parser,
             train_parent_parser,
             transfer_learning_parent],
         help="Train an image-level CNN.")
@@ -873,7 +911,7 @@ def parse_command_line():
 
     train_patch_ae_parser = train_patch_subparser.add_parser(
         "autoencoder",
-        parents=[train_parent_parser, train_patch_parent, autoencoder_parent],
+        parents=[parent_parser, train_parent_parser, train_patch_parent, autoencoder_parent],
         help="Train a 3D patch-level autoencoder.")
 
     train_patch_ae_parser.set_defaults(func=train_func)
@@ -881,6 +919,7 @@ def parse_command_line():
     train_patch_cnn_parser = train_patch_subparser.add_parser(
         "cnn",
         parents=[
+            parent_parser,
             train_parent_parser,
             train_patch_parent,
             transfer_learning_parent],
@@ -905,6 +944,7 @@ def parse_command_line():
     train_patch_multicnn_parser = train_patch_subparser.add_parser(
         "multicnn",
         parents=[
+            parent_parser,
             train_parent_parser,
             train_patch_parent,
             transfer_learning_parent],
@@ -943,8 +983,10 @@ def parse_command_line():
 
     train_roi_ae_parser = train_roi_subparser.add_parser(
         "autoencoder",
-        parents=[train_parent_parser,
-                 autoencoder_parent],
+        parents=[
+            parent_parser,
+            train_parent_parser,
+            autoencoder_parent],
         help="Train a ROI-based autoencoder.")
 
     train_roi_ae_parser.set_defaults(func=train_func)
@@ -952,6 +994,7 @@ def parse_command_line():
     train_roi_cnn_parser = train_roi_subparser.add_parser(
         "cnn",
         parents=[
+            parent_parser,
             train_parent_parser,
             transfer_learning_parent],
         help="Train a ROI-based CNN.")
@@ -978,7 +1021,7 @@ def parse_command_line():
     #########################
     train_slice_parser = train_subparser.add_parser(
         "slice",
-        parents=[train_parent_parser],
+        parents=[parent_parser, train_parent_parser],
         help="Train a 2D slice-level CNN.")
 
     train_slice_group = train_slice_parser.add_argument_group(
@@ -1012,50 +1055,79 @@ def parse_command_line():
 
     train_slice_parser.set_defaults(func=train_func)
 
-    #########################
-    # SVM
-    #########################
-    # train_svm_parser = train_subparser.add_parser(
-    #     "svm",
-    #     parents=[train_parent_parser],
-    #     help="Train a SVM.")
-    #
-    # train_svm_parser.set_defaults(func=train_func)
-
     # Classify - Classify a subject or a list of tsv files with the CNN
     # provided as argument.
     # classify_parser: get command line arguments and options
 
     classify_parser = subparser.add_parser(
         'classify',
+        parents=[parent_parser],
         help='''Classify one image or a list of images with your previously
                  trained model.''')
-    classify_parser.add_argument(
+    classify_pos_group = classify_parser.add_argument_group(
+        TRAIN_CATEGORIES["POSITIONAL"])
+    classify_pos_group.add_argument(
         'caps_directory',
         help='Data using CAPS structure.',
         default=None)
-    classify_parser.add_argument(
+    classify_pos_group.add_argument(
         'tsv_path',
-        help='TSV file with subjects/sessions to process.',
+        help='''Path to the file with subjects/sessions to process.
+        If it includes the filename will load the tsv file directly.
+        Else will load the baseline tsv files of wanted diagnoses produced by tsvtool.''',
         default=None)
-    classify_parser.add_argument(
+    classify_pos_group.add_argument(
         'model_path',
         help='''Path to the folder where the model is stored. Folder structure
                 should be the same obtained during the training.''',
         default=None)
-    classify_parser.add_argument(
-        '-pre', '--prefix_output',
+    classify_pos_group.add_argument(
+        'prefix_output',
         help='Prefix to name the files resulting from the classify task.',
-        type=str, default='prefix_DB')
-    classify_parser.add_argument(
+        type=str)
+
+    # Computational resources
+    classify_comput_group = classify_parser.add_argument_group(
+        TRAIN_CATEGORIES["COMPUTATIONAL"])
+    classify_comput_group.add_argument(
+        '-cpu', '--use_cpu', action='store_true',
+        help='Uses CPU instead of GPU.',
+        default=False)
+    classify_comput_group.add_argument(
+        '-np', '--nproc',
+        help='Number of cores used during the task.',
+        type=int, default=2)
+    classify_comput_group.add_argument(
+        '--batch_size',
+        default=2, type=int,
+        help='Batch size for data loading. (default=2)')
+
+    # Specific classification arguments
+    classify_specific_group = classify_parser.add_argument_group(
+        TRAIN_CATEGORIES["OPTIONAL"]
+    )
+    classify_specific_group.add_argument(
+        '-nl', '--no_labels', action='store_true',
+        help='Add this flag if your dataset does not contain a ground truth.',
+        default=False)
+    classify_specific_group.add_argument(
         '--use_extracted_features',
         help='''If True the extract slices or patche are used, otherwise the they
                 will be extracted on the fly (if necessary).''',
         default=False, action="store_true")
-    classify_parser.add_argument(
-        '-cpu', '--use_cpu', action='store_true',
-        help='Uses CPU instead of GPU.',
-        default=False)
+    classify_specific_group.add_argument(
+        '--selection_metrics',
+        help='''List of metrics to find the best models to evaluate. Default will
+        classify best model based on balanced accuracy.''',
+        choices=['loss', 'balanced_accuracy'],
+        default=['balanced_accuracy'],
+        nargs='+'
+    )
+    classify_specific_group.add_argument(
+        "--diagnoses",
+        help="List of participants that will be classified.",
+        nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'], default=None)
+
     classify_parser.set_defaults(func=classify_func)
 
     tsv_parser = subparser.add_parser(
@@ -1094,6 +1166,7 @@ def parse_command_line():
 
     tsv_getlabels_subparser = tsv_subparser.add_parser(
         'getlabels',
+        parents=[parent_parser],
         help='Get labels in separate tsv files.')
 
     tsv_getlabels_subparser.add_argument(
@@ -1131,6 +1204,7 @@ def parse_command_line():
 
     tsv_split_subparser = tsv_subparser.add_parser(
         'split',
+        parents=[parent_parser],
         help='Performs one stratified shuffle split on participant level.')
 
     tsv_split_subparser.add_argument(
@@ -1145,7 +1219,7 @@ def parse_command_line():
     # Optional arguments
     tsv_split_subparser.add_argument(
         "--n_test",
-        help="If > 1, number of subjects to put in set with name 'subset_name'. "
+        help="If >= 1, number of subjects to put in set with name 'subset_name'. "
              "If < 1, proportion of subjects to put set with name 'subset_name'. "
              "If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name.",
         type=float, default=100.)
@@ -1174,6 +1248,7 @@ def parse_command_line():
 
     tsv_kfold_subparser = tsv_subparser.add_parser(
         'kfold',
+        parents=[parent_parser],
         help='Performs a k-fold split on participant level.')
 
     tsv_kfold_subparser.add_argument(
@@ -1228,10 +1303,6 @@ def parse_command_line():
         "--age_name",
         help="Name of the variable related to the age in the merged_tsv file.",
         type=str, default="age_bl")
-    tsv_analysis_subparser.add_argument(
-        "--baseline",
-        help="Performs the analysis based on <label>_baseline.tsv files",
-        default=False, action="store_true")
 
     tsv_analysis_subparser.set_defaults(func=tsv_analysis_func)
 

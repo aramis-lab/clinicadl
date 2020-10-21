@@ -1,6 +1,6 @@
 # `train slice` - Train classification CNN using 2D slices
 
-This option allows training a network on 2D slices. For more information on slices please refer to [tensor extraction](../Extract.md).
+This option allows training a network on 2D slices. For more information on slices please refer to [tensor extraction](../Preprocessing/Extract.md).
 There is no network type choice for `slice` as the only network type is the single-CNN.
 
 One architecture is implemented in `clinicadl` for the `slice` mode: `resnet18`.

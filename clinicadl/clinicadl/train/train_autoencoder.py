@@ -9,6 +9,7 @@ from ..tools.deep_learning.models import init_model, load_model
 from ..tools.deep_learning.data import (load_data,
                                         get_transforms,
                                         return_dataset)
+from ..tools.deep_learning.iotools import return_logger
 
 
 def train_autoencoder(params):
@@ -26,6 +27,8 @@ def train_autoencoder(params):
 
     transformations = get_transforms(params.mode, params.minmaxnormalization)
     criterion = torch.nn.MSELoss()
+    main_logger = return_logger(params.verbosity, "main process")
+    train_logger = return_logger(params.verbosity, "train")
 
     if params.split is None:
         fold_iterator = range(params.n_splits)
@@ -33,16 +36,16 @@ def train_autoencoder(params):
         fold_iterator = params.split
 
     for fi in fold_iterator:
+        main_logger.info("Fold %i" % fi)
 
         training_df, valid_df = load_data(
-                params.tsv_path,
-                params.diagnoses,
-                fi,
-                n_splits=params.n_splits,
-                baseline=params.baseline
-                )
-
-        print("Running for the %d-th fold" % fi)
+            params.tsv_path,
+            params.diagnoses,
+            fi,
+            n_splits=params.n_splits,
+            baseline=params.baseline,
+            logger=main_logger
+        )
 
         data_train = return_dataset(params.mode, params.input_dir, training_df, params.preprocessing,
                                     transformations, params)
@@ -75,10 +78,9 @@ def train_autoencoder(params):
                                                             weight_decay=params.weight_decay)
 
         train(decoder, train_loader, valid_loader, criterion, optimizer, False,
-              log_dir, model_dir, params)
+              log_dir, model_dir, params, train_logger)
 
         if params.visualization:
-            print("Visualization of autoencoder reconstruction")
             best_decoder, _ = load_model(decoder, os.path.join(model_dir, "best_loss"),
                                          params.gpu, filename='model_best.pth.tar')
             nb_images = train_loader.dataset.elem_per_image

@@ -111,7 +111,8 @@ clinicadl tsvtool split <merged_tsv> <formatted_data_path>
 where:
 
   - `merged_tsv` (str) is the output file of the `clinica iotools merge-tsv` or `clinicadl tsvtool restrict` commands.
-  - `formatted_data_path` (str) is a folder containing a tsv file per label (output of `clinicadl tsvtool getlabels|split|kfold`).
+  - `formatted_data_path` (str) is the folder containing a tsv file per label which is going to be split 
+  (output of `clinicadl tsvtool getlabels|split|kfold`).
 
 Options:
 <ul>
@@ -171,7 +172,7 @@ This tool independently splits each label to perform a k-fold cross-validation.
 ```bash
 clinicadl tsvtool kfold <formatted_data_path>
 ```
-where `formatted_data_path` (str) is a folder containing a tsv file per label
+where `formatted_data_path` (str) is the folder containing a tsv file per label which is going to be split
 (output of `clinicadl tsvtool getlabels|split|kfold`).
 
 Options:

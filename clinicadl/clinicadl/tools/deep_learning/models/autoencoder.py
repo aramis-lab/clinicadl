@@ -121,7 +121,8 @@ class AutoEncoder(nn.Module):
 
 
 def transfer_learning(model, split, source_path=None, gpu=False,
-                      selection="best_balanced_accuracy", cnn_index=None):
+                      selection="best_balanced_accuracy", cnn_index=None,
+                      logger=None):
     """
     Allows transfer learning from a CNN or an autoencoder to a CNN
 
@@ -136,20 +137,24 @@ def transfer_learning(model, split, source_path=None, gpu=False,
     import argparse
     from os import path
     from .. import read_json
+    import logging
+
+    if logger is None:
+        logger = logging
 
     if source_path is not None:
         source_commandline = argparse.Namespace()
         source_commandline = read_json(source_commandline, json_path=path.join(source_path, "commandline.json"))
         if source_commandline.mode_task == "autoencoder":
-            print("A pretrained autoencoder is loaded at path %s" % source_path)
+            logger.info("A pretrained autoencoder is loaded at path %s" % source_path)
             model = transfer_autoencoder_weights(model, source_path, split)
 
         else:
-            print("A pretrained CNN is loaded at path %s" % source_path)
+            logger.info("A pretrained CNN is loaded at path %s" % source_path)
             model = transfer_cnn_weights(model, source_path, split, selection=selection, cnn_index=cnn_index)
 
     else:
-        print("The model is trained from scratch.")
+        logger.info("The model is trained from scratch.")
 
     if gpu:
         model.cuda()

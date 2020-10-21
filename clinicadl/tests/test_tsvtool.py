@@ -5,16 +5,16 @@ from os import path
 from clinicadl.tools.deep_learning.data import load_data, load_data_test
 from clinicadl.tools.tsv.test import run_test_suite
 
-merged_tsv = "data/ADNI_BIDS.tsv"
-missing_mods = "data/ADNI_missing_mods"
-reference_path = "data/tsvtool_ref"
+merged_tsv = "data/tsvtool/anonymous_BIDS.tsv"
+missing_mods = "data/tsvtool/anonymous_missing_mods"
+reference_path = "data/tsvtool/anonymous_reference"
 diagnoses = "AD CN MCI pMCI sMCI"
 
 
 def test_getlabels():
     """Checks that getlabels is working and that it is coherent with previous version in reference_path"""
     output_path = "data/tsvtool_test"
-    flag_getlabels = not os.system("clinicadl tsvtool getlabels %s %s %s --diagnoses %s"
+    flag_getlabels = not os.system("clinicadl tsvtool getlabels %s %s %s --diagnoses %s -vvv"
                                    % (merged_tsv, missing_mods, output_path, diagnoses))
     assert flag_getlabels
     for file in os.listdir(output_path):
@@ -32,9 +32,9 @@ def test_split():
      -  no data leakage is introduced in split and kfold.
      """
     n_splits = 5
-    flag_split = not os.system("clinicadl tsvtool split %s %s --age_name age"
+    flag_split = not os.system("clinicadl tsvtool split %s %s --age_name age -vvv"
                                % (merged_tsv, reference_path))
-    flag_kfold = not os.system("clinicadl tsvtool kfold %s --n_splits %i"
+    flag_kfold = not os.system("clinicadl tsvtool kfold %s --n_splits %i -vvv"
                                % (path.join(reference_path, "train"), n_splits))
     assert flag_split
     assert flag_kfold
@@ -56,8 +56,13 @@ def test_split():
 
 def test_analysis():
     """Checks that analysis can be performed"""
-    results_path = "data/analysis.tsv"
-    flag_analysis = not os.system("clinicadl tsvtool analysis %s %s %s --age_name age --mmse_name MMSE"
+    results_path = path.join("data", "tsvtool", "analysis.tsv")
+    ref_analysis_path = path.join("data", "tsvtool", "anonymous_analysis.tsv")
+    flag_analysis = not os.system("clinicadl tsvtool analysis %s %s %s --age_name age --mmse_name MMSE "
+                                  "--diagnoses AD CN MCI sMCI pMCI"
                                   % (merged_tsv, reference_path, results_path))
     assert flag_analysis
+    ref_df = pd.read_csv(ref_analysis_path, sep="\t")
+    out_df = pd.read_csv(results_path, sep="\t")
+    assert out_df.equals(ref_df)
     os.remove(results_path)
