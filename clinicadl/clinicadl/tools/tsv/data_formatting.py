@@ -347,8 +347,7 @@ def get_labels(merged_tsv, missing_mods, results_path,
             missing_mods_dict[session] = missing_mods_df
 
     # Creating results path
-    if not path.exists(results_path):
-        os.makedirs(results_path)
+    os.makedirs(results_path, exist_ok=True)
 
     # Adding the field diagnosis_bl
     if 'diagnosis_bl' not in bids_df.columns:

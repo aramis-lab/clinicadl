@@ -75,8 +75,7 @@ class VB_KFold_DualSVM(base.MLWorkflow):
         # Creation of the path where all the results will be saved
 
         classifier_dir = path.join(self._output_dir, 'classifier')
-        if not path.exists(classifier_dir):
-            os.makedirs(classifier_dir)
+        os.makedirs(classifier_dir, exist_ok=True)
 
         # Here we have selected what we want save
         self._algorithm.save_classifier(classifier, classifier_dir)

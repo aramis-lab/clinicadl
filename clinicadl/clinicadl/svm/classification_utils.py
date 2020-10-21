@@ -257,8 +257,7 @@ class KFoldCV(base.MLValidation):
         results_folds = []
         container_dir = path.join(output_dir, 'folds')
 
-        if not path.exists(container_dir):
-            os.makedirs(container_dir)
+        os.makedirs(container_dir, exist_ok=True)
 
         for i in range(len(self._fold_results)):
             subjects_df = pd.DataFrame({'y': self._fold_results[i]['y'],
@@ -493,8 +492,7 @@ def save_data(df, output_dir, folder_name):
     from os import path
 
     results_dir = path.join(output_dir, 'data', folder_name)
-    if not path.exists(results_dir):
-        os.makedirs(results_dir)
+    os.makedirs(results_dir, exist_ok=True)
 
     df.to_csv(path.join(results_dir, 'all_subjects.tsv'), sep="\t", index=False)
 
@@ -540,8 +538,7 @@ def apply_best_parameters_each_split(kernel, x, y, results_list, balanced, n_fol
     df_training = df.iloc[train_index]
 
     result_dir = path.join(output_dir, 'classifier', 'fold_' + str(n_fold))
-    if not path.exists(result_dir):
-        os.makedirs(result_dir)
+    os.makedirs(result_dir, exist_ok=True)
 
     training_tsv = os.path.join(result_dir, 'training_subjects.tsv')
     df_training.to_csv(training_tsv, index=False, sep='\t', encoding='utf-8')
