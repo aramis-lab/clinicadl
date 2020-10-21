@@ -1,4 +1,50 @@
 # coding: utf8
+import logging
+import sys
+
+LOG_LEVELS = [logging.WARNING, logging.INFO, logging.DEBUG]
+
+
+class StdLevelFilter(logging.Filter):
+    def __init__(self, err=False):
+        super().__init__()
+        self.err = err
+
+    def filter(self, record):
+        if record.levelno <= logging.INFO:
+            return not self.err
+        return self.err
+
+
+def return_logger(verbosity, name_fn):
+    logger = logging.getLogger(name_fn)
+    if verbosity < len(LOG_LEVELS):
+        logger.setLevel(LOG_LEVELS[verbosity])
+    else:
+        logger.setLevel(logging.DEBUG)
+    stdout = logging.StreamHandler(sys.stdout)
+    stdout.addFilter(StdLevelFilter())
+    stderr = logging.StreamHandler(sys.stderr)
+    stderr.addFilter(StdLevelFilter(err=True))
+    # create formatter
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(message)s")
+    # add formatter to ch
+    stdout.setFormatter(formatter)
+    stderr.setFormatter(formatter)
+    # add ch to logger
+    logger.addHandler(stdout)
+    logger.addHandler(stderr)
+
+    return logger
+
+
+def write_requirements_version(output_path):
+    import subprocess
+    from os import path
+
+    env_variables = subprocess.check_output("pip freeze", shell=True).decode("utf-8")
+    with open(path.join(output_path, "environment.txt"), "w") as file:
+        file.write(env_variables)
 
 
 class Parameters:
@@ -53,7 +99,8 @@ class Parameters:
             mri_plane: int = 0,
             discarded_slices: int = 20,
             prepare_dl: bool = False,
-            visualization: bool = False
+            visualization: bool = False,
+            verbosity: int = 0
     ):
         """
         Optional parameters used for training CNN.
@@ -91,6 +138,7 @@ class Parameters:
         prepare_dl: If True the outputs of preprocessing are used, else the
                     whole MRI is loaded.
                                      initialize corresponding models.
+        verbosity: level of verbosity of the train and test functions.
         """
 
         self.transfer_learning_difference = transfer_learning_difference
@@ -121,6 +169,7 @@ class Parameters:
         self.prepare_dl = prepare_dl
         self.visualization = visualization
         self.selection_threshold = selection_threshold
+        self.verbosity = verbosity
 
 
 def check_and_clean(d):

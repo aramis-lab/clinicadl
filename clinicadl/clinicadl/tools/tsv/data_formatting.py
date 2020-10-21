@@ -10,19 +10,22 @@ NB: Other preprocessing may be needed on the merged file obtained: for example t
 in the OASIS dataset is not done in this script. Moreover a quality check may be needed at the end of preprocessing
 pipelines, leading to the removal of some subjects.
 """
+from ..deep_learning.iotools import return_logger
 from .tsv_utils import neighbour_session, last_session, after_end_screening
 import pandas as pd
 from os import path
 from copy import copy
 import numpy as np
+import logging
 import os
 
 
-def cleaning_nan_diagnoses(bids_df):
+def cleaning_nan_diagnoses(bids_df, logger):
     """
     Printing the number of missing diagnoses and filling it partially for ADNI datasets
 
     :param bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+    :param logger: Logger object from logging library
     :return: cleaned DataFrame
     """
     bids_copy_df = copy(bids_df)
@@ -52,18 +55,19 @@ def cleaning_nan_diagnoses(bids_df):
             if isinstance(diagnosis, float):
                 missing_diag += 1
 
-    print('Missing diagnoses:', missing_diag)
-    print('Missing diagnoses not found:', missing_diag - found_diag)
+    logger.debug('Missing diagnoses: %i' % missing_diag)
+    logger.debug('Missing diagnoses not found: %i' % (missing_diag - found_diag))
 
     return bids_copy_df
 
 
-def infer_or_drop_diagnosis(bids_df):
+def infer_or_drop_diagnosis(bids_df, logger):
     """
     Deduce the diagnosis when missing from previous and following sessions of the subject. If not identical, the session
     is dropped. Sessions with no diagnosis are also dropped when there are the last sessions of the follow-up.
 
     :param bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+    :param logger: Logger object from logging library
     :return: cleaned DataFrame
     """
     bids_copy_df = copy(bids_df)
@@ -90,7 +94,7 @@ def infer_or_drop_diagnosis(bids_df):
                     else:
                         bids_copy_df.drop((subject, session), inplace=True)
 
-    print('Inferred diagnosis:', found_diag_interpol)
+    logger.debug('Inferred diagnosis: %i' % found_diag_interpol)
 
     return bids_copy_df
 
@@ -117,17 +121,22 @@ def mod_selection(bids_df, missing_mods_dict, mod='t1w'):
     return bids_copy_df
 
 
-def stable_selection(bids_df, diagnosis='AD'):
+def stable_selection(bids_df, diagnosis='AD', logger=None):
     """
     Select only subjects whom diagnosis is identical during the whole follow-up.
 
     :param bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+    :param logger: Logger object from logging library
     :param diagnosis: (str) diagnosis selected
     :return: DataFrame containing only the patients a the stable diagnosis
     """
+    if logger is None:
+        logger = logging
+        logger.basicConfig(level=logging.DEBUG)
+
     # Keep diagnosis at baseline
     bids_df = bids_df[bids_df.diagnosis_bl == diagnosis]
-    bids_df = cleaning_nan_diagnoses(bids_df)
+    bids_df = cleaning_nan_diagnoses(bids_df, logger=logger)
 
     # Drop if not stable
     bids_copy_df = copy(bids_df)
@@ -145,24 +154,29 @@ def stable_selection(bids_df, diagnosis='AD'):
         if subject_drop:
             bids_copy_df.drop(subject, inplace=True)
     bids_df = copy(bids_copy_df)
-    print('Number of unstable subjects dropped:', n_subjects)
+    logger.debug('Number of unstable subjects dropped: %i' % n_subjects)
 
-    bids_df = infer_or_drop_diagnosis(bids_df)
+    bids_df = infer_or_drop_diagnosis(bids_df, logger)
     return bids_df
 
 
-def mci_stability(bids_df, horizon_time=36):
+def mci_stability(bids_df, horizon_time=36, logger=None):
     """
     A method to label all MCI sessions depending on their stability on the time horizon
 
     :param bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
     :param horizon_time: (int) time horizon in months
+    :param logger: Logger object from logging library
     :return: DataFrame with new labels
     """
+    if logger is None:
+        logger = logging
+        logger.basicConfig(level=logging.DEBUG)
+
     diagnosis_list = ['MCI', 'EMCI', 'LMCI']
     bids_df = bids_df[(bids_df.diagnosis_bl.isin(diagnosis_list))]
-    bids_df = cleaning_nan_diagnoses(bids_df)
-    bids_df = infer_or_drop_diagnosis(bids_df)
+    bids_df = cleaning_nan_diagnoses(bids_df, logger)
+    bids_df = infer_or_drop_diagnosis(bids_df, logger)
 
     # Check possible double change in diagnosis in time
     bids_copy_df = copy(bids_df)
@@ -188,7 +202,7 @@ def mci_stability(bids_df, horizon_time=36):
             nb_subjects += 1
             bids_copy_df.drop(subject, inplace=True)
 
-    print('Dropped subjects: ', nb_subjects)
+    logger.debug('Dropped subjects: %i' % nb_subjects)
     bids_df = copy(bids_copy_df)
 
     # Stability of sessions
@@ -295,7 +309,7 @@ def apply_restriction(bids_df, restriction_path):
 
 def get_labels(merged_tsv, missing_mods, results_path,
                diagnoses, modality="t1w", restriction_path=None,
-               time_horizon=36):
+               time_horizon=36, verbosity=0):
     """
     Writes one tsv file per label in diagnoses argument based on merged_tsv and missing_mods.
 
@@ -307,10 +321,13 @@ def get_labels(merged_tsv, missing_mods, results_path,
         modality (str): Modality to select sessions. Sessions which do not include the modality will be excluded.
         restriction_path (str): Path to a tsv containing the sessions that can be included.
         time_horizon (int): Time horizon to analyse stability of MCI subjects.
+        verbosity (int): level of verbosity.
 
     Returns:
          writes one tsv file per label at results_path/<label>.tsv
     """
+    logger = return_logger(verbosity, "getlabels")
+
     # Reading files
     bids_df = pd.read_csv(merged_tsv, sep='\t')
     bids_df.set_index(['participant_id', 'session_id'], inplace=True)
@@ -345,32 +362,30 @@ def get_labels(merged_tsv, missing_mods, results_path,
 
     time_MCI_df = None
     if 'AD' in diagnoses:
-        print('Beginning the selection of AD label')
-        output_df = stable_selection(bids_df, diagnosis='AD')
+        logger.info('Beginning the selection of AD label')
+        output_df = stable_selection(bids_df, diagnosis='AD', logger=logger)
         output_df = mod_selection(output_df, missing_mods_dict, modality)
         output_df = apply_restriction(output_df, restriction_path)
 
         diagnosis_df = pd.DataFrame(output_df['diagnosis'], columns=['diagnosis'])
         diagnosis_df.to_csv(path.join(results_path, 'AD.tsv'), sep='\t')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
-        print('Found %s AD subjects for a total of %s sessions' % (len(sub_df), len(diagnosis_df)))
-        print()
+        logger.info('Found %s AD subjects for a total of %s sessions\n' % (len(sub_df), len(diagnosis_df)))
 
     if 'CN' in diagnoses:
-        print('Beginning the selection of CN label')
-        output_df = stable_selection(bids_df, diagnosis='CN')
+        logger.info('Beginning the selection of CN label')
+        output_df = stable_selection(bids_df, diagnosis='CN', logger=logger)
         output_df = mod_selection(output_df, missing_mods_dict, modality)
         output_df = apply_restriction(output_df, restriction_path)
 
         diagnosis_df = pd.DataFrame(output_df['diagnosis'], columns=['diagnosis'])
         diagnosis_df.to_csv(path.join(results_path, 'CN.tsv'), sep='\t')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
-        print('Found %s CN subjects for a total of %s sessions' % (len(sub_df), len(diagnosis_df)))
-        print()
+        logger.info('Found %s CN subjects for a total of %s sessions\n' % (len(sub_df), len(diagnosis_df)))
 
     if 'MCI' in diagnoses:
-        print('Beginning of the selection of MCI label')
-        MCI_df = mci_stability(bids_df, 10 ** 4)  # Remove rMCI independently from time horizon
+        logger.info('Beginning of the selection of MCI label')
+        MCI_df = mci_stability(bids_df, 10 ** 4, logger=logger)  # Remove rMCI independently from time horizon
         output_df = diagnosis_removal(MCI_df, diagnosis_list=['rMCI'])
         output_df = mod_selection(output_df, missing_mods_dict, modality)
         output_df = apply_restriction(output_df, restriction_path)
@@ -381,11 +396,11 @@ def get_labels(merged_tsv, missing_mods, results_path,
         diagnosis_df = pd.DataFrame(output_df['diagnosis'], columns=['diagnosis'])
         diagnosis_df.to_csv(path.join(results_path, 'MCI.tsv'), sep='\t')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
-        print('Found %s MCI subjects for a total of %s sessions' % (len(sub_df), len(diagnosis_df)))
-        print()
+        logger.info('Found %s MCI subjects for a total of %s sessions\n' % (len(sub_df), len(diagnosis_df)))
 
     if 'sMCI' in diagnoses:
-        time_MCI_df = mci_stability(bids_df, time_horizon)
+        logger.info('Beginning of the selection of sMCI label')
+        time_MCI_df = mci_stability(bids_df, time_horizon, logger=logger)
         output_df = diagnosis_removal(time_MCI_df, diagnosis_list=['rMCI', 'pMCI'])
         output_df = output_df[output_df.diagnosis == 'sMCI']
         output_df = mod_selection(output_df, missing_mods_dict, modality)
@@ -394,10 +409,10 @@ def get_labels(merged_tsv, missing_mods, results_path,
         diagnosis_df = pd.DataFrame(output_df['diagnosis'], columns=['diagnosis'])
         diagnosis_df.to_csv(path.join(results_path, 'sMCI.tsv'), sep='\t')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
-        print('Found %s sMCI subjects for a total of %s sessions' % (len(sub_df), len(diagnosis_df)))
-        print()
+        logger.info('Found %s sMCI subjects for a total of %s sessions\n' % (len(sub_df), len(diagnosis_df)))
 
     if 'pMCI' in diagnoses:
+        logger.info('Beginning of the selection of pMCI label')
         if time_MCI_df is None:
             time_MCI_df = mci_stability(bids_df, time_horizon)
         output_df = time_MCI_df[time_MCI_df.diagnosis == 'pMCI']
@@ -407,5 +422,4 @@ def get_labels(merged_tsv, missing_mods, results_path,
         diagnosis_df = pd.DataFrame(output_df['diagnosis'], columns=['diagnosis'])
         diagnosis_df.to_csv(path.join(results_path, 'pMCI.tsv'), sep='\t')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
-        print('Found %s pMCI subjects for a total of %s sessions' % (len(sub_df), len(diagnosis_df)))
-        print()
+        logger.info('Found %s pMCI subjects for a total of %s sessions\n' % (len(sub_df), len(diagnosis_df)))

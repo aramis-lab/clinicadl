@@ -6,11 +6,10 @@ This file generates data for trivial or intractable (random) data for binary cla
 import pandas as pd
 import numpy as np
 import nibabel as nib
-from os.path import dirname, join, abspath, split, exists
-from os import pardir, makedirs
-import torch.nn.functional as F
-import torch
-from .utils import im_loss_roi_gaussian_distribution, find_image_path
+from os.path import join, exists
+from os import makedirs
+from copy import copy
+from .utils import im_loss_roi_gaussian_distribution, find_image_path, load_and_check_tsv
 from ..tsv.tsv_utils import baseline_df
 from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
 from clinicadl.tools.inputs.input import fetch_file
@@ -18,7 +17,7 @@ from clinicadl.tools.inputs.input import RemoteFileStructure
 import tarfile
 
 
-def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
+def generate_random_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, mean=0,
                             sigma=0.5, preprocessing="t1-linear"):
     """
     Generates a random dataset.
@@ -29,11 +28,11 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
 
     Args:
         caps_dir: (str) Path to the (input) CAPS directory.
-        tsv_path: (str) path to tsv file of list of subjects/sessions.
         output_dir: (str) folder containing the synthetic dataset in (output)
             CAPS format.
         n_subjects: (int) number of subjects in each class of the
             synthetic dataset
+        tsv_path: (str) path to tsv file of list of subjects/sessions.
         mean: (float) mean of the gaussian noise
         sigma: (float) standard deviation of the gaussian noise
         preprocessing: (str) preprocessing performed. Must be in ['t1-linear', 't1-extensive'].
@@ -46,7 +45,7 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
 
     """
     # Read DataFrame
-    data_df = pd.read_csv(tsv_path, sep='\t')
+    data_df = load_and_check_tsv(tsv_path, caps_dir, output_dir)
 
     # Create subjects dir
     if not exists(join(output_dir, 'subjects')):
@@ -67,7 +66,7 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
     data = np.array([participant_id_list, session_id_list, diagnosis_list])
     data = data.T
     output_df = pd.DataFrame(data, columns=['participant_id', 'session_id', 'diagnosis'])
-    output_df['age'] = 60
+    output_df['age_bl'] = 60
     output_df['sex'] = 'F'
     output_df.to_csv(join(output_dir, 'data.tsv'), sep='\t', index=False)
 
@@ -82,8 +81,19 @@ def generate_random_dataset(caps_dir, tsv_path, output_dir, n_subjects, mean=0,
             makedirs(noisy_image_nii_path)
         nib.save(noisy_image_nii, join(noisy_image_nii_path, noisy_image_nii_filename))
 
+    missing_path = join(output_dir, "missing_mods")
+    if not exists(missing_path):
+        makedirs(missing_path)
 
-def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preprocessing="linear",
+    sessions = data_df.session_id.unique()
+    for session in sessions:
+        session_df = data_df[data_df.session_id == session]
+        out_df = copy(session_df[["participant_id"]])
+        out_df["synthetic"] = [1] * len(out_df)
+        out_df.to_csv(join(missing_path, "missing_mods_%s.tsv" % session), sep="\t", index=False)
+
+
+def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, preprocessing="linear",
                              mask_path=None, atrophy_percent=60):
     """
     Generates a fully separable dataset.
@@ -95,10 +105,10 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
 
     Args:
         caps_dir: (str) path to the CAPS directory.
-        tsv_path: (str) path to tsv file of list of subjects/sessions.
         output_dir: (str) folder containing the synthetic dataset in CAPS format.
         n_subjects: (int) number of subjects in each class of the synthetic
             dataset.
+        tsv_path: (str) path to tsv file of list of subjects/sessions.
         preprocessing: (str) preprocessing performed. Must be in ['linear', 'extensive'].
         mask_path: (str) path to the extracted masks to generate the two labels.
         atrophy_percent: (float) percentage of atrophy applied.
@@ -111,7 +121,7 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
     from pathlib import Path
 
     # Read DataFrame
-    data_df = pd.read_csv(tsv_path, sep='\t')
+    data_df = load_and_check_tsv(tsv_path, caps_dir, output_dir)
     data_df = baseline_df(data_df, "None")
 
     home = str(Path.home())
@@ -151,8 +161,11 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
         else:
             mask_path = join(cache_clinicadl, 'AAL2')
 
+    # Create subjects dir
+    makedirs(join(output_dir, 'subjects'), exist_ok=True)
+
     # Output tsv file
-    columns = ['participant_id', 'session_id', 'diagnosis', 'age', 'sex']
+    columns = ['participant_id', 'session_id', 'diagnosis', 'age_bl', 'sex']
     output_df = pd.DataFrame(columns=columns)
     diagnosis_list = ["AD", "CN"]
 
@@ -162,7 +175,7 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
 
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
-        filename = 'sub-TRIV%i' % i + FILENAME_TYPE['cropped'] + '.nii.gz'
+        filename = 'sub-TRIV%i_ses-M00' % i + FILENAME_TYPE['cropped'] + '.nii.gz'
         path_image = join(output_dir, 'subjects', 'sub-TRIV%i' % i, 'ses-M00', 't1_linear')
 
         if not exists(path_image):
@@ -185,3 +198,14 @@ def generate_trivial_dataset(caps_dir, tsv_path, output_dir, n_subjects, preproc
         output_df = output_df.append(row_df)
 
     output_df.to_csv(join(output_dir, 'data.tsv'), sep='\t', index=False)
+
+    missing_path = join(output_dir, "missing_mods")
+    if not exists(missing_path):
+        makedirs(missing_path)
+
+    sessions = data_df.session_id.unique()
+    for session in sessions:
+        session_df = data_df[data_df.session_id == session]
+        out_df = copy(session_df[["participant_id"]])
+        out_df["synthetic"] = [1] * len(out_df)
+        out_df.to_csv(join(missing_path, "missing_mods_%s.tsv" % session), sep="\t", index=False)
