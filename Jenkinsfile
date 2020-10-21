@@ -216,11 +216,10 @@ pipeline {
              '''
              withCredentials([usernamePassword(credentialsId: 'jenkins-pass-for-pypi-aramis', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                sh '''#!/usr/bin/env bash
-                 cd cd $WORKSPACE/clinicadl
+                 cd $WORKSPACE/clinicadl
                  twine upload \
-                   --repository-url https://test.pypi.org/legacy/ \
                    -u ${USERNAME} \
-                   -p ${PASSWORD} ./dist/*'
+                   -p ${PASSWORD} ./dist/*
                  '''
           }
         }
@@ -228,7 +227,7 @@ pipeline {
           success {
             mattermostSend( 
               color: "#00B300",
-              message: "CLinicaDL package has been published!!!:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
+              message: "ClinicaDL package version ${env.TAG_NAME} has been published!!!:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
             )
           } 
         }
