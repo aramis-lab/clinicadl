@@ -229,10 +229,11 @@ pipeline {
             mattermostSend( 
               color: "#00B300",
               message: "CLinicaDL package has been published!!!:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
-          }
-        } 
+            )
+          } 
+        }
       }
-    }
+    }  
     post {
       failure {
         mail to: 'clinicadl-ci@inria.fr',
