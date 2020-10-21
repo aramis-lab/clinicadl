@@ -195,6 +195,43 @@ pipeline {
           }
         }
       }
+      stage('Deploy') {
+        when { buildingTag() }
+        environment {
+          PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
+        }
+        steps {
+          echo 'Testing train task...'
+          sh 'echo "Agent name: ${NODE_NAME}"'
+          //sh 'conda env remove --name "clinicadl_test"'
+          sh '''#!/usr/bin/env bash
+             set +x
+             eval "$(conda shell.bash hook)"
+             source ./.jenkins/scripts/find_env.sh
+             conda activate clinicadl_test
+             clinicadl --help
+             cd $WORKSPACE/.jenkins/scripts
+             ./generate_wheels.sh
+             conda deactivate
+             '''
+             withCredentials([usernamePassword(credentialsId: 'jenkins-pass-for-pypi-aramis', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+               sh '''#!/usr/bin/env bash
+                 cd cd $WORKSPACE/clinicadl
+                 twine upload \
+                   --repository-url https://test.pypi.org/legacy/ \
+                   -u ${USERNAME} \
+                   -p ${PASSWORD} ./dist/*'
+                 '''
+          }
+        }
+        post {
+          success {
+            mattermostSend( 
+              color: "#00B300",
+              message: "CLinicaDL package has been published!!!:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
+          }
+        } 
+      }
     }
     post {
       failure {
