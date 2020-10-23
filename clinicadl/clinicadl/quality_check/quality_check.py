@@ -13,8 +13,6 @@ from torch.utils.data import DataLoader
 from clinica.utils.inputs import fetch_file, RemoteFileStructure
 from clinicadl.quality_check.utils import QCDataset, resnet_qc_18
 from clinicadl.tools.data.utils import load_and_check_tsv
-from clinicadl.tools.inputs.input import RemoteFileStructure
-from clinicadl.tools.inputs.input import fetch_file
 
 
 def quality_check(caps_dir, output_path, preprocessing,
