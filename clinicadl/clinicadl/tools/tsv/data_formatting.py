@@ -143,7 +143,11 @@ def stable_selection(bids_df, diagnosis='AD', logger=None):
     n_subjects = 0
     for subject, subject_df in bids_df.groupby(level=0):
         subject_drop = False
-        diagnosis_bl = subject_df.loc[(subject, 'ses-M00'), 'diagnosis_bl']
+        try:
+            diagnosis_bl = subject_df.loc[(subject, 'ses-M00'), 'diagnosis_bl']
+        except KeyError:
+            raise KeyError("The baseline session is necessary for labels selection. It is missing for subject %s"
+                           % subject)
         diagnosis_values = subject_df.diagnosis.values
         for diagnosis in diagnosis_values:
             if not isinstance(diagnosis, float):
@@ -354,7 +358,11 @@ def get_labels(merged_tsv, missing_mods, results_path,
         bids_copy_df = copy(bids_df)
         bids_copy_df['diagnosis_bl'] = pd.Series(np.zeros(len(bids_df)), index=bids_df.index)
         for subject, subject_df in bids_df.groupby(level=0):
-            diagnosis_bl = subject_df.loc[(subject, 'ses-M00'), 'diagnosis']
+            try:
+                diagnosis_bl = subject_df.loc[(subject, 'ses-M00'), 'diagnosis']
+            except KeyError:
+                raise KeyError("The baseline session is necessary for labels selection. It is missing for subject %s"
+                               % subject)
             bids_copy_df.loc[subject, 'diagnosis_bl'] = diagnosis_bl
 
         bids_df = copy(bids_copy_df)
