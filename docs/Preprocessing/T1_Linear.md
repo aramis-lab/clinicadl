@@ -1,4 +1,4 @@
-# `t1-linear` - Affine registration of T1w images to the MNI standard space
+# `t1-linear` - Affine registration of T1-weighted MR images to the MNI standard space
 
 This pipeline performs a set of steps in order to affinely align T1-weighted MR images to the MNI space using the
 [ANTs](http://stnava.github.io/ANTs/) software package [[Avants et al., 2014](https://doi.org/10.3389/fninf.2014.00044)].

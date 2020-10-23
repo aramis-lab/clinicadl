@@ -1,10 +1,10 @@
-# `t1-extensive` - Skull-stripping of T1w images in MNI standard space
+# `t1-extensive` - Skull-stripping of T1-weighted MR images in MNI standard space
 
-This pipeline performs skull-stripping of T1-weighted MR images in [`Ixi549Space` space](https://bids-specification.readthedocs.io/en/stable/99-appendices/08-coordinate-systems.html) using brainmask from the [SPM](http://www.fil.ion.ucl.ac.uk/spm/) software.
+This pipeline performs skull-stripping of T1-weighted MR images in [`Ixi549Space` space](https://bids-specification.readthedocs.io/en/stable/99-appendices/08-coordinate-systems.html) using the brain mask (`mask_ICV.nii`) from the [SPM](http://www.fil.ion.ucl.ac.uk/spm/) software.
 
 
 ## Prerequisites
-You need to execute the [`t1-volume` pipeline](http://www.clinica.run/doc/Pipelines/T1_Volume/) to run the pipeline. On the `t1-volume-tissue-segmentation` sub-pipeline ("Tissue segmentation, bias correction and spatial normalization to MNI space" step) needs to be executed.
+You need to execute the [`t1-volume` pipeline](http://www.clinica.run/doc/Pipelines/T1_Volume/) from Clinica to run this pipeline. Only the `t1-volume-tissue-segmentation` sub-pipeline ("Tissue segmentation, bias correction and spatial normalization to MNI space" step) needs to be executed.
 
 
 ### Running the pipeline
