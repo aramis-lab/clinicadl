@@ -1,6 +1,6 @@
 # `t1-extensive` - Skull-stripping of T1w images in MNI standard space
 
-This pipeline performs skull-stripping of T1-weighted MR images in [`Ixi549Space` space](https://bids-specification.readthedocs.io/en/stable/99-appendices/08-coordinate-systems.html) using brainmask from the [SPM](http://www.fil.ion.ucl.ac.uk/spm/) software
+This pipeline performs skull-stripping of T1-weighted MR images in [`Ixi549Space` space](https://bids-specification.readthedocs.io/en/stable/99-appendices/08-coordinate-systems.html) using brainmask from the [SPM](http://www.fil.ion.ucl.ac.uk/spm/) software.
 
 
 ## Prerequisites
