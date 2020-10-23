@@ -23,7 +23,10 @@ class T1ExtensiveCli(ce.CmdParser):
         clinica_comp = self._args.add_argument_group(
             PIPELINE_CATEGORIES["CLINICA_COMPULSORY"]
         )
-        clinica_comp.add_argument("caps_directory", help="Path to the CAPS directory.")
+        clinica_comp.add_argument(
+            "caps_directory",
+            help="Path to the CAPS directory containing the outputs of t1-volume.",
+        )
         # Clinica standard arguments (e.g. --n_procs)
         self.add_clinica_standard_arguments()
 
