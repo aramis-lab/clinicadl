@@ -35,7 +35,10 @@ def train_multi_cnn(params):
     num_cnn = compute_num_cnn(params.input_dir, params.tsv_path, params, data="train")
 
     if params.split is None:
-        fold_iterator = range(params.n_splits)
+        if params.n_splits is None:
+            fold_iterator = range(1)
+        else:
+            fold_iterator = range(params.n_splits)
     else:
         fold_iterator = params.split
 
