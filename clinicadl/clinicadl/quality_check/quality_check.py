@@ -1,17 +1,20 @@
+# coding: utf-8
+
 """
 This file contains all methods needed to perform the quality check procedure after t1-linear preprocessing.
 """
-from os import pardir, makedirs
-from os.path import dirname, join, abspath, split, exists, splitext
+from os import makedirs
+from os.path import dirname, join, exists, splitext, abspath
 from pathlib import Path
-import torch
+
 import pandas as pd
+import torch
 from torch.utils.data import DataLoader
 
-from clinicadl.quality_check.utils import QCDataset, resnet_qc_18
-from clinicadl.tools.inputs.input import fetch_file
-from clinicadl.tools.inputs.input import RemoteFileStructure
-from clinicadl.tools.data.utils import load_and_check_tsv
+from .utils import QCDataset, resnet_qc_18
+from ..tools.inputs.input import fetch_file
+from ..tools.inputs.input import RemoteFileStructure
+from ..tools.data.utils import load_and_check_tsv
 
 
 def quality_check(caps_dir, output_path, preprocessing,
@@ -33,8 +36,7 @@ def quality_check(caps_dir, output_path, preprocessing,
         checksum='a97a781be3820b06424fe891ec405c78b87ad51a27b6b81614dbdb996ce60104'
     )
 
-    if not(exists(cache_clinicadl)):
-        makedirs(cache_clinicadl)
+    makedirs(cache_clinicadl, exist_ok=True)
 
     model_file = join(cache_clinicadl, FILE1.filename)
 
@@ -52,7 +54,7 @@ def quality_check(caps_dir, output_path, preprocessing,
         model.cuda()
 
     # Load DataFrame
-    df = load_and_check_tsv(tsv_path, caps_dir, output_path)
+    df = load_and_check_tsv(tsv_path, caps_dir, dirname(abspath(output_path)))
 
     dataset = QCDataset(caps_dir, df)
     dataloader = DataLoader(

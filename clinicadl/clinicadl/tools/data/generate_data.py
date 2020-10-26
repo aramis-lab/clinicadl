@@ -9,11 +9,10 @@ import nibabel as nib
 from os.path import join, exists
 from os import makedirs
 from copy import copy
+from clinica.utils.inputs import fetch_file, RemoteFileStructure
 from .utils import im_loss_roi_gaussian_distribution, find_image_path, load_and_check_tsv
 from ..tsv.tsv_utils import baseline_df
 from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
-from clinicadl.tools.inputs.input import fetch_file
-from clinicadl.tools.inputs.input import RemoteFileStructure
 import tarfile
 
 
@@ -48,8 +47,7 @@ def generate_random_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, mea
     data_df = load_and_check_tsv(tsv_path, caps_dir, output_dir)
 
     # Create subjects dir
-    if not exists(join(output_dir, 'subjects')):
-        makedirs(join(output_dir, 'subjects'))
+    makedirs(join(output_dir, 'subjects'), exist_ok=True)
 
     # Retrieve image of first subject
     participant_id = data_df.loc[0, 'participant_id']
@@ -77,13 +75,11 @@ def generate_random_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, mea
         noisy_image_nii = nib.Nifti1Image(noisy_image, header=image_nii.header, affine=image_nii.affine)
         noisy_image_nii_path = join(output_dir, 'subjects', participant_id, 'ses-M00', 't1_linear')
         noisy_image_nii_filename = participant_id + '_ses-M00' + FILENAME_TYPE['cropped'] + '.nii.gz'
-        if not exists(noisy_image_nii_path):
-            makedirs(noisy_image_nii_path)
+        makedirs(noisy_image_nii_path, exist_ok=True)
         nib.save(noisy_image_nii, join(noisy_image_nii_path, noisy_image_nii_filename))
 
     missing_path = join(output_dir, "missing_mods")
-    if not exists(missing_path):
-        makedirs(missing_path)
+    makedirs(missing_path, exist_ok=True)
 
     sessions = data_df.session_id.unique()
     for session in sessions:
@@ -131,10 +127,7 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
                                 url=url_aramis,
                                 checksum='89427970921674792481bffd2de095c8fbf49509d615e7e09e4bc6f0e0564471'
                                 )
-    if not(exists(cache_clinicadl)):
-        makedirs(cache_clinicadl)
-
-    AAL2_masks_path = join(cache_clinicadl, FILE1.filename)
+    makedirs(cache_clinicadl, exist_ok=True)
 
     if n_subjects > len(data_df):
         raise ValueError("The number of subjects %i cannot be higher than the number of subjects in the baseline "
@@ -178,8 +171,7 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
         filename = 'sub-TRIV%i_ses-M00' % i + FILENAME_TYPE['cropped'] + '.nii.gz'
         path_image = join(output_dir, 'subjects', 'sub-TRIV%i' % i, 'ses-M00', 't1_linear')
 
-        if not exists(path_image):
-            makedirs(path_image)
+        makedirs(path_image, exist_ok=True)
 
         image_path = find_image_path(caps_dir, participant_id, session_id, preprocessing)
         image_nii = nib.load(image_path)
@@ -200,8 +192,7 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
     output_df.to_csv(join(output_dir, 'data.tsv'), sep='\t', index=False)
 
     missing_path = join(output_dir, "missing_mods")
-    if not exists(missing_path):
-        makedirs(missing_path)
+    makedirs(missing_path, exist_ok=True)
 
     sessions = data_df.session_id.unique()
     for session in sessions:

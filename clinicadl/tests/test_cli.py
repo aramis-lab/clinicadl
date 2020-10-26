@@ -4,8 +4,9 @@ import pytest
 import clinicadl.cli as cli
 
 
-@pytest.fixture(params=['preprocessing',
-                        'extract',
+@pytest.fixture(params=['preprocessing_run_t1_linear',
+                        'preprocessing_run_t1_extensive',
+                        'extract_tensor',
                         'generate',
                         'quality_check',
                         'classify',
@@ -14,7 +15,7 @@ import clinicadl.cli as cli
                         'train_patch',
                         'train_multipatch'])
 def generate_cli_commands(request):
-    if request.param == 'preprocessing':
+    if request.param == 'preprocessing_run_t1_linear':
         test_input = [
             'preprocessing',
             'run',
@@ -28,7 +29,21 @@ def generate_cli_commands(request):
             'bids_directory',
             'caps_directory']
 
-    if request.param == 'extract':
+    if request.param == 'preprocessing_run_t1_extensive':
+        test_input = [
+            'preprocessing',
+            'run',
+            't1-extensive',
+            '/dir/caps/'
+        ]
+        keys_output = [
+            'task',
+            'preprocessing_task',
+            'preprocessing',
+            'caps_directory'
+        ]
+
+    if request.param == 'extract_tensor':
         test_input = [
             'preprocessing',
             'extract-tensor',

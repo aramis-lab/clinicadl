@@ -27,8 +27,7 @@ def get_mean_image_population(caps_directory, tsv, template_image):
     import nibabel as nib
     import numpy as np
 
-    if not os.path.exists(os.path.join(caps_directory, 'group')):
-        os.makedirs(os.path.join(caps_directory, 'group'))
+    os.makedirs(os.path.join(caps_directory, 'group'), exist_ok=True)
 
     df = pd.read_csv(tsv, sep='\t')
     if ('session_id' != list(df.columns.values)[1]) and (

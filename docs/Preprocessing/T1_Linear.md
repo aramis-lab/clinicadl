@@ -1,4 +1,4 @@
-# `t1-linear` - Affine registration of T1w images to the MNI standard space
+# `t1-linear` - Affine registration of T1-weighted MR images to the MNI standard space
 
 This pipeline performs a set of steps in order to affinely align T1-weighted MR images to the MNI space using the
 [ANTs](http://stnava.github.io/ANTs/) software package [[Avants et al., 2014](https://doi.org/10.3389/fninf.2014.00044)].
@@ -20,7 +20,7 @@ This pipeline needs the installation of **ANTs** on your computer. You can find 
 ### Running the pipeline
 The pipeline can be run with the following command line:
 ```{.sourceCode .bash}
-clinicadl preprocessing run t1-linear <bids_directory> caps_directory
+clinicadl preprocessing run t1-linear <bids_directory> <caps_directory>
 ```
 where:
 
