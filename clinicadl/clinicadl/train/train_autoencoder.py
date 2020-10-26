@@ -31,7 +31,10 @@ def train_autoencoder(params):
     train_logger = return_logger(params.verbosity, "train")
 
     if params.split is None:
-        fold_iterator = range(params.n_splits)
+        if params.n_splits is None:
+            fold_iterator = range(1)
+        else:
+            fold_iterator = range(params.n_splits)
     else:
         fold_iterator = params.split
 
