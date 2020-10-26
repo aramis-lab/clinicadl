@@ -51,11 +51,12 @@ def extract_tensors(args):
 
 
 def qc_func(args):
-    from clinicadl.quality_check.quality_check import quality_check
+    from .quality_check.quality_check import quality_check
 
     quality_check(
         args.caps_dir,
         args.output_path,
+        preprocessing=args.preprocessing,
         tsv_path=args.subjects_sessions_tsv,
         threshold=args.threshold,
         batch_size=args.batch_size,
