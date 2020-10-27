@@ -12,8 +12,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from .utils import QCDataset, resnet_qc_18
-from ..tools.inputs.input import fetch_file
-from ..tools.inputs.input import RemoteFileStructure
+from clinica.utils.inputs import fetch_file, RemoteFileStructure
 from ..tools.data.utils import load_and_check_tsv
 
 
