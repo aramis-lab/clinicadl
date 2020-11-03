@@ -48,7 +48,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
     writer_valid = SummaryWriter(os.path.join(log_dir, 'validation'))
 
     # Initialize variables
-    best_valid_accuracy = 0.0
+    best_valid_accuracy = -1.0  # Mandatory saving of a model even if BA = 0.00 (useful for tests)
     best_valid_loss = np.inf
     epoch = options.beginning_epoch
 
