@@ -157,41 +157,80 @@ pipeline {
                 } 
               }
             }
-          }  
-          stage('Train tests Linux') {
-            agent { label 'linux && gpu' }
-            environment {
-              PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
-            }
-            steps {
-              echo 'Testing train task...'
-              sh 'echo "Agent name: ${NODE_NAME}"'
-              //sh 'conda env remove --name "clinicadl_test"'
-              sh '''#!/usr/bin/env bash
-                 set +x
-                 eval "$(conda shell.bash hook)"
-                 source ./.jenkins/scripts/find_env.sh
-                 conda activate clinicadl_test
-                 clinicadl --help
-                 cd $WORKSPACE/clinicadl/tests
-                 mkdir -p ./data/dataset
-                 tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
-                 cp -r /mnt/data/data_CI/labels_list ./data/
-                 pytest \
-                    --junitxml=../../test-reports/test_train_report.xml \
-                    --verbose \
-                    --disable-warnings \
-                    -k "test_train"
-                 conda deactivate
-                 '''
-            }
-            post {
-              always {
-                junit 'test-reports/test_train_report.xml'
-                sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
-                sh 'rm -rf $WORKSPACE/clinicadl/tests/data/labels_list'
+          }
+          stage('Train and transfer learning') {
+            stages{
+              stage('Train tests Linux') {
+                agent { label 'linux && gpu' }
+                environment {
+                  PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
+                }
+                steps {
+                  echo 'Testing train task...'
+                  sh 'echo "Agent name: ${NODE_NAME}"'
+                  //sh 'conda env remove --name "clinicadl_test"'
+                  sh '''#!/usr/bin/env bash
+                     set +x
+                     eval "$(conda shell.bash hook)"
+                     source ./.jenkins/scripts/find_env.sh
+                     conda activate clinicadl_test
+                     clinicadl --help
+                     cd $WORKSPACE/clinicadl/tests
+                     mkdir -p ./data/dataset
+                     tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
+                     cp -r /mnt/data/data_CI/labels_list ./data/
+                     pytest \
+                        --junitxml=../../test-reports/test_train_report.xml \
+                        --verbose \
+                        --disable-warnings \
+                        -k "test_train"
+                     conda deactivate
+                     '''
+                }
+                post {
+                  always {
+                    junit 'test-reports/test_train_report.xml'
+                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
+                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/labels_list'
+                  }
+                }
               }
-            } 
+              stage('Transfer learning tests Linux') {
+                agent { label 'linux && gpu' }
+                environment {
+                  PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
+                }
+                steps {
+                  echo 'Testing transfer learning...'
+                  sh 'echo "Agent name: ${NODE_NAME}"'
+                  //sh 'conda env remove --name "clinicadl_test"'
+                  sh '''#!/usr/bin/env bash
+                     set +x
+                     eval "$(conda shell.bash hook)"
+                     source ./.jenkins/scripts/find_env.sh
+                     conda activate clinicadl_test
+                     clinicadl --help
+                     cd $WORKSPACE/clinicadl/tests
+                     mkdir -p ./data/dataset
+                     tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
+                     cp -r /mnt/data/data_CI/labels_list ./data/
+                     pytest \
+                        --junitxml=../../test-reports/test_transfer_learning_report.xml \
+                        --verbose \
+                        --disable-warnings \
+                        test_transfer_learning.py
+                     conda deactivate
+                     '''
+                }
+                post {
+                  always {
+                    junit 'test-reports/test_transfer_learning_report.xml'
+                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
+                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/labels_list'
+                  }
+                }
+              }
+            }
           }
         }
       }
