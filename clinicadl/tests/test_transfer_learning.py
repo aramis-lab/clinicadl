@@ -19,7 +19,7 @@ def cli_commands(request):
             'train',
             'roi',
             'autoencoder',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results_source',
@@ -27,13 +27,12 @@ def cli_commands(request):
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
         ]
         target_task = [
             'train',
             'image',
             'autoencoder',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results_target',
@@ -42,14 +41,13 @@ def cli_commands(request):
             '--n_splits', '2',
             '--split', '0',
             '--transfer_learning_path', 'results_source',
-            '-cpu'
         ]
     elif request.param == 'transfer_ae_ae':
         source_task = [
             'train',
             'roi',
             'autoencoder',
-            'data/OASIS_test',
+            'data/data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results_source',
@@ -57,13 +55,12 @@ def cli_commands(request):
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
         ]
         target_task = [
             'train',
             'roi',
             'autoencoder',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results_target',
@@ -72,14 +69,13 @@ def cli_commands(request):
             '--n_splits', '2',
             '--split', '0',
             '--transfer_learning_path', 'results_source',
-            '-cpu'
         ]
     elif request.param == 'transfer_smallAE_largeCNN':
         source_task = [
             'train',
             'roi',
             'autoencoder',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results_source',
@@ -87,13 +83,12 @@ def cli_commands(request):
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
         ]
         target_task = [
             'train',
             'image',
             'cnn',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results_target',
@@ -102,14 +97,13 @@ def cli_commands(request):
             '--n_splits', '2',
             '--split', '0',
             '--transfer_learning_path', 'results_source',
-            '-cpu'
         ]
     elif request.param == 'transfer_ae_cnn':
         source_task = [
             'train',
             'roi',
             'autoencoder',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results_source',
@@ -117,13 +111,12 @@ def cli_commands(request):
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
         ]
         target_task = [
             'train',
             'roi',
             'cnn',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results_target',
@@ -132,14 +125,13 @@ def cli_commands(request):
             '--n_splits', '2',
             '--split', '0',
             '--transfer_learning_path', 'results_source',
-            '-cpu'
         ]
     elif request.param == 'transfer_cnn_cnn':
         source_task = [
             'train',
             'roi',
             'cnn',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results_source',
@@ -147,13 +139,12 @@ def cli_commands(request):
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
         ]
         target_task = [
             'train',
             'roi',
             'cnn',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results_target',
@@ -162,14 +153,13 @@ def cli_commands(request):
             '--n_splits', '2',
             '--split', '0',
             '--transfer_learning_path', 'results_source',
-            '-cpu'
         ]
     elif request.param == 'transfer_cnn_multicnn':
         source_task = [
             'train',
             'patch',
             'cnn',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results_source',
@@ -177,13 +167,12 @@ def cli_commands(request):
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
         ]
         target_task = [
             'train',
             'patch',
             'multicnn',
-            'data/OASIS_test',
+            'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
             'results_target',
@@ -192,7 +181,6 @@ def cli_commands(request):
             '--n_splits', '2',
             '--split', '0',
             '--transfer_learning_path', 'results_source',
-            '-cpu'
         ]
     else:
         raise NotImplementedError(
