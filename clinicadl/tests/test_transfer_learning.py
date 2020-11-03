@@ -7,9 +7,9 @@ import shutil
 @pytest.fixture(params=[
     'transfer_smallAE_largeAE',
     'transfer_ae_ae',
-    #'transfer_smallAE_largeCNN',
-    #'transfer_ae_cnn',
-    #'transfer_cnn_cnn',
+    'transfer_smallAE_largeCNN',
+    'transfer_ae_cnn',
+    'transfer_cnn_cnn',
     'transfer_cnn_multicnn',
 ])
 def cli_commands(request):
@@ -27,7 +27,6 @@ def cli_commands(request):
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
         ]
         target_task = [
             'train',
@@ -42,7 +41,6 @@ def cli_commands(request):
             '--n_splits', '2',
             '--split', '0',
             '--transfer_learning_path', 'results_source',
-            '-cpu'
         ]
     elif request.param == 'transfer_ae_ae':
         source_task = [
@@ -57,7 +55,6 @@ def cli_commands(request):
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
         ]
         target_task = [
             'train',
@@ -72,7 +69,6 @@ def cli_commands(request):
             '--n_splits', '2',
             '--split', '0',
             '--transfer_learning_path', 'results_source',
-            '-cpu'
         ]
     elif request.param == 'transfer_smallAE_largeCNN':
         source_task = [
@@ -171,7 +167,6 @@ def cli_commands(request):
             '--epochs', '1',
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
         ]
         target_task = [
             'train',
@@ -186,7 +181,6 @@ def cli_commands(request):
             '--n_splits', '2',
             '--split', '0',
             '--transfer_learning_path', 'results_source',
-            '-cpu'
         ]
     else:
         raise NotImplementedError(
