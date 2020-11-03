@@ -201,7 +201,7 @@ pipeline {
                   PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
                 }
                 steps {
-                  echo 'Testing train task...'
+                  echo 'Testing transfer learning...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
                   //sh 'conda env remove --name "clinicadl_test"'
                   sh '''#!/usr/bin/env bash
@@ -215,7 +215,7 @@ pipeline {
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      cp -r /mnt/data/data_CI/labels_list ./data/
                      pytest \
-                        --junitxml=../../test-reports/test_train_report.xml \
+                        --junitxml=../../test-reports/test_transfer_learning_report.xml \
                         --verbose \
                         --disable-warnings \
                         test_transfer_learning.py
@@ -224,7 +224,7 @@ pipeline {
                 }
                 post {
                   always {
-                    junit 'test-reports/test_train_report.xml'
+                    junit 'test-reports/test_transfer_learning_report.xml'
                     sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
                     sh 'rm -rf $WORKSPACE/clinicadl/tests/data/labels_list'
                   }
