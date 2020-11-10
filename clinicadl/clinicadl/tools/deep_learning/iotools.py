@@ -180,9 +180,6 @@ def read_json(options, json_path=None, test=False):
         options.model = options.network
         del options.network
 
-    if not hasattr(options, 'dropout'):
-        options.dropout = "default"
-
     if not hasattr(options, 'discarded_sliced'):
         options.discarded_slices = 20
 
@@ -235,7 +232,21 @@ def read_json(options, json_path=None, test=False):
     if not hasattr(options, "loss"):
         options.loss = "default"
 
+    if not hasattr(options, 'dropout') or options.dropout is None:
+        options.dropout = None
+        set_default_dropout(options)
+
     return options
+
+
+def set_default_dropout(args):
+    if args.dropout is None:
+        if args.mode == 'image':
+            args.dropout = 0.5
+        elif args.mode == 'slice':
+            args.dropout = 0.8
+        else:
+            args.dropout = 0
 
 
 def memReport():
