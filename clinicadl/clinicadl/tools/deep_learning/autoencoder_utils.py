@@ -54,7 +54,8 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
 
     else:
         if not os.path.exists(filename):
-            raise ValueError('The training.tsv file of the resumed experiment does not exist.')
+            raise ValueError(
+                'The training.tsv file of the resumed experiment does not exist.')
         truncated_tsv = pd.read_csv(filename, sep='\t')
         truncated_tsv.set_index(['epoch', 'iteration'], inplace=True)
         truncated_tsv.drop(options.beginning_epoch, level=0, inplace=True)
@@ -75,7 +76,8 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
     best_loss_valid = np.inf
     epoch = options.beginning_epoch
 
-    early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
+    early_stopping = EarlyStopping(
+        'min', min_delta=options.tolerance, patience=options.patience)
     loss_valid = None
     t_beginning = time()
 
@@ -106,30 +108,38 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
                 # Evaluate the decoder only when no gradients are accumulated
                 if options.evaluation_steps != 0 and (i + 1) % options.evaluation_steps == 0:
                     evaluation_flag = False
-                    loss_train = test_ae(decoder, train_loader, options.gpu, criterion)
-                    mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
+                    loss_train = test_ae(
+                        decoder, train_loader, options.gpu, criterion)
+                    mean_loss_train = loss_train / \
+                        (len(train_loader) * train_loader.batch_size)
 
-                    loss_valid = test_ae(decoder, valid_loader, options.gpu, criterion)
-                    mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.batch_size)
+                    loss_valid = test_ae(
+                        decoder, valid_loader, options.gpu, criterion)
+                    mean_loss_valid = loss_valid / \
+                        (len(valid_loader) * valid_loader.batch_size)
                     decoder.train()
                     train_loader.dataset.train()
 
-                    writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
-                    writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
+                    writer_train.add_scalar(
+                        'loss', mean_loss_train, i + epoch * len(train_loader))
+                    writer_valid.add_scalar(
+                        'loss', mean_loss_valid, i + epoch * len(train_loader))
                     logger.info("%s level training loss is %f at the end of iteration %d"
                                 % (options.mode, mean_loss_train, i))
                     logger.info("%s level validation loss is %f at the end of iteration %d"
                                 % (options.mode, mean_loss_valid, i))
 
                     t_current = time() - t_beginning
-                    row = [epoch, i, t_current, mean_loss_train, mean_loss_valid]
+                    row = [epoch, i, t_current,
+                           mean_loss_train, mean_loss_valid]
                     row_df = pd.DataFrame([row], columns=columns)
                     with open(filename, 'a') as f:
                         row_df.to_csv(f, header=False, index=False, sep='\t')
 
         # If no step has been performed, raise Exception
         if step_flag:
-            raise Exception('The model has not been updated once in the epoch. The accumulation step may be too large.')
+            raise Exception(
+                'The model has not been updated once in the epoch. The accumulation step may be too large.')
 
         # If no evaluation has been performed, warn the user
         if evaluation_flag and options.evaluation_steps != 0:
@@ -140,15 +150,19 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
         logger.debug('Last checkpoint at the end of the epoch %d' % epoch)
 
         loss_train = test_ae(decoder, train_loader, options.gpu, criterion)
-        mean_loss_train = loss_train / (len(train_loader) * train_loader.batch_size)
+        mean_loss_train = loss_train / \
+            (len(train_loader) * train_loader.batch_size)
 
         loss_valid = test_ae(decoder, valid_loader, options.gpu, criterion)
-        mean_loss_valid = loss_valid / (len(valid_loader) * valid_loader.batch_size)
+        mean_loss_valid = loss_valid / \
+            (len(valid_loader) * valid_loader.batch_size)
         decoder.train()
         train_loader.dataset.train()
 
-        writer_train.add_scalar('loss', mean_loss_train, i + epoch * len(train_loader))
-        writer_valid.add_scalar('loss', mean_loss_valid, i + epoch * len(train_loader))
+        writer_train.add_scalar('loss', mean_loss_train,
+                                i + epoch * len(train_loader))
+        writer_valid.add_scalar('loss', mean_loss_valid,
+                                i + epoch * len(train_loader))
         logger.info("%s level training loss is %f at the end of iteration %d"
                     % (options.mode, mean_loss_train, i))
         logger.info("%s level validation loss is %f at the end of iteration %d"
@@ -244,8 +258,10 @@ def visualize_image(decoder, dataloader, visualization_path, nb_images=1):
         input_np = image.squeeze(0).squeeze(0).cpu().detach().numpy()
         output_nii = nib.Nifti1Image(output_np, np.eye(4))
         input_nii = nib.Nifti1Image(input_np, np.eye(4))
-        nib.save(output_nii, os.path.join(visualization_path, 'output-%i.nii.gz' % image_index))
-        nib.save(input_nii, os.path.join(visualization_path, 'input-%i.nii.gz' % image_index))
+        nib.save(output_nii, os.path.join(
+            visualization_path, 'output-%i.nii.gz' % image_index))
+        nib.save(input_nii, os.path.join(
+            visualization_path, 'input-%i.nii.gz' % image_index))
 
 
 ###########
@@ -257,11 +273,14 @@ def get_criterion(option):
         return nn.MSELoss()
     elif option == "L1Norm" or option == "L1":
         if option == "L1Norm":
-            warnings.warn("Normalization refers to SoftMax and cannot be applied for autoencoder training.")
+            warnings.warn(
+                "Normalization refers to SoftMax and cannot be applied for autoencoder training.")
         return nn.L1Loss()
     elif option == "SmoothL1Norm" or option == "SmoothL1":
         if option == "SmoothL1Norm":
-            warnings.warn("Normalization refers to SoftMax and cannot be applied for autoencoder training.")
+            warnings.warn(
+                "Normalization refers to SoftMax and cannot be applied for autoencoder training.")
         return nn.SmoothL1Loss()
     else:
-        raise ValueError("The option %s is unknown for criterion selection" % option)
+        raise ValueError(
+            "The option %s is unknown for criterion selection" % option)

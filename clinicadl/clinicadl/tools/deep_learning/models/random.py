@@ -21,7 +21,8 @@ def sampling_fn(value, sampling_type):
         elif sampling_type is "uniform":
             return random.uniform(*value)
         else:
-            raise ValueError("Sampling type %s is not implemented" % sampling_type)
+            raise ValueError(
+                "Sampling type %s is not implemented" % sampling_type)
     else:
         if sampling_type is "exponent":
             return 10 ** -value
@@ -87,7 +88,8 @@ def random_sampling(rs_options, options):
         setattr(options, name, sampled_value)
 
     if options.mode not in additional_mode_dict.keys():
-        raise NotImplementedError("Mode %s was not correctly implemented for random search" % options.mode)
+        raise NotImplementedError(
+            "Mode %s was not correctly implemented for random search" % options.mode)
 
     additional_dict = additional_mode_dict[options.mode]
     for name, sampling_type in additional_dict.items():
@@ -101,7 +103,8 @@ def random_sampling(rs_options, options):
     else:
         options.weight_decay = 0
 
-    options.evaluation_steps = find_evaluation_steps(options.accumulation_steps, goal=rs_options.evaluation_steps)
+    options.evaluation_steps = find_evaluation_steps(
+        options.accumulation_steps, goal=rs_options.evaluation_steps)
     options.convolutions = random_conv_sampling(rs_options)
 
     return options
@@ -142,7 +145,8 @@ def random_conv_sampling(rs_options):
         conv_dict['in_channels'] = current_in_channels
         conv_dict['out_channels'] = current_out_channels
 
-        current_in_channels, current_out_channels = update_channels(current_out_channels, rs_options.channels_limit)
+        current_in_channels, current_out_channels = update_channels(
+            current_out_channels, rs_options.channels_limit)
         conv_dict['n_conv'] = sampling_fn(rs_options.n_conv, "choice")
         conv_dict['d_reduction'] = d_reduction
         convolutions['conv' + str(i)] = conv_dict
@@ -192,7 +196,8 @@ class RandomArchitecture(nn.Module):
             Flatten(),
             nn.Dropout(p=dropout))
 
-        fc, flattened_shape = self.fc_dict_design(n_fcblocks, convolutions, initial_shape, n_classes)
+        fc, flattened_shape = self.fc_dict_design(
+            n_fcblocks, convolutions, initial_shape, n_classes)
         for key, item in fc.items():
             n_fc = int(key[2::])
             if n_fc == len(fc) - 1:
@@ -204,8 +209,10 @@ class RandomArchitecture(nn.Module):
         self.flattened_shape = flattened_shape
 
     def __len__(self):
-        fc_list = [('classifier', 'FC' + str(i)) for i in range(len(self.classifier) - 2)]
-        conv_list = [('features', 'conv' + str(i)) for i in range(len(self.features))]
+        fc_list = [('classifier', 'FC' + str(i))
+                   for i in range(len(self.classifier) - 2)]
+        conv_list = [('features', 'conv' + str(i))
+                     for i in range(len(self.features))]
         return len(conv_list) + len(fc_list)
 
     def forward(self, x):
@@ -230,17 +237,23 @@ class RandomArchitecture(nn.Module):
 
         conv_block = []
         for i in range(conv_dict['n_conv'] - 1):
-            conv_block.append(self.layers_dict["Conv"](in_channels, in_channels, 3, stride=1, padding=1))
-            conv_block = self.append_normalization_layer(conv_block, in_channels)
+            conv_block.append(self.layers_dict["Conv"](
+                in_channels, in_channels, 3, stride=1, padding=1))
+            conv_block = self.append_normalization_layer(
+                conv_block, in_channels)
             conv_block.append(nn.LeakyReLU())
         if conv_dict['d_reduction'] == "MaxPooling":
-            conv_block.append(self.layers_dict["Conv"](in_channels, out_channels, 3, stride=1, padding=1))
-            conv_block = self.append_normalization_layer(conv_block, out_channels)
+            conv_block.append(self.layers_dict["Conv"](
+                in_channels, out_channels, 3, stride=1, padding=1))
+            conv_block = self.append_normalization_layer(
+                conv_block, out_channels)
             conv_block.append(nn.LeakyReLU())
             conv_block.append(self.layers_dict["Pool"](2, 2))
         elif conv_dict['d_reduction'] == "stride":
-            conv_block.append(self.layers_dict["Conv"](in_channels, out_channels, 3, stride=2, padding=1))
-            conv_block = self.append_normalization_layer(conv_block, out_channels)
+            conv_block.append(self.layers_dict["Conv"](
+                in_channels, out_channels, 3, stride=2, padding=1))
+            conv_block = self.append_normalization_layer(
+                conv_block, out_channels)
             conv_block.append(nn.LeakyReLU())
 
         return nn.Sequential(*conv_block)
@@ -255,7 +268,8 @@ class RandomArchitecture(nn.Module):
         """
 
         if self.network_normalization in ["BatchNorm", "InstanceNorm"]:
-            conv_block.append(self.layers_dict[self.network_normalization](num_features))
+            conv_block.append(
+                self.layers_dict[self.network_normalization](num_features))
         elif self.network_normalization is not None:
             raise ValueError("The network normalization %s value must be in ['BatchNorm', 'InstanceNorm', None]"
                              % self.network_normalization)
@@ -273,7 +287,8 @@ class RandomArchitecture(nn.Module):
                       "InstanceNorm": nn.InstanceNorm2d,
                       "BatchNorm": nn.BatchNorm2d}
         else:
-            raise ValueError("Cannot construct random network in dimension %i" % self.dimension)
+            raise ValueError(
+                "Cannot construct random network in dimension %i" % self.dimension)
         return layers
 
     @staticmethod
@@ -309,8 +324,10 @@ class RandomArchitecture(nn.Module):
         :param random_model: (RandomArchitecture) random model to transfer identical weights
         :return self
         """
-        fc_list = [('classifier', 'FC' + str(i)) for i in range(len(self.classifier) - 2)]
-        conv_list = [('features', 'conv' + str(i)) for i in range(len(self.features))]
+        fc_list = [('classifier', 'FC' + str(i))
+                   for i in range(len(self.classifier) - 2)]
+        conv_list = [('features', 'conv' + str(i))
+                     for i in range(len(self.features))]
         layers_list = conv_list + fc_list
         if n > len(layers_list):
             raise ValueError('The number of randomized layers %i cannot exceed the number of layers of the network %i'
@@ -329,7 +346,7 @@ class RandomArchitecture(nn.Module):
 
             for j in range(len(layer)):
                 layer[j] = random_layer[j]
-                
+
         return self
 
     @staticmethod
@@ -350,8 +367,10 @@ class RandomArchitecture(nn.Module):
         :param n: (int) number of layers to fix
         :return self
         """
-        fc_list = [('classifier', 'FC' + str(i)) for i in range(len(self.classifier) - 2)]
-        conv_list = [('features', 'conv' + str(i)) for i in range(len(self.features))]
+        fc_list = [('classifier', 'FC' + str(i))
+                   for i in range(len(self.classifier) - 2)]
+        conv_list = [('features', 'conv' + str(i))
+                     for i in range(len(self.features))]
         layers_list = conv_list + fc_list
         if n > len(layers_list):
             raise ValueError('The number of randomized layers %i cannot exceed the number of layers of the network %i'

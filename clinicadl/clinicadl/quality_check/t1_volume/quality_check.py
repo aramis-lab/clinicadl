@@ -14,18 +14,20 @@ def quality_check(caps_dir, output_dir):
     qc_df = pd.read_csv(path.join(output_dir, 'QC_metrics.tsv'), sep='\t')
 
     rejection1_df = qc_df[qc_df.max_intensity > 0.95]
-    rejection1_df.to_csv(path.join(output_dir, 'pass_step-1.tsv'), sep='\t', index=False)
+    rejection1_df.to_csv(
+        path.join(output_dir, 'pass_step-1.tsv'), sep='\t', index=False)
     print("Number of sessions removed based on max intensity: %i"
           % (len(qc_df) - len(rejection1_df)))
 
     rejection2_df = rejection1_df[(rejection1_df.non_zero_percentage < 0.5) &
                                   (rejection1_df.non_zero_percentage > 0.15)]
-    rejection2_df.to_csv(path.join(output_dir, 'pass_step-2.tsv'), sep='\t', index=False)
+    rejection2_df.to_csv(
+        path.join(output_dir, 'pass_step-2.tsv'), sep='\t', index=False)
     print("Number of sessions removed based on non-zero voxels: %i"
           % (len(rejection1_df) - len(rejection2_df)))
 
     rejection3_df = rejection2_df[rejection2_df.frontal_similarity > 0.10]
-    rejection3_df.to_csv(path.join(output_dir, 'pass_step-3.tsv'), sep='\t', index=False)
+    rejection3_df.to_csv(
+        path.join(output_dir, 'pass_step-3.tsv'), sep='\t', index=False)
     print("Number of sessions removed based on frontal similarity with DARTEL template: %i"
           % (len(rejection2_df) - len(rejection3_df)))
-

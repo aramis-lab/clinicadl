@@ -26,7 +26,8 @@ class PadMaxPool3d(nn.Module):
         super(PadMaxPool3d, self).__init__()
         self.kernel_size = kernel_size
         self.stride = stride
-        self.pool = nn.MaxPool3d(kernel_size, stride, return_indices=return_indices)
+        self.pool = nn.MaxPool3d(
+            kernel_size, stride, return_indices=return_indices)
         self.pad = nn.ConstantPad3d(padding=0, value=0)
         self.return_indices = return_indices
         self.return_pad = return_pad
@@ -37,7 +38,8 @@ class PadMaxPool3d(nn.Module):
         self.pool.return_indices = return_indices
 
     def forward(self, f_maps):
-        coords = [self.stride - f_maps.size(i + 2) % self.stride for i in range(3)]
+        coords = [self.stride -
+                  f_maps.size(i + 2) % self.stride for i in range(3)]
         for i, coord in enumerate(coords):
             if coord == self.stride:
                 coords[i] = 0
@@ -66,7 +68,8 @@ class PadMaxPool2d(nn.Module):
         super(PadMaxPool2d, self).__init__()
         self.kernel_size = kernel_size
         self.stride = stride
-        self.pool = nn.MaxPool2d(kernel_size, stride, return_indices=return_indices)
+        self.pool = nn.MaxPool2d(
+            kernel_size, stride, return_indices=return_indices)
         self.pad = nn.ConstantPad2d(padding=0, value=0)
         self.return_indices = return_indices
         self.return_pad = return_pad
@@ -77,7 +80,8 @@ class PadMaxPool2d(nn.Module):
         self.pool.return_indices = return_indices
 
     def forward(self, f_maps):
-        coords = [self.stride - f_maps.size(i + 2) % self.stride for i in range(2)]
+        coords = [self.stride -
+                  f_maps.size(i + 2) % self.stride for i in range(2)]
         for i, coord in enumerate(coords):
             if coord == self.stride:
                 coords[i] = 0

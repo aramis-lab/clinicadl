@@ -19,8 +19,10 @@ def load_and_check_tsv(tsv_path, caps_dir, output_path):
             raise Exception("the data file is not in the correct format."
                             "Columns should include ['participant_id', 'session_id']")
     else:
-        create_subs_sess_list(caps_dir, output_path, is_bids_dir=False, use_session_tsv=False)
-        df = pd.read_csv(join(output_path, 'subjects_sessions_list.tsv'), sep="\t")
+        create_subs_sess_list(caps_dir, output_path,
+                              is_bids_dir=False, use_session_tsv=False)
+        df = pd.read_csv(
+            join(output_path, 'subjects_sessions_list.tsv'), sep="\t")
 
     return df
 
@@ -154,7 +156,8 @@ def generate_scales(size):
     elif size == "small":
         return random.uniform(0.8, 0.9), random.uniform(0.8, 0.9)
     else:
-        raise NotImplementedError("Size %s was not implemented for variable sizes." % size)
+        raise NotImplementedError(
+            "Size %s was not implemented for variable sizes." % size)
 
 
 def generate_shepplogan_phantom(img_size, label=0, smoothing=True):
@@ -180,7 +183,8 @@ def generate_shepplogan_phantom(img_size, label=0, smoothing=True):
 
     # Brain
     offset = random.uniform(1, img_size / 32)
-    rr, cc = ellipse(center + offset / 2, center, a - offset, b - offset, (img_size, img_size))
+    rr, cc = ellipse(center + offset / 2, center, a - offset,
+                     b - offset, (img_size, img_size))
     img[rr, cc] = 0.2
 
     # Central
@@ -234,19 +238,22 @@ def generate_shepplogan_phantom(img_size, label=0, smoothing=True):
     # Ventricle 1
     a_roi = a * random.uniform(0.8, 1.2)
     phi = np.random.uniform(-np.pi / 16, np.pi / 16)
-    rr, cc = ellipse(center, center * 0.75, a_roi / 3, a_roi / 6, (img_size, img_size), rotation=np.pi / 8 + phi)
+    rr, cc = ellipse(center, center * 0.75, a_roi / 3, a_roi / 6,
+                     (img_size, img_size), rotation=np.pi / 8 + phi)
     img[rr, cc] = 0.0
 
     # Ventricle 2
     a_roi = a * random.uniform(0.8, 1.2)
     phi = np.random.uniform(-np.pi / 16, np.pi / 16)
-    rr, cc = ellipse(center, center * 1.25, a_roi / 3, a_roi / 6, (img_size, img_size), rotation=-np.pi / 8 + phi)
+    rr, cc = ellipse(center, center * 1.25, a_roi / 3, a_roi / 6,
+                     (img_size, img_size), rotation=-np.pi / 8 + phi)
     img[rr, cc] = 0.0
 
     # Random smoothing
     if smoothing:
         sigma = random.uniform(0, 1)
-        img = gaussian_filter(img, sigma * img_size / 100.)  # smoothing of data
+        img = gaussian_filter(img, sigma * img_size /
+                              100.)  # smoothing of data
 
     img.clip(0, 1)
 

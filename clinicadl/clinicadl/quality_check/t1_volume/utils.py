@@ -34,13 +34,15 @@ def extract_metrics(caps_dir, output_dir):
         try:
             segmentation_file = fetch_file(FILE1, cache_clinicadl)
         except IOError as err:
-            raise IOError('Unable to download required eyes segmentation for QC:', err)
+            raise IOError(
+                'Unable to download required eyes segmentation for QC:', err)
 
     segmentation_nii = nib.load(segmentation_file)
     segmentation_np = segmentation_nii.get_fdata()
 
     # Get the GM template
-    template_path = path.join(caps_dir, 'groups', 'group-ADNIbl', 't1', 'group-ADNIbl_template.nii.gz')
+    template_path = path.join(
+        caps_dir, 'groups', 'group-ADNIbl', 't1', 'group-ADNIbl_template.nii.gz')
     template_nii = nib.load(template_path)
     template_np = template_nii.get_fdata()
     template_np = np.sum(template_np, axis=3)
@@ -48,7 +50,8 @@ def extract_metrics(caps_dir, output_dir):
 
     # Get the data
     filename = path.join(output_dir, 'QC_metrics.tsv')
-    columns = ['participant_id', 'session_id', 'max_intensity', 'non_zero_percentage', 'frontal_similarity']
+    columns = ['participant_id', 'session_id', 'max_intensity',
+               'non_zero_percentage', 'frontal_similarity']
     results_df = pd.DataFrame()
 
     subjects = os.listdir(path.join(caps_dir, 'subjects'))
@@ -59,18 +62,21 @@ def extract_metrics(caps_dir, output_dir):
         sessions = [session for session in sessions if session[:4:] == "ses-"]
         for session in sessions:
             image_path = path.join(subject_path, session, 't1', 'spm', 'segmentation', 'normalized_space',
-                subject + '_' + session + '_T1w_segm-graymatter_space-Ixi549Space_modulated-off_probability.nii.gz')
+                                   subject + '_' + session + '_T1w_segm-graymatter_space-Ixi549Space_modulated-off_probability.nii.gz')
 
             if path.exists(image_path):
                 # GM analysis
                 image_nii = nib.load(image_path)
                 image_np = image_nii.get_fdata()
                 image_segmentation_np = image_np * segmentation_np
-                eyes_nmi_value = nmi(occlusion1=template_segmentation_np, occlusion2=image_segmentation_np)
+                eyes_nmi_value = nmi(
+                    occlusion1=template_segmentation_np, occlusion2=image_segmentation_np)
 
-                non_zero_percentage = np.count_nonzero(image_np) / image_np.size
+                non_zero_percentage = np.count_nonzero(
+                    image_np) / image_np.size
 
-                row = [[subject, session, np.max(image_np), non_zero_percentage, eyes_nmi_value]]
+                row = [[subject, session, np.max(
+                    image_np), non_zero_percentage, eyes_nmi_value]]
                 row_df = pd.DataFrame(row, columns=columns)
                 results_df = pd.concat([results_df, row_df])
 
@@ -87,7 +93,7 @@ def nmi(occlusion1, occlusion2):
     hist2, _, _ = np.histogram2d(occlusion2.ravel(), occlusion2.ravel())
 
     return 2 * _mutual_information(hist_inter) / (
-            _mutual_information(hist1) + _mutual_information(hist2))
+        _mutual_information(hist1) + _mutual_information(hist2))
 
 
 def _mutual_information(hgram):
@@ -98,4 +104,3 @@ def _mutual_information(hgram):
     # Now we can do the calculation using the pxy, px_py 2D arrays
     nzs = pxy > 0  # Only non-zero pxy values contribute to the sum
     return np.sum(pxy[nzs] * np.log(pxy[nzs] / px_py[nzs]))
-
