@@ -815,6 +815,11 @@ def parse_command_line():
         "slice",
         parents=[parent_parser, train_parent_parser, transfer_learning_parent],
         help="Train a 2D slice-level CNN.")
+    # /!\ If parents list is changed the arguments won't be in the right group anymore !
+    train_slice_parser._action_groups[-1].add_argument(
+        '--transfer_learning_selection',
+        help="If transfer_learning from CNN, chooses which best transfer model is selected.",
+        type=str, default="best_balanced_accuracy", choices=["best_loss", "best_balanced_accuracy"])
 
     train_slice_group = train_slice_parser.add_argument_group(
         TRAIN_CATEGORIES["SLICE"])
