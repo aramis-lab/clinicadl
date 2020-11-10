@@ -41,8 +41,8 @@ def extract_tensors(args):
 
 
 def qc_func(args):
-    from clinicadl.quality_check.t1_linear.quality_check import quality_check as linear_qc
-    from clinicadl.quality_check.t1_volume.quality_check import quality_check as volume_qc
+    from .quality_check.t1_linear.quality_check import quality_check as linear_qc
+    from .quality_check.t1_volume.quality_check import quality_check as volume_qc
 
     if args.preprocessing == "t1-linear":
         linear_qc(
@@ -365,7 +365,7 @@ def parse_command_line():
     # Preprocessing
     from clinica.pipelines.t1_linear.t1_linear_cli import T1LinearCLI
     from clinica.engine.cmdparser import init_cmdparser_objects
-    from clinicadl.preprocessing.t1_extensive.t1_extensive_cli import T1ExtensiveCli
+    from .preprocessing.t1_extensive.t1_extensive_cli import T1ExtensiveCli
     preprocessing_parser = subparser.add_parser(
         'preprocessing',
         help='Preprocess T1w-weighted images with t1-linear or t1-extensive pipelines'
