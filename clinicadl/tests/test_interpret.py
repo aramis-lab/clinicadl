@@ -60,7 +60,7 @@ def cli_commands(request):
     return cnn_input, interpret_input
 
 
-def test_train(cli_commands):
+def test_interpret(cli_commands):
     cnn_input, interpret_input = cli_commands
     train_error = not os.system("clinicadl " + " ".join(cnn_input))
     interpret_error = not os.system("clinicadl " + " ".join(interpret_input))

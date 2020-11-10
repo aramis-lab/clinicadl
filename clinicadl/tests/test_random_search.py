@@ -46,7 +46,7 @@ def cli_commands(request):
     return arg_dict, test_input
 
 
-def test_train(cli_commands):
+def test_random_search(cli_commands):
     arg_dict, test_input = cli_commands
 
     # Write random_search.json file
