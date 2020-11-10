@@ -8,7 +8,7 @@ import os
 from time import time
 
 from clinicadl.tools.deep_learning import commandline_to_json
-from clinicadl.tools.deep_learning.models import load_model, create_model
+from clinicadl.tools.deep_learning.models import load_model, init_model
 from clinicadl.tools.deep_learning.data import (load_data,
                                                 MinMaxNormalization,
                                                 MRIDatasetSlice,
@@ -80,7 +80,8 @@ parser.add_argument(
     "--mri_plane",
     default=0,
     type=int,
-    help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
+    help='Which coordinate axis to take for slicing the MRI. '
+         '0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
 
 parser.add_argument(
     '--baseline',
@@ -212,7 +213,10 @@ def train_CNN_bad_data_split(params):
     total_time = time()
 
     if params.split is None:
-        fold_iterator = range(params.n_splits)
+        if params.n_splits is None:
+            fold_iterator = range(1)
+        else:
+            fold_iterator = range(params.n_splits)
     else:
         fold_iterator = [params.split]
 
@@ -271,7 +275,7 @@ def train_CNN_bad_data_split(params):
 
         # Initialize the model
         print('Initialization of the model')
-        model = create_model(
+        model = init_model(
             params.model,
             gpu=params.gpu,
             dropout=params.dropout)

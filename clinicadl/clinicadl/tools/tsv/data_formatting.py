@@ -135,7 +135,7 @@ def stable_selection(bids_df, diagnosis='AD', logger=None):
         logger.basicConfig(level=logging.DEBUG)
 
     # Keep diagnosis at baseline
-    bids_df = bids_df[bids_df.diagnosis_bl == diagnosis]
+    bids_df = bids_df[bids_df.baseline_diagnosis == diagnosis]
     bids_df = cleaning_nan_diagnoses(bids_df, logger=logger)
 
     # Drop if not stable
@@ -178,7 +178,7 @@ def mci_stability(bids_df, horizon_time=36, logger=None):
         logger.basicConfig(level=logging.DEBUG)
 
     diagnosis_list = ['MCI', 'EMCI', 'LMCI']
-    bids_df = bids_df[(bids_df.diagnosis_bl.isin(diagnosis_list))]
+    bids_df = bids_df[(bids_df.baseline_diagnosis.isin(diagnosis_list))]
     bids_df = cleaning_nan_diagnoses(bids_df, logger)
     bids_df = infer_or_drop_diagnosis(bids_df, logger)
 
@@ -313,7 +313,8 @@ def apply_restriction(bids_df, restriction_path):
 
 def get_labels(merged_tsv, missing_mods, results_path,
                diagnoses, modality="t1w", restriction_path=None,
-               time_horizon=36, verbosity=0):
+               time_horizon=36, variables_of_interest=None,
+               remove_smc=True, verbose=0):
     """
     Writes one tsv file per label in diagnoses argument based on merged_tsv and missing_mods.
 
@@ -325,16 +326,21 @@ def get_labels(merged_tsv, missing_mods, results_path,
         modality (str): Modality to select sessions. Sessions which do not include the modality will be excluded.
         restriction_path (str): Path to a tsv containing the sessions that can be included.
         time_horizon (int): Time horizon to analyse stability of MCI subjects.
-        verbosity (int): level of verbosity.
+        variables_of_interest (list[str]): columns that should be kept in the output tsv files.
+        remove_smc (bool): if True SMC participants are removed from the lists.
+        verbose (int): level of verbosity.
 
     Returns:
          writes one tsv file per label at results_path/<label>.tsv
     """
-    logger = return_logger(verbosity, "getlabels")
+    logger = return_logger(verbose, "getlabels")
 
     # Reading files
     bids_df = pd.read_csv(merged_tsv, sep='\t')
     bids_df.set_index(['participant_id', 'session_id'], inplace=True)
+    variables_list = ["diagnosis"]
+    if variables_of_interest is not None:
+        variables_list += variables_of_interest
 
     list_files = os.listdir(missing_mods)
     missing_mods_dict = {}
@@ -353,19 +359,18 @@ def get_labels(merged_tsv, missing_mods, results_path,
     # Creating results path
     os.makedirs(results_path, exist_ok=True)
 
-    # Adding the field diagnosis_bl
-    if 'diagnosis_bl' not in bids_df.columns:
-        bids_copy_df = copy(bids_df)
-        bids_copy_df['diagnosis_bl'] = pd.Series(np.zeros(len(bids_df)), index=bids_df.index)
-        for subject, subject_df in bids_df.groupby(level=0):
-            try:
-                diagnosis_bl = subject_df.loc[(subject, 'ses-M00'), 'diagnosis']
-            except KeyError:
-                raise KeyError("The baseline session is necessary for labels selection. It is missing for subject %s"
-                               % subject)
-            bids_copy_df.loc[subject, 'diagnosis_bl'] = diagnosis_bl
+    # Remove SMC patients
+    if remove_smc and "diagnosis_bl" in bids_df.columns.values:
+        bids_df = bids_df[~bids_df.diagnosis_bl == "SMC"]
 
-        bids_df = copy(bids_copy_df)
+    # Adding the field baseline_diagnosis
+    bids_copy_df = copy(bids_df)
+    bids_copy_df['baseline_diagnosis'] = pd.Series(np.zeros(len(bids_df)), index=bids_df.index)
+    for subject, subject_df in bids_df.groupby(level=0):
+        baseline_diagnosis = subject_df.loc[(subject, 'ses-M00'), 'diagnosis']
+        bids_copy_df.loc[subject, 'baseline_diagnosis'] = baseline_diagnosis
+
+    bids_df = copy(bids_copy_df)
 
     time_MCI_df = None
     if 'AD' in diagnoses:
@@ -374,7 +379,7 @@ def get_labels(merged_tsv, missing_mods, results_path,
         output_df = mod_selection(output_df, missing_mods_dict, modality)
         output_df = apply_restriction(output_df, restriction_path)
 
-        diagnosis_df = pd.DataFrame(output_df['diagnosis'], columns=['diagnosis'])
+        diagnosis_df = output_df[variables_list]
         diagnosis_df.to_csv(path.join(results_path, 'AD.tsv'), sep='\t')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
         logger.info('Found %s AD subjects for a total of %s sessions\n' % (len(sub_df), len(diagnosis_df)))
@@ -385,7 +390,7 @@ def get_labels(merged_tsv, missing_mods, results_path,
         output_df = mod_selection(output_df, missing_mods_dict, modality)
         output_df = apply_restriction(output_df, restriction_path)
 
-        diagnosis_df = pd.DataFrame(output_df['diagnosis'], columns=['diagnosis'])
+        diagnosis_df = output_df[variables_list]
         diagnosis_df.to_csv(path.join(results_path, 'CN.tsv'), sep='\t')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
         logger.info('Found %s CN subjects for a total of %s sessions\n' % (len(sub_df), len(diagnosis_df)))
@@ -400,7 +405,7 @@ def get_labels(merged_tsv, missing_mods, results_path,
         # Relabelling everything as MCI
         output_df.diagnosis = ['MCI'] * len(output_df)
 
-        diagnosis_df = pd.DataFrame(output_df['diagnosis'], columns=['diagnosis'])
+        diagnosis_df = output_df[variables_list]
         diagnosis_df.to_csv(path.join(results_path, 'MCI.tsv'), sep='\t')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
         logger.info('Found %s MCI subjects for a total of %s sessions\n' % (len(sub_df), len(diagnosis_df)))
@@ -413,7 +418,7 @@ def get_labels(merged_tsv, missing_mods, results_path,
         output_df = mod_selection(output_df, missing_mods_dict, modality)
         output_df = apply_restriction(output_df, restriction_path)
 
-        diagnosis_df = pd.DataFrame(output_df['diagnosis'], columns=['diagnosis'])
+        diagnosis_df = output_df[variables_list]
         diagnosis_df.to_csv(path.join(results_path, 'sMCI.tsv'), sep='\t')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
         logger.info('Found %s sMCI subjects for a total of %s sessions\n' % (len(sub_df), len(diagnosis_df)))
@@ -426,7 +431,7 @@ def get_labels(merged_tsv, missing_mods, results_path,
         output_df = mod_selection(output_df, missing_mods_dict, modality)
         output_df = apply_restriction(output_df, restriction_path)
 
-        diagnosis_df = pd.DataFrame(output_df['diagnosis'], columns=['diagnosis'])
+        diagnosis_df = output_df[variables_list]
         diagnosis_df.to_csv(path.join(results_path, 'pMCI.tsv'), sep='\t')
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
         logger.info('Found %s pMCI subjects for a total of %s sessions\n' % (len(sub_df), len(diagnosis_df)))

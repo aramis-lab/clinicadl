@@ -14,7 +14,7 @@ sex_dict = {'M': 0, 'F': 1}
 
 def split_diagnoses(formatted_data_path,
                     n_splits=5, subset_name="validation", MCI_sub_categories=True,
-                    verbosity=0):
+                    stratification=None, verbose=0):
     """
     Performs a k-fold split for each label independently on the subject level.
     The train folder will contain two lists per fold per diagnosis (baseline and longitudinal),
@@ -25,7 +25,8 @@ def split_diagnoses(formatted_data_path,
         n_splits (int): Number of folds in the k-fold split.
         subset_name (str): Name of the subset that is complementary to train.
         MCI_sub_categories (bool): If True, manages MCI sub-categories to avoid data leakage.
-        verbosity (int): level of verbosity.
+        stratification (str): Name of variable used to stratify k-fold.
+        verbose (int): level of verbosity.
 
     Returns:
          writes three files per split per <label>.tsv file present in formatted_data_path:
@@ -33,7 +34,7 @@ def split_diagnoses(formatted_data_path,
             - formatted_data_path/train_splits-<n_splits>/split-<split>/<label>_baseline.tsv
             - formatted_data_path/<subset_name>_splits-<n_splits>/split-<split>/<label>_baseline.tsv
     """
-    logger = return_logger(verbosity, 'k-fold split')
+    logger = return_logger(verbose, 'k-fold split')
 
     # Read files
     results_path = formatted_data_path
@@ -72,10 +73,14 @@ def split_diagnoses(formatted_data_path,
 
         diagnosis_df = pd.read_csv(path.join(results_path, diagnosis_df_path), sep='\t')
         diagnosis_baseline_df = baseline_df(diagnosis_df, diagnosis)
-        diagnoses_list = list(diagnosis_baseline_df.diagnosis)
-        unique = list(set(diagnoses_list))
-        y = np.array(
-            [unique.index(x) for x in diagnoses_list])  # There is one label per diagnosis depending on the order
+        if stratification is None:
+            diagnoses_list = list(diagnosis_baseline_df.diagnosis)
+            unique = list(set(diagnoses_list))
+            y = np.array([unique.index(x) for x in diagnoses_list])
+        else:
+            stratification_list = list(diagnosis_baseline_df[stratification])
+            unique = list(set(stratification_list))
+            y = np.array([unique.index(x) for x in stratification_list])
 
         splits = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=2)
 
@@ -99,7 +104,7 @@ def split_diagnoses(formatted_data_path,
             test_df.to_csv(
                 path.join(test_path, 'split-' + str(i), str(diagnosis) + '_baseline.tsv'), sep='\t', index=False)
 
-    logger.info("K-fold split for diagnosis %s is done" % diagnosis)
+        logger.info("K-fold split for diagnosis %s is done" % diagnosis)
 
     if MCI_special_treatment:
 
@@ -138,11 +143,15 @@ def split_diagnoses(formatted_data_path,
             raise ValueError('The MCI_sub_categories flag is not needed as there are no intersections with'
                              'MCI subcategories.')
 
-        diagnosis_baseline_df = baseline_df(MCI_df, 'MCI', False)
-        diagnoses_list = list(diagnosis_baseline_df.diagnosis)
-        unique = list(set(diagnoses_list))
-        y = np.array(
-            [unique.index(x) for x in diagnoses_list])  # There is one label per diagnosis depending on the order
+        diagnosis_baseline_df = baseline_df(MCI_df, False)
+        if stratification is None:
+            diagnoses_list = list(diagnosis_baseline_df.diagnosis)
+            unique = list(set(diagnoses_list))
+            y = np.array([unique.index(x) for x in diagnoses_list])
+        else:
+            stratification_list = list(diagnosis_baseline_df[stratification])
+            unique = list(set(stratification_list))
+            y = np.array([unique.index(x) for x in stratification_list])
 
         splits = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=2)
 

@@ -4,6 +4,7 @@ import torch.utils.model_zoo as model_zoo
 from torchvision.models.resnet import BasicBlock
 from torch import nn
 import math
+from .modules import Flatten
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -114,3 +115,55 @@ class ResNetDesigner(nn.Module):
         x = self.fc_out(x)
 
         return x
+
+
+class ConvNet(nn.Module):
+    def __init__(self, dropout=0.5, n_classes=2):
+        super(ConvNet, self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(1, 8, 3, padding=1),
+            nn.Conv2d(8, 8, 3, padding=1),
+            nn.BatchNorm2d(8),
+            nn.LeakyReLU(),
+            nn.MaxPool2d(2, 2),
+            # feature_map : (8@64x64)
+
+            nn.Conv2d(8, 16, 3, padding=1),
+            nn.Conv2d(16, 16, 3, padding=1),
+            nn.BatchNorm2d(16),
+            nn.LeakyReLU(),
+            nn.MaxPool2d(2, 2),
+            # feature_map : (16@32x32)
+
+            nn.Conv2d(16, 32, 3, padding=1),
+            nn.Conv2d(32, 32, 3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.LeakyReLU(),
+            nn.MaxPool2d(2, 2),
+            # feature_map : (32@16x16)
+
+            nn.Conv2d(32, 64, 3, padding=1),
+            nn.Conv2d(64, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(),
+            nn.MaxPool2d(2, 2),
+            # feature_map : (64@8x8)
+
+            nn.Conv2d(64, 64, 3, padding=1),
+            nn.Conv2d(64, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(),
+            nn.MaxPool2d(2, 2),
+            # feature_map : (64@4x4)
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+            nn.Dropout(dropout),
+            nn.Linear(64 * 4 * 4, n_classes)
+        )
+
+    def forward(self, x):
+        out = self.features(x)
+        out = self.classifier(out)
+        return out

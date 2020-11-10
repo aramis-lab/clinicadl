@@ -1,0 +1,79 @@
+"""
+Launch a random network training.
+"""
+
+import argparse
+from os import path
+
+from ..tools.deep_learning import read_json
+from ..tools.deep_learning.models.random import random_sampling
+from .train_multiCNN import train_multi_cnn
+from .train_singleCNN import train_single_cnn
+from .train_autoencoder import train_autoencoder
+
+
+def check_and_complete(rs_options):
+    """
+    This function initializes fields so a random model can be sampled.
+    Some fields are mandatory and cannot be initialized by default; this will raise an issue if they are missing.
+
+    :param rs_options: (Namespace) the random search options
+    """
+    filename = 'random_search.json'
+
+    default_values = {
+        "accumulation_steps": 1,
+        "baseline": False,
+        "channels_limit": 512,
+        "d_reduction": "MaxPooling",
+        "data_augmentation": False,
+        "discarded_slices": 20,
+        "dropout": 0,
+        "learning_rate": 4,
+        "loss": "default",
+        "n_conv": 1,
+        "network_normalization": "BatchNorm",
+        "optimizer": "Adam",
+        "unnormalize": False,
+        "patch_size": 50,
+        "selection_threshold": 0,
+        "slice_direction": 0,
+        "stride_size": 50,
+        "transfer_learning_path": None,
+        "transfer_learning_selection": "best_loss",
+        "use_extracted_features": False,
+        "wd_bool": False,
+        "sampler": "random"
+    }
+    for name, default_value in default_values.items():
+        if not hasattr(rs_options, name):
+            setattr(rs_options, name, default_value)
+
+    # Exception of weight decay to better handle
+    if not rs_options.wd_bool and not hasattr(rs_options, "weight_decay"):
+        raise ValueError("A range for the opposite of the weight decay exponent must be given in %s." % filename)
+
+    mandatory_arguments = ['epochs', 'patience', 'tolerance', 'mode_task', 'mode',
+                           'tsv_path', 'caps_dir', 'diagnoses', 'preprocessing',
+                           'n_convblocks', 'first_conv_width', 'n_fcblocks']
+
+    for argument in mandatory_arguments:
+        if not hasattr(rs_options, argument):
+            raise ValueError("The argument %s must be specified in %s." % (argument, filename))
+
+
+def launch_search(options):
+
+    rs_options = argparse.Namespace()
+    rs_options = read_json(rs_options, path.join(options.launch_dir, 'random_search.json'))
+    check_and_complete(rs_options)
+    random_sampling(rs_options, options)
+
+    options.output_dir = path.join(options.launch_dir, options.name)
+
+    if options.mode_task == "autoencoder":
+        train_autoencoder(options)
+    elif options.mode_task == "cnn":
+        train_single_cnn(options)
+    elif options.mode_task == "multicnn":
+        train_multi_cnn(options)

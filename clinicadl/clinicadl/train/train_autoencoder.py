@@ -4,12 +4,14 @@ import torch
 import os
 from torch.utils.data import DataLoader
 
-from ..tools.deep_learning.autoencoder_utils import train, visualize_image
-from ..tools.deep_learning.models import create_model, load_model, transfer_learning
+from ..tools.deep_learning.autoencoder_utils import train, visualize_image, get_criterion
+from ..tools.deep_learning.models import init_model, load_model
 from ..tools.deep_learning.data import (load_data,
                                         get_transforms,
-                                        return_dataset)
+                                        return_dataset,
+                                        generate_sampler)
 from ..tools.deep_learning.iotools import return_logger
+from ..tools.deep_learning.iotools import commandline_to_json, write_requirements_version, translate_parameters
 
 
 def train_autoencoder(params):
@@ -24,14 +26,23 @@ def train_autoencoder(params):
     optimizer.pth.tar files which respectively contains the state of the model and the optimizer at the end
     of the last epoch that was completed before the crash.
     """
+    main_logger = return_logger(params.verbose, "main process")
+    train_logger = return_logger(params.verbose, "train")
 
-    transformations = get_transforms(params.mode, params.minmaxnormalization)
-    criterion = torch.nn.MSELoss()
-    main_logger = return_logger(params.verbosity, "main process")
-    train_logger = return_logger(params.verbosity, "train")
+    commandline_to_json(params, logger=main_logger)
+    write_requirements_version(params.output_dir)
+    params = translate_parameters(params)
+
+    train_transforms, all_transforms = get_transforms(params.mode,
+                                                      minmaxnormalization=params.minmaxnormalization,
+                                                      data_augmentation=params.data_augmentation)
+    criterion = get_criterion(params.loss)
 
     if params.split is None:
-        fold_iterator = range(params.n_splits)
+        if params.n_splits is None:
+            fold_iterator = range(1)
+        else:
+            fold_iterator = range(params.n_splits)
     else:
         fold_iterator = params.split
 
@@ -48,15 +59,18 @@ def train_autoencoder(params):
         )
 
         data_train = return_dataset(params.mode, params.input_dir, training_df, params.preprocessing,
-                                    transformations, params)
+                                    train_transformations=train_transforms, all_transformations=all_transforms,
+                                    params=params)
         data_valid = return_dataset(params.mode, params.input_dir, valid_df, params.preprocessing,
-                                    transformations, params)
+                                    train_transformations=train_transforms, all_transformations=all_transforms,
+                                    params=params)
 
-        # Use argument load to distinguish training and testing
+        train_sampler = generate_sampler(data_train, params.sampler)
+
         train_loader = DataLoader(
                 data_train,
                 batch_size=params.batch_size,
-                shuffle=True,
+                sampler=train_sampler,
                 num_workers=params.num_workers,
                 pin_memory=True)
 
@@ -72,12 +86,10 @@ def train_autoencoder(params):
         model_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'models')
         visualization_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'autoencoder_reconstruction')
 
-        decoder = create_model(params.model, gpu=params.gpu, ae_from_model=True)
-        decoder = transfer_learning(decoder, fi, source_path=params.transfer_learning_path,
-                                    gpu=params.gpu, selection=params.transfer_learning_selection)
-        optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
-                                                            lr=params.learning_rate,
-                                                            weight_decay=params.weight_decay)
+        decoder = init_model(params, initial_shape=data_train.size, autoencoder=True)
+        optimizer = getattr(torch.optim, params.optimizer)(filter(lambda x: x.requires_grad, decoder.parameters()),
+                                                           lr=params.learning_rate,
+                                                           weight_decay=params.weight_decay)
 
         train(decoder, train_loader, valid_loader, criterion, optimizer, False,
               log_dir, model_dir, params, train_logger)
@@ -85,7 +97,7 @@ def train_autoencoder(params):
         if params.visualization:
             best_decoder, _ = load_model(decoder, os.path.join(model_dir, "best_loss"),
                                          params.gpu, filename='model_best.pth.tar')
-            nb_images = train_loader.dataset.elem_per_image
+            nb_images = data_train.size.elem_per_image
             if nb_images <= 2:
                 nb_images *= 3
             visualize_image(best_decoder, valid_loader, os.path.join(visualization_dir, "validation"),

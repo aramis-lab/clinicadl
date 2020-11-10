@@ -6,7 +6,15 @@ import os
 import warnings
 import pandas as pd
 from time import time
+from torch.nn.modules.loss import _Loss
+import torch.nn.functional as F
+from sklearn.utils import column_or_1d
+import scipy.sparse as sp
 import logging
+from torch.nn.modules.loss import _Loss
+import torch.nn.functional as F
+from sklearn.utils import column_or_1d
+import scipy.sparse as sp
 
 from clinicadl.tools.deep_learning.iotools import check_and_clean
 from clinicadl.tools.deep_learning import EarlyStopping, save_checkpoint
@@ -36,26 +44,51 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
     from tensorboardX import SummaryWriter
     from time import time
 
+    columns = ['epoch', 'iteration', 'time',
+               'balanced_accuracy_train', 'loss_train',
+               'balanced_accuracy_valid', 'loss_valid']
+    filename = os.path.join(os.path.dirname(log_dir), 'training.tsv')
+
     if logger is None:
         logger = logging
+
+    columns = ['epoch', 'iteration', 'time',
+               'balanced_accuracy_train', 'loss_train',
+               'balanced_accuracy_valid', 'loss_valid']
+    filename = os.path.join(os.path.dirname(log_dir), 'training.tsv')
 
     if not resume:
         check_and_clean(model_dir)
         check_and_clean(log_dir)
+
+        results_df = pd.DataFrame(columns=columns)
+        with open(filename, 'w') as f:
+            results_df.to_csv(f, index=False, sep='\t')
+        options.beginning_epoch = 0
+
+    else:
+        if not os.path.exists(filename):
+            raise ValueError('The training.tsv file of the resumed experiment does not exist.')
+        truncated_tsv = pd.read_csv(filename, sep='\t')
+        truncated_tsv.set_index(['epoch', 'iteration'], inplace=True)
+        truncated_tsv.drop(options.beginning_epoch, level=0, inplace=True)
+        truncated_tsv.to_csv(filename, index=True, sep='\t')
 
     # Create writers
     writer_train = SummaryWriter(os.path.join(log_dir, 'train'))
     writer_valid = SummaryWriter(os.path.join(log_dir, 'validation'))
 
     # Initialize variables
-    best_valid_accuracy = -1.0  # Mandatory saving of a model even if BA = 0.00 (useful for tests)
+    best_valid_accuracy = 0.0
     best_valid_loss = np.inf
     epoch = options.beginning_epoch
 
-    model.train()  # set the module to training mode
+    model.train()  # set the model to training mode
+    train_loader.dataset.train()
 
     early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
     mean_loss_valid = None
+    t_beginning = time()
 
     while epoch < options.epochs and not early_stopping.step(mean_loss_valid):
         logger.info("Beginning epoch %i." % epoch)
@@ -99,6 +132,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                     _, results_valid = test(model, valid_loader, options.gpu, criterion)
                     mean_loss_valid = results_valid["total_loss"] / (len(valid_loader) * valid_loader.batch_size)
                     model.train()
+                    train_loader.dataset.train()
 
                     global_step = i + epoch * len(train_loader)
                     writer_train.add_scalar('balanced_accuracy', results_train["balanced_accuracy"], global_step)
@@ -109,6 +143,14 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                                 % (options.mode, results_train["balanced_accuracy"], i))
                     logger.info("%s level validation accuracy is %f at the end of iteration %d"
                                 % (options.mode, results_valid["balanced_accuracy"], i))
+
+                    t_current = time() - t_beginning
+                    row = [epoch, i, t_current,
+                           results_train["balanced_accuracy"], mean_loss_train,
+                           results_valid["balanced_accuracy"], mean_loss_valid]
+                    row_df = pd.DataFrame([row], columns=columns)
+                    with open(filename, 'a') as f:
+                        row_df.to_csv(f, header=False, index=False, sep='\t')
 
             tend = time()
         logger.debug('Mean time per batch loading: %.10f s'
@@ -133,6 +175,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
         _, results_valid = test(model, valid_loader, options.gpu, criterion)
         mean_loss_valid = results_valid["total_loss"] / (len(valid_loader) * valid_loader.batch_size)
         model.train()
+        train_loader.dataset.train()
 
         global_step = (epoch + 1) * len(train_loader)
         writer_train.add_scalar('balanced_accuracy', results_train["balanced_accuracy"], global_step)
@@ -143,6 +186,14 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                     % (options.mode, results_train["balanced_accuracy"], len(train_loader)))
         logger.info("%s level validation accuracy is %f at the end of iteration %d"
                     % (options.mode, results_valid["balanced_accuracy"], len(train_loader)))
+
+        t_current = time() - t_beginning
+        row = [epoch, i, t_current,
+               results_train["balanced_accuracy"], mean_loss_train,
+               results_valid["balanced_accuracy"], mean_loss_valid]
+        row_df = pd.DataFrame([row], columns=columns)
+        with open(filename, 'a') as f:
+            row_df.to_csv(f, header=False, index=False, sep='\t')
 
         accuracy_is_best = results_valid["balanced_accuracy"] > best_valid_accuracy
         loss_is_best = mean_loss_valid < best_valid_loss
@@ -238,6 +289,7 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
         (dict) ensemble of metrics + total loss on mode level.
     """
     model.eval()
+    dataloader.dataset.eval()
 
     if mode == "image":
         columns = ["participant_id", "session_id", "true_label", "predicted_label"]
@@ -292,6 +344,40 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
     torch.cuda.empty_cache()
 
     return results_df, metrics_dict
+
+
+def sort_predicted(model, data_df, input_dir, model_options, criterion, keep_true,
+                   batch_size=1, num_workers=0, gpu=False):
+    from .data import return_dataset, get_transforms
+    from torch.utils.data import DataLoader
+    from copy import copy
+
+    if keep_true is None:
+        return data_df
+
+    _, all_transforms = get_transforms(model_options.mode, model_options.minmaxnormalization)
+    dataset = return_dataset(mode=model_options.mode, input_dir=input_dir,
+                             data_df=data_df, preprocessing=model_options.preprocessing,
+                             train_transformations=None, all_transformations=all_transforms,
+                             params=model_options)
+    dataloader = DataLoader(dataset,
+                            batch_size=batch_size,
+                            shuffle=False,
+                            num_workers=num_workers,
+                            pin_memory=True)
+
+    test_options = copy(model_options)
+    test_options.gpu = gpu
+
+    results_df, _ = test(model, dataloader, gpu, criterion, model_options.mode, use_labels=True)
+
+    sorted_df = data_df.sort_values(['participant_id', 'session_id']).reset_index(drop=True)
+    results_df = results_df.sort_values(['participant_id', 'session_id']).reset_index(drop=True)
+
+    if keep_true:
+        return sorted_df[results_df.true_label == results_df.predicted_label].reset_index(drop=True)
+    else:
+        return sorted_df[results_df.true_label != results_df.predicted_label].reset_index(drop=True)
 
 
 #################################
@@ -491,3 +577,73 @@ def check_prediction(row):
         return 1
     else:
         return 0
+
+
+###########
+# Loss
+###########
+class L1ClassificationLoss(_Loss):
+    def __init__(self, reduction="mean", normalization=True, n_classes=2):
+        super(L1ClassificationLoss, self).__init__(reduction=reduction)
+        self.softmax = torch.nn.Softmax(dim=1)
+        self.normalization = normalization
+        self.classes = np.arange(n_classes)
+
+    def forward(self, input, target):
+        if self.normalization:
+            input = self.softmax(input)
+        binarize_target = binarize_label(target, self.classes)
+        return F.l1_loss(input, binarize_target)
+
+
+class SmoothL1ClassificationLoss(_Loss):
+    def __init__(self, reduction="mean", normalization=True, n_classes=2):
+        super(SmoothL1ClassificationLoss, self).__init__(reduction=reduction)
+        self.softmax = torch.nn.Softmax(dim=1)
+        self.normalization = normalization
+        self.classes = np.arange(n_classes)
+
+    def forward(self, input, target):
+        if self.normalization:
+            input = self.softmax(input)
+        binarize_target = binarize_label(target, self.classes)
+        return F.smooth_l1_loss(input, binarize_target)
+
+
+def get_criterion(option):
+    """Returns the appropriate loss depending on the option"""
+    if option == "default":
+        return torch.nn.CrossEntropyLoss()
+    elif option == "L1Norm" or option == "L1":
+        return L1ClassificationLoss(reduction="mean", normalization=(option == "L1Norm"))
+    elif option == "SmoothL1Norm" or option == "SmoothL1":
+        return SmoothL1ClassificationLoss(reduction="mean", normalization=(option == "SmoothL1Norm"))
+    else:
+        raise ValueError("The option %s is unknown for criterion selection" % option)
+
+
+def binarize_label(y, classes, pos_label=1, neg_label=0):
+    """Greatly inspired from scikit-learn"""
+    sorted_class = np.sort(classes)
+    device = y.device
+    y = y.cpu().numpy()
+    n_samples = len(y)
+    n_classes = len(classes)
+    y = column_or_1d(y)
+
+    # pick out the known labels from y
+    y_in_classes = np.in1d(y, classes)
+    y_seen = y[y_in_classes]
+    indices = np.searchsorted(sorted_class, y_seen)
+    indptr = np.hstack((0, np.cumsum(y_in_classes)))
+
+    data = np.empty_like(indices)
+    data.fill(pos_label)
+    Y = sp.csr_matrix((data, indices, indptr),
+                      shape=(n_samples, n_classes))
+    Y = Y.toarray()
+    Y = Y.astype(int, copy=False)
+    if neg_label != 0:
+        Y[Y == 0] = neg_label
+    Y = torch.from_numpy(Y).float().to(device)
+    return Y

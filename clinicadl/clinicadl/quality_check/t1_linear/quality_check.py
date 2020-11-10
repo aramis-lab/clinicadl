@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 This file contains all methods needed to perform the quality check procedure after t1-linear preprocessing.
 """
@@ -13,7 +11,7 @@ from torch.utils.data import DataLoader
 
 from .utils import QCDataset, resnet_qc_18
 from clinica.utils.inputs import fetch_file, RemoteFileStructure
-from ..tools.data.utils import load_and_check_tsv
+from ...tools.data.utils import load_and_check_tsv
 
 
 def quality_check(caps_dir, output_path, preprocessing,
