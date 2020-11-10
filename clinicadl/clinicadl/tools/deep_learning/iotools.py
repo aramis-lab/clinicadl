@@ -38,6 +38,9 @@ def return_logger(verbose, name_fn):
     return logger
 
 
+computational_list = ['gpu', 'batch_size', 'num_workers', 'evaluation_steps']
+
+
 def write_requirements_version(output_path):
     import subprocess
     from os import path
@@ -178,7 +181,6 @@ def read_json(options, json_path=None, test=False):
 
     if not hasattr(options, 'dropout'):
         options.dropout = "default"
-    set_default_dropout(options)
 
     if not hasattr(options, 'discarded_sliced'):
         options.discarded_slices = 20
