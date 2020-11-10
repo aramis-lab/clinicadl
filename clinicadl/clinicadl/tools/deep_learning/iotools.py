@@ -232,6 +232,9 @@ def read_json(options, json_path=None, test=False):
     if hasattr(options, "selection"):
         options.transfer_learning_selection = options.selection
 
+    if not hasattr(options, "loss"):
+        options.loss = "default"
+
     return options
 
 
