@@ -111,6 +111,7 @@ def train_func(args):
         args.mode_task = "cnn"
 
     if args.mode_task == "autoencoder":
+        args.transfer_learning_selection = "best_loss"
         train_autoencoder(args)
     elif args.mode_task == "cnn":
         train_single_cnn(args)
