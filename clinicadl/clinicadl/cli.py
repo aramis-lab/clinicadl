@@ -813,7 +813,7 @@ def parse_command_line():
     #########################
     train_slice_parser = train_subparser.add_parser(
         "slice",
-        parents=[parent_parser, train_parent_parser],
+        parents=[parent_parser, train_parent_parser, transfer_learning_parent],
         help="Train a 2D slice-level CNN.")
 
     train_slice_group = train_slice_parser.add_argument_group(
