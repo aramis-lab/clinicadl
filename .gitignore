@@ -35,3 +35,6 @@ clinicadl/notebooks/
 # Mask and other files
 clinicadl/clinicadl/resources/masks/*.nii
 clinicadl/clinicadl/resources/masks/*.nii.gz
+
+# Post processing specific to project
+clinicadl/post_processing
