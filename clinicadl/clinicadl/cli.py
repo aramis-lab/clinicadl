@@ -270,7 +270,7 @@ def parse_command_line():
         help='TSV file containing a list of subjects with their sessions.',
         type=str, default=None
     )
-    generate_parser.add_argument(
+    generate_rs_parent_parser.add_argument(
         '--n_subjects',
         type=int,
         default=300,
@@ -504,9 +504,6 @@ def parse_command_line():
     )
     qc_linear_parser.add_argument("caps_dir",
                                   help='Data using CAPS structure.',
-                                  type=str)
-    qc_linear_parser.add_argument("tsv_file",
-                                  help='TSV path with subjects/sessions to process.',
                                   type=str)
     qc_linear_parser.add_argument("output_path",
                                   help="Path to the output tsv file (filename included).",
