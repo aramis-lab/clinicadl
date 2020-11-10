@@ -144,7 +144,7 @@ def stable_selection(bids_df, diagnosis='AD', logger=None):
     for subject, subject_df in bids_df.groupby(level=0):
         subject_drop = False
         try:
-            diagnosis_bl = subject_df.loc[(subject, 'ses-M00'), 'diagnosis_bl']
+            diagnosis_bl = subject_df.loc[(subject, 'ses-M00'), 'baseline_diagnosis']
         except KeyError:
             raise KeyError("The baseline session is necessary for labels selection. It is missing for subject %s"
                            % subject)
