@@ -60,9 +60,10 @@ def translate_parameters(args):
     """
     args.gpu = not args.use_cpu
     args.num_workers = args.nproc
-    args.input_dir = args.caps_dir
     args.optimizer = "Adam"
 
+    if hasattr(args, "caps_dir"):
+        args.input_dir = args.caps_dir
     if hasattr(args, "unnormalize"):
         args.minmaxnormalization = not args.unnormalize
     if hasattr(args, "slice_direction"):
