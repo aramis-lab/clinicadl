@@ -164,12 +164,12 @@ def inference_from_model(caps_dir,
     if diagnoses is not None:
         options.diagnoses = diagnoses
 
+    options = translate_parameters(options)
+
     if options.mode_task == "multicnn":
         num_cnn = compute_num_cnn(caps_dir, tsv_path, options, "test")
     else:
         num_cnn = None
-
-    options = translate_parameters(options)
     # Define the path
     currentDirectory = pathlib.Path(model_path)
     # Search for 'fold-*' pattern
