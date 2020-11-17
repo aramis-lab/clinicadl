@@ -6,6 +6,7 @@ import shutil
 import json
 
 launch_dir = "results"
+name_dir = "job-1"
 
 
 @pytest.fixture(params=[
@@ -34,7 +35,7 @@ def cli_commands(request):
             'random_search',
             'generate',
             launch_dir,
-            'job-1',
+            name_dir,
             '--n_splits', '2',
             '--split', '0',
             '-cpu'
@@ -59,7 +60,7 @@ def test_random_search(cli_commands):
 
     flag_error = not os.system("clinicadl " + " ".join(test_input))
     performances_flag = os.path.exists(
-        os.path.join("results", "fold-0", "cnn_classification"))
+        os.path.join(launch_dir, name_dir, "fold-0", "cnn_classification"))
     assert flag_error
     assert performances_flag
-    shutil.rmtree("results")
+    shutil.rmtree(launch_dir)
