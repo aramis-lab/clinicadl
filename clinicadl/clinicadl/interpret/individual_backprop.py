@@ -59,7 +59,7 @@ def individual_backprop(options):
                                           params=options)
 
             model = create_model(model_options, data_example.size)
-            model_dir = os.path.join(options.model_path, fold, 'outputs', 'best_%s' % selection)
+            model_dir = os.path.join(options.model_path, fold, 'models', 'best_%s' % selection)
             model, best_epoch = load_model(model, model_dir, gpu=options.gpu, filename='model_best.pth.tar')
             commandline_to_json(options, logger=main_logger)
 
@@ -106,14 +106,11 @@ def individual_backprop(options):
                         affine = np.eye(4)
 
                     map_nii = nib.Nifti1Image(map_np[0, 0, :, :, :], affine)
-                    nii_path = path.join(single_path, "outputs", "best_loss")
-                    if not path.exists(nii_path):
-                        os.makedirs(nii_path)
-                    nib.save(map_nii, path.join(nii_path, "occlusion.nii.gz"))
+                    os.makedirs(single_path, exist_ok=True)
+                    nib.save(map_nii, path.join(single_path, "occlusion.nii.gz"))
                 else:
                     jpg_path = path.join(single_path, "occlusion.jpg")
-                    if not path.exists(single_path):
-                        os.makedirs(single_path)
+                    os.makedirs(single_path, exist_ok=True)
                     plt.imshow(map_np[0, 0], cmap="coolwarm", vmin=-options.vmax, vmax=options.vmax)
                     plt.colorbar()
                     plt.savefig(jpg_path)
