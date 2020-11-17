@@ -75,8 +75,7 @@ def group_backprop(options):
 
                 # Save the tsv files used for the masking task
                 data_path = path.join(results_path, 'data')
-                if not path.exists(data_path):
-                    os.makedirs(data_path)
+                os.makedirs(data_path, exist_ok=True)
                 training_df.to_csv(path.join(data_path, 'label_train.tsv'), sep='\t', index=False)
 
                 data_train = return_dataset(model_options.mode, options.input_dir,
