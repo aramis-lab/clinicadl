@@ -30,7 +30,7 @@ def individual_backprop(options):
         main_logger.info(fold)
         for selection in options.selection:
             results_path = path.join(options.model_path, fold, 'gradients',
-                                     selection, options.name)
+                                     'best_%s' % selection, options.name)
 
             model_options = argparse.Namespace()
             model_options.gpu = options.gpu
@@ -59,7 +59,7 @@ def individual_backprop(options):
                                           params=options)
 
             model = create_model(model_options, data_example.size)
-            model_dir = os.path.join(options.model_path, fold, 'outputs', selection)
+            model_dir = os.path.join(options.model_path, fold, 'outputs', 'best_%s' % selection)
             model, best_epoch = load_model(model, model_dir, gpu=options.gpu, filename='model_best.pth.tar')
             commandline_to_json(options, logger=main_logger)
 
