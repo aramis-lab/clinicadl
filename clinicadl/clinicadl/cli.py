@@ -369,7 +369,7 @@ def parse_command_line():
     from .preprocessing.t1_extensive.t1_extensive_cli import T1ExtensiveCli
     preprocessing_parser = subparser.add_parser(
         'preprocessing',
-        help='Preprocess T1w-weighted images with t1-linear or t1-extensive pipelines'
+        help='Preprocess T1w-weighted images with t1-linear or t1-extensive pipelines.'
     )
 
     preprocessing_subparser = preprocessing_parser.add_subparsers(
@@ -932,7 +932,7 @@ def parse_command_line():
 
     tsv_parser = subparser.add_parser(
         'tsvtool',
-        help='''Handle tsv files for metadata processing and data splits''')
+        help='''Handle tsv files for metadata processing and data splits.''')
 
     tsv_subparser = tsv_parser.add_subparsers(
         title='''Task to execute with tsv tool:''',
