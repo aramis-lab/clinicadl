@@ -36,7 +36,8 @@ def cli_commands(request):
             launch_dir,
             'job-1',
             '--n_splits', '2',
-            '--split', '0'
+            '--split', '0',
+            '-cpu'
         ]
     else:
         raise NotImplementedError(
