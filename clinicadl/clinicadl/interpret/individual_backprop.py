@@ -61,6 +61,7 @@ def individual_backprop(options):
             model = create_model(model_options, data_example.size)
             model_dir = os.path.join(options.model_path, fold, 'models', 'best_%s' % selection)
             model, best_epoch = load_model(model, model_dir, gpu=options.gpu, filename='model_best.pth.tar')
+            options.output_dir = results_path
             commandline_to_json(options, logger=main_logger)
 
             # Keep only subjects who were correctly / wrongly predicted by the network
@@ -69,49 +70,50 @@ def individual_backprop(options):
                                          batch_size=options.batch_size, num_workers=options.num_workers,
                                          gpu=options.gpu)
 
-            # Save the tsv files used for the masking task
-            data_path = path.join(results_path, 'data')
-            if not path.exists(data_path):
-                os.makedirs(data_path)
-            training_df.to_csv(path.join(data_path, 'label_train.tsv'), sep='\t', index=False)
+            if len(training_df) > 0:
 
-            data_train = return_dataset(model_options.mode, options.input_dir,
-                                        training_df, model_options.preprocessing,
-                                        train_transformations=None, all_transformations=all_transforms,
-                                        params=options)
+                # Save the tsv files used for the masking task
+                data_path = path.join(results_path, 'data')
+                os.makedirs(data_path, exist_ok=True)
+                training_df.to_csv(path.join(data_path, 'label_train.tsv'), sep='\t', index=False)
 
-            train_loader = DataLoader(data_train,
-                                      batch_size=options.batch_size,
-                                      shuffle=True,
-                                      num_workers=options.num_workers,
-                                      pin_memory=True)
+                data_train = return_dataset(model_options.mode, options.input_dir,
+                                            training_df, model_options.preprocessing,
+                                            train_transformations=None, all_transformations=all_transforms,
+                                            params=options)
 
-            interpreter = VanillaBackProp(model, gpu=options.gpu)
+                train_loader = DataLoader(data_train,
+                                          batch_size=options.batch_size,
+                                          shuffle=True,
+                                          num_workers=options.num_workers,
+                                          pin_memory=True)
 
-            for data in train_loader:
-                if options.gpu:
-                    input_batch = data['image'].cuda()
-                else:
-                    input_batch = data['image']
+                interpreter = VanillaBackProp(model, gpu=options.gpu)
 
-                single_path = path.join(results_path, data['participant_id'][0], data['session_id'][0])
-                map_np = interpreter.generate_gradients(input_batch,
-                                                        data_train.diagnosis_code[options.target_diagnosis])
-
-                if len(data_train.size) == 4:
-                    if options.nifti_template_path is not None:
-                        image_nii = nib.load(options.nifti_template_path)
-                        affine = image_nii.affine
+                for data in train_loader:
+                    if options.gpu:
+                        input_batch = data['image'].cuda()
                     else:
-                        affine = np.eye(4)
+                        input_batch = data['image']
 
-                    map_nii = nib.Nifti1Image(map_np[0, 0, :, :, :], affine)
-                    os.makedirs(single_path, exist_ok=True)
-                    nib.save(map_nii, path.join(single_path, "occlusion.nii.gz"))
-                else:
-                    jpg_path = path.join(single_path, "occlusion.jpg")
-                    os.makedirs(single_path, exist_ok=True)
-                    plt.imshow(map_np[0, 0], cmap="coolwarm", vmin=-options.vmax, vmax=options.vmax)
-                    plt.colorbar()
-                    plt.savefig(jpg_path)
-                    plt.close()
+                    map_np = interpreter.generate_gradients(input_batch,
+                                                            data_train.diagnosis_code[options.target_diagnosis])
+                    for i in range(options.batch_size):
+                        single_path = path.join(results_path, data['participant_id'][i], data['session_id'][i])
+                        os.makedirs(single_path, exist_ok=True)
+
+                        if len(data_train.size) == 4:
+                            if options.nifti_template_path is not None:
+                                image_nii = nib.load(options.nifti_template_path)
+                                affine = image_nii.affine
+                            else:
+                                affine = np.eye(4)
+
+                            map_nii = nib.Nifti1Image(map_np[i, 0, :, :, :], affine)
+                            nib.save(map_nii, path.join(single_path, "occlusion.nii.gz"))
+                        else:
+                            jpg_path = path.join(single_path, "occlusion.jpg")
+                            plt.imshow(map_np[i, 0, :, :], cmap="coolwarm", vmin=-options.vmax, vmax=options.vmax)
+                            plt.colorbar()
+                            plt.savefig(jpg_path)
+                            plt.close()
