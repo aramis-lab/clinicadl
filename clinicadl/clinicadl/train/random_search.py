@@ -23,6 +23,7 @@ def check_and_complete(rs_options):
 
     default_values = {
         "accumulation_steps": 1,
+        "evaluation_steps": 0,
         "baseline": False,
         "channels_limit": 512,
         "d_reduction": "MaxPooling",
@@ -50,7 +51,7 @@ def check_and_complete(rs_options):
             setattr(rs_options, name, default_value)
 
     # Exception of weight decay to better handle
-    if not rs_options.wd_bool and not hasattr(rs_options, "weight_decay"):
+    if rs_options.wd_bool and not hasattr(rs_options, "weight_decay"):
         raise ValueError("A range for the opposite of the weight decay exponent must be given in %s." % filename)
 
     mandatory_arguments = ['epochs', 'patience', 'tolerance', 'mode_task', 'mode',

@@ -556,6 +556,7 @@ def parse_command_line():
 
     rs_generate_parser = rs_subparsers.add_parser(
         'generate',
+        parents=[parent_parser],
         help='Sample a new network and train it.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -597,7 +598,7 @@ def parse_command_line():
     retrain_parent_parser = return_train_parent_parser(retrain=True)
     rs_retrain_parser = rs_subparsers.add_parser(
         'retrain',
-        parents=[retrain_parent_parser],
+        parents=[parent_parser, retrain_parent_parser],
         help='Train a network previously created by generate.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
