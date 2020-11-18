@@ -1267,7 +1267,7 @@ def return_train_parent_parser(retrain=False):
     train_data_group = train_parent_parser.add_argument_group(
         TRAIN_CATEGORIES["DATA"])
 
-    if not retrain:
+    if retrain:
         train_data_group.add_argument(
             "--caps_dir", type=str, default=None,
             help="Data using CAPS structure.")
