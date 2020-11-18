@@ -18,6 +18,7 @@ TRAIN_CATEGORIES = {
     'AUTOENCODER': '%sAutoencoder specific%s' % (Fore.BLUE, Fore.RESET),
     # Slice-level
     'SLICE': '%sSlice-level parameters%s' % (Fore.BLUE, Fore.RESET),
+    'SLICE CNN': '%sSlice-level CNN parameters%s' % (Fore.BLUE, Fore.RESET),
     # Patch arguments
     'PATCH': '%sPatch-level parameters%s' % (Fore.BLUE, Fore.RESET),
     'PATCH CNN': '%sPatch-level CNN parameters%s' % (Fore.BLUE, Fore.RESET),
@@ -109,10 +110,6 @@ def rs_func(args):
 # Function to dispatch training to corresponding function
 def train_func(args):
     from .train import train_autoencoder, train_multi_cnn, train_single_cnn
-
-    # Will change after command line refactoring
-    if args.mode == "slice":
-        args.network_type = "cnn"
 
     if args.network_type == "autoencoder":
         args.transfer_learning_selection = "best_loss"
@@ -821,22 +818,48 @@ def parse_command_line():
              accuracy > threshold. Default corresponds to no selection.''',
         type=float, default=0.0)
 
-    train_roi_cnn_group.set_defaults(func=train_func)
+    train_roi_cnn_parser.set_defaults(func=train_func)
+
+    train_roi_multicnn_parser = train_roi_subparser.add_parser(
+        "multicnn",
+        parents=[
+            parent_parser,
+            train_parent_parser,
+            transfer_learning_parent],
+        help="Train a ROI-based multi-CNN (one CNN is trained per patch location).")
+    # /!\ If parents list is changed the arguments won't be in the right group anymore !
+    train_roi_multicnn_parser._action_groups[-1].add_argument(
+        '--transfer_learning_selection',
+        help="If transfer_learning from CNN, chooses which best transfer model is selected.",
+        type=str, default="best_balanced_accuracy", choices=["best_loss", "best_balanced_accuracy"])
+
+    train_roi_multicnn_group = train_roi_multicnn_parser.add_argument_group(
+        TRAIN_CATEGORIES["ROI CNN"])
+    train_roi_multicnn_group.add_argument(
+        '--selection_threshold',
+        help='''Threshold on the balanced accuracies to compute the
+                     subject-level performance. Patches are selected if their balanced
+                     accuracy > threshold. Default corresponds to no selection.''',
+        type=float, default=0.0)
+
+    train_roi_multicnn_parser.set_defaults(func=train_func)
 
     #########################
     # SLICE
     #########################
     train_slice_parser = train_subparser.add_parser(
         "slice",
-        parents=[parent_parser, train_parent_parser, transfer_learning_parent],
         help="Train a 2D slice-level CNN.")
-    # /!\ If parents list is changed the arguments won't be in the right group anymore !
-    train_slice_parser._action_groups[-1].add_argument(
-        '--transfer_learning_selection',
-        help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-        type=str, default="best_balanced_accuracy", choices=["best_loss", "best_balanced_accuracy"])
 
-    train_slice_group = train_slice_parser.add_argument_group(
+    train_slice_subparser = train_slice_parser.add_subparsers(
+        title='''Task to be performed''',
+        description='''Autoencoder reconstruction or cnn classification ?''',
+        dest='mode_task',
+        help='''****** Choose a type of network ******''')
+    train_slice_subparser.required = True
+
+    train_slice_parent = argparse.ArgumentParser(add_help=False)
+    train_slice_group = train_slice_parent.add_argument_group(
         TRAIN_CATEGORIES["SLICE"])
     train_slice_group.add_argument(
         '--slice_direction', '-sd',
@@ -857,14 +880,55 @@ def parse_command_line():
         help='''If provided the outputs of extract preprocessing are used, else the whole
                  MRI is loaded.''',
         default=False, action="store_true")
-    train_slice_group.add_argument(
+
+    train_slice_ae_parser = train_slice_subparser.add_parser(
+        "autoencoder",
+        parents=[parent_parser, train_parent_parser, train_slice_parent, transfer_learning_parent],
+        help="Train a 2D slice-level autoencoder.")
+
+    train_slice_ae_parser.set_defaults(func=train_func)
+
+    train_slice_cnn_parser = train_slice_subparser.add_parser(
+        "cnn",
+        parents=[parent_parser, train_parent_parser, train_slice_parent, transfer_learning_parent],
+        help="Train a 2D slice-level CNN.")
+    # /!\ If parents list is changed the arguments won't be in the right group anymore !
+    train_slice_cnn_parser._action_groups[-1].add_argument(
+        '--transfer_learning_selection',
+        help="If transfer_learning from CNN, chooses which best transfer model is selected.",
+        type=str, default="best_balanced_accuracy", choices=["best_loss", "best_balanced_accuracy"])
+
+    train_slice_cnn_group = train_slice_cnn_parser.add_argument_group(
+        TRAIN_CATEGORIES["SLICE CNN"])
+    train_slice_cnn_group.add_argument(
+        '--selection_threshold',
+        help='''Threshold on the balanced accuracies to compute the
+             subject-level performance. Slices are selected if their balanced
+             accuracy > threshold. Default corresponds to no selection.''',
+        type=float, default=0.0)
+
+    train_slice_cnn_parser.set_defaults(func=train_func)
+
+    train_slice_multicnn_parser = train_slice_subparser.add_parser(
+        "multicnn",
+        parents=[parent_parser, train_parent_parser, train_slice_parent, transfer_learning_parent],
+        help="Train a 2D slice-level multi-CNN.")
+    # /!\ If parents list is changed the arguments won't be in the right group anymore !
+    train_slice_multicnn_parser._action_groups[-1].add_argument(
+        '--transfer_learning_selection',
+        help="If transfer_learning from CNN, chooses which best transfer model is selected.",
+        type=str, default="best_balanced_accuracy", choices=["best_loss", "best_balanced_accuracy"])
+
+    train_slice_multicnn_group = train_slice_multicnn_parser.add_argument_group(
+        TRAIN_CATEGORIES["SLICE CNN"])
+    train_slice_multicnn_group.add_argument(
         '--selection_threshold',
         help='''Threshold on the balanced accuracies to compute the
                  subject-level performance. Slices are selected if their balanced
                  accuracy > threshold. Default corresponds to no selection.''',
         type=float, default=0.0)
 
-    train_slice_parser.set_defaults(func=train_func)
+    train_slice_multicnn_parser.set_defaults(func=train_func)
 
     # Classify - Classify a subject or a list of tsv files with the CNN
     # provided as argument.
