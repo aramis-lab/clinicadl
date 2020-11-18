@@ -97,18 +97,18 @@ def generate_cli_commands(request):
             'generate',
             'random',
             '/dir/caps',
+            't1-linear',
             '/dir/output/',
             '--n_subjects', '10',
-            '--preprocessing', 't1-linear',
             '--mean', '0.5',
             '--sigma', '0.5']
         keys_output = [
             'task',
             'mode',
             'caps_dir',
+            'preprocessing',
             'output_dir',
             'n_subjects',
-            'preprocessing',
             'mean',
             'sigma']
 
