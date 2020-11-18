@@ -263,6 +263,12 @@ def parse_command_line():
         default=None
     )
     generate_rs_parent_parser.add_argument(
+        'preprocessing',
+        type=str,
+        choices=['t1-linear', 't1-extensive'],
+        help="Preprocessing used to generate synthetic data."
+    )
+    generate_rs_parent_parser.add_argument(
         'output_dir',
         help='Folder containing the synthetic dataset.',
     )
@@ -276,13 +282,6 @@ def parse_command_line():
         type=int,
         default=300,
         help="Number of subjects in each class of the synthetic dataset."
-    )
-    generate_rs_parent_parser.add_argument(
-        '--preprocessing',
-        type=str,
-        default='t1-linear',
-        choices=['t1-linear', 't1-extensive'],
-        help="Preprocessing used to generate synthetic data."
     )
 
     generate_random_parser = generate_subparser.add_parser(
