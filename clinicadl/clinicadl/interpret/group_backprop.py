@@ -33,6 +33,8 @@ def group_backprop(options):
             model_options = translate_parameters(model_options)
             model_options.gpu = options.gpu
 
+            if options.tsv_path is None and options.input_dir is None:
+                options.multi_cohort = model_options.multi_cohort
             if options.tsv_path is None:
                 options.tsv_path = model_options.tsv_path
             if options.input_dir is None:

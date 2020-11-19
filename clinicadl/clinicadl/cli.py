@@ -1248,6 +1248,12 @@ def parse_command_line():
         "--caps_dir", type=str, default=None,
         help="Path to input dir of the MRI (preprocessed CAPS_dir), if different from classification task")
     interpret_data_group.add_argument(
+        "--multi_cohort",
+        help="Performs multi-cohort training. In this case, caps_dir and tsv_path must be paths to TSV files.",
+        action="store_true",
+        default=False
+    )
+    interpret_data_group.add_argument(
         "--diagnosis", "-d", default='AD', type=str,
         help="The images corresponding to this diagnosis only will be loaded.")
     interpret_data_group.add_argument(
@@ -1352,6 +1358,12 @@ def return_train_parent_parser(retrain=False):
             "--tsv_path", type=str, default=None,
             help="TSV path with subjects/sessions to process.")
 
+    train_data_group.add_argument(
+        "--multi_cohort",
+        help="Performs multi-cohort training. In this case, caps_dir and tsv_path must be paths to TSV files.",
+        action="store_true",
+        default=None if retrain else False
+    )
     train_data_group.add_argument(
         '--diagnoses', '-d',
         help='List of diagnoses that will be selected for training.',
