@@ -236,6 +236,9 @@ def read_json(options, json_path=None, test=False):
         options.dropout = None
         set_default_dropout(options)
 
+    if not hasattr(options, 'multi_cohort'):
+        options.multi_cohort = False
+
     return options
 
 

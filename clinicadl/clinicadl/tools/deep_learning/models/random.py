@@ -59,7 +59,7 @@ def random_sampling(rs_options, options):
         "transfer_learning_path": "choice",
         "transfer_learning_selection": "choice"
     }
-    fixed_values = ["tsv_path", "caps_dir",
+    fixed_values = ["tsv_path", "caps_dir", "multi_cohort",
                     "epochs", "patience", "tolerance",
                     "diagnoses", "data_augmentation",
                     "channels_limit", "use_extracted_features"]
