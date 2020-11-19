@@ -26,6 +26,7 @@ crash*
 .pytest_cache/
 clinicadl/tests/data/models
 clinicadl/tests/data/dataset
+clinicadl/tests/data/labels_list
 clinicadl/tests/data/tsvtool_test
 
 # Notebook jupyter
