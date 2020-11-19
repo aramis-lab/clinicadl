@@ -14,13 +14,14 @@ from copy import copy
 from clinica.utils.inputs import fetch_file, RemoteFileStructure
 from .utils import im_loss_roi_gaussian_distribution, find_image_path, load_and_check_tsv, generate_shepplogan_phantom
 from ..tsv.tsv_utils import baseline_df
+from ..deep_learning.data import MRIDataset
 from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
 from clinicadl.tools.deep_learning.iotools import check_and_clean, commandline_to_json
 import tarfile
 
 
 def generate_random_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, mean=0,
-                            sigma=0.5, preprocessing="t1-linear"):
+                            sigma=0.5, preprocessing="t1-linear", multi_cohort=False):
     """
     Generates a random dataset.
 
@@ -38,6 +39,7 @@ def generate_random_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, mea
         mean: (float) mean of the gaussian noise
         sigma: (float) standard deviation of the gaussian noise
         preprocessing: (str) preprocessing performed. Must be in ['t1-linear', 't1-extensive'].
+        multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
 
     Returns:
         A folder written on the output_dir location (in CAPS format), also a
@@ -54,8 +56,11 @@ def generate_random_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, mea
         "mean": mean,
         "sigma": sigma
     })
+    # Transform caps_dir in dict
+    caps_dict = MRIDataset.create_caps_dict(caps_dir, multi_cohort=multi_cohort)
+
     # Read DataFrame
-    data_df = load_and_check_tsv(tsv_path, caps_dir, output_dir)
+    data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
 
     # Create subjects dir
     makedirs(join(output_dir, 'subjects'), exist_ok=True)
@@ -63,8 +68,9 @@ def generate_random_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, mea
     # Retrieve image of first subject
     participant_id = data_df.loc[0, 'participant_id']
     session_id = data_df.loc[0, 'session_id']
+    cohort = data_df.loc[0, 'cohort']
 
-    image_path = find_image_path(caps_dir, participant_id, session_id, preprocessing)
+    image_path = find_image_path(caps_dict, participant_id, session_id, cohort, preprocessing)
     image_nii = nib.load(image_path)
     image = image_nii.get_data()
 
@@ -101,7 +107,7 @@ def generate_random_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, mea
 
 
 def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, preprocessing="linear",
-                             mask_path=None, atrophy_percent=60):
+                             mask_path=None, atrophy_percent=60, multi_cohort=False):
     """
     Generates a fully separable dataset.
 
@@ -119,6 +125,7 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
         preprocessing: (str) preprocessing performed. Must be in ['linear', 'extensive'].
         mask_path: (str) path to the extracted masks to generate the two labels.
         atrophy_percent: (float) percentage of atrophy applied.
+        multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
 
     Returns:
         Folder structure where images are stored in CAPS format.
@@ -135,8 +142,11 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
         "atrophy_percent": atrophy_percent
     })
 
+    # Transform caps_dir in dict
+    caps_dict = MRIDataset.create_caps_dict(caps_dir, multi_cohort=multi_cohort)
+
     # Read DataFrame
-    data_df = load_and_check_tsv(tsv_path, caps_dir, output_dir)
+    data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
     data_df = baseline_df(data_df, "None")
 
     home = str(Path.home())
@@ -187,12 +197,13 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
 
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
+        cohort = data_df.loc[data_idx, "cohort"]
         filename = 'sub-TRIV%i_ses-M00' % i + FILENAME_TYPE['cropped'] + '.nii.gz'
         path_image = join(output_dir, 'subjects', 'sub-TRIV%i' % i, 'ses-M00', 't1_linear')
 
         makedirs(path_image, exist_ok=True)
 
-        image_path = find_image_path(caps_dir, participant_id, session_id, preprocessing)
+        image_path = find_image_path(caps_dict, participant_id, session_id, cohort, preprocessing)
         image_nii = nib.load(image_path)
         image = image_nii.get_data()
 
