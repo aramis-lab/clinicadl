@@ -23,7 +23,8 @@ def classify(caps_dir,
              prepare_dl=True,
              selection_metrics=None,
              diagnoses=None,
-             verbose=0):
+             verbose=0,
+             multi_cohort=False):
     """
     This function verifies the input folders, and the existence of the json file
     then it launch the inference stage from a specific model.
@@ -44,6 +45,7 @@ def classify(caps_dir,
         selection_metrics: list of metrics to find best models to be evaluated.
         diagnoses: list of diagnoses to be tested if tsv_path is a folder.
         verbose: level of verbosity.
+        multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
 
     """
     logger = return_logger(verbose, "classify")
@@ -88,7 +90,8 @@ def classify(caps_dir,
         prepare_dl,
         selection_metrics,
         diagnoses,
-        logger
+        logger,
+        multi_cohort
     )
 
 
@@ -104,7 +107,8 @@ def inference_from_model(caps_dir,
                          prepare_dl=False,
                          selection_metrics=None,
                          diagnoses=None,
-                         logger=None):
+                         logger=None,
+                         multi_cohort=False):
     """
     Inference from previously trained model.
 
@@ -131,6 +135,7 @@ def inference_from_model(caps_dir,
         selection_metrics: list of metrics to find best models to be evaluated.
         diagnoses: list of diagnoses to be tested if tsv_path is a folder.
         logger: Logger instance.
+        multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
 
     Returns:
         Files written in the output folder with prediction results and metrics. By
@@ -219,7 +224,8 @@ def inference_from_model(caps_dir,
                 "best_%s" % selection_metric,
                 labels=labels,
                 num_cnn=num_cnn,
-                logger=logger
+                logger=logger,
+                multi_cohort=multi_cohort
             )
 
             # Soft voting
@@ -241,7 +247,8 @@ def inference_from_model(caps_dir,
 
 def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
                                  prefix, output_dir, fold, selection,
-                                 labels=True, num_cnn=None, logger=None):
+                                 labels=True, num_cnn=None, logger=None,
+                                 multi_cohort=False):
     from os.path import join
     import logging
 
@@ -252,7 +259,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
 
     _, all_transforms = get_transforms(model_options.mode, model_options.minmaxnormalization)
 
-    test_df = load_data_test(tsv_path, model_options.diagnoses)
+    test_df = load_data_test(tsv_path, model_options.diagnoses, multi_cohort=multi_cohort)
 
     # Define loss and optimizer
     criterion = get_criterion(model_options.loss)
