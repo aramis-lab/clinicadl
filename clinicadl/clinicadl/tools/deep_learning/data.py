@@ -754,6 +754,8 @@ def load_data(tsv_path, diagnoses_list,
                 cohort_valid_df["cohort"] = cohort_name
                 train_df = pd.concat([train_df, cohort_train_df])
                 valid_df = pd.concat([valid_df, cohort_valid_df])
+            train_df.reset_index(inplace=True, drop=True)
+            valid_df.reset_index(inplace=True, drop=True)
     else:
         if tsv_path.endswith(".tsv"):
             raise ValueError('To use multi-cohort framework, please add --multi-cohort flag.')
@@ -783,10 +785,10 @@ def load_data_single(train_val_path, diagnoses_list,
         valid_path = path.join(train_val_path, 'validation')
 
     else:
-        train_path = path.join(train_val_path, 'train_splits-' + str(n_splits),
-                               'split-' + str(split))
-        valid_path = path.join(train_val_path, 'validation_splits-' + str(n_splits),
-                               'split-' + str(split))
+        train_path = path.join(train_val_path, 'train_splits-%i' % n_splits,
+                               'split-%i' % split)
+        valid_path = path.join(train_val_path, 'validation_splits-%i' % n_splits,
+                               'split-%i' % split)
 
     logger.debug("Train path %s" % train_path)
     logger.debug("Valid path %s" % valid_path)
@@ -829,6 +831,7 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
                 cohort_test_df = load_data_test_single(cohort_path, diagnoses_list, baseline=baseline)
                 cohort_test_df["cohort"] = cohort_name
                 test_df = pd.concat([test_df, cohort_test_df])
+            test_df.reset_index(inplace=True, drop=True)
     else:
         if test_path.endswith(".tsv"):
             tsv_df = pd.read_csv(test_path, sep='\t')

@@ -136,7 +136,8 @@ def classify_func(args):
         prepare_dl=args.use_extracted_features,
         selection_metrics=args.selection_metrics,
         diagnoses=args.diagnoses,
-        verbose=args.verbose
+        verbose=args.verbose,
+        multi_cohort=args.multi_cohort
     )
 
 
@@ -927,6 +928,12 @@ def parse_command_line():
         "--diagnoses",
         help="List of participants that will be classified.",
         nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'], default=None)
+    classify_specific_group.add_argument(
+        "--multi_cohort",
+        help="Performs multi-cohort training. In this case, caps_dir and tsv_path must be paths to TSV files.",
+        action="store_true",
+        default=False
+    )
 
     classify_parser.set_defaults(func=classify_func)
 
