@@ -1,6 +1,6 @@
 # coding: utf8
 
-from .tsv_utils import complementary_list, add_demographics, baseline_df, chi2
+from .tsv_utils import complementary_list, extract_baseline, chi2, category_conversion, remove_unicity
 from ..deep_learning.iotools import return_logger
 from scipy.stats import ttest_ind
 import shutil
@@ -9,99 +9,131 @@ from os import path
 import numpy as np
 import os
 import logging
+from sklearn.model_selection import StratifiedShuffleSplit
+
 
 sex_dict = {'M': 0, 'F': 1}
 
 
-def create_split(diagnosis, diagnosis_df, merged_df, n_test, age_name="age",
-                 pval_threshold_ttest=0.80, t_val_chi2_threshold=0.0642,
+def format_final_tsv(df, diagnosis_df, baseline=True):
+    # Retrieve all sessions for the training set
+    final_df = pd.DataFrame()
+    for idx in df.index.values:
+        subject = df.loc[idx, 'participant_id']
+        session = df.loc[idx, 'session_id']
+        if baseline:
+            row_df = diagnosis_df[(diagnosis_df.participant_id == subject) & (diagnosis_df.session_id == session)]
+        else:
+            row_df = diagnosis_df[diagnosis_df.participant_id == subject]
+        final_df = pd.concat([final_df, row_df])
+
+    return final_df
+
+
+def create_split(diagnosis, diagnosis_df, split_label, n_test,
+                 p_age_threshold=0.80, p_sex_threshold=0.80,
+                 age_name="age", supplementary_train_df=None,
                  ignore_demographics=False, logger=None):
     """
     Split data at the subject-level in training and test set with equivalent age and sex distributions
 
-    :param diagnosis: (str) diagnosis on which the split is done
-    :param diagnosis_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-    :param merged_df: DataFrame with columns including ['age', 'sex'] and containing the same sessions as diagnosis_df
+    :param diagnosis: (str) diagnosis on which the split is done.
+    :param diagnosis_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis'].
+    :param split_label: (str) label on which the split is done (categorical variables)
     :param n_test: (float)
-        If >= 1 number of subjects to put in the test set.
+        If > 1 number of subjects to put in the test set.
         If < 1 proportion of subjects to put in the test set.
-    :param age_name: (str) label of the age column in the dataset.
-    :param pval_threshold_ttest: (float) threshold for the t-test on age
-    :param t_val_chi2_threshold:  (float) threshold for the chi2 test on sex
+    :param p_age_threshold: (float) threshold for the t-test on age.
+    :param p_sex_threshold: (float) threshold for the chi2 test on sex.
+    :param supplementary_train_df: (DataFrame) Add data that must be included in the train set.
     :param ignore_demographics: (bool): If True the diagnoses are split without taking into account the demographics
     distributions (age, sex).
     :param logger: Logger object from logging library
+
     :return:
         train_df (DataFrame) subjects in the train set
         test_df (DataFrame) subjects in the test set
     """
+
     if logger is None:
         logger = logging
         logger.basicConfig(level=logging.DEBUG)
 
-    diagnosis_baseline_df = baseline_df(diagnosis_df)
+    if supplementary_train_df is not None:
+        sup_train_sex = [sex_dict[x] for x in supplementary_train_df.sex.values]
+        sup_train_age = [float(x) for x in supplementary_train_df.age.values]
+    else:
+        sup_train_sex = []
+        sup_train_age = []
 
-    if n_test >= 1:
+    baseline_df = extract_baseline(diagnosis_df, diagnosis)
+
+    if n_test > 1:
         n_test = int(n_test)
     else:
-        n_test = int(n_test * len(diagnosis_baseline_df))
+        n_test = int(n_test * len(baseline_df))
+
+    if not {"sex", age_name, split_label}.issubset(set(baseline_df.columns.values)):
+        raise ValueError("Columns such as sex, %s and %s are missing."
+                         "Please add them using the --variables_of_interest flag in getlabels."
+                         % (age_name, split_label))
 
     if not ignore_demographics:
-        baseline_demographics_df = add_demographics(diagnosis_baseline_df, merged_df, diagnosis)
-
-        sex = list(baseline_demographics_df.sex.values)
-        age = list(baseline_demographics_df[age_name].values)
-
-        idx = np.arange(len(diagnosis_baseline_df))
+        sex = list(baseline_df.sex.values)
+        age = list(baseline_df[age_name].values)
+        category = list(baseline_df[split_label].values)
+        category = category_conversion(category)
+        category = remove_unicity(category)
 
         flag_selection = True
         n_try = 0
 
         while flag_selection:
-            idx_test = np.random.choice(idx, size=n_test, replace=False)
-            idx_test.sort()
-            idx_train = complementary_list(idx, idx_test)
 
-            # Find similarity of distribution for the age variable
-            if len(set(age)) != 1:
-                age_test = [float(age[idx]) for idx in idx_test]
-                age_train = [float(age[idx]) for idx in idx_train]
+            splits = StratifiedShuffleSplit(n_splits=1, test_size=n_test)
+            for train_index, test_index in splits.split(category, category):
 
-                t_age, p_age = ttest_ind(age_test, age_train)
-            else:
-                p_age = 1
+                # Find the value for different demographics (age & sex)
+                if len(set(age)) != 1:
+                    age_test = [float(age[idx]) for idx in test_index]
+                    age_train = [float(age[idx]) for idx in train_index] + sup_train_age
+                    _, p_age = ttest_ind(age_test, age_train, nan_policy="omit")
+                else:
+                    p_age = 1
 
-            # Find the a similar distribution for the sex variable
-            if len(set(sex)) != 1:
-                sex_test = [sex_dict[sex[idx]] for idx in idx_test]
-                sex_train = [sex_dict[sex[idx]] for idx in idx_train]
-                T_sex = chi2(sex_test, sex_train)
-            else:
-                T_sex = 0
+                if len(set(sex)) != 1:
+                    sex_test = [sex_dict[sex[idx]] for idx in test_index]
+                    sex_train = [sex_dict[sex[idx]] for idx in train_index] + sup_train_sex
+                    _, p_sex = chi2(sex_test, sex_train)
+                else:
+                    p_sex = 1
 
-            logger.debug("p=%.2f, T=%.4f" % (p_age, T_sex))
-            if T_sex < t_val_chi2_threshold and p_age > pval_threshold_ttest:
-                flag_selection = False
-                test_df = baseline_demographics_df.loc[idx_test]
-                train_df = baseline_demographics_df.loc[idx_train]
+                logger.debug("p_age=%.2f, p_sex=%.4f" % (p_age, p_sex))
 
-            n_try += 1
+                if p_sex >= p_sex_threshold and p_age >= p_age_threshold:
+                    flag_selection = False
+                    test_df = baseline_df.loc[test_index]
+                    train_df = baseline_df.loc[train_index]
+                    if supplementary_train_df is not None:
+                        train_df = pd.concat([train_df, supplementary_train_df])
+                        train_df.reset_index(drop=True, inplace=True)
 
+                n_try += 1
         logger.info("Split for diagnosis %s was found after %i trials" % (diagnosis, n_try))
+
     else:
-        idx = np.arange(len(diagnosis_baseline_df))
+        idx = np.arange(len(baseline_df))
         idx_test = np.random.choice(idx, size=n_test, replace=False)
         idx_test.sort()
         idx_train = complementary_list(idx, idx_test)
-        test_df = diagnosis_baseline_df.loc[idx_test]
-        train_df = diagnosis_baseline_df.loc[idx_train]
+        test_df = baseline_df.loc[idx_test]
+        train_df = baseline_df.loc[idx_train]
 
     return train_df, test_df
 
 
-def split_diagnoses(merged_tsv, formatted_data_path,
-                    n_test=100, age_name="age", subset_name="test", MCI_sub_categories=True,
-                    t_val_threshold=0.0642, p_val_threshold=0.80,
+def split_diagnoses(formatted_data_path, n_test=100, age_name="age", subset_name="test", MCI_sub_categories=True,
+                    p_age_threshold=0.80, p_sex_threshold=0.80, categorical_split_variable=None,
                     ignore_demographics=False, verbose=0):
     """
     Performs a single split for each label independently on the subject level.
@@ -111,7 +143,6 @@ def split_diagnoses(merged_tsv, formatted_data_path,
     The age and sex distributions between the two sets must be non-significant (according to T-test and chi-square).
 
     Args:
-        merged_tsv (str): Path to the file obtained by the command clinica iotools merge-tsv.
         formatted_data_path (str): Path to the folder containing data extracted by clinicadl tsvtool getlabels.
         n_test (float):
             If > 1, number of subjects to put in set with name 'subset_name'.
@@ -120,8 +151,9 @@ def split_diagnoses(merged_tsv, formatted_data_path,
         age_name (str): Label of the age column in the dataset.
         subset_name (str): Name of the subset that is complementary to train.
         MCI_sub_categories (bool): If True, manages MCI sub-categories to avoid data leakage.
-        t_val_threshold (float): The threshold used for the chi2 test on sex distributions.
-        p_val_threshold (float): The threshold used for the T-test on age distributions.
+        p_age_threshold (float): The threshold used for the T-test on age distributions.
+        p_sex_threshold (float): The threshold used for the T-test on sex distributions.
+        categorical_split_variable (str): name of a categorical variable to perform a stratified split.
         ignore_demographics (bool): If True the diagnoses are split without taking into account the demographics
             distributions (age, sex).
         verbose (int): level of verbosity.
@@ -135,8 +167,6 @@ def split_diagnoses(merged_tsv, formatted_data_path,
     logger = return_logger(verbose, "split")
 
     # Read files
-    merged_df = pd.read_csv(merged_tsv, sep='\t')
-    merged_df.set_index(['participant_id', 'session_id'], inplace=True)
     results_path = formatted_data_path
 
     train_path = path.join(results_path, 'train')
@@ -144,6 +174,9 @@ def split_diagnoses(merged_tsv, formatted_data_path,
         shutil.rmtree(train_path)
     if n_test > 0:
         os.makedirs(train_path)
+
+    if categorical_split_variable is None:
+        categorical_split_variable = "diagnosis"
 
     test_path = path.join(results_path, subset_name)
     if path.exists(test_path):
@@ -172,16 +205,21 @@ def split_diagnoses(merged_tsv, formatted_data_path,
         diagnosis = diagnosis_df_path.split('.')[0]
         logger.info("Running split for diagnosis %s" % diagnosis)
         if n_test > 0:
-            train_df, test_df = create_split(diagnosis, diagnosis_df, merged_df, age_name=age_name,
-                                             n_test=n_test, t_val_chi2_threshold=t_val_threshold,
-                                             pval_threshold_ttest=p_val_threshold,
+            train_df, test_df = create_split(diagnosis, diagnosis_df, categorical_split_variable, age_name=age_name,
+                                             n_test=n_test, p_age_threshold=p_age_threshold,
+                                             p_sex_threshold=p_sex_threshold,
                                              ignore_demographics=ignore_demographics,
                                              logger=logger)
             # Save baseline splits
-            train_df = train_df[interest_columns]
-            train_df.to_csv(path.join(train_path, str(diagnosis) + '_baseline.tsv'), sep='\t', index=False)
-            test_df = test_df[interest_columns]
-            test_df.to_csv(path.join(test_path, str(diagnosis) + '_baseline.tsv'), sep='\t', index=False)
+            baseline_train_df = format_final_tsv(train_df, diagnosis_df, baseline=True)
+            baseline_train_df.to_csv(path.join(train_path, str(diagnosis) + '_baseline.tsv'), sep='\t', index=False)
+            baseline_test_df = format_final_tsv(test_df, diagnosis_df, baseline=True)
+            baseline_test_df.to_csv(path.join(test_path, str(diagnosis) + '_baseline.tsv'), sep='\t', index=False)
+
+            long_train_df = format_final_tsv(train_df, diagnosis_df, baseline=False)
+            long_train_df.to_csv(path.join(train_path, str(diagnosis) + '.tsv'), sep='\t', index=False)
+            long_test_df = format_final_tsv(test_df, diagnosis_df, baseline=False)
+            long_test_df.to_csv(path.join(test_path, str(diagnosis) + '.tsv'), sep='\t', index=False)
 
             # Retrieve all sessions for the training set
             complete_train_df = pd.DataFrame()
@@ -202,7 +240,7 @@ def split_diagnoses(merged_tsv, formatted_data_path,
         # Extraction of MCI subjects without intersection with the sMCI / pMCI train
         diagnosis_df = pd.read_csv(path.join(results_path, 'MCI.tsv'), sep='\t')
         MCI_df = diagnosis_df.set_index(['participant_id', 'session_id'])
-        baseline_MCI_df = baseline_df(MCI_df, set_index=False)
+        baseline_MCI_df = extract_baseline(MCI_df, set_index=False)
         supplementary_diagnoses = []
 
         if n_test > 1:
@@ -260,84 +298,24 @@ def split_diagnoses(merged_tsv, formatted_data_path,
             logger.debug('supplementary_train_df %i subjects, %i scans' % (len(sub_df), len(supplementary_train_df)))
 
         supplementary_train_df.reset_index(drop=True, inplace=True)
-        supplementary_train_df = add_demographics(supplementary_train_df, merged_df, 'MCI')
 
         # MCI selection
         MCI_df.reset_index(inplace=True)
-        diagnosis_baseline_df = baseline_df(MCI_df)
-        if not ignore_demographics:
-            baseline_demographics_df = add_demographics(diagnosis_baseline_df, merged_df, 'MCI')
+        baseline_df = extract_baseline(MCI_df, 'MCI')
 
-            sex = list(baseline_demographics_df.sex.values)
-            age = list(baseline_demographics_df[age_name].values)
-
-            sup_train_sex = list(supplementary_train_df.sex.values)
-            sup_train_age = list(supplementary_train_df[age_name].values)
-
-            sup_train_sex = [sex_dict[x] for x in sup_train_sex]
-            sup_train_age = [float(x) for x in sup_train_age]
-
-            idx = np.arange(len(diagnosis_baseline_df))
-
-            flag_selection = True
-            n_try = 0
-
-            while flag_selection:
-                idx_test = np.random.choice(idx, size=n_test, replace=False)
-                idx_test.sort()
-                idx_train = complementary_list(idx, idx_test)
-
-                # Find similarity of distribution for the age variable
-                if len(set(age)) != 1:
-                    age_test = [float(age[idx]) for idx in idx_test]
-                    age_train = [float(age[idx]) for idx in idx_train]
-
-                    t_age, p_age = ttest_ind(age_test, age_train)
-                else:
-                    p_age = 1
-
-                # Find similarity of distribution for the sex variable
-                if len(set(sex)) != 1:
-                    sex_test = [sex_dict[sex[idx]] for idx in idx_test]
-                    sex_train = [sex_dict[sex[idx]] for idx in idx_train]
-                    T_sex = chi2(sex_test, sex_train)
-                else:
-                    T_sex = 0
-
-                logger.debug("p=%.2f, T=%.4f" % (p_age, T_sex))
-                if T_sex < t_val_threshold and p_age > p_val_threshold:
-                    flag_selection = False
-                    MCI_baseline_test_df = baseline_demographics_df.loc[idx_test]
-                    train_df = baseline_demographics_df.loc[idx_train]
-                    MCI_baseline_train_df = pd.concat([train_df, supplementary_train_df])
-                    logger.debug('Supplementary train df %i' % len(supplementary_train_df))
-                    MCI_baseline_train_df.reset_index(drop=True, inplace=True)
-
-                n_try += 1
-
-            logger.info('Split for diagnosis MCI was found after %i trials' % n_try)
-        else:
-            idx = np.arange(len(diagnosis_baseline_df))
-            idx_test = np.random.choice(idx, size=n_test, replace=False)
-            idx_test.sort()
-            idx_train = complementary_list(idx, idx_test)
-
-            MCI_baseline_test_df = diagnosis_baseline_df.loc[idx_test]
-            train_df = diagnosis_baseline_df.loc[idx_train]
-            MCI_baseline_train_df = pd.concat([train_df, supplementary_train_df])
-            MCI_baseline_train_df.reset_index(drop=True, inplace=True)
+        train_df, test_df = create_split('MCI', baseline_df, categorical_split_variable,
+                                         n_test=n_test, p_age_threshold=p_age_threshold,
+                                         p_sex_threshold=p_sex_threshold, ignore_demographics=ignore_demographics,
+                                         logger=logger,
+                                         supplementary_train_df=supplementary_train_df)
 
         # Write selection of MCI
-        MCI_baseline_train_df = MCI_baseline_train_df[interest_columns]
-        MCI_baseline_train_df.to_csv(path.join(train_path, 'MCI_baseline.tsv'), sep='\t', index=False)
-        MCI_baseline_test_df = MCI_baseline_test_df[interest_columns]
-        MCI_baseline_test_df.to_csv(path.join(test_path, 'MCI_baseline.tsv'), sep='\t', index=False)
+        baseline_train_df = format_final_tsv(train_df, diagnosis_df, baseline=True)
+        baseline_train_df.to_csv(path.join(train_path, 'MCI_baseline.tsv'), sep='\t', index=False)
+        baseline_test_df = format_final_tsv(test_df, diagnosis_df, baseline=True)
+        baseline_test_df.to_csv(path.join(test_path, 'MCI_baseline.tsv'), sep='\t', index=False)
 
-        # Retrieve all sessions for the training set
-        MCI_complete_train_df = pd.DataFrame()
-        for idx in MCI_baseline_train_df.index.values:
-            subject = MCI_baseline_train_df.loc[idx, 'participant_id']
-            subject_df = diagnosis_df[diagnosis_df.participant_id == subject]
-            MCI_complete_train_df = pd.concat([MCI_complete_train_df, subject_df])
-
-        MCI_complete_train_df.to_csv(path.join(train_path, 'MCI.tsv'), sep='\t', index=False)
+        long_train_df = format_final_tsv(train_df, diagnosis_df, baseline=False)
+        long_train_df.to_csv(path.join(train_path, 'MCI.tsv'), sep='\t', index=False)
+        long_test_df = format_final_tsv(test_df, diagnosis_df, baseline=False)
+        long_test_df.to_csv(path.join(test_path, 'MCI.tsv'), sep='\t', index=False)
