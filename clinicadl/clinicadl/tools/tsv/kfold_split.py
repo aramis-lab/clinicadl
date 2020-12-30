@@ -1,6 +1,6 @@
 # coding: utf8
 
-from .tsv_utils import baseline_df
+from .tsv_utils import extract_baseline
 from ..deep_learning.iotools import return_logger
 import shutil
 from sklearn.model_selection import StratifiedKFold
@@ -72,13 +72,13 @@ def split_diagnoses(formatted_data_path,
         diagnosis = diagnosis_df_path.split('.')[0]
 
         diagnosis_df = pd.read_csv(path.join(results_path, diagnosis_df_path), sep='\t')
-        diagnosis_baseline_df = baseline_df(diagnosis_df, diagnosis)
+        baseline_df = extract_baseline(diagnosis_df, diagnosis)
         if stratification is None:
-            diagnoses_list = list(diagnosis_baseline_df.diagnosis)
+            diagnoses_list = list(baseline_df.diagnosis)
             unique = list(set(diagnoses_list))
             y = np.array([unique.index(x) for x in diagnoses_list])
         else:
-            stratification_list = list(diagnosis_baseline_df[stratification])
+            stratification_list = list(baseline_df[stratification])
             unique = list(set(stratification_list))
             y = np.array([unique.index(x) for x in stratification_list])
 
@@ -88,8 +88,8 @@ def split_diagnoses(formatted_data_path,
 
             train_index, test_index = indices
 
-            test_df = diagnosis_baseline_df.iloc[test_index]
-            train_df = diagnosis_baseline_df.iloc[train_index]
+            test_df = baseline_df.iloc[test_index]
+            train_df = baseline_df.iloc[train_index]
             # Retrieve all sessions for the training set
             complete_train_df = pd.DataFrame()
             for idx in train_df.index.values:
@@ -143,13 +143,13 @@ def split_diagnoses(formatted_data_path,
             raise ValueError('The MCI_sub_categories flag is not needed as there are no intersections with'
                              'MCI subcategories.')
 
-        diagnosis_baseline_df = baseline_df(MCI_df, False)
+        baseline_df = extract_baseline(MCI_df, False)
         if stratification is None:
-            diagnoses_list = list(diagnosis_baseline_df.diagnosis)
+            diagnoses_list = list(baseline_df.diagnosis)
             unique = list(set(diagnoses_list))
             y = np.array([unique.index(x) for x in diagnoses_list])
         else:
-            stratification_list = list(diagnosis_baseline_df[stratification])
+            stratification_list = list(baseline_df[stratification])
             unique = list(set(stratification_list))
             y = np.array([unique.index(x) for x in stratification_list])
 
@@ -159,8 +159,8 @@ def split_diagnoses(formatted_data_path,
 
             train_index, test_index = indices
 
-            test_df = diagnosis_baseline_df.iloc[test_index]
-            train_df = diagnosis_baseline_df.iloc[train_index]
+            test_df = baseline_df.iloc[test_index]
+            train_df = baseline_df.iloc[train_index]
 
             # Add the sub categories
             for diagnosis in supplementary_diagnoses:

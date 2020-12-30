@@ -173,16 +173,16 @@ def tsv_split_func(args):
     from .tools.tsv.data_split import split_diagnoses
 
     split_diagnoses(
-        args.merged_tsv,
         args.formatted_data_path,
         n_test=args.n_test,
         subset_name=args.subset_name,
         age_name=args.age_name,
         MCI_sub_categories=args.MCI_sub_categories,
-        t_val_threshold=args.t_val_threshold,
-        p_val_threshold=args.p_val_threshold,
+        p_age_threshold=args.p_age_threshold,
+        p_sex_threshold=args.p_sex_threshold,
         ignore_demographics=args.ignore_demographics,
-        verbose=args.verbose
+        verbose=args.verbose,
+        categorical_split_variable=args.categorical_split_variable
     )
 
 
@@ -1024,10 +1024,6 @@ def parse_command_line():
         help='Performs one stratified shuffle split on participant level.')
 
     tsv_split_subparser.add_argument(
-        "merged_tsv",
-        help="Path to the file obtained by the command clinica iotools merge-tsv.",
-        type=str)
-    tsv_split_subparser.add_argument(
         "formatted_data_path",
         help="Path to the folder containing data extracted by clinicadl tsvtool getlabels.",
         type=str)
@@ -1048,11 +1044,11 @@ def parse_command_line():
         help="Deactivate default managing of MCI sub-categories to avoid data leakage.",
         action="store_false", default=True)
     tsv_split_subparser.add_argument(
-        "--t_val_threshold", "-t",
+        "--p_sex_threshold", "-ps",
         help="The threshold used for the chi2 test on sex distributions.",
-        default=0.0642, type=float)
+        default=0.80, type=float)
     tsv_split_subparser.add_argument(
-        "--p_val_threshold", "-p",
+        "--p_age_threshold", "-pa",
         help="The threshold used for the T-test on age distributions.",
         default=0.80, type=float)
     tsv_split_subparser.add_argument(
@@ -1063,6 +1059,12 @@ def parse_command_line():
         "--ignore_demographics",
         help="If True do not use age and sex to create the splits.",
         default=False, action="store_true"
+    )
+    tsv_split_subparser.add_argument(
+        "--categorical_split_variable",
+        help="Name of a categorical variable used for a stratified shuffle split "
+             "(in addition to age and sex selection).",
+        default=None, type=str
     )
 
     tsv_split_subparser.set_defaults(func=tsv_split_func)
