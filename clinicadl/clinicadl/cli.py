@@ -540,25 +540,27 @@ def parse_command_line():
     qc_volume_parser.set_defaults(func=qc_func)
 
     # random search parsers
-    rs_parser = subparser.add_parser(
-        'random_search',
-        help='Generate and train random networks to explore hyper parameters space.'
-    )
-    rs_subparsers = rs_parser.add_subparsers(
-        title='''Possibilities for random network training''',
-        description='''You can generate and train a new random network,
-        or relaunch a previous random job with some alterations.''',
-        dest='random_task',
-        help='''****** Possible tasks ******'''
-    )
-    rs_subparsers.required = True
-
-    rs_generate_parser = rs_subparsers.add_parser(
-        'generate',
+    rs_generate_parser = subparser.add_parser(
+        'random-search',
         parents=[parent_parser],
-        help='Sample a new network and train it.',
+        help='Generate random networks to explore hyper parameters space.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
+    # rs_subparsers = rs_parser.add_subparsers(
+    #     title='''Possibilities for random network training''',
+    #     description='''You can generate and train a new random network,
+    #     or relaunch a previous random job with some alterations.''',
+    #     dest='random_task',
+    #     help='''****** Possible tasks ******'''
+    # )
+    # rs_subparsers.required = True
+
+    # rs_generate_parser = rs_subparsers.add_parser(
+    #     'generate',
+    #     parents=[parent_parser],
+    #     help='Sample a new network and train it.',
+    #     formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    # )
     rs_pos_group = rs_generate_parser.add_argument_group(
         TRAIN_CATEGORIES["POSITIONAL"]
     )
@@ -591,16 +593,21 @@ def parse_command_line():
         '--batch_size',
         default=2, type=int,
         help='Batch size for training.')
+    rs_comp_group.add_argument(
+        '--evaluation_steps', '-esteps',
+        default=0, type=int,
+        help='Fix the number of iterations to perform before computing an evaluations. Default will only '
+             'perform one evaluation at the end of each epoch.')
 
     rs_generate_parser.set_defaults(func=rs_func)
 
-    retrain_parent_parser = return_train_parent_parser(retrain=True)
-    rs_retrain_parser = rs_subparsers.add_parser(
-        'retrain',
-        parents=[parent_parser, retrain_parent_parser],
-        help='Train a network previously created by generate.',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
+    # retrain_parent_parser = return_train_parent_parser(retrain=True)
+    # rs_retrain_parser = rs_subparsers.add_parser(
+    #     'retrain',
+    #     parents=[parent_parser, retrain_parent_parser],
+    #     help='Train a network previously created by generate.',
+    #     formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    # )
 
     train_parser = subparser.add_parser(
         'train',
@@ -1340,10 +1347,10 @@ def return_train_parent_parser(retrain=False):
         help='Accumulates gradients during the given number of iterations before performing the weight update '
              'in order to virtually increase the size of the batch.',
         default=None if retrain else 1, type=int)
-    train_optim_group.add_argument(
-        "--loss",
-        help="Replaces default losses: cross-entropy for CNN and MSE for autoencoders.",
-        type=str, default=None if retrain else "default",
-        choices=["default", "L1", "L1Norm", "SmoothL1", "SmoothL1Norm"])
+    # train_optim_group.add_argument(
+    #     "--loss",
+    #     help="Replaces default losses: cross-entropy for CNN and MSE for autoencoders.",
+    #     type=str, default=None if retrain else "default",
+    #     choices=["default", "L1", "L1Norm", "SmoothL1", "SmoothL1Norm"])
 
     return train_parent_parser

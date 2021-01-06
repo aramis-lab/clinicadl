@@ -104,7 +104,7 @@ def random_sampling(rs_options, options):
         options.weight_decay = 0
 
     options.evaluation_steps = find_evaluation_steps(
-        options.accumulation_steps, goal=rs_options.evaluation_steps)
+        options.accumulation_steps, goal=options.evaluation_steps)
     options.convolutions = random_conv_sampling(rs_options)
 
     return options

@@ -23,7 +23,6 @@ def check_and_complete(rs_options):
 
     default_values = {
         "accumulation_steps": 1,
-        "evaluation_steps": 0,
         "baseline": False,
         "channels_limit": 512,
         "d_reduction": "MaxPooling",
