@@ -837,14 +837,14 @@ def generate_sampler(dataset, sampler_option='random'):
         count[key] += 1
 
     weight_per_class = 1 / np.array(count)
-    weights = [0] * len(df)
+    weights = []
 
     for idx, label in enumerate(df["diagnosis"].values):
         key = dataset.diagnosis_code[label]
-        weights[idx] = weight_per_class[key]
+        weights += [weight_per_class[key]] * dataset.elem_per_image
 
     if sampler_option == 'random':
-        return sampler.RandomSampler(df)
+        return sampler.RandomSampler(weights)
     elif sampler_option == 'weighted':
         return sampler.WeightedRandomSampler(weights, len(weights))
     else:
