@@ -108,17 +108,17 @@ def train_func(args):
 
     # Will change after command line refactoring
     if args.mode == "slice":
-        args.mode_task = "cnn"
+        args.network_type = "cnn"
 
-    if args.mode_task == "autoencoder":
+    if args.network_type == "autoencoder":
         args.transfer_learning_selection = "best_loss"
         train_autoencoder(args)
-    elif args.mode_task == "cnn":
+    elif args.network_type == "cnn":
         train_single_cnn(args)
-    elif args.mode_task == "multicnn":
+    elif args.network_type == "multicnn":
         train_multi_cnn(args)
     else:
-        raise NotImplementedError('Framework %s not implemented in clinicadl' % args.mode_task)
+        raise NotImplementedError('Framework %s not implemented in clinicadl' % args.network_type)
 
 
 # Function to dispatch command line options from classify to corresponding
@@ -651,7 +651,7 @@ def parse_command_line():
     train_image_subparser = train_image_parser.add_subparsers(
         title='''Task to be performed''',
         description='''Autoencoder reconstruction or cnn classification ?''',
-        dest='mode_task',
+        dest='network_type',
         help='''****** Choose a type of network ******''')
 
     train_parent_parser = return_train_parent_parser(retrain=False)
@@ -708,7 +708,7 @@ def parse_command_line():
     train_patch_subparser = train_patch_parser.add_subparsers(
         title='''Task to be performed''',
         description='''Autoencoder reconstruction or (multi)cnn classification ?''',
-        dest='mode_task',
+        dest='network_type',
         help='''****** Choose a type of network ******''')
     train_patch_subparser.required = True
 
@@ -779,7 +779,7 @@ def parse_command_line():
     train_roi_subparser = train_roi_parser.add_subparsers(
         title='''Task to be performed''',
         description='''Autoencoder reconstruction or cnn classification ?''',
-        dest='mode_task',
+        dest='network_type',
         help='''****** Choose a type of network ******''')
     train_roi_subparser.required = True
 
@@ -1337,7 +1337,7 @@ def return_train_parent_parser(retrain=False):
     train_optim_group.add_argument(
         '--patience',
         help='Number of epochs for early stopping patience.',
-        type=int, default=None if retrain else 10)
+        type=int, default=None if retrain else 0)
     train_optim_group.add_argument(
         '--tolerance',
         help='Value for the early stopping tolerance.',

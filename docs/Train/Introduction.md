@@ -36,11 +36,17 @@ Options shared for all values of `mode` are organized in groups:
     - `--use_cpu` (bool) forces to use CPU. Default behaviour is to try to use a GPU and to raise an error if it is not found.
     - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
+    - `--evaluation_steps` (int) gives the number of iterations to perform an [evaluation internal to an epoch](Details.md#evaluation). 
+    Default will only perform an evaluation at the end of each epoch.
 - **Data management**
     - `--diagnoses` (list of str) is the list of the labels that will be used for training. 
     These labels must be chosen from {AD,CN,MCI,sMCI,pMCI}. Default will use AD and CN labels.
     - `--baseline` (bool) is a flag to load only `_baseline.tsv` files instead of `.tsv` files comprising all the sessions. Default: `False`.
     - `--unnormalize` (bool) is a flag to disable min-max normalization that is performed by default. Default: `False`.
+    - `data_augmentation` (list of str) is the list of data augmentation transforms applied to the training data.
+    Must be chosen in [`None`, `Noise`, `Erasing`, `CropPad`, `Smoothing`]. Default: `False`.
+    - `--sampler` (str) is the sampler used on the training set. It must be chosen in [`random`, `weighted`]. 
+    `weighted` will give a stronger weight to underrepresented classes. Default: `random`.
 - **Cross-validation arguments**
     - `--n_splits` (int) is a number of splits k to load in the case of a k-fold cross-validation. Default will load a single-split.
     - `--split` (list of int) is a subset of folds that will be used for training. By default all splits available are used. 
@@ -50,10 +56,8 @@ Options shared for all values of `mode` are organized in groups:
     - `--weight_decay` (float) is the weight decay used by the Adam optimizer. Default: `1e-4`.
     - `--dropout` (float) is the rate of dropout applied in dropout layers. Default will reproduce the dropout rates used in 
     [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)].
-    - `--patience` (int) is the number of epochs for [early stopping](Details.md#stopping-criterion) patience. Default: `10`.
+    - `--patience` (int) is the number of epochs for [early stopping](Details.md#stopping-criterion) patience. Default: `0`.
     - `--tolerance` (float) is the value used for [early stopping](Details.md#stopping-criterion) tolerance. Default: `0`.
-    - `--evaluation_steps` (int) gives the number of iterations to perform an [evaluation internal to an epoch](Details.md#evaluation). 
-    Default will only perform an evaluation at the end of each epoch.
     - `--accumulation_steps` (int) gives the number of iterations during which gradients are accumulated before performing the [weights update](Details.md#optimization). 
     This allows to virtually increase the size of the batch. Default: `1`.
 
