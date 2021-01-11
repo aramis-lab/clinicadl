@@ -136,7 +136,7 @@ def transfer_learning(model, split, source_path=None, gpu=False,
     """
     import argparse
     from os import path
-    from .. import read_json
+    from ..iotools import read_json, translate_parameters
     import logging
 
     if logger is None:
@@ -145,6 +145,7 @@ def transfer_learning(model, split, source_path=None, gpu=False,
     if source_path is not None:
         source_commandline = argparse.Namespace()
         source_commandline = read_json(source_commandline, json_path=path.join(source_path, "commandline.json"))
+        source_commandline = translate_parameters(source_commandline)
         if source_commandline.mode_task == "autoencoder":
             logger.info("A pretrained autoencoder is loaded at path %s" % source_path)
             model = transfer_autoencoder_weights(model, source_path, split)
