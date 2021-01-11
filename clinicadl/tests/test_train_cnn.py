@@ -6,7 +6,7 @@ import shutil
 
 
 @pytest.fixture(params=[
-    'train_slice',
+    'train_slice_cnn',
     'train_image_cnn',
     'train_patch_cnn',
     'train_patch_multicnn',
@@ -15,7 +15,7 @@ import shutil
 ])
 def cli_commands(request):
 
-    if request.param == 'train_slice':
+    if request.param == 'train_slice_cnn':
         test_input = [
             'train',
             'slice',
