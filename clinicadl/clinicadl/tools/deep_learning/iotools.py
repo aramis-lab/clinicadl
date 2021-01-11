@@ -61,6 +61,7 @@ def translate_parameters(args):
     args.gpu = not args.use_cpu
     args.num_workers = args.nproc
     args.optimizer = "Adam"
+    args.loss = "default"
 
     if hasattr(args, "caps_dir"):
         args.input_dir = args.caps_dir
