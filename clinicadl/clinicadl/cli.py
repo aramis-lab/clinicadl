@@ -26,6 +26,10 @@ TRAIN_CATEGORIES = {
     'ROI CNN': '%sROI-based CNN parameters%s' % (Fore.BLUE, Fore.RESET),
     # Other optional arguments
     'OPTIONAL': '%sOther options%s' % (Fore.BLUE, Fore.RESET),
+    # Model selection
+    'MODEL': '%sModel selection%s' % (Fore.BLUE, Fore.RESET),
+    # Display
+    'DISPLAY': '%sResults display%s' % (Fore.BLUE, Fore.RESET),
 }
 
 
@@ -1145,56 +1149,58 @@ def parse_command_line():
 
     interpret_parent_parser = argparse.ArgumentParser(add_help=False)
 
-    # Mandatory arguments
-    interpret_parent_parser.add_argument(
+    interpret_pos_group = interpret_parent_parser.add_argument_group(TRAIN_CATEGORIES["POSITIONAL"])
+    interpret_pos_group.add_argument(
         "model_path", type=str,
         help="Path to the model output directory.")
-    interpret_parent_parser.add_argument(
+    interpret_pos_group.add_argument(
         "name", type=str,
         help="Name of the interpretation map.")
 
-    interpret_parent_parser.add_argument(
-        "--selection", default=['loss'], type=str, nargs="+", choices=['loss', 'balanced_accuracy'],
-        help="Loads the model selected on minimal loss or maximum accuracy on validation.")
-
-    # Data Management
-    interpret_parent_parser.add_argument(
-        "--tsv_path", type=str, default=None,
-        help="TSV path with subjects/sessions to process, if different from classification task.")
-    interpret_parent_parser.add_argument(
-        "--caps_dir", type=str, default=None,
-        help="Path to input dir of the MRI (preprocessed CAPS_dir), if different from classification task")
-    interpret_parent_parser.add_argument(
-        "--diagnosis", "-d", default='AD', type=str,
-        help="The diagnoses used for the classification")
-    interpret_parent_parser.add_argument(
-        "--target_diagnosis", default=None, type=str,
-        help="Which class the gradients explain. If None is given will be equal to diagnosis.")
-    interpret_parent_parser.add_argument(
-        "--baseline", action="store_true", default=False,
-        help="Use only baseline data for the mask training.")
-    interpret_parent_parser.add_argument(
-        "--keep_true", type=lambda x: bool(strtobool(x)), default=None,
-        help="Chooses false or true positive values of the classification. No selection by default")
-    interpret_parent_parser.add_argument(
-        "--nifti_template_path", type=str, default=None,
-        help="Path to a nifti template to retrieve affine values.")
-
-    # Computational issues
-    interpret_parent_parser.add_argument(
+    interpret_comput_group = interpret_parent_parser.add_argument_group(TRAIN_CATEGORIES["COMPUTATIONAL"])
+    interpret_comput_group.add_argument(
         "--batch_size", default=1, type=int,
         help="Batch size for selection of images (keep_true).")
-    interpret_parent_parser.add_argument(
+    interpret_comput_group.add_argument(
         '-cpu', '--use_cpu',
         action='store_true', default=False,
         help='Uses gpu instead of cpu if cuda is available.')
-    interpret_parent_parser.add_argument(
+    interpret_comput_group.add_argument(
         '-np', '--nproc',
         default=2, type=int,
         help='the number of batches being loaded in parallel.')
 
-    # Display of 2D images
-    interpret_parent_parser.add_argument(
+    interpret_model_group = interpret_parent_parser.add_argument_group(TRAIN_CATEGORIES["MODEL"])
+    interpret_model_group.add_argument(
+        "--selection", default=['best_loss'], type=str, nargs="+",
+        choices=['best_loss', 'best_balanced_accuracy'],
+        help="Loads the model selected on minimal loss or maximum accuracy on validation.")
+
+    interpret_data_group = interpret_parent_parser.add_argument_group(TRAIN_CATEGORIES["DATA"])
+    interpret_data_group.add_argument(
+        "--tsv_path", type=str, default=None,
+        help="TSV path with subjects/sessions to process, if different from classification task.")
+    interpret_data_group.add_argument(
+        "--caps_dir", type=str, default=None,
+        help="Path to input dir of the MRI (preprocessed CAPS_dir), if different from classification task")
+    interpret_data_group.add_argument(
+        "--diagnosis", "-d", default='AD', type=str,
+        help="The images corresponding to this diagnosis only will be loaded.")
+    interpret_data_group.add_argument(
+        "--target_diagnosis", default=None, type=str,
+        help="Which class the gradients explain. If None is given will be equal to diagnosis.")
+    interpret_data_group.add_argument(
+        "--baseline", action="store_true", default=False,
+        help="If provided, only the baseline sessions are used for training.")
+    interpret_data_group.add_argument(
+        "--keep_true", type=lambda x: bool(strtobool(x)), default=None,
+        help="Chooses false or true positive values of the classification. No selection by default")
+    interpret_data_group.add_argument(
+        "--nifti_template_path", type=str, default=None,
+        help="Path to a nifti template to retrieve affine values.")
+
+    interpret_display_group = interpret_parent_parser.add_argument_group(TRAIN_CATEGORIES["DISPLAY"])
+    interpret_display_group.add_argument(
         "--vmax", type=float, default=0.5,
         help="Maximum value used in 2D image display.")
 

@@ -12,11 +12,6 @@ from clinicadl.tools.deep_learning.models import create_model, load_model
 from clinicadl.tools.deep_learning.data import load_data_test, return_dataset, get_transforms
 from .gradients import VanillaBackProp
 
-"""
-Module to test whether an occlusion may prevent a pretrained network from classifying a diagnosis accurately
-
-"""
-
 
 def group_backprop(options):
 
@@ -31,7 +26,7 @@ def group_backprop(options):
         main_logger.info(fold)
         for selection in options.selection:
             results_path = path.join(options.model_path, fold, 'gradients',
-                                     'best_%s' % selection, options.name)
+                                     selection, options.name)
 
             model_options = argparse.Namespace()
             model_options = read_json(model_options, path.join(options.model_path, 'commandline.json'))
@@ -60,7 +55,7 @@ def group_backprop(options):
                                           params=options)
 
             model = create_model(model_options, data_example.size)
-            model_dir = os.path.join(options.model_path, fold, 'models', 'best_%s' % selection)
+            model_dir = os.path.join(options.model_path, fold, 'models', selection)
             model, best_epoch = load_model(model, model_dir, gpu=options.gpu, filename='model_best.pth.tar')
             options.output_dir = results_path
             commandline_to_json(options, logger=main_logger)
@@ -73,10 +68,8 @@ def group_backprop(options):
 
             if len(training_df) > 0:
 
-                # Save the tsv files used for the masking task
-                data_path = path.join(results_path, 'data')
-                os.makedirs(data_path, exist_ok=True)
-                training_df.to_csv(path.join(data_path, 'label_train.tsv'), sep='\t', index=False)
+                # Save the tsv files used for the saliency maps
+                training_df.to_csv(path.join('data.tsv'), sep='\t', index=False)
 
                 data_train = return_dataset(model_options.mode, options.input_dir,
                                             training_df, model_options.preprocessing,
@@ -112,15 +105,15 @@ def group_backprop(options):
                         affine = np.eye(4)
 
                     mean_map_nii = nib.Nifti1Image(mean_map[0], affine)
-                    nib.save(mean_map_nii, path.join(results_path, "occlusion.nii.gz"))
-                    np.save(path.join(results_path, "occlusion.npy"), mean_map[0])
+                    nib.save(mean_map_nii, path.join(results_path, "map.nii.gz"))
+                    np.save(path.join(results_path, "map.npy"), mean_map[0])
                 else:
-                    jpg_path = path.join(results_path, "occlusion.jpg")
+                    jpg_path = path.join(results_path, "map.jpg")
                     plt.imshow(mean_map[0], cmap="coolwarm", vmin=-options.vmax, vmax=options.vmax)
                     plt.colorbar()
                     plt.savefig(jpg_path)
                     plt.close()
-                    numpy_path = path.join(results_path, "occlusion.npy")
+                    numpy_path = path.join(results_path, "map.npy")
                     np.save(numpy_path, mean_map[0])
             else:
                 main_logger.warn("There are no subjects for the given options")

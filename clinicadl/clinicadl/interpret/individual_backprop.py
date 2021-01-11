@@ -11,10 +11,6 @@ from clinicadl.tools.deep_learning.cnn_utils import get_criterion, sort_predicte
 from clinicadl.tools.deep_learning.models import create_model, load_model
 from clinicadl.tools.deep_learning.data import load_data_test, return_dataset, get_transforms
 from .gradients import VanillaBackProp
-"""
-Module to test whether an occlusion may prevent a pretrained network from classifying a diagnosis accurately
-
-"""
 
 
 def individual_backprop(options):
@@ -30,7 +26,7 @@ def individual_backprop(options):
         main_logger.info(fold)
         for selection in options.selection:
             results_path = path.join(options.model_path, fold, 'gradients',
-                                     'best_%s' % selection, options.name)
+                                     selection, options.name)
 
             model_options = argparse.Namespace()
             model_options.gpu = options.gpu
@@ -59,7 +55,7 @@ def individual_backprop(options):
                                           params=options)
 
             model = create_model(model_options, data_example.size)
-            model_dir = os.path.join(options.model_path, fold, 'models', 'best_%s' % selection)
+            model_dir = os.path.join(options.model_path, fold, 'models', selection)
             model, best_epoch = load_model(model, model_dir, gpu=options.gpu, filename='model_best.pth.tar')
             options.output_dir = results_path
             commandline_to_json(options, logger=main_logger)
@@ -72,10 +68,8 @@ def individual_backprop(options):
 
             if len(training_df) > 0:
 
-                # Save the tsv files used for the masking task
-                data_path = path.join(results_path, 'data')
-                os.makedirs(data_path, exist_ok=True)
-                training_df.to_csv(path.join(data_path, 'label_train.tsv'), sep='\t', index=False)
+                # Save the tsv files used for the saliency maps
+                training_df.to_csv(path.join('data.tsv'), sep='\t', index=False)
 
                 data_train = return_dataset(model_options.mode, options.input_dir,
                                             training_df, model_options.preprocessing,
@@ -110,9 +104,9 @@ def individual_backprop(options):
                                 affine = np.eye(4)
 
                             map_nii = nib.Nifti1Image(map_np[i, 0, :, :, :], affine)
-                            nib.save(map_nii, path.join(single_path, "occlusion.nii.gz"))
+                            nib.save(map_nii, path.join(single_path, "map.nii.gz"))
                         else:
-                            jpg_path = path.join(single_path, "occlusion.jpg")
+                            jpg_path = path.join(single_path, "map.jpg")
                             plt.imshow(map_np[i, 0, :, :], cmap="coolwarm", vmin=-options.vmax, vmax=options.vmax)
                             plt.colorbar()
                             plt.savefig(jpg_path)
