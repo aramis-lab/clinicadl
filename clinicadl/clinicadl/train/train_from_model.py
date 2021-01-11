@@ -77,9 +77,9 @@ def retrain(new_options):
     # Default behaviour reuse the same dataset as before
     options = set_options(options, new_options)
 
-    if options.mode_task == "autoencoder":
+    if options.network_type == "autoencoder":
         train_autoencoder(options)
-    elif options.mode_task == "cnn":
+    elif options.network_type == "cnn":
         train_single_cnn(options)
-    elif options.mode_task == "multicnn":
+    elif options.network_type == "multicnn":
         train_multi_cnn(options)

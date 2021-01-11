@@ -43,7 +43,7 @@ def random_sampling(rs_options, options):
 
     sampling_dict = {
         "mode": "choice",
-        "mode_task": "choice",
+        "network_type": "choice",
         "network_normalization": "choice",
         "n_fcblocks": "randint",
         "preprocessing": "choice",
@@ -62,7 +62,9 @@ def random_sampling(rs_options, options):
     fixed_values = ["tsv_path", "caps_dir",
                     "epochs", "patience", "tolerance",
                     "diagnoses", "data_augmentation",
-                    "channels_limit", "use_extracted_features"]
+                    "channels_limit",
+                    "use_extracted_patches",
+                    "use_extracted_slices"]
     additional_mode_dict = {
         "image": {},
         "patch": {
@@ -255,6 +257,9 @@ class RandomArchitecture(nn.Module):
             conv_block = self.append_normalization_layer(
                 conv_block, out_channels)
             conv_block.append(nn.LeakyReLU())
+        else:
+            raise ValueError("Dimension reduction %s is not supported. Please only include"
+                             "'MaxPooling' or 'stride' in your sampling options." % conv_dict['d_reduction'])
 
         return nn.Sequential(*conv_block)
 

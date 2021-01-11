@@ -68,6 +68,8 @@ def translate_parameters(args):
         args.minmaxnormalization = not args.unnormalize
     if hasattr(args, "slice_direction"):
         args.mri_plane = args.slice_direction
+    if hasattr(args, "network_type"):
+        args.mode_task = args.network_type
 
     if not hasattr(args, "selection_threshold"):
         args.selection_threshold = None
@@ -75,11 +77,11 @@ def translate_parameters(args):
     if not hasattr(args, "prepare_dl"):
         if hasattr(args, "use_extracted_features"):
             args.prepare_dl = args.use_extracted_features
-        elif hasattr(args, "use_extracted_patches"):
+        elif hasattr(args, "use_extracted_patches") and args.mode == "patch":
             args.prepare_dl = args.use_extracted_patches
-        elif hasattr(args, "use_extracted_slices"):
+        elif hasattr(args, "use_extracted_slices") and args.mode == "slice":
             args.prepare_dl = args.use_extracted_slices
-        elif hasattr(args, "use_extracted_roi"):
+        elif hasattr(args, "use_extracted_roi") and args.mode == "roi":
             args.prepare_dl = args.use_extracted_roi
 
     return args
@@ -213,18 +215,19 @@ def read_json(options, json_path=None, test=False):
     if hasattr(options, 'mode'):
         if options.mode == "subject":
             options.mode = "image"
-        if options.mode == "slice" and not hasattr(options, "mode_task"):
-            options.mode_task = "cnn"
+        if options.mode == "slice" and not hasattr(options, "network_type"):
+            options.network_type = "cnn"
         if options.mode == "patch" and hasattr(options, "network_type"):
             if options.network_type == "multi":
-                options.mode_task = "multicnn"
-            del options.network_type
+                options.network_type = "multicnn"
 
-    if not hasattr(options, "mode_task"):
-        if hasattr(options, "train_autoencoder"):
-            options.mode_task = "autoencoder"
+    if not hasattr(options, "network_type"):
+        if hasattr(options, "mode_task"):
+            options.network_type = options.mode_task
+        elif hasattr(options, "train_autoencoder"):
+            options.network_type = "autoencoder"
         else:
-            options.mode_task = "cnn"
+            options.network_type = "cnn"
 
     if hasattr(options, "selection"):
         options.transfer_learning_selection = options.selection

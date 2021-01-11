@@ -159,7 +159,7 @@ def generate_cli_commands(request):
         keys_output = [
             'task',
             'mode',
-            'mode_task',
+            'network_type',
             'caps_dir',
             'preprocessing',
             'tsv_path',
@@ -178,7 +178,7 @@ def generate_cli_commands(request):
         keys_output = [
             'task',
             'mode',
-            'mode_task',
+            'network_type',
             'caps_dir',
             'preprocessing',
             'tsv_path',
@@ -197,7 +197,7 @@ def generate_cli_commands(request):
         keys_output = [
             'task',
             'mode',
-            'mode_task',
+            'network_type',
             'caps_dir',
             'preprocessing',
             'tsv_path',

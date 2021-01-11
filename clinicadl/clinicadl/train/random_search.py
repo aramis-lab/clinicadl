@@ -36,13 +36,16 @@ def check_and_complete(rs_options):
         "optimizer": "Adam",
         "unnormalize": False,
         "patch_size": 50,
+        "patience": 0,
         "selection_threshold": 0,
         "slice_direction": 0,
         "stride_size": 50,
+        "tolerance": 0.0,
         "transfer_learning_path": None,
         "transfer_learning_selection": "best_loss",
-        "use_extracted_features": False,
-        "wd_bool": False,
+        "use_extracted_patches": False,
+        "use_extracted_slices": False,
+        "wd_bool": True,
         "sampler": "random"
     }
     for name, default_value in default_values.items():
@@ -53,7 +56,7 @@ def check_and_complete(rs_options):
     if rs_options.wd_bool and not hasattr(rs_options, "weight_decay"):
         raise ValueError("A range for the opposite of the weight decay exponent must be given in %s." % filename)
 
-    mandatory_arguments = ['epochs', 'patience', 'tolerance', 'mode_task', 'mode',
+    mandatory_arguments = ['epochs', 'network_type', 'mode',
                            'tsv_path', 'caps_dir', 'diagnoses', 'preprocessing',
                            'n_convblocks', 'first_conv_width', 'n_fcblocks']
 
@@ -71,9 +74,9 @@ def launch_search(options):
 
     options.output_dir = path.join(options.launch_dir, options.name)
 
-    if options.mode_task == "autoencoder":
+    if options.network_type == "autoencoder":
         train_autoencoder(options)
-    elif options.mode_task == "cnn":
+    elif options.network_type == "cnn":
         train_single_cnn(options)
-    elif options.mode_task == "multicnn":
+    elif options.network_type == "multicnn":
         train_multi_cnn(options)

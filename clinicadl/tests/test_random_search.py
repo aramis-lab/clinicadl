@@ -22,7 +22,7 @@ def cli_commands(request):
             'diagnoses': ["AD", "CN"],
 
             'mode': 'image',
-            'mode_task': 'cnn',
+            'network_type': 'cnn',
             'epochs': 1,
             'patience': 0,
             'tolerance': 0.0,
