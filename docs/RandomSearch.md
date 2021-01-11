@@ -52,7 +52,7 @@ Optional arguments:
     - `--n_splits` (int) is a number of splits k to load in the case of a k-fold cross-validation. Default will load a single-split.
     - `--split` (list of int) is a subset of folds that will be used for training. By default all splits available are used. 
     
-## Content of `random_search.json`:
+## Content of `random_search.json`
 
 `random_search.json` must be present in `launch_dir` before running the command. 
 An example of this file can be found in 
@@ -184,7 +184,7 @@ the following file system:
 In the following we give an example of a `random_search.json` file and 
 two possible sets of options that can be sampled from it.
 
-### `random_search.json` content:
+### `random_search.json`
 
 ```
 {"mode": ["patch", "image"],
@@ -211,7 +211,7 @@ two possible sets of options that can be sampled from it.
 "n_fcblocks": [1, 3]}
 ```
 
-### Options #1:
+### Options #1
 
 ```
 {"mode": "image",
@@ -269,7 +269,7 @@ The scheme of the corresponding architecture is the following:
 ![Illustration of the CNN corresponding to options #1](images/random1.png)
 
 
-### Options #2:
+### Options #2
 
 ```
 {"mode": "patch",
