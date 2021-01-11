@@ -11,8 +11,7 @@ from ..tools.deep_learning.data import (get_transforms,
                                         compute_num_cnn,
                                         generate_sampler)
 from ..tools.deep_learning.cnn_utils import train, test, mode_level_to_tsvs, soft_voting_to_tsvs, get_criterion
-from ..tools.deep_learning.iotools import commandline_to_json, write_requirements_version, translate_parameters
-from ..tools.deep_learning.iotools import return_logger
+from ..tools.deep_learning.iotools import return_logger, check_and_clean
 from ..tools.deep_learning.iotools import commandline_to_json, write_requirements_version, translate_parameters
 
 
@@ -32,6 +31,7 @@ def train_multi_cnn(params):
     main_logger = return_logger(params.verbose, "main process")
     train_logger = return_logger(params.verbose, "train")
     eval_logger = return_logger(params.verbose, "final evaluation")
+    check_and_clean(params.output_dir)
 
     commandline_to_json(params, logger=main_logger)
     write_requirements_version(params.output_dir)

@@ -10,7 +10,7 @@ from ..tools.deep_learning.data import (load_data,
                                         get_transforms,
                                         return_dataset,
                                         generate_sampler)
-from ..tools.deep_learning.iotools import return_logger
+from ..tools.deep_learning.iotools import return_logger, check_and_clean
 from ..tools.deep_learning.iotools import commandline_to_json, write_requirements_version, translate_parameters
 
 
@@ -28,6 +28,7 @@ def train_autoencoder(params):
     """
     main_logger = return_logger(params.verbose, "main process")
     train_logger = return_logger(params.verbose, "train")
+    check_and_clean(params.output_dir)
 
     commandline_to_json(params, logger=main_logger)
     write_requirements_version(params.output_dir)
