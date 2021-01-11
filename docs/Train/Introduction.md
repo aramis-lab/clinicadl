@@ -43,7 +43,7 @@ Options shared for all values of `mode` are organized in groups:
     These labels must be chosen from {AD,CN,MCI,sMCI,pMCI}. Default will use AD and CN labels.
     - `--baseline` (bool) is a flag to load only `_baseline.tsv` files instead of `.tsv` files comprising all the sessions. Default: `False`.
     - `--unnormalize` (bool) is a flag to disable min-max normalization that is performed by default. Default: `False`.
-    - `data_augmentation` (list of str) is the list of data augmentation transforms applied to the training data.
+    - `--data_augmentation` (list of str) is the list of data augmentation transforms applied to the training data.
     Must be chosen in [`None`, `Noise`, `Erasing`, `CropPad`, `Smoothing`]. Default: `False`.
     - `--sampler` (str) is the sampler used on the training set. It must be chosen in [`random`, `weighted`]. 
     `weighted` will give a stronger weight to underrepresented classes. Default: `random`.
@@ -54,8 +54,7 @@ Options shared for all values of `mode` are organized in groups:
     - `--epochs` (int) is the [maximum number of epochs](Details.md#stopping-criterion). Default: `20`.
     - `--learning_rate` (float) is the learning rate used to perform weight update. Default: `1e-4`.
     - `--weight_decay` (float) is the weight decay used by the Adam optimizer. Default: `1e-4`.
-    - `--dropout` (float) is the rate of dropout applied in dropout layers. Default will reproduce the dropout rates used in 
-    [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)].
+    - `--dropout` (float) is the rate of dropout applied in dropout layers. Default: `0`.
     - `--patience` (int) is the number of epochs for [early stopping](Details.md#stopping-criterion) patience. Default: `0`.
     - `--tolerance` (float) is the value used for [early stopping](Details.md#stopping-criterion) tolerance. Default: `0`.
     - `--accumulation_steps` (int) gives the number of iterations during which gradients are accumulated before performing the [weights update](Details.md#optimization). 
