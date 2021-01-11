@@ -132,6 +132,7 @@ def generate_cli_commands(request):
         test_input = [
             'train',
             'slice',
+            'cnn',
             '/dir/caps',
             't1-linear',
             '/dir/tsv_path/',
@@ -140,6 +141,7 @@ def generate_cli_commands(request):
         keys_output = [
             'task',
             'mode',
+            'network_type',
             'caps_dir',
             'preprocessing',
             'tsv_path',
