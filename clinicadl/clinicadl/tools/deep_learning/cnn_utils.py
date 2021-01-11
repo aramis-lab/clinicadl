@@ -44,11 +44,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
     from tensorboardX import SummaryWriter
     from time import time
 
-    columns = ['epoch', 'iteration', 'time',
-               'balanced_accuracy_train', 'loss_train',
-               'balanced_accuracy_valid', 'loss_valid']
-    filename = os.path.join(os.path.dirname(log_dir), 'training.tsv')
-
     if logger is None:
         logger = logging
 
