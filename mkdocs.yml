@@ -71,5 +71,6 @@ nav:
     - Custom experiment: Train/Custom.md
     - Implementation details: Train/Details.md
   - Classify: Classify.md
+  - Interpret: Interpret.md
   - Generate: Generate.md
   - TSV Tools: TSVTools.md
