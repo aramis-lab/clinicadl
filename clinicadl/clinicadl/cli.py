@@ -854,7 +854,7 @@ def parse_command_line():
     train_slice_subparser = train_slice_parser.add_subparsers(
         title='''Task to be performed''',
         description='''Autoencoder reconstruction or cnn classification ?''',
-        dest='mode_task',
+        dest='network_type',
         help='''****** Choose a type of network ******''')
     train_slice_subparser.required = True
 
