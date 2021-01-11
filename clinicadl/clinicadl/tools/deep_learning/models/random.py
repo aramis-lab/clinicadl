@@ -55,6 +55,7 @@ def random_sampling(rs_options, options):
         "loss": "choice",
         "optimizer": "choice",
         "wd_bool": "choice",
+        "weight_decay": "exponent",
         "sampler": "choice",
         "transfer_learning_path": "choice",
         "transfer_learning_selection": "choice"
@@ -99,10 +100,7 @@ def random_sampling(rs_options, options):
         setattr(options, name, sampled_value)
 
     # Exceptions to classical sampling functions
-    if options.wd_bool:
-        exponent = random.uniform(*rs_options.weight_decay)
-        options.weight_decay = 10 ** -exponent
-    else:
+    if not options.wd_bool:
         options.weight_decay = 0
 
     options.evaluation_steps = find_evaluation_steps(

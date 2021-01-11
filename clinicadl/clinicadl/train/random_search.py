@@ -46,15 +46,12 @@ def check_and_complete(rs_options):
         "use_extracted_patches": False,
         "use_extracted_slices": False,
         "wd_bool": True,
+        "weight_decay": 4,
         "sampler": "random"
     }
     for name, default_value in default_values.items():
         if not hasattr(rs_options, name):
             setattr(rs_options, name, default_value)
-
-    # Exception of weight decay to better handle
-    if rs_options.wd_bool and not hasattr(rs_options, "weight_decay"):
-        raise ValueError("A range for the opposite of the weight decay exponent must be given in %s." % filename)
 
     mandatory_arguments = ['epochs', 'network_type', 'mode',
                            'tsv_path', 'caps_dir', 'diagnoses', 'preprocessing',

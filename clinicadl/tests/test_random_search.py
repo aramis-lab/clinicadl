@@ -32,8 +32,7 @@ def cli_commands(request):
             'n_fcblocks': [1, 2]
         }
         test_input = [
-            'random_search',
-            'generate',
+            'random-search',
             launch_dir,
             name_dir,
             '--n_splits', '2',
