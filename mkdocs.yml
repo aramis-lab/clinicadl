@@ -61,6 +61,7 @@ nav:
     - t1-extensive pipeline: Preprocessing/T1_Extensive.md
     - extract tensors: Preprocessing/Extract.md
     - quality check: Preprocessing/QualityCheck.md
+  - Random Search: RandomSearch.md
   - Train:
     - Introduction: Train/Introduction.md
     - Image-based: Train/Image.md
