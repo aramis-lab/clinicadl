@@ -92,9 +92,9 @@ def generate_random_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, mea
     missing_path = join(output_dir, "missing_mods")
     makedirs(missing_path, exist_ok=True)
 
-    sessions = data_df.session_id.unique()
+    sessions = output_df.session_id.unique()
     for session in sessions:
-        session_df = data_df[data_df.session_id == session]
+        session_df = output_df[output_df.session_id == session]
         out_df = copy(session_df[["participant_id"]])
         out_df["synthetic"] = [1] * len(out_df)
         out_df.to_csv(join(missing_path, "missing_mods_%s.tsv" % session), sep="\t", index=False)
@@ -150,7 +150,7 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
 
     if n_subjects > len(data_df):
         raise ValueError("The number of subjects %i cannot be higher than the number of subjects in the baseline "
-                         "DataFrame extracted from %s" % (n_subjects, tsv_path))
+                         "dataset of size %i." % (n_subjects, len(data_df)))
 
     if mask_path is None:
         if not exists(join(cache_clinicadl, 'AAL2')):
@@ -213,9 +213,9 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
     missing_path = join(output_dir, "missing_mods")
     makedirs(missing_path, exist_ok=True)
 
-    sessions = data_df.session_id.unique()
+    sessions = output_df.session_id.unique()
     for session in sessions:
-        session_df = data_df[data_df.session_id == session]
+        session_df = output_df[output_df.session_id == session]
         out_df = copy(session_df[["participant_id"]])
         out_df["synthetic"] = [1] * len(out_df)
         out_df.to_csv(join(missing_path, "missing_mods_%s.tsv" % session), sep="\t", index=False)
