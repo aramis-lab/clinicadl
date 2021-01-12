@@ -112,8 +112,8 @@ def mod_selection(bids_df, missing_mods_dict, mod='t1w'):
     if mod is not None:
         for subject, session in bids_df.index.values:
             try:
-                t1_present = missing_mods_dict[session].loc[subject, mod]
-                if not t1_present:
+                mod_present = missing_mods_dict[session].loc[subject, mod]
+                if not mod_present:
                     bids_copy_df.drop((subject, session), inplace=True)
             except Exception:
                 bids_copy_df.drop((subject, session), inplace=True)
