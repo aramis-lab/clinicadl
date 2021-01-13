@@ -777,6 +777,25 @@ def parse_command_line():
         "roi",
         help="Train a ROI-based level network.")
 
+    train_roi_parent = argparse.ArgumentParser(add_help=False)
+    train_roi_group = train_roi_parent.add_argument_group(
+        TRAIN_CATEGORIES["ROI"])
+    train_roi_group.add_argument(
+        '-rl', '--roi_list',
+        help='Names of the regions used for the classification task.'
+             'Default will use the hippocampi as described in (Wen et al, 2019).',
+        type=str, nargs="+", default=None)
+    train_roi_group.add_argument(
+        '--uncropped_roi',
+        help='If given the image is as large as the whole image. Default will crop the image'
+             'with the smallest bounding box possible.',
+        action='store_true', default=False)
+    train_roi_group.add_argument(
+        '--use_extracted_roi',
+        help='''If provided the outputs of extract preprocessing are used, else the whole
+                 MRI is loaded.''',
+        default=False, action="store_true")
+
     train_roi_subparser = train_roi_parser.add_subparsers(
         title='''Task to be performed''',
         description='''Autoencoder reconstruction or cnn classification ?''',
@@ -789,6 +808,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
+            train_roi_parent,
             autoencoder_parent,
             transfer_learning_parent
         ],
@@ -801,6 +821,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
+            train_roi_parent,
             transfer_learning_parent],
         help="Train a ROI-based CNN.")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
@@ -825,6 +846,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
+            train_roi_parent,
             transfer_learning_parent],
         help="Train a ROI-based multi-CNN (one CNN is trained per patch location).")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
