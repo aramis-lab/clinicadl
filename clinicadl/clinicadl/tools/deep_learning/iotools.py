@@ -240,6 +240,12 @@ def read_json(options, json_path=None, test=False):
         options.dropout = None
         set_default_dropout(options)
 
+    if not hasattr(options, 'uncropped_roi'):
+        options.uncropped_roi = False
+
+    if not hasattr(options, 'roi_list'):
+        options.roi_list = None
+
     return options
 
 
