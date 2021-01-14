@@ -17,7 +17,8 @@ def check_and_complete(rs_options):
     This function initializes fields so a random model can be sampled.
     Some fields are mandatory and cannot be initialized by default; this will raise an issue if they are missing.
 
-    :param rs_options: (Namespace) the random search options
+    Args:
+        rs_options: (Namespace) the random search options
     """
     filename = 'random_search.json'
 
