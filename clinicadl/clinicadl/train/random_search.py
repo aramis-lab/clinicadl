@@ -59,7 +59,7 @@ def check_and_complete(rs_options):
 
     for argument in mandatory_arguments:
         if not hasattr(rs_options, argument):
-            raise ValueError("The argument %s must be specified in %s." % (argument, filename))
+            raise ValueError(f"The argument {argument} must be specified in {filename}.")
 
 
 def launch_search(options):
