@@ -4,6 +4,8 @@ import pytest
 import os
 from os.path import join, exists, abspath
 
+# TODO implement test_shepplogan
+
 
 @pytest.fixture(params=[
     'generate_trivial',

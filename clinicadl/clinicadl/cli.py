@@ -253,7 +253,7 @@ def parse_command_line():
     generate_subparser = generate_parser.add_subparsers(
         title='''Type of synthetic data generated''',
         description='''What type of synthetic data do you want to generate?
-                (random, shepplogan, trivial).''',
+                (random, trivial).''',
         dest='mode',
         help='''****** Synthetic datasets proposed by clinicadl ******''')
 
@@ -326,45 +326,45 @@ def parse_command_line():
     )
     generate_trivial_parser.set_defaults(func=generate_data_func)
 
-    generate_shepplogan_parser = generate_subparser.add_parser(
-        "shepplogan",
-        help="Generate a dataset of 2D images including 3 subtypes based on Shepp Logan phantom."
-    )
-    generate_shepplogan_parser.add_argument(
-        'output_dir',
-        help='Folder containing the synthetic dataset.',
-    )
-    generate_shepplogan_parser.add_argument(
-        '--n_subjects',
-        type=int,
-        default=300,
-        help="Number of subjects in each class of the synthetic dataset."
-    )
-    generate_shepplogan_parser.add_argument(
-        '--image_size',
-        type=int,
-        default=128,
-        help="Size in pixels of the squared images."
-    )
-    generate_shepplogan_parser.add_argument(
-        '--CN_subtypes_distribution', '-Csd',
-        type=float, nargs='+',
-        default=[1.0, 0.0, 0.0],
-        help="Probability of each subtype to be drawn in CN label."
-    )
-    generate_shepplogan_parser.add_argument(
-        '--AD_subtypes_distribution', '-Asd',
-        type=float, nargs='+',
-        default=[0.05, 0.85, 0.10],
-        help="Probability of each subtype to be drawn in AD label."
-    )
-    generate_shepplogan_parser.add_argument(
-        '--smoothing',
-        action='store_true',
-        default=False,
-        help='Adds random smoothing to generated data.'
-    )
-    generate_shepplogan_parser.set_defaults(func=generate_data_func)
+    # generate_shepplogan_parser = generate_subparser.add_parser(
+    #     "shepplogan",
+    #     help="Generate a dataset of 2D images including 3 subtypes based on Shepp Logan phantom."
+    # )
+    # generate_shepplogan_parser.add_argument(
+    #     'output_dir',
+    #     help='Folder containing the synthetic dataset.',
+    # )
+    # generate_shepplogan_parser.add_argument(
+    #     '--n_subjects',
+    #     type=int,
+    #     default=300,
+    #     help="Number of subjects in each class of the synthetic dataset."
+    # )
+    # generate_shepplogan_parser.add_argument(
+    #     '--image_size',
+    #     type=int,
+    #     default=128,
+    #     help="Size in pixels of the squared images."
+    # )
+    # generate_shepplogan_parser.add_argument(
+    #     '--CN_subtypes_distribution', '-Csd',
+    #     type=float, nargs='+',
+    #     default=[1.0, 0.0, 0.0],
+    #     help="Probability of each subtype to be drawn in CN label."
+    # )
+    # generate_shepplogan_parser.add_argument(
+    #     '--AD_subtypes_distribution', '-Asd',
+    #     type=float, nargs='+',
+    #     default=[0.05, 0.85, 0.10],
+    #     help="Probability of each subtype to be drawn in AD label."
+    # )
+    # generate_shepplogan_parser.add_argument(
+    #     '--smoothing',
+    #     action='store_true',
+    #     default=False,
+    #     help='Adds random smoothing to generated data.'
+    # )
+    # generate_shepplogan_parser.set_defaults(func=generate_data_func)
 
     # Preprocessing
     from clinica.pipelines.t1_linear.t1_linear_cli import T1LinearCLI
@@ -1243,7 +1243,7 @@ def return_train_parent_parser(retrain=False):
         train_pos_group.add_argument(
             'preprocessing',
             help='Defines the type of preprocessing of CAPS data.',
-            choices=['t1-linear', 't1-extensive', 'shepplogan'], type=str)
+            choices=['t1-linear', 't1-extensive'], type=str)
         train_pos_group.add_argument(
             'tsv_path',
             help='TSV path with subjects/sessions to process.',
