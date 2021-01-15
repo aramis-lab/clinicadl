@@ -497,7 +497,7 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
          (Dataset) the corresponding dataset.
     """
 
-    if cnn_index is not None and mode in ["image", "roi", "slice"]:
+    if cnn_index is not None and mode in ["image"]:
         raise ValueError("Multi-CNN is not implemented for %s mode." % mode)
 
     if mode == "image":
