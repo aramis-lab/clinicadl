@@ -1,6 +1,6 @@
 {
     "id": "aramislab/t1-extensive",
-    "author": "Alexandre Routier",
+    "author": ["Alexandre Routier"],
     "version": "0.1.0",
     "space_caps": "3M",
     "space_wd": "3M",
