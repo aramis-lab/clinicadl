@@ -439,7 +439,7 @@ class MRIDatasetRoi(MRIDataset):
                     raise NotImplementedError("Roi extraction for %s preprocessing was not implemented."
                                               % preprocessing)
 
-                mask_path = path.join(caps_directory, "masks", "roi_based",  "tpl-%s" % template,
+                mask_path = path.join(caps_directory, "masks", "roi_based", "tpl-%s" % template,
                                       "tpl-%s%s_roi-%s_mask.nii.gz" % (template, mask_pattern, roi))
                 mask_nii = nib.load(mask_path)
                 mask_list.append(mask_nii.get_fdata())
