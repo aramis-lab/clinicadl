@@ -482,8 +482,6 @@ class MRIDatasetRoi(MRIDataset):
             image_path = self._get_path(participant, session, cohort, "image")
             image = torch.load(image_path)
             patch = self.extract_roi_from_mri(image, roi_idx)
-        t2 = time()
-        print(f"get roi {t2 - t1}")
 
         if self.transformations:
             patch = self.transformations(patch)
@@ -491,21 +489,14 @@ class MRIDatasetRoi(MRIDataset):
         if self.augmentation_transformations and not self.eval_mode:
             patch = self.augmentation_transformations(patch)
 
-        t3 = time()
-        print(f"transformations {t3 - t2}")
-
         sample = {'image': patch, 'label': label,
                   'participant_id': participant, 'session_id': session,
                   'roi_id': roi_idx}
 
-        t4 = time()
-        print(f"sample {t4 - t3}")
         if self.atlas is not None:
             atlas_df = self._get_statistics_df(participant, session, cohort)
             atlas_pt = torch.from_numpy(atlas_df.values).float()
             sample['atlas'] = atlas_pt
-        t5 = time()
-        print(f"get atlas {t5 - t4}")
 
         return sample
 
