@@ -250,7 +250,7 @@ def parse_command_line():
     generate_subparser = generate_parser.add_subparsers(
         title='''Type of synthetic data generated''',
         description='''What type of synthetic data do you want to generate?
-                (random, trivial).''',
+                (random, shepplogan, trivial).''',
         dest='mode',
         help='''****** Synthetic datasets proposed by clinicadl ******''')
 
@@ -323,45 +323,45 @@ def parse_command_line():
     )
     generate_trivial_parser.set_defaults(func=generate_data_func)
 
-    # generate_shepplogan_parser = generate_subparser.add_parser(
-    #     "shepplogan",
-    #     help="Generate a dataset of 2D images including 3 subtypes based on Shepp Logan phantom."
-    # )
-    # generate_shepplogan_parser.add_argument(
-    #     'output_dir',
-    #     help='Folder containing the synthetic dataset.',
-    # )
-    # generate_shepplogan_parser.add_argument(
-    #     '--n_subjects',
-    #     type=int,
-    #     default=300,
-    #     help="Number of subjects in each class of the synthetic dataset."
-    # )
-    # generate_shepplogan_parser.add_argument(
-    #     '--image_size',
-    #     type=int,
-    #     default=128,
-    #     help="Size in pixels of the squared images."
-    # )
-    # generate_shepplogan_parser.add_argument(
-    #     '--CN_subtypes_distribution', '-Csd',
-    #     type=float, nargs='+',
-    #     default=[1.0, 0.0, 0.0],
-    #     help="Probability of each subtype to be drawn in CN label."
-    # )
-    # generate_shepplogan_parser.add_argument(
-    #     '--AD_subtypes_distribution', '-Asd',
-    #     type=float, nargs='+',
-    #     default=[0.05, 0.85, 0.10],
-    #     help="Probability of each subtype to be drawn in AD label."
-    # )
-    # generate_shepplogan_parser.add_argument(
-    #     '--smoothing',
-    #     action='store_true',
-    #     default=False,
-    #     help='Adds random smoothing to generated data.'
-    # )
-    # generate_shepplogan_parser.set_defaults(func=generate_data_func)
+    generate_shepplogan_parser = generate_subparser.add_parser(
+        "shepplogan",
+        help="Generate a dataset of 2D images including 3 subtypes based on Shepp Logan phantom."
+    )
+    generate_shepplogan_parser.add_argument(
+        'output_dir',
+        help='Folder containing the synthetic dataset.',
+    )
+    generate_shepplogan_parser.add_argument(
+        '--n_subjects',
+        type=int,
+        default=300,
+        help="Number of subjects in each class of the synthetic dataset."
+    )
+    generate_shepplogan_parser.add_argument(
+        '--image_size',
+        type=int,
+        default=128,
+        help="Size in pixels of the squared images."
+    )
+    generate_shepplogan_parser.add_argument(
+        '--CN_subtypes_distribution', '-Csd',
+        type=float, nargs='+',
+        default=[1.0, 0.0, 0.0],
+        help="Probability of each subtype to be drawn in CN label."
+    )
+    generate_shepplogan_parser.add_argument(
+        '--AD_subtypes_distribution', '-Asd',
+        type=float, nargs='+',
+        default=[0.05, 0.85, 0.10],
+        help="Probability of each subtype to be drawn in AD label."
+    )
+    generate_shepplogan_parser.add_argument(
+        '--smoothing',
+        action='store_true',
+        default=False,
+        help='Adds random smoothing to generated data.'
+    )
+    generate_shepplogan_parser.set_defaults(func=generate_data_func)
 
     # Preprocessing
     from clinica.pipelines.t1_linear.t1_linear_cli import T1LinearCLI
@@ -777,6 +777,25 @@ def parse_command_line():
         "roi",
         help="Train a ROI-based level network.")
 
+    train_roi_parent = argparse.ArgumentParser(add_help=False)
+    train_roi_group = train_roi_parent.add_argument_group(
+        TRAIN_CATEGORIES["ROI"])
+    train_roi_group.add_argument(
+        '-rl', '--roi_list',
+        help='Names of the regions used for the classification task.'
+             'Default will use the hippocampi as described in (Wen et al, 2019).',
+        type=str, nargs="+", default=None)
+    train_roi_group.add_argument(
+        '--uncropped_roi',
+        help='If given the image is as large as the whole image. Default will crop the image'
+             'with the smallest bounding box possible.',
+        action='store_true', default=False)
+    train_roi_group.add_argument(
+        '--use_extracted_roi',
+        help='''If provided the outputs of extract preprocessing are used, else the whole
+                 MRI is loaded.''',
+        default=False, action="store_true")
+
     train_roi_subparser = train_roi_parser.add_subparsers(
         title='''Task to be performed''',
         description='''Autoencoder reconstruction or cnn classification ?''',
@@ -789,6 +808,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
+            train_roi_parent,
             autoencoder_parent,
             transfer_learning_parent
         ],
@@ -801,6 +821,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
+            train_roi_parent,
             transfer_learning_parent],
         help="Train a ROI-based CNN.")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
@@ -825,6 +846,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
+            train_roi_parent,
             transfer_learning_parent],
         help="Train a ROI-based multi-CNN (one CNN is trained per patch location).")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
@@ -1307,7 +1329,7 @@ def return_train_parent_parser(retrain=False):
         train_pos_group.add_argument(
             'preprocessing',
             help='Defines the type of preprocessing of CAPS data.',
-            choices=['t1-linear', 't1-extensive'], type=str)
+            choices=['t1-linear', 't1-extensive', 'shepplogan'], type=str)
         train_pos_group.add_argument(
             'tsv_path',
             help='TSV path with subjects/sessions to process.',
