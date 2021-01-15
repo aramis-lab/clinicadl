@@ -1,13 +1,14 @@
 # `train roi` - Train deep learning networks using predefined regions of interest (ROI)
 
-This option allows training a network on two regions of interest (ROI).
-ROI inputs correspond to two patches of size 50x50x50 voxels manually centered on each hippocampus.
-This manual centering has only been done for the `t1-linear` pipeline.
+This option allows training a network on a set of regions of interest (ROI) defined by 
+[masks](./ROI.md#definition-of-masks).
+
+If no ROI is specified, the inputs will correspond to two patches of size 50x50x50 voxels 
+manually centered on each hippocampus.
+This manual centering has only been done for the `t1-linear` pipeline, and is only available if
+`--use_extracted_roi` is not enabled.
 
 ![Coronal view of ROI patches](../images/hippocampi.png)
-
-!!! warning
-    Contrary to `patch` and `slice`, `roi` inputs cannot be extracted with `clinicadl extract`.
 
 One architecture is implemented in `clinicadl` for the `roi` mode: 
 `Conv4_FC3`, adapted to `t1-linear` pipeline outputs.
@@ -15,6 +16,18 @@ One architecture is implemented in `clinicadl` for the `roi` mode:
 !!! info "Adding a custom architecture"
     It is possible to add a custom architecture and train it with `clinicadl`.
     Detailed instructions can be found [here](./Custom.md).
+
+## Definition of masks
+
+Regions of interest must correspond to masks that are defined in the CAPS directory `caps_directory`
+at `<caps_directory>/masks/roi_based/tpl-<tpl>`. Here `tpl` corresponds to the template used for registration
+in the preprocessing pipeline wanted.
+
+The mask corresponding to the region `roi` must be named according to the following pattern:
+`tpl-<tpl>_key1-<value_1>...keyN-<value_N>_roi-<roi>_mask.nii.gz`.
+
+Keys that are included in the mask name correspond only to those describing an operation
+modifying the size of the image compared to the original template. 
 
 ## `train roi autoencoder` - Train autoencoders using ROI
 
@@ -39,8 +52,16 @@ where mandatory arguments are:
     Options that are common to all `train` input and network types can be found in the introduction of 
     [`clinicadl train`](./Introduction.md#running-the-task).
 
-There is two specific options for this task: 
+The options specific to this task are the following: 
 
+- `--roi_list` (list of str) includes the names of the regions wanted. Each region must correspond
+to a mask defined in `caps_directory`. See the [dedicated section](./ROI.md#definition-of-masks) for more information.
+Default will extract two patches centered on the hippocampi (available for `t1-linear` preprocessing only).
+- `--uncropped_roi` (bool) if given the extracted region is not cropped. Default will crop the image
+with the smallest bounding box possible.
+- `--use_extracted_roi` (bool) if this flag is given, the outputs of `clinicadl extract` are used.
+Otherwise, the whole 3D MR volumes are loaded and patches are extracted on-the-fly.
+Cannot be used if `--roi_list` is set to default.
 - `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
 The best model of this folder will be used to initialize the network as 
 explained in the [implementation details](./Details.md#transfer-learning). 
@@ -49,6 +70,10 @@ If nothing is given the initialization will be random.
 the validation sets and their corresponding reconstructions are written in `autoencoder_reconstruction`.
 Inputs are reconstructed based on the model that obtained the [best validation loss](./Details.md#model-selection).
 
+!!! note "Masks"
+    For more information on the masks needed for ROI extraction please refer to the section on 
+    [`extract`](../Preprocessing/Extract.md).
+    
 ### Outputs
 
 The complete output file system is the following (the folder `autoencoder_reconstruction` is created only if the 
@@ -114,6 +139,14 @@ where mandatory arguments are:
 
 The options specific to this task are the following:
 
+- `--roi_list` (list of str) includes the names of the regions wanted. Each region must correspond
+to a mask defined in `caps_directory`. See the [dedicated section](./ROI.md#definition-of-masks) for more information.
+Default will extract two patches centered on the hippocampi (available for `t1-linear` preprocessing only).
+- `--uncropped_roi` (bool) if given the extracted region is not cropped. Default will crop the image
+with the smallest bounding box possible.
+- `--use_extracted_roi` (bool) if this flag is given, the outputs of `clinicadl extract` are used.
+Otherwise, the whole 3D MR volumes are loaded and patches are extracted on-the-fly.
+Cannot be used if `--roi_list` is set to default.
 - `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
 The best model of this folder will be used to initialize the network as 
 explained in the [implementation details](./Details.md#transfer-learning). 
@@ -195,6 +228,14 @@ where mandatory arguments are:
 
 The options specific to this task are the following:
 
+- `--roi_list` (list of str) includes the names of the regions wanted. Each region must correspond
+to a mask defined in `caps_directory`. See the [dedicated section](./ROI.md#definition-of-masks) for more information.
+Default will extract two patches centered on the hippocampi (available for `t1-linear` preprocessing only).
+- `--uncropped_roi` (bool) if given the extracted region is not cropped. Default will crop the image
+with the smallest bounding box possible.
+- `--use_extracted_roi` (bool) if this flag is given, the outputs of `clinicadl extract` are used.
+Otherwise, the whole 3D MR volumes are loaded and patches are extracted on-the-fly.
+Cannot be used if `--roi_list` is set to default.
 - `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
 The best model of this folder will be used to initialize the network as 
 explained in the [implementation details](./Details.md#transfer-learning). 
