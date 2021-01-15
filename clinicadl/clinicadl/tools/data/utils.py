@@ -2,6 +2,9 @@
 
 import numpy as np
 from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
+import random
+from skimage.draw import ellipse
+from scipy.ndimage import gaussian_filter
 
 
 def load_and_check_tsv(tsv_path, caps_dir, output_path):
@@ -16,8 +19,10 @@ def load_and_check_tsv(tsv_path, caps_dir, output_path):
             raise Exception("the data file is not in the correct format."
                             "Columns should include ['participant_id', 'session_id']")
     else:
-        create_subs_sess_list(caps_dir, output_path, is_bids_dir=False, use_session_tsv=False)
-        df = pd.read_csv(join(output_path, 'subjects_sessions_list.tsv'), sep="\t")
+        create_subs_sess_list(caps_dir, output_path,
+                              is_bids_dir=False, use_session_tsv=False)
+        df = pd.read_csv(
+            join(output_path, 'subjects_sessions_list.tsv'), sep="\t")
 
     return df
 
@@ -143,3 +148,113 @@ def find_border_of_prob_gm_and_atlas(output_path, i, tsv_atlas, im_data):
     for i in range(len(idx[0])):
         coordinates.append([idx[0][i], idx[1][i], idx[2][i]])
     return coordinates
+
+
+def generate_scales(size):
+    if size == "large":
+        return random.uniform(1, 1.2), random.uniform(1, 1.2)
+    elif size == "small":
+        return random.uniform(0.8, 0.9), random.uniform(0.8, 0.9)
+    else:
+        raise NotImplementedError(
+            "Size %s was not implemented for variable sizes." % size)
+
+
+def generate_shepplogan_phantom(img_size, label=0, smoothing=True):
+    img = np.zeros((img_size, img_size))
+    center = (img_size + 1.) / 2.0
+    a = center - 2
+    b = center * 2 / 3 - 2
+
+    color = random.uniform(0.4, 0.6)
+
+    if label == 0:
+        roi1, roi2 = "large", "large"
+    elif label == 1:
+        roi1, roi2 = "large", "small"
+    elif label == 2:
+        roi1, roi2 = "small", "large"
+    else:
+        raise ValueError("Subtype %i was not implemented." % label)
+
+    # Skull
+    rr, cc = ellipse(center, center, a, b, (img_size, img_size))
+    img[rr, cc] = 1
+
+    # Brain
+    offset = random.uniform(1, img_size / 32)
+    rr, cc = ellipse(center + offset / 2, center, a - offset,
+                     b - offset, (img_size, img_size))
+    img[rr, cc] = 0.2
+
+    # Central
+    offset1 = random.uniform(1, img_size / 32)
+    offset2 = random.uniform(1, img_size / 32)
+    scale1, scale2 = generate_scales("large")
+    phi = random.uniform(-np.pi, np.pi)
+    rr, cc = ellipse(center + offset1, center + offset2,
+                     b / 6 * scale1, b / 6 * scale2,
+                     (img_size, img_size), rotation=phi)
+    img[rr, cc] = color
+
+    # ROI 1
+    offset1 = random.uniform(1, img_size / 32)
+    offset2 = random.uniform(1, img_size / 32)
+    scale1, scale2 = generate_scales(roi1)
+    phi = random.uniform(-np.pi, np.pi)
+    rr, cc = ellipse(center * 0.6 + offset1, center + offset2,
+                     b / 3 * scale1, b / 4 * scale2,
+                     (img_size, img_size), rotation=phi)
+    img[rr, cc] = color
+
+    # ROI 2
+    offset1 = random.uniform(1, img_size / 32)
+    offset2 = random.uniform(1, img_size / 32)
+    scale1, scale2 = generate_scales(roi2)
+    phi = random.uniform(-np.pi, np.pi)
+    rr, cc = ellipse(center * 1.5 + offset1, center + offset2,
+                     b / 10 * scale1, b / 10 * scale2,
+                     (img_size, img_size), rotation=phi)
+    img[rr, cc] = color
+
+    offset1 = random.uniform(1, img_size / 32)
+    offset2 = random.uniform(1, img_size / 32)
+    scale1, scale2 = generate_scales(roi2)
+    phi = random.uniform(-np.pi, np.pi)
+    rr, cc = ellipse(center * 1.5 + offset1, center * 1.1 + offset2,
+                     b / 10 * scale1, b / 10 * scale2,
+                     (img_size, img_size), rotation=phi)
+    img[rr, cc] = color
+
+    offset1 = random.uniform(1, img_size / 32)
+    offset2 = random.uniform(1, img_size / 32)
+    scale1, scale2 = generate_scales(roi2)
+    phi = random.uniform(-np.pi, np.pi)
+    rr, cc = ellipse(center * 1.5 + offset1, center * 0.9 + offset2,
+                     b / 10 * scale1, b / 10 * scale2,
+                     (img_size, img_size), rotation=phi)
+    img[rr, cc] = color
+
+    # Ventricle 1
+    a_roi = a * random.uniform(0.8, 1.2)
+    phi = np.random.uniform(-np.pi / 16, np.pi / 16)
+    rr, cc = ellipse(center, center * 0.75, a_roi / 3, a_roi / 6,
+                     (img_size, img_size), rotation=np.pi / 8 + phi)
+    img[rr, cc] = 0.0
+
+    # Ventricle 2
+    a_roi = a * random.uniform(0.8, 1.2)
+    phi = np.random.uniform(-np.pi / 16, np.pi / 16)
+    rr, cc = ellipse(center, center * 1.25, a_roi / 3, a_roi / 6,
+                     (img_size, img_size), rotation=-np.pi / 8 + phi)
+    img[rr, cc] = 0.0
+
+    # Random smoothing
+    if smoothing:
+        sigma = random.uniform(0, 1)
+        img = gaussian_filter(img, sigma * img_size /
+                              100.)  # smoothing of data
+
+    img.clip(0, 1)
+
+    return img

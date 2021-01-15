@@ -66,7 +66,7 @@ def main(options):
 
     # Initialize the model
     print('Initialization of the model')
-    decoder = create_autoencoder(options.model)
+    decoder = create_autoencoder(options, data_train.size)
 
     decoder, current_epoch = load_model(decoder, options.model_path, options.gpu, 'checkpoint.pth.tar')
     if options.gpu:

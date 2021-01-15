@@ -4,7 +4,7 @@ from torch import nn
 import torch
 from copy import deepcopy
 
-from .modules import PadMaxPool3d, CropMaxUnpool3d, Flatten, Reshape
+from .modules import PadMaxPool3d, PadMaxPool2d, CropMaxUnpool3d, CropMaxUnpool2d, Flatten, Reshape
 
 
 class AutoEncoder(nn.Module):
@@ -78,8 +78,8 @@ class AutoEncoder(nn.Module):
                 self.level += 1
             elif isinstance(layer, PadMaxPool3d):
                 inv_layers.append(CropMaxUnpool3d(layer.kernel_size, stride=layer.stride))
-            elif isinstance(layer, nn.MaxPool3d):
-                inv_layers.append(nn.MaxUnpool3d(layer.kernel_size, stride=layer.stride))
+            elif isinstance(layer, PadMaxPool2d):
+                inv_layers.append(CropMaxUnpool2d(layer.kernel_size, stride=layer.stride))
             elif isinstance(layer, nn.Linear):
                 inv_layers.append(nn.Linear(layer.out_features, layer.in_features))
             elif isinstance(layer, Flatten):
@@ -121,7 +121,7 @@ class AutoEncoder(nn.Module):
 
 
 def transfer_learning(model, split, source_path=None, gpu=False,
-                      selection="best_loss", cnn_index=None,
+                      selection="best_balanced_accuracy", cnn_index=None,
                       logger=None):
     """
     Allows transfer learning from a CNN or an autoencoder to a CNN
@@ -136,7 +136,7 @@ def transfer_learning(model, split, source_path=None, gpu=False,
     """
     import argparse
     from os import path
-    from .. import read_json
+    from ..iotools import read_json, translate_parameters
     import logging
 
     if logger is None:
@@ -145,6 +145,7 @@ def transfer_learning(model, split, source_path=None, gpu=False,
     if source_path is not None:
         source_commandline = argparse.Namespace()
         source_commandline = read_json(source_commandline, json_path=path.join(source_path, "commandline.json"))
+        source_commandline = translate_parameters(source_commandline)
         if source_commandline.mode_task == "autoencoder":
             logger.info("A pretrained autoencoder is loaded at path %s" % source_path)
             model = transfer_autoencoder_weights(model, source_path, split)
@@ -199,7 +200,6 @@ def transfer_autoencoder_weights(model, source_path, split):
 def transfer_cnn_weights(model, source_path, split, selection="best_balanced_accuracy", cnn_index=None):
     """
     Set the weights of the model according to the CNN at source path.
-
     :param model: (Module) the model which must be initialized
     :param source_path: (str) path to the source task experiment
     :param split: (int) split number to load
@@ -228,7 +228,6 @@ def transfer_cnn_weights(model, source_path, split, selection="best_balanced_acc
 def initialize_other_autoencoder(decoder, source_dict):
     """
     Initialize an autoencoder with another one values even if they have different sizes.
-
     :param decoder: (Autoencoder) Autoencoder constructed from a CNN with the Autoencoder class.
     :param source_dict: (dict) The result dict produced by save_checkpoint.
     :return: (Autoencoder) initialized autoencoder

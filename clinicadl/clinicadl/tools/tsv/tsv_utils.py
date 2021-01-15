@@ -76,19 +76,19 @@ def next_session(subject_df, session_orig):
             raise ValueError('The argument session is the last session')
 
 
-def baseline_df(diagnosis_df, diagnosis, set_index=True):
+def baseline_df(diagnosis_df, set_index=True):
     from copy import deepcopy
 
     if set_index:
         all_df = diagnosis_df.set_index(['participant_id', 'session_id'])
     else:
         all_df = deepcopy(diagnosis_df)
-    columns = ['participant_id', 'session_id', 'diagnosis']
+    columns = ['participant_id', 'session_id'] + all_df.columns.values.tolist()
     result_df = pd.DataFrame()
     for subject, subject_df in all_df.groupby(level=0):
         first_session_id = first_session(subject_df)
-        data = np.array([subject, first_session_id, diagnosis]).reshape(1, 3)
-        subject_baseline_df = pd.DataFrame(data, columns=columns)
+        data_baseline = [[subject, first_session_id] + all_df.loc[(subject, first_session_id)].values.tolist()]
+        subject_baseline_df = pd.DataFrame(data_baseline, columns=columns)
         result_df = pd.concat([result_df, subject_baseline_df])
 
     result_df.reset_index(inplace=True, drop=True)

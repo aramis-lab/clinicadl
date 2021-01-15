@@ -4,7 +4,7 @@ import torch
 import pandas as pd
 import numpy as np
 from os import path
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, sampler
 import torchvision.transforms as transforms
 import abc
 import logging
@@ -21,9 +21,12 @@ class MRIDataset(Dataset):
     """Abstract class for all derived MRIDatasets."""
 
     def __init__(self, caps_directory, data_file,
-                 preprocessing, transformations, labels):
+                 preprocessing, transformations, labels,
+                 augmentation_transformations=None):
         self.caps_directory = caps_directory
         self.transformations = transformations
+        self.augmentation_transformations = augmentation_transformations
+        self.eval_mode = False
         self.labels = labels
         self.diagnosis_code = {
             'CN': 0,
@@ -69,6 +72,7 @@ class MRIDataset(Dataset):
                           % (unique_diagnoses, unique_codes))
 
         self.elem_per_image = self.num_elem_per_image()
+        self.size = self[0]['image'].size()
 
     def __len__(self):
         return len(self.df) * self.elem_per_image
@@ -85,6 +89,14 @@ class MRIDataset(Dataset):
                                    'deeplearning_prepare_data', '%s_based' % mode, 't1_extensive',
                                    participant + '_' + session
                                    + FILENAME_TYPE['skull_stripped'] + '.pt')
+        elif self.preprocessing == "t1-volume":
+            image_path = path.join(self.caps_directory, 'subjects', participant, session,
+                                   'deeplearning_prepare_data', '%s_based' % mode, 't1_volume',
+                                   participant + '_' + session
+                                   + FILENAME_TYPE['gm_maps'] + '.pt')
+        elif self.preprocessing == "shepplogan":
+            image_path = path.join(self.caps_directory, 'subjects',
+                                   '%s_%s%s.pt' % (participant, session, FILENAME_TYPE['shepplogan']))
         else:
             raise NotImplementedError(
                 "The path to preprocessing %s is not implemented" % self.preprocessing)
@@ -141,25 +153,36 @@ class MRIDataset(Dataset):
     def num_elem_per_image(self):
         pass
 
+    def eval(self):
+        self.eval_mode = True
+        return self
+
+    def train(self):
+        self.eval_mode = False
+        return self
+
 
 class MRIDatasetImage(MRIDataset):
     """Dataset of MRI organized in a CAPS folder."""
 
     def __init__(self, caps_directory, data_file,
-                 preprocessing='t1-linear', transformations=None,
-                 labels=True):
+                 preprocessing='t1-linear', train_transformations=None,
+                 labels=True, all_transformations=None):
         """
         Args:
             caps_directory (string): Directory of all the images.
             data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
             preprocessing (string): Defines the path to the data in CAPS.
-            transformations (callable, optional): Optional transform to be applied on a sample.
+            train_transformations (callable, optional): Optional transform to be applied only on training mode.
             labels (bool): If True the diagnosis will be extracted from the given DataFrame.
+            all_transformations (callable, options): Optional transform to be applied during training and evaluation.
 
         """
         self.elem_index = None
         self.mode = "image"
-        super().__init__(caps_directory, data_file, preprocessing, transformations, labels)
+        super().__init__(caps_directory, data_file, preprocessing,
+                         augmentation_transformations=train_transformations, labels=labels,
+                         transformations=all_transformations)
 
     def __getitem__(self, idx):
         participant, session, _, label = self._get_meta_data(idx)
@@ -169,6 +192,10 @@ class MRIDatasetImage(MRIDataset):
 
         if self.transformations:
             image = self.transformations(image)
+
+        if self.augmentation_transformations and not self.eval_mode:
+            image = self.augmentation_transformations(image)
+
         sample = {'image': image, 'label': label, 'participant_id': participant, 'session_id': session,
                   'image_path': image_path}
 
@@ -180,28 +207,34 @@ class MRIDatasetImage(MRIDataset):
 
 class MRIDatasetPatch(MRIDataset):
 
-    def __init__(self, caps_directory, data_file, patch_size, stride_size, transformations=None, prepare_dl=False,
-                 patch_index=None, preprocessing="t1-linear", labels=True):
+    def __init__(self, caps_directory, data_file, patch_size, stride_size, train_transformations=None, prepare_dl=False,
+                 patch_index=None, preprocessing="t1-linear", labels=True, all_transformations=None):
         """
         Args:
             caps_directory (string): Directory of all the images.
             data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
             preprocessing (string): Defines the path to the data in CAPS.
-            transformations (callable, optional): Optional transform to be applied on a sample.
+            train_transformations (callable, optional): Optional transform to be applied only on training mode.
             prepare_dl (bool): If true pre-extracted patches will be loaded.
             patch_index (int, optional): If a value is given the same patch location will be extracted for each image.
                 else the dataset will load all the patches possible for one image.
             patch_size (int): size of the regular cubic patch.
             stride_size (int): length between the centers of two patches.
             labels (bool): If True the diagnosis will be extracted from the given DataFrame.
+            all_transformations (callable, options): Optional transform to be applied during training and evaluation.
+
 
         """
+        if preprocessing == "shepplogan":
+            raise ValueError("Patch mode is not available for preprocessing %s" % preprocessing)
         self.patch_size = patch_size
         self.stride_size = stride_size
         self.elem_index = patch_index
         self.mode = "patch"
-        super().__init__(caps_directory, data_file, preprocessing, transformations, labels)
         self.prepare_dl = prepare_dl
+        super().__init__(caps_directory, data_file, preprocessing,
+                         augmentation_transformations=train_transformations, labels=labels,
+                         transformations=all_transformations)
 
     def __getitem__(self, idx):
         participant, session, patch_idx, label = self._get_meta_data(idx)
@@ -220,6 +253,9 @@ class MRIDatasetPatch(MRIDataset):
 
         if self.transformations:
             image = self.transformations(image)
+
+        if self.augmentation_transformations and not self.eval_mode:
+            image = self.augmentation_transformations(image)
 
         sample = {'image': image, 'label': label,
                   'participant_id': participant, 'session_id': session, 'patch_id': patch_idx}
@@ -260,21 +296,26 @@ class MRIDatasetPatch(MRIDataset):
 class MRIDatasetRoi(MRIDataset):
 
     def __init__(self, caps_directory, data_file, preprocessing="t1-linear",
-                 transformations=None, prepare_dl=False, labels=True):
+                 train_transformations=None, prepare_dl=False, labels=True, all_transformations=None):
         """
         Args:
             caps_directory (string): Directory of all the images.
             data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
             preprocessing (string): Defines the path to the data in CAPS.
-            transformations (callable, optional): Optional transform to be applied on a sample.
+            train_transformations (callable, optional): Optional transform to be applied only on training mode.
             prepare_dl (bool): If true pre-extracted patches will be loaded.
             labels (bool): If True the diagnosis will be extracted from the given DataFrame.
+            all_transformations (callable, options): Optional transform to be applied during training and evaluation.
+
 
         """
+        if preprocessing == "shepplogan":
+            raise ValueError("ROI mode is not available for preprocessing %s" % preprocessing)
         self.elem_index = None
         self.mode = "roi"
-        super().__init__(caps_directory, data_file, preprocessing, transformations, labels)
         self.prepare_dl = prepare_dl
+        super().__init__(caps_directory, data_file, preprocessing, augmentation_transformations=train_transformations,
+                         labels=labels, transformations=all_transformations)
 
     def __getitem__(self, idx):
         participant, session, roi_idx, label = self._get_meta_data(idx)
@@ -290,6 +331,9 @@ class MRIDatasetRoi(MRIDataset):
 
         if self.transformations:
             patch = self.transformations(patch)
+
+        if self.augmentation_transformations and not self.eval_mode:
+            patch = self.augmentation_transformations(patch)
 
         sample = {'image': patch, 'label': label,
                   'participant_id': participant, 'session_id': session,
@@ -333,14 +377,14 @@ class MRIDatasetRoi(MRIDataset):
 class MRIDatasetSlice(MRIDataset):
 
     def __init__(self, caps_directory, data_file, preprocessing="t1-linear",
-                 transformations=None, mri_plane=0, prepare_dl=False,
-                 discarded_slices=20, mixed=False, labels=True):
+                 train_transformations=None, mri_plane=0, prepare_dl=False,
+                 discarded_slices=20, mixed=False, labels=True, all_transformations=None):
         """
         Args:
             caps_directory (string): Directory of all the images.
             data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
             preprocessing (string): Defines the path to the data in CAPS.
-            transformations (callable, optional): Optional transform to be applied on a sample.
+            train_transformations (callable, optional): Optional transform to be applied only on training mode.
             prepare_dl (bool): If true pre-extracted patches will be loaded.
             mri_plane (int): Defines which mri plane is used for slice extraction.
             discarded_slices (int or list): number of slices discarded at the beginning and the end of the image.
@@ -348,8 +392,11 @@ class MRIDatasetSlice(MRIDataset):
             mixed (bool): If True will look for a 'slice_id' column in the input DataFrame to load each slice
                 independently.
             labels (bool): If True the diagnosis will be extracted from the given DataFrame.
+            all_transformations (callable, options): Optional transform to be applied during training and evaluation.
         """
         # Rename MRI plane
+        if preprocessing == "shepplogan":
+            raise ValueError("Slice mode is not available for preprocessing %s" % preprocessing)
         self.mri_plane = mri_plane
         self.direction_list = ['sag', 'cor', 'axi']
         if self.mri_plane >= len(self.direction_list):
@@ -371,8 +418,10 @@ class MRIDatasetSlice(MRIDataset):
             self.elem_index = None
 
         self.mode = "slice"
-        super().__init__(caps_directory, data_file, preprocessing, transformations, labels)
         self.prepare_dl = prepare_dl
+        super().__init__(caps_directory, data_file, preprocessing,
+                         augmentation_transformations=train_transformations, labels=labels,
+                         transformations=all_transformations)
 
     def __getitem__(self, idx):
         participant, session, slice_idx, label = self._get_meta_data(idx)
@@ -391,6 +440,9 @@ class MRIDatasetSlice(MRIDataset):
 
         if self.transformations:
             image = self.transformations(image)
+
+        if self.augmentation_transformations and not self.eval_mode:
+            image = self.augmentation_transformations(image)
 
         sample = {'image': image, 'label': label,
                   'participant_id': participant, 'session_id': session,
@@ -425,7 +477,8 @@ class MRIDatasetSlice(MRIDataset):
 
 
 def return_dataset(mode, input_dir, data_df, preprocessing,
-                   transformations, params, cnn_index=None, labels=True):
+                   all_transformations, params, train_transformations=None,
+                   cnn_index=None, labels=True):
     """
     Return appropriate Dataset according to given options.
 
@@ -434,7 +487,8 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
         input_dir: (str) path to a directory containing a CAPS structure.
         data_df: (DataFrame) List subjects, sessions and diagnoses.
         preprocessing: (str) type of preprocessing wanted ('t1-linear' or 't1-extensive')
-        transformations: (transforms) list of transformations performed on-the-fly.
+        train_transformations (callable, optional): Optional transform to be applied during training only.
+        all_transformations (callable, optional): Optional transform to be applied during training and evaluation.
         params: (Namespace) options used by specific modes.
         cnn_index: (int) Index of the CNN in a multi-CNN paradigm (optional).
         labels (bool): If True the diagnosis will be extracted from the given DataFrame.
@@ -451,7 +505,8 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             input_dir,
             data_df,
             preprocessing,
-            transformations=transformations,
+            train_transformations=train_transformations,
+            all_transformations=all_transformations,
             labels=labels
         )
     elif mode == "patch":
@@ -461,7 +516,8 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             params.patch_size,
             params.stride_size,
             preprocessing=preprocessing,
-            transformations=transformations,
+            train_transformations=train_transformations,
+            all_transformations=all_transformations,
             prepare_dl=params.prepare_dl,
             patch_index=cnn_index,
             labels=labels
@@ -471,7 +527,8 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             input_dir,
             data_df,
             preprocessing=preprocessing,
-            transformations=transformations,
+            train_transformations=train_transformations,
+            all_transformations=all_transformations,
             labels=labels
         )
     elif mode == "slice":
@@ -479,7 +536,8 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             input_dir,
             data_df,
             preprocessing=preprocessing,
-            transformations=transformations,
+            train_transformations=train_transformations,
+            all_transformations=all_transformations,
             mri_plane=params.mri_plane,
             prepare_dl=params.prepare_dl,
             discarded_slices=params.discarded_slices,
@@ -491,7 +549,7 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
 
 def compute_num_cnn(input_dir, tsv_path, options, data="train"):
 
-    transformations = get_transforms(options.mode, options.minmaxnormalization)
+    _, transformations = get_transforms(options.mode, options.minmaxnormalization)
 
     if data == "train":
         example_df, _ = load_data(tsv_path, options.diagnoses, 0, options.n_splits, options.baseline)
@@ -499,7 +557,8 @@ def compute_num_cnn(input_dir, tsv_path, options, data="train"):
         example_df = load_data_test(tsv_path, options.diagnoses)
 
     full_dataset = return_dataset(options.mode, input_dir, example_df,
-                                  options.preprocessing, transformations, options)
+                                  options.preprocessing, train_transformations=None,
+                                  all_transformations=transformations, params=options)
 
     return full_dataset.elem_per_image
 
@@ -507,6 +566,52 @@ def compute_num_cnn(input_dir, tsv_path, options, data="train"):
 ##################################
 # Transformations
 ##################################
+
+class RandomNoising(object):
+    """Applies a random zoom to a tensor"""
+
+    def __init__(self, sigma=0.1):
+        self.sigma = sigma
+
+    def __call__(self, image):
+        import random
+
+        sigma = random.uniform(0, self.sigma)
+        dist = torch.distributions.normal.Normal(0, sigma)
+        return image + dist.sample(image.shape)
+
+
+class RandomSmoothing(object):
+    """Applies a random zoom to a tensor"""
+
+    def __init__(self, sigma=1):
+        self.sigma = sigma
+
+    def __call__(self, image):
+        import random
+        from scipy.ndimage import gaussian_filter
+
+        sigma = random.uniform(0, self.sigma)
+        image = gaussian_filter(image, sigma)  # smoothing of data
+        image = torch.from_numpy(image).float()
+        return image
+
+
+class RandomCropPad(object):
+    def __init__(self, length):
+        self.length = length
+
+    def __call__(self, image):
+        dimensions = len(image.shape) - 1
+        crop = np.random.randint(-self.length, self.length, dimensions)
+        if dimensions == 2:
+            output = torch.nn.functional.pad(image, (-crop[0], crop[0], -crop[1], crop[1]))
+        elif dimensions == 3:
+            output = torch.nn.functional.pad(image, (-crop[0], crop[0], -crop[1], crop[1], -crop[2], crop[2]))
+        else:
+            raise ValueError("RandomCropPad is only available for 2D or 3D data.")
+        return output
+
 
 class GaussianSmoothing(object):
 
@@ -541,27 +646,42 @@ class MinMaxNormalization(object):
         return (image - image.min()) / (image.max() - image.min())
 
 
-def get_transforms(mode, minmaxnormalization=True):
-    if mode in ["image", "patch", "roi"]:
-        if minmaxnormalization:
-            transformations = MinMaxNormalization()
-        else:
-            transformations = None
-    elif mode == "slice":
-        trg_size = (224, 224)
-        if minmaxnormalization:
-            transformations = transforms.Compose([MinMaxNormalization(),
-                                                  transforms.ToPILImage(),
-                                                  transforms.Resize(trg_size),
-                                                  transforms.ToTensor()])
-        else:
-            transformations = transforms.Compose([transforms.ToPILImage(),
-                                                  transforms.Resize(trg_size),
-                                                  transforms.ToTensor()])
-    else:
-        raise ValueError("Transforms for mode %s are not implemented." % mode)
+def get_transforms(mode, minmaxnormalization=True, data_augmentation=None):
+    """
+    Outputs the transformations that will be applied to the dataset
 
-    return transformations
+    :param mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
+    :param minmaxnormalization: (bool) if True will perform MinMaxNormalization
+    :param data_augmentation: (list[str]) list of data augmentation performed on the training set.
+    :return:
+    - container transforms.Compose including transforms to apply in train and evaluation mode.
+    - container transforms.Compose including transforms to apply in evaluation mode only.
+    """
+    augmentation_dict = {"Noise": RandomNoising(sigma=0.1),
+                         "Erasing": transforms.RandomErasing(),
+                         "CropPad": RandomCropPad(10),
+                         "Smoothing": RandomSmoothing(),
+                         "None": None}
+    if data_augmentation:
+        augmentation_list = [augmentation_dict[augmentation] for augmentation in data_augmentation]
+    else:
+        augmentation_list = []
+
+    if minmaxnormalization:
+        transformations_list = [MinMaxNormalization()]
+    else:
+        transformations_list = []
+
+    if mode == "slice":
+        trg_size = (224, 224)
+        transformations_list += [transforms.ToPILImage(),
+                                 transforms.Resize(trg_size),
+                                 transforms.ToTensor()]
+
+    all_transformations = transforms.Compose(transformations_list)
+    train_transformations = transforms.Compose(augmentation_list)
+
+    return train_transformations, all_transformations
 
 
 ################################
@@ -614,7 +734,7 @@ def load_data(train_val_path, diagnoses_list,
     return train_df, valid_df
 
 
-def load_data_test(test_path, diagnoses_list):
+def load_data_test(test_path, diagnoses_list, baseline=True):
 
     if test_path.endswith('.tsv'):
         return pd.read_csv(test_path, sep='\t')
@@ -623,7 +743,11 @@ def load_data_test(test_path, diagnoses_list):
 
     for diagnosis in diagnoses_list:
 
-        test_diagnosis_path = path.join(test_path, diagnosis + '_baseline.tsv')
+        if baseline:
+            test_diagnosis_path = path.join(test_path, diagnosis + '_baseline.tsv')
+        else:
+            test_diagnosis_path = path.join(test_path, diagnosis + '.tsv')
+
         test_diagnosis_df = pd.read_csv(test_diagnosis_path, sep='\t')
         test_df = pd.concat([test_df, test_diagnosis_df])
 
@@ -693,3 +817,35 @@ def mix_slices(df_training, df_validation, mri_plane=0, val_size=0.15):
     df_sub_valid.reset_index(inplace=True, drop=True)
 
     return df_sub_train, df_sub_valid
+
+
+def generate_sampler(dataset, sampler_option='random'):
+    """
+    Returns sampler according to the wanted options
+
+    :param dataset: (MRIDataset) the dataset to sample from
+    :param sampler_option: (str) choice of sampler
+    :return: (Sampler)
+    """
+    df = dataset.df
+    # To be changed for non-binary classification
+    count = np.zeros(2)
+
+    for idx in df.index:
+        label = df.loc[idx, "diagnosis"]
+        key = dataset.diagnosis_code[label]
+        count[key] += 1
+
+    weight_per_class = 1 / np.array(count)
+    weights = []
+
+    for idx, label in enumerate(df["diagnosis"].values):
+        key = dataset.diagnosis_code[label]
+        weights += [weight_per_class[key]] * dataset.elem_per_image
+
+    if sampler_option == 'random':
+        return sampler.RandomSampler(weights)
+    elif sampler_option == 'weighted':
+        return sampler.WeightedRandomSampler(weights, len(weights))
+    else:
+        raise NotImplementedError("The option %s for sampler is not implemented" % sampler_option)

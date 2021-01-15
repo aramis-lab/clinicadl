@@ -4,6 +4,8 @@ import pytest
 import os
 from os.path import join, exists, abspath
 
+# TODO implement test_shepplogan
+
 
 @pytest.fixture(params=[
     'generate_trivial',
@@ -16,9 +18,8 @@ def generate_commands(request):
             'generate',
             'trivial',
             data_caps_folder,
-            output_folder,
-            '--preprocessing',
             't1-linear',
+            output_folder,
             '--n_subjects',
             '4'
         ]
@@ -42,9 +43,8 @@ def generate_commands(request):
             'generate',
             'random',
             data_caps_folder,
-            output_folder,
-            '--preprocessing',
             't1-linear',
+            output_folder,
             '--n_subjects',
             '10',
             '--mean',

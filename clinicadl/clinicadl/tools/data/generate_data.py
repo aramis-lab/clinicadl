@@ -6,13 +6,16 @@ This file generates data for trivial or intractable (random) data for binary cla
 import pandas as pd
 import numpy as np
 import nibabel as nib
+import torch
 from os.path import join, exists
 from os import makedirs
 from copy import copy
+
 from clinica.utils.inputs import fetch_file, RemoteFileStructure
-from .utils import im_loss_roi_gaussian_distribution, find_image_path, load_and_check_tsv
+from .utils import im_loss_roi_gaussian_distribution, find_image_path, load_and_check_tsv, generate_shepplogan_phantom
 from ..tsv.tsv_utils import baseline_df
 from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
+from clinicadl.tools.deep_learning.iotools import check_and_clean, commandline_to_json
 import tarfile
 
 
@@ -43,6 +46,14 @@ def generate_random_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, mea
     Raises:
 
     """
+    commandline_to_json({
+        "output_dir": output_dir,
+        "caps_dir": caps_dir,
+        "preprocessing": preprocessing,
+        "n_subjects": n_subjects,
+        "mean": mean,
+        "sigma": sigma
+    })
     # Read DataFrame
     data_df = load_and_check_tsv(tsv_path, caps_dir, output_dir)
 
@@ -116,6 +127,14 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
     """
     from pathlib import Path
 
+    commandline_to_json({
+        "output_dir": output_dir,
+        "caps_dir": caps_dir,
+        "preprocessing": preprocessing,
+        "n_subjects": n_subjects,
+        "atrophy_percent": atrophy_percent
+    })
+
     # Read DataFrame
     data_df = load_and_check_tsv(tsv_path, caps_dir, output_dir)
     data_df = baseline_df(data_df, "None")
@@ -145,10 +164,10 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
                     tar_file.close()
                     mask_path = join(cache_clinicadl, 'AAL2')
                 except RuntimeError:
-                    print('Unable to extract donwloaded files')
+                    print('Unable to extract downloaded files')
             except IOError as err:
                 print('Unable to download required templates:', err)
-                raise ValueError('''Unable to download masks, please donwload them
+                raise ValueError('''Unable to download masks, please download them
                                   manually at https://aramislab.paris.inria.fr/files/data/masks/
                                   and provide a valid path.''')
         else:
@@ -199,4 +218,93 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
         session_df = data_df[data_df.session_id == session]
         out_df = copy(session_df[["participant_id"]])
         out_df["synthetic"] = [1] * len(out_df)
+        out_df.to_csv(join(missing_path, "missing_mods_%s.tsv" % session), sep="\t", index=False)
+
+
+def generate_shepplogan_dataset(output_dir, img_size, labels_distribution,
+                                samples=100, smoothing=True):
+
+    check_and_clean(join(output_dir, "subjects"))
+    commandline_to_json({
+        "output_dir": output_dir,
+        "img_size": img_size,
+        "labels_distribution": labels_distribution,
+        "samples": samples,
+        "smoothing": smoothing
+    })
+    columns = ["participant_id", "session_id", "diagnosis", "subtype"]
+    data_df = pd.DataFrame(columns=columns)
+
+    for i, label in enumerate(labels_distribution.keys()):
+        samples_per_subtype = np.array(labels_distribution[label]) * samples
+        for subtype in range(len(samples_per_subtype)):
+            for j in range(int(samples_per_subtype[subtype])):
+                participant_id = "sub-CLNC%i%04d" % (i, j + np.sum(samples_per_subtype[:subtype:]).astype(int))
+                session_id = "ses-M00"
+                row_df = pd.DataFrame([[participant_id, session_id, label, subtype]],
+                                      columns=columns)
+                data_df = data_df.append(row_df)
+
+                # Image generation
+                path_out = join(output_dir, "subjects", "%s_%s%s.pt"
+                                % (participant_id, session_id, FILENAME_TYPE["shepplogan"]))
+                img = generate_shepplogan_phantom(img_size, label=subtype, smoothing=smoothing)
+                torch_img = torch.from_numpy(img).float().unsqueeze(0)
+                torch.save(torch_img, path_out)
+
+    data_df.to_csv(join(output_dir, 'data.tsv'), sep="\t", index=False)
+
+    missing_path = join(output_dir, "missing_mods")
+    if not exists(missing_path):
+        makedirs(missing_path)
+
+    sessions = data_df.session_id.unique()
+    for session in sessions:
+        session_df = data_df[data_df.session_id == session]
+        out_df = copy(session_df[["participant_id"]])
+        out_df["t1w"] = [1] * len(out_df)
+        out_df.to_csv(join(missing_path, "missing_mods_%s.tsv" % session), sep="\t", index=False)
+
+
+def generate_shepplogan_dataset(output_dir, img_size, labels_distribution,
+                                samples=100, smoothing=True):
+
+    check_and_clean(join(output_dir, "subjects"))
+    commandline_to_json({
+        "output_dir": output_dir,
+        "img_size": img_size,
+        "labels_distribution": labels_distribution,
+        "samples": samples,
+        "smoothing": smoothing
+    })
+    columns = ["participant_id", "session_id", "diagnosis", "subtype"]
+    data_df = pd.DataFrame(columns=columns)
+
+    for i, label in enumerate(labels_distribution.keys()):
+        for j in range(samples):
+            participant_id = "sub-CLNC%i%04d" % (i, j)
+            session_id = "ses-M00"
+            subtype = np.random.choice(np.arange(len(labels_distribution[label])), p=labels_distribution[label])
+            row_df = pd.DataFrame([[participant_id, session_id, label, subtype]],
+                                  columns=columns)
+            data_df = data_df.append(row_df)
+
+            # Image generation
+            path_out = join(output_dir, "subjects", "%s_%s%s.pt"
+                            % (participant_id, session_id, FILENAME_TYPE["shepplogan"]))
+            img = generate_shepplogan_phantom(img_size, label=subtype, smoothing=smoothing)
+            torch_img = torch.from_numpy(img).float().unsqueeze(0)
+            torch.save(torch_img, path_out)
+
+    data_df.to_csv(join(output_dir, 'data.tsv'), sep="\t", index=False)
+
+    missing_path = join(output_dir, "missing_mods")
+    if not exists(missing_path):
+        makedirs(missing_path)
+
+    sessions = data_df.session_id.unique()
+    for session in sessions:
+        session_df = data_df[data_df.session_id == session]
+        out_df = copy(session_df[["participant_id"]])
+        out_df["t1w"] = [1] * len(out_df)
         out_df.to_csv(join(missing_path, "missing_mods_%s.tsv" % session), sep="\t", index=False)
