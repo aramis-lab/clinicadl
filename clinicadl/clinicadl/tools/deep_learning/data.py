@@ -176,7 +176,6 @@ class MRIDatasetImage(MRIDataset):
             train_transformations (callable, optional): Optional transform to be applied only on training mode.
             labels (bool): If True the diagnosis will be extracted from the given DataFrame.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
-
         """
         self.elem_index = None
         self.mode = "image"
@@ -222,8 +221,6 @@ class MRIDatasetPatch(MRIDataset):
             stride_size (int): length between the centers of two patches.
             labels (bool): If True the diagnosis will be extracted from the given DataFrame.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
-
-
         """
         if preprocessing == "shepplogan":
             raise ValueError("Patch mode is not available for preprocessing %s" % preprocessing)
@@ -295,23 +292,23 @@ class MRIDatasetPatch(MRIDataset):
 
 class MRIDatasetRoi(MRIDataset):
 
-    def __init__(self, caps_directory, data_file, preprocessing="t1-linear",
+    def __init__(self, caps_directory, data_file, roi_index=None, preprocessing="t1-linear",
                  train_transformations=None, prepare_dl=False, labels=True, all_transformations=None):
         """
         Args:
             caps_directory (string): Directory of all the images.
             data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
+            roi_index (int, optional): If a value is given the same region will be extracted for each image.
+                else the dataset will load all the regions possible for one image.
             preprocessing (string): Defines the path to the data in CAPS.
             train_transformations (callable, optional): Optional transform to be applied only on training mode.
             prepare_dl (bool): If true pre-extracted patches will be loaded.
             labels (bool): If True the diagnosis will be extracted from the given DataFrame.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
-
-
         """
         if preprocessing == "shepplogan":
             raise ValueError("ROI mode is not available for preprocessing %s" % preprocessing)
-        self.elem_index = None
+        self.elem_index = roi_index
         self.mode = "roi"
         self.prepare_dl = prepare_dl
         super().__init__(caps_directory, data_file, preprocessing, augmentation_transformations=train_transformations,
@@ -342,11 +339,12 @@ class MRIDatasetRoi(MRIDataset):
         return sample
 
     def num_elem_per_image(self):
+        if self.elem_index is not None:
+            return 1
         return 2
 
     def extract_roi_from_mri(self, image_tensor, left_is_odd):
         """
-
         :param image_tensor: (Tensor) the tensor of the image.
         :param left_is_odd: (int) if 1 the left hippocampus is extracted, else the right one.
         :return: Tensor of the extracted hippocampus
@@ -376,7 +374,7 @@ class MRIDatasetRoi(MRIDataset):
 
 class MRIDatasetSlice(MRIDataset):
 
-    def __init__(self, caps_directory, data_file, preprocessing="t1-linear",
+    def __init__(self, caps_directory, data_file, slice_index=None, preprocessing="t1-linear",
                  train_transformations=None, mri_plane=0, prepare_dl=False,
                  discarded_slices=20, mixed=False, labels=True, all_transformations=None):
         """
@@ -384,6 +382,8 @@ class MRIDatasetSlice(MRIDataset):
             caps_directory (string): Directory of all the images.
             data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
             preprocessing (string): Defines the path to the data in CAPS.
+            slice_index (int, optional): If a value is given the same slice will be extracted for each image.
+                else the dataset will load all the slices possible for one image.
             train_transformations (callable, optional): Optional transform to be applied only on training mode.
             prepare_dl (bool): If true pre-extracted patches will be loaded.
             mri_plane (int): Defines which mri plane is used for slice extraction.
@@ -397,6 +397,7 @@ class MRIDatasetSlice(MRIDataset):
         # Rename MRI plane
         if preprocessing == "shepplogan":
             raise ValueError("Slice mode is not available for preprocessing %s" % preprocessing)
+        self.elem_index = slice_index
         self.mri_plane = mri_plane
         self.direction_list = ['sag', 'cor', 'axi']
         if self.mri_plane >= len(self.direction_list):
@@ -451,7 +452,7 @@ class MRIDatasetSlice(MRIDataset):
         return sample
 
     def num_elem_per_image(self):
-        if self.elem_index == "mixed":
+        if self.elem_index is not None:
             return 1
 
         image = self._get_full_image()
@@ -481,7 +482,6 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
                    cnn_index=None, labels=True):
     """
     Return appropriate Dataset according to given options.
-
     Args:
         mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
         input_dir: (str) path to a directory containing a CAPS structure.
@@ -492,7 +492,6 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
         params: (Namespace) options used by specific modes.
         cnn_index: (int) Index of the CNN in a multi-CNN paradigm (optional).
         labels (bool): If True the diagnosis will be extracted from the given DataFrame.
-
     Returns:
          (Dataset) the corresponding dataset.
     """
@@ -529,6 +528,7 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             preprocessing=preprocessing,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
+            roi_index=cnn_index,
             labels=labels
         )
     elif mode == "slice":
@@ -541,6 +541,7 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             mri_plane=params.mri_plane,
             prepare_dl=params.prepare_dl,
             discarded_slices=params.discarded_slices,
+            slice_index=cnn_index,
             labels=labels
         )
     else:
@@ -649,7 +650,6 @@ class MinMaxNormalization(object):
 def get_transforms(mode, minmaxnormalization=True, data_augmentation=None):
     """
     Outputs the transformations that will be applied to the dataset
-
     :param mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
     :param minmaxnormalization: (bool) if True will perform MinMaxNormalization
     :param data_augmentation: (list[str]) list of data augmentation performed on the training set.
