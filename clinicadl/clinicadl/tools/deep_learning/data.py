@@ -9,7 +9,7 @@ import torchvision.transforms as transforms
 import abc
 import logging
 import warnings
-from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
+from clinicadl.tools.inputs.filename_types import FILENAME_TYPE, MASK_PATTERN
 
 
 #################################
@@ -329,13 +329,16 @@ class MRIDatasetPatch(MRIDataset):
 
 class MRIDatasetRoi(MRIDataset):
 
-    def __init__(self, caps_directory, data_file, roi_index=None, preprocessing="t1-linear",
-                 train_transformations=None, prepare_dl=False, labels=True, all_transformations=None,
+    def __init__(self, caps_directory, data_file, roi_list=None, cropped_roi=True, roi_index=None,
+                 preprocessing="t1-linear", train_transformations=None, prepare_dl=False, labels=True,
+                 all_transformations=None,
                  multi_cohort=False):
         """
         Args:
             caps_directory (string): Directory of all the images.
             data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
+            roi_list (list): Defines the regions used in the classification.
+            cropped_roi (bool): If True the image is cropped according to the smallest bounding box possible.
             roi_index (int, optional): If a value is given the same region will be extracted for each image.
                 else the dataset will load all the regions possible for one image.
             preprocessing (string): Defines the path to the data in CAPS.
@@ -350,7 +353,10 @@ class MRIDatasetRoi(MRIDataset):
             raise ValueError("ROI mode is not available for preprocessing %s" % preprocessing)
         self.elem_index = roi_index
         self.mode = "roi"
+        self.roi_list = roi_list
+        self.cropped_roi = cropped_roi
         self.prepare_dl = prepare_dl
+        self.mask_list = self.find_masks(caps_directory, preprocessing)
         super().__init__(caps_directory, data_file, preprocessing, augmentation_transformations=train_transformations,
                          labels=labels, transformations=all_transformations, multi_cohort=multi_cohort)
 
@@ -358,8 +364,21 @@ class MRIDatasetRoi(MRIDataset):
         participant, session, cohort, roi_idx, label = self._get_meta_data(idx)
 
         if self.prepare_dl:
-            raise NotImplementedError(
-                'The extraction of ROIs prior to training is not implemented.')
+            if self.roi_list is None:
+                raise NotImplementedError(
+                    'The extraction of ROIs prior to training is not implemented for default ROIs.'
+                    'Please disable --use_extracted_rois or precise the regions in --roi_names.')
+
+            # read the regions directly
+            if self.cropped_roi:
+                cropping_description = "_desc-Crop"
+            else:
+                cropping_description = ""
+
+            roi_path = path.join(self._get_path(participant, session, "roi")[0:-7]
+                                 + '_roi-%s' % self.roi_list[roi_idx]
+                                 + '%s_T1w.pt' % cropping_description)
+            patch = torch.load(roi_path)
 
         else:
             image_path = self._get_path(participant, session, cohort, "image")
@@ -381,35 +400,86 @@ class MRIDatasetRoi(MRIDataset):
     def num_elem_per_image(self):
         if self.elem_index is not None:
             return 1
-        return 2
-
-    def extract_roi_from_mri(self, image_tensor, left_is_odd):
-        """
-        :param image_tensor: (Tensor) the tensor of the image.
-        :param left_is_odd: (int) if 1 the left hippocampus is extracted, else the right one.
-        :return: Tensor of the extracted hippocampus
-        """
-
-        if self.preprocessing == "t1-linear":
-            if left_is_odd == 1:
-                # the center of the left hippocampus
-                crop_center = (61, 96, 68)
-            else:
-                # the center of the right hippocampus
-                crop_center = (109, 96, 68)
+        if self.roi_list is None:
+            return 2
         else:
-            raise NotImplementedError("The extraction of hippocampi was not implemented for "
-                                      "preprocessing %s" % self.preprocessing)
-        crop_size = (50, 50, 50)  # the output cropped hippocampus size
+            return len(self.roi_list)
 
-        extracted_roi = image_tensor[
-            :,
-            crop_center[0] - crop_size[0] // 2: crop_center[0] + crop_size[0] // 2:,
-            crop_center[1] - crop_size[1] // 2: crop_center[1] + crop_size[1] // 2:,
-            crop_center[2] - crop_size[2] // 2: crop_center[2] + crop_size[2] // 2:
-        ].clone()
+    def extract_roi_from_mri(self, image_tensor, roi_idx):
+        """
+
+        :param image_tensor: (Tensor) the tensor of the image.
+        :param roi_idx: (int) Region index.
+        :return: Tensor of the extracted region.
+        """
+
+        if self.roi_list is None:
+
+            if self.preprocessing == "t1-linear":
+                if roi_idx == 1:
+                    # the center of the left hippocampus
+                    crop_center = (61, 96, 68)
+                else:
+                    # the center of the right hippocampus
+                    crop_center = (109, 96, 68)
+            else:
+                raise NotImplementedError("The extraction of hippocampi was not implemented for "
+                                          "preprocessing %s" % self.preprocessing)
+            crop_size = (50, 50, 50)  # the output cropped hippocampus size
+
+            if self.cropped_roi:
+
+                extracted_roi = image_tensor[
+                    :,
+                    crop_center[0] - crop_size[0] // 2: crop_center[0] + crop_size[0] // 2:,
+                    crop_center[1] - crop_size[1] // 2: crop_center[1] + crop_size[1] // 2:,
+                    crop_center[2] - crop_size[2] // 2: crop_center[2] + crop_size[2] // 2:
+                ].clone()
+
+            else:
+                raise NotImplementedError("The uncropped option for the default ROI was not implemented.")
+
+        else:
+            roi_mask = self.mask_list[roi_idx]
+            extracted_roi = image_tensor * roi_mask
+            if self.cropped_roi:
+                extracted_roi = extracted_roi[np.ix_(roi_mask.any((1, 2, 3)),
+                                                     roi_mask.any((0, 2, 3)),
+                                                     roi_mask.any((0, 1, 3)),
+                                                     roi_mask.any((0, 1, 2)))]
 
         return extracted_roi
+
+    def find_masks(self, caps_directory, preprocessing):
+        """Loads the masks necessary to regions extraction"""
+        import nibabel as nib
+
+        # TODO replace with import in clinica as soon as the version of clinica is stable
+        templates_dict = {
+            "t1-linear": "MNI152NLin2009cSym",
+            "t1-volume": "Ixi549Space"
+        }
+
+        if self.prepare_dl:
+            return None
+        else:
+            mask_list = []
+            for roi in self.roi_list:
+                template = templates_dict[preprocessing]
+                if preprocessing == "t1-linear":
+                    mask_pattern = MASK_PATTERN['cropped']
+                elif preprocessing == "t1-extensive":
+                    mask_pattern = MASK_PATTERN['skull_stripped']
+                else:
+                    raise NotImplementedError("Roi extraction for %s preprocessing was not implemented."
+                                              % preprocessing)
+
+                mask_path = path.join(caps_directory, "masks", "roi_based",  "tpl-%s" % template,
+                                      "tpl-%s%s_roi-%s_mask.nii.gz" % (template, mask_pattern, roi))
+                mask_nii = nib.load(mask_path)
+                mask_list.append(mask_nii.get_fdata())
+
+        return mask_list
 
 
 class MRIDatasetSlice(MRIDataset):
@@ -524,6 +594,7 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
                    cnn_index=None, labels=True):
     """
     Return appropriate Dataset according to given options.
+
     Args:
         mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
         input_dir: (str) path to a directory containing a CAPS structure.
@@ -534,6 +605,7 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
         params: (Namespace) options used by specific modes.
         cnn_index: (int) Index of the CNN in a multi-CNN paradigm (optional).
         labels (bool): If True the diagnosis will be extracted from the given DataFrame.
+
     Returns:
          (Dataset) the corresponding dataset.
     """
@@ -569,9 +641,12 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
         return MRIDatasetRoi(
             input_dir,
             data_df,
+            roi_list=params.roi_list,
+            cropped_roi=not params.uncropped_roi,
             preprocessing=preprocessing,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
+            prepare_dl=params.prepare_dl,
             roi_index=cnn_index,
             labels=labels,
             multi_cohort=params.multi_cohort
@@ -699,6 +774,7 @@ class MinMaxNormalization(object):
 def get_transforms(mode, minmaxnormalization=True, data_augmentation=None):
     """
     Outputs the transformations that will be applied to the dataset
+
     :param mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
     :param minmaxnormalization: (bool) if True will perform MinMaxNormalization
     :param data_augmentation: (list[str]) list of data augmentation performed on the training set.
