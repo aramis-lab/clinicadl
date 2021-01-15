@@ -522,7 +522,6 @@ class MRIDatasetRoi(MRIDataset):
 
     def extract_roi_from_mri(self, image_tensor, roi_idx):
         """
-
         :param image_tensor: (Tensor) the tensor of the image.
         :param roi_idx: (int) Region index.
         :return: Tensor of the extracted region.
@@ -748,7 +747,6 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
                    prepare_dl=False):
     """
     Return appropriate Dataset according to given options.
-
     Args:
         mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
         input_dir: (str) path to a directory containing a CAPS structure.
@@ -941,7 +939,6 @@ class MinMaxNormalization(object):
 def get_transforms(mode, minmaxnormalization=True, data_augmentation=None):
     """
     Outputs the transformations that will be applied to the dataset
-
     :param mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
     :param minmaxnormalization: (bool) if True will perform MinMaxNormalization
     :param data_augmentation: (list[str]) list of data augmentation performed on the training set.
