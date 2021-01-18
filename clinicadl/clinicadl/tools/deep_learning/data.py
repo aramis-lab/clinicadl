@@ -448,7 +448,7 @@ class MRIDatasetRoi(MRIDataset):
                                                      roi_mask.any((0, 1, 3)),
                                                      roi_mask.any((0, 1, 2)))]
 
-        return extracted_roi
+        return extracted_roi.float()
 
     def find_masks(self, caps_directory, preprocessing):
         """Loads the masks necessary to regions extraction"""
