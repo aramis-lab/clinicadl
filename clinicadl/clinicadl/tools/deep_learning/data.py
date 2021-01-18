@@ -460,7 +460,7 @@ class MRIDatasetRoi(MRIDataset):
             "t1-volume": "Ixi549Space"
         }
 
-        if self.prepare_dl:
+        if self.prepare_dl or self.roi_list is None:
             return None
         else:
             mask_list = []
