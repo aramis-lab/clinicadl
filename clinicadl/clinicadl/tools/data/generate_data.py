@@ -43,8 +43,6 @@ def generate_random_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, mea
         A folder written on the output_dir location (in CAPS format), also a
         tsv file describing this output
 
-    Raises:
-
     """
     commandline_to_json({
         "output_dir": output_dir,
@@ -69,7 +67,7 @@ def generate_random_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, mea
     image = image_nii.get_data()
 
     # Create output tsv file
-    participant_id_list = ['sub-RAND%i' % i for i in range(2 * n_subjects)]
+    participant_id_list = [f'sub-RAND{i}' for i in range(2 * n_subjects)]
     session_id_list = ['ses-M00'] * 2 * n_subjects
     diagnosis_list = ['AD'] * n_subjects + ['CN'] * n_subjects
     data = np.array([participant_id_list, session_id_list, diagnosis_list])
@@ -81,7 +79,7 @@ def generate_random_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, mea
 
     for i in range(2 * n_subjects):
         gauss = np.random.normal(mean, sigma, image.shape)
-        participant_id = 'sub-RAND%i' % i
+        participant_id = f'sub-RAND{i}'
         noisy_image = image + gauss
         noisy_image_nii = nib.Nifti1Image(noisy_image, header=image_nii.header, affine=image_nii.affine)
         noisy_image_nii_path = join(output_dir, 'subjects', participant_id, 'ses-M00', 't1_linear')
@@ -97,7 +95,7 @@ def generate_random_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, mea
         session_df = output_df[output_df.session_id == session]
         out_df = copy(session_df[["participant_id"]])
         out_df["synthetic"] = [1] * len(out_df)
-        out_df.to_csv(join(missing_path, "missing_mods_%s.tsv" % session), sep="\t", index=False)
+        out_df.to_csv(join(missing_path, f"missing_mods_{session}.tsv"), sep="\t", index=False)
 
 
 def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, preprocessing="linear",
@@ -124,6 +122,7 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
         Folder structure where images are stored in CAPS format.
 
     Raises:
+        ValueError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
     """
     from pathlib import Path
 
@@ -149,8 +148,8 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
     makedirs(cache_clinicadl, exist_ok=True)
 
     if n_subjects > len(data_df):
-        raise ValueError("The number of subjects %i cannot be higher than the number of subjects in the baseline "
-                         "dataset of size %i." % (n_subjects, len(data_df)))
+        raise ValueError(f"The number of subjects {n_subjects} cannot be higher "
+                         f"than the number of subjects in the baseline dataset of size {len(data_df)}")
 
     if mask_path is None:
         if not exists(join(cache_clinicadl, 'AAL2')):
@@ -187,8 +186,8 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
 
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
-        filename = 'sub-TRIV%i_ses-M00' % i + FILENAME_TYPE['cropped'] + '.nii.gz'
-        path_image = join(output_dir, 'subjects', 'sub-TRIV%i' % i, 'ses-M00', 't1_linear')
+        filename = f'sub-TRIV{i}_ses-M00' + FILENAME_TYPE['cropped'] + '.nii.gz'
+        path_image = join(output_dir, 'subjects', f'sub-TRIV{i}', 'ses-M00', 't1_linear')
 
         makedirs(path_image, exist_ok=True)
 
@@ -196,7 +195,7 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
         image_nii = nib.load(image_path)
         image = image_nii.get_data()
 
-        atlas_to_mask = nib.load(join(mask_path, 'mask-%i.nii' % (label + 1))).get_data()
+        atlas_to_mask = nib.load(join(mask_path, f'mask-{label + 1}.nii')).get_data()
 
         # Create atrophied image
         trivial_image = im_loss_roi_gaussian_distribution(image, atlas_to_mask, atrophy_percent)
@@ -204,7 +203,7 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
         trivial_image_nii.to_filename(join(path_image, filename))
 
         # Append row to output tsv
-        row = ['sub-TRIV%i' % i, 'ses-M00', diagnosis_list[label], 60, 'F']
+        row = [f'sub-TRI{i}', 'ses-M00', diagnosis_list[label], 60, 'F']
         row_df = pd.DataFrame([row], columns=columns)
         output_df = output_df.append(row_df)
 
@@ -218,7 +217,7 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
         session_df = output_df[output_df.session_id == session]
         out_df = copy(session_df[["participant_id"]])
         out_df["synthetic"] = [1] * len(out_df)
-        out_df.to_csv(join(missing_path, "missing_mods_%s.tsv" % session), sep="\t", index=False)
+        out_df.to_csv(join(missing_path, f"missing_mods_{session}.tsv"), sep="\t", index=False)
 
 
 def generate_shepplogan_dataset(output_dir, img_size, labels_distribution,
