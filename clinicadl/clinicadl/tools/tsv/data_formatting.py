@@ -384,6 +384,17 @@ def get_labels(merged_tsv, missing_mods, results_path,
         sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
         logger.info('Found %s AD subjects for a total of %s sessions\n' % (len(sub_df), len(diagnosis_df)))
 
+    if 'BV' in diagnoses:
+        logger.info('Beginning the selection of BV label')
+        output_df = stable_selection(bids_df, diagnosis='BV', logger=logger)
+        output_df = mod_selection(output_df, missing_mods_dict, modality)
+        output_df = apply_restriction(output_df, restriction_path)
+
+        diagnosis_df = output_df[variables_list]
+        diagnosis_df.to_csv(path.join(results_path, 'BV.tsv'), sep='\t')
+        sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
+        logger.info('Found %s BV subjects for a total of %s sessions\n' % (len(sub_df), len(diagnosis_df)))
+
     if 'CN' in diagnoses:
         logger.info('Beginning the selection of CN label')
         output_df = stable_selection(bids_df, diagnosis='CN', logger=logger)
