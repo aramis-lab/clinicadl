@@ -62,7 +62,8 @@ def qc_func(args):
     elif args.preprocessing == "t1-volume":
         volume_qc(
             args.caps_dir,
-            args.output_dir
+            args.output_dir,
+            args.group_label
         )
 
 
@@ -539,6 +540,10 @@ def parse_command_line():
     qc_volume_parser.add_argument("output_dir",
                                   help="Path to the output directory containing TSV files.",
                                   type=str)
+    qc_volume_parser.add_argument("group_label",
+                                  help="Name of the group associated to the DARTEL template.",
+                                  type=str)
+
     qc_volume_parser.set_defaults(func=qc_func)
 
     # random search parsers
