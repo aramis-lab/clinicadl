@@ -796,10 +796,8 @@ def load_data_single(train_val_path, diagnoses_list,
         valid_path = path.join(train_val_path, 'validation')
 
     else:
-        train_path = path.join(train_val_path, 'train_splits-%i' % n_splits,
-                               'split-%i' % split)
-        valid_path = path.join(train_val_path, 'validation_splits-%i' % n_splits,
-                               'split-%i' % split)
+        train_path = path.join(train_val_path, f'train_splits-{n_splits}', f'split-{split}')
+        valid_path = path.join(train_val_path, f'validation_splits-{n_splits}', f'split-{split}')
 
     logger.debug("Train path %s" % train_path)
     logger.debug("Valid path %s" % valid_path)
@@ -971,10 +969,10 @@ def generate_sampler(dataset, sampler_option='random'):
     elif sampler_option == 'weighted':
         return sampler.WeightedRandomSampler(weights, len(weights))
     else:
-        raise NotImplementedError("The option %s for sampler is not implemented" % sampler_option)
+        raise NotImplementedError(f"The option {sampler_option} for sampler is not implemented")
 
 
 def check_multi_cohort_tsv(tsv_df, purpose):
     mandatory_col = {"cohort", "path", "diagnoses"}
     if not mandatory_col.issubset(tsv_df.columns.values):
-        raise ValueError('Columns of the TSV file used for %s location must include %s' % (purpose, mandatory_col))
+        raise ValueError(f'Columns of the TSV file used for {purpose} location must include {mandatory_col}')
