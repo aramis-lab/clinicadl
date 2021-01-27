@@ -755,7 +755,9 @@ def load_data(tsv_path, diagnoses_list,
             for idx in range(len(tsv_df)):
                 cohort_name = tsv_df.loc[idx, 'cohort']
                 cohort_path = tsv_df.loc[idx, 'path']
-                cohort_train_df, cohort_valid_df = load_data_single(cohort_path, diagnoses_list, split,
+                cohort_diagnoses = tsv_df.loc[idx, 'diagnoses'].replace(' ', '').split(",")
+                assert set(cohort_diagnoses).issubset(set(diagnoses_list))
+                cohort_train_df, cohort_valid_df = load_data_single(cohort_path, cohort_diagnoses, split,
                                                                     n_splits=n_splits,
                                                                     baseline=baseline,
                                                                     logger=logger)
@@ -837,7 +839,9 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
             for idx in range(len(tsv_df)):
                 cohort_name = tsv_df.loc[idx, 'cohort']
                 cohort_path = tsv_df.loc[idx, 'path']
-                cohort_test_df = load_data_test_single(cohort_path, diagnoses_list, baseline=baseline)
+                cohort_diagnoses = tsv_df.loc[idx, 'diagnoses'].replace(' ', '').split(",")
+                assert set(cohort_diagnoses).issubset(set(diagnoses_list))
+                cohort_test_df = load_data_test_single(cohort_path, cohort_diagnoses, baseline=baseline)
                 cohort_test_df["cohort"] = cohort_name
                 test_df = pd.concat([test_df, cohort_test_df])
             test_df.reset_index(inplace=True, drop=True)
@@ -971,6 +975,6 @@ def generate_sampler(dataset, sampler_option='random'):
 
 
 def check_multi_cohort_tsv(tsv_df, purpose):
-    mandatory_col = {"cohort", "path"}
+    mandatory_col = {"cohort", "path", "diagnoses"}
     if not mandatory_col.issubset(tsv_df.columns.values):
         raise ValueError('Columns of the TSV file used for %s location must include %s' % (purpose, mandatory_col))
