@@ -1381,7 +1381,8 @@ def return_train_parent_parser(retrain=False):
     train_data_group.add_argument(
         '--diagnoses', '-d',
         help='List of diagnoses that will be selected for training.',
-        default=None if retrain else ['AD', 'CN'], nargs='+', type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'])
+        default=None if retrain else ['AD', 'CN'], nargs='+', type=str,
+        choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'])
     train_data_group.add_argument(
         '--baseline',
         help='If provided, only the baseline sessions are used for training.',

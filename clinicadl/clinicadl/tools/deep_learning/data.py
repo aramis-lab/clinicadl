@@ -30,6 +30,7 @@ class MRIDataset(Dataset):
         self.labels = labels
         self.diagnosis_code = {
             'CN': 0,
+            'BV': 1,
             'AD': 1,
             'sMCI': 0,
             'pMCI': 1,

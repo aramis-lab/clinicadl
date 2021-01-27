@@ -125,6 +125,7 @@ def add_demographics(df, demographics_df, diagnosis):
     out_df.diagnosis = [diagnosis] * len(out_df)
     return out_df
 
+
 def remove_unicity(values_list):
     """Count the values of each class and label all the classes with only one label under the same label."""
     unique_classes, counts = np.unique(values_list, return_counts=True)
