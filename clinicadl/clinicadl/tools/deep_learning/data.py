@@ -974,6 +974,9 @@ def generate_sampler(dataset, sampler_option='random'):
 
 
 def check_multi_cohort_tsv(tsv_df, purpose):
-    mandatory_col = {"cohort", "path", "diagnoses"}
+    if purpose.upper() == "CAPS":
+        mandatory_col = {"cohort", "path"}
+    else:
+        mandatory_col = {"cohort", "path", "diagnoses"}
     if not mandatory_col.issubset(tsv_df.columns.values):
         raise ValueError(f'Columns of the TSV file used for {purpose} location must include {mandatory_col}')
