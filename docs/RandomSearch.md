@@ -65,7 +65,7 @@ Sampling function: `choice`.
 - `network_type` (str) is the type of network used. 
 The options depend on the type of input used, but at most it can be chosen between `autoencoder`, `cnn` and `multicnn`.
 Sampling function: `choice`.
-- `caps_dir` (str) is the input folder containing the neuroimaging data in a [CAPS](http://www.clinica.run/doc/CAPS/Introduction/) hierarchy.
+- `caps_dir` (str) is the input folder containing the neuroimaging data in a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
 Sampling function: `fixed`.
 - `preprocessing` (str) corresponds to the preprocessing pipeline whose outputs will be used for training. 
 Sampling function: `choice`.

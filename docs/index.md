@@ -56,4 +56,4 @@ as well as the references mentioned on the wiki page of the pipelines you used
 
 ---
 
-![Clinica_Partners_Banner](http://www.clinica.run/doc/img/Clinica_Partners_Banner.png)
+![Clinica_Partners_Banner](https://aramislab.paris.inria.fr/clinica/docs/public/latest/img/Clinica_Partners_Banner.png)
