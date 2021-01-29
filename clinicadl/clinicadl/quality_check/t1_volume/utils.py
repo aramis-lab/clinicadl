@@ -11,7 +11,7 @@ from pathlib import Path
 from clinicadl.tools.inputs.input import fetch_file, RemoteFileStructure
 
 
-def extract_metrics(caps_dir, output_dir):
+def extract_metrics(caps_dir, output_dir, group_label):
     if not path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -42,7 +42,7 @@ def extract_metrics(caps_dir, output_dir):
 
     # Get the GM template
     template_path = path.join(
-        caps_dir, 'groups', 'group-ADNIbl', 't1', 'group-ADNIbl_template.nii.gz')
+        caps_dir, 'groups', f'group-{group_label}', 't1', f'group-{group_label}_template.nii.gz')
     template_nii = nib.load(template_path)
     template_np = template_nii.get_fdata()
     template_np = np.sum(template_np, axis=3)
