@@ -59,15 +59,16 @@ An example of TSV file is:
 | sub-CLNC04         | ses-M00        | 0.1549495905637741     | False     |
 | ...                |  ...           |  ...                   |  ...      |
 
-## `quality-check t1-volume` - Evaluate `t1-volume-segmentation` registration and grey matter segmentation
+## `quality-check t1-volume` - Evaluate `t1-volume` registration and grey matter segmentation
 
 The quality check procedure is based on thresholds on different statistics that were empirically
 linked to images of bad quality. Three steps are performed to remove images with the following characteristics:
-   1. a maximum value below 0.95,
-   2. a percentage of non-zero values below 15% or higher than 50%,
-   3. a similarity with the DARTEL template around the frontal lobe below 0.40. The similarity
-    corresponds to the normalized mutual information. This allows to check that the eyes are not
-    included in the brain volume. 
+
+1. a maximum value below 0.95,
+2. a percentage of non-zero values below 15% or higher than 50%,
+3. a similarity with the DARTEL template around the frontal lobe below 0.40. The similarity
+corresponds to the normalized mutual information. This allows to check that the eyes are not
+included in the brain volume. 
     
 !!! warning
     This quality check procedure is specific to the `t1-volume` pipeline and should not be applied 
