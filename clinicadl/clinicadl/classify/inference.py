@@ -50,26 +50,8 @@ def classify(caps_dir,
     """
     logger = return_logger(verbose, "classify")
 
-    # Verify that paths exist
-    caps_dir = abspath(caps_dir)
-    model_path = abspath(model_path)
-    tsv_path = abspath(tsv_path)
-
-    if not isdir(caps_dir):
-        logger.error("Folder containing MRIs was not found, please verify its location.")
-        raise FileNotFoundError(
-            errno.ENOENT, strerror(errno.ENOENT), caps_dir)
-    if not isdir(model_path):
-        logger.error("A valid model in the path was not found. Donwload them from aramislab.inria.fr")
-        raise FileNotFoundError(
-            errno.ENOENT, strerror(errno.ENOENT), model_path)
-    if not exists(tsv_path):
-        raise FileNotFoundError(
-            errno.ENOENT, strerror(errno.ENOENT), tsv_path)
-
     # Infer json file from model_path (suppose that json file is at the same
     # folder)
-
     json_file = join(model_path, 'commandline.json')
 
     if not exists(json_file):
