@@ -1,7 +1,8 @@
 # `quality-check` - Evaluate registration quality
 
 Two different quality check procedures are available in ClinicaDL:
-on `t1-linear` and `t1-volume` (necessary step before performing `t1-extensive` preprorcessing).
+one for the `t1-linear` preprocessing pipeline and another for the `t1-volume` 
+pipeline (necessary step before performing `t1-extensive` preprocessing).
 
 
 ## `quality-check t1-linear` - Evaluate `t1-linear` registration
@@ -16,7 +17,8 @@ Their original code can be found on [GitHub](https://github.com/vfonov/deep-qc).
     This quality check procedure is specific to the `t1-linear` pipeline and should not be applied 
     to other preprocessing procedures as the results may not be reliable.
     Moreover you should be aware that this procedure may not be well adapted to anonymized data 
-    (for example images from OASIS-1) where parts of the images were removed or modified to guarantee anonymization.
+    (for example images from OASIS-1) where parts of the images were removed (e.g. the face)
+    or modified to guarantee anonymization.
 
 
 ### Prerequisites
@@ -67,7 +69,7 @@ linked to images of bad quality. Three steps are performed to remove images with
 1. a maximum value below 0.95,
 2. a percentage of non-zero values below 15% or higher than 50%,
 3. a similarity with the DARTEL template around the frontal lobe below 0.40. The similarity
-corresponds to the normalized mutual information. This allows to check that the eyes are not
+corresponds to the normalized mutual information. This allows checking that the eyes are not
 included in the brain volume. 
     
 !!! warning
@@ -89,13 +91,13 @@ where:
 and the output of the present command, both in a [CAPS hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
 - `output_path` (str) is the path to an output directory in which TSV files will be created.
 - `group_label` (str) is the identifier for the group of subjects used to create the DARTEL template.
-You can check which groups are available in the `groups/` folder of yout `caps_directory`.
+You can check which groups are available in the `groups/` folder of your `caps_directory`.
 
 
 ### Outputs
 
 This pipeline outputs 4 files:
-- `QC_metrics.tsv` containing the three QC metrics for all images are available,
+- `QC_metrics.tsv` containing the three QC metrics for all the images,
 - `pass_step-1.tsv` including only the images which passed the first step,
 - `pass_step-2.tsv` including only the images which passed the two first steps,
 - `pass_step-3.tsv` including only the images which passed all the three steps.
