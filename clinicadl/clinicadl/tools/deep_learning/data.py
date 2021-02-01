@@ -839,7 +839,7 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
                 cohort_name = tsv_df.loc[idx, 'cohort']
                 cohort_path = tsv_df.loc[idx, 'path']
                 cohort_diagnoses = tsv_df.loc[idx, 'diagnoses'].replace(' ', '').split(",")
-                assert set(cohort_diagnoses).issubset(set(diagnoses_list))
+                assert bool(set(cohort_diagnoses) & set(diagnoses_list))
                 cohort_test_df = load_data_test_single(cohort_path, cohort_diagnoses, baseline=baseline)
                 cohort_test_df["cohort"] = cohort_name
                 test_df = pd.concat([test_df, cohort_test_df])
