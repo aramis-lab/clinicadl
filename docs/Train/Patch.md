@@ -96,8 +96,9 @@ The set of images used corresponds to all the possible patch locations in MR vol
 
 The output of the CNN is a vector of size equal to the number of classes in this dataset.
 This vector can be preprocessed by the [softmax function](https://pytorch.org/docs/master/generated/torch.nn.Softmax.html) 
-to produce a probability for each class. During training, the CNN is optimized according to the cross-entropy loss, 
-which becomes null for a subset of images if the CNN outputs 100% probability for the true class of each image of the subset.
+to produce a probability for each class. During training, the CNN is optimized according to the cross-entropy loss. 
+Its value becomes null for a subset of images if the probability of the CNN is 1, 
+with respect to the true class (ground truth) of each image in the subset.
 
 ### Running the task
 
@@ -180,8 +181,9 @@ the label at the image level.
 
 The output of each CNN is a vector of size equals to the number of classes in this dataset.
 This vector can be preprocessed by the [softmax function](https://pytorch.org/docs/master/generated/torch.nn.Softmax.html) 
-to produce a probability for each class. During training, the CNN is optimized according to the cross-entropy loss, 
-which becomes null for a subset of images if the CNN outputs 100% probability for the true class of each image of the subset.
+to produce a probability for each class. During training, the CNN is optimized according to the cross-entropy loss. 
+Its value becomes null for a subset of images if the probability of the CNN is 1, 
+with respect to the true class (ground truth) of each image in the subset.
 
 ### Running the task
 
