@@ -43,6 +43,10 @@ The options specific to this task are the following:
 - `--stride_size` (int) length between the centers of successive patches in voxels. Default: `50`.
 - `--use_extracted_patches` (bool) if this flag is given, the outputs of `clinicadl extract` are used.
 Otherwise, the whole 3D MR volumes are loaded and patches are extracted on-the-fly.
+- `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
+The best model of this folder will be used to initialize the network as 
+explained in the [implementation details](./Details.md#transfer-learning). 
+If nothing is given the initialization will be random.
 - `--visualization` (bool) if this flag is given, inputs of the train and
 the validation sets and their corresponding reconstructions are written in `autoencoder_reconstruction`.
 Inputs are reconstructed based on the model that obtained the [best validation loss](./Details.md#model-selection).
@@ -92,8 +96,9 @@ The set of images used corresponds to all the possible patch locations in MR vol
 
 The output of the CNN is a vector of size equal to the number of classes in this dataset.
 This vector can be preprocessed by the [softmax function](https://pytorch.org/docs/master/generated/torch.nn.Softmax.html) 
-to produce a probability for each class. During training, the CNN is optimized according to the cross-entropy loss, 
-which becomes null for a subset of images if the CNN outputs 100% probability for the true class of each image of the subset.
+to produce a probability for each class. During training, the CNN is optimized according to the cross-entropy loss. 
+Its value becomes null for a subset of images if the probability of the CNN is 1, 
+with respect to the true class (ground truth) of each image in the subset.
 
 ### Running the task
 
@@ -176,8 +181,9 @@ the label at the image level.
 
 The output of each CNN is a vector of size equals to the number of classes in this dataset.
 This vector can be preprocessed by the [softmax function](https://pytorch.org/docs/master/generated/torch.nn.Softmax.html) 
-to produce a probability for each class. During training, the CNN is optimized according to the cross-entropy loss, 
-which becomes null for a subset of images if the CNN outputs 100% probability for the true class of each image of the subset.
+to produce a probability for each class. During training, the CNN is optimized according to the cross-entropy loss. 
+Its value becomes null for a subset of images if the probability of the CNN is 1, 
+with respect to the true class (ground truth) of each image in the subset.
 
 ### Running the task
 
@@ -197,6 +203,10 @@ where mandatory arguments are:
 
 The options specific to this task are the following:
 
+- `--patch_size` (int) size of the patches in voxels. Default: `50`.
+- `--stride_size` (int) length between the centers of successive patches in voxels. Default: `50`.
+- `--use_extracted_patches` (bool) if this flag is given, the outputs of `clinicadl extract` are used.
+Otherwise, the whole 3D MR volumes are loaded and patches are extracted on-the-fly.
 - `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
 The best model of this folder will be used to initialize the network as 
 explained in the [implementation details](./Details.md#transfer-learning). 

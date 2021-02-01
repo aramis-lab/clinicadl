@@ -6,18 +6,20 @@ import shutil
 
 
 @pytest.fixture(params=[
-    'train_slice',
+    'train_slice_cnn',
     'train_image_cnn',
     'train_patch_cnn',
     'train_patch_multicnn',
     'train_roi_cnn',
+    'train_roi_multicnn'
 ])
 def cli_commands(request):
 
-    if request.param == 'train_slice':
+    if request.param == 'train_slice_cnn':
         test_input = [
             'train',
             'slice',
+            'cnn',
             'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
@@ -74,6 +76,20 @@ def cli_commands(request):
             'train',
             'roi',
             'cnn',
+            'data/dataset/random_example',
+            't1-linear',
+            'data/labels_list',
+            'results',
+            'Conv4_FC3',
+            '--epochs', '1',
+            '--n_splits', '2',
+            '--split', '0'
+        ]
+    elif request.param == 'train_roi_multicnn':
+        test_input = [
+            'train',
+            'roi',
+            'multicnn',
             'data/dataset/random_example',
             't1-linear',
             'data/labels_list',
