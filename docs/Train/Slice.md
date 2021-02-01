@@ -16,7 +16,7 @@ of a ResNet-18 trained on ImageNet.
 The objective of an autoencoder is to learn to reconstruct images given in input while performing a dimension reduction. 
 Slices at the beginning or at the end of the volume may be excluded using the `discarded_slices` argument.
 
-The difference between the input and the output image is given by the mean squared error.
+The difference between the input and the output image is given by the mean squared error (MSE).
 In clinicadl, autoencoders are designed [based on a CNN architecture](./Details.md#autoencoders-construction-from-cnn-architectures). 
 
 ### Running the task

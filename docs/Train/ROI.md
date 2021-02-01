@@ -125,7 +125,7 @@ This argument will only be taken into account if the source network is a CNN.
 Choices are `best_loss` and `best_balanced_accuracy`. Default: `best_balanced_accuracy`.
 - `--selection_threshold` (float) threshold on the balanced accuracies to compute the 
 [image-level performance](./Details.md#soft-voting). 
-Regions are selected if their balanced accuracy is greather than the threshold. Default corresponds to no selection.
+Regions are selected if their balanced accuracy is greater than the threshold. Default corresponds to no selection.
 
 ### Outputs
 
@@ -169,8 +169,8 @@ results
 
 ## `train roi multicnn` - Train one classification CNN per region
 
-Contrary to the preceding network in which all regions of interest were used as input of a unique CNN, with this option
-a CNN is trained per region. Then the predictions of the CNNs are [assembled](./Details.md#soft-voting) to determine
+Contrary to the preceding network in which all regions of interest were used as input of a unique CNN, this option
+allows to train a CNN per region. Then the predictions of the CNNs are [assembled](./Details.md#soft-voting) to determine
 the label at the image level.
 
 The output of each CNN is a vector of size equals to the number of classes in this dataset.
