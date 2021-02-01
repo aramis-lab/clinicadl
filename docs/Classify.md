@@ -50,7 +50,7 @@ where:
 - `caps_directory` (str) is the input folder containing the neuroimaging data
   (tensor version of images, output of [`clinicadl extract`
   pipeline](Preprocessing/Extract.md)) in a
-  [CAPS](http://www.clinica.run/doc/CAPS/Introduction/) hierarchy.
+  [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
 - `tsv_file` (str) is a TSV file with subjects/sessions to process (filename
   included).
 - `model_path` (str) is a path to the folder where the model and the json file

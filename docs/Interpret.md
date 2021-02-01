@@ -69,7 +69,7 @@ Optional arguments:
     - `--tsv_path` (str) is a path to a directory containing one TSV file per diagnosis
     (see output tree of [getlabels](./TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease)). 
     Default will use the same participants than those used during the training task.
-    - `--caps_dir` (str) is the path to a [CAPS](http://www.clinica.run/doc/CAPS/Introduction/) hierarchy.
+    - `--caps_dir` (str) is the path to a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
     Default will use the same CAPS than during the training task.
     - `--diagnosis` (str) is the diagnosis that will be loaded in `tsv_path`. Default value: `AD`.
     - `--target_diagnosis` (str) is the class the gradients explain. Default will explain

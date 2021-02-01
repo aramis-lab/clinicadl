@@ -10,12 +10,12 @@ template [Fonov et al., [2011](https://doi.org/10.1016/j.neuroimage.2010.07.033)
 
 !!! tip
     This pipeline can be also run with Clinica by typing
-    [`clinica run t1-linear` pipeline](http://www.clinica.run/doc/Pipelines/T1_Linear).
+    [`clinica run t1-linear` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Linear/).
     Results are equivalent.
 
 ### Dependencies
 This pipeline needs the installation of **ANTs** on your computer. You can find how to install this software package on the
-[third-party page on the Clinica Wiki](http://www.clinica.run/doc/Third-party).
+[third-party page on the Clinica Wiki](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Third-party/).
 
 ### Running the pipeline
 The pipeline can be run with the following command line:
@@ -24,15 +24,15 @@ clinicadl preprocessing run t1-linear <bids_directory> <caps_directory>
 ```
 where:
 
-- `bids_directory` (str) is the input folder containing the dataset in a [BIDS](http://www.clinica.run/doc/BIDS) hierarchy.
-- `caps_directory` (str) is the output folder containing the results in a [CAPS](http://www.clinica.run/doc/CAPS/Introduction) hierarchy.
+- `bids_directory` (str) is the input folder containing the dataset in a [BIDS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/BIDS/) hierarchy.
+- `caps_directory` (str) is the output folder containing the results in a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
 
 On default, cropped images (matrix size 169×208×179, 1 mm isotropic voxels) are generated to reduce the computing power required when training deep learning models. Use `--uncropped_image` flag if you do not want to crop the image.
 
 
 ### Outputs
 Results are stored in the following folder of the
-[CAPS hierarchy](http://www.clinica.run/doc/CAPS/Specifications/#t1-linear-affine-registration-of-t1w-images-to-the-mni-standard-space):
+[CAPS hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Specifications/#t1-linear-affine-registration-of-t1w-images-to-the-mni-standard-space):
 `subjects/sub-<participant_label>/ses-<session_label>/t1_linear` with the following outputs:
 
 - `<source_file>_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz`: T1w image affinely registered to the [`MNI152NLin2009cSym` template](https://bids-specification.readthedocs.io/en/stable/99-appendices/08-coordinate-systems.html) and cropped.
