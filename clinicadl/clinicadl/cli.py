@@ -487,11 +487,11 @@ def parse_command_line():
     )
     optional_custom.add_argument(
         '-cn', '--custom_suffix',
-            help='''Custom suffix filename, e.g.:
+        help='''Custom suffix filename, e.g.:
             'graymatter_space-Ixi549Space_modulated-off_probability.nii.gz', or
             'segm-whitematter_probability.nii.gz'
             ''',
-            type=str, default=''
+        type=str, default=''
     )
 
     # Clinica standard arguments (e.g. --n_procs)
