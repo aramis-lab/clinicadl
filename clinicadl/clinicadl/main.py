@@ -18,9 +18,9 @@ def main():
             raise ValueError("No GPU is available. Please add the -cpu flag to run on CPU.")
 
     if not args.task:
-       parser.print_help()
+        parser.print_help()
     else:
-       args.func(args)
-    
+        args.func(args)
+
 if __name__ == '__main__':
     main()

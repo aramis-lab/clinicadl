@@ -230,19 +230,15 @@ def parse_command_line():
         description='Deep learning software for neuroimaging datasets')
 
     parser.add_argument('-v', '--verbose', action='count', default=0)
-    parser.add_argument('-l', '--logname', 
-            dest='logname', 
-            default="clinica.log",
-            metavar=('file.log'),
-            help='Define the log file name (default: clinica.log)')
+    parser.add_argument('-l', '--logname',
+                        dest='logname',
+                        default="clinica.log",
+                        metavar=('file.log'),
+                        help='Define the log file name (default: clinica.log)')
     parser.add_argument("-V", "--version",
-            dest='version',
-            action='store_true', default=False,
-            help="Clinica's installed version")
-    #parser.add_argument("-V", "--version",
-    #        action='version',
-    #        version='%(prog)s %(prog.__version__)')
-
+                        dest='version',
+                        action='store_true', default=False,
+                        help="Clinica's installed version")
 
     parent_parser = argparse.ArgumentParser(add_help=False)
     parent_parser.add_argument('--verbose', '-v', action='count', default=0)
