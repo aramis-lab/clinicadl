@@ -419,14 +419,18 @@ def parse_command_line():
     )
     clinica_comp = extract_parser.add_argument_group('%sClinica mandatory arguments%s' % (Fore.BLUE, Fore.RESET))
     clinica_comp.add_argument(
-        'preprocessing',
-        help='Preprocessing pipeline on which extraction is performed.',
-        choices=['t1-linear']
-    )
-    clinica_comp.add_argument(
         "caps_directory",
         help='Path to the CAPS directory.'
     )
+    clinica_comp.add_argument("modality",
+                              help='''For which modality the tensor will be extracted.
+            't1-linear': images prepocessed with t1-linear pipeline.
+            't1-extensive': images preprocessed with t1-extensive pipeline.
+            'custom': find images with a custom suffix in their filename and
+            transform them to tensor format.''',
+                              choices=['t1-linear', 't1-extensive', 'custom'], default='t1-linear'
+    )
+
     clinica_comp.add_argument(
         "extract_method",
         help='''Format of the extracted features. Three options:
@@ -478,6 +482,17 @@ def parse_command_line():
             single channel (default: --slice_mode rgb).''',
         choices=['rgb', 'single'], default='rgb'
     )
+    optional_custom = extract_parser.add_argument_group(
+            "%sPipeline options if you chose ‘custom’ modality%s" % (Fore.BLUE, Fore.RESET)
+            )
+    optional_custom.add_argument(
+            '-cn', '--custom_suffix',
+            help='''Custom suffix filename, e.g.:
+            'graymatter_space-Ixi549Space_modulated-off_probability.nii.gz', or
+            'segm-whitematter_probability.nii.gz'
+            ''',
+            type=str, default=''
+            )
 
     # Clinica standard arguments (e.g. --n_procs)
     clinica_standard_options = extract_parser.add_argument_group('%sClinica standard options%s' % (Fore.BLUE, Fore.RESET))
