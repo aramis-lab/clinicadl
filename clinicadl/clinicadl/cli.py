@@ -429,7 +429,7 @@ def parse_command_line():
             'custom': find images with a custom suffix in their filename and
             transform them to tensor format.''',
                               choices=['t1-linear', 't1-extensive', 'custom'], default='t1-linear'
-    )
+                              )
 
     clinica_comp.add_argument(
         "extract_method",
@@ -483,16 +483,16 @@ def parse_command_line():
         choices=['rgb', 'single'], default='rgb'
     )
     optional_custom = extract_parser.add_argument_group(
-            "%sPipeline options if you chose ‘custom’ modality%s" % (Fore.BLUE, Fore.RESET)
-            )
+        "%sPipeline options if you chose ‘custom’ modality%s" % (Fore.BLUE, Fore.RESET)
+    )
     optional_custom.add_argument(
-            '-cn', '--custom_suffix',
+        '-cn', '--custom_suffix',
             help='''Custom suffix filename, e.g.:
             'graymatter_space-Ixi549Space_modulated-off_probability.nii.gz', or
             'segm-whitematter_probability.nii.gz'
             ''',
             type=str, default=''
-            )
+    )
 
     # Clinica standard arguments (e.g. --n_procs)
     clinica_standard_options = extract_parser.add_argument_group('%sClinica standard options%s' % (Fore.BLUE, Fore.RESET))
