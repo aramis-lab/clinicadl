@@ -250,7 +250,7 @@ def parse_command_line():
         dest='task',
         help='''****** Tasks proposed by clinicadl ******''')
 
-    #subparser.required = True
+    # subparser.required = True
 
     # Generate synthetic data
     generate_parser = subparser.add_parser(
@@ -265,7 +265,7 @@ def parse_command_line():
         dest='mode',
         help='''****** Synthetic datasets proposed by clinicadl ******''')
 
-    #generate_subparser.required = True
+    # generate_subparser.required = True
 
     # Positional arguments
     generate_rs_parent_parser = argparse.ArgumentParser(add_help=False)
