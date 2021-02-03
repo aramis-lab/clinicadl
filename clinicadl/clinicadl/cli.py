@@ -240,9 +240,6 @@ def parse_command_line():
                         action='store_true', default=False,
                         help="ClinicaDL's installed version")
 
-    parent_parser = argparse.ArgumentParser(add_help=False)
-    parent_parser.add_argument('--verbose', '-v', action='count', default=0)
-
     subparser = parser.add_subparsers(
         title='''Task to execute with clinicadl:''',
         description='''What kind of task do you want to use with clinicadl?
