@@ -753,6 +753,7 @@ def load_data(tsv_path, diagnoses_list,
             check_multi_cohort_tsv(tsv_df, "labels")
             train_df = pd.DataFrame()
             valid_df = pd.DataFrame()
+            found_diagnoses = set()
             for idx in range(len(tsv_df)):
                 cohort_name = tsv_df.loc[idx, 'cohort']
                 cohort_path = tsv_df.loc[idx, 'path']
@@ -767,6 +768,11 @@ def load_data(tsv_path, diagnoses_list,
                     cohort_valid_df["cohort"] = cohort_name
                     train_df = pd.concat([train_df, cohort_train_df])
                     valid_df = pd.concat([valid_df, cohort_valid_df])
+                    found_diagnoses = found_diagnoses | (set(cohort_diagnoses) & set(diagnoses_list))
+
+            if found_diagnoses != set(diagnoses_list):
+                raise ValueError(f"The diagnoses found in the multi cohort dataset {found_diagnoses} "
+                                 f"do not correspond to the diagnoses wanted {set(diagnoses_list)}.")
             train_df.reset_index(inplace=True, drop=True)
             valid_df.reset_index(inplace=True, drop=True)
     else:
@@ -836,6 +842,7 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
             tsv_df = pd.read_csv(test_path, sep="\t")
             check_multi_cohort_tsv(tsv_df, "labels")
             test_df = pd.DataFrame()
+            found_diagnoses = set()
             for idx in range(len(tsv_df)):
                 cohort_name = tsv_df.loc[idx, 'cohort']
                 cohort_path = tsv_df.loc[idx, 'path']
@@ -845,6 +852,11 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
                     cohort_test_df = load_data_test_single(cohort_path, target_diagnoses, baseline=baseline)
                     cohort_test_df["cohort"] = cohort_name
                     test_df = pd.concat([test_df, cohort_test_df])
+                    found_diagnoses = found_diagnoses | (set(cohort_diagnoses) & set(diagnoses_list))
+
+            if found_diagnoses != set(diagnoses_list):
+                raise ValueError(f"The diagnoses found in the multi cohort dataset {found_diagnoses} "
+                                 f"do not correspond to the diagnoses wanted {set(diagnoses_list)}.")
             test_df.reset_index(inplace=True, drop=True)
     else:
         if test_path.endswith(".tsv"):
