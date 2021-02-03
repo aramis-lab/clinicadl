@@ -174,11 +174,9 @@ def tsv_split_func(args):
     from .tools.tsv.data_split import split_diagnoses
 
     split_diagnoses(
-        args.merged_tsv,
         args.formatted_data_path,
         n_test=args.n_test,
         subset_name=args.subset_name,
-        age_name=args.age_name,
         MCI_sub_categories=args.MCI_sub_categories,
         t_val_threshold=args.t_val_threshold,
         p_val_threshold=args.p_val_threshold,
@@ -207,9 +205,7 @@ def tsv_analysis_func(args):
         args.merged_tsv,
         args.formatted_data_path,
         args.results_path,
-        diagnoses=args.diagnoses,
-        mmse_name=args.mmse_name,
-        age_name=args.age_name
+        diagnoses=args.diagnoses
     )
 
 
@@ -1080,7 +1076,8 @@ def parse_command_line():
         type=str, default=None)
     tsv_getlabels_subparser.add_argument(
         "--variables_of_interest",
-        help="Variables of interest that will be kept in the final lists",
+        help="Variables of interest that will be kept in the final lists."
+             "Default will keep the diagnosis, age and the sex needed for the split procedure.",
         type=str, nargs="+", default=None)
     tsv_getlabels_subparser.add_argument(
         "--keep_smc",
@@ -1094,11 +1091,6 @@ def parse_command_line():
         'split',
         parents=[parent_parser],
         help='Performs one stratified shuffle split on participant level.')
-
-    tsv_split_subparser.add_argument(
-        "merged_tsv",
-        help="Path to the file obtained by the command clinica iotools merge-tsv.",
-        type=str)
     tsv_split_subparser.add_argument(
         "formatted_data_path",
         help="Path to the folder containing data extracted by clinicadl tsvtool getlabels.",
@@ -1111,10 +1103,6 @@ def parse_command_line():
              "If < 1, proportion of subjects to put set with name 'subset_name'. "
              "If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name.",
         type=float, default=100.)
-    tsv_split_subparser.add_argument(
-        "--age_name",
-        help="Name of the variable related to the age in the merged_tsv file.",
-        type=str, default="age_bl")
     tsv_split_subparser.add_argument(
         "--MCI_sub_categories",
         help="Deactivate default managing of MCI sub-categories to avoid data leakage.",
@@ -1192,14 +1180,6 @@ def parse_command_line():
         "--diagnoses",
         help="Labels selected for the demographic analysis.",
         default=['AD', 'CN'], nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'])
-    tsv_analysis_subparser.add_argument(
-        "--mmse_name",
-        help="Name of the variable related to the MMSE score in the merged_tsv file.",
-        type=str, default="MMS")
-    tsv_analysis_subparser.add_argument(
-        "--age_name",
-        help="Name of the variable related to the age in the merged_tsv file.",
-        type=str, default="age_bl")
 
     tsv_analysis_subparser.set_defaults(func=tsv_analysis_func)
 
