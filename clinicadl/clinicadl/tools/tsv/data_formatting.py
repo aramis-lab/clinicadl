@@ -339,8 +339,11 @@ def get_labels(merged_tsv, missing_mods, results_path,
     bids_df = pd.read_csv(merged_tsv, sep='\t')
     bids_df.set_index(['participant_id', 'session_id'], inplace=True)
     variables_list = ["diagnosis"]
-    variables_list.append(find_label(bids_df.columns.values, 'age'))
-    variables_list.append(find_label(bids_df.columns.values, 'sex'))
+    try:
+        variables_list.append(find_label(bids_df.columns.values, 'age'))
+        variables_list.append(find_label(bids_df.columns.values, 'sex'))
+    except ValueError:
+        logger.warn("The age or sex values were not found in the dataset.")
     if variables_of_interest is not None:
         variables_set = set(variables_of_interest) | set(variables_list)
         variables_list = list(variables_set)
