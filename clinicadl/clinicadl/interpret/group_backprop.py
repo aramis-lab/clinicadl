@@ -38,8 +38,6 @@ def group_backprop(options):
     if options.target_diagnosis is None:
         options.target_diagnosis = options.diagnosis
 
-    print(options.multi_cohort)
-
     for fold in fold_list:
         main_logger.info(fold)
         for selection in options.selection:
