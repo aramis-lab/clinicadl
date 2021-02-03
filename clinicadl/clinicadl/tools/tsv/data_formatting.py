@@ -348,7 +348,6 @@ def get_labels(merged_tsv, missing_mods, results_path,
         variables_set = set(variables_of_interest) | set(variables_list)
         variables_list = list(variables_set)
 
-
     list_files = os.listdir(missing_mods)
     missing_mods_dict = {}
 

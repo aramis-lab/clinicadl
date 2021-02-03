@@ -46,8 +46,13 @@ def create_split(diagnosis, diagnosis_df, n_test,
         n_test = int(n_test * len(diagnosis_baseline_df))
 
     if not ignore_demographics:
-        sex_label = find_label(diagnosis_baseline_df.columns.values, "sex")
-        age_label = find_label(diagnosis_baseline_df.columns.values, "age")
+        try:
+            sex_label = find_label(diagnosis_baseline_df.columns.values, "sex")
+            age_label = find_label(diagnosis_baseline_df.columns.values, "age")
+        except ValueError:
+            raise ValueError("This dataset do not have age or sex values. "
+                             "Please add the flag --ignore_demographics to split "
+                             "without trying to balance age or sex distributions.")
 
         sex = list(diagnosis_baseline_df[sex_label].values)
         age = list(diagnosis_baseline_df[age_label].values)
