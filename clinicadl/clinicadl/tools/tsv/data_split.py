@@ -12,6 +12,7 @@ import logging
 
 sex_dict = {'M': 0, 'F': 1}
 
+
 def create_split(diagnosis, diagnosis_df, n_test,
                  pval_threshold_ttest=0.80, t_val_chi2_threshold=0.0642,
                  ignore_demographics=False, logger=None):
