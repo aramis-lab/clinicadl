@@ -229,7 +229,6 @@ def parse_command_line():
         prog='clinicadl',
         description='Deep learning software for neuroimaging datasets')
 
-    parser.add_argument('-v', '--verbose', action='count', default=0)
     parser.add_argument('-l', '--logname',
                         dest='logname',
                         default="clinicaDL.log",
@@ -239,6 +238,9 @@ def parse_command_line():
                         dest='version',
                         action='store_true', default=False,
                         help="ClinicaDL's installed version")
+
+    parent_parser = argparse.ArgumentParser(add_help=False)
+    parent_parser.add_argument('--verbose', '-v', action='count', default=0)
 
     subparser = parser.add_subparsers(
         title='''Task to execute with clinicadl:''',
@@ -566,6 +568,7 @@ def parse_command_line():
     # random search parsers
     rs_generate_parser = subparser.add_parser(
         'random-search',
+        parents=[parent_parser],
         help='Generate random networks to explore hyper parameters space.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -681,6 +684,7 @@ def parse_command_line():
     train_image_ae_parser = train_image_subparser.add_parser(
         "autoencoder",
         parents=[
+            parent_parser,
             train_parent_parser,
             autoencoder_parent,
             transfer_learning_parent],
@@ -691,6 +695,7 @@ def parse_command_line():
     train_image_cnn_parser = train_image_subparser.add_parser(
         "cnn",
         parents=[
+            parent_parser,
             train_parent_parser,
             transfer_learning_parent],
         help="Train an image-level CNN.")
@@ -735,7 +740,7 @@ def parse_command_line():
 
     train_patch_ae_parser = train_patch_subparser.add_parser(
         "autoencoder",
-        parents=[train_parent_parser, train_patch_parent, autoencoder_parent, transfer_learning_parent],
+        parents=[parent_parser, train_parent_parser, train_patch_parent, autoencoder_parent, transfer_learning_parent],
         help="Train a 3D patch-level autoencoder.")
 
     train_patch_ae_parser.set_defaults(func=train_func)
@@ -743,6 +748,7 @@ def parse_command_line():
     train_patch_cnn_parser = train_patch_subparser.add_parser(
         "cnn",
         parents=[
+            parent_parser,
             train_parent_parser,
             train_patch_parent,
             transfer_learning_parent],
@@ -767,6 +773,7 @@ def parse_command_line():
     train_patch_multicnn_parser = train_patch_subparser.add_parser(
         "multicnn",
         parents=[
+            parent_parser,
             train_parent_parser,
             train_patch_parent,
             transfer_learning_parent],
@@ -805,6 +812,7 @@ def parse_command_line():
     train_roi_ae_parser = train_roi_subparser.add_parser(
         "autoencoder",
         parents=[
+            parent_parser,
             train_parent_parser,
             autoencoder_parent,
             transfer_learning_parent
@@ -816,6 +824,7 @@ def parse_command_line():
     train_roi_cnn_parser = train_roi_subparser.add_parser(
         "cnn",
         parents=[
+            parent_parser,
             train_parent_parser,
             transfer_learning_parent],
         help="Train a ROI-based CNN.")
@@ -839,6 +848,7 @@ def parse_command_line():
     train_roi_multicnn_parser = train_roi_subparser.add_parser(
         "multicnn",
         parents=[
+            parent_parser,
             train_parent_parser,
             transfer_learning_parent],
         help="Train a ROI-based multi-CNN (one CNN is trained per patch location).")
@@ -898,14 +908,14 @@ def parse_command_line():
 
     train_slice_ae_parser = train_slice_subparser.add_parser(
         "autoencoder",
-        parents=[train_parent_parser, train_slice_parent, transfer_learning_parent],
+        parents=[parent_parser, train_parent_parser, train_slice_parent, transfer_learning_parent],
         help="Train a 2D slice-level autoencoder.")
 
     train_slice_ae_parser.set_defaults(func=train_func)
 
     train_slice_cnn_parser = train_slice_subparser.add_parser(
         "cnn",
-        parents=[train_parent_parser, train_slice_parent, transfer_learning_parent],
+        parents=[parent_parser, train_parent_parser, train_slice_parent, transfer_learning_parent],
         help="Train a 2D slice-level CNN.")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
     train_slice_cnn_parser._action_groups[-1].add_argument(
@@ -926,7 +936,7 @@ def parse_command_line():
 
     train_slice_multicnn_parser = train_slice_subparser.add_parser(
         "multicnn",
-        parents=[train_parent_parser, train_slice_parent, transfer_learning_parent],
+        parents=[parent_parser, train_parent_parser, train_slice_parent, transfer_learning_parent],
         help="Train a 2D slice-level multi-CNN.")
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
     train_slice_multicnn_parser._action_groups[-1].add_argument(
@@ -951,6 +961,7 @@ def parse_command_line():
 
     classify_parser = subparser.add_parser(
         'classify',
+        parents=[parent_parser],
         help='''Classify one image or a list of images with your previously
                  trained model.''')
     classify_pos_group = classify_parser.add_argument_group(
@@ -1055,6 +1066,7 @@ def parse_command_line():
 
     tsv_getlabels_subparser = tsv_subparser.add_parser(
         'getlabels',
+        parents=[parent_parser],
         help='Get labels in separate tsv files.')
 
     tsv_getlabels_subparser.add_argument(
@@ -1101,6 +1113,7 @@ def parse_command_line():
 
     tsv_split_subparser = tsv_subparser.add_parser(
         'split',
+        parents=[parent_parser],
         help='Performs one stratified shuffle split on participant level.')
 
     tsv_split_subparser.add_argument(
@@ -1149,6 +1162,7 @@ def parse_command_line():
 
     tsv_kfold_subparser = tsv_subparser.add_parser(
         'kfold',
+        parents=[parent_parser],
         help='Performs a k-fold split on participant level.')
 
     tsv_kfold_subparser.add_argument(
@@ -1281,7 +1295,7 @@ def parse_command_line():
 
     interpret_group_parser = interpret_subparser.add_parser(
         "group",
-        parents=[interpret_parent_parser],
+        parents=[parent_parser, interpret_parent_parser],
         help="Mean saliency map over a list of sessions"
     )
 
@@ -1289,7 +1303,7 @@ def parse_command_line():
 
     interpret_individual_parser = interpret_subparser.add_parser(
         "individual",
-        parents=[interpret_parent_parser],
+        parents=[parent_parser, interpret_parent_parser],
         help="Individual saliency maps for each session in the input TSV file."
     )
 
