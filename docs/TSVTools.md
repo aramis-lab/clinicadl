@@ -74,6 +74,10 @@ Options:
   Default value: `36`.
   - `--restriction_path` (str) is a path to a tsv file containing the list of sessions that should be used.
   This argument is useful to integrate the result of a quality check procedure. Default will not perform any restriction.
+  - `--variables_of_interest` (list of str) is a list of columns present in `merged_tsv` that will be included
+  in the outputs.
+  - `--keep_smc` (bool) if given the SMC participants are kept in the `CN.tsv` file.
+  Default setting remove these participants.
 
 ### Output tree
 
@@ -88,7 +92,9 @@ The command will output one tsv file per label:
 </pre>
 
 Each tsv file comprises the `participant_id` and `session_id` values of all the sessions that correspond to the label.
-The values of the last column `diagnosis` are equal to the label name.
+The values of the column `diagnosis` are equal to the label name.
+The age and sex are also included in the TSV files. The names of these columns depend on the 
+columns of `merged_tsv`.
 
 ## `split` - Single split observing similar age and sex distributions
 
@@ -106,11 +112,10 @@ with similar demographics for these labels.
 ### Running the task
 
 ```bash
-clinicadl tsvtool split <merged_tsv> <formatted_data_path>
+clinicadl tsvtool split <formatted_data_path>
 ```
 where:
 
-  - `merged_tsv` (str) is the output file of the `clinica iotools merge-tsv` or `clinicadl tsvtool restrict` commands.
   - `formatted_data_path` (str) is the folder containing a tsv file per label which is going to be split 
   (output of `clinicadl tsvtool getlabels|split|kfold`).
 
@@ -126,8 +131,6 @@ Options:
     with name <code>subset_name</code>.
     </ul>
   Default value: <code>100</code>.</li>
-  <li> <code>--age_name</code> (str) is the name of the column containing the age values in <code>merged_tsv</code>.
-  Default value: <code>age_bl</code>.</li>
   <li> <code>--MCI_sub_categories</code> (bool) is a flag that disables the special treatment of the MCI set and its subsets.
   This will allow sets with more similar age and sex distributions, but it will cause 
   data leakage for transfer learning tasks involving these sets. Default value: <code>False</code>.</li>
@@ -241,10 +244,6 @@ Options:
 
   - `--diagnoses` (list of str) is the list of the labels that will be extracted.
    These labels must be chosen from {AD,CN,MCI,sMCI,pMCI}. Default will only process AD and CN labels.
-  - `--age_name` (str) is the name of the column containing the age values in `merged_tsv`.
-  Default value: `age_bl`.
-  - `--mmse_name` (str) is the name of the column containing the MMSE values in `merged_tsv`.
-  Default value: `MMS`.
   - `--baseline` (bool) is a flag to perform the analysis on `<label>_baseline.tsv` files
   instead of `<label>.tsv` files comprising all the sessions.
   Default: `False`.
