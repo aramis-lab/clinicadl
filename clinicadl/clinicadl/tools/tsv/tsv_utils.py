@@ -123,3 +123,19 @@ def add_demographics(df, demographics_df, diagnosis):
     out_df.reset_index(inplace=True, drop=True)
     out_df.diagnosis = [diagnosis] * len(out_df)
     return out_df
+
+
+def find_label(labels_list, target_label):
+    if target_label in labels_list:
+        return target_label
+    else:
+        min_length = np.inf
+        found_label = None
+        for label in labels_list:
+            if target_label.lower() in label.lower() and min_length > len(label):
+                min_length = len(label)
+                found_label = label
+        if found_label is None:
+            raise ValueError(f"No label was found in {labels_list} for target label {target_label}.")
+
+        return found_label
