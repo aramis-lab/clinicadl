@@ -1201,7 +1201,7 @@ def parse_command_line():
     tsv_analysis_subparser.add_argument(
         "--diagnoses",
         help="Labels selected for the demographic analysis.",
-        default=['AD', 'CN'], nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'])
+        default=['AD', 'CN'], nargs="+", type=str, choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'])
     tsv_analysis_subparser.add_argument(
         "--mmse_name",
         help="Name of the variable related to the MMSE score in the merged_tsv file.",
