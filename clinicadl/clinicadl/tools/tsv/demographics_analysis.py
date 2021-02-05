@@ -14,6 +14,7 @@ from .tsv_utils import first_session, next_session, add_demographics
 import os
 from os import path
 import numpy as np
+from warnings import warn
 
 
 def demographics_analysis(merged_tsv, formatted_data_path, results_path,
@@ -111,19 +112,23 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path,
             elif cdr == 3:
                 results_df.loc[diagnosis, 'CDR_3'] += 1
             else:
-                raise ValueError('Patient %s has CDR %f' % (subject, cdr))
+                warn(f'Patient {subject} has CDR {cdr}')
 
     for diagnosis in diagnoses:
         results_df.loc[diagnosis, 'mean_age'] = np.nanmean(diagnosis_dict[diagnosis]['age'])
         results_df.loc[diagnosis, 'std_age'] = np.nanstd(diagnosis_dict[diagnosis]['age'])
-        results_df.loc[diagnosis, 'min_age'] = np.min(diagnosis_dict[diagnosis]['age'])
-        results_df.loc[diagnosis, 'max_age'] = np.max(diagnosis_dict[diagnosis]['age'])
+        results_df.loc[diagnosis, 'min_age'] = np.nanmin(diagnosis_dict[diagnosis]['age'])
+        results_df.loc[diagnosis, 'max_age'] = np.nanmax(diagnosis_dict[diagnosis]['age'])
         results_df.loc[diagnosis, 'mean_MMSE'] = np.nanmean(diagnosis_dict[diagnosis]['MMSE'])
         results_df.loc[diagnosis, 'std_MMSE'] = np.nanstd(diagnosis_dict[diagnosis]['MMSE'])
         results_df.loc[diagnosis, 'min_MMSE'] = np.nanmin(diagnosis_dict[diagnosis]['MMSE'])
         results_df.loc[diagnosis, 'max_MMSE'] = np.nanmax(diagnosis_dict[diagnosis]['MMSE'])
         results_df.loc[diagnosis, 'mean_scans'] = np.nanmean(diagnosis_dict[diagnosis]['scans'])
         results_df.loc[diagnosis, 'std_scans'] = np.nanstd(diagnosis_dict[diagnosis]['scans'])
+
+        for key in diagnosis_dict[diagnosis]:
+            if np.isnan(diagnosis_dict[diagnosis][key]).any():
+                warn(f"NaN values were found for {key} values associated to diagnosis {diagnosis}")
 
     results_df.index.name = "diagnosis"
 
