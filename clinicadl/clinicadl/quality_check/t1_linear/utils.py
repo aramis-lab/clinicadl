@@ -8,7 +8,7 @@ import nibabel as nib
 from os import path
 import torch
 
-from ..tools.deep_learning.data import FILENAME_TYPE
+from clinicadl.tools.deep_learning.data import FILENAME_TYPE
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -159,7 +159,7 @@ class QCDataset(Dataset):
             data_df (DataFrame): Subject and session list.
 
         """
-        from ..tools.deep_learning.data import MinMaxNormalization
+        from clinicadl.tools.deep_learning.data import MinMaxNormalization
 
         self.img_dir = img_dir
         self.df = data_df

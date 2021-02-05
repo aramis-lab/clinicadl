@@ -11,17 +11,18 @@ We assume that users installing and using `clinicadl` are comfortable with using
 ## User documentation (`clinicadl`)
 
 ### Prepare your imaging data
-- `clinicadl preprocessing` - [Preprocessing pipelines](Preprocessing/Introduction.md)
+- `clinicadl preprocessing run` - [Preprocessing pipelines](Preprocessing/Introduction.md)
     - `t1-linear` - [Linear processing of T1w MR images](Preprocessing/T1_Linear.md): affine registration to the MNI standard space
     - `t1-extensive` - ['Extensive' processing of T1w MR images](Preprocessing/T1_Extensive.md): non linear registration to the MNI standard space
-- `clinicadl quality_check` - [Quality control of preprocessed data](Preprocessing/QualityCheck.md): use a pretrained network [[Fonov et al., 2018](https://www.biorxiv.org/content/10.1101/303487v1)] to classify adequately registered images.
-- `clinicadl extract` - [Prepare input data for deep learning with PyTorch](Preprocessing/Extract.md)
-- `clinicadl quality_check` - [Evaluate registration quality](Preprocessing/QualityCheck.md)
+- `clinicadl preprocessing quality-check` - [Quality control of preprocessed data](Preprocessing/QualityCheck.md): use a pretrained network [[Fonov et al., 2018](https://www.biorxiv.org/content/10.1101/303487v1)] to classify adequately registered images.
+- `clinicadl preprocessing extract-tensor` - [Prepare input data for deep learning with PyTorch](Preprocessing/Extract.md)
 
 
 ### Train & test your classifier
+- `clinicadl random-search` - [Explore hyperparameters space by training random models](./RandomSearch.md)
 - `clinicadl train` - [Train with your data and create a model](./Train/Introduction.md)
-- `clinicadl classify` - [Classify one image or a list of images with your previously trained model](./Classify.md)
+- `clinicadl classify` - [Classify one image or a list of images with your previously trained CNN](./Classify.md)
+- `clinicadl interpret`- [Interpret trained CNNs on individual or group of images](./Interpret.md)
 
 ### Utilitaries <!--used for the preparation of imaging data and/or training your classifier-->
 
@@ -55,4 +56,4 @@ as well as the references mentioned on the wiki page of the pipelines you used
 
 ---
 
-![Clinica_Partners_Banner](http://www.clinica.run/doc/img/Clinica_Partners_Banner.png)
+![Clinica_Partners_Banner](https://aramislab.paris.inria.fr/clinica/docs/public/latest/img/Clinica_Partners_Banner.png)

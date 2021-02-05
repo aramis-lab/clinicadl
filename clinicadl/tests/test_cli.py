@@ -47,8 +47,8 @@ def generate_cli_commands(request):
         test_input = [
             'preprocessing',
             'extract-tensor',
-            't1-linear',
             '/dir/caps',
+            't1-linear',
             'slice',
             '-ps', '50',
             '-ss', '50',
@@ -61,8 +61,8 @@ def generate_cli_commands(request):
         keys_output = [
             'task',
             'preprocessing_task',
-            'preprocessing',
             'caps_directory',
+            'modality',
             'extract_method',
             'patch_size',
             'stride_size',
@@ -97,18 +97,18 @@ def generate_cli_commands(request):
             'generate',
             'random',
             '/dir/caps',
+            't1-linear',
             '/dir/output/',
             '--n_subjects', '10',
-            '--preprocessing', 't1-linear',
             '--mean', '0.5',
             '--sigma', '0.5']
         keys_output = [
             'task',
             'mode',
             'caps_dir',
+            'preprocessing',
             'output_dir',
             'n_subjects',
-            'preprocessing',
             'mean',
             'sigma']
 
@@ -132,6 +132,7 @@ def generate_cli_commands(request):
         test_input = [
             'train',
             'slice',
+            'cnn',
             '/dir/caps',
             't1-linear',
             '/dir/tsv_path/',
@@ -140,6 +141,7 @@ def generate_cli_commands(request):
         keys_output = [
             'task',
             'mode',
+            'network_type',
             'caps_dir',
             'preprocessing',
             'tsv_path',
@@ -159,7 +161,7 @@ def generate_cli_commands(request):
         keys_output = [
             'task',
             'mode',
-            'mode_task',
+            'network_type',
             'caps_dir',
             'preprocessing',
             'tsv_path',
@@ -178,7 +180,7 @@ def generate_cli_commands(request):
         keys_output = [
             'task',
             'mode',
-            'mode_task',
+            'network_type',
             'caps_dir',
             'preprocessing',
             'tsv_path',
@@ -197,7 +199,7 @@ def generate_cli_commands(request):
         keys_output = [
             'task',
             'mode',
-            'mode_task',
+            'network_type',
             'caps_dir',
             'preprocessing',
             'tsv_path',

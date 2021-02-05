@@ -4,12 +4,14 @@ import os
 import torch
 from torch.utils.data import DataLoader
 
-from ..tools.deep_learning.models import transfer_learning, init_model, create_model, load_model
+from ..tools.deep_learning.models import transfer_learning, init_model, load_model
 from ..tools.deep_learning.data import (get_transforms,
                                         load_data,
-                                        return_dataset)
-from ..tools.deep_learning.cnn_utils import train, test, mode_level_to_tsvs, soft_voting_to_tsvs
-from ..tools.deep_learning.iotools import return_logger
+                                        return_dataset,
+                                        generate_sampler)
+from ..tools.deep_learning.cnn_utils import train, get_criterion, test, mode_level_to_tsvs, soft_voting_to_tsvs
+from ..tools.deep_learning.iotools import return_logger, check_and_clean
+from ..tools.deep_learning.iotools import commandline_to_json, write_requirements_version, translate_parameters
 
 
 def train_single_cnn(params):
@@ -24,11 +26,17 @@ def train_single_cnn(params):
     optimizer.pth.tar files which respectively contains the state of the model and the optimizer at the end
     of the last epoch that was completed before the crash.
     """
+    main_logger = return_logger(params.verbose, "main process")
+    train_logger = return_logger(params.verbose, "train")
+    eval_logger = return_logger(params.verbose, "final evaluation")
+    check_and_clean(params.output_dir)
 
-    main_logger = return_logger(params.verbosity, "main process")
-    train_logger = return_logger(params.verbosity, "train")
-    eval_logger = return_logger(params.verbosity, "final evaluation")
-    transformations = get_transforms(params.mode, params.minmaxnormalization)
+    commandline_to_json(params, logger=main_logger)
+    write_requirements_version(params.output_dir)
+    params = translate_parameters(params)
+    train_transforms, all_transforms = get_transforms(params.mode,
+                                                      minmaxnormalization=params.minmaxnormalization,
+                                                      data_augmentation=params.data_augmentation)
 
     if params.split is None:
         if params.n_splits is None:
@@ -51,15 +59,18 @@ def train_single_cnn(params):
         )
 
         data_train = return_dataset(params.mode, params.input_dir, training_df, params.preprocessing,
-                                    transformations, params)
+                                    train_transformations=train_transforms, all_transformations=all_transforms,
+                                    params=params)
         data_valid = return_dataset(params.mode, params.input_dir, valid_df, params.preprocessing,
-                                    transformations, params)
+                                    train_transformations=train_transforms, all_transformations=all_transforms,
+                                    params=params)
 
-        # Use argument load to distinguish training and testing
+        train_sampler = generate_sampler(data_train, params.sampler)
+
         train_loader = DataLoader(
             data_train,
             batch_size=params.batch_size,
-            shuffle=True,
+            sampler=train_sampler,
             num_workers=params.num_workers,
             pin_memory=True
         )
@@ -74,17 +85,16 @@ def train_single_cnn(params):
 
         # Initialize the model
         main_logger.info('Initialization of the model')
-        model = init_model(params.model, gpu=params.gpu, dropout=params.dropout)
+        model = init_model(params, initial_shape=data_train.size)
         model = transfer_learning(model, fi, source_path=params.transfer_learning_path,
                                   gpu=params.gpu, selection=params.transfer_learning_selection,
                                   logger=main_logger)
 
         # Define criterion and optimizer
-        criterion = torch.nn.CrossEntropyLoss()
-        optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
-                                                            lr=params.learning_rate,
-                                                            weight_decay=params.weight_decay)
-        setattr(params, 'beginning_epoch', 0)
+        criterion = get_criterion(params.loss)
+        optimizer = getattr(torch.optim, params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
+                                                           lr=params.learning_rate,
+                                                           weight_decay=params.weight_decay)
 
         # Define output directories
         log_dir = os.path.join(

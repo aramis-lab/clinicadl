@@ -80,7 +80,8 @@ parser.add_argument(
     "--mri_plane",
     default=0,
     type=int,
-    help='Which coordinate axis to take for slicing the MRI. 0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
+    help='Which coordinate axis to take for slicing the MRI. '
+         '0 is for saggital, 1 is for coronal and 2 is for axial direction, respectively ')
 
 parser.add_argument(
     '--baseline',

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 """
 This file contains all methods needed to perform the quality check procedure after t1-linear preprocessing.
 """
@@ -13,14 +11,12 @@ from torch.utils.data import DataLoader
 
 from .utils import QCDataset, resnet_qc_18
 from clinica.utils.inputs import fetch_file, RemoteFileStructure
-from ..tools.data.utils import load_and_check_tsv
+from ...tools.data.utils import load_and_check_tsv
 
 
-def quality_check(caps_dir, output_path, preprocessing,
-                  tsv_path=None, threshold=0.5, batch_size=1, num_workers=0, gpu=True):
-    if preprocessing != "t1-linear":
-        raise NotImplementedError("The quality check procedure implemented in clinicadl is meant to be run "
-                                  "on t1-linear preprocessing only.")
+def quality_check(caps_dir, output_path,
+                  tsv_path=None, threshold=0.5,
+                  batch_size=1, num_workers=0, gpu=True):
 
     if splitext(output_path)[1] != ".tsv":
         raise ValueError("Please provide an output path to a tsv file")

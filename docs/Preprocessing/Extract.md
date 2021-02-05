@@ -7,8 +7,9 @@ Three types of tensors are proposed: 3D images, 3D patches or 2D slices.
 Currently, only outputs from the [`t1-linear` pipeline](T1_Linear.md) can be processed.
 
 !!! tip
-    This pipeline can be also run with Clinica by typing
-    [`clinica run deeplearning-prepare-data` pipeline](http://www.clinica.run/doc/Pipelines/DeepLearning_PrepareData/).
+    This pipeline can be also run with Clinica by typing [`clinica run
+    deeplearning-prepare-data`
+    pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/DeepLearning_PrepareData/).
     Results are equivalent.
 
 ## Prerequisites
@@ -19,19 +20,25 @@ You need to have performed the [`t1-linear` pipeline](T1_Linear.md) on your T1-w
 ## Running the pipeline
 The pipeline can be run with the following command line:
 ```{.sourceCode .bash}
-clinicadl preprocessing extract-tensor <preprocessing> <caps_directory> <tsv_file> <working_dir> <tensor_format>
+clinicadl preprocessing extract-tensor <caps_directory> <modality> <tensor_format>
 ```
 
 where:
 
-- `preprocessing` (str) corresponds to the preprocessing pipeline whose outputs will be formatted. Currently, only `t1-linear` pipeline is available.
-- `caps_directory` (str) is the folder containing the results of the [`t1-linear` pipeline](T1_Linear.md)
-and the output of the present command, both in a [CAPS hierarchy](http://www.clinica.run/doc/CAPS/Introduction).
+- `caps_directory` (str) is the folder containing the results of the
+  [`t1-linear` pipeline](T1_Linear.md) and the output of the present command,
+  both in a [CAPS
+  hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
+- `modality` is the name of the preprocessing done in the original images. It
+  can be `t1-linear` or `t1-extensive`. You can chose `custom` if you want to get a
+  tensor from a custom filename.
 - `tensor_format` (str) is the format of the extracted tensors.
 You can choose between `image` to convert to PyTorch tensor the whole 3D image,
 `patch` to extract 3D patches and `slice` to extract 2D slices from the image.
 
-By default the features are extracted from the cropped image (see the documentation of the [`t1-linear` pipeline](T1_Linear.md). You can deactivate this behaviour with the `--use_uncropped_image` flag.
+By default the features are extracted from the cropped image (see the
+documentation of the [`t1-linear` pipeline](T1_Linear.md). You can deactivate
+this behaviour with the `--use_uncropped_image` flag.
 
 Pipeline options if you use `patch` extraction:
 
@@ -47,18 +54,32 @@ Default value: `0`.
 You can choose between `rgb` (will save the slice in three identical channels)
 or `single` (will save the slice in a single channel). Default value: `rgb`.
 
-!!! note "Regarding the default values"
-	When using patch or slice extraction, default values were set according to [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)].
+Pipeline options if you use `custom` modality:
 
+- `--custom_suffix`: suffix of the filename that should be converted to the
+  tensor format. The output will be saved into a folder named `custom` but the
+  processed files will kep their original name. E.g.: you can convert the
+  images from the segmentation of the grey matter registered on the
+  Ixi549Space. This images are obtained by running `t1-volume` pipeline (and
+  SPM underhood). The suffix for these images is
+  "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz".
+
+!!! note "Regarding the default values"
+  When using patch or slice extraction, default values were set according to
+  [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)].
+
+!!! tip
+    type `clinicadl preprocessing extract-tensor --help` to see the full list of
+    parameters.
 
 ## Outputs
 In the following subsections, files with the `.pt` extension denote tensors in PyTorch format.
 
 The full list of output files can be found in the
-[ClinicA Processed Structure (CAPS) Specification](http://www.clinica.run/doc/CAPS/Specifications/#deeplearning-prepare-data-prepare-input-data-for-deep-learning-with-pytorch).
+[ClinicA Processed Structure (CAPS) Specification](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Specifications/#deeplearning-prepare-data-prepare-input-data-for-deep-learning-with-pytorch).
 
 ### Image-based outputs
-Results are stored in the following folder of the [CAPS hierarchy](http://www.clinica.run/doc/CAPS/Introduction):
+Results are stored in the following folder of the [CAPS hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/):
 `subjects/<subject_id>/<session_id>/deeplearning_prepare_data/image_based/t1_linear`.
 
 The main output files are:
@@ -69,7 +90,7 @@ and optionally cropped.
 
 ### Patch-based outputs
 
-Results are stored in the following folder of the [CAPS hierarchy](http://www.clinica.run/doc/CAPS/Introduction/):
+Results are stored in the following folder of the [CAPS hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/):
 `subjects/<subject_id>/<session_id>/deeplearning_prepare_data/patch_based/t1_linear`.
 
 The main output files are:
@@ -82,7 +103,7 @@ and optionally cropped.
 
 ### Slice-based outputs
 
-Results are stored in the following folder of the [CAPS hierarchy](http://www.clinica.run/doc/CAPS/Introduction/):
+Results are stored in the following folder of the [CAPS hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/):
 `subjects/<subject_id>/<session_id>/deeplearning_prepare_data/slice_based/t1_linear`.
 
 The main output files are:

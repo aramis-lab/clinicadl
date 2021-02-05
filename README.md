@@ -89,7 +89,7 @@ can be performed:
     * **T1w-weighted MR image preprocessing.** The `preprocessing` task
       processes a dataset of T1 images stored in BIDS format and prepares to
       extract the tensors (see paper for details on the preprocessing). Output
-      is stored using the [CAPS](http://www.clinica.run/doc/CAPS/Introduction/)
+      is stored using the [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/)
       hierarchy.
     * **Quality check of preprocessed data.** The `quality_check` task uses a
       pretrained network [(Fonov et al,
@@ -98,7 +98,7 @@ can be performed:
     * **Tensor extraction from preprocessed data.** The `extract` task allows
       to create files in PyTorch format (`.pt`) with different options: the
       complete MRI, 2D slices and/or 3D patches. This files are also stored in
-      the [CAPS](http://www.clinica.run/doc/CAPS/Introduction/) hierarchy.
+      the [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
 
 - **Train & test your classifier**
     * **Train neural networks.** The `train` task is designed to perform

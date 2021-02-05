@@ -49,7 +49,7 @@ def main(options):
 if __name__ == "__main__":
     commandline = parser.parse_known_args()
     commandline[0].split = None
-    commandline_to_json(commandline, 'SVM')
+    commandline_to_json(commandline)
     options = commandline[0]
     if commandline[1]:
         raise Exception("unknown arguments: %s" % (parser.parse_known_args()[1]))

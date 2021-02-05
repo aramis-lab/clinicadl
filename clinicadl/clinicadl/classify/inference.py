@@ -5,9 +5,9 @@ from os import strerror, makedirs, listdir
 import errno
 import pathlib
 from clinicadl.tools.deep_learning import create_model, load_model, read_json
-from clinicadl.tools.deep_learning.iotools import return_logger
+from clinicadl.tools.deep_learning.iotools import return_logger, translate_parameters
 from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, compute_num_cnn, load_data_test
-from clinicadl.tools.deep_learning.cnn_utils import test, soft_voting_to_tsvs, mode_level_to_tsvs
+from clinicadl.tools.deep_learning.cnn_utils import test, soft_voting_to_tsvs, mode_level_to_tsvs, get_criterion
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
@@ -23,7 +23,7 @@ def classify(caps_dir,
              prepare_dl=True,
              selection_metrics=None,
              diagnoses=None,
-             verbosity=0):
+             verbose=0):
     """
     This function verifies the input folders, and the existence of the json file
     then it launch the inference stage from a specific model.
@@ -43,10 +43,10 @@ def classify(caps_dir,
         on-the-fly.
         selection_metrics: list of metrics to find best models to be evaluated.
         diagnoses: list of diagnoses to be tested if tsv_path is a folder.
-        verbosity: level of verbosity.
+        verbose: level of verbosity.
 
     """
-    logger = return_logger(verbosity, "classify")
+    logger = return_logger(verbose, "classify")
 
     # Verify that paths exist
     caps_dir = abspath(caps_dir)
@@ -164,6 +164,8 @@ def inference_from_model(caps_dir,
     if diagnoses is not None:
         options.diagnoses = diagnoses
 
+    options = translate_parameters(options)
+
     if options.mode_task == "multicnn":
         num_cnn = compute_num_cnn(caps_dir, tsv_path, options, "test")
     else:
@@ -248,17 +250,12 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
 
     gpu = not model_options.use_cpu
 
-    # Recreate the model with the network described in the json file
-    # Initialize the model
-    model = create_model(model_options.model,
-                         gpu, dropout=model_options.dropout)
-    transformations = get_transforms(model_options.mode,
-                                     model_options.minmaxnormalization)
+    _, all_transforms = get_transforms(model_options.mode, model_options.minmaxnormalization)
 
     test_df = load_data_test(tsv_path, model_options.diagnoses)
 
     # Define loss and optimizer
-    criterion = nn.CrossEntropyLoss()
+    criterion = get_criterion(model_options.loss)
 
     if model_options.mode_task == 'multicnn':
 
@@ -269,8 +266,9 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
                 caps_dir,
                 test_df,
                 model_options.preprocessing,
-                transformations,
-                model_options,
+                train_transformations=None,
+                all_transformations=all_transforms,
+                params=model_options,
                 cnn_index=n,
                 labels=labels
             )
@@ -283,6 +281,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
                 pin_memory=True)
 
             # load the best trained model during the training
+            model = create_model(model_options, test_dataset.size)
             model, best_epoch = load_model(
                 model,
                 join(model_path, 'cnn-%i' % n, selection),
@@ -307,19 +306,15 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
 
     else:
 
-        # Load model from path
-        best_model, best_epoch = load_model(
-            model, join(model_path, selection),
-            gpu, filename='model_best.pth.tar')
-
         # Read/localize the data
         test_dataset = return_dataset(
             model_options.mode,
             caps_dir,
             test_df,
             model_options.preprocessing,
-            transformations,
-            model_options,
+            train_transformations=None,
+            all_transformations=all_transforms,
+            params=model_options,
             labels=labels
         )
 
@@ -330,6 +325,12 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
             shuffle=False,
             num_workers=model_options.nproc,
             pin_memory=True)
+
+        # Load model from path
+        model = create_model(model_options, test_dataset.size)
+        best_model, best_epoch = load_model(
+            model, join(model_path, selection),
+            gpu, filename='model_best.pth.tar')
 
         # Run the model on the data
         predictions_df, metrics = test(

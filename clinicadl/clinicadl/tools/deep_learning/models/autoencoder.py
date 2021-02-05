@@ -4,7 +4,7 @@ from torch import nn
 import torch
 from copy import deepcopy
 
-from .modules import PadMaxPool3d, CropMaxUnpool3d, Flatten, Reshape
+from .modules import PadMaxPool3d, PadMaxPool2d, CropMaxUnpool3d, CropMaxUnpool2d, Flatten, Reshape
 
 
 class AutoEncoder(nn.Module):
@@ -78,8 +78,8 @@ class AutoEncoder(nn.Module):
                 self.level += 1
             elif isinstance(layer, PadMaxPool3d):
                 inv_layers.append(CropMaxUnpool3d(layer.kernel_size, stride=layer.stride))
-            elif isinstance(layer, nn.MaxPool3d):
-                inv_layers.append(nn.MaxUnpool3d(layer.kernel_size, stride=layer.stride))
+            elif isinstance(layer, PadMaxPool2d):
+                inv_layers.append(CropMaxUnpool2d(layer.kernel_size, stride=layer.stride))
             elif isinstance(layer, nn.Linear):
                 inv_layers.append(nn.Linear(layer.out_features, layer.in_features))
             elif isinstance(layer, Flatten):
@@ -136,7 +136,7 @@ def transfer_learning(model, split, source_path=None, gpu=False,
     """
     import argparse
     from os import path
-    from .. import read_json
+    from ..iotools import read_json, translate_parameters
     import logging
 
     if logger is None:
@@ -145,6 +145,7 @@ def transfer_learning(model, split, source_path=None, gpu=False,
     if source_path is not None:
         source_commandline = argparse.Namespace()
         source_commandline = read_json(source_commandline, json_path=path.join(source_path, "commandline.json"))
+        source_commandline = translate_parameters(source_commandline)
         if source_commandline.mode_task == "autoencoder":
             logger.info("A pretrained autoencoder is loaded at path %s" % source_path)
             model = transfer_autoencoder_weights(model, source_path, split)
@@ -177,15 +178,21 @@ def transfer_autoencoder_weights(model, source_path, split):
     from copy import deepcopy
     import os
 
-    decoder = AutoEncoder(model)
+    if not isinstance(model, AutoEncoder):
+        decoder = AutoEncoder(model)
+    else:
+        decoder = model
+
     model_path = os.path.join(source_path, 'fold-%i' % split, 'models', "best_loss", "model_best.pth.tar")
+    source_dict = torch.load(model_path)
 
-    initialize_other_autoencoder(decoder, model_path, difference=0)
+    initialize_other_autoencoder(decoder, source_dict)
 
-    model.features = deepcopy(decoder.encoder)
-    for layer in model.features:
-        if isinstance(layer, PadMaxPool3d):
-            layer.set_new_return(False, False)
+    if not isinstance(model, AutoEncoder):
+        model.features = deepcopy(decoder.encoder)
+        for layer in model.features:
+            if isinstance(layer, PadMaxPool3d):
+                layer.set_new_return(False, False)
 
     return model
 
@@ -193,7 +200,6 @@ def transfer_autoencoder_weights(model, source_path, split):
 def transfer_cnn_weights(model, source_path, split, selection="best_balanced_accuracy", cnn_index=None):
     """
     Set the weights of the model according to the CNN at source path.
-
     :param model: (Module) the model which must be initialized
     :param source_path: (str) path to the source task experiment
     :param split: (int) split number to load
@@ -204,6 +210,9 @@ def transfer_cnn_weights(model, source_path, split, selection="best_balanced_acc
 
     import os
     import torch
+
+    if isinstance(model, AutoEncoder):
+        raise ValueError('Transfer learning from CNN to autoencoder was not implemented.')
 
     model_path = os.path.join(source_path, "fold-%i" % split, "models", selection, "model_best.pth.tar")
     if cnn_index is not None and not os.path.exists(model_path):
@@ -216,36 +225,51 @@ def transfer_cnn_weights(model, source_path, split, selection="best_balanced_acc
     return model
 
 
-def initialize_other_autoencoder(decoder, pretrained_autoencoder_path, difference=0):
+def initialize_other_autoencoder(decoder, source_dict):
     """
     Initialize an autoencoder with another one values even if they have different sizes.
-
     :param decoder: (Autoencoder) Autoencoder constructed from a CNN with the Autoencoder class.
-    :param pretrained_autoencoder_path: (str) path to a pretrained autoencoder weights and biases.
-    :param difference: (int) difference of depth between the pretrained encoder and the new one.
+    :param source_dict: (dict) The result dict produced by save_checkpoint.
     :return: (Autoencoder) initialized autoencoder
     """
 
-    result_dict = torch.load(pretrained_autoencoder_path)
-    parameters_dict = result_dict['model']
-    module_length = int(len(decoder) / decoder.level)
-    difference = difference * module_length
+    try:
+        decoder.load_state_dict(source_dict['model'])
+    except RuntimeError:
+        print("The source and target autoencoders do not have the same size."
+              "The transfer learning task may not work correctly for custom models.")
 
-    for key in parameters_dict.keys():
-        section, number, spec = key.split('.')
-        number = int(number)
-        if section == 'encoder' and number < len(decoder.encoder):
-            data_ptr = eval('decoder.' + section + '[number].' + spec + '.data')
-            data_ptr = parameters_dict[key]
-        elif section == 'decoder':
-            # Deeper autoencoder
-            if difference >= 0:
-                data_ptr = eval('decoder.' + section + '[number + difference].' + spec + '.data')
-                data_ptr = parameters_dict[key]
-            # More shallow autoencoder
-            elif difference < 0 and number < len(decoder.decoder):
-                data_ptr = eval('decoder.' + section + '[number].' + spec + '.data')
-                new_key = '.'.join(['decoder', str(number + difference), spec])
-                data_ptr = parameters_dict[new_key]
+        parameters_dict = source_dict['model']
+        difference = find_maximum_layer(decoder.state_dict()) - find_maximum_layer(parameters_dict)
+
+        for key in parameters_dict.keys():
+            section, number, spec = key.split('.')
+            number = int(number)
+            if section == 'encoder' and number < len(decoder.encoder):
+                data = getattr(getattr(decoder, section)[number], spec).data
+                assert data.shape == parameters_dict[key].shape
+                getattr(getattr(decoder, section)[number], spec).data = parameters_dict[key]
+            elif section == 'decoder':
+                # Deeper target autoencoder
+                if difference >= 0:
+                    data = getattr(getattr(decoder, section)[number + difference], spec).data
+                    assert data.shape == parameters_dict[key].shape
+                    getattr(getattr(decoder, section)[number + difference], spec).data = parameters_dict[key]
+                # More shallow target autoencoder
+                elif difference < 0 and number < len(decoder.decoder):
+                    data = getattr(getattr(decoder, section)[number], spec).data
+                    new_key = '.'.join(['decoder', str(number + abs(difference)), spec])
+                    assert data.shape == parameters_dict[new_key].shape
+                    getattr(getattr(decoder, section)[number], spec).data = parameters_dict[new_key]
 
     return decoder
+
+
+def find_maximum_layer(state_dict):
+    max_layer = 0
+    for key in state_dict.keys():
+        _, num, _ = key.split(".")
+        num = int(num)
+        if num > max_layer:
+            max_layer = num
+    return max_layer
