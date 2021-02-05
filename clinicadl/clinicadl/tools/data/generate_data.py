@@ -203,7 +203,7 @@ def generate_trivial_dataset(caps_dir, output_dir, n_subjects, tsv_path=None, pr
         trivial_image_nii.to_filename(join(path_image, filename))
 
         # Append row to output tsv
-        row = [f'sub-TRI{i}', 'ses-M00', diagnosis_list[label], 60, 'F']
+        row = [f'sub-TRIV{i}', 'ses-M00', diagnosis_list[label], 60, 'F']
         row_df = pd.DataFrame([row], columns=columns)
         output_df = output_df.append(row_df)
 
