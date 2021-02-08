@@ -24,9 +24,12 @@ def cleaning_nan_diagnoses(bids_df, logger):
     """
     Printing the number of missing diagnoses and filling it partially for ADNI datasets
 
-    :param bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-    :param logger: Logger object from logging library
-    :return: cleaned DataFrame
+    Args:
+        bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+        logger: Logger object from logging library
+
+    Returns:
+        cleaned DataFrame
     """
     bids_copy_df = copy(bids_df)
 
@@ -66,9 +69,12 @@ def infer_or_drop_diagnosis(bids_df, logger):
     Deduce the diagnosis when missing from previous and following sessions of the subject. If not identical, the session
     is dropped. Sessions with no diagnosis are also dropped when there are the last sessions of the follow-up.
 
-    :param bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-    :param logger: Logger object from logging library
-    :return: cleaned DataFrame
+    Args:
+        bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+        logger: Logger object from logging library
+
+    Returns:
+        cleaned DataFrame
     """
     bids_copy_df = copy(bids_df)
     found_diag_interpol = 0
@@ -103,10 +109,13 @@ def mod_selection(bids_df, missing_mods_dict, mod='t1w'):
     """
     Select only sessions for which the modality is present
 
-    :param bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-    :param missing_mods_dict: dictionnary of the DataFrames of missing modalities
-    :param mod: the modality used for selection
-    :return: DataFrame
+    Args:
+        bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+        missing_mods_dict: dictionnary of the DataFrames of missing modalities
+        mod: the modality used for selection
+
+    Returns:
+        DataFrame
     """
     bids_copy_df = copy(bids_df)
     if mod is not None:
@@ -125,10 +134,13 @@ def stable_selection(bids_df, diagnosis='AD', logger=None):
     """
     Select only subjects whom diagnosis is identical during the whole follow-up.
 
-    :param bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-    :param logger: Logger object from logging library
-    :param diagnosis: (str) diagnosis selected
-    :return: DataFrame containing only the patients a the stable diagnosis
+    Args:
+        bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+        logger: Logger object from logging library
+        diagnosis: (str) diagnosis selected
+
+    Returns:
+        DataFrame containing only the patients a the stable diagnosis
     """
     if logger is None:
         logger = logging
@@ -168,10 +180,13 @@ def mci_stability(bids_df, horizon_time=36, logger=None):
     """
     A method to label all MCI sessions depending on their stability on the time horizon
 
-    :param bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-    :param horizon_time: (int) time horizon in months
-    :param logger: Logger object from logging library
-    :return: DataFrame with new labels
+    Args:
+        bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+        horizon_time: (int) time horizon in months
+        logger: Logger object from logging library
+
+    Returns:
+        DataFrame with new labels
     """
     if logger is None:
         logger = logging
@@ -271,9 +286,12 @@ def diagnosis_removal(MCI_df, diagnosis_list):
     """
     Removes subjects whom last diagnosis is in the list provided (avoid to keep rMCI and pMCI in sMCI lists).
 
-    :param MCI_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-    :param diagnosis_list: list of diagnoses that will be removed
-    :return: cleaned DataFrame
+    Args:
+        MCI_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+        diagnosis_list: list of diagnoses that will be removed
+
+    Returns:
+        cleaned DataFrame
     """
 
     output_df = copy(MCI_df)
@@ -293,10 +311,13 @@ def apply_restriction(bids_df, restriction_path):
     """
     Application of a restriction (for example after the removal of some subjects after a preprocessing pipeline)
 
-    :param bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-    :param restriction_path: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis'] including
-    all the sessions that can be included
-    :return: The restricted DataFrame
+    Args:
+        bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+        restriction_path: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis'] including
+            all the sessions that can be included
+
+    Returns:
+        The restricted DataFrame
     """
     bids_copy_df = copy(bids_df)
 

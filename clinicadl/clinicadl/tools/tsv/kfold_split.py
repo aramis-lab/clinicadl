@@ -1,6 +1,6 @@
 # coding: utf8
 
-from .tsv_utils import extract_baseline
+from .tsv_utils import extract_baseline, retrieve_longitudinal, remove_sub_labels
 from ..deep_learning.iotools import return_logger
 import shutil
 from sklearn.model_selection import StratifiedKFold
@@ -10,6 +10,69 @@ import pandas as pd
 import numpy as np
 
 sex_dict = {'M': 0, 'F': 1}
+
+
+def write_splits(diagnosis, diagnosis_df, split_label, n_splits,
+                 train_path, test_path, supplementary_diagnoses=None):
+    """
+    Split data at the subject-level in training and test to have equivalent distributions in split_label.
+
+    Args:
+        diagnosis: (str) diagnosis on which the split is done
+        diagnosis_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+        split_label: (str) label on which the split is done (categorical variables)
+        n_splits: (int) Number of folds in the k-fold split
+        train_path: (str) Path to the training data.
+        test_path: (str) Path to the test data.
+        supplementary_diagnoses: (list of str) List of supplementary diagnoses to add to the data.
+
+    Returns:
+        train_df (DataFrame) subjects in the train set
+        test_df (DataFrame) subjects in the test set
+    """
+
+    baseline_df = extract_baseline(diagnosis_df, diagnosis)
+    if split_label is None:
+        diagnoses_list = list(baseline_df.diagnosis)
+        unique = list(set(diagnoses_list))
+        y = np.array([unique.index(x) for x in diagnoses_list])
+    else:
+        stratification_list = list(baseline_df[split_label])
+        unique = list(set(stratification_list))
+        y = np.array([unique.index(x) for x in stratification_list])
+
+    splits = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=2)
+
+    for i, indices in enumerate(splits.split(np.zeros(len(y)), y)):
+        print(f'Split {i}')
+        train_index, test_index = indices
+
+        test_df = baseline_df.iloc[test_index]
+        train_df = baseline_df.iloc[train_index]
+        print(len(test_df))
+        print(len(train_df))
+
+        if supplementary_diagnoses is not None:
+            for supplementary_diagnosis in supplementary_diagnoses:
+                sup_train_df = pd.read_csv(path.join(train_path, f'split-{i}',
+                                                     f'{supplementary_diagnosis}_baseline.tsv'), sep='\t')
+                train_df = pd.concat([train_df, sup_train_df])
+                sup_test_df = pd.read_csv(path.join(test_path, f'split-{i}',
+                                                    f'{supplementary_diagnosis}_baseline.tsv'), sep='\t')
+                test_df = pd.concat([test_df, sup_test_df])
+
+            train_df.reset_index(inplace=True, drop=True)
+            test_df.reset_index(inplace=True, drop=True)
+
+        print(len(test_df))
+        print(len(train_df))
+
+        print(path.join(train_path, f'split-{i}', f'{diagnosis}_baseline.tsv'))
+        train_df.to_csv(path.join(train_path, f'split-{i}', f'{diagnosis}_baseline.tsv'), sep='\t', index=False)
+        test_df.to_csv(path.join(test_path, f'split-{i}', f'{diagnosis}_baseline.tsv'), sep='\t', index=False)
+
+        long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
+        long_train_df.to_csv(path.join(train_path, f'split-{i}', f'{diagnosis}.tsv'), sep='\t', index=False)
 
 
 def split_diagnoses(formatted_data_path,
@@ -39,19 +102,19 @@ def split_diagnoses(formatted_data_path,
     # Read files
     results_path = formatted_data_path
 
-    train_path = path.join(results_path, 'train_splits-' + str(n_splits))
+    train_path = path.join(results_path, f'train_splits-{n_splits}')
     if path.exists(train_path):
         shutil.rmtree(train_path)
     os.makedirs(train_path)
     for i in range(n_splits):
-        os.mkdir(path.join(train_path, 'split-' + str(i)))
+        os.mkdir(path.join(train_path, f'split-{i}'))
 
-    test_path = path.join(results_path, subset_name + '_splits-' + str(n_splits))
+    test_path = path.join(results_path, f'{subset_name}_splits-{n_splits}')
     if path.exists(test_path):
         shutil.rmtree(test_path)
     os.makedirs(test_path)
     for i in range(n_splits):
-        os.mkdir(path.join(test_path, 'split-' + str(i)))
+        os.mkdir(path.join(test_path, f'split-{i}'))
 
     diagnosis_df_paths = os.listdir(results_path)
     diagnosis_df_paths = [x for x in diagnosis_df_paths if x.endswith('.tsv')]
@@ -64,7 +127,7 @@ def split_diagnoses(formatted_data_path,
             diagnosis_df_paths.remove('MCI.tsv')
             MCI_special_treatment = True
         elif 'sMCI.tsv' in diagnosis_df_paths or 'pMCI.tsv' in diagnosis_df_paths:
-            logger.warning("MCI special treatment was deactivated though MCI subgroups were found."
+            logger.warning("MCI special treatment was deactivated though MCI subgroups were found. "
                            "Be aware that it may cause data leakage in transfer learning tasks.")
 
     # The baseline session must be kept before or we are taking all the sessions to mix them
@@ -72,122 +135,25 @@ def split_diagnoses(formatted_data_path,
         diagnosis = diagnosis_df_path.split('.')[0]
 
         diagnosis_df = pd.read_csv(path.join(results_path, diagnosis_df_path), sep='\t')
-        baseline_df = extract_baseline(diagnosis_df, diagnosis)
-        if stratification is None:
-            diagnoses_list = list(baseline_df.diagnosis)
-            unique = list(set(diagnoses_list))
-            y = np.array([unique.index(x) for x in diagnoses_list])
-        else:
-            stratification_list = list(baseline_df[stratification])
-            unique = list(set(stratification_list))
-            y = np.array([unique.index(x) for x in stratification_list])
+        write_splits(diagnosis, diagnosis_df, stratification, n_splits, train_path, test_path)
 
-        splits = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=2)
-
-        for i, indices in enumerate(splits.split(np.zeros(len(y)), y)):
-
-            train_index, test_index = indices
-
-            test_df = baseline_df.iloc[test_index]
-            train_df = baseline_df.iloc[train_index]
-            # Retrieve all sessions for the training set
-            complete_train_df = pd.DataFrame()
-            for idx in train_df.index.values:
-                subject = train_df.loc[idx, 'participant_id']
-                subject_df = diagnosis_df[diagnosis_df.participant_id == subject]
-                complete_train_df = pd.concat([complete_train_df, subject_df])
-
-            complete_train_df.to_csv(path.join(train_path, 'split-' + str(i), str(diagnosis) + '.tsv'),
-                                     sep='\t', index=False)
-            train_df.to_csv(
-                path.join(train_path, 'split-' + str(i), str(diagnosis) + '_baseline.tsv'), sep='\t', index=False)
-            test_df.to_csv(
-                path.join(test_path, 'split-' + str(i), str(diagnosis) + '_baseline.tsv'), sep='\t', index=False)
-
-        logger.info("K-fold split for diagnosis %s is done" % diagnosis)
+        logger.info(f"K-fold split for diagnosis {diagnosis} is done")
 
     if MCI_special_treatment:
 
         # Extraction of MCI subjects without intersection with the sMCI / pMCI train
         diagnosis_df = pd.read_csv(path.join(results_path, 'MCI.tsv'), sep='\t')
         MCI_df = diagnosis_df.set_index(['participant_id', 'session_id'])
-        supplementary_diagnoses = []
-
-        logger.debug('Before subjects removal')
-        sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
-        logger.debug('%i subjects, %i scans' % (len(sub_df), len(diagnosis_df)))
-
-        if 'sMCI.tsv' in diagnosis_df_paths:
-            sMCI_baseline_df = pd.read_csv(path.join(results_path, 'sMCI_baseline.tsv'), sep='\t')
-            for idx in sMCI_baseline_df.index.values:
-                subject = sMCI_baseline_df.loc[idx, 'participant_id']
-                MCI_df.drop(subject, inplace=True, level=0)
-            supplementary_diagnoses.append('sMCI')
-
-            logger.debug('Removed %i subjects based on sMCI label' % len(sMCI_baseline_df))
-            sub_df = MCI_df.reset_index().groupby('participant_id')['session_id'].nunique()
-            logger.debug('%i subjects, %i scans' % (len(sub_df), len(MCI_df)))
-
-        if 'pMCI.tsv' in diagnosis_df_paths:
-            pMCI_baseline_df = pd.read_csv(path.join(results_path, 'pMCI_baseline.tsv'), sep='\t')
-            for idx in pMCI_baseline_df.index.values:
-                subject = pMCI_baseline_df.loc[idx, 'participant_id']
-                MCI_df.drop(subject, inplace=True, level=0)
-            supplementary_diagnoses.append('pMCI')
-
-            logger.debug('Removed %i subjects based on pMCI label' % len(pMCI_baseline_df))
-            sub_df = MCI_df.reset_index().groupby('participant_id')['session_id'].nunique()
-            logger.debug('%i subjects, %i scans' % (len(sub_df), len(MCI_df)))
+        MCI_df, supplementary_diagnoses = remove_sub_labels(MCI_df, ["sMCI", "pMCI"],
+                                                            diagnosis_df_paths, results_path,
+                                                            logger=logger)
 
         if len(supplementary_diagnoses) == 0:
-            raise ValueError('The MCI_sub_categories flag is not needed as there are no intersections with'
+            raise ValueError('The MCI_sub_categories flag is not needed as there are no intersections with '
                              'MCI subcategories.')
 
-        baseline_df = extract_baseline(MCI_df, False)
-        if stratification is None:
-            diagnoses_list = list(baseline_df.diagnosis)
-            unique = list(set(diagnoses_list))
-            y = np.array([unique.index(x) for x in diagnoses_list])
-        else:
-            stratification_list = list(baseline_df[stratification])
-            unique = list(set(stratification_list))
-            y = np.array([unique.index(x) for x in stratification_list])
-
-        splits = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=2)
-
-        for i, indices in enumerate(splits.split(np.zeros(len(y)), y)):
-
-            train_index, test_index = indices
-
-            test_df = baseline_df.iloc[test_index]
-            train_df = baseline_df.iloc[train_index]
-
-            # Add the sub categories
-            for diagnosis in supplementary_diagnoses:
-                sup_train_df = pd.read_csv(path.join(train_path, 'split-' + str(i), str(diagnosis) + '_baseline.tsv'),
-                                           sep='\t')
-                train_df = pd.concat([train_df, sup_train_df])
-                sup_test_df = pd.read_csv(path.join(test_path, 'split-' + str(i), str(diagnosis) + '_baseline.tsv'),
-                                          sep='\t')
-                test_df = pd.concat([test_df, sup_test_df])
-
-            train_df.reset_index(inplace=True, drop=True)
-            test_df.reset_index(inplace=True, drop=True)
-            train_df.diagnosis = ['MCI'] * len(train_df)
-            test_df.diagnosis = ['MCI'] * len(test_df)
-
-            # Retrieve all sessions for the training set
-            complete_train_df = pd.DataFrame()
-            for idx in train_df.index.values:
-                subject = train_df.loc[idx, 'participant_id']
-                subject_df = diagnosis_df[diagnosis_df.participant_id == subject]
-                complete_train_df = pd.concat([complete_train_df, subject_df])
-
-            complete_train_df.to_csv(path.join(train_path, 'split-' + str(i), 'MCI.tsv'),
-                                     sep='\t', index=False)
-            train_df.to_csv(
-                path.join(train_path, 'split-' + str(i), 'MCI_baseline.tsv'), sep='\t', index=False)
-            test_df.to_csv(
-                path.join(test_path, 'split-' + str(i), 'MCI_baseline.tsv'), sep='\t', index=False)
-
+        MCI_df.reset_index(drop=False, inplace=True)
+        logger.debug(MCI_df)
+        write_splits('MCI', MCI_df, stratification, n_splits, train_path, test_path,
+                     supplementary_diagnoses=supplementary_diagnoses)
         logger.info("K-fold split for diagnosis MCI is done")

@@ -3,6 +3,7 @@
 from copy import copy
 import numpy as np
 import pandas as pd
+from os import path
 
 
 def neighbour_session(session, session_list, neighbour):
@@ -159,3 +160,43 @@ def find_label(labels_list, target_label):
             raise ValueError(f"No label was found in {labels_list} for target label {target_label}.")
 
         return found_label
+
+
+def retrieve_longitudinal(df, diagnosis_df):
+    final_df = pd.DataFrame()
+    for idx in df.index.values:
+        subject = df.loc[idx, 'participant_id']
+        row_df = diagnosis_df[diagnosis_df.participant_id == subject]
+        final_df = pd.concat([final_df, row_df])
+
+    return final_df
+
+
+def remove_sub_labels(diagnosis_df, sub_labels, diagnosis_df_paths, results_path,
+                      logger=None):
+
+    from ..deep_learning.iotools import return_logger
+
+    if logger is None:
+        logger = return_logger(2, "remove sub labels")
+
+    supplementary_diagnoses = []
+
+    logger.debug('Before subjects removal')
+    sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
+    logger.debug(f'{len(sub_df)} subjects, {len(diagnosis_df)} scans')
+
+    for label in sub_labels:
+        if f'{label}.tsv' in diagnosis_df_paths:
+            sub_diag_df = pd.read_csv(path.join(results_path, f'{label}.tsv'), sep='\t')
+            sub_diag_baseline_df = extract_baseline(sub_diag_df, label)
+            for idx in sub_diag_baseline_df.index.values:
+                subject = sub_diag_baseline_df.loc[idx, 'participant_id']
+                diagnosis_df.drop(subject, inplace=True, level=0)
+            supplementary_diagnoses.append(label)
+
+            logger.debug(f'Removed {len(sub_diag_baseline_df)} subjects based on {label} label')
+            sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
+            logger.debug(f'{len(sub_df)} subjects, {len(diagnosis_df)} scans')
+
+    return diagnosis_df, supplementary_diagnoses
