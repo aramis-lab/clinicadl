@@ -33,6 +33,8 @@ def group_backprop(options):
 
     if options.tsv_path is None and options.input_dir is None:
         options.multi_cohort = model_options.multi_cohort
+    else:
+        options.multi_cohort = False
     if options.tsv_path is None:
         options.tsv_path = model_options.tsv_path
     if options.input_dir is None:

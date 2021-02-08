@@ -24,6 +24,7 @@ def individual_backprop(options):
         raise ValueError("No folds were found at path %s" % options.model_path)
 
     model_options = argparse.Namespace()
+
     model_options = read_json(model_options, path.join(options.model_path, 'commandline.json'))
     model_options = translate_parameters(model_options)
     model_options.gpu = options.gpu
@@ -33,6 +34,8 @@ def individual_backprop(options):
 
     if options.tsv_path is None and options.input_dir is None:
         options.multi_cohort = model_options.multi_cohort
+    else:
+        options.multi_cohort = False
     if options.tsv_path is None:
         options.tsv_path = model_options.tsv_path
     if options.input_dir is None:
@@ -41,6 +44,12 @@ def individual_backprop(options):
         options.target_diagnosis = options.diagnosis
     options.merged_tsv_path = model_options.merged_tsv_path
     options.predict_atlas_intensities = model_options.predict_atlas_intensities
+
+    for fold in fold_list:
+        main_logger.info(fold)
+        for selection in options.selection:
+            results_path = path.join(options.model_path, fold, 'gradients',
+                                     selection, options.name)
 
     for fold in fold_list:
         main_logger.info(fold)
