@@ -1,4 +1,7 @@
 -r requirements.txt
+isort
+black
 pytest
 pytest-timeout
 pytest-xdist
+pre-commit

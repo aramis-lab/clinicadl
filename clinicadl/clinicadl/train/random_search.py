@@ -7,9 +7,9 @@ from os import path
 
 from ..tools.deep_learning import read_json
 from ..tools.deep_learning.models.random import random_sampling
+from .train_autoencoder import train_autoencoder
 from .train_multiCNN import train_multi_cnn
 from .train_singleCNN import train_single_cnn
-from .train_autoencoder import train_autoencoder
 
 
 def check_and_complete(rs_options):
@@ -20,7 +20,7 @@ def check_and_complete(rs_options):
     Args:
         rs_options: (Namespace) the random search options
     """
-    filename = 'random_search.json'
+    filename = "random_search.json"
 
     default_values = {
         "accumulation_steps": 1,
@@ -48,25 +48,38 @@ def check_and_complete(rs_options):
         "use_extracted_slices": False,
         "wd_bool": True,
         "weight_decay": 4,
-        "sampler": "random"
+        "sampler": "random",
     }
     for name, default_value in default_values.items():
         if not hasattr(rs_options, name):
             setattr(rs_options, name, default_value)
 
-    mandatory_arguments = ['epochs', 'network_type', 'mode',
-                           'tsv_path', 'caps_dir', 'diagnoses', 'preprocessing',
-                           'n_convblocks', 'first_conv_width', 'n_fcblocks']
+    mandatory_arguments = [
+        "epochs",
+        "network_type",
+        "mode",
+        "tsv_path",
+        "caps_dir",
+        "diagnoses",
+        "preprocessing",
+        "n_convblocks",
+        "first_conv_width",
+        "n_fcblocks",
+    ]
 
     for argument in mandatory_arguments:
         if not hasattr(rs_options, argument):
-            raise ValueError(f"The argument {argument} must be specified in {filename}.")
+            raise ValueError(
+                f"The argument {argument} must be specified in {filename}."
+            )
 
 
 def launch_search(options):
 
     rs_options = argparse.Namespace()
-    rs_options = read_json(rs_options, path.join(options.launch_dir, 'random_search.json'))
+    rs_options = read_json(
+        rs_options, path.join(options.launch_dir, "random_search.json")
+    )
     check_and_complete(rs_options)
     random_sampling(rs_options, options)
 

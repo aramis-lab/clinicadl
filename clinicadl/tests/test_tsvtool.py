@@ -1,7 +1,9 @@
 import os
 import shutil
-import pandas as pd
 from os import path
+
+import pandas as pd
+
 from clinicadl.tools.deep_learning.data import load_data, load_data_test
 from clinicadl.tools.tsv.test import run_test_suite
 
@@ -14,8 +16,10 @@ diagnoses = "AD CN MCI pMCI sMCI"
 def test_getlabels():
     """Checks that getlabels is working and that it is coherent with previous version in reference_path"""
     output_path = "data/tsvtool_test"
-    flag_getlabels = not os.system("clinicadl tsvtool getlabels %s %s %s --diagnoses %s -vvv"
-                                   % (merged_tsv, missing_mods, output_path, diagnoses))
+    flag_getlabels = not os.system(
+        f"clinicadl tsvtool getlabels {merged_tsv} {missing_mods} {output_path} "
+        f"--diagnoses {diagnoses} -vvv"
+    )
     assert flag_getlabels
     for file in os.listdir(output_path):
         out_df = pd.read_csv(path.join(output_path, file), sep="\t")
@@ -27,21 +31,28 @@ def test_getlabels():
 
 def test_split():
     """Checks that:
-     -  split and kfold are working
-     -  the loading functions can find the output
-     -  no data leakage is introduced in split and kfold.
-     """
+    -  split and kfold are working
+    -  the loading functions can find the output
+    -  no data leakage is introduced in split and kfold.
+    """
     n_splits = 5
     train_path = path.join(reference_path, "train")
     flag_split = not os.system(f"clinicadl tsvtool split {reference_path} -vvv")
-    flag_kfold = not os.system(f"clinicadl tsvtool kfold {train_path} --n_splits {n_splits} -vvv")
+    flag_kfold = not os.system(
+        f"clinicadl tsvtool kfold {train_path} --n_splits {n_splits} -vvv"
+    )
     assert flag_split
     assert flag_kfold
     flag_load = True
     try:
         _ = load_data_test(path.join(reference_path, "test"), diagnoses.split(" "))
         for fold in range(n_splits):
-            _, _ = load_data(path.join(reference_path, "train"), diagnoses.split(" "), fold, n_splits=n_splits)
+            _, _ = load_data(
+                path.join(reference_path, "train"),
+                diagnoses.split(" "),
+                fold,
+                n_splits=n_splits,
+            )
     except FileNotFoundError:
         flag_load = False
     assert flag_load
@@ -57,9 +68,10 @@ def test_analysis():
     """Checks that analysis can be performed"""
     results_path = path.join("data", "tsvtool", "analysis.tsv")
     ref_analysis_path = path.join("data", "tsvtool", "anonymous_analysis.tsv")
-    flag_analysis = not os.system("clinicadl tsvtool analysis %s %s %s "
-                                  "--diagnoses AD CN MCI sMCI pMCI"
-                                  % (merged_tsv, reference_path, results_path))
+    flag_analysis = not os.system(
+        f"clinicadl tsvtool analysis {merged_tsv} {reference_path} {results_path} "
+        "--diagnoses AD CN MCI sMCI pMCI"
+    )
     assert flag_analysis
     ref_df = pd.read_csv(ref_analysis_path, sep="\t")
     out_df = pd.read_csv(results_path, sep="\t")

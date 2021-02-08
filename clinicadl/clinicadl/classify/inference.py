@@ -1,29 +1,43 @@
 # coding: utf8
 
-from os.path import isdir, join, abspath, exists
-from os import strerror, makedirs, listdir
 import errno
 import pathlib
-from clinicadl.tools.deep_learning import create_model, load_model, read_json
-from clinicadl.tools.deep_learning.iotools import return_logger, translate_parameters
-from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, compute_num_cnn, load_data_test
-from clinicadl.tools.deep_learning.cnn_utils import test, soft_voting_to_tsvs, mode_level_to_tsvs, get_criterion
+from os import listdir, makedirs, strerror
+from os.path import abspath, exists, isdir, join
+
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
+from clinicadl.tools.deep_learning import create_model, load_model, read_json
+from clinicadl.tools.deep_learning.cnn_utils import (
+    get_criterion,
+    mode_level_to_tsvs,
+    soft_voting_to_tsvs,
+    test,
+)
+from clinicadl.tools.deep_learning.data import (
+    compute_num_cnn,
+    get_transforms,
+    load_data_test,
+    return_dataset,
+)
+from clinicadl.tools.deep_learning.iotools import return_logger, translate_parameters
 
-def classify(caps_dir,
-             tsv_path,
-             model_path,
-             prefix_output,
-             labels=True,
-             gpu=True,
-             num_workers=0,
-             batch_size=1,
-             prepare_dl=True,
-             selection_metrics=None,
-             diagnoses=None,
-             verbose=0):
+
+def classify(
+    caps_dir,
+    tsv_path,
+    model_path,
+    prefix_output,
+    labels=True,
+    gpu=True,
+    num_workers=0,
+    batch_size=1,
+    prepare_dl=True,
+    selection_metrics=None,
+    diagnoses=None,
+    verbose=0,
+):
     """
     This function verifies the input folders, and the existence of the json file
     then it launch the inference stage from a specific model.
@@ -54,26 +68,26 @@ def classify(caps_dir,
     tsv_path = abspath(tsv_path)
 
     if not isdir(caps_dir):
-        logger.error("Folder containing MRIs was not found, please verify its location.")
-        raise FileNotFoundError(
-            errno.ENOENT, strerror(errno.ENOENT), caps_dir)
+        logger.error(
+            "Folder containing MRIs was not found, please verify its location."
+        )
+        raise FileNotFoundError(errno.ENOENT, strerror(errno.ENOENT), caps_dir)
     if not isdir(model_path):
-        logger.error("A valid model in the path was not found. Donwload them from aramislab.inria.fr")
-        raise FileNotFoundError(
-            errno.ENOENT, strerror(errno.ENOENT), model_path)
+        logger.error(
+            "A valid model in the path was not found. Donwload them from aramislab.inria.fr"
+        )
+        raise FileNotFoundError(errno.ENOENT, strerror(errno.ENOENT), model_path)
     if not exists(tsv_path):
-        raise FileNotFoundError(
-            errno.ENOENT, strerror(errno.ENOENT), tsv_path)
+        raise FileNotFoundError(errno.ENOENT, strerror(errno.ENOENT), tsv_path)
 
     # Infer json file from model_path (suppose that json file is at the same
     # folder)
 
-    json_file = join(model_path, 'commandline.json')
+    json_file = join(model_path, "commandline.json")
 
     if not exists(json_file):
         logger.error("Json file doesn't exist")
-        raise FileNotFoundError(
-            errno.ENOENT, strerror(errno.ENOENT), json_file)
+        raise FileNotFoundError(errno.ENOENT, strerror(errno.ENOENT), json_file)
 
     inference_from_model(
         caps_dir,
@@ -88,23 +102,25 @@ def classify(caps_dir,
         prepare_dl,
         selection_metrics,
         diagnoses,
-        logger
+        logger,
     )
 
 
-def inference_from_model(caps_dir,
-                         tsv_path,
-                         model_path=None,
-                         json_file=None,
-                         prefix=None,
-                         labels=True,
-                         gpu=True,
-                         num_workers=0,
-                         batch_size=1,
-                         prepare_dl=False,
-                         selection_metrics=None,
-                         diagnoses=None,
-                         logger=None):
+def inference_from_model(
+    caps_dir,
+    tsv_path,
+    model_path=None,
+    json_file=None,
+    prefix=None,
+    labels=True,
+    gpu=True,
+    num_workers=0,
+    batch_size=1,
+    prepare_dl=False,
+    selection_metrics=None,
+    diagnoses=None,
+    logger=None,
+):
     """
     Inference from previously trained model.
 
@@ -148,8 +164,9 @@ def inference_from_model(caps_dir,
         logger = logging
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("model_path", type=str,
-                        help="Path to the trained model folder.")
+    parser.add_argument(
+        "model_path", type=str, help="Path to the trained model folder."
+    )
     options = parser.parse_args([model_path])
     options = read_json(options, json_path=json_file)
 
@@ -179,31 +196,43 @@ def inference_from_model(caps_dir,
     for fold_dir in currentDirectory.glob(currentPattern):
         fold = int(str(fold_dir).split("-")[-1])
         fold_path = join(model_path, fold_dir)
-        model_path = join(fold_path, 'models')
+        model_path = join(fold_path, "models")
 
         for selection_metric in selection_metrics:
 
-            if options.mode_task == 'multicnn':
+            if options.mode_task == "multicnn":
                 for cnn_dir in listdir(model_path):
-                    if not exists(join(model_path, cnn_dir, "best_%s" % selection_metric, 'model_best.pth.tar')):
+                    if not exists(
+                        join(
+                            model_path,
+                            cnn_dir,
+                            f"best_{selection_metric}",
+                            "model_best.pth.tar",
+                        )
+                    ):
                         raise FileNotFoundError(
                             errno.ENOENT,
                             strerror(errno.ENOENT),
-                            join(model_path,
-                                 cnn_dir,
-                                 "best_%s" % selection_metric,
-                                 'model_best.pth.tar')
+                            join(
+                                model_path,
+                                cnn_dir,
+                                f"best_{selection_metric}",
+                                "model_best.pth.tar",
+                            ),
                         )
 
             else:
-                full_model_path = join(model_path, "best_%s" % selection_metric)
-                if not exists(join(full_model_path, 'model_best.pth.tar')):
+                full_model_path = join(model_path, f"best_{selection_metric}")
+                if not exists(join(full_model_path, "model_best.pth.tar")):
                     raise FileNotFoundError(
                         errno.ENOENT,
                         strerror(errno.ENOENT),
-                        join(full_model_path, 'model_best.pth.tar'))
+                        join(full_model_path, "model_best.pth.tar"),
+                    )
 
-            performance_dir = join(fold_path, 'cnn_classification', 'best_%s' % selection_metric)
+            performance_dir = join(
+                fold_path, "cnn_classification", f"best_{selection_metric}"
+            )
 
             makedirs(performance_dir, exist_ok=True)
 
@@ -216,14 +245,14 @@ def inference_from_model(caps_dir,
                 prefix,
                 currentDirectory,
                 fold,
-                "best_%s" % selection_metric,
+                f"best_{selection_metric}",
                 labels=labels,
                 num_cnn=num_cnn,
-                logger=logger
+                logger=logger,
             )
 
             # Soft voting
-            if hasattr(options, 'selection_threshold'):
+            if hasattr(options, "selection_threshold"):
                 selection_thresh = options.selection_threshold
             else:
                 selection_thresh = 0.8
@@ -231,33 +260,55 @@ def inference_from_model(caps_dir,
             # Write files at the image level (for patch, roi and slice).
             # It assumes the existance of validation files to perform soft-voting
             if options.mode in ["patch", "roi", "slice"]:
-                soft_voting_to_tsvs(currentDirectory, fold, "best_%s" % selection_metric, options.mode,
-                                    prefix, num_cnn=num_cnn, selection_threshold=selection_thresh,
-                                    use_labels=labels, logger=logger)
+                soft_voting_to_tsvs(
+                    currentDirectory,
+                    fold,
+                    f"best_{selection_metric}",
+                    options.mode,
+                    prefix,
+                    num_cnn=num_cnn,
+                    selection_threshold=selection_thresh,
+                    use_labels=labels,
+                    logger=logger,
+                )
 
-            logger.info("Prediction results and metrics are written in the "
-                        "following folder: %s" % performance_dir)
+            logger.info(
+                "Prediction results and metrics are written in the "
+                f"following folder: {performance_dir}"
+            )
 
 
-def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
-                                 prefix, output_dir, fold, selection,
-                                 labels=True, num_cnn=None, logger=None):
-    from os.path import join
+def inference_from_model_generic(
+    caps_dir,
+    tsv_path,
+    model_path,
+    model_options,
+    prefix,
+    output_dir,
+    fold,
+    selection,
+    labels=True,
+    num_cnn=None,
+    logger=None,
+):
     import logging
+    from os.path import join
 
     if logger is None:
         logger = logging
 
     gpu = not model_options.use_cpu
 
-    _, all_transforms = get_transforms(model_options.mode, model_options.minmaxnormalization)
+    _, all_transforms = get_transforms(
+        model_options.mode, model_options.minmaxnormalization
+    )
 
     test_df = load_data_test(tsv_path, model_options.diagnoses)
 
     # Define loss and optimizer
     criterion = get_criterion(model_options.loss)
 
-    if model_options.mode_task == 'multicnn':
+    if model_options.mode_task == "multicnn":
 
         for n in range(num_cnn):
 
@@ -270,7 +321,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
                 all_transformations=all_transforms,
                 params=model_options,
                 cnn_index=n,
-                labels=labels
+                labels=labels,
             )
 
             test_loader = DataLoader(
@@ -278,15 +329,17 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
                 batch_size=model_options.batch_size,
                 shuffle=False,
                 num_workers=model_options.nproc,
-                pin_memory=True)
+                pin_memory=True,
+            )
 
             # load the best trained model during the training
             model = create_model(model_options, test_dataset.size)
             model, best_epoch = load_model(
                 model,
-                join(model_path, 'cnn-%i' % n, selection),
+                join(model_path, f"cnn-{n}", selection),
                 gpu,
-                filename='model_best.pth.tar')
+                filename="model_best.pth.tar",
+            )
 
             cnn_df, cnn_metrics = test(
                 model,
@@ -294,15 +347,31 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
                 gpu,
                 criterion,
                 mode=model_options.mode,
-                use_labels=labels
+                use_labels=labels,
             )
 
             if labels:
-                logger.info("%s balanced accuracy is %f for %s %i and model selected on %s"
-                            % (prefix, cnn_metrics["balanced_accuracy"], model_options.mode, n, selection))
+                logger.info(
+                    "%s balanced accuracy is %f for %s %i and model selected on %s"
+                    % (
+                        prefix,
+                        cnn_metrics["balanced_accuracy"],
+                        model_options.mode,
+                        n,
+                        selection,
+                    )
+                )
 
-            mode_level_to_tsvs(output_dir, cnn_df, cnn_metrics, fold, selection, model_options.mode,
-                               dataset=prefix, cnn_index=n)
+            mode_level_to_tsvs(
+                output_dir,
+                cnn_df,
+                cnn_metrics,
+                fold,
+                selection,
+                model_options.mode,
+                dataset=prefix,
+                cnn_index=n,
+            )
 
     else:
 
@@ -315,7 +384,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
             train_transformations=None,
             all_transformations=all_transforms,
             params=model_options,
-            labels=labels
+            labels=labels,
         )
 
         # Load the data
@@ -324,13 +393,14 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
             batch_size=model_options.batch_size,
             shuffle=False,
             num_workers=model_options.nproc,
-            pin_memory=True)
+            pin_memory=True,
+        )
 
         # Load model from path
         model = create_model(model_options, test_dataset.size)
         best_model, best_epoch = load_model(
-            model, join(model_path, selection),
-            gpu, filename='model_best.pth.tar')
+            model, join(model_path, selection), gpu, filename="model_best.pth.tar"
+        )
 
         # Run the model on the data
         predictions_df, metrics = test(
@@ -339,12 +409,21 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
             gpu,
             criterion,
             mode=model_options.mode,
-            use_labels=labels
+            use_labels=labels,
         )
 
         if labels:
-            logger.info("%s level %s balanced accuracy is %f for model selected on %s"
-                        % (model_options.mode, prefix, metrics["balanced_accuracy"], selection))
+            logger.info(
+                "%s level %s balanced accuracy is %f for model selected on %s"
+                % (model_options.mode, prefix, metrics["balanced_accuracy"], selection)
+            )
 
-        mode_level_to_tsvs(output_dir, predictions_df, metrics, fold, selection, model_options.mode,
-                           dataset=prefix)
+        mode_level_to_tsvs(
+            output_dir,
+            predictions_df,
+            metrics,
+            fold,
+            selection,
+            model_options.mode,
+            dataset=prefix,
+        )

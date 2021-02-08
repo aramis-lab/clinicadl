@@ -5,7 +5,6 @@ from distutils.util import strtobool
 
 from colorama import Fore
 
-
 TRAIN_CATEGORIES = {
     # General parent group
     'POSITIONAL': '%sPositional arguments%s' % (Fore.BLUE, Fore.RESET),
@@ -36,8 +35,11 @@ TRAIN_CATEGORIES = {
 
 def extract_tensors(args):
     import sys
+
+    from clinica.pipelines.deeplearning_prepare_data.deeplearning_prepare_data_cli import (
+        DeepLearningPrepareDataCLI,
+    )
     from clinica.utils.stream import FilterOut
-    from clinica.pipelines.deeplearning_prepare_data.deeplearning_prepare_data_cli import DeepLearningPrepareDataCLI
 
     sys.stdout = FilterOut(sys.stdout)
 
@@ -68,9 +70,11 @@ def qc_func(args):
 
 
 def generate_data_func(args):
-    from .tools.data.generate_data import (generate_random_dataset,
-                                           generate_trivial_dataset,
-                                           generate_shepplogan_dataset)
+    from .tools.data.generate_data import (
+        generate_random_dataset,
+        generate_shepplogan_dataset,
+        generate_trivial_dataset,
+    )
 
     if args.mode == "random":
         generate_random_dataset(
@@ -371,8 +375,9 @@ def parse_command_line():
     # generate_shepplogan_parser.set_defaults(func=generate_data_func)
 
     # Preprocessing
-    from clinica.pipelines.t1_linear.t1_linear_cli import T1LinearCLI
     from clinica.engine.cmdparser import init_cmdparser_objects
+    from clinica.pipelines.t1_linear.t1_linear_cli import T1LinearCLI
+
     from .preprocessing.t1_extensive.t1_extensive_cli import T1ExtensiveCli
     preprocessing_parser = subparser.add_parser(
         'preprocessing',

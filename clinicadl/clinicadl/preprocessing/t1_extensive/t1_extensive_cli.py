@@ -32,9 +32,10 @@ class T1ExtensiveCli(ce.CmdParser):
 
     def run_command(self, args):
         """Run the pipeline with defined args."""
+        from clinica.utils.ux import print_crash_files_and_exit, print_end_pipeline
         from networkx import Graph
+
         from .t1_extensive_pipeline import T1Extensive
-        from clinica.utils.ux import print_end_pipeline, print_crash_files_and_exit
 
         pipeline = T1Extensive(
             caps_directory=self.absolute_path(args.caps_directory),

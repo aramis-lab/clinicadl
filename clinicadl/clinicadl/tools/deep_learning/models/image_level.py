@@ -1,7 +1,8 @@
 # coding: utf8
 
-from .modules import PadMaxPool3d, Flatten
 import torch.nn as nn
+
+from .modules import Flatten, PadMaxPool3d
 
 """
 All the architectures are built here
@@ -14,6 +15,7 @@ class Conv5_FC3(nn.Module):
 
     Image level architecture used on Minimal preprocessing
     """
+
     def __init__(self, dropout=0.5):
         super(Conv5_FC3, self).__init__()
 
@@ -22,41 +24,32 @@ class Conv5_FC3(nn.Module):
             nn.BatchNorm3d(8),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
             nn.Conv3d(8, 16, 3, padding=1),
             nn.BatchNorm3d(16),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
             nn.Conv3d(16, 32, 3, padding=1),
             nn.BatchNorm3d(32),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
             nn.Conv3d(32, 64, 3, padding=1),
             nn.BatchNorm3d(64),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
             nn.Conv3d(64, 128, 3, padding=1),
             nn.BatchNorm3d(128),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
         )
 
         self.classifier = nn.Sequential(
             Flatten(),
             nn.Dropout(p=dropout),
-
             nn.Linear(128 * 6 * 7 * 6, 1300),
             nn.ReLU(),
-
             nn.Linear(1300, 50),
             nn.ReLU(),
-
-            nn.Linear(50, 2)
-
+            nn.Linear(50, 2),
         )
 
         self.flattened_shape = [-1, 128, 6, 7, 6]
@@ -74,6 +67,7 @@ class Conv5_FC3_mni(nn.Module):
 
     Image level architecture used on Extensive preprocessing
     """
+
     def __init__(self, dropout=0.5):
         super(Conv5_FC3_mni, self).__init__()
 
@@ -82,41 +76,32 @@ class Conv5_FC3_mni(nn.Module):
             nn.BatchNorm3d(8),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
             nn.Conv3d(8, 16, 3, padding=1),
             nn.BatchNorm3d(16),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
             nn.Conv3d(16, 32, 3, padding=1),
             nn.BatchNorm3d(32),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
             nn.Conv3d(32, 64, 3, padding=1),
             nn.BatchNorm3d(64),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
             nn.Conv3d(64, 128, 3, padding=1),
             nn.BatchNorm3d(128),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
         )
 
         self.classifier = nn.Sequential(
             Flatten(),
             nn.Dropout(p=dropout),
-
             nn.Linear(128 * 4 * 5 * 4, 1300),
             nn.ReLU(),
-
             nn.Linear(1300, 50),
             nn.ReLU(),
-
-            nn.Linear(50, 2)
-
+            nn.Linear(50, 2),
         )
 
         self.flattened_shape = [-1, 128, 4, 5, 4]
@@ -134,6 +119,7 @@ class Conv6_FC3(nn.Module):
 
     Image level architecture used on Minimal preprocessing
     """
+
     def __init__(self, dropout=0.5):
         super(Conv6_FC3, self).__init__()
 
@@ -142,27 +128,22 @@ class Conv6_FC3(nn.Module):
             nn.BatchNorm3d(8),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
             nn.Conv3d(8, 16, 3, padding=1),
             nn.BatchNorm3d(16),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
             nn.Conv3d(16, 32, 3, padding=1),
             nn.BatchNorm3d(32),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
             nn.Conv3d(32, 64, 3, padding=1),
             nn.BatchNorm3d(64),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
             nn.Conv3d(64, 128, 3, padding=1),
             nn.BatchNorm3d(128),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
             nn.Conv3d(128, 256, 3, padding=1),
             nn.BatchNorm3d(256),
             nn.ReLU(),
@@ -172,15 +153,11 @@ class Conv6_FC3(nn.Module):
         self.classifier = nn.Sequential(
             Flatten(),
             nn.Dropout(p=dropout),
-
             nn.Linear(256 * 3 * 4 * 3, 1000),
             nn.ReLU(),
-
             nn.Linear(1000, 50),
             nn.ReLU(),
-
-            nn.Linear(50, 2)
-
+            nn.Linear(50, 2),
         )
 
         self.flattened_shape = [-1, 256, 3, 4, 3]

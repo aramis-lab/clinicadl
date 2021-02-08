@@ -22,19 +22,21 @@ def get_mean_image_population(caps_directory, tsv, template_image):
     :param tsv:
     :return:
     """
-    import pandas as pd
     import os
+
     import nibabel as nib
     import numpy as np
+    import pandas as pd
 
-    os.makedirs(os.path.join(caps_directory, 'group'), exist_ok=True)
+    os.makedirs(os.path.join(caps_directory, "group"), exist_ok=True)
 
-    df = pd.read_csv(tsv, sep='\t')
-    if ('session_id' != list(df.columns.values)[1]) and (
-                'participant_id' != list(df.columns.values)[0]):
-        raise Exception('the data file is not in the correct format.')
-    participant_id = list(df['participant_id'])
-    session_id = list(df['session_id'])
+    df = pd.read_csv(tsv, sep="\t")
+    if ("session_id" != list(df.columns.values)[1]) and (
+        "participant_id" != list(df.columns.values)[0]
+    ):
+        raise Exception("the data file is not in the correct format.")
+    participant_id = list(df["participant_id"])
+    session_id = list(df["session_id"])
 
     # get the template image info:
     template_image_data = nib.load(template_image)
@@ -42,10 +44,25 @@ def get_mean_image_population(caps_directory, tsv, template_image):
     header = template_image_data.header
     affine = template_image_data.affine
 
-    final_array = np.empty((template_image_array.shape[0], template_image_array.shape[1], template_image_array.shape[2], len(participant_id)))
+    final_array = np.empty(
+        (
+            template_image_array.shape[0],
+            template_image_array.shape[1],
+            template_image_array.shape[2],
+            len(participant_id),
+        )
+    )
 
     for i in range(len(participant_id)):
-        image = os.path.join(caps_directory, 'subjects', participant_id[i], session_id[i], 't1', 'preprocessing_dl', participant_id[i] + '_' + session_id[i] + '_space-MNI_res-1x1x1.nii.gz')
+        image = os.path.join(
+            caps_directory,
+            "subjects",
+            participant_id[i],
+            session_id[i],
+            "t1",
+            "preprocessing_dl",
+            participant_id[i] + "_" + session_id[i] + "_space-MNI_res-1x1x1.nii.gz",
+        )
         image_data = nib.load(image)
         image_array = image_data.get_data()
         final_array[..., i] = image_array
@@ -55,4 +72,6 @@ def get_mean_image_population(caps_directory, tsv, template_image):
 
     # save the mean image as nifti
     mean_image = nib.Nifti1Image(final_mean_array, affine, header)
-    nib.save(mean_image, os.path.join(caps_directory, 'group', 'mean_population.nii.gz'))
+    nib.save(
+        mean_image, os.path.join(caps_directory, "group", "mean_population.nii.gz")
+    )

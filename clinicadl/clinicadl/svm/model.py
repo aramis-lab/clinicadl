@@ -1,10 +1,16 @@
 # coding: utf8
 
-from os import path
-import numpy as np
 import os
-from .classification_utils import KFoldCV, CAPSVoxelBasedInput, apply_best_parameters_each_split
-from clinica.pipelines.machine_learning import base, algorithm
+from os import path
+
+import numpy as np
+from clinica.pipelines.machine_learning import algorithm, base
+
+from .classification_utils import (
+    CAPSVoxelBasedInput,
+    KFoldCV,
+    apply_best_parameters_each_split,
+)
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"
@@ -22,9 +28,25 @@ class VB_KFold_DualSVM(base.MLWorkflow):
     This is a specific implementation of KFold with DualSVM, in which case the data split has been pre-defined.
     """
 
-    def __init__(self, caps_directory, diagnoses_tsv, group_id, image_type, output_dir, fwhm=8,
-                 modulated="on", pvc=None, precomputed_kernel=None, mask_zeros=True, n_threads=15, n_folds=5,
-                 grid_search_folds=10, balanced=True, c_range=np.logspace(-6, 2, 17), splits_indices=None):
+    def __init__(
+        self,
+        caps_directory,
+        diagnoses_tsv,
+        group_id,
+        image_type,
+        output_dir,
+        fwhm=8,
+        modulated="on",
+        pvc=None,
+        precomputed_kernel=None,
+        mask_zeros=True,
+        n_threads=15,
+        n_folds=5,
+        grid_search_folds=10,
+        balanced=True,
+        c_range=np.logspace(-6, 2, 17),
+        splits_indices=None,
+    ):
 
         # Here some parameters selected for this task
 
@@ -42,8 +64,17 @@ class VB_KFold_DualSVM(base.MLWorkflow):
         # In this case we are running a voxel based input approach
         #
 
-        self._input = CAPSVoxelBasedInput(caps_directory, diagnoses_tsv, group_id,
-                                          image_type, fwhm, modulated, pvc, mask_zeros, precomputed_kernel)
+        self._input = CAPSVoxelBasedInput(
+            caps_directory,
+            diagnoses_tsv,
+            group_id,
+            image_type,
+            fwhm,
+            modulated,
+            pvc,
+            mask_zeros,
+            precomputed_kernel,
+        )
 
         self._validation = None
         self._algorithm = None
@@ -60,21 +91,28 @@ class VB_KFold_DualSVM(base.MLWorkflow):
         # Look at algorithm.py to understand the input necessary for each method
         # input parameters were chosen previously
 
-        self._algorithm = algorithm.DualSVMAlgorithm(kernel,
-                                                     y,
-                                                     balanced=self._balanced,
-                                                     grid_search_folds=self._grid_search_folds,
-                                                     c_range=self._c_range,
-                                                     n_threads=self._n_threads)
+        self._algorithm = algorithm.DualSVMAlgorithm(
+            kernel,
+            y,
+            balanced=self._balanced,
+            grid_search_folds=self._grid_search_folds,
+            c_range=self._c_range,
+            n_threads=self._n_threads,
+        )
         # Here validation type is selected, it's the K fold cross-validation
 
         self._validation = KFoldCV(self._algorithm)
 
-        classifier, best_params, results = self._validation.validate(y, n_threads=self._n_threads, splits_indices=self._splits_indices, n_folds=self._n_folds)
+        classifier, best_params, results = self._validation.validate(
+            y,
+            n_threads=self._n_threads,
+            splits_indices=self._splits_indices,
+            n_folds=self._n_folds,
+        )
 
         # Creation of the path where all the results will be saved
 
-        classifier_dir = path.join(self._output_dir, 'classifier')
+        classifier_dir = path.join(self._output_dir, "classifier")
         os.makedirs(classifier_dir, exist_ok=True)
 
         # Here we have selected what we want save
@@ -85,11 +123,22 @@ class VB_KFold_DualSVM(base.MLWorkflow):
         self._input.save_weights_as_nifti(weights, classifier_dir)
         # save the model for each split only fitting with the training data
         for n_fold in range(self._n_folds):
-            svc, _, train_index = apply_best_parameters_each_split(kernel, x, y, results, self._balanced, n_fold, self._diagnoses_tsv, self._output_dir)
-            classifier_dir = path.join(self._output_dir, 'classifier', 'fold_' + str(n_fold))
+            svc, _, train_index = apply_best_parameters_each_split(
+                kernel,
+                x,
+                y,
+                results,
+                self._balanced,
+                n_fold,
+                self._diagnoses_tsv,
+                self._output_dir,
+            )
+            classifier_dir = path.join(
+                self._output_dir, "classifier", "fold_" + str(n_fold)
+            )
             if not path.exists(classifier_dir):
                 os.makedirs(classifier_dir)
             self._algorithm.save_classifier(svc, classifier_dir)
 
             # save the train index for recontruction purpose
-            np.savetxt(path.join(classifier_dir, 'train_index.txt'), train_index)
+            np.savetxt(path.join(classifier_dir, "train_index.txt"), train_index)
