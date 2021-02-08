@@ -51,12 +51,6 @@ def individual_backprop(options):
             results_path = path.join(options.model_path, fold, 'gradients',
                                      selection, options.name)
 
-    for fold in fold_list:
-        main_logger.info(fold)
-        for selection in options.selection:
-            results_path = path.join(options.model_path, fold, 'gradients',
-                                     selection, options.name)
-
             criterion = get_criterion(model_options.loss)
 
             # Data management (remove data not well predicted by the CNN)
