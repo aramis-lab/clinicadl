@@ -17,8 +17,7 @@ def check_and_complete(rs_options):
     This function initializes fields so a random model can be sampled.
     Some fields are mandatory and cannot be initialized by default; this will raise an issue if they are missing.
 
-    Args:
-        rs_options: (Namespace) the random search options
+    :param rs_options: (Namespace) the random search options
     """
     filename = 'random_search.json'
 
@@ -60,7 +59,7 @@ def check_and_complete(rs_options):
 
     for argument in mandatory_arguments:
         if not hasattr(rs_options, argument):
-            raise ValueError(f"The argument {argument} must be specified in {filename}.")
+            raise ValueError("The argument %s must be specified in %s." % (argument, filename))
 
 
 def launch_search(options):
