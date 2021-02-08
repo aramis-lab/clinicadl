@@ -5,6 +5,7 @@ import nibabel as nib
 from torch.utils.data import DataLoader
 import argparse
 import matplotlib.pyplot as plt
+import warnings
 
 from clinicadl.tools.deep_learning.iotools import read_json, commandline_to_json, translate_parameters, return_logger
 from clinicadl.tools.deep_learning.cnn_utils import get_criterion, sort_predicted
@@ -22,37 +23,44 @@ def individual_backprop(options):
     if len(fold_list) == 0:
         raise ValueError("No folds were found at path %s" % options.model_path)
 
+    model_options = argparse.Namespace()
+    model_options.gpu = options.gpu
+    model_options = read_json(model_options, path.join(options.model_path, 'commandline.json'))
+    model_options = translate_parameters(model_options)
+
+    if options.tsv_path is None and options.input_dir is None:
+        options.multi_cohort = model_options.multi_cohort
+    else:
+        options.multi_cohort = False
+    if options.tsv_path is None:
+        options.tsv_path = model_options.tsv_path
+    if options.input_dir is None:
+        options.input_dir = model_options.input_dir
+    if options.target_diagnosis is None:
+        options.target_diagnosis = options.diagnosis
+
     for fold in fold_list:
         main_logger.info(fold)
         for selection in options.selection:
             results_path = path.join(options.model_path, fold, 'gradients',
                                      selection, options.name)
 
-            model_options = argparse.Namespace()
-            model_options.gpu = options.gpu
-            model_options = read_json(model_options, path.join(options.model_path, 'commandline.json'))
-            model_options = translate_parameters(model_options)
-
-            if options.tsv_path is None:
-                options.tsv_path = model_options.tsv_path
-            if options.input_dir is None:
-                options.input_dir = model_options.input_dir
-            if options.target_diagnosis is None:
-                options.target_diagnosis = options.diagnosis
-
             criterion = get_criterion(model_options.loss)
 
             # Data management (remove data not well predicted by the CNN)
-            training_df = load_data_test(options.tsv_path, [options.diagnosis], baseline=options.baseline)
+            training_df = load_data_test(options.tsv_path, [options.diagnosis], baseline=options.baseline,
+                                         multi_cohort=options.multi_cohort)
             training_df.reset_index(drop=True, inplace=True)
 
             # Model creation
             _, all_transforms = get_transforms(model_options.mode,
                                                minmaxnormalization=model_options.minmaxnormalization)
-            data_example = return_dataset(model_options.mode, options.input_dir,
-                                          training_df, model_options.preprocessing,
-                                          train_transformations=None, all_transformations=all_transforms,
-                                          params=options)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                data_example = return_dataset(model_options.mode, options.input_dir,
+                                              training_df, model_options.preprocessing,
+                                              train_transformations=None, all_transformations=all_transforms,
+                                              params=options)
 
             model = create_model(model_options, data_example.size)
             model_dir = os.path.join(options.model_path, fold, 'models', selection)
@@ -71,10 +79,12 @@ def individual_backprop(options):
                 # Save the tsv files used for the saliency maps
                 training_df.to_csv(path.join('data.tsv'), sep='\t', index=False)
 
-                data_train = return_dataset(model_options.mode, options.input_dir,
-                                            training_df, model_options.preprocessing,
-                                            train_transformations=None, all_transformations=all_transforms,
-                                            params=options)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    data_train = return_dataset(model_options.mode, options.input_dir,
+                                                training_df, model_options.preprocessing,
+                                                train_transformations=None, all_transformations=all_transforms,
+                                                params=options)
 
                 train_loader = DataLoader(data_train,
                                           batch_size=options.batch_size,

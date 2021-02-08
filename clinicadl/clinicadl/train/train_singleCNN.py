@@ -55,7 +55,8 @@ def train_single_cnn(params):
             fi,
             n_splits=params.n_splits,
             baseline=params.baseline,
-            logger=main_logger
+            logger=main_logger,
+            multi_cohort=params.multi_cohort
         )
 
         data_train = return_dataset(params.mode, params.input_dir, training_df, params.preprocessing,

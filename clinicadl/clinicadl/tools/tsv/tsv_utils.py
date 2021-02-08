@@ -3,6 +3,7 @@
 from copy import copy
 import numpy as np
 import pandas as pd
+from os import path
 
 
 def neighbour_session(session, session_list, neighbour):
@@ -76,39 +77,40 @@ def next_session(subject_df, session_orig):
             raise ValueError('The argument session is the last session')
 
 
-def baseline_df(diagnosis_df, set_index=True):
+def extract_baseline(diagnosis_df, diagnosis, set_index=True):
     from copy import deepcopy
 
     if set_index:
         all_df = diagnosis_df.set_index(['participant_id', 'session_id'])
     else:
         all_df = deepcopy(diagnosis_df)
-    columns = ['participant_id', 'session_id'] + all_df.columns.values.tolist()
+
     result_df = pd.DataFrame()
     for subject, subject_df in all_df.groupby(level=0):
-        first_session_id = first_session(subject_df)
-        data_baseline = [[subject, first_session_id] + all_df.loc[(subject, first_session_id)].values.tolist()]
-        subject_baseline_df = pd.DataFrame(data_baseline, columns=columns)
+        baseline = first_session(subject_df)
+        subject_baseline_df = pd.DataFrame(data=[[subject, baseline] +
+                                                 subject_df.loc[(subject, baseline)].tolist()],
+                                           columns=["participant_id", "session_id"] + subject_df.columns.values.tolist())
         result_df = pd.concat([result_df, subject_baseline_df])
 
+    result_df["diagnosis"] = [diagnosis] * len(result_df)
     result_df.reset_index(inplace=True, drop=True)
 
     return result_df
 
 
 def chi2(x_test, x_train):
+    from scipy.stats import chisquare
+
     # Look for chi2 computation
-    p_expectedF = np.sum(x_train) / len(x_train)
-    p_expectedM = 1 - p_expectedF
+    total_categories = np.concatenate([x_test, x_train])
+    unique_categories = np.unique(total_categories)
+    f_obs = [(x_test == category).sum() / len(x_test) for category in unique_categories]
+    f_exp = [(x_train == category).sum() / len(x_train) for category in unique_categories]
 
-    expectedF = p_expectedF * len(x_test)
-    expectedM = p_expectedM * len(x_test)
-    observedF = np.sum(x_test)
-    observedM = len(x_test) - np.sum(x_test)
+    T, p = chisquare(f_obs, f_exp)
 
-    T = (expectedF - observedF) ** 2 / expectedF + (expectedM - observedM) ** 2 / expectedM
-
-    return T
+    return T, p
 
 
 def add_demographics(df, demographics_df, diagnosis):
@@ -125,6 +127,25 @@ def add_demographics(df, demographics_df, diagnosis):
     return out_df
 
 
+def remove_unicity(values_list):
+    """Count the values of each class and label all the classes with only one label under the same label."""
+    unique_classes, counts = np.unique(values_list, return_counts=True)
+    one_sub_classes = unique_classes[(counts == 1)]
+    for class_element in one_sub_classes:
+        values_list[values_list.index(class_element)] = unique_classes.min()
+
+    return values_list
+
+
+def category_conversion(values_list):
+    values_np = np.array(values_list)
+    unique_classes = np.unique(values_np)
+    for index, unique_class in enumerate(unique_classes):
+        values_np[values_np == unique_class] = index + 1
+
+    return values_np.astype(int).tolist()
+
+
 def find_label(labels_list, target_label):
     if target_label in labels_list:
         return target_label
@@ -139,3 +160,43 @@ def find_label(labels_list, target_label):
             raise ValueError(f"No label was found in {labels_list} for target label {target_label}.")
 
         return found_label
+
+
+def retrieve_longitudinal(df, diagnosis_df):
+    final_df = pd.DataFrame()
+    for idx in df.index.values:
+        subject = df.loc[idx, 'participant_id']
+        row_df = diagnosis_df[diagnosis_df.participant_id == subject]
+        final_df = pd.concat([final_df, row_df])
+
+    return final_df
+
+
+def remove_sub_labels(diagnosis_df, sub_labels, diagnosis_df_paths, results_path,
+                      logger=None):
+
+    from ..deep_learning.iotools import return_logger
+
+    if logger is None:
+        logger = return_logger(2, "remove sub labels")
+
+    supplementary_diagnoses = []
+
+    logger.debug('Before subjects removal')
+    sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
+    logger.debug(f'{len(sub_df)} subjects, {len(diagnosis_df)} scans')
+
+    for label in sub_labels:
+        if f'{label}.tsv' in diagnosis_df_paths:
+            sub_diag_df = pd.read_csv(path.join(results_path, f'{label}.tsv'), sep='\t')
+            sub_diag_baseline_df = extract_baseline(sub_diag_df, label)
+            for idx in sub_diag_baseline_df.index.values:
+                subject = sub_diag_baseline_df.loc[idx, 'participant_id']
+                diagnosis_df.drop(subject, inplace=True, level=0)
+            supplementary_diagnoses.append(label)
+
+            logger.debug(f'Removed {len(sub_diag_baseline_df)} subjects based on {label} label')
+            sub_df = diagnosis_df.reset_index().groupby('participant_id')['session_id'].nunique()
+            logger.debug(f'{len(sub_df)} subjects, {len(diagnosis_df)} scans')
+
+    return diagnosis_df, supplementary_diagnoses

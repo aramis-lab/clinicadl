@@ -154,7 +154,7 @@ launched, in the following order:
 - **classify** test (`test_classify.py`): this test classifies synthetic
   (random) MRI obtained in previous test. You can preprocess the dataset
   obtained during the **generate** test (`clinica run deeplearning-prepare-data
-  ./dataset/random-example image`) or you can [download it
+  ./dataset/random_example image`) or you can [download it
   here](https://aramislab.paris.inria.fr/files/data/databases/tuto/RandomCaps.tar.gz).
   This test verifies that the output file exists. ([the previoulsy trained
   models are available
