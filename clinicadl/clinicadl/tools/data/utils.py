@@ -7,35 +7,55 @@ from skimage.draw import ellipse
 from scipy.ndimage import gaussian_filter
 
 
-def load_and_check_tsv(tsv_path, caps_dir, output_path):
+def load_and_check_tsv(tsv_path, caps_dict, output_path):
     import pandas as pd
     from os.path import join
     from clinica.iotools.utils.data_handling import create_subs_sess_list
+    from ..deep_learning.data import check_multi_cohort_tsv
 
     if tsv_path is not None:
-        df = pd.read_csv(tsv_path, sep='\t')
-        if ('session_id' not in list(df.columns.values)) or (
-                'participant_id' not in list(df.columns.values)):
-            raise Exception("the data file is not in the correct format."
-                            "Columns should include ['participant_id', 'session_id']")
+        if len(caps_dict) == 1:
+            df = pd.read_csv(tsv_path, sep='\t')
+            if ('session_id' not in list(df.columns.values)) or (
+                    'participant_id' not in list(df.columns.values)):
+                raise Exception("the data file is not in the correct format."
+                                "Columns should include ['participant_id', 'session_id']")
+        else:
+            tsv_df = pd.read_csv(tsv_path, sep='\t')
+            check_multi_cohort_tsv(tsv_df, "labels")
+            df = pd.DataFrame()
+            for idx in range(len(tsv_df)):
+                cohort_name = tsv_df.loc[idx, 'cohort']
+                cohort_path = tsv_df.loc[idx, 'path']
+                cohort_df = pd.read_csv(cohort_path, sep="\t")
+                cohort_df['cohort'] = cohort_name
+                df = pd.concat([df, cohort_df])
     else:
-        create_subs_sess_list(caps_dir, output_path,
-                              is_bids_dir=False, use_session_tsv=False)
-        df = pd.read_csv(
-            join(output_path, 'subjects_sessions_list.tsv'), sep="\t")
+        df = pd.DataFrame()
+        for cohort, caps_path in caps_dict.items():
+            create_subs_sess_list(caps_path, output_path,
+                                  is_bids_dir=False, use_session_tsv=False)
+            cohort_df = pd.read_csv(
+                join(output_path, 'subjects_sessions_list.tsv'), sep="\t")
+            cohort_df['cohort'] = cohort
+            df = pd.concat([df, cohort_df])
 
     return df
 
 
-def find_image_path(caps_dir, participant_id, session_id, preprocessing):
+def find_image_path(caps_dict, participant_id, session_id, cohort, preprocessing):
     from os import path
+
+    if cohort not in caps_dict.keys():
+        raise ValueError('Cohort names in labels and CAPS definitions do not match.')
+
     if preprocessing == "t1-linear":
-        image_path = path.join(caps_dir, 'subjects', participant_id, session_id,
+        image_path = path.join(caps_dict[cohort], 'subjects', participant_id, session_id,
                                't1_linear',
                                participant_id + '_' + session_id +
                                FILENAME_TYPE['cropped'] + '.nii.gz')
     elif preprocessing == "t1-extensive":
-        image_path = path.join(caps_dir, 'subjects', participant_id, session_id,
+        image_path = path.join(caps_dict[cohort], 'subjects', participant_id, session_id,
                                't1', 'spm', 'segmentation', 'normalized_space',
                                participant_id + '_' + session_id +
                                FILENAME_TYPE['skull_stripped'] + '.nii.gz')
