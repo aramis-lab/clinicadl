@@ -4,8 +4,8 @@ scanner:
 
 pycodestyle:
     ignore:
+        - E203 # Ignore whitespace before ':'
         - E501 # Line too long
         - W503 # Line break occurred before a binary operator
-        - W504 # Line break occurred after a binary operator
 
 no_blank_comment: True # If True, no comment is made on PR without any errors.
