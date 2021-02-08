@@ -36,11 +36,10 @@ def random_sampling(rs_options, options):
     """
     Samples all the hyperparameters of the model.
 
-    Args:
-        rs_options: (Namespace) parameters of the random search
-        options: (Namespace) options of the training
+    :param rs_options: (Namespace) parameters of the random search
+    :param options: (Namespace) options of the training
 
-    Returns:
+    :return:
         options (Namespace), options updated to train the model generated randomly
     """
 
@@ -130,27 +129,24 @@ def random_sampling(rs_options, options):
 
 def find_evaluation_steps(accumulation_steps, goal=18):
     """
-    Compute the evaluation steps to be a multiple of accumulation steps as close possible as the goal.
+    We want the evaluation step to be performed all goal batches
 
-    Args:
-        accumulation_steps: (int) number of times the gradients are accumulated before parameters update.
-    Returns:
-        (int) number of evaluation_steps
+    :param accumulation_steps: (int) number of times the gradients are accumulated before parameters update.
+    :return: (int) number of evaluation_steps
     """
     if goal == 0 or goal % accumulation_steps == 0:
         return goal
     else:
-        return (goal // accumulation_steps + 1) * accumulation_steps
+        return find_evaluation_steps(accumulation_steps, goal + 1)
 
 
 def random_conv_sampling(rs_options):
     """
-    Generate random parameters for a random architecture (convolutional part).
+    Generate random parameters for a random architecture (convolutional part)
 
-    Args:
-        rs_options: (Namespace) parameters of the random search
+    :param rs_options: (Namespace) parameters of the random search
 
-    Returns
+    :return:
         (dict) parameters of the architecture
     """
     n_convblocks = sampling_fn(rs_options.n_convblocks, "randint")
@@ -195,13 +191,12 @@ class RandomArchitecture(nn.Module):
         """
         Construct the Architecture randomly chosen for Random Search.
 
-        Args:
-            convolutions: (dict) description of the convolutional blocks.
-            n_fcblocks: (int) number of FC blocks in the network.
-            initial_shape: (list) gives the structure of the input of the network.
-            dropout: (float) rate of the dropout.
-            network_normalization: (str) type of normalization layer in the network.
-            n_classes: (int) Number of output neurones of the network.
+        :param convolutions: (dict) description of the convolutional blocks.
+        :param n_fcblocks: (int) number of FC blocks in the network.
+        :param initial_shape: (list) gives the structure of the input of the network.
+        :param dropout: (float) rate of the dropout.
+        :param network_normalization: (str) type of normalization layer in the network.
+        :param n_classes: (int) Number of output neurones of the network.
         """
         super(RandomArchitecture, self).__init__()
         self.dimension = len(initial_shape) - 1
@@ -245,16 +240,14 @@ class RandomArchitecture(nn.Module):
 
     def define_convolutional_block(self, conv_dict):
         """
-        Design a convolutional block from the dictionnary conv_dict.
+        Design the convolutional block from the dictionnary conv_dict.
 
-        Args:
-            conv_dict: (dict) A dictionnary with the specifications to build a convolutional block
+        :param conv_dict: (dict) A dictionnary with the specifications to build a convolutional block
             - n_conv (int) number of convolutional layers in the block
             - in_channels (int) number of input channels
             - out_channels (int) number of output channels (2 * in_channels or threshold = 512)
             - d_reduction (String) "MaxPooling" or "stride"
-        Returns:
-            (nn.Module) a list of modules in a nn.Sequential list
+        :return: (nn.Module) a list of modules in a nn.Sequential list
         """
         in_channels = conv_dict['in_channels'] if conv_dict['in_channels'] is not None else self.first_in_channels
         out_channels = conv_dict['out_channels']
@@ -289,11 +282,9 @@ class RandomArchitecture(nn.Module):
         """
         Appends or not a normalization layer to a convolutional block depending on network attributes.
 
-        Args:
-            conv_block: (list) list of the modules of the convolutional block
-            num_features: (int) number of features to normalize
-        Returns:
-            (list) the updated convolutional block
+        :param conv_block: (list) list of the modules of the convolution block
+        :param num_features: (int) number of features to normalize
+        :return: conv_block the update convolution block
         """
 
         if self.network_normalization in ["BatchNorm", "InstanceNorm"]:
@@ -323,15 +314,13 @@ class RandomArchitecture(nn.Module):
     @staticmethod
     def define_fc_layer(fc_dict, last_block=False):
         """
-        Implement the FC block from the dictionnary fc_dict.
+        Design the FC block from the dictionnary fc_dict.
 
-        Args:
-            fc_dict: (dict) A dictionnary with the specifications to build a FC block
+        :param fc_dict: (dict) A dictionnary with the specifications to build a FC block
             - in_features (int) number of input neurones
             - out_features (int) number of output neurones
-            last_block: (bool) indicates if the current FC layer is the last one of the network.
-        Returns:
-            (nn.Module) a list of modules in a nn.Sequential list
+        :param last_block: (bool) indicates if the current FC layer is the last one of the network.
+        :return: (nn.Module) a list of modules in a nn.Sequential list
         """
         in_features = fc_dict["in_features"]
         out_features = fc_dict["out_features"]
@@ -351,11 +340,9 @@ class RandomArchitecture(nn.Module):
         Randomize then n last layers of the network.
         Similar as (Adebayo et al, 2018).
 
-        Args:
-            n: (int) number of layers to randomize
-            random_model: (RandomArchitecture) random model to transfer identical weights
-        Returns:
-            self
+        :param n: (int) number of layers to randomize
+        :param random_model: (RandomArchitecture) random model to transfer identical weights
+        :return self
         """
         fc_list = [('classifier', 'FC' + str(i))
                    for i in range(len(self.classifier) - 2)]
@@ -397,10 +384,8 @@ class RandomArchitecture(nn.Module):
         """
         Fix the n first model of the network.
 
-        Args:
-            n: (int) number of layers to fix
-        Returns:
-            self
+        :param n: (int) number of layers to fix
+        :return self
         """
         fc_list = [('classifier', 'FC' + str(i))
                    for i in range(len(self.classifier) - 2)]
@@ -422,14 +407,13 @@ class RandomArchitecture(nn.Module):
     @ staticmethod
     def fc_dict_design(n_fcblocks, convolutions, initial_shape, n_classes=2):
         """
-        Sample parameters for a random architecture (FC part).
+        Generate random parameters for a random architecture (FC part)
 
-        Args:
-            n_fcblocks: (int) number of fully connected blocks in the architecture.
-            convolutions: (dict) parameters of the convolutional part.
-            initial_shape: (array_like) shape of the initial input.
-            n_classes: (int) number of classes in the classification problem.
-        Returns:
+        :param n_fcblocks: (int) number of fully connected blocks in the architecture.
+        :param convolutions: (dict) parameters of the convolutional part.
+        :param initial_shape: (array_like) shape of the initial input.
+        :param n_classes: (int) number of classes in the classification problem.
+        :return:
             (dict) parameters of the architecture
             (list) the shape of the flattened layer
         """

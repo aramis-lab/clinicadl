@@ -465,13 +465,7 @@ class MRIDatasetRoi(MRIDataset):
                          atlas=atlas, merged_df=merged_df)
 
     def __getitem__(self, idx):
-        from time import time
-
-        t0 = time()
         participant, session, cohort, roi_idx, label = self._get_meta_data(idx)
-        t1 = time(
-        )
-        print(f"get meta data {t1 - t0}")
 
         if self.prepare_dl:
             if self.roi_list is None:
