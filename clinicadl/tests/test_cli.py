@@ -47,8 +47,8 @@ def generate_cli_commands(request):
         test_input = [
             'preprocessing',
             'extract-tensor',
-            't1-linear',
             '/dir/caps',
+            't1-linear',
             'slice',
             '-ps', '50',
             '-ss', '50',
@@ -61,8 +61,8 @@ def generate_cli_commands(request):
         keys_output = [
             'task',
             'preprocessing_task',
-            'preprocessing',
             'caps_directory',
+            'modality',
             'extract_method',
             'patch_size',
             'stride_size',

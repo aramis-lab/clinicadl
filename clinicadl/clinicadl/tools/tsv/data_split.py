@@ -1,5 +1,6 @@
 # coding: utf8
 
+from .tsv_utils import complementary_list, find_label, baseline_df, chi2
 from .tsv_utils import complementary_list, extract_baseline, chi2, category_conversion, remove_unicity
 from ..deep_learning.iotools import return_logger
 from scipy.stats import ttest_ind
@@ -32,13 +33,13 @@ def format_final_tsv(df, diagnosis_df, baseline=True):
 
 def create_split(diagnosis, diagnosis_df, split_label, n_test,
                  p_age_threshold=0.80, p_sex_threshold=0.80,
-                 age_name="age", supplementary_train_df=None,
+                 supplementary_train_df=None,
                  ignore_demographics=False, logger=None):
     """
     Split data at the subject-level in training and test set with equivalent age and sex distributions
 
-    :param diagnosis: (str) diagnosis on which the split is done.
-    :param diagnosis_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis'].
+    :param diagnosis: (str) diagnosis on which the split is done
+    :param diagnosis_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
     :param split_label: (str) label on which the split is done (categorical variables)
     :param n_test: (float)
         If > 1 number of subjects to put in the test set.
@@ -73,14 +74,21 @@ def create_split(diagnosis, diagnosis_df, split_label, n_test,
     else:
         n_test = int(n_test * len(baseline_df))
 
-    if not {"sex", age_name, split_label}.issubset(set(baseline_df.columns.values)):
-        raise ValueError("Columns such as sex, %s and %s are missing."
-                         "Please add them using the --variables_of_interest flag in getlabels."
-                         % (age_name, split_label))
+    if not {split_label}.issubset(set(baseline_df.columns.values)):
+        raise ValueError(f"The column {split_label} is missing."
+                         f"Please add it using the --variables_of_interest flag in getlabels.")
 
     if not ignore_demographics:
-        sex = list(baseline_df.sex.values)
-        age = list(baseline_df[age_name].values)
+        try:
+            sex_label = find_label(baseline_df.columns.values, "sex")
+            age_label = find_label(baseline_df.columns.values, "age")
+        except ValueError:
+            raise ValueError("This dataset do not have age or sex values. "
+                             "Please add the flag --ignore_demographics to split "
+                             "without trying to balance age or sex distributions.")
+
+        sex = list(baseline_df[sex_label].values)
+        age = list(baseline_df[age_label].values)
         category = list(baseline_df[split_label].values)
         category = category_conversion(category)
         category = remove_unicity(category)
@@ -132,7 +140,7 @@ def create_split(diagnosis, diagnosis_df, split_label, n_test,
     return train_df, test_df
 
 
-def split_diagnoses(formatted_data_path, n_test=100, age_name="age", subset_name="test", MCI_sub_categories=True,
+def split_diagnoses(formatted_data_path, n_test=100, subset_name="test", MCI_sub_categories=True,
                     p_age_threshold=0.80, p_sex_threshold=0.80, categorical_split_variable=None,
                     ignore_demographics=False, verbose=0):
     """
@@ -148,7 +156,6 @@ def split_diagnoses(formatted_data_path, n_test=100, age_name="age", subset_name
             If > 1, number of subjects to put in set with name 'subset_name'.
             If < 1, proportion of subjects to put in set with name 'subset_name'.
             If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name'.
-        age_name (str): Label of the age column in the dataset.
         subset_name (str): Name of the subset that is complementary to train.
         MCI_sub_categories (bool): If True, manages MCI sub-categories to avoid data leakage.
         p_age_threshold (float): The threshold used for the T-test on age distributions.
@@ -205,8 +212,8 @@ def split_diagnoses(formatted_data_path, n_test=100, age_name="age", subset_name
         diagnosis = diagnosis_df_path.split('.')[0]
         logger.info("Running split for diagnosis %s" % diagnosis)
         if n_test > 0:
-            train_df, test_df = create_split(diagnosis, diagnosis_df, categorical_split_variable, age_name=age_name,
-                                             n_test=n_test, p_age_threshold=p_age_threshold,
+            train_df, test_df = create_split(diagnosis, diagnosis_df, categorical_split_variable, n_test=n_test,
+                                             p_age_threshold=p_age_threshold,
                                              p_sex_threshold=p_sex_threshold,
                                              ignore_demographics=ignore_demographics,
                                              logger=logger)

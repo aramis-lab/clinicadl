@@ -9,8 +9,8 @@ from os import path
 from .utils import extract_metrics
 
 
-def quality_check(caps_dir, output_dir, group):
-    extract_metrics(caps_dir=caps_dir, output_dir=output_dir, group=group)
+def quality_check(caps_dir, output_dir, group_label):
+    extract_metrics(caps_dir=caps_dir, output_dir=output_dir, group=group_label)
     qc_df = pd.read_csv(path.join(output_dir, 'QC_metrics.tsv'), sep='\t')
 
     rejection1_df = qc_df[qc_df.max_intensity > 0.95]

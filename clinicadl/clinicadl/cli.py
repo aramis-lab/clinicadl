@@ -178,7 +178,6 @@ def tsv_split_func(args):
         args.formatted_data_path,
         n_test=args.n_test,
         subset_name=args.subset_name,
-        age_name=args.age_name,
         MCI_sub_categories=args.MCI_sub_categories,
         p_age_threshold=args.p_age_threshold,
         p_sex_threshold=args.p_sex_threshold,
@@ -208,9 +207,7 @@ def tsv_analysis_func(args):
         args.merged_tsv,
         args.formatted_data_path,
         args.results_path,
-        diagnoses=args.diagnoses,
-        mmse_name=args.mmse_name,
-        age_name=args.age_name
+        diagnoses=args.diagnoses
     )
 
 
@@ -231,6 +228,16 @@ def parse_command_line():
         prog='clinicadl',
         description='Deep learning software for neuroimaging datasets')
 
+    parser.add_argument('-l', '--logname',
+                        dest='logname',
+                        default="clinicaDL.log",
+                        metavar=('file.log'),
+                        help='Define the log file name (default: clinicaDL.log)')
+    parser.add_argument("-V", "--version",
+                        dest='version',
+                        action='store_true', default=False,
+                        help="ClinicaDL's installed version")
+
     parent_parser = argparse.ArgumentParser(add_help=False)
     parent_parser.add_argument('--verbose', '-v', action='count', default=0)
 
@@ -241,7 +248,7 @@ def parse_command_line():
         dest='task',
         help='''****** Tasks proposed by clinicadl ******''')
 
-    subparser.required = True
+    # subparser.required = True
 
     # Generate synthetic data
     generate_parser = subparser.add_parser(
@@ -256,7 +263,7 @@ def parse_command_line():
         dest='mode',
         help='''****** Synthetic datasets proposed by clinicadl ******''')
 
-    generate_subparser.required = True
+    # generate_subparser.required = True
 
     # Positional arguments
     generate_rs_parent_parser = argparse.ArgumentParser(add_help=False)
@@ -410,14 +417,18 @@ def parse_command_line():
     )
     clinica_comp = extract_parser.add_argument_group('%sClinica mandatory arguments%s' % (Fore.BLUE, Fore.RESET))
     clinica_comp.add_argument(
-        'preprocessing',
-        help='Preprocessing pipeline on which extraction is performed.',
-        choices=['t1-linear']
-    )
-    clinica_comp.add_argument(
         "caps_directory",
         help='Path to the CAPS directory.'
     )
+    clinica_comp.add_argument("modality",
+                              help='''For which modality the tensor will be extracted.
+            't1-linear': images prepocessed with t1-linear pipeline.
+            't1-extensive': images preprocessed with t1-extensive pipeline.
+            'custom': find images with a custom suffix in their filename and
+            transform them to tensor format.''',
+                              choices=['t1-linear', 't1-extensive', 'custom'], default='t1-linear'
+                              )
+
     clinica_comp.add_argument(
         "extract_method",
         help='''Format of the extracted features. Three options:
@@ -468,6 +479,17 @@ def parse_command_line():
             three identical channels, ‘single’ to save the slice in a
             single channel (default: --slice_mode rgb).''',
         choices=['rgb', 'single'], default='rgb'
+    )
+    optional_custom = extract_parser.add_argument_group(
+        "%sPipeline options if you chose ‘custom’ modality%s" % (Fore.BLUE, Fore.RESET)
+    )
+    optional_custom.add_argument(
+        '-cn', '--custom_suffix',
+        help='''Custom suffix filename, e.g.:
+            'graymatter_space-Ixi549Space_modulated-off_probability.nii.gz', or
+            'segm-whitematter_probability.nii.gz'
+            ''',
+        type=str, default=''
     )
 
     # Clinica standard arguments (e.g. --n_procs)
@@ -541,9 +563,8 @@ def parse_command_line():
                                   help="Path to the output directory containing TSV files.",
                                   type=str)
     qc_volume_parser.add_argument("group_label",
-                                  help="Name of the group associated to the DARTEL template.",
+                                  help="Identifier for the group of subjects used to create the DARTEL template.",
                                   type=str)
-
     qc_volume_parser.set_defaults(func=qc_func)
 
     # random search parsers
@@ -844,8 +865,8 @@ def parse_command_line():
     train_roi_multicnn_group.add_argument(
         '--selection_threshold',
         help='''Threshold on the balanced accuracies to compute the
-                     subject-level performance. Patches are selected if their balanced
-                     accuracy > threshold. Default corresponds to no selection.''',
+                         subject-level performance. Patches are selected if their balanced
+                         accuracy > threshold. Default corresponds to no selection.''',
         type=float, default=0.0)
 
     train_roi_multicnn_parser.set_defaults(func=train_func)
@@ -909,8 +930,8 @@ def parse_command_line():
     train_slice_cnn_group.add_argument(
         '--selection_threshold',
         help='''Threshold on the balanced accuracies to compute the
-             subject-level performance. Slices are selected if their balanced
-             accuracy > threshold. Default corresponds to no selection.''',
+                 subject-level performance. Slices are selected if their balanced
+                 accuracy > threshold. Default corresponds to no selection.''',
         type=float, default=0.0)
 
     train_slice_cnn_parser.set_defaults(func=train_func)
@@ -1088,7 +1109,8 @@ def parse_command_line():
         type=str, default=None)
     tsv_getlabels_subparser.add_argument(
         "--variables_of_interest",
-        help="Variables of interest that will be kept in the final lists",
+        help="Variables of interest that will be kept in the final lists."
+             "Default will keep the diagnosis, age and the sex needed for the split procedure.",
         type=str, nargs="+", default=None)
     tsv_getlabels_subparser.add_argument(
         "--keep_smc",
@@ -1115,10 +1137,6 @@ def parse_command_line():
              "If < 1, proportion of subjects to put set with name 'subset_name'. "
              "If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name.",
         type=float, default=100.)
-    tsv_split_subparser.add_argument(
-        "--age_name",
-        help="Name of the variable related to the age in the merged_tsv file.",
-        type=str, default="age_bl")
     tsv_split_subparser.add_argument(
         "--MCI_sub_categories",
         help="Deactivate default managing of MCI sub-categories to avoid data leakage.",
@@ -1202,14 +1220,6 @@ def parse_command_line():
         "--diagnoses",
         help="Labels selected for the demographic analysis.",
         default=['AD', 'CN'], nargs="+", type=str, choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'])
-    tsv_analysis_subparser.add_argument(
-        "--mmse_name",
-        help="Name of the variable related to the MMSE score in the merged_tsv file.",
-        type=str, default="MMS")
-    tsv_analysis_subparser.add_argument(
-        "--age_name",
-        help="Name of the variable related to the age in the merged_tsv file.",
-        type=str, default="age_bl")
 
     tsv_analysis_subparser.set_defaults(func=tsv_analysis_func)
 

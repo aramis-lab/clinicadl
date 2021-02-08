@@ -32,10 +32,9 @@ def test_split():
      -  no data leakage is introduced in split and kfold.
      """
     n_splits = 5
-    flag_split = not os.system("clinicadl tsvtool split %s %s --age_name age -vvv"
-                               % (merged_tsv, reference_path))
-    flag_kfold = not os.system("clinicadl tsvtool kfold %s --n_splits %i -vvv"
-                               % (path.join(reference_path, "train"), n_splits))
+    train_path = path.join(reference_path, "train")
+    flag_split = not os.system(f"clinicadl tsvtool split {reference_path} -vvv")
+    flag_kfold = not os.system(f"clinicadl tsvtool kfold {train_path} --n_splits {n_splits} -vvv")
     assert flag_split
     assert flag_kfold
     flag_load = True
@@ -58,7 +57,7 @@ def test_analysis():
     """Checks that analysis can be performed"""
     results_path = path.join("data", "tsvtool", "analysis.tsv")
     ref_analysis_path = path.join("data", "tsvtool", "anonymous_analysis.tsv")
-    flag_analysis = not os.system("clinicadl tsvtool analysis %s %s %s --age_name age --mmse_name MMSE "
+    flag_analysis = not os.system("clinicadl tsvtool analysis %s %s %s "
                                   "--diagnoses AD CN MCI sMCI pMCI"
                                   % (merged_tsv, reference_path, results_path))
     assert flag_analysis

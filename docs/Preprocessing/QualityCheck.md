@@ -1,5 +1,12 @@
 # `quality-check` - Evaluate registration quality
 
+Two different quality check procedures are available in ClinicaDL:
+one for the `t1-linear` preprocessing pipeline and another for the `t1-volume` 
+pipeline (necessary step before performing `t1-extensive` preprocessing).
+
+
+## `quality-check t1-linear` - Evaluate `t1-linear` registration
+
 The quality check procedure relies on a pretrained network that learned to classify images 
 that are adequately registered to a template from others for which the registration failed. 
 It reproduces the quality check procedure performed in [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)]. 
@@ -10,22 +17,23 @@ Their original code can be found on [GitHub](https://github.com/vfonov/deep-qc).
     This quality check procedure is specific to the `t1-linear` pipeline and should not be applied 
     to other preprocessing procedures as the results may not be reliable.
     Moreover you should be aware that this procedure may not be well adapted to anonymized data 
-    (for example images from OASIS-1) where parts of the images were removed or modified to guarantee anonymization.
+    (for example images from OASIS-1) where parts of the images were removed (e.g. the face)
+    or modified to guarantee anonymization.
 
 
-## Prerequisites
-You need to execute the `clinicadl preprocessing` and `clinicadl extract` pipelines prior to running this task.
+### Prerequisites
+You need to execute the `clinica run t1-linear` and `clinica run deeplearning-prepare-data` pipelines 
+prior to running this task.
 
-## Running the task
+### Running the task
 The task can be run with the following command line:
 ```
-clinicadl preprocessing quality-check <preprocessing> <caps_directory> <output_path>
+clinicadl preprocessing quality-check t1-linear <caps_directory> <output_path>
 ```
 where:
 
-- `preprocessing` (str) corresponds to the preprocessing pipeline whose outputs will be checked.
-- `caps_directory`(str) is the folder containing the results of the [`t1-linear` pipeline](T1_Linear.md) 
-and the output of the present command, both in a [CAPS hierarchy](http://www.clinica.run/doc/CAPS/Introduction).
+- `caps_directory` (str) is the folder containing the results of the [`t1-linear` pipeline](T1_Linear.md) 
+and the output of the present command, both in a [CAPS hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
 - `output_path` (str) is the path to the output TSV file (filename included).
 
 
@@ -39,7 +47,7 @@ Default value: `0.5`.
 - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
 - `--use_cpu` (bool) forces to use CPU. Default behaviour is to try to use a GPU and to raise an error if it is not found.
 
-## Outputs
+### Outputs
 
 The output of the quality check is a TSV file in which all the sessions (identified with their `participant_id` and `session_id`) 
 are associated with a `pass_probability` value and a True/False `pass` value depending on the chosen threshold. 
@@ -52,3 +60,49 @@ An example of TSV file is:
 | sub-CLNC03         | ses-M00        | 0.7292165160179138     | True      |
 | sub-CLNC04         | ses-M00        | 0.1549495905637741     | False     |
 | ...                |  ...           |  ...                   |  ...      |
+
+## `quality-check t1-volume` - Evaluate `t1-volume` registration and grey matter segmentation
+
+The quality check procedure is based on thresholds on different statistics that were empirically
+linked to images of bad quality. Three steps are performed to remove images with the following characteristics:
+
+1. a maximum value below 0.95,
+2. a percentage of non-zero values below 15% or higher than 50%,
+3. a similarity with the DARTEL template around the frontal lobe below 0.40. The similarity
+corresponds to the normalized mutual information. This allows checking that the eyes are not
+included in the brain volume. 
+    
+!!! warning
+    This quality check procedure is specific to the `t1-volume` pipeline and should not be applied 
+    to other preprocessing procedures as the results may not be reliable.
+
+
+### Prerequisites
+You need to execute the `clinica run t1-volume` pipeline prior to running this task.
+
+### Running the task
+The task can be run with the following command line:
+```
+clinicadl preprocessing quality-check t1-volume <caps_directory> <output_path> <group_label>
+```
+where:
+
+- `caps_directory` (str) is the folder containing the results of the [`t1-volume` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Volume/) 
+and the output of the present command, both in a [CAPS hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
+- `output_path` (str) is the path to an output directory in which TSV files will be created.
+- `group_label` (str) is the identifier for the group of subjects used to create the DARTEL template.
+You can check which groups are available in the `groups/` folder of your `caps_directory`.
+
+
+### Outputs
+
+This pipeline outputs 4 files:
+- `QC_metrics.tsv` containing the three QC metrics for all the images,
+- `pass_step-1.tsv` including only the images which passed the first step,
+- `pass_step-2.tsv` including only the images which passed the two first steps,
+- `pass_step-3.tsv` including only the images which passed all the three steps.
+
+!!! note "Manual quality check"
+    This quality check is really conservative and may keep some images that are not of good quality.
+    You may want to check the last images kept at each step to assess if their quality is good enough 
+    for your application.

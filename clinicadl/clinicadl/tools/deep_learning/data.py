@@ -343,7 +343,6 @@ class MRIDatasetRoi(MRIDataset):
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
 
-
         """
         if preprocessing == "shepplogan":
             raise ValueError("ROI mode is not available for preprocessing %s" % preprocessing)
@@ -384,7 +383,6 @@ class MRIDatasetRoi(MRIDataset):
 
     def extract_roi_from_mri(self, image_tensor, left_is_odd):
         """
-
         :param image_tensor: (Tensor) the tensor of the image.
         :param left_is_odd: (int) if 1 the left hippocampus is extracted, else the right one.
         :return: Tensor of the extracted hippocampus
@@ -524,7 +522,6 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
                    cnn_index=None, labels=True):
     """
     Return appropriate Dataset according to given options.
-
     Args:
         mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
         input_dir: (str) path to a directory containing a CAPS structure.
@@ -535,7 +532,6 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
         params: (Namespace) options used by specific modes.
         cnn_index: (int) Index of the CNN in a multi-CNN paradigm (optional).
         labels (bool): If True the diagnosis will be extracted from the given DataFrame.
-
     Returns:
          (Dataset) the corresponding dataset.
     """
@@ -699,7 +695,6 @@ class MinMaxNormalization(object):
 def get_transforms(mode, minmaxnormalization=True, data_augmentation=None):
     """
     Outputs the transformations that will be applied to the dataset
-
     :param mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
     :param minmaxnormalization: (bool) if True will perform MinMaxNormalization
     :param data_augmentation: (list[str]) list of data augmentation performed on the training set.

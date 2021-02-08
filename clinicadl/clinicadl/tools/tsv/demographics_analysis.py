@@ -1,24 +1,14 @@
 # coding: utf-8
 
-__author__ = "Elina Thibeau--Sutre"
-__copyright__ = "Copyright 2016-2019 The Aramis Lab Team"
-__credits__ = [""]
-__license__ = "See LICENSE.txt file"
-__version__ = "0.1.0"
-__maintainer__ = "Elina Thibeau--Sutre"
-__email__ = "elina.ts@free.fr"
-__status__ = "Completed"
-
 import pandas as pd
-from .tsv_utils import first_session, next_session, add_demographics
+from .tsv_utils import first_session, next_session, add_demographics, find_label
 import os
 from os import path
 import numpy as np
 from warnings import warn
 
 
-def demographics_analysis(merged_tsv, formatted_data_path, results_path,
-                          diagnoses, mmse_name="MMS", age_name="age"):
+def demographics_analysis(merged_tsv, formatted_data_path, results_path, diagnoses):
     """
     Produces a tsv file with rows corresponding to the labels defined by the diagnoses list,
     and the columns being demographic statistics.
@@ -28,8 +18,6 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path,
         formatted_data_path (str): Path to the folder containing data extracted by clinicadl tsvtool getlabels.
         results_path (str): Path to the output tsv file (filename included).
         diagnoses (list): Labels selected for the demographic analysis.
-        mmse_name (str): Name of the variable related to the MMSE score in the merged_tsv file.
-        age_name (str): Name of the variable related to the age in the merged_tsv file.
 
     Returns:
         writes one tsv file at results_path containing the
@@ -41,15 +29,10 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path,
     parent_directory = path.abspath(path.join(results_path, os.pardir))
     os.makedirs(parent_directory, exist_ok=True)
 
-    fields_dict = {'age': age_name, 'sex': 'sex', 'MMSE': mmse_name, 'CDR': 'cdr_global'}
-
-    if age_name not in merged_df.columns.values:
-        raise ValueError("The column corresponding to age is not labelled as %s. "
-                         "Please change the parameters." % age_name)
-
-    if mmse_name not in merged_df.columns.values:
-        raise ValueError("The column corresponding to mmse is not labelled as %s. "
-                         "Please change the parameters." % mmse_name)
+    fields_dict = {'age': find_label(merged_df.columns.values, 'age'),
+                   'sex': find_label(merged_df.columns.values, 'sex'),
+                   'MMSE': find_label(merged_df.columns.values, 'mms'),
+                   'CDR': 'cdr_global'}
 
     columns = ['n_subjects', 'mean_age', 'std_age',
                'min_age', 'max_age', 'sexF',

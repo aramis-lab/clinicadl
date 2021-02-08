@@ -11,7 +11,7 @@ in the OASIS dataset is not done in this script. Moreover a quality check may be
 pipelines, leading to the removal of some subjects.
 """
 from ..deep_learning.iotools import return_logger
-from .tsv_utils import neighbour_session, last_session, after_end_screening
+from .tsv_utils import neighbour_session, last_session, after_end_screening, find_label
 import pandas as pd
 from os import path
 from copy import copy
@@ -112,8 +112,8 @@ def mod_selection(bids_df, missing_mods_dict, mod='t1w'):
     if mod is not None:
         for subject, session in bids_df.index.values:
             try:
-                t1_present = missing_mods_dict[session].loc[subject, mod]
-                if not t1_present:
+                mod_present = missing_mods_dict[session].loc[subject, mod]
+                if not mod_present:
                     bids_copy_df.drop((subject, session), inplace=True)
             except Exception:
                 bids_copy_df.drop((subject, session), inplace=True)
@@ -339,8 +339,14 @@ def get_labels(merged_tsv, missing_mods, results_path,
     bids_df = pd.read_csv(merged_tsv, sep='\t')
     bids_df.set_index(['participant_id', 'session_id'], inplace=True)
     variables_list = ["diagnosis"]
+    try:
+        variables_list.append(find_label(bids_df.columns.values, 'age'))
+        variables_list.append(find_label(bids_df.columns.values, 'sex'))
+    except ValueError:
+        logger.warn("The age or sex values were not found in the dataset.")
     if variables_of_interest is not None:
-        variables_list += variables_of_interest
+        variables_set = set(variables_of_interest) | set(variables_list)
+        variables_list = list(variables_set)
 
     list_files = os.listdir(missing_mods)
     missing_mods_dict = {}

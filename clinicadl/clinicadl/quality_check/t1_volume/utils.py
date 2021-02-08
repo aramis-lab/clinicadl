@@ -8,10 +8,10 @@ import nibabel as nib
 import os
 from pathlib import Path
 
-from clinicadl.tools.inputs.input import fetch_file, RemoteFileStructure
+from clinica.utils.inputs import fetch_file, RemoteFileStructure
 
 
-def extract_metrics(caps_dir, output_dir, group):
+def extract_metrics(caps_dir, output_dir, group_label):
     if not path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -42,7 +42,7 @@ def extract_metrics(caps_dir, output_dir, group):
 
     # Get the GM template
     template_path = path.join(
-        caps_dir, 'groups', f'group-{group}', 't1', f'group-{group}_template.nii.gz')
+        caps_dir, 'groups', f'group-{group_label}', 't1', f'group-{group_label}_template.nii.gz')
     template_nii = nib.load(template_path)
     template_np = template_nii.get_fdata()
     template_np = np.sum(template_np, axis=3)

@@ -32,7 +32,7 @@ clinicadl generate <dataset> <caps_directory> <tsv_path> <output_dir>
 where:
 
 - `dataset` (str) is the type of synthetic data wanted. Choices are `random` or `trivial`.
-- `caps_directory` (str) is the input folder containing the neuroimaging data in a [CAPS](http://www.clinica.run/doc/CAPS/Introduction/) hierarchy.
+- `caps_directory` (str) is the input folder containing the neuroimaging data in a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
 - `tsv_path` (str) is the path to a tsv file containing the subjects/sessions list for data generation.
 - `output_dir` (str) is the folder where the synthetic CAPS is stored.
 
