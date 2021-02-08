@@ -5,6 +5,7 @@ import nibabel as nib
 from torch.utils.data import DataLoader
 import argparse
 import matplotlib.pyplot as plt
+import warnings
 
 from clinicadl.tools.deep_learning.iotools import read_json, commandline_to_json, translate_parameters, return_logger
 from clinicadl.tools.deep_learning.cnn_utils import get_criterion, sort_predicted
@@ -54,10 +55,12 @@ def group_backprop(options):
             # Model creation
             _, all_transforms = get_transforms(model_options.mode,
                                                minmaxnormalization=model_options.minmaxnormalization)
-            data_example = return_dataset(model_options.mode, options.input_dir,
-                                          training_df, model_options.preprocessing,
-                                          train_transformations=None, all_transformations=all_transforms,
-                                          params=options)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                data_example = return_dataset(model_options.mode, options.input_dir,
+                                              training_df, model_options.preprocessing,
+                                              train_transformations=None, all_transformations=all_transforms,
+                                              params=options)
 
             model = create_model(model_options, data_example.size)
             model_dir = os.path.join(options.model_path, fold, 'models', selection)
@@ -76,10 +79,12 @@ def group_backprop(options):
                 # Save the tsv files used for the saliency maps
                 training_df.to_csv(path.join('data.tsv'), sep='\t', index=False)
 
-                data_train = return_dataset(model_options.mode, options.input_dir,
-                                            training_df, model_options.preprocessing,
-                                            train_transformations=None, all_transformations=all_transforms,
-                                            params=options)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    data_train = return_dataset(model_options.mode, options.input_dir,
+                                                training_df, model_options.preprocessing,
+                                                train_transformations=None, all_transformations=all_transforms,
+                                                params=options)
 
                 train_loader = DataLoader(data_train,
                                           batch_size=options.batch_size,
