@@ -165,8 +165,7 @@ def inference_from_model(caps_dir,
     # loop depending the number of folds found in the model folder
     for fold_dir in currentDirectory.glob(currentPattern):
         fold = int(str(fold_dir).split("-")[-1])
-        fold_path = join(model_path, fold_dir)
-        out_path = join(fold_path, 'models')
+        out_path = join(fold_dir, 'models')
 
         for selection_metric in selection_metrics:
 
@@ -190,7 +189,7 @@ def inference_from_model(caps_dir,
                         strerror(errno.ENOENT),
                         join(full_model_path, 'model_best.pth.tar'))
 
-            performance_dir = join(fold_path, 'cnn_classification', 'best_%s' % selection_metric)
+            performance_dir = join(fold_dir, 'cnn_classification', 'best_%s' % selection_metric)
 
             makedirs(performance_dir, exist_ok=True)
 
