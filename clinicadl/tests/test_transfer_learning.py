@@ -15,7 +15,6 @@ import pytest
         "transfer_cnn_multicnn",
     ]
 )
-
 # fmt: off
 def cli_commands(request):
 
