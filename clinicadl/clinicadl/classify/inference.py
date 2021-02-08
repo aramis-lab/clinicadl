@@ -166,24 +166,24 @@ def inference_from_model(caps_dir,
     for fold_dir in currentDirectory.glob(currentPattern):
         fold = int(str(fold_dir).split("-")[-1])
         fold_path = join(model_path, fold_dir)
-        model_path = join(fold_path, 'models')
+        out_path = join(fold_path, 'models')
 
         for selection_metric in selection_metrics:
 
             if options.mode_task == 'multicnn':
-                for cnn_dir in listdir(model_path):
-                    if not exists(join(model_path, cnn_dir, "best_%s" % selection_metric, 'model_best.pth.tar')):
+                for cnn_dir in listdir(out_path):
+                    if not exists(join(out_path, cnn_dir, "best_%s" % selection_metric, 'model_best.pth.tar')):
                         raise FileNotFoundError(
                             errno.ENOENT,
                             strerror(errno.ENOENT),
-                            join(model_path,
+                            join(out_path,
                                  cnn_dir,
                                  "best_%s" % selection_metric,
                                  'model_best.pth.tar')
                         )
 
             else:
-                full_model_path = join(model_path, "best_%s" % selection_metric)
+                full_model_path = join(out_path, "best_%s" % selection_metric)
                 if not exists(join(full_model_path, 'model_best.pth.tar')):
                     raise FileNotFoundError(
                         errno.ENOENT,
@@ -198,7 +198,7 @@ def inference_from_model(caps_dir,
             inference_from_model_generic(
                 caps_dir,
                 tsv_path,
-                model_path,
+                out_path,
                 options,
                 prefix,
                 currentDirectory,
