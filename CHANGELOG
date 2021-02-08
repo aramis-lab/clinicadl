@@ -1,0 +1,54 @@
+# Changelog
+
+Main changes to this code/ project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+-
+-
+-
+
+### Changed
+
+-
+-
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## ClinicaDL 0.2.0
+
+### Added
+
+- New functionality `clinica interpret`  to generate saliency maps linked
+  to pretrained models based on groups of individual images.
+- New functionality `clinicadl random-search` to sample random networks from a
+  predefined hyperparameter space.
+- Slice subparsers for `autoencoder`/`cnn`/`multicnn` to be homogeneous with other
+  parsers.
+- roi parser has now `multicnn` option.	
+- Add generic options to command line: `--verbose`, `--version` and
+  `--logname`.
+
+### Changed
+
+- Behaviour of `clinicadl quality-check t1-volume`.
+- Simplify `clinicadl tsvtools` behaviour when using getlabels, split and
+  analysis.
+- Update documentation.
+
+### Fixed
+
+- Fix broken file when running preprocessing in t1-extensive.
+
+

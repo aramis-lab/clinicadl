@@ -291,7 +291,7 @@ def split_diagnoses(formatted_data_path,
                 # Find similarity of distribution for the age variable
                 if len(set(age)) != 1:
                     age_test = [float(age[idx]) for idx in idx_test]
-                    age_train = [float(age[idx]) for idx in idx_train]
+                    age_train = [float(age[idx]) for idx in idx_train] + sup_train_age
 
                     t_age, p_age = ttest_ind(age_test, age_train)
                 else:
@@ -300,7 +300,7 @@ def split_diagnoses(formatted_data_path,
                 # Find similarity of distribution for the sex variable
                 if len(set(sex)) != 1:
                     sex_test = [sex_dict[sex[idx]] for idx in idx_test]
-                    sex_train = [sex_dict[sex[idx]] for idx in idx_train]
+                    sex_train = [sex_dict[sex[idx]] for idx in idx_train] + sup_train_sex
                     T_sex = chi2(sex_test, sex_train)
                 else:
                     T_sex = 0
