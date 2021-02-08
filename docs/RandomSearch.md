@@ -60,7 +60,7 @@ An example of this file can be found in
 
 Mandatory variables:
 
-- `mode` (str) is the type of input used. Options are: `image`, `patch`, `roi` and `slice`. 
+- `mode` (str) is the type of input used. Must be chosen between `image`, `patch`, `roi` and `slice`. 
 Sampling function: `choice`.
 - `network_type` (str) is the type of network used. 
 The options depend on the type of input used, but at most it can be chosen between `autoencoder`, `cnn` and `multicnn`.

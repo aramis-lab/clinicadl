@@ -138,7 +138,8 @@ def classify_func(args):
         prepare_dl=args.use_extracted_features,
         selection_metrics=args.selection_metrics,
         diagnoses=args.diagnoses,
-        verbose=args.verbose
+        verbose=args.verbose,
+        multi_cohort=args.multi_cohort
     )
 
 
@@ -178,10 +179,11 @@ def tsv_split_func(args):
         n_test=args.n_test,
         subset_name=args.subset_name,
         MCI_sub_categories=args.MCI_sub_categories,
-        t_val_threshold=args.t_val_threshold,
-        p_val_threshold=args.p_val_threshold,
+        p_age_threshold=args.p_age_threshold,
+        p_sex_threshold=args.p_sex_threshold,
         ignore_demographics=args.ignore_demographics,
-        verbose=args.verbose
+        verbose=args.verbose,
+        categorical_split_variable=args.categorical_split_variable
     )
 
 
@@ -257,7 +259,7 @@ def parse_command_line():
     generate_subparser = generate_parser.add_subparsers(
         title='''Type of synthetic data generated''',
         description='''What type of synthetic data do you want to generate?
-                (random, trivial).''',
+                (random, shepplogan, trivial).''',
         dest='mode',
         help='''****** Synthetic datasets proposed by clinicadl ******''')
 
@@ -330,45 +332,45 @@ def parse_command_line():
     )
     generate_trivial_parser.set_defaults(func=generate_data_func)
 
-    # generate_shepplogan_parser = generate_subparser.add_parser(
-    #     "shepplogan",
-    #     help="Generate a dataset of 2D images including 3 subtypes based on Shepp Logan phantom."
-    # )
-    # generate_shepplogan_parser.add_argument(
-    #     'output_dir',
-    #     help='Folder containing the synthetic dataset.',
-    # )
-    # generate_shepplogan_parser.add_argument(
-    #     '--n_subjects',
-    #     type=int,
-    #     default=300,
-    #     help="Number of subjects in each class of the synthetic dataset."
-    # )
-    # generate_shepplogan_parser.add_argument(
-    #     '--image_size',
-    #     type=int,
-    #     default=128,
-    #     help="Size in pixels of the squared images."
-    # )
-    # generate_shepplogan_parser.add_argument(
-    #     '--CN_subtypes_distribution', '-Csd',
-    #     type=float, nargs='+',
-    #     default=[1.0, 0.0, 0.0],
-    #     help="Probability of each subtype to be drawn in CN label."
-    # )
-    # generate_shepplogan_parser.add_argument(
-    #     '--AD_subtypes_distribution', '-Asd',
-    #     type=float, nargs='+',
-    #     default=[0.05, 0.85, 0.10],
-    #     help="Probability of each subtype to be drawn in AD label."
-    # )
-    # generate_shepplogan_parser.add_argument(
-    #     '--smoothing',
-    #     action='store_true',
-    #     default=False,
-    #     help='Adds random smoothing to generated data.'
-    # )
-    # generate_shepplogan_parser.set_defaults(func=generate_data_func)
+    generate_shepplogan_parser = generate_subparser.add_parser(
+        "shepplogan",
+        help="Generate a dataset of 2D images including 3 subtypes based on Shepp Logan phantom."
+    )
+    generate_shepplogan_parser.add_argument(
+        'output_dir',
+        help='Folder containing the synthetic dataset.',
+    )
+    generate_shepplogan_parser.add_argument(
+        '--n_subjects',
+        type=int,
+        default=300,
+        help="Number of subjects in each class of the synthetic dataset."
+    )
+    generate_shepplogan_parser.add_argument(
+        '--image_size',
+        type=int,
+        default=128,
+        help="Size in pixels of the squared images."
+    )
+    generate_shepplogan_parser.add_argument(
+        '--CN_subtypes_distribution', '-Csd',
+        type=float, nargs='+',
+        default=[1.0, 0.0, 0.0],
+        help="Probability of each subtype to be drawn in CN label."
+    )
+    generate_shepplogan_parser.add_argument(
+        '--AD_subtypes_distribution', '-Asd',
+        type=float, nargs='+',
+        default=[0.05, 0.85, 0.10],
+        help="Probability of each subtype to be drawn in AD label."
+    )
+    generate_shepplogan_parser.add_argument(
+        '--smoothing',
+        action='store_true',
+        default=False,
+        help='Adds random smoothing to generated data.'
+    )
+    generate_shepplogan_parser.set_defaults(func=generate_data_func)
 
     # Preprocessing
     from clinica.pipelines.t1_linear.t1_linear_cli import T1LinearCLI
@@ -1027,6 +1029,12 @@ def parse_command_line():
         "--diagnoses",
         help="List of participants that will be classified.",
         nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'], default=None)
+    classify_specific_group.add_argument(
+        "--multi_cohort",
+        help="Performs multi-cohort training. In this case, caps_dir and tsv_path must be paths to TSV files.",
+        action="store_true",
+        default=False
+    )
 
     classify_parser.set_defaults(func=classify_func)
 
@@ -1090,7 +1098,7 @@ def parse_command_line():
     tsv_getlabels_subparser.add_argument(
         "--diagnoses",
         help="Labels that must be extracted from merged_tsv.",
-        nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'], default=['AD', 'CN'])
+        nargs="+", type=str, choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'], default=['AD', 'CN'])
     tsv_getlabels_subparser.add_argument(
         "--time_horizon",
         help="Time horizon to analyse stability of MCI subjects.",
@@ -1116,6 +1124,7 @@ def parse_command_line():
         'split',
         parents=[parent_parser],
         help='Performs one stratified shuffle split on participant level.')
+
     tsv_split_subparser.add_argument(
         "formatted_data_path",
         help="Path to the folder containing data extracted by clinicadl tsvtool getlabels.",
@@ -1133,11 +1142,11 @@ def parse_command_line():
         help="Deactivate default managing of MCI sub-categories to avoid data leakage.",
         action="store_false", default=True)
     tsv_split_subparser.add_argument(
-        "--t_val_threshold", "-t",
+        "--p_sex_threshold", "-ps",
         help="The threshold used for the chi2 test on sex distributions.",
-        default=0.0642, type=float)
+        default=0.80, type=float)
     tsv_split_subparser.add_argument(
-        "--p_val_threshold", "-p",
+        "--p_age_threshold", "-pa",
         help="The threshold used for the T-test on age distributions.",
         default=0.80, type=float)
     tsv_split_subparser.add_argument(
@@ -1148,6 +1157,12 @@ def parse_command_line():
         "--ignore_demographics",
         help="If True do not use age and sex to create the splits.",
         default=False, action="store_true"
+    )
+    tsv_split_subparser.add_argument(
+        "--categorical_split_variable",
+        help="Name of a categorical variable used for a stratified shuffle split "
+             "(in addition to age and sex selection).",
+        default=None, type=str
     )
 
     tsv_split_subparser.set_defaults(func=tsv_split_func)
@@ -1204,7 +1219,7 @@ def parse_command_line():
     tsv_analysis_subparser.add_argument(
         "--diagnoses",
         help="Labels selected for the demographic analysis.",
-        default=['AD', 'CN'], nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'])
+        default=['AD', 'CN'], nargs="+", type=str, choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'])
 
     tsv_analysis_subparser.set_defaults(func=tsv_analysis_func)
 
@@ -1256,6 +1271,12 @@ def parse_command_line():
     interpret_data_group.add_argument(
         "--caps_dir", type=str, default=None,
         help="Path to input dir of the MRI (preprocessed CAPS_dir), if different from classification task")
+    interpret_data_group.add_argument(
+        "--multi_cohort",
+        help="Performs multi-cohort training. In this case, caps_dir and tsv_path must be paths to TSV files.",
+        action="store_true",
+        default=False
+    )
     interpret_data_group.add_argument(
         "--diagnosis", "-d", default='AD', type=str,
         help="The images corresponding to this diagnosis only will be loaded.")
@@ -1316,7 +1337,7 @@ def return_train_parent_parser(retrain=False):
         train_pos_group.add_argument(
             'preprocessing',
             help='Defines the type of preprocessing of CAPS data.',
-            choices=['t1-linear', 't1-extensive'], type=str)
+            choices=['t1-linear', 't1-extensive', 'shepplogan'], type=str)
         train_pos_group.add_argument(
             'tsv_path',
             help='TSV path with subjects/sessions to process.',
@@ -1362,9 +1383,16 @@ def return_train_parent_parser(retrain=False):
             help="TSV path with subjects/sessions to process.")
 
     train_data_group.add_argument(
+        "--multi_cohort",
+        help="Performs multi-cohort training. In this case, caps_dir and tsv_path must be paths to TSV files.",
+        action="store_true",
+        default=None if retrain else False
+    )
+    train_data_group.add_argument(
         '--diagnoses', '-d',
         help='List of diagnoses that will be selected for training.',
-        default=None if retrain else ['AD', 'CN'], nargs='+', type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'])
+        default=None if retrain else ['AD', 'CN'], nargs='+', type=str,
+        choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'])
     train_data_group.add_argument(
         '--baseline',
         help='If provided, only the baseline sessions are used for training.',
