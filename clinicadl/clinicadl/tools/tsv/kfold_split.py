@@ -49,8 +49,6 @@ def write_splits(diagnosis, diagnosis_df, split_label, n_splits,
 
         test_df = baseline_df.iloc[test_index]
         train_df = baseline_df.iloc[train_index]
-        print(len(test_df))
-        print(len(train_df))
 
         if supplementary_diagnoses is not None:
             for supplementary_diagnosis in supplementary_diagnoses:
@@ -64,10 +62,6 @@ def write_splits(diagnosis, diagnosis_df, split_label, n_splits,
             train_df.reset_index(inplace=True, drop=True)
             test_df.reset_index(inplace=True, drop=True)
 
-        print(len(test_df))
-        print(len(train_df))
-
-        print(path.join(train_path, f'split-{i}', f'{diagnosis}_baseline.tsv'))
         train_df.to_csv(path.join(train_path, f'split-{i}', f'{diagnosis}_baseline.tsv'), sep='\t', index=False)
         test_df.to_csv(path.join(test_path, f'split-{i}', f'{diagnosis}_baseline.tsv'), sep='\t', index=False)
 
@@ -137,7 +131,7 @@ def split_diagnoses(formatted_data_path,
         diagnosis_df = pd.read_csv(path.join(results_path, diagnosis_df_path), sep='\t')
         write_splits(diagnosis, diagnosis_df, stratification, n_splits, train_path, test_path)
 
-        logger.info(f"K-fold split for diagnosis {diagnosis} is done")
+        logger.info(f"K-fold split for diagnosis {diagnosis} is done.")
 
     if MCI_special_treatment:
 
@@ -156,4 +150,4 @@ def split_diagnoses(formatted_data_path,
         logger.debug(MCI_df)
         write_splits('MCI', MCI_df, stratification, n_splits, train_path, test_path,
                      supplementary_diagnoses=supplementary_diagnoses)
-        logger.info("K-fold split for diagnosis MCI is done")
+        logger.info("K-fold split for diagnosis MCI is done.")

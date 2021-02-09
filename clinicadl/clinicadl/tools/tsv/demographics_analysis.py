@@ -43,7 +43,7 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path, diagnos
                'n_scans']
     results_df = pd.DataFrame(index=diagnoses, columns=columns, data=np.zeros((len(diagnoses), len(columns))))
 
-    # Need all values for mean and variance (age and MMSE)
+    # Need all values for mean and variance (age, MMSE and scans)
     diagnosis_dict = dict.fromkeys(diagnoses)
     for diagnosis in diagnoses:
         diagnosis_dict[diagnosis] = {'age': [], 'MMSE': [], 'scans': []}
