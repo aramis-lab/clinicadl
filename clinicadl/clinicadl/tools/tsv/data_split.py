@@ -204,27 +204,20 @@ def split_diagnoses(formatted_data_path, n_test=100, subset_name="test", MCI_sub
                                              ignore_demographics=ignore_demographics,
                                              logger=logger)
             # Save baseline splits
-            train_df.to_csv(path.join(train_path, str(diagnosis) + '_baseline.tsv'), sep='\t', index=False)
-            test_df.to_csv(path.join(test_path, str(diagnosis) + '_baseline.tsv'), sep='\t', index=False)
+            train_df.to_csv(path.join(train_path, f'{diagnosis}_baseline.tsv'), sep='\t', index=False)
+            test_df.to_csv(path.join(test_path, f'{diagnosis}_baseline.tsv'), sep='\t', index=False)
 
             long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
-            long_train_df.to_csv(path.join(train_path, str(diagnosis) + '.tsv'), sep='\t', index=False)
+            long_train_df.to_csv(path.join(train_path, f'{diagnosis}.tsv'), sep='\t', index=False)
             long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
-            long_test_df.to_csv(path.join(test_path, str(diagnosis) + '.tsv'), sep='\t', index=False)
-
-            # Retrieve all sessions for the training set
-            complete_train_df = pd.DataFrame()
-            for idx in train_df.index.values:
-                subject = train_df.loc[idx, 'participant_id']
-                subject_df = diagnosis_df[diagnosis_df.participant_id == subject]
-                complete_train_df = pd.concat([complete_train_df, subject_df])
-
-            complete_train_df.to_csv(path.join(train_path, str(diagnosis) + '.tsv'), sep='\t', index=False)
+            long_test_df.to_csv(path.join(test_path, f'{diagnosis}.tsv'), sep='\t', index=False)
 
         else:
             baseline_df = extract_baseline(diagnosis_df, diagnosis)
             test_df = baseline_df[interest_columns]
-            test_df.to_csv(path.join(test_path, str(diagnosis) + '_baseline.tsv'), sep='\t', index=False)
+            test_df.to_csv(path.join(test_path, f'{diagnosis}_baseline.tsv'), sep='\t', index=False)
+            long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
+            long_test_df.to_csv(path.join(test_path, f'{diagnosis}.tsv'), sep='\t', index=False)
 
     if MCI_special_treatment:
 
@@ -241,8 +234,6 @@ def split_diagnoses(formatted_data_path, n_test=100, subset_name="test", MCI_sub
         MCI_df, supplementary_diagnoses = remove_sub_labels(MCI_df, ["sMCI", "pMCI"],
                                                             diagnosis_df_paths, results_path,
                                                             logger=logger)
-        print(supplementary_diagnoses)
-
         if len(supplementary_diagnoses) == 0:
             raise ValueError('The MCI_sub_categories flag is not needed as there are no intersections with'
                              'MCI subcategories.')
@@ -250,10 +241,10 @@ def split_diagnoses(formatted_data_path, n_test=100, subset_name="test", MCI_sub
         # Construction of supplementary train
         supplementary_train_df = pd.DataFrame()
         for diagnosis in supplementary_diagnoses:
-            sup_baseline_train_df = pd.read_csv(path.join(train_path, diagnosis + '_baseline.tsv'), sep='\t')
+            sup_baseline_train_df = pd.read_csv(path.join(train_path, f'{diagnosis}_baseline.tsv'), sep='\t')
             supplementary_train_df = pd.concat([supplementary_train_df, sup_baseline_train_df])
             sub_df = supplementary_train_df.reset_index().groupby('participant_id')['session_id'].nunique()
-            logger.debug('supplementary_train_df %i subjects, %i scans' % (len(sub_df), len(supplementary_train_df)))
+            logger.debug(f'supplementary_train_df {len(sub_df)} subjects, {len(supplementary_diagnoses)} scans')
 
         supplementary_train_df.reset_index(drop=True, inplace=True)
 
