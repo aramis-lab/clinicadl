@@ -1,8 +1,8 @@
 # `clinicadl` Documentation
 
-:warning: **NEW!:** :warning:
-> :reminder_ribbon: Visit our [hands-on tutorial web
-site](https://aramislab.paris.inria.fr/clinicadl/tuto/intro.html) to try **ClinicaDL** directly in a Google Colab instance!
+!!! tip "ClinicaDL tutorial"
+    Visit our [hands-on tutorial web site](https://aramislab.paris.inria.fr/clinicadl/tuto/intro.html) 
+    to try **ClinicaDL** directly in a Google Colab instance!
 
 ## Installation
 
