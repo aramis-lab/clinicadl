@@ -1031,7 +1031,7 @@ def parse_command_line():
         nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'], default=None)
     classify_specific_group.add_argument(
         "--multi_cohort",
-        help="Performs multi-cohort training. In this case, caps_dir and tsv_path must be paths to TSV files.",
+        help="Performs multi-cohort classification. In this case, caps_dir and tsv_path must be paths to TSV files.",
         action="store_true",
         default=False
     )
@@ -1273,7 +1273,7 @@ def parse_command_line():
         help="Path to input dir of the MRI (preprocessed CAPS_dir), if different from classification task")
     interpret_data_group.add_argument(
         "--multi_cohort",
-        help="Performs multi-cohort training. In this case, caps_dir and tsv_path must be paths to TSV files.",
+        help="Performs multi-cohort interpretation. In this case, caps_dir and tsv_path must be paths to TSV files.",
         action="store_true",
         default=False
     )
