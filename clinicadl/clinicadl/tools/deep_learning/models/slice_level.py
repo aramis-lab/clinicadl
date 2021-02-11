@@ -6,16 +6,6 @@ from torch import nn
 import math
 from .modules import Flatten
 
-__author__ = "Junhao Wen"
-__copyright__ = "Copyright 2018 The Aramis Lab Team"
-__credits__ = ["Junhao Wen"]
-__license__ = "See LICENSE.txt file"
-__version__ = "0.1.0"
-__maintainer__ = "Junhao Wen"
-__email__ = "junhao.wen89@gmail.com"
-__status__ = "Development"
-
-
 model_urls = {
     'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth'
 }
