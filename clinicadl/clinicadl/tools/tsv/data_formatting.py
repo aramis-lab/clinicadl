@@ -366,8 +366,11 @@ def get_labels(merged_tsv, missing_mods, results_path,
     os.makedirs(results_path, exist_ok=True)
 
     # Remove SMC patients
-    if remove_smc and "diagnosis_bl" in bids_df.columns.values:
-        bids_df = bids_df[~(bids_df.diagnosis_bl == "SMC")]
+    if remove_smc:
+        if "diagnosis_bl" in bids_df.columns.values: # Retro-compatibility
+            bids_df = bids_df[~(bids_df.diagnosis_bl == "SMC")]
+        if "diagnosis_sc" in bids_df.columns.values:
+            bids_df = bids_df[~(bids_df.diagnosis_sc == "SMC")]
 
     # Adding the field baseline_diagnosis
     bids_copy_df = copy(bids_df)
