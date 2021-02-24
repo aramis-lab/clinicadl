@@ -118,7 +118,7 @@ class MRIDataset(Dataset):
                                    + FILENAME_TYPE['skull_stripped'] + '.pt')
         elif self.preprocessing == "t1-volume":
             image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
-                                   'deeplearning_prepare_data', '%s_based' % mode, 't1_volume',
+                                   'deeplearning_prepare_data', '%s_based' % mode, 'custom',
                                    participant + '_' + session
                                    + FILENAME_TYPE['gm_maps'] + '.pt')
         elif self.preprocessing == "shepplogan":
