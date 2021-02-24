@@ -1337,7 +1337,7 @@ def return_train_parent_parser(retrain=False):
         train_pos_group.add_argument(
             'preprocessing',
             help='Defines the type of preprocessing of CAPS data.',
-            choices=['t1-linear', 't1-extensive', 'shepplogan'], type=str)
+            choices=['t1-linear', 't1-extensive', 'shepplogan', 't1-volume'], type=str)
         train_pos_group.add_argument(
             'tsv_path',
             help='TSV path with subjects/sessions to process.',
