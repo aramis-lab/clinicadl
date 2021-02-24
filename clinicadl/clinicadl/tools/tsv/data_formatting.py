@@ -11,7 +11,7 @@ in the OASIS dataset is not done in this script. Moreover a quality check may be
 pipelines, leading to the removal of some subjects.
 """
 from ..deep_learning.iotools import return_logger
-from .tsv_utils import neighbour_session, last_session, after_end_screening, find_label
+from .tsv_utils import neighbour_session, last_session, after_end_screening, find_label, first_session
 import pandas as pd
 from os import path
 from copy import copy
@@ -92,8 +92,14 @@ def infer_or_drop_diagnosis(bids_df, logger):
                 else:
                     prev_session = neighbour_session(session_nb, session_list, -1)
                     prev_diagnosis = bids_df.loc[(subject, prev_session), 'diagnosis']
+                    while isinstance(prev_diagnosis, float) and prev_session != first_session(subject_df):
+                        prev_session = neighbour_session(int(prev_session[5::]), session_list, -1)
+                        prev_diagnosis = bids_df.loc[(subject, prev_session), 'diagnosis']
                     post_session = neighbour_session(session_nb, session_list, +1)
                     post_diagnosis = bids_df.loc[(subject, post_session), 'diagnosis']
+                    while isinstance(post_diagnosis, float) and post_session != last_session(session_list):
+                        post_session = neighbour_session(int(post_session[5::]), session_list, +1)
+                        post_diagnosis = bids_df.loc[(subject, post_session), 'diagnosis']
                     if prev_diagnosis == post_diagnosis:
                         found_diag_interpol += 1
                         bids_copy_df.loc[(subject, session), 'diagnosis'] = prev_diagnosis
