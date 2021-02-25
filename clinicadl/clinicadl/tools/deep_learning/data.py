@@ -456,7 +456,8 @@ class MRIDatasetRoi(MRIDataset):
         # TODO replace with import in clinica as soon as the version of clinica is stable
         templates_dict = {
             "t1-linear": "MNI152NLin2009cSym",
-            "t1-volume": "Ixi549Space"
+            "t1-volume": "Ixi549Space",
+            "t1-extensive": "Ixi549Space"
         }
 
         if self.prepare_dl or self.roi_list is None:
@@ -467,6 +468,8 @@ class MRIDatasetRoi(MRIDataset):
                 template = templates_dict[preprocessing]
                 if preprocessing == "t1-linear":
                     mask_pattern = MASK_PATTERN['cropped']
+                elif preprocessing == "t1-volume":
+                    mask_pattern = MASK_PATTERN['gm_maps']
                 elif preprocessing == "t1-extensive":
                     mask_pattern = MASK_PATTERN['skull_stripped']
                 else:
