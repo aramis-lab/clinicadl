@@ -101,16 +101,28 @@ class MRIDataset(Dataset):
 
         return caps_dict
 
-    def _get_path(self, participant, session, cohort, mode="image"):
+    def _get_path(self, participant, session, cohort, mode="image", cropped_roi=True):
 
         if cohort not in self.caps_dict.keys():
             raise ValueError('Cohort names in labels and CAPS definitions do not match.')
 
         if self.preprocessing == "t1-linear":
-            image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
-                                   'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
-                                   participant + '_' + session
-                                   + FILENAME_TYPE['cropped'] + '.pt')
+            if mode == "roi":
+                if cropped_roi:
+                    image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
+                                           'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
+                                           participant + '_' + session
+                                           + FILENAME_TYPE['cropped_roi'] + '.pt')
+                else:
+                    image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
+                                           'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
+                                           participant + '_' + session
+                                           + FILENAME_TYPE['cropped_image'] + '.pt')
+            else:
+                image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
+                                       'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
+                                       participant + '_' + session
+                                       + FILENAME_TYPE['cropped'] + '.pt')
         elif self.preprocessing == "t1-extensive":
             image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
                                    'deeplearning_prepare_data', '%s_based' % mode, 't1_extensive',
@@ -375,7 +387,7 @@ class MRIDatasetRoi(MRIDataset):
             else:
                 cropping_description = ""
 
-            roi_path = path.join(self._get_path(participant, session, "roi")[0:-7]
+            roi_path = path.join(self._get_path(participant, session, "roi", cropped_roi)[0:-7]
                                  + '_roi-%s' % self.roi_list[roi_idx]
                                  + '%s_T1w.pt' % cropping_description)
             patch = torch.load(roi_path)
