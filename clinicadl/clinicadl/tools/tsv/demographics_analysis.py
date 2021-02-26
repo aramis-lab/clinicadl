@@ -61,7 +61,6 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path, diagnos
             first_session_id = first_session(subject_df)
             feature_absence = isinstance(merged_df.loc[(subject, first_session_id), 'diagnosis'], float)
             while feature_absence:
-                print(subject, first_session_id)
                 first_session_id = next_session(subject_df, first_session_id)
                 feature_absence = isinstance(merged_df.loc[(subject, first_session_id), 'diagnosis'], float)
             demographics_subject_df = merged_df.loc[subject]
