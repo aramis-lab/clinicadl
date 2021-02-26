@@ -101,7 +101,7 @@ class MRIDataset(Dataset):
 
         return caps_dict
 
-    def _get_path(self, participant, session, cohort, mode="image"):
+    def _get_path(self, participant, session, cohort, mode="image", cropped_roi=True):
 
         if cohort not in self.caps_dict.keys():
             raise ValueError('Cohort names in labels and CAPS definitions do not match.')
@@ -343,8 +343,7 @@ class MRIDatasetRoi(MRIDataset):
 
     def __init__(self, caps_directory, data_file, roi_list=None, cropped_roi=True, roi_index=None,
                  preprocessing="t1-linear", train_transformations=None, prepare_dl=False, labels=True,
-                 all_transformations=None,
-                 multi_cohort=False):
+                 all_transformations=None, multi_cohort=False):
         """
         Args:
             caps_directory (string): Directory of all the images.
