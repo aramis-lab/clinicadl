@@ -160,22 +160,10 @@ class MRIDataset(Dataset):
             raise ValueError('Cohort names in labels and CAPS definitions do not match.')
 
         if self.preprocessing == "t1-linear":
-            if mode == "roi":
-                if cropped_roi:
-                    image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
-                                           'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
-                                           participant + '_' + session
-                                           + FILENAME_TYPE['cropped_roi'] + '.pt')
-                else:
-                    image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
-                                           'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
-                                           participant + '_' + session
-                                           + FILENAME_TYPE['cropped_image'] + '.pt')
-            else:
-                image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
-                                       'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
-                                       participant + '_' + session
-                                       + FILENAME_TYPE['cropped'] + '.pt')
+            image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
+                                   'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
+                                   participant + '_' + session
+                                   + FILENAME_TYPE['cropped'] + '.pt')
         elif self.preprocessing == "t1-extensive":
             image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
                                    'deeplearning_prepare_data', '%s_based' % mode, 't1_extensive',
