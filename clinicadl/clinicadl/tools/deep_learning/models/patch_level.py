@@ -6,16 +6,6 @@ Script containing the models for the patch level experiments.
 from torch import nn
 from .modules import PadMaxPool3d, Flatten
 
-__author__ = "Junhao Wen"
-__copyright__ = "Copyright 2018 The Aramis Lab Team"
-__credits__ = ["Junhao Wen"]
-__license__ = "See LICENSE.txt file"
-__version__ = "0.1.0"
-__maintainer__ = "Junhao Wen"
-__email__ = "junhao.wen89@gmail.com"
-__status__ = "Development"
-
-
 class Conv4_FC3(nn.Module):
     """
     Classifier for a binary classification task

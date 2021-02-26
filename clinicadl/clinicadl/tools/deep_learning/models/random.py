@@ -64,6 +64,7 @@ def random_sampling(rs_options, options):
     fixed_values = ["tsv_path", "caps_dir",
                     "epochs", "patience", "tolerance",
                     "diagnoses", "data_augmentation",
+                    "multi_cohort",
                     "channels_limit",
                     "use_extracted_patches",
                     "use_extracted_slices"]

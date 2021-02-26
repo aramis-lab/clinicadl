@@ -5,6 +5,7 @@ from .tsv_utils import first_session, next_session, add_demographics, find_label
 import os
 from os import path
 import numpy as np
+from warnings import warn
 
 
 def demographics_analysis(merged_tsv, formatted_data_path, results_path, diagnoses):
@@ -42,7 +43,7 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path, diagnos
                'n_scans']
     results_df = pd.DataFrame(index=diagnoses, columns=columns, data=np.zeros((len(diagnoses), len(columns))))
 
-    # Need all values for mean and variance (age and MMSE)
+    # Need all values for mean and variance (age, MMSE and scans)
     diagnosis_dict = dict.fromkeys(diagnoses)
     for diagnosis in diagnoses:
         diagnosis_dict[diagnosis] = {'age': [], 'MMSE': [], 'scans': []}
@@ -60,7 +61,6 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path, diagnos
             first_session_id = first_session(subject_df)
             feature_absence = isinstance(merged_df.loc[(subject, first_session_id), 'diagnosis'], float)
             while feature_absence:
-                print(subject, first_session_id)
                 first_session_id = next_session(subject_df, first_session_id)
                 feature_absence = isinstance(merged_df.loc[(subject, first_session_id), 'diagnosis'], float)
             demographics_subject_df = merged_df.loc[subject]
@@ -94,19 +94,23 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path, diagnos
             elif cdr == 3:
                 results_df.loc[diagnosis, 'CDR_3'] += 1
             else:
-                raise ValueError('Patient %s has CDR %f' % (subject, cdr))
+                warn(f'Patient {subject} has CDR {cdr}')
 
     for diagnosis in diagnoses:
         results_df.loc[diagnosis, 'mean_age'] = np.nanmean(diagnosis_dict[diagnosis]['age'])
         results_df.loc[diagnosis, 'std_age'] = np.nanstd(diagnosis_dict[diagnosis]['age'])
-        results_df.loc[diagnosis, 'min_age'] = np.min(diagnosis_dict[diagnosis]['age'])
-        results_df.loc[diagnosis, 'max_age'] = np.max(diagnosis_dict[diagnosis]['age'])
+        results_df.loc[diagnosis, 'min_age'] = np.nanmin(diagnosis_dict[diagnosis]['age'])
+        results_df.loc[diagnosis, 'max_age'] = np.nanmax(diagnosis_dict[diagnosis]['age'])
         results_df.loc[diagnosis, 'mean_MMSE'] = np.nanmean(diagnosis_dict[diagnosis]['MMSE'])
         results_df.loc[diagnosis, 'std_MMSE'] = np.nanstd(diagnosis_dict[diagnosis]['MMSE'])
         results_df.loc[diagnosis, 'min_MMSE'] = np.nanmin(diagnosis_dict[diagnosis]['MMSE'])
         results_df.loc[diagnosis, 'max_MMSE'] = np.nanmax(diagnosis_dict[diagnosis]['MMSE'])
         results_df.loc[diagnosis, 'mean_scans'] = np.nanmean(diagnosis_dict[diagnosis]['scans'])
         results_df.loc[diagnosis, 'std_scans'] = np.nanstd(diagnosis_dict[diagnosis]['scans'])
+
+        for key in diagnosis_dict[diagnosis]:
+            if np.isnan(diagnosis_dict[diagnosis][key]).any():
+                warn(f"NaN values were found for {key} values associated to diagnosis {diagnosis}")
 
     results_df.index.name = "diagnosis"
 

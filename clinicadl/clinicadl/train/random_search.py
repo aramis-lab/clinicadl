@@ -32,6 +32,7 @@ def check_and_complete(rs_options):
         "dropout": 0,
         "learning_rate": 4,
         "loss": "default",
+        "multi_cohort": False,
         "n_conv": 1,
         "network_normalization": "BatchNorm",
         "optimizer": "Adam",

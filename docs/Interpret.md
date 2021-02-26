@@ -79,6 +79,9 @@ Optional arguments:
     classified by the CNN. Default will not perform any selection.
     - `--nifti_template_path` (str) is a path to a nifti template to retrieve the affine values
     needed to write Nifti files for 3D saliency maps. Default will use the identity matrix for the affine.
+    - `--multi_cohort` (bool) is a flag indicated that [multi-cohort interpretation](Details.md#multi-cohort) is performed.
+    In this case, `caps_dir` and `tsv_path` must be paths to TSV files. If no new `caps_dir` and `tsv_path` are 
+    given this argument is not taken into account. 
 - **Results display**
     - `--vmax` (float) is the maximum value used for 2D saliency maps display. Default value: `0.5`.
    
