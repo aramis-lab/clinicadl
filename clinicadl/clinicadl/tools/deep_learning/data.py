@@ -101,7 +101,7 @@ class MRIDataset(Dataset):
 
         return caps_dict
 
-    def _get_path(self, participant, session, cohort, mode="image", cropped_roi=True):
+    def _get_path(self, participant, session, cohort, mode="image"):
 
         if cohort not in self.caps_dict.keys():
             raise ValueError('Cohort names in labels and CAPS definitions do not match.')
@@ -382,14 +382,8 @@ class MRIDatasetRoi(MRIDataset):
                     'Please disable --use_extracted_rois or precise the regions in --roi_names.')
 
             # read the regions directly
-            if self.cropped_roi:
-                cropping_description = "_desc-Crop"
-            else:
-                cropping_description = ""
-
-            roi_path = path.join(self._get_path(participant, session, "roi", cropped_roi)[0:-7]
-                                 + '_roi-%s' % self.roi_list[roi_idx]
-                                 + '%s_T1w.pt' % cropping_description)
+            roi_path = self._get_path(participant, session, cohort, "roi")
+            roi_path = self.compute_roi_filename(roi_path)
             patch = torch.load(roi_path)
 
         else:
@@ -495,6 +489,23 @@ class MRIDatasetRoi(MRIDataset):
                 mask_list.append(mask_nii.get_fdata())
 
         return mask_list
+
+    def compute_roi_filename(self, image_path):
+        from os import path
+
+        image_filename = path.basename(image_path)
+        image_descriptors = image_filename.split("_")
+        if "desc-Crop" not in image_descriptors and self.cropped_roi:
+            image_descriptors = insert_descriptor(image_descriptors, "desc-CropRoi")
+
+        elif "desc-Crop" in image_descriptors:
+            image_descriptors = [descriptor for descriptor in image_descriptors if descriptor != "desc-Crop"]
+            if self.cropped_roi:
+                image_descriptors = insert_descriptor(image_descriptors, "desc-CropRoi")
+            else:
+                image_descriptors = insert_descriptor(image_descriptors, "desc-CropImage")
+
+        return "_".join(image_descriptors)
 
 
 class MRIDatasetSlice(MRIDataset):
