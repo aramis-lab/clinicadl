@@ -53,9 +53,14 @@ class MRIDataset(Dataset):
         else:
             raise Exception('The argument data_file is not of correct type.')
 
+        if not multi_cohort:
+            self.df["cohort"] = "single"
+
         mandatory_col = {"participant_id", "session_id"}
         if self.labels:
             mandatory_col.add("diagnosis")
+        if multi_cohort:
+            mandatory_col.add("cohort")
         if self.elem_index == "mixed":
             mandatory_col.add("%s_id" % self.mode)
 
@@ -107,22 +112,10 @@ class MRIDataset(Dataset):
             raise ValueError('Cohort names in labels and CAPS definitions do not match.')
 
         if self.preprocessing == "t1-linear":
-            if mode == "roi":
-                if cropped_roi:
-                    image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
-                                           'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
-                                           participant + '_' + session
-                                           + FILENAME_TYPE['cropped_roi'] + '.pt')
-                else:
-                    image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
-                                           'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
-                                           participant + '_' + session
-                                           + FILENAME_TYPE['cropped_image'] + '.pt')
-            else:
-                image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
-                                       'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
-                                       participant + '_' + session
-                                       + FILENAME_TYPE['cropped'] + '.pt')
+            image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
+                                   'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
+                                   participant + '_' + session
+                                   + FILENAME_TYPE['cropped'] + '.pt')
         elif self.preprocessing == "t1-extensive":
             image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
                                    'deeplearning_prepare_data', '%s_based' % mode, 't1_extensive',
@@ -382,7 +375,7 @@ class MRIDatasetRoi(MRIDataset):
 
             # read the regions directly
             roi_path = self._get_path(participant, session, cohort, "roi")
-            roi_path = self.compute_roi_filename(roi_path)
+            roi_path = self.compute_roi_filename(roi_path, roi_idx)
             patch = torch.load(roi_path)
 
         else:
@@ -489,22 +482,32 @@ class MRIDatasetRoi(MRIDataset):
 
         return mask_list
 
-    def compute_roi_filename(self, image_path):
+    def compute_roi_filename(self, image_path, roi_index):
         from os import path
 
+        image_dir = path.dirname(image_path)
         image_filename = path.basename(image_path)
         image_descriptors = image_filename.split("_")
         if "desc-Crop" not in image_descriptors and self.cropped_roi:
-            image_descriptors = insert_descriptor(image_descriptors, "desc-CropRoi")
+            image_descriptors = self.insert_descriptor(image_descriptors, "desc-CropRoi", "space")
 
         elif "desc-Crop" in image_descriptors:
             image_descriptors = [descriptor for descriptor in image_descriptors if descriptor != "desc-Crop"]
             if self.cropped_roi:
-                image_descriptors = insert_descriptor(image_descriptors, "desc-CropRoi")
+                image_descriptors = self.insert_descriptor(image_descriptors, "desc-CropRoi", "space")
             else:
-                image_descriptors = insert_descriptor(image_descriptors, "desc-CropImage")
+                image_descriptors = self.insert_descriptor(image_descriptors, "desc-CropImage", "space")
 
-        return "_".join(image_descriptors)
+        return path.join(image_dir, "_".join(image_descriptors))[0:-7] + f"_roi-{self.roi_list[roi_index]}_T1w.pt"
+
+    @staticmethod
+    def insert_descriptor(image_descriptors, descriptor_to_add, key_to_follow):
+
+        for i, desc in enumerate(image_descriptors):
+            if key_to_follow in desc:
+                image_descriptors.insert(i+1, descriptor_to_add)
+
+        return image_descriptors
 
 
 class MRIDatasetSlice(MRIDataset):
