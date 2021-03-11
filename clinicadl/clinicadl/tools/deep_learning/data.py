@@ -22,14 +22,15 @@ class MRIDataset(Dataset):
 
     def __init__(self, caps_directory, data_file,
                  preprocessing, transformations, labels,
-                 augmentation_transformations=None):
-        self.caps_directory = caps_directory
+                 augmentation_transformations=None, multi_cohort=False):
+        self.caps_dict = self.create_caps_dict(caps_directory, multi_cohort)
         self.transformations = transformations
         self.augmentation_transformations = augmentation_transformations
         self.eval_mode = False
         self.labels = labels
         self.diagnosis_code = {
             'CN': 0,
+            'BV': 1,
             'AD': 1,
             'sMCI': 0,
             'pMCI': 1,
@@ -77,25 +78,51 @@ class MRIDataset(Dataset):
     def __len__(self):
         return len(self.df) * self.elem_per_image
 
-    def _get_path(self, participant, session, mode="image"):
+    @staticmethod
+    def create_caps_dict(caps_directory, multi_cohort):
+
+        from clinica.utils.inputs import check_caps_folder
+
+        if multi_cohort:
+            if not caps_directory.endswith('.tsv'):
+                raise ValueError('If multi_cohort is given, the caps_dir argument should be a path to a TSV file.')
+            else:
+                caps_df = pd.read_csv(caps_directory, sep="\t")
+                check_multi_cohort_tsv(caps_df, 'CAPS')
+                caps_dict = dict()
+                for idx in range(len(caps_df)):
+                    cohort = caps_df.loc[idx, 'cohort']
+                    caps_path = caps_df.loc[idx, 'path']
+                    check_caps_folder(caps_path)
+                    caps_dict[cohort] = caps_path
+        else:
+            check_caps_folder(caps_directory)
+            caps_dict = {'single': caps_directory}
+
+        return caps_dict
+
+    def _get_path(self, participant, session, cohort, mode="image"):
+
+        if cohort not in self.caps_dict.keys():
+            raise ValueError('Cohort names in labels and CAPS definitions do not match.')
 
         if self.preprocessing == "t1-linear":
-            image_path = path.join(self.caps_directory, 'subjects', participant, session,
+            image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
                                    'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
                                    participant + '_' + session
                                    + FILENAME_TYPE['cropped'] + '.pt')
         elif self.preprocessing == "t1-extensive":
-            image_path = path.join(self.caps_directory, 'subjects', participant, session,
+            image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
                                    'deeplearning_prepare_data', '%s_based' % mode, 't1_extensive',
                                    participant + '_' + session
                                    + FILENAME_TYPE['skull_stripped'] + '.pt')
         elif self.preprocessing == "t1-volume":
-            image_path = path.join(self.caps_directory, 'subjects', participant, session,
-                                   'deeplearning_prepare_data', '%s_based' % mode, 't1_volume',
+            image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
+                                   'deeplearning_prepare_data', '%s_based' % mode, 'custom',
                                    participant + '_' + session
                                    + FILENAME_TYPE['gm_maps'] + '.pt')
         elif self.preprocessing == "shepplogan":
-            image_path = path.join(self.caps_directory, 'subjects',
+            image_path = path.join(self.caps_dict[cohort], 'subjects',
                                    '%s_%s%s.pt' % (participant, session, FILENAME_TYPE['shepplogan']))
         else:
             raise NotImplementedError(
@@ -107,6 +134,7 @@ class MRIDataset(Dataset):
         image_idx = idx // self.elem_per_image
         participant = self.df.loc[image_idx, 'participant_id']
         session = self.df.loc[image_idx, 'session_id']
+        cohort = self.df.loc[image_idx, 'cohort']
 
         if self.elem_index is None:
             elem_idx = idx % self.elem_per_image
@@ -121,7 +149,7 @@ class MRIDataset(Dataset):
         else:
             label = self.diagnosis_code['unlabeled']
 
-        return participant, session, elem_idx, label
+        return participant, session, cohort, elem_idx, label
 
     def _get_full_image(self):
         from ..data.utils import find_image_path as get_nii_path
@@ -129,16 +157,20 @@ class MRIDataset(Dataset):
 
         participant_id = self.df.loc[0, 'participant_id']
         session_id = self.df.loc[0, 'session_id']
+        cohort = self.df.loc[0, 'cohort']
 
         try:
-            image_path = self._get_path(participant_id, session_id, "image")
+            image_path = self._get_path(participant_id, session_id, cohort, mode="image")
+            print(image_path)
             image = torch.load(image_path)
         except FileNotFoundError:
             image_path = get_nii_path(
-                self.caps_directory,
+                self.caps_dict,
                 participant_id,
                 session_id,
+                cohort=cohort,
                 preprocessing=self.preprocessing)
+            print(image_path)
             image_nii = nib.load(image_path)
             image_np = image_nii.get_fdata()
             image = ToTensor()(image_np)
@@ -167,7 +199,7 @@ class MRIDatasetImage(MRIDataset):
 
     def __init__(self, caps_directory, data_file,
                  preprocessing='t1-linear', train_transformations=None,
-                 labels=True, all_transformations=None):
+                 labels=True, all_transformations=None, multi_cohort=False):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -176,17 +208,19 @@ class MRIDatasetImage(MRIDataset):
             train_transformations (callable, optional): Optional transform to be applied only on training mode.
             labels (bool): If True the diagnosis will be extracted from the given DataFrame.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
+            multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
+
         """
         self.elem_index = None
         self.mode = "image"
         super().__init__(caps_directory, data_file, preprocessing,
                          augmentation_transformations=train_transformations, labels=labels,
-                         transformations=all_transformations)
+                         transformations=all_transformations, multi_cohort=multi_cohort)
 
     def __getitem__(self, idx):
-        participant, session, _, label = self._get_meta_data(idx)
+        participant, session, cohort, _, label = self._get_meta_data(idx)
 
-        image_path = self._get_path(participant, session, "image")
+        image_path = self._get_path(participant, session, cohort, "image")
         image = torch.load(image_path)
 
         if self.transformations:
@@ -207,7 +241,8 @@ class MRIDatasetImage(MRIDataset):
 class MRIDatasetPatch(MRIDataset):
 
     def __init__(self, caps_directory, data_file, patch_size, stride_size, train_transformations=None, prepare_dl=False,
-                 patch_index=None, preprocessing="t1-linear", labels=True, all_transformations=None):
+                 patch_index=None, preprocessing="t1-linear", labels=True, all_transformations=None,
+                 multi_cohort=False):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -221,6 +256,8 @@ class MRIDatasetPatch(MRIDataset):
             stride_size (int): length between the centers of two patches.
             labels (bool): If True the diagnosis will be extracted from the given DataFrame.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
+            multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
+
         """
         if preprocessing == "shepplogan":
             raise ValueError("Patch mode is not available for preprocessing %s" % preprocessing)
@@ -231,20 +268,20 @@ class MRIDatasetPatch(MRIDataset):
         self.prepare_dl = prepare_dl
         super().__init__(caps_directory, data_file, preprocessing,
                          augmentation_transformations=train_transformations, labels=labels,
-                         transformations=all_transformations)
+                         transformations=all_transformations, multi_cohort=multi_cohort)
 
     def __getitem__(self, idx):
-        participant, session, patch_idx, label = self._get_meta_data(idx)
+        participant, session, cohort, patch_idx, label = self._get_meta_data(idx)
 
         if self.prepare_dl:
-            patch_path = path.join(self._get_path(participant, session, "patch")[0:-7]
+            patch_path = path.join(self._get_path(participant, session, cohort, "patch")[0:-7]
                                    + '_patchsize-' + str(self.patch_size)
                                    + '_stride-' + str(self.stride_size)
                                    + '_patch-' + str(patch_idx) + '_T1w.pt')
 
             image = torch.load(patch_path)
         else:
-            image_path = self._get_path(participant, session, "image")
+            image_path = self._get_path(participant, session, cohort, "image")
             full_image = torch.load(image_path)
             image = self.extract_patch_from_mri(full_image, patch_idx)
 
@@ -293,7 +330,8 @@ class MRIDatasetPatch(MRIDataset):
 class MRIDatasetRoi(MRIDataset):
 
     def __init__(self, caps_directory, data_file, roi_index=None, preprocessing="t1-linear",
-                 train_transformations=None, prepare_dl=False, labels=True, all_transformations=None):
+                 train_transformations=None, prepare_dl=False, labels=True, all_transformations=None,
+                 multi_cohort=False):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -305,6 +343,8 @@ class MRIDatasetRoi(MRIDataset):
             prepare_dl (bool): If true pre-extracted patches will be loaded.
             labels (bool): If True the diagnosis will be extracted from the given DataFrame.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
+            multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
+
         """
         if preprocessing == "shepplogan":
             raise ValueError("ROI mode is not available for preprocessing %s" % preprocessing)
@@ -312,17 +352,17 @@ class MRIDatasetRoi(MRIDataset):
         self.mode = "roi"
         self.prepare_dl = prepare_dl
         super().__init__(caps_directory, data_file, preprocessing, augmentation_transformations=train_transformations,
-                         labels=labels, transformations=all_transformations)
+                         labels=labels, transformations=all_transformations, multi_cohort=multi_cohort)
 
     def __getitem__(self, idx):
-        participant, session, roi_idx, label = self._get_meta_data(idx)
+        participant, session, cohort, roi_idx, label = self._get_meta_data(idx)
 
         if self.prepare_dl:
             raise NotImplementedError(
                 'The extraction of ROIs prior to training is not implemented.')
 
         else:
-            image_path = self._get_path(participant, session, "image")
+            image_path = self._get_path(participant, session, cohort, "image")
             image = torch.load(image_path)
             patch = self.extract_roi_from_mri(image, roi_idx)
 
@@ -376,7 +416,8 @@ class MRIDatasetSlice(MRIDataset):
 
     def __init__(self, caps_directory, data_file, slice_index=None, preprocessing="t1-linear",
                  train_transformations=None, mri_plane=0, prepare_dl=False,
-                 discarded_slices=20, mixed=False, labels=True, all_transformations=None):
+                 discarded_slices=20, mixed=False, labels=True, all_transformations=None,
+                 multi_cohort=False):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -393,6 +434,7 @@ class MRIDatasetSlice(MRIDataset):
                 independently.
             labels (bool): If True the diagnosis will be extracted from the given DataFrame.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
+            multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
         """
         # Rename MRI plane
         if preprocessing == "shepplogan":
@@ -422,20 +464,20 @@ class MRIDatasetSlice(MRIDataset):
         self.prepare_dl = prepare_dl
         super().__init__(caps_directory, data_file, preprocessing,
                          augmentation_transformations=train_transformations, labels=labels,
-                         transformations=all_transformations)
+                         transformations=all_transformations, multi_cohort=multi_cohort)
 
     def __getitem__(self, idx):
-        participant, session, slice_idx, label = self._get_meta_data(idx)
+        participant, session, cohort, slice_idx, label = self._get_meta_data(idx)
         slice_idx = slice_idx + self.discarded_slices[0]
 
         if self.prepare_dl:
             # read the slices directly
-            slice_path = path.join(self._get_path(participant, session, "slice")[0:-7]
+            slice_path = path.join(self._get_path(participant, session, cohort, "slice")[0:-7]
                                    + '_axis-%s' % self.direction_list[self.mri_plane]
                                    + '_channel-rgb_slice-%i_T1w.pt' % slice_idx)
             image = torch.load(slice_path)
         else:
-            image_path = self._get_path(participant, session, "image")
+            image_path = self._get_path(participant, session, cohort, "image")
             full_image = torch.load(image_path)
             image = self.extract_slice_from_mri(full_image, slice_idx)
 
@@ -506,7 +548,8 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             preprocessing,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
-            labels=labels
+            labels=labels,
+            multi_cohort=params.multi_cohort
         )
     elif mode == "patch":
         return MRIDatasetPatch(
@@ -519,7 +562,8 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             all_transformations=all_transformations,
             prepare_dl=params.prepare_dl,
             patch_index=cnn_index,
-            labels=labels
+            labels=labels,
+            multi_cohort=params.multi_cohort
         )
     elif mode == "roi":
         return MRIDatasetRoi(
@@ -529,7 +573,8 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
             roi_index=cnn_index,
-            labels=labels
+            labels=labels,
+            multi_cohort=params.multi_cohort
         )
     elif mode == "slice":
         return MRIDatasetSlice(
@@ -542,7 +587,8 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             prepare_dl=params.prepare_dl,
             discarded_slices=params.discarded_slices,
             slice_index=cnn_index,
-            labels=labels
+            labels=labels,
+            multi_cohort=params.multi_cohort
         )
     else:
         raise ValueError("Mode %s is not implemented." % mode)
@@ -551,11 +597,14 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
 def compute_num_cnn(input_dir, tsv_path, options, data="train"):
 
     _, transformations = get_transforms(options.mode, options.minmaxnormalization)
+    print(tsv_path)
+    print(input_dir)
 
     if data == "train":
-        example_df, _ = load_data(tsv_path, options.diagnoses, 0, options.n_splits, options.baseline)
+        example_df, _ = load_data(tsv_path, options.diagnoses, 0, options.n_splits, options.baseline,
+                                  multi_cohort=options.multi_cohort)
     else:
-        example_df = load_data_test(tsv_path, options.diagnoses)
+        example_df = load_data_test(tsv_path, options.diagnoses, multi_cohort=options.multi_cohort)
 
     full_dataset = return_dataset(options.mode, input_dir, example_df,
                                   options.preprocessing, train_transformations=None,
@@ -688,9 +737,60 @@ def get_transforms(mode, minmaxnormalization=True, data_augmentation=None):
 # tsv files loaders
 ################################
 
-def load_data(train_val_path, diagnoses_list,
+def load_data(tsv_path, diagnoses_list,
               split, n_splits=None, baseline=True,
-              logger=None):
+              logger=None, multi_cohort=False):
+
+    if logger is None:
+        logger = logging
+
+    if multi_cohort:
+        if not tsv_path.endswith(".tsv"):
+            raise ValueError('If multi_cohort is given, the tsv_path argument should be a path to a TSV file.')
+        else:
+            tsv_df = pd.read_csv(tsv_path, sep="\t")
+            check_multi_cohort_tsv(tsv_df, "labels")
+            train_df = pd.DataFrame()
+            valid_df = pd.DataFrame()
+            found_diagnoses = set()
+            for idx in range(len(tsv_df)):
+                cohort_name = tsv_df.loc[idx, 'cohort']
+                cohort_path = tsv_df.loc[idx, 'path']
+                cohort_diagnoses = tsv_df.loc[idx, 'diagnoses'].replace(' ', '').split(",")
+                if bool(set(cohort_diagnoses) & set(diagnoses_list)):
+                    target_diagnoses = list(set(cohort_diagnoses) & set(diagnoses_list))
+                    cohort_train_df, cohort_valid_df = load_data_single(cohort_path, target_diagnoses, split,
+                                                                        n_splits=n_splits,
+                                                                        baseline=baseline,
+                                                                        logger=logger)
+                    cohort_train_df["cohort"] = cohort_name
+                    cohort_valid_df["cohort"] = cohort_name
+                    train_df = pd.concat([train_df, cohort_train_df])
+                    valid_df = pd.concat([valid_df, cohort_valid_df])
+                    found_diagnoses = found_diagnoses | (set(cohort_diagnoses) & set(diagnoses_list))
+
+            if found_diagnoses != set(diagnoses_list):
+                raise ValueError(f"The diagnoses found in the multi cohort dataset {found_diagnoses} "
+                                 f"do not correspond to the diagnoses wanted {set(diagnoses_list)}.")
+            train_df.reset_index(inplace=True, drop=True)
+            valid_df.reset_index(inplace=True, drop=True)
+    else:
+        if tsv_path.endswith(".tsv"):
+            raise ValueError('To use multi-cohort framework, please add --multi-cohort flag.')
+        else:
+            train_df, valid_df = load_data_single(tsv_path, diagnoses_list, split,
+                                                  n_splits=n_splits,
+                                                  baseline=baseline,
+                                                  logger=logger)
+            train_df["cohort"] = "single"
+            valid_df["cohort"] = "single"
+
+    return train_df, valid_df
+
+
+def load_data_single(train_val_path, diagnoses_list,
+                     split, n_splits=None, baseline=True,
+                     logger=None):
 
     if logger is None:
         logger = logging
@@ -703,10 +803,8 @@ def load_data(train_val_path, diagnoses_list,
         valid_path = path.join(train_val_path, 'validation')
 
     else:
-        train_path = path.join(train_val_path, 'train_splits-' + str(n_splits),
-                               'split-' + str(split))
-        valid_path = path.join(train_val_path, 'validation_splits-' + str(n_splits),
-                               'split-' + str(split))
+        train_path = path.join(train_val_path, f'train_splits-{n_splits}', f'split-{split}')
+        valid_path = path.join(train_val_path, f'validation_splits-{n_splits}', f'split-{split}')
 
     logger.debug("Train path %s" % train_path)
     logger.debug("Valid path %s" % valid_path)
@@ -734,7 +832,44 @@ def load_data(train_val_path, diagnoses_list,
     return train_df, valid_df
 
 
-def load_data_test(test_path, diagnoses_list, baseline=True):
+def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False):
+
+    if multi_cohort:
+        if not test_path.endswith(".tsv"):
+            raise ValueError('If multi_cohort is given, the tsv_path argument should be a path to a TSV file.')
+        else:
+            tsv_df = pd.read_csv(test_path, sep="\t")
+            check_multi_cohort_tsv(tsv_df, "labels")
+            test_df = pd.DataFrame()
+            found_diagnoses = set()
+            for idx in range(len(tsv_df)):
+                cohort_name = tsv_df.loc[idx, 'cohort']
+                cohort_path = tsv_df.loc[idx, 'path']
+                cohort_diagnoses = tsv_df.loc[idx, 'diagnoses'].replace(' ', '').split(",")
+                if bool(set(cohort_diagnoses) & set(diagnoses_list)):
+                    target_diagnoses = list(set(cohort_diagnoses) & set(diagnoses_list))
+                    cohort_test_df = load_data_test_single(cohort_path, target_diagnoses, baseline=baseline)
+                    cohort_test_df["cohort"] = cohort_name
+                    test_df = pd.concat([test_df, cohort_test_df])
+                    found_diagnoses = found_diagnoses | (set(cohort_diagnoses) & set(diagnoses_list))
+
+            if found_diagnoses != set(diagnoses_list):
+                raise ValueError(f"The diagnoses found in the multi cohort dataset {found_diagnoses} "
+                                 f"do not correspond to the diagnoses wanted {set(diagnoses_list)}.")
+            test_df.reset_index(inplace=True, drop=True)
+    else:
+        if test_path.endswith(".tsv"):
+            tsv_df = pd.read_csv(test_path, sep='\t')
+            multi_col = {"cohort", "path"}
+            if multi_col.issubset(tsv_df.columns.values):
+                raise ValueError('To use multi-cohort framework, please add --multi-cohort flag.')
+        test_df = load_data_test_single(test_path, diagnoses_list, baseline=baseline)
+        test_df["cohort"] = "single"
+
+    return test_df
+
+
+def load_data_test_single(test_path, diagnoses_list, baseline=True):
 
     if test_path.endswith('.tsv'):
         return pd.read_csv(test_path, sep='\t')
@@ -848,4 +983,13 @@ def generate_sampler(dataset, sampler_option='random'):
     elif sampler_option == 'weighted':
         return sampler.WeightedRandomSampler(weights, len(weights))
     else:
-        raise NotImplementedError("The option %s for sampler is not implemented" % sampler_option)
+        raise NotImplementedError(f"The option {sampler_option} for sampler is not implemented")
+
+
+def check_multi_cohort_tsv(tsv_df, purpose):
+    if purpose.upper() == "CAPS":
+        mandatory_col = {"cohort", "path"}
+    else:
+        mandatory_col = {"cohort", "path", "diagnoses"}
+    if not mandatory_col.issubset(tsv_df.columns.values):
+        raise ValueError(f'Columns of the TSV file used for {purpose} location must include {mandatory_col}')

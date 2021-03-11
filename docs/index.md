@@ -1,5 +1,9 @@
 # `clinicadl` Documentation
 
+!!! tip "ClinicaDL tutorial"
+    Visit our [hands-on tutorial web site](https://aramislab.paris.inria.fr/clinicadl/tuto/intro.html) 
+    to try **ClinicaDL** directly in a Google Colab instance!
+
 ## Installation
 
 `clinicadl` can be installed on Mac OS X and Linux machines, and possibly on Windows computers with a Linux Virtual Machine.
