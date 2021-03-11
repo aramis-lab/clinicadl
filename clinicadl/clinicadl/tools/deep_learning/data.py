@@ -164,6 +164,11 @@ class MRIDataset(Dataset):
                                    'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
                                    participant + '_' + session
                                    + FILENAME_TYPE['cropped'] + '.pt')
+        elif self.preprocessing == "t1-linear-downsampled":
+            image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
+                                   'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
+                                   participant + '_' + session
+                                   + FILENAME_TYPE['downsampled'] + '.pt')
         elif self.preprocessing == "t1-extensive":
             image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
                                    'deeplearning_prepare_data', '%s_based' % mode, 't1_extensive',
