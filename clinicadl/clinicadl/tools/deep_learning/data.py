@@ -772,7 +772,7 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
     if cnn_index is not None and mode in ["image"]:
         raise ValueError("Multi-CNN is not implemented for %s mode." % mode)
 
-    if params.merged_tsv_path is not "":
+    if params.merged_tsv_path is not "" and params.merged_tsv_path is not None:
         merged_df = pd.read_csv(params.merged_tsv_path, sep="\t")
     else:
         merged_df = None

@@ -62,6 +62,7 @@ def translate_parameters(args):
     args.num_workers = args.nproc
     args.optimizer = "Adam"
     args.loss = "default"
+    args.atlas = args.predict_atlas_intensities
 
     if hasattr(args, "predict_atlas_intensities"):
         args.atlas = args.predict_atlas_intensities
@@ -253,7 +254,7 @@ def read_json(options=None, json_path=None, test=False, read_computational=False
         options.predict_atlas_intensities = None
 
     if not hasattr(options, "merged_tsv_path"):
-        options.merged_tsv_path = ""
+        options.merged_tsv_path = None
 
     if not hasattr(options, "atlas_weight"):
         options.atlas_weight = 1
