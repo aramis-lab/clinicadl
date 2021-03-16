@@ -880,7 +880,7 @@ def load_data(tsv_path, diagnoses_list,
             valid_df.reset_index(inplace=True, drop=True)
     else:
         if tsv_path.endswith(".tsv"):
-            raise ValueError('To use multi-cohort framework, please add --multi-cohort flag.')
+            raise ValueError('To use multi-cohort framework, please add --multi_cohort flag.')
         else:
             train_df, valid_df = load_data_single(tsv_path, diagnoses_list, split,
                                                   n_splits=n_splits,
@@ -966,7 +966,7 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
             tsv_df = pd.read_csv(test_path, sep='\t')
             multi_col = {"cohort", "path"}
             if multi_col.issubset(tsv_df.columns.values):
-                raise ValueError('To use multi-cohort framework, please add --multi-cohort flag.')
+                raise ValueError('To use multi-cohort framework, please add --multi_cohort flag.')
         test_df = load_data_test_single(test_path, diagnoses_list, baseline=baseline)
         test_df["cohort"] = "single"
 
