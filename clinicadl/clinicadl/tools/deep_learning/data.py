@@ -470,6 +470,7 @@ class MRIDatasetRoi(MRIDataset):
                          atlas=atlas, merged_df=merged_df)
 
     def __getitem__(self, idx):
+
         participant, session, cohort, roi_idx, label = self._get_meta_data(idx)
 
         if self.prepare_dl:
