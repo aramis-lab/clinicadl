@@ -3,7 +3,7 @@
 import torch
 import pandas as pd
 import numpy as np
-from os import path
+from os import path, listdir
 from torch.utils.data import Dataset, sampler
 import torchvision.transforms as transforms
 import abc
@@ -22,7 +22,8 @@ class MRIDataset(Dataset):
 
     def __init__(self, caps_directory, data_file,
                  preprocessing, transformations, labels,
-                 augmentation_transformations=None, multi_cohort=False):
+                 augmentation_transformations=None, multi_cohort=False,
+                 atlas=None, group=None, merged_df=None):
         self.caps_dict = self.create_caps_dict(caps_directory, multi_cohort)
         self.transformations = transformations
         self.augmentation_transformations = augmentation_transformations
@@ -77,6 +78,19 @@ class MRIDataset(Dataset):
                           "If you want to run a binary classification please change the labels involved."
                           % (unique_diagnoses, unique_codes))
 
+        self.merged_df = merged_df
+        if merged_df is not None and "participant_id" in merged_df.columns.values:
+            self.merged_df.set_index(["participant_id", "session_id"], inplace=True)
+
+        self.atlas = atlas
+        self.group_dict = None
+        if self.atlas is not None and group is None:
+            self.group_dict = self.create_group_dict(caps_directory, multi_cohort, group)
+        if self.atlas is not None and self.merged_df is not None:
+            filtered_columns = [col for col in merged_df.columns.values
+                                if "t1-volume" in col and atlas in col]
+            self.merged_df = self.merged_df[filtered_columns]
+
         self.elem_per_image = self.num_elem_per_image()
         self.size = self[0]['image'].size()
 
@@ -106,6 +120,40 @@ class MRIDataset(Dataset):
 
         return caps_dict
 
+    @staticmethod
+    def create_group_dict(caps_directory, multi_cohort, group):
+        if multi_cohort:
+            if not caps_directory.endswith('.tsv'):
+                raise ValueError('If multi_cohort is given, the caps_dir argument should be a path to a TSV file.')
+            else:
+                caps_df = pd.read_csv(caps_directory, sep="\t")
+                check_multi_cohort_tsv(caps_df, 'CAPS')
+                if "group_label" not in caps_df.columns and group is None:
+                    raise ValueError('When atlas intensities are involved the group_label column must be filled '
+                                     'in the CAPS TSV file.')
+                group_dict = dict()
+                for idx in range(len(caps_df)):
+                    cohort = caps_df.loc[idx, 'cohort']
+                    if group is None:
+                        group_label = f"group-{caps_df.loc[idx, 'group_label']}"
+                    else:
+                        group_label = f"group-{group}"
+                    group_dict[cohort] = group_label
+        else:
+            if group is None:
+                groups_list = listdir(path.join(caps_directory, "groups"))
+                if len(groups_list) == 0:
+                    raise ValueError("A commun group could not be found for the CAPS folder wanted.")
+                elif len(groups_list) > 1:
+                    raise ValueError(f"Several groups were found for the CAPS folder wanted {groups_list}. "
+                                     "Please precise which group should be used.")
+                else:
+                    group_dict = {'single': groups_list[0]}
+            else:
+                group_dict = {'single': f"group-{group}"}
+
+        return group_dict
+
     def _get_path(self, participant, session, cohort, mode="image"):
 
         if cohort not in self.caps_dict.keys():
@@ -134,6 +182,33 @@ class MRIDataset(Dataset):
                 "The path to preprocessing %s is not implemented" % self.preprocessing)
 
         return image_path
+
+    def _get_statistics_df(self, participant, session, cohort):
+        if cohort not in self.caps_dict.keys():
+            raise ValueError('Cohort names in labels and CAPS definitions do not match.')
+
+        if self.merged_df is None:
+
+            statistics_path = path.join(
+                self.caps_dict[cohort],
+                'subjects',
+                participant,
+                session,
+                "t1",
+                "spm",
+                "dartel",
+                self.group_dict[cohort],
+                "atlas_statistics",
+                f"{participant}_{session}_T1w_segm-graymatter_space-Ixi549Space_modulated-on_probability_space-{self.atlas}_map-graymatter_statistics.tsv"
+            )
+
+            if not path.exists(statistics_path):
+                raise ValueError(f"Last step of t1-volume with {self.group_dict[cohort]} was not run on {participant} | {session}")
+
+            return pd.read_csv(statistics_path, sep="\t", usecols=["mean_scalar"], dtype=np.float32, squeeze=True)
+
+        else:
+            return self.merged_df.loc[(participant, session)]
 
     def _get_meta_data(self, idx):
         image_idx = idx // self.elem_per_image
@@ -180,6 +255,13 @@ class MRIDataset(Dataset):
 
         return image
 
+    def len_atlas(self):
+        example_data = self[0]
+        if "atlas" in example_data:
+            return len(example_data["atlas"])
+        else:
+            return 0
+
     @abc.abstractmethod
     def __getitem__(self, idx):
         pass
@@ -202,7 +284,8 @@ class MRIDatasetImage(MRIDataset):
 
     def __init__(self, caps_directory, data_file,
                  preprocessing='t1-linear', train_transformations=None,
-                 labels=True, all_transformations=None, multi_cohort=False):
+                 labels=True, all_transformations=None, multi_cohort=False,
+                 atlas=None, merged_df=None):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -212,13 +295,16 @@ class MRIDatasetImage(MRIDataset):
             labels (bool): If True the diagnosis will be extracted from the given DataFrame.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
+            atlas (str): name of an atlas if predicting the regional intensities.
+            merged_df (DataFrame): DataFrame of all TSV files needed for atlas intensities prediction.
 
         """
         self.elem_index = None
         self.mode = "image"
         super().__init__(caps_directory, data_file, preprocessing,
                          augmentation_transformations=train_transformations, labels=labels,
-                         transformations=all_transformations, multi_cohort=multi_cohort)
+                         transformations=all_transformations, multi_cohort=multi_cohort,
+                         atlas=atlas, merged_df=merged_df)
 
     def __getitem__(self, idx):
         participant, session, cohort, _, label = self._get_meta_data(idx)
@@ -235,6 +321,11 @@ class MRIDatasetImage(MRIDataset):
         sample = {'image': image, 'label': label, 'participant_id': participant, 'session_id': session,
                   'image_path': image_path}
 
+        if self.atlas is not None:
+            atlas_df = self._get_statistics_df(participant, session, cohort)
+            atlas_pt = torch.from_numpy(atlas_df.values).float()
+            sample['atlas'] = atlas_pt
+
         return sample
 
     def num_elem_per_image(self):
@@ -245,7 +336,7 @@ class MRIDatasetPatch(MRIDataset):
 
     def __init__(self, caps_directory, data_file, patch_size, stride_size, train_transformations=None, prepare_dl=False,
                  patch_index=None, preprocessing="t1-linear", labels=True, all_transformations=None,
-                 multi_cohort=False):
+                 multi_cohort=False, atlas=None, merged_df=None):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -260,6 +351,8 @@ class MRIDatasetPatch(MRIDataset):
             labels (bool): If True the diagnosis will be extracted from the given DataFrame.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
+            atlas (str): name of an atlas if predicting the regional intensities.
+            merged_df (DataFrame): DataFrame of all TSV files needed for atlas intensities prediction.
 
         """
         if preprocessing == "shepplogan":
@@ -271,7 +364,8 @@ class MRIDatasetPatch(MRIDataset):
         self.prepare_dl = prepare_dl
         super().__init__(caps_directory, data_file, preprocessing,
                          augmentation_transformations=train_transformations, labels=labels,
-                         transformations=all_transformations, multi_cohort=multi_cohort)
+                         transformations=all_transformations, multi_cohort=multi_cohort,
+                         atlas=atlas, merged_df=merged_df)
 
     def __getitem__(self, idx):
         participant, session, cohort, patch_idx, label = self._get_meta_data(idx)
@@ -296,6 +390,11 @@ class MRIDatasetPatch(MRIDataset):
 
         sample = {'image': image, 'label': label,
                   'participant_id': participant, 'session_id': session, 'patch_id': patch_idx}
+
+        if self.atlas is not None:
+            atlas_df = self._get_statistics_df(participant, session, cohort)
+            atlas_pt = torch.from_numpy(atlas_df.mean_scalar.values).float()
+            sample['atlas'] = atlas_pt
 
         return sample
 
@@ -334,7 +433,7 @@ class MRIDatasetRoi(MRIDataset):
 
     def __init__(self, caps_directory, data_file, roi_list=None, cropped_roi=True, roi_index=None,
                  preprocessing="t1-linear", train_transformations=None, prepare_dl=False, labels=True,
-                 all_transformations=None, multi_cohort=False):
+                 all_transformations=None, multi_cohort=False, atlas=None, merged_df=None):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -349,6 +448,8 @@ class MRIDatasetRoi(MRIDataset):
             labels (bool): If True the diagnosis will be extracted from the given DataFrame.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
+            atlas (str): name of an atlas if predicting the regional intensities.
+            merged_df (DataFrame): DataFrame of all TSV files needed for atlas intensities prediction.
 
         """
         if preprocessing == "shepplogan":
@@ -360,10 +461,17 @@ class MRIDatasetRoi(MRIDataset):
         self.prepare_dl = prepare_dl
         self.mask_list = self.find_masks(caps_directory, preprocessing)
         super().__init__(caps_directory, data_file, preprocessing, augmentation_transformations=train_transformations,
-                         labels=labels, transformations=all_transformations, multi_cohort=multi_cohort)
+                         labels=labels, transformations=all_transformations, multi_cohort=multi_cohort,
+                         atlas=atlas, merged_df=merged_df)
 
     def __getitem__(self, idx):
+        from time import time
+
+        t0 = time()
         participant, session, cohort, roi_idx, label = self._get_meta_data(idx)
+        t1 = time(
+        )
+        print(f"get meta data {t1 - t0}")
 
         if self.prepare_dl:
             if self.roi_list is None:
@@ -380,6 +488,8 @@ class MRIDatasetRoi(MRIDataset):
             image_path = self._get_path(participant, session, cohort, "image")
             image = torch.load(image_path)
             patch = self.extract_roi_from_mri(image, roi_idx)
+        t2 = time()
+        print(f"get roi {t2 - t1}")
 
         if self.transformations:
             patch = self.transformations(patch)
@@ -387,9 +497,21 @@ class MRIDatasetRoi(MRIDataset):
         if self.augmentation_transformations and not self.eval_mode:
             patch = self.augmentation_transformations(patch)
 
+        t3 = time()
+        print(f"transformations {t3 - t2}")
+
         sample = {'image': patch, 'label': label,
                   'participant_id': participant, 'session_id': session,
                   'roi_id': roi_idx}
+
+        t4 = time()
+        print(f"sample {t4 - t3}")
+        if self.atlas is not None:
+            atlas_df = self._get_statistics_df(participant, session, cohort)
+            atlas_pt = torch.from_numpy(atlas_df.values).float()
+            sample['atlas'] = atlas_pt
+        t5 = time()
+        print(f"get atlas {t5 - t4}")
 
         return sample
 
@@ -513,7 +635,7 @@ class MRIDatasetSlice(MRIDataset):
     def __init__(self, caps_directory, data_file, slice_index=None, preprocessing="t1-linear",
                  train_transformations=None, mri_plane=0, prepare_dl=False,
                  discarded_slices=20, mixed=False, labels=True, all_transformations=None,
-                 multi_cohort=False):
+                 multi_cohort=False, atlas=None, merged_df=None):
         """
         Args:
             caps_directory (string): Directory of all the images.
@@ -531,6 +653,8 @@ class MRIDatasetSlice(MRIDataset):
             labels (bool): If True the diagnosis will be extracted from the given DataFrame.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
+            atlas (str): name of an atlas if predicting the regional intensities.
+            merged_df (DataFrame): DataFrame of all TSV files needed for atlas intensities prediction.
         """
         # Rename MRI plane
         if preprocessing == "shepplogan":
@@ -560,7 +684,8 @@ class MRIDatasetSlice(MRIDataset):
         self.prepare_dl = prepare_dl
         super().__init__(caps_directory, data_file, preprocessing,
                          augmentation_transformations=train_transformations, labels=labels,
-                         transformations=all_transformations, multi_cohort=multi_cohort)
+                         transformations=all_transformations, multi_cohort=multi_cohort,
+                         atlas=atlas, merged_df=merged_df)
 
     def __getitem__(self, idx):
         participant, session, cohort, slice_idx, label = self._get_meta_data(idx)
@@ -586,6 +711,11 @@ class MRIDatasetSlice(MRIDataset):
         sample = {'image': image, 'label': label,
                   'participant_id': participant, 'session_id': session,
                   'slice_id': slice_idx}
+
+        if self.atlas is not None:
+            atlas_df = self._get_statistics_df(participant, session, cohort)
+            atlas_pt = torch.from_numpy(atlas_df.mean_scalar.values).float()
+            sample['atlas'] = atlas_pt
 
         return sample
 
@@ -642,6 +772,11 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
     if cnn_index is not None and mode in ["image"]:
         raise ValueError("Multi-CNN is not implemented for %s mode." % mode)
 
+    if params.merged_tsv_path is not None:
+        merged_df = pd.read_csv(params.merged_tsv_path, sep="\t")
+    else:
+        merged_df = None
+
     if mode == "image":
         return MRIDatasetImage(
             input_dir,
@@ -650,7 +785,9 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
             labels=labels,
-            multi_cohort=multi_cohort
+            multi_cohort=multi_cohort,
+            atlas=params.predict_atlas_intensities,
+            merged_df=merged_df
         )
     elif mode == "patch":
         return MRIDatasetPatch(
@@ -664,7 +801,9 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             prepare_dl=prepare_dl,
             patch_index=cnn_index,
             labels=labels,
-            multi_cohort=multi_cohort
+            multi_cohort=multi_cohort,
+            atlas=params.predict_atlas_intensities,
+            merged_df=merged_df
         )
     elif mode == "roi":
         return MRIDatasetRoi(
@@ -678,7 +817,9 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             prepare_dl=prepare_dl,
             roi_index=cnn_index,
             labels=labels,
-            multi_cohort=multi_cohort
+            multi_cohort=multi_cohort,
+            atlas=params.predict_atlas_intensities,
+            merged_df=merged_df
         )
     elif mode == "slice":
         return MRIDatasetSlice(
@@ -692,7 +833,9 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             discarded_slices=params.discarded_slices,
             slice_index=cnn_index,
             labels=labels,
-            multi_cohort=multi_cohort
+            multi_cohort=multi_cohort,
+            atlas=params.predict_atlas_intensities,
+            merged_df=merged_df
         )
     else:
         raise ValueError("Mode %s is not implemented." % mode)

@@ -24,6 +24,7 @@ def check_and_complete(rs_options):
 
     default_values = {
         "accumulation_steps": 1,
+        "atlas_weight": 1,
         "baseline": False,
         "channels_limit": 512,
         "d_reduction": "MaxPooling",
@@ -32,6 +33,7 @@ def check_and_complete(rs_options):
         "dropout": 0,
         "learning_rate": 4,
         "loss": "default",
+        "merged_tsv_path": None,
         "multi_cohort": False,
         "n_conv": 1,
         "network_normalization": "BatchNorm",
@@ -39,6 +41,7 @@ def check_and_complete(rs_options):
         "unnormalize": False,
         "patch_size": 50,
         "patience": 0,
+        "predict_atlas_intensities": None,
         "roi_list": None,
         "selection_threshold": 0,
         "slice_direction": 0,

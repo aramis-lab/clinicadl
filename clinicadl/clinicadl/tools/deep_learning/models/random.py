@@ -46,6 +46,7 @@ def random_sampling(rs_options, options):
 
     sampling_dict = {
         "accumulation_steps": "randint",
+        "atlas_weight": "uniform",
         "baseline": "choice",
         "caps_dir": "fixed",
         "channels_limit": "fixed",
@@ -55,6 +56,7 @@ def random_sampling(rs_options, options):
         "epochs": "fixed",
         "learning_rate": "exponent",
         "loss": "choice",
+        "merged_tsv_path": "fixed",
         "mode": "choice",
         "multi_cohort": "fixed",
         "n_fcblocks": "randint",
@@ -63,6 +65,7 @@ def random_sampling(rs_options, options):
         "optimizer": "choice",
         "patience": "fixed",
         "preprocessing": "choice",
+        "predict_atlas_intensities": "fixed",
         "sampler": "choice",
         "tolerance": "fixed",
         "transfer_learning_path": "choice",

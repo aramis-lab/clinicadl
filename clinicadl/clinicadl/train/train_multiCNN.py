@@ -97,7 +97,7 @@ def train_multi_cnn(params):
 
             # Initialize the model
             main_logger.info('Initialization of the model %i' % cnn_index)
-            model = create_model(params, initial_shape=data_train.size)
+            model = create_model(params, initial_shape=data_train.size, len_atlas=data_train.len_atlas())
             model = transfer_learning(model, fi, source_path=params.transfer_learning_path,
                                       gpu=params.gpu, selection=params.transfer_learning_selection,
                                       logger=main_logger)

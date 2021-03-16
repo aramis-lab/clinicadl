@@ -6,6 +6,7 @@ Script containing the models for the patch level experiments.
 from torch import nn
 from .modules import PadMaxPool3d, Flatten
 
+
 class Conv4_FC3(nn.Module):
     """
     Classifier for a binary classification task
