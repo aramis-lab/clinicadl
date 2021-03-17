@@ -62,10 +62,13 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
     else:
         if not os.path.exists(filename):
             raise ValueError('The training.tsv file of the resumed experiment does not exist.')
-        truncated_tsv = pd.read_csv(filename, sep='\t')
-        truncated_tsv.set_index(['epoch', 'iteration'], inplace=True)
-        truncated_tsv.drop(options.beginning_epoch, level=0, inplace=True)
-        truncated_tsv.to_csv(filename, index=True, sep='\t')
+        truncated_df = pd.read_csv(filename, sep='\t')
+        truncated_df.set_index(['epoch', 'iteration'], inplace=True, drop=True)
+        epochs = [epoch for epoch, _ in truncated_df.index.values]
+        if options.beginning_epoch in epochs:
+            truncated_df.drop(options.beginning_epoch, level=0, inplace=True)
+        truncated_df.to_csv(filename, index=True, sep='\t')
+        assert hasattr(options, "beginning_epoch")
 
     # Create writers
     writer_train = SummaryWriter(os.path.join(log_dir, 'train'))
@@ -345,7 +348,7 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
                     atlas_data = data["atlas"]
                 atlas_output = outputs[:, -atlas_data.size(1)::]
                 outputs = outputs[:, :-atlas_data.size(1):]
-                total_atlas_loss += torch.nn.MSELoss(reduction="sum")(atlas_output, atlas_data)
+                total_atlas_loss += torch.nn.MSELoss(reduction="sum")(atlas_output, atlas_data).item()
 
             if use_labels:
                 loss = criterion(outputs, labels)

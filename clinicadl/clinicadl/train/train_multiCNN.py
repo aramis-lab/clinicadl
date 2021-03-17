@@ -15,7 +15,7 @@ from ..tools.deep_learning.iotools import return_logger, check_and_clean
 from ..tools.deep_learning.iotools import commandline_to_json, write_requirements_version, translate_parameters
 
 
-def train_multi_cnn(params):
+def train_multi_cnn(params, erase_existing=True):
     """
     Trains one CNN per patch and writes for each CNN:
         - logs obtained with Tensorboard during training,
@@ -31,7 +31,8 @@ def train_multi_cnn(params):
     main_logger = return_logger(params.verbose, "main process")
     train_logger = return_logger(params.verbose, "train")
     eval_logger = return_logger(params.verbose, "final evaluation")
-    check_and_clean(params.output_dir)
+    if erase_existing:
+        check_and_clean(params.output_dir)
 
     commandline_to_json(params, logger=main_logger)
     write_requirements_version(params.output_dir)

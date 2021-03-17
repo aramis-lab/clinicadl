@@ -10,8 +10,13 @@ from warnings import warn
 
 def random_search_analysis(launch_dir, splits):
 
-    jobs_list = os.listdir(launch_dir)
-    jobs_list = [job for job in jobs_list if job[0:4] == 'job_']
+    if splits is None:
+        splits = [0]
+
+    jobs_list = [job for job in os.listdir(launch_dir)
+                 if path.exists(path.join(launch_dir, job, "commandline.json"))]
+
+    print(jobs_list)
 
     for selection in ['balanced_accuracy', 'loss']:
 

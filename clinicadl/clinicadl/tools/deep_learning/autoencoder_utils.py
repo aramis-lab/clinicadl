@@ -34,9 +34,6 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
     """
     from tensorboardX import SummaryWriter
 
-    columns = ['epoch', 'iteration', 'time', 'loss_train', 'loss_valid']
-    filename = os.path.join(os.path.dirname(log_dir), 'training.tsv')
-
     if logger is None:
         logger = logging
 
@@ -56,10 +53,12 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
         if not os.path.exists(filename):
             raise ValueError(
                 'The training.tsv file of the resumed experiment does not exist.')
-        truncated_tsv = pd.read_csv(filename, sep='\t')
-        truncated_tsv.set_index(['epoch', 'iteration'], inplace=True)
-        truncated_tsv.drop(options.beginning_epoch, level=0, inplace=True)
-        truncated_tsv.to_csv(filename, index=True, sep='\t')
+        truncated_df = pd.read_csv(filename, sep='\t')
+        truncated_df.set_index(['epoch', 'iteration'], inplace=True)
+        epochs = [epoch for epoch, _ in truncated_df.index.values]
+        if options.beginning_epoch in epochs:
+            truncated_df.drop(options.beginning_epoch, level=0, inplace=True)
+        truncated_df.to_csv(filename, index=True, sep='\t')
 
     # Create writers
     writer_train = SummaryWriter(os.path.join(log_dir, 'train'))

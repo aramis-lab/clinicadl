@@ -104,8 +104,33 @@ def generate_data_func(args):
 
 def rs_func(args):
     from .train.random_search import launch_search
+    from .train.train_from_model import retrain
+    from .classify.random_search_analysis import random_search_analysis
 
-    launch_search(args)
+    if args.random_task == "generate":
+        launch_search(args)
+    elif args.random_task == "analysis":
+        random_search_analysis(
+            args.launch_dir,
+            args.splits
+        )
+    elif args.random_task == "retrain":
+        retrain(args)
+    else:
+        raise ValueError('This task was not implemented in random-search.')
+
+
+def resume_func(args):
+    from .resume.automatic_resume import automatic_resume
+
+    automatic_resume(
+        model_path=args.model_path,
+        gpu=not args.use_cpu,
+        batch_size=args.batch_size,
+        num_workers=args.nproc,
+        evaluation_steps=args.evaluation_steps,
+        verbose=args.verbose
+    )
 
 
 # Function to dispatch training to corresponding function
@@ -570,27 +595,28 @@ def parse_command_line():
     qc_volume_parser.set_defaults(func=qc_func)
 
     # random search parsers
-    rs_generate_parser = subparser.add_parser(
+    rs_parser = subparser.add_parser(
         'random-search',
         parents=[parent_parser],
         help='Generate random networks to explore hyper parameters space.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    # rs_subparsers = rs_parser.add_subparsers(
-    #     title='''Possibilities for random network training''',
-    #     description='''You can generate and train a new random network,
-    #     or relaunch a previous random job with some alterations.''',
-    #     dest='random_task',
-    #     help='''****** Possible tasks ******'''
-    # )
-    # rs_subparsers.required = True
+    rs_subparsers = rs_parser.add_subparsers(
+        title='''Possibilities for random network training''',
+        description='''You can generate and train a new random network,
+        or relaunch a previous random job with some alterations.''',
+        dest='random_task',
+        help='''****** Possible tasks ******'''
+    )
 
-    # rs_generate_parser = rs_subparsers.add_parser(
-    #     'generate',
-    #     parents=[parent_parser],
-    #     help='Sample a new network and train it.',
-    #     formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    # )
+    rs_subparsers.required = True
+
+    rs_generate_parser = rs_subparsers.add_parser(
+        'generate',
+        parents=[parent_parser],
+        help='Sample a new network and train it.',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
     rs_pos_group = rs_generate_parser.add_argument_group(
         TRAIN_CATEGORIES["POSITIONAL"]
     )
@@ -631,13 +657,69 @@ def parse_command_line():
 
     rs_generate_parser.set_defaults(func=rs_func)
 
-    # retrain_parent_parser = return_train_parent_parser(retrain=True)
-    # rs_retrain_parser = rs_subparsers.add_parser(
-    #     'retrain',
-    #     parents=[parent_parser, retrain_parent_parser],
-    #     help='Train a network previously created by generate.',
-    #     formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    # )
+    rs_analysis_parser = rs_subparsers.add_parser(
+        'analysis',
+        help="Performs the analysis of all jobs in launch_dir",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    rs_analysis_parser.add_argument(
+        "launch_dir",
+        type=str,
+        help="Directory containing the random_search.json file."
+    )
+
+    rs_analysis_parser.add_argument(
+        "--splits",
+        type=int, nargs="+", default=None,
+        help="List of the folds used for the analysis. Default will perform only the first fold."
+    )
+
+    rs_analysis_parser.set_defaults(func=rs_func)
+
+    retrain_parent_parser = return_train_parent_parser(retrain=True)
+    rs_retrain_parser = rs_subparsers.add_parser(
+        'retrain',
+        parents=[parent_parser, retrain_parent_parser],
+        help='Train a network previously created by generate.',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    rs_retrain_parser.set_defaults(func=rs_func)
+
+    resume_parser = subparser.add_parser(
+        'resume',
+        parents=[parent_parser],
+        help='Resume all jobs prematurely ended in launch_dir.',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    resume_parser.add_argument(
+        "model_path",
+        type=str,
+        help="Directory containing the random_search.json file."
+    )
+    resume_parser.add_argument(
+        "-np", "--nproc",
+        help='Number of cores used the quality check. (default=2)',
+        type=int, default=2
+    )
+    resume_parser.add_argument(
+        '-cpu', '--use_cpu', action='store_true',
+        help='If provided, will use CPU instead of GPU.',
+    )
+    resume_parser.add_argument(
+        '--batch_size',
+        default=2, type=int,
+        help='Batch size for data loading. (default=2)')
+    resume_parser.add_argument(
+        '--evaluation_steps', '-esteps',
+        default=0, type=int,
+        help='Fix the number of iterations to perform before computing an evaluations. Default will only '
+             'perform one evaluation at the end of each epoch.'
+    )
+
+    resume_parser.set_defaults(func=resume_func)
 
     train_parser = subparser.add_parser(
         'train',
