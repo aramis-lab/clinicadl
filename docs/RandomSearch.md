@@ -1,4 +1,6 @@
-# `clinicadl random-search` - Train random models sampled from a defined hyperparameter space
+# `clinicadl random-search` - Launch and analyse random search results
+
+## `clinicadl random-search generate`- Train random models sampled from a defined hyperparameter space
 
 This functionality trains a random model with hyperparameters sampled from a predefined space. 
 The hyperparameter space is defined in a `random_search.json` file that must be manually filled
@@ -21,18 +23,18 @@ the options of the [train function](./Train/Introduction.md) except for the
 that are defined with the commandline arguments.
 Some variables were also added to sample the architecture of the network.
 
-## Prerequisites
+### Prerequisites
 
 You need to execute the [`clinicadl tsvtool getlabels`](TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease) 
 and [`clinicadl tsvtool {split|kfold}`](TSVTools.md#split---single-split-observing-similar-age-and-sex-distributions) commands
 prior to running this task to have the correct TSV file organization.
 Moreover, there should be a CAPS, obtained running the `t1-linear` pipeline of ClinicaDL.
 
-## Running the task
+### Running the task
 
 This task can be run with the following command line:
 ```Text
-clinicadl random-search <launch_directory> <name>
+clinicadl random-search generate <launch_directory> <name>
 
 ```
 where:
@@ -52,7 +54,7 @@ Optional arguments:
     - `--n_splits` (int) is a number of splits k to load in the case of a k-fold cross-validation. Default will load a single-split.
     - `--split` (list of int) is a subset of folds that will be used for training. By default all splits available are used. 
     
-## Content of `random_search.json`
+### Content of `random_search.json`
 
 `random_search.json` must be present in `launch_dir` before running the command. 
 An example of this file can be found in 
@@ -169,7 +171,7 @@ Mode-dependent variables:
 !!! note "Sampling different modes"
     The mode-dependent variables are used only if the corresponding mode is sampled.
 
-## Outputs
+### Outputs
 
 Results are stored in the results folder given by `launch_dir`, according to
 the following file system:
@@ -179,12 +181,12 @@ the following file system:
     └── <name>
 ```
 
-## Example of setting
+### Example of setting
 
 In the following we give an example of a `random_search.json` file and 
 two possible sets of options that can be sampled from it.
 
-### `random_search.json`
+#### `random_search.json`
 
 ```
 {"mode": ["patch", "image"],
@@ -211,7 +213,7 @@ two possible sets of options that can be sampled from it.
 "n_fcblocks": [1, 3]}
 ```
 
-### Options #1
+#### Options #1
 
 ```
 {"mode": "image",
@@ -269,7 +271,7 @@ The scheme of the corresponding architecture is the following:
 ![Illustration of the CNN corresponding to options #1](images/random1.png)
 
 
-### Options #2
+#### Options #2
 
 ```
 {"mode": "patch",
@@ -320,3 +322,51 @@ number of layers for each convolutional block, described in the `conv` dictionna
 The scheme of the corresponding architecture is the following:
 
 ![Illustration of the CNN corresponding to options #2](images/random2.png)
+
+
+## `clinicadl random-search analysis` - Find best performing jobs
+
+This tool allows to parse all the jobs trained with ClinicaDL and 
+produces a TSV files that indicates how many jobs have a validation balanced accuracy
+higher than a threshold (from 0.50 to 0.95).
+
+### Prerequisites
+
+A random search must have run in `launch_directory`, so 
+`clinicadl random-search generate <launch_directory>` must have been executed at least one time.
+
+### Running the task
+
+This task can be run with the following command line:
+```Text
+clinicadl random-search analysis <launch_directory>
+
+```
+where `launch_directory` (str) is the parent directory of output folder containing the file `random_search.json`.
+
+The list of the folds that can be included in the analysis can be specified in `splits` option.
+If nothing is specified only the first split is included for all jobs.
+
+### Outputs
+
+Two TSV files are produced in `launch_directory`:
+- `analysis_balanced_accuracy.tsv` which gives the results of the best models according to validation balanced accuracy,
+- `analysis_balanced_accuracy.tsv` which gives the results of the best models according to validation loss.
+
+The content of these TSV files is as follows:
+
+```
+	    run >0.5	>0.55	...	>0.85	>0.9	>0.95	folds
+job-0	1	1	    1	    	0	    0	    0	    4
+job-1	1	1	    1       	0	    0	    0	    3
+...
+job-10	1	1	    1       	1	    0	    0	    3
+total   9   8       8           2       1       0       32
+```
+
+where:
+- the column `run` indicates if the job has run are not (it can crash at the beginning because the
+architecture chosen is too large for the GPU).
+- the columns `>XX` indicates if the job has a validation balanced accuracy higher than `XX`.
+- the columns `folds` indicates how many folds were found for this job,
+- the last row `total` is the sum of all the previous rows.
