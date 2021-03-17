@@ -104,7 +104,6 @@ def generate_data_func(args):
 
 def rs_func(args):
     from .train.random_search import launch_search
-    from .train.train_from_model import retrain
     from .classify.random_search_analysis import random_search_analysis
 
     if args.random_task == "generate":
@@ -114,10 +113,14 @@ def rs_func(args):
             args.launch_dir,
             args.splits
         )
-    elif args.random_task == "retrain":
-        retrain(args)
     else:
         raise ValueError('This task was not implemented in random-search.')
+
+
+def retrain_func(args):
+    from .train.train_from_model import retrain
+
+    retrain(args)
 
 
 def resume_func(args):
@@ -678,14 +681,14 @@ def parse_command_line():
     rs_analysis_parser.set_defaults(func=rs_func)
 
     retrain_parent_parser = return_train_parent_parser(retrain=True)
-    rs_retrain_parser = rs_subparsers.add_parser(
+    retrain_parser = subparser.add_parser(
         'retrain',
         parents=[parent_parser, retrain_parent_parser],
         help='Train a network previously created by generate.',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    rs_retrain_parser.set_defaults(func=rs_func)
+    retrain_parser.set_defaults(func=retrain_func)
 
     resume_parser = subparser.add_parser(
         'resume',
