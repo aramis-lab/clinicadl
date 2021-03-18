@@ -272,7 +272,7 @@ class Conv5_FC3_down(nn.Module):
 
     Image level architecture used on Minimal preprocessing
     """
-    def __init__(self, dropout=0.5):
+    def __init__(self, dropout=0.5, n_classes=2):
         super(Conv5_FC3_down, self).__init__()
 
         self.features = nn.Sequential(
@@ -313,7 +313,7 @@ class Conv5_FC3_down(nn.Module):
             nn.Linear(350, 25),
             nn.ReLU(),
 
-            nn.Linear(25, 2)
+            nn.Linear(25, n_classes)
 
         )
 
