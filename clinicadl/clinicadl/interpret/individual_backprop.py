@@ -39,6 +39,8 @@ def individual_backprop(options):
         options.input_dir = model_options.input_dir
     if options.target_diagnosis is None:
         options.target_diagnosis = options.diagnosis
+    options.merged_tsv_path = model_options.merged_tsv_path
+    options.predict_atlas_intensities = model_options.predict_atlas_intensities
 
     for fold in fold_list:
         main_logger.info(fold)

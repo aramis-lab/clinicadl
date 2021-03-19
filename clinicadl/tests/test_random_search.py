@@ -43,7 +43,7 @@ def cli_commands(request):
             'random-search',
             'analysis',
             launch_dir,
-            '--n_splits', '2'
+            '--splits', '2'
         ]
     else:
         raise NotImplementedError(
