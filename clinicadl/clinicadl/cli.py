@@ -1514,11 +1514,6 @@ def return_train_parent_parser(retrain=False):
         default=None if retrain else 0, type=int,
         help='Fix the number of iterations to perform before computing an evaluation. Default will only '
              'perform one evaluation at the end of each epoch.')
-    train_comput_group.add_argument(
-        '--merged_tsv_path',
-        default=None if retrain else "", type=str,
-        help="Path to the output of clinica iotools merged-tsv (concatenation for multi-cohort). "
-    )
 
     train_data_group = train_parent_parser.add_argument_group(
         TRAIN_CATEGORIES["DATA"])
@@ -1570,6 +1565,11 @@ def return_train_parent_parser(retrain=False):
         "--atlas_weight",
         help="Weight to put on the MSE loss used to compute the error on atlas intensities.",
         default=1, type=float,
+    )
+    train_data_group.add_argument(
+        '--merged_tsv_path',
+        default=None if retrain else "", type=str,
+        help="Path to the output of clinica iotools merged-tsv (concatenation for multi-cohort). "
     )
 
     train_cv_group = train_parent_parser.add_argument_group(
