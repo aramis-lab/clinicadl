@@ -94,4 +94,3 @@ def resume_autoencoder(params, resumed_split):
                         nb_images=nb_images)
     del decoder
     torch.cuda.empty_cache()
-
