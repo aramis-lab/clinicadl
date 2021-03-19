@@ -8,6 +8,11 @@ import os
 from os import path
 
 
+def replace_arg(options, key_name, value):
+    if value is not None:
+        setattr(options, key_name, value)
+
+
 def automatic_resume(model_path,
                      gpu,
                      batch_size,
@@ -28,13 +33,13 @@ def automatic_resume(model_path,
     options.model_path = model_path
     logger.info(f"Job being resumed: {model_path}")
 
-    options = read_json(options)
+    options = read_json(options, read_computational=True)
 
     # Set computational parameters
-    options.gpu = gpu
-    options.batch_size = batch_size
-    options.num_workers = num_workers
-    options.evaluation_steps = evaluation_steps
+    replace_arg(options, "gpu", gpu)
+    replace_arg(options, "batch_size", batch_size)
+    replace_arg(options, "num_workers", num_workers)
+    replace_arg(options, "evaluation_steps", evaluation_steps)
 
     # Set verbose
     options.verbose = verbose

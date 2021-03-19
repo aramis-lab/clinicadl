@@ -31,24 +31,30 @@ def cli_commands(request):
             'first_conv_width': [1, 3],
             'n_fcblocks': [1, 2]
         }
-        test_input = [
+        generate_input = [
             'random-search',
+            'generate',
             launch_dir,
             name_dir,
             '--n_splits', '2',
             '--split', '0',
-            '-cpu'
+        ]
+        log_input = [
+            'random-search',
+            'analysis',
+            launch_dir,
+            '--n_splits', '2'
         ]
     else:
         raise NotImplementedError(
             "Test %s is not implemented." %
             request.param)
 
-    return arg_dict, test_input
+    return arg_dict, generate_input, log_input
 
 
 def test_random_search(cli_commands):
-    arg_dict, test_input = cli_commands
+    arg_dict, generate_input, log_input = cli_commands
 
     # Write random_search.json file
     os.makedirs(launch_dir, exist_ok=True)
@@ -57,9 +63,17 @@ def test_random_search(cli_commands):
     f.write(json_file)
     f.close()
 
-    flag_error = not os.system("clinicadl " + " ".join(test_input))
+    flag_error_generate = not os.system("clinicadl " + " ".join(generate_input))
     performances_flag = os.path.exists(
         os.path.join(launch_dir, name_dir, "fold-0", "cnn_classification"))
-    assert flag_error
+    flag_error_log = not os.system("clinicadl " + " ".join(log_input))
+    analysis_flag = True
+    for metric in ["loss", "balanced_accuracy"]:
+        analysis_flag = analysis_flag and os.path.exists(
+            os.path.join(launch_dir, f"analysis_{metric}.tsv")
+        )
+    assert flag_error_generate
     assert performances_flag
+    assert flag_error_log
+    assert analysis_flag
     shutil.rmtree(launch_dir)

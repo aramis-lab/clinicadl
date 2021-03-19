@@ -120,15 +120,35 @@ def rs_func(args):
 def retrain_func(args):
     from .train.train_from_model import retrain
 
+    if args.model_path == args.output_dir:
+        raise ValueError(f"The output directory path {args.output_dir} cannot be the same "
+                         f"than the path to the reference model {args.model_path}.")
+
+    if args.use_cpu and args.use_gpu:
+        raise ValueError("The flags --use_cpu and --use_gpu cannot be specified at the same time.")
+    elif args.use_gpu:
+        args.use_cpu = False
+    else:
+        args.use_cpu = None
+
     retrain(args)
 
 
 def resume_func(args):
     from .resume.automatic_resume import automatic_resume
 
+    if args.use_cpu and args.use_gpu:
+        raise ValueError("The flags --use_cpu and --use_gpu cannot be specified at the same time.")
+    elif args.use_cpu:
+        gpu = False
+    elif args.use_gpu:
+        gpu = True
+    else:
+        gpu = None
+
     automatic_resume(
         model_path=args.model_path,
-        gpu=not args.use_cpu,
+        gpu=gpu,
         batch_size=args.batch_size,
         num_workers=args.nproc,
         evaluation_steps=args.evaluation_steps,
@@ -655,7 +675,7 @@ def parse_command_line():
     rs_comp_group.add_argument(
         '--evaluation_steps', '-esteps',
         default=0, type=int,
-        help='Fix the number of iterations to perform before computing an evaluations. Default will only '
+        help='Fix the number of iterations to perform before computing an evaluation. Default will only '
              'perform one evaluation at the end of each epoch.')
 
     rs_generate_parser.set_defaults(func=rs_func)
@@ -693,8 +713,7 @@ def parse_command_line():
     resume_parser = subparser.add_parser(
         'resume',
         parents=[parent_parser],
-        help='Resume all jobs prematurely ended in launch_dir.',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        help='Resume all jobs prematurely ended in launch_dir.'
     )
 
     resume_parser.add_argument(
@@ -702,24 +721,34 @@ def parse_command_line():
         type=str,
         help="Directory containing the random_search.json file."
     )
-    resume_parser.add_argument(
+
+    resume_comp_group = resume_parser.add_argument_group(
+        TRAIN_CATEGORIES["COMPUTATIONAL"]
+    )
+    resume_comp_group.add_argument(
         "-np", "--nproc",
-        help='Number of cores used the quality check. (default=2)',
-        type=int, default=2
+        help='Number of cores used the quality check. '
+             'Default will reuse the same value than in training.',
+        type=int, default=None
     )
-    resume_parser.add_argument(
-        '-cpu', '--use_cpu', action='store_true',
-        help='If provided, will use CPU instead of GPU.',
+    resume_comp_group.add_argument(
+        '-cpu', '--use_cpu', action='store_true', default=False,
+        help='Override the previous command line to use CPU.',
     )
-    resume_parser.add_argument(
+    resume_comp_group.add_argument(
+        '-gpu', '--use_gpu', action='store_true', default=False,
+        help='Override the previous command line to use GPU.',
+    )
+    resume_comp_group.add_argument(
         '--batch_size',
-        default=2, type=int,
-        help='Batch size for data loading. (default=2)')
-    resume_parser.add_argument(
+        default=None, type=int,
+        help='Batch size for data loading. '
+             'Default will reuse the same value than in training.')
+    resume_comp_group.add_argument(
         '--evaluation_steps', '-esteps',
-        default=0, type=int,
-        help='Fix the number of iterations to perform before computing an evaluations. Default will only '
-             'perform one evaluation at the end of each epoch.'
+        default=None, type=int,
+        help='Fix the number of iterations to perform before computing an evaluation. '
+             'Default will reuse the same value than in training.'
     )
 
     resume_parser.set_defaults(func=resume_func)
@@ -1465,23 +1494,29 @@ def return_train_parent_parser(retrain=False):
     train_comput_group.add_argument(
         '-cpu', '--use_cpu', action='store_true',
         help='If provided, will use CPU instead of GPU.',
-        default=False)
+        default=None if retrain else False)
+    if retrain:
+        train_comput_group.add_argument(
+            '-gpu', '--use_gpu', action='store_true',
+            help='If provided, will use GPU instead of CPU.',
+            default=None if retrain else False
+        )
     train_comput_group.add_argument(
         '-np', '--nproc',
         help='Number of cores used during the training. (default=2)',
-        type=int, default=2)
+        type=int, default=None if retrain else 2)
     train_comput_group.add_argument(
         '--batch_size',
-        default=2, type=int,
+        default=None if retrain else 2, type=int,
         help='Batch size for training. (default=2)')
     train_comput_group.add_argument(
         '--evaluation_steps', '-esteps',
-        default=0, type=int,
-        help='Fix the number of iterations to perform before computing an evaluations. Default will only '
+        default=None if retrain else 0, type=int,
+        help='Fix the number of iterations to perform before computing an evaluation. Default will only '
              'perform one evaluation at the end of each epoch.')
     train_comput_group.add_argument(
         '--merged_tsv_path',
-        default=None, type=str,
+        default=None if retrain else "", type=str,
         help="Path to the output of clinica iotools merged-tsv (concatenation for multi-cohort). "
     )
 

@@ -149,7 +149,7 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
     f.close()
 
 
-def read_json(options, json_path=None, test=False):
+def read_json(options, json_path=None, test=False, read_computational=False):
     """
     Read a json file to update python argparse Namespace.
     Ensures retro-compatibility with previous namings in clinicadl.
@@ -158,6 +158,7 @@ def read_json(options, json_path=None, test=False):
         options: (argparse.Namespace) options of the model.
         json_path: (str) If given path to the json file, else found with options.model_path.
         test: (bool) If given the reader will ignore some options specific to data.
+        read_computational: (bool) if set to True, the computational arguments are also read.
     Returns:
         options (args.Namespace) options of the model updated
     """
@@ -174,7 +175,7 @@ def read_json(options, json_path=None, test=False):
 
     for key, item in json_data.items():
         # We do not change computational options
-        if key in computational_list:
+        if key in computational_list and not read_computational:
             pass
         # If used for evaluation, some parameters were already given
         if test and key in evaluation_parameters:
