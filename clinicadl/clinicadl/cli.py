@@ -297,6 +297,7 @@ def parse_command_line():
     generate_random_parser = generate_subparser.add_parser(
         "random",
         parents=[
+            parent_parser,
             generate_rs_parent_parser],
         help="Generate a random dataset in which gaussian noise is added to brain images.")
     generate_random_parser.add_argument(
@@ -316,6 +317,7 @@ def parse_command_line():
     generate_trivial_parser = generate_subparser.add_parser(
         "trivial",
         parents=[
+            parent_parser,
             generate_rs_parent_parser],
         help="Generate a trivial dataset in which gaussian half of the brain is atrophied.")
     generate_trivial_parser.add_argument(
