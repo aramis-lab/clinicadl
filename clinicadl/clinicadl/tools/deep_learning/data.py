@@ -984,7 +984,7 @@ def get_transforms(mode, minmaxnormalization=True, data_augmentation=None):
 ################################
 
 def load_data(tsv_path, diagnoses_list,
-              split, n_splits=None, baseline=True,
+              split, n_splits=0, baseline=True,
               logger=None, multi_cohort=False):
 
     if logger is None:
@@ -1035,7 +1035,7 @@ def load_data(tsv_path, diagnoses_list,
 
 
 def load_data_single(train_val_path, diagnoses_list,
-                     split, n_splits=None, baseline=True,
+                     split, n_splits=0, baseline=True,
                      logger=None):
 
     if logger is None:
@@ -1044,7 +1044,7 @@ def load_data_single(train_val_path, diagnoses_list,
     train_df = pd.DataFrame()
     valid_df = pd.DataFrame()
 
-    if n_splits is None:
+    if n_splits == 0:
         train_path = path.join(train_val_path, 'train')
         valid_path = path.join(train_val_path, 'validation')
 

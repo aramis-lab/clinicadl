@@ -652,8 +652,9 @@ def parse_command_line():
     rs_data_group = rs_generate_parser.add_argument_group(
         TRAIN_CATEGORIES["CROSS-VALIDATION"]
     )
-    rs_data_group.add_argument("--n_splits", type=int, default=None,
-                               help="If a value is given will load data of a k-fold CV")
+    rs_data_group.add_argument("--n_splits", type=int, default=0,
+                               help="If a value is given for k will load data of a k-fold CV. "
+                                    "Default value (0) will load a single split.")
     rs_data_group.add_argument("--split", type=int, default=None, nargs="+",
                                help="Will load the specific split wanted.")
 
@@ -1576,8 +1577,9 @@ def return_train_parent_parser(retrain=False):
         TRAIN_CATEGORIES["CROSS-VALIDATION"])
     train_cv_group.add_argument(
         '--n_splits',
-        help='If a value is given will load data of a k-fold CV. Else will load a single split.',
-        type=int, default=None)
+        help='If a value is given for k will load data of a k-fold CV. '
+             'Default value (0) will load a single split.',
+        type=int, default=None if retrain else 0)
     train_cv_group.add_argument(
         '--split',
         help='Train the list of given folds. By default train all folds.',

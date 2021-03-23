@@ -264,6 +264,9 @@ def read_json(options, json_path=None, test=False, read_computational=False):
     if not hasattr(options, "atlas_weight"):
         options.atlas_weight = 1
 
+    if hasattr(options, "n_splits") and options.n_splits is None:
+        options.n_splits = 0
+
     return options
 
 
