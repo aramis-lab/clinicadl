@@ -84,6 +84,8 @@ def translate_parameters(args):
             args.prepare_dl = args.use_extracted_slices
         elif hasattr(args, "use_extracted_roi") and args.mode == "roi":
             args.prepare_dl = args.use_extracted_roi
+        else:
+            args.prepare_dl = False
 
     return args
 

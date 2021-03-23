@@ -28,6 +28,9 @@ def group_backprop(options):
     model_options = translate_parameters(model_options)
     model_options.gpu = options.gpu
 
+    if model_options.network_type == "multicnn":
+        raise NotImplementedError("The interpretation of multi-CNN is not implemented.")
+
     if options.tsv_path is None and options.input_dir is None:
         options.multi_cohort = model_options.multi_cohort
     if options.tsv_path is None:
@@ -58,7 +61,8 @@ def group_backprop(options):
                 data_example = return_dataset(model_options.mode, options.input_dir,
                                               training_df, model_options.preprocessing,
                                               train_transformations=None, all_transformations=all_transforms,
-                                              params=options)
+                                              prepare_dl=options.prepare_dl, multi_cohort=options.multi_cohort,
+                                              params=model_options)
 
             model = create_model(model_options, data_example.size)
             model_dir = os.path.join(options.model_path, fold, 'models', selection)
@@ -82,7 +86,8 @@ def group_backprop(options):
                     data_train = return_dataset(model_options.mode, options.input_dir,
                                                 training_df, model_options.preprocessing,
                                                 train_transformations=None, all_transformations=all_transforms,
-                                                params=options)
+                                                prepare_dl=options.prepare_dl, multi_cohort=options.multi_cohort,
+                                                params=model_options)
 
                 train_loader = DataLoader(data_train,
                                           batch_size=options.batch_size,

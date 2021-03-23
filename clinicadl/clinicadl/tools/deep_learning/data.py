@@ -619,7 +619,8 @@ class MRIDatasetSlice(MRIDataset):
 
 def return_dataset(mode, input_dir, data_df, preprocessing,
                    all_transformations, params, train_transformations=None,
-                   cnn_index=None, labels=True):
+                   cnn_index=None, labels=True, multi_cohort=False,
+                   prepare_dl=False):
     """
     Return appropriate Dataset according to given options.
 
@@ -633,6 +634,8 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
         params: (Namespace) options used by specific modes.
         cnn_index: (int) Index of the CNN in a multi-CNN paradigm (optional).
         labels (bool): If True the diagnosis will be extracted from the given DataFrame.
+        multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
+        prepare_dl (bool): If true pre-extracted slices / patches / regions will be loaded.
 
     Returns:
          (Dataset) the corresponding dataset.
@@ -649,7 +652,7 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
             labels=labels,
-            multi_cohort=params.multi_cohort
+            multi_cohort=multi_cohort
         )
     elif mode == "patch":
         return MRIDatasetPatch(
@@ -660,10 +663,10 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             preprocessing=preprocessing,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
-            prepare_dl=params.prepare_dl,
+            prepare_dl=prepare_dl,
             patch_index=cnn_index,
             labels=labels,
-            multi_cohort=params.multi_cohort
+            multi_cohort=multi_cohort
         )
     elif mode == "roi":
         return MRIDatasetRoi(
@@ -674,10 +677,10 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             preprocessing=preprocessing,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
-            prepare_dl=params.prepare_dl,
+            prepare_dl=prepare_dl,
             roi_index=cnn_index,
             labels=labels,
-            multi_cohort=params.multi_cohort
+            multi_cohort=multi_cohort
         )
     elif mode == "slice":
         return MRIDatasetSlice(
@@ -687,11 +690,11 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
             mri_plane=params.mri_plane,
-            prepare_dl=params.prepare_dl,
+            prepare_dl=prepare_dl,
             discarded_slices=params.discarded_slices,
             slice_index=cnn_index,
             labels=labels,
-            multi_cohort=params.multi_cohort
+            multi_cohort=multi_cohort
         )
     else:
         raise ValueError("Mode %s is not implemented." % mode)

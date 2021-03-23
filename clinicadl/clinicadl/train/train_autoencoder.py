@@ -62,9 +62,11 @@ def train_autoencoder(params):
 
         data_train = return_dataset(params.mode, params.input_dir, training_df, params.preprocessing,
                                     train_transformations=train_transforms, all_transformations=all_transforms,
+                                    prepare_dl=params.prepare_dl, multi_cohort=params.multi_cohort,
                                     params=params)
         data_valid = return_dataset(params.mode, params.input_dir, valid_df, params.preprocessing,
                                     train_transformations=train_transforms, all_transformations=all_transforms,
+                                    prepare_dl=params.prepare_dl, multi_cohort=params.multi_cohort,
                                     params=params)
 
         train_sampler = generate_sampler(data_train, params.sampler)

@@ -8,7 +8,6 @@ from clinicadl.tools.deep_learning import create_model, load_model, read_json
 from clinicadl.tools.deep_learning.iotools import return_logger, translate_parameters
 from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, compute_num_cnn, load_data_test
 from clinicadl.tools.deep_learning.cnn_utils import test, soft_voting_to_tsvs, mode_level_to_tsvs, get_criterion
-import torch.nn as nn
 from torch.utils.data import DataLoader
 
 
@@ -147,7 +146,6 @@ def inference_from_model(caps_dir,
     options.use_cpu = not gpu
     options.nproc = num_workers
     options.batch_size = batch_size
-    options.prepare_dl = prepare_dl
     if diagnoses is not None:
         options.diagnoses = diagnoses
 
@@ -206,7 +204,8 @@ def inference_from_model(caps_dir,
                 labels=labels,
                 num_cnn=num_cnn,
                 logger=logger,
-                multi_cohort=multi_cohort
+                multi_cohort=multi_cohort,
+                prepare_dl=prepare_dl
             )
 
             # Soft voting
@@ -229,7 +228,7 @@ def inference_from_model(caps_dir,
 def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
                                  prefix, output_dir, fold, selection,
                                  labels=True, num_cnn=None, logger=None,
-                                 multi_cohort=False):
+                                 multi_cohort=False, prepare_dl=True):
     from os.path import join
     import logging
 
@@ -258,7 +257,9 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
                 all_transformations=all_transforms,
                 params=model_options,
                 cnn_index=n,
-                labels=labels
+                labels=labels,
+                prepare_dl=prepare_dl,
+                multi_cohort=multi_cohort
             )
 
             test_loader = DataLoader(
@@ -303,7 +304,9 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
             train_transformations=None,
             all_transformations=all_transforms,
             params=model_options,
-            labels=labels
+            labels=labels,
+            prepare_dl=prepare_dl,
+            multi_cohort=multi_cohort
         )
 
         # Load the data
