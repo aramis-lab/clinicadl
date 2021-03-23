@@ -106,7 +106,7 @@ class MRIDataset(Dataset):
 
         return caps_dict
 
-    def _get_path(self, participant, session, cohort, mode="image", cropped_roi=True):
+    def _get_path(self, participant, session, cohort, mode="image"):
 
         if cohort not in self.caps_dict.keys():
             raise ValueError('Cohort names in labels and CAPS definitions do not match.')
