@@ -84,6 +84,8 @@ def translate_parameters(args):
             args.prepare_dl = args.use_extracted_slices
         elif hasattr(args, "use_extracted_roi") and args.mode == "roi":
             args.prepare_dl = args.use_extracted_roi
+        else:
+            args.prepare_dl = False
 
     return args
 
@@ -239,6 +241,12 @@ def read_json(options, json_path=None, test=False):
     if not hasattr(options, 'dropout') or options.dropout is None:
         options.dropout = None
         set_default_dropout(options)
+
+    if not hasattr(options, 'uncropped_roi'):
+        options.uncropped_roi = False
+
+    if not hasattr(options, 'roi_list'):
+        options.roi_list = None
 
     if not hasattr(options, 'multi_cohort'):
         options.multi_cohort = False
