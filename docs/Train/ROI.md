@@ -1,6 +1,6 @@
 # `train roi` - Train deep learning networks using predefined regions of interest (ROI)
 
-This option allows training a network on a set of regions of interest (ROI) defined by 
+This option allows training a network using a set of regions of interest (ROI) defined by 
 [masks](./ROI.md#definition-of-masks).
 
 If no ROI is specified, the inputs will correspond to two patches of size 50x50x50 voxels 
@@ -141,9 +141,9 @@ where mandatory arguments are:
 
 The options specific to this task are the following:
 
-- `--roi_list` (list of str) includes the names of the regions wanted. Each region must correspond
+- `--roi_list` (list of str) includes the names of the targeted regions. Each region corresponds
 to a mask defined in `caps_directory`. See the [dedicated section](./ROI.md#definition-of-masks) for more information.
-Default will extract two patches centered on the hippocampi (available for `t1-linear` preprocessing only).
+Default behavior will extract two patches centered on the hippocampi (available for `t1-linear` preprocessing only).
 - `--uncropped_roi` (bool) if given the extracted region is not cropped. Default will crop the image
 with the smallest bounding box possible.
 - `--use_extracted_roi` (bool) if this flag is given, the outputs of `clinicadl extract` are used.
