@@ -29,6 +29,10 @@ theme:
     primary: green
     accent: green
 
+# Version panel
+extra_javascript:
+  - 'https://code.jquery.com/jquery-3.3.1.min.js'
+
 # Customization
 extra:
   feature:
@@ -40,6 +44,7 @@ extra:
       link: https://twitter.com/clinica_run
     - icon: material/earth
       link: http://www.aramislab.fr
+
 
 # Extensions
 markdown_extensions:
