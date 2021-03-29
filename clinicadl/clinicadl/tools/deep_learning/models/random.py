@@ -22,6 +22,8 @@ def sampling_fn(value, sampling_type):
             return random.randint(*value)
         elif sampling_type is "uniform":
             return random.uniform(*value)
+        elif sampling_type is "fixed":
+            return value
         else:
             raise ValueError(
                 "Sampling type %s is not implemented" % sampling_type)
@@ -87,19 +89,19 @@ def random_sampling(rs_options, options):
             "patch_size": "randint",
             "selection_threshold": "uniform",
             "stride_size": "randint",
-            "use_extracted_patches": "fixed",
+            "use_extracted_patches": "fixed"
         },
         "roi": {
             "selection_threshold": "uniform",
             "roi_list": "fixed",
             "use_extracted_roi": "fixed",
-            "uncropped_roi": "fixed",
+            "uncropped_roi": "fixed"
         },
         "slice": {
             "discarded_slices": "randint",
             "selection_threshold": "uniform",
             "slice_direction": "choice",
-            "use_extracted_slices": "fixed",
+            "use_extracted_slices": "fixed"
         }
     }
 
