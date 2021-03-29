@@ -40,8 +40,6 @@ extra:
       link: https://twitter.com/clinica_run
     - icon: material/earth
       link: http://www.aramislab.fr
-  version:
-      provider: mike
 
 # Extensions
 markdown_extensions:
