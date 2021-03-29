@@ -614,7 +614,8 @@ def soft_voting(performance_df, validation_df, mode, selection_threshold=None, u
 
 def mode_to_image_tsvs(output_dir, fold, selection, mode, dataset="test"):
     """
-    Copy mode-level tsvs to name them as image-level tsvs
+    Copy mode-level tsvs to name them as image-level TSV files
+
     Args:
         output_dir: (str) path to the output directory.
         fold: (int) Fold number of the cross-validation.
