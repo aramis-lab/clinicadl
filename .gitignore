@@ -36,3 +36,5 @@ clinicadl/notebooks/
 clinicadl/clinicadl/resources/masks/*.nii
 clinicadl/clinicadl/resources/masks/*.nii.gz
 
+# mike
+site/
