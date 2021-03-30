@@ -505,7 +505,7 @@ class MRIDatasetRoi(MRIDataset):
 
         for i, desc in enumerate(image_descriptors):
             if key_to_follow in desc:
-                image_descriptors.insert(i+1, descriptor_to_add)
+                image_descriptors.insert(i + 1, descriptor_to_add)
 
         return image_descriptors
 
@@ -980,7 +980,7 @@ def load_data_test_single(test_path, diagnoses_list, baseline=True):
 
     if test_path.endswith('.tsv'):
         test_df = pd.read_csv(test_path, sep='\t')
-        if not "diagnosis" in test_df.columns.values:
+        if "diagnosis" not in test_df.columns.values:
             raise ValueError(f"'diagnosis' column must be present in TSV file {test_path}.")
         test_df = test_df[test_df.diagnosis.isin(diagnoses_list)]
         if len(test_df) == 0:
