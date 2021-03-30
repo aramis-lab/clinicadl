@@ -23,8 +23,8 @@ Some variables were also added to sample the architecture of the network.
 
 ## Prerequisites
 
-You need to execute the [`clinicadl tsvtool getlabels`](../TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease) 
-and [`clinicadl tsvtool {split|kfold}`](../TSVTools.md#split---single-split-observing-similar-age-and-sex-distributions) commands
+You need to execute the [`clinicadl tsvtool getlabels`](TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease) 
+and [`clinicadl tsvtool {split|kfold}`](TSVTools.md#split---single-split-observing-similar-age-and-sex-distributions) commands
 prior to running this task to have the correct TSV file organization.
 Moreover, there should be a CAPS, obtained running the `t1-linear` pipeline of ClinicaDL.
 
@@ -46,7 +46,7 @@ Optional arguments:
     - `--use_cpu` (bool) forces to use CPU. Default behaviour is to try to use a GPU and to raise an error if it is not found.
     - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
-    - `--evaluation_steps` (int) gives the number of iterations to perform an [evaluation internal to an epoch](Details.md#evaluation). 
+    - `--evaluation_steps` (int) gives the number of iterations to perform an [evaluation internal to an epoch](Train/Details.md#evaluation). 
     Default will only perform an evaluation at the end of each epoch.
 - **Cross-validation arguments**
     - `--n_splits` (int) is a number of splits k to load in the case of a k-fold cross-validation. Default will load a single-split.
@@ -73,7 +73,7 @@ Sampling function: `choice`.
 Sampling function: `fixed`.
 - `diagnoses` (list of str) is the list of the labels that will be used for training. 
 Sampling function: `fixed`.
-- `epochs` (int) is the [maximum number of epochs](Details.md#stopping-criterion).
+- `epochs` (int) is the [maximum number of epochs](Train/Details.md#stopping-criterion).
 Sampling function: `fixed`.
 - `n_convblocks` (int) is the number of convolutional blocks in CNN.
 Sampling function: `randint`.
@@ -116,18 +116,18 @@ Optional variables:
     Sampling function: `exponent`, conditioned by `wd_bool`. Default: `4` (leading to a value of `1e-4`).
     - `dropout` (float) is the rate of dropout applied in dropout layers.
     Sampling function: `uniform`. Default: `0.0`.
-    - `patience` (int) is the number of epochs for [early stopping](Details.md#stopping-criterion) patience.
+    - `patience` (int) is the number of epochs for [early stopping](Train/Details.md#stopping-criterion) patience.
     Sampling function: `fixed`. Default: `0`.
-    - `tolerance` (float) is the value used for [early stopping](Details.md#stopping-criterion) tolerance.
+    - `tolerance` (float) is the value used for [early stopping](Train/Details.md#stopping-criterion) tolerance.
      Sampling function: `fixed`. Default: `0.0`.
 "accumulation_steps": 1
 - **Transfer learning**
     - `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
     The best model of this folder will be used to initialize the network as 
-    explained in the [implementation details](./Details.md#transfer-learning). 
+    explained in the [implementation details](Train/Details.md#transfer-learning). 
     If nothing is given the initialization will be random.
     - `--transfer_learning_selection` (str) corresponds to the metric according to which the 
-    [best model](./Details.md#model-selection) of `transfer_learning_path` will be loaded. 
+    [best model](Train/Details.md#model-selection) of `transfer_learning_path` will be loaded. 
     This argument will only be taken into account if the source network is a CNN. 
     Choices are `best_loss` and `best_balanced_accuracy`. Default: `best_balanced_accuracy`.
 
@@ -137,7 +137,7 @@ Mode-dependent variables:
     - `patch_size` (int) size of the patches in voxels. 
     Sampling function: `randint`. Default: `50`.
     - `selection_threshold` (float) threshold on the balanced accuracies to compute the 
-    [image-level performance](./Details.md#soft-voting). 
+    [image-level performance](Train/Details.md#soft-voting). 
     Patches are selected if their balanced accuracy is greater than the threshold.
     Sampling function: `uniform`. Default will perform no selection.
     - `stride_size` (int) length between the centers of successive patches in voxels.
@@ -146,7 +146,7 @@ Mode-dependent variables:
     Otherwise, the whole 3D MR volumes are loaded and patches are extracted on-the-fly.
 - `roi`
     - `selection_threshold` (float) threshold on the balanced accuracies to compute the 
-    [image-level performance](./Details.md#soft-voting). 
+    [image-level performance](Train/Details.md#soft-voting). 
     Patches are selected if their balanced accuracy is greater than the threshold.
     Sampling function: `uniform`. Default will perform no selection.
 - `slice`
@@ -154,7 +154,7 @@ Mode-dependent variables:
     If only one argument is given, it will be used for both sides.
     Sampling function: `randint`. Default: `20`.
     - `selection_threshold` (float) threshold on the balanced accuracies to compute the 
-    [image-level performance](./Details.md#soft-voting). 
+    [image-level performance](Train/Details.md#soft-voting). 
     Slices are selected if their balanced accuracy is greater than the threshold. 
     Sampling function: `uniform`. Default corresponds to no selection.
     - `slice_direction` (int) axis along which the MR volume is sliced.
