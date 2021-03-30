@@ -63,7 +63,7 @@ Optional arguments:
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
 - **Model selection**
     - `--selection` (list of str) corresponds to the metrics according to which the 
-    [best models](./Details.md#model-selection) of `model_path` will be loaded. 
+    [best models](Train/Details.md#model-selection) of `model_path` will be loaded. 
     Choices are `best_loss` and `best_balanced_accuracy`. Default: `best_balanced_accuracy`.
 - **Data management**
     - `--tsv_path` (str) is a path to a directory containing one TSV file per diagnosis
@@ -79,7 +79,7 @@ Optional arguments:
     classified by the CNN. Default will not perform any selection.
     - `--nifti_template_path` (str) is a path to a nifti template to retrieve the affine values
     needed to write Nifti files for 3D saliency maps. Default will use the identity matrix for the affine.
-    - `--multi_cohort` (bool) is a flag indicated that [multi-cohort interpretation](Details.md#multi-cohort) is performed.
+    - `--multi_cohort` (bool) is a flag indicated that [multi-cohort interpretation](Train/Details.md#multi-cohort) is performed.
     In this case, `caps_dir` and `tsv_path` must be paths to TSV files. If no new `caps_dir` and `tsv_path` are 
     given this argument is not taken into account. 
 - **Results display**

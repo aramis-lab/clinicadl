@@ -22,6 +22,7 @@ google_analytics:
 # Configuration
 theme:
   name: material
+  custom_dir: docs/overrides
   icon:
     repo: material/github
   language: en
@@ -44,6 +45,8 @@ extra:
       link: https://twitter.com/clinica_run
     - icon: material/earth
       link: http://www.aramislab.fr
+  version:
+    default: stable
 
 
 # Extensions

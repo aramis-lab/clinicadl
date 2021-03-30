@@ -77,7 +77,8 @@ Optional arguments:
     - `--diagnoses` (list[str]) is the list of participants that will be classified.
     Default will look for the same labels used during the training task.
     Choices available are `AD`, `CN`, `MCI`, `sMCI` and `pMCI`.
-    - `--multi_cohort` (bool) is a flag indicated that [multi-cohort classification](Details.md#multi-cohort) is performed.
+    - `--multi_cohort` (bool) is a flag indicated that [multi-cohort classification](Train/Details.md#multi-cohort)
+     is performed.
     In this case, `caps_directory` and `tsv_path` must be paths to TSV files.
 
 ## Outputs
