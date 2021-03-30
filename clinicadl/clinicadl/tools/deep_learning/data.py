@@ -979,7 +979,13 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
 def load_data_test_single(test_path, diagnoses_list, baseline=True):
 
     if test_path.endswith('.tsv'):
-        return pd.read_csv(test_path, sep='\t')
+        test_df = pd.read_csv(test_path, sep='\t')
+        if not "diagnosis" in test_df.columns.values:
+            raise ValueError(f"'diagnosis' column must be present in TSV file {test_path}.")
+        test_df = test_df[test_df.diagnosis.isin(diagnoses_list)]
+        if len(test_df) == 0:
+            raise ValueError(f"Diagnoses wanted {diagnoses_list} were not found in TSV file {test_path}.")
+        return test_df
 
     test_df = pd.DataFrame()
 
