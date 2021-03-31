@@ -124,3 +124,4 @@ def individual_backprop(options):
                             plt.colorbar()
                             plt.savefig(jpg_path)
                             plt.close()
+                        np.save(path.join(single_path, "map.npy"), map_np[i])

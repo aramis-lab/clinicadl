@@ -119,14 +119,12 @@ def group_backprop(options):
 
                     mean_map_nii = nib.Nifti1Image(mean_map[0], affine)
                     nib.save(mean_map_nii, path.join(results_path, "map.nii.gz"))
-                    np.save(path.join(results_path, "map.npy"), mean_map[0])
                 else:
                     jpg_path = path.join(results_path, "map.jpg")
                     plt.imshow(mean_map[0], cmap="coolwarm", vmin=-options.vmax, vmax=options.vmax)
                     plt.colorbar()
                     plt.savefig(jpg_path)
                     plt.close()
-                    numpy_path = path.join(results_path, "map.npy")
-                    np.save(numpy_path, mean_map[0])
+                np.save(path.join(results_path, "map.npy"), mean_map[0])
             else:
                 main_logger.warn("There are no subjects for the given options")
