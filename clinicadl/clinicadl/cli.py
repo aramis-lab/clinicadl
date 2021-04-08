@@ -1484,11 +1484,6 @@ def return_train_parent_parser():
         default=0, type=int,
         help='Fix the number of iterations to perform before computing an evaluation. Default will only '
              'perform one evaluation at the end of each epoch.')
-    train_comput_group.add_argument(
-        '--merged_tsv_path',
-        default=None, type=str,
-        help="Path to the output of clinica iotools merged-tsv (concatenation for multi-cohort). "
-    )
 
     train_data_group = train_parent_parser.add_argument_group(
         TRAIN_CATEGORIES["DATA"])
@@ -1536,6 +1531,7 @@ def return_train_parent_parser():
         '--merged_tsv_path',
         default="", type=str,
         help="Path to the output of clinica iotools merged-tsv (concatenation for multi-cohort). "
+             "Can accelerate training if atlas intensities are predicted."
     )
 
     train_cv_group = train_parent_parser.add_argument_group(
