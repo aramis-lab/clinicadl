@@ -406,7 +406,7 @@ def get_labels(merged_tsv, missing_mods, results_path,
 
     # Remove SMC patients
     if remove_smc:
-        if "diagnosis_bl" in bids_df.columns.values: # Retro-compatibility
+        if "diagnosis_bl" in bids_df.columns.values:  # Retro-compatibility
             bids_df = bids_df[~(bids_df.diagnosis_bl == "SMC")]
         if "diagnosis_sc" in bids_df.columns.values:
             bids_df = bids_df[~(bids_df.diagnosis_sc == "SMC")]
