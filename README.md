@@ -119,7 +119,7 @@ can be performed:
 
 ## Pretrained models
 
-Some of the pretained models for the CNN networks described in 
+Some of the pretrained models for the CNN networks described in 
 ([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)) 
 are available on Zenodo:
 <https://zenodo.org/record/3491003>
@@ -134,4 +134,4 @@ Updated versions of the models will be published soon.
 ## Scientific papers using this framework
 
 - Wen et al., 2020 [Convolutional neural networks for classification of Alzheimer's disease: Overview and reproducible evaluation](https://doi.org/10.1016/j.media.2020.101694)
-([arXiv version](https://arxiv.org/abs/1904.07773)).
+([arXiv version](https://arxiv.org/abs/1904.07773)). Scripts and related data are available in `projects/Wen_MedIA_2020`.
