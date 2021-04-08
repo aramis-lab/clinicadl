@@ -43,6 +43,9 @@ def train_multi_cnn(params):
 
     num_cnn = compute_num_cnn(params.input_dir, params.tsv_path, params, data="train")
 
+    if num_cnn == 1:
+        raise ValueError("Multi-CNN framework cannot be performed on a dataset computing one element per image.")
+
     if params.split is None:
         if params.n_splits is None:
             fold_iterator = range(1)
