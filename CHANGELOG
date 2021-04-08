@@ -26,6 +26,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## ClinicaDL 0.2.1
+
+### Changed
+
+- Update README.md to avoid duplicates.
+
+### Removed
+
+- Scripts and data related to MedIA publication.
+
 ## ClinicaDL 0.2.0
 
 ### Added
