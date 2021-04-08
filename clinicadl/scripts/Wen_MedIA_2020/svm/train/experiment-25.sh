@@ -20,7 +20,7 @@ SCRIPT="train"
 # Dataset Management
 COHORT='ADNI'
 CAPS_EXT="_clinica_spm"
-BASELINE=1
+BASELINE=0
 TASK='sMCI pMCI'
 SPLITS=5
 
@@ -31,7 +31,7 @@ OPTIONS="$OPTIONS --baseline"
 fi
 
 NUM_WORKERS=16
-DATE="refactoring_results/svm4"
+DATE="refactoring_results/svm3"
 
 TSVPATH="/network/lustre/iss01/home/elina.thibeausutre/data/Frontiers/$COHORT/lists_by_diagnosis/train/"
 RESULTSPATH="/network/lustre/iss01/home/elina.thibeausutre/results/$DATE/"
@@ -43,6 +43,5 @@ echo $TASK_NAME
 
 NAME="model-svm_task-${TASK_NAME}"
 
-cd /network/lustre/iss01/home/elina.thibeausutre/Code/AD-DL/clinicadl
-pwd
-python -m clinicadl.svm.$SCRIPT $TSVPATH $IMGPATH $RESULTSPATH$NAME -w $NUM_WORKERS -d $TASK $OPTIONS
+cd ..
+python -m src.$SCRIPT $TSVPATH $IMGPATH $RESULTSPATH$NAME -w $NUM_WORKERS -d $TASK $OPTIONS

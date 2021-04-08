@@ -39,10 +39,7 @@
 
 This repository hosts the source code of a **framework for the reproducible
 evaluation of deep learning classification experiments using anatomical MRI
-data for the computer-aided diagnosis of Alzheimer's disease (AD)**. This work
-has been published in [Medical Image
-Analysis](https://doi.org/10.1016/j.media.2020.101694) and is also available on
-[arXiv](https://arxiv.org/abs/1904.07773).
+data for the computer-aided diagnosis of Alzheimer's disease (AD)**.
 
 Automatic classification of AD using classical machine learning approaches can
 be performed using the framework available here:
@@ -133,3 +130,8 @@ Updated versions of the models will be published soon.
 
 - [Clinica: Software platform for clinical neuroimaging studies](https://github.com/aramis-lab/clinica)
 - [AD-ML: Framework for the reproducible classification of Alzheimer's disease using machine learning](https://github.com/aramis-lab/AD-ML)
+
+## Scientific papers using this framework
+
+- Wen et al., 2020 [Convolutional neural networks for classification of Alzheimer's disease: Overview and reproducible evaluation](https://doi.org/10.1016/j.media.2020.101694)
+([arXiv version](https://arxiv.org/abs/1904.07773)).

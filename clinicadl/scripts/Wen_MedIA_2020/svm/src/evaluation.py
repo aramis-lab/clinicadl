@@ -6,7 +6,7 @@ from os import path
 import pandas as pd
 import numpy as np
 from .classification_utils import load_data_svm, revert_mask, CAPSVoxelBasedInput, evaluate_prediction, save_data
-from ..tools.deep_learning.data import load_data, load_data_test
+from clinicadl.tools.deep_learning.data import load_data, load_data_test
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 

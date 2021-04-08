@@ -1,57 +1,32 @@
 # coding: utf8
 
 import argparse
-import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 import torch
 import os
-from time import time
 
-from clinicadl.tools.deep_learning import commandline_to_json
+from clinicadl.tools.deep_learning.iotools import commandline_to_json, return_logger, check_and_clean, \
+    write_requirements_version, translate_parameters
 from clinicadl.tools.deep_learning.models import load_model, init_model
 from clinicadl.tools.deep_learning.data import (load_data,
-                                                MinMaxNormalization,
                                                 MRIDatasetSlice,
-                                                mix_slices)
-from clinicadl.tools.deep_learning.cnn_utils import train, test, mode_level_to_tsvs
+                                                mix_slices,
+                                                generate_sampler,
+                                                get_transforms)
+from clinicadl.tools.deep_learning.cnn_utils import train, test, mode_level_to_tsvs, get_criterion
 
 
-__author__ = "Junhao Wen"
-__copyright__ = "Copyright 2018-2020 The Aramis Lab Team"
-__credits__ = ["Junhao Wen" "Elina Thibeau-Sutre" "Mauricio Diaz"]
-__license__ = "See LICENSE.txt file"
-__version__ = "0.1.0"
-__maintainer__ = "Junhao Wen, Elina Thibeau-Sutre, Mauricio Diaz"
-__email__ = "junhao.wen89@gmail.com, mauricio.diaz@inria.fr"
-__status__ = "Development"
+def test_bad_cnn(model, output_dir, data_loader, subset_name, split, criterion, mode, logger, gpu=False):
 
-
-def test_cnn(data_loader, subset_name, split, criterion, options):
-
-    for selection in ["best_acc", "best_loss"]:
+    for selection in ["best_balanced_accuracy", "best_loss"]:
         # load the best trained model during the training
-        model = init_model(
-            options.model,
-            gpu=options.gpu,
-            dropout=options.dropout)
-        model, best_epoch = load_model(model, os.path.join(options.output_dir, 'best_model_dir', "fold_%i" % split,
-                                                           'CNN', selection),
-                                       gpu=options.gpu, filename='model_best.pth.tar')
+        model, best_epoch = load_model(model, os.path.join(output_dir, f'fold-{split}', 'models', selection),
+                                       gpu=gpu, filename='model_best.pth.tar')
+        results_df, metrics = test(model, data_loader, gpu, criterion, mode)
+        logger.info("%s level %s balanced accuracy is %f for model selected on %s"
+                    % (mode, subset_name, metrics["balanced_accuracy"], selection))
 
-        results_df, metrics = test(
-            model, data_loader, options.gpu, criterion, options.mode)
-        print(
-            "Slice level balanced accuracy is %f" %
-            metrics['balanced_accuracy'])
-
-        mode_level_to_tsvs(
-            options.output_dir,
-            results_df,
-            metrics,
-            split,
-            selection,
-            options.mode,
-            dataset=subset_name)
+        mode_level_to_tsvs(output_dir, results_df, metrics, split, selection, mode, dataset=subset_name)
 
 
 # Train 2D CNN - Slice level network
@@ -118,7 +93,9 @@ parser.add_argument(
     "--split",
     default=None,
     type=int,
-    help="Define a specific fold in the k-fold, this is very useful to find the optimal model, where you do not want to run your k-fold validation")
+    nargs="+",
+    help="Define a specific fold in the k-fold, this is very useful to find the optimal model, "
+         "when you do not want to run your k-fold validation")
 
 parser.add_argument(
     "--epochs",
@@ -189,28 +166,38 @@ parser.add_argument(
     default=0,
     help="Tolerance of magnitude of performance after each epoch.")
 
+parser.add_argument(
+    '--verbose',
+    '-v',
+    action='count',
+    default=0)
 
-def train_CNN_bad_data_split(params):
 
-    # Initialize the model
-    print('Do transfer learning with existed model trained on ImageNet!\n')
-    print('The chosen network is %s !' % params.model)
+def train_bad_cnn(params):
+    """
+    Trains a single CNN and writes:
+        - logs obtained with Tensorboard during training,
+        - best models obtained according to two metrics on the validation set (loss and balanced accuracy),
+        - for patch and roi modes, the initialization state is saved as it is identical across all folds,
+        - final performances at the end of the training.
 
-    # most of the imagenet pretrained model has this input size
-    trg_size = (224, 224)
+    If the training crashes it is possible to relaunch the training process from the checkpoint.pth.tar and
+    optimizer.pth.tar files which respectively contains the state of the model and the optimizer at the end
+    of the last epoch that was completed before the crash.
+    """
+    main_logger = return_logger(params.verbose, "main process")
+    train_logger = return_logger(params.verbose, "train")
+    eval_logger = return_logger(params.verbose, "final evaluation")
+    check_and_clean(params.output_dir)
 
-    # All pre-trained models expect input images normalized in the same way,
-    # i.e. mini-batches of 3-channel RGB images of shape (3 x H x W), where H
-    # and W are expected to be at least 224. The images have to be loaded in to
-    # a range of [0, 1] and then normalized using mean = [0.485, 0.456, 0.406]
-    # and std = [0.229, 0.224, 0.225].
-    transformations = transforms.Compose([MinMaxNormalization(),
-                                          transforms.ToPILImage(),
-                                          transforms.Resize(trg_size),
-                                          transforms.ToTensor()])
-    params.dropout = 0.8
-
-    total_time = time()
+    params.mode = "slice"
+    params.network_type = "cnn"
+    commandline_to_json(params, logger=main_logger)
+    write_requirements_version(params.output_dir)
+    params = translate_parameters(params)
+    train_transforms, all_transforms = get_transforms(params.mode,
+                                                      minmaxnormalization=True,
+                                                      data_augmentation=False)
 
     if params.split is None:
         if params.n_splits is None:
@@ -218,19 +205,20 @@ def train_CNN_bad_data_split(params):
         else:
             fold_iterator = range(params.n_splits)
     else:
-        fold_iterator = [params.split]
+        fold_iterator = params.split
 
     for fi in fold_iterator:
-        print("Running for the %d-th fold" % fi)
+        main_logger.info("Fold %i" % fi)
 
         training_sub_df, valid_sub_df = load_data(
             params.tsv_path,
             params.diagnoses,
             fi,
             n_splits=params.n_splits,
-            baseline=params.baseline
+            baseline=params.baseline,
+            logger=main_logger,
+            multi_cohort=params.multi_cohort
         )
-
         # split the training + validation by slice
         training_df, valid_df = mix_slices(
             training_sub_df,
@@ -241,7 +229,8 @@ def train_CNN_bad_data_split(params):
         data_train = MRIDatasetSlice(
                 params.caps_directory,
                 training_df,
-                transformations=transformations,
+                all_transformations=all_transforms,
+                train_transformations=train_transforms,
                 mri_plane=params.mri_plane,
                 prepare_dl=params.prepare_dl,
                 mixed=True
@@ -250,17 +239,19 @@ def train_CNN_bad_data_split(params):
         data_valid = MRIDatasetSlice(
                 params.caps_directory,
                 valid_df,
-                transformations=transformations,
+                all_transformations=all_transforms,
+                train_transformations=train_transforms,
                 mri_plane=params.mri_plane,
                 prepare_dl=params.prepare_dl,
                 mixed=True
                 )
 
-        # Use argument load to distinguish training and testing
+        train_sampler = generate_sampler(data_train, params.sampler)
+
         train_loader = DataLoader(
             data_train,
             batch_size=params.batch_size,
-            shuffle=True,
+            sampler=train_sampler,
             num_workers=params.num_workers,
             pin_memory=True
         )
@@ -274,42 +265,29 @@ def train_CNN_bad_data_split(params):
         )
 
         # Initialize the model
-        print('Initialization of the model')
-        model = init_model(
-            params.model,
-            gpu=params.gpu,
-            dropout=params.dropout)
+        main_logger.info('Initialization of the model')
+        model = init_model(params, initial_shape=data_train.size)
 
         # Define criterion and optimizer
-        criterion = torch.nn.CrossEntropyLoss()
-        optimizer = eval("torch.optim." + params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
-                                                            lr=params.learning_rate,
-                                                            weight_decay=params.weight_decay)
-        setattr(params, 'beginning_epoch', 0)
+        criterion = get_criterion("default")
+        optimizer = getattr(torch.optim, params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
+                                                           lr=params.learning_rate,
+                                                           weight_decay=params.weight_decay)
 
         # Define output directories
         log_dir = os.path.join(
-            params.output_dir, 'fold-%i' %
-            fi, 'tensorboard_logs')
-        model_dir = os.path.join(params.output_dir, 'fold-%i' % fi, 'models')
+            params.output_dir, 'fold-%i' % fi, 'tensorboard_logs')
+        model_dir = os.path.join(
+            params.output_dir, 'fold-%i' % fi, 'models')
 
-        print('Beginning the training task')
-        train(
-            model,
-            train_loader,
-            valid_loader,
-            criterion,
-            optimizer,
-            False,
-            log_dir,
-            model_dir,
-            params)
+        main_logger.debug('Beginning the training task')
+        train(model, train_loader, valid_loader, criterion,
+              optimizer, False, log_dir, model_dir, params, train_logger)
 
-        test_cnn(train_loader, "train", fi, criterion, options)
-        test_cnn(valid_loader, "validation", fi, criterion, options)
-
-    total_time = time() - total_time
-    print("Total time of computation: %d s" % total_time)
+        test_bad_cnn(model, params.output_dir, train_loader, "train",
+                     fi, criterion, params.mode, eval_logger, gpu=params.gpu)
+        test_bad_cnn(model, params.output_dir, valid_loader, "validation",
+                     fi, criterion, params.mode, eval_logger, gpu=params.gpu)
 
 
 if __name__ == "__main__":
@@ -320,4 +298,4 @@ if __name__ == "__main__":
         raise Exception(
             "unknown arguments: %s" %
             (parser.parse_known_args()[1]))
-    train_CNN_bad_data_split(options)
+    train_bad_cnn(options)

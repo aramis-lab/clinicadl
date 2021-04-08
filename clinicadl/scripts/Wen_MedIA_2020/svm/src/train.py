@@ -4,7 +4,7 @@ import argparse
 import os
 from .classification_utils import extract_indices_from_5_fold
 from .model import VB_KFold_DualSVM
-from ..tools.deep_learning import commandline_to_json
+from clinicadl.tools.deep_learning import commandline_to_json
 
 parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
 
