@@ -1,10 +1,10 @@
 # coding: utf8
 
-from os.path import isdir, join, abspath, exists
+from os.path import join, exists
 from os import strerror, makedirs, listdir
 import errno
 import pathlib
-from clinicadl.tools.deep_learning import create_model, load_model, read_json
+from clinicadl.tools.deep_learning import create_model, load_model, read_json, commandline_to_json
 from clinicadl.tools.deep_learning.iotools import return_logger, translate_parameters
 from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, compute_num_cnn, load_data_test
 from clinicadl.tools.deep_learning.cnn_utils import test, soft_voting_to_tsvs, mode_level_to_tsvs, get_criterion
@@ -190,6 +190,14 @@ def inference_from_model(caps_dir,
             performance_dir = join(fold_dir, 'cnn_classification', 'best_%s' % selection_metric)
 
             makedirs(performance_dir, exist_ok=True)
+
+            commandline_to_json({
+                "output_dir": model_path,
+                "caps_dir": caps_dir,
+                "tsv_path": tsv_path,
+                "prefix": prefix,
+                "labels": labels
+            }, filename=f"commandline_classify-{prefix}")
 
             # It launch the corresponding function, depending on the mode.
             inference_from_model_generic(
