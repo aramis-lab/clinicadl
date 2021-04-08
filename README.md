@@ -41,15 +41,8 @@ This repository hosts the source code of a **framework for the reproducible
 evaluation of deep learning classification experiments using anatomical MRI
 data for the computer-aided diagnosis of Alzheimer's disease (AD)**.
 
-Automatic classification of AD using classical machine learning approaches can
-be performed using the framework available here:
-<https://github.com/aramis-lab/AD-ML>.
-
 > **Disclaimer:** this software is **under development**. Some features can
-change between different commits. A stable version is planned to be released
-soon. The release v.0.0.1 corresponds to the date of submission of the
-publication but in the meantime important changes are being done to facilitate
-the use of the package.
+change between different commits.
 
 The complete documentation of the project can be found on 
 this [page](https://clinicadl.readthedocs.io/). 
@@ -75,63 +68,12 @@ pip install clinicadl
 site](https://aramislab.paris.inria.fr/clinicadl/tuto/intro.html) to start
 using **ClinicaDL** directly in a Google Colab instance!
 
-## Overview
-
-### How to use ClinicaDL?
-
-`clinicadl` is an utility that is used through the command line. Several tasks
-can be performed:
-
-- **Preparation of your imaging data**
-    * **T1w-weighted MR image preprocessing.** The `preprocessing` task
-      processes a dataset of T1 images stored in BIDS format and prepares to
-      extract the tensors (see paper for details on the preprocessing). Output
-      is stored using the [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/)
-      hierarchy.
-    * **Quality check of preprocessed data.** The `quality_check` task uses a
-      pretrained network [(Fonov et al,
-      2018)](https://www.biorxiv.org/content/10.1101/303487v1) to classify
-      adequately registered images.
-    * **Tensor extraction from preprocessed data.** The `extract` task allows
-      to create files in PyTorch format (`.pt`) with different options: the
-      complete MRI, 2D slices and/or 3D patches. This files are also stored in
-      the [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
-
-- **Train & test your classifier**
-    * **Train neural networks.** The `train` task is designed to perform
-      training of CNN models using different kind of inputs, e.g., a full MRI
-      (3D-image), patches from a MRI (3D-patch), specific regions of a MRI
-      (ROI-based) or slices extracted from the MRI (2D-slices). Parameters used
-      during the training are configurable. This task allow also to train
-      autoencoders.
-    * **MRI classification.** The `classify` task uses previously trained models
-      to perform the inference of a particular or a set of MRI.
-
-
-- **Utilitaries used for the preparation of imaging data and/or training your
-  classifier**
-    * **Process TSV files**. `tsvtool` includes many functions to get labels
-      from BIDS, perform k-fold or single splits, produce demographic analysis
-      of extracted labels and reproduce the restrictions made on AIBL and OASIS
-      in the original paper.
-    * **Generate a synthetic dataset.** The `generate` task is useful to obtain
-      synthetic datasets frequently used in functional tests.
-
-## Pretrained models
-
-Some of the pretrained models for the CNN networks described in 
-([Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)) 
-are available on Zenodo:
-<https://zenodo.org/record/3491003>
-
-Updated versions of the models will be published soon.
-
 ## Related Repositories
 
 - [Clinica: Software platform for clinical neuroimaging studies](https://github.com/aramis-lab/clinica)
 - [AD-ML: Framework for the reproducible classification of Alzheimer's disease using machine learning](https://github.com/aramis-lab/AD-ML)
 
-## Scientific papers using this framework
+## Reproducibility
 
 - Wen et al., 2020 [Convolutional neural networks for classification of Alzheimer's disease: Overview and reproducible evaluation](https://doi.org/10.1016/j.media.2020.101694)
-([arXiv version](https://arxiv.org/abs/1904.07773)). Scripts and related data are available in `projects/Wen_MedIA_2020`.
+([arXiv version](https://arxiv.org/abs/1904.07773)). Corresponding version `v0.0.1`.
