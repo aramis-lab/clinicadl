@@ -26,6 +26,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## ClinicaDL 0.2.2
+
+### Added
+
+- New functionality `clinicadl random-search analysis` to obtain the histogram of the balanced accuracy
+over a random search folder.
+- New functionality `clinicadl train from_json` to train a model with parameters defined in a JSON file.
+- New functionality `clinicadl resume` to resume a prematurely stopped training task.
+- possibility to learn the grey matter intensities with the binary classification during training,
+based on `t1-volume` outputs.
+
+### Changed
+
+- Previous `clinicadl random-search` is now `clinicadl random-search generate`
+
 ## ClinicaDL 0.2.1
 
 ### Added
@@ -47,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- New functionality `clinica interpret`  to generate saliency maps linked
+- New functionality `clinicadl interpret`  to generate saliency maps linked
   to pretrained models based on groups of individual images.
 - New functionality `clinicadl random-search` to sample random networks from a
   predefined hyperparameter space.
