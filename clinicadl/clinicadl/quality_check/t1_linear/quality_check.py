@@ -8,11 +8,9 @@ from pathlib import Path
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader
-
 from .utils import QCDataset, resnet_qc_18
 from clinica.utils.inputs import fetch_file, RemoteFileStructure
-from ...tools.data.utils import load_and_check_tsv
-
+from clinicadl.tools.data.utils import load_and_check_tsv
 
 def quality_check(caps_dir, output_path,
                   tsv_path=None, threshold=0.5,

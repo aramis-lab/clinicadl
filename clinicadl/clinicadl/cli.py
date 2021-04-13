@@ -46,8 +46,8 @@ def extract_tensors(args):
 
 
 def qc_func(args):
-    from .quality_check.t1_linear.quality_check import quality_check as linear_qc
-    from .quality_check.t1_volume.quality_check import quality_check as volume_qc
+    from quality_check.t1_linear.quality_check import quality_check as linear_qc
+    from quality_check.t1_volume.quality_check import quality_check as volume_qc
 
     if args.preprocessing == "t1-linear":
         linear_qc(
@@ -154,7 +154,7 @@ def tsv_restrict_func(args):
 
 
 def tsv_getlabels_func(args):
-    from .tools.tsv.data_formatting import get_labels
+    from tools.tsv.data_formatting import get_labels
 
     get_labels(
         args.merged_tsv,
@@ -171,7 +171,7 @@ def tsv_getlabels_func(args):
 
 
 def tsv_split_func(args):
-    from .tools.tsv.data_split import split_diagnoses
+    from tools.tsv.data_split import split_diagnoses
 
     split_diagnoses(
         args.formatted_data_path,
@@ -1131,7 +1131,7 @@ def parse_command_line():
     tsv_split_subparser.add_argument(
         "--MCI_sub_categories",
         help="Deactivate default managing of MCI sub-categories to avoid data leakage.",
-        action="store_false", default=True)
+        action="store_false", default=False)
     tsv_split_subparser.add_argument(
         "--t_val_threshold", "-t",
         help="The threshold used for the chi2 test on sex distributions.",
@@ -1146,8 +1146,8 @@ def parse_command_line():
         type=str, default="test")
     tsv_split_subparser.add_argument(
         "--ignore_demographics",
-        help="If True do not use age and sex to create the splits.",
-        default=False, action="store_true"
+        help="If True do not use age and sex to create the splits.",type=str2bool,
+        default=False
     )
 
     tsv_split_subparser.set_defaults(func=tsv_split_func)
@@ -1171,7 +1171,7 @@ def parse_command_line():
     tsv_kfold_subparser.add_argument(
         "--MCI_sub_categories",
         help="Deactivate default managing of MCI sub-categories to avoid data leakage.",
-        action="store_false", default=True)
+        type=str2bool, default=True)
     tsv_kfold_subparser.add_argument(
         "--subset_name",
         help="Name of the subset that is complementary to train.",
@@ -1433,3 +1433,15 @@ def return_train_parent_parser(retrain=False):
     #     choices=["default", "L1", "L1Norm", "SmoothL1", "SmoothL1Norm"])
 
     return train_parent_parser
+
+
+def str2bool(v):
+    import argparse
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')

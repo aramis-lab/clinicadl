@@ -1,6 +1,6 @@
 # coding: utf8
 
-from . import cli
+import cli
 import torch
 
 
