@@ -4,14 +4,14 @@ import torch
 import os
 from torch.utils.data import DataLoader
 
-from ..tools.deep_learning.autoencoder_utils import train, visualize_image, get_criterion
-from ..tools.deep_learning.models import init_model, load_model, transfer_learning
-from ..tools.deep_learning.data import (load_data,
+from clinicadl.tools.deep_learning.autoencoder_utils import train, visualize_image, get_criterion
+from clinicadl.tools.deep_learning.models import init_model, load_model, transfer_learning
+from clinicadl.tools.deep_learning.data import (load_data,
                                         get_transforms,
                                         return_dataset,
                                         generate_sampler)
-from ..tools.deep_learning.iotools import return_logger, check_and_clean
-from ..tools.deep_learning.iotools import commandline_to_json, write_requirements_version, translate_parameters
+from clinicadl.tools.deep_learning.iotools import return_logger, check_and_clean
+from clinicadl.tools.deep_learning.iotools import commandline_to_json, write_requirements_version, translate_parameters
 
 
 def train_autoencoder(params):

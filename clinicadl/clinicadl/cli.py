@@ -110,7 +110,7 @@ def rs_func(args):
 
 # Function to dispatch training to corresponding function
 def train_func(args):
-    from .train import train_autoencoder, train_multi_cnn, train_single_cnn
+    from train import train_autoencoder, train_multi_cnn, train_single_cnn
 
     if args.network_type == "autoencoder":
         args.transfer_learning_selection = "best_loss"
@@ -186,7 +186,7 @@ def tsv_split_func(args):
 
 
 def tsv_kfold_func(args):
-    from .tools.tsv.kfold_split import split_diagnoses
+    from tools.tsv.kfold_split import split_diagnoses
 
     split_diagnoses(
         args.formatted_data_path,
@@ -1131,7 +1131,7 @@ def parse_command_line():
     tsv_split_subparser.add_argument(
         "--MCI_sub_categories",
         help="Deactivate default managing of MCI sub-categories to avoid data leakage.",
-        action="store_false", default=False)
+        type=str2bool, default=False)
     tsv_split_subparser.add_argument(
         "--t_val_threshold", "-t",
         help="The threshold used for the chi2 test on sex distributions.",
@@ -1171,7 +1171,7 @@ def parse_command_line():
     tsv_kfold_subparser.add_argument(
         "--MCI_sub_categories",
         help="Deactivate default managing of MCI sub-categories to avoid data leakage.",
-        type=str2bool, default=True)
+        type=str2bool, default=False)
     tsv_kfold_subparser.add_argument(
         "--subset_name",
         help="Name of the subset that is complementary to train.",

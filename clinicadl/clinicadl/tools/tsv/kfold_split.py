@@ -3,7 +3,7 @@
 from .tsv_utils import baseline_df
 from ..deep_learning.iotools import return_logger
 import shutil
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, ShuffleSplit
 from os import path
 import os
 import pandas as pd
@@ -81,8 +81,10 @@ def split_diagnoses(formatted_data_path,
             stratification_list = list(diagnosis_baseline_df[stratification])
             unique = list(set(stratification_list))
             y = np.array([unique.index(x) for x in stratification_list])
-
-        splits = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=2)
+        if n_splits<2:
+            splits=ShuffleSplit(n_splits=n_splits, random_state=2)
+        else:
+            splits = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=2)
 
         for i, indices in enumerate(splits.split(np.zeros(len(y)), y)):
 
