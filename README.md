@@ -44,8 +44,8 @@ data for the computer-aided diagnosis of Alzheimer's disease (AD)**.
 > **Disclaimer:** this software is **under development**. Some features can
 change between different releases and/or commits.
 
-The complete documentation of the project can be found on 
-this [page](https://clinicadl.readthedocs.io/). 
+To access the full documentation of the project, follow the link 
+[https://clinicadl.readthedocs.io/](https://clinicadl.readthedocs.io/). 
 If you find a problem when using it or if you want to provide us feedback,
 please [open an issue](https://github.com/aramis-lab/ad-dl/issues) or write on
 the [forum](https://groups.google.com/forum/#!forum/clinica-user).
@@ -81,5 +81,5 @@ using **ClinicaDL** directly in a Google Colab instance!
 
 ## Reproducibility
 
-- Wen et al., 2020 [Convolutional neural networks for classification of Alzheimer's disease: Overview and reproducible evaluation](https://doi.org/10.1016/j.media.2020.101694)
-([arXiv version](https://arxiv.org/abs/1904.07773)). Corresponding version `v0.0.1`.
+To reproduce the results published in [Wen et al., MedIA, 2020](https://doi.org/10.1016/j.media.2020.101694) ([arXiv version](https://arxiv.org/abs/1904.07773))
+please use the version of ClinicaDL tagged `[v0.0.1](https://github.com/aramis-lab/AD-DL/tree/v.0.0.1)`.
