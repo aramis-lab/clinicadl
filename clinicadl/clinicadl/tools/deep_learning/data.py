@@ -166,7 +166,6 @@ class MRIDataset(Dataset):
 
         try:
             image_path = self._get_path(participant_id, session_id, cohort, mode="image")
-            print(image_path)
             image = torch.load(image_path)
         except FileNotFoundError:
             image_path = get_nii_path(
@@ -175,7 +174,6 @@ class MRIDataset(Dataset):
                 session_id,
                 cohort=cohort,
                 preprocessing=self.preprocessing)
-            print(image_path)
             image_nii = nib.load(image_path)
             image_np = image_nii.get_fdata()
             image = ToTensor()(image_np)
@@ -703,8 +701,6 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
 def compute_num_cnn(input_dir, tsv_path, options, data="train"):
 
     _, transformations = get_transforms(options.mode, options.minmaxnormalization)
-    print(tsv_path)
-    print(input_dir)
 
     if data == "train":
         example_df, _ = load_data(tsv_path, options.diagnoses, 0, options.n_splits, options.baseline,

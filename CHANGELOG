@@ -30,7 +30,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Update README.md to avoid duplicates.
 - JSON files are added for `clinicadl classify` and `clinicadl tsvtool getlabels|split|kfold`
+
+### Removed
+
+- Scripts and data related to MedIA publication.
+
 
 ## ClinicaDL 0.2.0
 

@@ -41,7 +41,7 @@ Pretrained models for the CNN networks implemented in ClinicaDL can be obtained 
 
 These models were obtained during the experiments for publication.
 They correspond to a previous version of ClinicaDL, hence their file system is not compatible with the current version.
-Updated versions of the models will be published soon.
+Updated versions of most representative models are available [here](https://aramislab.paris.inria.fr/files/data/models/dl/models_v002/).
 
 ## Support
 - [Report an issue on GitHub](https://github.com/aramis-lab/AD-DL/issues)
