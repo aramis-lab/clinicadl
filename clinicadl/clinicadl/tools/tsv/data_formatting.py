@@ -10,7 +10,7 @@ NB: Other preprocessing may be needed on the merged file obtained: for example t
 in the OASIS dataset is not done in this script. Moreover a quality check may be needed at the end of preprocessing
 pipelines, leading to the removal of some subjects.
 """
-from ..deep_learning.iotools import return_logger
+from ..deep_learning.iotools import return_logger, commandline_to_json
 from .tsv_utils import neighbour_session, last_session, after_end_screening, find_label, first_session
 import pandas as pd
 from os import path
@@ -361,6 +361,18 @@ def get_labels(merged_tsv, missing_mods, results_path,
          writes one tsv file per label at results_path/<label>.tsv
     """
     logger = return_logger(verbose, "getlabels")
+
+    commandline_to_json({
+        "output_dir": results_path,
+        "merged_tsv": merged_tsv,
+        "missing_mods": missing_mods,
+        "diagnoses": diagnoses,
+        "modality": modality,
+        "restriction_path": restriction_path,
+        "time_horizon": time_horizon,
+        "variables_of_interest": variables_of_interest,
+        "remove_smc": remove_smc
+    }, filename="getlabels.json")
 
     # Reading files
     bids_df = pd.read_csv(merged_tsv, sep='\t')
