@@ -1,7 +1,7 @@
 # coding: utf8
 
 from .tsv_utils import extract_baseline, retrieve_longitudinal, remove_sub_labels
-from ..deep_learning.iotools import return_logger
+from ..deep_learning.iotools import return_logger, commandline_to_json
 import shutil
 from sklearn.model_selection import StratifiedKFold
 from os import path
@@ -92,6 +92,14 @@ def split_diagnoses(formatted_data_path,
             - formatted_data_path/<subset_name>_splits-<n_splits>/split-<split>/<label>_baseline.tsv
     """
     logger = return_logger(verbose, 'k-fold split')
+
+    commandline_to_json({
+        "output_dir": formatted_data_path,
+        "n_splits": n_splits,
+        "subset_name": subset_name,
+        "MCI_sub_categories": MCI_sub_categories,
+        "stratification": stratification
+    }, filename="kfold.json")
 
     # Read files
     results_path = formatted_data_path

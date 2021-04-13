@@ -2,7 +2,7 @@
 
 from .tsv_utils import complementary_list, extract_baseline, chi2, category_conversion, remove_unicity, find_label, \
     retrieve_longitudinal, remove_sub_labels
-from ..deep_learning.iotools import return_logger
+from ..deep_learning.iotools import return_logger, commandline_to_json
 from scipy.stats import ttest_ind
 import shutil
 import pandas as pd
@@ -158,6 +158,17 @@ def split_diagnoses(formatted_data_path, n_test=100, subset_name="test", MCI_sub
             - formatted_data_path/<subset_name>/<label>_baseline.tsv
     """
     logger = return_logger(verbose, "split")
+
+    commandline_to_json({
+        "output_dir": formatted_data_path,
+        "n_test": n_test,
+        "subset_name": subset_name,
+        "MCI_sub_categories": MCI_sub_categories,
+        "p_age_threshold": p_age_threshold,
+        "p_sex_threshold": p_sex_threshold,
+        "categorical_split_variable": categorical_split_variable,
+        "ignore_demographics": ignore_demographics
+    }, filename="split.json")
 
     # Read files
     results_path = formatted_data_path
