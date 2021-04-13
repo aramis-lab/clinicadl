@@ -28,8 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## ClinicaDL 0.2.1
 
+### Added
+
+- the `multi_cohort` flag in train allows to train on several CAPS at the same time.
+
 ### Changed
 
+- `clinicadl train roi` now allows any ROI defined by a mask.
 - Update README.md to avoid duplicates.
 - JSON files are added for `clinicadl classify` and `clinicadl tsvtool getlabels|split|kfold`
 

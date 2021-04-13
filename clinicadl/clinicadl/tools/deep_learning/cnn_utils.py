@@ -584,6 +584,29 @@ def soft_voting(performance_df, validation_df, mode, selection_threshold=None, u
     return df_final, results
 
 
+def mode_to_image_tsvs(output_dir, fold, selection, mode, dataset="test"):
+    """
+    Copy mode-level tsvs to name them as image-level tsvs
+    Args:
+        output_dir: (str) path to the output directory.
+        fold: (int) Fold number of the cross-validation.
+        selection: (str) criterion on which the model is selected (either best_loss or best_acc)
+        mode: (str) input used by the network. Chosen from ['patch', 'roi', 'slice'].
+        dataset: (str) name of the dataset for which the soft-voting is performed. If different from training or
+            validation, the weights of soft voting will be computed on validation accuracies.
+    """
+    sub_df = retrieve_sub_level_results(output_dir, fold, selection, mode, dataset, 1)
+    sub_df.drop([f'{mode}_id', 'proba0', 'proba1'], axis=1, inplace=True)
+
+    performance_path = os.path.join(output_dir, f'fold-{fold}', 'cnn_classification', selection)
+    sub_df.to_csv(os.path.join(performance_path, f'{dataset}_image_level_prediction.tsv'),
+                  index=False, sep='\t')
+    metrics_df = pd.read_csv(os.path.join(performance_path, f'{dataset}_{mode}_level_metrics.tsv'), sep="\t")
+    metrics_df.drop([f'{mode}_id'], axis=1, inplace=True)
+    metrics_df.to_csv(os.path.join(performance_path, f'{dataset}_image_level_metrics.tsv'),
+                      index=False, sep='\t')
+
+
 def check_prediction(row):
     if row["true_label"] == row["predicted_label"]:
         return 1

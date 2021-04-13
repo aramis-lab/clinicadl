@@ -9,7 +9,8 @@ from ..tools.deep_learning.data import (get_transforms,
                                         load_data,
                                         return_dataset,
                                         generate_sampler)
-from ..tools.deep_learning.cnn_utils import train, get_criterion, test, mode_level_to_tsvs, soft_voting_to_tsvs
+from ..tools.deep_learning.cnn_utils import train, get_criterion, test, mode_level_to_tsvs, soft_voting_to_tsvs, \
+    mode_to_image_tsvs
 from ..tools.deep_learning.iotools import return_logger, check_and_clean
 from ..tools.deep_learning.iotools import commandline_to_json, write_requirements_version, translate_parameters
 
@@ -130,6 +131,8 @@ def test_single_cnn(model, output_dir, data_loader, subset_name, split, criterio
         mode_level_to_tsvs(output_dir, results_df, metrics, split, selection, mode, dataset=subset_name)
 
         # Soft voting
-        if mode in ["patch", "roi", "slice"]:
+        if data_loader.dataset.elem_per_image > 1:
             soft_voting_to_tsvs(output_dir, split, logger=logger, selection=selection, mode=mode,
                                 dataset=subset_name, selection_threshold=selection_threshold)
+        elif mode != "image":
+            mode_to_image_tsvs(output_dir, split, selection=selection, mode=mode, dataset=subset_name)
