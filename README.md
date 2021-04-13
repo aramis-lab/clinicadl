@@ -73,6 +73,12 @@ using **ClinicaDL** directly in a Google Colab instance!
 - [Clinica: Software platform for clinical neuroimaging studies](https://github.com/aramis-lab/clinica)
 - [AD-ML: Framework for the reproducible classification of Alzheimer's disease using machine learning](https://github.com/aramis-lab/AD-ML)
 
+## Citing us
+
+- Wen, J., Thibeau-Sutre, E., Samper-González, J., Routier, A., Bottani, S., Durrleman, S., Burgos, N., and Colliot, O.: ‘Convolutional Neural Networks for Classification of Alzheimer’s Disease: Overview and Reproducible Evaluation’, *Medical Image Analysis*, 63: 101694, 2020. [doi:10.1016/j.media.2020.101694](https://doi.org/10.1016/j.media.2020.101694)
+- Routier, A., Burgos, N., Díaz, M., Bacci, M., Bottani, S., El-Rifai O., Fontanella, S., Gori, P., Guillon, J., Guyot, A., Hassanaly, R., Jacquemont, T.,  Lu, P., Marcoux, A.,  Moreau, T., Samper-González, J., Teichmann, M., Thibeau-Sutre, E., Vaillant G., Wen, J., Wild, A., Habert, M.-O., Durrleman, S., and Colliot, O.: ‘Clinica: An Open Source Software Platform for Reproducible Clinical Neuroscience Studies’, 2021. [hal-02308126](https://hal.inria.fr/hal-02308126)
+
+
 ## Reproducibility
 
 - Wen et al., 2020 [Convolutional neural networks for classification of Alzheimer's disease: Overview and reproducible evaluation](https://doi.org/10.1016/j.media.2020.101694)
