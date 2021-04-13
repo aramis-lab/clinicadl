@@ -42,7 +42,7 @@ evaluation of deep learning classification experiments using anatomical MRI
 data for the computer-aided diagnosis of Alzheimer's disease (AD)**.
 
 > **Disclaimer:** this software is **under development**. Some features can
-change between different commits.
+change between different releases and/or commits.
 
 The complete documentation of the project can be found on 
 this [page](https://clinicadl.readthedocs.io/). 
