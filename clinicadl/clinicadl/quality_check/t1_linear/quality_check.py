@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader
 from .utils import QCDataset, resnet_qc_18
 from clinica.utils.inputs import fetch_file, RemoteFileStructure
 from ...tools.data.utils import load_and_check_tsv
+from ...tools.deep_learning.data import MRIDataset
 
 
 def quality_check(caps_dir, output_path,
@@ -48,8 +49,11 @@ def quality_check(caps_dir, output_path,
     if gpu:
         model.cuda()
 
+    # Transform caps_dir in dict
+    caps_dict = MRIDataset.create_caps_dict(caps_dir, multi_cohort=False)
+
     # Load DataFrame
-    df = load_and_check_tsv(tsv_path, caps_dir, dirname(abspath(output_path)))
+    df = load_and_check_tsv(tsv_path, caps_dict, dirname(abspath(output_path)))
 
     dataset = QCDataset(caps_dir, df)
     dataloader = DataLoader(

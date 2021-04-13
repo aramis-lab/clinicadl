@@ -1,5 +1,9 @@
 # `clinicadl` Documentation
 
+!!! tip "ClinicaDL tutorial"
+    Visit our [hands-on tutorial web site](https://aramislab.paris.inria.fr/clinicadl/tuto/intro.html) 
+    to try **ClinicaDL** directly in a Google Colab instance!
+
 ## Installation
 
 `clinicadl` can be installed on Mac OS X and Linux machines, and possibly on Windows computers with a Linux Virtual Machine.
@@ -37,7 +41,7 @@ Pretrained models for the CNN networks implemented in ClinicaDL can be obtained 
 
 These models were obtained during the experiments for publication.
 They correspond to a previous version of ClinicaDL, hence their file system is not compatible with the current version.
-Updated versions of the models will be published soon.
+Updated versions of most representative models are available [here](https://aramislab.paris.inria.fr/files/data/models/dl/models_v002/).
 
 ## Support
 - [Report an issue on GitHub](https://github.com/aramis-lab/AD-DL/issues)

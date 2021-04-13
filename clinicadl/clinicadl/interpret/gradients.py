@@ -17,7 +17,10 @@ class VanillaBackProp:
     def generate_gradients(self, input_batch, target_class):
         # Forward
         input_batch.requires_grad = True
-        model_output = self.model(input_batch)
+        if hasattr(self.model, "variational") and self.model.variational:
+            _, _, _, model_output = self.model(input_batch)
+        else:
+            model_output = self.model(input_batch)
         # Target for backprop
         one_hot_output = torch.zeros_like(model_output)
         one_hot_output[:, target_class] = 1

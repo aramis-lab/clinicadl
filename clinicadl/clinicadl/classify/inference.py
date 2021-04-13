@@ -1,14 +1,13 @@
 # coding: utf8
 
-from os.path import isdir, join, abspath, exists
+from os.path import join, exists
 from os import strerror, makedirs, listdir
 import errno
 import pathlib
-from clinicadl.tools.deep_learning import create_model, load_model, read_json
+from clinicadl.tools.deep_learning import create_model, load_model, read_json, commandline_to_json
 from clinicadl.tools.deep_learning.iotools import return_logger, translate_parameters
 from clinicadl.tools.deep_learning.data import return_dataset, get_transforms, compute_num_cnn, load_data_test
 from clinicadl.tools.deep_learning.cnn_utils import test, soft_voting_to_tsvs, mode_level_to_tsvs, get_criterion
-import torch.nn as nn
 from torch.utils.data import DataLoader
 
 
@@ -23,7 +22,8 @@ def classify(caps_dir,
              prepare_dl=True,
              selection_metrics=None,
              diagnoses=None,
-             verbose=0):
+             verbose=0,
+             multi_cohort=False):
     """
     This function verifies the input folders, and the existence of the json file
     then it launch the inference stage from a specific model.
@@ -44,30 +44,13 @@ def classify(caps_dir,
         selection_metrics: list of metrics to find best models to be evaluated.
         diagnoses: list of diagnoses to be tested if tsv_path is a folder.
         verbose: level of verbosity.
+        multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
 
     """
     logger = return_logger(verbose, "classify")
 
-    # Verify that paths exist
-    caps_dir = abspath(caps_dir)
-    model_path = abspath(model_path)
-    tsv_path = abspath(tsv_path)
-
-    if not isdir(caps_dir):
-        logger.error("Folder containing MRIs was not found, please verify its location.")
-        raise FileNotFoundError(
-            errno.ENOENT, strerror(errno.ENOENT), caps_dir)
-    if not isdir(model_path):
-        logger.error("A valid model in the path was not found. Donwload them from aramislab.inria.fr")
-        raise FileNotFoundError(
-            errno.ENOENT, strerror(errno.ENOENT), model_path)
-    if not exists(tsv_path):
-        raise FileNotFoundError(
-            errno.ENOENT, strerror(errno.ENOENT), tsv_path)
-
     # Infer json file from model_path (suppose that json file is at the same
     # folder)
-
     json_file = join(model_path, 'commandline.json')
 
     if not exists(json_file):
@@ -88,7 +71,8 @@ def classify(caps_dir,
         prepare_dl,
         selection_metrics,
         diagnoses,
-        logger
+        logger,
+        multi_cohort
     )
 
 
@@ -104,7 +88,8 @@ def inference_from_model(caps_dir,
                          prepare_dl=False,
                          selection_metrics=None,
                          diagnoses=None,
-                         logger=None):
+                         logger=None,
+                         multi_cohort=False):
     """
     Inference from previously trained model.
 
@@ -131,6 +116,7 @@ def inference_from_model(caps_dir,
         selection_metrics: list of metrics to find best models to be evaluated.
         diagnoses: list of diagnoses to be tested if tsv_path is a folder.
         logger: Logger instance.
+        multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
 
     Returns:
         Files written in the output folder with prediction results and metrics. By
@@ -160,7 +146,6 @@ def inference_from_model(caps_dir,
     options.use_cpu = not gpu
     options.nproc = num_workers
     options.batch_size = batch_size
-    options.prepare_dl = prepare_dl
     if diagnoses is not None:
         options.diagnoses = diagnoses
 
@@ -178,40 +163,47 @@ def inference_from_model(caps_dir,
     # loop depending the number of folds found in the model folder
     for fold_dir in currentDirectory.glob(currentPattern):
         fold = int(str(fold_dir).split("-")[-1])
-        fold_path = join(model_path, fold_dir)
-        model_path = join(fold_path, 'models')
+        out_path = join(fold_dir, 'models')
 
         for selection_metric in selection_metrics:
 
             if options.mode_task == 'multicnn':
-                for cnn_dir in listdir(model_path):
-                    if not exists(join(model_path, cnn_dir, "best_%s" % selection_metric, 'model_best.pth.tar')):
+                for cnn_dir in listdir(out_path):
+                    if not exists(join(out_path, cnn_dir, "best_%s" % selection_metric, 'model_best.pth.tar')):
                         raise FileNotFoundError(
                             errno.ENOENT,
                             strerror(errno.ENOENT),
-                            join(model_path,
+                            join(out_path,
                                  cnn_dir,
                                  "best_%s" % selection_metric,
                                  'model_best.pth.tar')
                         )
 
             else:
-                full_model_path = join(model_path, "best_%s" % selection_metric)
+                full_model_path = join(out_path, "best_%s" % selection_metric)
                 if not exists(join(full_model_path, 'model_best.pth.tar')):
                     raise FileNotFoundError(
                         errno.ENOENT,
                         strerror(errno.ENOENT),
                         join(full_model_path, 'model_best.pth.tar'))
 
-            performance_dir = join(fold_path, 'cnn_classification', 'best_%s' % selection_metric)
+            performance_dir = join(fold_dir, 'cnn_classification', 'best_%s' % selection_metric)
 
             makedirs(performance_dir, exist_ok=True)
+
+            commandline_to_json({
+                "output_dir": model_path,
+                "caps_dir": caps_dir,
+                "tsv_path": tsv_path,
+                "prefix": prefix,
+                "labels": labels
+            }, filename=f"commandline_classify-{prefix}")
 
             # It launch the corresponding function, depending on the mode.
             inference_from_model_generic(
                 caps_dir,
                 tsv_path,
-                model_path,
+                out_path,
                 options,
                 prefix,
                 currentDirectory,
@@ -219,7 +211,9 @@ def inference_from_model(caps_dir,
                 "best_%s" % selection_metric,
                 labels=labels,
                 num_cnn=num_cnn,
-                logger=logger
+                logger=logger,
+                multi_cohort=multi_cohort,
+                prepare_dl=prepare_dl
             )
 
             # Soft voting
@@ -241,7 +235,8 @@ def inference_from_model(caps_dir,
 
 def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
                                  prefix, output_dir, fold, selection,
-                                 labels=True, num_cnn=None, logger=None):
+                                 labels=True, num_cnn=None, logger=None,
+                                 multi_cohort=False, prepare_dl=True):
     from os.path import join
     import logging
 
@@ -252,7 +247,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
 
     _, all_transforms = get_transforms(model_options.mode, model_options.minmaxnormalization)
 
-    test_df = load_data_test(tsv_path, model_options.diagnoses)
+    test_df = load_data_test(tsv_path, model_options.diagnoses, multi_cohort=multi_cohort)
 
     # Define loss and optimizer
     criterion = get_criterion(model_options.loss)
@@ -270,7 +265,9 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
                 all_transformations=all_transforms,
                 params=model_options,
                 cnn_index=n,
-                labels=labels
+                labels=labels,
+                prepare_dl=prepare_dl,
+                multi_cohort=multi_cohort
             )
 
             test_loader = DataLoader(
@@ -315,7 +312,9 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
             train_transformations=None,
             all_transformations=all_transforms,
             params=model_options,
-            labels=labels
+            labels=labels,
+            prepare_dl=prepare_dl,
+            multi_cohort=multi_cohort
         )
 
         # Load the data

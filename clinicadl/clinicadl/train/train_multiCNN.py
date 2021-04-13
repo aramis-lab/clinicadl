@@ -43,6 +43,9 @@ def train_multi_cnn(params):
 
     num_cnn = compute_num_cnn(params.input_dir, params.tsv_path, params, data="train")
 
+    if num_cnn == 1:
+        raise ValueError("Multi-CNN framework cannot be performed on a dataset computing one element per image.")
+
     if params.split is None:
         if params.n_splits is None:
             fold_iterator = range(1)
@@ -63,14 +66,17 @@ def train_multi_cnn(params):
                 fi,
                 n_splits=params.n_splits,
                 baseline=params.baseline,
-                logger=main_logger
+                logger=main_logger,
+                multi_cohort=params.multi_cohort
             )
 
             data_train = return_dataset(params.mode, params.input_dir, training_df, params.preprocessing,
                                         train_transformations=train_transforms, all_transformations=all_transforms,
+                                        prepare_dl=params.prepare_dl, multi_cohort=params.multi_cohort,
                                         params=params, cnn_index=cnn_index)
             data_valid = return_dataset(params.mode, params.input_dir, valid_df, params.preprocessing,
                                         train_transformations=train_transforms, all_transformations=all_transforms,
+                                        prepare_dl=params.prepare_dl, multi_cohort=params.multi_cohort,
                                         params=params, cnn_index=cnn_index)
 
             train_sampler = generate_sampler(data_train, params.sampler)

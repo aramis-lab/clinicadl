@@ -22,12 +22,17 @@ google_analytics:
 # Configuration
 theme:
   name: material
+  custom_dir: docs/overrides
   icon:
     repo: material/github
   language: en
   palette:
     primary: green
     accent: green
+
+# Version panel
+extra_javascript:
+  - 'https://code.jquery.com/jquery-3.3.1.min.js'
 
 # Customization
 extra:
@@ -40,6 +45,9 @@ extra:
       link: https://twitter.com/clinica_run
     - icon: material/earth
       link: http://www.aramislab.fr
+  version:
+    default: stable
+
 
 # Extensions
 markdown_extensions:

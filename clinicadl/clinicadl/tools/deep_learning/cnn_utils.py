@@ -6,10 +6,6 @@ import os
 import warnings
 import pandas as pd
 from time import time
-from torch.nn.modules.loss import _Loss
-import torch.nn.functional as F
-from sklearn.utils import column_or_1d
-import scipy.sparse as sp
 import logging
 from torch.nn.modules.loss import _Loss
 import torch.nn.functional as F
@@ -50,6 +46,8 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
     columns = ['epoch', 'iteration', 'time',
                'balanced_accuracy_train', 'loss_train',
                'balanced_accuracy_valid', 'loss_valid']
+    if hasattr(model, "variational") and model.variational:
+        columns += ["kl_loss_train", "kl_loss_valid"]
     filename = os.path.join(os.path.dirname(log_dir), 'training.tsv')
 
     if not resume:
@@ -101,9 +99,14 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                 imgs, labels = data['image'].cuda(), data['label'].cuda()
             else:
                 imgs, labels = data['image'], data['label']
-            train_output = model(imgs)
-            _, predict_batch = train_output.topk(1)
-            loss = criterion(train_output, labels)
+
+            if hasattr(model, "variational") and model.variational:
+                z, mu, std, train_output = model(imgs)
+                kl_loss = kl_divergence(z, mu, std)
+                loss = criterion(train_output, labels) + kl_loss
+            else:
+                train_output = model(imgs)
+                loss = criterion(train_output, labels)
 
             # Back propagation
             loss.backward()
@@ -143,6 +146,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                     row = [epoch, i, t_current,
                            results_train["balanced_accuracy"], mean_loss_train,
                            results_valid["balanced_accuracy"], mean_loss_valid]
+                    if hasattr(model, "variational") and model.variational:
+                        row += [results_train["total_kl_loss"] / (len(train_loader) * train_loader.batch_size),
+                                results_valid["total_kl_loss"] / (len(valid_loader) * valid_loader.batch_size)]
                     row_df = pd.DataFrame([row], columns=columns)
                     with open(filename, 'a') as f:
                         row_df.to_csv(f, header=False, index=False, sep='\t')
@@ -186,6 +192,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
         row = [epoch, i, t_current,
                results_train["balanced_accuracy"], mean_loss_train,
                results_valid["balanced_accuracy"], mean_loss_valid]
+        if hasattr(model, "variational") and model.variational:
+            row += [results_train["total_kl_loss"] / (len(train_loader) * train_loader.batch_size),
+                    results_valid["total_kl_loss"] / (len(valid_loader) * valid_loader.batch_size)]
         row_df = pd.DataFrame([row], columns=columns)
         with open(filename, 'a') as f:
             row_df.to_csv(f, header=False, index=False, sep='\t')
@@ -296,6 +305,7 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
     softmax = torch.nn.Softmax(dim=1)
     results_df = pd.DataFrame(columns=columns)
     total_loss = 0
+    total_kl_loss = 0
     total_time = 0
     tend = time()
     with torch.no_grad():
@@ -306,7 +316,13 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
                 inputs, labels = data['image'].cuda(), data['label'].cuda()
             else:
                 inputs, labels = data['image'], data['label']
-            outputs = model(inputs)
+
+            if hasattr(model, "variational") and model.variational:
+                z, mu, std, outputs = model(inputs)
+                kl_loss = kl_divergence(z, mu, std)
+                total_kl_loss += kl_loss.item()
+            else:
+                outputs = model(inputs)
             if use_labels:
                 loss = criterion(outputs, labels)
                 total_loss += loss.item()
@@ -336,6 +352,7 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
         metrics_dict = evaluate_prediction(results_df.true_label.values.astype(int),
                                            results_df.predicted_label.values.astype(int))
         metrics_dict['total_loss'] = total_loss
+        metrics_dict['total_kl_loss'] = total_kl_loss
     torch.cuda.empty_cache()
 
     return results_df, metrics_dict
@@ -567,6 +584,29 @@ def soft_voting(performance_df, validation_df, mode, selection_threshold=None, u
     return df_final, results
 
 
+def mode_to_image_tsvs(output_dir, fold, selection, mode, dataset="test"):
+    """
+    Copy mode-level tsvs to name them as image-level tsvs
+    Args:
+        output_dir: (str) path to the output directory.
+        fold: (int) Fold number of the cross-validation.
+        selection: (str) criterion on which the model is selected (either best_loss or best_acc)
+        mode: (str) input used by the network. Chosen from ['patch', 'roi', 'slice'].
+        dataset: (str) name of the dataset for which the soft-voting is performed. If different from training or
+            validation, the weights of soft voting will be computed on validation accuracies.
+    """
+    sub_df = retrieve_sub_level_results(output_dir, fold, selection, mode, dataset, 1)
+    sub_df.drop([f'{mode}_id', 'proba0', 'proba1'], axis=1, inplace=True)
+
+    performance_path = os.path.join(output_dir, f'fold-{fold}', 'cnn_classification', selection)
+    sub_df.to_csv(os.path.join(performance_path, f'{dataset}_image_level_prediction.tsv'),
+                  index=False, sep='\t')
+    metrics_df = pd.read_csv(os.path.join(performance_path, f'{dataset}_{mode}_level_metrics.tsv'), sep="\t")
+    metrics_df.drop([f'{mode}_id'], axis=1, inplace=True)
+    metrics_df.to_csv(os.path.join(performance_path, f'{dataset}_image_level_metrics.tsv'),
+                      index=False, sep='\t')
+
+
 def check_prediction(row):
     if row["true_label"] == row["predicted_label"]:
         return 1
@@ -608,11 +648,11 @@ class SmoothL1ClassificationLoss(_Loss):
 def get_criterion(option):
     """Returns the appropriate loss depending on the option"""
     if option == "default":
-        return torch.nn.CrossEntropyLoss()
+        return torch.nn.CrossEntropyLoss(reduction="sum")
     elif option == "L1Norm" or option == "L1":
-        return L1ClassificationLoss(reduction="mean", normalization=(option == "L1Norm"))
+        return L1ClassificationLoss(reduction="sum", normalization=(option == "L1Norm"))
     elif option == "SmoothL1Norm" or option == "SmoothL1":
-        return SmoothL1ClassificationLoss(reduction="mean", normalization=(option == "SmoothL1Norm"))
+        return SmoothL1ClassificationLoss(reduction="sum", normalization=(option == "SmoothL1Norm"))
     else:
         raise ValueError("The option %s is unknown for criterion selection" % option)
 
@@ -642,3 +682,31 @@ def binarize_label(y, classes, pos_label=1, neg_label=0):
         Y[Y == 0] = neg_label
     Y = torch.from_numpy(Y).float().to(device)
     return Y
+
+
+def kl_divergence(z, mu, std):
+    """
+    Monte-Carlo KL divergence from
+    https://towardsdatascience.com/variational-autoencoder-demystified-with-pytorch-implementation-3a06bee395ed
+
+    Args:
+        z: The vector sampled from Normal(mu, std) in the variational network
+        mu: The mean value of the Normal distribution of the variational network
+        std: The standard deviation of the Normal distribution of the variational network
+    Returns:
+        The value of the KL divergence between the Normal distributions of mean 0 and std 1 and of mean mu and std std.
+    """
+    # 1. define the first two probabilities (in this case Normal for both)
+    p = torch.distributions.Normal(torch.zeros_like(mu), torch.ones_like(std))
+    q = torch.distributions.Normal(mu, std)
+
+    # 2. get the probabilities from the equation
+    log_qzx = q.log_prob(z)
+    log_pz = p.log_prob(z)
+
+    # kl
+    kl = (log_qzx - log_pz)
+
+    # go from single dim distribution to multi-dim
+    kl = kl.mean(-1).sum()
+    return kl
