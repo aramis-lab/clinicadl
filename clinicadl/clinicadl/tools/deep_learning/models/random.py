@@ -11,7 +11,9 @@ All the architectures are built here
 
 def sampling_fn(value, sampling_type):
     if isinstance(value, (tuple, list)):
-        if sampling_type is "choice":
+        if sampling_type is "fixed":
+            return value
+        elif sampling_type is "choice":
             return random.choice(value)
         elif sampling_type is "exponent":
             exponent = random.uniform(*value)
@@ -43,50 +45,55 @@ def random_sampling(rs_options, options):
     """
 
     sampling_dict = {
+        "accumulation_steps": "randint",
+        "baseline": "choice",
+        "caps_dir": "fixed",
+        "channels_limit": "fixed",
+        "data_augmentation": "fixed",
+        "diagnoses": "fixed",
+        "dropout": "uniform",
+        "epochs": "fixed",
+        "learning_rate": "exponent",
+        "loss": "choice",
         "mode": "choice",
+        "multi_cohort": "fixed",
+        "n_fcblocks": "randint",
         "network_type": "choice",
         "network_normalization": "choice",
-        "n_fcblocks": "randint",
-        "preprocessing": "choice",
-        "baseline": "choice",
-        "unnormalize": "choice",
-        "learning_rate": "exponent",
-        "dropout": "uniform",
-        "accumulation_steps": "randint",
-        "loss": "choice",
         "optimizer": "choice",
+        "patience": "fixed",
+        "preprocessing": "choice",
+        "sampler": "choice",
+        "tolerance": "fixed",
+        "transfer_learning_path": "choice",
+        "transfer_learning_selection": "choice",
+        "tsv_path": "fixed",
+        "unnormalize": "choice",
         "wd_bool": "choice",
         "weight_decay": "exponent",
-        "sampler": "choice",
-        "transfer_learning_path": "choice",
-        "transfer_learning_selection": "choice"
     }
-    fixed_values = ["tsv_path", "caps_dir",
-                    "epochs", "patience", "tolerance",
-                    "diagnoses", "data_augmentation",
-                    "multi_cohort",
-                    "channels_limit",
-                    "use_extracted_patches",
-                    "use_extracted_slices"]
+
     additional_mode_dict = {
         "image": {},
         "patch": {
             "patch_size": "randint",
             "selection_threshold": "uniform",
-            "stride_size": "randint"
+            "stride_size": "randint",
+            "use_extracted_patches": "fixed",
         },
         "roi": {
-            "selection_threshold": "uniform"
+            "selection_threshold": "uniform",
+            "roi_list": "fixed",
+            "use_extracted_roi": "fixed",
+            "uncropped_roi": "fixed",
         },
         "slice": {
             "discarded_slices": "randint",
             "selection_threshold": "uniform",
-            "slice_direction": "choice"
+            "slice_direction": "choice",
+            "use_extracted_slices": "fixed",
         }
     }
-
-    for name in fixed_values:
-        setattr(options, name, getattr(rs_options, name))
 
     for name, sampling_type in sampling_dict.items():
         sampled_value = sampling_fn(getattr(rs_options, name), sampling_type)
