@@ -44,7 +44,6 @@ def write_splits(diagnosis, diagnosis_df, split_label, n_splits,
     splits = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=2)
 
     for i, indices in enumerate(splits.split(np.zeros(len(y)), y)):
-        print(f'Split {i}')
         train_index, test_index = indices
 
         test_df = baseline_df.iloc[test_index]
