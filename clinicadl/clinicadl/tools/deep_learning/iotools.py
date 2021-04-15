@@ -91,10 +91,16 @@ def translate_parameters(args):
 def check_and_clean(d):
     import shutil
     import os
+    import datetime
+    try:
+        os.makedirs(d, exist_ok=False)
+    except OSError as error:
+        dir_split=os.path.split(d)
+        d = os.path.join(dir_split[0], dir_split[1] + '_' + datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
+        print("Directory can not be created. This foder already exists,  directory name was changed into "+d)
+        os.makedirs(d)
 
-    if os.path.exists(d):
-        shutil.rmtree(d)
-    os.makedirs(d)
+    return d
 
 
 def commandline_to_json(commandline, logger=None):
@@ -140,9 +146,9 @@ def commandline_to_json(commandline, logger=None):
     # save to json file
     json = json.dumps(commandline_arg_dict, skipkeys=True, indent=4)
     logger.info("Path of json file: %s" % os.path.join(output_dir, "commandline.json"))
-    f = open(os.path.join(output_dir, "commandline.json"), "w")
-    f.write(json)
-    f.close()
+    with open(os.path.join(output_dir, "commandline.json"), "w") as f:
+        f.write(json)
+
 
 
 def read_json(options, json_path=None, test=False):

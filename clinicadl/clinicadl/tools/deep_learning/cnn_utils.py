@@ -102,7 +102,6 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
             else:
                 imgs, labels = data['image'], data['label']
             train_output = model(imgs)
-            _, predict_batch = train_output.topk(1)
             loss = criterion(train_output, labels)
 
             # Back propagation

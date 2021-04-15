@@ -34,7 +34,7 @@ def train_single_cnn(params):
     train_logger = return_logger(params.verbose, "train")
     eval_logger = return_logger(params.verbose, "final evaluation")
     #toDO: edit to change directory and give new name instead of cleaning whole directory
-    check_and_clean(params.output_dir)
+    params.output_dir=check_and_clean(params.output_dir)
 
     commandline_to_json(params, logger=main_logger)
     write_requirements_version(params.output_dir)
@@ -108,6 +108,7 @@ def train_single_cnn(params):
             params.output_dir, 'fold-%i' % fi, 'models')
 
         main_logger.debug('Beginning the training task')
+        #toDO: resume as argument from command line
         train(model, train_loader, valid_loader, criterion,
               optimizer, False, log_dir, model_dir, params, train_logger)
 

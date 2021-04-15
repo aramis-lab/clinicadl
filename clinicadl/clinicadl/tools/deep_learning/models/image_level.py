@@ -1,6 +1,6 @@
 # coding: utf8
 
-from .modules import PadMaxPool3d, Flatten
+from .modules import PadMaxPool3d, Flatten, BasicBlock, Bottleneck, SEBasicBlock, SEBottleneck, ResNet
 import torch.nn as nn
 
 """
@@ -190,3 +190,25 @@ class Conv6_FC3(nn.Module):
         x = self.classifier(x)
 
         return x
+
+class ResNet18(ResNet):
+    def __init__(self, n_classes=3):
+        super().__init__(BasicBlock, [2, 2, 2, 2], num_classes=n_classes)
+
+
+class ResNet50(ResNet):
+    def __init__(self, n_classes=3):
+        super().__init__(Bottleneck, [3, 4, 6, 3], num_classes=n_classes)
+
+class SEResNet18(ResNet):
+    def __init__(self, n_classes=3):
+        super().__init__(SEBottleneck, [3, 4, 6, 3], num_classes=n_classes, num_channels=1)
+        self.avgpool = nn.AdaptiveAvgPool3d(1)
+
+
+
+class SEResNet50(ResNet):
+    def __init__(self, n_classes=3):
+        super().__init__(SEBasicBlock, [2, 2, 2, 2], num_classes=n_classes, num_channels=1)
+        self.avgpool = nn.AdaptiveAvgPool3d(1)
+
