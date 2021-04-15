@@ -4,14 +4,18 @@ import os
 import torch
 from torch.utils.data import DataLoader
 
-from clinicadl.tools.deep_learning.models import transfer_learning, init_model, load_model
-from clinicadl.tools.deep_learning.data import (get_transforms,
+
+import sys, os
+sys.path.insert(0, os.path.abspath('./'))
+
+from tools.deep_learning.models import transfer_learning, init_model, load_model
+from tools.deep_learning.data import (get_transforms,
                                         load_data,
                                         return_dataset,
                                         generate_sampler)
-from clinicadl.tools.deep_learning.cnn_utils import train, get_criterion, test, mode_level_to_tsvs, soft_voting_to_tsvs
-from clinicadl.tools.deep_learning.iotools import return_logger, check_and_clean
-from clinicadl.tools.deep_learning.iotools import commandline_to_json, write_requirements_version, translate_parameters
+from tools.deep_learning.cnn_utils import train, get_criterion, test, mode_level_to_tsvs, soft_voting_to_tsvs
+from tools.deep_learning.iotools import return_logger, check_and_clean
+from tools.deep_learning.iotools import commandline_to_json, write_requirements_version, translate_parameters
 
 
 def train_single_cnn(params):
@@ -29,6 +33,7 @@ def train_single_cnn(params):
     main_logger = return_logger(params.verbose, "main process")
     train_logger = return_logger(params.verbose, "train")
     eval_logger = return_logger(params.verbose, "final evaluation")
+    #toDO: edit to change directory and give new name instead of cleaning whole directory
     check_and_clean(params.output_dir)
 
     commandline_to_json(params, logger=main_logger)

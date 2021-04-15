@@ -9,7 +9,10 @@ import torchvision.transforms as transforms
 import abc
 import logging
 import warnings
-from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
+import sys
+import os
+sys.path.insert(0, os.path.abspath('./'))
+from tools.inputs.filename_types import FILENAME_TYPE
 
 
 #################################

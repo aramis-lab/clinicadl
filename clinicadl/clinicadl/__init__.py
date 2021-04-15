@@ -6,6 +6,7 @@ import pkgutil
 __version__ = pkgutil.get_data(__package__, 'VERSION').decode('ascii').strip()
 version = __version__
 
+__path__ = pkgutil.extend_path(__path__, __name__)
 # import pkg_resources
 # version = pkg_resources.require("Clinica")[0].version
 # __version__ = version
