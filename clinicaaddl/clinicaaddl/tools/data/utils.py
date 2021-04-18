@@ -10,7 +10,7 @@ from scipy.ndimage import gaussian_filter
 def load_and_check_tsv(tsv_path, caps_dir, output_path):
     import pandas as pd
     from os.path import join
-    from clinica.iotools.utils.data_handling import create_subs_sess_list
+    from clinicaml.iotools.utils.data_handling import create_subs_sess_list
 
     if tsv_path is not None:
         df = pd.read_csv(tsv_path, sep='\t')

@@ -1,6 +1,6 @@
 # coding: utf8
 
-import clinica.engine as ce
+import clinicaml.engine as ce
 
 
 class T1ExtensiveCli(ce.CmdParser):
@@ -17,7 +17,7 @@ class T1ExtensiveCli(ce.CmdParser):
 
     def define_options(self):
         """Define the sub-command arguments."""
-        from clinica.engine.cmdparser import PIPELINE_CATEGORIES
+        from clinicaml.engine.cmdparser import PIPELINE_CATEGORIES
 
         # Clinica compulsory arguments (e.g. BIDS, CAPS, group_label)
         clinica_comp = self._args.add_argument_group(
@@ -34,7 +34,7 @@ class T1ExtensiveCli(ce.CmdParser):
         """Run the pipeline with defined args."""
         from networkx import Graph
         from .t1_extensive_pipeline import T1Extensive
-        from clinica.utils.ux import print_end_pipeline, print_crash_files_and_exit
+        from clinicaml.utils.ux import print_end_pipeline, print_crash_files_and_exit
 
         pipeline = T1Extensive(
             caps_directory=self.absolute_path(args.caps_directory),

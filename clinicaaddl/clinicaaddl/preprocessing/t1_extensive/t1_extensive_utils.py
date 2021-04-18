@@ -57,19 +57,19 @@ def get_file_from_server(remote_file, cache_path=None):
     Download file from server
 
     Args:
-        remote_file (str): RemoteFileStructure defined in clinica.utils.inputs
+        remote_file (str): RemoteFileStructure defined in clinicaml.utils.inputs
         cache_path (str): (default: ~/.cache/clinica/data)
 
     Returns:
         Path to downloaded file.
 
     Note:
-        This function will be in Clinica.
+        This function will be in clinicaml.
     """
     import os
     from pathlib import Path
-    from clinica.utils.stream import cprint
-    from clinica.utils.inputs import fetch_file
+    from clinicaml.utils.stream import cprint
+    from clinicaml.utils.inputs import fetch_file
 
     home = str(Path.home())
     if cache_path:

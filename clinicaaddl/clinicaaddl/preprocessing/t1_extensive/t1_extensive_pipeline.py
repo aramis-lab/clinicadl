@@ -1,6 +1,6 @@
 # coding: utf8
 
-import clinica.pipelines.engine as cpe
+import clinicaml.pipelines.engine as cpe
 
 # Use hash instead of parameters for iterables folder names
 from nipype import config
@@ -19,8 +19,8 @@ class T1Extensive(cpe.Pipeline):
     @staticmethod
     def get_processed_images(caps_directory, subjects, sessions):
         import os
-        from clinica.utils.filemanip import extract_image_ids
-        from clinica.utils.inputs import clinica_file_reader
+        from clinicaml.utils.filemanip import extract_image_ids
+        from clinicaml.utils.inputs import clinica_file_reader
 
         information = {
             "pattern": os.path.join(
@@ -67,10 +67,10 @@ class T1Extensive(cpe.Pipeline):
         import os
         import nipype.pipeline.engine as npe
         import nipype.interfaces.utility as nutil
-        from clinica.utils.inputs import clinica_file_reader
-        from clinica.utils.exceptions import ClinicaException
-        from clinica.utils.stream import cprint
-        from clinica.utils.ux import print_images_to_process
+        from clinicaml.utils.inputs import clinica_file_reader
+        from clinicaml.utils.exceptions import ClinicaException
+        from clinicaml.utils.stream import cprint
+        from clinicaml.utils.ux import print_images_to_process
 
         all_errors = []
         t1w_in_ixi549space = {
@@ -124,7 +124,7 @@ class T1Extensive(cpe.Pipeline):
         import nipype.interfaces.utility as nutil
         import nipype.pipeline.engine as npe
         import nipype.interfaces.io as nio
-        from clinica.utils.nipype import fix_join, container_from_filename
+        from clinicaml.utils.nipype import fix_join, container_from_filename
 
         # Find container path from filename
         # =================================
@@ -156,7 +156,7 @@ class T1Extensive(cpe.Pipeline):
         import os
         import nipype.pipeline.engine as npe
         import nipype.interfaces.utility as nutil
-        from clinica.utils.inputs import RemoteFileStructure
+        from clinicaml.utils.inputs import RemoteFileStructure
         from .t1_extensive_utils import (
             get_caps_filename,
             apply_binary_mask,

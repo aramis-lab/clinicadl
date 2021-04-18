@@ -4,7 +4,7 @@
 Source files can be obtained by running the following commands on a BIDS folder:
  - clinica iotools merge-tsv
  - clinica iotools missing-mods
-To download Clinica follow the instructions at http://www.clinica.run/doc/#installation
+To download Clinica follow the instructions at http://www.clinicaml.run/doc/#installation
 
 NB: Other preprocessing may be needed on the merged file obtained: for example the selection of subjects older than 62
 in the OASIS dataset is not done in this script. Moreover a quality check may be needed at the end of preprocessing
