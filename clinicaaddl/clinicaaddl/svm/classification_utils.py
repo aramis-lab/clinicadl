@@ -3,9 +3,9 @@
 import abc
 import os
 import pandas as pd
-from clinicaml.pipelines.machine_learning import base
-import clinicaml.pipelines.machine_learning.voxel_based_io as vbio
-import clinicaml.pipelines.machine_learning.ml_utils as utils
+from clinica.pipelines.machine_learning import base
+import clinica.pipelines.machine_learning.voxel_based_io as vbio
+import clinica.pipelines.machine_learning.ml_utils as utils
 from multiprocessing.pool import ThreadPool
 from os import path
 import numpy as np

@@ -4,7 +4,7 @@ from os import path
 import numpy as np
 import os
 from .classification_utils import KFoldCV, CAPSVoxelBasedInput, apply_best_parameters_each_split
-from clinicaml.pipelines.machine_learning import base, algorithm
+from clinica.pipelines.machine_learning import base, algorithm
 
 __author__ = "Junhao Wen"
 __copyright__ = "Copyright 2018 The Aramis Lab Team"

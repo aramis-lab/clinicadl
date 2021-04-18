@@ -8,7 +8,7 @@ import nibabel as nib
 import os
 from pathlib import Path
 
-from clinicaml.utils.inputs import fetch_file, RemoteFileStructure
+from clinica.utils.inputs import fetch_file, RemoteFileStructure
 
 
 def extract_metrics(caps_dir, output_dir, group_label):
