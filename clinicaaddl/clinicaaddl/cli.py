@@ -5,7 +5,6 @@ from distutils.util import strtobool
 
 from colorama import Fore
 
-
 TRAIN_CATEGORIES = {
     # General parent group
     'POSITIONAL': '%sPositional arguments%s' % (Fore.BLUE, Fore.RESET),
@@ -110,13 +109,16 @@ def rs_func(args):
 
 # Function to dispatch training to corresponding function
 def train_func(args):
-    from train import train_autoencoder, train_multi_cnn, train_single_cnn
+    from train import train_autoencoder, train_multi_cnn, train_single_cnn, resume_single_CNN
 
     if args.network_type == "autoencoder":
         args.transfer_learning_selection = "best_loss"
         train_autoencoder(args)
     elif args.network_type == "cnn":
-        train_single_cnn(args)
+        if args.resume == False:
+            train_single_cnn(args)
+        else:
+            resume_single_CNN(args)
     elif args.network_type == "multicnn":
         train_multi_cnn(args)
     else:
@@ -491,7 +493,8 @@ def parse_command_line():
     )
 
     # Clinica standard arguments (e.g. --n_procs)
-    clinica_standard_options = extract_parser.add_argument_group('%sClinica standard options%s' % (Fore.BLUE, Fore.RESET))
+    clinica_standard_options = extract_parser.add_argument_group(
+        '%sClinica standard options%s' % (Fore.BLUE, Fore.RESET))
     clinica_standard_options.add_argument(
         "-tsv", "--subjects_sessions_tsv",
         help='TSV file containing a list of subjects with their sessions.'
@@ -704,7 +707,10 @@ def parse_command_line():
         '--transfer_learning_selection',
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
         type=str, default="best_balanced_accuracy", choices=["best_loss", "best_balanced_accuracy"])
-
+    train_image_cnn_parser.add_argument(
+        '-r', '--resume',
+        help='Flag to resume training',
+        type=str2bool, default=False)
     train_image_cnn_parser.set_defaults(func=train_func)
 
     #########################
@@ -1146,7 +1152,7 @@ def parse_command_line():
         type=str, default="test")
     tsv_split_subparser.add_argument(
         "--ignore_demographics",
-        help="If True do not use age and sex to create the splits.",type=str2bool,
+        help="If True do not use age and sex to create the splits.", type=str2bool,
         default=False
     )
 
@@ -1378,7 +1384,11 @@ def return_train_parent_parser(retrain=False):
         default=None if retrain else False)
     train_data_group.add_argument(
         "--data_augmentation", nargs="+", default=None if retrain else False,
-        choices=["None", "Noise", "Erasing", "CropPad", "Smoothing"],
+        # choices=["None", "Noise", "Erasing", "CropPad", "Smoothing"],
+        choices=["None", "RandomNoise", "RandomBiasField", "RandomBiasField2", "RandomGamma",
+                 "RandomRotation", "RandomScaling", "RandomRotationAndScaling",
+                 "RandomSpike", "RandomMotion", "RandomMotion2",
+                 "RandomGhosting"],
         help="Randomly applies transforms on the training set.")
     train_data_group.add_argument(
         '--sampler', '-s',
@@ -1439,7 +1449,7 @@ def return_train_parent_parser(retrain=False):
 def str2bool(v):
     import argparse
     if isinstance(v, bool):
-       return v
+        return v
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
         return True
     elif v.lower() in ('no', 'false', 'f', 'n', '0'):

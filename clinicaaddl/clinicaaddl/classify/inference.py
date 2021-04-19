@@ -4,10 +4,10 @@ from os.path import isdir, join, abspath, exists
 from os import strerror, makedirs, listdir
 import errno
 import pathlib
-from clinicaaddl.tools.deep_learning import create_model, load_model, read_json
-from clinicaaddl.tools.deep_learning.iotools import return_logger, translate_parameters
-from clinicaaddl.tools.deep_learning.data import return_dataset, get_transforms, compute_num_cnn, load_data_test
-from clinicaaddl.tools.deep_learning.cnn_utils import test, soft_voting_to_tsvs, mode_level_to_tsvs, get_criterion
+from ..tools.deep_learning import create_model, load_model, read_json
+from ..tools.deep_learning.iotools import return_logger, translate_parameters
+from ..tools.deep_learning.data import return_dataset, get_transforms, compute_num_cnn, load_data_test
+from ..tools.deep_learning.cnn_utils import test, soft_voting_to_tsvs, mode_level_to_tsvs, get_criterion
 import torch.nn as nn
 from torch.utils.data import DataLoader
 

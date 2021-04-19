@@ -11,8 +11,8 @@ import logging
 import warnings
 import sys
 import os
-sys.path.insert(0, os.path.abspath('./'))
-from tools.inputs.filename_types import FILENAME_TYPE
+
+from clinicaaddl.tools.inputs.filename_types import FILENAME_TYPE
 
 
 #################################
@@ -567,72 +567,6 @@ def compute_num_cnn(input_dir, tsv_path, options, data="train"):
     return full_dataset.elem_per_image
 
 
-##################################
-# Transformations
-##################################
-
-class RandomNoising(object):
-    """Applies a random zoom to a tensor"""
-
-    def __init__(self, sigma=0.1):
-        self.sigma = sigma
-
-    def __call__(self, image):
-        import random
-
-        sigma = random.uniform(0, self.sigma)
-        dist = torch.distributions.normal.Normal(0, sigma)
-        return image + dist.sample(image.shape)
-
-
-class RandomSmoothing(object):
-    """Applies a random zoom to a tensor"""
-
-    def __init__(self, sigma=1):
-        self.sigma = sigma
-
-    def __call__(self, image):
-        import random
-        from scipy.ndimage import gaussian_filter
-
-        sigma = random.uniform(0, self.sigma)
-        image = gaussian_filter(image, sigma)  # smoothing of data
-        image = torch.from_numpy(image).float()
-        return image
-
-
-class RandomCropPad(object):
-    def __init__(self, length):
-        self.length = length
-
-    def __call__(self, image):
-        dimensions = len(image.shape) - 1
-        crop = np.random.randint(-self.length, self.length, dimensions)
-        if dimensions == 2:
-            output = torch.nn.functional.pad(image, (-crop[0], crop[0], -crop[1], crop[1]))
-        elif dimensions == 3:
-            output = torch.nn.functional.pad(image, (-crop[0], crop[0], -crop[1], crop[1], -crop[2], crop[2]))
-        else:
-            raise ValueError("RandomCropPad is only available for 2D or 3D data.")
-        return output
-
-
-class GaussianSmoothing(object):
-
-    def __init__(self, sigma):
-        self.sigma = sigma
-
-    def __call__(self, sample):
-        from scipy.ndimage.filters import gaussian_filter
-
-        image = sample['image']
-        np.nan_to_num(image, copy=False)
-        smoothed_image = gaussian_filter(image, sigma=self.sigma)
-        sample['image'] = smoothed_image
-
-        return sample
-
-
 class ToTensor(object):
     """Convert image type to Tensor and diagnosis to diagnosis code"""
 
@@ -650,7 +584,7 @@ class MinMaxNormalization(object):
         return (image - image.min()) / (image.max() - image.min())
 
 
-def get_transforms(mode, minmaxnormalization=True, data_augmentation=None):
+def get_transforms(mode, minmaxnormalization=True, data_augmentation=None, output_dir=None):
     """
     Outputs the transformations that will be applied to the dataset
     :param mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
@@ -660,18 +594,20 @@ def get_transforms(mode, minmaxnormalization=True, data_augmentation=None):
     - container transforms.Compose including transforms to apply in train and evaluation mode.
     - container transforms.Compose including transforms to apply in evaluation mode only.
     """
-    augmentation_dict = {"Noise": RandomNoising(sigma=0.1),
-                         "Erasing": transforms.RandomErasing(),
-                         "CropPad": RandomCropPad(10),
-                         "Smoothing": RandomSmoothing(),
-                         "None": None}
+    import torchio as tio
+    import augmentations as aug
+
     if data_augmentation:
-        augmentation_list = [augmentation_dict[augmentation] for augmentation in data_augmentation]
+
+        augmentations_list = aug.get_augmentation_list(data_augmentation)
+        aug.save_augmentations(augmentations_list, os.path.join(output_dir, 'augmentations.json'))
+        augmentation_list = [aug.create_tensor_augmentations(augmentations_list)]
+
     else:
         augmentation_list = []
 
     if minmaxnormalization:
-        transformations_list = [MinMaxNormalization()]
+        transformations_list = [tio.RescaleIntensity(percentiles=(0.01, 99.99))]
     else:
         transformations_list = []
 

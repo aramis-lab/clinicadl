@@ -11,24 +11,24 @@ from clinicaaddl.tools.deep_learning.data import MRIDataset, MinMaxNormalization
 from clinicaaddl.tools.deep_learning import create_model, load_model, load_optimizer, read_json
 from clinicaaddl.tools.deep_learning.cnn_utils import train
 
-parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
+# parser = argparse.ArgumentParser(description="Argparser for Pytorch 3D CNN")
+#
+# # Mandatory arguments
+# parser.add_argument("model_path", type=str,
+#                     help="model selected")
+# parser.add_argument("split", type=int,
+#                     help="Will load the specific split wanted.")
+#
+# # Computational argument
+# parser.add_argument('--gpu', action='store_true', default=False,
+#                     help='Uses gpu instead of cpu if cuda is available')
+# parser.add_argument("--num_workers", '-w', default=1, type=int,
+#                     help='the number of batch being loaded in parallel')
 
-# Mandatory arguments
-parser.add_argument("model_path", type=str,
-                    help="model selected")
-parser.add_argument("split", type=int,
-                    help="Will load the specific split wanted.")
 
-# Computational argument
-parser.add_argument('--gpu', action='store_true', default=False,
-                    help='Uses gpu instead of cpu if cuda is available')
-parser.add_argument("--num_workers", '-w', default=1, type=int,
-                    help='the number of batch being loaded in parallel')
+def resume_single_CNN(options):
 
-
-def main(options):
-
-    options = read_json(options)
+    options = read_json(options.output_dir)
 
     if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
