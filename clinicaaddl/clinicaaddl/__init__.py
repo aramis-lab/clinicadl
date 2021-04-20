@@ -3,8 +3,8 @@ __all__ = ['__version__']
 # Load the Clinica package version
 import sys
 import pkgutil
-__version__ = pkgutil.get_data(__package__, 'VERSION').decode('ascii').strip()
-version = __version__
+# __version__ = pkgutil.get_data(__package__, 'VERSION').decode('ascii').strip()
+# version = __version__
 
 __path__ = pkgutil.extend_path(__path__, __name__)
 # import pkg_resources
@@ -13,5 +13,5 @@ __path__ = pkgutil.extend_path(__path__, __name__)
 
 # python 3.6 minimum version is required
 if sys.version_info < (3, 6):
-    print(f"ClinicaDL {__version__} requires Python 3.6")
+    print(f"ClinicaDL requires Python 3.6")
     sys.exit(1)
