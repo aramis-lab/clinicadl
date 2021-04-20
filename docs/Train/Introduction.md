@@ -1,7 +1,8 @@
 # `train` - Train deep learning networks for neuroimaging classification
 
-This task enables the training of a convolutional neural network (CNN) classifier using different formats of inputs 
-(whole 3D images, 3D patches or 2D slices), as defined in [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)]. 
+This task enables the training of a convolutional neural network (CNN) classifier or an autoencoder using 
+different formats of inputs  (whole 3D images, 3D patches or 2D slices), as defined in 
+[[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)]. 
 It mainly relies on the PyTorch deep learning library 
 [[Paszke et al., 2019](https://papers.nips.cc/paper/9015-pytorch-an-imperative-style-high-performance-deep-learning-library)].
 
@@ -36,6 +37,10 @@ In case of [multi-cohort training](Details.md#multi-cohort), must be a path to a
 - `output_directory` (str) is the folder where the results are stored.
 - `architecture` (str) is the name of the architecture used (e.g. `Conv5_FC3`). 
 It must correspond to a class that inherits from `nn.Module` imported in `tools/deep_learning/models/__init__.py`.
+
+!!! tip "`from_json` mode"
+    To shorten the command line, the option [`from_json`](Retrain.md) was added to `clinicadl train` in order
+    to define all the arguments in a JSON file.
 
 Options shared for all values of `mode` are organized in groups:
 
