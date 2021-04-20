@@ -115,7 +115,7 @@ def train_func(args):
         args.transfer_learning_selection = "best_loss"
         train_autoencoder(args)
     elif args.network_type == "cnn":
-        if args.resume == False:
+        if not args.resume:
             train_single_cnn(args)
         else:
             resume_single_CNN(args)
