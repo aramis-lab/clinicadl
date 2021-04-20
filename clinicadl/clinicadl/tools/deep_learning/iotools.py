@@ -270,6 +270,68 @@ def read_json(options, json_path=None, test=False, read_computational=False):
     return options
 
 
+def check_and_complete(options, random_search=False):
+    """
+    This function initializes missing fields with missing values.
+    Some fields are mandatory and cannot be initialized by default; this will raise an issue if they are missing.
+
+    Args:
+        options: (Namespace) the options used for training.
+        random_search: (bool) If True the options are looking for mandatory values of random-search.
+    """
+    filename = 'random_search.json'
+
+    default_values = {
+        "accumulation_steps": 1,
+        "atlas_weight": 1,
+        "baseline": False,
+        "channels_limit": 512,
+        "data_augmentation": False,
+        "diagnoses": ['AD', 'CN'],
+        "discarded_slices": 20,
+        "dropout": 0,
+        "epochs": 20,
+        "learning_rate": 4,
+        "loss": "default",
+        "merged_tsv_path": None,
+        "multi_cohort": False,
+        "n_conv": 1,
+        "optimizer": "Adam",
+        "unnormalize": False,
+        "patch_size": 50,
+        "patience": 0,
+        "predict_atlas_intensities": None,
+        "selection_threshold": 0,
+        "slice_direction": 0,
+        "stride_size": 50,
+        "tolerance": 0.0,
+        "transfer_learning_path": None,
+        "transfer_learning_selection": "best_loss",
+        "use_extracted_patches": False,
+        "use_extracted_slices": False,
+        "use_extracted_roi": False,
+        "wd_bool": True,
+        "weight_decay": 4,
+        "sampler": "random"
+    }
+    if random_search:
+        default_values["d_reduction"] = "MaxPooling"
+        default_values["network_normalization"] = "BatchNorm"
+
+    for name, default_value in default_values.items():
+        if not hasattr(options, name):
+            setattr(options, name, default_value)
+
+    mandatory_arguments = ['network_type', 'mode',
+                           'tsv_path', 'caps_dir', 'preprocessing']
+    if random_search:
+        mandatory_arguments += ['n_convblocks', 'first_conv_width', 'n_fcblocks']
+
+    for argument in mandatory_arguments:
+        if not hasattr(options, argument):
+            raise ValueError(f"The argument {argument} must be specified in {filename}.")
+
+
 def set_default_dropout(args):
     if args.dropout is None:
         if args.mode == 'image':

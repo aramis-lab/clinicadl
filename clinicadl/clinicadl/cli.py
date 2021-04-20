@@ -118,20 +118,12 @@ def rs_func(args):
 
 
 def retrain_func(args):
-    from .train.train_from_model import retrain
+    from .train.train_from_json import retrain
 
-    if args.model_path == args.output_dir:
-        raise ValueError(f"The output directory path {args.output_dir} cannot be the same "
-                         f"than the path to the reference model {args.model_path}.")
-
-    if args.use_cpu and args.use_gpu:
-        raise ValueError("The flags --use_cpu and --use_gpu cannot be specified at the same time.")
-    elif args.use_gpu:
-        args.use_cpu = False
-    else:
-        args.use_cpu = None
-
-    retrain(args)
+    retrain(
+        args.json_path,
+        args.output_dir
+    )
 
 
 def resume_func(args):
@@ -291,8 +283,7 @@ def parse_command_line():
 
     subparser = parser.add_subparsers(
         title='''Task to execute with clinicadl:''',
-        description='''What kind of task do you want to use with clinicadl?
-            (tsvtool, preprocessing, generate, train, classify).''',
+        description='''What kind of task do you want to use with clinicadl?''',
         dest='task',
         help='''****** Tasks proposed by clinicadl ******''')
 
@@ -701,16 +692,6 @@ def parse_command_line():
 
     rs_analysis_parser.set_defaults(func=rs_func)
 
-    retrain_parent_parser = return_train_parent_parser(retrain=True)
-    retrain_parser = subparser.add_parser(
-        'retrain',
-        parents=[parent_parser, retrain_parent_parser],
-        help='Train a network previously created by generate.',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    retrain_parser.set_defaults(func=retrain_func)
-
     resume_parser = subparser.add_parser(
         'resume',
         parents=[parent_parser],
@@ -799,7 +780,7 @@ def parse_command_line():
         dest='network_type',
         help='''****** Choose a type of network ******''')
 
-    train_parent_parser = return_train_parent_parser(retrain=False)
+    train_parent_parser = return_train_parent_parser()
     train_image_ae_parser = train_image_subparser.add_parser(
         "autoencoder",
         parents=[
@@ -1015,7 +996,7 @@ def parse_command_line():
     #########################
     train_slice_parser = train_subparser.add_parser(
         "slice",
-        help="Train a 2D slice-level CNN.")
+        help="Train a 2D slice-level network.")
 
     train_slice_subparser = train_slice_parser.add_subparsers(
         title='''Task to be performed''',
@@ -1095,6 +1076,24 @@ def parse_command_line():
         type=float, default=0.0)
 
     train_slice_multicnn_parser.set_defaults(func=train_func)
+
+    #########################
+    # FROM JSON
+    #########################
+    train_json_parser = train_subparser.add_parser(
+        "from_json",
+        parents=[parent_parser],
+        help="Train a network as defined in a JSON file.")
+    train_json_group = train_json_parser.add_argument_group(
+        TRAIN_CATEGORIES["POSITIONAL"])
+    train_json_group.add_argument(
+        "json_path", type=str,
+        help="Path to the JSON file.")
+    train_json_group.add_argument(
+        "output_dir", type=str,
+        help="Directory in which the new job is stored.")
+
+    train_json_parser.set_defaults(func=retrain_func)
 
     # Classify - Classify a subject or a list of tsv files with the CNN
     # provided as argument.
@@ -1456,100 +1455,77 @@ def parse_command_line():
     return parser
 
 
-def return_train_parent_parser(retrain=False):
+def return_train_parent_parser():
     # Main train parent parser common to train and random search
     train_parent_parser = argparse.ArgumentParser(add_help=False)
     train_pos_group = train_parent_parser.add_argument_group(
         TRAIN_CATEGORIES["POSITIONAL"])
-    if retrain:
-        train_pos_group.add_argument(
-            "model_path", type=str,
-            help="Path to the trained model folder.")
-        train_pos_group.add_argument(
-            "output_dir", type=str,
-            help="Directory in which the new job is stored.")
-    else:
-        train_pos_group.add_argument(
-            'caps_dir',
-            help='Data using CAPS structure.',
-            default=None)
-        train_pos_group.add_argument(
-            'preprocessing',
-            help='Defines the type of preprocessing of CAPS data.',
-            choices=['t1-linear', 't1-extensive', 't1-volume'], type=str)
-        train_pos_group.add_argument(
-            'tsv_path',
-            help='TSV path with subjects/sessions to process.',
-            default=None)
-        train_pos_group.add_argument(
-            'output_dir',
-            help='Folder containing results of the training.',
-            default=None)
-        train_pos_group.add_argument(
-            'model',
-            help='CNN Model to be used during the training.',
-            default='Conv5_FC3')
+    train_pos_group.add_argument(
+        'caps_dir',
+        help='Data using CAPS structure.',
+        default=None)
+    train_pos_group.add_argument(
+        'preprocessing',
+        help='Defines the type of preprocessing of CAPS data.',
+        choices=['t1-linear', 't1-extensive', 't1-volume'], type=str)
+    train_pos_group.add_argument(
+        'tsv_path',
+        help='TSV path with subjects/sessions to process.',
+        default=None)
+    train_pos_group.add_argument(
+        'output_dir',
+        help='Folder containing results of the training.',
+        default=None)
+    train_pos_group.add_argument(
+        'model',
+        help='CNN Model to be used during the training.',
+        default='Conv5_FC3')
 
     train_comput_group = train_parent_parser.add_argument_group(
         TRAIN_CATEGORIES["COMPUTATIONAL"])
     train_comput_group.add_argument(
         '-cpu', '--use_cpu', action='store_true',
         help='If provided, will use CPU instead of GPU.',
-        default=None if retrain else False)
-    if retrain:
-        train_comput_group.add_argument(
-            '-gpu', '--use_gpu', action='store_true',
-            help='If provided, will use GPU instead of CPU.',
-            default=None if retrain else False
-        )
+        default=False)
     train_comput_group.add_argument(
         '-np', '--nproc',
         help='Number of cores used during the training. (default=2)',
-        type=int, default=None if retrain else 2)
+        type=int, default=2)
     train_comput_group.add_argument(
         '--batch_size',
-        default=None if retrain else 2, type=int,
+        default=2, type=int,
         help='Batch size for training. (default=2)')
     train_comput_group.add_argument(
         '--evaluation_steps', '-esteps',
-        default=None if retrain else 0, type=int,
+        default=0, type=int,
         help='Fix the number of iterations to perform before computing an evaluation. Default will only '
              'perform one evaluation at the end of each epoch.')
 
     train_data_group = train_parent_parser.add_argument_group(
         TRAIN_CATEGORIES["DATA"])
-
-    if retrain:
-        train_data_group.add_argument(
-            "--caps_dir", type=str, default=None,
-            help="Data using CAPS structure.")
-        train_data_group.add_argument(
-            "--tsv_path", type=str, default=None,
-            help="TSV path with subjects/sessions to process.")
-
     train_data_group.add_argument(
         "--multi_cohort",
         help="Performs multi-cohort training. In this case, caps_dir and tsv_path must be paths to TSV files.",
         action="store_true",
-        default=None if retrain else False
+        default=False
     )
     train_data_group.add_argument(
         '--diagnoses', '-d',
         help='List of diagnoses that will be selected for training.',
-        default=None if retrain else ['AD', 'CN'], nargs='+', type=str,
+        default=['AD', 'CN'], nargs='+', type=str,
         choices=['AD', 'BV', 'CN', 'MCI', 'sMCI', 'pMCI'])
     train_data_group.add_argument(
         '--baseline',
         help='If provided, only the baseline sessions are used for training.',
         action="store_true",
-        default=None if retrain else False)
+        default=False)
     train_data_group.add_argument(
         '--unnormalize', '-un',
         help='Disable default MinMaxNormalization.',
         action="store_true",
-        default=None if retrain else False)
+        default=False)
     train_data_group.add_argument(
-        "--data_augmentation", nargs="+", default=None if retrain else False,
+        "--data_augmentation", nargs="+", default=False,
         choices=["None", "Noise", "Erasing", "CropPad", "Smoothing"],
         help="Randomly applies transforms on the training set.")
     train_data_group.add_argument(
@@ -1569,7 +1545,7 @@ def return_train_parent_parser(retrain=False):
     )
     train_data_group.add_argument(
         '--merged_tsv_path',
-        default=None if retrain else "", type=str,
+        default="", type=str,
         help="Path to the output of clinica iotools merged-tsv (concatenation for multi-cohort). "
     )
 
@@ -1579,7 +1555,7 @@ def return_train_parent_parser(retrain=False):
         '--n_splits',
         help='If a value is given for k will load data of a k-fold CV. '
              'Default value (0) will load a single split.',
-        type=int, default=None if retrain else 0)
+        type=int, default=0)
     train_cv_group.add_argument(
         '--split',
         help='Train the list of given folds. By default train all folds.',
@@ -1590,36 +1566,36 @@ def return_train_parent_parser(retrain=False):
     train_optim_group.add_argument(
         '--epochs',
         help='Maximum number of epochs.',
-        default=None if retrain else 20, type=int)
+        default=20, type=int)
     train_optim_group.add_argument(
         '--learning_rate', '-lr',
         help='Learning rate of the optimization.',
-        default=None if retrain else 1e-4, type=float)
+        default=1e-4, type=float)
     train_optim_group.add_argument(
         '--weight_decay', '-wd',
         help='Weight decay value used in optimization.',
-        default=None if retrain else 1e-4, type=float)
+        default=1e-4, type=float)
     train_optim_group.add_argument(
         '--dropout',
         help='rate of dropout that will be applied to dropout layers in CNN.',
-        default=None if retrain else 0, type=float)
+        default=0, type=float)
     train_optim_group.add_argument(
         '--patience',
         help='Number of epochs for early stopping patience.',
-        type=int, default=None if retrain else 0)
+        type=int, default=0)
     train_optim_group.add_argument(
         '--tolerance',
         help='Value for the early stopping tolerance.',
-        type=float, default=None if retrain else 0.0)
+        type=float, default=0.0)
     train_optim_group.add_argument(
         '--accumulation_steps', '-asteps',
         help='Accumulates gradients during the given number of iterations before performing the weight update '
              'in order to virtually increase the size of the batch.',
-        default=None if retrain else 1, type=int)
+        default=1, type=int)
     # train_optim_group.add_argument(
     #     "--loss",
     #     help="Replaces default losses: cross-entropy for CNN and MSE for autoencoders.",
-    #     type=str, default=None if retrain else "default",
+    #     type=str, default="default",
     #     choices=["default", "L1", "L1Norm", "SmoothL1", "SmoothL1Norm"])
 
     return train_parent_parser
