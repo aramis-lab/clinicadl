@@ -10,7 +10,7 @@ NB: Other preprocessing may be needed on the merged file obtained: for example t
 in the OASIS dataset is not done in this script. Moreover a quality check may be needed at the end of preprocessing
 pipelines, leading to the removal of some subjects.
 """
-from ..deep_learning.iotools import return_logger
+from clinicaaddl.tools.deep_learning.iotools import return_logger
 from .tsv_utils import neighbour_session, last_session, after_end_screening, find_label
 import pandas as pd
 from os import path

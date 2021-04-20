@@ -8,14 +8,14 @@ from torch.utils.data import DataLoader
 # import sys, os
 # sys.path.insert(0, os.path.abspath('./'))
 
-from ..tools.deep_learning.models import transfer_learning, init_model, load_model
-from ..tools.deep_learning.data import (get_transforms,
+from clinicaaddl.tools.deep_learning.models import transfer_learning, init_model, load_model
+from clinicaaddl.tools.deep_learning.data import (get_transforms,
                                         load_data,
                                         return_dataset,
                                         generate_sampler)
-from ..tools.deep_learning.cnn_utils import train, get_criterion, test, mode_level_to_tsvs, soft_voting_to_tsvs
-from ..tools.deep_learning.iotools import return_logger, check_and_clean
-from ..tools.deep_learning.iotools import commandline_to_json, write_requirements_version, translate_parameters
+from clinicaaddl.tools.deep_learning.cnn_utils import train, get_criterion, test, mode_level_to_tsvs, soft_voting_to_tsvs
+from clinicaaddl.tools.deep_learning.iotools import return_logger, check_and_clean
+from clinicaaddl.tools.deep_learning.iotools import commandline_to_json, write_requirements_version, translate_parameters
 
 
 def train_single_cnn(params):

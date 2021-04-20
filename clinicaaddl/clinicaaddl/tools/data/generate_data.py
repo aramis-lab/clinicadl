@@ -13,7 +13,7 @@ from copy import copy
 
 from clinica.utils.inputs import fetch_file, RemoteFileStructure
 from .utils import im_loss_roi_gaussian_distribution, find_image_path, load_and_check_tsv, generate_shepplogan_phantom
-from ..tsv.tsv_utils import baseline_df
+from clinicaaddl.tools.tsv.tsv_utils import baseline_df
 from clinicaaddl.tools.inputs.filename_types import FILENAME_TYPE
 from clinicaaddl.tools.deep_learning.iotools import check_and_clean, commandline_to_json
 import tarfile

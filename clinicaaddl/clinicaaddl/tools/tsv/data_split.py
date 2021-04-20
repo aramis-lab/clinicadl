@@ -1,7 +1,7 @@
 # coding: utf8
 
 from .tsv_utils import complementary_list, find_label, baseline_df, chi2
-from ..deep_learning.iotools import return_logger
+from clinicaaddl.tools.deep_learning.iotools import return_logger
 from scipy.stats import ttest_ind
 import shutil
 import pandas as pd

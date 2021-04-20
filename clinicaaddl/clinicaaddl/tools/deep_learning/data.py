@@ -127,7 +127,7 @@ class MRIDataset(Dataset):
         return participant, session, elem_idx, label
 
     def _get_full_image(self):
-        from ..data.utils import find_image_path as get_nii_path
+        from clinicaaddl.tools.data.utils import find_image_path as get_nii_path
         import nibabel as nib
 
         participant_id = self.df.loc[0, 'participant_id']

@@ -5,8 +5,8 @@ Launch a random network training.
 import argparse
 from os import path
 
-from ..tools.deep_learning import read_json
-from ..tools.deep_learning.models.random import random_sampling
+from clinicaaddl.tools.deep_learning import read_json
+from clinicaaddl.tools.deep_learning.models.random import random_sampling
 from .train_multiCNN import train_multi_cnn
 from .train_singleCNN import train_single_cnn
 from .train_autoencoder import train_autoencoder

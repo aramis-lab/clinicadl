@@ -1,7 +1,7 @@
 # coding: utf8
 
 from .tsv_utils import baseline_df
-from ..deep_learning.iotools import return_logger
+from clinicaaddl.tools.deep_learning.iotools import return_logger
 import shutil
 from sklearn.model_selection import StratifiedKFold, ShuffleSplit
 from os import path

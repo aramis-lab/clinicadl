@@ -5,8 +5,8 @@ Retrain a model defined by a commandline.json file
 from copy import deepcopy
 import warnings
 
-from ..tools.deep_learning.iotools import read_json
-from ..tools.deep_learning.models.random import find_evaluation_steps
+from clinicaaddl.tools.deep_learning.iotools import read_json
+from clinicaaddl.tools.deep_learning.models.random import find_evaluation_steps
 from .train_autoencoder import train_autoencoder
 from .train_singleCNN import train_single_cnn
 from .train_multiCNN import train_multi_cnn
