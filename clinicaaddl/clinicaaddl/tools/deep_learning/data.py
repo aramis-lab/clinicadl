@@ -595,8 +595,10 @@ def get_transforms(mode, minmaxnormalization=True, data_augmentation=None, outpu
     - container transforms.Compose including transforms to apply in evaluation mode only.
     """
     import torchio as tio
-    import augmentations as aug
-
+    
+    import sys, os
+    sys.path.insert(0, os.path.abspath('./'))
+    import tools.deep_learning.augmentations as aug
     if data_augmentation:
 
         augmentations_list = aug.get_augmentation_list(data_augmentation)

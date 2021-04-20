@@ -136,7 +136,7 @@ def transfer_learning(model, split, source_path=None, gpu=False,
     """
     import argparse
     from os import path
-    from clinicaaddl.tools.deep_learing.iotools import read_json, translate_parameters
+    from clinicaaddl.tools.deep_learning.iotools import read_json, translate_parameters
     import logging
 
     if logger is None:
