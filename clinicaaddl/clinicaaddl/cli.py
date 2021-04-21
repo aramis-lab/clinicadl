@@ -106,34 +106,40 @@ def rs_func(args):
 
     launch_search(args)
 
+
 # Function to dispatch training to corresponding function
 def prepare_train_func(args):
-    from tools.deep_learning.iotools import return_logger, check_and_clean, write_requirements_version
+    from tools.deep_learning.iotools import return_logger, check_and_create, write_requirements_version
     from tools.deep_learning.iotools import commandline_to_json
 
     main_logger = return_logger(args.verbose, "main process")
-    args.output_dir = check_and_clean(args.output_dir)
+    args.output_dir = check_and_create(args.output_dir)
     commandline_to_json(args, logger=main_logger)
     write_requirements_version(args.output_dir)
     if args.network_type not in ["autoencoder", "cnn", "multicnn"]:
         raise NotImplementedError('Framework %s not implemented in clinicaaddl' % args.network_type)
 
+
 # Function to dispatch training to corresponding function
 def train_func(args):
-
     from train import train_autoencoder, train_multi_cnn, train_single_cnn, resume_single_CNN
     from tools.deep_learning.iotools import read_json
-    options = read_json(args.output_dir)
-    if options.network_type == "autoencoder":
-        options.transfer_learning_selection = "best_loss"
-        train_autoencoder(options)
-    elif options.network_type == "cnn":
-        if not options.resume:
-            train_single_cnn(options)
+
+    import os
+    args = read_json(args, json_path=os.path.join(args.output_dir, 'commandline.json'))
+
+    # options=Namespace(**vars(options, **vars(args)))
+
+    if args.network_type == "autoencoder":
+        args.transfer_learning_selection = "best_loss"
+        train_autoencoder(args)
+    elif args.network_type == "cnn":
+        if not args.resume:
+            train_single_cnn(args)
         else:
-            resume_single_CNN(options)
-    elif options.network_type == "multicnn":
-        train_multi_cnn(options)
+            resume_single_CNN(args)
+    elif args.network_type == "multicnn":
+        train_multi_cnn(args)
     else:
         raise NotImplementedError('Framework %s not implemented in clinicaaddl' % options.network_type)
 
@@ -653,23 +659,24 @@ def parse_command_line():
 
     train_parser = subparser.add_parser(
         'train',
-        help='Train with your data and create a model.')
+        help='Train with your data and create a model.',
+        parents=[parent_parser]
+    )
 
-    train_subparser = train_parser.add_argument(
+    train_parser.add_argument(
         '-r', '--resume',
         help='Flag to resume training',
         type=str2bool, default=False)
 
-
-    train_subparser.required = True
-    train_pos_group = train_subparser.add_argument_group(
+    train_parser.required = True
+    train_pos_group = train_parser.add_argument_group(
         TRAIN_CATEGORIES["POSITIONAL"])
 
     train_pos_group.add_argument(
         "output_dir", type=str,
         help="Directory from which configs are read and in which the new job is stored.")
 
-    train_comput_group = train_subparser.add_argument_group(
+    train_comput_group = train_parser.add_argument_group(
         TRAIN_CATEGORIES["COMPUTATIONAL"])
     train_comput_group.add_argument(
         '-cpu', '--use_cpu', action='store_true',
@@ -680,11 +687,20 @@ def parse_command_line():
         help='Number of cores used during the training. (default=2)',
         type=int, default=2)
 
-    train_subparser.set_defaults(func=train_func)
+    train_cv_group = train_parser.add_argument_group(
+        TRAIN_CATEGORIES["CROSS-VALIDATION"])
+    train_cv_group.add_argument(
+        '--n_splits',
+        help='If a value is given will load data of a k-fold CV. Else will load a single split.',
+        type=int, default=None)
+    train_cv_group.add_argument(
+        '--split',
+        help='Train the list of given folds. By default train all folds.',
+        type=int, default=None, nargs='+')
+    train_parser.set_defaults(func=train_func)
 
-    #Prepare model dir for training
 
-
+    # Prepare model dir for training
 
     prepare_train_parser = subparser.add_parser(
         'prepare_train',
@@ -1315,7 +1331,7 @@ def parse_command_line():
         "--target_diagnosis", default=None, type=str,
         help="Which class the gradients explain. If None is given will be equal to diagnosis.")
     interpret_data_group.add_argument(
-        "--baseline", action="store_true", default=False,
+        "--baseline", action="store_true", default=True,
         help="If provided, only the baseline sessions are used for training.")
     interpret_data_group.add_argument(
         "--keep_true", type=lambda x: bool(strtobool(x)), default=None,
@@ -1346,6 +1362,7 @@ def parse_command_line():
     interpret_individual_parser.set_defaults(func=interpret_func)
 
     return parser
+
 
 def return_train_parent_parser(retrain=False):
     # Main train parent parser common to train and random search
@@ -1383,14 +1400,14 @@ def return_train_parent_parser(retrain=False):
 
     train_comput_group = train_parent_parser.add_argument_group(
         TRAIN_CATEGORIES["COMPUTATIONAL"])
-    train_comput_group.add_argument(
-        '-cpu', '--use_cpu', action='store_true',
-        help='If provided, will use CPU instead of GPU.',
-        default=False)
-    train_comput_group.add_argument(
-        '-np', '--nproc',
-        help='Number of cores used during the training. (default=2)',
-        type=int, default=2)
+    # train_comput_group.add_argument(
+    #     '-cpu', '--use_cpu', action='store_true',
+    #     help='If provided, will use CPU instead of GPU.',
+    #     default=False)
+    # train_comput_group.add_argument(
+    #     '-np', '--nproc',
+    #     help='Number of cores used during the training. (default=2)',
+    #     type=int, default=2)
     train_comput_group.add_argument(
         '--batch_size',
         default=2, type=int,
@@ -1438,17 +1455,6 @@ def return_train_parent_parser(retrain=False):
         '--sampler', '-s',
         help="Sampler choice (random, or weighted for imbalanced datasets)",
         default="random", type=str, choices=["random", "weighted"])
-
-    train_cv_group = train_parent_parser.add_argument_group(
-        TRAIN_CATEGORIES["CROSS-VALIDATION"])
-    train_cv_group.add_argument(
-        '--n_splits',
-        help='If a value is given will load data of a k-fold CV. Else will load a single split.',
-        type=int, default=None)
-    train_cv_group.add_argument(
-        '--split',
-        help='Train the list of given folds. By default train all folds.',
-        type=int, default=None, nargs='+')
 
     train_optim_group = train_parent_parser.add_argument_group(
         TRAIN_CATEGORIES["OPTIMIZATION"])

@@ -91,6 +91,13 @@ def translate_parameters(args):
 def check_and_clean(d):
     import shutil
     import os
+    if os.path.exists(d):
+        shutil.rmtree(d)
+    os.makedirs(d)
+
+
+def check_and_create(d):
+    import os
     import datetime
     try:
         os.makedirs(d, exist_ok=False)
@@ -101,7 +108,6 @@ def check_and_clean(d):
         os.makedirs(d)
 
     return d
-
 
 def commandline_to_json(commandline, logger=None):
     """

@@ -27,9 +27,9 @@ from clinicaaddl.tools.deep_learning.cnn_utils import train
 
 
 def resume_single_CNN(options):
+    import os
 
-    options = read_json(options.output_dir)
-
+    options = read_json(json_path=os.path.join(options.output_dir, 'commandline.json'))
     if options.evaluation_steps % options.accumulation_steps != 0 and options.evaluation_steps != 1:
         raise Exception('Evaluation steps %d must be a multiple of accumulation steps %d' %
                         (options.evaluation_steps, options.accumulation_steps))

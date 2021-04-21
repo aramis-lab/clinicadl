@@ -115,9 +115,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                 optimizer.zero_grad()
 
                 del loss
-
                 # Evaluate the model only when no gradients are accumulated
                 if options.evaluation_steps != 0 and (i + 1) % options.evaluation_steps == 0:
+
                     evaluation_flag = False
 
                     _, results_train = test(model, train_loader, options.gpu, criterion)
@@ -234,6 +234,7 @@ def evaluate_prediction(y, y_pred):
 
     accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
 
+    #same as recall
     if (true_positive + false_negative) != 0:
         sensitivity = true_positive / (true_positive + false_negative)
     else:
@@ -244,6 +245,7 @@ def evaluate_prediction(y, y_pred):
     else:
         specificity = 0.0
 
+    # precision
     if (true_positive + false_positive) != 0:
         ppv = true_positive / (true_positive + false_positive)
     else:
@@ -256,12 +258,18 @@ def evaluate_prediction(y, y_pred):
 
     balanced_accuracy = (sensitivity + specificity) / 2
 
+    if (ppv + sensitivity) != 0:
+        f1_score=2*(ppv*sensitivity)/(ppv+sensitivity)
+    else:
+        f1_score=0
+
     results = {'accuracy': accuracy,
                'balanced_accuracy': balanced_accuracy,
                'sensitivity': sensitivity,
                'specificity': specificity,
-               'ppv': ppv,
+               'precision': ppv,
                'npv': npv,
+               'f1-score':f1_score
                }
 
     return results
@@ -309,8 +317,10 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
             if use_labels:
                 loss = criterion(outputs, labels)
                 total_loss += loss.item()
-            _, predicted = torch.max(outputs.data, 1)
-
+            if mode == "image":
+                _, predicted = torch.max(softmax(outputs).data, 1)
+            else:
+                _, predicted = torch.max(outputs.data, 1)
             # Generate detailed DataFrame
             for idx, sub in enumerate(data['participant_id']):
                 if mode == "image":
