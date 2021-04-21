@@ -106,23 +106,36 @@ def rs_func(args):
 
     launch_search(args)
 
+# Function to dispatch training to corresponding function
+def prepare_train_func(args):
+    from tools.deep_learning.iotools import return_logger, check_and_clean, write_requirements_version
+    from tools.deep_learning.iotools import commandline_to_json
+
+    main_logger = return_logger(args.verbose, "main process")
+    args.output_dir = check_and_clean(args.output_dir)
+    commandline_to_json(args, logger=main_logger)
+    write_requirements_version(args.output_dir)
+    if args.network_type not in ["autoencoder", "cnn", "multicnn"]:
+        raise NotImplementedError('Framework %s not implemented in clinicaaddl' % args.network_type)
 
 # Function to dispatch training to corresponding function
 def train_func(args):
-    from train import train_autoencoder, train_multi_cnn, train_single_cnn, resume_single_CNN
 
-    if args.network_type == "autoencoder":
-        args.transfer_learning_selection = "best_loss"
-        train_autoencoder(args)
-    elif args.network_type == "cnn":
-        if not args.resume:
-            train_single_cnn(args)
+    from train import train_autoencoder, train_multi_cnn, train_single_cnn, resume_single_CNN
+    from tools.deep_learning.iotools import read_json
+    options = read_json(args.output_dir)
+    if options.network_type == "autoencoder":
+        options.transfer_learning_selection = "best_loss"
+        train_autoencoder(options)
+    elif options.network_type == "cnn":
+        if not options.resume:
+            train_single_cnn(options)
         else:
-            resume_single_CNN(args)
-    elif args.network_type == "multicnn":
-        train_multi_cnn(args)
+            resume_single_CNN(options)
+    elif options.network_type == "multicnn":
+        train_multi_cnn(options)
     else:
-        raise NotImplementedError('Framework %s not implemented in clinicaaddl' % args.network_type)
+        raise NotImplementedError('Framework %s not implemented in clinicaaddl' % options.network_type)
 
 
 # Function to dispatch command line options from classify to corresponding
@@ -642,14 +655,49 @@ def parse_command_line():
         'train',
         help='Train with your data and create a model.')
 
-    train_subparser = train_parser.add_subparsers(
+    train_subparser = train_parser.add_argument(
+        '-r', '--resume',
+        help='Flag to resume training',
+        type=str2bool, default=False)
+
+
+    train_subparser.required = True
+    train_pos_group = train_subparser.add_argument_group(
+        TRAIN_CATEGORIES["POSITIONAL"])
+
+    train_pos_group.add_argument(
+        "output_dir", type=str,
+        help="Directory from which configs are read and in which the new job is stored.")
+
+    train_comput_group = train_subparser.add_argument_group(
+        TRAIN_CATEGORIES["COMPUTATIONAL"])
+    train_comput_group.add_argument(
+        '-cpu', '--use_cpu', action='store_true',
+        help='If provided, will use CPU instead of GPU.',
+        default=False)
+    train_comput_group.add_argument(
+        '-np', '--nproc',
+        help='Number of cores used during the training. (default=2)',
+        type=int, default=2)
+
+    train_subparser.set_defaults(func=train_func)
+
+    #Prepare model dir for training
+
+
+
+    prepare_train_parser = subparser.add_parser(
+        'prepare_train',
+        help='Save configs to train with your data and create a model.')
+
+    prepare_train_subparser = prepare_train_parser.add_subparsers(
         title='''Inputs types implemented in clinicaaddl''',
         description='''What type of input do you want to use?
                 (image, patch, roi, slice).''',
         dest='mode',
         help='''****** Input types proposed by clinicaaddl ******''')
 
-    train_subparser.required = True
+    prepare_train_subparser.required = True
 
     # Transfer learning
     transfer_learning_parent = argparse.ArgumentParser(add_help=False)
@@ -673,7 +721,7 @@ def parse_command_line():
     ######################
     # IMAGE
     ######################
-    train_image_parser = train_subparser.add_parser(
+    train_image_parser = prepare_train_subparser.add_parser(
         "image",
         help="Train a 3D image-level network.")
 
@@ -693,7 +741,7 @@ def parse_command_line():
             transfer_learning_parent],
         help="Train an image-level autoencoder.")
 
-    train_image_ae_parser.set_defaults(func=train_func)
+    train_image_ae_parser.set_defaults(func=prepare_train_func)
 
     train_image_cnn_parser = train_image_subparser.add_parser(
         "cnn",
@@ -707,16 +755,13 @@ def parse_command_line():
         '--transfer_learning_selection',
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
         type=str, default="best_balanced_accuracy", choices=["best_loss", "best_balanced_accuracy"])
-    train_image_cnn_parser.add_argument(
-        '-r', '--resume',
-        help='Flag to resume training',
-        type=str2bool, default=False)
-    train_image_cnn_parser.set_defaults(func=train_func)
+
+    train_image_cnn_parser.set_defaults(func=prepare_train_func)
 
     #########################
     # PATCH
     #########################
-    train_patch_parser = train_subparser.add_parser(
+    train_patch_parser = prepare_train_subparser.add_parser(
         "patch",
         help="Train a 3D patch-level network.")
 
@@ -749,7 +794,7 @@ def parse_command_line():
         parents=[parent_parser, train_parent_parser, train_patch_parent, autoencoder_parent, transfer_learning_parent],
         help="Train a 3D patch-level autoencoder.")
 
-    train_patch_ae_parser.set_defaults(func=train_func)
+    train_patch_ae_parser.set_defaults(func=prepare_train_func)
 
     train_patch_cnn_parser = train_patch_subparser.add_parser(
         "cnn",
@@ -774,7 +819,7 @@ def parse_command_line():
              accuracy > threshold. Default corresponds to no selection.''',
         type=float, default=0.0)
 
-    train_patch_cnn_parser.set_defaults(func=train_func)
+    train_patch_cnn_parser.set_defaults(func=prepare_train_func)
 
     train_patch_multicnn_parser = train_patch_subparser.add_parser(
         "multicnn",
@@ -799,12 +844,12 @@ def parse_command_line():
                  accuracy > threshold. Default corresponds to no selection.''',
         type=float, default=0.0)
 
-    train_patch_multicnn_parser.set_defaults(func=train_func)
+    train_patch_multicnn_parser.set_defaults(func=prepare_train_func)
 
     #########################
     # ROI
     #########################
-    train_roi_parser = train_subparser.add_parser(
+    train_roi_parser = prepare_train_subparser.add_parser(
         "roi",
         help="Train a ROI-based level network.")
 
@@ -825,7 +870,7 @@ def parse_command_line():
         ],
         help="Train a ROI-based autoencoder.")
 
-    train_roi_ae_parser.set_defaults(func=train_func)
+    train_roi_ae_parser.set_defaults(func=prepare_train_func)
 
     train_roi_cnn_parser = train_roi_subparser.add_parser(
         "cnn",
@@ -849,7 +894,7 @@ def parse_command_line():
              accuracy > threshold. Default corresponds to no selection.''',
         type=float, default=0.0)
 
-    train_roi_cnn_parser.set_defaults(func=train_func)
+    train_roi_cnn_parser.set_defaults(func=prepare_train_func)
 
     train_roi_multicnn_parser = train_roi_subparser.add_parser(
         "multicnn",
@@ -873,12 +918,12 @@ def parse_command_line():
                          accuracy > threshold. Default corresponds to no selection.''',
         type=float, default=0.0)
 
-    train_roi_multicnn_parser.set_defaults(func=train_func)
+    train_roi_multicnn_parser.set_defaults(func=prepare_train_func)
 
     #########################
     # SLICE
     #########################
-    train_slice_parser = train_subparser.add_parser(
+    train_slice_parser = prepare_train_subparser.add_parser(
         "slice",
         help="Train a 2D slice-level CNN.")
 
@@ -917,7 +962,7 @@ def parse_command_line():
         parents=[parent_parser, train_parent_parser, train_slice_parent, transfer_learning_parent],
         help="Train a 2D slice-level autoencoder.")
 
-    train_slice_ae_parser.set_defaults(func=train_func)
+    train_slice_ae_parser.set_defaults(func=prepare_train_func)
 
     train_slice_cnn_parser = train_slice_subparser.add_parser(
         "cnn",
@@ -938,7 +983,7 @@ def parse_command_line():
                  accuracy > threshold. Default corresponds to no selection.''',
         type=float, default=0.0)
 
-    train_slice_cnn_parser.set_defaults(func=train_func)
+    train_slice_cnn_parser.set_defaults(func=prepare_train_func)
 
     train_slice_multicnn_parser = train_slice_subparser.add_parser(
         "multicnn",
@@ -959,7 +1004,7 @@ def parse_command_line():
                  accuracy > threshold. Default corresponds to no selection.''',
         type=float, default=0.0)
 
-    train_slice_multicnn_parser.set_defaults(func=train_func)
+    train_slice_multicnn_parser.set_defaults(func=prepare_train_func)
 
     # Classify - Classify a subject or a list of tsv files with the CNN
     # provided as argument.
@@ -1301,7 +1346,6 @@ def parse_command_line():
     interpret_individual_parser.set_defaults(func=interpret_func)
 
     return parser
-
 
 def return_train_parent_parser(retrain=False):
     # Main train parent parser common to train and random search

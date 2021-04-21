@@ -28,10 +28,10 @@ def train_autoencoder(params):
     """
     main_logger = return_logger(params.verbose, "main process")
     train_logger = return_logger(params.verbose, "train")
-    check_and_clean(params.output_dir)
-
-    commandline_to_json(params, logger=main_logger)
-    write_requirements_version(params.output_dir)
+    # check_and_clean(params.output_dir)
+    #
+    # commandline_to_json(params, logger=main_logger)
+    # write_requirements_version(params.output_dir)
     params = translate_parameters(params)
 
     train_transforms, all_transforms = get_transforms(params.mode,

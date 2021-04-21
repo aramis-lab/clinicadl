@@ -34,10 +34,11 @@ def train_single_cnn(params):
     train_logger = return_logger(params.verbose, "train")
     eval_logger = return_logger(params.verbose, "final evaluation")
 
-    params.output_dir=check_and_clean(params.output_dir)
+    # params.output_dir=check_and_clean(params.output_dir)
+    #
+    # commandline_to_json(params, logger=main_logger)
 
-    commandline_to_json(params, logger=main_logger)
-    write_requirements_version(params.output_dir)
+    # write_requirements_version(params.output_dir)
     params = translate_parameters(params)
     train_transforms, all_transforms = get_transforms(params.mode,
                                                       minmaxnormalization=params.minmaxnormalization,
