@@ -42,18 +42,6 @@ where:
 - `launch_directory` (str) is the parent directory of output folder containing the file `random_search.json`.
 - `name` (str) is the name of the output folder containing the experiment.
 
-Optional arguments:
-
-- **Computational resources**
-    - `--use_cpu` (bool) forces to use CPU. Default behaviour is to try to use a GPU and to raise an error if it is not found.
-    - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
-    - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
-    - `--evaluation_steps` (int) gives the number of iterations to perform an [evaluation internal to an epoch](Train/Details.md#evaluation). 
-    Default will only perform an evaluation at the end of each epoch.
-- **Cross-validation arguments**
-    - `--n_splits` (int) is a number of splits k to load in the case of a k-fold cross-validation. Default will load a single-split.
-    - `--split` (list of int) is a subset of folds that will be used for training. By default all splits available are used. 
-    
 ### Content of `random_search.json`
 
 `random_search.json` must be present in `launch_dir` before running the command. 
@@ -99,6 +87,12 @@ Optional variables:
     - `network_normalization` (str) is the type of normalization performed after convolutions.
     Must include only `BatchNorm`, `InstanceNorm` or `None`.
     Sampling function: `choice`. Default:  `BatchNorm`.
+- **Computational resources**
+    - `--use_cpu` (bool) forces to use CPU. Default behaviour is to try to use a GPU and to raise an error if it is not found.
+    - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
+    - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
+    - `--evaluation_steps` (int) gives the number of iterations to perform an [evaluation internal to an epoch](Train/Details.md#evaluation). 
+    Default will only perform an evaluation at the end of each epoch.
 - **Data management**
     - `baseline` (bool) allows to only load `_baseline.tsv` files when set to `True`.
     Sampling function: `choice`. Default: `False`.
@@ -109,6 +103,9 @@ Optional variables:
     Sampling function: `choice`. Default: `False`.
     - `sampler` (str) is the sampler used on the training set. It must be chosen in [`random`, `weighted`].
     Sampling function: `choice`. Default: `random`.
+- **Cross-validation arguments**
+    - `--n_splits` (int) is a number of splits k to load in the case of a k-fold cross-validation. Default will load a single-split.
+    - `--split` (list of int) is a subset of folds that will be used for training. By default all splits available are used. 
 - **Optimization parameters**
     - `learning_rate` (float) is the learning rate used to perform weight update. 
     Sampling function: `exponent`. Default: `4` (leading to a value of `1e-4`).
