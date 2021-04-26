@@ -62,7 +62,6 @@ def translate_parameters(args):
     args.num_workers = args.nproc
     args.optimizer = "Adam"
     args.loss = "default"
-    args.atlas = args.predict_atlas_intensities
 
     if hasattr(args, "predict_atlas_intensities"):
         args.atlas = args.predict_atlas_intensities
