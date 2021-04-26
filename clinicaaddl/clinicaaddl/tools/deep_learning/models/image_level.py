@@ -192,23 +192,40 @@ class Conv6_FC3(nn.Module):
         return x
 
 class ResNet18(ResNet):
-    def __init__(self, n_classes=3):
-        super().__init__(BasicBlock, [2, 2, 2, 2], num_classes=n_classes)
+    def __init__(self, n_classes=3, expanded=False):
+        super().__init__(BasicBlock, [2, 2, 2, 2], num_classes=n_classes, expanded=expanded)
 
 
 class ResNet50(ResNet):
-    def __init__(self, n_classes=3):
-        super().__init__(Bottleneck, [3, 4, 6, 3], num_classes=n_classes)
+    def __init__(self, n_classes=3, expanded=False):
+        super().__init__(Bottleneck, [3, 4, 6, 3], num_classes=n_classes, expanded=expanded)
 
 class SEResNet18(ResNet):
-    def __init__(self, n_classes=3):
-        super().__init__(SEBottleneck, [3, 4, 6, 3], num_classes=n_classes, num_channels=1)
+    def __init__(self, n_classes=3, expanded=False):
+        super().__init__(SEBottleneck, [3, 4, 6, 3], num_classes=n_classes, num_channels=1, expanded=expanded)
         self.avgpool = nn.AdaptiveAvgPool3d(1)
 
 
 
 class SEResNet50(ResNet):
-    def __init__(self, n_classes=3):
-        super().__init__(SEBasicBlock, [2, 2, 2, 2], num_classes=n_classes, num_channels=1)
-        self.avgpool = nn.AdaptiveAvgPool3d(1)
+    def __init__(self, n_classes=3, expanded=False):
+        super().__init__(SEBasicBlock, [2, 2, 2, 2], num_classes=n_classes, num_channels=1, expanded=expanded)
 
+class ResNet18Expanded(ResNet18):
+    def __init__(self, n_classes=3, expanded=True):
+        super().__init__(n_classes, expanded)
+
+
+class ResNet50Expanded(ResNet50):
+    def __init__(self, n_classes=3, expanded=True):
+        super().__init__(n_classes, expanded)
+
+class SEResNet18Expanded(SEResNet18):
+    def __init__(self, n_classes=3, expanded=True):
+        super().__init__(n_classes, expanded)
+
+
+
+class SEResNet50Expanded(SEResNet50):
+    def __init__(self, n_classes=3, expanded=True):
+        super().__init__(n_classes, expanded)

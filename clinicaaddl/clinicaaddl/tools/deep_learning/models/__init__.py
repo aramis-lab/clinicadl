@@ -1,6 +1,6 @@
 from .autoencoder import AutoEncoder, initialize_other_autoencoder, transfer_learning
 from .iotools import load_model, load_optimizer, save_checkpoint
-from .image_level import Conv5_FC3, Conv5_FC3_mni, Conv6_FC3, ResNet18, SEResNet18,ResNet50, SEResNet50
+from .image_level import Conv5_FC3, Conv5_FC3_mni, Conv6_FC3, ResNet18, SEResNet18,ResNet50, SEResNet50, ResNet18Expanded, SEResNet18Expanded,ResNet50Expanded, SEResNet50Expanded
 from .patch_level import Conv4_FC3
 from .slice_level import resnet18, ConvNet
 from .random import RandomArchitecture
@@ -20,9 +20,10 @@ def create_model(options, initial_shape):
                                    options.dropout, options.network_normalization, n_classes=2)
     else:
         try:
-            kwards={'dropout':options.dropout}
-            if options.model in ("ResNet18", "SEResNet18","ResNet50", "SEResNet50"):
+            if options.model in ("ResNet18", "SEResNet18","ResNet50", "SEResNet50", "ResNet18Expanded", "SEResNet18Expanded","ResNet50Expanded", "SEResNet50Expanded"):
                 kwards={'n_classes':len(options.diagnoses)}
+            else:
+                kwards = {'dropout': options.dropout}
             model = eval(options.model)(**kwards)
         except NameError:
             raise NotImplementedError(

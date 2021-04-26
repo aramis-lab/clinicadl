@@ -340,7 +340,7 @@ class ResNet(nn.Module):
                  sample_size=1,
                  sample_duration=1,
                  shortcut_type='B',
-                 num_classes=400, num_channels=1):
+                 num_classes=400, num_channels=1, expanded=False):
         self.inplanes = 64
         super(ResNet, self).__init__()
         self.conv1 = nn.Conv3d(
@@ -363,7 +363,22 @@ class ResNet(nn.Module):
         last_duration = int(math.ceil(sample_duration / 16))
         last_size = int(math.ceil(sample_size / 32))
         self.avgpool = nn.AdaptiveAvgPool3d((last_duration, last_size, last_size))
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+
+        # self.fc = nn.Linear(512 * block.expansion, num_classes)
+        if expanded:
+            last_size = 512 * block.expansion
+            self.fc = nn.Sequential(
+                nn.Dropout(p=0.25),
+                nn.Linear(last_size, last_size//4),
+                nn.ReLU(),
+                nn.Linear(last_size//4, last_size//16),
+                nn.ReLU(),
+                nn.Linear(last_size // 16, last_size // 16),
+                nn.ReLU(),
+
+                nn.Linear(last_size//16, num_classes))
+        else:
+            self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv3d):
