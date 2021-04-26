@@ -614,10 +614,12 @@ class SmoothL1ClassificationLoss(_Loss):
         return F.smooth_l1_loss(input, binarize_target)
 
 
-def get_criterion(option):
+def get_criterion(option, classWights):
     """Returns the appropriate loss depending on the option"""
     if option == "default":
         return torch.nn.CrossEntropyLoss()
+    elif option == "WeightedCrossEntropy" or option == "L1":
+        return torch.nn.CrossEntropyLoss(weight=classWights)
     elif option == "L1Norm" or option == "L1":
         return L1ClassificationLoss(reduction="mean", normalization=(option == "L1Norm"))
     elif option == "SmoothL1Norm" or option == "SmoothL1":
@@ -625,6 +627,12 @@ def get_criterion(option):
     else:
         raise ValueError("The option %s is unknown for criterion selection" % option)
 
+def get_classWeights(params, df):
+    device = torch.device("cpu" if params.use_cpu else "cuda")
+    nSamples = [len(df[df["diagnosis"].isin([i])]) for i in params.diagnoses]
+    normedWeights = [1 - (x / sum(nSamples)) for x in nSamples]
+    normedWeights = torch.FloatTensor(normedWeights).to(device)
+    return normedWeights
 
 def binarize_label(y, classes, pos_label=1, neg_label=0):
     """Greatly inspired from scikit-learn"""

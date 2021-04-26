@@ -13,7 +13,7 @@ from tools.deep_learning.data import (get_transforms,
                                         load_data,
                                         return_dataset,
                                         generate_sampler)
-from tools.deep_learning.cnn_utils import train, get_criterion, test, mode_level_to_tsvs, soft_voting_to_tsvs
+from tools.deep_learning.cnn_utils import train, get_criterion, test, mode_level_to_tsvs, soft_voting_to_tsvs, get_classWeights
 from tools.deep_learning.iotools import return_logger, check_and_clean
 from tools.deep_learning.iotools import commandline_to_json, write_requirements_version, translate_parameters
 
@@ -97,7 +97,9 @@ def train_single_cnn(params):
                                   logger=main_logger)
 
         # Define criterion and optimizer
-        criterion = get_criterion(params.loss)
+
+        normedWeights=get_classWeights(params, training_df)
+        criterion = get_criterion(params.loss, normedWeights)
         optimizer = getattr(torch.optim, params.optimizer)(filter(lambda x: x.requires_grad, model.parameters()),
                                                            lr=params.learning_rate,
                                                            weight_decay=params.weight_decay)

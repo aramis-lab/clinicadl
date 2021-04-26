@@ -127,12 +127,13 @@ def prepare_train_func(args):
 def train_func(args):
     from train import train_autoencoder, train_multi_cnn, train_single_cnn, resume_single_CNN
     from tools.deep_learning.iotools import read_json
+    from tools.deep_learning.iotools import commandline_to_json
 
     import os
     args = read_json(args, json_path=os.path.join(args.output_dir, 'commandline.json'))
+    commandline_to_json(args, filename="commandline_train.json")
 
     # options=Namespace(**vars(options, **vars(args)))
-
     if args.network_type == "autoencoder":
         args.transfer_learning_selection = "best_loss"
         train_autoencoder(args)
@@ -144,7 +145,7 @@ def train_func(args):
     elif args.network_type == "multicnn":
         train_multi_cnn(args)
     else:
-        raise NotImplementedError('Framework %s not implemented in clinicaaddl' % options.network_type)
+        raise NotImplementedError('Framework %s not implemented in clinicaaddl' % args.network_type)
 
 
 # Function to dispatch command line options from classify to corresponding
@@ -689,6 +690,11 @@ def parse_command_line():
         '-np', '--nproc',
         help='Number of cores used during the training. (default=2)',
         type=int, default=2)
+
+    train_comput_group.add_argument(
+        '--batch_size',
+        default=2, type=int,
+        help='Batch size for training. (default=2)')
 
     train_cv_group = train_parser.add_argument_group(
         TRAIN_CATEGORIES["CROSS-VALIDATION"])
@@ -1490,11 +1496,11 @@ def return_train_parent_parser(retrain=False):
         help='Accumulates gradients during the given number of iterations before performing the weight update '
              'in order to virtually increase the size of the batch.',
         default=None if retrain else 1, type=int)
-    # train_optim_group.add_argument(
-    #     "--loss",
-    #     help="Replaces default losses: cross-entropy for CNN and MSE for autoencoders.",
-    #     type=str, default=None if retrain else "default",
-    #     choices=["default", "L1", "L1Norm", "SmoothL1", "SmoothL1Norm"])
+    train_optim_group.add_argument(
+        "--loss",
+        help="Replaces default losses: cross-entropy for CNN and MSE for autoencoders.",
+        type=str, default=None if retrain else "default",
+        choices=["default", "WeightedCrossEntropy", "L1", "L1Norm", "SmoothL1", "SmoothL1Norm"])
 
     return train_parent_parser
 

@@ -4,10 +4,13 @@ from os.path import isdir, join, abspath, exists
 from os import strerror, makedirs, listdir
 import errno
 import pathlib
-from clinicaaddl.tools.deep_learning import create_model, load_model, read_json
-from clinicaaddl.tools.deep_learning.iotools import return_logger, translate_parameters
-from clinicaaddl.tools.deep_learning.data import return_dataset, get_transforms, compute_num_cnn, load_data_test
-from clinicaaddl.tools.deep_learning.cnn_utils import test, soft_voting_to_tsvs, mode_level_to_tsvs, get_criterion
+
+import sys, os
+sys.path.insert(0, os.path.abspath('./'))
+from tools.deep_learning import create_model, load_model, read_json
+from tools.deep_learning.iotools import return_logger, translate_parameters
+from tools.deep_learning.data import return_dataset, get_transforms, compute_num_cnn, load_data_test
+from tools.deep_learning.cnn_utils import test, soft_voting_to_tsvs, mode_level_to_tsvs, get_criterion, get_classWeights
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
@@ -245,6 +248,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
     from os.path import join
     import logging
 
+
     if logger is None:
         logger = logging
 
@@ -255,7 +259,8 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
     test_df = load_data_test(tsv_path, model_options.diagnoses)
 
     # Define loss and optimizer
-    criterion = get_criterion(model_options.loss)
+    normedWeights = get_classWeights(model_options, test_df)
+    criterion = get_criterion(model_options.loss,)
 
     if model_options.mode_task == 'multicnn':
 
