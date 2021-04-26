@@ -341,9 +341,6 @@ clinicadl random-search analysis <launch_directory>
 ```
 where `launch_directory` (str) is the parent directory of output folder containing the file `random_search.json`.
 
-The list of the folds that can be included in the analysis can be specified in `splits` option.
-If nothing is specified only the first split is included for all jobs.
-
 ### Outputs
 
 Two TSV files are produced in `launch_directory`:

@@ -140,7 +140,7 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
     f.close()
 
 
-def read_json(options, json_path=None, test=False, read_computational=False):
+def read_json(options=None, json_path=None, test=False, read_computational=False):
     """
     Read a json file to update python argparse Namespace.
     Ensures retro-compatibility with previous namings in clinicadl.
@@ -155,6 +155,10 @@ def read_json(options, json_path=None, test=False, read_computational=False):
     """
     import json
     from os import path
+    from argparse import Namespace
+
+    if options is None:
+        options = Namespace()
 
     evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
     prep_compatibility_dict = {"mni": "t1-extensive", "linear": "t1-linear"}

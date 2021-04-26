@@ -7,11 +7,20 @@ import pandas as pd
 import numpy as np
 from warnings import warn
 
+from clinicadl.tools.deep_learning import read_json
 
-def random_search_analysis(launch_dir, splits):
 
-    if splits is None:
-        splits = [0]
+def random_search_analysis(launch_dir):
+
+    rs_options = read_json(json_path=path.join(launch_dir, "random_search.json"))
+
+    if rs_options.split is None:
+        if rs_options.n_splits is None:
+            fold_iterator = range(1)
+        else:
+            fold_iterator = range(rs_options.n_splits)
+    else:
+        fold_iterator = rs_options.split
 
     jobs_list = [job for job in os.listdir(launch_dir)
                  if path.exists(path.join(launch_dir, job, "commandline.json"))]
@@ -26,7 +35,7 @@ def random_search_analysis(launch_dir, splits):
         for job in jobs_list:
 
             valid_accuracies = []
-            for fold in splits:
+            for fold in fold_iterator:
                 performance_path = path.join(launch_dir, job, f'fold-{fold}', 'cnn_classification', f'best_{selection}')
                 if path.exists(performance_path):
                     valid_df = pd.read_csv(path.join(performance_path, 'validation_image_level_metrics.tsv'), sep='\t')

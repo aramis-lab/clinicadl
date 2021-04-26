@@ -111,7 +111,6 @@ def rs_func(args):
     elif args.random_task == "analysis":
         random_search_analysis(
             args.launch_dir,
-            args.splits
         )
     else:
         raise ValueError('This task was not implemented in random-search.')
@@ -673,12 +672,6 @@ def parse_command_line():
         "launch_dir",
         type=str,
         help="Directory containing the random_search.json file."
-    )
-
-    rs_analysis_parser.add_argument(
-        "--splits",
-        type=int, nargs="+", default=None,
-        help="List of the folds used for the analysis. Default will perform only the first fold."
     )
 
     rs_analysis_parser.set_defaults(func=rs_func)

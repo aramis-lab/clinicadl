@@ -27,6 +27,9 @@ def cli_commands(request):
             'patience': 0,
             'tolerance': 0.0,
 
+            'n_splits': 2,
+            'split': [0],
+
             'n_convblocks': [3, 5],
             'first_conv_width': [1, 3],
             'n_fcblocks': [1, 2]
@@ -35,15 +38,12 @@ def cli_commands(request):
             'random-search',
             'generate',
             launch_dir,
-            name_dir,
-            '--n_splits', '2',
-            '--split', '0',
+            name_dir
         ]
         log_input = [
             'random-search',
             'analysis',
-            launch_dir,
-            '--splits', '2'
+            launch_dir
         ]
     else:
         raise NotImplementedError(

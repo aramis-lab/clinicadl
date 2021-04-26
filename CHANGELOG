@@ -40,6 +40,8 @@ based on `t1-volume` outputs.
 ### Changed
 
 - Previous `clinicadl random-search` is now `clinicadl random-search generate`
+- cross-validation and computational arguments of `clinicadl random-search generate` are
+ now defined in `random_search.json`.
 
 ## ClinicaDL 0.2.1
 
