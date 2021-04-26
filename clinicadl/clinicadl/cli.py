@@ -122,7 +122,8 @@ def retrain_func(args):
 
     retrain(
         args.json_path,
-        args.output_dir
+        args.output_dir,
+        verbose=args.verbose
     )
 
 

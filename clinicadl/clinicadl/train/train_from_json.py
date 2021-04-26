@@ -10,11 +10,12 @@ from .train_singleCNN import train_single_cnn
 from .train_multiCNN import train_multi_cnn
 
 
-def retrain(json_path, output_dir):
+def retrain(json_path, output_dir, verbose=0):
     options = argparse.Namespace()
     options = read_json(options, json_path=json_path, read_computational=True)
     check_and_complete(options)
     options.output_dir = output_dir
+    options.verbose = verbose
 
     if options.network_type == "autoencoder":
         train_autoencoder(options)
