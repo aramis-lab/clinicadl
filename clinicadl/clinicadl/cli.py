@@ -640,16 +640,6 @@ def parse_command_line():
     rs_pos_group.add_argument("name", type=str,
                               help="Name of the job.")
 
-    # Data management
-    rs_data_group = rs_generate_parser.add_argument_group(
-        TRAIN_CATEGORIES["CROSS-VALIDATION"]
-    )
-    rs_data_group.add_argument("--n_splits", type=int, default=0,
-                               help="If a value is given for k will load data of a k-fold CV. "
-                                    "Default value (0) will load a single split.")
-    rs_data_group.add_argument("--split", type=int, default=None, nargs="+",
-                               help="Will load the specific split wanted.")
-
     rs_comp_group = rs_generate_parser.add_argument_group(
         TRAIN_CATEGORIES["COMPUTATIONAL"]
     )

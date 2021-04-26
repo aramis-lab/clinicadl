@@ -21,8 +21,7 @@ def cli_commands(request):
 
             "epochs": 1,
             "n_splits": 2,
-            "split": 0,
-            "gpu": True
+            "split": [0],
         }
     else:
         raise NotImplementedError(

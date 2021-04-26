@@ -127,20 +127,10 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
     os.makedirs(output_dir, exist_ok=True)
 
     # remove these entries from the commandline log file
-    if 'func' in commandline_arg_dict:
-        del commandline_arg_dict['func']
-
-    if 'output_dir' in commandline_arg_dict:
-        del commandline_arg_dict['output_dir']
-
-    if 'launch_dir' in commandline_arg_dict:
-        del commandline_arg_dict['launch_dir']
-
-    if 'name' in commandline_arg_dict:
-        del commandline_arg_dict['name']
-
-    if 'verbose' in commandline_arg_dict:
-        del commandline_arg_dict['verbose']
+    remove_list = ['func', 'output_dir', 'launch_dir', 'name', 'verbose', 'logname']
+    for variable in remove_list:
+        if variable in commandline_arg_dict:
+            del commandline_arg_dict[variable]
 
     # save to json file
     json = json.dumps(commandline_arg_dict, skipkeys=True, indent=4)
@@ -279,48 +269,71 @@ def check_and_complete(options, random_search=False):
         options: (Namespace) the options used for training.
         random_search: (bool) If True the options are looking for mandatory values of random-search.
     """
+
+    def set_default(namespace, default_dict):
+        for name, default_value in default_dict.items():
+            if not hasattr(namespace, name):
+                setattr(namespace, name, default_value)
+
     filename = 'random_search.json'
 
     default_values = {
         "accumulation_steps": 1,
         "atlas_weight": 1,
         "baseline": False,
-        "channels_limit": 512,
+        "batch_size": 2,
         "data_augmentation": False,
         "diagnoses": ['AD', 'CN'],
-        "discarded_slices": 20,
         "dropout": 0,
         "epochs": 20,
+        "evaluation_steps": 0,
         "learning_rate": 4,
         "loss": "default",
         "merged_tsv_path": None,
         "multi_cohort": False,
-        "n_conv": 1,
+        "n_splits": 0,
+        "nproc": 2,
         "optimizer": "Adam",
         "unnormalize": False,
-        "patch_size": 50,
         "patience": 0,
         "predict_atlas_intensities": None,
-        "selection_threshold": 0,
-        "slice_direction": 0,
-        "stride_size": 50,
+        "split": None,
         "tolerance": 0.0,
         "transfer_learning_path": None,
         "transfer_learning_selection": "best_loss",
-        "use_extracted_patches": False,
-        "use_extracted_slices": False,
-        "use_extracted_roi": False,
+        "use_cpu": False,
         "wd_bool": True,
         "weight_decay": 4,
         "sampler": "random"
     }
+    mode_default_values = {
+        "patch": {
+            "patch_size": 50,
+            "stride_size": 50,
+            "selection_threshold": 0,
+            "use_extracted_patches": False
+        },
+        "roi": {
+            "roi_list": None,
+            "selection_threshold": 0,
+            "uncropped_roi": False,
+            "use_extracted_roi": False
+        },
+        "slice": {
+            "discarded_slices": 20,
+            "selection_threshold": 0,
+            "slice_direction": 0,
+            "use_extracted_slices": False
+        },
+        "image": {}
+    }
     if random_search:
         default_values["d_reduction"] = "MaxPooling"
         default_values["network_normalization"] = "BatchNorm"
+        default_values["channels_limit"] = 512
+        default_values["n_conv"] = 1
 
-    for name, default_value in default_values.items():
-        if not hasattr(options, name):
-            setattr(options, name, default_value)
+    set_default(options, default_values)
 
     mandatory_arguments = ['network_type', 'mode',
                            'tsv_path', 'caps_dir', 'preprocessing']
@@ -330,6 +343,15 @@ def check_and_complete(options, random_search=False):
     for argument in mandatory_arguments:
         if not hasattr(options, argument):
             raise ValueError(f"The argument {argument} must be specified in {filename}.")
+
+    if random_search:
+        for mode, mode_dict in mode_default_values.items():
+            set_default(options, mode_dict)
+    else:
+        if options.mode not in mode_default_values:
+            raise NotImplementedError(f"The mode optional arguments corresponding to mode {options.mode}")
+        mode_dict = mode_default_values[options.mode]
+        set_default(options, mode_dict)
 
 
 def set_default_dropout(args):
