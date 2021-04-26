@@ -1444,8 +1444,8 @@ def return_train_parent_parser(retrain=False):
         default=None if retrain else ['AD', 'CN'], nargs='+', type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'])
     train_data_group.add_argument(
         '--baseline',
-        help='If provided, only the baseline sessions are used for training.',
-        action="store_true",
+        help='If True, only the baseline sessions are used for training.',
+        type=str2bool,
         default=None if retrain else False)
     train_data_group.add_argument(
         '--unnormalize', '-un',
