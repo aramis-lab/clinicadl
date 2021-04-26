@@ -1,0 +1,29 @@
+Resume training from checkpoint: False
+                                  
+================================= 
+Global information about the job: 
+================================= 
+  
+Job owner: horlavanasta(42988)
+Job name:  run_experiment.sh
+Node list: co6034
+Job start: Wed Apr 21 21:12:58 CEST 2021
+Job end:   Thu Apr 22 02:33:57 CEST 2021
+Work dir:  /cobra/u/horlavanasta/MasterProject/Code/ClinicaTools/AD-DL/clinicaaddl/scripts
+Command:   /cobra/u/horlavanasta/MasterProject/Code/ClinicaTools/AD-DL/clinicaaddl/scripts/run_experiment.sh
+  
+  
+  
+==========================================================================================
+Information on jobsteps (Note: MaxRSS/AveRSS is the maximum/average over all 
+tasks of the per-task memory high-water marks; cf. "man sacct"): 
+==========================================================================================
+  
+       JobID    JobName NNodes NTasks  NCPUS       MaxRSS       AveRSS    Elapsed ExitCode 
+------------ ---------- ------ ------ ------ ------------ ------------ ---------- -------- 
+3953433      run_exper+      1            80                             05:20:59      0:0 
+3953433.0       python3      1      1      1     4511.17M     4511.17M   05:20:56      0:0 
+  
+Maximum memory per node: 4.61943 GB (defined as MaxRSS*Ntasks/NNodes)
+CPU utilization: 7.2 %
+     

@@ -116,8 +116,11 @@ def prepare_train_func(args):
     args.output_dir = check_and_create(args.output_dir)
     commandline_to_json(args, logger=main_logger)
     write_requirements_version(args.output_dir)
+    
     if args.network_type not in ["autoencoder", "cnn", "multicnn"]:
         raise NotImplementedError('Framework %s not implemented in clinicaaddl' % args.network_type)
+    print("You can now run the experiment via executing the following command")
+    print("sbatch run_experiment.sh "+args.output_dir)
 
 
 # Function to dispatch training to corresponding function
@@ -147,7 +150,7 @@ def train_func(args):
 # Function to dispatch command line options from classify to corresponding
 # function
 def classify_func(args):
-    from .classify.inference import classify
+    from classify.inference import classify
 
     classify(
         args.caps_directory,
@@ -1087,7 +1090,7 @@ def parse_command_line():
         help='''List of metrics to find the best models to evaluate. Default will
         classify best model based on balanced accuracy.''',
         choices=['loss', 'balanced_accuracy'],
-        default=['balanced_accuracy'],
+        default=['balanced_accuracy', 'loss'],
         nargs='+'
     )
     classify_specific_group.add_argument(

@@ -1,0 +1,54 @@
+Traceback (most recent call last):
+  File "/u/horlavanasta/MasterProject/Code/ClinicaTools/AD-DL/clinicaaddl/clinicaaddl/main.py", line 27, in <module>
+    main()
+  File "/u/horlavanasta/MasterProject/Code/ClinicaTools/AD-DL/clinicaaddl/clinicaaddl/main.py", line 23, in main
+    args.func(args)
+  File "/cobra/u/horlavanasta/MasterProject/Code/ClinicaTools/AD-DL/clinicaaddl/clinicaaddl/cli.py", line 138, in train_func
+    train_single_cnn(args)
+  File "/cobra/u/horlavanasta/MasterProject/Code/ClinicaTools/AD-DL/clinicaaddl/clinicaaddl/train/train_singleCNN.py", line 114, in train_single_cnn
+    optimizer, False, log_dir, model_dir, params, train_logger)
+  File "/cobra/u/horlavanasta/MasterProject/Code/ClinicaTools/AD-DL/clinicaaddl/clinicaaddl/tools/deep_learning/cnn_utils.py", line 108, in train
+    loss.backward()
+  File "/mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/tensor.py", line 185, in backward
+    torch.autograd.backward(self, gradient, retain_graph, create_graph)
+  File "/mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/autograd/__init__.py", line 127, in backward
+    allow_unreachable=True)  # allow_unreachable flag
+RuntimeError: CUDA out of memory. Tried to allocate 5.69 GiB (GPU 0; 31.75 GiB total capacity; 20.10 GiB already allocated; 4.26 GiB free; 26.30 GiB reserved in total by PyTorch)
+Exception raised from malloc at /pytorch/c10/cuda/CUDACachingAllocator.cpp:272 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::string) + 0x42 (0x2ac3835361e2 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libc10.so)
+frame #1: <unknown function> + 0x1e64b (0x2ac3832d764b in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libc10_cuda.so)
+frame #2: <unknown function> + 0x1f464 (0x2ac3832d8464 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libc10_cuda.so)
+frame #3: <unknown function> + 0x1faa1 (0x2ac3832d8aa1 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libc10_cuda.so)
+frame #4: at::native::empty_cuda(c10::ArrayRef<long>, c10::TensorOptions const&, c10::optional<c10::MemoryFormat>) + 0x11e (0x2ac34b1b290e in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cuda.so)
+frame #5: <unknown function> + 0xf33949 (0x2ac3495ec949 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cuda.so)
+frame #6: <unknown function> + 0xf4d777 (0x2ac349606777 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cuda.so)
+frame #7: <unknown function> + 0x10e9c7d (0x2ac3395e1c7d in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #8: <unknown function> + 0x10e9f97 (0x2ac3395e1f97 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #9: at::empty(c10::ArrayRef<long>, c10::TensorOptions const&, c10::optional<c10::MemoryFormat>) + 0xfa (0x2ac3396eca1a in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #10: at::native::empty_like(at::Tensor const&, c10::TensorOptions const&, c10::optional<c10::MemoryFormat>) + 0x49e (0x2ac33936ac3e in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #11: <unknown function> + 0x12880c1 (0x2ac3397800c1 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #12: <unknown function> + 0x12c3863 (0x2ac3397bb863 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #13: at::empty_like(at::Tensor const&, c10::TensorOptions const&, c10::optional<c10::MemoryFormat>) + 0x101 (0x2ac3396cfb31 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #14: at::native::zeros_like(at::Tensor const&, c10::TensorOptions const&, c10::optional<c10::MemoryFormat>) + 0x46 (0x2ac3393646f6 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #15: <unknown function> + 0x128b434 (0x2ac339783434 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #16: <unknown function> + 0x12c3863 (0x2ac3397bb863 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #17: at::zeros_like(at::Tensor const&, c10::TensorOptions const&, c10::optional<c10::MemoryFormat>) + 0x101 (0x2ac3396cfdd1 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #18: at::native::max_pool3d_with_indices_backward_cuda(at::Tensor const&, at::Tensor const&, c10::ArrayRef<long>, c10::ArrayRef<long>, c10::ArrayRef<long>, c10::ArrayRef<long>, bool, at::Tensor const&) + 0x63 (0x2ac34a545be3 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cuda.so)
+frame #19: <unknown function> + 0xf2eb71 (0x2ac3495e7b71 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cuda.so)
+frame #20: <unknown function> + 0xf4fd9f (0x2ac349608d9f in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cuda.so)
+frame #21: at::max_pool3d_with_indices_backward(at::Tensor const&, at::Tensor const&, c10::ArrayRef<long>, c10::ArrayRef<long>, c10::ArrayRef<long>, c10::ArrayRef<long>, bool, at::Tensor const&) + 0x1ac (0x2ac3396ded1c in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #22: <unknown function> + 0x2f0af9d (0x2ac33b402f9d in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #23: <unknown function> + 0x111485f (0x2ac33960c85f in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #24: at::max_pool3d_with_indices_backward(at::Tensor const&, at::Tensor const&, c10::ArrayRef<long>, c10::ArrayRef<long>, c10::ArrayRef<long>, c10::ArrayRef<long>, bool, at::Tensor const&) + 0x1ac (0x2ac3396ded1c in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #25: torch::autograd::generated::MaxPool3DWithIndicesBackward::apply(std::vector<at::Tensor, std::allocator<at::Tensor> >&&) + 0x248 (0x2ac33b23e5f8 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #26: <unknown function> + 0x3375bb7 (0x2ac33b86dbb7 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #27: torch::autograd::Engine::evaluate_function(std::shared_ptr<torch::autograd::GraphTask>&, torch::autograd::Node*, torch::autograd::InputBuffer&, std::shared_ptr<torch::autograd::ReadyQueue> const&) + 0x1400 (0x2ac33b869400 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #28: torch::autograd::Engine::thread_main(std::shared_ptr<torch::autograd::GraphTask> const&) + 0x451 (0x2ac33b869fa1 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #29: torch::autograd::Engine::thread_init(int, std::shared_ptr<torch::autograd::ReadyQueue> const&, bool) + 0x89 (0x2ac33b862119 in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_cpu.so)
+frame #30: torch::autograd::python::PythonEngine::thread_init(int, std::shared_ptr<torch::autograd::ReadyQueue> const&, bool) + 0x4a (0x2ac337457dea in /mpcdf/soft/SLE_12/packages/skylake/pytorch/gpu/anaconda_3_2020.02-2020.02-cuda_10.2-10.2.89/1.6.0/lib/python3.7/site-packages/torch/lib/libtorch_python.so)
+frame #31: <unknown function> + 0xd6c00 (0x2ac336810c00 in /usr/lib64/libstdc++.so.6)
+frame #32: <unknown function> + 0x96da (0x2ac334be96da in /lib64/libpthread.so.0)
+frame #33: clone + 0x6d (0x2ac334eed31d in /lib64/libc.so.6)
+
+srun: error: co6058: task 0: Exited with exit code 1
+srun: Terminating job step 3952859.0

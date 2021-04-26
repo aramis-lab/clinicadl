@@ -581,7 +581,10 @@ class MinMaxNormalization(object):
     """Normalizes a tensor between 0 and 1"""
 
     def __call__(self, image):
-        return (image - image.min()) / (image.max() - image.min())
+        if (image.max() - image.min())!=0:
+            return (image - image.min()) / (image.max() - image.min())
+        else:
+            return image
 
 
 def get_transforms(mode, minmaxnormalization=True, data_augmentation=None, output_dir=None):
@@ -609,7 +612,9 @@ def get_transforms(mode, minmaxnormalization=True, data_augmentation=None, outpu
         augmentation_list = []
 
     if minmaxnormalization:
-        transformations_list = [tio.RescaleIntensity(percentiles=(0.01, 99.99))]
+        transformations_list = [MinMaxNormalization()]
+
+#         transformations_list = [tio.RescaleIntensity(percentiles=(0.01, 99.99))]
     else:
         transformations_list = []
 

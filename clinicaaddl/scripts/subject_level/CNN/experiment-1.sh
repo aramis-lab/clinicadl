@@ -1,34 +1,42 @@
 #!/bin/bash
-#SBATCH --partition=gpu_p1
-#SBATCH --time=20:00:00
-#SBATCH --mem=60G
+#!/bin/bash
+#SBATCH --gres=gpu:v100:2
+#SBATCH --constraint="gpu"
+#SBATCH --time=23:59:00
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=g.nasta.work@gmail.com
+#SBATCH --ntasks-per-node=1
+#SBATCH -o logs/HLR_%j.out
+#SBATCH -e logs//HLR_%j.err
 #SBATCH --cpus-per-task=10
 #SBATCH --threads-per-core=1
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
-#SBATCH --workdir=/gpfswork/rech/zft/upd53tc/jobs2/AD-DL/train/subject_level/cnn
+#SBATCH --workdir=/u/horlavanasta/MasterProject/Code/ClinicaTools/AD-DL/train/subject_level/cnn
 #SBATCH --output=./exp1/pytorch_job_%A_%a.out
 #SBATCH --error=./exp1/pytorch_job_%A_%a.err
 #SBATCH --job-name=3CNN_subject
 #SBATCH --gres=gpu:1
-#SBATCH --array=0-4
-#SBATCH --mail-type=END
-#SBATCH --mail-user=mauricio.diaz@inria.fr
 
-#export http_proxy=http://10.10.2.1:8123
-#export https_proxy=http://10.10.2.1:8123
+if [ -z "$1" ]
+  then
+    FROM_CHECKPOINT='False'
+else
+  FROM_CHECKPOINT=$2
+fi
+echo $FROM_CHECKPOINT
+module load anaconda/3/2020.02
+module load cuda/10.2   
+module load pytorch/gpu/1.6.0
 
-# Experiment taining CNN
-eval "$(conda shell.bash hook)"
-conda activate clinicadl_env_py37
+# Experiment training CNN
 
 # Network structure
 NETWORK="Conv5_FC3"
-COHORT="ADNI"
 DATE="reproducibility_results_2"
 
 # Input arguments to clinicaaddl
-CAPS_DIR="$SCRATCH/../commun/datasets/${COHORT}_rerun"
+CAPS_DIR="/u/horlavanasta/MasterProject/ADNI_data/CAPSPreprocessedT1linear"
 TSV_PATH="$HOME/code/AD-DL/data/$COHORT/lists_by_diagnosis/train"
 OUTPUT_DIR="$SCRATCH/results/$DATE/"
 

@@ -1,0 +1,30 @@
+/u/horlavanasta/MasterProject/NNs/subject_model-SEResNet18_preprocessing-linear_task-AD_CN_norm-1_augmFalse-t-0
+Resume training from checkpoint: False
+                                  
+================================= 
+Global information about the job: 
+================================= 
+  
+Job owner: horlavanasta(42988)
+Job name:  run_experiment.sh
+Node list: co6011
+Job start: Wed Apr 21 21:23:02 CEST 2021
+Job end:   Thu Apr 22 03:15:42 CEST 2021
+Work dir:  /cobra/u/horlavanasta/MasterProject/Code/ClinicaTools/AD-DL/clinicaaddl/scripts
+Command:   /cobra/u/horlavanasta/MasterProject/Code/ClinicaTools/AD-DL/clinicaaddl/scripts/run_experiment.sh
+  
+  
+  
+==========================================================================================
+Information on jobsteps (Note: MaxRSS/AveRSS is the maximum/average over all 
+tasks of the per-task memory high-water marks; cf. "man sacct"): 
+==========================================================================================
+  
+       JobID    JobName NNodes NTasks  NCPUS       MaxRSS       AveRSS    Elapsed ExitCode 
+------------ ---------- ------ ------ ------ ------------ ------------ ---------- -------- 
+3953697      run_exper+      1            80                             05:52:40      0:0 
+3953697.0       python3      1      1      1     3961.84M     3961.84M   05:52:39      0:0 
+  
+Maximum memory per node: 4.05692 GB (defined as MaxRSS*Ntasks/NNodes)
+CPU utilization: 23.1 %
+     

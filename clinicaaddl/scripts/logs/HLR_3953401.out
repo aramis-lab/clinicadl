@@ -1,0 +1,30 @@
+Resume training from checkpoint: False
+{0: {'name': 'RandomNoise', 'params': {'mean': (-0.03, 0.03), 'std': (0, 0.01)}}, 1: {'name': 'RandomBiasField', 'params': {'coefficients': (0, 0.2), 'order': 1}}, 2: {'name': 'RandomGamma', 'params': {'log_gamma': (-0.15, 0.15)}}, 3: {'name': 'RandomAffine', 'params': {'degrees': (-4, 4), 'scales': (1.0, 1.0), 'isotropic': True, 'default_pad_value': 'mean'}}}
+                                  
+================================= 
+Global information about the job: 
+================================= 
+  
+Job owner: horlavanasta(42988)
+Job name:  run_experiment.sh
+Node list: co6031
+Job start: Wed Apr 21 20:23:39 CEST 2021
+Job end:   Thu Apr 22 03:41:44 CEST 2021
+Work dir:  /cobra/u/horlavanasta/MasterProject/Code/ClinicaTools/AD-DL/clinicaaddl/scripts
+Command:   /cobra/u/horlavanasta/MasterProject/Code/ClinicaTools/AD-DL/clinicaaddl/scripts/run_experiment.sh
+  
+  
+  
+==========================================================================================
+Information on jobsteps (Note: MaxRSS/AveRSS is the maximum/average over all 
+tasks of the per-task memory high-water marks; cf. "man sacct"): 
+==========================================================================================
+  
+       JobID    JobName NNodes NTasks  NCPUS       MaxRSS       AveRSS    Elapsed ExitCode 
+------------ ---------- ------ ------ ------ ------------ ------------ ---------- -------- 
+3953401      run_exper+      1            80                             07:18:05      0:0 
+3953401.0       python3      1      1      1     4792.42M     4792.42M   07:18:01      0:0 
+  
+Maximum memory per node: 4.90744 GB (defined as MaxRSS*Ntasks/NNodes)
+CPU utilization: 4.6 %
+     
