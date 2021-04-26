@@ -1,6 +1,6 @@
 #!/bin/bash
 module load anaconda/3/2020.02
-module load cuda/10.2   
+module load cuda/10.2
 module load pytorch/gpu/1.6.0
 
 # Experiment training CNN
@@ -8,37 +8,36 @@ module load pytorch/gpu/1.6.0
 # Importnant args
 NETWORK="SEResNet18"
 AUGMENTATION=True
-EPOCHS=100
+EPOCHS=200
 BATCH=10
 
 # Input arguments to clinicaaddl
 CAPS_DIR="$HOME//MasterProject/ADNI_data/CAPSPreprocessedT1linear"
-TSV_PATH="$HOME/MasterProject/ADNI_data/DataPrep/labels/train"
+TSV_PATH="$HOME/MasterProject/ADNI_data/DataPrep/labels_new/train"
 OUTPUT_DIR="$HOME/MasterProject/NNs_new/"
 
 # Dataset Management
 PREPROCESSING='linear'
 TASK='AD CN'
 LOSS='WeightedCrossEntropy'
-BASELINE=True
+BASELINE=False
 
 
 # Training arguments
 ACCUMULATION=1
 EVALUATION=0
-LR=1e-4
+LR=1e-5
 WEIGHT_DECAY=0
 NORMALIZATION=1
-PATIENCE=100
+PATIENCE=$EPOCHS
 TOLERANCE=0
-DISCARDED_SLICES=0
 # Pretraining
 T_BOOL=0
 T_PATH=""
 T_DIFF=0
 
 # Other options
-OPTIONS="--discarded_slices $DISCARDED_SLICES"
+OPTIONS=""
 
 if [ $AUGMENTATION = True ]; then
 OPTIONS="$OPTIONS --data_augmentation RandomNoise RandomBiasField RandomGamma RandomRotation"
@@ -66,9 +65,9 @@ python $HOME/MasterProject/Code/ClinicaTools/AD-DL/clinicaaddl/clinicaaddl/main.
   $TSV_PATH \
   $OUTPUT_DIR$NAME \
   $NETWORK \
-  --baseline \
+  --baseline $BASELINE\
   --diagnoses $TASK \
---loss $LOSS\
+  --loss $LOSS\
   --batch_size $BATCH \
   --evaluation_steps $EVALUATION \
   --accumulation_steps $ACCUMULATION \

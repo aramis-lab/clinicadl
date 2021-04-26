@@ -46,6 +46,12 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
 
     if logger is None:
         logger = logging
+    
+    #clear cache
+    import gc
+    gc.collect()
+    if options.gpu:
+        torch.cuda.empty_cache()
 
     columns = ['epoch', 'iteration', 'time',
                'balanced_accuracy_train', 'loss_train',
@@ -145,8 +151,10 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                     row_df = pd.DataFrame([row], columns=columns)
                     with open(filename, 'a') as f:
                         row_df.to_csv(f, header=False, index=False, sep='\t')
-
+#             if options.gpu:
+#                 torch.cuda.empty_cache()
             tend = time()
+            
         logger.debug('Mean time per batch loading: %.10f s'
                      % (total_time / len(train_loader) * train_loader.batch_size))
 
