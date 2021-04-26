@@ -24,15 +24,17 @@ crash*
 
 # Pytest files
 .pytest_cache/
-clinicadl/tests/data/models
-clinicadl/tests/data/dataset
-clinicadl/tests/data/tsvtool_test
+clinicaaddl/tests/data/models
+clinicaaddl/tests/data/dataset
+clinicaaddl/tests/data/tsvtool_test
 
 # Notebook jupyter
 .ipynb_checkpoints/
-clinicadl/notebooks/
+clinicaaddl/notebooks/
 
 # Mask and other files
-clinicadl/clinicadl/resources/masks/*.nii
-clinicadl/clinicadl/resources/masks/*.nii.gz
+clinicaaddl/clinicaaddl/resources/masks/*.nii
+clinicaaddl/clinicaaddl/resources/masks/*.nii.gz
 
+#logs
+clinicaaddl/scripts/logs
