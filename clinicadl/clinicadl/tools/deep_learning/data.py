@@ -324,7 +324,7 @@ class MRIDatasetImage(MRIDataset):
             image = self.augmentation_transformations(image)
 
         sample = {'image': image, 'label': label, 'participant_id': participant, 'session_id': session,
-                  'image_path': image_path}
+                  'image_id': None, 'image_path': image_path}
 
         if self.atlas is not None:
             atlas_df = self._get_statistics_df(participant, session, cohort)

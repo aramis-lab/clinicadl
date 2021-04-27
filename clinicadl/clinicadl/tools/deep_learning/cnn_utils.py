@@ -311,12 +311,7 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
     model.eval()
     dataloader.dataset.eval()
 
-    if mode == "image":
-        columns = ["participant_id", "session_id", "true_label", "predicted_label"]
-    elif mode in ["patch", "roi", "slice"]:
-        columns = ['participant_id', 'session_id', '%s_id' % mode, 'true_label', 'predicted_label', 'proba0', 'proba1']
-    else:
-        raise ValueError("The mode %s is invalid." % mode)
+    columns = ['participant_id', 'session_id', f'{mode}_id', 'true_label', 'predicted_label', 'proba0', 'proba1']
 
     softmax = torch.nn.Softmax(dim=1)
     results_df = pd.DataFrame(columns=columns)
@@ -357,13 +352,10 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
 
             # Generate detailed DataFrame
             for idx, sub in enumerate(data['participant_id']):
-                if mode == "image":
-                    row = [[sub, data['session_id'][idx], labels[idx].item(), predicted[idx].item()]]
-                else:
-                    normalized_output = softmax(outputs)
-                    row = [[sub, data['session_id'][idx], data['%s_id' % mode][idx].item(),
-                            labels[idx].item(), predicted[idx].item(),
-                            normalized_output[idx, 0].item(), normalized_output[idx, 1].item()]]
+                normalized_output = softmax(outputs)
+                row = [[sub, data['session_id'][idx], data['%s_id' % mode][idx].item(),
+                        labels[idx].item(), predicted[idx].item(),
+                        normalized_output[idx, 0].item(), normalized_output[idx, 1].item()]]
 
                 row_df = pd.DataFrame(row, columns=columns)
                 results_df = pd.concat([results_df, row_df])
@@ -382,6 +374,9 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
         metrics_dict['total_kl_loss'] = total_kl_loss
         metrics_dict['total_atlas_loss'] = total_atlas_loss
     torch.cuda.empty_cache()
+
+    if mode == "image":
+        results_df = results_df.drop("image_id", axis=1)
 
     return results_df, metrics_dict
 
@@ -585,9 +580,9 @@ def soft_voting(performance_df, validation_df, mode, selection_threshold=None, u
 
     # Soft majority vote
     if use_labels:
-        columns = ['participant_id', 'session_id', 'true_label', 'predicted_label']
+        columns = ['participant_id', 'session_id', 'true_label', 'predicted_label', 'proba0', 'proba1']
     else:
-        columns = ['participant_id', 'session_id', 'predicted_label']
+        columns = ['participant_id', 'session_id', 'predicted_label', 'proba0', 'proba1']
     df_final = pd.DataFrame(columns=columns)
     for (subject, session), subject_df in performance_df.groupby(['participant_id', 'session_id']):
         proba0 = np.average(subject_df["proba0"], weights=weight_series)
@@ -597,9 +592,9 @@ def soft_voting(performance_df, validation_df, mode, selection_threshold=None, u
 
         if use_labels:
             y = subject_df["true_label"].unique().item()
-            row = [[subject, session, y, y_hat]]
+            row = [[subject, session, y, y_hat, proba0, proba1]]
         else:
-            row = [[subject, session, y_hat]]
+            row = [[subject, session, y_hat, proba0, proba1]]
         row_df = pd.DataFrame(row, columns=columns)
         df_final = df_final.append(row_df)
 
