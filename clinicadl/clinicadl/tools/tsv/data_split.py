@@ -71,7 +71,7 @@ def create_split(
 
     baseline_df = extract_baseline(diagnosis_df, diagnosis)
 
-    if n_test > 1:
+    if n_test >= 1:
         n_test = int(n_test)
     else:
         n_test = int(n_test * len(baseline_df))
@@ -171,7 +171,7 @@ def split_diagnoses(
     Args:
         formatted_data_path (str): Path to the folder containing data extracted by clinicadl tsvtool getlabels.
         n_test (float):
-            If > 1, number of subjects to put in set with name 'subset_name'.
+            If >= 1, number of subjects to put in set with name 'subset_name'.
             If < 1, proportion of subjects to put in set with name 'subset_name'.
             If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name'.
         subset_name (str): Name of the subset that is complementary to train.
