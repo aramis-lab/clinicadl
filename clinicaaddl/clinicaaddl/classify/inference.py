@@ -260,7 +260,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
 
     # Define loss and optimizer
     normedWeights = get_classWeights(model_options, test_df)
-    criterion = get_criterion(model_options.loss,)
+    criterion = get_criterion(model_options.loss, normedWeights)
 
     if model_options.mode_task == 'multicnn':
 
