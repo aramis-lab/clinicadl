@@ -170,12 +170,14 @@ def classify_func(args):
 # Functions to dispatch command line options from tsvtool to corresponding
 # function
 def tsv_restrict_func(args):
-    from .tools.tsv.restriction import aibl_restriction, oasis_restriction
+    from tools.tsv.restriction import aibl_restriction, oasis_restriction, adni_restriction
 
     if args.dataset == "AIBL":
         aibl_restriction(args.merged_tsv, args.results_path)
     elif args.dataset == "OASIS":
         oasis_restriction(args.merged_tsv, args.results_path)
+    elif args.dataset == "ADNI":
+        adni_restriction(args.merged_tsv, args.results_path, args.magnet_strength)
 
 
 def tsv_getlabels_func(args):
@@ -1126,17 +1128,24 @@ def parse_command_line():
     tsv_restrict_subparser.add_argument(
         "dataset",
         help="dataset on which the restriction is performed.",
-        choices=["AIBL", "OASIS"],
+        choices=["AIBL", "OASIS", "ADNI"],
         type=str)
+
 
     tsv_restrict_subparser.add_argument(
         "merged_tsv",
         help="Path to the file obtained by the command clinica iotools merge-tsv.",
         type=str)
+
     tsv_restrict_subparser.add_argument(
         "results_path",
         help="Path to the output tsv file (filename included).",
         type=str)
+
+    tsv_restrict_subparser.add_argument(
+        "--magnet_strength", "-ms",
+        help="Strength of magnet field by which one wants to restrict scans",
+        type=float, default=1.5)
 
     tsv_restrict_subparser.set_defaults(func=tsv_restrict_func)
 
