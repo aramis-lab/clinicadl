@@ -10,23 +10,24 @@ NETWORK="SEResNet18"
 AUGMENTATION=True
 EPOCHS=200
 BATCH=10
+LR=1e-4
 
 # Input arguments to clinicaaddl
 CAPS_DIR="$HOME//MasterProject/ADNI_data/CAPSPreprocessedT1linear"
-TSV_PATH="$HOME/MasterProject/ADNI_data/DataPrep/labels_new/train"
-OUTPUT_DIR="$HOME/MasterProject/NNs_new/"
+TSV_PATH="$HOME/MasterProject/ADNI_data/DataPrep/labels/train"
+OUTPUT_DIR="$HOME/MasterProject/NNs/"
 
 # Dataset Management
 PREPROCESSING='linear'
 TASK='AD CN'
 LOSS='WeightedCrossEntropy'
-BASELINE=False
+# LOSS='default'
+BASELINE=True
 
 
 # Training arguments
 ACCUMULATION=1
 EVALUATION=0
-LR=1e-5
 WEIGHT_DECAY=0
 NORMALIZATION=1
 PATIENCE=$EPOCHS
@@ -52,7 +53,7 @@ TASK_NAME="${TASK// /_}"
 
 echo $TASK_NAME
 
-NAME="subject_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-${TASK_NAME}_norm-${NORMALIZATION}_augm${AUGMENTATION}"
+NAME="subject_model-${NETWORK}_preprocessing-${PREPROCESSING}_task-${TASK_NAME}_norm-${NORMALIZATION}_loss-${LOSS}_augm${AUGMENTATION}"
 
 
 # echo $NAME
