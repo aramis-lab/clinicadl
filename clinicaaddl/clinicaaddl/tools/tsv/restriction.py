@@ -44,3 +44,20 @@ def oasis_restriction(merged_tsv, results_path):
     merged_df = pd.read_csv(merged_tsv, sep='\t')
     results_df = merged_df[merged_df.age_bl >= 62]
     results_df.to_csv(results_path, sep='\t', index=False)
+
+
+def adni_restriction(merged_tsv, results_path, magnet_strength):
+    """
+    Writes a new file from which participants who are 61 years old or younger are removed.
+    This restriction was originally applied to OASIS dataset
+
+    Args:
+        merged_tsv (str): Path to the file obtained by the command clinica iotools merge-tsv.
+        results_path (str): Path to the output tsv file (filename included).
+
+    Returns:
+        writes a tsv file at results_path
+    """
+    merged_df = pd.read_csv(merged_tsv, sep='\t')
+    results_df = merged_df[merged_df.T1w_mri_field == magnet_strength]
+    results_df.to_csv(results_path, sep='\t', index=False)
