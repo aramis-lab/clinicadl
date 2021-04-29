@@ -199,14 +199,20 @@ def inference_from_model(caps_dir,
                         )
 
             else:
-                full_model_path = join(model_path, "best_%s" % selection_metric)
-                if not exists(join(full_model_path, 'model_best.pth.tar')):
+                if selection_metric=="last_checkpoint":
+                    full_model_path = model_path
+                    name='checkpoint.pth.tar'
+                else:
+                    full_model_path = join(model_path, "best_%s" % selection_metric)
+                    name='model_best.pth.tar'
+                if not exists(join(full_model_path, name)):
                     raise FileNotFoundError(
                         errno.ENOENT,
                         strerror(errno.ENOENT),
-                        join(full_model_path, 'model_best.pth.tar'))
+                        join(full_model_path, name))
+            mode_prefix=selection_metric if selection_metric=="last_checkpoint" else 'best_%s' % selection_metric
 
-            performance_dir = join(fold_path, 'cnn_classification', 'best_%s' % selection_metric)
+            performance_dir = join(fold_path, 'cnn_classification', mode_prefix)
 
             makedirs(performance_dir, exist_ok=True)
 
@@ -219,7 +225,7 @@ def inference_from_model(caps_dir,
                 prefix,
                 currentDirectory,
                 fold,
-                "best_%s" % selection_metric,
+                mode_prefix,
                 labels=labels,
                 num_cnn=num_cnn,
                 logger=logger
@@ -234,7 +240,7 @@ def inference_from_model(caps_dir,
             # Write files at the image level (for patch, roi and slice).
             # It assumes the existance of validation files to perform soft-voting
             if options.mode in ["patch", "roi", "slice"]:
-                soft_voting_to_tsvs(currentDirectory, fold, "best_%s" % selection_metric, options.mode,
+                soft_voting_to_tsvs(currentDirectory, fold, mode_prefix, options.mode,
                                     prefix, num_cnn=num_cnn, selection_threshold=selection_thresh,
                                     use_labels=labels, logger=logger)
 
@@ -287,11 +293,19 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
 
             # load the best trained model during the training
             model = create_model(model_options, test_dataset.size)
+
+            if selection == "last_checkpoint":
+                full_model_path = join(model_path, 'cnn-%i' % n)
+                filename = 'checkpoint.pth.tar'
+            else:
+                full_model_path = join(model_path, 'cnn-%i' % n, selection)
+                filename = 'model_best.pth.tar'
+
             model, best_epoch = load_model(
                 model,
-                join(model_path, 'cnn-%i' % n, selection),
+                full_model_path,
                 gpu,
-                filename='model_best.pth.tar')
+                filename=filename)
 
             cnn_df, cnn_metrics = test(
                 model,
@@ -333,9 +347,17 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
 
         # Load model from path
         model = create_model(model_options, test_dataset.size)
+
+        if selection == "last_checkpoint":
+            full_model_path = model_path
+            filename = 'checkpoint.pth.tar'
+        else:
+            full_model_path = join(model_path, selection)
+            filename = 'model_best.pth.tar'
+
         best_model, best_epoch = load_model(
-            model, join(model_path, selection),
-            gpu, filename='model_best.pth.tar')
+            model, full_model_path,
+            gpu, filename=filename)
 
         # Run the model on the data
         predictions_df, metrics = test(

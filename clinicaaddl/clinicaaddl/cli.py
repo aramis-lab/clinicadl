@@ -1097,7 +1097,7 @@ def parse_command_line():
         '--selection_metrics',
         help='''List of metrics to find the best models to evaluate. Default will
         classify best model based on balanced accuracy.''',
-        choices=['loss', 'balanced_accuracy'],
+        choices=['loss', 'balanced_accuracy', "last_checkpoint"],
         default=['balanced_accuracy', 'loss'],
         nargs='+'
     )
