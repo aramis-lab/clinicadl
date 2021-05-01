@@ -398,8 +398,8 @@ def parse_command_line():
     # generate_shepplogan_parser.set_defaults(func=generate_data_func)
 
     # Preprocessing
-    from clinica.pipelines.t1_linear.t1_linear_cli import T1LinearCLI
-    from clinica.engine.cmdparser import init_cmdparser_objects
+    from clinicaml.pipelines.t1_linear.t1_linear_cli import T1LinearCLI
+    from clinicaml.engine.cmdparser import init_cmdparser_objects
     from preprocessing.t1_extensive.t1_extensive_cli import T1ExtensiveCli
     preprocessing_parser = subparser.add_parser(
         'preprocessing',
