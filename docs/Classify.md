@@ -1,7 +1,7 @@
 # `clinicadl classify` - Inference using pretrained models
 
 This functionality performs image classification using models trained with
-[`clinicadl train`](./Train/Introduction.md) of [`clinicadl random-search generate`](./RandomSearch.md)
+[`clinicadl train`](./Train/Introduction.md) or [`clinicadl random-search generate`](./RandomSearch.md)
 tasks. It can also use pretrained
 models if their folder structure is similar to the structure created by the
 command `clinicadl train`.  At the top level of each model folder there are two

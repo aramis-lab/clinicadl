@@ -2,9 +2,7 @@
 
 This functionality allows to resume a prematurely stopped job trained with
 [`clinicadl train`](./Train/Introduction.md) of [`clinicadl random-search generate`](./RandomSearch.md) tasks.
-It can also use pretrained
-models if their folder structure is similar to the structure created by the
-command `clinicadl train`.  The files that are used by this function are the following:
+The files that are used by this function are the following:
 
 - `commandline.json` describes the training parameters used to create the
   model,

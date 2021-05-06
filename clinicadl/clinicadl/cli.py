@@ -282,7 +282,7 @@ def parse_command_line():
     parent_parser.add_argument('--verbose', '-v', action='count', default=0)
 
     subparser = parser.add_subparsers(
-        title='''Task to execute with clinicadl:''',
+        title='''Task to execute with clinicadl''',
         description='''What kind of task do you want to use with clinicadl?''',
         dest='task',
         help='''****** Tasks proposed by clinicadl ******''')
@@ -423,7 +423,7 @@ def parse_command_line():
     )
 
     preprocessing_subparser = preprocessing_parser.add_subparsers(
-        title='''Preprocessing task to execute with clinicadl:''',
+        title='''Preprocessing task to execute with clinicadl''',
         description='''What kind of task do you want to perform with clinicadl?
                 (run, quality-check, extract-tensor).''',
         dest='preprocessing_task',
