@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 over a random search folder.
 - New functionality `clinicadl train from_json` to train a model with parameters defined in a JSON file.
 - New functionality `clinicadl resume` to resume a prematurely stopped training task.
-- possibility to learn the grey matter intensities with the binary classification during training,
+- Possibility to learn the grey matter intensities with the binary classification during training,
 based on `t1-volume` outputs.
 
 ### Changed
@@ -84,5 +84,4 @@ based on `t1-volume` outputs.
 ### Fixed
 
 - Fix broken file when running preprocessing in t1-extensive.
-
 
