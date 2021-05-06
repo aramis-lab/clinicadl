@@ -676,49 +676,6 @@ def parse_command_line():
 
     rs_analysis_parser.set_defaults(func=rs_func)
 
-    resume_parser = subparser.add_parser(
-        'resume',
-        parents=[parent_parser],
-        help='Resume all jobs prematurely ended in launch_dir.'
-    )
-
-    resume_parser.add_argument(
-        "model_path",
-        type=str,
-        help="Directory containing the random_search.json file."
-    )
-
-    resume_comp_group = resume_parser.add_argument_group(
-        TRAIN_CATEGORIES["COMPUTATIONAL"]
-    )
-    resume_comp_group.add_argument(
-        "-np", "--nproc",
-        help='Number of cores used the quality check. '
-             'Default will reuse the same value than in training.',
-        type=int, default=None
-    )
-    resume_comp_group.add_argument(
-        '-cpu', '--use_cpu', action='store_true', default=False,
-        help='Override the previous command line to use CPU.',
-    )
-    resume_comp_group.add_argument(
-        '-gpu', '--use_gpu', action='store_true', default=False,
-        help='Override the previous command line to use GPU.',
-    )
-    resume_comp_group.add_argument(
-        '--batch_size',
-        default=None, type=int,
-        help='Batch size for data loading. '
-             'Default will reuse the same value than in training.')
-    resume_comp_group.add_argument(
-        '--evaluation_steps', '-esteps',
-        default=None, type=int,
-        help='Fix the number of iterations to perform before computing an evaluation. '
-             'Default will reuse the same value than in training.'
-    )
-
-    resume_parser.set_defaults(func=resume_func)
-
     train_parser = subparser.add_parser(
         'train',
         help='Train with your data and create a model.')
@@ -1078,6 +1035,52 @@ def parse_command_line():
         help="Directory in which the new job is stored.")
 
     train_json_parser.set_defaults(func=retrain_func)
+
+    #########################
+    # RESUME
+    #########################
+    resume_parser = train_subparser.add_parser(
+        'resume',
+        parents=[parent_parser],
+        help='Resume all jobs prematurely ended in launch_dir.'
+    )
+
+    resume_parser.add_argument(
+        "model_path",
+        type=str,
+        help="Directory containing the random_search.json file."
+    )
+
+    resume_comp_group = resume_parser.add_argument_group(
+        TRAIN_CATEGORIES["COMPUTATIONAL"]
+    )
+    resume_comp_group.add_argument(
+        "-np", "--nproc",
+        help='Number of cores used the quality check. '
+             'Default will reuse the same value than in training.',
+        type=int, default=None
+    )
+    resume_comp_group.add_argument(
+        '-cpu', '--use_cpu', action='store_true', default=False,
+        help='Override the previous command line to use CPU.',
+    )
+    resume_comp_group.add_argument(
+        '-gpu', '--use_gpu', action='store_true', default=False,
+        help='Override the previous command line to use GPU.',
+    )
+    resume_comp_group.add_argument(
+        '--batch_size',
+        default=None, type=int,
+        help='Batch size for data loading. '
+             'Default will reuse the same value than in training.')
+    resume_comp_group.add_argument(
+        '--evaluation_steps', '-esteps',
+        default=None, type=int,
+        help='Fix the number of iterations to perform before computing an evaluation. '
+             'Default will reuse the same value than in training.'
+    )
+
+    resume_parser.set_defaults(func=resume_func)
 
     # Classify - Classify a subject or a list of tsv files with the CNN
     # provided as argument.

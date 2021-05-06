@@ -1,7 +1,7 @@
-# `clinicadl resume` - Resume a prematurely stopped job
+# `clinicadl train resume` - Resume a prematurely stopped job
 
 This functionality allows to resume a prematurely stopped job trained with
-[`clinicadl train`](./Train/Introduction.md) of [`clinicadl random-search generate`](./RandomSearch.md) tasks.
+[`clinicadl train`](Introduction.md) of [`clinicadl random-search generate`](../RandomSearch.md) tasks.
 The files that are used by this function are the following:
 
 - `commandline.json` describes the training parameters used to create the
@@ -44,7 +44,7 @@ extract` to obtain the tensor versions of the images.
 ## Running the task
 This task can be run with the following command line:
 ```Text
-clinicadl resume <model_path>
+clinicadl train resume <model_path>
 
 ```
 where `model_path` (str) is a path to the folder where the model and the json file
@@ -63,9 +63,9 @@ computing an evaluation.
 
 ## Outputs
 
-The outputs correspond to the ones obtained using [`clinicadl train`](./Train/Introduction.md#outputs)
+The outputs correspond to the ones obtained using [`clinicadl train`](Introduction.md#outputs)
 
 !!! note
     The files `checkpoint.pth.tar` and `optimizer.pth.tar` are automatically removed as soon
-    as the [stopping criterion](./Train/Details.md#stopping-criterion) is reached and the 
+    as the [stopping criterion](Details.md#stopping-criterion) is reached and the 
     performances of the models are evaluated on the training and validation datasets.
