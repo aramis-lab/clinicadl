@@ -62,10 +62,13 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
     else:
         if not os.path.exists(filename):
             raise ValueError('The training.tsv file of the resumed experiment does not exist.')
-        truncated_tsv = pd.read_csv(filename, sep='\t')
-        truncated_tsv.set_index(['epoch', 'iteration'], inplace=True)
-        truncated_tsv.drop(options.beginning_epoch, level=0, inplace=True)
-        truncated_tsv.to_csv(filename, index=True, sep='\t')
+        truncated_df = pd.read_csv(filename, sep='\t')
+        truncated_df.set_index(['epoch', 'iteration'], inplace=True, drop=True)
+        epochs = [epoch for epoch, _ in truncated_df.index.values]
+        if options.beginning_epoch in epochs:
+            truncated_df.drop(options.beginning_epoch, level=0, inplace=True)
+        truncated_df.to_csv(filename, index=True, sep='\t')
+        assert hasattr(options, "beginning_epoch")
 
     # Create writers
     writer_train = SummaryWriter(os.path.join(log_dir, 'train'))
@@ -103,10 +106,23 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
             if hasattr(model, "variational") and model.variational:
                 z, mu, std, train_output = model(imgs)
                 kl_loss = kl_divergence(z, mu, std)
-                loss = criterion(train_output, labels) + kl_loss
+                loss = kl_loss
             else:
                 train_output = model(imgs)
-                loss = criterion(train_output, labels)
+                loss = 0
+
+            if "atlas" in data:
+                if options.gpu:
+                    atlas_data = data["atlas"].cuda()
+                else:
+                    atlas_data = data["atlas"]
+                atlas_output = train_output[:, -atlas_data.size(1)::]
+                classif_output = train_output[:, :-atlas_data.size(1):]
+                loss += criterion(classif_output, labels)
+                loss += options.atlas_weight * torch.nn.MSELoss(reduction="sum")(atlas_output, atlas_data)
+
+            else:
+                loss += criterion(train_output, labels)
 
             # Back propagation
             loss.backward()
@@ -306,6 +322,7 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
     results_df = pd.DataFrame(columns=columns)
     total_loss = 0
     total_kl_loss = 0
+    total_atlas_loss = 0
     total_time = 0
     tend = time()
     with torch.no_grad():
@@ -323,6 +340,16 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
                 total_kl_loss += kl_loss.item()
             else:
                 outputs = model(inputs)
+
+            if "atlas" in data:
+                if use_cuda:
+                    atlas_data = data["atlas"].cuda()
+                else:
+                    atlas_data = data["atlas"]
+                atlas_output = outputs[:, -atlas_data.size(1)::]
+                outputs = outputs[:, :-atlas_data.size(1):]
+                total_atlas_loss += torch.nn.MSELoss(reduction="sum")(atlas_output, atlas_data).item()
+
             if use_labels:
                 loss = criterion(outputs, labels)
                 total_loss += loss.item()
@@ -353,6 +380,7 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
                                            results_df.predicted_label.values.astype(int))
         metrics_dict['total_loss'] = total_loss
         metrics_dict['total_kl_loss'] = total_kl_loss
+        metrics_dict['total_atlas_loss'] = total_atlas_loss
     torch.cuda.empty_cache()
 
     return results_df, metrics_dict

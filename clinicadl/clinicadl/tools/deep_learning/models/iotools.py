@@ -66,5 +66,7 @@ def load_optimizer(optimizer_path, model):
     print('Loading optimizer')
     optimizer_dict = torch.load(optimizer_path)
     name = optimizer_dict["name"]
-    optimizer = eval("torch.optim." + name)(filter(lambda x: x.requires_grad, model.parameters()))
+    optimizer = getattr(torch.optim, name)(filter(lambda x: x.requires_grad, model.parameters()))
     optimizer.load_state_dict(optimizer_dict["optimizer"])
+
+    return optimizer

@@ -1,7 +1,8 @@
 # `clinicadl classify` - Inference using pretrained models
 
 This functionality performs image classification using models trained with
-[`clinicadl train`](./Train/Introduction.md) task. It can also use pretrained
+[`clinicadl train`](./Train/Introduction.md) or [`clinicadl random-search generate`](./RandomSearch.md)
+tasks. It can also use pretrained
 models if their folder structure is similar to the structure created by the
 command `clinicadl train`.  At the top level of each model folder there are two
 files:
@@ -25,7 +26,7 @@ performance on the validation set according to one or several metrics (.pth.tar 
 
 In order to execute this task, the input images must be listed in a `tsv_file`
 formatted using the CAPS definition. Please check which preprocessing needs to
-be performed in the `commandline.json` file in the results folder.  If it has
+be performed in the `commandline.json` file in the results folder. If it has
 not been performed, execute the preprocessing pipeline as well as `clinicadl
 extract` to obtain the tensor versions of the images.
 

@@ -38,7 +38,7 @@ def resnet18(**kwargs):
 
     # add a fc layer on top of the transfer_learning model and a softmax classifier
     model.add_module('drop_out', nn.Dropout(p=kwargs["dropout"]))
-    model.add_module('fc_out', nn.Linear(1000, 2))
+    model.add_module('fc_out', nn.Linear(1000, kwargs["n_classes"]))
 
     return model
 

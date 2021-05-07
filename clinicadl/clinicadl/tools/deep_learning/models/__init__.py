@@ -6,21 +6,27 @@ from .slice_level import resnet18, ConvNet
 from .random import RandomArchitecture
 
 
-def create_model(options, initial_shape):
+def create_model(options, initial_shape, len_atlas=0):
     """
     Creates model object from the model_name.
 
-    :param options: (Namespace) arguments needed to create the model.
-    :param initial_shape: (array-like) shape of the input data.
-    :return: (Module) the model object
+    Args:
+        options: (Namespace) arguments needed to create the model.
+        initial_shape: (array-like) shape of the input data.
+        len_atlas: (int) length of the atlas in case of double prediction
+
+    Returns:
+        (Module) the model object
     """
 
     if not hasattr(options, "model"):
         model = RandomArchitecture(options.convolutions, options.n_fcblocks, initial_shape,
-                                   options.dropout, options.network_normalization, n_classes=2)
+                                   options.dropout, options.network_normalization,
+                                   n_classes=2 + len_atlas)
     else:
         try:
-            model = eval(options.model)(dropout=options.dropout)
+            model = eval(options.model)(dropout=options.dropout,
+                                        n_classes=2 + len_atlas)
         except NameError:
             raise NotImplementedError(
                 'The model wanted %s has not been implemented.' % options.model)
@@ -55,9 +61,9 @@ def create_autoencoder(options, initial_shape, difference=0):
     return decoder
 
 
-def init_model(options, initial_shape, autoencoder=False):
+def init_model(options, initial_shape, autoencoder=False, len_atlas=0):
 
-    model = create_model(options, initial_shape)
+    model = create_model(options, initial_shape, len_atlas=len_atlas)
     if autoencoder:
         model = AutoEncoder(model)
 

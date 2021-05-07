@@ -14,8 +14,11 @@ def main():
         print(f"ClinicaDL version is: {clinicadl.__version__}")
         exit(0)
     if hasattr(args, 'use_cpu'):
-        if not args.use_cpu and not torch.cuda.is_available():
+        if args.use_cpu is not None and not args.use_cpu and not torch.cuda.is_available():
             raise ValueError("No GPU is available. Please add the -cpu flag to run on CPU.")
+    if hasattr(args, 'use_gpu'):
+        if args.use_gpu and torch.cuda.is_available():
+            raise ValueError("No GPU is available. Please disable -gpu flag to run on CPU.")
 
     if not args.task:
         parser.print_help()

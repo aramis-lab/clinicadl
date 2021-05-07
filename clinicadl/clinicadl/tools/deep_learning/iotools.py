@@ -63,6 +63,8 @@ def translate_parameters(args):
     args.optimizer = "Adam"
     args.loss = "default"
 
+    if hasattr(args, "predict_atlas_intensities"):
+        args.atlas = args.predict_atlas_intensities
     if hasattr(args, "caps_dir"):
         args.input_dir = args.caps_dir
     if hasattr(args, "unnormalize"):
@@ -125,20 +127,10 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
     os.makedirs(output_dir, exist_ok=True)
 
     # remove these entries from the commandline log file
-    if 'func' in commandline_arg_dict:
-        del commandline_arg_dict['func']
-
-    if 'output_dir' in commandline_arg_dict:
-        del commandline_arg_dict['output_dir']
-
-    if 'launch_dir' in commandline_arg_dict:
-        del commandline_arg_dict['launch_dir']
-
-    if 'name' in commandline_arg_dict:
-        del commandline_arg_dict['name']
-
-    if 'verbose' in commandline_arg_dict:
-        del commandline_arg_dict['verbose']
+    remove_list = ['func', 'output_dir', 'launch_dir', 'name', 'verbose', 'logname']
+    for variable in remove_list:
+        if variable in commandline_arg_dict:
+            del commandline_arg_dict[variable]
 
     # save to json file
     json = json.dumps(commandline_arg_dict, skipkeys=True, indent=4)
@@ -148,7 +140,7 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
     f.close()
 
 
-def read_json(options, json_path=None, test=False):
+def read_json(options=None, json_path=None, test=False, read_computational=False):
     """
     Read a json file to update python argparse Namespace.
     Ensures retro-compatibility with previous namings in clinicadl.
@@ -157,11 +149,16 @@ def read_json(options, json_path=None, test=False):
         options: (argparse.Namespace) options of the model.
         json_path: (str) If given path to the json file, else found with options.model_path.
         test: (bool) If given the reader will ignore some options specific to data.
+        read_computational: (bool) if set to True, the computational arguments are also read.
     Returns:
         options (args.Namespace) options of the model updated
     """
     import json
     from os import path
+    from argparse import Namespace
+
+    if options is None:
+        options = Namespace()
 
     evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
     prep_compatibility_dict = {"mni": "t1-extensive", "linear": "t1-linear"}
@@ -173,7 +170,7 @@ def read_json(options, json_path=None, test=False):
 
     for key, item in json_data.items():
         # We do not change computational options
-        if key in computational_list:
+        if key in computational_list and not read_computational:
             pass
         # If used for evaluation, some parameters were already given
         if test and key in evaluation_parameters:
@@ -252,7 +249,113 @@ def read_json(options, json_path=None, test=False):
     if not hasattr(options, 'multi_cohort'):
         options.multi_cohort = False
 
+    if not hasattr(options, "predict_atlas_intensities"):
+        options.predict_atlas_intensities = None
+
+    if not hasattr(options, "merged_tsv_path"):
+        options.merged_tsv_path = ""
+
+    if not hasattr(options, "atlas_weight"):
+        options.atlas_weight = 1
+
+    if hasattr(options, "n_splits") and options.n_splits is None:
+        options.n_splits = 0
+
     return options
+
+
+def check_and_complete(options, random_search=False):
+    """
+    This function initializes missing fields with missing values.
+    Some fields are mandatory and cannot be initialized by default; this will raise an issue if they are missing.
+
+    Args:
+        options: (Namespace) the options used for training.
+        random_search: (bool) If True the options are looking for mandatory values of random-search.
+    """
+
+    def set_default(namespace, default_dict):
+        for name, default_value in default_dict.items():
+            if not hasattr(namespace, name):
+                setattr(namespace, name, default_value)
+
+    filename = 'random_search.json'
+
+    default_values = {
+        "accumulation_steps": 1,
+        "atlas_weight": 1,
+        "baseline": False,
+        "batch_size": 2,
+        "data_augmentation": False,
+        "diagnoses": ['AD', 'CN'],
+        "dropout": 0,
+        "epochs": 20,
+        "evaluation_steps": 0,
+        "learning_rate": 4,
+        "loss": "default",
+        "merged_tsv_path": None,
+        "multi_cohort": False,
+        "n_splits": 0,
+        "nproc": 2,
+        "optimizer": "Adam",
+        "unnormalize": False,
+        "patience": 0,
+        "predict_atlas_intensities": None,
+        "split": None,
+        "tolerance": 0.0,
+        "transfer_learning_path": None,
+        "transfer_learning_selection": "best_loss",
+        "use_cpu": False,
+        "wd_bool": True,
+        "weight_decay": 4,
+        "sampler": "random"
+    }
+    mode_default_values = {
+        "patch": {
+            "patch_size": 50,
+            "stride_size": 50,
+            "selection_threshold": 0,
+            "use_extracted_patches": False
+        },
+        "roi": {
+            "roi_list": None,
+            "selection_threshold": 0,
+            "uncropped_roi": False,
+            "use_extracted_roi": False
+        },
+        "slice": {
+            "discarded_slices": 20,
+            "selection_threshold": 0,
+            "slice_direction": 0,
+            "use_extracted_slices": False
+        },
+        "image": {}
+    }
+    if random_search:
+        default_values["d_reduction"] = "MaxPooling"
+        default_values["network_normalization"] = "BatchNorm"
+        default_values["channels_limit"] = 512
+        default_values["n_conv"] = 1
+
+    set_default(options, default_values)
+
+    mandatory_arguments = ['network_type', 'mode',
+                           'tsv_path', 'caps_dir', 'preprocessing']
+    if random_search:
+        mandatory_arguments += ['n_convblocks', 'first_conv_width', 'n_fcblocks']
+
+    for argument in mandatory_arguments:
+        if not hasattr(options, argument):
+            raise ValueError(f"The argument {argument} must be specified in {filename}.")
+
+    if random_search:
+        for mode, mode_dict in mode_default_values.items():
+            set_default(options, mode_dict)
+    else:
+        if options.mode not in mode_default_values:
+            raise NotImplementedError(f"The mode optional arguments corresponding to mode {options.mode}")
+        mode_dict = mode_default_values[options.mode]
+        set_default(options, mode_dict)
 
 
 def set_default_dropout(args):

@@ -76,6 +76,8 @@ nav:
     - Patch-based: Train/Patch.md
     - Slice-based: Train/Slice.md
     - ROI-based: Train/ROI.md
+    - JSON defined: Train/Retrain.md
+    - Resume: Train/Resume.md
     - Custom experiment: Train/Custom.md
     - Implementation details: Train/Details.md
   - Classify: Classify.md

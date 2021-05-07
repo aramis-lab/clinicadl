@@ -15,7 +15,7 @@ class Conv5_FC3(nn.Module):
 
     Image level architecture used on Minimal preprocessing
     """
-    def __init__(self, dropout=0.5):
+    def __init__(self, dropout=0.5, n_classes=2):
         super(Conv5_FC3, self).__init__()
 
         self.features = nn.Sequential(
@@ -56,7 +56,7 @@ class Conv5_FC3(nn.Module):
             nn.Linear(1300, 50),
             nn.ReLU(),
 
-            nn.Linear(50, 2)
+            nn.Linear(50, n_classes)
 
         )
 
@@ -75,7 +75,7 @@ class VConv5_FC3(nn.Module):
 
     Image level architecture used on Minimal preprocessing
     """
-    def __init__(self, dropout=0.5):
+    def __init__(self, dropout=0.5, n_classes=2):
         super(VConv5_FC3, self).__init__()
 
         self.features = nn.Sequential(
@@ -120,7 +120,7 @@ class VConv5_FC3(nn.Module):
             nn.Linear(1300, 50),
             nn.ReLU(),
 
-            nn.Linear(50, 2)
+            nn.Linear(50, n_classes)
 
         )
 
@@ -148,7 +148,7 @@ class Conv5_FC3_mni(nn.Module):
 
     Image level architecture used on Extensive preprocessing
     """
-    def __init__(self, dropout=0.5):
+    def __init__(self, dropout=0.5, n_classes=2):
         super(Conv5_FC3_mni, self).__init__()
 
         self.features = nn.Sequential(
@@ -189,7 +189,7 @@ class Conv5_FC3_mni(nn.Module):
             nn.Linear(1300, 50),
             nn.ReLU(),
 
-            nn.Linear(50, 2)
+            nn.Linear(50, n_classes)
 
         )
 
@@ -208,7 +208,7 @@ class Conv6_FC3(nn.Module):
 
     Image level architecture used on Minimal preprocessing
     """
-    def __init__(self, dropout=0.5):
+    def __init__(self, dropout=0.5, n_classes=2):
         super(Conv6_FC3, self).__init__()
 
         self.features = nn.Sequential(
@@ -253,7 +253,7 @@ class Conv6_FC3(nn.Module):
             nn.Linear(1000, 50),
             nn.ReLU(),
 
-            nn.Linear(50, 2)
+            nn.Linear(50, n_classes)
 
         )
 
