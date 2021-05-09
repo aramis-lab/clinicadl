@@ -163,7 +163,8 @@ def classify_func(args):
         prepare_dl=args.use_extracted_features,
         selection_metrics=args.selection_metrics,
         diagnoses=args.diagnoses,
-        verbose=args.verbose
+        verbose=args.verbose,
+        baseline=args.baseline
     )
 
 
@@ -1105,6 +1106,10 @@ def parse_command_line():
         "--diagnoses",
         help="List of participants that will be classified.",
         nargs="+", type=str, choices=['AD', 'CN', 'MCI', 'sMCI', 'pMCI'], default=None)
+
+    classify_specific_group.add_argument(
+        "--baseline",
+        help="Specify if baseline", type=str2bool, default=True)
 
     classify_parser.set_defaults(func=classify_func)
 

@@ -26,7 +26,8 @@ def classify(caps_dir,
              prepare_dl=True,
              selection_metrics=None,
              diagnoses=None,
-             verbose=0):
+             verbose=0,
+             baseline=True):
     """
     This function verifies the input folders, and the existence of the json file
     then it launch the inference stage from a specific model.
@@ -91,7 +92,8 @@ def classify(caps_dir,
         prepare_dl,
         selection_metrics,
         diagnoses,
-        logger
+        logger,
+        baseline
     )
 
 
@@ -107,7 +109,8 @@ def inference_from_model(caps_dir,
                          prepare_dl=False,
                          selection_metrics=None,
                          diagnoses=None,
-                         logger=None):
+                         logger=None,
+                         baseline=True):
     """
     Inference from previously trained model.
 
@@ -228,7 +231,8 @@ def inference_from_model(caps_dir,
                 mode_prefix,
                 labels=labels,
                 num_cnn=num_cnn,
-                logger=logger
+                logger=logger,
+                baseline=baseline
             )
 
             # Soft voting
@@ -250,7 +254,7 @@ def inference_from_model(caps_dir,
 
 def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
                                  prefix, output_dir, fold, selection,
-                                 labels=True, num_cnn=None, logger=None):
+                                 labels=True, num_cnn=None, logger=None, baseline=True):
     from os.path import join
     import logging
 
@@ -262,7 +266,7 @@ def inference_from_model_generic(caps_dir, tsv_path, model_path, model_options,
 
     _, all_transforms = get_transforms(model_options.mode, model_options.minmaxnormalization)
 
-    test_df = load_data_test(tsv_path, model_options.diagnoses)
+    test_df = load_data_test(tsv_path, model_options.diagnoses, baseline)
 
     # Define loss and optimizer
     normedWeights = get_classWeights(model_options, test_df)
