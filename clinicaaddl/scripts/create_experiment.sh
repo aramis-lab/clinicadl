@@ -12,10 +12,17 @@ EPOCHS=200
 BATCH=10
 LR=1e-4
 
+if [ -z "$1" ]
+  then
+    MS='1.5T'
+else
+  MS=$1
+fi
+
 # Input arguments to clinicaaddl
-CAPS_DIR="$HOME//MasterProject/ADNI_data/CAPSPreprocessedT1linear"
-TSV_PATH="$HOME/MasterProject/ADNI_data/DataPrep/labels/train"
-OUTPUT_DIR="$HOME/MasterProject/NNs/"
+CAPS_DIR="$HOME//MasterProject/ADNI_data/CAPS"
+TSV_PATH="$HOME/MasterProject/DataAndExperiments/Experiments/Experiments-${MS}/labels/train"
+OUTPUT_DIR="$HOME/MasterProject//DataAndExperiments/Experiments/Experiments-${MS}/NNs/${NETWORK}"
 
 # Dataset Management
 PREPROCESSING='linear'

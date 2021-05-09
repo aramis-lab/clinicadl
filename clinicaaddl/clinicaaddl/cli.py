@@ -35,8 +35,8 @@ TRAIN_CATEGORIES = {
 
 def extract_tensors(args):
     import sys
-    from clinica.utils.stream import FilterOut
-    from clinica.pipelines.deeplearning_prepare_data.deeplearning_prepare_data_cli import DeepLearningPrepareDataCLI
+    from clinicaml.utils.stream import FilterOut
+    from clinicaml.pipelines.deeplearning_prepare_data.deeplearning_prepare_data_cli import DeepLearningPrepareDataCLI
 
     sys.stdout = FilterOut(sys.stdout)
 

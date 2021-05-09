@@ -1,12 +1,13 @@
 #!/bin/bash
-#SBATCH --gres=gpu:v100:2
+#SBATCH --gres=gpu:v100:1
 #SBATCH --constraint="gpu"
 #SBATCH --time=23:59:00
 #SBATCH --nodes=1
-#SBATCH --mem=32000
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=20
+#SBATCH --mem=92500
 #SBATCH --mail-type=END
 #SBATCH --mail-user=g.nasta.work@gmail.com
-#SBATCH --ntasks-per-node=1
 #SBATCH -o logs/HLR_%j.out
 #SBATCH -e logs/HLR_%j.err
 echo $1

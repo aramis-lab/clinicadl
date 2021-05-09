@@ -58,6 +58,8 @@ def adni_restriction(merged_tsv, results_path, magnet_strength):
     Returns:
         writes a tsv file at results_path
     """
+    import os
     merged_df = pd.read_csv(merged_tsv, sep='\t')
     results_df = merged_df[merged_df.T1w_mri_field == magnet_strength]
+    os.makedirs(os.path.dirname(results_path), exist_ok=True)
     results_df.to_csv(results_path, sep='\t', index=False)
