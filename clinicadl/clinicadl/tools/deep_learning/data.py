@@ -164,6 +164,11 @@ class MRIDataset(Dataset):
                                    'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
                                    participant + '_' + session
                                    + FILENAME_TYPE['cropped'] + '.pt')
+        elif self.preprocessing == "t1-linear-downsampled":
+            image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
+                                   'deeplearning_prepare_data', '%s_based' % mode, 't1_linear',
+                                   participant + '_' + session
+                                   + FILENAME_TYPE['downsampled'] + '.pt')
         elif self.preprocessing == "t1-extensive":
             image_path = path.join(self.caps_dict[cohort], 'subjects', participant, session,
                                    'deeplearning_prepare_data', '%s_based' % mode, 't1_extensive',
@@ -465,13 +470,7 @@ class MRIDatasetRoi(MRIDataset):
                          atlas=atlas, merged_df=merged_df)
 
     def __getitem__(self, idx):
-        from time import time
-
-        t0 = time()
         participant, session, cohort, roi_idx, label = self._get_meta_data(idx)
-        t1 = time(
-        )
-        print(f"get meta data {t1 - t0}")
 
         if self.prepare_dl:
             if self.roi_list is None:
@@ -488,8 +487,6 @@ class MRIDatasetRoi(MRIDataset):
             image_path = self._get_path(participant, session, cohort, "image")
             image = torch.load(image_path)
             patch = self.extract_roi_from_mri(image, roi_idx)
-        t2 = time()
-        print(f"get roi {t2 - t1}")
 
         if self.transformations:
             patch = self.transformations(patch)
@@ -497,21 +494,14 @@ class MRIDatasetRoi(MRIDataset):
         if self.augmentation_transformations and not self.eval_mode:
             patch = self.augmentation_transformations(patch)
 
-        t3 = time()
-        print(f"transformations {t3 - t2}")
-
         sample = {'image': patch, 'label': label,
                   'participant_id': participant, 'session_id': session,
                   'roi_id': roi_idx}
 
-        t4 = time()
-        print(f"sample {t4 - t3}")
         if self.atlas is not None:
             atlas_df = self._get_statistics_df(participant, session, cohort)
             atlas_pt = torch.from_numpy(atlas_df.values).float()
             sample['atlas'] = atlas_pt
-        t5 = time()
-        print(f"get atlas {t5 - t4}")
 
         return sample
 
@@ -525,7 +515,6 @@ class MRIDatasetRoi(MRIDataset):
 
     def extract_roi_from_mri(self, image_tensor, roi_idx):
         """
-
         :param image_tensor: (Tensor) the tensor of the image.
         :param roi_idx: (int) Region index.
         :return: Tensor of the extracted region.
@@ -751,7 +740,6 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
                    prepare_dl=False):
     """
     Return appropriate Dataset according to given options.
-
     Args:
         mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
         input_dir: (str) path to a directory containing a CAPS structure.
@@ -772,7 +760,7 @@ def return_dataset(mode, input_dir, data_df, preprocessing,
     if cnn_index is not None and mode in ["image"]:
         raise ValueError("Multi-CNN is not implemented for %s mode." % mode)
 
-    if params.merged_tsv_path is not "":
+    if params.merged_tsv_path is not "" and params.merged_tsv_path is not None:
         merged_df = pd.read_csv(params.merged_tsv_path, sep="\t")
     else:
         merged_df = None
@@ -944,7 +932,6 @@ class MinMaxNormalization(object):
 def get_transforms(mode, minmaxnormalization=True, data_augmentation=None):
     """
     Outputs the transformations that will be applied to the dataset
-
     :param mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
     :param minmaxnormalization: (bool) if True will perform MinMaxNormalization
     :param data_augmentation: (list[str]) list of data augmentation performed on the training set.

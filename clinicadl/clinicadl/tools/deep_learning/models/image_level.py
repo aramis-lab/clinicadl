@@ -264,3 +264,63 @@ class Conv6_FC3(nn.Module):
         x = self.classifier(x)
 
         return x
+
+
+class Conv5_FC3_down(nn.Module):
+    """
+    Classifier for a binary classification task
+
+    Image level architecture used on Minimal preprocessing
+    """
+    def __init__(self, dropout=0.5, n_classes=2):
+        super(Conv5_FC3_down, self).__init__()
+
+        self.features = nn.Sequential(
+            nn.Conv3d(1, 8, 3, padding=1),
+            nn.BatchNorm3d(8),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(8, 16, 3, padding=1),
+            nn.BatchNorm3d(16),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(16, 32, 3, padding=1),
+            nn.BatchNorm3d(32),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(32, 64, 3, padding=1),
+            nn.BatchNorm3d(64),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+            nn.Conv3d(64, 128, 3, padding=1),
+            nn.BatchNorm3d(128),
+            nn.ReLU(),
+            PadMaxPool3d(2, 2),
+
+        )
+
+        self.classifier = nn.Sequential(
+            Flatten(),
+            nn.Dropout(p=dropout),
+
+            nn.Linear(128 * 3 * 4 * 3, 350),
+            nn.ReLU(),
+
+            nn.Linear(350, 25),
+            nn.ReLU(),
+
+            nn.Linear(25, n_classes)
+
+        )
+
+        self.flattened_shape = [-1, 128, 3, 4, 3]
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+
+        return x

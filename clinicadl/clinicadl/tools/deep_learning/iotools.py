@@ -253,7 +253,7 @@ def read_json(options=None, json_path=None, test=False, read_computational=False
         options.predict_atlas_intensities = None
 
     if not hasattr(options, "merged_tsv_path"):
-        options.merged_tsv_path = ""
+        options.merged_tsv_path = None
 
     if not hasattr(options, "atlas_weight"):
         options.atlas_weight = 1
