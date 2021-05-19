@@ -143,6 +143,7 @@ class T1Extensive(cpe.Pipeline):
         write_node.inputs.base_directory = self.caps_directory
         write_node.inputs.parameterization = False
 
+        # fmt: off
         self.connect(
             [
                 (self.input_node, container_path, [("norm_t1w", "bids_or_caps_filename")]),
@@ -150,6 +151,7 @@ class T1Extensive(cpe.Pipeline):
                 (container_path, write_node, [(("container", fix_join, ""), "container")]),
             ]
         )
+        # fmt: on
 
     def build_core_nodes(self):
         """Build and connect the core nodes of the pipeline."""
@@ -196,6 +198,7 @@ class T1Extensive(cpe.Pipeline):
 
         # Connection
         # ==========
+        # fmt: off
         self.connect(
             [
                 (self.input_node, caps_filename, [("norm_t1w", "norm_t1w")]),
@@ -204,3 +207,4 @@ class T1Extensive(cpe.Pipeline):
                 (skull_stripping, self.output_node, [("masked_image_path", "skull_stripped_t1w")]),
             ]
         )
+        # fmt: on
