@@ -3,8 +3,9 @@ import torch
 
 class VanillaBackProp:
     """
-        Produces gradients generated with vanilla back propagation from the image
+    Produces gradients generated with vanilla back propagation from the image
     """
+
     def __init__(self, model, gpu=False):
         self.model = model
         self.gradients = None

@@ -1,14 +1,14 @@
 # coding: utf8
 
-import torch.utils.model_zoo as model_zoo
-from torchvision.models.resnet import BasicBlock
-from torch import nn
 import math
+
+import torch.utils.model_zoo as model_zoo
+from torch import nn
+from torchvision.models.resnet import BasicBlock
+
 from .modules import Flatten
 
-model_urls = {
-    'resnet18': 'https://download.pytorch.org/models/resnet18-5c106cde.pth'
-}
+model_urls = {"resnet18": "https://download.pytorch.org/models/resnet18-5c106cde.pth"}
 
 
 def resnet18(**kwargs):
@@ -20,7 +20,7 @@ def resnet18(**kwargs):
     """
     model = ResNetDesigner(BasicBlock, [2, 2, 2, 2], **kwargs)
     try:
-        model.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+        model.load_state_dict(model_zoo.load_url(model_urls["resnet18"]))
     except Exception as err:
         print("Error is:", err)
         # raise ConnectionError('The URL %s may not be functional anymore. Check if it still exists or '
@@ -37,19 +37,17 @@ def resnet18(**kwargs):
         p.requires_grad = True
 
     # add a fc layer on top of the transfer_learning model and a softmax classifier
-    model.add_module('drop_out', nn.Dropout(p=kwargs["dropout"]))
-    model.add_module('fc_out', nn.Linear(1000, kwargs["n_classes"]))
+    model.add_module("drop_out", nn.Dropout(p=kwargs["dropout"]))
+    model.add_module("fc_out", nn.Linear(1000, kwargs["n_classes"]))
 
     return model
 
 
 class ResNetDesigner(nn.Module):
-
     def __init__(self, block, layers, num_classes=1000, **kwargs):
         self.inplanes = 64
         super(ResNetDesigner, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
-                               bias=False)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -63,7 +61,7 @@ class ResNetDesigner(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
+                m.weight.data.normal_(0, math.sqrt(2.0 / n))
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
@@ -72,8 +70,13 @@ class ResNetDesigner(nn.Module):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion,
-                          kernel_size=1, stride=stride, bias=False),
+                nn.Conv2d(
+                    self.inplanes,
+                    planes * block.expansion,
+                    kernel_size=1,
+                    stride=stride,
+                    bias=False,
+                ),
                 nn.BatchNorm2d(planes * block.expansion),
             )
 
@@ -117,28 +120,24 @@ class ConvNet(nn.Module):
             nn.LeakyReLU(),
             nn.MaxPool2d(2, 2),
             # feature_map : (8@64x64)
-
             nn.Conv2d(8, 16, 3, padding=1),
             nn.Conv2d(16, 16, 3, padding=1),
             nn.BatchNorm2d(16),
             nn.LeakyReLU(),
             nn.MaxPool2d(2, 2),
             # feature_map : (16@32x32)
-
             nn.Conv2d(16, 32, 3, padding=1),
             nn.Conv2d(32, 32, 3, padding=1),
             nn.BatchNorm2d(32),
             nn.LeakyReLU(),
             nn.MaxPool2d(2, 2),
             # feature_map : (32@16x16)
-
             nn.Conv2d(32, 64, 3, padding=1),
             nn.Conv2d(64, 64, 3, padding=1),
             nn.BatchNorm2d(64),
             nn.LeakyReLU(),
             nn.MaxPool2d(2, 2),
             # feature_map : (64@8x8)
-
             nn.Conv2d(64, 64, 3, padding=1),
             nn.Conv2d(64, 64, 3, padding=1),
             nn.BatchNorm2d(64),
@@ -148,9 +147,7 @@ class ConvNet(nn.Module):
         )
 
         self.classifier = nn.Sequential(
-            Flatten(),
-            nn.Dropout(dropout),
-            nn.Linear(64 * 4 * 4, n_classes)
+            Flatten(), nn.Dropout(dropout), nn.Linear(64 * 4 * 4, n_classes)
         )
 
     def forward(self, x):

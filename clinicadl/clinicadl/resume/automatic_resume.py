@@ -13,19 +13,15 @@ def replace_arg(options, key_name, value):
         setattr(options, key_name, value)
 
 
-def automatic_resume(model_path,
-                     gpu,
-                     batch_size,
-                     num_workers,
-                     evaluation_steps,
-                     verbose=0):
-    from ..tools.deep_learning.iotools import return_logger, read_json
-    from ..train.train_singleCNN import train_single_cnn
-    from ..train.train_multiCNN import train_multi_cnn
+def automatic_resume(
+    model_path, gpu, batch_size, num_workers, evaluation_steps, verbose=0
+):
+    from ..tools.deep_learning.iotools import read_json, return_logger
     from ..train.train_autoencoder import train_autoencoder
-
-    from .resume_single_CNN import resume_single_cnn
+    from ..train.train_multiCNN import train_multi_cnn
+    from ..train.train_singleCNN import train_single_cnn
     from .resume_autoencoder import resume_autoencoder
+    from .resume_single_CNN import resume_single_cnn
 
     logger = return_logger(verbose=verbose, name_fn="automatic resume")
 
@@ -44,11 +40,26 @@ def automatic_resume(model_path,
     # Set verbose
     options.verbose = verbose
 
-    fold_list = sorted([int(fold.split("-")[1]) for fold in os.listdir(options.model_path) if fold[:4:] == "fold"])
-    finished_folds = [fold for fold in fold_list
-                      if "cnn_classification" in os.listdir(path.join(options.model_path, f"fold-{fold}"))]
-    stopped_folds = [fold for fold in fold_list if fold not in finished_folds and
-                     "checkpoint.pth.tar" in os.listdir(path.join(options.model_path, f"fold-{fold}", "models"))]
+    fold_list = sorted(
+        [
+            int(fold.split("-")[1])
+            for fold in os.listdir(options.model_path)
+            if fold[:4:] == "fold"
+        ]
+    )
+    finished_folds = [
+        fold
+        for fold in fold_list
+        if "cnn_classification"
+        in os.listdir(path.join(options.model_path, f"fold-{fold}"))
+    ]
+    stopped_folds = [
+        fold
+        for fold in fold_list
+        if fold not in finished_folds
+        and "checkpoint.pth.tar"
+        in os.listdir(path.join(options.model_path, f"fold-{fold}", "models"))
+    ]
 
     if options.split is None:
         if options.n_splits is None:
@@ -58,7 +69,11 @@ def automatic_resume(model_path,
     else:
         fold_iterator = options.split
 
-    absent_folds = [fold for fold in fold_iterator if fold not in finished_folds and fold not in stopped_folds]
+    absent_folds = [
+        fold
+        for fold in fold_iterator
+        if fold not in finished_folds and fold not in stopped_folds
+    ]
     logger.info(f"Finished folds {finished_folds}")
     logger.info(f"Stopped folds {stopped_folds}")
     logger.info(f"Missing folds {absent_folds}")
@@ -72,7 +87,9 @@ def automatic_resume(model_path,
         elif options.network_type == "autoencoder":
             resume_autoencoder(options, fold)
         else:
-            raise NotImplementedError(f'Resume function is not implemented for network type {options.network_type}')
+            raise NotImplementedError(
+                f"Resume function is not implemented for network type {options.network_type}"
+            )
 
     if len(absent_folds) != 0:
         options.split = absent_folds
@@ -83,4 +100,6 @@ def automatic_resume(model_path,
         elif options.network_type == "autoencoder":
             train_autoencoder(options, erase_existing=False)
         else:
-            raise NotImplementedError(f'Resume function is not implemented for network type {options.network_type}')
+            raise NotImplementedError(
+                f"Resume function is not implemented for network type {options.network_type}"
+            )

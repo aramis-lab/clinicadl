@@ -2,7 +2,7 @@
 build/
 dist/
 examples/external-data
-Clinica.egg-info
+clinicadl.egg-info
 *egg-info
 *.log
 *.lock

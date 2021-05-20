@@ -4,7 +4,8 @@
 Script containing the models for the patch level experiments.
 """
 from torch import nn
-from .modules import PadMaxPool3d, Flatten
+
+from .modules import Flatten, PadMaxPool3d
 
 
 class Conv4_FC3(nn.Module):
@@ -26,36 +27,29 @@ class Conv4_FC3(nn.Module):
             nn.BatchNorm3d(15),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
             nn.Conv3d(15, 25, 3),
             nn.BatchNorm3d(25),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
             nn.Conv3d(25, 50, 3),
             nn.BatchNorm3d(50),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
-
             nn.Conv3d(50, 50, 3),
             nn.BatchNorm3d(50),
             nn.ReLU(),
-            PadMaxPool3d(2, 2)
-
+            PadMaxPool3d(2, 2),
         )
         self.classifier = nn.Sequential(
             # Fully connected layers
             Flatten(),
-
             nn.Dropout(p=dropout),
             nn.Linear(50 * 2 * 2 * 2, 50),
             nn.ReLU(),
-
             nn.Dropout(p=dropout),
             nn.Linear(50, 40),
             nn.ReLU(),
-
-            nn.Linear(40, n_classes)
+            nn.Linear(40, n_classes),
         )
 
         self.flattened_shape = [-1, 50, 2, 2, 2]
