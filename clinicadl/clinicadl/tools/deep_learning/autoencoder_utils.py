@@ -32,7 +32,7 @@ def train(decoder, train_loader, valid_loader, criterion, optimizer, resume,
         options: (Namespace) ensemble of other options given to the main script.
         logger: (logging object) writer to stdout and stderr
     """
-    from tensorboardX import SummaryWriter
+    from torch.utils.tensorboard import SummaryWriter
 
     columns = ['epoch', 'iteration', 'time', 'loss_train', 'loss_valid']
     filename = os.path.join(os.path.dirname(log_dir), 'training.tsv')

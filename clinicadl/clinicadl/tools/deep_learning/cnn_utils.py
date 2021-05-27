@@ -37,7 +37,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
         options: (Namespace) ensemble of other options given to the main script.
         logger: (logging object) writer to stdout and stderr
     """
-    from tensorboardX import SummaryWriter
+    from torch.utils.tensorboard import SummaryWriter
     from time import time
 
     if logger is None:

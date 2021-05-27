@@ -7,6 +7,6 @@
 clinica>=0.3.6
 nilearn
 nipy
-tensorboardX
+torch
 pandas
 colorama
