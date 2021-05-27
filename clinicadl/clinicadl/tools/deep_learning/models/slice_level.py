@@ -89,6 +89,7 @@ class ResNetDesigner(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        # fmt: off
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -106,6 +107,7 @@ class ResNetDesigner(nn.Module):
         # Added top FC layer
         x = self.drop_out(x)
         x = self.fc_out(x)
+        # fmt: on
 
         return x
 
@@ -113,6 +115,7 @@ class ResNetDesigner(nn.Module):
 class ConvNet(nn.Module):
     def __init__(self, dropout=0.5, n_classes=2):
         super(ConvNet, self).__init__()
+        # fmt: off
         self.features = nn.Sequential(
             nn.Conv2d(1, 8, 3, padding=1),
             nn.Conv2d(8, 8, 3, padding=1),
@@ -120,24 +123,28 @@ class ConvNet(nn.Module):
             nn.LeakyReLU(),
             nn.MaxPool2d(2, 2),
             # feature_map : (8@64x64)
+
             nn.Conv2d(8, 16, 3, padding=1),
             nn.Conv2d(16, 16, 3, padding=1),
             nn.BatchNorm2d(16),
             nn.LeakyReLU(),
             nn.MaxPool2d(2, 2),
             # feature_map : (16@32x32)
+
             nn.Conv2d(16, 32, 3, padding=1),
             nn.Conv2d(32, 32, 3, padding=1),
             nn.BatchNorm2d(32),
             nn.LeakyReLU(),
             nn.MaxPool2d(2, 2),
             # feature_map : (32@16x16)
+
             nn.Conv2d(32, 64, 3, padding=1),
             nn.Conv2d(64, 64, 3, padding=1),
             nn.BatchNorm2d(64),
             nn.LeakyReLU(),
             nn.MaxPool2d(2, 2),
             # feature_map : (64@8x8)
+
             nn.Conv2d(64, 64, 3, padding=1),
             nn.Conv2d(64, 64, 3, padding=1),
             nn.BatchNorm2d(64),
@@ -147,8 +154,11 @@ class ConvNet(nn.Module):
         )
 
         self.classifier = nn.Sequential(
-            Flatten(), nn.Dropout(dropout), nn.Linear(64 * 4 * 4, n_classes)
+            Flatten(),
+            nn.Dropout(dropout),
+            nn.Linear(64 * 4 * 4, n_classes)
         )
+        # fmt: on
 
     def forward(self, x):
         out = self.features(x)

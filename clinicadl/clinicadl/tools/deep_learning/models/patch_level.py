@@ -20,39 +20,47 @@ class Conv4_FC3(nn.Module):
 
     def __init__(self, dropout=0, n_classes=2):
         super(Conv4_FC3, self).__init__()
-
+        # fmt: off
         self.features = nn.Sequential(
             # Convolutions
             nn.Conv3d(1, 15, 3),
             nn.BatchNorm3d(15),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
+
             nn.Conv3d(15, 25, 3),
             nn.BatchNorm3d(25),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
+
             nn.Conv3d(25, 50, 3),
             nn.BatchNorm3d(50),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
+
             nn.Conv3d(50, 50, 3),
             nn.BatchNorm3d(50),
             nn.ReLU(),
-            PadMaxPool3d(2, 2),
+            PadMaxPool3d(2, 2)
+
         )
         self.classifier = nn.Sequential(
             # Fully connected layers
             Flatten(),
+
             nn.Dropout(p=dropout),
             nn.Linear(50 * 2 * 2 * 2, 50),
             nn.ReLU(),
+
             nn.Dropout(p=dropout),
             nn.Linear(50, 40),
             nn.ReLU(),
-            nn.Linear(40, n_classes),
+
+            nn.Linear(40, n_classes)
         )
 
         self.flattened_shape = [-1, 50, 2, 2, 2]
+        # fmt: on
 
     def forward(self, x):
         x = self.features(x)
