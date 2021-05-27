@@ -1,6 +1,7 @@
 # coding: utf8
 
 import pytest
+
 import clinicadl.cli as cli
 
 
@@ -33,193 +34,170 @@ def generate_cli_commands(request):
         test_input = ["preprocessing", "run", "t1-extensive", "/dir/caps/"]
         keys_output = ["task", "preprocessing_task", "preprocessing", "caps_directory"]
 
-    if request.param == "extract_tensor":
+    # fmt: off
+    if request.param == 'extract_tensor':
         test_input = [
-            "preprocessing",
-            "extract-tensor",
-            "/dir/caps",
-            "t1-linear",
-            "slice",
-            "-ps",
-            "50",
-            "-ss",
-            "50",
-            "-sd",
-            "0",
-            "-sm",
-            "rgb",
-            "-tsv",
-            "/dir/tsv.file",
-            "-wd",
-            "/dir/work/dir",
-            "-np",
-            "1",
+            'preprocessing',
+            'extract-tensor',
+            '/dir/caps',
+            't1-linear',
+            'slice',
+            '-ps', '50',
+            '-ss', '50',
+            '-sd', '0',
+            '-sm', 'rgb',
+            '-tsv', '/dir/tsv.file',
+            '-wd', '/dir/work/dir',
+            '-np', '1',
         ]
         keys_output = [
-            "task",
-            "preprocessing_task",
-            "caps_directory",
-            "modality",
-            "extract_method",
-            "patch_size",
-            "stride_size",
-            "slice_direction",
-            "slice_mode",
-            "subjects_sessions_tsv",
-            "working_directory",
-            "n_procs",
+            'task',
+            'preprocessing_task',
+            'caps_directory',
+            'modality',
+            'extract_method',
+            'patch_size',
+            'stride_size',
+            'slice_direction',
+            'slice_mode',
+            'subjects_sessions_tsv',
+            'working_directory',
+            'n_procs',
         ]
-    if request.param == "quality_check":
+    if request.param == 'quality_check':
         test_input = [
-            "preprocessing",
-            "quality-check",
-            "t1-linear",
-            "/dir/caps",
-            "/dir/res.tsv",
-            "-tsv",
-            "/dir/tsv.file",
-            "--threshold",
-            "0.5",
-            "--batch_size",
-            "8",
+            'preprocessing',
+            'quality-check',
+            't1-linear',
+            '/dir/caps',
+            '/dir/res.tsv',
+            '-tsv', '/dir/tsv.file',
+            '--threshold', '0.5',
+            '--batch_size', '8']
+        keys_output = [
+            'task',
+            'preprocessing_task',
+            'preprocessing',
+            'caps_dir',
+            'output_path',
+            'subjects_sessions_tsv',
+            'threshold',
+            'batch_size']
+
+    if request.param == 'generate':
+        test_input = [
+            'generate',
+            'random',
+            '/dir/caps',
+            't1-linear',
+            '/dir/output/',
+            '--n_subjects', '10',
+            '--mean', '0.5',
+            '--sigma', '0.5']
+        keys_output = [
+            'task',
+            'mode',
+            'caps_dir',
+            'preprocessing',
+            'output_dir',
+            'n_subjects',
+            'mean',
+            'sigma']
+
+    if request.param == 'classify':
+        test_input = [
+            'classify',
+            '/dir/caps',
+            '/dir/tsv_file',
+            '/dir/model_path/',
+            'DB_XXXXX'
         ]
         keys_output = [
-            "task",
-            "preprocessing_task",
-            "preprocessing",
-            "caps_dir",
-            "output_path",
-            "subjects_sessions_tsv",
-            "threshold",
-            "batch_size",
+            'task',
+            'caps_directory',
+            'tsv_path',
+            'model_path',
+            'prefix_output'
         ]
 
-    if request.param == "generate":
+    if request.param == 'train_slice':
         test_input = [
-            "generate",
-            "random",
-            "/dir/caps",
-            "t1-linear",
-            "/dir/output/",
-            "--n_subjects",
-            "10",
-            "--mean",
-            "0.5",
-            "--sigma",
-            "0.5",
-        ]
+            'train',
+            'slice',
+            'cnn',
+            '/dir/caps',
+            't1-linear',
+            '/dir/tsv_path/',
+            '/dir/output/',
+            'Conv5_FC3']
         keys_output = [
-            "task",
-            "mode",
-            "caps_dir",
-            "preprocessing",
-            "output_dir",
-            "n_subjects",
-            "mean",
-            "sigma",
-        ]
+            'task',
+            'mode',
+            'network_type',
+            'caps_dir',
+            'preprocessing',
+            'tsv_path',
+            'output_dir',
+            'model']
 
-    if request.param == "classify":
+    if request.param == 'train_subject':
         test_input = [
-            "classify",
-            "/dir/caps",
-            "/dir/tsv_file",
-            "/dir/model_path/",
-            "DB_XXXXX",
-        ]
+            'train',
+            'image',
+            'cnn',
+            '/dir/caps',
+            't1-linear',
+            '/dir/tsv_path/',
+            '/dir/output/',
+            'Conv5_FC3']
         keys_output = [
-            "task",
-            "caps_directory",
-            "tsv_path",
-            "model_path",
-            "prefix_output",
-        ]
-
-    if request.param == "train_slice":
+            'task',
+            'mode',
+            'network_type',
+            'caps_dir',
+            'preprocessing',
+            'tsv_path',
+            'output_dir',
+            'model']
+    if request.param == 'train_patch':
         test_input = [
-            "train",
-            "slice",
-            "cnn",
-            "/dir/caps",
-            "t1-linear",
-            "/dir/tsv_path/",
-            "/dir/output/",
-            "Conv5_FC3",
-        ]
+            'train',
+            'patch',
+            'cnn',
+            '/dir/caps',
+            't1-linear',
+            '/dir/tsv_path/',
+            '/dir/output/',
+            'Conv5_FC3']
         keys_output = [
-            "task",
-            "mode",
-            "network_type",
-            "caps_dir",
-            "preprocessing",
-            "tsv_path",
-            "output_dir",
-            "model",
-        ]
-
-    if request.param == "train_subject":
+            'task',
+            'mode',
+            'network_type',
+            'caps_dir',
+            'preprocessing',
+            'tsv_path',
+            'output_dir',
+            'model']
+    if request.param == 'train_multipatch':
         test_input = [
-            "train",
-            "image",
-            "cnn",
-            "/dir/caps",
-            "t1-linear",
-            "/dir/tsv_path/",
-            "/dir/output/",
-            "Conv5_FC3",
-        ]
+            'train',
+            'patch',
+            'multicnn',
+            '/dir/caps',
+            't1-linear',
+            '/dir/tsv_path/',
+            '/dir/output/',
+            'Conv5_FC3']
         keys_output = [
-            "task",
-            "mode",
-            "network_type",
-            "caps_dir",
-            "preprocessing",
-            "tsv_path",
-            "output_dir",
-            "model",
-        ]
-    if request.param == "train_patch":
-        test_input = [
-            "train",
-            "patch",
-            "cnn",
-            "/dir/caps",
-            "t1-linear",
-            "/dir/tsv_path/",
-            "/dir/output/",
-            "Conv5_FC3",
-        ]
-        keys_output = [
-            "task",
-            "mode",
-            "network_type",
-            "caps_dir",
-            "preprocessing",
-            "tsv_path",
-            "output_dir",
-            "model",
-        ]
-    if request.param == "train_multipatch":
-        test_input = [
-            "train",
-            "patch",
-            "multicnn",
-            "/dir/caps",
-            "t1-linear",
-            "/dir/tsv_path/",
-            "/dir/output/",
-            "Conv5_FC3",
-        ]
-        keys_output = [
-            "task",
-            "mode",
-            "network_type",
-            "caps_dir",
-            "preprocessing",
-            "tsv_path",
-            "output_dir",
-            "model",
-        ]
+            'task',
+            'mode',
+            'network_type',
+            'caps_dir',
+            'preprocessing',
+            'tsv_path',
+            'output_dir',
+            'model']
+    # fmt: on
 
     return test_input, keys_output
 
