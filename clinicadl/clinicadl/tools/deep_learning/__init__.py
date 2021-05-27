@@ -1,9 +1,20 @@
-from .models import create_autoencoder, create_model, load_model, load_optimizer, save_checkpoint
-from .iotools import read_json, commandline_to_json, write_requirements_version, check_and_complete
+from .iotools import (
+    check_and_complete,
+    commandline_to_json,
+    read_json,
+    write_requirements_version,
+)
+from .models import (
+    create_autoencoder,
+    create_model,
+    load_model,
+    load_optimizer,
+    save_checkpoint,
+)
 
 
 class EarlyStopping(object):
-    def __init__(self, mode='min', min_delta=0, patience=10):
+    def __init__(self, mode="min", min_delta=0, patience=10):
         self.mode = mode
         self.min_delta = min_delta
         self.patience = patience
@@ -38,10 +49,10 @@ class EarlyStopping(object):
         return False
 
     def _init_is_better(self, mode, min_delta):
-        if mode not in {'min', 'max'}:
-            raise ValueError('mode ' + mode + ' is unknown!')
+        if mode not in {"min", "max"}:
+            raise ValueError("mode " + mode + " is unknown!")
 
-        if mode == 'min':
+        if mode == "min":
             self.is_better = lambda a, best: a < best - best * min_delta
-        if mode == 'max':
+        if mode == "max":
             self.is_better = lambda a, best: a > best + best * min_delta

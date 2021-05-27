@@ -37,6 +37,7 @@ def apply_binary_mask(input_img, binary_img, output_filename):
         input_img*binary_img
     """
     import os
+
     import nibabel as nib
 
     original_image = nib.load(input_img)
@@ -68,8 +69,9 @@ def get_file_from_server(remote_file, cache_path=None):
     """
     import os
     from pathlib import Path
-    from clinica.utils.stream import cprint
+
     from clinica.utils.inputs import fetch_file
+    from clinica.utils.stream import cprint
 
     home = str(Path.home())
     if cache_path:

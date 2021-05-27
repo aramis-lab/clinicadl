@@ -9,46 +9,34 @@ launch_dir = "results"
 name_dir = "job-1"
 
 
-@pytest.fixture(params=[
-    'rs_image_cnn',
-])
+@pytest.fixture(
+    params=[
+        "rs_image_cnn",
+    ]
+)
 def cli_commands(request):
 
-    if request.param == 'rs_image_cnn':
+    if request.param == "rs_image_cnn":
         arg_dict = {
-            'caps_dir': 'data/dataset/random_example',
-            'tsv_path': 'data/labels_list',
-            'preprocessing': 't1-linear',
-            'diagnoses': ["AD", "CN"],
-
-            'mode': 'image',
-            'network_type': 'cnn',
-            'epochs': 1,
-            'patience': 0,
-            'tolerance': 0.0,
-
-            'n_splits': 2,
-            'split': [0],
-
-            'n_convblocks': [3, 5],
-            'first_conv_width': [1, 3],
-            'n_fcblocks': [1, 2]
+            "caps_dir": "data/dataset/random_example",
+            "tsv_path": "data/labels_list",
+            "preprocessing": "t1-linear",
+            "diagnoses": ["AD", "CN"],
+            "mode": "image",
+            "network_type": "cnn",
+            "epochs": 1,
+            "patience": 0,
+            "tolerance": 0.0,
+            "n_splits": 2,
+            "split": [0],
+            "n_convblocks": [3, 5],
+            "first_conv_width": [1, 3],
+            "n_fcblocks": [1, 2],
         }
-        generate_input = [
-            'random-search',
-            'generate',
-            launch_dir,
-            name_dir
-        ]
-        log_input = [
-            'random-search',
-            'analysis',
-            launch_dir
-        ]
+        generate_input = ["random-search", "generate", launch_dir, name_dir]
+        log_input = ["random-search", "analysis", launch_dir]
     else:
-        raise NotImplementedError(
-            "Test %s is not implemented." %
-            request.param)
+        raise NotImplementedError("Test %s is not implemented." % request.param)
 
     return arg_dict, generate_input, log_input
 
@@ -65,7 +53,8 @@ def test_random_search(cli_commands):
 
     flag_error_generate = not os.system("clinicadl " + " ".join(generate_input))
     performances_flag = os.path.exists(
-        os.path.join(launch_dir, name_dir, "fold-0", "cnn_classification"))
+        os.path.join(launch_dir, name_dir, "fold-0", "cnn_classification")
+    )
     flag_error_log = not os.system("clinicadl " + " ".join(log_input))
     analysis_flag = True
     for metric in ["loss", "balanced_accuracy"]:

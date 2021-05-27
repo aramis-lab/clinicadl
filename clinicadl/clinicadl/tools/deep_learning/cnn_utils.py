@@ -1,26 +1,38 @@
 # coding: utf8
 
-import torch
-import numpy as np
+import logging
 import os
 import warnings
-import pandas as pd
 from time import time
-import logging
-from torch.nn.modules.loss import _Loss
+
+import numpy as np
+import pandas as pd
+import scipy.sparse as sp
+import torch
 import torch.nn.functional as F
 from sklearn.utils import column_or_1d
-import scipy.sparse as sp
+from torch.nn.modules.loss import _Loss
 
-from clinicadl.tools.deep_learning.iotools import check_and_clean
 from clinicadl.tools.deep_learning import EarlyStopping, save_checkpoint
-
+from clinicadl.tools.deep_learning.iotools import check_and_clean
 
 #####################
 # CNN train / test  #
 #####################
 
-def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_dir, model_dir, options, logger=None):
+
+def train(
+    model,
+    train_loader,
+    valid_loader,
+    criterion,
+    optimizer,
+    resume,
+    log_dir,
+    model_dir,
+    options,
+    logger=None,
+):
     """
     Function used to train a CNN.
     The best model and checkpoint will be found in the 'best_model_dir' of options.output_dir.
@@ -37,42 +49,51 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
         options: (Namespace) ensemble of other options given to the main script.
         logger: (logging object) writer to stdout and stderr
     """
-    from tensorboardX import SummaryWriter
     from time import time
+
+    from tensorboardX import SummaryWriter
 
     if logger is None:
         logger = logging
 
-    columns = ['epoch', 'iteration', 'time',
-               'balanced_accuracy_train', 'loss_train',
-               'balanced_accuracy_valid', 'loss_valid']
+    columns = [
+        "epoch",
+        "iteration",
+        "time",
+        "balanced_accuracy_train",
+        "loss_train",
+        "balanced_accuracy_valid",
+        "loss_valid",
+    ]
     if hasattr(model, "variational") and model.variational:
         columns += ["kl_loss_train", "kl_loss_valid"]
-    filename = os.path.join(os.path.dirname(log_dir), 'training.tsv')
+    filename = os.path.join(os.path.dirname(log_dir), "training.tsv")
 
     if not resume:
         check_and_clean(model_dir)
         check_and_clean(log_dir)
 
         results_df = pd.DataFrame(columns=columns)
-        with open(filename, 'w') as f:
-            results_df.to_csv(f, index=False, sep='\t')
+        with open(filename, "w") as f:
+            results_df.to_csv(f, index=False, sep="\t")
         options.beginning_epoch = 0
 
     else:
         if not os.path.exists(filename):
-            raise ValueError('The training.tsv file of the resumed experiment does not exist.')
-        truncated_df = pd.read_csv(filename, sep='\t')
-        truncated_df.set_index(['epoch', 'iteration'], inplace=True, drop=True)
+            raise ValueError(
+                "The training.tsv file of the resumed experiment does not exist."
+            )
+        truncated_df = pd.read_csv(filename, sep="\t")
+        truncated_df.set_index(["epoch", "iteration"], inplace=True, drop=True)
         epochs = [epoch for epoch, _ in truncated_df.index.values]
         if options.beginning_epoch in epochs:
             truncated_df.drop(options.beginning_epoch, level=0, inplace=True)
-        truncated_df.to_csv(filename, index=True, sep='\t')
+        truncated_df.to_csv(filename, index=True, sep="\t")
         assert hasattr(options, "beginning_epoch")
 
     # Create writers
-    writer_train = SummaryWriter(os.path.join(log_dir, 'train'))
-    writer_valid = SummaryWriter(os.path.join(log_dir, 'validation'))
+    writer_train = SummaryWriter(os.path.join(log_dir, "train"))
+    writer_valid = SummaryWriter(os.path.join(log_dir, "validation"))
 
     # Initialize variables
     best_valid_accuracy = -1.0
@@ -82,7 +103,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
     model.train()  # set the model to training mode
     train_loader.dataset.train()
 
-    early_stopping = EarlyStopping('min', min_delta=options.tolerance, patience=options.patience)
+    early_stopping = EarlyStopping(
+        "min", min_delta=options.tolerance, patience=options.patience
+    )
     mean_loss_valid = None
     t_beginning = time()
 
@@ -99,9 +122,9 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
             t0 = time()
             total_time = total_time + t0 - tend
             if options.gpu:
-                imgs, labels = data['image'].cuda(), data['label'].cuda()
+                imgs, labels = data["image"].cuda(), data["label"].cuda()
             else:
-                imgs, labels = data['image'], data['label']
+                imgs, labels = data["image"], data["label"]
 
             if hasattr(model, "variational") and model.variational:
                 z, mu, std, train_output = model(imgs)
@@ -116,10 +139,12 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                     atlas_data = data["atlas"].cuda()
                 else:
                     atlas_data = data["atlas"]
-                atlas_output = train_output[:, -atlas_data.size(1)::]
-                classif_output = train_output[:, :-atlas_data.size(1):]
+                atlas_output = train_output[:, -atlas_data.size(1) : :]
+                classif_output = train_output[:, : -atlas_data.size(1) :]
                 loss += criterion(classif_output, labels)
-                loss += options.atlas_weight * torch.nn.MSELoss(reduction="sum")(atlas_output, atlas_data)
+                loss += options.atlas_weight * torch.nn.MSELoss(reduction="sum")(
+                    atlas_output, atlas_data
+                )
 
             else:
                 loss += criterion(train_output, labels)
@@ -137,103 +162,171 @@ def train(model, train_loader, valid_loader, criterion, optimizer, resume, log_d
                 del loss
 
                 # Evaluate the model only when no gradients are accumulated
-                if options.evaluation_steps != 0 and (i + 1) % options.evaluation_steps == 0:
+                if (
+                    options.evaluation_steps != 0
+                    and (i + 1) % options.evaluation_steps == 0
+                ):
                     evaluation_flag = False
 
                     _, results_train = test(model, train_loader, options.gpu, criterion)
-                    mean_loss_train = results_train["total_loss"] / (len(train_loader) * train_loader.batch_size)
+                    mean_loss_train = results_train["total_loss"] / (
+                        len(train_loader) * train_loader.batch_size
+                    )
 
                     _, results_valid = test(model, valid_loader, options.gpu, criterion)
-                    mean_loss_valid = results_valid["total_loss"] / (len(valid_loader) * valid_loader.batch_size)
+                    mean_loss_valid = results_valid["total_loss"] / (
+                        len(valid_loader) * valid_loader.batch_size
+                    )
                     model.train()
                     train_loader.dataset.train()
 
                     global_step = i + epoch * len(train_loader)
-                    writer_train.add_scalar('balanced_accuracy', results_train["balanced_accuracy"], global_step)
-                    writer_train.add_scalar('loss', mean_loss_train, global_step)
-                    writer_valid.add_scalar('balanced_accuracy', results_valid["balanced_accuracy"], global_step)
-                    writer_valid.add_scalar('loss', mean_loss_valid, global_step)
-                    logger.info("%s level training accuracy is %f at the end of iteration %d"
-                                % (options.mode, results_train["balanced_accuracy"], i))
-                    logger.info("%s level validation accuracy is %f at the end of iteration %d"
-                                % (options.mode, results_valid["balanced_accuracy"], i))
+                    writer_train.add_scalar(
+                        "balanced_accuracy",
+                        results_train["balanced_accuracy"],
+                        global_step,
+                    )
+                    writer_train.add_scalar("loss", mean_loss_train, global_step)
+                    writer_valid.add_scalar(
+                        "balanced_accuracy",
+                        results_valid["balanced_accuracy"],
+                        global_step,
+                    )
+                    writer_valid.add_scalar("loss", mean_loss_valid, global_step)
+                    logger.info(
+                        "%s level training accuracy is %f at the end of iteration %d"
+                        % (options.mode, results_train["balanced_accuracy"], i)
+                    )
+                    logger.info(
+                        "%s level validation accuracy is %f at the end of iteration %d"
+                        % (options.mode, results_valid["balanced_accuracy"], i)
+                    )
 
                     t_current = time() - t_beginning
-                    row = [epoch, i, t_current,
-                           results_train["balanced_accuracy"], mean_loss_train,
-                           results_valid["balanced_accuracy"], mean_loss_valid]
+                    row = [
+                        epoch,
+                        i,
+                        t_current,
+                        results_train["balanced_accuracy"],
+                        mean_loss_train,
+                        results_valid["balanced_accuracy"],
+                        mean_loss_valid,
+                    ]
                     if hasattr(model, "variational") and model.variational:
-                        row += [results_train["total_kl_loss"] / (len(train_loader) * train_loader.batch_size),
-                                results_valid["total_kl_loss"] / (len(valid_loader) * valid_loader.batch_size)]
+                        row += [
+                            results_train["total_kl_loss"]
+                            / (len(train_loader) * train_loader.batch_size),
+                            results_valid["total_kl_loss"]
+                            / (len(valid_loader) * valid_loader.batch_size),
+                        ]
                     row_df = pd.DataFrame([row], columns=columns)
-                    with open(filename, 'a') as f:
-                        row_df.to_csv(f, header=False, index=False, sep='\t')
+                    with open(filename, "a") as f:
+                        row_df.to_csv(f, header=False, index=False, sep="\t")
 
             tend = time()
-        logger.debug('Mean time per batch loading: %.10f s'
-                     % (total_time / len(train_loader) * train_loader.batch_size))
+        logger.debug(
+            "Mean time per batch loading: %.10f s"
+            % (total_time / len(train_loader) * train_loader.batch_size)
+        )
 
         # If no step has been performed, raise Exception
         if step_flag:
-            raise Exception('The model has not been updated once in the epoch. The accumulation step may be too large.')
+            raise Exception(
+                "The model has not been updated once in the epoch. The accumulation step may be too large."
+            )
 
         # If no evaluation has been performed, warn the user
         elif evaluation_flag and options.evaluation_steps != 0:
-            warnings.warn('Your evaluation steps are too big compared to the size of the dataset.'
-                          'The model is evaluated only once at the end of the epoch')
+            warnings.warn(
+                "Your evaluation steps are too big compared to the size of the dataset."
+                "The model is evaluated only once at the end of the epoch"
+            )
 
         # Always test the results and save them once at the end of the epoch
         model.zero_grad()
-        logger.debug('Last checkpoint at the end of the epoch %d' % epoch)
+        logger.debug("Last checkpoint at the end of the epoch %d" % epoch)
 
         _, results_train = test(model, train_loader, options.gpu, criterion)
-        mean_loss_train = results_train["total_loss"] / (len(train_loader) * train_loader.batch_size)
+        mean_loss_train = results_train["total_loss"] / (
+            len(train_loader) * train_loader.batch_size
+        )
 
         _, results_valid = test(model, valid_loader, options.gpu, criterion)
-        mean_loss_valid = results_valid["total_loss"] / (len(valid_loader) * valid_loader.batch_size)
+        mean_loss_valid = results_valid["total_loss"] / (
+            len(valid_loader) * valid_loader.batch_size
+        )
         model.train()
         train_loader.dataset.train()
 
         global_step = (epoch + 1) * len(train_loader)
-        writer_train.add_scalar('balanced_accuracy', results_train["balanced_accuracy"], global_step)
-        writer_train.add_scalar('loss', mean_loss_train, global_step)
-        writer_valid.add_scalar('balanced_accuracy', results_valid["balanced_accuracy"], global_step)
-        writer_valid.add_scalar('loss', mean_loss_valid, global_step)
-        logger.info("%s level training accuracy is %f at the end of iteration %d"
-                    % (options.mode, results_train["balanced_accuracy"], len(train_loader)))
-        logger.info("%s level validation accuracy is %f at the end of iteration %d"
-                    % (options.mode, results_valid["balanced_accuracy"], len(train_loader)))
+        writer_train.add_scalar(
+            "balanced_accuracy", results_train["balanced_accuracy"], global_step
+        )
+        writer_train.add_scalar("loss", mean_loss_train, global_step)
+        writer_valid.add_scalar(
+            "balanced_accuracy", results_valid["balanced_accuracy"], global_step
+        )
+        writer_valid.add_scalar("loss", mean_loss_valid, global_step)
+        logger.info(
+            "%s level training accuracy is %f at the end of iteration %d"
+            % (options.mode, results_train["balanced_accuracy"], len(train_loader))
+        )
+        logger.info(
+            "%s level validation accuracy is %f at the end of iteration %d"
+            % (options.mode, results_valid["balanced_accuracy"], len(train_loader))
+        )
 
         t_current = time() - t_beginning
-        row = [epoch, i, t_current,
-               results_train["balanced_accuracy"], mean_loss_train,
-               results_valid["balanced_accuracy"], mean_loss_valid]
+        row = [
+            epoch,
+            i,
+            t_current,
+            results_train["balanced_accuracy"],
+            mean_loss_train,
+            results_valid["balanced_accuracy"],
+            mean_loss_valid,
+        ]
         if hasattr(model, "variational") and model.variational:
-            row += [results_train["total_kl_loss"] / (len(train_loader) * train_loader.batch_size),
-                    results_valid["total_kl_loss"] / (len(valid_loader) * valid_loader.batch_size)]
+            row += [
+                results_train["total_kl_loss"]
+                / (len(train_loader) * train_loader.batch_size),
+                results_valid["total_kl_loss"]
+                / (len(valid_loader) * valid_loader.batch_size),
+            ]
         row_df = pd.DataFrame([row], columns=columns)
-        with open(filename, 'a') as f:
-            row_df.to_csv(f, header=False, index=False, sep='\t')
+        with open(filename, "a") as f:
+            row_df.to_csv(f, header=False, index=False, sep="\t")
 
         accuracy_is_best = results_valid["balanced_accuracy"] > best_valid_accuracy
         loss_is_best = mean_loss_valid < best_valid_loss
-        best_valid_accuracy = max(results_valid["balanced_accuracy"], best_valid_accuracy)
+        best_valid_accuracy = max(
+            results_valid["balanced_accuracy"], best_valid_accuracy
+        )
         best_valid_loss = min(mean_loss_valid, best_valid_loss)
 
-        save_checkpoint({'model': model.state_dict(),
-                         'epoch': epoch,
-                         'valid_loss': mean_loss_valid,
-                         'valid_acc': results_valid["balanced_accuracy"]},
-                        accuracy_is_best, loss_is_best,
-                        model_dir)
+        save_checkpoint(
+            {
+                "model": model.state_dict(),
+                "epoch": epoch,
+                "valid_loss": mean_loss_valid,
+                "valid_acc": results_valid["balanced_accuracy"],
+            },
+            accuracy_is_best,
+            loss_is_best,
+            model_dir,
+        )
         # Save optimizer state_dict to be able to reload
-        save_checkpoint({'optimizer': optimizer.state_dict(),
-                         'epoch': epoch,
-                         'name': options.optimizer,
-                         },
-                        False, False,
-                        model_dir,
-                        filename='optimizer.pth.tar')
+        save_checkpoint(
+            {
+                "optimizer": optimizer.state_dict(),
+                "epoch": epoch,
+                "name": options.optimizer,
+            },
+            False,
+            False,
+            model_dir,
+            filename="optimizer.pth.tar",
+        )
 
         epoch += 1
 
@@ -258,7 +351,9 @@ def evaluate_prediction(y, y_pred):
     false_positive = np.sum((y_pred == 1) & (y == 0))
     false_negative = np.sum((y_pred == 0) & (y == 1))
 
-    accuracy = (true_positive + true_negative) / (true_positive + true_negative + false_positive + false_negative)
+    accuracy = (true_positive + true_negative) / (
+        true_positive + true_negative + false_positive + false_negative
+    )
 
     if (true_positive + false_negative) != 0:
         sensitivity = true_positive / (true_positive + false_negative)
@@ -282,13 +377,14 @@ def evaluate_prediction(y, y_pred):
 
     balanced_accuracy = (sensitivity + specificity) / 2
 
-    results = {'accuracy': accuracy,
-               'balanced_accuracy': balanced_accuracy,
-               'sensitivity': sensitivity,
-               'specificity': specificity,
-               'ppv': ppv,
-               'npv': npv,
-               }
+    results = {
+        "accuracy": accuracy,
+        "balanced_accuracy": balanced_accuracy,
+        "sensitivity": sensitivity,
+        "specificity": specificity,
+        "ppv": ppv,
+        "npv": npv,
+    }
 
     return results
 
@@ -314,7 +410,15 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
     if mode == "image":
         columns = ["participant_id", "session_id", "true_label", "predicted_label"]
     elif mode in ["patch", "roi", "slice"]:
-        columns = ['participant_id', 'session_id', '%s_id' % mode, 'true_label', 'predicted_label', 'proba0', 'proba1']
+        columns = [
+            "participant_id",
+            "session_id",
+            "%s_id" % mode,
+            "true_label",
+            "predicted_label",
+            "proba0",
+            "proba1",
+        ]
     else:
         raise ValueError("The mode %s is invalid." % mode)
 
@@ -330,9 +434,9 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
             t0 = time()
             total_time = total_time + t0 - tend
             if use_cuda:
-                inputs, labels = data['image'].cuda(), data['label'].cuda()
+                inputs, labels = data["image"].cuda(), data["label"].cuda()
             else:
-                inputs, labels = data['image'], data['label']
+                inputs, labels = data["image"], data["label"]
 
             if hasattr(model, "variational") and model.variational:
                 z, mu, std, outputs = model(inputs)
@@ -346,9 +450,11 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
                     atlas_data = data["atlas"].cuda()
                 else:
                     atlas_data = data["atlas"]
-                atlas_output = outputs[:, -atlas_data.size(1)::]
-                outputs = outputs[:, :-atlas_data.size(1):]
-                total_atlas_loss += torch.nn.MSELoss(reduction="sum")(atlas_output, atlas_data).item()
+                atlas_output = outputs[:, -atlas_data.size(1) : :]
+                outputs = outputs[:, : -atlas_data.size(1) :]
+                total_atlas_loss += torch.nn.MSELoss(reduction="sum")(
+                    atlas_output, atlas_data
+                ).item()
 
             if use_labels:
                 loss = criterion(outputs, labels)
@@ -356,14 +462,29 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
             _, predicted = torch.max(outputs.data, 1)
 
             # Generate detailed DataFrame
-            for idx, sub in enumerate(data['participant_id']):
+            for idx, sub in enumerate(data["participant_id"]):
                 if mode == "image":
-                    row = [[sub, data['session_id'][idx], labels[idx].item(), predicted[idx].item()]]
+                    row = [
+                        [
+                            sub,
+                            data["session_id"][idx],
+                            labels[idx].item(),
+                            predicted[idx].item(),
+                        ]
+                    ]
                 else:
                     normalized_output = softmax(outputs)
-                    row = [[sub, data['session_id'][idx], data['%s_id' % mode][idx].item(),
-                            labels[idx].item(), predicted[idx].item(),
-                            normalized_output[idx, 0].item(), normalized_output[idx, 1].item()]]
+                    row = [
+                        [
+                            sub,
+                            data["session_id"][idx],
+                            data["%s_id" % mode][idx].item(),
+                            labels[idx].item(),
+                            predicted[idx].item(),
+                            normalized_output[idx, 0].item(),
+                            normalized_output[idx, 1].item(),
+                        ]
+                    ]
 
                 row_df = pd.DataFrame(row, columns=columns)
                 results_df = pd.concat([results_df, row_df])
@@ -376,55 +497,97 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
         results_df = results_df.drop("true_label", axis=1)
         metrics_dict = None
     else:
-        metrics_dict = evaluate_prediction(results_df.true_label.values.astype(int),
-                                           results_df.predicted_label.values.astype(int))
-        metrics_dict['total_loss'] = total_loss
-        metrics_dict['total_kl_loss'] = total_kl_loss
-        metrics_dict['total_atlas_loss'] = total_atlas_loss
+        metrics_dict = evaluate_prediction(
+            results_df.true_label.values.astype(int),
+            results_df.predicted_label.values.astype(int),
+        )
+        metrics_dict["total_loss"] = total_loss
+        metrics_dict["total_kl_loss"] = total_kl_loss
+        metrics_dict["total_atlas_loss"] = total_atlas_loss
     torch.cuda.empty_cache()
 
     return results_df, metrics_dict
 
 
-def sort_predicted(model, data_df, input_dir, model_options, criterion, keep_true,
-                   batch_size=1, num_workers=0, gpu=False):
-    from .data import return_dataset, get_transforms
-    from torch.utils.data import DataLoader
+def sort_predicted(
+    model,
+    data_df,
+    input_dir,
+    model_options,
+    criterion,
+    keep_true,
+    batch_size=1,
+    num_workers=0,
+    gpu=False,
+):
     from copy import copy
+
+    from torch.utils.data import DataLoader
+
+    from .data import get_transforms, return_dataset
 
     if keep_true is None:
         return data_df
 
-    _, all_transforms = get_transforms(model_options.mode, model_options.minmaxnormalization)
-    dataset = return_dataset(mode=model_options.mode, input_dir=input_dir,
-                             data_df=data_df, preprocessing=model_options.preprocessing,
-                             train_transformations=None, all_transformations=all_transforms,
-                             params=model_options)
-    dataloader = DataLoader(dataset,
-                            batch_size=batch_size,
-                            shuffle=False,
-                            num_workers=num_workers,
-                            pin_memory=True)
+    _, all_transforms = get_transforms(
+        model_options.mode, model_options.minmaxnormalization
+    )
+    dataset = return_dataset(
+        mode=model_options.mode,
+        input_dir=input_dir,
+        data_df=data_df,
+        preprocessing=model_options.preprocessing,
+        train_transformations=None,
+        all_transformations=all_transforms,
+        params=model_options,
+    )
+    dataloader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=True,
+    )
 
     test_options = copy(model_options)
     test_options.gpu = gpu
 
-    results_df, _ = test(model, dataloader, gpu, criterion, model_options.mode, use_labels=True)
+    results_df, _ = test(
+        model, dataloader, gpu, criterion, model_options.mode, use_labels=True
+    )
 
-    sorted_df = data_df.sort_values(['participant_id', 'session_id']).reset_index(drop=True)
-    results_df = results_df.sort_values(['participant_id', 'session_id']).reset_index(drop=True)
+    sorted_df = data_df.sort_values(["participant_id", "session_id"]).reset_index(
+        drop=True
+    )
+    results_df = results_df.sort_values(["participant_id", "session_id"]).reset_index(
+        drop=True
+    )
 
     if keep_true:
-        return sorted_df[results_df.true_label == results_df.predicted_label].reset_index(drop=True)
+        return sorted_df[
+            results_df.true_label == results_df.predicted_label
+        ].reset_index(drop=True)
     else:
-        return sorted_df[results_df.true_label != results_df.predicted_label].reset_index(drop=True)
+        return sorted_df[
+            results_df.true_label != results_df.predicted_label
+        ].reset_index(drop=True)
 
 
 #################################
 # Voting systems
 #################################
 
-def mode_level_to_tsvs(output_dir, results_df, metrics, fold, selection, mode, dataset='train', cnn_index=None):
+
+def mode_level_to_tsvs(
+    output_dir,
+    results_df,
+    metrics,
+    fold,
+    selection,
+    mode,
+    dataset="train",
+    cnn_index=None,
+):
     """
     Writes the outputs of the test function in tsv files.
 
@@ -439,26 +602,49 @@ def mode_level_to_tsvs(output_dir, results_df, metrics, fold, selection, mode, d
         cnn_index: (int) provide the cnn_index only for a multi-cnn framework.
     """
     if cnn_index is None:
-        performance_dir = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', selection)
+        performance_dir = os.path.join(
+            output_dir, "fold-%i" % fold, "cnn_classification", selection
+        )
     else:
-        performance_dir = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', 'cnn-%i' % cnn_index,
-                                       selection)
+        performance_dir = os.path.join(
+            output_dir,
+            "fold-%i" % fold,
+            "cnn_classification",
+            "cnn-%i" % cnn_index,
+            selection,
+        )
 
     os.makedirs(performance_dir, exist_ok=True)
 
-    results_df.to_csv(os.path.join(performance_dir, '%s_%s_level_prediction.tsv' % (dataset, mode)), index=False,
-                      sep='\t')
+    results_df.to_csv(
+        os.path.join(performance_dir, "%s_%s_level_prediction.tsv" % (dataset, mode)),
+        index=False,
+        sep="\t",
+    )
 
     if metrics is not None:
         metrics["%s_id" % mode] = cnn_index
         if isinstance(metrics, dict):
-            pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(performance_dir, '%s_%s_level_metrics.tsv' % (dataset, mode)),
-                                                    index=False, sep='\t')
+            pd.DataFrame(metrics, index=[0]).to_csv(
+                os.path.join(
+                    performance_dir, "%s_%s_level_metrics.tsv" % (dataset, mode)
+                ),
+                index=False,
+                sep="\t",
+            )
         elif isinstance(metrics, pd.DataFrame):
-            metrics.to_csv(os.path.join(performance_dir, '%s_%s_level_metrics.tsv' % (dataset, mode)),
-                           index=False, sep='\t')
+            metrics.to_csv(
+                os.path.join(
+                    performance_dir, "%s_%s_level_metrics.tsv" % (dataset, mode)
+                ),
+                index=False,
+                sep="\t",
+            )
         else:
-            raise ValueError("Bad type for metrics: %s. Must be dict or DataFrame." % type(metrics).__name__)
+            raise ValueError(
+                "Bad type for metrics: %s. Must be dict or DataFrame."
+                % type(metrics).__name__
+            )
 
 
 def concat_multi_cnn_results(output_dir, fold, selection, mode, dataset, num_cnn):
@@ -466,17 +652,23 @@ def concat_multi_cnn_results(output_dir, fold, selection, mode, dataset, num_cnn
     prediction_df = pd.DataFrame()
     metrics_df = pd.DataFrame()
     for cnn_index in range(num_cnn):
-        cnn_dir = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', 'cnn-%i' % cnn_index)
+        cnn_dir = os.path.join(
+            output_dir, "fold-%i" % fold, "cnn_classification", "cnn-%i" % cnn_index
+        )
         performance_dir = os.path.join(cnn_dir, selection)
-        cnn_pred_path = os.path.join(performance_dir, '%s_%s_level_prediction.tsv' % (dataset, mode))
-        cnn_metrics_path = os.path.join(performance_dir, '%s_%s_level_metrics.tsv' % (dataset, mode))
+        cnn_pred_path = os.path.join(
+            performance_dir, "%s_%s_level_prediction.tsv" % (dataset, mode)
+        )
+        cnn_metrics_path = os.path.join(
+            performance_dir, "%s_%s_level_metrics.tsv" % (dataset, mode)
+        )
 
-        cnn_pred_df = pd.read_csv(cnn_pred_path, sep='\t')
+        cnn_pred_df = pd.read_csv(cnn_pred_path, sep="\t")
         prediction_df = pd.concat([prediction_df, cnn_pred_df])
         os.remove(cnn_pred_path)
 
         if os.path.exists(cnn_metrics_path):
-            cnn_metrics_df = pd.read_csv(cnn_metrics_path, sep='\t')
+            cnn_metrics_df = pd.read_csv(cnn_metrics_path, sep="\t")
             metrics_df = pd.concat([metrics_df, cnn_metrics_df])
             os.remove(cnn_metrics_path)
 
@@ -491,26 +683,42 @@ def concat_multi_cnn_results(output_dir, fold, selection, mode, dataset, num_cnn
         metrics_df = None
     else:
         metrics_df.reset_index(drop=True, inplace=True)
-    mode_level_to_tsvs(output_dir, prediction_df, metrics_df, fold, selection, mode, dataset)
+    mode_level_to_tsvs(
+        output_dir, prediction_df, metrics_df, fold, selection, mode, dataset
+    )
 
 
 def retrieve_sub_level_results(output_dir, fold, selection, mode, dataset, num_cnn):
     """Retrieve performance_df for single or multi-CNN framework.
     If the results of the multi-CNN were not concatenated it will be done here."""
-    result_tsv = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', selection,
-                              '%s_%s_level_prediction.tsv' % (dataset, mode))
+    result_tsv = os.path.join(
+        output_dir,
+        "fold-%i" % fold,
+        "cnn_classification",
+        selection,
+        "%s_%s_level_prediction.tsv" % (dataset, mode),
+    )
     if os.path.exists(result_tsv):
-        performance_df = pd.read_csv(result_tsv, sep='\t')
+        performance_df = pd.read_csv(result_tsv, sep="\t")
 
     else:
         concat_multi_cnn_results(output_dir, fold, selection, mode, dataset, num_cnn)
-        performance_df = pd.read_csv(result_tsv, sep='\t')
+        performance_df = pd.read_csv(result_tsv, sep="\t")
 
     return performance_df
 
 
-def soft_voting_to_tsvs(output_dir, fold, selection, mode, dataset='test', num_cnn=None,
-                        selection_threshold=None, logger=None, use_labels=True):
+def soft_voting_to_tsvs(
+    output_dir,
+    fold,
+    selection,
+    mode,
+    dataset="test",
+    num_cnn=None,
+    selection_threshold=None,
+    logger=None,
+    use_labels=True,
+):
     """
     Writes soft voting results in tsv files.
 
@@ -531,29 +739,52 @@ def soft_voting_to_tsvs(output_dir, fold, selection, mode, dataset='test', num_c
         logger = logging
 
     # Choose which dataset is used to compute the weights of soft voting.
-    if dataset in ['train', 'validation']:
+    if dataset in ["train", "validation"]:
         validation_dataset = dataset
     else:
-        validation_dataset = 'validation'
-    test_df = retrieve_sub_level_results(output_dir, fold, selection, mode, dataset, num_cnn)
-    validation_df = retrieve_sub_level_results(output_dir, fold, selection, mode, validation_dataset, num_cnn)
+        validation_dataset = "validation"
+    test_df = retrieve_sub_level_results(
+        output_dir, fold, selection, mode, dataset, num_cnn
+    )
+    validation_df = retrieve_sub_level_results(
+        output_dir, fold, selection, mode, validation_dataset, num_cnn
+    )
 
-    performance_path = os.path.join(output_dir, 'fold-%i' % fold, 'cnn_classification', selection)
+    performance_path = os.path.join(
+        output_dir, "fold-%i" % fold, "cnn_classification", selection
+    )
     os.makedirs(performance_path, exist_ok=True)
 
-    df_final, metrics = soft_voting(test_df, validation_df, mode, selection_threshold=selection_threshold,
-                                    use_labels=use_labels)
+    df_final, metrics = soft_voting(
+        test_df,
+        validation_df,
+        mode,
+        selection_threshold=selection_threshold,
+        use_labels=use_labels,
+    )
 
-    df_final.to_csv(os.path.join(os.path.join(performance_path, '%s_image_level_prediction.tsv' % dataset)),
-                    index=False, sep='\t')
+    df_final.to_csv(
+        os.path.join(
+            os.path.join(performance_path, "%s_image_level_prediction.tsv" % dataset)
+        ),
+        index=False,
+        sep="\t",
+    )
     if use_labels:
-        pd.DataFrame(metrics, index=[0]).to_csv(os.path.join(performance_path, '%s_image_level_metrics.tsv' % dataset),
-                                                index=False, sep='\t')
-        logger.info("image level %s balanced accuracy is %f for model selected on %s"
-                    % (dataset, metrics["balanced_accuracy"], selection))
+        pd.DataFrame(metrics, index=[0]).to_csv(
+            os.path.join(performance_path, "%s_image_level_metrics.tsv" % dataset),
+            index=False,
+            sep="\t",
+        )
+        logger.info(
+            "image level %s balanced accuracy is %f for model selected on %s"
+            % (dataset, metrics["balanced_accuracy"], selection)
+        )
 
 
-def soft_voting(performance_df, validation_df, mode, selection_threshold=None, use_labels=True):
+def soft_voting(
+    performance_df, validation_df, mode, selection_threshold=None, use_labels=True
+):
     """
     Computes soft voting based on the probabilities in performance_df. Weights are computed based on the accuracies
     of validation_df.
@@ -573,23 +804,31 @@ def soft_voting(performance_df, validation_df, mode, selection_threshold=None, u
     """
 
     # Compute the sub-level accuracies on the validation set:
-    validation_df["accurate_prediction"] = validation_df.apply(lambda x: check_prediction(x), axis=1)
-    sub_level_accuracies = validation_df.groupby("%s_id" % mode)["accurate_prediction"].sum()
+    validation_df["accurate_prediction"] = validation_df.apply(
+        lambda x: check_prediction(x), axis=1
+    )
+    sub_level_accuracies = validation_df.groupby("%s_id" % mode)[
+        "accurate_prediction"
+    ].sum()
     if selection_threshold is not None:
         sub_level_accuracies[sub_level_accuracies < selection_threshold] = 0
     weight_series = sub_level_accuracies / sub_level_accuracies.sum()
 
     # Sort to allow weighted average computation
-    performance_df.sort_values(['participant_id', 'session_id', '%s_id' % mode], inplace=True)
+    performance_df.sort_values(
+        ["participant_id", "session_id", "%s_id" % mode], inplace=True
+    )
     weight_series.sort_index(inplace=True)
 
     # Soft majority vote
     if use_labels:
-        columns = ['participant_id', 'session_id', 'true_label', 'predicted_label']
+        columns = ["participant_id", "session_id", "true_label", "predicted_label"]
     else:
-        columns = ['participant_id', 'session_id', 'predicted_label']
+        columns = ["participant_id", "session_id", "predicted_label"]
     df_final = pd.DataFrame(columns=columns)
-    for (subject, session), subject_df in performance_df.groupby(['participant_id', 'session_id']):
+    for (subject, session), subject_df in performance_df.groupby(
+        ["participant_id", "session_id"]
+    ):
         proba0 = np.average(subject_df["proba0"], weights=weight_series)
         proba1 = np.average(subject_df["proba1"], weights=weight_series)
         proba_list = [proba0, proba1]
@@ -604,8 +843,10 @@ def soft_voting(performance_df, validation_df, mode, selection_threshold=None, u
         df_final = df_final.append(row_df)
 
     if use_labels:
-        results = evaluate_prediction(df_final.true_label.values.astype(int),
-                                      df_final.predicted_label.values.astype(int))
+        results = evaluate_prediction(
+            df_final.true_label.values.astype(int),
+            df_final.predicted_label.values.astype(int),
+        )
     else:
         results = None
 
@@ -625,15 +866,25 @@ def mode_to_image_tsvs(output_dir, fold, selection, mode, dataset="test"):
             validation, the weights of soft voting will be computed on validation accuracies.
     """
     sub_df = retrieve_sub_level_results(output_dir, fold, selection, mode, dataset, 1)
-    sub_df.drop([f'{mode}_id', 'proba0', 'proba1'], axis=1, inplace=True)
+    sub_df.drop([f"{mode}_id", "proba0", "proba1"], axis=1, inplace=True)
 
-    performance_path = os.path.join(output_dir, f'fold-{fold}', 'cnn_classification', selection)
-    sub_df.to_csv(os.path.join(performance_path, f'{dataset}_image_level_prediction.tsv'),
-                  index=False, sep='\t')
-    metrics_df = pd.read_csv(os.path.join(performance_path, f'{dataset}_{mode}_level_metrics.tsv'), sep="\t")
-    metrics_df.drop([f'{mode}_id'], axis=1, inplace=True)
-    metrics_df.to_csv(os.path.join(performance_path, f'{dataset}_image_level_metrics.tsv'),
-                      index=False, sep='\t')
+    performance_path = os.path.join(
+        output_dir, f"fold-{fold}", "cnn_classification", selection
+    )
+    sub_df.to_csv(
+        os.path.join(performance_path, f"{dataset}_image_level_prediction.tsv"),
+        index=False,
+        sep="\t",
+    )
+    metrics_df = pd.read_csv(
+        os.path.join(performance_path, f"{dataset}_{mode}_level_metrics.tsv"), sep="\t"
+    )
+    metrics_df.drop([f"{mode}_id"], axis=1, inplace=True)
+    metrics_df.to_csv(
+        os.path.join(performance_path, f"{dataset}_image_level_metrics.tsv"),
+        index=False,
+        sep="\t",
+    )
 
 
 def check_prediction(row):
@@ -681,7 +932,9 @@ def get_criterion(option):
     elif option == "L1Norm" or option == "L1":
         return L1ClassificationLoss(reduction="sum", normalization=(option == "L1Norm"))
     elif option == "SmoothL1Norm" or option == "SmoothL1":
-        return SmoothL1ClassificationLoss(reduction="sum", normalization=(option == "SmoothL1Norm"))
+        return SmoothL1ClassificationLoss(
+            reduction="sum", normalization=(option == "SmoothL1Norm")
+        )
     else:
         raise ValueError("The option %s is unknown for criterion selection" % option)
 
@@ -703,8 +956,7 @@ def binarize_label(y, classes, pos_label=1, neg_label=0):
 
     data = np.empty_like(indices)
     data.fill(pos_label)
-    Y = sp.csr_matrix((data, indices, indptr),
-                      shape=(n_samples, n_classes))
+    Y = sp.csr_matrix((data, indices, indptr), shape=(n_samples, n_classes))
     Y = Y.toarray()
     Y = Y.astype(int, copy=False)
     if neg_label != 0:
@@ -734,7 +986,7 @@ def kl_divergence(z, mu, std):
     log_pz = p.log_prob(z)
 
     # kl
-    kl = (log_qzx - log_pz)
+    kl = log_qzx - log_pz
 
     # go from single dim distribution to multi-dim
     kl = kl.mean(-1).sum()

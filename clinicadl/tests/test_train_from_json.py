@@ -5,12 +5,10 @@ import os
 import shutil
 
 
-@pytest.fixture(params=[
-    'train_roi_cnn'
-])
+@pytest.fixture(params=["train_roi_cnn"])
 def cli_commands(request):
 
-    if request.param == 'train_roi_cnn':
+    if request.param == "train_roi_cnn":
         command_dict = {
             "mode": "roi",
             "network_type": "cnn",
@@ -18,15 +16,12 @@ def cli_commands(request):
             "preprocessing": "t1-linear",
             "tsv_path": "data/labels_list",
             "model": "Conv4_FC3",
-
             "epochs": 1,
             "n_splits": 2,
             "split": [0],
         }
     else:
-        raise NotImplementedError(
-            "Test %s is not implemented." %
-            request.param)
+        raise NotImplementedError("Test %s is not implemented." % request.param)
 
     return command_dict
 
@@ -40,7 +35,8 @@ def test_train(cli_commands):
 
     flag_error = not os.system("clinicadl train from_json commandline.json results")
     performances_flag = os.path.exists(
-        os.path.join("results", "fold-0", "cnn_classification"))
+        os.path.join("results", "fold-0", "cnn_classification")
+    )
     assert flag_error
     assert performances_flag
     shutil.rmtree("results")

@@ -4,7 +4,8 @@
 Script containing the models for the patch level experiments.
 """
 from torch import nn
-from .modules import PadMaxPool3d, Flatten
+
+from .modules import Flatten, PadMaxPool3d
 
 
 class Conv4_FC3(nn.Module):
@@ -19,7 +20,7 @@ class Conv4_FC3(nn.Module):
 
     def __init__(self, dropout=0, n_classes=2):
         super(Conv4_FC3, self).__init__()
-
+        # fmt: off
         self.features = nn.Sequential(
             # Convolutions
             nn.Conv3d(1, 15, 3),
@@ -59,6 +60,7 @@ class Conv4_FC3(nn.Module):
         )
 
         self.flattened_shape = [-1, 50, 2, 2, 2]
+        # fmt: on
 
     def forward(self, x):
         x = self.features(x)

@@ -1,48 +1,40 @@
 # coding: utf8
 
 import pytest
+
 import clinicadl.cli as cli
 
 
-@pytest.fixture(params=['preprocessing_run_t1_linear',
-                        'preprocessing_run_t1_extensive',
-                        'extract_tensor',
-                        'generate',
-                        'quality_check',
-                        'classify',
-                        'train_subject',
-                        'train_slice',
-                        'train_patch',
-                        'train_multipatch'])
+@pytest.fixture(
+    params=[
+        "preprocessing_run_t1_linear",
+        "preprocessing_run_t1_extensive",
+        "extract_tensor",
+        "generate",
+        "quality_check",
+        "classify",
+        "train_subject",
+        "train_slice",
+        "train_patch",
+        "train_multipatch",
+    ]
+)
 def generate_cli_commands(request):
-    if request.param == 'preprocessing_run_t1_linear':
-        test_input = [
-            'preprocessing',
-            'run',
-            't1-linear',
-            '/dir/bids/',
-            '/dir/caps/']
+    if request.param == "preprocessing_run_t1_linear":
+        test_input = ["preprocessing", "run", "t1-linear", "/dir/bids/", "/dir/caps/"]
         keys_output = [
-            'task',
-            'preprocessing_task',
-            'preprocessing',
-            'bids_directory',
-            'caps_directory']
-
-    if request.param == 'preprocessing_run_t1_extensive':
-        test_input = [
-            'preprocessing',
-            'run',
-            't1-extensive',
-            '/dir/caps/'
-        ]
-        keys_output = [
-            'task',
-            'preprocessing_task',
-            'preprocessing',
-            'caps_directory'
+            "task",
+            "preprocessing_task",
+            "preprocessing",
+            "bids_directory",
+            "caps_directory",
         ]
 
+    if request.param == "preprocessing_run_t1_extensive":
+        test_input = ["preprocessing", "run", "t1-extensive", "/dir/caps/"]
+        keys_output = ["task", "preprocessing_task", "preprocessing", "caps_directory"]
+
+    # fmt: off
     if request.param == 'extract_tensor':
         test_input = [
             'preprocessing',
@@ -205,16 +197,18 @@ def generate_cli_commands(request):
             'tsv_path',
             'output_dir',
             'model']
+    # fmt: on
 
     return test_input, keys_output
 
 
 def test_cli(generate_cli_commands):
     import re
+
     test_input = generate_cli_commands[0]
     keys_output = generate_cli_commands[1]
-    print('Value of test_input is:', type(test_input), test_input)
-    regex = re.compile(r'\-.*$')
+    print("Value of test_input is:", type(test_input), test_input)
+    regex = re.compile(r"\-.*$")
     test_input_filtered = [i for i in test_input if not regex.match(i)]
     parser = cli.parse_command_line()
     args = parser.parse_args(test_input)

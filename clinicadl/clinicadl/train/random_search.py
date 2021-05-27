@@ -5,17 +5,19 @@ Launch a random network training.
 import argparse
 from os import path
 
-from ..tools.deep_learning import read_json, check_and_complete
+from ..tools.deep_learning import check_and_complete, read_json
 from ..tools.deep_learning.models.random import random_sampling
+from .train_autoencoder import train_autoencoder
 from .train_multiCNN import train_multi_cnn
 from .train_singleCNN import train_single_cnn
-from .train_autoencoder import train_autoencoder
 
 
 def launch_search(options):
 
     rs_options = argparse.Namespace()
-    rs_options = read_json(rs_options, path.join(options.launch_dir, 'random_search.json'))
+    rs_options = read_json(
+        rs_options, path.join(options.launch_dir, "random_search.json")
+    )
     check_and_complete(rs_options, random_search=True)
     random_sampling(rs_options, options)
 

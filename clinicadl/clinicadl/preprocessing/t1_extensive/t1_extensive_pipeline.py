@@ -19,6 +19,7 @@ class T1Extensive(cpe.Pipeline):
     @staticmethod
     def get_processed_images(caps_directory, subjects, sessions):
         import os
+
         from clinica.utils.filemanip import extract_image_ids
         from clinica.utils.inputs import clinica_file_reader
 
@@ -65,10 +66,11 @@ class T1Extensive(cpe.Pipeline):
     def build_input_node(self):
         """Build and connect an input node to the pipeline."""
         import os
-        import nipype.pipeline.engine as npe
+
         import nipype.interfaces.utility as nutil
-        from clinica.utils.inputs import clinica_file_reader
+        import nipype.pipeline.engine as npe
         from clinica.utils.exceptions import ClinicaException
+        from clinica.utils.inputs import clinica_file_reader
         from clinica.utils.stream import cprint
         from clinica.utils.ux import print_images_to_process
 
@@ -121,10 +123,10 @@ class T1Extensive(cpe.Pipeline):
 
     def build_output_node(self):
         """Build and connect an output node to the pipeline."""
+        import nipype.interfaces.io as nio
         import nipype.interfaces.utility as nutil
         import nipype.pipeline.engine as npe
-        import nipype.interfaces.io as nio
-        from clinica.utils.nipype import fix_join, container_from_filename
+        from clinica.utils.nipype import container_from_filename, fix_join
 
         # Find container path from filename
         # =================================
@@ -143,6 +145,7 @@ class T1Extensive(cpe.Pipeline):
         write_node.inputs.base_directory = self.caps_directory
         write_node.inputs.parameterization = False
 
+        # fmt: off
         self.connect(
             [
                 (self.input_node, container_path, [("norm_t1w", "bids_or_caps_filename")]),
@@ -150,17 +153,20 @@ class T1Extensive(cpe.Pipeline):
                 (container_path, write_node, [(("container", fix_join, ""), "container")]),
             ]
         )
+        # fmt: on
 
     def build_core_nodes(self):
         """Build and connect the core nodes of the pipeline."""
         import os
-        import nipype.pipeline.engine as npe
+
         import nipype.interfaces.utility as nutil
+        import nipype.pipeline.engine as npe
         from clinica.utils.inputs import RemoteFileStructure
+
         from .t1_extensive_utils import (
-            get_caps_filename,
             apply_binary_mask,
-            get_file_from_server
+            get_caps_filename,
+            get_file_from_server,
         )
 
         # Get CAPS Filename
@@ -196,6 +202,7 @@ class T1Extensive(cpe.Pipeline):
 
         # Connection
         # ==========
+        # fmt: off
         self.connect(
             [
                 (self.input_node, caps_filename, [("norm_t1w", "norm_t1w")]),
@@ -204,3 +211,4 @@ class T1Extensive(cpe.Pipeline):
                 (skull_stripping, self.output_node, [("masked_image_path", "skull_stripped_t1w")]),
             ]
         )
+        # fmt: on
