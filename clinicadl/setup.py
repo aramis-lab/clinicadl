@@ -1,5 +1,6 @@
-from os.path import dirname, join, abspath, pardir
-from setuptools import setup, find_packages
+from os.path import abspath, dirname, join, pardir
+
+from setuptools import find_packages, setup
 
 with open(join(dirname(__file__), "clinicadl/VERSION"), "rb") as f:
     version = f.read().decode("ascii").strip()
@@ -35,6 +36,6 @@ setup(
         "Intended Audience :: Developers",
         "Programming Language :: Python",
     ],
-    install_requires=["numpy>=1.17", "clinica>=0.3.8", "tensorboardX"],
+    install_requires=["numpy>=1.17", "clinica>=0.3.8", "torch", "tensorboard"],
     python_requires=">=3.6",
 )

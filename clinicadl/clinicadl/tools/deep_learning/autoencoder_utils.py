@@ -43,7 +43,7 @@ def train(
         options: (Namespace) ensemble of other options given to the main script.
         logger: (logging object) writer to stdout and stderr
     """
-    from tensorboardX import SummaryWriter
+    from torch.utils.tensorboard import SummaryWriter
 
     if logger is None:
         logger = logging

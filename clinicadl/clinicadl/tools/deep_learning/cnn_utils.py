@@ -51,7 +51,7 @@ def train(
     """
     from time import time
 
-    from tensorboardX import SummaryWriter
+    from torch.utils.tensorboard import SummaryWriter
 
     if logger is None:
         logger = logging
