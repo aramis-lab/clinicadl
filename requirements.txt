@@ -10,3 +10,4 @@ nipy
 torch
 pandas
 colorama
+tensorboard
