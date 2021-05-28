@@ -35,6 +35,6 @@ setup(
         'Intended Audience :: Developers',
         'Programming Language :: Python',
     ],
-    install_requires=["numpy>=1.17", "clinica>=0.3.8", "tensorboardX"],
+    install_requires=["numpy>=1.17", "clinica>=0.3.8", "torch", "tensorboard"],
     python_requires='>=3.6',
 )
