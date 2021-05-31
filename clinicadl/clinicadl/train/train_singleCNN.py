@@ -162,7 +162,8 @@ def train_single_cnn(params, erase_existing=True):
             log_dir,
             model_dir,
             params,
-            train_logger,
+            params.network_task,
+            logger=train_logger,
         )
 
         test_single_cnn(
@@ -175,6 +176,7 @@ def train_single_cnn(params, erase_existing=True):
             params.mode,
             eval_logger,
             params.selection_threshold,
+            task=params.network_task,
             gpu=params.gpu,
         )
         test_single_cnn(
@@ -187,6 +189,7 @@ def train_single_cnn(params, erase_existing=True):
             params.mode,
             eval_logger,
             params.selection_threshold,
+            task=params.network_task,
             gpu=params.gpu,
         )
 
@@ -201,6 +204,7 @@ def test_single_cnn(
     mode,
     logger,
     selection_threshold,
+    task,
     gpu=False,
 ):
 
@@ -213,11 +217,11 @@ def test_single_cnn(
             filename="model_best.pth.tar",
         )
 
-        results_df, metrics = test(model, data_loader, gpu, criterion, mode)
-        logger.info(
-            f"{mode} level {subset_name} balanced accuracy is {metrics['balanced_accuracy']} "
-            f"for model selected on {selection}"
-        )
+        results_df, metrics = test(model, data_loader, gpu, criterion, mode, task=task)
+        # logger.info(
+        #     f"{mode} level {subset_name} balanced accuracy is {metrics['balanced_accuracy']} "
+        #     f"for model selected on {selection}"
+        # )
 
         mode_level_to_tsvs(
             output_dir, results_df, metrics, split, selection, mode, dataset=subset_name
@@ -233,6 +237,7 @@ def test_single_cnn(
                 mode=mode,
                 dataset=subset_name,
                 selection_threshold=selection_threshold,
+                task=task,
             )
         elif mode != "image":
             mode_to_image_tsvs(

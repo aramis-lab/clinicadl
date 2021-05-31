@@ -781,10 +781,20 @@ def parse_command_line():
     )
     cnn_group.add_argument(
         "--network_task",
-        help="Task performed by the netwok. Must be chosen between classification and regression.",
+        help="Task performed by the network. Must be chosen between classification and regression.",
         type=str,
         default="classification",
         choices=["classification", "regression"],
+    )
+
+    # Multi-CNN
+    multicnn_parent_parser = argparse.ArgumentParser(add_help=False)
+    multicnn_group = multicnn_parent_parser.add_argument_group(TRAIN_CATEGORIES["CNN"])
+    multicnn_group.add_argument(
+        "--label",
+        help="Name of the column used as label.",
+        type=str,
+        default="diagnosis",
     )
 
     # Autoencoder
@@ -932,7 +942,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
-            cnn_parent_parser,
+            multicnn_parent_parser,
             train_patch_parent,
             transfer_learning_parent,
         ],
@@ -1055,7 +1065,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
-            cnn_parent_parser,
+            multicnn_parent_parser,
             train_roi_parent,
             transfer_learning_parent,
         ],
@@ -1180,7 +1190,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
-            cnn_parent_parser,
+            multicnn_parent_parser,
             train_slice_parent,
             transfer_learning_parent,
         ],

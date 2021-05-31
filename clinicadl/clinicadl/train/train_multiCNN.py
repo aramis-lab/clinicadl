@@ -43,6 +43,8 @@ def train_multi_cnn(params, erase_existing=True):
     optimizer.pth.tar files which respectively contains the state of the model and the optimizer at the end
     of the last epoch that was completed before the crash.
     """
+    params.network_task == "classification"
+
     main_logger = return_logger(params.verbose, "main process")
     train_logger = return_logger(params.verbose, "train")
     eval_logger = return_logger(params.verbose, "final evaluation")
@@ -183,6 +185,7 @@ def train_multi_cnn(params, erase_existing=True):
                 log_dir,
                 model_dir,
                 params,
+                params.network_task,
                 logger=train_logger,
             )
 
@@ -196,6 +199,7 @@ def train_multi_cnn(params, erase_existing=True):
                 cnn_index,
                 mode=params.mode,
                 gpu=params.gpu,
+                task=params.network_task,
                 logger=eval_logger,
             )
             test_cnn(
@@ -208,6 +212,7 @@ def train_multi_cnn(params, erase_existing=True):
                 cnn_index,
                 mode=params.mode,
                 gpu=params.gpu,
+                task=params.network_task,
                 logger=eval_logger,
             )
 
@@ -244,6 +249,7 @@ def test_cnn(
     cnn_index,
     mode,
     logger,
+    task,
     gpu=False,
 ):
 
@@ -258,12 +264,12 @@ def test_cnn(
             filename="model_best.pth.tar",
         )
 
-        results_df, metrics = test(model, data_loader, gpu, criterion, mode)
+        results_df, metrics = test(model, data_loader, gpu, criterion, mode, task=task)
 
-        logger.info(
-            f"{subset_name} balanced accuracy is {metrics['balanced_accuracy']} "
-            f"for {mode} {cnn_index} and model selected on {selection}"
-        )
+        # logger.info(
+        #     f"{subset_name} balanced accuracy is {metrics['balanced_accuracy']} "
+        #     f"for {mode} {cnn_index} and model selected on {selection}"
+        # )
 
         mode_level_to_tsvs(
             output_dir,

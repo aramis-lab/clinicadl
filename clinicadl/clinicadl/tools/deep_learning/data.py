@@ -443,6 +443,7 @@ class MRIDatasetImage(MRIDataset):
             "label": label,
             "participant_id": participant,
             "session_id": session,
+            "image_id": 0,
             "image_path": image_path,
         }
 

@@ -112,6 +112,7 @@ def group_backprop(options):
                 model_options,
                 criterion,
                 options.keep_true,
+                task=model_options.task,
                 batch_size=options.batch_size,
                 num_workers=options.num_workers,
                 gpu=options.gpu,

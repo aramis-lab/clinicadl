@@ -9,22 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
--
--
--
+- `clinicadl train` can now perform a regression task by specifying the flag `--network_task regression` for `cnn` network.
+- The target values of `clinicadl train` can be chosen through the flag `--label` for `cnn` and `multicnn` networks.
 
-### Changed
-
--
--
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
 
 ## ClinicaDL 0.2.2
 

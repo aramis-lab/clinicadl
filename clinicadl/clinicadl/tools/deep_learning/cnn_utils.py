@@ -31,6 +31,7 @@ def train(
     log_dir,
     model_dir,
     options,
+    task,
     logger=None,
 ):
     """
@@ -47,6 +48,7 @@ def train(
         log_dir: (str) path to the folder containing the logs
         model_dir: (str) path to the folder containing the models weights and biases
         options: (Namespace) ensemble of other options given to the main script.
+        task: (str) Task performed by the network (classification or regression).
         logger: (logging object) writer to stdout and stderr
     """
     from time import time
@@ -56,13 +58,24 @@ def train(
     if logger is None:
         logger = logging
 
+    if task == "classification":
+        main_metric = "balanced_accuracy"
+        best_valid_metric = -1.0
+        compare_op = max
+        is_better = lambda a, best: a > best
+    else:
+        main_metric = "mae"
+        best_valid_metric = np.inf
+        compare_op = min
+        is_better = lambda a, best: a < best
+
     columns = [
         "epoch",
         "iteration",
         "time",
-        "balanced_accuracy_train",
+        f"{main_metric}_train",
         "loss_train",
-        "balanced_accuracy_valid",
+        f"{main_metric}_valid",
         "loss_valid",
     ]
     if hasattr(model, "variational") and model.variational:
@@ -96,7 +109,6 @@ def train(
     writer_valid = SummaryWriter(os.path.join(log_dir, "validation"))
 
     # Initialize variables
-    best_valid_accuracy = -1.0
     best_valid_loss = np.inf
     epoch = options.beginning_epoch
 
@@ -168,12 +180,26 @@ def train(
                 ):
                     evaluation_flag = False
 
-                    _, results_train = test(model, train_loader, options.gpu, criterion)
+                    _, results_train = test(
+                        model,
+                        train_loader,
+                        options.gpu,
+                        criterion,
+                        mode=options.mode,
+                        task=task,
+                    )
                     mean_loss_train = results_train["total_loss"] / (
                         len(train_loader) * train_loader.batch_size
                     )
 
-                    _, results_valid = test(model, valid_loader, options.gpu, criterion)
+                    _, results_valid = test(
+                        model,
+                        valid_loader,
+                        options.gpu,
+                        criterion,
+                        mode=options.mode,
+                        task=task,
+                    )
                     mean_loss_valid = results_valid["total_loss"] / (
                         len(valid_loader) * valid_loader.batch_size
                     )
@@ -182,24 +208,24 @@ def train(
 
                     global_step = i + epoch * len(train_loader)
                     writer_train.add_scalar(
-                        "balanced_accuracy",
-                        results_train["balanced_accuracy"],
+                        main_metric,
+                        results_train[main_metric],
                         global_step,
                     )
                     writer_train.add_scalar("loss", mean_loss_train, global_step)
                     writer_valid.add_scalar(
-                        "balanced_accuracy",
-                        results_valid["balanced_accuracy"],
+                        main_metric,
+                        results_valid[main_metric],
                         global_step,
                     )
                     writer_valid.add_scalar("loss", mean_loss_valid, global_step)
                     logger.info(
-                        "%s level training accuracy is %f at the end of iteration %d"
-                        % (options.mode, results_train["balanced_accuracy"], i)
+                        "%s level training %s is %f at the end of iteration %d"
+                        % (options.mode, main_metric, results_train[main_metric], i)
                     )
                     logger.info(
-                        "%s level validation accuracy is %f at the end of iteration %d"
-                        % (options.mode, results_valid["balanced_accuracy"], i)
+                        "%s level validation %s is %f at the end of iteration %d"
+                        % (options.mode, main_metric, results_valid[main_metric], i)
                     )
 
                     t_current = time() - t_beginning
@@ -207,9 +233,9 @@ def train(
                         epoch,
                         i,
                         t_current,
-                        results_train["balanced_accuracy"],
+                        results_train[main_metric],
                         mean_loss_train,
-                        results_valid["balanced_accuracy"],
+                        results_valid[main_metric],
                         mean_loss_valid,
                     ]
                     if hasattr(model, "variational") and model.variational:
@@ -246,12 +272,16 @@ def train(
         model.zero_grad()
         logger.debug("Last checkpoint at the end of the epoch %d" % epoch)
 
-        _, results_train = test(model, train_loader, options.gpu, criterion)
+        _, results_train = test(
+            model, train_loader, options.gpu, criterion, mode=options.mode, task=task
+        )
         mean_loss_train = results_train["total_loss"] / (
             len(train_loader) * train_loader.batch_size
         )
 
-        _, results_valid = test(model, valid_loader, options.gpu, criterion)
+        _, results_valid = test(
+            model, valid_loader, options.gpu, criterion, mode=options.mode, task=task
+        )
         mean_loss_valid = results_valid["total_loss"] / (
             len(valid_loader) * valid_loader.batch_size
         )
@@ -259,21 +289,17 @@ def train(
         train_loader.dataset.train()
 
         global_step = (epoch + 1) * len(train_loader)
-        writer_train.add_scalar(
-            "balanced_accuracy", results_train["balanced_accuracy"], global_step
-        )
+        writer_train.add_scalar(main_metric, results_train[main_metric], global_step)
         writer_train.add_scalar("loss", mean_loss_train, global_step)
-        writer_valid.add_scalar(
-            "balanced_accuracy", results_valid["balanced_accuracy"], global_step
-        )
+        writer_valid.add_scalar(main_metric, results_valid[main_metric], global_step)
         writer_valid.add_scalar("loss", mean_loss_valid, global_step)
         logger.info(
-            "%s level training accuracy is %f at the end of iteration %d"
-            % (options.mode, results_train["balanced_accuracy"], len(train_loader))
+            "%s level training %s is %f at the end of iteration %d"
+            % (options.mode, main_metric, results_train[main_metric], len(train_loader))
         )
         logger.info(
-            "%s level validation accuracy is %f at the end of iteration %d"
-            % (options.mode, results_valid["balanced_accuracy"], len(train_loader))
+            "%s level validation %s is %f at the end of iteration %d"
+            % (options.mode, main_metric, results_valid[main_metric], len(train_loader))
         )
 
         t_current = time() - t_beginning
@@ -281,9 +307,9 @@ def train(
             epoch,
             i,
             t_current,
-            results_train["balanced_accuracy"],
+            results_train[main_metric],
             mean_loss_train,
-            results_valid["balanced_accuracy"],
+            results_valid[main_metric],
             mean_loss_valid,
         ]
         if hasattr(model, "variational") and model.variational:
@@ -297,11 +323,9 @@ def train(
         with open(filename, "a") as f:
             row_df.to_csv(f, header=False, index=False, sep="\t")
 
-        accuracy_is_best = results_valid["balanced_accuracy"] > best_valid_accuracy
+        metric_is_best = is_better(results_valid[main_metric], best_valid_metric)
         loss_is_best = mean_loss_valid < best_valid_loss
-        best_valid_accuracy = max(
-            results_valid["balanced_accuracy"], best_valid_accuracy
-        )
+        best_valid_metric = compare_op(results_valid[main_metric], best_valid_metric)
         best_valid_loss = min(mean_loss_valid, best_valid_loss)
 
         save_checkpoint(
@@ -309,9 +333,9 @@ def train(
                 "model": model.state_dict(),
                 "epoch": epoch,
                 "valid_loss": mean_loss_valid,
-                "valid_acc": results_valid["balanced_accuracy"],
+                f"valid_{main_metric}": results_valid[main_metric],
             },
-            accuracy_is_best,
+            metric_is_best,
             loss_is_best,
             model_dir,
         )
@@ -334,62 +358,81 @@ def train(
     os.remove(os.path.join(model_dir, "checkpoint.pth.tar"))
 
 
-def evaluate_prediction(y, y_pred):
+def evaluate_prediction(y, y_pred, task="classification"):
     """
     Evaluates different metrics based on the list of true labels and predicted labels.
 
     Args:
         y: (list) true labels
         y_pred: (list) corresponding predictions
+        task: (str) Task performed by the network (classification or regression).
 
     Returns:
         (dict) ensemble of metrics
     """
 
-    true_positive = np.sum((y_pred == 1) & (y == 1))
-    true_negative = np.sum((y_pred == 0) & (y == 0))
-    false_positive = np.sum((y_pred == 1) & (y == 0))
-    false_negative = np.sum((y_pred == 0) & (y == 1))
+    if task == "classification":
 
-    accuracy = (true_positive + true_negative) / (
-        true_positive + true_negative + false_positive + false_negative
-    )
+        true_positive = np.sum((y_pred == 1) & (y == 1))
+        true_negative = np.sum((y_pred == 0) & (y == 0))
+        false_positive = np.sum((y_pred == 1) & (y == 0))
+        false_negative = np.sum((y_pred == 0) & (y == 1))
 
-    if (true_positive + false_negative) != 0:
-        sensitivity = true_positive / (true_positive + false_negative)
+        accuracy = (true_positive + true_negative) / (
+            true_positive + true_negative + false_positive + false_negative
+        )
+
+        if (true_positive + false_negative) != 0:
+            sensitivity = true_positive / (true_positive + false_negative)
+        else:
+            sensitivity = 0.0
+
+        if (false_positive + true_negative) != 0:
+            specificity = true_negative / (false_positive + true_negative)
+        else:
+            specificity = 0.0
+
+        if (true_positive + false_positive) != 0:
+            ppv = true_positive / (true_positive + false_positive)
+        else:
+            ppv = 0.0
+
+        if (true_negative + false_negative) != 0:
+            npv = true_negative / (true_negative + false_negative)
+        else:
+            npv = 0.0
+
+        balanced_accuracy = (sensitivity + specificity) / 2
+
+        results = {
+            "accuracy": accuracy,
+            "balanced_accuracy": balanced_accuracy,
+            "sensitivity": sensitivity,
+            "specificity": specificity,
+            "ppv": ppv,
+            "npv": npv,
+        }
+
+    elif task == "regression":
+        results = {"mae": np.mean(np.abs(y - y_pred))}
+
     else:
-        sensitivity = 0.0
-
-    if (false_positive + true_negative) != 0:
-        specificity = true_negative / (false_positive + true_negative)
-    else:
-        specificity = 0.0
-
-    if (true_positive + false_positive) != 0:
-        ppv = true_positive / (true_positive + false_positive)
-    else:
-        ppv = 0.0
-
-    if (true_negative + false_negative) != 0:
-        npv = true_negative / (true_negative + false_negative)
-    else:
-        npv = 0.0
-
-    balanced_accuracy = (sensitivity + specificity) / 2
-
-    results = {
-        "accuracy": accuracy,
-        "balanced_accuracy": balanced_accuracy,
-        "sensitivity": sensitivity,
-        "specificity": specificity,
-        "ppv": ppv,
-        "npv": npv,
-    }
+        raise NotImplementedError(
+            f"Metrics computation for task {task} is not implemented."
+        )
 
     return results
 
 
-def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
+def test(
+    model,
+    dataloader,
+    use_cuda,
+    criterion,
+    mode="image",
+    use_labels=True,
+    task="classification",
+):
     """
     Computes the predictions and evaluation metrics.
 
@@ -399,7 +442,8 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
         use_cuda: (bool) if True a gpu is used.
         criterion: (loss) function to calculate the loss.
         mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
-        use_labels (bool): If True the true_label will be written in output DataFrame and metrics dict will be created.
+        use_labels: (bool) If True the true_label will be written in output DataFrame and metrics dict will be created.
+        task: (str) Task performed by the network (classification or regression).
     Returns
         (DataFrame) results of each input.
         (dict) ensemble of metrics + total loss on mode level.
@@ -407,20 +451,26 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
     model.eval()
     dataloader.dataset.eval()
 
-    if mode == "image":
-        columns = ["participant_id", "session_id", "true_label", "predicted_label"]
-    elif mode in ["patch", "roi", "slice"]:
+    if task == "regression":
         columns = [
             "participant_id",
             "session_id",
-            "%s_id" % mode,
+            f"{mode}_id",
+            "true_label",
+            "predicted_label",
+        ]
+    elif task == "classification":
+        columns = [
+            "participant_id",
+            "session_id",
+            f"{mode}_id",
             "true_label",
             "predicted_label",
             "proba0",
             "proba1",
         ]
     else:
-        raise ValueError("The mode %s is invalid." % mode)
+        raise ValueError(f"The task {task} is invalid.")
 
     softmax = torch.nn.Softmax(dim=1)
     results_df = pd.DataFrame(columns=columns)
@@ -459,17 +509,18 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
             if use_labels:
                 loss = criterion(outputs, labels)
                 total_loss += loss.item()
-            _, predicted = torch.max(outputs.data, 1)
+            values, indices = torch.max(outputs.data, 1)
 
             # Generate detailed DataFrame
             for idx, sub in enumerate(data["participant_id"]):
-                if mode == "image":
+                if task == "regression":
                     row = [
                         [
                             sub,
                             data["session_id"][idx],
+                            data[f"{mode}_id"][idx].item(),
                             labels[idx].item(),
-                            predicted[idx].item(),
+                            values[idx].item(),
                         ]
                     ]
                 else:
@@ -478,9 +529,9 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
                         [
                             sub,
                             data["session_id"][idx],
-                            data["%s_id" % mode][idx].item(),
+                            data[f"{mode}_id"][idx].item(),
                             labels[idx].item(),
-                            predicted[idx].item(),
+                            indices[idx].item(),
                             normalized_output[idx, 0].item(),
                             normalized_output[idx, 1].item(),
                         ]
@@ -500,6 +551,7 @@ def test(model, dataloader, use_cuda, criterion, mode="image", use_labels=True):
         metrics_dict = evaluate_prediction(
             results_df.true_label.values.astype(int),
             results_df.predicted_label.values.astype(int),
+            task=task,
         )
         metrics_dict["total_loss"] = total_loss
         metrics_dict["total_kl_loss"] = total_kl_loss
@@ -516,6 +568,7 @@ def sort_predicted(
     model_options,
     criterion,
     keep_true,
+    task="classification",
     batch_size=1,
     num_workers=0,
     gpu=False,
@@ -553,7 +606,13 @@ def sort_predicted(
     test_options.gpu = gpu
 
     results_df, _ = test(
-        model, dataloader, gpu, criterion, model_options.mode, use_labels=True
+        model,
+        dataloader,
+        gpu,
+        criterion,
+        model_options.mode,
+        use_labels=True,
+        task=task,
     )
 
     sorted_df = data_df.sort_values(["participant_id", "session_id"]).reset_index(
@@ -718,6 +777,7 @@ def soft_voting_to_tsvs(
     selection_threshold=None,
     logger=None,
     use_labels=True,
+    task="classification",
 ):
     """
     Writes soft voting results in tsv files.
@@ -751,7 +811,7 @@ def soft_voting_to_tsvs(
     )
 
     performance_path = os.path.join(
-        output_dir, "fold-%i" % fold, "cnn_classification", selection
+        output_dir, f"fold-{fold}", "cnn_classification", selection
     )
     os.makedirs(performance_path, exist_ok=True)
 
@@ -761,6 +821,8 @@ def soft_voting_to_tsvs(
         mode,
         selection_threshold=selection_threshold,
         use_labels=use_labels,
+        task=task,
+        logger=logger,
     )
 
     df_final.to_csv(
@@ -776,14 +838,20 @@ def soft_voting_to_tsvs(
             index=False,
             sep="\t",
         )
-        logger.info(
-            "image level %s balanced accuracy is %f for model selected on %s"
-            % (dataset, metrics["balanced_accuracy"], selection)
-        )
+        # logger.info(
+        #     "image level %s balanced accuracy is %f for model selected on %s"
+        #     % (dataset, metrics["balanced_accuracy"], selection)
+        # )
 
 
 def soft_voting(
-    performance_df, validation_df, mode, selection_threshold=None, use_labels=True
+    performance_df,
+    validation_df,
+    mode,
+    selection_threshold=None,
+    use_labels=True,
+    task="classification",
+    logger=None,
 ):
     """
     Computes soft voting based on the probabilities in performance_df. Weights are computed based on the accuracies
@@ -797,26 +865,37 @@ def soft_voting(
         mode: (str) input used by the network. Chosen from ['patch', 'roi', 'slice'].
         selection_threshold: (float) if given, all patches for which the classification accuracy is below the
             threshold is removed.
+        task: (str) Task performed by the network (classification or regression).
+        logger: (logging object) writer to stdout and stderr
 
     Returns:
         df_final (DataFrame) the results on the image level
         results (dict) the metrics on the image level
     """
+    if logger is None:
+        logger = logging
 
     # Compute the sub-level accuracies on the validation set:
     validation_df["accurate_prediction"] = validation_df.apply(
         lambda x: check_prediction(x), axis=1
     )
-    sub_level_accuracies = validation_df.groupby("%s_id" % mode)[
+    sub_level_accuracies = validation_df.groupby(f"{mode}_id")[
         "accurate_prediction"
     ].sum()
-    if selection_threshold is not None:
-        sub_level_accuracies[sub_level_accuracies < selection_threshold] = 0
+
+    if task == "regression":
+        sub_level_accuracies[:] = 1
+        logger.warn("Soft-voting is not performed as the task performed is regression.")
+
+    elif task == "classification":
+        if selection_threshold is not None:
+            sub_level_accuracies[sub_level_accuracies < selection_threshold] = 0
+
     weight_series = sub_level_accuracies / sub_level_accuracies.sum()
 
     # Sort to allow weighted average computation
     performance_df.sort_values(
-        ["participant_id", "session_id", "%s_id" % mode], inplace=True
+        ["participant_id", "session_id", f"{mode}_id"], inplace=True
     )
     weight_series.sort_index(inplace=True)
 
@@ -829,10 +908,13 @@ def soft_voting(
     for (subject, session), subject_df in performance_df.groupby(
         ["participant_id", "session_id"]
     ):
-        proba0 = np.average(subject_df["proba0"], weights=weight_series)
-        proba1 = np.average(subject_df["proba1"], weights=weight_series)
-        proba_list = [proba0, proba1]
-        y_hat = proba_list.index(max(proba_list))
+        if task == "classification":
+            proba0 = np.average(subject_df["proba0"], weights=weight_series)
+            proba1 = np.average(subject_df["proba1"], weights=weight_series)
+            proba_list = [proba0, proba1]
+            y_hat = proba_list.index(max(proba_list))
+        else:
+            y_hat = np.average(subject_df["predicted_label"], weights=weight_series)
 
         if use_labels:
             y = subject_df["true_label"].unique().item()
@@ -846,6 +928,7 @@ def soft_voting(
         results = evaluate_prediction(
             df_final.true_label.values.astype(int),
             df_final.predicted_label.values.astype(int),
+            task=task,
         )
     else:
         results = None

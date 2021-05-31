@@ -153,6 +153,7 @@ def train_autoencoder(params, erase_existing=True):
             log_dir,
             model_dir,
             params,
+            params.network_task,
             train_logger,
         )
 
