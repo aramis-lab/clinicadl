@@ -10,6 +10,7 @@ import pytest
     params=[
         "train_sex_classification",
         "train_age_regression",
+        "train_multi_age_regression",
     ]
 )
 def cli_commands(request):
@@ -35,6 +36,23 @@ def cli_commands(request):
             "train",
             "roi",
             "cnn",
+            "data/dataset/random_example",
+            "t1-linear",
+            "data/labels_list",
+            "results",
+            "Conv4_FC3",
+            "--epochs 1",
+            "--n_splits 2",
+            "--split 0",
+            "--network_task regression",
+            "--label age",
+        ]
+
+    elif request.param == "train_multi_age_regression":
+        test_input = [
+            "train",
+            "roi",
+            "multicnn",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",

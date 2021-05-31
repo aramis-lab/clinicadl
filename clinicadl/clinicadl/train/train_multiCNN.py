@@ -43,8 +43,6 @@ def train_multi_cnn(params, erase_existing=True):
     optimizer.pth.tar files which respectively contains the state of the model and the optimizer at the end
     of the last epoch that was completed before the crash.
     """
-    params.network_task == "classification"
-
     main_logger = return_logger(params.verbose, "main process")
     train_logger = return_logger(params.verbose, "train")
     eval_logger = return_logger(params.verbose, "final evaluation")
@@ -226,6 +224,7 @@ def train_multi_cnn(params, erase_existing=True):
                 dataset="train",
                 num_cnn=num_cnn,
                 selection_threshold=params.selection_threshold,
+                task=params.network_task,
             )
             soft_voting_to_tsvs(
                 params.output_dir,
@@ -236,6 +235,7 @@ def train_multi_cnn(params, erase_existing=True):
                 dataset="validation",
                 num_cnn=num_cnn,
                 selection_threshold=params.selection_threshold,
+                task=params.network_task,
             )
 
 

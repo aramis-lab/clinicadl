@@ -942,7 +942,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
-            multicnn_parent_parser,
+            cnn_parent_parser,
             train_patch_parent,
             transfer_learning_parent,
         ],
@@ -1065,7 +1065,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
-            multicnn_parent_parser,
+            cnn_parent_parser,
             train_roi_parent,
             transfer_learning_parent,
         ],
@@ -1190,7 +1190,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
-            multicnn_parent_parser,
+            cnn_parent_parser,
             train_slice_parent,
             transfer_learning_parent,
         ],
