@@ -27,7 +27,9 @@ class MRIDataset(Dataset):
         data_file,
         preprocessing,
         transformations,
-        labels,
+        label_presence,
+        label,
+        task,
         augmentation_transformations=None,
         multi_cohort=False,
         atlas=None,
@@ -38,16 +40,9 @@ class MRIDataset(Dataset):
         self.transformations = transformations
         self.augmentation_transformations = augmentation_transformations
         self.eval_mode = False
-        self.labels = labels
-        self.diagnosis_code = {
-            "CN": 0,
-            "BV": 1,
-            "AD": 1,
-            "sMCI": 0,
-            "pMCI": 1,
-            "MCI": 1,
-            "unlabeled": -1,
-        }
+        self.label_presence = label_presence
+        self.label = label
+        self.task = task
         self.preprocessing = preprocessing
 
         if not hasattr(self, "elem_index"):
@@ -67,29 +62,20 @@ class MRIDataset(Dataset):
             self.df["cohort"] = "single"
 
         mandatory_col = {"participant_id", "session_id"}
-        if self.labels:
-            mandatory_col.add("diagnosis")
+        if self.label_presence:
+            mandatory_col.add(self.label)
         if multi_cohort:
             mandatory_col.add("cohort")
         if self.elem_index == "mixed":
-            mandatory_col.add("%s_id" % self.mode)
+            mandatory_col.add(f"{self.mode}_id")
 
         if not mandatory_col.issubset(set(self.df.columns.values)):
             raise Exception(
-                "the data file is not in the correct format."
-                "Columns should include %s" % mandatory_col
+                "The data file is not in the correct format."
+                f"Columns should include {mandatory_col}"
             )
 
-        unique_diagnoses = set(self.df.diagnosis)
-        unique_codes = set()
-        for diagnosis in unique_diagnoses:
-            unique_codes.add(self.diagnosis_code[diagnosis])
-        if len(unique_codes) == 1:
-            warnings.warn(
-                "The diagnoses found in the DataFrame %s only corresponds to one class %s. "
-                "If you want to run a binary classification please change the labels involved."
-                % (unique_diagnoses, unique_codes)
-            )
+        self.label_fn, self.label_code = self.generate_label_fn()
 
         self.merged_df = merged_df
         if merged_df is not None and "participant_id" in merged_df.columns.values:
@@ -114,6 +100,22 @@ class MRIDataset(Dataset):
 
     def __len__(self):
         return len(self.df) * self.elem_per_image
+
+    def generate_label_fn(self):
+        if self.task == "classification":
+            unique_labels = list(set(getattr(self.df, self.label)))
+            unique_labels.sort()
+            label_code = {key: value for value, key in enumerate(unique_labels)}
+        else:
+            label_code = None
+
+        def label_fn(key):
+            if label_code is None:
+                # If label_code is not None, the loss associated needs a 2D tensor
+                return np.float32([key])
+            return label_code[key]
+
+        return label_fn, label_code
 
     @staticmethod
     def create_caps_dict(caps_directory, multi_cohort):
@@ -296,11 +298,11 @@ class MRIDataset(Dataset):
         else:
             elem_idx = self.elem_index
 
-        if self.labels:
-            diagnosis = self.df.loc[image_idx, "diagnosis"]
-            label = self.diagnosis_code[diagnosis]
+        if self.label_presence:
+            value = self.df.loc[image_idx, self.label]
+            label = self.label_fn(value)
         else:
-            label = self.diagnosis_code["unlabeled"]
+            label = -1
 
         return participant, session, cohort, elem_idx, label
 
@@ -331,6 +333,25 @@ class MRIDataset(Dataset):
             image = ToTensor()(image_np)
 
         return image
+
+    def n_classes(self):
+        if self.label_presence:
+            example_data = self[0]
+            if "atlas" in example_data:
+                len_atlas = len(example_data["atlas"])
+            else:
+                len_atlas = 0
+
+            if self.task == "classification":
+                return len(self.label_code) + len_atlas
+            else:
+                return 1 + len_atlas
+
+        else:
+            raise ValueError(
+                "The dataset cannot compute the number of output "
+                "classes as the labels are not present in the data."
+            )
 
     def len_atlas(self):
         example_data = self[0]
@@ -363,9 +384,11 @@ class MRIDatasetImage(MRIDataset):
         self,
         caps_directory,
         data_file,
+        label,
+        task="classification",
         preprocessing="t1-linear",
         train_transformations=None,
-        labels=True,
+        label_presence=True,
         all_transformations=None,
         multi_cohort=False,
         atlas=None,
@@ -373,11 +396,14 @@ class MRIDatasetImage(MRIDataset):
     ):
         """
         Args:
-            caps_directory (string): Directory of all the images.
-            data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
-            preprocessing (string): Defines the path to the data in CAPS.
+            caps_directory (str): Directory of all the images.
+            data_file (str or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
+            label (str): name of the column containing the labels in data_file.
+            task (str): task performed by the classifier, allows to correctly format the labels.
+                Must be chosen between 'classification' and 'regression'.
+            preprocessing (str): Defines the path to the data in CAPS.
             train_transformations (callable, optional): Optional transform to be applied only on training mode.
-            labels (bool): If True the diagnosis will be extracted from the given DataFrame.
+            label_presence (bool): If True the diagnosis will be extracted from the given DataFrame.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
             atlas (str): name of an atlas if predicting the regional intensities.
@@ -391,7 +417,9 @@ class MRIDatasetImage(MRIDataset):
             data_file,
             preprocessing,
             augmentation_transformations=train_transformations,
-            labels=labels,
+            label_presence=label_presence,
+            label=label,
+            task=task,
             transformations=all_transformations,
             multi_cohort=multi_cohort,
             atlas=atlas,
@@ -436,11 +464,13 @@ class MRIDatasetPatch(MRIDataset):
         data_file,
         patch_size,
         stride_size,
+        label,
+        task="classification",
         train_transformations=None,
         prepare_dl=False,
         patch_index=None,
         preprocessing="t1-linear",
-        labels=True,
+        label_presence=True,
         all_transformations=None,
         multi_cohort=False,
         atlas=None,
@@ -450,6 +480,9 @@ class MRIDatasetPatch(MRIDataset):
         Args:
             caps_directory (string): Directory of all the images.
             data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
+            label (str): name of the column containing the labels in data_file.
+            task (str): task performed by the classifier, allows to correctly format the labels.
+                Must be chosen between 'classification' and 'regression'.
             preprocessing (string): Defines the path to the data in CAPS.
             train_transformations (callable, optional): Optional transform to be applied only on training mode.
             prepare_dl (bool): If true pre-extracted patches will be loaded.
@@ -457,7 +490,7 @@ class MRIDatasetPatch(MRIDataset):
                 else the dataset will load all the patches possible for one image.
             patch_size (int): size of the regular cubic patch.
             stride_size (int): length between the centers of two patches.
-            labels (bool): If True the diagnosis will be extracted from the given DataFrame.
+            label_presence (bool): If True the diagnosis will be extracted from the given DataFrame.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
             atlas (str): name of an atlas if predicting the regional intensities.
@@ -477,8 +510,10 @@ class MRIDatasetPatch(MRIDataset):
             caps_directory,
             data_file,
             preprocessing,
+            label=label,
+            task=task,
             augmentation_transformations=train_transformations,
-            labels=labels,
+            label_presence=label_presence,
             transformations=all_transformations,
             multi_cohort=multi_cohort,
             atlas=atlas,
@@ -566,13 +601,15 @@ class MRIDatasetRoi(MRIDataset):
         self,
         caps_directory,
         data_file,
+        label,
+        task="classification",
         roi_list=None,
         cropped_roi=True,
         roi_index=None,
         preprocessing="t1-linear",
         train_transformations=None,
         prepare_dl=False,
-        labels=True,
+        label_presence=True,
         all_transformations=None,
         multi_cohort=False,
         atlas=None,
@@ -582,6 +619,9 @@ class MRIDatasetRoi(MRIDataset):
         Args:
             caps_directory (string): Directory of all the images.
             data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
+            label (str): name of the column containing the labels in data_file.
+            task (str): task performed by the classifier, allows to correctly format the labels.
+                Must be chosen between 'classification' and 'regression'.
             roi_list (list): Defines the regions used in the classification.
             cropped_roi (bool): If True the image is cropped according to the smallest bounding box possible.
             roi_index (int, optional): If a value is given the same region will be extracted for each image.
@@ -589,7 +629,7 @@ class MRIDatasetRoi(MRIDataset):
             preprocessing (string): Defines the path to the data in CAPS.
             train_transformations (callable, optional): Optional transform to be applied only on training mode.
             prepare_dl (bool): If true pre-extracted patches will be loaded.
-            labels (bool): If True the diagnosis will be extracted from the given DataFrame.
+            label_presence (bool): If True the diagnosis will be extracted from the given DataFrame.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
             atlas (str): name of an atlas if predicting the regional intensities.
@@ -610,8 +650,10 @@ class MRIDatasetRoi(MRIDataset):
             caps_directory,
             data_file,
             preprocessing,
+            label=label,
+            task=task,
             augmentation_transformations=train_transformations,
-            labels=labels,
+            label_presence=label_presence,
             transformations=all_transformations,
             multi_cohort=multi_cohort,
             atlas=atlas,
@@ -812,6 +854,8 @@ class MRIDatasetSlice(MRIDataset):
         self,
         caps_directory,
         data_file,
+        label,
+        task="classification",
         slice_index=None,
         preprocessing="t1-linear",
         train_transformations=None,
@@ -819,7 +863,7 @@ class MRIDatasetSlice(MRIDataset):
         prepare_dl=False,
         discarded_slices=20,
         mixed=False,
-        labels=True,
+        label_presence=True,
         all_transformations=None,
         multi_cohort=False,
         atlas=None,
@@ -829,6 +873,9 @@ class MRIDatasetSlice(MRIDataset):
         Args:
             caps_directory (string): Directory of all the images.
             data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
+            label (str): name of the column containing the labels in data_file.
+            task (str): task performed by the classifier, allows to correctly format the labels.
+                Must be chosen between 'classification' and 'regression'.
             preprocessing (string): Defines the path to the data in CAPS.
             slice_index (int, optional): If a value is given the same slice will be extracted for each image.
                 else the dataset will load all the slices possible for one image.
@@ -839,7 +886,7 @@ class MRIDatasetSlice(MRIDataset):
                 If one single value is given, the same amount is discarded at the beginning and at the end.
             mixed (bool): If True will look for a 'slice_id' column in the input DataFrame to load each slice
                 independently.
-            labels (bool): If True the diagnosis will be extracted from the given DataFrame.
+            label_presence (bool): If True the diagnosis will be extracted from the given DataFrame.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
             atlas (str): name of an atlas if predicting the regional intensities.
@@ -876,8 +923,10 @@ class MRIDatasetSlice(MRIDataset):
             caps_directory,
             data_file,
             preprocessing,
+            label=label,
+            task=task,
             augmentation_transformations=train_transformations,
-            labels=labels,
+            label_presence=label_presence,
             transformations=all_transformations,
             multi_cohort=multi_cohort,
             atlas=atlas,
@@ -955,12 +1004,14 @@ def return_dataset(
     mode,
     input_dir,
     data_df,
+    label,
+    task,
     preprocessing,
     all_transformations,
     params,
     train_transformations=None,
     cnn_index=None,
-    labels=True,
+    label_presence=True,
     multi_cohort=False,
     prepare_dl=False,
 ):
@@ -970,12 +1021,15 @@ def return_dataset(
         mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
         input_dir: (str) path to a directory containing a CAPS structure.
         data_df: (DataFrame) List subjects, sessions and diagnoses.
+        label (str): name of the column containing the labels in data_file.
+        task (str): task performed by the classifier, allows to correctly format the labels.
+            Must be chosen between 'classification' and 'regression'.
         preprocessing: (str) type of preprocessing wanted ('t1-linear' or 't1-extensive')
         train_transformations (callable, optional): Optional transform to be applied during training only.
         all_transformations (callable, optional): Optional transform to be applied during training and evaluation.
         params: (Namespace) options used by specific modes.
         cnn_index: (int) Index of the CNN in a multi-CNN paradigm (optional).
-        labels (bool): If True the diagnosis will be extracted from the given DataFrame.
+        label_presence (bool): If True the diagnosis will be extracted from the given DataFrame.
         multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
         prepare_dl (bool): If true pre-extracted slices / patches / regions will be loaded.
 
@@ -995,10 +1049,12 @@ def return_dataset(
         return MRIDatasetImage(
             input_dir,
             data_df,
-            preprocessing,
+            preprocessing=preprocessing,
+            label=label,
+            task=task,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
-            labels=labels,
+            label_presence=label_presence,
             multi_cohort=multi_cohort,
             atlas=params.predict_atlas_intensities,
             merged_df=merged_df,
@@ -1009,12 +1065,14 @@ def return_dataset(
             data_df,
             params.patch_size,
             params.stride_size,
+            label=label,
+            task=task,
             preprocessing=preprocessing,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
             prepare_dl=prepare_dl,
             patch_index=cnn_index,
-            labels=labels,
+            label_presence=label_presence,
             multi_cohort=multi_cohort,
             atlas=params.predict_atlas_intensities,
             merged_df=merged_df,
@@ -1023,6 +1081,8 @@ def return_dataset(
         return MRIDatasetRoi(
             input_dir,
             data_df,
+            label=label,
+            task=task,
             roi_list=params.roi_list,
             cropped_roi=not params.uncropped_roi,
             preprocessing=preprocessing,
@@ -1030,7 +1090,7 @@ def return_dataset(
             all_transformations=all_transformations,
             prepare_dl=prepare_dl,
             roi_index=cnn_index,
-            labels=labels,
+            label_presence=label_presence,
             multi_cohort=multi_cohort,
             atlas=params.predict_atlas_intensities,
             merged_df=merged_df,
@@ -1039,6 +1099,8 @@ def return_dataset(
         return MRIDatasetSlice(
             input_dir,
             data_df,
+            label=label,
+            task=task,
             preprocessing=preprocessing,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
@@ -1046,7 +1108,7 @@ def return_dataset(
             prepare_dl=prepare_dl,
             discarded_slices=params.discarded_slices,
             slice_index=cnn_index,
-            labels=labels,
+            label_presence=label_presence,
             multi_cohort=multi_cohort,
             atlas=params.predict_atlas_intensities,
             merged_df=merged_df,
@@ -1077,7 +1139,9 @@ def compute_num_cnn(input_dir, tsv_path, options, data="train"):
         options.mode,
         input_dir,
         example_df,
-        options.preprocessing,
+        preprocessing=options.preprocessing,
+        label=options.label,
+        task=options.network_task,
         train_transformations=None,
         all_transformations=transformations,
         params=options,
@@ -1424,7 +1488,9 @@ def load_data_test_single(test_path, diagnoses_list, baseline=True):
     return test_df
 
 
-def mix_slices(df_training, df_validation, mri_plane=0, val_size=0.15):
+def mix_slices(
+    df_training, df_validation, mri_plane=0, val_size=0.15, label="diagnosis"
+):
     """
     This is a function to gather the training and validation tsv together, then do the bad data split by slice.
     :param training_tsv:
@@ -1448,7 +1514,7 @@ def mix_slices(df_training, df_validation, mri_plane=0, val_size=0.15):
 
     participant_list = list(df_all["participant_id"])
     session_list = list(df_all["session_id"])
-    label_list = list(df_all["diagnosis"])
+    label_list = list(df_all[label])
 
     slice_participant_list = [
         ele for ele in participant_list for _ in range(slices_per_patient)
@@ -1486,34 +1552,47 @@ def generate_sampler(dataset, sampler_option="random"):
     """
     Returns sampler according to the wanted options
 
-    :param dataset: (MRIDataset) the dataset to sample from
-    :param sampler_option: (str) choice of sampler
-    :return: (Sampler)
+    Args:
+        dataset: (MRIDataset) the dataset to sample from
+        sampler_option: (str) choice of sampler
+    Returns:
+         (Sampler)
     """
     df = dataset.df
     # To be changed for non-binary classification
-    count = np.zeros(2)
 
-    for idx in df.index:
-        label = df.loc[idx, "diagnosis"]
-        key = dataset.diagnosis_code[label]
-        count[key] += 1
+    if dataset.task == "classification":
+        count = np.zeros(dataset.n_classes() - dataset.len_atlas())
 
-    weight_per_class = 1 / np.array(count)
-    weights = []
+        for idx in df.index:
+            label = df.loc[idx, dataset.label]
+            key = dataset.label_fn(label)
+            count[key] += 1
 
-    for idx, label in enumerate(df["diagnosis"].values):
-        key = dataset.diagnosis_code[label]
-        weights += [weight_per_class[key]] * dataset.elem_per_image
+        weight_per_class = 1 / np.array(count)
+        weights = []
 
-    if sampler_option == "random":
-        return sampler.RandomSampler(weights)
-    elif sampler_option == "weighted":
-        return sampler.WeightedRandomSampler(weights, len(weights))
+        for idx, label in enumerate(df[dataset.label].values):
+            key = dataset.label_fn(label)
+            weights += [weight_per_class[key]] * dataset.elem_per_image
+
+        if sampler_option == "random":
+            return sampler.RandomSampler(weights)
+        elif sampler_option == "weighted":
+            return sampler.WeightedRandomSampler(weights, len(weights))
+        else:
+            raise NotImplementedError(
+                f"The option {sampler_option} for sampler on classification task is not implemented"
+            )
+
     else:
-        raise NotImplementedError(
-            f"The option {sampler_option} for sampler is not implemented"
-        )
+        weights = [1] * len(dataset)
+        if sampler_option == "random":
+            return sampler.RandomSampler(weights)
+        else:
+            raise NotImplementedError(
+                f"The option {sampler_option} for sampler on regression task is not implemented"
+            )
 
 
 def check_multi_cohort_tsv(tsv_df, purpose):

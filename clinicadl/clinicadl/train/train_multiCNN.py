@@ -20,6 +20,7 @@ from ..tools.deep_learning.data import (
     return_dataset,
 )
 from ..tools.deep_learning.iotools import (
+    append_to_json,
     check_and_clean,
     commandline_to_json,
     return_logger,
@@ -75,7 +76,7 @@ def train_multi_cnn(params, erase_existing=True):
 
     # Loop on folds
     for fi in fold_iterator:
-        main_logger.info("Fold %i" % fi)
+        main_logger.info(f"Fold {fi}")
 
         for cnn_index in range(num_cnn):
 
@@ -93,7 +94,9 @@ def train_multi_cnn(params, erase_existing=True):
                 params.mode,
                 params.input_dir,
                 training_df,
-                params.preprocessing,
+                preprocessing=params.preprocessing,
+                label=params.label,
+                task=params.network_task,
                 train_transformations=train_transforms,
                 all_transformations=all_transforms,
                 prepare_dl=params.prepare_dl,
@@ -105,7 +108,9 @@ def train_multi_cnn(params, erase_existing=True):
                 params.mode,
                 params.input_dir,
                 valid_df,
-                params.preprocessing,
+                preprocessing=params.preprocessing,
+                label=params.label,
+                task=params.network_task,
                 train_transformations=train_transforms,
                 all_transformations=all_transforms,
                 prepare_dl=params.prepare_dl,
@@ -133,9 +138,9 @@ def train_multi_cnn(params, erase_existing=True):
             )
 
             # Initialize the model
-            main_logger.info("Initialization of the model %i" % cnn_index)
+            main_logger.info(f"Initialization of the model {cnn_index}")
             model = create_model(
-                params, initial_shape=data_train.size, len_atlas=data_train.len_atlas()
+                params, initial_shape=data_train.size, n_classes=data_train.n_classes()
             )
             model = transfer_learning(
                 model,
@@ -145,9 +150,11 @@ def train_multi_cnn(params, erase_existing=True):
                 selection=params.transfer_learning_selection,
                 logger=main_logger,
             )
+            # Save number of classes for other functionalities
+            append_to_json({"n_classes": data_train.n_classes()}, params)
 
             # Define criterion and optimizer
-            criterion = get_criterion(params.loss)
+            criterion = get_criterion(params.network_task)
             optimizer = getattr(torch.optim, params.optimizer)(
                 filter(lambda x: x.requires_grad, model.parameters()),
                 lr=params.learning_rate,
@@ -157,12 +164,12 @@ def train_multi_cnn(params, erase_existing=True):
             # Define output directories
             log_dir = os.path.join(
                 params.output_dir,
-                "fold-%i" % fi,
+                f"fold-{fi}",
                 "tensorboard_logs",
-                "cnn-%i" % cnn_index,
+                f"cnn-{cnn_index}",
             )
             model_dir = os.path.join(
-                params.output_dir, "fold-%i" % fi, "models", "cnn-%i" % cnn_index
+                params.output_dir, f"fold-{fi}", "models", f"cnn-{cnn_index}"
             )
 
             main_logger.debug("Beginning the training task")
@@ -245,7 +252,7 @@ def test_cnn(
         model, best_epoch = load_model(
             model,
             os.path.join(
-                output_dir, "fold-%i" % split, "models", "cnn-%i" % cnn_index, selection
+                output_dir, f"fold-{split}", "models", f"cnn-{cnn_index}", selection
             ),
             gpu=gpu,
             filename="model_best.pth.tar",
@@ -254,8 +261,8 @@ def test_cnn(
         results_df, metrics = test(model, data_loader, gpu, criterion, mode)
 
         logger.info(
-            "%s balanced accuracy is %f for %s %i and model selected on %s"
-            % (subset_name, metrics["balanced_accuracy"], mode, cnn_index, selection)
+            f"{subset_name} balanced accuracy is {metrics['balanced_accuracy']} "
+            f"for {mode} {cnn_index} and model selected on {selection}"
         )
 
         mode_level_to_tsvs(

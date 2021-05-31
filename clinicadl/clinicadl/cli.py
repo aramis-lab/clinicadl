@@ -15,6 +15,7 @@ TRAIN_CATEGORIES = {
     # Other parent groups
     "TRANSFER LEARNING": "%sTransfer learning%s" % (Fore.BLUE, Fore.RESET),
     "AUTOENCODER": "%sAutoencoder specific%s" % (Fore.BLUE, Fore.RESET),
+    "CNN": "%sCNN specific%s" % (Fore.BLUE, Fore.RESET),
     # Slice-level
     "SLICE": "%sSlice-level parameters%s" % (Fore.BLUE, Fore.RESET),
     "SLICE CNN": "%sSlice-level CNN parameters%s" % (Fore.BLUE, Fore.RESET),
@@ -177,7 +178,7 @@ def classify_func(args):
         args.tsv_path,
         args.model_path,
         args.prefix_output,
-        labels=not args.no_labels,
+        label_presence=not args.no_labels,
         gpu=not args.use_cpu,
         prepare_dl=args.use_extracted_features,
         selection_metrics=args.selection_metrics,
@@ -769,6 +770,23 @@ def parse_command_line():
         default=None,
     )
 
+    # CNN
+    cnn_parent_parser = argparse.ArgumentParser(add_help=False)
+    cnn_group = cnn_parent_parser.add_argument_group(TRAIN_CATEGORIES["CNN"])
+    cnn_group.add_argument(
+        "--label",
+        help="Name of the column used as label.",
+        type=str,
+        default="diagnosis",
+    )
+    cnn_group.add_argument(
+        "--network_task",
+        help="Task performed by the netwok. Must be chosen between classification and regression.",
+        type=str,
+        default="classification",
+        choices=["classification", "regression"],
+    )
+
     # Autoencoder
     autoencoder_parent = argparse.ArgumentParser(add_help=False)
     autoencoder_group = autoencoder_parent.add_argument_group(
@@ -811,7 +829,12 @@ def parse_command_line():
 
     train_image_cnn_parser = train_image_subparser.add_parser(
         "cnn",
-        parents=[parent_parser, train_parent_parser, transfer_learning_parent],
+        parents=[
+            parent_parser,
+            train_parent_parser,
+            cnn_parent_parser,
+            transfer_learning_parent,
+        ],
         help="Train an image-level CNN.",
     )
     # /!\ If parents list is changed the arguments won't be in the right group anymore !
@@ -875,6 +898,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
+            cnn_parent_parser,
             train_patch_parent,
             transfer_learning_parent,
         ],
@@ -908,6 +932,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
+            cnn_parent_parser,
             train_patch_parent,
             transfer_learning_parent,
         ],
@@ -996,6 +1021,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
+            cnn_parent_parser,
             train_roi_parent,
             transfer_learning_parent,
         ],
@@ -1029,6 +1055,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
+            cnn_parent_parser,
             train_roi_parent,
             transfer_learning_parent,
         ],
@@ -1119,6 +1146,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
+            cnn_parent_parser,
             train_slice_parent,
             transfer_learning_parent,
         ],
@@ -1152,6 +1180,7 @@ def parse_command_line():
         parents=[
             parent_parser,
             train_parent_parser,
+            cnn_parent_parser,
             train_slice_parent,
             transfer_learning_parent,
         ],
@@ -1661,6 +1690,12 @@ def parse_command_line():
         TRAIN_CATEGORIES["DATA"]
     )
     interpret_data_group.add_argument(
+        "--target_label",
+        default=None,
+        type=str,
+        help="Which class the gradients explain. If None is given will be equal to the true label.",
+    )
+    interpret_data_group.add_argument(
         "--tsv_path",
         type=str,
         default=None,
@@ -1684,12 +1719,6 @@ def parse_command_line():
         default="AD",
         type=str,
         help="The images corresponding to this diagnosis only will be loaded.",
-    )
-    interpret_data_group.add_argument(
-        "--target_diagnosis",
-        default=None,
-        type=str,
-        help="Which class the gradients explain. If None is given will be equal to diagnosis.",
     )
     interpret_data_group.add_argument(
         "--baseline",
@@ -1922,10 +1951,5 @@ def return_train_parent_parser():
         default=1,
         type=int,
     )
-    # train_optim_group.add_argument(
-    #     "--loss",
-    #     help="Replaces default losses: cross-entropy for CNN and MSE for autoencoders.",
-    #     type=str, default="default",
-    #     choices=["default", "L1", "L1Norm", "SmoothL1", "SmoothL1Norm"])
 
     return train_parent_parser

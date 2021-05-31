@@ -1,6 +1,5 @@
 import argparse
 import os
-import warnings
 from os import path
 
 import matplotlib.pyplot as plt
@@ -54,8 +53,7 @@ def group_backprop(options):
         options.tsv_path = model_options.tsv_path
     if options.input_dir is None:
         options.input_dir = model_options.input_dir
-    if options.target_diagnosis is None:
-        options.target_diagnosis = options.diagnosis
+
     options.merged_tsv_path = model_options.merged_tsv_path
     options.predict_atlas_intensities = model_options.predict_atlas_intensities
 
@@ -66,7 +64,7 @@ def group_backprop(options):
                 options.model_path, fold, "gradients", selection, options.name
             )
 
-            criterion = get_criterion(model_options.loss)
+            criterion = get_criterion(model_options.network_task)
 
             # Data management (remove data not well predicted by the CNN)
             training_df = load_data_test(
@@ -82,21 +80,23 @@ def group_backprop(options):
                 model_options.mode,
                 minmaxnormalization=model_options.minmaxnormalization,
             )
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                data_example = return_dataset(
-                    model_options.mode,
-                    options.input_dir,
-                    training_df,
-                    model_options.preprocessing,
-                    train_transformations=None,
-                    all_transformations=all_transforms,
-                    prepare_dl=options.prepare_dl,
-                    multi_cohort=options.multi_cohort,
-                    params=model_options,
-                )
+            data_example = return_dataset(
+                model_options.mode,
+                options.input_dir,
+                training_df,
+                preprocessing=model_options.preprocessing,
+                label=model_options.label,
+                task=model_options.network_task,
+                train_transformations=None,
+                all_transformations=all_transforms,
+                prepare_dl=options.prepare_dl,
+                multi_cohort=options.multi_cohort,
+                params=model_options,
+            )
 
-            model = create_model(model_options, data_example.size)
+            model = create_model(
+                model_options, data_example.size, n_classes=model_options.n_classes
+            )
             model_dir = os.path.join(options.model_path, fold, "models", selection)
             model, best_epoch = load_model(
                 model, model_dir, gpu=options.gpu, filename="model_best.pth.tar"
@@ -122,19 +122,19 @@ def group_backprop(options):
                 # Save the tsv files used for the saliency maps
                 training_df.to_csv(path.join("data.tsv"), sep="\t", index=False)
 
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    data_train = return_dataset(
-                        model_options.mode,
-                        options.input_dir,
-                        training_df,
-                        model_options.preprocessing,
-                        train_transformations=None,
-                        all_transformations=all_transforms,
-                        prepare_dl=options.prepare_dl,
-                        multi_cohort=options.multi_cohort,
-                        params=model_options,
-                    )
+                data_train = return_dataset(
+                    model_options.mode,
+                    options.input_dir,
+                    training_df,
+                    preprocessing=model_options.preprocessing,
+                    label=model_options.label,
+                    task=model_options.network_task,
+                    train_transformations=None,
+                    all_transformations=all_transforms,
+                    prepare_dl=options.prepare_dl,
+                    multi_cohort=options.multi_cohort,
+                    params=model_options,
+                )
 
                 train_loader = DataLoader(
                     data_train,
@@ -153,9 +153,12 @@ def group_backprop(options):
                     else:
                         input_batch = data["image"]
 
-                    maps = interpreter.generate_gradients(
-                        input_batch, data_train.diagnosis_code[options.target_diagnosis]
-                    )
+                    if options.target_label is None:
+                        label = data["label"].reshape(-1)
+                    else:
+                        label = data_train.label_fn(options.target_label)
+
+                    maps = interpreter.generate_gradients(input_batch, label)
                     cum_map += maps.sum(axis=0)
 
                 mean_map = cum_map / len(data_train)

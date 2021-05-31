@@ -20,6 +20,7 @@ from ..tools.deep_learning.data import (
     return_dataset,
 )
 from ..tools.deep_learning.iotools import (
+    append_to_json,
     check_and_clean,
     commandline_to_json,
     return_logger,
@@ -81,7 +82,9 @@ def train_single_cnn(params, erase_existing=True):
             params.mode,
             params.input_dir,
             training_df,
-            params.preprocessing,
+            preprocessing=params.preprocessing,
+            label=params.label,
+            task=params.network_task,
             train_transformations=train_transforms,
             all_transformations=all_transforms,
             prepare_dl=params.prepare_dl,
@@ -92,7 +95,9 @@ def train_single_cnn(params, erase_existing=True):
             params.mode,
             params.input_dir,
             valid_df,
-            params.preprocessing,
+            preprocessing=params.preprocessing,
+            label=params.label,
+            task=params.network_task,
             train_transformations=train_transforms,
             all_transformations=all_transforms,
             prepare_dl=params.prepare_dl,
@@ -121,7 +126,7 @@ def train_single_cnn(params, erase_existing=True):
         # Initialize the model
         main_logger.info("Initialization of the model")
         model = init_model(
-            params, initial_shape=data_train.size, len_atlas=data_train.len_atlas()
+            params, initial_shape=data_train.size, n_classes=data_train.n_classes()
         )
         model = transfer_learning(
             model,
@@ -131,9 +136,11 @@ def train_single_cnn(params, erase_existing=True):
             selection=params.transfer_learning_selection,
             logger=main_logger,
         )
+        # Save number of classes for other functionalities
+        append_to_json({"n_classes": data_train.n_classes()}, params)
 
         # Define criterion and optimizer
-        criterion = get_criterion(params.loss)
+        criterion = get_criterion(params.network_task)
         optimizer = getattr(torch.optim, params.optimizer)(
             filter(lambda x: x.requires_grad, model.parameters()),
             lr=params.learning_rate,
@@ -141,8 +148,8 @@ def train_single_cnn(params, erase_existing=True):
         )
 
         # Define output directories
-        log_dir = os.path.join(params.output_dir, "fold-%i" % fi, "tensorboard_logs")
-        model_dir = os.path.join(params.output_dir, "fold-%i" % fi, "models")
+        log_dir = os.path.join(params.output_dir, f"fold-{fi}", "tensorboard_logs")
+        model_dir = os.path.join(params.output_dir, f"fold-{fi}", "models")
 
         main_logger.debug("Beginning the training task")
         train(
@@ -201,15 +208,15 @@ def test_single_cnn(
         # load the best trained model during the training
         model, best_epoch = load_model(
             model,
-            os.path.join(output_dir, "fold-%i" % split, "models", selection),
+            os.path.join(output_dir, f"fold-{split}", "models", selection),
             gpu=gpu,
             filename="model_best.pth.tar",
         )
 
         results_df, metrics = test(model, data_loader, gpu, criterion, mode)
         logger.info(
-            "%s level %s balanced accuracy is %f for model selected on %s"
-            % (mode, subset_name, metrics["balanced_accuracy"], selection)
+            f"{mode} level {subset_name} balanced accuracy is {metrics['balanced_accuracy']} "
+            f"for model selected on {selection}"
         )
 
         mode_level_to_tsvs(

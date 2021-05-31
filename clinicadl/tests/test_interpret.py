@@ -1,8 +1,9 @@
 # coding: utf8
 
-import pytest
 import os
 import shutil
+
+import pytest
 
 
 @pytest.fixture(params=["group_image", "individual_image"])
@@ -18,12 +19,9 @@ def cli_commands(request):
             "data/labels_list",
             "results",
             "Conv5_FC3",
-            "--epochs",
-            "1",
-            "--n_splits",
-            "2",
-            "--split",
-            "0",
+            "--epochs 1",
+            "--n_splits 2",
+            "--split 0",
         ]
         interpret_input = ["interpret", "group", "results", "group-test"]
 
@@ -37,12 +35,9 @@ def cli_commands(request):
             "data/labels_list",
             "results",
             "Conv5_FC3",
-            "--epochs",
-            "1",
-            "--n_splits",
-            "2",
-            "--split",
-            "0",
+            "--epochs 1",
+            "--n_splits 2",
+            "--split 0",
         ]
         interpret_input = ["interpret", "individual", "results", "individual-test"]
     else:

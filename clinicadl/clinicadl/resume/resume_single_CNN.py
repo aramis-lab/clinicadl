@@ -49,7 +49,9 @@ def resume_single_cnn(params, resumed_split):
         params.mode,
         params.input_dir,
         training_df,
-        params.preprocessing,
+        preprocessing=params.preprocessing,
+        label=params.label,
+        task=params.network_task,
         train_transformations=train_transforms,
         all_transformations=all_transforms,
         params=params,
@@ -58,7 +60,9 @@ def resume_single_cnn(params, resumed_split):
         params.mode,
         params.input_dir,
         valid_df,
-        params.preprocessing,
+        preprocessing=params.preprocessing,
+        label=params.label,
+        task=params.network_task,
         train_transformations=train_transforms,
         all_transformations=all_transforms,
         params=params,
@@ -85,7 +89,7 @@ def resume_single_cnn(params, resumed_split):
     # Initialize the model
     main_logger.info("Initialization of the model")
     model = init_model(
-        params, initial_shape=data_train.size, len_atlas=data_train.len_atlas()
+        params, initial_shape=data_train.size, n_classes=data_train.n_classes()
     )
     model_dir = path.join(params.output_dir, f"fold-{resumed_split}", "models")
     model, current_epoch = load_model(
@@ -95,7 +99,7 @@ def resume_single_cnn(params, resumed_split):
     params.beginning_epoch = current_epoch + 1
 
     # Define criterion and optimizer
-    criterion = get_criterion(params.loss)
+    criterion = get_criterion(params.network_task)
     optimizer_path = path.join(
         params.output_dir, f"fold-{resumed_split}", "models", "optimizer.pth.tar"
     )

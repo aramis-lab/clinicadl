@@ -925,18 +925,14 @@ class SmoothL1ClassificationLoss(_Loss):
         return F.smooth_l1_loss(input, binarize_target)
 
 
-def get_criterion(option):
+def get_criterion(network_task):
     """Returns the appropriate loss depending on the option"""
-    if option == "default":
+    if network_task == "classification":
         return torch.nn.CrossEntropyLoss(reduction="sum")
-    elif option == "L1Norm" or option == "L1":
-        return L1ClassificationLoss(reduction="sum", normalization=(option == "L1Norm"))
-    elif option == "SmoothL1Norm" or option == "SmoothL1":
-        return SmoothL1ClassificationLoss(
-            reduction="sum", normalization=(option == "SmoothL1Norm")
-        )
+    elif network_task == "regression":
+        return torch.nn.MSELoss(reduction="sum")
     else:
-        raise ValueError("The option %s is unknown for criterion selection" % option)
+        raise ValueError(f"The task {network_task} is unknown for criterion selection.")
 
 
 def binarize_label(y, classes, pos_label=1, neg_label=0):

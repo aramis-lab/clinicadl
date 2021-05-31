@@ -105,6 +105,27 @@ def check_and_clean(d):
     os.makedirs(d)
 
 
+def append_to_json(new_dict, params, filename="commandline.json"):
+    """
+    Appends new values defined in new_dict in a previously written JSON file.
+    Args:
+        new_dict: (dict) new values to append to the JSON file.
+        params: (Namespace or dict) the output of `parser.parse_known_args()`.
+        filename: (str) name of the JSON file.
+    """
+    import json
+    from os import path
+
+    json_path = path.join(params.output_dir, filename)
+    with open(json_path, "r") as file:
+        data = json.load(file)
+
+    data.update(new_dict)
+    json_data = json.dumps(data, skipkeys=True, indent=4)
+    with open(json_path, "w") as file:
+        file.write(json_data)
+
+
 def commandline_to_json(commandline, logger=None, filename="commandline.json"):
     """
     This is a function to write the python argparse object into a json file.
@@ -114,7 +135,6 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
         logger: (logging object) writer to stdout and stderr
         filename: (str) name of the JSON file.
 
-    :return:
     """
     if logger is None:
         logger = logging
@@ -137,11 +157,10 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
             del commandline_arg_dict[variable]
 
     # save to json file
-    json = json.dumps(commandline_arg_dict, skipkeys=True, indent=4)
-    logger.info("Path of json file: %s" % os.path.join(output_dir, "commandline.json"))
-    f = open(os.path.join(output_dir, filename), "w")
-    f.write(json)
-    f.close()
+    json_data = json.dumps(commandline_arg_dict, skipkeys=True, indent=4)
+    logger.info(f"Path of json file: {os.path.join(output_dir, filename)}")
+    with open(os.path.join(output_dir, filename), "w") as f:
+        f.write(json_data)
 
 
 def read_json(options=None, json_path=None, test=False, read_computational=False):
@@ -265,6 +284,23 @@ def read_json(options=None, json_path=None, test=False, read_computational=False
     if hasattr(options, "n_splits") and options.n_splits is None:
         options.n_splits = 0
 
+    if not hasattr(options, "n_classes"):
+        if options.predict_atlas_intensities is not None:
+            raise ValueError(
+                "Retro-compatibility is broken between the version used to train this model and"
+                "the one used to process it. To run the processing with this version please "
+                "update manually the JSON file and specify the number of output nodes of your network "
+                "with key 'n_classes'."
+            )
+        else:
+            options.n_classes = 2
+
+    if not hasattr(options, "network_task"):
+        options.network_task = "classification"
+
+    if not hasattr(options, "label"):
+        options.label = "diagnosis"
+
     return options
 
 
@@ -295,11 +331,13 @@ def check_and_complete(options, random_search=False):
         "dropout": 0,
         "epochs": 20,
         "evaluation_steps": 0,
+        "label": "diagnosis",
         "learning_rate": 4,
         "loss": "default",
         "merged_tsv_path": None,
         "multi_cohort": False,
         "n_splits": 0,
+        "network_task": "classification",
         "nproc": 2,
         "optimizer": "Adam",
         "unnormalize": False,

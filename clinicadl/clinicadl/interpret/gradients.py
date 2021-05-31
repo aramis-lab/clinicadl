@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 
 
@@ -24,7 +25,7 @@ class VanillaBackProp:
             model_output = self.model(input_batch)
         # Target for backprop
         one_hot_output = torch.zeros_like(model_output)
-        one_hot_output[:, target_class] = 1
+        one_hot_output[np.arange(len(model_output)), target_class] = 1
         if self.gpu:
             one_hot_output = one_hot_output.cuda()
         # Backward pass

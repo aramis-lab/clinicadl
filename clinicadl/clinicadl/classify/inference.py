@@ -33,7 +33,7 @@ def classify(
     tsv_path,
     model_path,
     prefix_output,
-    labels=True,
+    label_presence=True,
     gpu=True,
     num_workers=0,
     batch_size=1,
@@ -54,7 +54,7 @@ def classify(
         tsv_path: file with the name of the MRIs to process (single or multiple)
         model_path: file with the model (pth format).
         prefix_output: prefix of all classification outputs.
-        labels: by default is True. If False no metrics tsv files will be written.
+        label_presence: by default is True. If False no metrics tsv files will be written.
         gpu: if true, it uses gpu.
         num_workers: num_workers used in DataLoader
         batch_size: batch size of the DataLoader
@@ -82,7 +82,7 @@ def classify(
         model_path,
         json_file,
         prefix_output,
-        labels,
+        label_presence,
         gpu,
         num_workers,
         batch_size,
@@ -100,7 +100,7 @@ def inference_from_model(
     model_path=None,
     json_file=None,
     prefix=None,
-    labels=True,
+    label_presence=True,
     gpu=True,
     num_workers=0,
     batch_size=1,
@@ -126,7 +126,7 @@ def inference_from_model(
         model_path: file with the model (pth format).
         json_file: file containing the training parameters.
         prefix: prefix of all classification outputs.
-        labels: by default is True. If False no metrics tsv files will be written.
+        label_presence: by default is True. If False no metrics tsv files will be written.
         measurements.tsv
         gpu: if true, it uses gpu.
         num_workers: num_workers used in DataLoader
@@ -230,7 +230,7 @@ def inference_from_model(
                     "caps_dir": caps_dir,
                     "tsv_path": tsv_path,
                     "prefix": prefix,
-                    "labels": labels,
+                    "label_presence": label_presence,
                 },
                 filename=f"commandline_classify-{prefix}",
             )
@@ -245,7 +245,7 @@ def inference_from_model(
                 currentDirectory,
                 fold,
                 "best_%s" % selection_metric,
-                labels=labels,
+                label_presence=label_presence,
                 num_cnn=num_cnn,
                 logger=logger,
                 multi_cohort=multi_cohort,
@@ -269,7 +269,7 @@ def inference_from_model(
                     prefix,
                     num_cnn=num_cnn,
                     selection_threshold=selection_thresh,
-                    use_labels=labels,
+                    use_labels=label_presence,
                     logger=logger,
                 )
 
@@ -288,7 +288,7 @@ def inference_from_model_generic(
     output_dir,
     fold,
     selection,
-    labels=True,
+    label_presence=True,
     num_cnn=None,
     logger=None,
     multi_cohort=False,
@@ -311,7 +311,7 @@ def inference_from_model_generic(
     )
 
     # Define loss and optimizer
-    criterion = get_criterion(model_options.loss)
+    criterion = get_criterion(model_options.network_task)
 
     if model_options.mode_task == "multicnn":
 
@@ -321,12 +321,14 @@ def inference_from_model_generic(
                 model_options.mode,
                 caps_dir,
                 test_df,
-                model_options.preprocessing,
+                preprocessing=model_options.preprocessing,
+                label=model_options.label,
+                task=model_options.network_task,
                 train_transformations=None,
                 all_transformations=all_transforms,
                 params=model_options,
                 cnn_index=n,
-                labels=labels,
+                label_presence=label_presence,
                 prepare_dl=prepare_dl,
                 multi_cohort=multi_cohort,
             )
@@ -340,7 +342,9 @@ def inference_from_model_generic(
             )
 
             # load the best trained model during the training
-            model = create_model(model_options, test_dataset.size)
+            model = create_model(
+                model_options, test_dataset.size, n_classes=model_options.n_classes
+            )
             model, best_epoch = load_model(
                 model,
                 join(model_path, "cnn-%i" % n, selection),
@@ -354,19 +358,13 @@ def inference_from_model_generic(
                 gpu,
                 criterion,
                 mode=model_options.mode,
-                use_labels=labels,
+                use_labels=label_presence,
             )
 
-            if labels:
+            if label_presence:
                 logger.info(
-                    "%s balanced accuracy is %f for %s %i and model selected on %s"
-                    % (
-                        prefix,
-                        cnn_metrics["balanced_accuracy"],
-                        model_options.mode,
-                        n,
-                        selection,
-                    )
+                    f"{prefix} balanced accuracy is {cnn_metrics['balanced_accuracy']} "
+                    f"for {model_options.mode} {n} and model selected on {selection}."
                 )
 
             mode_level_to_tsvs(
@@ -387,11 +385,13 @@ def inference_from_model_generic(
             model_options.mode,
             caps_dir,
             test_df,
-            model_options.preprocessing,
+            preprocessing=model_options.preprocessing,
+            label=model_options.label,
+            task=model_options.network_task,
             train_transformations=None,
             all_transformations=all_transforms,
             params=model_options,
-            labels=labels,
+            label_presence=label_presence,
             prepare_dl=prepare_dl,
             multi_cohort=multi_cohort,
         )
@@ -418,13 +418,13 @@ def inference_from_model_generic(
             gpu,
             criterion,
             mode=model_options.mode,
-            use_labels=labels,
+            use_labels=label_presence,
         )
 
-        if labels:
+        if label_presence:
             logger.info(
-                "%s level %s balanced accuracy is %f for model selected on %s"
-                % (model_options.mode, prefix, metrics["balanced_accuracy"], selection)
+                f"{model_options.mode} level {prefix} balanced accuracy is {metrics['balanced_accuracy']} "
+                f"for model selected on {selection}."
             )
 
         mode_level_to_tsvs(
