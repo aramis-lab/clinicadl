@@ -29,7 +29,7 @@ def resume_autoencoder(params, resumed_split):
     main_logger = return_logger(params.verbose, "main process")
     train_logger = return_logger(params.verbose, "train")
 
-    commandline_to_json(params, logger=main_logger)
+    commandline_to_json(params, logger=main_logger, filename="resume.json")
     write_requirements_version(params.output_dir)
     params = translate_parameters(params)
     train_transforms, all_transforms = get_transforms(
@@ -100,6 +100,9 @@ def resume_autoencoder(params, resumed_split):
     )
 
     params.beginning_epoch = current_epoch + 1
+    append_to_json(
+        {"beginning_epoch": current_epoch + 1}, params, filename="resume.json"
+    )
 
     # Define criterion and optimizer
     criterion = get_criterion(params.loss)
