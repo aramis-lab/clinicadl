@@ -1,27 +1,21 @@
 """
-Launch a random network training.
+Retrain a model defined by a commandline.json file
 """
 
 import argparse
-from os import path
 
 from ..tools.deep_learning import check_and_complete, read_json
-from ..tools.deep_learning.models.random import random_sampling
 from .train_autoencoder import train_autoencoder
 from .train_multiCNN import train_multi_cnn
 from .train_singleCNN import train_single_cnn
 
 
-def launch_search(options):
-
-    rs_options = argparse.Namespace()
-    rs_options = read_json(
-        rs_options, path.join(options.launch_dir, "random_search.json")
-    )
-    check_and_complete(rs_options, random_search=True)
-    random_sampling(rs_options, options)
-
-    options.output_dir = path.join(options.launch_dir, options.name)
+def retrain(json_path, output_dir, verbose=0):
+    options = argparse.Namespace()
+    options = read_json(options, json_path=json_path, read_computational=True)
+    check_and_complete(options)
+    options.output_dir = output_dir
+    options.verbose = verbose
 
     if options.network_type == "autoencoder":
         train_autoencoder(options)

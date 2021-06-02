@@ -1,14 +1,21 @@
 # coding: utf8
 
-from torch import nn
-import torch
 from copy import deepcopy
 
-from .modules import PadMaxPool3d, PadMaxPool2d, CropMaxUnpool3d, CropMaxUnpool2d, Flatten, Reshape
+import torch
+from torch import nn
+
+from .modules import (
+    CropMaxUnpool2d,
+    CropMaxUnpool3d,
+    Flatten,
+    PadMaxPool2d,
+    PadMaxPool3d,
+    Reshape,
+)
 
 
 class AutoEncoder(nn.Module):
-
     def __init__(self, model=None):
         """
         Construct an autoencoder from a given CNN. The encoder part corresponds to the convolutional part of the CNN.
@@ -16,6 +23,7 @@ class AutoEncoder(nn.Module):
         :param model: (Module) a CNN. The convolutional part must be comprised in a 'features' class variable.
         """
         from copy import deepcopy
+
         super(AutoEncoder, self).__init__()
 
         self.level = 0
@@ -73,13 +81,24 @@ class AutoEncoder(nn.Module):
         inv_layers = []
         for i, layer in enumerate(self.encoder):
             if isinstance(layer, nn.Conv3d):
-                inv_layers.append(nn.ConvTranspose3d(layer.out_channels, layer.in_channels, layer.kernel_size,
-                                                     stride=layer.stride, padding=layer.padding))
+                inv_layers.append(
+                    nn.ConvTranspose3d(
+                        layer.out_channels,
+                        layer.in_channels,
+                        layer.kernel_size,
+                        stride=layer.stride,
+                        padding=layer.padding,
+                    )
+                )
                 self.level += 1
             elif isinstance(layer, PadMaxPool3d):
-                inv_layers.append(CropMaxUnpool3d(layer.kernel_size, stride=layer.stride))
+                inv_layers.append(
+                    CropMaxUnpool3d(layer.kernel_size, stride=layer.stride)
+                )
             elif isinstance(layer, PadMaxPool2d):
-                inv_layers.append(CropMaxUnpool2d(layer.kernel_size, stride=layer.stride))
+                inv_layers.append(
+                    CropMaxUnpool2d(layer.kernel_size, stride=layer.stride)
+                )
             elif isinstance(layer, nn.Linear):
                 inv_layers.append(nn.Linear(layer.out_features, layer.in_features))
             elif isinstance(layer, Flatten):
@@ -108,7 +127,10 @@ class AutoEncoder(nn.Module):
                 idx_relu = idx
 
             if idx_conv != -1 and idx_relu != -1:
-                inv_layers[idx_relu], inv_layers[idx_conv] = inv_layers[idx_conv], inv_layers[idx_relu]
+                inv_layers[idx_relu], inv_layers[idx_conv] = (
+                    inv_layers[idx_conv],
+                    inv_layers[idx_relu],
+                )
                 idx_conv, idx_relu = -1, -1
 
         # Check if number of features of batch normalization layers is still correct
@@ -120,9 +142,15 @@ class AutoEncoder(nn.Module):
         return inv_layers
 
 
-def transfer_learning(model, split, source_path=None, gpu=False,
-                      selection="best_balanced_accuracy", cnn_index=None,
-                      logger=None):
+def transfer_learning(
+    model,
+    split,
+    source_path=None,
+    gpu=False,
+    selection="best_balanced_accuracy",
+    cnn_index=None,
+    logger=None,
+):
     """
     Allows transfer learning from a CNN or an autoencoder to a CNN
 
@@ -135,16 +163,19 @@ def transfer_learning(model, split, source_path=None, gpu=False,
     :return: (nn.Module) the model after transfer learning.
     """
     import argparse
-    from os import path
-    from ..iotools import read_json, translate_parameters
     import logging
+    from os import path
+
+    from ..iotools import read_json, translate_parameters
 
     if logger is None:
         logger = logging
 
     if source_path is not None:
         source_commandline = argparse.Namespace()
-        source_commandline = read_json(source_commandline, json_path=path.join(source_path, "commandline.json"))
+        source_commandline = read_json(
+            source_commandline, json_path=path.join(source_path, "commandline.json")
+        )
         source_commandline = translate_parameters(source_commandline)
         if source_commandline.mode_task == "autoencoder":
             logger.info("A pretrained autoencoder is loaded at path %s" % source_path)
@@ -152,7 +183,9 @@ def transfer_learning(model, split, source_path=None, gpu=False,
 
         else:
             logger.info("A pretrained CNN is loaded at path %s" % source_path)
-            model = transfer_cnn_weights(model, source_path, split, selection=selection, cnn_index=cnn_index)
+            model = transfer_cnn_weights(
+                model, source_path, split, selection=selection, cnn_index=cnn_index
+            )
 
     else:
         logger.info("The model is trained from scratch.")
@@ -175,15 +208,17 @@ def transfer_autoencoder_weights(model, source_path, split):
     :param split: (int) split number to load
     :return: (str) path to the written weights ready to be loaded
     """
-    from copy import deepcopy
     import os
+    from copy import deepcopy
 
     if not isinstance(model, AutoEncoder):
         decoder = AutoEncoder(model)
     else:
         decoder = model
 
-    model_path = os.path.join(source_path, 'fold-%i' % split, 'models', "best_loss", "model_best.pth.tar")
+    model_path = os.path.join(
+        source_path, "fold-%i" % split, "models", "best_loss", "model_best.pth.tar"
+    )
     source_dict = torch.load(model_path)
 
     initialize_other_autoencoder(decoder, source_dict)
@@ -197,7 +232,9 @@ def transfer_autoencoder_weights(model, source_path, split):
     return model
 
 
-def transfer_cnn_weights(model, source_path, split, selection="best_balanced_accuracy", cnn_index=None):
+def transfer_cnn_weights(
+    model, source_path, split, selection="best_balanced_accuracy", cnn_index=None
+):
     """
     Set the weights of the model according to the CNN at source path.
     :param model: (Module) the model which must be initialized
@@ -209,18 +246,29 @@ def transfer_cnn_weights(model, source_path, split, selection="best_balanced_acc
     """
 
     import os
+
     import torch
 
     if isinstance(model, AutoEncoder):
-        raise ValueError('Transfer learning from CNN to autoencoder was not implemented.')
+        raise ValueError(
+            "Transfer learning from CNN to autoencoder was not implemented."
+        )
 
-    model_path = os.path.join(source_path, "fold-%i" % split, "models", selection, "model_best.pth.tar")
+    model_path = os.path.join(
+        source_path, "fold-%i" % split, "models", selection, "model_best.pth.tar"
+    )
     if cnn_index is not None and not os.path.exists(model_path):
         print("Transfer learning from multi-CNN, cnn-%i" % cnn_index)
-        model_path = os.path.join(source_path, "fold_%i" % split, "models", "cnn-%i" % cnn_index,
-                                  selection, "model_best.pth.tar")
+        model_path = os.path.join(
+            source_path,
+            "fold_%i" % split,
+            "models",
+            "cnn-%i" % cnn_index,
+            selection,
+            "model_best.pth.tar",
+        )
     results = torch.load(model_path)
-    model.load_state_dict(results['model'])
+    model.load_state_dict(results["model"])
 
     return model
 
@@ -234,33 +282,45 @@ def initialize_other_autoencoder(decoder, source_dict):
     """
 
     try:
-        decoder.load_state_dict(source_dict['model'])
+        decoder.load_state_dict(source_dict["model"])
     except RuntimeError:
-        print("The source and target autoencoders do not have the same size."
-              "The transfer learning task may not work correctly for custom models.")
+        print(
+            "The source and target autoencoders do not have the same size."
+            "The transfer learning task may not work correctly for custom models."
+        )
 
-        parameters_dict = source_dict['model']
-        difference = find_maximum_layer(decoder.state_dict()) - find_maximum_layer(parameters_dict)
+        parameters_dict = source_dict["model"]
+        difference = find_maximum_layer(decoder.state_dict()) - find_maximum_layer(
+            parameters_dict
+        )
 
         for key in parameters_dict.keys():
-            section, number, spec = key.split('.')
+            section, number, spec = key.split(".")
             number = int(number)
-            if section == 'encoder' and number < len(decoder.encoder):
+            if section == "encoder" and number < len(decoder.encoder):
                 data = getattr(getattr(decoder, section)[number], spec).data
                 assert data.shape == parameters_dict[key].shape
-                getattr(getattr(decoder, section)[number], spec).data = parameters_dict[key]
-            elif section == 'decoder':
+                getattr(getattr(decoder, section)[number], spec).data = parameters_dict[
+                    key
+                ]
+            elif section == "decoder":
                 # Deeper target autoencoder
                 if difference >= 0:
-                    data = getattr(getattr(decoder, section)[number + difference], spec).data
+                    data = getattr(
+                        getattr(decoder, section)[number + difference], spec
+                    ).data
                     assert data.shape == parameters_dict[key].shape
-                    getattr(getattr(decoder, section)[number + difference], spec).data = parameters_dict[key]
+                    getattr(
+                        getattr(decoder, section)[number + difference], spec
+                    ).data = parameters_dict[key]
                 # More shallow target autoencoder
                 elif difference < 0 and number < len(decoder.decoder):
                     data = getattr(getattr(decoder, section)[number], spec).data
-                    new_key = '.'.join(['decoder', str(number + abs(difference)), spec])
+                    new_key = ".".join(["decoder", str(number + abs(difference)), spec])
                     assert data.shape == parameters_dict[new_key].shape
-                    getattr(getattr(decoder, section)[number], spec).data = parameters_dict[new_key]
+                    getattr(
+                        getattr(decoder, section)[number], spec
+                    ).data = parameters_dict[new_key]
 
     return decoder
 

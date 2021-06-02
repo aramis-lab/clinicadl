@@ -2,19 +2,21 @@
 Copied from https://github.com/vfonov/deep-qc/blob/master/python/model/resnet_qc.py
 """
 
+from os import path
+
+import nibabel as nib
+import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
-import nibabel as nib
-from os import path
-import torch
 
 from clinicadl.tools.deep_learning.data import FILENAME_TYPE
 
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                     padding=1, bias=False)
+    return nn.Conv2d(
+        in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False
+    )
 
 
 def conv1x1(in_planes, out_planes, stride=1):
@@ -55,15 +57,17 @@ class BasicBlock(nn.Module):
 
 
 class ResNetQC(nn.Module):
-
-    def __init__(self, block, layers, num_classes=2, use_ref=False, zero_init_residual=False):
+    def __init__(
+        self, block, layers, num_classes=2, use_ref=False, zero_init_residual=False
+    ):
         super(ResNetQC, self).__init__()
         self.inplanes = 64
         self.use_ref = use_ref
         self.feat = 3
         self.expansion = block.expansion
-        self.conv1 = nn.Conv2d(2 if self.use_ref else 1, 64, kernel_size=7, stride=2, padding=3,
-                               bias=False)
+        self.conv1 = nn.Conv2d(
+            2 if self.use_ref else 1, 64, kernel_size=7, stride=2, padding=3, bias=False
+        )
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
@@ -74,11 +78,19 @@ class ResNetQC(nn.Module):
 
         # for merging multiple features
         self.addon = nn.Sequential(
-            nn.Conv2d(self.feat * 512 * block.expansion, 512 * block.expansion, kernel_size=1, stride=1, padding=0,
-                      bias=True),
+            nn.Conv2d(
+                self.feat * 512 * block.expansion,
+                512 * block.expansion,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                bias=True,
+            ),
             nn.BatchNorm2d(512 * block.expansion),
             nn.ReLU(inplace=True),
-            nn.Conv2d(512 * block.expansion, 32, kernel_size=1, stride=1, padding=0, bias=True),
+            nn.Conv2d(
+                512 * block.expansion, 32, kernel_size=1, stride=1, padding=0, bias=True
+            ),
             nn.BatchNorm2d(32),
             nn.ReLU(inplace=True),
             nn.Conv2d(32, 32, kernel_size=7, stride=1, padding=0, bias=True),
@@ -88,12 +100,12 @@ class ResNetQC(nn.Module):
             nn.BatchNorm2d(32),
             nn.ReLU(inplace=False),
             nn.Dropout2d(p=0.5, inplace=True),
-            nn.Conv2d(32, num_classes, kernel_size=1, stride=1, padding=0, bias=True)
+            nn.Conv2d(32, num_classes, kernel_size=1, stride=1, padding=0, bias=True),
         )
         # initialization
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
@@ -165,9 +177,13 @@ class QCDataset(Dataset):
         self.df = data_df
         self.use_extracted_tensors = use_extracted_tensors
 
-        if ('session_id' not in list(self.df.columns.values)) or ('participant_id' not in list(self.df.columns.values)):
-            raise Exception("the data file is not in the correct format."
-                            "Columns should include ['participant_id', 'session_id']")
+        if ("session_id" not in list(self.df.columns.values)) or (
+            "participant_id" not in list(self.df.columns.values)
+        ):
+            raise Exception(
+                "the data file is not in the correct format."
+                "Columns should include ['participant_id', 'session_id']"
+            )
 
         self.normalization = MinMaxNormalization()
 
@@ -175,24 +191,37 @@ class QCDataset(Dataset):
         return len(self.df)
 
     def __getitem__(self, idx):
-        subject = self.df.loc[idx, 'participant_id']
-        session = self.df.loc[idx, 'session_id']
+        subject = self.df.loc[idx, "participant_id"]
+        session = self.df.loc[idx, "session_id"]
 
         if self.use_extracted_tensors:
-            image_path = path.join(self.img_dir, 'subjects', subject, session, 'deeplearning_prepare_data',
-                                   'image_based', 't1_linear',
-                                   '%s_%s%s.pt' % (subject, session, FILENAME_TYPE["full"]))
+            image_path = path.join(
+                self.img_dir,
+                "subjects",
+                subject,
+                session,
+                "deeplearning_prepare_data",
+                "image_based",
+                "t1_linear",
+                "%s_%s%s.pt" % (subject, session, FILENAME_TYPE["full"]),
+            )
 
             image = torch.load(image_path)
             image = self.pt_transform(image)
         else:
-            image_path = path.join(self.img_dir, 'subjects', subject, session, 't1_linear',
-                                   '%s_%s%s.nii.gz' % (subject, session, FILENAME_TYPE["full"]))
+            image_path = path.join(
+                self.img_dir,
+                "subjects",
+                subject,
+                session,
+                "t1_linear",
+                "%s_%s%s.nii.gz" % (subject, session, FILENAME_TYPE["full"]),
+            )
 
             image = nib.load(image_path)
             image = self.nii_transform(image)
 
-        sample = {'image': image, 'participant_id': subject, 'session_id': session}
+        sample = {"image": image, "participant_id": subject, "session_id": session}
 
         return sample
 
@@ -212,13 +241,15 @@ class QCDataset(Dataset):
         input_images = [
             sample[:, :, int(sz[2] / 2)],
             sample[int(sz[0] / 2), :, :],
-            sample[:, int(sz[1] / 2), :]
+            sample[:, int(sz[1] / 2), :],
         ]
 
         output_images = [
-            np.zeros((224, 224),),
+            np.zeros(
+                (224, 224),
+            ),
             np.zeros((224, 224)),
-            np.zeros((224, 224))
+            np.zeros((224, 224)),
         ]
 
         # flip, resize and crop
@@ -230,28 +261,36 @@ class QCDataset(Dataset):
 
             if len(input_images[i].shape) == 3:
                 slice = np.reshape(
-                    input_images[i], (input_images[i].shape[0], input_images[i].shape[1]))
+                    input_images[i],
+                    (input_images[i].shape[0], input_images[i].shape[1]),
+                )
             else:
                 slice = input_images[i]
 
             _scale = min(256.0 / slice.shape[0], 256.0 / slice.shape[1])
             # slice[::-1, :] is to flip the first axis of image
             slice = transform.rescale(
-                slice[::-1, :], _scale, mode='constant', clip=False)
+                slice[::-1, :], _scale, mode="constant", clip=False
+            )
 
             sz = slice.shape
             # pad image
-            dummy = np.zeros((256, 256),)
-            dummy[int((256 - sz[0]) / 2): int((256 - sz[0]) / 2) + sz[0],
-                  int((256 - sz[1]) / 2): int((256 - sz[1]) / 2) + sz[1]] = slice
+            dummy = np.zeros(
+                (256, 256),
+            )
+            dummy[
+                int((256 - sz[0]) / 2) : int((256 - sz[0]) / 2) + sz[0],
+                int((256 - sz[1]) / 2) : int((256 - sz[1]) / 2) + sz[1],
+            ] = slice
 
             # rotate and flip the image back to the right direction for each view, if the MRI was read by nibabel
             # it seems that this will rotate the image 90 degree with
             # counter-clockwise direction and then flip it horizontally
-            output_images[i] = np.flip(
-                np.rot90(dummy[16:240, 16:240]), axis=1).copy()
+            output_images[i] = np.flip(np.rot90(dummy[16:240, 16:240]), axis=1).copy()
 
-        return torch.cat([torch.from_numpy(i).float().unsqueeze_(0) for i in output_images]).unsqueeze_(0)
+        return torch.cat(
+            [torch.from_numpy(i).float().unsqueeze_(0) for i in output_images]
+        ).unsqueeze_(0)
 
     def pt_transform(self, image):
         from torch.nn.functional import interpolate, pad
@@ -262,7 +301,7 @@ class QCDataset(Dataset):
         input_images = [
             image[:, :, int(sz[2] / 2)],
             image[int(sz[0] / 2), :, :],
-            image[:, int(sz[1] / 2), :]
+            image[:, int(sz[1] / 2), :],
         ]
 
         output_images = list()
@@ -272,7 +311,9 @@ class QCDataset(Dataset):
 
             scale = min(256.0 / slice.shape[0], 256.0 / slice.shape[1])
             # slice[::-1, :] is to flip the first axis of image
-            slice = interpolate(torch.flip(slice, (0,)).unsqueeze(0).unsqueeze(0), scale_factor=scale)
+            slice = interpolate(
+                torch.flip(slice, (0,)).unsqueeze(0).unsqueeze(0), scale_factor=scale
+            )
             slice = slice[0, 0, :, :]
 
             padding = self.get_padding(slice)
@@ -281,9 +322,18 @@ class QCDataset(Dataset):
             # rotate and flip the image back to the right direction for each view, if the MRI was read by nibabel
             # it seems that this will rotate the image 90 degree with
             # counter-clockwise direction and then flip it horizontally
-            output_images.append(torch.flip(torch.rot90(slice[16:240, 16:240], 1, [0, 1]), [1, ]).clone())
+            output_images.append(
+                torch.flip(
+                    torch.rot90(slice[16:240, 16:240], 1, [0, 1]),
+                    [
+                        1,
+                    ],
+                ).clone()
+            )
 
-        return torch.cat([image.float().unsqueeze_(0) for image in output_images]).unsqueeze_(0)
+        return torch.cat(
+            [image.float().unsqueeze_(0) for image in output_images]
+        ).unsqueeze_(0)
 
     @staticmethod
     def get_padding(image):
