@@ -44,6 +44,8 @@ The options specific to this task are the following:
 - `--stride_size` (int) length between the centers of successive patches in voxels. Default: `50`.
 - `--use_extracted_patches` (bool) if this flag is given, the outputs of `clinicadl extract` are used.
 Otherwise, the whole 3D MR volumes are loaded and patches are extracted on-the-fly.
+- `--sampler_label` (str) is the name of the column used as label for weighted sampling.
+Default will lead to random sampling.
 - `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
 The best model of this folder will be used to initialize the network as 
 explained in the [implementation details](./Details.md#transfer-learning). 

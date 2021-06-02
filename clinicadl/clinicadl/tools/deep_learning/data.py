@@ -1592,7 +1592,11 @@ def generate_sampler(dataset, sampler_option="random", n_bins=5):
          (Sampler)
     """
     df = dataset.df
-    # To be changed for non-binary classification
+
+    # Case for autoencoders when no label is given
+    if dataset.label is None:
+        weights = [1] * len(df) * dataset.elem_per_image
+        return sampler.RandomSampler(weights)
 
     if dataset.task == "classification":
         count = np.zeros(dataset.n_classes() - dataset.len_atlas())

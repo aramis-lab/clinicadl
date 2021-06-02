@@ -798,6 +798,13 @@ def parse_command_line():
         action="store_true",
         default=False,
     )
+    autoencoder_group.add_argument(
+        "--sampler_label",
+        help="Name of the column used as label for weighted sampling. "
+        "Default will lead to random sampling.",
+        type=str,
+        default=None,
+    )
 
     ######################
     # IMAGE

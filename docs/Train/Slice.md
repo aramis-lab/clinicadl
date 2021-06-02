@@ -232,6 +232,8 @@ Otherwise, the whole 3D MR volumes are loaded and slices are extracted on-the-fl
 refer to the [customization page](./Custom.md#custom-labels). Default: `diagnosis`.
 - `--network_task` (str) is the type of task performed by the CNN. Must be chosen between classification and regression.
 Default: `classification`.
+- `--sampler_label` (str) is the name of the column used as label for weighted sampling.
+Default will lead to random sampling.
 - `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
 The best model of this folder will be used to initialize the network as 
 explained in the [implementation details](./Details.md#transfer-learning). 

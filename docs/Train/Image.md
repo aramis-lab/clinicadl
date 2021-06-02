@@ -38,8 +38,14 @@ where mandatory arguments are:
     Options that are common to all `train` input and network types can be found in the introduction of 
     [`clinicadl train`](./Introduction.md#running-the-task).
 
-There is one specific option for this task: 
+The options specific to this task are the following: 
 
+- `--sampler_label` (str) is the name of the column used as label for weighted sampling.
+Default will lead to random sampling.
+- `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
+The best model of this folder will be used to initialize the network as 
+explained in the [implementation details](./Details.md#transfer-learning). 
+If nothing is given the initialization will be random.
 - `--visualization` (bool) if this flag is given, inputs of the train and
 the validation sets and their corresponding reconstructions are written in `autoencoder_reconstruction`.
 Inputs are reconstructed based on the model that obtained the [best validation loss](./Details.md#model-selection).
