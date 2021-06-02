@@ -787,16 +787,6 @@ def parse_command_line():
         choices=["classification", "regression"],
     )
 
-    # Multi-CNN
-    multicnn_parent_parser = argparse.ArgumentParser(add_help=False)
-    multicnn_group = multicnn_parent_parser.add_argument_group(TRAIN_CATEGORIES["CNN"])
-    multicnn_group.add_argument(
-        "--label",
-        help="Name of the column used as label.",
-        type=str,
-        default="diagnosis",
-    )
-
     # Autoencoder
     autoencoder_parent = argparse.ArgumentParser(add_help=False)
     autoencoder_group = autoencoder_parent.add_argument_group(
@@ -1595,7 +1585,7 @@ def parse_command_line():
         default="validation",
     )
     tsv_kfold_subparser.add_argument(
-        "--stratification",
+        "--categorical_split_variable",
         help="Name of a variable used to stratify the k-fold split.",
         type=str,
         default=None,
