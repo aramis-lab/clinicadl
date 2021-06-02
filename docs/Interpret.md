@@ -62,9 +62,9 @@ Optional arguments:
     - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
 - **Model selection**
-    - `--selection` (list of str) corresponds to the metrics according to which the 
+    - `--selection_metrics` (list of str) corresponds to the metrics according to which the 
     [best models](Train/Details.md#model-selection) of `model_path` will be loaded. 
-    Choices are `best_loss` and `best_balanced_accuracy`. Default: `best_balanced_accuracy`.
+    Choices are `loss`, `balanced_accuracy` and `mae`. Default: `loss`.
 - **Data management**
     - `--tsv_path` (str) is a path to a directory containing one TSV file per diagnosis
     (see output tree of [getlabels](./TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease)). 
