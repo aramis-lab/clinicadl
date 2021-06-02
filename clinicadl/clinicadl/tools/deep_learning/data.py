@@ -75,6 +75,15 @@ class MRIDataset(Dataset):
                 f"Columns should include {mandatory_col}"
             )
 
+        # Check absence of NaN in labels
+        if self.label_presence:
+            if self.df[self.label].isnull().values.any():
+                raise ValueError(
+                    "NaN values were detected in your label column. "
+                    "Please remove them before training or use the flag "
+                    "--no_labels if you are classifying."
+                )
+
         self.label_fn, self.label_code = self.generate_label_fn()
 
         self.merged_df = merged_df
@@ -1363,7 +1372,7 @@ def load_data(
 
 
 def load_data_single(
-    train_val_path, diagnoses_list, split, n_splits=0, baseline=True, logger=None
+    train_val_path, diagnoses_list, split, n_splits=None, baseline=True, logger=None
 ):
 
     if logger is None:
@@ -1372,7 +1381,7 @@ def load_data_single(
     train_df = pd.DataFrame()
     valid_df = pd.DataFrame()
 
-    if n_splits == 0:
+    if n_splits == 0 or n_splits is None:
         train_path = path.join(train_val_path, "train")
         valid_path = path.join(train_val_path, "validation")
 

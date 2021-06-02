@@ -1903,9 +1903,9 @@ def return_train_parent_parser():
     train_cv_group.add_argument(
         "--n_splits",
         help="If a value is given for k will load data of a k-fold CV. "
-        "Default value (0) will load a single split.",
+        "Default value will load a single split.",
         type=int,
-        default=0,
+        default=None,
     )
     train_cv_group.add_argument(
         "--split",
