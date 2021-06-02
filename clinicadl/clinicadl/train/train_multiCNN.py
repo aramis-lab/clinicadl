@@ -74,6 +74,12 @@ def train_multi_cnn(params, erase_existing=True):
     else:
         fold_iterator = params.split
 
+    # Find main metric
+    if params.task == "classification":
+        main_metric = "balanced_accuracy"
+    else:
+        main_metric = "mae"
+
     # Loop on folds
     for fi in fold_iterator:
         main_logger.info(f"Fold {fi}")
@@ -220,7 +226,7 @@ def train_multi_cnn(params, erase_existing=True):
                 logger=eval_logger,
             )
 
-        for selection in ["best_balanced_accuracy", "best_loss"]:
+        for selection in [f"best_{main_metric}", "best_loss"]:
             soft_voting_to_tsvs(
                 params.output_dir,
                 fi,

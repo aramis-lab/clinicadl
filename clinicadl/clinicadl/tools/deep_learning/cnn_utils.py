@@ -900,24 +900,23 @@ def soft_voting(
     )
     weight_series.sort_index(inplace=True)
 
-    # Soft majority vote
+    # Name columns
     if use_labels:
         columns = [
             "participant_id",
             "session_id",
             "true_label",
             "predicted_label",
-            "proba0",
-            "proba1",
         ]
     else:
         columns = [
             "participant_id",
             "session_id",
             "predicted_label",
-            "proba0",
-            "proba1",
         ]
+    if task == "classification":
+        columns += ["proba0", "proba1"]
+
     df_final = pd.DataFrame(columns=columns)
     for (subject, session), subject_df in performance_df.groupby(
         ["participant_id", "session_id"]
@@ -932,10 +931,13 @@ def soft_voting(
 
         if use_labels:
             y = subject_df["true_label"].unique().item()
-            row = [[subject, session, y, y_hat, proba0, proba1]]
+            row = [subject, session, y, y_hat]
         else:
-            row = [[subject, session, y_hat, proba0, proba1]]
-        row_df = pd.DataFrame(row, columns=columns)
+            row = [subject, session, y_hat]
+        if task == "classification":
+            row += [proba0, proba1]
+
+        row_df = pd.DataFrame([row], columns=columns)
         df_final = df_final.append(row_df)
 
     if use_labels:
