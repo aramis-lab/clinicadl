@@ -59,6 +59,7 @@ Options shared for all values of `mode` are organized in groups:
     Must be chosen in [`None`, `Noise`, `Erasing`, `CropPad`, `Smoothing`]. Default: `False`.
     - `--sampler` (str) is the sampler used on the training set. It must be chosen in [`random`, `weighted`]. 
     `weighted` will give a stronger weight to underrepresented classes. Default: `random`.
+    - `sampler_bins` (int) is the number of bins to create a weighted sampler from a continuous variable. Default: `5`.
     - `--multi_cohort` (bool) is a flag indicated that [multi-cohort training](Details.md#multi-cohort) is performed.
     In this case, `caps_directory` and `tsv_path` must be paths to TSV files.
     - `--predict_atlas_intensities` (str) corresponds to a neuroanatomical atlas.

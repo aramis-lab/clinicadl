@@ -75,7 +75,9 @@ def resume_single_cnn(params, resumed_split):
         filename="resume.json",
     )
 
-    train_sampler = generate_sampler(data_train, params.sampler)
+    train_sampler = generate_sampler(
+        data_train, params.sampler, n_bins=params.sampler_bins
+    )
 
     train_loader = DataLoader(
         data_train,

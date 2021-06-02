@@ -1580,13 +1580,14 @@ def mix_slices(
     return df_sub_train, df_sub_valid
 
 
-def generate_sampler(dataset, sampler_option="random"):
+def generate_sampler(dataset, sampler_option="random", n_bins=5):
     """
-    Returns sampler according to the wanted options
+    Returns sampler according to the wanted options.
 
     Args:
-        dataset: (MRIDataset) the dataset to sample from
-        sampler_option: (str) choice of sampler
+        dataset: (MRIDataset) the dataset to sample from.
+        sampler_option: (str) choice of sampler.
+        n_bins: (int) number of bins to used for a continuous variable (regression task).
     Returns:
          (Sampler)
     """
@@ -1607,24 +1608,34 @@ def generate_sampler(dataset, sampler_option="random"):
         for idx, label in enumerate(df[dataset.label].values):
             key = dataset.label_fn(label)
             weights += [weight_per_class[key]] * dataset.elem_per_image
-
-        if sampler_option == "random":
-            return sampler.RandomSampler(weights)
-        elif sampler_option == "weighted":
-            return sampler.WeightedRandomSampler(weights, len(weights))
-        else:
-            raise NotImplementedError(
-                f"The option {sampler_option} for sampler on classification task is not implemented"
-            )
-
     else:
-        weights = [1] * len(dataset)
-        if sampler_option == "random":
-            return sampler.RandomSampler(weights)
-        else:
-            raise NotImplementedError(
-                f"The option {sampler_option} for sampler on regression task is not implemented"
-            )
+        count = np.zeros(n_bins)
+        values = df[dataset.label].values.astype(float)
+
+        thresholds = [
+            min(values) + i * (max(values) - min(values)) / n_bins
+            for i in range(n_bins)
+        ]
+        for idx in df.index:
+            label = df.loc[idx, dataset.label]
+            key = max(np.where((label >= thresholds))[0])
+            count[key] += 1
+
+        weight_per_class = 1 / np.array(count)
+        weights = []
+
+        for idx, label in enumerate(df[dataset.label].values):
+            key = max(np.where((label >= thresholds))[0])
+            weights += [weight_per_class[key]] * dataset.elem_per_image
+
+    if sampler_option == "random":
+        return sampler.RandomSampler(weights)
+    elif sampler_option == "weighted":
+        return sampler.WeightedRandomSampler(weights, len(weights))
+    else:
+        raise NotImplementedError(
+            f"The option {sampler_option} for sampler on classification task is not implemented"
+        )
 
 
 def check_multi_cohort_tsv(tsv_df, purpose):

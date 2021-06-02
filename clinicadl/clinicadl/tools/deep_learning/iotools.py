@@ -304,6 +304,9 @@ def read_json(options=None, json_path=None, test=False, read_computational=False
     if not hasattr(options, "label_code"):
         options.label_code = {"CN": 0, "BV": 1, "AD": 1, "sMCI": 0, "pMCI": 1, "MCI": 1}
 
+    if not hasattr(options, "sampler_bins"):
+        options.sampler_bins = 5
+
     return options
 
 
@@ -346,6 +349,8 @@ def check_and_complete(options, random_search=False):
         "unnormalize": False,
         "patience": 0,
         "predict_atlas_intensities": None,
+        "sampler": "random",
+        "sampler_bins": 5,
         "split": None,
         "tolerance": 0.0,
         "transfer_learning_path": None,

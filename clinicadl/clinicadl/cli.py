@@ -1860,6 +1860,12 @@ def return_train_parent_parser():
         choices=["random", "weighted"],
     )
     train_data_group.add_argument(
+        "--sampler_bins",
+        help="Number of bins to create a weighted sampler from a continuous variable.",
+        default=5,
+        type=int,
+    )
+    train_data_group.add_argument(
         "--predict_atlas_intensities",
         help="Atlases used in t1-volume pipeline to make intensities prediction.",
         default=None,

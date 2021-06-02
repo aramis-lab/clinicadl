@@ -103,6 +103,8 @@ Optional variables:
     Sampling function: `choice`. Default: `False`.
     - `sampler` (str) is the sampler used on the training set. It must be chosen in [`random`, `weighted`].
     Sampling function: `choice`. Default: `random`.
+    - `sampler_bins` (int) is the number of bins to create a weighted sampler from a continuous variable.
+    Sampling function: `choice`. Default: `5`.
 - **Cross-validation arguments**
     - `--n_splits` (int) is a number of splits k to load in the case of a k-fold cross-validation. Default will load a single-split.
     - `--split` (list of int) is a subset of folds that will be used for training. By default all splits available are used. 

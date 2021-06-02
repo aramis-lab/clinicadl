@@ -74,6 +74,7 @@ def random_sampling(rs_options, options):
         "preprocessing": "choice",
         "predict_atlas_intensities": "fixed",
         "sampler": "choice",
+        "sampler_bins": "choice",
         "split": "fixed",
         "tolerance": "fixed",
         "transfer_learning_path": "choice",
