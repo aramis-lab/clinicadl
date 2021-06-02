@@ -75,7 +75,7 @@ def train_multi_cnn(params, erase_existing=True):
         fold_iterator = params.split
 
     # Find main metric
-    if params.task == "classification":
+    if params.network_task == "classification":
         main_metric = "balanced_accuracy"
     else:
         main_metric = "mae"
