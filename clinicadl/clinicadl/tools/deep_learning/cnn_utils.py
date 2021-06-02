@@ -327,7 +327,7 @@ def train(
         loss_is_best = mean_loss_valid < best_valid_loss
         best_valid_metric = compare_op(results_valid[main_metric], best_valid_metric)
         best_valid_loss = min(mean_loss_valid, best_valid_loss)
-
+        metrics_dict = {"loss": loss_is_best, main_metric: metric_is_best}
         save_checkpoint(
             {
                 "model": model.state_dict(),
@@ -335,8 +335,7 @@ def train(
                 "valid_loss": mean_loss_valid,
                 f"valid_{main_metric}": results_valid[main_metric],
             },
-            metric_is_best,
-            loss_is_best,
+            metrics_dict,
             model_dir,
         )
         # Save optimizer state_dict to be able to reload
@@ -346,8 +345,7 @@ def train(
                 "epoch": epoch,
                 "name": options.optimizer,
             },
-            False,
-            False,
+            None,
             model_dir,
             filename="optimizer.pth.tar",
         )

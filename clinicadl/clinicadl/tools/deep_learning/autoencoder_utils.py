@@ -197,13 +197,12 @@ def train(
         with open(filename, "a") as f:
             row_df.to_csv(f, header=False, index=False, sep="\t")
 
-        is_best = loss_valid < best_loss_valid
+        selection_dict = {"loss": loss_valid < best_loss_valid}
         best_loss_valid = min(best_loss_valid, loss_valid)
         # Always save the model at the end of the epoch and update best model
         save_checkpoint(
             {"model": decoder.state_dict(), "epoch": epoch, "valid_loss": loss_valid},
-            False,
-            is_best,
+            selection_dict,
             model_dir,
         )
         # Save optimizer state_dict to be able to reload
@@ -213,8 +212,7 @@ def train(
                 "epoch": epoch,
                 "name": options.optimizer,
             },
-            False,
-            False,
+            None,
             model_dir,
             filename="optimizer.pth.tar",
         )

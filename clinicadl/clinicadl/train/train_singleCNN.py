@@ -219,8 +219,12 @@ def test_single_cnn(
     task,
     gpu=False,
 ):
+    if task == "classification":
+        main_metric = "balanced_accuracy"
+    else:
+        main_metric = "mae"
 
-    for selection in ["best_balanced_accuracy", "best_loss"]:
+    for selection in [f"best_{main_metric}", "best_loss"]:
         # load the best trained model during the training
         model, best_epoch = load_model(
             model,

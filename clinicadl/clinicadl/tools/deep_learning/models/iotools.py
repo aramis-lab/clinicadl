@@ -7,37 +7,42 @@ Script containing the iotools for model and optimizer serialization.
 
 def save_checkpoint(
     state,
-    accuracy_is_best,
-    loss_is_best,
+    metrics_dict,
     checkpoint_dir,
     filename="checkpoint.pth.tar",
-    best_accuracy="best_balanced_accuracy",
-    best_loss="best_loss",
 ):
+    """
+    Update checkpoint and save the best model according to a dictionnary of metrics.
+    If no metrics_dict is given, only the checkpoint is saved.
+
+    Args:
+        state: (dict) state of the training (model weights, epoch...)
+        metrics_dict: (dict) key correspond to the name of the selection metric. The content is a boolean:
+            - True if the saved model for this metric must be updated
+            - False otherwise
+        checkpoint_dir: (str) path to the checkpoint dir
+        filename: (str) name of the checkpoint
+    """
     import os
     import shutil
+    from os.path import join
 
     import torch
 
     os.makedirs(checkpoint_dir, exist_ok=True)
 
-    torch.save(state, os.path.join(checkpoint_dir, filename))
-    if accuracy_is_best:
-        best_accuracy_path = os.path.join(checkpoint_dir, best_accuracy)
-        if not os.path.exists(best_accuracy_path):
-            os.makedirs(best_accuracy_path)
-        shutil.copyfile(
-            os.path.join(checkpoint_dir, filename),
-            os.path.join(best_accuracy_path, "model_best.pth.tar"),
-        )
+    torch.save(state, join(checkpoint_dir, filename))
 
-    if loss_is_best:
-        best_loss_path = os.path.join(checkpoint_dir, best_loss)
-        os.makedirs(best_loss_path, exist_ok=True)
-        shutil.copyfile(
-            os.path.join(checkpoint_dir, filename),
-            os.path.join(best_loss_path, "model_best.pth.tar"),
-        )
+    # Save model according to several metrics
+    if metrics_dict is not None:
+        for metric_name, metric_bool in metrics_dict.items():
+            metric_path = join(checkpoint_dir, f"best_{metric_name}")
+            if metric_bool:
+                os.makedirs(metric_path, exist_ok=True)
+                shutil.copyfile(
+                    join(checkpoint_dir, filename),
+                    join(metric_path, "model_best.pth.tar"),
+                )
 
 
 def load_model(model, checkpoint_dir, gpu, filename="model_best.pth.tar"):
