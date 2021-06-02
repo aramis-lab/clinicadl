@@ -843,7 +843,6 @@ def parse_command_line():
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
         type=str,
         default="best_balanced_accuracy",
-        choices=["best_loss", "best_balanced_accuracy"],
     )
 
     train_image_cnn_parser.set_defaults(func=train_func)
@@ -910,7 +909,6 @@ def parse_command_line():
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
         type=str,
         default="best_balanced_accuracy",
-        choices=["best_loss", "best_balanced_accuracy"],
     )
 
     train_patch_cnn_group = train_patch_cnn_parser.add_argument_group(
@@ -944,7 +942,6 @@ def parse_command_line():
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
         type=str,
         default="best_balanced_accuracy",
-        choices=["best_loss", "best_balanced_accuracy"],
     )
 
     train_patch_multicnn_group = train_patch_multicnn_parser.add_argument_group(
@@ -1033,7 +1030,6 @@ def parse_command_line():
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
         type=str,
         default="best_balanced_accuracy",
-        choices=["best_loss", "best_balanced_accuracy"],
     )
 
     train_roi_cnn_group = train_roi_cnn_parser.add_argument_group(
@@ -1067,7 +1063,6 @@ def parse_command_line():
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
         type=str,
         default="best_balanced_accuracy",
-        choices=["best_loss", "best_balanced_accuracy"],
     )
 
     train_roi_multicnn_group = train_roi_multicnn_parser.add_argument_group(
@@ -1158,7 +1153,6 @@ def parse_command_line():
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
         type=str,
         default="best_balanced_accuracy",
-        choices=["best_loss", "best_balanced_accuracy"],
     )
 
     train_slice_cnn_group = train_slice_cnn_parser.add_argument_group(
@@ -1192,7 +1186,6 @@ def parse_command_line():
         help="If transfer_learning from CNN, chooses which best transfer model is selected.",
         type=str,
         default="best_balanced_accuracy",
-        choices=["best_loss", "best_balanced_accuracy"],
     )
 
     train_slice_multicnn_group = train_slice_multicnn_parser.add_argument_group(

@@ -154,13 +154,16 @@ def transfer_learning(
     """
     Allows transfer learning from a CNN or an autoencoder to a CNN
 
-    :param model: (nn.Module) the target CNN of the transfer learning.
-    :param split: (int) the fold number (for serialization purpose).
-    :param source_path: (str) path to the source experiment.
-    :param gpu: (bool) If True a GPU is used.
-    :param selection: (str) chooses on which criterion the source model is selected (ex: best_loss, best_acc)
-    :param cnn_index: (int) index of the CNN to be loaded (if transfer from a multi-CNN).
-    :return: (nn.Module) the model after transfer learning.
+    Args:
+        model: (nn.Module) the target CNN of the transfer learning.
+        split: (int) the fold number (for serialization purpose).
+        source_path: (str) path to the source experiment.
+        gpu: (bool) If True a GPU is used.
+        selection: (str) chooses on which criterion the source model is selected (ex: best_loss, best_balanced_accuracy)
+        cnn_index: (int) index of the CNN to be loaded (if transfer from a multi-CNN).
+
+    Returns:
+        (nn.Module) the model after transfer learning.
     """
     import argparse
     import logging
@@ -237,15 +240,20 @@ def transfer_cnn_weights(
 ):
     """
     Set the weights of the model according to the CNN at source path.
-    :param model: (Module) the model which must be initialized
-    :param source_path: (str) path to the source task experiment
-    :param split: (int) split number to load
-    :param selection: (str) chooses on which criterion the source model is selected (ex: best_loss, best_acc)
-    :param cnn_index: (int) index of the CNN to be loaded (if transfer from a multi-CNN).
-    :return: (str) path to the written weights ready to be loaded
+
+    Args:
+        model: (Module) the model which must be initialized
+        source_path: (str) path to the source task experiment
+        split: (int) split number to load
+        selection: (str) chooses on which criterion the source model is selected (ex: best_loss, best_acc)
+        cnn_index: (int) index of the CNN to be loaded (if transfer from a multi-CNN).
+
+    Returns:
+        (str) path to the written weights ready to be loaded
     """
 
-    import os
+    from os import listdir
+    from os.path import exists, join
 
     import torch
 
@@ -254,19 +262,32 @@ def transfer_cnn_weights(
             "Transfer learning from CNN to autoencoder was not implemented."
         )
 
-    model_path = os.path.join(
-        source_path, "fold-%i" % split, "models", selection, "model_best.pth.tar"
+    model_path = join(
+        source_path, f"fold-{split}", "models", selection, "model_best.pth.tar"
     )
-    if cnn_index is not None and not os.path.exists(model_path):
-        print("Transfer learning from multi-CNN, cnn-%i" % cnn_index)
-        model_path = os.path.join(
+    if cnn_index is not None and not exists(model_path):
+        print(f"Transfer learning from multi-CNN, cnn {cnn_index}")
+        model_path = join(
             source_path,
-            "fold_%i" % split,
+            f"fold_{split}",
             "models",
-            "cnn-%i" % cnn_index,
+            f"cnn-{cnn_index}",
             selection,
             "model_best.pth.tar",
         )
+
+    if not exists(model_path):
+        if cnn_index is None:
+            options = listdir(join(source_path, f"fold-{split}", "models"))
+        else:
+            options = listdir(
+                join(source_path, f"fold-{split}", "models", f"cnn-{cnn_index}")
+            )
+        raise ValueError(
+            f"The selection metric asked {selection} was not found in the source model. "
+            f"The possible options are {options}."
+        )
+
     results = torch.load(model_path)
     model.load_state_dict(results["model"])
 

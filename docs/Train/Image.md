@@ -126,8 +126,7 @@ explained in the [implementation details](./Details.md#transfer-learning).
 If nothing is given the initialization will be random.
 - `--transfer_learning_selection` (str) corresponds to the metric according to which the 
 [best model](./Details.md#model-selection) of `transfer_learning_path` will be loaded. 
-This argument will only be taken into account if the source network is a CNN. 
-Choices are `best_loss` and `best_balanced_accuracy`. Default: `best_balanced_accuracy`.
+This argument will only be taken into account if the source network is a CNN. Default: `best_balanced_accuracy`.
 
 ### Outputs
 
@@ -139,7 +138,7 @@ results
 ├── environment.txt
 └── fold-0
     ├── cnn_classification
-    │   ├── best_balanced_accuracy
+    │   ├── best_<metric>
     │   │   ├── train_image_level_metrics.tsv
     │   │   ├── train_image_level_prediction.tsv
     │   │   ├── validation_image_level_metrics.tsv
@@ -150,6 +149,8 @@ results
     │        ├── validation_image_level_metrics.tsv
     │        └── validation_image_level_prediction.tsv
     ├── models
+    │    ├── best_<metric>
+    │    │   ├── model_best.pth.tar
     │    └── best_loss
     │        └── model_best.pth.tar
     └── tensorboard_logs
@@ -158,3 +159,6 @@ results
          └── validation
               └── events.out.tfevents.XXXX
 </pre>
+
+`metric` is set to `balanced_accuracy` if `network_task` is `classification`,
+else `mae`.
