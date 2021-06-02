@@ -35,6 +35,7 @@ class MRIDataset(Dataset):
         atlas=None,
         group=None,
         merged_df=None,
+        label_code="default",
     ):
         self.caps_dict = self.create_caps_dict(caps_directory, multi_cohort)
         self.transformations = transformations
@@ -84,7 +85,10 @@ class MRIDataset(Dataset):
                     "--no_labels if you are classifying."
                 )
 
-        self.label_fn, self.label_code = self.generate_label_fn()
+        if label_code == "default":
+            self.label_code = self.generate_label_fn()
+        else:
+            self.label_code = label_code
 
         self.merged_df = merged_df
         if merged_df is not None and "participant_id" in merged_df.columns.values:
@@ -110,6 +114,12 @@ class MRIDataset(Dataset):
     def __len__(self):
         return len(self.df) * self.elem_per_image
 
+    def label_fn(self, key):
+        if self.label_code is None:
+            # If label_code is not None, the loss associated needs a 2D tensor
+            return np.float32([key])
+        return self.label_code[key]
+
     def generate_label_fn(self):
         if self.task == "classification":
             unique_labels = list(set(getattr(self.df, self.label)))
@@ -118,13 +128,7 @@ class MRIDataset(Dataset):
         else:
             label_code = None
 
-        def label_fn(key):
-            if label_code is None:
-                # If label_code is not None, the loss associated needs a 2D tensor
-                return np.float32([key])
-            return label_code[key]
-
-        return label_fn, label_code
+        return label_code
 
     @staticmethod
     def create_caps_dict(caps_directory, multi_cohort):
@@ -402,6 +406,7 @@ class MRIDatasetImage(MRIDataset):
         multi_cohort=False,
         atlas=None,
         merged_df=None,
+        label_code="default",
     ):
         """
         Args:
@@ -417,6 +422,7 @@ class MRIDatasetImage(MRIDataset):
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
             atlas (str): name of an atlas if predicting the regional intensities.
             merged_df (DataFrame): DataFrame of all TSV files needed for atlas intensities prediction.
+            label_code (dict or None): Defines the link between values and classes in a classification framework.
 
         """
         self.elem_index = None
@@ -433,6 +439,7 @@ class MRIDatasetImage(MRIDataset):
             multi_cohort=multi_cohort,
             atlas=atlas,
             merged_df=merged_df,
+            label_code=label_code,
         )
 
     def __getitem__(self, idx):
@@ -485,6 +492,7 @@ class MRIDatasetPatch(MRIDataset):
         multi_cohort=False,
         atlas=None,
         merged_df=None,
+        label_code="default",
     ):
         """
         Args:
@@ -505,6 +513,7 @@ class MRIDatasetPatch(MRIDataset):
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
             atlas (str): name of an atlas if predicting the regional intensities.
             merged_df (DataFrame): DataFrame of all TSV files needed for atlas intensities prediction.
+            label_code (dict or None): Defines the link between values and classes in a classification framework.
 
         """
         if preprocessing == "shepplogan":
@@ -528,6 +537,7 @@ class MRIDatasetPatch(MRIDataset):
             multi_cohort=multi_cohort,
             atlas=atlas,
             merged_df=merged_df,
+            label_code=label_code,
         )
 
     def __getitem__(self, idx):
@@ -624,6 +634,7 @@ class MRIDatasetRoi(MRIDataset):
         multi_cohort=False,
         atlas=None,
         merged_df=None,
+        label_code="default",
     ):
         """
         Args:
@@ -644,6 +655,7 @@ class MRIDatasetRoi(MRIDataset):
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
             atlas (str): name of an atlas if predicting the regional intensities.
             merged_df (DataFrame): DataFrame of all TSV files needed for atlas intensities prediction.
+            label_code (dict or None): Defines the link between values and classes in a classification framework.
 
         """
         if preprocessing == "shepplogan":
@@ -668,6 +680,7 @@ class MRIDatasetRoi(MRIDataset):
             multi_cohort=multi_cohort,
             atlas=atlas,
             merged_df=merged_df,
+            label_code=label_code,
         )
 
     def __getitem__(self, idx):
@@ -878,6 +891,7 @@ class MRIDatasetSlice(MRIDataset):
         multi_cohort=False,
         atlas=None,
         merged_df=None,
+        label_code="default",
     ):
         """
         Args:
@@ -901,6 +915,7 @@ class MRIDatasetSlice(MRIDataset):
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
             atlas (str): name of an atlas if predicting the regional intensities.
             merged_df (DataFrame): DataFrame of all TSV files needed for atlas intensities prediction.
+            label_code (dict or None): Defines the link between values and classes in a classification framework.
         """
         # Rename MRI plane
         if preprocessing == "shepplogan":
@@ -941,6 +956,7 @@ class MRIDatasetSlice(MRIDataset):
             multi_cohort=multi_cohort,
             atlas=atlas,
             merged_df=merged_df,
+            label_code=label_code,
         )
 
     def __getitem__(self, idx):
@@ -1024,6 +1040,7 @@ def return_dataset(
     label_presence=True,
     multi_cohort=False,
     prepare_dl=False,
+    label_code="default",
 ):
     """
     Return appropriate Dataset according to given options.
@@ -1042,6 +1059,7 @@ def return_dataset(
         label_presence (bool): If True the diagnosis will be extracted from the given DataFrame.
         multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
         prepare_dl (bool): If true pre-extracted slices / patches / regions will be loaded.
+        label_code (dict or None): Defines the link between values and classes in a classification framework.
 
     Returns:
          (Dataset) the corresponding dataset.
@@ -1068,6 +1086,7 @@ def return_dataset(
             multi_cohort=multi_cohort,
             atlas=params.predict_atlas_intensities,
             merged_df=merged_df,
+            label_code=label_code,
         )
     elif mode == "patch":
         return MRIDatasetPatch(
@@ -1086,6 +1105,7 @@ def return_dataset(
             multi_cohort=multi_cohort,
             atlas=params.predict_atlas_intensities,
             merged_df=merged_df,
+            label_code=label_code,
         )
     elif mode == "roi":
         return MRIDatasetRoi(
@@ -1104,6 +1124,7 @@ def return_dataset(
             multi_cohort=multi_cohort,
             atlas=params.predict_atlas_intensities,
             merged_df=merged_df,
+            label_code=label_code,
         )
     elif mode == "slice":
         return MRIDatasetSlice(
@@ -1122,9 +1143,10 @@ def return_dataset(
             multi_cohort=multi_cohort,
             atlas=params.predict_atlas_intensities,
             merged_df=merged_df,
+            label_code=label_code,
         )
     else:
-        raise ValueError("Mode %s is not implemented." % mode)
+        raise ValueError(f"Mode {mode} is not implemented.")
 
 
 def compute_num_cnn(input_dir, tsv_path, options, data="train"):

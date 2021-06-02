@@ -104,6 +104,15 @@ def train_single_cnn(params, erase_existing=True):
             multi_cohort=params.multi_cohort,
             params=params,
         )
+        if (
+            data_train.label_code is not None
+            and data_train.label_code != data_valid.label_code
+        ):
+            raise ValueError(
+                "The label codes computed from training and validation data are different. "
+                "Please ensure that your classes are all represented in training and validation data. "
+                f"{data_train.label_code} != {data_valid.label_code}"
+            )
 
         train_sampler = generate_sampler(data_train, params.sampler)
 
@@ -137,7 +146,10 @@ def train_single_cnn(params, erase_existing=True):
             logger=main_logger,
         )
         # Save number of classes for other functionalities
-        append_to_json({"n_classes": data_train.n_classes()}, params)
+        append_to_json(
+            {"n_classes": data_train.n_classes(), "label_code": data_train.label_code},
+            params,
+        )
 
         # Define criterion and optimizer
         criterion = get_criterion(params.network_task)

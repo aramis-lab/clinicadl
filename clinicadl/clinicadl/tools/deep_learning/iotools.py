@@ -301,6 +301,9 @@ def read_json(options=None, json_path=None, test=False, read_computational=False
     if not hasattr(options, "label"):
         options.label = "diagnosis"
 
+    if not hasattr(options, "label_code"):
+        options.label_code = {"CN": 0, "BV": 1, "AD": 1, "sMCI": 0, "pMCI": 1, "MCI": 1}
+
     return options
 
 

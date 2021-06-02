@@ -93,6 +93,7 @@ def individual_backprop(options):
                 prepare_dl=options.prepare_dl,
                 multi_cohort=options.multi_cohort,
                 params=model_options,
+                label_code=model_options.label_code,
             )
 
             model = create_model(
@@ -136,6 +137,7 @@ def individual_backprop(options):
                     prepare_dl=options.prepare_dl,
                     multi_cohort=options.multi_cohort,
                     params=model_options,
+                    label_code=model_options.label_code,
                 )
 
                 train_loader = DataLoader(

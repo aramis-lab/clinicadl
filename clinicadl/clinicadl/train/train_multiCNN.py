@@ -151,7 +151,13 @@ def train_multi_cnn(params, erase_existing=True):
                 logger=main_logger,
             )
             # Save number of classes for other functionalities
-            append_to_json({"n_classes": data_train.n_classes()}, params)
+            append_to_json(
+                {
+                    "n_classes": data_train.n_classes(),
+                    "label_code": data_train.label_code,
+                },
+                params,
+            )
 
             # Define criterion and optimizer
             criterion = get_criterion(params.network_task)

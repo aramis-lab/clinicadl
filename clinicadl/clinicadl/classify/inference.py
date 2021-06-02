@@ -331,6 +331,7 @@ def inference_from_model_generic(
                 label_presence=label_presence,
                 prepare_dl=prepare_dl,
                 multi_cohort=multi_cohort,
+                label_code=model_options.label_code,
             )
 
             test_loader = DataLoader(
@@ -394,6 +395,7 @@ def inference_from_model_generic(
             label_presence=label_presence,
             prepare_dl=prepare_dl,
             multi_cohort=multi_cohort,
+            label_code=model_options.label_code,
         )
 
         # Load the data
