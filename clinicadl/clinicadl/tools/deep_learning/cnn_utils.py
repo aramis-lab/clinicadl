@@ -556,6 +556,9 @@ def test(
         metrics_dict["total_atlas_loss"] = total_atlas_loss
     torch.cuda.empty_cache()
 
+    if mode == "image":
+        results_df = results_df.drop("image_id", axis=1)
+
     return results_df, metrics_dict
 
 
@@ -899,9 +902,22 @@ def soft_voting(
 
     # Soft majority vote
     if use_labels:
-        columns = ["participant_id", "session_id", "true_label", "predicted_label"]
+        columns = [
+            "participant_id",
+            "session_id",
+            "true_label",
+            "predicted_label",
+            "proba0",
+            "proba1",
+        ]
     else:
-        columns = ["participant_id", "session_id", "predicted_label"]
+        columns = [
+            "participant_id",
+            "session_id",
+            "predicted_label",
+            "proba0",
+            "proba1",
+        ]
     df_final = pd.DataFrame(columns=columns)
     for (subject, session), subject_df in performance_df.groupby(
         ["participant_id", "session_id"]
@@ -916,9 +932,9 @@ def soft_voting(
 
         if use_labels:
             y = subject_df["true_label"].unique().item()
-            row = [[subject, session, y, y_hat]]
+            row = [[subject, session, y, y_hat, proba0, proba1]]
         else:
-            row = [[subject, session, y_hat]]
+            row = [[subject, session, y_hat, proba0, proba1]]
         row_df = pd.DataFrame(row, columns=columns)
         df_final = df_final.append(row_df)
 
