@@ -110,6 +110,16 @@ where mandatory arguments are:
 
 The options specific to this task are the following:
 
+- `--label` (str) is the name of the column in the input TSV files at `tsv_path` which contains the target values
+(classes for classification, target for regression). Default: `diagnosis`.
+- `--network_task` (str) is the type of task performed by the CNN. Must be chosen between classification and regression.
+Default: `classification`.
+  
+!!! warning "Classes representation in train and validation sets"
+    If `network_type` is set to `classification`, all classes must be represented in both the training and validation sets as the number of 
+    classes is deduced from the data. To ensure its representation in both sets, use the flag
+    `--categorical_split_variable` in `split` or `kfold` functions.
+
 - `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
 The best model of this folder will be used to initialize the network as 
 explained in the [implementation details](./Details.md#transfer-learning). 

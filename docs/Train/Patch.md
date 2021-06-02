@@ -124,6 +124,17 @@ The options specific to this task are the following:
 - `--stride_size` (int) length between the centers of successive patches in voxels. Default: `50`.
 - `--use_extracted_patches` (bool) if this flag is given, the outputs of `clinicadl extract` are used.
 Otherwise, the whole 3D MR volumes are loaded and patches are extracted on-the-fly.
+
+- `--label` (str) is the name of the column in the input TSV files at `tsv_path` which contains the target values
+(classes for classification, target for regression). Default: `diagnosis`.
+- `--network_task` (str) is the type of task performed by the CNN. Must be chosen between classification and regression.
+Default: `classification`.
+  
+!!! warning "Classes representation in train and validation sets"
+    If `network_type` is set to `classification`, all classes must be represented in both the training and validation sets as the number of 
+    classes is deduced from the data. To ensure its representation in both sets, use the flag
+    `--categorical_split_variable` in `split` or `kfold` functions.
+
 - `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
 The best model of this folder will be used to initialize the network as 
 explained in the [implementation details](./Details.md#transfer-learning). 
@@ -210,6 +221,17 @@ The options specific to this task are the following:
 - `--stride_size` (int) length between the centers of successive patches in voxels. Default: `50`.
 - `--use_extracted_patches` (bool) if this flag is given, the outputs of `clinicadl extract` are used.
 Otherwise, the whole 3D MR volumes are loaded and patches are extracted on-the-fly.
+
+- `--label` (str) is the name of the column in the input TSV files at `tsv_path` which contains the target values
+(classes for classification, target for regression). Default: `diagnosis`.
+- `--network_task` (str) is the type of task performed by the CNN. Must be chosen between classification and regression.
+Default: `classification`.
+  
+!!! warning "Classes representation in train and validation sets"
+    If `network_type` is set to `classification`, all classes must be represented in both the training and validation sets as the number of 
+    classes is deduced from the data. To ensure its representation in both sets, use the flag
+    `--categorical_split_variable` in `split` or `kfold` functions.
+
 - `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
 The best model of this folder will be used to initialize the network as 
 explained in the [implementation details](./Details.md#transfer-learning). 

@@ -134,10 +134,14 @@ Options:
   <li> <code>--MCI_sub_categories</code> (bool) is a flag that disables the special treatment of the MCI set and its subsets.
   This will allow sets with more similar age and sex distributions, but it will cause 
   data leakage for transfer learning tasks involving these sets. Default value: <code>False</code>.</li>
-  <li> <code>--p_val_threshold</code> is the threshold on the p-value used for the T-test on age distributions.
+  <li> <code>--p_val_threshold</code> (float) is the threshold on the p-value used for the T-test on age distributions.
   Default value: <code>0.80</code>.</li>
-  <li> <code>--t_val_threshold</code> is the threshold on the t-value used for the chi2 test on sex distributions.
+  <li> <code>--t_val_threshold</code> (float) is the threshold on the t-value used for the chi2 test on sex distributions.
   Default value: <code>0.0642</code>.</li>
+  <li> <code>--categorical_split_variable</code></li> (str) is the name of a categorical variable used to stratify 
+  the split. Default will only assess that the age and sex distributions are similar.
+  <li> <code>--ignore_demographics</code> (bool) when this flag is given, age and sex values are not used to 
+  ensure the similarity between the two sets created.</li>
 </ul>
 
 ### Output tree
@@ -186,6 +190,9 @@ Options:
   Default value: `5`.
   - `--MCI_sub_categories` (bool) is a flag that disables the special treatment of the MCI set and its subsets.
   This will cause data leakage for transfer learning tasks involving these sets. Default value: `False`.
+  - `--categorical_split_variable` (str) is the name of a categorical variable used to stratify 
+  the k-fold splits. Default will not perform any stratification.
+
 
 ### Output tree
 

@@ -119,7 +119,14 @@ Optional variables:
     Sampling function: `fixed`. Default: `0`.
     - `tolerance` (float) is the value used for [early stopping](Train/Details.md#stopping-criterion) tolerance.
      Sampling function: `fixed`. Default: `0.0`.
-"accumulation_steps": 1
+    - `accumulation_steps` (int) gives the number of iterations during which gradients are accumulated before
+    performing the [weights update](Details.md#optimization). This allows to virtually increase the size of the batch. 
+    Sampling function: `randint`. Default: `1`.
+- **CNN specific**
+    - `--label` (str) is the name of the column in the input TSV files at `tsv_path` which contains the target values
+    (classes for classification, target for regression). Sampling function: `fixed`. Default: `diagnosis`.
+    - `--network_task` (str) is the type of task performed by the CNN. Must be chosen between classification
+    and regression. Sampling function: `fixed`. Default: `classification`.
 - **Transfer learning**
     - `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
     The best model of this folder will be used to initialize the network as 
