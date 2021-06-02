@@ -194,7 +194,7 @@ def inference_from_model(
                         join(
                             out_path,
                             cnn_dir,
-                            "best_%s" % selection_metric,
+                            f"best_{selection_metric}",
                             "model_best.pth.tar",
                         )
                     ):

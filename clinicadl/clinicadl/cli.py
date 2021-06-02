@@ -1358,8 +1358,8 @@ def parse_command_line():
         "--selection_metrics",
         help="""List of metrics to find the best models to evaluate. Default will
         classify best model based on balanced accuracy.""",
-        choices=["loss", "balanced_accuracy"],
-        default=["balanced_accuracy"],
+        choices=["loss", "balanced_accuracy", "mae"],
+        default=["loss"],
         nargs="+",
     )
     classify_specific_group.add_argument(
@@ -1671,12 +1671,12 @@ def parse_command_line():
         TRAIN_CATEGORIES["MODEL"]
     )
     interpret_model_group.add_argument(
-        "--selection",
-        default=["best_loss"],
+        "--selection_metrics",
+        default=["loss"],
         type=str,
         nargs="+",
-        choices=["best_loss", "best_balanced_accuracy"],
-        help="Loads the model selected on minimal loss or maximum accuracy on validation.",
+        choices=["loss", "balanced_accuracy", "mae"],
+        help="Loads the model selected on the metrics asked.",
     )
 
     interpret_data_group = interpret_parent_parser.add_argument_group(

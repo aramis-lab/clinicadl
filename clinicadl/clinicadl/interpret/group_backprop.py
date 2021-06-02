@@ -59,9 +59,9 @@ def group_backprop(options):
 
     for fold in fold_list:
         main_logger.info(fold)
-        for selection in options.selection:
+        for selection in options.selection_metrics:
             results_path = path.join(
-                options.model_path, fold, "gradients", selection, options.name
+                options.model_path, fold, "gradients", f"best_{selection}", options.name
             )
 
             criterion = get_criterion(model_options.network_task)
@@ -98,7 +98,9 @@ def group_backprop(options):
             model = create_model(
                 model_options, data_example.size, n_classes=model_options.n_classes
             )
-            model_dir = os.path.join(options.model_path, fold, "models", selection)
+            model_dir = os.path.join(
+                options.model_path, fold, "models", f"best_{selection}"
+            )
             model, best_epoch = load_model(
                 model, model_dir, gpu=options.gpu, filename="model_best.pth.tar"
             )
