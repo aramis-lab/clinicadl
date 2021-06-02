@@ -240,7 +240,7 @@ def tsv_kfold_func(args):
         n_splits=args.n_splits,
         subset_name=args.subset_name,
         MCI_sub_categories=args.MCI_sub_categories,
-        stratification=args.stratification,
+        stratification=args.categorical_split_variable,
         verbose=args.verbose,
     )
 
