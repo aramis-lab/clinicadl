@@ -48,9 +48,14 @@ of the `preprocessing` argument of `train_pos_group` in `cli.py`.
 
 ## Custom labels
 You can launch a classification task with clinicadl using any label. 
-The input tsv files must include the columns `participant_id`, `session_id` and `diagnosis`. 
+The input tsv files must include the columns `participant_id`, `session_id` and the name of your label column. 
 
-If the column `diagnosis` does not contain the labels described in the 
-[dedicated section](../TSVTools.md#getlabels-extract-labels-specific-to-alzheimers-disease) (AD, CN, MCI, sMCI or pMCI), 
-you can add your own label name associated to a class value in the `diagnosis_code` of the class `MRIDataset` 
-in `clinicadl/tools/deep_learning/data.py`.
+The label will be associated to a class in the dictionary `label_code`. This code is saved in the
+commandline.json file and will be reloaded to perform classification using other ClinicaDL functionnalities
+(`classify` or `interpret`).
+
+!!! warning "Classes representation in train and validation sets"
+    If `network_type` is set to `classification`, all classes must be represented in both the training and validation sets as the number of 
+    classes is deduced from the data. To ensure its representation in both sets, use the flag
+    `--categorical_split_variable` in `split` or `kfold` functions.
+
