@@ -1374,7 +1374,6 @@ def parse_command_line():
         help="List of participants that will be classified.",
         nargs="+",
         type=str,
-        choices=["AD", "CN", "MCI", "sMCI", "pMCI"],
         default=None,
     )
     classify_specific_group.add_argument(
@@ -1620,7 +1619,6 @@ def parse_command_line():
         default=["AD", "CN"],
         nargs="+",
         type=str,
-        choices=["AD", "BV", "CN", "MCI", "sMCI", "pMCI"],
     )
 
     tsv_analysis_subparser.set_defaults(func=tsv_analysis_func)
@@ -1836,7 +1834,6 @@ def return_train_parent_parser():
         default=["AD", "CN"],
         nargs="+",
         type=str,
-        choices=["AD", "BV", "CN", "MCI", "sMCI", "pMCI"],
     )
     train_data_group.add_argument(
         "--baseline",
