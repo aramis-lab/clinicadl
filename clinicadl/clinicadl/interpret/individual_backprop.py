@@ -158,7 +158,9 @@ def individual_backprop(options):
                     else:
                         input_batch = data["image"]
 
-                    if options.target_label is None:
+                    if data_train.label_code is None:
+                        label = 0
+                    elif options.target_label is None:
                         label = data["label"].reshape(-1)
                     else:
                         label = data_train.label_fn(options.target_label)
