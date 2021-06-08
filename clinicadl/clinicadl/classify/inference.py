@@ -267,6 +267,7 @@ def inference_from_model(
                     "best_%s" % selection_metric,
                     options.mode,
                     prefix,
+                    task=options.task,
                     num_cnn=num_cnn,
                     selection_threshold=selection_thresh,
                     use_labels=label_presence,
@@ -360,13 +361,14 @@ def inference_from_model_generic(
                 criterion,
                 mode=model_options.mode,
                 use_labels=label_presence,
+                task=model_options.network_task,
             )
 
-            if label_presence:
-                logger.info(
-                    f"{prefix} balanced accuracy is {cnn_metrics['balanced_accuracy']} "
-                    f"for {model_options.mode} {n} and model selected on {selection}."
-                )
+            # if label_presence:
+            #     logger.info(
+            #         f"{prefix} balanced accuracy is {cnn_metrics['balanced_accuracy']} "
+            #         f"for {model_options.mode} {n} and model selected on {selection}."
+            #     )
 
             mode_level_to_tsvs(
                 output_dir,
@@ -377,6 +379,7 @@ def inference_from_model_generic(
                 model_options.mode,
                 dataset=prefix,
                 cnn_index=n,
+                task=model_options.network_task,
             )
 
     else:
@@ -408,7 +411,9 @@ def inference_from_model_generic(
         )
 
         # Load model from path
-        model = create_model(model_options, test_dataset.size)
+        model = create_model(
+            model_options, test_dataset.size, n_classes=model_options.n_classes
+        )
         best_model, best_epoch = load_model(
             model, join(model_path, selection), gpu, filename="model_best.pth.tar"
         )
@@ -421,13 +426,14 @@ def inference_from_model_generic(
             criterion,
             mode=model_options.mode,
             use_labels=label_presence,
+            task=model_options.network_task,
         )
 
-        if label_presence:
-            logger.info(
-                f"{model_options.mode} level {prefix} balanced accuracy is {metrics['balanced_accuracy']} "
-                f"for model selected on {selection}."
-            )
+        # if label_presence:
+        #     logger.info(
+        #         f"{model_options.mode} level {prefix} balanced accuracy is {metrics['balanced_accuracy']} "
+        #         f"for model selected on {selection}."
+        #     )
 
         mode_level_to_tsvs(
             output_dir,
