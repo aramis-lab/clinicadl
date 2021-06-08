@@ -86,7 +86,7 @@ class MRIDataset(Dataset):
                 )
 
         if label_code == "default":
-            self.label_code = self.generate_label_fn()
+            self.label_code = self.generate_label_code()
         else:
             self.label_code = label_code
 
@@ -120,7 +120,7 @@ class MRIDataset(Dataset):
             return np.float32([key])
         return self.label_code[key]
 
-    def generate_label_fn(self):
+    def generate_label_code(self):
         if self.task == "classification":
             unique_labels = list(set(getattr(self.df, self.label)))
             unique_labels.sort()
