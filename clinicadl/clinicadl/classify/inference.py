@@ -267,7 +267,7 @@ def inference_from_model(
                     "best_%s" % selection_metric,
                     options.mode,
                     prefix,
-                    task=options.task,
+                    task=options.network_task,
                     num_cnn=num_cnn,
                     selection_threshold=selection_thresh,
                     use_labels=label_presence,
@@ -379,7 +379,6 @@ def inference_from_model_generic(
                 model_options.mode,
                 dataset=prefix,
                 cnn_index=n,
-                task=model_options.network_task,
             )
 
     else:
