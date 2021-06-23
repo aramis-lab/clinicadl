@@ -186,7 +186,7 @@ def remove_sub_labels(
     diagnosis_df, sub_labels, diagnosis_df_paths, results_path, logger=None
 ):
 
-    from ..deep_learning.iotools import return_logger
+    from clinicadl.utils.maps_manager.iotools import return_logger
 
     if logger is None:
         logger = return_logger(2, "remove sub labels")

@@ -5,7 +5,20 @@ import os
 import torch
 from torch.utils.data import DataLoader
 
-from ..tools.deep_learning.cnn_utils import (
+from clinicadl.utils.caps_dataset.data import (
+    generate_sampler,
+    get_transforms,
+    load_data,
+    return_dataset,
+)
+from clinicadl.utils.maps_manager.iotools import (
+    check_and_clean,
+    commandline_to_json,
+    return_logger,
+    translate_parameters,
+    write_requirements_version,
+)
+from clinicadl.utils.network.cnn_utils import (
     get_criterion,
     mode_level_to_tsvs,
     mode_to_image_tsvs,
@@ -13,20 +26,7 @@ from ..tools.deep_learning.cnn_utils import (
     test,
     train,
 )
-from ..tools.deep_learning.data import (
-    generate_sampler,
-    get_transforms,
-    load_data,
-    return_dataset,
-)
-from ..tools.deep_learning.iotools import (
-    check_and_clean,
-    commandline_to_json,
-    return_logger,
-    translate_parameters,
-    write_requirements_version,
-)
-from ..tools.deep_learning.models import init_model, load_model, transfer_learning
+from clinicadl.utils.network.models import init_model, load_model, transfer_learning
 
 
 def train_single_cnn(params, erase_existing=True):

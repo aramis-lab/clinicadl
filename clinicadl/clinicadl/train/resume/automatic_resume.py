@@ -16,10 +16,11 @@ def replace_arg(options, key_name, value):
 def automatic_resume(
     model_path, gpu, batch_size, num_workers, evaluation_steps, verbose=0
 ):
-    from ..tools.deep_learning.iotools import read_json, return_logger
-    from ..train.train_autoencoder import train_autoencoder
-    from ..train.train_multiCNN import train_multi_cnn
-    from ..train.train_singleCNN import train_single_cnn
+    from clinicadl.utils.maps_manager.iotools import read_json, return_logger
+
+    from ..train_autoencoder import train_autoencoder
+    from ..train_multiCNN import train_multi_cnn
+    from ..train_singleCNN import train_single_cnn
     from .resume_autoencoder import resume_autoencoder
     from .resume_single_CNN import resume_single_cnn
 

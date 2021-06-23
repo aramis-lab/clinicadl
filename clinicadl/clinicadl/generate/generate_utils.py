@@ -15,7 +15,7 @@ def load_and_check_tsv(tsv_path, caps_dict, output_path):
     import pandas as pd
     from clinica.iotools.utils.data_handling import create_subs_sess_list
 
-    from ..deep_learning.data import check_multi_cohort_tsv
+    from clinicadl.utils.caps_dataset.data import check_multi_cohort_tsv
 
     if tsv_path is not None:
         if len(caps_dict) == 1:
