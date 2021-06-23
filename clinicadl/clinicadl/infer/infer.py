@@ -19,13 +19,13 @@ from clinicadl.utils.maps_manager.iotools import (
     return_logger,
     translate_parameters,
 )
-from clinicadl.utils.network import create_model, load_model
 from clinicadl.utils.network.cnn_utils import (
     get_criterion,
     mode_level_to_tsvs,
     soft_voting_to_tsvs,
     test,
 )
+from clinicadl.utils.network.models import create_model, load_model
 
 
 def classify(

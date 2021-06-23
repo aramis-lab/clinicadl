@@ -18,12 +18,12 @@ from clinicadl.utils.maps_manager.iotools import (
     translate_parameters,
     write_requirements_version,
 )
-from clinicadl.utils.network import init_model, load_model, transfer_learning
 from clinicadl.utils.network.autoencoder_utils import (
     get_criterion,
     train,
     visualize_image,
 )
+from clinicadl.utils.network.models import init_model, load_model, transfer_learning
 
 
 def train_autoencoder(params, erase_existing=True):
