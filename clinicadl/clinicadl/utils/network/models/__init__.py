@@ -1,9 +1,8 @@
-from clinicadl.random_search.random_search_utils import RandomArchitecture
-
 from .autoencoder import AutoEncoder, initialize_other_autoencoder, transfer_learning
 from .image_level import Conv5_FC3, Conv5_FC3_down, Conv5_FC3_mni, Conv6_FC3, VConv5_FC3
 from .iotools import load_model, load_optimizer, save_checkpoint
 from .patch_level import Conv4_FC3
+from .random import RandomArchitecture
 from .slice_level import ConvNet, resnet18
 
 
