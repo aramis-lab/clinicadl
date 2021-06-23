@@ -524,10 +524,7 @@ def sort_predicted(
 
     from torch.utils.data import DataLoader
 
-    from clinicadl.clinicadl.utils.caps_dataset.data import (
-        get_transforms,
-        return_dataset,
-    )
+    from clinicadl.utils.caps_dataset.data import get_transforms, return_dataset
 
     if keep_true is None:
         return data_df

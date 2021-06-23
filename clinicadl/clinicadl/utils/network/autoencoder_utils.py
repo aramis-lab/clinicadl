@@ -273,7 +273,7 @@ def visualize_image(decoder, dataloader, visualization_path, nb_images=1):
     import nibabel as nib
     import numpy as np
 
-    from clinicadl.clinicadl.utils.maps_manager.iotools import check_and_clean
+    from clinicadl.utils.maps_manager.iotools import check_and_clean
 
     check_and_clean(visualization_path)
 

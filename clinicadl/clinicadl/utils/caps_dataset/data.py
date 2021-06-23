@@ -307,9 +307,7 @@ class MRIDataset(Dataset):
     def _get_full_image(self):
         import nibabel as nib
 
-        from clinicadl.clinicadl.generate.generate_utils import (
-            find_image_path as get_nii_path,
-        )
+        from clinicadl.generate.generate_utils import find_image_path as get_nii_path
 
         participant_id = self.df.loc[0, "participant_id"]
         session_id = self.df.loc[0, "session_id"]

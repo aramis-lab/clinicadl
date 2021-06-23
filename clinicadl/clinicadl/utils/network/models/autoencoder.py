@@ -166,10 +166,7 @@ def transfer_learning(
     import logging
     from os import path
 
-    from clinicadl.clinicadl.utils.maps_manager.iotools import (
-        read_json,
-        translate_parameters,
-    )
+    from clinicadl.utils.maps_manager.iotools import read_json, translate_parameters
 
     if logger is None:
         logger = logging

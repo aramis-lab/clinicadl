@@ -4,7 +4,7 @@ import numpy as np
 import random_search_utils
 import torch.nn as nn
 
-from clinicadl.clinicadl.tools.deep_learning.models.modules import *
+from clinicadl.tools.deep_learning.models.modules import *
 
 """
 All the architectures are built here

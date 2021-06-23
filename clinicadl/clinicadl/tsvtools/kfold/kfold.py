@@ -8,11 +8,8 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 
-from clinicadl.clinicadl.tools.deep_learning.iotools import (
-    commandline_to_json,
-    return_logger,
-)
-from clinicadl.clinicadl.tools.tsv_utils import (
+from clinicadl.tools.deep_learning.iotools import commandline_to_json, return_logger
+from clinicadl.tools.tsv_utils import (
     extract_baseline,
     remove_sub_labels,
     retrieve_longitudinal,

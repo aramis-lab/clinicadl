@@ -4,25 +4,21 @@ from os import path
 
 from torch.utils.data import DataLoader
 
-from clinicadl.clinicadl.tools.deep_learning.cnn_utils import get_criterion, train
-from clinicadl.clinicadl.tools.deep_learning.data import (
+from clinicadl.tools.deep_learning.cnn_utils import get_criterion, train
+from clinicadl.tools.deep_learning.data import (
     generate_sampler,
     get_transforms,
     load_data,
     return_dataset,
 )
-from clinicadl.clinicadl.tools.deep_learning.iotools import (
+from clinicadl.tools.deep_learning.iotools import (
     commandline_to_json,
     return_logger,
     translate_parameters,
     write_requirements_version,
 )
-from clinicadl.clinicadl.tools.deep_learning.models import (
-    init_model,
-    load_model,
-    load_optimizer,
-)
-from clinicadl.clinicadl.train.train_singleCNN import test_single_cnn
+from clinicadl.tools.deep_learning.models import init_model, load_model, load_optimizer
+from clinicadl.train.train_singleCNN import test_single_cnn
 
 
 def resume_single_cnn(params, resumed_split):

@@ -5,28 +5,24 @@ from os import path
 import torch
 from torch.utils.data import DataLoader
 
-from clinicadl.clinicadl.tools.deep_learning.autoencoder_utils import (
+from clinicadl.tools.deep_learning.autoencoder_utils import (
     get_criterion,
     train,
     visualize_image,
 )
-from clinicadl.clinicadl.tools.deep_learning.data import (
+from clinicadl.tools.deep_learning.data import (
     generate_sampler,
     get_transforms,
     load_data,
     return_dataset,
 )
-from clinicadl.clinicadl.tools.deep_learning.iotools import (
+from clinicadl.tools.deep_learning.iotools import (
     commandline_to_json,
     return_logger,
     translate_parameters,
     write_requirements_version,
 )
-from clinicadl.clinicadl.tools.deep_learning.models import (
-    init_model,
-    load_model,
-    load_optimizer,
-)
+from clinicadl.tools.deep_learning.models import init_model, load_model, load_optimizer
 
 
 def resume_autoencoder(params, resumed_split):

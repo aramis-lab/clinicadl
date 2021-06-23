@@ -10,8 +10,8 @@ import torch
 from clinica.utils.inputs import RemoteFileStructure, fetch_file
 from torch.utils.data import DataLoader
 
-from clinicadl.clinicadl.generate.generate_utils import load_and_check_tsv
-from clinicadl.clinicadl.tools.deep_learning.data import MRIDataset
+from clinicadl.generate.generate_utils import load_and_check_tsv
+from clinicadl.tools.deep_learning.data import MRIDataset
 
 from .utils import QCDataset, resnet_qc_18
 

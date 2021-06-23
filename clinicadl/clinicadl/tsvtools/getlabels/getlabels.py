@@ -18,11 +18,8 @@ from os import path
 import numpy as np
 import pandas as pd
 
-from clinicadl.clinicadl.tools.deep_learning.iotools import (
-    commandline_to_json,
-    return_logger,
-)
-from clinicadl.clinicadl.tools.tsv_utils import (
+from clinicadl.tools.deep_learning.iotools import commandline_to_json, return_logger
+from clinicadl.tools.tsv_utils import (
     after_end_screening,
     find_label,
     first_session,
