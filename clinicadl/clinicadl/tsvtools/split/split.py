@@ -10,8 +10,11 @@ import pandas as pd
 from scipy.stats import ttest_ind
 from sklearn.model_selection import StratifiedShuffleSplit
 
-from clinicadl.utils.maps_manager.iotools import commandline_to_json, return_logger
-from clinicadl.utils.tsvtools_utils import (
+from clinicadl.clinicadl.tools.deep_learning.iotools import (
+    commandline_to_json,
+    return_logger,
+)
+from clinicadl.clinicadl.tools.tsv_utils import (
     category_conversion,
     chi2,
     complementary_list,

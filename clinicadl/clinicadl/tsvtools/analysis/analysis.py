@@ -7,7 +7,7 @@ from warnings import warn
 import numpy as np
 import pandas as pd
 
-from clinicadl.utils.tsvtools_utils import (
+from clinicadl.clinicadl.tools.tsv_utils import (
     add_demographics,
     find_label,
     first_session,

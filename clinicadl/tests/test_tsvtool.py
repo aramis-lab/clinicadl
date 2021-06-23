@@ -4,8 +4,7 @@ from os import path
 
 import pandas as pd
 
-from clinicadl.utils.caps_dataset.data import load_data_test
-from clinicadl.utils.split_manager import KFoldSplit
+from clinicadl.tools.deep_learning.data import load_data, load_data_test
 
 merged_tsv = "data/tsvtool/anonymous_BIDS.tsv"
 missing_mods = "data/tsvtool/anonymous_missing_mods"
