@@ -14,10 +14,10 @@ import pandas as pd
 import torch
 from clinica.utils.inputs import RemoteFileStructure, fetch_file
 
-from clinicadl.clinicadl.tools.deep_learning.data import MRIDataset
-from clinicadl.clinicadl.tsv.tsv_utils import extract_baseline
+from clinicadl.tools.deep_learning.data import MRIDataset
 from clinicadl.tools.deep_learning.iotools import check_and_clean, commandline_to_json
 from clinicadl.tools.inputs.filename_types import FILENAME_TYPE
+from clinicadl.tsv.tsv_utils import extract_baseline
 
 from .generate_utils import (
     find_image_path,
