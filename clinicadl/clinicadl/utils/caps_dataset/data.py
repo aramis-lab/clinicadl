@@ -11,7 +11,7 @@ import torch
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset, sampler
 
-from clinicadl.tools.inputs.filename_types import FILENAME_TYPE, MASK_PATTERN
+from clinicadl.utils.inputs import FILENAME_TYPE, MASK_PATTERN
 
 #################################
 # Datasets loaders

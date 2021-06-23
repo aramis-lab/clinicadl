@@ -7,25 +7,25 @@ from os.path import exists, join
 
 from torch.utils.data import DataLoader
 
-from clinicadl.tools.deep_learning import (
-    commandline_to_json,
-    create_model,
-    load_model,
-    read_json,
-)
-from clinicadl.tools.deep_learning.cnn_utils import (
-    get_criterion,
-    mode_level_to_tsvs,
-    soft_voting_to_tsvs,
-    test,
-)
-from clinicadl.tools.deep_learning.data import (
+from clinicadl.utils.caps_dataset.data import (
     compute_num_cnn,
     get_transforms,
     load_data_test,
     return_dataset,
 )
-from clinicadl.tools.deep_learning.iotools import return_logger, translate_parameters
+from clinicadl.utils.maps_manager.iotools import (
+    commandline_to_json,
+    read_json,
+    return_logger,
+    translate_parameters,
+)
+from clinicadl.utils.network import create_model, load_model
+from clinicadl.utils.network.cnn_utils import (
+    get_criterion,
+    mode_level_to_tsvs,
+    soft_voting_to_tsvs,
+    test,
+)
 
 
 def classify(

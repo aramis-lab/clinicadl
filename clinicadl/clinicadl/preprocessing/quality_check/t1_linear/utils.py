@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 
-from clinicadl.tools.deep_learning.data import FILENAME_TYPE
+from clinicadl.utils.inputs import FILENAME_TYPE
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -171,7 +171,7 @@ class QCDataset(Dataset):
             data_df (DataFrame): Subject and session list.
 
         """
-        from clinicadl.tools.deep_learning.data import MinMaxNormalization
+        from clinicadl.utils.caps_dataset.data import MinMaxNormalization
 
         self.img_dir = img_dir
         self.df = data_df

@@ -7,8 +7,8 @@ import numpy as np
 import pandas as pd
 from torch import nn
 
-from clinicadl.tools.deep_learning import EarlyStopping, save_checkpoint
-from clinicadl.tools.deep_learning.iotools import check_and_clean
+from clinicadl.utils.maps_manager.iotools import check_and_clean, save_checkpoint
+from clinicadl.utils.network import EarlyStopping
 
 #############################
 # AutoEncoder train / test  #

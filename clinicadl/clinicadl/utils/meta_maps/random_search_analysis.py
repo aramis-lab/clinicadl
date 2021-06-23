@@ -8,7 +8,7 @@ from warnings import warn
 import numpy as np
 import pandas as pd
 
-from clinicadl.tools.deep_learning import read_json
+from clinicadl.utils.maps_manager import read_json
 
 
 def random_search_analysis(launch_dir):

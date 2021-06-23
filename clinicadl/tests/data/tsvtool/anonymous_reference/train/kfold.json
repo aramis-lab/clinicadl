@@ -1,0 +1,6 @@
+{
+    "n_splits": 5,
+    "subset_name": "validation",
+    "MCI_sub_categories": true,
+    "stratification": null
+}
