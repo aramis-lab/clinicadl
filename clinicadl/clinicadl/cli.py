@@ -176,7 +176,7 @@ def classify_func(args):
 # Functions to dispatch command line options from tsvtool to corresponding
 # function
 def tsv_restrict_func(args):
-    from clinicadl.tsv import aibl_restriction, oasis_restriction
+    from clinicadl.tsvtools.restrict import aibl_restriction, oasis_restriction
 
     if args.dataset == "AIBL":
         aibl_restriction(args.merged_tsv, args.results_path)
@@ -185,7 +185,7 @@ def tsv_restrict_func(args):
 
 
 def tsv_getlabels_func(args):
-    from clinicadl.tsv import get_labels
+    from clinicadl.tsvtools.getlabels import get_labels
 
     get_labels(
         args.merged_tsv,
@@ -202,7 +202,7 @@ def tsv_getlabels_func(args):
 
 
 def tsv_split_func(args):
-    from clinicadl.tsv import split_diagnoses
+    from clinicadl.tsvtools.split import split_diagnoses
 
     split_diagnoses(
         args.formatted_data_path,
@@ -218,7 +218,7 @@ def tsv_split_func(args):
 
 
 def tsv_kfold_func(args):
-    from clinicadl.tsv.kfold_split import split_diagnoses
+    from clinicadl.tsvtools.kfold import split_diagnoses
 
     split_diagnoses(
         args.formatted_data_path,
@@ -231,7 +231,7 @@ def tsv_kfold_func(args):
 
 
 def tsv_analysis_func(args):
-    from clinicadl.tsvtools.analysis.analysis import demographics_analysis
+    from clinicadl.tsvtools.analysis import demographics_analysis
 
     demographics_analysis(
         args.merged_tsv,
