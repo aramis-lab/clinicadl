@@ -1,7 +1,6 @@
 from copy import deepcopy
 
 import numpy as np
-import random_search_utils
 import torch.nn as nn
 
 from clinicadl.utils.network.models.modules import *
