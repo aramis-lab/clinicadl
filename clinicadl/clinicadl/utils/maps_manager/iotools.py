@@ -187,7 +187,7 @@ def read_json(options=None, json_path=None, test=False, read_computational=False
         options.model = options.network
         del options.network
 
-    if not hasattr(options, "discarded_sliced"):
+    if not hasattr(options, "discarded_slices"):
         options.discarded_slices = 20
 
     if isinstance(options.preprocessing, str):

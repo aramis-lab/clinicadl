@@ -18,8 +18,8 @@ from clinicadl.utils.inputs import FILENAME_TYPE, MASK_PATTERN
 #################################
 
 
-class MRIDataset(Dataset):
-    """Abstract class for all derived MRIDatasets."""
+class CapsDataset(Dataset):
+    """Abstract class for all derived CapsDatasets."""
 
     def __init__(
         self,
@@ -51,9 +51,11 @@ class MRIDataset(Dataset):
         self.preprocessing = preprocessing
 
         if not hasattr(self, "elem_index"):
-            raise ValueError("Child class of MRIDataset must set elem_index attribute.")
+            raise ValueError(
+                "Child class of CapsDataset must set elem_index attribute."
+            )
         if not hasattr(self, "mode"):
-            raise ValueError("Child class of MRIDataset must set mode attribute.")
+            raise ValueError("Child class of CapsDataset must set mode attribute.")
 
         # Check the format of the tsv file here
         if isinstance(data_file, str):
@@ -356,7 +358,7 @@ class MRIDataset(Dataset):
         return self
 
 
-class MRIDatasetImage(MRIDataset):
+class CapsDatasetImage(CapsDataset):
     """Dataset of MRI organized in a CAPS folder."""
 
     def __init__(
@@ -429,7 +431,7 @@ class MRIDatasetImage(MRIDataset):
         return 1
 
 
-class MRIDatasetPatch(MRIDataset):
+class CapsDatasetPatch(CapsDataset):
     def __init__(
         self,
         caps_directory,
@@ -561,7 +563,7 @@ class MRIDatasetPatch(MRIDataset):
         return extracted_patch
 
 
-class MRIDatasetRoi(MRIDataset):
+class CapsDatasetRoi(CapsDataset):
     def __init__(
         self,
         caps_directory,
@@ -807,7 +809,7 @@ class MRIDatasetRoi(MRIDataset):
         return image_descriptors
 
 
-class MRIDatasetSlice(MRIDataset):
+class CapsDatasetSlice(CapsDataset):
     def __init__(
         self,
         caps_directory,
@@ -992,7 +994,7 @@ def return_dataset(
         merged_df = None
 
     if mode == "image":
-        return MRIDatasetImage(
+        return CapsDatasetImage(
             input_dir,
             data_df,
             preprocessing,
@@ -1004,7 +1006,7 @@ def return_dataset(
             merged_df=merged_df,
         )
     elif mode == "patch":
-        return MRIDatasetPatch(
+        return CapsDatasetPatch(
             input_dir,
             data_df,
             params.patch_size,
@@ -1020,7 +1022,7 @@ def return_dataset(
             merged_df=merged_df,
         )
     elif mode == "roi":
-        return MRIDatasetRoi(
+        return CapsDatasetRoi(
             input_dir,
             data_df,
             roi_list=params.roi_list,
@@ -1036,7 +1038,7 @@ def return_dataset(
             merged_df=merged_df,
         )
     elif mode == "slice":
-        return MRIDatasetSlice(
+        return CapsDatasetSlice(
             input_dir,
             data_df,
             preprocessing=preprocessing,
@@ -1486,9 +1488,11 @@ def generate_sampler(dataset, sampler_option="random"):
     """
     Returns sampler according to the wanted options
 
-    :param dataset: (MRIDataset) the dataset to sample from
-    :param sampler_option: (str) choice of sampler
-    :return: (Sampler)
+    Args:
+        dataset: (CapsDataset) the dataset to sample from
+        sampler_option: (str) choice of sampler
+    Returns:
+        (Sampler)
     """
     df = dataset.df
     # To be changed for non-binary classification

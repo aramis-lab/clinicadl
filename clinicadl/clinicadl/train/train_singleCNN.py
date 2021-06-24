@@ -41,13 +41,11 @@ def train_single_cnn(params, erase_existing=True):
     optimizer.pth.tar files which respectively contains the state of the model and the optimizer at the end
     of the last epoch that was completed before the crash.
     """
-    main_logger = return_logger(params.verbose, "main process")
-    train_logger = return_logger(params.verbose, "train")
-    eval_logger = return_logger(params.verbose, "final evaluation")
+    logger = params.logger
     if erase_existing:
         check_and_clean(params.output_dir)
 
-    commandline_to_json(params, logger=main_logger)
+    commandline_to_json(params, logger=logger)
     write_requirements_version(params.output_dir)
     params = translate_parameters(params)
     train_transforms, all_transforms = get_transforms(
@@ -65,7 +63,7 @@ def train_single_cnn(params, erase_existing=True):
         fold_iterator = params.split
 
     for fi in fold_iterator:
-        main_logger.info("Fold %i" % fi)
+        logger.info("Fold %i" % fi)
 
         training_df, valid_df = load_data(
             params.tsv_path,
@@ -73,7 +71,7 @@ def train_single_cnn(params, erase_existing=True):
             fi,
             n_splits=params.n_splits,
             baseline=params.baseline,
-            logger=main_logger,
+            logger=logger,
             multi_cohort=params.multi_cohort,
         )
 
