@@ -4,7 +4,8 @@ Retrain a model defined by a commandline.json file
 
 import argparse
 
-from ..tools.deep_learning import check_and_complete, read_json
+from clinicadl.utils.maps_manager.iotools import check_and_complete, read_json
+
 from .train_autoencoder import train_autoencoder
 from .train_multiCNN import train_multi_cnn
 from .train_singleCNN import train_single_cnn

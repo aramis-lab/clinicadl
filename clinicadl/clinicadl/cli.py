@@ -48,8 +48,12 @@ def extract_tensors(args):
 
 
 def qc_func(args):
-    from .quality_check.t1_linear.quality_check import quality_check as linear_qc
-    from .quality_check.t1_volume.quality_check import quality_check as volume_qc
+    from clinicadl.preprocessing.quality_check.t1_linear import (
+        quality_check as linear_qc,
+    )
+    from clinicadl.preprocessing.quality_check.t1_volume import (
+        quality_check as volume_qc,
+    )
 
     if args.preprocessing == "t1-linear":
         linear_qc(
@@ -66,7 +70,7 @@ def qc_func(args):
 
 
 def generate_data_func(args):
-    from .tools.data.generate_data import (
+    from clinicadl.generate.generate import (
         generate_random_dataset,
         generate_shepplogan_dataset,
         generate_trivial_dataset,
@@ -107,8 +111,8 @@ def generate_data_func(args):
 
 
 def rs_func(args):
-    from .classify.random_search_analysis import random_search_analysis
-    from .train.random_search import launch_search
+    from clinicadl.random_search.random_search import launch_search
+    from clinicadl.utils.meta_maps.random_search_analysis import random_search_analysis
 
     if args.random_task == "generate":
         launch_search(args)
@@ -127,7 +131,7 @@ def retrain_func(args):
 
 
 def resume_func(args):
-    from .resume.automatic_resume import automatic_resume
+    from clinicadl.train.resume import automatic_resume
 
     if args.use_cpu and args.use_gpu:
         raise ValueError(
@@ -170,7 +174,7 @@ def train_func(args):
 # Function to dispatch command line options from classify to corresponding
 # function
 def classify_func(args):
-    from .classify.inference import classify
+    from clinicadl.infer.infer import classify
 
     classify(
         args.caps_directory,
@@ -190,7 +194,7 @@ def classify_func(args):
 # Functions to dispatch command line options from tsvtool to corresponding
 # function
 def tsv_restrict_func(args):
-    from .tools.tsv.restriction import aibl_restriction, oasis_restriction
+    from clinicadl.tsvtools.restrict import aibl_restriction, oasis_restriction
 
     if args.dataset == "AIBL":
         aibl_restriction(args.merged_tsv, args.results_path)
@@ -199,7 +203,7 @@ def tsv_restrict_func(args):
 
 
 def tsv_getlabels_func(args):
-    from .tools.tsv.data_formatting import get_labels
+    from clinicadl.tsvtools.getlabels import get_labels
 
     get_labels(
         args.merged_tsv,
@@ -216,7 +220,7 @@ def tsv_getlabels_func(args):
 
 
 def tsv_split_func(args):
-    from .tools.tsv.data_split import split_diagnoses
+    from clinicadl.tsvtools.split import split_diagnoses
 
     split_diagnoses(
         args.formatted_data_path,
@@ -232,7 +236,7 @@ def tsv_split_func(args):
 
 
 def tsv_kfold_func(args):
-    from .tools.tsv.kfold_split import split_diagnoses
+    from clinicadl.tsvtools.kfold import split_diagnoses
 
     split_diagnoses(
         args.formatted_data_path,
@@ -245,7 +249,7 @@ def tsv_kfold_func(args):
 
 
 def tsv_analysis_func(args):
-    from .tools.tsv.demographics_analysis import demographics_analysis
+    from clinicadl.tsvtools.analysis import demographics_analysis
 
     demographics_analysis(
         args.merged_tsv,
@@ -431,7 +435,7 @@ def parse_command_line():
     from clinica.engine.cmdparser import init_cmdparser_objects
     from clinica.pipelines.t1_linear.t1_linear_cli import T1LinearCLI
 
-    from .preprocessing.t1_extensive.t1_extensive_cli import T1ExtensiveCli
+    from clinicadl.preprocessing.run.t1_extensive.t1_extensive_cli import T1ExtensiveCli
 
     preprocessing_parser = subparser.add_parser(
         "preprocessing",

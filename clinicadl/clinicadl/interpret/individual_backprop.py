@@ -8,19 +8,19 @@ import nibabel as nib
 import numpy as np
 from torch.utils.data import DataLoader
 
-from clinicadl.tools.deep_learning.cnn_utils import get_criterion, sort_predicted
-from clinicadl.tools.deep_learning.data import (
+from clinicadl.utils.caps_dataset.data import (
     get_transforms,
     load_data_test,
     return_dataset,
 )
-from clinicadl.tools.deep_learning.iotools import (
+from clinicadl.utils.maps_manager.iotools import (
     commandline_to_json,
     read_json,
     return_logger,
     translate_parameters,
 )
-from clinicadl.tools.deep_learning.models import create_model, load_model
+from clinicadl.utils.network.cnn_utils import get_criterion, sort_predicted
+from clinicadl.utils.network.models import create_model, load_model
 
 from .gradients import VanillaBackProp
 
