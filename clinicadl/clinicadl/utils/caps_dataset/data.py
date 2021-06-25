@@ -1309,7 +1309,7 @@ def load_data_single(
     train_df = pd.DataFrame()
     valid_df = pd.DataFrame()
 
-    if n_splits == 0:
+    if n_splits == 0 or n_splits is None:
         train_path = path.join(train_val_path, "train")
         valid_path = path.join(train_val_path, "validation")
 

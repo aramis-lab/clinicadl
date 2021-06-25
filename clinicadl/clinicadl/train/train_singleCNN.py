@@ -139,8 +139,8 @@ def train_single_cnn(params, erase_existing=True):
         )
 
         # Define output directories
-        log_dir = os.path.join(params.output_dir, "fold-%i" % fi, "tensorboard_logs")
-        model_dir = os.path.join(params.output_dir, "fold-%i" % fi, "models")
+        log_dir = os.path.join(params.maps_path, "fold-%i" % fi, "tensorboard_logs")
+        model_dir = os.path.join(params.maps_path, "fold-%i" % fi, "models")
 
         main_logger.debug("Beginning the training task")
         train(
@@ -158,7 +158,7 @@ def train_single_cnn(params, erase_existing=True):
 
         test_single_cnn(
             model,
-            params.output_dir,
+            params.maps_path,
             train_loader,
             "train",
             fi,
