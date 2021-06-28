@@ -89,19 +89,19 @@ class LogWriter:
 
         row = [general_row + train_row + valid_row]
         row_df = pd.DataFrame(row, columns=self.columns)
-        with open(file_path, "a") as f:
+        with open(tsv_path, "a") as f:
             row_df.to_csv(f, header=False, index=False, sep="\t")
 
         # Write tensorboard logs
-        global_step = i + epoch * len(train_loader)
+        global_step = i + epoch * len_epoch
         for selection in self.evaluation_metrics:
-            writer_train.add_scalar(
+            self.writer_train.add_scalar(
                 selection,
-                results_train[selection],
+                metrics_train[selection],
                 global_step,
             )
-            writer_valid.add_scalar(
+            self.writer_valid.add_scalar(
                 selection,
-                results_valid[selection],
+                metrics_valid[selection],
                 global_step,
             )

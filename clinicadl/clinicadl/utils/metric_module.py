@@ -7,7 +7,7 @@ metric_optimum = {
     "specificity": "max",
     "ppv": "max",
     "npv": "max",
-    "balanced_accuracy": "max",
+    "ba": "max",
     "loss": "min",
 }
 
@@ -25,7 +25,7 @@ class MetricModule:
         ]
         self.metrics = dict()
         for metric in metrics:
-            if f"{metric}_fn" in list_fn:
+            if f"{metric.lower()}_fn" in list_fn:
                 self.metrics[metric] = getattr(MetricModule, f"{metric}_fn")
             else:
                 raise ValueError(
@@ -154,7 +154,7 @@ class MetricModule:
             return 0.0
 
     @staticmethod
-    def balanced_accuracy_fn(y, y_pred):
+    def ba_fn(y, y_pred):
         """
         Args:
             y (List): list of labels
@@ -202,9 +202,9 @@ class RetainBest:
     def _init_best_metrics(self):
         self.best_metrics = dict()
         for selection in self.selection_list:
-            if metric_optimum[selection] == "min":
+            if metric_optimum[selection.lower()] == "min":
                 self.best_metrics[selection] = np.inf
-            elif metric_optimum[selection] == "max":
+            elif metric_optimum[selection.lower()] == "max":
                 self.best_metrics[selection] = -np.inf
             else:
                 raise ValueError(
@@ -224,7 +224,7 @@ class RetainBest:
 
         metrics_dict = dict()
         for selection in self.selection_list:
-            if metric_optimum[selection] == "min":
+            if metric_optimum[selection.lower()] == "min":
                 metrics_dict[selection] = (
                     metrics_valid[selection] < self.best_metrics[selection]
                 )

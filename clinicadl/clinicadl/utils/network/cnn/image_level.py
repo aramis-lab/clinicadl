@@ -14,8 +14,6 @@ class Conv5_FC3(CNN):
     """
 
     def __init__(self, input_shape, use_cpu=False, n_classes=2, dropout=0.5):
-
-        super().__init__(use_cpu=use_cpu, n_classes=n_classes)
         # fmt: off
         convolutions = nn.Sequential(
             nn.Conv3d(1, 8, 3, padding=1),
@@ -48,8 +46,7 @@ class Conv5_FC3(CNN):
         input_tensor = torch.zeros(input_shape).unsqueeze(0)
         output_convolutions = convolutions(input_tensor)
 
-        self.convolutions = convolutions
-        self.classifier = nn.Sequential(
+        classifier = nn.Sequential(
             Flatten(),
             nn.Dropout(p=dropout),
 
@@ -59,6 +56,9 @@ class Conv5_FC3(CNN):
             nn.Linear(1300, 50),
             nn.ReLU(),
 
-            nn.Linear(50, self.n_classes)
+            nn.Linear(50, n_classes)
         )
         # fmt: on
+        super().__init__(
+            convolutions=convolutions, classifier=classifier, use_cpu=use_cpu
+        )
