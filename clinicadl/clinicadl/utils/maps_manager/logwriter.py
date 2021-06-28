@@ -17,7 +17,12 @@ class StdLevelFilter(logging.Filter):
 
 
 class LogWriter:
-    def __init__(self, maps_path, evaluation_metrics):
+    def __init__(
+        self, maps_path, evaluation_metrics, fold, resume=False, beginning_epoch=0
+    ):
+        from time import time
+
+        from torch.utils.tensorboard import SummaryWriter
 
         # Generate columns of DataFrame
         columns_train = [
@@ -31,14 +36,9 @@ class LogWriter:
         self.evaluation_metrics = evaluation_metrics
         self.maps_path = maps_path
 
-    def init_fold(self, fold, resume=False, beginning_epoch=0):
-        from time import time
-
-        from torch.utils.tensorboard import SummaryWriter
-
-        file_dir = path.join(self.maps_path, f"fold-{fold}", "training_logs")
-        makedirs(file_dir, exist_ok=True)
-        tsv_path = path.join(file_dir, "training.tsv")
+        self.file_dir = path.join(self.maps_path, f"fold-{fold}", "training_logs")
+        makedirs(self.file_dir, exist_ok=True)
+        tsv_path = path.join(self.file_dir, "training.tsv")
 
         self.beginning_epoch = beginning_epoch
         if not resume:
@@ -58,17 +58,18 @@ class LogWriter:
             self.beginning_time = time() + training_tsv.iloc[-1, -1]
             truncated_tsv.to_csv(tsv_path, index=True, sep="\t")
 
-        self.writer_train = SummaryWriter(path.join(file_dir, "tensorboard", "train"))
+        self.writer_train = SummaryWriter(
+            path.join(self.file_dir, "tensorboard", "train")
+        )
         self.writer_valid = SummaryWriter(
-            path.join(file_dir, "tensorboard", "validation")
+            path.join(self.file_dir, "tensorboard", "validation")
         )
 
-    def step(self, fold, epoch, i, metrics_train, metrics_valid, len_epoch):
+    def step(self, epoch, i, metrics_train, metrics_valid, len_epoch):
         """
         Write a new row on the output file training.tsv.
 
         Args:
-            fold (int): number of fold
             epoch (int): current epoch number
             i (int): current iteration number
             metrics_train (Dict[str:float]): metrics on the training set
@@ -77,10 +78,8 @@ class LogWriter:
         """
         from time import time
 
-        file_dir = path.join(self.maps_path, f"fold-{fold}", "training_logs")
-
         # Write TSV file
-        tsv_path = path.join(file_dir, "training.tsv")
+        tsv_path = path.join(self.file_dir, "training.tsv")
 
         t_current = time() - self.beginning_time
         general_row = [epoch, i, t_current]

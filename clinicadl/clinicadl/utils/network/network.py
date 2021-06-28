@@ -5,6 +5,8 @@ import pandas as pd
 import torch
 from torch import nn
 
+from clinicadl.utils.metric_module import MetricModule
+
 
 class Network(nn.Module):
     """Abstract Template for all networks used in ClinicaDL"""
@@ -13,6 +15,7 @@ class Network(nn.Module):
         super(Network, self).__init__()
         # TODO: check if gpu is available
         self.device = self._select_device(use_cpu)
+        self.metrics_module = MetricModule(self.evaluation_metrics)
 
     @staticmethod
     def _select_device(use_cpu):
@@ -50,6 +53,10 @@ class Network(nn.Module):
     @abc.abstractproperty
     def ensemble_prediction(self):
         """If True results on parts of images can be merged to find a result at the image level."""
+        pass
+
+    @abc.abstractproperty
+    def evaluation_metrics(self):
         pass
 
     def test(self, dataloader, criterion, mode="image", use_labels=True):
@@ -92,7 +99,7 @@ class Network(nn.Module):
             metrics_dict = None
         else:
             metrics_dict = self._compute_metrics(results_df)
-            metrics_dict["total_loss"] = total_loss
+            metrics_dict["loss"] = total_loss
         torch.cuda.empty_cache()
 
         return results_df, metrics_dict
@@ -135,6 +142,10 @@ class CNN(Network):
     def ensemble_prediction(self):
         return True
 
+    @property
+    def evaluation_metrics(self):
+        return ["accuracy", "sensitivity", "specificity", "PPV", "NPV", "BA"]
+
     def forward(self, input):
         return self.predict(input)
 
@@ -169,7 +180,7 @@ class CNN(Network):
 
         # TODO: process only idx values
         _, predicted = torch.max(outputs.data, 1)
-        normalized_output = softmax(outputs)
+        normalized_output = softmax(outputs, dim=1)
         row = [
             [
                 data["participant_id"][idx],
@@ -185,7 +196,7 @@ class CNN(Network):
 
     def _compute_metrics(self, results_df):
 
-        return evaluate_prediction(
+        return self.metrics_module.apply(
             results_df.true_label.values.astype(int),
             results_df.predicted_label.values.astype(int),
         )
@@ -257,66 +268,8 @@ class CNN(Network):
             df_final = df_final.append(row_df)
 
         if use_labels:
-            results = evaluate_prediction(
-                df_final.true_label.values.astype(int),
-                df_final.predicted_label.values.astype(int),
-            )
+            results = self._compute_metrics(df_final)
         else:
             results = None
 
         return df_final, results
-
-
-def evaluate_prediction(y, y_pred):
-    """
-    Evaluates different metrics based on the list of true labels and predicted labels.
-
-    Args:
-        y: (list) true labels
-        y_pred: (list) corresponding predictions
-
-    Returns:
-        (dict) ensemble of metrics
-    """
-
-    true_positive = np.sum((y_pred == 1) & (y == 1))
-    true_negative = np.sum((y_pred == 0) & (y == 0))
-    false_positive = np.sum((y_pred == 1) & (y == 0))
-    false_negative = np.sum((y_pred == 0) & (y == 1))
-
-    accuracy = (true_positive + true_negative) / (
-        true_positive + true_negative + false_positive + false_negative
-    )
-
-    if (true_positive + false_negative) != 0:
-        sensitivity = true_positive / (true_positive + false_negative)
-    else:
-        sensitivity = 0.0
-
-    if (false_positive + true_negative) != 0:
-        specificity = true_negative / (false_positive + true_negative)
-    else:
-        specificity = 0.0
-
-    if (true_positive + false_positive) != 0:
-        ppv = true_positive / (true_positive + false_positive)
-    else:
-        ppv = 0.0
-
-    if (true_negative + false_negative) != 0:
-        npv = true_negative / (true_negative + false_negative)
-    else:
-        npv = 0.0
-
-    balanced_accuracy = (sensitivity + specificity) / 2
-
-    results = {
-        "accuracy": accuracy,
-        "BA": balanced_accuracy,
-        "sensitivity": sensitivity,
-        "specificity": specificity,
-        "ppv": ppv,
-        "npv": npv,
-    }
-
-    return results

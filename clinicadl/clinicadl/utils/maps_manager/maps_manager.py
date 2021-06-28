@@ -1,13 +1,16 @@
+import json
 import logging
+import shutil
+import subprocess
+import sys
+from os import listdir, makedirs, path
 
-from clinicadl.utils.maps_manager import LogWriter
+import nibabel as nib
+import pandas as pd
+import torch
+
+from clinicadl.utils.maps_manager.logwriter import LogWriter, StdLevelFilter
 from clinicadl.utils.metric_module import MetricModule, RetainBest
-
-# Options
-# selection_metrics: BA, loss
-
-# TODO clarify difference between evaluation_metrics and selection_metrics
-# TODO: homogeneize dataset and prefix names
 
 level_dict = {
     "debug": logging.DEBUG,
@@ -29,8 +32,6 @@ class MapsManager:
             parameters (Dict[str:object]): parameters of the training step. If given a new MAPS is created.
             verbose (str): Logging level ("debug", "info", "warning", "error", "critical")
         """
-        from os import listdir, path
-
         self.maps_path = maps_path
         self.set_verbose(verbose)
 
@@ -41,13 +42,13 @@ class MapsManager:
                     f"MAPS was not found at {maps_path}."
                     f"To initiate a new MAPS please give a train_dict."
                 )
-            self.parameters = self._load_parameters()
+            self.parameters = self.get_parameters()
 
         # Initiate MAPS
         else:
             if (
-                path.exists(maps_path) and not path.isdir(maps_path)
-            ) or (  # Non-folder file
+                path.exists(maps_path) and not path.isdir(maps_path)  # Non-folder file
+            ) or (
                 path.isdir(maps_path) and listdir(maps_path)  # Non empty folder
             ):
                 raise ValueError(
@@ -60,147 +61,7 @@ class MapsManager:
             self.parameters = parameters
             self._write_parameters()
             self._write_requirements_version()
-
-        self.log_writer = LogWriter(self.maps_path, self.evaluation_metrics)
-
-    def _load_parameters(self):
-        import json
-        from os import path
-
-        json_path = path.join(self.maps_path, "maps.json")
-        with open(json_path, "r") as f:
-            parameters = json.load(f)
-
-        # Types of retro-compatibility
-        # Change arg name: ex network --> model
-        # Change arg value: ex for preprocessing: mni --> t1-extensive
-        # New arg with default hard-coded value --> discarded_slice --> 20
-        retro_change_name = {
-            "network": "model",
-            "mri_plane": "slice_direction",
-            "pretrained_path": "transfer_learning_path",
-            "pretrained_difference": "transfer_learning_difference",
-            "patch_stride": "stride_size",
-            "selection": "transfer_learning_selection",
-        }
-        retro_change_value = {
-            "preprocessing": {"mni": "t1-extensive", "linear": "t1-linear"}
-        }
-        retro_add = {
-            "discarded_slices": 20,
-            "loss": "default",
-            "uncropped_roi": False,
-            "roi_list": None,
-            "multi_cohort": False,
-            "predict_atlas_intensities": None,  # To remove after multi-task implementation
-            "merged_tsv_path": None,  # To remove after multi-task implementation
-            "atlas_weight": 1,  # To remove after multi-task implementation
-        }
-
-        for old_name, new_name in retro_change_name.items():
-            if old_name in parameters:
-                parameters[new_name] = parameters[old_name]
-                del parameters[old_name]
-
-        for name, change_values in retro_change_value.items():
-            if parameters[name] in change_values:
-                parameters[name] = change_values[parameters[name]]
-
-        for name, value in retro_add.items():
-            if name not in parameters:
-                parameters[name] = value
-
-        return parameters
-
-    @staticmethod
-    def _check_args(parameters):
-        mandatory_arguments = [
-            "caps_directory",
-            "tsv_path",
-            "preprocessing",
-            "mode",
-            "network_type",
-            "model",
-        ]
-
-        for arg in mandatory_arguments:
-            if arg not in parameters:
-                raise ValueError(
-                    f"The values of mandatory arguments {mandatory_arguments} should be set."
-                    f"No value was given for {arg}."
-                )
-
-        # TODO: add default values manager
-        # click passing context @click.command / @click.passcontext (config.json)
-        # or default parameters in click --> from config_param import learning_rate --> @learning_rate
-
-    def _write_parameters(self):
-        import json
-        from os import makedirs, path
-
-        makedirs(self.maps_path, exist_ok=True)
-
-        # save to json file
-        json = json.dumps(self.parameters, skipkeys=True, indent=4)
-        json_path = path.join(self.maps_path, "maps.json")
-        self.logger.info(f"Path of json file: {json_path}")
-        with open(json_path, "w") as f:
-            f.write(json)
-
-    def _write_requirements_version(self):
-        import subprocess
-        from os import path
-
-        try:
-            env_variables = subprocess.check_output("pip freeze", shell=True).decode(
-                "utf-8"
-            )
-            with open(path.join(self.maps_path, "environment.txt"), "w") as file:
-                file.write(env_variables)
-        except subprocess.CalledProcessError:
-            self.logger.warning(
-                "You do not have the right to execute pip freeze. Your environment will not be written"
-            )
-
-    def _write_weights(self, state, metrics_dict, fold, filename="checkpoint.pth.tar"):
-        """
-        Update checkpoint and save the best model according to a set of metrics.
-        If no metrics_dict is given, only the checkpoint is saved.
-
-        Args:
-            state: (Dict[str,object]) state of the training (model weights, epoch...)
-            metrics_dict: (Dict[str,bool]) output of RetainBest step
-            fold: (int) fold number
-        """
-        import shutil
-        from os import makedirs, path
-
-        import nibabel as nib
-        import torch
-
-        checkpoint_dir = path.join(self.maps_path, f"fold-{fold}", "tmp")
-        makedirs(checkpoint_dir, exist_ok=True)
-        checkpoint_path = path.join(checkpoint_dir, filename)
-        torch.save(state, checkpoint_path)
-
-        # Save model according to several metrics
-        if metrics_dict is not None:
-            for metric_name, metric_bool in metrics_dict.items():
-                metric_path = path.join(
-                    self.maps_path, f"fold-{fold}", f"best-{metric_name}"
-                )
-                if metric_bool:
-                    makedirs(metric_path, exist_ok=True)
-                    shutil.copyfile(
-                        checkpoint_path, path.join(metric_path, "model.pth.tar")
-                    )
-
-    def _erase_tmp(self, fold):
-        import shutil
-        from os import path
-
-        tmp_path = path.join(self.maps_path, f"fold-{fold}", "tmp")
-        shutil.rmtree(tmp_path)
+            self._write_training_data()
 
     def __getattr__(self, name):
         """Allow to directly get the values in parameters attribute"""
@@ -214,18 +75,12 @@ class MapsManager:
         Args:
             verbose (str): Logging level ("debug", "info", "warning", "error", "critical")
         """
-        import logging
-        import sys
-        from logging import getLogger
-
-        from clinicadl.utils.maps_manager.logwriter import StdLevelFilter
-
         if verbose not in level_dict:
             raise ValueError(
                 f"Your verbose value {verbose} is incorrect."
                 f"Please choose between the following values {level_dict.keys()}."
             )
-        self.logger = getLogger("clinicadl")
+        self.logger = logging.getLogger("clinicadl")
         self.logger.setLevel(level_dict[verbose])
 
         if self.logger.hasHandlers():
@@ -244,39 +99,130 @@ class MapsManager:
         self.logger.addHandler(stdout)
         self.logger.addHandler(stderr)
 
-    def train(self, folds=None, override=False):
-        from os import path
+    def train(self, folds=None, overwrite=False):
+        existing_folds = []
 
-        # TODO: if override erase folds
-
-        if not override:
-            existing_folds = []
-
-            # TODO: replace by CV
-            if folds is None:
-                if self.n_splits is None:
-                    fold_iterator = range(1)
-                else:
-                    fold_iterator = range(self.n_splits)
+        # TODO: replace by CV
+        if folds is None:
+            if self.n_splits is None:
+                fold_iterator = range(1)
             else:
-                fold_iterator = folds
+                fold_iterator = range(self.n_splits)
+        else:
+            fold_iterator = folds
 
-            for fold in fold_iterator:
-                if path.exists(path.join(self.maps_path, f"fold-{fold}")):
+        for fold in fold_iterator:
+            fold_path = path.join(self.maps_path, f"fold-{fold}")
+            if path.exists(fold_path):
+                if overwrite:
+                    shutil.rmtree(fold_path)
+                else:
                     existing_folds.append(fold)
 
-            if len(existing_folds) > 0:
-                raise ValueError(
-                    f"Folds {existing_folds} already exist. Please "
-                    f"specify a list of folds not intersecting the previous list, "
-                    f"or use override to erase previously trained folds."
-                )
+        if len(existing_folds) > 0:
+            raise ValueError(
+                f"Folds {existing_folds} already exist. Please "
+                f"specify a list of folds not intersecting the previous list, "
+                f"or use overwrite to erase previously trained folds."
+            )
 
         self._train(folds, resume=False)
 
     def resume(self, folds=None):
         self._train(folds, resume=True)
 
+    def predict(
+        self,
+        caps_directory,
+        tsv_path,
+        prefix,
+        folds=None,
+        selection_metrics=None,
+        multi_cohort=False,
+        preprocessing=None,
+        diagnoses=None,
+        use_labels=True,
+        fold_list=None,
+        prepare_dl=None,
+        batch_size=None,
+        num_workers=None,
+        use_cpu=None,
+        overwrite=False,
+    ):
+        # TODO: check folds were all executed
+        from torch.utils.data import DataLoader
+
+        from clinicadl.utils.caps_dataset.data import (
+            get_transforms,
+            load_data_test,
+            return_dataset,
+        )
+
+        self._check_prefix(
+            prefix,
+            folds=folds,
+            selection_metrics=selection_metrics,
+            overwrite=overwrite,
+        )
+
+        _, all_transforms = get_transforms(
+            self.mode,
+            minmaxnormalization=self.minmaxnormalization,
+            data_augmentation=self.data_augmentation,
+        )
+
+        test_df = load_data_test(
+            tsv_path,
+            diagnoses if diagnoses is not None else self.diagnoses,
+            multi_cohort=multi_cohort,
+        )
+
+        self._check_leakage(test_df)
+
+        data_test = return_dataset(
+            self.mode,
+            caps_directory,
+            test_df,
+            preprocessing if preprocessing is not None else self.preprocessing,
+            all_transformations=all_transforms,
+            prepare_dl=prepare_dl if prepare_dl is not None else self.prepare_dl,
+            multi_cohort=multi_cohort,
+            params=self,
+        )
+        test_loader = DataLoader(
+            data_test,
+            batch_size=batch_size if batch_size is not None else self.batch_size,
+            shuffle=False,
+            num_workers=num_workers if num_workers is not None else self.num_workers,
+        )
+
+        criterion = self._get_criterion()
+
+        # TODO: replace by CV
+        if folds is None:
+            if self.n_splits is None:
+                fold_iterator = range(1)
+            else:
+                fold_iterator = range(self.n_splits)
+        else:
+            fold_iterator = folds
+
+        for fold in fold_iterator:
+            self._test(
+                test_loader,
+                criterion,
+                prefix,
+                fold,
+                selection_metrics
+                if selection_metrics is not None
+                else self._find_selection_metrics(fold),
+                use_labels=use_labels,
+                use_cpu=use_cpu,
+            )
+
+    ###################################
+    # High-level functions templates  #
+    ###################################
     def _train(self, folds=None, resume=False):
         """
         Args:
@@ -363,7 +309,7 @@ class MapsManager:
                 num_workers=self.num_workers,
             )
 
-            model = self._init_model(
+            model, beginning_epoch = self._init_model(
                 input_shape=data_train.size, fold=fold, resume=resume
             )
             model.train()
@@ -371,18 +317,26 @@ class MapsManager:
             criterion = self._get_criterion()
             optimizer = self._init_optimizer(model, fold=fold, resume=resume)
 
-            retain_best = RetainBest(selection_list=self.selection_metrics)
-
             early_stopping = EarlyStopping(
                 "min", min_delta=self.tolerance, patience=self.patience
             )
-            metrics_valid = {"total_loss": None}
+            metrics_valid = {"loss": None}
 
-            self.log_writer.init_fold(fold, resume=resume)
-            epoch = self.log_writer.beginning_epoch
+            evaluation_metrics = model.evaluation_metrics
+            evaluation_metrics.append("loss")
+            log_writer = LogWriter(
+                self.maps_path,
+                evaluation_metrics,
+                fold,
+                resume=resume,
+                beginning_epoch=beginning_epoch,
+            )
+            epoch = log_writer.beginning_epoch
+
+            retain_best = RetainBest(selection_metrics=self.selection_metrics)
 
             while epoch < self.epochs and not early_stopping.step(
-                metrics_valid["total_loss"]
+                metrics_valid["loss"]
             ):
                 self.logger.info(f"Beginning epoch {epoch}.")
 
@@ -418,8 +372,7 @@ class MapsManager:
                             model.train()
                             train_loader.dataset.train()
 
-                            self.log_writer.step(
-                                fold,
+                            log_writer.step(
                                 epoch,
                                 i,
                                 metrics_train,
@@ -427,11 +380,11 @@ class MapsManager:
                                 len(train_loader),
                             )
                             self.logger.info(
-                                f"{self.mode} level training loss is {metrics_train['total_loss']} "
+                                f"{self.mode} level training loss is {metrics_train['loss']} "
                                 f"at the end of iteration {i}"
                             )
                             self.logger.info(
-                                f"{self.mode} level validation loss is {metrics_valid['total_loss']} "
+                                f"{self.mode} level validation loss is {metrics_valid['loss']} "
                                 f"at the end of iteration {i}"
                             )
 
@@ -464,15 +417,15 @@ class MapsManager:
                 model.train()
                 train_loader.dataset.train()
 
-                self.log_writer.step(
-                    fold, epoch, i, metrics_train, metrics_valid, len(train_loader)
+                log_writer.step(
+                    epoch, i, metrics_train, metrics_valid, len(train_loader)
                 )
                 self.logger.info(
-                    f"{self.mode} level training loss is {metrics_train['total_loss']} "
+                    f"{self.mode} level training loss is {metrics_train['loss']} "
                     f"at the end of iteration {i}"
                 )
                 self.logger.info(
-                    f"{self.mode} level validation loss is {metrics_valid['total_loss']} "
+                    f"{self.mode} level validation loss is {metrics_valid['loss']} "
                     f"at the end of iteration {i}"
                 )
 
@@ -518,11 +471,11 @@ class MapsManager:
         for selection_metric in selection_metrics:
 
             # load the best trained model during the training
-            model = self._init_model(
-                dataloader.dataset.size,
-                self.maps_path,
-                fold,
-                selection_metric,
+            model, _ = self._init_model(
+                input_shape=dataloader.dataset.size,
+                transfer_path=self.maps_path,
+                fold=fold,
+                transfer_selection=selection_metric,
                 use_cpu=use_cpu,
             )
 
@@ -531,12 +484,12 @@ class MapsManager:
             )
             if use_labels:
                 self.logger.info(
-                    f"{self.mode} level {prefix} loss is {metrics['total_loss']} for model selected on {selection_metric}"
+                    f"{self.mode} level {prefix} loss is {metrics['loss']} for model selected on {selection_metric}"
                 )
 
             # Replace here
             self._mode_level_to_tsvs(
-                prediction_df, metrics, fold, selection_metric, dataset=prefix
+                prediction_df, metrics, fold, selection_metric, prefix=prefix
             )
 
             # Soft voting
@@ -546,240 +499,43 @@ class MapsManager:
                         model,
                         fold,
                         selection=selection_metric,
-                        dataset=prefix,
+                        prefix=prefix,
                         use_labels=use_labels,
                     )
                 elif self.mode != "image":
                     self._mode_to_image_tsvs(
                         fold,
                         selection=selection_metric,
-                        dataset=prefix,
+                        prefix=prefix,
                         use_labels=use_labels,
                     )
 
-    def _mode_level_to_tsvs(
-        self,
-        results_df,
-        metrics,
-        fold,
-        selection,
-        dataset="train",
-    ):
-        """
-        Writes the outputs of the test function in tsv files.
+    ###############################
+    # Checks                      #
+    ###############################
+    @staticmethod
+    def _check_args(parameters):
+        mandatory_arguments = [
+            "caps_directory",
+            "tsv_path",
+            "preprocessing",
+            "mode",
+            "network_type",
+            "model",
+        ]
 
-        Args:
-            results_df: (DataFrame) the individual results per patch.
-            metrics: (dict or DataFrame) the performances obtained on a series of metrics.
-            fold: (int) the fold for which the performances were obtained.
-            selection: (str) the metrics on which the model was selected (BA, loss...)
-            dataset: (str) the dataset on which the evaluation was performed.
-        """
-        from os import makedirs, path
+        for arg in mandatory_arguments:
+            if arg not in parameters:
+                raise ValueError(
+                    f"The values of mandatory arguments {mandatory_arguments} should be set."
+                    f"No value was given for {arg}."
+                )
 
-        import pandas as pd
-
-        performance_dir = path.join(
-            self.maps_path, f"fold-{fold}", f"best-{selection}", dataset
-        )
-
-        makedirs(performance_dir, exist_ok=True)
-
-        results_df.to_csv(
-            path.join(performance_dir, f"{dataset}_{self.mode}_level_prediction.tsv"),
-            index=False,
-            sep="\t",
-        )
-
-        if metrics is not None:
-            pd.DataFrame(metrics, index=[0]).to_csv(
-                path.join(performance_dir, f"{dataset}_{self.mode}_level_metrics.tsv"),
-                index=False,
-                sep="\t",
-            )
-
-    def _soft_voting_to_tsvs(
-        self,
-        model,
-        fold,
-        selection,
-        dataset="test",
-        use_labels=True,
-    ):
-        """
-        Writes soft voting results in tsv files.
-
-        Args:
-            fold: (int) fold number of the cross-validation.
-            selection: (str) criterion on which the model is selected (for example loss or BA).
-            dataset: (str) name of the dataset for which the soft-voting is performed. If different from training or
-                validation, the weights of soft voting will be computed on validation accuracies.
-            selection_threshold: (float) all parts of the image for which the classification accuracy is below the
-                threshold is removed.
-            use_labels: (bool) If True the labels are added to the final tsv
-        """
-        from os import makedirs, path
-
-        import pandas as pd
-
-        # Choose which dataset is used to compute the weights of soft voting.
-        if dataset in ["train", "validation"]:
-            validation_dataset = dataset
-        else:
-            validation_dataset = "validation"
-        test_df = self.get_prediction(dataset, fold, selection, self.mode)
-        validation_df = self.get_prediction(
-            validation_dataset, fold, selection, self.mode
-        )
-
-        performance_dir = path.join(
-            self.maps_path, f"fold-{fold}", f"best-{selection}", dataset
-        )
-        makedirs(performance_dir, exist_ok=True)
-
-        df_final, metrics = model._soft_voting(
-            test_df,
-            validation_df,
-            mode=self.mode,
-            selection_threshold=self.selection_threshold,
-            use_labels=use_labels,
-        )
-
-        df_final.to_csv(
-            path.join(performance_dir, f"{dataset}_image_level_prediction.tsv"),
-            index=False,
-            sep="\t",
-        )
-        if use_labels:
-            pd.DataFrame(metrics, index=[0]).to_csv(
-                path.join(performance_dir, f"{dataset}_image_level_metrics.tsv"),
-                index=False,
-                sep="\t",
-            )
-
-    def _mode_to_image_tsvs(self, fold, selection, dataset="test", use_labels=True):
-        """
-        Copy mode-level tsvs to name them as image-level TSV files
-
-        Args:
-            fold: (int) Fold number of the cross-validation.
-            selection: (str) criterion on which the model is selected (for example loss or BA)
-            dataset: (str) name of the dataset for which the soft-voting is performed. If different from training or
-                validation, the weights of soft voting will be computed on validation accuracies.
-            use_labels: (bool) If True the labels are added to the final tsv
-
-        """
-        from os import path
-
-        import pandas as pd
-
-        sub_df = self.get_prediction(dataset, fold, selection, self.mode)
-        sub_df.rename(columns={f"{self.mode}_id": "image_id"}, inplace=True)
-
-        performance_dir = path.join(
-            self.maps_path, f"fold-{fold}", f"best-{selection}", dataset
-        )
-        sub_df.to_csv(
-            os.path.join(performance_dir, f"{dataset}_image_level_prediction.tsv"),
-            index=False,
-            sep="\t",
-        )
-        if use_labels:
-            metrics_df = pd.read_csv(
-                path.join(performance_dir, f"{dataset}_{self.mode}_level_metrics.tsv"),
-                sep="\t",
-            )
-            metrics_df["image_id"] = metrics_df.pop(f"{self.mode}_id")
-            metrics_df.to_csv(
-                os.path.join(performance_dir, f"{dataset}_image_level_metrics.tsv"),
-                index=False,
-                sep="\t",
-            )
-
-    def predict(
-        self,
-        caps_directory,
-        tsv_path,
-        prefix,
-        folds=None,
-        selection_metrics=None,
-        multi_cohort=False,
-        preprocessing=None,
-        diagnoses=None,
-        use_labels=True,
-        fold_list=None,
-        prepare_dl=None,
-        batch_size=None,
-        num_workers=None,
-        use_cpu=None,
-    ):
-        # TODO: check if no intersection was found with train data
-        # TODO: check folds were all executed
-        # TODO: check prefix is not already used
-        from torch.utils.data import DataLoader
-
-        from clinicadl.utils.caps_dataset.data import (
-            get_transforms,
-            load_data_test,
-            return_dataset,
-        )
-
-        _, all_transforms = get_transforms(
-            self.mode,
-            minmaxnormalization=self.minmaxnormalization,
-            data_augmentation=self.data_augmentation,
-        )
-
-        test_df = load_data_test(
-            tsv_path,
-            diagnoses if diagnoses is not None else self.diagnoses,
-            multi_cohort=multi_cohort,
-        )
-
-        data_test = return_dataset(
-            self.mode,
-            caps_directory,
-            test_df,
-            preprocessing if preprocessing is not None else self.preprocessing,
-            all_transformations=all_transforms,
-            prepare_dl=prepare_dl if prepare_dl is not None else self.prepare_dl,
-            multi_cohort=multi_cohort,
-            params=self,
-        )
-        test_loader = DataLoader(
-            data_test,
-            batch_size=batch_size if batch_size is not None else self.batch_size,
-            shuffle=False,
-            num_workers=num_workers if num_workers is not None else self.num_workers,
-        )
-
-        criterion = self._get_criterion()
-
-        # TODO: replace by CV
-        if folds is None:
-            if self.n_splits is None:
-                fold_iterator = range(1)
-            else:
-                fold_iterator = range(self.n_splits)
-        else:
-            fold_iterator = folds
-
-        for fold in fold_iterator:
-            self._test(
-                test_loader,
-                criterion,
-                prefix,
-                fold,
-                selection_metrics
-                if selection_metrics is not None
-                else self._find_selection_metrics(fold),
-                use_labels=use_labels,
-                use_cpu=use_cpu,
-            )
+        # TODO: add default values manager
+        # click passing context @click.command / @click.passcontext (config.json)
+        # or default parameters in click --> from config_param import learning_rate --> @learning_rate
 
     def _find_selection_metrics(self, fold):
-        from os import listdir, path
-
         fold_path = path.join(self.maps_path, f"fold-{fold}")
         if not path.exists(fold_path):
             raise ValueError(
@@ -790,8 +546,6 @@ class MapsManager:
         return [metric[5::] for metric in listdir(fold_path) if metric[:5:] == "best-"]
 
     def _check_selection_metrics(self, fold, selection_metric=None):
-        from os import path
-
         available_metrics = self._find_selection_metrics(fold)
         if selection_metric is None:
             if available_metrics > 1:
@@ -809,15 +563,275 @@ class MapsManager:
                 )
         return selection_metric
 
-    def _get_criterion(self):
-        from torch import nn
+    def _check_prefix(
+        self, prefix, folds=None, selection_metrics=None, overwrite=False
+    ):
+        # TODO: replace by CV
+        if folds is None:
+            if self.n_splits is None:
+                fold_iterator = range(1)
+            else:
+                fold_iterator = range(self.n_splits)
+        else:
+            fold_iterator = folds
 
+        already_evaluated = []
+        for fold in fold_iterator:
+            selection_metrics = self._find_selection_metrics(fold)
+            for selection_metric in selection_metrics:
+                prediction_dir = path.join(
+                    self.maps_path, f"fold-{fold}", f"best-{selection_metric}", prefix
+                )
+                if path.exists(prediction_dir):
+                    if overwrite:
+                        shutil.rmtree(prediction_dir)
+                    else:
+                        already_evaluated.append(
+                            f"- fold {fold}, selection_metric {selection_metric}\n"
+                        )
+
+        if len(already_evaluated) > 0:
+            error_message = (
+                f"Evaluations corresponding to prefix {prefix} were found."
+                f"Please use overwrite to erase the evaluations previously done."
+                f"List of evaluations already performed:\n"
+            )
+            for message in already_evaluated:
+                error_message += message
+            raise ValueError(error_message)
+
+    def _check_leakage(self, test_df):
+        train_path = path.join(self.maps_path, "train_data.tsv")
+        train_df = pd.read_csv(train_path, sep="\t")
+        participants_train = set(train_df.participant_id.values)
+        participants_test = set(test_df.participant_id.values)
+        intersection = participants_test & participants_train
+
+        if len(intersection) > 0:
+            raise ValueError(
+                "Your evaluation set contains participants who were already seen during "
+                "the training step. The list of common participants is the following: "
+                f"{intersection}."
+            )
+
+    ###############################
+    # File writers                #
+    ###############################
+    def _write_parameters(self):
+        makedirs(self.maps_path, exist_ok=True)
+
+        # save to json file
+        json = json.dumps(self.parameters, skipkeys=True, indent=4)
+        json_path = path.join(self.maps_path, "maps.json")
+        self.logger.info(f"Path of json file: {json_path}")
+        with open(json_path, "w") as f:
+            f.write(json)
+
+    def _write_requirements_version(self):
+        try:
+            env_variables = subprocess.check_output("pip freeze", shell=True).decode(
+                "utf-8"
+            )
+            with open(path.join(self.maps_path, "environment.txt"), "w") as file:
+                file.write(env_variables)
+        except subprocess.CalledProcessError:
+            self.logger.warning(
+                "You do not have the right to execute pip freeze. Your environment will not be written"
+            )
+
+    def _write_training_data(self):
+        from clinicadl.utils.caps_dataset.data import load_data_test
+
+        train_df = load_data_test(
+            self.tsv_path,
+            self.diagnoses,
+            baseline=False,
+            multi_cohort=self.multi_cohort,
+        )
+        train_df.to_csv(
+            path.join(self.maps_path, "train_data.tsv"), sep="\t", index=False
+        )
+
+    def _write_weights(self, state, metrics_dict, fold, filename="checkpoint.pth.tar"):
+        """
+        Update checkpoint and save the best model according to a set of metrics.
+        If no metrics_dict is given, only the checkpoint is saved.
+
+        Args:
+            state: (Dict[str,object]) state of the training (model weights, epoch...)
+            metrics_dict: (Dict[str,bool]) output of RetainBest step
+            fold: (int) fold number
+        """
+        checkpoint_dir = path.join(self.maps_path, f"fold-{fold}", "tmp")
+        makedirs(checkpoint_dir, exist_ok=True)
+        checkpoint_path = path.join(checkpoint_dir, filename)
+        torch.save(state, checkpoint_path)
+
+        # Save model according to several metrics
+        if metrics_dict is not None:
+            for metric_name, metric_bool in metrics_dict.items():
+                metric_path = path.join(
+                    self.maps_path, f"fold-{fold}", f"best-{metric_name}"
+                )
+                if metric_bool:
+                    makedirs(metric_path, exist_ok=True)
+                    shutil.copyfile(
+                        checkpoint_path, path.join(metric_path, "model.pth.tar")
+                    )
+
+    def _erase_tmp(self, fold):
+        tmp_path = path.join(self.maps_path, f"fold-{fold}", "tmp")
+        shutil.rmtree(tmp_path)
+
+    def _write_prediction_log(self, prefix, fold, selection_metric, caps_directory, df):
+        log_dir = path.join(
+            self.maps_path, f"fold-{fold}", f"best-{selection_metric}", prefix
+        )
+        makedirs(log_dir, exist_ok=True)
+        log_path = path.join(log_dir, "prediction.log")
+        with open(log_path, "w") as f:
+            f.write(f"Evaluation of {prefix} group - %(asctime)s")
+            f.write(f"Data loaded from CAPS directory {caps_directory}.")
+            f.write(f"Number of participants: {df.participant_id.nunique()}")
+            f.write(f"Number of sessions: {len(df)}")
+
+    def _mode_level_to_tsvs(
+        self,
+        results_df,
+        metrics,
+        fold,
+        selection,
+        prefix="train",
+    ):
+        """
+        Writes the outputs of the test function in tsv files.
+
+        Args:
+            results_df: (DataFrame) the individual results per patch.
+            metrics: (dict or DataFrame) the performances obtained on a series of metrics.
+            fold: (int) the fold for which the performances were obtained.
+            selection: (str) the metrics on which the model was selected (BA, loss...)
+            prefix: (str) the prefix referring to the data groupe on which evaluation is performed.
+        """
+        performance_dir = path.join(
+            self.maps_path, f"fold-{fold}", f"best-{selection}", prefix
+        )
+
+        makedirs(performance_dir, exist_ok=True)
+
+        results_df.to_csv(
+            path.join(performance_dir, f"{prefix}_{self.mode}_level_prediction.tsv"),
+            index=False,
+            sep="\t",
+        )
+
+        if metrics is not None:
+            pd.DataFrame(metrics, index=[0]).to_csv(
+                path.join(performance_dir, f"{prefix}_{self.mode}_level_metrics.tsv"),
+                index=False,
+                sep="\t",
+            )
+
+    def _soft_voting_to_tsvs(
+        self,
+        model,
+        fold,
+        selection,
+        prefix="test",
+        use_labels=True,
+    ):
+        """
+        Writes soft voting results in tsv files.
+
+        Args:
+            fold: (int) fold number of the cross-validation.
+            selection: (str) criterion on which the model is selected (for example loss or BA).
+            prefix: (str) the prefix referring to the data groupe on which evaluation is performed.
+                If different from training or validation, the weights of soft voting will be computed
+                on validation accuracies.
+            selection_threshold: (float) all parts of the image for which the classification accuracy is below the
+                threshold is removed.
+            use_labels: (bool) If True the labels are added to the final tsv
+        """
+        # Choose which dataset is used to compute the weights of soft voting.
+        if prefix in ["train", "validation"]:
+            validation_dataset = prefix
+        else:
+            validation_dataset = "validation"
+        test_df = self.get_prediction(prefix, fold, selection, self.mode)
+        validation_df = self.get_prediction(
+            validation_dataset, fold, selection, self.mode
+        )
+
+        performance_dir = path.join(
+            self.maps_path, f"fold-{fold}", f"best-{selection}", prefix
+        )
+        makedirs(performance_dir, exist_ok=True)
+
+        df_final, metrics = model._soft_voting(
+            test_df,
+            validation_df,
+            mode=self.mode,
+            selection_threshold=self.selection_threshold,
+            use_labels=use_labels,
+        )
+
+        df_final.to_csv(
+            path.join(performance_dir, f"{prefix}_image_level_prediction.tsv"),
+            index=False,
+            sep="\t",
+        )
+        if use_labels:
+            pd.DataFrame(metrics, index=[0]).to_csv(
+                path.join(performance_dir, f"{prefix}_image_level_metrics.tsv"),
+                index=False,
+                sep="\t",
+            )
+
+    def _mode_to_image_tsvs(self, fold, selection, prefix="test", use_labels=True):
+        """
+        Copy mode-level tsvs to name them as image-level TSV files
+
+        Args:
+            fold: (int) Fold number of the cross-validation.
+            selection: (str) criterion on which the model is selected (for example loss or BA)
+            prefix: (str) the prefix referring to the data groupe on which evaluation is performed.
+            use_labels: (bool) If True the labels are added to the final tsv
+
+        """
+        sub_df = self.get_prediction(prefix, fold, selection, self.mode)
+        sub_df.rename(columns={f"{self.mode}_id": "image_id"}, inplace=True)
+
+        performance_dir = path.join(
+            self.maps_path, f"fold-{fold}", f"best-{selection}", prefix
+        )
+        sub_df.to_csv(
+            os.path.join(performance_dir, f"{prefix}_image_level_prediction.tsv"),
+            index=False,
+            sep="\t",
+        )
+        if use_labels:
+            metrics_df = pd.read_csv(
+                path.join(performance_dir, f"{prefix}_{self.mode}_level_metrics.tsv"),
+                sep="\t",
+            )
+            metrics_df["image_id"] = metrics_df.pop(f"{self.mode}_id")
+            metrics_df.to_csv(
+                os.path.join(performance_dir, f"{prefix}_image_level_metrics.tsv"),
+                index=False,
+                sep="\t",
+            )
+
+    ###############################
+    # Objects initialization      #
+    ###############################
+    def _get_criterion(self):
         # TODO: add a check depending on the network task to ensure
         #  the good sizes match of targets / inputs
 
         loss_dict = {
-            "mse": nn.MSELoss(),
-            "ce": nn.CrossEntropyLoss(),
+            "mse": torch.nn.MSELoss(),
+            "ce": torch.nn.CrossEntropyLoss(),
         }
 
         return loss_dict[self.optimization_metric.lower()]
@@ -826,8 +840,8 @@ class MapsManager:
         self,
         input_shape,
         transfer_path=None,
+        transfer_selection=None,
         fold=None,
-        selection=None,
         resume=False,
         use_cpu=None,
     ):
@@ -854,29 +868,90 @@ class MapsManager:
             kwargs["use_cpu"] = use_cpu
 
         model = model_class(**kwargs)
-        print(model)
+        current_epoch = 0
 
-        # TODO: implement resume
-        # TODO: CRITICAL implement transfer learning
+        if resume:
+            checkpoint_path = path.join(
+                self.maps_path, f"fold-{fold}", "tmp", "checkpoint.pth.tar"
+            )
+            checkpoint_state = torch.load(checkpoint_path)
+            model.load_state_dict(checkpoint_state["model"])
+            current_epoch = checkpoint_state["epoch"]
+        elif transfer_path is not None:
+            transfer_maps = MapsManager(transfer_path)
+            transfer_state = transfer_maps.get_state_dict(
+                fold, selection_metric=transfer_selection
+            )
+            model.load_state_dict(transfer_state["model"])
 
-        return model
+        return model, current_epoch
 
     def _init_optimizer(self, model, fold=None, resume=False):
-        import torch
-
-        # TODO: implement resume
         optimizer = getattr(torch.optim, self.optimizer)(
             filter(lambda x: x.requires_grad, model.parameters()),
             lr=self.learning_rate,
             weight_decay=self.weight_decay,
         )
 
+        if resume:
+            checkpoint_path = path.join(
+                self.maps_path, f"fold-{fold}", "tmp", "optimizer.pth.tar"
+            )
+            checkpoint_state = torch.load(checkpoint_path)
+            optimizer.load_state_dict(checkpoint_state["optimizer"])
+
         return optimizer
 
     ###############################
-    # GETTERS                     #
+    # Getters                     #
     ###############################
-    def get_model(self, fold=0, selection_metric=None):
+    def get_parameters(self):
+        json_path = path.join(self.maps_path, "maps.json")
+        with open(json_path, "r") as f:
+            parameters = json.load(f)
+
+        # Types of retro-compatibility
+        # Change arg name: ex network --> model
+        # Change arg value: ex for preprocessing: mni --> t1-extensive
+        # New arg with default hard-coded value --> discarded_slice --> 20
+        retro_change_name = {
+            "network": "model",
+            "mri_plane": "slice_direction",
+            "pretrained_path": "transfer_learning_path",
+            "pretrained_difference": "transfer_learning_difference",
+            "patch_stride": "stride_size",
+            "selection": "transfer_learning_selection",
+        }
+        retro_change_value = {
+            "preprocessing": {"mni": "t1-extensive", "linear": "t1-linear"}
+        }
+        retro_add = {
+            "discarded_slices": 20,
+            "loss": "default",
+            "uncropped_roi": False,
+            "roi_list": None,
+            "multi_cohort": False,
+            "predict_atlas_intensities": None,  # To remove after multi-task implementation
+            "merged_tsv_path": None,  # To remove after multi-task implementation
+            "atlas_weight": 1,  # To remove after multi-task implementation
+        }
+
+        for old_name, new_name in retro_change_name.items():
+            if old_name in parameters:
+                parameters[new_name] = parameters[old_name]
+                del parameters[old_name]
+
+        for name, change_values in retro_change_value.items():
+            if parameters[name] in change_values:
+                parameters[name] = change_values[parameters[name]]
+
+        for name, value in retro_add.items():
+            if name not in parameters:
+                parameters[name] = value
+
+        return parameters
+
+    def get_state_dict(self, fold=0, selection_metric=None):
         """
         Get the model trained corresponding to one fold and one metric evaluated on the validation set.
 
@@ -886,10 +961,6 @@ class MapsManager:
         Returns:
             (Dict): dictionnary of results (weights, epoch number, metrics values)
         """
-        from os import path
-
-        import torch
-
         selection_metric = self._check_selection_metrics(fold, selection_metric)
         model_path = path.join(
             self.maps_path, f"fold-{fold}", f"best-{selection_metric}", "model.pth.tar"
@@ -914,10 +985,6 @@ class MapsManager:
             (DataFrame): Results indexed by columns 'participant_id' and 'session_id' which
             identifies the image in the BIDS / CAPS.
         """
-        from os import path
-
-        import pandas as pd
-
         # TODO add prediction log print
         selection_metric = self._check_selection_metrics(fold, selection_metric)
         prediction_dir = path.join(
@@ -944,10 +1011,6 @@ class MapsManager:
         Returns:
             (Dict[str:float]): Values of the metrics
         """
-        from os import path
-
-        import pandas as pd
-
         # TODO add prediction log print
         selection_metric = self._check_selection_metrics(fold, selection_metric)
         prediction_dir = path.join(

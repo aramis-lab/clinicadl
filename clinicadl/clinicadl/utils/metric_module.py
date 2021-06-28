@@ -1,13 +1,13 @@
 import numpy as np
 
 metric_optimum = {
-    "mae": "min",
+    "MAE": "min",
     "accuracy": "max",
     "sensitivity": "max",
     "specificity": "max",
-    "ppv": "max",
-    "npv": "max",
-    "ba": "max",
+    "PPV": "max",
+    "NPV": "max",
+    "BA": "max",
     "loss": "min",
 }
 
@@ -26,7 +26,7 @@ class MetricModule:
         self.metrics = dict()
         for metric in metrics:
             if f"{metric.lower()}_fn" in list_fn:
-                self.metrics[metric] = getattr(MetricModule, f"{metric}_fn")
+                self.metrics[metric] = getattr(MetricModule, f"{metric.lower()}_fn")
             else:
                 raise ValueError(
                     f"The metric {metric} is not implemented in the module"
@@ -195,16 +195,19 @@ class RetainBest:
     A class to retain the best and overfitting values for a set of wanted metrics.
     """
 
-    def __init__(self, selection_list):
-        self.selection_list = selection_list
-        self._init_best_metrics()
-
-    def _init_best_metrics(self):
+    def __init__(self, selection_metrics):
+        self.selection_metrics = selection_metrics
+        implemented_metrics = set(metric_optimum.keys())
+        if not set(selection_metrics).issubset(implemented_metrics):
+            raise NotImplementedError(
+                f"The selection metrics {selection_metrics} are not all implemented. "
+                f"Available metrics are {implemented_metrics}."
+            )
         self.best_metrics = dict()
-        for selection in self.selection_list:
-            if metric_optimum[selection.lower()] == "min":
+        for selection in self.selection_metrics:
+            if metric_optimum[selection] == "min":
                 self.best_metrics[selection] = np.inf
-            elif metric_optimum[selection.lower()] == "max":
+            elif metric_optimum[selection] == "max":
                 self.best_metrics[selection] = -np.inf
             else:
                 raise ValueError(
@@ -223,8 +226,8 @@ class RetainBest:
         """
 
         metrics_dict = dict()
-        for selection in self.selection_list:
-            if metric_optimum[selection.lower()] == "min":
+        for selection in self.selection_metrics:
+            if metric_optimum[selection] == "min":
                 metrics_dict[selection] = (
                     metrics_valid[selection] < self.best_metrics[selection]
                 )
