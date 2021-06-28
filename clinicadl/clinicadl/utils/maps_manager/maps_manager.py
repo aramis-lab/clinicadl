@@ -3,6 +3,7 @@ import logging
 import shutil
 import subprocess
 import sys
+from datetime import datetime
 from os import listdir, makedirs, path
 
 import nibabel as nib
@@ -467,9 +468,15 @@ class MapsManager:
         use_cpu=None,
     ):
 
-        # TODO: write prediction.log
         for selection_metric in selection_metrics:
 
+            self._write_prediction_log(
+                prefix,
+                fold,
+                selection_metric,
+                dataloader.dataset.caps_dict,
+                dataloader.dataset.df,
+            )
             # load the best trained model during the training
             model, _ = self._init_model(
                 input_shape=dataloader.dataset.size,
@@ -548,7 +555,7 @@ class MapsManager:
     def _check_selection_metrics(self, fold, selection_metric=None):
         available_metrics = self._find_selection_metrics(fold)
         if selection_metric is None:
-            if available_metrics > 1:
+            if len(available_metrics) > 1:
                 raise ValueError(
                     f"Several metrics are available for fold {fold}. "
                     f"Please choose which one you want to read among {available_metrics}"
@@ -690,10 +697,10 @@ class MapsManager:
         makedirs(log_dir, exist_ok=True)
         log_path = path.join(log_dir, "prediction.log")
         with open(log_path, "w") as f:
-            f.write(f"Evaluation of {prefix} group - %(asctime)s")
-            f.write(f"Data loaded from CAPS directory {caps_directory}.")
-            f.write(f"Number of participants: {df.participant_id.nunique()}")
-            f.write(f"Number of sessions: {len(df)}")
+            f.write(f"Evaluation of {prefix} group - {datetime.now()}\n")
+            f.write(f"Data loaded from CAPS directories: {caps_directory}\n")
+            f.write(f"Number of participants: {df.participant_id.nunique()}\n")
+            f.write(f"Number of sessions: {len(df)}\n")
 
     def _mode_level_to_tsvs(
         self,
@@ -758,9 +765,9 @@ class MapsManager:
             validation_dataset = prefix
         else:
             validation_dataset = "validation"
-        test_df = self.get_prediction(prefix, fold, selection, self.mode)
+        test_df = self.get_prediction(prefix, fold, selection, self.mode, verbose=False)
         validation_df = self.get_prediction(
-            validation_dataset, fold, selection, self.mode
+            validation_dataset, fold, selection, self.mode, verbose=False
         )
 
         performance_dir = path.join(
@@ -799,7 +806,7 @@ class MapsManager:
             use_labels: (bool) If True the labels are added to the final tsv
 
         """
-        sub_df = self.get_prediction(prefix, fold, selection, self.mode)
+        sub_df = self.get_prediction(prefix, fold, selection, self.mode, verbose=False)
         sub_df.rename(columns={f"{self.mode}_id": "image_id"}, inplace=True)
 
         performance_dir = path.join(
@@ -905,6 +912,15 @@ class MapsManager:
     ###############################
     # Getters                     #
     ###############################
+    def _print_prediction_log(self, prefix, fold, selection_metric):
+        log_dir = path.join(
+            self.maps_path, f"fold-{fold}", f"best-{selection_metric}", prefix
+        )
+        log_path = path.join(log_dir, "prediction.log")
+        with open(log_path, "r") as f:
+            content = f.read()
+            print(content)
+
     def get_parameters(self):
         json_path = path.join(self.maps_path, "maps.json")
         with open(json_path, "r") as f:
@@ -971,7 +987,9 @@ class MapsManager:
         )
         return torch.load(model_path)
 
-    def get_prediction(self, prefix, fold=0, selection_metric=None, mode="image"):
+    def get_prediction(
+        self, prefix, fold=0, selection_metric=None, mode="image", verbose=True
+    ):
         """
         Get the individual predictions for each participant corresponding to one group
         of participants identified by its prefix.
@@ -981,12 +999,14 @@ class MapsManager:
             fold (int): fold number
             selection_metric (str): name of the metric used for the selection
             mode (str): level of the prediction
+            verbose (bool): if True will print associated prediction.log
         Returns:
             (DataFrame): Results indexed by columns 'participant_id' and 'session_id' which
             identifies the image in the BIDS / CAPS.
         """
-        # TODO add prediction log print
         selection_metric = self._check_selection_metrics(fold, selection_metric)
+        if verbose:
+            self._print_prediction_log(prefix, fold, selection_metric)
         prediction_dir = path.join(
             self.maps_path, f"fold-{fold}", f"best-{selection_metric}", prefix
         )
@@ -1000,7 +1020,9 @@ class MapsManager:
         df.set_index(["participant_id", "session_id"], inplace=True, drop=True)
         return df
 
-    def get_metrics(self, prefix, fold=0, selection_metric=None):
+    def get_metrics(
+        self, prefix, fold=0, selection_metric=None, mode="image", verbose=True
+    ):
         """
         Get the metrics corresponding to a group of participants identified by its prefix.
 
@@ -1008,11 +1030,14 @@ class MapsManager:
             prefix (str): name of the prediction performed on the group of participants
             fold (int): fold number
             selection_metric (str): name of the metric used for the selection
+            mode (str): level of the prediction
+            verbose (bool): if True will print associated prediction.log
         Returns:
             (Dict[str:float]): Values of the metrics
         """
-        # TODO add prediction log print
         selection_metric = self._check_selection_metrics(fold, selection_metric)
+        if verbose:
+            self._print_prediction_log(prefix, fold, selection_metric)
         prediction_dir = path.join(
             self.maps_path, f"fold-{fold}", f"best-{selection_metric}", prefix
         )
@@ -1020,5 +1045,7 @@ class MapsManager:
             raise ValueError(
                 f"No prediction corresponding to prefix {prefix} was found."
             )
-        df = pd.read_csv(path.join(prediction_dir, f"{prefix}_metrics.tsv"), sep="\t")
+        df = pd.read_csv(
+            path.join(prediction_dir, f"{prefix}_{mode}_level_metrics.tsv"), sep="\t"
+        )
         return df.to_dict("records")[0]
