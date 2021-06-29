@@ -103,16 +103,8 @@ class MapsManager:
     def train(self, folds=None, overwrite=False):
         existing_folds = []
 
-        # TODO: replace by CV
-        if folds is None:
-            if self.n_splits is None:
-                fold_iterator = range(1)
-            else:
-                fold_iterator = range(self.n_splits)
-        else:
-            fold_iterator = folds
-
-        for fold in fold_iterator:
+        split_manager = self._init_split_manager(folds)
+        for fold in split_manager.fold_iterator():
             fold_path = path.join(self.maps_path, f"fold-{fold}")
             if path.exists(fold_path):
                 if overwrite:
@@ -150,7 +142,6 @@ class MapsManager:
         use_cpu=None,
         overwrite=False,
     ):
-        # TODO: check folds were all executed
         from torch.utils.data import DataLoader
 
         from clinicadl.utils.caps_dataset.data import (
@@ -199,16 +190,8 @@ class MapsManager:
 
         criterion = self._get_criterion()
 
-        # TODO: replace by CV
-        if folds is None:
-            if self.n_splits is None:
-                fold_iterator = range(1)
-            else:
-                fold_iterator = range(self.n_splits)
-        else:
-            fold_iterator = folds
-
-        for fold in fold_iterator:
+        split_manager = self._init_split_manager(folds)
+        for fold in split_manager.fold_iterator():
             self._test(
                 test_loader,
                 criterion,
@@ -248,33 +231,16 @@ class MapsManager:
             data_augmentation=self.data_augmentation,
         )
 
-        # TODO: replace by CV (given in argument)
-        if folds is None:
-            if self.n_splits is None:
-                fold_iterator = range(1)
-            else:
-                fold_iterator = range(self.n_splits)
-        else:
-            fold_iterator = folds
-
-        for fold in fold_iterator:
+        split_manager = self._init_split_manager(folds)
+        for fold in split_manager.fold_iterator():
             self.logger.info(f"Training fold {fold}")
 
-            # TODO generate DataFrames with CV --> specify here multi_cohort
-            training_df, valid_df = load_data(
-                self.tsv_path,
-                self.diagnoses,
-                fold,
-                n_splits=self.n_splits,
-                baseline=self.baseline,
-                logger=self.logger,
-                multi_cohort=self.multi_cohort,
-            )
+            fold_paths_dict = split_manager[fold]
 
             data_train = return_dataset(
                 self.mode,
                 self.caps_directory,
-                training_df,
+                fold_paths_dict["train"],
                 self.preprocessing,
                 train_transformations=train_transforms,
                 all_transformations=all_transforms,
@@ -285,7 +251,7 @@ class MapsManager:
             data_valid = return_dataset(
                 self.mode,
                 self.caps_directory,
-                valid_df,
+                fold_paths_dict["validation"],
                 self.preprocessing,
                 train_transformations=train_transforms,
                 all_transformations=all_transforms,
@@ -573,17 +539,10 @@ class MapsManager:
     def _check_prefix(
         self, prefix, folds=None, selection_metrics=None, overwrite=False
     ):
-        # TODO: replace by CV
-        if folds is None:
-            if self.n_splits is None:
-                fold_iterator = range(1)
-            else:
-                fold_iterator = range(self.n_splits)
-        else:
-            fold_iterator = folds
 
         already_evaluated = []
-        for fold in fold_iterator:
+        split_manager = self._init_split_manager(folds)
+        for fold in split_manager.fold_iterator():
             selection_metrics = self._find_selection_metrics(fold)
             for selection_metric in selection_metrics:
                 prediction_dir = path.join(
@@ -655,6 +614,14 @@ class MapsManager:
             baseline=False,
             multi_cohort=self.multi_cohort,
         )
+        train_df = train_df[["participant_id", "session_id"]]
+        if self.transfer_path is not None:
+            transfer_train_path = path.join(self.transfer_path, "train_data.tsv")
+            transfer_train_df = pd.read_csv(transfer_train_path, sep="\t")
+            transfer_train_df = train_df[["participant_id", "session_id"]]
+            train_df = pd.concat(train_df, transfer_train_df)
+            train_df.drop_duplicates(inplace=True)
+
         train_df.to_csv(
             path.join(self.maps_path, "train_data.tsv"), sep="\t", index=False
         )
@@ -908,6 +875,24 @@ class MapsManager:
             optimizer.load_state_dict(checkpoint_state["optimizer"])
 
         return optimizer
+
+    def _init_split_manager(self, folds):
+        from clinicadl.utils import split_manager
+
+        split_class = getattr(split_manager, self.validation)
+        args = list(
+            split_class.__init__.__code__.co_varnames[
+                : split_class.__init__.__code__.co_argcount
+            ]
+        )
+        args.remove("self")
+        args.remove("folds")
+        args.remove("logger")
+        kwargs = {"folds": folds, "logger": self.logger}
+        for arg in args:
+            kwargs[arg] = self.parameters[arg]
+
+        return split_class(**kwargs)
 
     ###############################
     # Getters                     #
