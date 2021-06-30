@@ -134,7 +134,7 @@ def test_train(cli_commands):
         shutil.rmtree(output_dir)
     flag_error = not os.system("clinicadl " + " ".join(test_input))
     performances_flag = os.path.exists(
-        os.path.join("results", "fold-0", "cnn_classification")
+        os.path.join("results", "fold-0", "best-loss", "train")
     )
     assert flag_error
     assert performances_flag

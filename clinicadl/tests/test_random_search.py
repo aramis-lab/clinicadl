@@ -1,9 +1,10 @@
 # coding: utf8
 
-import pytest
+import json
 import os
 import shutil
-import json
+
+import pytest
 
 launch_dir = "results"
 name_dir = "job-1"
@@ -53,7 +54,7 @@ def test_random_search(cli_commands):
 
     flag_error_generate = not os.system("clinicadl " + " ".join(generate_input))
     performances_flag = os.path.exists(
-        os.path.join(launch_dir, name_dir, "fold-0", "cnn_classification")
+        os.path.join(launch_dir, name_dir, "fold-0", "best-loss", "train")
     )
     flag_error_log = not os.system("clinicadl " + " ".join(log_input))
     analysis_flag = True

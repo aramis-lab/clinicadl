@@ -1,11 +1,12 @@
 # coding: utf8
 
-import pytest
 import os
 import shutil
 from os import path
-import numpy as np
+
 import nibabel as nib
+import numpy as np
+import pytest
 
 caps_dir = "data/dataset/random_example"
 
@@ -86,7 +87,7 @@ def test_train(cli_commands):
 
     flag_error = not os.system("clinicadl " + " ".join(test_input))
     performances_flag = os.path.exists(
-        os.path.join("results", "fold-0", "cnn_classification")
+        os.path.join("results", "fold-0", "best-loss", "train")
     )
     assert flag_error
     assert performances_flag

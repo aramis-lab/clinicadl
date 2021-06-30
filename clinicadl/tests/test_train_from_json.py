@@ -1,8 +1,9 @@
 # coding: utf8
 
-import pytest
 import os
 import shutil
+
+import pytest
 
 
 @pytest.fixture(params=["train_roi_cnn"])
@@ -35,7 +36,7 @@ def test_train(cli_commands):
 
     flag_error = not os.system("clinicadl train from_json commandline.json results")
     performances_flag = os.path.exists(
-        os.path.join("results", "fold-0", "cnn_classification")
+        os.path.join("results", "fold-0", "best-loss", "train")
     )
     assert flag_error
     assert performances_flag
