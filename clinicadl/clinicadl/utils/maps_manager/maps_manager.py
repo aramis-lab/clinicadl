@@ -10,6 +10,7 @@ import nibabel as nib
 import pandas as pd
 import torch
 
+from clinicadl.utils.caps_dataset.data import compute_num_cnn
 from clinicadl.utils.maps_manager.logwriter import LogWriter, StdLevelFilter
 from clinicadl.utils.metric_module import MetricModule, RetainBest
 
@@ -22,7 +23,9 @@ level_dict = {
 }
 
 # TODO: replace "fold" with "split"
-# TODO: two subclasses from MapsManager --> single or multi network
+# TODO CRITICAL add multi network (compute cnn at the initialization)
+# TODO save weights on CPU for better compatibility
+# TODO transfer learning between classes
 
 
 class MapsManager:
@@ -60,6 +63,10 @@ class MapsManager:
             self.logger.info(f"A new MAPS was created at {maps_path}")
             self._check_args(parameters)
             self.parameters = parameters
+            if self.multi:
+                self.parameters["num_networks"] = compute_num_cnn(
+                    self.caps_directory, self.tsv_path, self, data="train"
+                )
             self._write_parameters()
             self._write_requirements_version()
             self._write_training_data()
@@ -105,7 +112,7 @@ class MapsManager:
 
         split_manager = self._init_split_manager(folds)
         for fold in split_manager.fold_iterator():
-            fold_path = path.join(self.maps_path, f"fold-{fold}")
+            fold_path = path.join(self.maps_path, f"fold-{fold}", "tmp")
             if path.exists(fold_path):
                 if overwrite:
                     shutil.rmtree(fold_path)
@@ -118,11 +125,30 @@ class MapsManager:
                 f"specify a list of folds not intersecting the previous list, "
                 f"or use overwrite to erase previously trained folds."
             )
-
-        self._train(folds, resume=False)
+        if self.multi:
+            self._train_multi(folds, resume=False)
+        else:
+            self._train_single(folds, resume=False)
 
     def resume(self, folds=None):
-        self._train(folds, resume=True)
+
+        missing_folds = []
+        split_manager = self._init_split_manager(folds)
+
+        for fold in split_manager.fold_iterator():
+            if not path.exists(path.join(self.maps_path, f"fold-{fold}", "tmp")):
+                missing_folds.append(fold)
+
+        if len(missing_folds) > 0:
+            raise ValueError(
+                f"Folds {missing_folds} were not intialized. "
+                f"Please try train command on these folds and resume only others."
+            )
+
+        if self.multi:
+            self._train_multi(folds, resume=True)
+        else:
+            self._train_single(folds, resume=True)
 
     def predict(
         self,
@@ -192,22 +218,41 @@ class MapsManager:
 
         split_manager = self._init_split_manager(folds)
         for fold in split_manager.fold_iterator():
-            self._test(
-                test_loader,
-                criterion,
-                prefix,
-                fold,
-                selection_metrics
-                if selection_metrics is not None
-                else self._find_selection_metrics(fold),
-                use_labels=use_labels,
-                use_cpu=use_cpu,
-            )
+
+            if self.multi:
+                for network in range(self.num_networks):
+                    self._test(
+                        test_loader,
+                        criterion,
+                        prefix,
+                        fold,
+                        selection_metrics
+                        if selection_metrics is not None
+                        else self._find_selection_metrics(fold),
+                        use_labels=use_labels,
+                        use_cpu=use_cpu,
+                        network=network,
+                    )
+
+            else:
+                self._test(
+                    test_loader,
+                    criterion,
+                    prefix,
+                    fold,
+                    selection_metrics
+                    if selection_metrics is not None
+                    else self._find_selection_metrics(fold),
+                    use_labels=use_labels,
+                    use_cpu=use_cpu,
+                )
+
+            self._ensemble_prediction()
 
     ###################################
     # High-level functions templates  #
     ###################################
-    def _train(self, folds=None, resume=False):
+    def _train_single(self, folds=None, resume=False):
         """
         Args:
             folds (List[int]): list of folds that are trained
@@ -277,151 +322,298 @@ class MapsManager:
             )
 
             model, beginning_epoch = self._init_model(
-                input_shape=data_train.size, fold=fold, resume=resume
+                input_shape=train_loader.dataset.size, fold=fold, resume=resume
             )
-            model.train()
-            train_loader.dataset.train()
             criterion = self._get_criterion()
             optimizer = self._init_optimizer(model, fold=fold, resume=resume)
 
-            early_stopping = EarlyStopping(
-                "min", min_delta=self.tolerance, patience=self.patience
-            )
-            metrics_valid = {"loss": None}
-
-            evaluation_metrics = model.evaluation_metrics
-            evaluation_metrics.append("loss")
-            log_writer = LogWriter(
-                self.maps_path,
-                evaluation_metrics,
+            self._train(
+                train_loader,
+                valid_loader,
+                model,
+                beginning_epoch,
+                criterion,
+                optimizer,
                 fold,
                 resume=resume,
-                beginning_epoch=beginning_epoch,
             )
-            epoch = log_writer.beginning_epoch
 
-            retain_best = RetainBest(selection_metrics=self.selection_metrics)
+        if model.ensemble_prediction:
+            self._ensemble_prediction(
+                model, train_loader, criterion, "train", fold, self.selection_metrics
+            )
 
-            while epoch < self.epochs and not early_stopping.step(
-                metrics_valid["loss"]
-            ):
-                self.logger.info(f"Beginning epoch {epoch}.")
+    def _train_multi(self, folds=None, resume=False):
+        from time import time
 
-                model.zero_grad()
-                evaluation_flag, step_flag = True, True
+        from torch.utils.data import DataLoader
+        from torch.utils.tensorboard import SummaryWriter
 
-                for i, data in enumerate(train_loader):
+        from clinicadl.utils.caps_dataset.data import (
+            generate_sampler,
+            get_transforms,
+            load_data,
+            return_dataset,
+        )
+        from clinicadl.utils.early_stopping import EarlyStopping
 
-                    _, loss = model.compute_outputs_and_loss(data, criterion)
-                    loss.backward()
+        train_transforms, all_transforms = get_transforms(
+            self.mode,
+            minmaxnormalization=self.minmaxnormalization,
+            data_augmentation=self.data_augmentation,
+        )
 
-                    if (i + 1) % self.accumulation_steps == 0:
-                        step_flag = False
-                        optimizer.step()
-                        optimizer.zero_grad()
+        split_manager = self._init_split_manager(folds)
+        for fold in split_manager.fold_iterator():
+            self.logger.info(f"Training fold {fold}")
 
-                        del loss
+            fold_paths_dict = split_manager[fold]
 
-                        # Evaluate the model only when no gradients are accumulated
-                        if (
-                            self.evaluation_steps != 0
-                            and (i + 1) % self.evaluation_steps == 0
-                        ):
-                            evaluation_flag = False
-
-                            _, metrics_train = model.test(
-                                train_loader, criterion, mode=self.mode
-                            )
-                            _, metrics_valid = model.test(
-                                valid_loader, criterion, mode=self.mode
-                            )
-
-                            model.train()
-                            train_loader.dataset.train()
-
-                            log_writer.step(
-                                epoch,
-                                i,
-                                metrics_train,
-                                metrics_valid,
-                                len(train_loader),
-                            )
-                            self.logger.info(
-                                f"{self.mode} level training loss is {metrics_train['loss']} "
-                                f"at the end of iteration {i}"
-                            )
-                            self.logger.info(
-                                f"{self.mode} level validation loss is {metrics_valid['loss']} "
-                                f"at the end of iteration {i}"
-                            )
-
-                # If no step has been performed, raise Exception
-                if step_flag:
-                    raise Exception(
-                        "The model has not been updated once in the epoch. The accumulation step may be too large."
+            first_network = 0
+            if resume:
+                training_logs = [
+                    int(network_folder.split("-")[1])
+                    for network_folder in listdir(
+                        path.join(self.maps_path, f"fold-{fold}", "training_logs")
                     )
+                ]
+                first_network = max(training_logs)
 
-                # If no evaluation has been performed, warn the user
-                elif evaluation_flag and self.evaluation_steps != 0:
-                    self.logger.warning(
-                        f"Your evaluation steps {self.evaluation_steps} are too big "
-                        f"compared to the size of the dataset. "
-                        f"The model is evaluated only once at the end epochs."
-                    )
+            for network in range(first_network, self.num_networks):
 
-                # Update weights one last time if gradients were computed without update
-                if (i + 1) % self.accumulation_steps != 0:
+                data_train = return_dataset(
+                    self.mode,
+                    self.caps_directory,
+                    fold_paths_dict["train"],
+                    self.preprocessing,
+                    train_transformations=train_transforms,
+                    all_transformations=all_transforms,
+                    prepare_dl=self.prepare_dl,
+                    multi_cohort=self.multi_cohort,
+                    cnn_index=network,
+                    params=self,
+                )
+                data_valid = return_dataset(
+                    self.mode,
+                    self.caps_directory,
+                    fold_paths_dict["validation"],
+                    self.preprocessing,
+                    train_transformations=train_transforms,
+                    all_transformations=all_transforms,
+                    prepare_dl=self.prepare_dl,
+                    multi_cohort=self.multi_cohort,
+                    cnn_index=network,
+                    params=self,
+                )
+
+                train_sampler = generate_sampler(data_train, self.sampler)
+
+                train_loader = DataLoader(
+                    data_train,
+                    batch_size=self.batch_size,
+                    sampler=train_sampler,
+                    num_workers=self.num_workers,
+                )
+
+                valid_loader = DataLoader(
+                    data_valid,
+                    batch_size=self.batch_size,
+                    shuffle=False,
+                    num_workers=self.num_workers,
+                )
+
+                model, beginning_epoch = self._init_model(
+                    input_shape=train_loader.dataset.size, fold=fold, resume=resume
+                )
+                criterion = self._get_criterion()
+                optimizer = self._init_optimizer(model, fold=fold, resume=resume)
+
+                self._train(
+                    train_loader,
+                    valid_loader,
+                    model,
+                    beginning_epoch,
+                    criterion,
+                    optimizer,
+                    fold,
+                    network,
+                    resume=resume,
+                )
+
+            if model.ensemble_prediction:
+                self._ensemble_prediction(
+                    model,
+                    train_loader,
+                    criterion,
+                    "train",
+                    fold,
+                    self.selection_metrics,
+                )
+
+    def _train(
+        self,
+        train_loader,
+        valid_loader,
+        model,
+        beginning_epoch,
+        criterion,
+        optimizer,
+        fold,
+        network=None,
+        resume=False,
+    ):
+
+        model.train()
+        train_loader.dataset.train()
+
+        early_stopping = EarlyStopping(
+            "min", min_delta=self.tolerance, patience=self.patience
+        )
+        metrics_valid = {"loss": None}
+
+        evaluation_metrics = model.evaluation_metrics
+        evaluation_metrics.append("loss")
+        log_writer = LogWriter(
+            self.maps_path,
+            evaluation_metrics,
+            fold,
+            resume=resume,
+            beginning_epoch=beginning_epoch,
+            network=network,
+        )
+        epoch = log_writer.beginning_epoch
+
+        retain_best = RetainBest(selection_metrics=self.selection_metrics)
+
+        while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
+            self.logger.info(f"Beginning epoch {epoch}.")
+
+            model.zero_grad()
+            evaluation_flag, step_flag = True, True
+
+            for i, data in enumerate(train_loader):
+
+                _, loss = model.compute_outputs_and_loss(data, criterion)
+                loss.backward()
+
+                if (i + 1) % self.accumulation_steps == 0:
+                    step_flag = False
                     optimizer.step()
                     optimizer.zero_grad()
 
-                # Always test the results and save them once at the end of the epoch
-                model.zero_grad()
-                self.logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
+                    del loss
 
-                _, metrics_train = model.test(train_loader, criterion, mode=self.mode)
-                _, metrics_valid = model.test(valid_loader, criterion, mode=self.mode)
+                    # Evaluate the model only when no gradients are accumulated
+                    if (
+                        self.evaluation_steps != 0
+                        and (i + 1) % self.evaluation_steps == 0
+                    ):
+                        evaluation_flag = False
 
-                model.train()
-                train_loader.dataset.train()
+                        _, metrics_train = model.test(
+                            train_loader, criterion, mode=self.mode
+                        )
+                        _, metrics_valid = model.test(
+                            valid_loader, criterion, mode=self.mode
+                        )
 
-                log_writer.step(
-                    epoch, i, metrics_train, metrics_valid, len(train_loader)
+                        model.train()
+                        train_loader.dataset.train()
+
+                        log_writer.step(
+                            epoch,
+                            i,
+                            metrics_train,
+                            metrics_valid,
+                            len(train_loader),
+                        )
+                        self.logger.info(
+                            f"{self.mode} level training loss is {metrics_train['loss']} "
+                            f"at the end of iteration {i}"
+                        )
+                        self.logger.info(
+                            f"{self.mode} level validation loss is {metrics_valid['loss']} "
+                            f"at the end of iteration {i}"
+                        )
+
+            # If no step has been performed, raise Exception
+            if step_flag:
+                raise Exception(
+                    "The model has not been updated once in the epoch. The accumulation step may be too large."
                 )
-                self.logger.info(
-                    f"{self.mode} level training loss is {metrics_train['loss']} "
-                    f"at the end of iteration {i}"
-                )
-                self.logger.info(
-                    f"{self.mode} level validation loss is {metrics_valid['loss']} "
-                    f"at the end of iteration {i}"
-                )
 
-                # Save checkpoints and best models
-                best_dict = retain_best.step(metrics_valid)
-                self._write_weights(
-                    {"model": model.state_dict(), "epoch": epoch, "name": self.model},
-                    best_dict,
-                    fold,
-                )
-                self._write_weights(
-                    {
-                        "optimizer": optimizer.state_dict(),
-                        "epoch": epoch,
-                        "name": self.optimizer,
-                    },
-                    None,
-                    fold,
-                    filename="optimizer.pth.tar",
+            # If no evaluation has been performed, warn the user
+            elif evaluation_flag and self.evaluation_steps != 0:
+                self.logger.warning(
+                    f"Your evaluation steps {self.evaluation_steps} are too big "
+                    f"compared to the size of the dataset. "
+                    f"The model is evaluated only once at the end epochs."
                 )
 
-                epoch += 1
+            # Update weights one last time if gradients were computed without update
+            if (i + 1) % self.accumulation_steps != 0:
+                optimizer.step()
+                optimizer.zero_grad()
 
-            self._erase_tmp(fold)
+            # Always test the results and save them once at the end of the epoch
+            model.zero_grad()
+            self.logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
-            self._test(train_loader, criterion, "train", fold, self.selection_metrics)
-            self._test(
-                valid_loader, criterion, "validation", fold, self.selection_metrics
+            _, metrics_train = model.test(train_loader, criterion, mode=self.mode)
+            _, metrics_valid = model.test(valid_loader, criterion, mode=self.mode)
+
+            model.train()
+            train_loader.dataset.train()
+
+            log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
+            self.logger.info(
+                f"{self.mode} level training loss is {metrics_train['loss']} "
+                f"at the end of iteration {i}"
             )
+            self.logger.info(
+                f"{self.mode} level validation loss is {metrics_valid['loss']} "
+                f"at the end of iteration {i}"
+            )
+
+            # Save checkpoints and best models
+            best_dict = retain_best.step(metrics_valid)
+            self._write_weights(
+                {"model": model.state_dict(), "epoch": epoch, "name": self.model},
+                best_dict,
+                fold,
+                network=network,
+            )
+            self._write_weights(
+                {
+                    "optimizer": optimizer.state_dict(),
+                    "epoch": epoch,
+                    "name": self.optimizer,
+                },
+                None,
+                fold,
+                filename="optimizer.pth.tar",
+            )
+
+            epoch += 1
+
+        self._erase_tmp(fold)
+
+        self._test(
+            train_loader,
+            criterion,
+            "train",
+            fold,
+            self.selection_metrics,
+            network=network,
+        )
+        self._test(
+            valid_loader,
+            criterion,
+            "validation",
+            fold,
+            self.selection_metrics,
+            network=network,
+        )
 
     def _test(
         self,
@@ -432,6 +624,7 @@ class MapsManager:
         selection_metrics,
         use_labels=True,
         use_cpu=None,
+        network=None,
     ):
 
         for selection_metric in selection_metrics:
@@ -456,6 +649,8 @@ class MapsManager:
                 dataloader, criterion, mode=self.mode, use_labels=use_labels
             )
             if use_labels:
+                if network is not None:
+                    metrics[f"{self.mode}_id"] = network
                 self.logger.info(
                     f"{self.mode} level {prefix} loss is {metrics['loss']} for model selected on {selection_metric}"
                 )
@@ -465,23 +660,35 @@ class MapsManager:
                 prediction_df, metrics, fold, selection_metric, prefix=prefix
             )
 
+    def _ensemble_prediction(
+        self,
+        model,
+        dataloader,
+        criterion,
+        prefix,
+        fold,
+        selection_metrics,
+        use_labels=True,
+        use_cpu=None,
+    ):
+
+        for selection_metric in selection_metrics:
             # Soft voting
-            if model.ensemble_prediction:
-                if dataloader.dataset.elem_per_image > 1:
-                    self._soft_voting_to_tsvs(
-                        model,
-                        fold,
-                        selection=selection_metric,
-                        prefix=prefix,
-                        use_labels=use_labels,
-                    )
-                elif self.mode != "image":
-                    self._mode_to_image_tsvs(
-                        fold,
-                        selection=selection_metric,
-                        prefix=prefix,
-                        use_labels=use_labels,
-                    )
+            if dataloader.dataset.elem_per_image > 1:
+                self._ensemble_to_tsvs(
+                    model,
+                    fold,
+                    selection=selection_metric,
+                    prefix=prefix,
+                    use_labels=use_labels,
+                )
+            elif self.mode != "image":
+                self._mode_to_image_tsvs(
+                    fold,
+                    selection=selection_metric,
+                    prefix=prefix,
+                    use_labels=use_labels,
+                )
 
     ###############################
     # Checks                      #
@@ -626,7 +833,9 @@ class MapsManager:
             path.join(self.maps_path, "train_data.tsv"), sep="\t", index=False
         )
 
-    def _write_weights(self, state, metrics_dict, fold, filename="checkpoint.pth.tar"):
+    def _write_weights(
+        self, state, metrics_dict, fold, network=None, filename="checkpoint.pth.tar"
+    ):
         """
         Update checkpoint and save the best model according to a set of metrics.
         If no metrics_dict is given, only the checkpoint is saved.
@@ -641,6 +850,10 @@ class MapsManager:
         checkpoint_path = path.join(checkpoint_dir, filename)
         torch.save(state, checkpoint_path)
 
+        best_filename = "model.pth.tar"
+        if network is not None:
+            best_filename = f"network-{network}_model.pth.tar"
+
         # Save model according to several metrics
         if metrics_dict is not None:
             for metric_name, metric_bool in metrics_dict.items():
@@ -650,7 +863,7 @@ class MapsManager:
                 if metric_bool:
                     makedirs(metric_path, exist_ok=True)
                     shutil.copyfile(
-                        checkpoint_path, path.join(metric_path, "model.pth.tar")
+                        checkpoint_path, path.join(metric_path, best_filename)
                     )
 
     def _erase_tmp(self, fold):
@@ -692,21 +905,31 @@ class MapsManager:
         )
 
         makedirs(performance_dir, exist_ok=True)
-
-        results_df.to_csv(
-            path.join(performance_dir, f"{prefix}_{self.mode}_level_prediction.tsv"),
-            index=False,
-            sep="\t",
+        performance_path = path.join(
+            performance_dir, f"{prefix}_{self.mode}_level_prediction.tsv"
         )
 
-        if metrics is not None:
-            pd.DataFrame(metrics, index=[0]).to_csv(
-                path.join(performance_dir, f"{prefix}_{self.mode}_level_metrics.tsv"),
-                index=False,
-                sep="\t",
+        if not path.exists(performance_path):
+            results_df.to_csv(performance_path, index=False, sep="\t")
+        else:
+            results_df.to_csv(
+                performance_path, index=False, sep="\t", mode="a", header=False
             )
 
-    def _soft_voting_to_tsvs(
+        metrics_path = path.join(
+            performance_dir, f"{prefix}_{self.mode}_level_metrics.tsv"
+        )
+        if metrics is not None:
+            if not path.exists(metrics_path):
+                pd.DataFrame(metrics, index=[0]).to_csv(
+                    metrics_path, index=False, sep="\t"
+                )
+            else:
+                pd.DataFrame(metrics, index=[0]).to_csv(
+                    metrics_path, index=False, sep="\t", mode="a", header=False
+                )
+
+    def _ensemble_to_tsvs(
         self,
         model,
         fold,
@@ -715,7 +938,7 @@ class MapsManager:
         use_labels=True,
     ):
         """
-        Writes soft voting results in tsv files.
+        Writes image-level performance files from mode level performances.
 
         Args:
             fold: (int) fold number of the cross-validation.
@@ -742,7 +965,7 @@ class MapsManager:
         )
         makedirs(performance_dir, exist_ok=True)
 
-        df_final, metrics = model._soft_voting(
+        df_final, metrics = model._ensemble_fn(
             test_df,
             validation_df,
             mode=self.mode,
@@ -789,7 +1012,8 @@ class MapsManager:
                 path.join(performance_dir, f"{prefix}_{self.mode}_level_metrics.tsv"),
                 sep="\t",
             )
-            metrics_df["image_id"] = metrics_df.pop(f"{self.mode}_id")
+            if f"{self.mode}_id" in metrics_df:
+                del metrics_df[f"{self.mode}_id"]
             metrics_df.to_csv(
                 os.path.join(performance_dir, f"{prefix}_image_level_metrics.tsv"),
                 index=False,

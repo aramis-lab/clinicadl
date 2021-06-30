@@ -8,14 +8,25 @@ from torch import nn
 from clinicadl.utils.metric_module import MetricModule
 
 
+class abstractstatic(staticmethod):
+    __slots__ = ()
+
+    def __init__(self, function):
+        super(abstractstatic, self).__init__(function)
+        function.__isabstractmethod__ = True
+
+    __isabstractmethod__ = True
+
+
 class Network(nn.Module):
     """Abstract Template for all networks used in ClinicaDL"""
+
+    metrics_module = MetricModule(evaluation_metrics)
 
     def __init__(self, use_cpu=False):
         super(Network, self).__init__()
         # TODO: check if gpu is available
         self.device = self._select_device(use_cpu)
-        self.metrics_module = MetricModule(self.evaluation_metrics)
 
     @staticmethod
     def _select_device(use_cpu):
@@ -53,10 +64,6 @@ class Network(nn.Module):
     @abc.abstractproperty
     def ensemble_prediction(self):
         """If True results on parts of images can be merged to find a result at the image level."""
-        pass
-
-    @abc.abstractproperty
-    def evaluation_metrics(self):
         pass
 
     def test(self, dataloader, criterion, mode="image", use_labels=True):
@@ -104,21 +111,20 @@ class Network(nn.Module):
 
         return results_df, metrics_dict
 
-    @abc.abstractmethod
-    def _test_columns(self, mode, use_labels):
+    @abstractstatic
+    def _test_columns(mode, use_labels):
         pass
 
-    @abc.abstractmethod
-    def _generate_test_row(self, idx, data, outputs, mode, use_labels=True):
+    @abstractstatic
+    def _generate_test_row(idx, data, outputs, mode, use_labels=True):
         pass
 
-    @abc.abstractmethod
-    def _compute_metrics(self, results_df):
+    @abstractstatic
+    def _compute_metrics(results_df):
         pass
 
-    @abc.abstractmethod
-    def _soft_voting(
-        self,
+    @abstractstatic
+    def _ensemble_fn(
         performance_df,
         validation_df,
         mode,
@@ -129,6 +135,8 @@ class Network(nn.Module):
 
 
 class CNN(Network):
+    evaluation_metrics = ["accuracy", "sensitivity", "specificity", "PPV", "NPV", "BA"]
+
     def __init__(self, convolutions, classifier, use_cpu=False):
         super().__init__(use_cpu=use_cpu)
         self.convolutions = convolutions.to(self.device)
@@ -141,10 +149,6 @@ class CNN(Network):
     @property
     def ensemble_prediction(self):
         return True
-
-    @property
-    def evaluation_metrics(self):
-        return ["accuracy", "sensitivity", "specificity", "PPV", "NPV", "BA"]
 
     def forward(self, input):
         return self.predict(input)
@@ -162,7 +166,8 @@ class CNN(Network):
 
         return train_output, loss
 
-    def _test_columns(self, mode):
+    @staticmethod
+    def _test_columns(mode):
         columns = [
             "participant_id",
             "session_id",
@@ -175,7 +180,8 @@ class CNN(Network):
 
         return columns
 
-    def _generate_test_row(self, idx, data, outputs, mode, use_labels=True):
+    @staticmethod
+    def _generate_test_row(idx, data, outputs, mode, use_labels=True):
         from torch.nn.functional import softmax
 
         # TODO: process only idx values
@@ -194,15 +200,16 @@ class CNN(Network):
         ]
         return row
 
-    def _compute_metrics(self, results_df):
+    @staticmethod
+    def _compute_metrics(results_df):
 
-        return self.metrics_module.apply(
+        return CNN.metrics_module.apply(
             results_df.true_label.values.astype(int),
             results_df.predicted_label.values.astype(int),
         )
 
-    def _soft_voting(
-        self,
+    @staticmethod
+    def _ensemble_fn(
         performance_df,
         validation_df,
         mode,
@@ -252,7 +259,7 @@ class CNN(Network):
         weight_series.sort_index(inplace=True)
 
         # Soft majority vote
-        columns = self._test_columns(mode="image")
+        columns = CNN._test_columns(mode="image")
         df_final = pd.DataFrame(columns=columns)
         for (subject, session), subject_df in performance_df.groupby(
             ["participant_id", "session_id"]
@@ -268,7 +275,7 @@ class CNN(Network):
             df_final = df_final.append(row_df)
 
         if use_labels:
-            results = self._compute_metrics(df_final)
+            results = CNN._compute_metrics(df_final)
         else:
             results = None
 
