@@ -56,7 +56,6 @@ class CapsDataset(Dataset):
             )
         if not hasattr(self, "mode"):
             raise ValueError("Child class of CapsDataset must set mode attribute.")
-
         # Check the format of the tsv file here
         if isinstance(data_file, str):
             self.df = pd.read_csv(data_file, sep="\t")
