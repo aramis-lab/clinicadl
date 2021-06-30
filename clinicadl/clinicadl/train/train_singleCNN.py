@@ -42,6 +42,8 @@ def train_single_cnn(params, erase_existing=True):
 
     train_dict["num_workers"] = train_dict.pop("nproc")
     train_dict["optimizer"] = "Adam"
+    if "slice_direction" in train_dict:
+        train_dict["mri_plane"] = train_dict.pop("slice_direction")
 
     maps_manager = MapsManager(maps_dir, train_dict, verbose="info")
     maps_manager.train(folds=params.split, overwrite=erase_existing)
