@@ -1,32 +1,5 @@
 # coding: utf8
-
-import os
-
-import torch
-from torch.utils.data import DataLoader
-
-from clinicadl.utils.caps_dataset.data import (
-    compute_num_cnn,
-    generate_sampler,
-    get_transforms,
-    load_data,
-    return_dataset,
-)
-from clinicadl.utils.maps_manager.iotools import (
-    check_and_clean,
-    commandline_to_json,
-    return_logger,
-    translate_parameters,
-    write_requirements_version,
-)
-from clinicadl.utils.network.cnn_utils import (
-    get_criterion,
-    mode_level_to_tsvs,
-    soft_voting_to_tsvs,
-    test,
-    train,
-)
-from clinicadl.utils.network.models import create_model, load_model, transfer_learning
+from clinicadl import MapsManager
 
 
 def train_multi_cnn(params, erase_existing=True):
@@ -42,189 +15,37 @@ def train_multi_cnn(params, erase_existing=True):
     optimizer.pth.tar files which respectively contains the state of the model and the optimizer at the end
     of the last epoch that was completed before the crash.
     """
-    main_logger = return_logger(params.verbose, "main process")
-    train_logger = return_logger(params.verbose, "train")
-    eval_logger = return_logger(params.verbose, "final evaluation")
-    if erase_existing:
-        check_and_clean(params.output_dir)
-
-    commandline_to_json(params, logger=main_logger)
-    write_requirements_version(params.output_dir)
-    params = translate_parameters(params)
-
-    train_transforms, all_transforms = get_transforms(
-        params.mode,
-        minmaxnormalization=params.minmaxnormalization,
-        data_augmentation=params.data_augmentation,
-    )
-
-    num_cnn = compute_num_cnn(params.input_dir, params.tsv_path, params, data="train")
-
-    if num_cnn == 1:
-        raise ValueError(
-            "Multi-CNN framework cannot be performed on a dataset computing one element per image."
-        )
-
-    if params.split is None:
-        if params.n_splits is None:
-            fold_iterator = range(1)
-        else:
-            fold_iterator = range(params.n_splits)
+    train_dict = vars(params)
+    train_dict["caps_directory"] = train_dict.pop("caps_dir")
+    train_dict["multi"] = True
+    train_dict["selection_metrics"] = ["loss", "BA"]
+    train_dict["optimization_metric"] = "CE"
+    train_dict["minmaxnormalization"] = not params.unnormalize
+    train_dict["transfer_path"] = train_dict.pop("transfer_learning_path")
+    train_dict["transfer_selection"] = train_dict.pop("transfer_learning_selection")
+    if params.n_splits > 1:
+        train_dict["validation"] = "KFoldSplit"
     else:
-        fold_iterator = params.split
+        train_dict["validation"] = "SingleSplit"
 
-    # Loop on folds
-    for fi in fold_iterator:
-        main_logger.info("Fold %i" % fi)
+    del train_dict["func"]
+    maps_dir = params.output_dir
+    del train_dict["output_dir"]
 
-        for cnn_index in range(num_cnn):
+    if "use_extracted_features" in train_dict:
+        train_dict["prepare_dl"] = train_dict["use_extracted_features"]
+    elif "use_extracted_patches" in train_dict:
+        train_dict["prepare_dl"] = train_dict["use_extracted_patches"]
+    elif "use_extracted_slices" in train_dict:
+        train_dict["prepare_dl"] = train_dict["use_extracted_slices"]
+    elif "use_extracted_roi" in train_dict:
+        train_dict["prepare_dl"] = train_dict["use_extracted_roi"]
 
-            training_df, valid_df = load_data(
-                params.tsv_path,
-                params.diagnoses,
-                fi,
-                n_splits=params.n_splits,
-                baseline=params.baseline,
-                logger=main_logger,
-                multi_cohort=params.multi_cohort,
-            )
+    train_dict["num_workers"] = train_dict.pop("nproc")
+    train_dict["optimizer"] = "Adam"
 
-            data_train = return_dataset(
-                params.mode,
-                params.input_dir,
-                training_df,
-                params.preprocessing,
-                train_transformations=train_transforms,
-                all_transformations=all_transforms,
-                prepare_dl=params.prepare_dl,
-                multi_cohort=params.multi_cohort,
-                params=params,
-                cnn_index=cnn_index,
-            )
-            data_valid = return_dataset(
-                params.mode,
-                params.input_dir,
-                valid_df,
-                params.preprocessing,
-                train_transformations=train_transforms,
-                all_transformations=all_transforms,
-                prepare_dl=params.prepare_dl,
-                multi_cohort=params.multi_cohort,
-                params=params,
-                cnn_index=cnn_index,
-            )
-
-            train_sampler = generate_sampler(data_train, params.sampler)
-
-            train_loader = DataLoader(
-                data_train,
-                batch_size=params.batch_size,
-                sampler=train_sampler,
-                num_workers=params.num_workers,
-                pin_memory=True,
-            )
-
-            valid_loader = DataLoader(
-                data_valid,
-                batch_size=params.batch_size,
-                shuffle=False,
-                num_workers=params.num_workers,
-                pin_memory=True,
-            )
-
-            # Initialize the model
-            main_logger.info("Initialization of the model %i" % cnn_index)
-            model = create_model(
-                params, initial_shape=data_train.size, len_atlas=data_train.len_atlas()
-            )
-            model = transfer_learning(
-                model,
-                fi,
-                source_path=params.transfer_learning_path,
-                gpu=params.gpu,
-                selection=params.transfer_learning_selection,
-                logger=main_logger,
-            )
-
-            # Define criterion and optimizer
-            criterion = get_criterion(params.loss)
-            optimizer = getattr(torch.optim, params.optimizer)(
-                filter(lambda x: x.requires_grad, model.parameters()),
-                lr=params.learning_rate,
-                weight_decay=params.weight_decay,
-            )
-
-            # Define output directories
-            log_dir = os.path.join(
-                params.output_dir,
-                "fold-%i" % fi,
-                "tensorboard_logs",
-                "cnn-%i" % cnn_index,
-            )
-            model_dir = os.path.join(
-                params.output_dir, "fold-%i" % fi, "models", "cnn-%i" % cnn_index
-            )
-
-            main_logger.debug("Beginning the training task")
-            train(
-                model,
-                train_loader,
-                valid_loader,
-                criterion,
-                optimizer,
-                False,
-                log_dir,
-                model_dir,
-                params,
-                logger=train_logger,
-            )
-
-            test_cnn(
-                model,
-                params.output_dir,
-                train_loader,
-                "train",
-                fi,
-                criterion,
-                cnn_index,
-                mode=params.mode,
-                gpu=params.gpu,
-                logger=eval_logger,
-            )
-            test_cnn(
-                model,
-                params.output_dir,
-                valid_loader,
-                "validation",
-                fi,
-                criterion,
-                cnn_index,
-                mode=params.mode,
-                gpu=params.gpu,
-                logger=eval_logger,
-            )
-
-        for selection in ["best_balanced_accuracy", "best_loss"]:
-            soft_voting_to_tsvs(
-                params.output_dir,
-                fi,
-                selection,
-                logger=eval_logger,
-                mode=params.mode,
-                dataset="train",
-                num_cnn=num_cnn,
-                selection_threshold=params.selection_threshold,
-            )
-            soft_voting_to_tsvs(
-                params.output_dir,
-                fi,
-                selection,
-                logger=eval_logger,
-                mode=params.mode,
-                dataset="validation",
-                num_cnn=num_cnn,
-                selection_threshold=params.selection_threshold,
-            )
+    maps_manager = MapsManager(maps_dir, train_dict, verbose="info")
+    maps_manager.train(folds=params.split, overwrite=erase_existing)
 
 
 def test_cnn(

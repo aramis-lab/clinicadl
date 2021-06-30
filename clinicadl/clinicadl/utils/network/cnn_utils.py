@@ -13,8 +13,9 @@ import torch.nn.functional as F
 from sklearn.utils import column_or_1d
 from torch.nn.modules.loss import _Loss
 
+from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.maps_manager.iotools import check_and_clean
-from clinicadl.utils.network import EarlyStopping, save_checkpoint
+from clinicadl.utils.network import save_checkpoint
 
 #####################
 # CNN train / test  #

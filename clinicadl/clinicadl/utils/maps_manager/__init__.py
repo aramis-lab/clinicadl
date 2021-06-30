@@ -5,3 +5,4 @@ from .iotools import (
     write_requirements_version,
 )
 from .logwriter import LogWriter
+from .maps_manager import MapsManager

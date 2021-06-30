@@ -15,3 +15,5 @@ version = __version__
 if sys.version_info < (3, 6):
     print(f"ClinicaDL {__version__} requires Python 3.6")
     sys.exit(1)
+
+from .utils import MapsManager

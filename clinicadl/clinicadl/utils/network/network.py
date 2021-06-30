@@ -5,28 +5,25 @@ import pandas as pd
 import torch
 from torch import nn
 
+from clinicadl.utils.descriptors import abstractstatic, classproperty
 from clinicadl.utils.metric_module import MetricModule
-
-
-class abstractstatic(staticmethod):
-    __slots__ = ()
-
-    def __init__(self, function):
-        super(abstractstatic, self).__init__(function)
-        function.__isabstractmethod__ = True
-
-    __isabstractmethod__ = True
 
 
 class Network(nn.Module):
     """Abstract Template for all networks used in ClinicaDL"""
 
-    metrics_module = MetricModule(evaluation_metrics)
-
     def __init__(self, use_cpu=False):
         super(Network, self).__init__()
         # TODO: check if gpu is available
         self.device = self._select_device(use_cpu)
+
+    @classproperty
+    def evaluation_metrics(cls):
+        return cls._evaluation_metrics
+
+    @classproperty
+    def ensemble_results(cls):
+        return cls._ensemble_results
 
     @staticmethod
     def _select_device(use_cpu):
@@ -135,7 +132,8 @@ class Network(nn.Module):
 
 
 class CNN(Network):
-    evaluation_metrics = ["accuracy", "sensitivity", "specificity", "PPV", "NPV", "BA"]
+    _evaluation_metrics = ["accuracy", "sensitivity", "specificity", "PPV", "NPV", "BA"]
+    _ensemble_results = True
 
     def __init__(self, convolutions, classifier, use_cpu=False):
         super().__init__(use_cpu=use_cpu)
@@ -203,7 +201,8 @@ class CNN(Network):
     @staticmethod
     def _compute_metrics(results_df):
 
-        return CNN.metrics_module.apply(
+        metrics_module = MetricModule(CNN.evaluation_metrics)
+        return metrics_module.apply(
             results_df.true_label.values.astype(int),
             results_df.predicted_label.values.astype(int),
         )

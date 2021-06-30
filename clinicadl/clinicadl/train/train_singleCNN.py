@@ -1,32 +1,5 @@
 # coding: utf8
-
-import os
-
-import torch
-from torch.utils.data import DataLoader
-
-from clinicadl.utils.caps_dataset.data import (
-    generate_sampler,
-    get_transforms,
-    load_data,
-    return_dataset,
-)
-from clinicadl.utils.maps_manager.iotools import (
-    check_and_clean,
-    commandline_to_json,
-    return_logger,
-    translate_parameters,
-    write_requirements_version,
-)
-from clinicadl.utils.network.cnn_utils import (
-    get_criterion,
-    mode_level_to_tsvs,
-    mode_to_image_tsvs,
-    soft_voting_to_tsvs,
-    test,
-    train,
-)
-from clinicadl.utils.network.models import init_model, load_model, transfer_learning
+from clinicadl import MapsManager
 
 
 def train_single_cnn(params, erase_existing=True):
@@ -41,145 +14,37 @@ def train_single_cnn(params, erase_existing=True):
     optimizer.pth.tar files which respectively contains the state of the model and the optimizer at the end
     of the last epoch that was completed before the crash.
     """
-    logger = params.logger
-    if erase_existing:
-        check_and_clean(params.output_dir)
-
-    commandline_to_json(params, logger=logger)
-    write_requirements_version(params.output_dir)
-    params = translate_parameters(params)
-    train_transforms, all_transforms = get_transforms(
-        params.mode,
-        minmaxnormalization=params.minmaxnormalization,
-        data_augmentation=params.data_augmentation,
-    )
-
-    if params.split is None:
-        if params.n_splits is None:
-            fold_iterator = range(1)
-        else:
-            fold_iterator = range(params.n_splits)
+    train_dict = vars(params)
+    train_dict["caps_directory"] = train_dict.pop("caps_dir")
+    train_dict["multi"] = False
+    train_dict["selection_metrics"] = ["loss", "BA"]
+    train_dict["optimization_metric"] = "CE"
+    train_dict["minmaxnormalization"] = not params.unnormalize
+    train_dict["transfer_path"] = train_dict.pop("transfer_learning_path")
+    train_dict["transfer_selection"] = train_dict.pop("transfer_learning_selection")
+    if params.n_splits > 1:
+        train_dict["validation"] = "KFoldSplit"
     else:
-        fold_iterator = params.split
+        train_dict["validation"] = "SingleSplit"
 
-    for fi in fold_iterator:
-        logger.info("Fold %i" % fi)
+    del train_dict["func"]
+    maps_dir = params.output_dir
+    del train_dict["output_dir"]
 
-        training_df, valid_df = load_data(
-            params.tsv_path,
-            params.diagnoses,
-            fi,
-            n_splits=params.n_splits,
-            baseline=params.baseline,
-            logger=logger,
-            multi_cohort=params.multi_cohort,
-        )
+    if "use_extracted_features" in train_dict:
+        train_dict["prepare_dl"] = train_dict["use_extracted_features"]
+    elif "use_extracted_patches" in train_dict:
+        train_dict["prepare_dl"] = train_dict["use_extracted_patches"]
+    elif "use_extracted_slices" in train_dict:
+        train_dict["prepare_dl"] = train_dict["use_extracted_slices"]
+    elif "use_extracted_roi" in train_dict:
+        train_dict["prepare_dl"] = train_dict["use_extracted_roi"]
 
-        data_train = return_dataset(
-            params.mode,
-            params.input_dir,
-            training_df,
-            params.preprocessing,
-            train_transformations=train_transforms,
-            all_transformations=all_transforms,
-            prepare_dl=params.prepare_dl,
-            multi_cohort=params.multi_cohort,
-            params=params,
-        )
-        data_valid = return_dataset(
-            params.mode,
-            params.input_dir,
-            valid_df,
-            params.preprocessing,
-            train_transformations=train_transforms,
-            all_transformations=all_transforms,
-            prepare_dl=params.prepare_dl,
-            multi_cohort=params.multi_cohort,
-            params=params,
-        )
+    train_dict["num_workers"] = train_dict.pop("nproc")
+    train_dict["optimizer"] = "Adam"
 
-        train_sampler = generate_sampler(data_train, params.sampler)
-
-        train_loader = DataLoader(
-            data_train,
-            batch_size=params.batch_size,
-            sampler=train_sampler,
-            num_workers=params.num_workers,
-            pin_memory=True,
-        )
-
-        valid_loader = DataLoader(
-            data_valid,
-            batch_size=params.batch_size,
-            shuffle=False,
-            num_workers=params.num_workers,
-            pin_memory=True,
-        )
-
-        # Initialize the model
-        main_logger.info("Initialization of the model")
-        model = init_model(
-            params, initial_shape=data_train.size, len_atlas=data_train.len_atlas()
-        )
-        model = transfer_learning(
-            model,
-            fi,
-            source_path=params.transfer_learning_path,
-            gpu=params.gpu,
-            selection=params.transfer_learning_selection,
-            logger=main_logger,
-        )
-
-        # Define criterion and optimizer
-        criterion = get_criterion(params.loss)
-        optimizer = getattr(torch.optim, params.optimizer)(
-            filter(lambda x: x.requires_grad, model.parameters()),
-            lr=params.learning_rate,
-            weight_decay=params.weight_decay,
-        )
-
-        # Define output directories
-        log_dir = os.path.join(params.maps_path, "fold-%i" % fi, "tensorboard_logs")
-        model_dir = os.path.join(params.maps_path, "fold-%i" % fi, "models")
-
-        main_logger.debug("Beginning the training task")
-        train(
-            model,
-            train_loader,
-            valid_loader,
-            criterion,
-            optimizer,
-            False,
-            log_dir,
-            model_dir,
-            params,
-            train_logger,
-        )
-
-        test_single_cnn(
-            model,
-            params.maps_path,
-            train_loader,
-            "train",
-            fi,
-            criterion,
-            params.mode,
-            eval_logger,
-            params.selection_threshold,
-            gpu=params.gpu,
-        )
-        test_single_cnn(
-            model,
-            params.output_dir,
-            valid_loader,
-            "validation",
-            fi,
-            criterion,
-            params.mode,
-            eval_logger,
-            params.selection_threshold,
-            gpu=params.gpu,
-        )
+    maps_manager = MapsManager(maps_dir, train_dict, verbose="info")
+    maps_manager.train(folds=params.split, overwrite=erase_existing)
 
 
 def test_single_cnn(

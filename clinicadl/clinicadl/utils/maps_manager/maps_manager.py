@@ -11,6 +11,7 @@ import pandas as pd
 import torch
 
 from clinicadl.utils.caps_dataset.data import compute_num_cnn
+from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.maps_manager.logwriter import LogWriter, StdLevelFilter
 from clinicadl.utils.metric_module import MetricModule, RetainBest
 
@@ -62,11 +63,6 @@ class MapsManager:
                 )
             self.logger.info(f"A new MAPS was created at {maps_path}")
             self._check_args(parameters)
-            self.parameters = parameters
-            if self.multi:
-                self.parameters["num_networks"] = compute_num_cnn(
-                    self.caps_directory, self.tsv_path, self, data="train"
-                )
             self._write_parameters()
             self._write_requirements_version()
             self._write_training_data()
@@ -112,7 +108,7 @@ class MapsManager:
 
         split_manager = self._init_split_manager(folds)
         for fold in split_manager.fold_iterator():
-            fold_path = path.join(self.maps_path, f"fold-{fold}", "tmp")
+            fold_path = path.join(self.maps_path, f"fold-{fold}")
             if path.exists(fold_path):
                 if overwrite:
                     shutil.rmtree(fold_path)
@@ -247,7 +243,9 @@ class MapsManager:
                     use_cpu=use_cpu,
                 )
 
-            self._ensemble_prediction()
+            self._ensemble_prediction(
+                prefix, fold, selection_metrics, use_labels, use_cpu
+            )
 
     ###################################
     # High-level functions templates  #
@@ -257,18 +255,13 @@ class MapsManager:
         Args:
             folds (List[int]): list of folds that are trained
         """
-        from time import time
-
         from torch.utils.data import DataLoader
-        from torch.utils.tensorboard import SummaryWriter
 
         from clinicadl.utils.caps_dataset.data import (
             generate_sampler,
             get_transforms,
-            load_data,
             return_dataset,
         )
-        from clinicadl.utils.early_stopping import EarlyStopping
 
         train_transforms, all_transforms = get_transforms(
             self.mode,
@@ -321,41 +314,33 @@ class MapsManager:
                 num_workers=self.num_workers,
             )
 
-            model, beginning_epoch = self._init_model(
-                input_shape=train_loader.dataset.size, fold=fold, resume=resume
-            )
-            criterion = self._get_criterion()
-            optimizer = self._init_optimizer(model, fold=fold, resume=resume)
-
             self._train(
                 train_loader,
                 valid_loader,
-                model,
-                beginning_epoch,
-                criterion,
-                optimizer,
                 fold,
                 resume=resume,
             )
 
-        if model.ensemble_prediction:
+        if self._get_ensemble_results():
             self._ensemble_prediction(
-                model, train_loader, criterion, "train", fold, self.selection_metrics
+                "train",
+                fold,
+                self.selection_metrics,
+            )
+            self._ensemble_prediction(
+                "validation",
+                fold,
+                self.selection_metrics,
             )
 
     def _train_multi(self, folds=None, resume=False):
-        from time import time
-
         from torch.utils.data import DataLoader
-        from torch.utils.tensorboard import SummaryWriter
 
         from clinicadl.utils.caps_dataset.data import (
             generate_sampler,
             get_transforms,
-            load_data,
             return_dataset,
         )
-        from clinicadl.utils.early_stopping import EarlyStopping
 
         train_transforms, all_transforms = get_transforms(
             self.mode,
@@ -378,8 +363,12 @@ class MapsManager:
                     )
                 ]
                 first_network = max(training_logs)
+                if not path.exists(path.join(self.maps_path, "tmp")):
+                    first_network += 1
+                    resume = False
 
             for network in range(first_network, self.num_networks):
+                self.logger.info(f"Train network {network}")
 
                 data_train = return_dataset(
                     self.mode,
@@ -422,30 +411,23 @@ class MapsManager:
                     num_workers=self.num_workers,
                 )
 
-                model, beginning_epoch = self._init_model(
-                    input_shape=train_loader.dataset.size, fold=fold, resume=resume
-                )
-                criterion = self._get_criterion()
-                optimizer = self._init_optimizer(model, fold=fold, resume=resume)
-
                 self._train(
                     train_loader,
                     valid_loader,
-                    model,
-                    beginning_epoch,
-                    criterion,
-                    optimizer,
                     fold,
                     network,
                     resume=resume,
                 )
+                resume = False
 
-            if model.ensemble_prediction:
+            if self._get_ensemble_results():
                 self._ensemble_prediction(
-                    model,
-                    train_loader,
-                    criterion,
                     "train",
+                    fold,
+                    self.selection_metrics,
+                )
+                self._ensemble_prediction(
+                    "validation",
                     fold,
                     self.selection_metrics,
                 )
@@ -454,14 +436,16 @@ class MapsManager:
         self,
         train_loader,
         valid_loader,
-        model,
-        beginning_epoch,
-        criterion,
-        optimizer,
         fold,
         network=None,
         resume=False,
     ):
+
+        model, beginning_epoch = self._init_model(
+            input_shape=train_loader.dataset.size, fold=fold, resume=resume
+        )
+        criterion = self._get_criterion()
+        optimizer = self._init_optimizer(model, fold=fold, resume=resume)
 
         model.train()
         train_loader.dataset.train()
@@ -471,7 +455,7 @@ class MapsManager:
         )
         metrics_valid = {"loss": None}
 
-        evaluation_metrics = model.evaluation_metrics
+        evaluation_metrics = model.evaluation_metrics.copy()
         evaluation_metrics.append("loss")
         log_writer = LogWriter(
             self.maps_path,
@@ -643,6 +627,7 @@ class MapsManager:
                 fold=fold,
                 transfer_selection=selection_metric,
                 use_cpu=use_cpu,
+                network=network,
             )
 
             prediction_df, metrics = model.test(
@@ -662,21 +647,18 @@ class MapsManager:
 
     def _ensemble_prediction(
         self,
-        model,
-        dataloader,
-        criterion,
         prefix,
         fold,
         selection_metrics,
         use_labels=True,
         use_cpu=None,
     ):
+        criterion = self._get_criterion()
 
         for selection_metric in selection_metrics:
             # Soft voting
-            if dataloader.dataset.elem_per_image > 1:
+            if self.num_networks > 1:
                 self._ensemble_to_tsvs(
-                    model,
                     fold,
                     selection=selection_metric,
                     prefix=prefix,
@@ -693,14 +675,13 @@ class MapsManager:
     ###############################
     # Checks                      #
     ###############################
-    @staticmethod
-    def _check_args(parameters):
+    # TODO: Could be static as soon as compute_num_cnn is changed
+    def _check_args(self, parameters):
         mandatory_arguments = [
             "caps_directory",
             "tsv_path",
             "preprocessing",
             "mode",
-            "network_type",
             "model",
         ]
 
@@ -710,6 +691,19 @@ class MapsManager:
                     f"The values of mandatory arguments {mandatory_arguments} should be set."
                     f"No value was given for {arg}."
                 )
+
+        self.parameters = parameters
+
+        # TODO: Merge all functions doing prior dataset analysis
+        if self.multi:
+            self.parameters["num_networks"] = compute_num_cnn(
+                self.caps_directory, self.tsv_path, self, data="train"
+            )
+        else:
+            self.parameters["num_networks"] = 1
+
+        # TODO: change when multi-task and label choice will be implemented
+        self.parameters["n_classes"] = 2
 
         # TODO: add default values manager
         # click passing context @click.command / @click.passcontext (config.json)
@@ -794,11 +788,11 @@ class MapsManager:
         makedirs(self.maps_path, exist_ok=True)
 
         # save to json file
-        json = json.dumps(self.parameters, skipkeys=True, indent=4)
+        json_data = json.dumps(self.parameters, skipkeys=True, indent=4)
         json_path = path.join(self.maps_path, "maps.json")
         self.logger.info(f"Path of json file: {json_path}")
         with open(json_path, "w") as f:
-            f.write(json)
+            f.write(json_data)
 
     def _write_requirements_version(self):
         try:
@@ -931,7 +925,6 @@ class MapsManager:
 
     def _ensemble_to_tsvs(
         self,
-        model,
         fold,
         selection,
         prefix="test",
@@ -965,7 +958,8 @@ class MapsManager:
         )
         makedirs(performance_dir, exist_ok=True)
 
-        df_final, metrics = model._ensemble_fn(
+        ensemble_fn = self._get_ensemble_fn()
+        df_final, metrics = ensemble_fn(
             test_df,
             validation_df,
             mode=self.mode,
@@ -1003,7 +997,7 @@ class MapsManager:
             self.maps_path, f"fold-{fold}", f"best-{selection}", prefix
         )
         sub_df.to_csv(
-            os.path.join(performance_dir, f"{prefix}_image_level_prediction.tsv"),
+            path.join(performance_dir, f"{prefix}_image_level_prediction.tsv"),
             index=False,
             sep="\t",
         )
@@ -1015,7 +1009,7 @@ class MapsManager:
             if f"{self.mode}_id" in metrics_df:
                 del metrics_df[f"{self.mode}_id"]
             metrics_df.to_csv(
-                os.path.join(performance_dir, f"{prefix}_image_level_metrics.tsv"),
+                path.join(performance_dir, f"{prefix}_image_level_metrics.tsv"),
                 index=False,
                 sep="\t",
             )
@@ -1034,6 +1028,18 @@ class MapsManager:
 
         return loss_dict[self.optimization_metric.lower()]
 
+    def _get_ensemble_fn(self):
+        import clinicadl.utils.network as network
+
+        model_class = getattr(network, self.model)
+        return model_class._ensemble_fn
+
+    def _get_ensemble_results(self):
+        import clinicadl.utils.network as network
+
+        model_class = getattr(network, self.model)
+        return model_class._ensemble_results
+
     def _init_model(
         self,
         input_shape,
@@ -1042,12 +1048,13 @@ class MapsManager:
         fold=None,
         resume=False,
         use_cpu=None,
+        network=None,
     ):
-        import clinicadl.utils.network as network
+        import clinicadl.utils.network as network_package
 
-        self.logger.info(f"Initialization of model {self.model}")
+        self.logger.debug(f"Initialization of model {self.model}")
         # or choose to implement a dictionnary
-        model_class = getattr(network, self.model)
+        model_class = getattr(network_package, self.model)
         args = list(
             model_class.__init__.__code__.co_varnames[
                 : model_class.__init__.__code__.co_argcount
@@ -1078,7 +1085,7 @@ class MapsManager:
         elif transfer_path is not None:
             transfer_maps = MapsManager(transfer_path)
             transfer_state = transfer_maps.get_state_dict(
-                fold, selection_metric=transfer_selection
+                fold, selection_metric=transfer_selection, network=network
             )
             model.load_state_dict(transfer_state["model"])
 
@@ -1176,23 +1183,42 @@ class MapsManager:
 
         return parameters
 
-    def get_state_dict(self, fold=0, selection_metric=None):
+    def get_state_dict(self, fold=0, selection_metric=None, network=None):
         """
         Get the model trained corresponding to one fold and one metric evaluated on the validation set.
 
         Args:
             fold (int): fold number
             selection_metric (str): name of the metric used for the selection
+            network (int): number of the network for multi-network framework
         Returns:
             (Dict): dictionnary of results (weights, epoch number, metrics values)
         """
         selection_metric = self._check_selection_metrics(fold, selection_metric)
-        model_path = path.join(
-            self.maps_path, f"fold-{fold}", f"best-{selection_metric}", "model.pth.tar"
-        )
+        if self.multi:
+            if network is None:
+                raise ValueError(
+                    "Please precise the network number that must be loaded."
+                )
+            else:
+                model_path = path.join(
+                    self.maps_path,
+                    f"fold-{fold}",
+                    f"best-{selection_metric}",
+                    f"network-{network}_model.pth.tar",
+                )
+        else:
+            model_path = path.join(
+                self.maps_path,
+                f"fold-{fold}",
+                f"best-{selection_metric}",
+                "model.pth.tar",
+            )
+
         self.logger.info(
             f"Loading model trained for fold {fold} "
-            f"selected according to best validation {selection_metric}."
+            f"selected according to best validation {selection_metric} "
+            f"at path {model_path}."
         )
         return torch.load(model_path)
 
