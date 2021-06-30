@@ -1,8 +1,11 @@
 # coding: utf8
 
-import pytest
 import os
 import shutil
+
+import pytest
+
+output_dir = "results"
 
 
 @pytest.fixture(
@@ -25,7 +28,7 @@ def cli_commands(request):
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
-            "results",
+            output_dir,
             "resnet18",
             "--epochs",
             "1",
@@ -43,7 +46,7 @@ def cli_commands(request):
             "t1-linear",
             "data/labels_list",
             "results",
-            "Conv5_FC3",
+            output_dir,
             "--epochs",
             "1",
             "--n_splits",
@@ -59,7 +62,7 @@ def cli_commands(request):
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
-            "results",
+            output_dir,
             "Conv4_FC3",
             "--epochs",
             "1",
@@ -77,7 +80,7 @@ def cli_commands(request):
             "t1-linear",
             "data/labels_list",
             "results",
-            "Conv4_FC3",
+            output_dir,
             "--epochs",
             "1",
             "--n_splits",
@@ -94,7 +97,7 @@ def cli_commands(request):
             "t1-linear",
             "data/labels_list",
             "results",
-            "Conv4_FC3",
+            output_dir,
             "--epochs",
             "1",
             "--n_splits",
@@ -110,7 +113,7 @@ def cli_commands(request):
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
-            "results",
+            output_dir,
             "Conv4_FC3",
             "--epochs",
             "1",
@@ -127,10 +130,12 @@ def cli_commands(request):
 
 def test_train(cli_commands):
     test_input = cli_commands
+    if os.path.exists(output_dir):
+        shutil.rmtree(output_dir)
     flag_error = not os.system("clinicadl " + " ".join(test_input))
     performances_flag = os.path.exists(
         os.path.join("results", "fold-0", "cnn_classification")
     )
     assert flag_error
     assert performances_flag
-    shutil.rmtree("results")
+    shutil.rmtree(output_dir)
