@@ -1,29 +1,5 @@
 # coding: utf8
-
-import os
-
-import torch
-from torch.utils.data import DataLoader
-
-from clinicadl.utils.caps_dataset.data import (
-    generate_sampler,
-    get_transforms,
-    load_data,
-    return_dataset,
-)
-from clinicadl.utils.maps_manager.iotools import (
-    check_and_clean,
-    commandline_to_json,
-    return_logger,
-    translate_parameters,
-    write_requirements_version,
-)
-from clinicadl.utils.network.autoencoder_utils import (
-    get_criterion,
-    train,
-    visualize_image,
-)
-from clinicadl.utils.network.models import init_model, load_model, transfer_learning
+from clinicadl import MapsManager
 
 
 def train_autoencoder(params, erase_existing=True):
@@ -32,145 +8,46 @@ def train_autoencoder(params, erase_existing=True):
         - logs obtained with Tensorboard during training,
         - best models obtained according to the validation loss,
         - for patch and roi modes, the initialization state is saved as it is identical across all folds,
-        - autoencoder reconstructions in nifti files at the end of the training.
+        - TODO autoencoder reconstructions in nifti files at the end of the training.
 
     If the training crashes it is possible to relaunch the training process from the checkpoint.pth.tar and
     optimizer.pth.tar files which respectively contains the state of the model and the optimizer at the end
     of the last epoch that was completed before the crash.
     """
-    main_logger = return_logger(params.verbose, "main process")
-    train_logger = return_logger(params.verbose, "train")
-    if erase_existing:
-        check_and_clean(params.output_dir)
-
-    commandline_to_json(params, logger=main_logger)
-    write_requirements_version(params.output_dir)
-    params = translate_parameters(params)
-
-    train_transforms, all_transforms = get_transforms(
-        params.mode,
-        minmaxnormalization=params.minmaxnormalization,
-        data_augmentation=params.data_augmentation,
-    )
-    criterion = get_criterion(params.loss)
-
-    if params.split is None:
-        if params.n_splits is None:
-            fold_iterator = range(1)
-        else:
-            fold_iterator = range(params.n_splits)
+    train_dict = vars(params)
+    train_dict["caps_directory"] = train_dict.pop("caps_dir")
+    train_dict["multi"] = False
+    train_dict["selection_metrics"] = ["loss", "MAE"]
+    train_dict["optimization_metric"] = "MSE"
+    train_dict["minmaxnormalization"] = not params.unnormalize
+    train_dict["transfer_path"] = train_dict.pop("transfer_learning_path")
+    train_dict["transfer_selection"] = train_dict.pop("transfer_learning_selection")
+    train_dict["model"] = "AE_" + train_dict["model"]
+    if params.n_splits > 1:
+        train_dict["validation"] = "KFoldSplit"
     else:
-        fold_iterator = params.split
+        train_dict["validation"] = "SingleSplit"
 
-    for fi in fold_iterator:
-        main_logger.info("Fold %i" % fi)
+    if "func" in train_dict:
+        del train_dict["func"]
+    maps_dir = params.output_dir
+    del train_dict["output_dir"]
 
-        training_df, valid_df = load_data(
-            params.tsv_path,
-            params.diagnoses,
-            fi,
-            n_splits=params.n_splits,
-            baseline=params.baseline,
-            logger=main_logger,
-            multi_cohort=params.multi_cohort,
-        )
+    if "use_extracted_features" in train_dict:
+        train_dict["prepare_dl"] = train_dict["use_extracted_features"]
+    elif "use_extracted_patches" in train_dict:
+        train_dict["prepare_dl"] = train_dict["use_extracted_patches"]
+    elif "use_extracted_slices" in train_dict:
+        train_dict["prepare_dl"] = train_dict["use_extracted_slices"]
+    elif "use_extracted_roi" in train_dict:
+        train_dict["prepare_dl"] = train_dict["use_extracted_roi"]
+    else:
+        train_dict["prepare_dl"] = False
 
-        data_train = return_dataset(
-            params.mode,
-            params.input_dir,
-            training_df,
-            params.preprocessing,
-            train_transformations=train_transforms,
-            all_transformations=all_transforms,
-            prepare_dl=params.prepare_dl,
-            multi_cohort=params.multi_cohort,
-            params=params,
-        )
-        data_valid = return_dataset(
-            params.mode,
-            params.input_dir,
-            valid_df,
-            params.preprocessing,
-            train_transformations=train_transforms,
-            all_transformations=all_transforms,
-            prepare_dl=params.prepare_dl,
-            multi_cohort=params.multi_cohort,
-            params=params,
-        )
+    train_dict["num_workers"] = train_dict.pop("nproc")
+    train_dict["optimizer"] = "Adam"
+    if "slice_direction" in train_dict:
+        train_dict["mri_plane"] = train_dict.pop("slice_direction")
 
-        train_sampler = generate_sampler(data_train, params.sampler)
-
-        train_loader = DataLoader(
-            data_train,
-            batch_size=params.batch_size,
-            sampler=train_sampler,
-            num_workers=params.num_workers,
-            pin_memory=True,
-        )
-
-        valid_loader = DataLoader(
-            data_valid,
-            batch_size=params.batch_size,
-            shuffle=False,
-            num_workers=params.num_workers,
-            pin_memory=True,
-        )
-
-        # Define output directories
-        log_dir = os.path.join(params.output_dir, "fold-%i" % fi, "tensorboard_logs")
-        model_dir = os.path.join(params.output_dir, "fold-%i" % fi, "models")
-        visualization_dir = os.path.join(
-            params.output_dir, "fold-%i" % fi, "autoencoder_reconstruction"
-        )
-
-        decoder = init_model(params, initial_shape=data_train.size, autoencoder=True)
-        decoder = transfer_learning(
-            decoder,
-            fi,
-            source_path=params.transfer_learning_path,
-            gpu=params.gpu,
-            selection=params.transfer_learning_selection,
-        )
-        optimizer = getattr(torch.optim, params.optimizer)(
-            filter(lambda x: x.requires_grad, decoder.parameters()),
-            lr=params.learning_rate,
-            weight_decay=params.weight_decay,
-        )
-
-        train(
-            decoder,
-            train_loader,
-            valid_loader,
-            criterion,
-            optimizer,
-            False,
-            log_dir,
-            model_dir,
-            params,
-            train_logger,
-        )
-
-        if params.visualization:
-            best_decoder, _ = load_model(
-                decoder,
-                os.path.join(model_dir, "best_loss"),
-                params.gpu,
-                filename="model_best.pth.tar",
-            )
-            nb_images = data_train.size.elem_per_image
-            if nb_images <= 2:
-                nb_images *= 3
-            visualize_image(
-                best_decoder,
-                valid_loader,
-                os.path.join(visualization_dir, "validation"),
-                nb_images=nb_images,
-            )
-            visualize_image(
-                best_decoder,
-                train_loader,
-                os.path.join(visualization_dir, "train"),
-                nb_images=nb_images,
-            )
-        del decoder
-        torch.cuda.empty_cache()
+    maps_manager = MapsManager(maps_dir, train_dict, verbose="info")
+    maps_manager.train(folds=params.split, overwrite=erase_existing)

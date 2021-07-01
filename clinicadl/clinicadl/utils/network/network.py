@@ -1,12 +1,10 @@
 import abc
 
-import numpy as np
 import pandas as pd
 import torch
 from torch import nn
 
-from clinicadl.utils.descriptors import abstractstatic, classproperty
-from clinicadl.utils.metric_module import MetricModule
+from clinicadl.utils.descriptors import classproperty
 
 
 class Network(nn.Module):
@@ -43,8 +41,9 @@ class Network(nn.Module):
             free_gpu = argmax(memory_available)
             return f"cuda:{free_gpu}"
 
+    @abc.abstractmethod
     def predict(self, input):
-        return self.layers(input)
+        pass
 
     @abc.abstractmethod
     def forward(self, input):
@@ -54,13 +53,13 @@ class Network(nn.Module):
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=True):
         pass
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def layers(self):
         pass
 
-    @abc.abstractproperty
-    def ensemble_prediction(self):
-        """If True results on parts of images can be merged to find a result at the image level."""
+    @abc.abstractmethod
+    def transfer_weights(self, state_dict, transfer_class):
         pass
 
     def test(self, dataloader, criterion, mode="image", use_labels=True):
@@ -71,7 +70,8 @@ class Network(nn.Module):
             dataloader: (DataLoader) wrapper of a dataset.
             criterion: (loss) function to calculate the loss.
             mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
-            use_labels (bool): If True the true_label will be written in output DataFrame and metrics dict will be created.
+            use_labels (bool): If True the true_label will be written in output DataFrame
+                and metrics dict will be created.
         Returns
             (DataFrame) results of each input.
             (dict) ensemble of metrics + total loss on mode level.
@@ -92,7 +92,7 @@ class Network(nn.Module):
 
                 # Generate detailed DataFrame
                 for idx in range(len(data["participant_id"])):
-                    row = self._generate_test_row(idx, data, outputs, mode, use_labels)
+                    row = self._generate_test_row(idx, data, outputs, mode)
                     row_df = pd.DataFrame(row, columns=columns)
                     results_df = pd.concat([results_df, row_df])
 
@@ -108,106 +108,23 @@ class Network(nn.Module):
 
         return results_df, metrics_dict
 
-    @abstractstatic
-    def _test_columns(mode, use_labels):
-        pass
-
-    @abstractstatic
-    def _generate_test_row(idx, data, outputs, mode, use_labels=True):
-        pass
-
-    @abstractstatic
-    def _compute_metrics(results_df):
-        pass
-
-    @abstractstatic
-    def _ensemble_fn(
-        performance_df,
-        validation_df,
-        mode,
-        selection_threshold=None,
-        use_labels=True,
-    ):
-        pass
-
-
-class CNN(Network):
-    _evaluation_metrics = ["accuracy", "sensitivity", "specificity", "PPV", "NPV", "BA"]
-    _ensemble_results = True
-
-    def __init__(self, convolutions, classifier, use_cpu=False):
-        super().__init__(use_cpu=use_cpu)
-        self.convolutions = convolutions.to(self.device)
-        self.classifier = classifier.to(self.device)
-
-    @property
-    def layers(self):
-        return nn.Sequential(self.convolutions, self.classifier)
-
-    @property
-    def ensemble_prediction(self):
-        return True
-
-    def forward(self, input):
-        return self.predict(input)
-
-    def compute_outputs_and_loss(self, input_dict, criterion, use_labels=True):
-
-        imgs, labels = input_dict["image"].to(self.device), input_dict["label"].to(
-            self.device
-        )
-        train_output = self.forward(imgs)
-        if use_labels:
-            loss = criterion(train_output, labels)
-        else:
-            loss = torch.Tensor([0])
-
-        return train_output, loss
-
     @staticmethod
+    @abc.abstractmethod
     def _test_columns(mode):
-        columns = [
-            "participant_id",
-            "session_id",
-            f"{mode}_id",
-            "true_label",
-            "predicted_label",
-            "proba0",
-            "proba1",
-        ]
-
-        return columns
+        pass
 
     @staticmethod
-    def _generate_test_row(idx, data, outputs, mode, use_labels=True):
-        from torch.nn.functional import softmax
-
-        # TODO: process only idx values
-        _, predicted = torch.max(outputs.data, 1)
-        normalized_output = softmax(outputs, dim=1)
-        row = [
-            [
-                data["participant_id"][idx],
-                data["session_id"][idx],
-                data[f"{mode}_id"][idx].item(),
-                data["label"][idx].item(),
-                predicted[idx].item(),
-                normalized_output[idx, 0].item(),
-                normalized_output[idx, 1].item(),
-            ]
-        ]
-        return row
+    @abc.abstractmethod
+    def _generate_test_row(idx, data, outputs, mode):
+        pass
 
     @staticmethod
+    @abc.abstractmethod
     def _compute_metrics(results_df):
-
-        metrics_module = MetricModule(CNN.evaluation_metrics)
-        return metrics_module.apply(
-            results_df.true_label.values.astype(int),
-            results_df.predicted_label.values.astype(int),
-        )
+        pass
 
     @staticmethod
+    @abc.abstractmethod
     def _ensemble_fn(
         performance_df,
         validation_df,
@@ -215,67 +132,4 @@ class CNN(Network):
         selection_threshold=None,
         use_labels=True,
     ):
-        """
-        Computes soft voting based on the probabilities in performance_df. Weights are computed based on the accuracies
-        of validation_df.
-
-        ref: S. Raschka. Python Machine Learning., 2015
-
-        Args:
-            performance_df: (DataFrame) results on patch level of the set on which the combination is made.
-            validation_df: (DataFrame) results on patch level of the set used to compute the weights.
-            mode: (str) input used by the network. Chosen from ['patch', 'roi', 'slice'].
-            selection_threshold: (float) if given, all patches for which the classification accuracy is below the
-                threshold is removed.
-            use_labels: (bool) If True the labels are added to the final TSV file.
-
-        Returns:
-            df_final (DataFrame) the results on the image level
-            results (dict) the metrics on the image level
-        """
-
-        def check_prediction(row):
-            if row["true_label"] == row["predicted_label"]:
-                return 1
-            else:
-                return 0
-
-        # Compute the sub-level accuracies on the validation set:
-        validation_df["accurate_prediction"] = validation_df.apply(
-            lambda x: check_prediction(x), axis=1
-        )
-        sub_level_accuracies = validation_df.groupby(f"{mode}_id")[
-            "accurate_prediction"
-        ].sum()
-        if selection_threshold is not None:
-            sub_level_accuracies[sub_level_accuracies < selection_threshold] = 0
-        weight_series = sub_level_accuracies / sub_level_accuracies.sum()
-
-        # Sort to allow weighted average computation
-        performance_df.sort_values(
-            ["participant_id", "session_id", f"{mode}_id"], inplace=True
-        )
-        weight_series.sort_index(inplace=True)
-
-        # Soft majority vote
-        columns = CNN._test_columns(mode="image")
-        df_final = pd.DataFrame(columns=columns)
-        for (subject, session), subject_df in performance_df.groupby(
-            ["participant_id", "session_id"]
-        ):
-            proba0 = np.average(subject_df["proba0"], weights=weight_series)
-            proba1 = np.average(subject_df["proba1"], weights=weight_series)
-            proba_list = [proba0, proba1]
-            prediction = proba_list.index(max(proba_list))
-            label = subject_df["true_label"].unique().item()
-
-            row = [[subject, session, 0, label, prediction, proba0, proba1]]
-            row_df = pd.DataFrame(row, columns=columns)
-            df_final = df_final.append(row_df)
-
-        if use_labels:
-            results = CNN._compute_metrics(df_final)
-        else:
-            results = None
-
-        return df_final, results
+        pass

@@ -3,50 +3,46 @@ from copy import deepcopy
 import numpy as np
 
 from clinicadl.utils.network.models.modules import *
+from clinicadl.utils.network.sub_network import CNN
 
 
-class RandomArchitecture(nn.Module):
-    """
-    Classifier for a multi-class classification task
-
-    Initially named Initial_architecture
-    """
-
+class RandomArchitecture(CNN):
     def __init__(
         self,
-        convolutions,
+        convolutions_dict,
         n_fcblocks,
-        initial_shape,
+        input_shape,
         dropout=0.5,
         network_normalization="BatchNorm",
         n_classes=2,
+        use_cpu=False,
     ):
         """
         Construct the Architecture randomly chosen for Random Search.
 
         Args:
-            convolutions: (dict) description of the convolutional blocks.
+            convolutions_dict: (dict) description of the convolutional blocks.
             n_fcblocks: (int) number of FC blocks in the network.
-            initial_shape: (list) gives the structure of the input of the network.
+            input_shape: (list) gives the structure of the input of the network.
             dropout: (float) rate of the dropout.
             network_normalization: (str) type of normalization layer in the network.
             n_classes: (int) Number of output neurones of the network.
+            use_cpu: (bool) If True the network weights are stored on a CPU, else GPU.
         """
-        super(RandomArchitecture, self).__init__()
-        self.dimension = len(initial_shape) - 1
-        self.first_in_channels = initial_shape[0]
+        self.dimension = len(input_shape) - 1
+        self.first_in_channels = input_shape[0]
         self.layers_dict = self.return_layers_dict()
-        self.features = nn.Sequential()
         self.network_normalization = network_normalization
 
-        for key, item in convolutions.items():
+        convolutions = nn.Sequential()
+        for key, item in convolutions_dict.items():
             convolutional_block = self.define_convolutional_block(item)
-            self.features.add_module(key, convolutional_block)
+            convolutions.add_module(key, convolutional_block)
 
-        self.classifier = nn.Sequential(Flatten(), nn.Dropout(p=dropout))
+        classifier = nn.Sequential(Flatten(), nn.Dropout(p=dropout))
 
         fc, flattened_shape = self.fc_dict_design(
-            n_fcblocks, convolutions, initial_shape, n_classes
+            n_fcblocks, convolutions_dict, input_shape, n_classes
         )
         for key, item in fc.items():
             n_fc = int(key[2::])
@@ -54,22 +50,11 @@ class RandomArchitecture(nn.Module):
                 fc_block = self.define_fc_layer(item, last_block=True)
             else:
                 fc_block = self.define_fc_layer(item, last_block=False)
-            self.classifier.add_module(key, fc_block)
+            classifier.add_module(key, fc_block)
 
-        self.flattened_shape = flattened_shape
-
-    def __len__(self):
-        fc_list = [
-            ("classifier", "FC" + str(i)) for i in range(len(self.classifier) - 2)
-        ]
-        conv_list = [("features", "conv" + str(i)) for i in range(len(self.features))]
-        return len(conv_list) + len(fc_list)
-
-    def forward(self, x):
-        x = self.features(x)
-        x = self.classifier(x)
-
-        return x
+        super().__init__(
+            convolutions=convolutions, classifier=classifier, use_cpu=use_cpu
+        )
 
     def define_convolutional_block(self, conv_dict):
         """
@@ -192,44 +177,6 @@ class RandomArchitecture(nn.Module):
 
         return nn.Sequential(*fc_block)
 
-    def cascading_randomization(self, n, random_model=None):
-        """
-        Randomize then n last layers of the network.
-        Similar as (Adebayo et al, 2018).
-
-        Args:
-            n: (int) number of layers to randomize
-            random_model: (RandomArchitecture) random model to transfer identical weights
-        Returns:
-            self
-        """
-        fc_list = [
-            ("classifier", "FC" + str(i)) for i in range(len(self.classifier) - 2)
-        ]
-        conv_list = [("features", "conv" + str(i)) for i in range(len(self.features))]
-        layers_list = conv_list + fc_list
-        if n > len(layers_list):
-            raise ValueError(
-                "The number of randomized layers %i cannot exceed the number of layers of the network %i"
-                % (n, len(layers_list))
-            )
-        for i in range(-n, 0):
-            block, name = layers_list[i]
-            print(block, name)
-            layer = getattr(getattr(self, block), name)
-
-            # Independent or successive randomization
-            if random_model is None:
-                random_layer = deepcopy(layer)
-                self.recursive_init(random_layer)
-            else:
-                random_layer = getattr(getattr(random_model, block), name)
-
-            for j in range(len(layer)):
-                layer[j] = random_layer[j]
-
-        return self
-
     @staticmethod
     def recursive_init(layer):
         if isinstance(layer, nn.Sequential):
@@ -240,34 +187,6 @@ class RandomArchitecture(nn.Module):
                 layer.reset_parameters()
             except AttributeError:
                 pass
-
-    def fix_first_layers(self, n):
-        """
-        Fix the n first model of the network.
-
-        Args:
-            n: (int) number of layers to fix
-        Returns:
-            self
-        """
-        fc_list = [
-            ("classifier", "FC" + str(i)) for i in range(len(self.classifier) - 2)
-        ]
-        conv_list = [("features", "conv" + str(i)) for i in range(len(self.features))]
-        layers_list = conv_list + fc_list
-        if n > len(layers_list):
-            raise ValueError(
-                "The number of randomized layers %i cannot exceed the number of layers of the network %i"
-                % (n, len(layers_list))
-            )
-        for i in range(n):
-            block, name = layers_list[i]
-            print(block, name)
-            layer = getattr(getattr(self, block), name)
-            for parameter in layer.parameters():
-                parameter.requires_grad = False
-
-        return self
 
     @staticmethod
     def fc_dict_design(n_fcblocks, convolutions, initial_shape, n_classes=2):

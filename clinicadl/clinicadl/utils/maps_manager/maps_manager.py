@@ -157,7 +157,6 @@ class MapsManager:
         preprocessing=None,
         diagnoses=None,
         use_labels=True,
-        fold_list=None,
         prepare_dl=None,
         batch_size=None,
         num_workers=None,
@@ -822,8 +821,8 @@ class MapsManager:
         if self.transfer_path is not None:
             transfer_train_path = path.join(self.transfer_path, "train_data.tsv")
             transfer_train_df = pd.read_csv(transfer_train_path, sep="\t")
-            transfer_train_df = train_df[["participant_id", "session_id"]]
-            train_df = pd.concat(train_df, transfer_train_df)
+            transfer_train_df = transfer_train_df[["participant_id", "session_id"]]
+            train_df = pd.concat([train_df, transfer_train_df])
             train_df.drop_duplicates(inplace=True)
 
         train_df.to_csv(
@@ -1090,7 +1089,9 @@ class MapsManager:
             transfer_state = transfer_maps.get_state_dict(
                 fold, selection_metric=transfer_selection, network=network
             )
-            model.load_state_dict(transfer_state["model"])
+            transfer_class = getattr(network_package, transfer_maps.model)
+            self.logger.debug(f"Transfer from {transfer_class}")
+            model.transfer_weights(transfer_state["model"], transfer_class)
 
         return model, current_epoch
 

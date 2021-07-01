@@ -1,8 +1,9 @@
 # coding: utf8
 
-import pytest
 import os
 import shutil
+
+import pytest
 
 
 @pytest.fixture(
@@ -72,6 +73,8 @@ def cli_commands(request):
 
 def test_train(cli_commands):
     test_input = cli_commands
+    if os.path.exists("results"):
+        shutil.rmtree("results")
     flag_error = not os.system("clinicadl " + " ".join(test_input))
     assert flag_error
     shutil.rmtree("results")

@@ -120,7 +120,7 @@ def random_sampling(rs_options, options):
     options.evaluation_steps = find_evaluation_steps(
         options.accumulation_steps, goal=options.evaluation_steps
     )
-    options.convolutions = random_conv_sampling(rs_options)
+    options.convolutions_dict = random_conv_sampling(rs_options)
 
     return options
 

@@ -1,11 +1,12 @@
 import numpy as np
 import torch
 import torch.utils.model_zoo as model_zoo
+from torch import nn
 from torchvision.models.resnet import BasicBlock
 
 from clinicadl.utils.network.cnn.resnet import ResNetDesigner, model_urls
-from clinicadl.utils.network.network import CNN
-from clinicadl.utils.network.network_utils import *  # TODO: remove EarlyStopping from network_utils
+from clinicadl.utils.network.network_utils import PadMaxPool3d
+from clinicadl.utils.network.sub_network import CNN
 
 
 class Conv5_FC3(CNN):
@@ -49,7 +50,7 @@ class Conv5_FC3(CNN):
         output_convolutions = convolutions(input_tensor)
 
         classifier = nn.Sequential(
-            Flatten(),
+            nn.Flatten(),
             nn.Dropout(p=dropout),
 
             nn.Linear(np.prod(list(output_convolutions.shape)), 1300),
@@ -107,7 +108,7 @@ class Conv4_FC3(CNN):
         output_convolutions = convolutions(input_tensor)
 
         classifier = nn.Sequential(
-            Flatten(),
+            nn.Flatten(),
             nn.Dropout(p=dropout),
 
             nn.Linear(np.prod(list(output_convolutions.shape)), 50),
