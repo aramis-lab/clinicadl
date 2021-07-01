@@ -695,12 +695,15 @@ class MapsManager:
         self.parameters = parameters
 
         # TODO: Merge all functions doing prior dataset analysis
-        if self.multi:
-            self.parameters["num_networks"] = compute_num_cnn(
-                self.caps_directory, self.tsv_path, self, data="train"
+        self.parameters["num_networks"] = compute_num_cnn(
+            self.caps_directory, self.tsv_path, self, data="train"
+        )
+        if self.parameters["num_networks"] < 2 and self.multi:
+            raise ValueError(
+                f"Invalid training arguments: cannot train a multi-network "
+                f"framework with only {self.parameters['num_networks']} element "
+                f"per image."
             )
-        else:
-            self.parameters["num_networks"] = 1
 
         # TODO: change when multi-task and label choice will be implemented
         self.parameters["n_classes"] = 2

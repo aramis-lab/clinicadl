@@ -28,7 +28,8 @@ def train_multi_cnn(params, erase_existing=True):
     else:
         train_dict["validation"] = "SingleSplit"
 
-    del train_dict["func"]
+    if "func" in train_dict:
+        del train_dict["func"]
     maps_dir = params.output_dir
     del train_dict["output_dir"]
 
@@ -40,6 +41,8 @@ def train_multi_cnn(params, erase_existing=True):
         train_dict["prepare_dl"] = train_dict["use_extracted_slices"]
     elif "use_extracted_roi" in train_dict:
         train_dict["prepare_dl"] = train_dict["use_extracted_roi"]
+    else:
+        train_dict["prepare_dl"] = False
 
     train_dict["num_workers"] = train_dict.pop("nproc")
     train_dict["optimizer"] = "Adam"

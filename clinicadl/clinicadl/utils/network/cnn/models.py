@@ -1,7 +1,9 @@
 import numpy as np
 import torch
-from torch import nn
+import torch.utils.model_zoo as model_zoo
+from torchvision.models.resnet import BasicBlock
 
+from clinicadl.utils.network.cnn.resnet import ResNetDesigner, model_urls
 from clinicadl.utils.network.network import CNN
 from clinicadl.utils.network.network_utils import *  # TODO: remove EarlyStopping from network_utils
 
@@ -117,6 +119,33 @@ class Conv4_FC3(CNN):
             nn.Linear(40, n_classes)
         )
         # fmt: on
+        super().__init__(
+            convolutions=convolutions, classifier=classifier, use_cpu=use_cpu
+        )
+
+
+class resnet18(CNN):
+    def __init__(self, use_cpu=False, n_classes=2, dropout=0.5):
+        model = ResNetDesigner(BasicBlock, [2, 2, 2, 2])
+        model.load_state_dict(model_zoo.load_url(model_urls["resnet18"]))
+
+        convolutions = nn.Sequential(
+            model.conv1,
+            model.bn1,
+            model.relu,
+            model.maxpool,
+            model.layer1,
+            model.layer2,
+            model.layer3,
+            model.layer4,
+            model.avgpool,
+        )
+
+        # add a fc layer on top of the transfer_learning model and a softmax classifier
+        classifier = nn.Sequential(nn.Flatten(), model.fc)
+        classifier.add_module("drop_out", nn.Dropout(p=dropout))
+        classifier.add_module("fc_out", nn.Linear(1000, n_classes))
+
         super().__init__(
             convolutions=convolutions, classifier=classifier, use_cpu=use_cpu
         )
