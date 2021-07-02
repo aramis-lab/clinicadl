@@ -24,9 +24,7 @@ level_dict = {
 }
 
 # TODO: replace "fold" with "split"
-# TODO CRITICAL add multi network (compute cnn at the initialization)
 # TODO save weights on CPU for better compatibility
-# TODO transfer learning between classes
 
 
 class MapsManager:
@@ -196,28 +194,37 @@ class MapsManager:
 
         self._check_leakage(test_df)
 
-        data_test = return_dataset(
-            self.mode,
-            caps_directory,
-            test_df,
-            preprocessing if preprocessing is not None else self.preprocessing,
-            all_transformations=all_transforms,
-            prepare_dl=prepare_dl if prepare_dl is not None else self.prepare_dl,
-            multi_cohort=multi_cohort,
-            params=self,
-        )
-        test_loader = DataLoader(
-            data_test,
-            batch_size=batch_size if batch_size is not None else self.batch_size,
-            shuffle=False,
-            num_workers=num_workers if num_workers is not None else self.num_workers,
-        )
-
         criterion = self._get_criterion()
 
         for fold in folds:
             if self.multi:
                 for network in range(self.num_networks):
+                    data_test = return_dataset(
+                        self.mode,
+                        caps_directory,
+                        test_df,
+                        preprocessing
+                        if preprocessing is not None
+                        else self.preprocessing,
+                        all_transformations=all_transforms,
+                        prepare_dl=prepare_dl
+                        if prepare_dl is not None
+                        else self.prepare_dl,
+                        multi_cohort=multi_cohort,
+                        params=self,
+                        cnn_index=network,
+                    )
+                    test_loader = DataLoader(
+                        data_test,
+                        batch_size=batch_size
+                        if batch_size is not None
+                        else self.batch_size,
+                        shuffle=False,
+                        num_workers=num_workers
+                        if num_workers is not None
+                        else self.num_workers,
+                    )
+
                     self._test(
                         test_loader,
                         criterion,
@@ -232,6 +239,29 @@ class MapsManager:
                     )
 
             else:
+                data_test = return_dataset(
+                    self.mode,
+                    caps_directory,
+                    test_df,
+                    preprocessing if preprocessing is not None else self.preprocessing,
+                    all_transformations=all_transforms,
+                    prepare_dl=prepare_dl
+                    if prepare_dl is not None
+                    else self.prepare_dl,
+                    multi_cohort=multi_cohort,
+                    params=self,
+                )
+                test_loader = DataLoader(
+                    data_test,
+                    batch_size=batch_size
+                    if batch_size is not None
+                    else self.batch_size,
+                    shuffle=False,
+                    num_workers=num_workers
+                    if num_workers is not None
+                    else self.num_workers,
+                )
+
                 self._test(
                     test_loader,
                     criterion,
@@ -243,10 +273,8 @@ class MapsManager:
                     use_labels=use_labels,
                     use_cpu=use_cpu,
                 )
-
-            self._ensemble_prediction(
-                prefix, fold, selection_metrics, use_labels, use_cpu
-            )
+            if self._get_ensemble_results():
+                self._ensemble_prediction(prefix, fold, selection_metrics, use_labels)
 
     def interpret(
         self,
@@ -277,6 +305,8 @@ class MapsManager:
             return_dataset,
         )
 
+        # TODO: save TSV file with all participant and session IDs
+        # TODO: mean per mode ID
         if folds is None:
             folds = self._find_folds()
 
@@ -326,6 +356,7 @@ class MapsManager:
                 selection_metrics = self._find_selection_metrics(fold)
 
             for selection_metric in selection_metrics:
+                self.logger.info(f"Interpretation of metric {selection_metric}")
                 self._write_description_log(
                     prefix,
                     fold,
@@ -368,11 +399,11 @@ class MapsManager:
                         for i in range(len(data["participant_id"])):
                             single_path = path.join(
                                 results_path,
-                                f"{data['participant_id'][i]}_{data['session_id'][i]}_map.pt",
+                                f"participant-{data['participant_id'][i]}_session-{data['session_id'][i]}_{self.mode}-{data[f'{self.mode}_id'][i]}_map.pt",
                             )
                             torch.save(map_pt, single_path)
-                    mean_map /= len(data_test)
-                    torch.save(mean_map, path.join(results_path, f"mean_map.pt"))
+                mean_map /= len(data_test)
+                torch.save(mean_map, path.join(results_path, f"mean_map.pt"))
 
     ###################################
     # High-level functions templates  #
@@ -778,9 +809,10 @@ class MapsManager:
         fold,
         selection_metrics,
         use_labels=True,
-        use_cpu=None,
     ):
-        criterion = self._get_criterion()
+
+        if selection_metrics is None:
+            selection_metrics = self._find_selection_metrics(fold)
 
         for selection_metric in selection_metrics:
             # Soft voting
@@ -914,8 +946,8 @@ class MapsManager:
 
         if len(already_evaluated) > 0:
             error_message = (
-                f"Evaluations corresponding to prefix {prefix} were found."
-                f"Please use overwrite to erase the evaluations previously done."
+                f"Evaluations corresponding to prefix {prefix} were found. \n"
+                f"Please use overwrite to erase the evaluations previously done. \n"
                 f"List of evaluations already performed:\n"
             )
             for message in already_evaluated:
@@ -1258,9 +1290,13 @@ class MapsManager:
             model.load_state_dict(checkpoint_state["model"])
             current_epoch = checkpoint_state["epoch"]
         elif transfer_path is not None:
+            self.logger.debug(f"Transfer weights from MAPS at {transfer_path}")
             transfer_maps = MapsManager(transfer_path)
             transfer_state = transfer_maps.get_state_dict(
-                fold, selection_metric=transfer_selection, network=network
+                fold,
+                selection_metric=transfer_selection,
+                network=network,
+                map_location=model.device,
             )
             transfer_class = getattr(network_package, transfer_maps.model)
             self.logger.debug(f"Transfer from {transfer_class}")
@@ -1305,7 +1341,7 @@ class MapsManager:
     ###############################
     # Getters                     #
     ###############################
-    def _print_prediction_log(
+    def _print_description_log(
         self, prefix, fold, selection_metric, interpretation=False
     ):
         if interpretation:
@@ -1320,7 +1356,7 @@ class MapsManager:
             log_dir = path.join(
                 self.maps_path, f"fold-{fold}", f"best-{selection_metric}", prefix
             )
-        log_path = path.join(log_dir, "prediction.log")
+        log_path = path.join(log_dir, "description.log")
         with open(log_path, "r") as f:
             content = f.read()
             print(content)
@@ -1336,7 +1372,6 @@ class MapsManager:
         # New arg with default hard-coded value --> discarded_slice --> 20
         retro_change_name = {
             "network": "model",
-            "mri_plane": "slice_direction",
             "pretrained_path": "transfer_learning_path",
             "pretrained_difference": "transfer_learning_difference",
             "patch_stride": "stride_size",
@@ -1371,7 +1406,9 @@ class MapsManager:
 
         return parameters
 
-    def get_state_dict(self, fold=0, selection_metric=None, network=None):
+    def get_state_dict(
+        self, fold=0, selection_metric=None, network=None, map_location=None
+    ):
         """
         Get the model trained corresponding to one fold and one metric evaluated on the validation set.
 
@@ -1379,6 +1416,9 @@ class MapsManager:
             fold (int): fold number
             selection_metric (str): name of the metric used for the selection
             network (int): number of the network for multi-network framework
+            map_location (str): a torch.device object or a string containing a device tag,
+                it indicates the location where all tensors should be loaded.
+                (see https://pytorch.org/docs/stable/generated/torch.load.html)
         Returns:
             (Dict): dictionnary of results (weights, epoch number, metrics values)
         """
@@ -1408,7 +1448,7 @@ class MapsManager:
             f"selected according to best validation {selection_metric} "
             f"at path {model_path}."
         )
-        return torch.load(model_path)
+        return torch.load(model_path, map_location=map_location)
 
     def get_prediction(
         self, prefix, fold=0, selection_metric=None, mode="image", verbose=True
@@ -1429,7 +1469,7 @@ class MapsManager:
         """
         selection_metric = self._check_selection_metric(fold, selection_metric)
         if verbose:
-            self._print_prediction_log(prefix, fold, selection_metric)
+            self._print_description_log(prefix, fold, selection_metric)
         prediction_dir = path.join(
             self.maps_path, f"fold-{fold}", f"best-{selection_metric}", prefix
         )
@@ -1460,7 +1500,7 @@ class MapsManager:
         """
         selection_metric = self._check_selection_metric(fold, selection_metric)
         if verbose:
-            self._print_prediction_log(prefix, fold, selection_metric)
+            self._print_description_log(prefix, fold, selection_metric)
         prediction_dir = path.join(
             self.maps_path, f"fold-{fold}", f"best-{selection_metric}", prefix
         )
@@ -1481,6 +1521,7 @@ class MapsManager:
         verbose=True,
         participant_id=None,
         session_id=None,
+        mode_id=0,
     ):
         """
         Get the individual interpretation maps for one session if participant_id and session_id are filled.
@@ -1499,7 +1540,7 @@ class MapsManager:
         """
         selection_metric = self._check_selection_metric(fold, selection_metric)
         if verbose:
-            self._print_prediction_log(
+            self._print_description_log(
                 prefix, fold, selection_metric, interpretation=True
             )
         map_dir = path.join(
@@ -1523,6 +1564,9 @@ class MapsManager:
             )
         else:
             map_pt = torch.load(
-                path.join(map_dir, f"{participant_id}_{session_id}_map.pt")
+                path.join(
+                    map_dir,
+                    f"participant-{participant_id}_session-{session_id}_{self.mode}-{mode_id}_map.pt",
+                )
             )
         return map_pt

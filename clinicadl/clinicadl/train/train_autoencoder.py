@@ -28,6 +28,9 @@ def train_autoencoder(params, erase_existing=True):
     else:
         train_dict["validation"] = "SingleSplit"
 
+    if "mri_plane" in train_dict:
+        train_dict["slice_direction"] = train_dict.pop("mri_plane")
+
     if "func" in train_dict:
         del train_dict["func"]
     maps_dir = params.output_dir

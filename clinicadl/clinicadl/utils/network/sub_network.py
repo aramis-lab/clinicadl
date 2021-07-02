@@ -270,6 +270,7 @@ class CNN(Network):
         if selection_threshold is not None:
             sub_level_accuracies[sub_level_accuracies < selection_threshold] = 0
         weight_series = sub_level_accuracies / sub_level_accuracies.sum()
+        print(weight_series)
 
         # Sort to allow weighted average computation
         performance_df.sort_values(
@@ -283,6 +284,7 @@ class CNN(Network):
         for (subject, session), subject_df in performance_df.groupby(
             ["participant_id", "session_id"]
         ):
+            print(subject_df)
             proba0 = np.average(subject_df["proba0"], weights=weight_series)
             proba1 = np.average(subject_df["proba1"], weights=weight_series)
             proba_list = [proba0, proba1]
