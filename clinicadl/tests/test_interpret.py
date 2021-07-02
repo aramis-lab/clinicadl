@@ -1,8 +1,9 @@
 # coding: utf8
 
-import pytest
 import os
 import shutil
+
+import pytest
 
 
 @pytest.fixture(params=["group_image", "individual_image"])
@@ -53,9 +54,14 @@ def cli_commands(request):
 
 def test_interpret(cli_commands):
     cnn_input, interpret_input = cli_commands
+    if os.path.exists("results"):
+        shutil.rmtree("results")
+
     train_error = not os.system("clinicadl " + " ".join(cnn_input))
     interpret_error = not os.system("clinicadl " + " ".join(interpret_input))
-    interpret_flag = os.path.exists(os.path.join("results", "fold-0", "gradients"))
+    interpret_flag = os.path.exists(
+        os.path.join("results", "fold-0", "best-loss", "interpretation")
+    )
     assert train_error
     assert interpret_error
     assert interpret_flag

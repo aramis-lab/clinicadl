@@ -57,8 +57,8 @@ class MapsManager:
                 path.isdir(maps_path) and listdir(maps_path)  # Non empty folder
             ):
                 raise ValueError(
-                    f"You are trying a new MAPS at {maps_path} but"
-                    f"this already corresponds to a file or a non-empty folder."
+                    f"You are trying a new MAPS at {maps_path} but "
+                    f"this already corresponds to a file or a non-empty folder. \n"
                     f"Please remove it or choose another location."
                 )
             self.logger.info(f"A new MAPS was created at {maps_path}")
@@ -102,6 +102,7 @@ class MapsManager:
         # add ch to logger
         self.logger.addHandler(stdout)
         self.logger.addHandler(stderr)
+        self.logger.propagate = False
 
     def train(self, folds=None, overwrite=False):
         existing_folds = []
@@ -171,6 +172,9 @@ class MapsManager:
             return_dataset,
         )
 
+        if folds is None:
+            folds = self._find_folds()
+
         self._check_prefix(
             prefix,
             folds=folds,
@@ -211,9 +215,7 @@ class MapsManager:
 
         criterion = self._get_criterion()
 
-        split_manager = self._init_split_manager(folds)
-        for fold in split_manager.fold_iterator():
-
+        for fold in folds:
             if self.multi:
                 for network in range(self.num_networks):
                     self._test(
@@ -245,6 +247,132 @@ class MapsManager:
             self._ensemble_prediction(
                 prefix, fold, selection_metrics, use_labels, use_cpu
             )
+
+    def interpret(
+        self,
+        caps_directory,
+        tsv_path,
+        prefix,
+        folds=None,
+        selection_metrics=None,
+        multi_cohort=False,
+        preprocessing=None,
+        diagnoses=None,
+        baseline=False,
+        target_node=0,
+        target_label=None,
+        prepare_dl=None,
+        save_individual=False,
+        batch_size=None,
+        num_workers=None,
+        use_cpu=None,
+        overwrite=False,
+    ):
+        from torch.utils.data import DataLoader
+
+        from clinicadl.interpret.gradients import VanillaBackProp
+        from clinicadl.utils.caps_dataset.data import (
+            get_transforms,
+            load_data_test,
+            return_dataset,
+        )
+
+        if folds is None:
+            folds = self._find_folds()
+
+        if self.multi:
+            raise NotImplementedError(
+                "The interpretation of multi-network framework is not implemented."
+            )
+        self._check_prefix(
+            prefix, folds, selection_metrics, overwrite, interpretation=True
+        )
+
+        _, all_transforms = get_transforms(
+            self.mode,
+            minmaxnormalization=self.minmaxnormalization,
+            data_augmentation=self.data_augmentation,
+        )
+
+        test_df = load_data_test(
+            tsv_path,
+            diagnoses if diagnoses is not None else self.diagnoses,
+            multi_cohort=multi_cohort,
+            baseline=baseline,
+        )
+        data_test = return_dataset(
+            self.mode,
+            caps_directory,
+            test_df,
+            preprocessing if preprocessing is not None else self.preprocessing,
+            all_transformations=all_transforms,
+            prepare_dl=prepare_dl if prepare_dl is not None else self.prepare_dl,
+            multi_cohort=multi_cohort,
+            params=self,
+        )
+        test_loader = DataLoader(
+            data_test,
+            batch_size=batch_size if batch_size is not None else self.batch_size,
+            shuffle=False,
+            num_workers=num_workers if num_workers is not None else self.num_workers,
+        )
+
+        if target_label is not None:
+            target_node = data_test.diagnosis_code[target_label]
+
+        for fold in folds:
+            self.logger.info(f"Interpretation of fold {fold}")
+            if selection_metrics is None:
+                selection_metrics = self._find_selection_metrics(fold)
+
+            for selection_metric in selection_metrics:
+                self._write_description_log(
+                    prefix,
+                    fold,
+                    selection_metric,
+                    data_test.caps_dict,
+                    data_test.df,
+                    interpretation=True,
+                    params_dict={
+                        "target_node": target_node,
+                        "target_label": target_label,
+                        "preprocessing": preprocessing,
+                        "diagnoses": diagnoses,
+                    },
+                )
+                results_path = path.join(
+                    self.maps_path,
+                    f"fold-{fold}",
+                    f"best-{selection_metric}",
+                    "interpretation",
+                    prefix,
+                )
+
+                model, _ = self._init_model(
+                    input_shape=test_loader.dataset.size,
+                    transfer_path=self.maps_path,
+                    fold=fold,
+                    transfer_selection=selection_metric,
+                    use_cpu=use_cpu,
+                )
+
+                interpreter = VanillaBackProp(model)
+
+                mean_map = 0
+                for data in test_loader:
+                    images = data["image"].to(model.device)
+
+                    map_pt = interpreter.generate_gradients(images, target_node)
+                    mean_map += map_pt.sum(axis=0)
+                    if save_individual:
+                        for i in range(len(data["participant_id"])):
+                            single_path = path.join(
+                                results_path,
+                                f"{data['participant_id'][i]}_{data['session_id'][i]}_map.pt",
+                            )
+                            torch.save(map_pt, single_path)
+                    mean_map /= len(data_test)
+                    torch.save(mean_map, path.join(results_path, f"mean_map.pt"))
 
     ###################################
     # High-level functions templates  #
@@ -612,7 +740,7 @@ class MapsManager:
 
         for selection_metric in selection_metrics:
 
-            self._write_prediction_log(
+            self._write_description_log(
                 prefix,
                 fold,
                 selection_metric,
@@ -711,6 +839,13 @@ class MapsManager:
         # click passing context @click.command / @click.passcontext (config.json)
         # or default parameters in click --> from config_param import learning_rate --> @learning_rate
 
+    def _find_folds(self):
+        return [
+            int(fold[5::])
+            for fold in listdir(self.maps_path)
+            if fold.startswith("fold-")
+        ]
+
     def _find_selection_metrics(self, fold):
         fold_path = path.join(self.maps_path, f"fold-{fold}")
         if not path.exists(fold_path):
@@ -721,7 +856,7 @@ class MapsManager:
 
         return [metric[5::] for metric in listdir(fold_path) if metric[:5:] == "best-"]
 
-    def _check_selection_metrics(self, fold, selection_metric=None):
+    def _check_selection_metric(self, fold, selection_metric=None):
         available_metrics = self._find_selection_metrics(fold)
         if selection_metric is None:
             if len(available_metrics) > 1:
@@ -740,17 +875,35 @@ class MapsManager:
         return selection_metric
 
     def _check_prefix(
-        self, prefix, folds=None, selection_metrics=None, overwrite=False
+        self,
+        prefix,
+        folds=None,
+        selection_metrics=None,
+        overwrite=False,
+        interpretation=False,
     ):
-
         already_evaluated = []
         split_manager = self._init_split_manager(folds)
         for fold in split_manager.fold_iterator():
-            selection_metrics = self._find_selection_metrics(fold)
+            if selection_metrics is None:
+                selection_metrics = self._find_selection_metrics(fold)
             for selection_metric in selection_metrics:
-                prediction_dir = path.join(
-                    self.maps_path, f"fold-{fold}", f"best-{selection_metric}", prefix
-                )
+                self._check_selection_metric(fold, selection_metric)
+                if interpretation:
+                    prediction_dir = path.join(
+                        self.maps_path,
+                        f"fold-{fold}",
+                        f"best-{selection_metric}",
+                        "interpretation",
+                        prefix,
+                    )
+                else:
+                    prediction_dir = path.join(
+                        self.maps_path,
+                        f"fold-{fold}",
+                        f"best-{selection_metric}",
+                        prefix,
+                    )
                 if path.exists(prediction_dir):
                     if overwrite:
                         shutil.rmtree(prediction_dir)
@@ -866,17 +1019,37 @@ class MapsManager:
         tmp_path = path.join(self.maps_path, f"fold-{fold}", "tmp")
         shutil.rmtree(tmp_path)
 
-    def _write_prediction_log(self, prefix, fold, selection_metric, caps_directory, df):
-        log_dir = path.join(
-            self.maps_path, f"fold-{fold}", f"best-{selection_metric}", prefix
-        )
+    def _write_description_log(
+        self,
+        prefix,
+        fold,
+        selection_metric,
+        caps_directory,
+        df,
+        interpretation=False,
+        params_dict=None,
+    ):
+        if interpretation:
+            log_dir = path.join(
+                self.maps_path,
+                f"fold-{fold}",
+                f"best-{selection_metric}",
+                "interpretation",
+                prefix,
+            )
+        else:
+            log_dir = path.join(
+                self.maps_path, f"fold-{fold}", f"best-{selection_metric}", prefix
+            )
         makedirs(log_dir, exist_ok=True)
-        log_path = path.join(log_dir, "prediction.log")
+        log_path = path.join(log_dir, "description.log")
         with open(log_path, "w") as f:
             f.write(f"Evaluation of {prefix} group - {datetime.now()}\n")
             f.write(f"Data loaded from CAPS directories: {caps_directory}\n")
             f.write(f"Number of participants: {df.participant_id.nunique()}\n")
             f.write(f"Number of sessions: {len(df)}\n")
+            if params_dict:
+                f.write(f"Other parameters: {params_dict}")
 
     def _mode_level_to_tsvs(
         self,
@@ -1132,10 +1305,21 @@ class MapsManager:
     ###############################
     # Getters                     #
     ###############################
-    def _print_prediction_log(self, prefix, fold, selection_metric):
-        log_dir = path.join(
-            self.maps_path, f"fold-{fold}", f"best-{selection_metric}", prefix
-        )
+    def _print_prediction_log(
+        self, prefix, fold, selection_metric, interpretation=False
+    ):
+        if interpretation:
+            log_dir = path.join(
+                self.maps_path,
+                f"fold-{fold}",
+                f"best-{selection_metric}",
+                "interpretation",
+                prefix,
+            )
+        else:
+            log_dir = path.join(
+                self.maps_path, f"fold-{fold}", f"best-{selection_metric}", prefix
+            )
         log_path = path.join(log_dir, "prediction.log")
         with open(log_path, "r") as f:
             content = f.read()
@@ -1198,7 +1382,7 @@ class MapsManager:
         Returns:
             (Dict): dictionnary of results (weights, epoch number, metrics values)
         """
-        selection_metric = self._check_selection_metrics(fold, selection_metric)
+        selection_metric = self._check_selection_metric(fold, selection_metric)
         if self.multi:
             if network is None:
                 raise ValueError(
@@ -1243,7 +1427,7 @@ class MapsManager:
             (DataFrame): Results indexed by columns 'participant_id' and 'session_id' which
             identifies the image in the BIDS / CAPS.
         """
-        selection_metric = self._check_selection_metrics(fold, selection_metric)
+        selection_metric = self._check_selection_metric(fold, selection_metric)
         if verbose:
             self._print_prediction_log(prefix, fold, selection_metric)
         prediction_dir = path.join(
@@ -1274,7 +1458,7 @@ class MapsManager:
         Returns:
             (Dict[str:float]): Values of the metrics
         """
-        selection_metric = self._check_selection_metrics(fold, selection_metric)
+        selection_metric = self._check_selection_metric(fold, selection_metric)
         if verbose:
             self._print_prediction_log(prefix, fold, selection_metric)
         prediction_dir = path.join(
@@ -1288,3 +1472,57 @@ class MapsManager:
             path.join(prediction_dir, f"{prefix}_{mode}_level_metrics.tsv"), sep="\t"
         )
         return df.to_dict("records")[0]
+
+    def get_interpretation(
+        self,
+        prefix,
+        fold=0,
+        selection_metric=None,
+        verbose=True,
+        participant_id=None,
+        session_id=None,
+    ):
+        """
+        Get the individual interpretation maps for one session if participant_id and session_id are filled.
+        Else load the mean interpretation map.
+
+        Args:
+            prefix (str): name of the prediction step
+            fold (int): fold number
+            selection_metric (str): name of the metric used for the selection
+            verbose (bool): if True will print associated prediction.log
+            participant_id (str): ID of the participant (if not given load mean map)
+            session_id (str): ID of the session (if not give load the mean map)
+        Returns:
+            (DataFrame): Results indexed by columns 'participant_id' and 'session_id' which
+            identifies the image in the BIDS / CAPS.
+        """
+        selection_metric = self._check_selection_metric(fold, selection_metric)
+        if verbose:
+            self._print_prediction_log(
+                prefix, fold, selection_metric, interpretation=True
+            )
+        map_dir = path.join(
+            self.maps_path,
+            f"fold-{fold}",
+            f"best-{selection_metric}",
+            "interpretation",
+            prefix,
+        )
+        if not path.exists(map_dir):
+            raise ValueError(
+                f"No prediction corresponding to prefix {prefix} was found."
+            )
+        if participant_id is None and session_id is None:
+            map_pt = torch.load(path.join(map_dir, "mean_map.pt"))
+        elif participant_id is None or session_id is None:
+            raise ValueError(
+                f"To load the mean interpretation map, "
+                f"please do not give any participant_id or session_id.\n "
+                f"Else specify both parameters"
+            )
+        else:
+            map_pt = torch.load(
+                path.join(map_dir, f"{participant_id}_{session_id}_map.pt")
+            )
+        return map_pt

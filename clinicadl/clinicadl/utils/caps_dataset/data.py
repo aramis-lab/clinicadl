@@ -85,12 +85,12 @@ class CapsDataset(Dataset):
         unique_codes = set()
         for diagnosis in unique_diagnoses:
             unique_codes.add(self.diagnosis_code[diagnosis])
-        if len(unique_codes) == 1:
-            warnings.warn(
-                "The diagnoses found in the DataFrame %s only corresponds to one class %s. "
-                "If you want to run a binary classification please change the labels involved."
-                % (unique_diagnoses, unique_codes)
-            )
+        # if len(unique_codes) == 1:
+        #     warnings.warn(
+        #         "The diagnoses found in the DataFrame %s only corresponds to one class %s. "
+        #         "If you want to run a binary classification please change the labels involved."
+        #         % (unique_diagnoses, unique_codes)
+        #     )
 
         self.merged_df = merged_df
         if merged_df is not None and "participant_id" in merged_df.columns.values:
