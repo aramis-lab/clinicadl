@@ -8,4 +8,3 @@ from .models import (
     load_optimizer,
     save_checkpoint,
 )
-from .network import Network

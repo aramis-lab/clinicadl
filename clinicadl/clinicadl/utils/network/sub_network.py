@@ -6,7 +6,7 @@ import torch
 from torch import nn
 
 from clinicadl.utils.metric_module import MetricModule
-from clinicadl.utils.network import Network
+from clinicadl.utils.network.network import Network
 from clinicadl.utils.network.network_utils import CropMaxUnpool3d, PadMaxPool3d
 
 
