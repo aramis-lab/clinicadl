@@ -38,7 +38,7 @@ class SplitManager:
         self._check_item(item)
 
         if self.multi_cohort:
-            tsv_df = pd.read_csv(tsv_path, sep="\t")
+            tsv_df = pd.read_csv(self.tsv_path, sep="\t")
             train_df = pd.DataFrame()
             valid_df = pd.DataFrame()
             found_diagnoses = set()
@@ -48,21 +48,23 @@ class SplitManager:
                 cohort_diagnoses = (
                     tsv_df.loc[idx, "diagnoses"].replace(" ", "").split(",")
                 )
-                if bool(set(cohort_diagnoses) & set(diagnoses_list)):
-                    target_diagnoses = list(set(cohort_diagnoses) & set(diagnoses_list))
-                    cohort_train_df, cohort_valid_df = self.concatenate_diagnoses(item)
+                if bool(set(cohort_diagnoses) & set(self.diagnoses)):
+                    target_diagnoses = list(set(cohort_diagnoses) & set(self.diagnoses))
+                    cohort_train_df, cohort_valid_df = self.concatenate_diagnoses(
+                        item, cohort_path=cohort_path, cohort_diagnoses=target_diagnoses
+                    )
                     cohort_train_df["cohort"] = cohort_name
                     cohort_valid_df["cohort"] = cohort_name
                     train_df = pd.concat([train_df, cohort_train_df])
                     valid_df = pd.concat([valid_df, cohort_valid_df])
                     found_diagnoses = found_diagnoses | (
-                        set(cohort_diagnoses) & set(diagnoses_list)
+                        set(cohort_diagnoses) & set(self.diagnoses)
                     )
 
-            if found_diagnoses != set(diagnoses_list):
+            if found_diagnoses != set(self.diagnoses):
                 raise ValueError(
                     f"The diagnoses found in the multi cohort dataset {found_diagnoses} "
-                    f"do not correspond to the diagnoses wanted {set(diagnoses_list)}."
+                    f"do not correspond to the diagnoses wanted {set(self.diagnoses)}."
                 )
             train_df.reset_index(inplace=True, drop=True)
             valid_df.reset_index(inplace=True, drop=True)
@@ -76,15 +78,20 @@ class SplitManager:
             "validation": valid_df,
         }
 
-    def concatenate_diagnoses(self, item):
+    def concatenate_diagnoses(self, fold, cohort_path=None, cohort_diagnoses=None):
 
         train_df, valid_df = pd.DataFrame(), pd.DataFrame()
 
-        train_path, valid_path = self._get_tsv_paths(item)
+        train_path, valid_path = self._get_tsv_paths(
+            fold=fold,
+            cohort_path=cohort_path if cohort_path is not None else self.tsv_path,
+        )
         self.logger.info(f"Training data loaded at {train_path}")
         self.logger.info(f"Validation data loaded at {valid_path}")
+        if cohort_diagnoses is None:
+            cohort_diagnoses = self.diagnoses
 
-        for diagnosis in self.diagnoses:
+        for diagnosis in cohort_diagnoses:
             if self.baseline:
                 train_diagnosis_path = path.join(
                     train_path, diagnosis + "_baseline.tsv"
@@ -106,7 +113,7 @@ class SplitManager:
         return train_df, valid_df
 
     @abc.abstractmethod
-    def _get_tsv_paths(self, item):
+    def _get_tsv_paths(self, cohort_path, fold):
         pass
 
     @abc.abstractmethod
@@ -130,7 +137,7 @@ class SplitManager:
                 )
             else:
                 caps_df = pd.read_csv(caps_directory, sep="\t")
-                self._check_multi_cohort_tsv(caps_df, "CAPS")
+                SplitManager._check_multi_cohort_tsv(caps_df, "CAPS")
                 caps_dict = dict()
                 for idx in range(len(caps_df)):
                     cohort = caps_df.loc[idx, "cohort"]
@@ -152,7 +159,7 @@ class SplitManager:
                 )
             else:
                 tsv_df = pd.read_csv(tsv_path, sep="\t")
-                check_multi_cohort_tsv(tsv_df, "labels")
+                SplitManager._check_multi_cohort_tsv(tsv_df, "labels")
         else:
             if tsv_path.endswith(".tsv"):
                 raise ValueError(

@@ -1,6 +1,6 @@
 from os import path
 
-from clinicadl.utils.split_manager.template import SplitManager
+from clinicadl.utils.split_manager.split_manager import SplitManager
 
 
 class KFoldSplit(SplitManager):
@@ -32,12 +32,12 @@ class KFoldSplit(SplitManager):
         else:
             return self.folds
 
-    def _get_tsv_paths(self, item):
+    def _get_tsv_paths(self, cohort_path, fold):
         train_path = path.join(
-            self.tsv_path, f"train_splits-{self.n_splits}", f"split-{item}"
+            cohort_path, f"train_splits-{self.n_splits}", f"split-{fold}"
         )
         valid_path = path.join(
-            self.tsv_path, f"validation_splits-{self.n_splits}", f"split-{item}"
+            cohort_path, f"validation_splits-{self.n_splits}", f"split-{fold}"
         )
         return train_path, valid_path
 

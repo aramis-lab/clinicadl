@@ -16,7 +16,7 @@ class Conv5_FC3(CNN):
     Image level architecture
     """
 
-    def __init__(self, input_shape, use_cpu=False, n_classes=2, dropout=0.5):
+    def __init__(self, input_size, use_cpu=False, n_classes=2, dropout=0.5):
         # fmt: off
         convolutions = nn.Sequential(
             nn.Conv3d(1, 8, 3, padding=1),
@@ -46,7 +46,7 @@ class Conv5_FC3(CNN):
         )
 
         # Compute the size of the first FC layer
-        input_tensor = torch.zeros(input_shape).unsqueeze(0)
+        input_tensor = torch.zeros(input_size).unsqueeze(0)
         output_convolutions = convolutions(input_tensor)
 
         classifier = nn.Sequential(
@@ -63,7 +63,10 @@ class Conv5_FC3(CNN):
         )
         # fmt: on
         super().__init__(
-            convolutions=convolutions, classifier=classifier, use_cpu=use_cpu
+            convolutions=convolutions,
+            classifier=classifier,
+            n_classes=n_classes,
+            use_cpu=use_cpu,
         )
 
 
@@ -74,7 +77,7 @@ class Conv4_FC3(CNN):
     Image level architecture
     """
 
-    def __init__(self, input_shape, use_cpu=False, n_classes=2, dropout=0.5):
+    def __init__(self, input_size, use_cpu=False, n_classes=2, dropout=0.5):
         # fmt: off
         convolutions = nn.Sequential(
             nn.Conv3d(1, 8, 3, padding=1),
@@ -104,7 +107,7 @@ class Conv4_FC3(CNN):
         )
 
         # Compute the size of the first FC layer
-        input_tensor = torch.zeros(input_shape).unsqueeze(0)
+        input_tensor = torch.zeros(input_size).unsqueeze(0)
         output_convolutions = convolutions(input_tensor)
 
         classifier = nn.Sequential(
@@ -121,7 +124,10 @@ class Conv4_FC3(CNN):
         )
         # fmt: on
         super().__init__(
-            convolutions=convolutions, classifier=classifier, use_cpu=use_cpu
+            convolutions=convolutions,
+            classifier=classifier,
+            n_classes=n_classes,
+            use_cpu=use_cpu,
         )
 
 
@@ -148,5 +154,8 @@ class resnet18(CNN):
         classifier.add_module("fc_out", nn.Linear(1000, n_classes))
 
         super().__init__(
-            convolutions=convolutions, classifier=classifier, use_cpu=use_cpu
+            convolutions=convolutions,
+            classifier=classifier,
+            n_classes=n_classes,
+            use_cpu=use_cpu,
         )

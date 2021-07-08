@@ -1,6 +1,6 @@
 from os import path
 
-from clinicadl.utils.split_manager.template import SplitManager
+from clinicadl.utils.split_manager.split_manager import SplitManager
 
 
 class SingleSplit(SplitManager):
@@ -24,9 +24,9 @@ class SingleSplit(SplitManager):
     def fold_iterator(self):
         return range(1)
 
-    def _get_tsv_paths(self, item):
-        train_path = path.join(self.tsv_path, "train")
-        valid_path = path.join(self.tsv_path, "validation")
+    def _get_tsv_paths(self, cohort_path, fold):
+        train_path = path.join(cohort_path, "train")
+        valid_path = path.join(cohort_path, "validation")
         return train_path, valid_path
 
     def _check_folds(self):

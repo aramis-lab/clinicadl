@@ -2,6 +2,7 @@ import numpy as np
 
 metric_optimum = {
     "MAE": "min",
+    "MSE": "min",
     "accuracy": "max",
     "sensitivity": "max",
     "specificity": "max",
@@ -10,8 +11,6 @@ metric_optimum = {
     "BA": "max",
     "loss": "min",
 }
-
-# TODO: what about the loss?
 
 
 class MetricModule:
@@ -66,6 +65,18 @@ class MetricModule:
         """
 
         return np.mean(np.abs(y - y_pred))
+
+    @staticmethod
+    def mse_fn(y, y_pred):
+        """
+        Args:
+            y (List): list of labels
+            y_pred (List): list of predictions
+        Returns:
+            (float) mean squared error
+        """
+
+        return np.mean(np.square(y - y_pred))
 
     @staticmethod
     def accuracy_fn(y, y_pred):

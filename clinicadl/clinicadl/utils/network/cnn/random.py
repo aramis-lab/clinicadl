@@ -11,7 +11,7 @@ class RandomArchitecture(CNN):
         self,
         convolutions_dict,
         n_fcblocks,
-        input_shape,
+        input_size,
         dropout=0.5,
         network_normalization="BatchNorm",
         n_classes=2,
@@ -29,8 +29,8 @@ class RandomArchitecture(CNN):
             n_classes: (int) Number of output neurones of the network.
             use_cpu: (bool) If True the network weights are stored on a CPU, else GPU.
         """
-        self.dimension = len(input_shape) - 1
-        self.first_in_channels = input_shape[0]
+        self.dimension = len(input_size) - 1
+        self.first_in_channels = input_size[0]
         self.layers_dict = self.return_layers_dict()
         self.network_normalization = network_normalization
 
@@ -53,7 +53,10 @@ class RandomArchitecture(CNN):
             classifier.add_module(key, fc_block)
 
         super().__init__(
-            convolutions=convolutions, classifier=classifier, use_cpu=use_cpu
+            convolutions=convolutions,
+            classifier=classifier,
+            n_classes=n_classes,
+            use_cpu=use_cpu,
         )
 
     def define_convolutional_block(self, conv_dict):

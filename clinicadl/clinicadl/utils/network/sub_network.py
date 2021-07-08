@@ -11,8 +11,7 @@ from clinicadl.utils.network.network_utils import CropMaxUnpool3d, PadMaxPool3d
 
 
 class AutoEncoder(Network):
-    _evaluation_metrics = ["MSE", "MAE"]
-    _ensemble_results = False
+    _possible_tasks = ["reconstruction"]
 
     def __init__(self, encoder, decoder, use_cpu=False):
         super().__init__(use_cpu=use_cpu)
@@ -40,14 +39,13 @@ class AutoEncoder(Network):
                 f"Cannot transfer weights from {transfer_class} " f"to Autoencoder."
             )
 
-    def predict(self, input):
-        _, output = self.forward(input)
+    def predict(self, x):
+        _, output = self.forward(x)
         return output
 
-    def forward(self, input):
+    def forward(self, x):
         indices_list = []
         pad_list = []
-        x = input
         for layer in self.encoder:
             if (
                 isinstance(layer, PadMaxPool3d)
@@ -77,56 +75,18 @@ class AutoEncoder(Network):
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=True):
 
-        imgs = input_dict["image"].to(self.device)
-        train_output = self.predict(imgs)
-        loss = criterion(train_output, imgs)
+        images = input_dict["image"].to(self.device)
+        train_output = self.predict(images)
+        loss = criterion(train_output, images)
 
         return train_output, loss
-
-    @staticmethod
-    def _test_columns(mode):
-        columns = [
-            "participant_id",
-            "session_id",
-            f"{mode}_id",
-            "MSE",
-            "MAE",
-        ]
-
-        return columns
-
-    @staticmethod
-    def _generate_test_row(idx, data, outputs, mode):
-        from torch.nn.functional import l1_loss, mse_loss
-
-        device = outputs.device
-        image = data["image"][idx].to(device)
-        mse_value = mse_loss(outputs[idx], image)
-        mae_value = l1_loss(outputs[idx], image)
-        row = [
-            [
-                data["participant_id"][idx],
-                data["session_id"][idx],
-                data[f"{mode}_id"][idx].item(),
-                mse_value,
-                mae_value,
-            ]
-        ]
-        return row
-
-    @staticmethod
-    def _compute_metrics(results_df):
-
-        return {
-            "MSE": results_df.MSE.mean(),
-            "MAE": results_df.MAE.mean(),
-        }
 
     @staticmethod
     def _ensemble_fn(
         performance_df,
         validation_df,
         mode,
+        evaluation_metrics,
         selection_threshold=None,
         use_labels=True,
     ):
@@ -136,13 +96,14 @@ class AutoEncoder(Network):
 
 
 class CNN(Network):
-    _evaluation_metrics = ["accuracy", "sensitivity", "specificity", "PPV", "NPV", "BA"]
-    _ensemble_results = True
+    _possible_tasks = ["classification", "regression"]
 
-    def __init__(self, convolutions, classifier, use_cpu=False):
+    def __init__(self, convolutions, classifier, n_classes, use_cpu=False):
         super().__init__(use_cpu=use_cpu)
         self.convolutions = convolutions.to(self.device)
         self.classifier = classifier.to(self.device)
+        self.n_classes = n_classes
+        assert self.classifier[-1].out_features == n_classes
 
     @property
     def layers(self):
@@ -165,18 +126,19 @@ class CNN(Network):
                 f"Cannot transfer weights from {transfer_class} " f"to CNN."
             )
 
-    def forward(self, input):
-        return self.layers(input)
+    def forward(self, x):
+        x = self.convolutions(x)
+        return self.classifier(x)
 
-    def predict(self, input):
-        return self.layers(input)
+    def predict(self, x):
+        return self.forward(x)
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=True):
 
-        imgs, labels = input_dict["image"].to(self.device), input_dict["label"].to(
+        images, labels = input_dict["image"].to(self.device), input_dict["label"].to(
             self.device
         )
-        train_output = self.forward(imgs)
+        train_output = self.forward(images)
         if use_labels:
             loss = criterion(train_output, labels)
         else:
@@ -185,53 +147,11 @@ class CNN(Network):
         return train_output, loss
 
     @staticmethod
-    def _test_columns(mode):
-        columns = [
-            "participant_id",
-            "session_id",
-            f"{mode}_id",
-            "true_label",
-            "predicted_label",
-            "proba0",
-            "proba1",
-        ]
-
-        return columns
-
-    @staticmethod
-    def _generate_test_row(idx, data, outputs, mode):
-        from torch.nn.functional import softmax
-
-        # TODO: process only idx values
-        _, predicted = torch.max(outputs.data, 1)
-        normalized_output = softmax(outputs, dim=1)
-        row = [
-            [
-                data["participant_id"][idx],
-                data["session_id"][idx],
-                data[f"{mode}_id"][idx].item(),
-                data["label"][idx].item(),
-                predicted[idx].item(),
-                normalized_output[idx, 0].item(),
-                normalized_output[idx, 1].item(),
-            ]
-        ]
-        return row
-
-    @staticmethod
-    def _compute_metrics(results_df):
-
-        metrics_module = MetricModule(CNN.evaluation_metrics)
-        return metrics_module.apply(
-            results_df.true_label.values.astype(int),
-            results_df.predicted_label.values.astype(int),
-        )
-
-    @staticmethod
     def _ensemble_fn(
         performance_df,
         validation_df,
         mode,
+        evaluation_metrics,
         selection_threshold=None,
         use_labels=True,
     ):
@@ -296,7 +216,7 @@ class CNN(Network):
             df_final = df_final.append(row_df)
 
         if use_labels:
-            results = CNN._compute_metrics(df_final)
+            results = CNN._compute_metrics(df_final, evaluation_metrics)
         else:
             results = None
 

@@ -6,14 +6,12 @@ import sys
 from datetime import datetime
 from os import listdir, makedirs, path
 
-import nibabel as nib
 import pandas as pd
 import torch
 
-from clinicadl.utils.caps_dataset.data import compute_num_cnn
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.maps_manager.logwriter import LogWriter, StdLevelFilter
-from clinicadl.utils.metric_module import MetricModule, RetainBest
+from clinicadl.utils.metric_module import RetainBest
 
 level_dict = {
     "debug": logging.DEBUG,
@@ -37,6 +35,7 @@ class MapsManager:
         """
         self.maps_path = maps_path
         self.set_verbose(verbose)
+        self.task_manager = self._init_task_manager()
 
         # Existing MAPS
         if parameters is None:
@@ -136,7 +135,7 @@ class MapsManager:
 
         if len(missing_folds) > 0:
             raise ValueError(
-                f"Folds {missing_folds} were not intialized. "
+                f"Folds {missing_folds} were not initialized. "
                 f"Please try train command on these folds and resume only others."
             )
 
@@ -225,7 +224,7 @@ class MapsManager:
                         else self.num_workers,
                     )
 
-                    self._test(
+                    self._test_loader(
                         test_loader,
                         criterion,
                         prefix,
@@ -262,7 +261,7 @@ class MapsManager:
                     else self.num_workers,
                 )
 
-                self._test(
+                self._test_loader(
                     test_loader,
                     criterion,
                     prefix,
@@ -273,8 +272,7 @@ class MapsManager:
                     use_labels=use_labels,
                     use_cpu=use_cpu,
                 )
-            if self._get_ensemble_results():
-                self._ensemble_prediction(prefix, fold, selection_metrics, use_labels)
+            self._ensemble_prediction(prefix, fold, selection_metrics, use_labels)
 
     def interpret(
         self,
@@ -380,7 +378,6 @@ class MapsManager:
                 )
 
                 model, _ = self._init_model(
-                    input_shape=test_loader.dataset.size,
                     transfer_path=self.maps_path,
                     fold=fold,
                     transfer_selection=selection_metric,
@@ -479,7 +476,6 @@ class MapsManager:
                 resume=resume,
             )
 
-        if self._get_ensemble_results():
             self._ensemble_prediction(
                 "train",
                 fold,
@@ -578,17 +574,16 @@ class MapsManager:
                 )
                 resume = False
 
-            if self._get_ensemble_results():
-                self._ensemble_prediction(
-                    "train",
-                    fold,
-                    self.selection_metrics,
-                )
-                self._ensemble_prediction(
-                    "validation",
-                    fold,
-                    self.selection_metrics,
-                )
+            self._ensemble_prediction(
+                "train",
+                fold,
+                self.selection_metrics,
+            )
+            self._ensemble_prediction(
+                "validation",
+                fold,
+                self.selection_metrics,
+            )
 
     def _train(
         self,
@@ -599,9 +594,7 @@ class MapsManager:
         resume=False,
     ):
 
-        model, beginning_epoch = self._init_model(
-            input_shape=train_loader.dataset.size, fold=fold, resume=resume
-        )
+        model, beginning_epoch = self._init_model(fold=fold, resume=resume)
         criterion = self._get_criterion()
         optimizer = self._init_optimizer(model, fold=fold, resume=resume)
 
@@ -613,11 +606,9 @@ class MapsManager:
         )
         metrics_valid = {"loss": None}
 
-        evaluation_metrics = model.evaluation_metrics.copy()
-        evaluation_metrics.append("loss")
         log_writer = LogWriter(
             self.maps_path,
-            evaluation_metrics,
+            self.task,
             fold,
             resume=resume,
             beginning_epoch=beginning_epoch,
@@ -652,11 +643,11 @@ class MapsManager:
                     ):
                         evaluation_flag = False
 
-                        _, metrics_train = model.test(
-                            train_loader, criterion, mode=self.mode
+                        _, metrics_train = self.task_manager.test(
+                            model, train_loader, criterion
                         )
-                        _, metrics_valid = model.test(
-                            valid_loader, criterion, mode=self.mode
+                        _, metrics_valid = self.task_manager.test(
+                            model, valid_loader, criterion
                         )
 
                         model.train()
@@ -701,8 +692,8 @@ class MapsManager:
             model.zero_grad()
             self.logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
-            _, metrics_train = model.test(train_loader, criterion, mode=self.mode)
-            _, metrics_valid = model.test(valid_loader, criterion, mode=self.mode)
+            _, metrics_train = self.task_manager.test(model, train_loader, criterion)
+            _, metrics_valid = self.task_manager.test(model, valid_loader, criterion)
 
             model.train()
             train_loader.dataset.train()
@@ -740,7 +731,7 @@ class MapsManager:
 
         self._erase_tmp(fold)
 
-        self._test(
+        self._test_loader(
             train_loader,
             criterion,
             "train",
@@ -748,7 +739,7 @@ class MapsManager:
             self.selection_metrics,
             network=network,
         )
-        self._test(
+        self._test_loader(
             valid_loader,
             criterion,
             "validation",
@@ -757,7 +748,7 @@ class MapsManager:
             network=network,
         )
 
-    def _test(
+    def _test_loader(
         self,
         dataloader,
         criterion,
@@ -780,7 +771,6 @@ class MapsManager:
             )
             # load the best trained model during the training
             model, _ = self._init_model(
-                input_shape=dataloader.dataset.size,
                 transfer_path=self.maps_path,
                 fold=fold,
                 transfer_selection=selection_metric,
@@ -788,8 +778,8 @@ class MapsManager:
                 network=network,
             )
 
-            prediction_df, metrics = model.test(
-                dataloader, criterion, mode=self.mode, use_labels=use_labels
+            prediction_df, metrics = self.task_manager.test(
+                model, dataloader, criterion, use_labels=use_labels
             )
             if use_labels:
                 if network is not None:
@@ -799,7 +789,7 @@ class MapsManager:
                 )
 
             # Replace here
-            self._mode_level_to_tsvs(
+            self._mode_level_to_tsv(
                 prediction_df, metrics, fold, selection_metric, prefix=prefix
             )
 
@@ -817,14 +807,14 @@ class MapsManager:
         for selection_metric in selection_metrics:
             # Soft voting
             if self.num_networks > 1:
-                self._ensemble_to_tsvs(
+                self._ensemble_to_tsv(
                     fold,
                     selection=selection_metric,
                     prefix=prefix,
                     use_labels=use_labels,
                 )
             elif self.mode != "image":
-                self._mode_to_image_tsvs(
+                self._mode_to_image_tsv(
                     fold,
                     selection=selection_metric,
                     prefix=prefix,
@@ -841,7 +831,7 @@ class MapsManager:
             "tsv_path",
             "preprocessing",
             "mode",
-            "model",
+            "network_task" "model",
         ]
 
         for arg in mandatory_arguments:
@@ -853,10 +843,9 @@ class MapsManager:
 
         self.parameters = parameters
 
-        # TODO: Merge all functions doing prior dataset analysis
-        self.parameters["num_networks"] = compute_num_cnn(
-            self.caps_directory, self.tsv_path, self, data="train"
-        )
+        train_parameters = self._compute_train_args()
+        self.parameters.update(train_parameters)
+
         if self.parameters["num_networks"] < 2 and self.multi:
             raise ValueError(
                 f"Invalid training arguments: cannot train a multi-network "
@@ -864,12 +853,38 @@ class MapsManager:
                 f"per image."
             )
 
-        # TODO: change when multi-task and label choice will be implemented
-        self.parameters["n_classes"] = 2
-
         # TODO: add default values manager
         # click passing context @click.command / @click.passcontext (config.json)
         # or default parameters in click --> from config_param import learning_rate --> @learning_rate
+
+    def _compute_train_args(self):
+
+        from clinicadl.utils.caps_dataset.data import get_transforms, return_dataset
+
+        _, transformations = get_transforms(self.mode, self.minmaxnormalization)
+
+        split_manager = self._init_split_manager(None)
+        fold_paths_dict = split_manager[0]
+        full_dataset = return_dataset(
+            self.mode,
+            self.caps_directory,
+            fold_paths_dict["train"],
+            self.preprocessing,
+            train_transformations=None,
+            all_transformations=transformations,
+            params=self,
+        )
+
+        return {
+            "num_networks": full_dataset.elem_per_image,
+            "label_code": self.task_manager.generate_label_code(
+                full_dataset.df, self.label
+            ),
+            "output_size": self.task_manager.output_size(
+                full_dataset.size, full_dataset.df, self.label
+            ),
+            "input_size": full_dataset.size,
+        }
 
     def _find_folds(self):
         return [
@@ -1083,7 +1098,7 @@ class MapsManager:
             if params_dict:
                 f.write(f"Other parameters: {params_dict}")
 
-    def _mode_level_to_tsvs(
+    def _mode_level_to_tsv(
         self,
         results_df,
         metrics,
@@ -1099,7 +1114,7 @@ class MapsManager:
             metrics: (dict or DataFrame) the performances obtained on a series of metrics.
             fold: (int) the fold for which the performances were obtained.
             selection: (str) the metrics on which the model was selected (BA, loss...)
-            prefix: (str) the prefix referring to the data groupe on which evaluation is performed.
+            prefix: (str) the prefix referring to the data group on which evaluation is performed.
         """
         performance_dir = path.join(
             self.maps_path, f"fold-{fold}", f"best-{selection}", prefix
@@ -1130,7 +1145,7 @@ class MapsManager:
                     metrics_path, index=False, sep="\t", mode="a", header=False
                 )
 
-    def _ensemble_to_tsvs(
+    def _ensemble_to_tsv(
         self,
         fold,
         selection,
@@ -1143,11 +1158,9 @@ class MapsManager:
         Args:
             fold: (int) fold number of the cross-validation.
             selection: (str) criterion on which the model is selected (for example loss or BA).
-            prefix: (str) the prefix referring to the data groupe on which evaluation is performed.
+            prefix: (str) the prefix referring to the data group on which evaluation is performed.
                 If different from training or validation, the weights of soft voting will be computed
                 on validation accuracies.
-            selection_threshold: (float) all parts of the image for which the classification accuracy is below the
-                threshold is removed.
             use_labels: (bool) If True the labels are added to the final tsv
         """
         # Choose which dataset is used to compute the weights of soft voting.
@@ -1165,11 +1178,9 @@ class MapsManager:
         )
         makedirs(performance_dir, exist_ok=True)
 
-        ensemble_fn = self._get_ensemble_fn()
-        df_final, metrics = ensemble_fn(
+        df_final, metrics = self.task_manager.ensemble_prediction(
             test_df,
             validation_df,
-            mode=self.mode,
             selection_threshold=self.selection_threshold,
             use_labels=use_labels,
         )
@@ -1186,14 +1197,14 @@ class MapsManager:
                 sep="\t",
             )
 
-    def _mode_to_image_tsvs(self, fold, selection, prefix="test", use_labels=True):
+    def _mode_to_image_tsv(self, fold, selection, prefix="test", use_labels=True):
         """
-        Copy mode-level tsvs to name them as image-level TSV files
+        Copy mode-level TSV files to name them as image-level TSV files
 
         Args:
             fold: (int) Fold number of the cross-validation.
             selection: (str) criterion on which the model is selected (for example loss or BA)
-            prefix: (str) the prefix referring to the data groupe on which evaluation is performed.
+            prefix: (str) the prefix referring to the data group on which evaluation is performed.
             use_labels: (bool) If True the labels are added to the final tsv
 
         """
@@ -1235,21 +1246,8 @@ class MapsManager:
 
         return loss_dict[self.optimization_metric.lower()]
 
-    def _get_ensemble_fn(self):
-        import clinicadl.utils.network as network
-
-        model_class = getattr(network, self.model)
-        return model_class._ensemble_fn
-
-    def _get_ensemble_results(self):
-        import clinicadl.utils.network as network
-
-        model_class = getattr(network, self.model)
-        return model_class._ensemble_results
-
     def _init_model(
         self,
-        input_shape,
         transfer_path=None,
         transfer_selection=None,
         fold=None,
@@ -1260,7 +1258,7 @@ class MapsManager:
         import clinicadl.utils.network as network_package
 
         self.logger.debug(f"Initialization of model {self.model}")
-        # or choose to implement a dictionnary
+        # or choose to implement a dictionary
         model_class = getattr(network_package, self.model)
         args = list(
             model_class.__init__.__code__.co_varnames[
@@ -1269,9 +1267,6 @@ class MapsManager:
         )
         args.remove("self")
         kwargs = dict()
-        if "input_shape" in args:
-            kwargs["input_shape"] = input_shape
-            args.remove("input_shape")
         for arg in args:
             kwargs[arg] = self.parameters[arg]
 
@@ -1337,6 +1332,25 @@ class MapsManager:
             kwargs[arg] = self.parameters[arg]
 
         return split_class(**kwargs)
+
+    def _init_task_manager(self):
+        from clinicadl.utils.task_manager import (
+            ClassificationManager,
+            ReconstructionManager,
+            RegressionManager,
+        )
+
+        if self.task == "classification":
+            return ClassificationManager(self.mode)
+        elif self.task == "regression":
+            return RegressionManager(self.mode)
+        elif self.task == "reconstruction":
+            return ReconstructionManager(self.mode)
+        else:
+            raise ValueError(
+                f"Task {self.task} is not implemented in ClinicaDL. "
+                f"Please choose between classification, regression and reconstruction."
+            )
 
     ###############################
     # Getters                     #
@@ -1420,7 +1434,7 @@ class MapsManager:
                 it indicates the location where all tensors should be loaded.
                 (see https://pytorch.org/docs/stable/generated/torch.load.html)
         Returns:
-            (Dict): dictionnary of results (weights, epoch number, metrics values)
+            (Dict): dictionary of results (weights, epoch number, metrics values)
         """
         selection_metric = self._check_selection_metric(fold, selection_metric)
         if self.multi:
