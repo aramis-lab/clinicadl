@@ -72,8 +72,6 @@ class CapsDataset(Dataset):
             mandatory_col.add("diagnosis")
         if multi_cohort:
             mandatory_col.add("cohort")
-        if self.elem_index == "mixed":
-            mandatory_col.add("%s_id" % self.mode)
 
         if not mandatory_col.issubset(set(self.df.columns.values)):
             raise Exception(
@@ -292,8 +290,6 @@ class CapsDataset(Dataset):
 
         if self.elem_index is None:
             elem_idx = idx % self.elem_per_image
-        elif self.elem_index == "mixed":
-            elem_idx = self.df.loc[image_idx, "%s_id" % self.mode]
         else:
             elem_idx = self.elem_index
 
@@ -820,7 +816,6 @@ class CapsDatasetSlice(CapsDataset):
         mri_plane=0,
         prepare_dl=False,
         discarded_slices=20,
-        mixed=False,
         labels=True,
         all_transformations=None,
         multi_cohort=False,
@@ -839,8 +834,6 @@ class CapsDatasetSlice(CapsDataset):
             mri_plane (int): Defines which mri plane is used for slice extraction.
             discarded_slices (int or list): number of slices discarded at the beginning and the end of the image.
                 If one single value is given, the same amount is discarded at the beginning and at the end.
-            mixed (bool): If True will look for a 'slice_id' column in the input DataFrame to load each slice
-                independently.
             labels (bool): If True the diagnosis will be extracted from the given DataFrame.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
@@ -866,11 +859,6 @@ class CapsDatasetSlice(CapsDataset):
         if isinstance(discarded_slices, list) and len(discarded_slices) == 1:
             discarded_slices = discarded_slices * 2
         self.discarded_slices = discarded_slices
-
-        if mixed:
-            self.elem_index = "mixed"
-        else:
-            self.elem_index = None
 
         self.mode = "slice"
         self.prepare_dl = prepare_dl
@@ -1220,131 +1208,8 @@ def get_transforms(mode, minmaxnormalization=True, data_augmentation=None):
 
 
 ################################
-# tsv files loaders
+# TSV files loaders
 ################################
-
-
-def load_data(
-    tsv_path,
-    diagnoses_list,
-    split,
-    n_splits=0,
-    baseline=True,
-    logger=None,
-    multi_cohort=False,
-):
-
-    if logger is None:
-        logger = logging
-
-    if multi_cohort:
-        if not tsv_path.endswith(".tsv"):
-            raise ValueError(
-                "If multi_cohort is given, the tsv_path argument should be a path to a TSV file."
-            )
-        else:
-            tsv_df = pd.read_csv(tsv_path, sep="\t")
-            check_multi_cohort_tsv(tsv_df, "labels")
-            train_df = pd.DataFrame()
-            valid_df = pd.DataFrame()
-            found_diagnoses = set()
-            for idx in range(len(tsv_df)):
-                cohort_name = tsv_df.loc[idx, "cohort"]
-                cohort_path = tsv_df.loc[idx, "path"]
-                cohort_diagnoses = (
-                    tsv_df.loc[idx, "diagnoses"].replace(" ", "").split(",")
-                )
-                if bool(set(cohort_diagnoses) & set(diagnoses_list)):
-                    target_diagnoses = list(set(cohort_diagnoses) & set(diagnoses_list))
-                    cohort_train_df, cohort_valid_df = load_data_single(
-                        cohort_path,
-                        target_diagnoses,
-                        split,
-                        n_splits=n_splits,
-                        baseline=baseline,
-                        logger=logger,
-                    )
-                    cohort_train_df["cohort"] = cohort_name
-                    cohort_valid_df["cohort"] = cohort_name
-                    train_df = pd.concat([train_df, cohort_train_df])
-                    valid_df = pd.concat([valid_df, cohort_valid_df])
-                    found_diagnoses = found_diagnoses | (
-                        set(cohort_diagnoses) & set(diagnoses_list)
-                    )
-
-            if found_diagnoses != set(diagnoses_list):
-                raise ValueError(
-                    f"The diagnoses found in the multi cohort dataset {found_diagnoses} "
-                    f"do not correspond to the diagnoses wanted {set(diagnoses_list)}."
-                )
-            train_df.reset_index(inplace=True, drop=True)
-            valid_df.reset_index(inplace=True, drop=True)
-    else:
-        if tsv_path.endswith(".tsv"):
-            raise ValueError(
-                "To use multi-cohort framework, please add --multi_cohort flag."
-            )
-        else:
-            train_df, valid_df = load_data_single(
-                tsv_path,
-                diagnoses_list,
-                split,
-                n_splits=n_splits,
-                baseline=baseline,
-                logger=logger,
-            )
-            train_df["cohort"] = "single"
-            valid_df["cohort"] = "single"
-
-    return train_df, valid_df
-
-
-def load_data_single(
-    train_val_path, diagnoses_list, split, n_splits=0, baseline=True, logger=None
-):
-
-    if logger is None:
-        logger = logging
-
-    train_df = pd.DataFrame()
-    valid_df = pd.DataFrame()
-
-    if n_splits == 0 or n_splits is None:
-        train_path = path.join(train_val_path, "train")
-        valid_path = path.join(train_val_path, "validation")
-
-    else:
-        train_path = path.join(
-            train_val_path, f"train_splits-{n_splits}", f"split-{split}"
-        )
-        valid_path = path.join(
-            train_val_path, f"validation_splits-{n_splits}", f"split-{split}"
-        )
-
-    logger.debug("Train path %s" % train_path)
-    logger.debug("Valid path %s" % valid_path)
-
-    for diagnosis in diagnoses_list:
-
-        if baseline:
-            train_diagnosis_path = path.join(train_path, diagnosis + "_baseline.tsv")
-        else:
-            train_diagnosis_path = path.join(train_path, diagnosis + ".tsv")
-
-        valid_diagnosis_path = path.join(valid_path, diagnosis + "_baseline.tsv")
-
-        train_diagnosis_df = pd.read_csv(train_diagnosis_path, sep="\t")
-        valid_diagnosis_df = pd.read_csv(valid_diagnosis_path, sep="\t")
-
-        train_df = pd.concat([train_df, train_diagnosis_df])
-        valid_df = pd.concat([valid_df, valid_diagnosis_df])
-
-    train_df.reset_index(inplace=True, drop=True)
-    valid_df.reset_index(inplace=True, drop=True)
-
-    return train_df, valid_df
-
-
 def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False):
 
     if multi_cohort:
@@ -1424,64 +1289,6 @@ def load_data_test_single(test_path, diagnoses_list, baseline=True):
     test_df.reset_index(inplace=True, drop=True)
 
     return test_df
-
-
-def mix_slices(df_training, df_validation, mri_plane=0, val_size=0.15):
-    """
-    This is a function to gather the training and validation tsv together, then do the bad data split by slice.
-    :param training_tsv:
-    :param validation_tsv:
-    :return:
-    """
-    from sklearn.model_selection import StratifiedShuffleSplit
-
-    df_all = pd.concat([df_training, df_validation])
-    df_all = df_all.reset_index(drop=True)
-
-    if mri_plane == 0:
-        slices_per_patient = 169 - 40
-        slice_index = list(np.arange(20, 169 - 20))
-    elif mri_plane == 1:
-        slices_per_patient = 208 - 40
-        slice_index = list(np.arange(20, 208 - 20))
-    else:
-        slices_per_patient = 179 - 40
-        slice_index = list(np.arange(20, 179 - 20))
-
-    participant_list = list(df_all["participant_id"])
-    session_list = list(df_all["session_id"])
-    label_list = list(df_all["diagnosis"])
-
-    slice_participant_list = [
-        ele for ele in participant_list for _ in range(slices_per_patient)
-    ]
-    slice_session_list = [
-        ele for ele in session_list for _ in range(slices_per_patient)
-    ]
-    slice_label_list = [ele for ele in label_list for _ in range(slices_per_patient)]
-    slice_index_list = slice_index * len(label_list)
-
-    df_final = pd.DataFrame(
-        columns=["participant_id", "session_id", "slice_id", "diagnosis"]
-    )
-    df_final["participant_id"] = np.array(slice_participant_list)
-    df_final["session_id"] = np.array(slice_session_list)
-    df_final["slice_id"] = np.array(slice_index_list)
-    df_final["diagnosis"] = np.array(slice_label_list)
-
-    y = np.array(slice_label_list)
-    # split the train data into training and validation set
-    skf_2 = StratifiedShuffleSplit(n_splits=1, test_size=val_size, random_state=10000)
-    indices = next(skf_2.split(np.zeros(len(y)), y))
-    train_ind, valid_ind = indices
-
-    df_sub_train = df_final.iloc[train_ind]
-    df_sub_valid = df_final.iloc[valid_ind]
-
-    df_sub_train.reset_index(inplace=True, drop=True)
-    df_sub_valid.reset_index(inplace=True, drop=True)
-
-    return df_sub_train, df_sub_valid
 
 
 def generate_sampler(dataset, sampler_option="random"):
