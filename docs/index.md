@@ -44,11 +44,11 @@ They correspond to a previous version of ClinicaDL, hence their file system is n
 Updated versions of most representative models are available [here](https://aramislab.paris.inria.fr/files/data/models/dl/models_v002/).
 
 ## Support
-- [Report an issue on GitHub](https://github.com/aramis-lab/AD-DL/issues)
+- [Report an issue on GitHub](https://github.com/aramis-lab/clinicadl/issues)
 - Use the [`clinicadl` Google Group](https://groups.google.com/forum/#!forum/clinica-user) to ask for help!
 
 ## License
-`clinicadl` is distributed under the terms of the MIT license given [here](https://github.com/aramis-lab/AD-DL/blob/dev/LICENSE.txt).
+`clinicadl` is distributed under the terms of the MIT license given [here](https://github.com/aramis-lab/clinicadl/blob/dev/LICENSE.txt).
 
 ## Citing `clinicadl`
 For publications or communications using `clinicadl`, please cite [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)] 
