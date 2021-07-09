@@ -1,15 +1,13 @@
 # coding: utf8
 
 import abc
-import logging
-import warnings
-from os import listdir, path
+from os import path
 
 import numpy as np
 import pandas as pd
 import torch
 import torchvision.transforms as transforms
-from torch.utils.data import Dataset, sampler
+from torch.utils.data import Dataset
 
 from clinicadl.utils.inputs import FILENAME_TYPE, MASK_PATTERN
 
@@ -24,30 +22,22 @@ class CapsDataset(Dataset):
     def __init__(
         self,
         caps_directory,
-        data_file,
+        data_df,
         preprocessing,
         transformations,
-        labels,
+        label_presence,
+        label=None,
+        label_code=None,
         augmentation_transformations=None,
         multi_cohort=False,
-        atlas=None,
-        group=None,
-        merged_df=None,
     ):
         self.caps_dict = self.create_caps_dict(caps_directory, multi_cohort)
         self.transformations = transformations
         self.augmentation_transformations = augmentation_transformations
         self.eval_mode = False
-        self.labels = labels
-        self.diagnosis_code = {
-            "CN": 0,
-            "BV": 1,
-            "AD": 1,
-            "sMCI": 0,
-            "pMCI": 1,
-            "MCI": 1,
-            "unlabeled": -1,
-        }
+        self.label_presence = label_presence
+        self.label = label
+        self.label_code = label_code
         self.preprocessing = preprocessing
 
         if not hasattr(self, "elem_index"):
@@ -57,21 +47,11 @@ class CapsDataset(Dataset):
         if not hasattr(self, "mode"):
             raise ValueError("Child class of CapsDataset must set mode attribute.")
         # Check the format of the tsv file here
-        if isinstance(data_file, str):
-            self.df = pd.read_csv(data_file, sep="\t")
-        elif isinstance(data_file, pd.DataFrame):
-            self.df = data_file
-        else:
-            raise Exception("The argument data_file is not of correct type.")
+        self.df = data_df
 
-        if not multi_cohort:
-            self.df["cohort"] = "single"
-
-        mandatory_col = {"participant_id", "session_id"}
-        if self.labels:
-            mandatory_col.add("diagnosis")
-        if multi_cohort:
-            mandatory_col.add("cohort")
+        mandatory_col = {"participant_id", "session_id", "cohort"}
+        if self.label_presence and self.label is not None:
+            mandatory_col.add(self.label)
 
         if not mandatory_col.issubset(set(self.df.columns.values)):
             raise Exception(
@@ -79,37 +59,32 @@ class CapsDataset(Dataset):
                 "Columns should include %s" % mandatory_col
             )
 
-        unique_diagnoses = set(self.df.diagnosis)
-        unique_codes = set()
-        for diagnosis in unique_diagnoses:
-            unique_codes.add(self.diagnosis_code[diagnosis])
-        # if len(unique_codes) == 1:
-        #     warnings.warn(
-        #         "The diagnoses found in the DataFrame %s only corresponds to one class %s. "
-        #         "If you want to run a binary classification please change the labels involved."
-        #         % (unique_diagnoses, unique_codes)
-        #     )
-
-        self.merged_df = merged_df
-        if merged_df is not None and "participant_id" in merged_df.columns.values:
-            self.merged_df.set_index(["participant_id", "session_id"], inplace=True)
-
-        self.atlas = atlas
-        self.group_dict = None
-        if self.atlas is not None and group is None:
-            self.group_dict = self.create_group_dict(
-                caps_directory, multi_cohort, group
-            )
-        if self.atlas is not None and self.merged_df is not None:
-            filtered_columns = [
-                col
-                for col in merged_df.columns.values
-                if "t1-volume" in col and atlas in col
-            ]
-            self.merged_df = self.merged_df[filtered_columns]
-
         self.elem_per_image = self.num_elem_per_image()
         self.size = self[0]["image"].size()
+
+    @property
+    @abc.abstractmethod
+    def elem_index(self):
+        pass
+
+    def label_fn(self, target):
+        """
+        Returns the label value usable in criterion.
+
+        Args:
+            target (str or float or int): value of the target.
+        Returns:
+            label (int or float): value of the label usable in criterion.
+        """
+        # Reconstruction case (no label)
+        if self.label is None:
+            return None
+        # Regression case (no label code)
+        elif self.label_code is None:
+            return np.float32([target])
+        # Classification case (label + label_code dict)
+        else:
+            return self.label_code[target]
 
     def __len__(self):
         return len(self.df) * self.elem_per_image
@@ -139,49 +114,18 @@ class CapsDataset(Dataset):
 
         return caps_dict
 
-    @staticmethod
-    def create_group_dict(caps_directory, multi_cohort, group):
-        if multi_cohort:
-            if not caps_directory.endswith(".tsv"):
-                raise ValueError(
-                    "If multi_cohort is given, the caps_dir argument should be a path to a TSV file."
-                )
-            else:
-                caps_df = pd.read_csv(caps_directory, sep="\t")
-                check_multi_cohort_tsv(caps_df, "CAPS")
-                if "group_label" not in caps_df.columns and group is None:
-                    raise ValueError(
-                        "When atlas intensities are involved the group_label column must be filled "
-                        "in the CAPS TSV file."
-                    )
-                group_dict = dict()
-                for idx in range(len(caps_df)):
-                    cohort = caps_df.loc[idx, "cohort"]
-                    if group is None:
-                        group_label = f"group-{caps_df.loc[idx, 'group_label']}"
-                    else:
-                        group_label = f"group-{group}"
-                    group_dict[cohort] = group_label
-        else:
-            if group is None:
-                groups_list = listdir(path.join(caps_directory, "groups"))
-                if len(groups_list) == 0:
-                    raise ValueError(
-                        "A commun group could not be found for the CAPS folder wanted."
-                    )
-                elif len(groups_list) > 1:
-                    raise ValueError(
-                        f"Several groups were found for the CAPS folder wanted {groups_list}. "
-                        "Please precise which group should be used."
-                    )
-                else:
-                    group_dict = {"single": groups_list[0]}
-            else:
-                group_dict = {"single": f"group-{group}"}
-
-        return group_dict
-
     def _get_path(self, participant, session, cohort, mode="image"):
+        """
+        Gets the path to the tensor image (*.pt)
+
+        Args:
+            participant (str): ID of the participant.
+            session (str): ID of the session.
+            cohort (str): Name of the cohort.
+            mode (str): Type of mode used (image, patch, slice or roi).
+        Returns:
+            image_path (str): path to the image
+        """
 
         if cohort not in self.caps_dict.keys():
             raise ValueError(
@@ -245,44 +189,19 @@ class CapsDataset(Dataset):
 
         return image_path
 
-    def _get_statistics_df(self, participant, session, cohort):
-        if cohort not in self.caps_dict.keys():
-            raise ValueError(
-                "Cohort names in labels and CAPS definitions do not match."
-            )
-
-        if self.merged_df is None:
-
-            statistics_path = path.join(
-                self.caps_dict[cohort],
-                "subjects",
-                participant,
-                session,
-                "t1",
-                "spm",
-                "dartel",
-                self.group_dict[cohort],
-                "atlas_statistics",
-                f"{participant}_{session}_T1w_segm-graymatter_space-Ixi549Space_modulated-on_probability_space-{self.atlas}_map-graymatter_statistics.tsv",
-            )
-
-            if not path.exists(statistics_path):
-                raise ValueError(
-                    f"Last step of t1-volume with {self.group_dict[cohort]} was not run on {participant} | {session}"
-                )
-
-            return pd.read_csv(
-                statistics_path,
-                sep="\t",
-                usecols=["mean_scalar"],
-                dtype=np.float32,
-                squeeze=True,
-            )
-
-        else:
-            return self.merged_df.loc[(participant, session)]
-
     def _get_meta_data(self, idx):
+        """
+        Gets all meta data necessary to compute the path with _get_path
+
+        Args:
+            idx (int): row number of the meta-data contained in self.df
+        Returns:
+            participant (str): ID of the participant.
+            session (str): ID of the session.
+            cohort (str): Name of the cohort.
+            elem_index (int): Index of the part of the image.
+            label (str or float or int): value of the label to be used in criterion.
+        """
         image_idx = idx // self.elem_per_image
         participant = self.df.loc[image_idx, "participant_id"]
         session = self.df.loc[image_idx, "session_id"]
@@ -293,15 +212,22 @@ class CapsDataset(Dataset):
         else:
             elem_idx = self.elem_index
 
-        if self.labels:
-            diagnosis = self.df.loc[image_idx, "diagnosis"]
-            label = self.diagnosis_code[diagnosis]
+        if self.label_presence:
+            target = self.df.loc[image_idx, self.label]
+            label = self.label_fn(target)
         else:
-            label = self.diagnosis_code["unlabeled"]
+            label = -1
 
         return participant, session, cohort, elem_idx, label
 
     def _get_full_image(self):
+        """
+        Allows to get the an example of the image mode corresponding to the dataset.
+        Useful to compute the number of elements if mode != image.
+
+        Returns:
+            image (torch.Tensor) tensor of the full image.
+        """
         import nibabel as nib
 
         from clinicadl.generate.generate_utils import find_image_path as get_nii_path
@@ -329,26 +255,37 @@ class CapsDataset(Dataset):
 
         return image
 
-    def len_atlas(self):
-        example_data = self[0]
-        if "atlas" in example_data:
-            return len(example_data["atlas"])
-        else:
-            return 0
-
     @abc.abstractmethod
     def __getitem__(self, idx):
+        """
+        Gets the sample containing all the information needed for training and testing tasks.
+
+        Args:
+            idx (int): row number of the meta-data contained in self.df
+        Returns:
+            Dict[str, Any]: dictionary with following items:
+                - "image" (torch.Tensor): the input given to the model,
+                - "label" (int or float): the label used in criterion,
+                - "participant_id" (str): ID of the participant,
+                - "session_id" (str): ID of the session,
+                - f"{self.mode}_id" (int): number of the element,
+                - "image_path": path to the image loaded in CAPS.
+
+        """
         pass
 
     @abc.abstractmethod
     def num_elem_per_image(self):
+        """Computes the number of elements per image based on the full image."""
         pass
 
     def eval(self):
+        """Put the dataset on evaluation mode (data augmentation is not performed)."""
         self.eval_mode = True
         return self
 
     def train(self):
+        """Put the dataset on training mode (data augmentation is performed)."""
         self.eval_mode = False
         return self
 
@@ -362,11 +299,11 @@ class CapsDatasetImage(CapsDataset):
         data_file,
         preprocessing="t1-linear",
         train_transformations=None,
-        labels=True,
+        label_presence=True,
+        label=None,
+        label_code=None,
         all_transformations=None,
         multi_cohort=False,
-        atlas=None,
-        merged_df=None,
     ):
         """
         Args:
@@ -374,26 +311,29 @@ class CapsDatasetImage(CapsDataset):
             data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
             preprocessing (string): Defines the path to the data in CAPS.
             train_transformations (callable, optional): Optional transform to be applied only on training mode.
-            labels (bool): If True the diagnosis will be extracted from the given DataFrame.
+            label_presence (bool): If True the diagnosis will be extracted from the given DataFrame.
+            label (str): Name of the column in data_df containing the label.
+            label_code (Dict[str, int]): label code that links the output node number to label value.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
-            atlas (str): name of an atlas if predicting the regional intensities.
-            merged_df (DataFrame): DataFrame of all TSV files needed for atlas intensities prediction.
 
         """
-        self.elem_index = None
         self.mode = "image"
         super().__init__(
             caps_directory,
             data_file,
             preprocessing,
             augmentation_transformations=train_transformations,
-            labels=labels,
+            label_presence=label_presence,
+            label=label,
+            label_code=label_code,
             transformations=all_transformations,
             multi_cohort=multi_cohort,
-            atlas=atlas,
-            merged_df=merged_df,
         )
+
+    @property
+    def elem_index(self):
+        return None
 
     def __getitem__(self, idx):
         participant, session, cohort, _, label = self._get_meta_data(idx)
@@ -416,11 +356,6 @@ class CapsDatasetImage(CapsDataset):
             "image_path": image_path,
         }
 
-        if self.atlas is not None:
-            atlas_df = self._get_statistics_df(participant, session, cohort)
-            atlas_pt = torch.from_numpy(atlas_df.values).float()
-            sample["atlas"] = atlas_pt
-
         return sample
 
     def num_elem_per_image(self):
@@ -438,11 +373,11 @@ class CapsDatasetPatch(CapsDataset):
         prepare_dl=False,
         patch_index=None,
         preprocessing="t1-linear",
-        labels=True,
+        label_presence=True,
+        label=None,
+        label_code=None,
         all_transformations=None,
         multi_cohort=False,
-        atlas=None,
-        merged_df=None,
     ):
         """
         Args:
@@ -455,11 +390,11 @@ class CapsDatasetPatch(CapsDataset):
                 else the dataset will load all the patches possible for one image.
             patch_size (int): size of the regular cubic patch.
             stride_size (int): length between the centers of two patches.
-            labels (bool): If True the diagnosis will be extracted from the given DataFrame.
+            label_presence (bool): If True the diagnosis will be extracted from the given DataFrame.
+            label (str): Name of the column in data_df containing the label.
+            label_code (Dict[str, int]): label code that links the output node number to label value.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
-            atlas (str): name of an atlas if predicting the regional intensities.
-            merged_df (DataFrame): DataFrame of all TSV files needed for atlas intensities prediction.
 
         """
         if preprocessing == "shepplogan":
@@ -468,7 +403,7 @@ class CapsDatasetPatch(CapsDataset):
             )
         self.patch_size = patch_size
         self.stride_size = stride_size
-        self.elem_index = patch_index
+        self.patch_index = patch_index
         self.mode = "patch"
         self.prepare_dl = prepare_dl
         super().__init__(
@@ -476,12 +411,16 @@ class CapsDatasetPatch(CapsDataset):
             data_file,
             preprocessing,
             augmentation_transformations=train_transformations,
-            labels=labels,
+            label_presence=label_presence,
+            label=label,
+            label_code=label_code,
             transformations=all_transformations,
             multi_cohort=multi_cohort,
-            atlas=atlas,
-            merged_df=merged_df,
         )
+
+    @property
+    def elem_index(self):
+        return self.patch_index
 
     def __getitem__(self, idx):
         participant, session, cohort, patch_idx, label = self._get_meta_data(idx)
@@ -518,11 +457,6 @@ class CapsDatasetPatch(CapsDataset):
             "patch_id": patch_idx,
         }
 
-        if self.atlas is not None:
-            atlas_df = self._get_statistics_df(participant, session, cohort)
-            atlas_pt = torch.from_numpy(atlas_df.mean_scalar.values).float()
-            sample["atlas"] = atlas_pt
-
         return sample
 
     def num_elem_per_image(self):
@@ -543,7 +477,16 @@ class CapsDatasetPatch(CapsDataset):
         num_patches = patches_tensor.shape[0]
         return num_patches
 
-    def extract_patch_from_mri(self, image_tensor, index_patch):
+    def extract_patch_from_mri(self, image_tensor, patch_idx):
+        """
+        Extracts the patch corresponding to patch_idx
+
+        Args:
+            image_tensor (torch.Tensor): tensor of the full image.
+            patch_idx (int): Index of the patch wanted.
+        Returns:
+            extracted_patch (torch.Tensor): the tensor of the patch.
+        """
 
         patches_tensor = (
             image_tensor.unfold(1, self.patch_size, self.stride_size)
@@ -554,7 +497,7 @@ class CapsDatasetPatch(CapsDataset):
         patches_tensor = patches_tensor.view(
             -1, self.patch_size, self.patch_size, self.patch_size
         )
-        extracted_patch = patches_tensor[index_patch, ...].unsqueeze_(0).clone()
+        extracted_patch = patches_tensor[patch_idx, ...].unsqueeze_(0).clone()
 
         return extracted_patch
 
@@ -570,11 +513,11 @@ class CapsDatasetRoi(CapsDataset):
         preprocessing="t1-linear",
         train_transformations=None,
         prepare_dl=False,
-        labels=True,
+        label_presence=True,
+        label=None,
+        label_code=None,
         all_transformations=None,
         multi_cohort=False,
-        atlas=None,
-        merged_df=None,
     ):
         """
         Args:
@@ -587,18 +530,18 @@ class CapsDatasetRoi(CapsDataset):
             preprocessing (string): Defines the path to the data in CAPS.
             train_transformations (callable, optional): Optional transform to be applied only on training mode.
             prepare_dl (bool): If true pre-extracted patches will be loaded.
-            labels (bool): If True the diagnosis will be extracted from the given DataFrame.
+            label_presence (bool): If True the diagnosis will be extracted from the given DataFrame.
+            label (str): Name of the column in data_df containing the label.
+            label_code (Dict[str, int]): label code that links the output node number to label value.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
-            atlas (str): name of an atlas if predicting the regional intensities.
-            merged_df (DataFrame): DataFrame of all TSV files needed for atlas intensities prediction.
 
         """
         if preprocessing == "shepplogan":
             raise ValueError(
                 "ROI mode is not available for preprocessing %s" % preprocessing
             )
-        self.elem_index = roi_index
+        self.roi_index = roi_index
         self.mode = "roi"
         self.roi_list = roi_list
         self.cropped_roi = cropped_roi
@@ -609,12 +552,16 @@ class CapsDatasetRoi(CapsDataset):
             data_file,
             preprocessing,
             augmentation_transformations=train_transformations,
-            labels=labels,
+            label_presence=label_presence,
+            label=label,
+            label_code=label_code,
             transformations=all_transformations,
             multi_cohort=multi_cohort,
-            atlas=atlas,
-            merged_df=merged_df,
         )
+
+    @property
+    def elem_index(self):
+        return self.roi_index
 
     def __getitem__(self, idx):
         participant, session, cohort, roi_idx, label = self._get_meta_data(idx)
@@ -650,11 +597,6 @@ class CapsDatasetRoi(CapsDataset):
             "roi_id": roi_idx,
         }
 
-        if self.atlas is not None:
-            atlas_df = self._get_statistics_df(participant, session, cohort)
-            atlas_pt = torch.from_numpy(atlas_df.values).float()
-            sample["atlas"] = atlas_pt
-
         return sample
 
     def num_elem_per_image(self):
@@ -667,9 +609,13 @@ class CapsDatasetRoi(CapsDataset):
 
     def extract_roi_from_mri(self, image_tensor, roi_idx):
         """
-        :param image_tensor: (Tensor) the tensor of the image.
-        :param roi_idx: (int) Region index.
-        :return: Tensor of the extracted region.
+        Extracts the region of interest corresponding to the roi_idx-th mask given to the dataset
+
+        Args:
+            image_tensor (torch.Tensor): tensor of the full image.
+            roi_idx (int): Index of the region wanted.
+        Returns:
+            extracted_roi (torch.Tensor): the tensor of the region.
         """
 
         if self.roi_list is None:
@@ -727,7 +673,7 @@ class CapsDatasetRoi(CapsDataset):
         """Loads the masks necessary to regions extraction"""
         import nibabel as nib
 
-        # TODO replace with import in clinica as soon as the version of clinica is stable
+        # TODO should be mutualized with deeplearning-prepare-data
         templates_dict = {
             "t1-linear": "MNI152NLin2009cSym",
             "t1-volume": "Ixi549Space",
@@ -765,6 +711,7 @@ class CapsDatasetRoi(CapsDataset):
         return mask_list
 
     def compute_roi_filename(self, image_path, roi_index):
+        # TODO should be mutualized with deeplearning-prepare-data
         from os import path
 
         image_dir = path.dirname(image_path)
@@ -797,6 +744,7 @@ class CapsDatasetRoi(CapsDataset):
 
     @staticmethod
     def insert_descriptor(image_descriptors, descriptor_to_add, key_to_follow):
+        # TODO should be mutualized with deeplearning-prepare-data
 
         for i, desc in enumerate(image_descriptors):
             if key_to_follow in desc:
@@ -816,11 +764,11 @@ class CapsDatasetSlice(CapsDataset):
         mri_plane=0,
         prepare_dl=False,
         discarded_slices=20,
-        labels=True,
+        label_presence=True,
+        label=None,
+        label_code=None,
         all_transformations=None,
         multi_cohort=False,
-        atlas=None,
-        merged_df=None,
     ):
         """
         Args:
@@ -834,18 +782,18 @@ class CapsDatasetSlice(CapsDataset):
             mri_plane (int): Defines which mri plane is used for slice extraction.
             discarded_slices (int or list): number of slices discarded at the beginning and the end of the image.
                 If one single value is given, the same amount is discarded at the beginning and at the end.
-            labels (bool): If True the diagnosis will be extracted from the given DataFrame.
+            label_presence (bool): If True the diagnosis will be extracted from the given DataFrame.
+            label (str): Name of the column in data_df containing the label.
+            label_code (Dict[str, int]): label code that links the output node number to label value.
             all_transformations (callable, options): Optional transform to be applied during training and evaluation.
             multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
-            atlas (str): name of an atlas if predicting the regional intensities.
-            merged_df (DataFrame): DataFrame of all TSV files needed for atlas intensities prediction.
         """
         # Rename MRI plane
         if preprocessing == "shepplogan":
             raise ValueError(
                 "Slice mode is not available for preprocessing %s" % preprocessing
             )
-        self.elem_index = slice_index
+        self.slice_index = slice_index
         self.mri_plane = mri_plane
         self.direction_list = ["sag", "cor", "axi"]
         if self.mri_plane >= len(self.direction_list):
@@ -867,12 +815,16 @@ class CapsDatasetSlice(CapsDataset):
             data_file,
             preprocessing,
             augmentation_transformations=train_transformations,
-            labels=labels,
+            label_presence=label_presence,
+            label=label,
+            label_code=label_code,
             transformations=all_transformations,
             multi_cohort=multi_cohort,
-            atlas=atlas,
-            merged_df=merged_df,
         )
+
+    @property
+    def elem_index(self):
+        return self.slice_index
 
     def __getitem__(self, idx):
         participant, session, cohort, slice_idx, label = self._get_meta_data(idx)
@@ -905,11 +857,6 @@ class CapsDatasetSlice(CapsDataset):
             "slice_id": slice_idx,
         }
 
-        if self.atlas is not None:
-            atlas_df = self._get_statistics_df(participant, session, cohort)
-            atlas_pt = torch.from_numpy(atlas_df.mean_scalar.values).float()
-            sample["atlas"] = atlas_pt
-
         return sample
 
     def num_elem_per_image(self):
@@ -925,14 +872,19 @@ class CapsDatasetSlice(CapsDataset):
 
     def extract_slice_from_mri(self, image, index_slice):
         """
-        This is a function to grab one slice in each view and create a rgb image for transferring learning: duplicate the slices into R, G, B channel
-        :param image: (tensor)
-        :param index_slice: (int) index of the wanted slice
-        :return:
-        To note, for each view:
+        This function extracts one slice along one axis and creates a RGB image
+        (the slice is duplicated in each channel).
+
+        To note:
         Axial_view = "[:, :, slice_i]"
         Coronal_view = "[:, slice_i, :]"
         Sagittal_view= "[slice_i, :, :]"
+
+        Args:
+            image (torch.Tensor): tensor of the full image.
+            index_slice (int): index of the wanted slice.
+        Returns:
+            triple_slice (torch.Tensor): tensor of the slice with 3 channels.
         """
         image = image.squeeze(0)
         simple_slice = image[(slice(None),) * self.mri_plane + (index_slice,)]
@@ -948,24 +900,28 @@ def return_dataset(
     preprocessing,
     all_transformations,
     params,
+    label=None,
+    label_code=None,
     train_transformations=None,
     cnn_index=None,
-    labels=True,
+    label_presence=True,
     multi_cohort=False,
     prepare_dl=False,
 ):
     """
     Return appropriate Dataset according to given options.
     Args:
-        mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
-        input_dir: (str) path to a directory containing a CAPS structure.
-        data_df: (DataFrame) List subjects, sessions and diagnoses.
-        preprocessing: (str) type of preprocessing wanted ('t1-linear' or 't1-extensive')
+        mode (str): input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
+        input_dir (str): path to a directory containing a CAPS structure.
+        data_df (pd.DataFrame): List subjects, sessions and diagnoses.
+        preprocessing (str): type of preprocessing wanted ('t1-linear' or 't1-extensive')
         train_transformations (callable, optional): Optional transform to be applied during training only.
         all_transformations (callable, optional): Optional transform to be applied during training and evaluation.
-        params: (Namespace) options used by specific modes.
-        cnn_index: (int) Index of the CNN in a multi-CNN paradigm (optional).
-        labels (bool): If True the diagnosis will be extracted from the given DataFrame.
+        params (clinicadl.MapsManager): options used by specific modes.
+        label (str): Name of the column in data_df containing the label.
+        label_code (Dict[str, int]): label code that links the output node number to label value.
+        cnn_index (int): Index of the CNN in a multi-CNN paradigm (optional).
+        label_presence (bool): If True the diagnosis will be extracted from the given DataFrame.
         multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
         prepare_dl (bool): If true pre-extracted slices / patches / regions will be loaded.
 
@@ -976,11 +932,6 @@ def return_dataset(
     if cnn_index is not None and mode in ["image"]:
         raise ValueError("Multi-CNN is not implemented for %s mode." % mode)
 
-    if params.merged_tsv_path is not "" and params.merged_tsv_path is not None:
-        merged_df = pd.read_csv(params.merged_tsv_path, sep="\t")
-    else:
-        merged_df = None
-
     if mode == "image":
         return CapsDatasetImage(
             input_dir,
@@ -988,10 +939,10 @@ def return_dataset(
             preprocessing,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
-            labels=labels,
+            label_presence=label_presence,
+            label=label,
+            label_code=label_code,
             multi_cohort=multi_cohort,
-            atlas=params.predict_atlas_intensities,
-            merged_df=merged_df,
         )
     elif mode == "patch":
         return CapsDatasetPatch(
@@ -1004,10 +955,10 @@ def return_dataset(
             all_transformations=all_transformations,
             prepare_dl=prepare_dl,
             patch_index=cnn_index,
-            labels=labels,
+            label_presence=label_presence,
+            label=label,
+            label_code=label_code,
             multi_cohort=multi_cohort,
-            atlas=params.predict_atlas_intensities,
-            merged_df=merged_df,
         )
     elif mode == "roi":
         return CapsDatasetRoi(
@@ -1020,10 +971,10 @@ def return_dataset(
             all_transformations=all_transformations,
             prepare_dl=prepare_dl,
             roi_index=cnn_index,
-            labels=labels,
+            label_presence=label_presence,
+            label=label,
+            label_code=label_code,
             multi_cohort=multi_cohort,
-            atlas=params.predict_atlas_intensities,
-            merged_df=merged_df,
         )
     elif mode == "slice":
         return CapsDatasetSlice(
@@ -1036,44 +987,13 @@ def return_dataset(
             prepare_dl=prepare_dl,
             discarded_slices=params.discarded_slices,
             slice_index=cnn_index,
-            labels=labels,
+            label_presence=label_presence,
+            label=label,
+            label_code=label_code,
             multi_cohort=multi_cohort,
-            atlas=params.predict_atlas_intensities,
-            merged_df=merged_df,
         )
     else:
         raise ValueError("Mode %s is not implemented." % mode)
-
-
-def compute_num_cnn(input_dir, tsv_path, options, data="train"):
-
-    _, transformations = get_transforms(options.mode, options.minmaxnormalization)
-
-    if data == "train":
-        example_df, _ = load_data(
-            tsv_path,
-            options.diagnoses,
-            0,
-            options.n_splits,
-            options.baseline,
-            multi_cohort=options.multi_cohort,
-        )
-    else:
-        example_df = load_data_test(
-            tsv_path, options.diagnoses, multi_cohort=options.multi_cohort
-        )
-
-    full_dataset = return_dataset(
-        options.mode,
-        input_dir,
-        example_df,
-        options.preprocessing,
-        train_transformations=None,
-        all_transformations=transformations,
-        params=options,
-    )
-
-    return full_dataset.elem_per_image
 
 
 ##################################
@@ -1167,10 +1087,12 @@ class MinMaxNormalization(object):
 def get_transforms(mode, minmaxnormalization=True, data_augmentation=None):
     """
     Outputs the transformations that will be applied to the dataset
-    :param mode: (str) input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
-    :param minmaxnormalization: (bool) if True will perform MinMaxNormalization
-    :param data_augmentation: (list[str]) list of data augmentation performed on the training set.
-    :return:
+
+    Args:
+        mode (str): input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
+        minmaxnormalization (bool): if True will perform MinMaxNormalization.
+        data_augmentation (List[str]): list of data augmentation performed on the training set.
+    Returns:
     - container transforms.Compose including transforms to apply in train and evaluation mode.
     - container transforms.Compose including transforms to apply in evaluation mode only.
     """
@@ -1211,6 +1133,16 @@ def get_transforms(mode, minmaxnormalization=True, data_augmentation=None):
 # TSV files loaders
 ################################
 def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False):
+    """
+    Load data not managed by split_manager.
+
+    Args:
+        test_path (str): path to the test TSV files / split directory / TSV file for multi-cohort
+        diagnoses_list (List[str]): list of the diagnoses wanted in case of split_dir or multi-cohort
+        baseline (bool): If True baseline sessions only used (split_dir handling only).
+        multi_cohort (bool): If True considers multi-cohort setting.
+    """
+    # TODO: computes baseline sessions on-the-fly to manager TSV file case
 
     if multi_cohort:
         if not test_path.endswith(".tsv"):
@@ -1291,43 +1223,16 @@ def load_data_test_single(test_path, diagnoses_list, baseline=True):
     return test_df
 
 
-def generate_sampler(dataset, sampler_option="random"):
+def check_multi_cohort_tsv(tsv_df, purpose):
     """
-    Returns sampler according to the wanted options
+    Checks that a multi-cohort TSV file is valid.
 
     Args:
-        dataset: (CapsDataset) the dataset to sample from
-        sampler_option: (str) choice of sampler
-    Returns:
-        (Sampler)
+        tsv_df (pd.DataFrame): DataFrame of multi-cohort definition.
+        purpose (str): what the TSV file describes (CAPS or TSV).
+    Raises:
+        ValueError: if the TSV file is badly formatted.
     """
-    df = dataset.df
-    # To be changed for non-binary classification
-    count = np.zeros(2)
-
-    for idx in df.index:
-        label = df.loc[idx, "diagnosis"]
-        key = dataset.diagnosis_code[label]
-        count[key] += 1
-
-    weight_per_class = 1 / np.array(count)
-    weights = []
-
-    for idx, label in enumerate(df["diagnosis"].values):
-        key = dataset.diagnosis_code[label]
-        weights += [weight_per_class[key]] * dataset.elem_per_image
-
-    if sampler_option == "random":
-        return sampler.RandomSampler(weights)
-    elif sampler_option == "weighted":
-        return sampler.WeightedRandomSampler(weights, len(weights))
-    else:
-        raise NotImplementedError(
-            f"The option {sampler_option} for sampler is not implemented"
-        )
-
-
-def check_multi_cohort_tsv(tsv_df, purpose):
     if purpose.upper() == "CAPS":
         mandatory_col = {"cohort", "path"}
     else:

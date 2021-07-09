@@ -106,10 +106,26 @@ class TaskManager:
         Computes the output_size needed to perform the task.
 
         Args:
+            input_size (Sequence[int]): size of the input.
             df (pd.DataFrame): meta-data of the training set.
             label (str): name of the column containing the labels.
         Returns:
             (Sequence[int]) output_size
+        """
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def generate_sampler(dataset, sampler_option="random", n_bins=5):
+        """
+        Returns sampler according to the wanted options.
+
+        Args:
+            dataset: (MRIDataset) the dataset to sample from.
+            sampler_option: (str) choice of sampler.
+            n_bins: (int) number of bins to used for a continuous variable (regression task).
+        Returns:
+             sampler (torch.utils.data.Sampler): callable given to the training data loader.
         """
         pass
 

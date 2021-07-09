@@ -73,6 +73,8 @@ class MapsManager:
 
     def set_verbose(self, verbose="warning"):
         """
+        Set the verbose to a new level.
+
         Args:
             verbose (str): Logging level ("debug", "info", "warning", "error", "critical")
         """
@@ -102,6 +104,18 @@ class MapsManager:
         self.logger.propagate = False
 
     def train(self, folds=None, overwrite=False):
+        """
+        Performs the training task for a defined list of folds
+
+        Args:
+            folds (List[int]): list of folds on which the training task is performed.
+                Default trains all folds.
+            overwrite (bool): If True previously trained folds that are going to be trained
+                are erased.
+
+        Raises:
+            ValueError: If folds specified in input already exist and overwrite is False.
+        """
         existing_folds = []
 
         split_manager = self._init_split_manager(folds)
@@ -125,7 +139,16 @@ class MapsManager:
             self._train_single(folds, resume=False)
 
     def resume(self, folds=None):
+        """
+        Resumes the training task for a defined list of folds
 
+        Args:
+            folds (List[int]): list of folds on which the training task is performed.
+                Default trains all folds.
+
+        Raises:
+            ValueError: If folds specified in input do not exist.
+        """
         missing_folds = []
         split_manager = self._init_split_manager(folds)
 
@@ -161,6 +184,30 @@ class MapsManager:
         use_cpu=None,
         overwrite=False,
     ):
+        """
+        Performs the prediction task on a subset of caps_directory defined in a TSV file.
+
+        Args:
+            caps_directory (str): path to the CAPS folder. For more information please refer to
+                [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
+            tsv_path (str): path to a TSV file containing the list of participants and sessions to test.
+            prefix (str): name of the data group tested.
+            folds (List[int]): list of folds to test. Default perform prediction on all folds available.
+            selection_metrics (List[str]): list of selection metrics to test.
+                Default performs the prediction on all selection metrics available.
+            multi_cohort (bool): If True considers that tsv_path is the path to a multi-cohort TSV.
+            preprocessing (str): Name of the preprocessing used. Default uses the same as in training step.
+            diagnoses (List[str]): List of diagnoses to load if tsv_path is a split_directory.
+                Default uses the same as in training step.
+            use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
+            prepare_dl (bool): If given, sets the value of prepare_dl, else use the same as in training step.
+            batch_size (bool): If given, sets the value of batch_size, else use the same as in training step.
+            num_workers (int): If given, sets the value of num_workers, else use the same as in training step.
+            use_cpu (bool): If given, a new value for the device of the model will be computed.
+            overwrite (bool): If True erase the occurrences of prefix.
+        Raises:
+            ValueError: If the predictions with prefix name already exist and overwrite is False.
+        """
         from torch.utils.data import DataLoader
 
         from clinicadl.utils.caps_dataset.data import (
@@ -210,6 +257,7 @@ class MapsManager:
                         if prepare_dl is not None
                         else self.prepare_dl,
                         multi_cohort=multi_cohort,
+                        label_presence=use_labels,
                         params=self,
                         cnn_index=network,
                     )
@@ -248,6 +296,7 @@ class MapsManager:
                     if prepare_dl is not None
                     else self.prepare_dl,
                     multi_cohort=multi_cohort,
+                    label_presence=use_labels,
                     params=self,
                 )
                 test_loader = DataLoader(
@@ -287,13 +336,43 @@ class MapsManager:
         baseline=False,
         target_node=0,
         target_label=None,
-        prepare_dl=None,
         save_individual=False,
+        prepare_dl=None,
         batch_size=None,
         num_workers=None,
         use_cpu=None,
         overwrite=False,
     ):
+        """
+        Performs the interpretation task on a subset of caps_directory defined in a TSV file.
+        The mean interpretation is always saved, to save the individual interpretations set save_individual to True.
+
+        Args:
+            caps_directory (str): path to the CAPS folder. For more information please refer to
+                [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
+            tsv_path (str): path to a TSV file containing the list of participants and sessions to interpret.
+            prefix (str): name of the data group interpreted.
+            folds (List[int]): list of folds to interpret. Default perform interpretation on all folds available.
+            selection_metrics (List[str]): list of selection metrics to interpret.
+                Default performs the interpretation on all selection metrics available.
+            multi_cohort (bool): If True considers that tsv_path is the path to a multi-cohort TSV.
+            preprocessing (str): Name of the preprocessing used. Default uses the same as in training step.
+            diagnoses (List[str]): List of diagnoses to load if tsv_path is a split_directory.
+                Default uses the same as in training step.
+            baseline (bool): If True baseline sessions only are used for interpretation.
+            target_node (int): Node from which the interpretation is computed.
+            target_label (str or int): Value of the target (for example "AD", "Female"...) corresponding to a final node
+                in classification setting. If given will override the value of target_node.
+            save_individual (bool): If True saves the individual map of each participant / session couple.
+            prepare_dl (bool): If given, sets the value of prepare_dl, else use the same as in training step.
+            batch_size (bool): If given, sets the value of batch_size, else use the same as in training step.
+            num_workers (int): If given, sets the value of num_workers, else use the same as in training step.
+            use_cpu (bool): If given, a new value for the device of the model will be computed.
+            overwrite (bool): If True erase the occurrences of prefix.
+        Raises:
+            ValueError: If the predictions with prefix name already exist and overwrite is False.
+        """
+
         from torch.utils.data import DataLoader
 
         from clinicadl.interpret.gradients import VanillaBackProp
@@ -303,8 +382,6 @@ class MapsManager:
             return_dataset,
         )
 
-        # TODO: save TSV file with all participant and session IDs
-        # TODO: mean per mode ID
         if folds is None:
             folds = self._find_folds()
 
@@ -336,6 +413,7 @@ class MapsManager:
             all_transformations=all_transforms,
             prepare_dl=prepare_dl if prepare_dl is not None else self.prepare_dl,
             multi_cohort=multi_cohort,
+            label_presence=False,
             params=self,
         )
         test_loader = DataLoader(
@@ -396,7 +474,8 @@ class MapsManager:
                         for i in range(len(data["participant_id"])):
                             single_path = path.join(
                                 results_path,
-                                f"participant-{data['participant_id'][i]}_session-{data['session_id'][i]}_{self.mode}-{data[f'{self.mode}_id'][i]}_map.pt",
+                                f"participant-{data['participant_id'][i]}_session-{data['session_id'][i]}_"
+                                f"{self.mode}-{data[f'{self.mode}_id'][i]}_map.pt",
                             )
                             torch.save(map_pt, single_path)
                 mean_map /= len(data_test)
@@ -407,16 +486,15 @@ class MapsManager:
     ###################################
     def _train_single(self, folds=None, resume=False):
         """
+        Trains a single CNN for all inputs.
+
         Args:
-            folds (List[int]): list of folds that are trained
+            folds (List[int]): list of folds that are trained.
+            resume (bool): If True the job is resumed from checkpoint.
         """
         from torch.utils.data import DataLoader
 
-        from clinicadl.utils.caps_dataset.data import (
-            generate_sampler,
-            get_transforms,
-            return_dataset,
-        )
+        from clinicadl.utils.caps_dataset.data import get_transforms, return_dataset
 
         train_transforms, all_transforms = get_transforms(
             self.mode,
@@ -428,12 +506,12 @@ class MapsManager:
         for fold in split_manager.fold_iterator():
             self.logger.info(f"Training fold {fold}")
 
-            fold_paths_dict = split_manager[fold]
+            fold_df_dict = split_manager[fold]
 
             data_train = return_dataset(
                 self.mode,
                 self.caps_directory,
-                fold_paths_dict["train"],
+                fold_df_dict["train"],
                 self.preprocessing,
                 train_transformations=train_transforms,
                 all_transformations=all_transforms,
@@ -444,7 +522,7 @@ class MapsManager:
             data_valid = return_dataset(
                 self.mode,
                 self.caps_directory,
-                fold_paths_dict["validation"],
+                fold_df_dict["validation"],
                 self.preprocessing,
                 train_transformations=train_transforms,
                 all_transformations=all_transforms,
@@ -453,7 +531,7 @@ class MapsManager:
                 params=self,
             )
 
-            train_sampler = generate_sampler(data_train, self.sampler)
+            train_sampler = self.task_manager.generate_sampler(data_train, self.sampler)
 
             train_loader = DataLoader(
                 data_train,
@@ -488,13 +566,16 @@ class MapsManager:
             )
 
     def _train_multi(self, folds=None, resume=False):
+        """
+        Trains a single CNN per element in the image.
+
+        Args:
+            folds (List[int]): list of folds that are trained.
+            resume (bool): If True the job is resumed from checkpoint.
+        """
         from torch.utils.data import DataLoader
 
-        from clinicadl.utils.caps_dataset.data import (
-            generate_sampler,
-            get_transforms,
-            return_dataset,
-        )
+        from clinicadl.utils.caps_dataset.data import get_transforms, return_dataset
 
         train_transforms, all_transforms = get_transforms(
             self.mode,
@@ -506,7 +587,7 @@ class MapsManager:
         for fold in split_manager.fold_iterator():
             self.logger.info(f"Training fold {fold}")
 
-            fold_paths_dict = split_manager[fold]
+            fold_df_dict = split_manager[fold]
 
             first_network = 0
             if resume:
@@ -527,7 +608,7 @@ class MapsManager:
                 data_train = return_dataset(
                     self.mode,
                     self.caps_directory,
-                    fold_paths_dict["train"],
+                    fold_df_dict["train"],
                     self.preprocessing,
                     train_transformations=train_transforms,
                     all_transformations=all_transforms,
@@ -539,7 +620,7 @@ class MapsManager:
                 data_valid = return_dataset(
                     self.mode,
                     self.caps_directory,
-                    fold_paths_dict["validation"],
+                    fold_df_dict["validation"],
                     self.preprocessing,
                     train_transformations=train_transforms,
                     all_transformations=all_transforms,
@@ -549,7 +630,9 @@ class MapsManager:
                     params=self,
                 )
 
-                train_sampler = generate_sampler(data_train, self.sampler)
+                train_sampler = self.task_manager.generate_sampler(
+                    data_train, self.sampler
+                )
 
                 train_loader = DataLoader(
                     data_train,
@@ -593,6 +676,16 @@ class MapsManager:
         network=None,
         resume=False,
     ):
+        """
+        Core function shared by train and resume.
+
+        Args:
+            train_loader (torch.utils.data.DataLoader): DataLoader wrapping the training set.
+            valid_loader (torch.utils.data.DataLoader): DataLoader wrapping the validation set.
+            fold (int): Index of the fold trained.
+            network (int): Index of the network trained (used in multi-network setting only).
+            resume (bool): If True the job is resumed from the checkpoint.
+        """
 
         model, beginning_epoch = self._init_model(fold=fold, resume=resume)
         criterion = self._get_criterion()
@@ -759,7 +852,19 @@ class MapsManager:
         use_cpu=None,
         network=None,
     ):
+        """
+        Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
 
+        Args:
+            dataloader (torch.utils.data.DataLoader): DataLoader wrapping the test set.
+            criterion (torch.nn.modules.loss._Loss): optimization criterion used during training.
+            prefix (str): name of the data group used for the testing task.
+            fold (int): Index of the fold used to train the model tested.
+            selection_metrics (List[str]): List of metrics used to select the best models which are tested.
+            use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
+            use_cpu (bool): If given, a new value for the device of the model will be computed.
+            network (int): Index of the network tested (only used in multi-network setting).
+        """
         for selection_metric in selection_metrics:
 
             self._write_description_log(
@@ -800,6 +905,7 @@ class MapsManager:
         selection_metrics,
         use_labels=True,
     ):
+        """Computes the results on the image-level."""
 
         if selection_metrics is None:
             selection_metrics = self._find_selection_metrics(fold)
@@ -824,14 +930,18 @@ class MapsManager:
     ###############################
     # Checks                      #
     ###############################
-    # TODO: Could be static as soon as compute_num_cnn is changed
     def _check_args(self, parameters):
+        """
+        Check the training parameters integrity
+        TODO: create independent class for train_parameters check
+        """
         mandatory_arguments = [
             "caps_directory",
             "tsv_path",
             "preprocessing",
             "mode",
-            "network_task" "model",
+            "network_task",
+            "model",
         ]
 
         for arg in mandatory_arguments:
@@ -864,12 +974,15 @@ class MapsManager:
         _, transformations = get_transforms(self.mode, self.minmaxnormalization)
 
         split_manager = self._init_split_manager(None)
-        fold_paths_dict = split_manager[0]
+        train_df = split_manager[0]["train"]
+        label_code = self.task_manager.generate_label_code(train_df, self.label)
         full_dataset = return_dataset(
             self.mode,
             self.caps_directory,
-            fold_paths_dict["train"],
+            train_df,
             self.preprocessing,
+            label=self.label,
+            label_code=label_code,
             train_transformations=None,
             all_transformations=transformations,
             params=self,
@@ -877,9 +990,7 @@ class MapsManager:
 
         return {
             "num_networks": full_dataset.elem_per_image,
-            "label_code": self.task_manager.generate_label_code(
-                full_dataset.df, self.label
-            ),
+            "label_code": label_code,
             "output_size": self.task_manager.output_size(
                 full_dataset.size, full_dataset.df, self.label
             ),
@@ -887,6 +998,7 @@ class MapsManager:
         }
 
     def _find_folds(self):
+        """Find which folds were trained in the MAPS."""
         return [
             int(fold[5::])
             for fold in listdir(self.maps_path)
@@ -894,6 +1006,7 @@ class MapsManager:
         ]
 
     def _find_selection_metrics(self, fold):
+        """Find which selection metrics are available in MAPS for a given fold."""
         fold_path = path.join(self.maps_path, f"fold-{fold}")
         if not path.exists(fold_path):
             raise ValueError(
@@ -904,6 +1017,7 @@ class MapsManager:
         return [metric[5::] for metric in listdir(fold_path) if metric[:5:] == "best-"]
 
     def _check_selection_metric(self, fold, selection_metric=None):
+        """Check that a given selection metric is available for a given fold."""
         available_metrics = self._find_selection_metrics(fold)
         if selection_metric is None:
             if len(available_metrics) > 1:
@@ -929,6 +1043,19 @@ class MapsManager:
         overwrite=False,
         interpretation=False,
     ):
+        """
+        Check that a prefix is available for a list of folds and selection metrics.
+
+        Args:
+            prefix (str): name whose presence is checked.
+            folds (List[int]): list of folds checked. Default checks all folds available.
+            selection_metrics (List[str]): list of selection metrics checked.
+                Default checks all selection metrics available.
+            overwrite (bool): If True erase the occurrences of prefix.
+            interpretation (bool): If True looks for interpretation prefix, else test prefix.
+        Raises:
+            ValueError: if an occurrence of prefix is found and overwrite is set to False.
+        """
         already_evaluated = []
         split_manager = self._init_split_manager(folds)
         for fold in split_manager.fold_iterator():
@@ -970,6 +1097,7 @@ class MapsManager:
             raise ValueError(error_message)
 
     def _check_leakage(self, test_df):
+        """Checks that no intersection exist between the participants used for training and those used for testing."""
         train_path = path.join(self.maps_path, "train_data.tsv")
         train_df = pd.read_csv(train_path, sep="\t")
         participants_train = set(train_df.participant_id.values)
@@ -987,6 +1115,7 @@ class MapsManager:
     # File writers                #
     ###############################
     def _write_parameters(self):
+        """Write the JSON file of parameters."""
         makedirs(self.maps_path, exist_ok=True)
 
         # save to json file
@@ -997,6 +1126,7 @@ class MapsManager:
             f.write(json_data)
 
     def _write_requirements_version(self):
+        """Writes the environment.txt file."""
         try:
             env_variables = subprocess.check_output("pip freeze", shell=True).decode(
                 "utf-8"
@@ -1009,6 +1139,7 @@ class MapsManager:
             )
 
     def _write_training_data(self):
+        """Writes the TSV file containing the participant and session IDs used for training."""
         from clinicadl.utils.caps_dataset.data import load_data_test
 
         train_df = load_data_test(
@@ -1063,6 +1194,7 @@ class MapsManager:
                     )
 
     def _erase_tmp(self, fold):
+        """Erase checkpoints of the model and optimizer at the end of training."""
         tmp_path = path.join(self.maps_path, f"fold-{fold}", "tmp")
         shutil.rmtree(tmp_path)
 
@@ -1076,6 +1208,18 @@ class MapsManager:
         interpretation=False,
         params_dict=None,
     ):
+        """
+        Write description log associated to predict or interpret task.
+
+        Args:
+            prefix (str): name of the data group used for the task.
+            fold (int): Index of the fold used for training.
+            selection_metric (str): selection metric used to select the best model.
+            caps_directory (str): CAPS used for the task
+            df (pd.DataFrame): DataFrame of the meta-data used for the task.
+            interpretation (bool): If True looks for interpretation prefix, else test prefix.
+            params_dict (Dict[str, Any]): set of parameters used for the task.
+        """
         if interpretation:
             log_dir = path.join(
                 self.maps_path,
@@ -1157,7 +1301,7 @@ class MapsManager:
 
         Args:
             fold: (int) fold number of the cross-validation.
-            selection: (str) criterion on which the model is selected (for example loss or BA).
+            selection: (str) metric on which the model is selected (for example loss or BA).
             prefix: (str) the prefix referring to the data group on which evaluation is performed.
                 If different from training or validation, the weights of soft voting will be computed
                 on validation accuracies.
@@ -1203,7 +1347,7 @@ class MapsManager:
 
         Args:
             fold: (int) Fold number of the cross-validation.
-            selection: (str) criterion on which the model is selected (for example loss or BA)
+            selection: (str) metric on which the model is selected (for example loss or BA)
             prefix: (str) the prefix referring to the data group on which evaluation is performed.
             use_labels: (bool) If True the labels are added to the final tsv
 
@@ -1236,6 +1380,7 @@ class MapsManager:
     # Objects initialization      #
     ###############################
     def _get_criterion(self):
+        """Gets the optimization criterion specified in training parameters."""
         # TODO: add a check depending on the network task to ensure
         #  the good sizes match of targets / inputs
 
@@ -1255,6 +1400,17 @@ class MapsManager:
         use_cpu=None,
         network=None,
     ):
+        """
+        Instantiate the model
+
+        Args:
+            transfer_path (str): path to a MAPS in which a model's weights are used for transfer learning.
+            transfer_selection (str): name of the metric used to find the source model.
+            fold (int): Index of the fold (only used if transfer_path is not None of not resume).
+            resume (bool): If True initialize the network with the checkpoint weights.
+            use_cpu (bool): If given, a new value for the device of the model will be computed.
+            network (int): Index of the network trained (used in multi-network setting only).
+        """
         import clinicadl.utils.network as network_package
 
         self.logger.debug(f"Initialization of model {self.model}")
@@ -1300,6 +1456,7 @@ class MapsManager:
         return model, current_epoch
 
     def _init_optimizer(self, model, fold=None, resume=False):
+        """Initialize the optimizer and use checkpoint weights if resume is True."""
         optimizer = getattr(torch.optim, self.optimizer)(
             filter(lambda x: x.requires_grad, model.parameters()),
             lr=self.learning_rate,
@@ -1340,11 +1497,11 @@ class MapsManager:
             RegressionManager,
         )
 
-        if self.task == "classification":
+        if self.network_task == "classification":
             return ClassificationManager(self.mode)
-        elif self.task == "regression":
+        elif self.network_task == "regression":
             return RegressionManager(self.mode)
-        elif self.task == "reconstruction":
+        elif self.network_task == "reconstruction":
             return ReconstructionManager(self.mode)
         else:
             raise ValueError(
@@ -1358,6 +1515,15 @@ class MapsManager:
     def _print_description_log(
         self, prefix, fold, selection_metric, interpretation=False
     ):
+        """
+        Print the description log associated to a prediction or interpretation.
+
+        Args:
+            prefix (str): name of the data group used for the task.
+            fold (int): Index of the fold used for training.
+            selection_metric (str): Metric used for best weights selection.
+            interpretation (bool): If True looks for interpretation prefix, else test prefix.
+        """
         if interpretation:
             log_dir = path.join(
                 self.maps_path,
@@ -1376,6 +1542,7 @@ class MapsManager:
             print(content)
 
     def get_parameters(self):
+        """Returns the training parameters dictionary."""
         json_path = path.join(self.maps_path, "maps.json")
         with open(json_path, "r") as f:
             parameters = json.load(f)
@@ -1427,12 +1594,12 @@ class MapsManager:
         Get the model trained corresponding to one fold and one metric evaluated on the validation set.
 
         Args:
-            fold (int): fold number
-            selection_metric (str): name of the metric used for the selection
-            network (int): number of the network for multi-network framework
-            map_location (str): a torch.device object or a string containing a device tag,
+            fold (int): Index of the fold used for training.
+            selection_metric (str): name of the metric used for the selection.
+            network (int): Index of the network trained (used in multi-network setting only).
+            map_location (str): torch.device object or a string containing a device tag,
                 it indicates the location where all tensors should be loaded.
-                (see https://pytorch.org/docs/stable/generated/torch.load.html)
+                (see https://pytorch.org/docs/stable/generated/torch.load.html).
         Returns:
             (Dict): dictionary of results (weights, epoch number, metrics values)
         """
@@ -1472,11 +1639,11 @@ class MapsManager:
         of participants identified by its prefix.
 
         Args:
-            prefix (str): name of the prediction step
-            fold (int): fold number
-            selection_metric (str): name of the metric used for the selection
-            mode (str): level of the prediction
-            verbose (bool): if True will print associated prediction.log
+            prefix (str): name of the data group used for the prediction task.
+            fold (int): Index of the fold used for training.
+            selection_metric (str): Metric used for best weights selection.
+            mode (str): level of the prediction.
+            verbose (bool): if True will print associated prediction.log.
         Returns:
             (DataFrame): Results indexed by columns 'participant_id' and 'session_id' which
             identifies the image in the BIDS / CAPS.
@@ -1504,9 +1671,9 @@ class MapsManager:
         Get the metrics corresponding to a group of participants identified by its prefix.
 
         Args:
-            prefix (str): name of the prediction performed on the group of participants
-            fold (int): fold number
-            selection_metric (str): name of the metric used for the selection
+            prefix (str): name of the data group used for the prediction task.
+            fold (int): Index of the fold used for training.
+            selection_metric (str): Metric used for best weights selection.
             mode (str): level of the prediction
             verbose (bool): if True will print associated prediction.log
         Returns:
@@ -1542,15 +1709,15 @@ class MapsManager:
         Else load the mean interpretation map.
 
         Args:
-            prefix (str): name of the prediction step
-            fold (int): fold number
-            selection_metric (str): name of the metric used for the selection
-            verbose (bool): if True will print associated prediction.log
-            participant_id (str): ID of the participant (if not given load mean map)
-            session_id (str): ID of the session (if not give load the mean map)
+            prefix (str): Name of the data group used for the interpretation task.
+            fold (int): Index of the fold used for training.
+            selection_metric (str): Metric used for best weights selection.
+            verbose (bool): if True will print associated prediction.log.
+            participant_id (str): ID of the participant (if not given load mean map).
+            session_id (str): ID of the session (if not give load the mean map).
+            mode_id (int): Index of the mode used.
         Returns:
-            (DataFrame): Results indexed by columns 'participant_id' and 'session_id' which
-            identifies the image in the BIDS / CAPS.
+            (torch.Tensor): Tensor of the interpretability map.
         """
         selection_metric = self._check_selection_metric(fold, selection_metric)
         if verbose:

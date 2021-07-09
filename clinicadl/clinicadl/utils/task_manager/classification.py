@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torch.nn.functional import softmax
+from torch.utils.data import sampler
 
 from clinicadl.utils.task_manager.task_manager import TaskManager
 
@@ -61,6 +62,33 @@ class ClassificationManager(TaskManager):
     def output_size(input_size, df, label):
         label_code = ClassificationManager.generate_label_code(df, label)
         return len(label_code)
+
+    @staticmethod
+    def generate_sampler(dataset, sampler_option="random", n_bins=5):
+        df = dataset.df
+        n_labels = df[dataset.label].nunique()
+        count = np.zeros(n_labels)
+
+        for idx in df.index:
+            label = df.loc[idx, dataset.label]
+            key = dataset.label_fn(label)
+            count[key] += 1
+
+        weight_per_class = 1 / np.array(count)
+        weights = []
+
+        for idx, label in enumerate(df[dataset.label].values):
+            key = dataset.label_fn(label)
+            weights += [weight_per_class[key]] * dataset.elem_per_image
+
+        if sampler_option == "random":
+            return sampler.RandomSampler(weights)
+        elif sampler_option == "weighted":
+            return sampler.WeightedRandomSampler(weights, len(weights))
+        else:
+            raise NotImplementedError(
+                f"The option {sampler_option} for sampler on classification task is not implemented"
+            )
 
     def ensemble_prediction(
         self,

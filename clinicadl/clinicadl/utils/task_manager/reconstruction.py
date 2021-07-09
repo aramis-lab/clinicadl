@@ -1,3 +1,5 @@
+from torch.utils.data import sampler
+
 from clinicadl.utils.task_manager.task_manager import TaskManager
 
 
@@ -45,6 +47,19 @@ class ReconstructionManager(TaskManager):
     @staticmethod
     def generate_label_code(df, label):
         return None
+
+    @staticmethod
+    def generate_sampler(dataset, sampler_option="random", n_bins=5):
+        df = dataset.df
+
+        weights = [1] * len(df) * dataset.elem_per_image
+
+        if sampler_option == "random":
+            return sampler.RandomSampler(weights)
+        else:
+            raise NotImplementedError(
+                f"The option {sampler_option} for sampler on reconstruction task is not implemented"
+            )
 
     def ensemble_prediction(
         self,
