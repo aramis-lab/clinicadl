@@ -72,7 +72,7 @@ Options shared for all values of `mode` are organized in groups:
     computing the grey matter intensities.
 - **Cross-validation arguments**
     - `--n_splits` (int) is a number of splits k to load in the case of a k-fold cross-validation. Default will load a single-split.
-    - `--split` (list of int) is a subset of folds that will be used for training. By default all splits available are used. 
+    - `--folds` (list of int) is a subset of folds that will be used for training. By default all splits available are used. 
 - **Optimization parameters**
     - `--epochs` (int) is the [maximum number of epochs](Details.md#stopping-criterion). Default: `20`.
     - `--learning_rate` (float) is the learning rate used to perform weight update. Default: `1e-4`.

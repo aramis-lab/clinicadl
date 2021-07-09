@@ -24,7 +24,7 @@ def cli_commands(request):
         test_input = [
             "train",
             "slice",
-            "cnn",
+            "classification",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
@@ -34,14 +34,14 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
     elif request.param == "train_image_cnn":
         test_input = [
             "train",
             "image",
-            "cnn",
+            "regression",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
@@ -51,14 +51,14 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
     elif request.param == "train_patch_cnn":
         test_input = [
             "train",
             "patch",
-            "cnn",
+            "classification",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
@@ -68,14 +68,14 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
     elif request.param == "train_patch_multicnn":
         test_input = [
             "train",
             "patch",
-            "multicnn",
+            "classification",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
@@ -85,14 +85,15 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
+            "--multi",
         ]
     elif request.param == "train_roi_cnn":
         test_input = [
             "train",
             "roi",
-            "cnn",
+            "classification",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
@@ -102,14 +103,14 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
     elif request.param == "train_roi_multicnn":
         test_input = [
             "train",
             "roi",
-            "multicnn",
+            "classification",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
@@ -119,8 +120,9 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
+            "--multi",
         ]
     else:
         raise NotImplementedError("Test %s is not implemented." % request.param)

@@ -105,7 +105,7 @@ Optional variables:
     Sampling function: `choice`. Default: `random`.
 - **Cross-validation arguments**
     - `--n_splits` (int) is a number of splits k to load in the case of a k-fold cross-validation. Default will load a single-split.
-    - `--split` (list of int) is a subset of folds that will be used for training. By default all splits available are used. 
+    - `--folds` (list of int) is a subset of folds that will be used for training. By default all splits available are used. 
 - **Optimization parameters**
     - `learning_rate` (float) is the learning rate used to perform weight update. 
     Sampling function: `exponent`. Default: `4` (leading to a value of `1e-4`).

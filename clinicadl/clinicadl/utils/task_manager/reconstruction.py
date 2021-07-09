@@ -85,4 +85,4 @@ class ReconstructionManager(TaskManager):
         Returns:
             None
         """
-        return None
+        return None, None

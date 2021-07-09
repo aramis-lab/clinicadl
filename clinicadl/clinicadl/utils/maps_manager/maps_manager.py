@@ -9,6 +9,7 @@ from os import listdir, makedirs, path
 import pandas as pd
 import torch
 
+from clinicadl.utils.caps_dataset.data import get_transforms, return_dataset
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.maps_manager.logwriter import LogWriter, StdLevelFilter
 from clinicadl.utils.metric_module import RetainBest
@@ -210,11 +211,7 @@ class MapsManager:
         """
         from torch.utils.data import DataLoader
 
-        from clinicadl.utils.caps_dataset.data import (
-            get_transforms,
-            load_data_test,
-            return_dataset,
-        )
+        from clinicadl.utils.caps_dataset.data import load_data_test
 
         if folds is None:
             folds = self._find_folds()
@@ -380,11 +377,7 @@ class MapsManager:
         from torch.utils.data import DataLoader
 
         from clinicadl.interpret.gradients import VanillaBackProp
-        from clinicadl.utils.caps_dataset.data import (
-            get_transforms,
-            load_data_test,
-            return_dataset,
-        )
+        from clinicadl.utils.caps_dataset.data import load_data_test
 
         if folds is None:
             folds = self._find_folds()
@@ -498,8 +491,6 @@ class MapsManager:
         """
         from torch.utils.data import DataLoader
 
-        from clinicadl.utils.caps_dataset.data import get_transforms, return_dataset
-
         train_transforms, all_transforms = get_transforms(
             self.mode,
             minmaxnormalization=self.minmaxnormalization,
@@ -582,8 +573,6 @@ class MapsManager:
             resume (bool): If True the job is resumed from checkpoint.
         """
         from torch.utils.data import DataLoader
-
-        from clinicadl.utils.caps_dataset.data import get_transforms, return_dataset
 
         train_transforms, all_transforms = get_transforms(
             self.mode,
@@ -981,7 +970,10 @@ class MapsManager:
 
     def _compute_train_args(self):
 
-        from clinicadl.utils.caps_dataset.data import get_transforms, return_dataset
+        if "label" not in self.parameters:
+            self.parameters["label"] = None
+        if "selection_threshold" not in self.parameters:
+            self.parameters["selection_threshold"] = None
 
         _, transformations = get_transforms(self.mode, self.minmaxnormalization)
 
@@ -1342,12 +1334,13 @@ class MapsManager:
             use_labels=use_labels,
         )
 
-        df_final.to_csv(
-            path.join(performance_dir, f"{prefix}_image_level_prediction.tsv"),
-            index=False,
-            sep="\t",
-        )
-        if use_labels:
+        if df_final is not None:
+            df_final.to_csv(
+                path.join(performance_dir, f"{prefix}_image_level_prediction.tsv"),
+                index=False,
+                sep="\t",
+            )
+        if metrics is not None:
             pd.DataFrame(metrics, index=[0]).to_csv(
                 path.join(performance_dir, f"{prefix}_image_level_metrics.tsv"),
                 index=False,
@@ -1394,15 +1387,15 @@ class MapsManager:
     ###############################
     def _get_criterion(self):
         """Gets the optimization criterion specified in training parameters."""
-        # TODO: add a check depending on the network task to ensure
-        #  the good sizes match of targets / inputs
+        # TODO: move this to task_manager as soon as choice is implemented.
 
         loss_dict = {
-            "mse": torch.nn.MSELoss(),
-            "ce": torch.nn.CrossEntropyLoss(),
+            "reconstruction": torch.nn.MSELoss(),
+            "classification": torch.nn.CrossEntropyLoss(),
+            "regression": torch.nn.MSELoss(),
         }
 
-        return loss_dict[self.optimization_metric.lower()]
+        return loss_dict[self.network_task]
 
     def _init_model(
         self,
@@ -1486,7 +1479,7 @@ class MapsManager:
 
         return optimizer
 
-    def _init_split_manager(self, folds):
+    def _init_split_manager(self, folds=None):
         from clinicadl.utils import split_manager
 
         split_class = getattr(split_manager, self.validation)
@@ -1519,7 +1512,7 @@ class MapsManager:
             return ReconstructionManager(self.mode)
         else:
             raise ValueError(
-                f"Task {self.task} is not implemented in ClinicaDL. "
+                f"Task {self.network_task} is not implemented in ClinicaDL. "
                 f"Please choose between classification, regression and reconstruction."
             )
 

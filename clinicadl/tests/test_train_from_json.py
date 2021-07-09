@@ -6,13 +6,13 @@ import shutil
 import pytest
 
 
-@pytest.fixture(params=["train_roi_cnn"])
+@pytest.fixture(params=["train_roi_regression"])
 def cli_commands(request):
 
-    if request.param == "train_roi_cnn":
+    if request.param == "train_roi_regression":
         command_dict = {
             "mode": "roi",
-            "network_type": "cnn",
+            "network_task": "regression",
             "caps_dir": "data/dataset/random_example",
             "preprocessing": "t1-linear",
             "tsv_path": "data/labels_list",

@@ -19,7 +19,7 @@ def cli_commands(request):
         test_input = [
             "train",
             "roi",
-            "cnn",
+            "classification",
             caps_dir,
             "t1-linear",
             "data/labels_list",
@@ -29,7 +29,7 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
             "--roi_list",
             "random1",
@@ -39,7 +39,7 @@ def cli_commands(request):
         test_input = [
             "train",
             "roi",
-            "multicnn",
+            "classification",
             caps_dir,
             "t1-linear",
             "data/labels_list",
@@ -49,10 +49,11 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
             "--roi_list",
             "random1 random2",
+            "--multi",
         ]
     else:
         raise NotImplementedError("Test %s is not implemented." % request.param)

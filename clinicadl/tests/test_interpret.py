@@ -23,7 +23,7 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
         interpret_input = ["interpret", "group", "results", "group-test"]
@@ -42,7 +42,7 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
         interpret_input = ["interpret", "individual", "results", "individual-test"]

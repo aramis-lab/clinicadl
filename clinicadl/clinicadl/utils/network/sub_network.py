@@ -10,6 +10,7 @@ from clinicadl.utils.network.network import Network
 from clinicadl.utils.network.network_utils import CropMaxUnpool3d, PadMaxPool3d
 
 
+# TODO: implement visualization of autoencoder output
 class AutoEncoder(Network):
     _possible_tasks = ["reconstruction"]
 
