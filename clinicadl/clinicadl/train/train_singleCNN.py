@@ -19,6 +19,8 @@ def train_single_cnn(params, erase_existing=True):
     train_dict["multi"] = False
     train_dict["selection_metrics"] = ["loss", "BA"]
     train_dict["optimization_metric"] = "CE"
+    train_dict["network_task"] = "classification"  # TODO: can be set in command line
+    train_dict["label"] = "diagnoses"  # TODO: can be set in command line
     train_dict["minmaxnormalization"] = not params.unnormalize
     train_dict["transfer_path"] = train_dict.pop("transfer_learning_path")
     train_dict["transfer_selection"] = train_dict.pop("transfer_learning_selection")
@@ -53,52 +55,3 @@ def train_single_cnn(params, erase_existing=True):
 
     maps_manager = MapsManager(maps_dir, train_dict, verbose="info")
     maps_manager.train(folds=params.split, overwrite=erase_existing)
-
-
-def test_single_cnn(
-    model,
-    output_dir,
-    data_loader,
-    subset_name,
-    split,
-    criterion,
-    mode,
-    logger,
-    selection_threshold,
-    gpu=False,
-):
-
-    for selection in ["best_balanced_accuracy", "best_loss"]:
-        # load the best trained model during the training
-        model, best_epoch = load_model(
-            model,
-            os.path.join(output_dir, "fold-%i" % split, "models", selection),
-            gpu=gpu,
-            filename="model_best.pth.tar",
-        )
-
-        results_df, metrics = test(model, data_loader, gpu, criterion, mode)
-        logger.info(
-            "%s level %s balanced accuracy is %f for model selected on %s"
-            % (mode, subset_name, metrics["balanced_accuracy"], selection)
-        )
-
-        mode_level_to_tsvs(
-            output_dir, results_df, metrics, split, selection, mode, dataset=subset_name
-        )
-
-        # Soft voting
-        if data_loader.dataset.elem_per_image > 1:
-            soft_voting_to_tsvs(
-                output_dir,
-                split,
-                logger=logger,
-                selection=selection,
-                mode=mode,
-                dataset=subset_name,
-                selection_threshold=selection_threshold,
-            )
-        elif mode != "image":
-            mode_to_image_tsvs(
-                output_dir, split, selection=selection, mode=mode, dataset=subset_name
-            )

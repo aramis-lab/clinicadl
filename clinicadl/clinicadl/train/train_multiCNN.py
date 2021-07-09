@@ -21,6 +21,8 @@ def train_multi_cnn(params, erase_existing=True):
     train_dict["selection_metrics"] = ["loss", "BA"]
     train_dict["optimization_metric"] = "CE"
     train_dict["minmaxnormalization"] = not params.unnormalize
+    train_dict["network_task"] = "classification"
+    train_dict["label"] = "diagnoses"
     train_dict["transfer_path"] = train_dict.pop("transfer_learning_path")
     train_dict["transfer_selection"] = train_dict.pop("transfer_learning_selection")
     if params.n_splits > 1:
@@ -54,46 +56,3 @@ def train_multi_cnn(params, erase_existing=True):
 
     maps_manager = MapsManager(maps_dir, train_dict, verbose="info")
     maps_manager.train(folds=params.split, overwrite=erase_existing)
-
-
-def test_cnn(
-    model,
-    output_dir,
-    data_loader,
-    subset_name,
-    split,
-    criterion,
-    cnn_index,
-    mode,
-    logger,
-    gpu=False,
-):
-
-    for selection in ["best_balanced_accuracy", "best_loss"]:
-        # load the best trained model during the training
-        model, best_epoch = load_model(
-            model,
-            os.path.join(
-                output_dir, "fold-%i" % split, "models", "cnn-%i" % cnn_index, selection
-            ),
-            gpu=gpu,
-            filename="model_best.pth.tar",
-        )
-
-        results_df, metrics = test(model, data_loader, gpu, criterion, mode)
-
-        logger.info(
-            "%s balanced accuracy is %f for %s %i and model selected on %s"
-            % (subset_name, metrics["balanced_accuracy"], mode, cnn_index, selection)
-        )
-
-        mode_level_to_tsvs(
-            output_dir,
-            results_df,
-            metrics,
-            split,
-            selection,
-            mode,
-            dataset=subset_name,
-            cnn_index=cnn_index,
-        )
