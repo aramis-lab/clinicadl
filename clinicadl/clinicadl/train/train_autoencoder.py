@@ -20,6 +20,7 @@ def train_autoencoder(params, erase_existing=True):
     train_dict["selection_metrics"] = ["loss", "MAE"]
     train_dict["optimization_metric"] = "MSE"
     train_dict["network_task"] = "reconstruction"
+    train_dict["label"] = None
     train_dict["minmaxnormalization"] = not params.unnormalize
     train_dict["transfer_path"] = train_dict.pop("transfer_learning_path")
     train_dict["transfer_selection"] = train_dict.pop("transfer_learning_selection")

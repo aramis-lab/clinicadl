@@ -212,7 +212,7 @@ class CapsDataset(Dataset):
         else:
             elem_idx = self.elem_index
 
-        if self.label_presence:
+        if self.label_presence and self.label is not None:
             target = self.df.loc[image_idx, self.label]
             label = self.label_fn(target)
         else:

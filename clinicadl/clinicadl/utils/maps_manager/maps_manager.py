@@ -1444,13 +1444,14 @@ class MapsManager:
             kwargs["use_cpu"] = use_cpu
 
         model = model_class(**kwargs)
+        device = model.device
         current_epoch = 0
 
         if resume:
             checkpoint_path = path.join(
                 self.maps_path, f"fold-{fold}", "tmp", "checkpoint.pth.tar"
             )
-            checkpoint_state = torch.load(checkpoint_path)
+            checkpoint_state = torch.load(checkpoint_path, map_location=device)
             model.load_state_dict(checkpoint_state["model"])
             current_epoch = checkpoint_state["epoch"]
         elif transfer_path is not None:
