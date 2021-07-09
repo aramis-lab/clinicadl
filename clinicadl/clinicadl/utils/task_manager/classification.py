@@ -32,15 +32,15 @@ class ClassificationManager(TaskManager):
 
     def generate_test_row(self, idx, data, outputs):
 
-        predicted = torch.argmax(outputs[idx].data)
-        normalized_output = softmax(outputs[idx], dim=1)
+        prediction = torch.argmax(outputs[idx].data).item()
+        normalized_output = softmax(outputs[idx], dim=0)
         return [
             [
                 data["participant_id"][idx],
                 data["session_id"][idx],
                 data[f"{self.mode}_id"][idx].item(),
                 data["label"][idx].item(),
-                predicted[idx].item(),
+                prediction,
                 normalized_output[0].item(),
                 normalized_output[1].item(),
             ]

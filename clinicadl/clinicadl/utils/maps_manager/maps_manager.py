@@ -35,7 +35,6 @@ class MapsManager:
         """
         self.maps_path = maps_path
         self.set_verbose(verbose)
-        self.task_manager = self._init_task_manager()
 
         # Existing MAPS
         if parameters is None:
@@ -45,6 +44,7 @@ class MapsManager:
                     f"To initiate a new MAPS please give a train_dict."
                 )
             self.parameters = self.get_parameters()
+            self.task_manager = self._init_task_manager()
 
         # Initiate MAPS
         else:
@@ -54,7 +54,7 @@ class MapsManager:
                 path.isdir(maps_path) and listdir(maps_path)  # Non empty folder
             ):
                 raise ValueError(
-                    f"You are trying a new MAPS at {maps_path} but "
+                    f"You are trying to create a new MAPS at {maps_path} but "
                     f"this already corresponds to a file or a non-empty folder. \n"
                     f"Please remove it or choose another location."
                 )
@@ -258,6 +258,8 @@ class MapsManager:
                         else self.prepare_dl,
                         multi_cohort=multi_cohort,
                         label_presence=use_labels,
+                        label=self.label,
+                        label_code=self.label_code,
                         params=self,
                         cnn_index=network,
                     )
@@ -297,6 +299,8 @@ class MapsManager:
                     else self.prepare_dl,
                     multi_cohort=multi_cohort,
                     label_presence=use_labels,
+                    label=self.label,
+                    label_code=self.label_code,
                     params=self,
                 )
                 test_loader = DataLoader(
@@ -517,6 +521,8 @@ class MapsManager:
                 all_transformations=all_transforms,
                 prepare_dl=self.prepare_dl,
                 multi_cohort=self.multi_cohort,
+                label=self.label,
+                label_code=self.label_code,
                 params=self,
             )
             data_valid = return_dataset(
@@ -528,6 +534,8 @@ class MapsManager:
                 all_transformations=all_transforms,
                 prepare_dl=self.prepare_dl,
                 multi_cohort=self.multi_cohort,
+                label=self.label,
+                label_code=self.label_code,
                 params=self,
             )
 
@@ -614,6 +622,8 @@ class MapsManager:
                     all_transformations=all_transforms,
                     prepare_dl=self.prepare_dl,
                     multi_cohort=self.multi_cohort,
+                    label=self.label,
+                    label_code=self.label_code,
                     cnn_index=network,
                     params=self,
                 )
@@ -626,6 +636,8 @@ class MapsManager:
                     all_transformations=all_transforms,
                     prepare_dl=self.prepare_dl,
                     multi_cohort=self.multi_cohort,
+                    label=self.label,
+                    label_code=self.label_code,
                     cnn_index=network,
                     params=self,
                 )
@@ -701,7 +713,7 @@ class MapsManager:
 
         log_writer = LogWriter(
             self.maps_path,
-            self.task,
+            self.task_manager.evaluation_metrics,
             fold,
             resume=resume,
             beginning_epoch=beginning_epoch,
@@ -975,6 +987,7 @@ class MapsManager:
 
         split_manager = self._init_split_manager(None)
         train_df = split_manager[0]["train"]
+        self.task_manager = self._init_task_manager()
         label_code = self.task_manager.generate_label_code(train_df, self.label)
         full_dataset = return_dataset(
             self.mode,

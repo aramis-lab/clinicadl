@@ -22,7 +22,7 @@ def train_multi_cnn(params, erase_existing=True):
     train_dict["optimization_metric"] = "CE"
     train_dict["minmaxnormalization"] = not params.unnormalize
     train_dict["network_task"] = "classification"
-    train_dict["label"] = "diagnoses"
+    train_dict["label"] = "diagnosis"
     train_dict["transfer_path"] = train_dict.pop("transfer_learning_path")
     train_dict["transfer_selection"] = train_dict.pop("transfer_learning_selection")
     if params.n_splits > 1:

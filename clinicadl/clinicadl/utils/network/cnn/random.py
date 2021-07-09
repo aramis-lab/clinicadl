@@ -14,7 +14,7 @@ class RandomArchitecture(CNN):
         input_size,
         dropout=0.5,
         network_normalization="BatchNorm",
-        n_classes=2,
+        output_size=2,
         use_cpu=False,
     ):
         """
@@ -42,7 +42,7 @@ class RandomArchitecture(CNN):
         classifier = nn.Sequential(Flatten(), nn.Dropout(p=dropout))
 
         fc, flattened_shape = self.fc_dict_design(
-            n_fcblocks, convolutions_dict, input_shape, n_classes
+            n_fcblocks, convolutions_dict, input_size, output_size
         )
         for key, item in fc.items():
             n_fc = int(key[2::])
@@ -55,7 +55,7 @@ class RandomArchitecture(CNN):
         super().__init__(
             convolutions=convolutions,
             classifier=classifier,
-            n_classes=n_classes,
+            n_classes=output_size,
             use_cpu=use_cpu,
         )
 

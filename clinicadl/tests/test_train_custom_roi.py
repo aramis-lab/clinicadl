@@ -61,6 +61,9 @@ def cli_commands(request):
 
 
 def test_train(cli_commands):
+    if os.path.exists("results"):
+        shutil.rmtree("results")
+
     roi_list, test_input = cli_commands
     crop_size = (50, 50, 50)
     os.makedirs(
