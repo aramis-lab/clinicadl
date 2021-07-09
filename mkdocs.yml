@@ -7,8 +7,8 @@ site_description: >-
   using deep learning
 
 # Repository
-repo_name: aramislab/AD-DL
-repo_url: https://github.com/aramis-lab/AD-DL
+repo_name: aramislab/clinicadl
+repo_url: https://github.com/aramis-lab/clinicadl
 #edit_uri: master/edit/doc
 
 # Copyright

@@ -2,10 +2,10 @@
 
 The aim of `clinicadl` is not only to provide a collection of tools, 
 but also to allow users to add their own in the framework.
-Before starting, please fork and clone the [github repo](https://github.com/aramis-lab/AD-DL]).
+Before starting, please fork and clone the [github repo](https://github.com/aramis-lab/clinicadl]).
 
 !!! tip
-    Do not hesitate to ask for help on [GitHub](https://github.com/aramis-lab/AD-DL/issues/new) 
+    Do not hesitate to ask for help on [GitHub](https://github.com/aramis-lab/clinicadl/issues/new) 
     or propose a new pull request!
 
 

@@ -3,7 +3,7 @@
 You will find below the steps for installing `clinicadl` on Linux or Mac.
 Please do not hesitate to contact us on the
 [forum](https://groups.google.com/forum/#!forum/clinica-user) or
-[GitHub](https://github.com/aramis-lab/AD-DL/issues)
+[GitHub](https://github.com/aramis-lab/clinicadl/issues)
 if you encounter any issues.
 
 ## Prepare your Python environment
@@ -91,11 +91,11 @@ If you plan to contribute to ClinicaDL or if you want to have the current develo
 version, you can either:
 
 * Download the tarball for a specific version from our
-[repository](https://github.com/aramis-lab/AD-DL/releases).
+[repository](https://github.com/aramis-lab/clinicadl/releases).
 Then decompress it.
 * Clone ClinicaDL's repository from GitHub:
 ```{.sourceCode .bash}
-git clone https://github.com/aramis-lab/AD-DL.git
+git clone https://github.com/aramis-lab/clinicadl.git
 ```
 
 We suggest creating a custom Conda environment and installing Clinica using the
@@ -113,7 +113,7 @@ activate the environment before proceeding:
 
 ```bash
 conda activate my_clinicadl_environment
-cd AD-DL/clinicadl
+cd clinicadl/clinicadl
 pip install -e .
 ```
 
@@ -133,7 +133,7 @@ Remember that ClinicaDL will be only available inside your Conda environment.
 !!! warning
     Data for testing must be manually downloaded (see below). Make sure you
     have installed pytest & Co (`pip install -r
-    https://raw.githubusercontent.com/aramis-lab/AD-DL/dev/requirements-dev.txt`)
+    https://raw.githubusercontent.com/aramis-lab/clinicadl/dev/requirements-dev.txt`)
     inside your developement environment.
 
 Main functionalities of ClinicaDL can be tested using the functions provided in
