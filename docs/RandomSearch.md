@@ -46,7 +46,7 @@ where:
 
 `random_search.json` must be present in `launch_dir` before running the command. 
 An example of this file can be found in 
-[clinicadl/clinicadl/tools/deep_learning/models](https://github.com/aramis-lab/AD-DL/tree/master/clinicadl/clinicadl/tools/deep_learning/models).
+[clinicadl/clinicadl/tools/deep_learning/models](https://github.com/aramis-lab/clinicadl/tree/master/clinicadl/clinicadl/tools/deep_learning/models).
 
 Mandatory variables:
 
