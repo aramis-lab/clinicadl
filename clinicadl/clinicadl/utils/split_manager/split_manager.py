@@ -35,6 +35,14 @@ class SplitManager:
         pass
 
     def __getitem__(self, item):
+        """
+        Returns a dictionary of DataFrames with train and validation data.
+
+        Args:
+            item (int): Index of the fold wanted.
+        Returns:
+            Dict[str:pd.DataFrame]: dictionary with two keys (train and validation).
+        """
         self._check_item(item)
 
         if self.multi_cohort:
@@ -79,6 +87,7 @@ class SplitManager:
         }
 
     def concatenate_diagnoses(self, fold, cohort_path=None, cohort_diagnoses=None):
+        """Concatenated the diagnoses needed to form the train and validation sets."""
 
         train_df, valid_df = pd.DataFrame(), pd.DataFrame()
 
@@ -114,14 +123,26 @@ class SplitManager:
 
     @abc.abstractmethod
     def _get_tsv_paths(self, cohort_path, fold):
+        """
+        Computes the paths to the TSV files needed depending on the split structure.
+
+        Args:
+            cohort_path (str): path to the split structure of a cohort.
+            fold (int): Index of the fold.
+        Returns:
+            train_path (str): path to the directory containing training data.
+            valid_path (str): path to the directory containing validation data.
+        """
         pass
 
     @abc.abstractmethod
     def fold_iterator(self):
+        """Returns an iterable to iterate on all folds wanted."""
         pass
 
     @abc.abstractmethod
     def _check_folds(self):
+        """Check that folds asked by the user at initialization can be performed."""
         pass
 
     def _check_item(self, item):
