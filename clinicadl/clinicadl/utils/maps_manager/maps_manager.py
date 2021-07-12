@@ -411,6 +411,8 @@ class MapsManager:
             prepare_dl=prepare_dl if prepare_dl is not None else self.prepare_dl,
             multi_cohort=multi_cohort,
             label_presence=False,
+            label_code=self.label_code,
+            label=self.label,
             params=self,
         )
         test_loader = DataLoader(
@@ -421,7 +423,7 @@ class MapsManager:
         )
 
         if target_label is not None:
-            target_node = data_test.diagnosis_code[target_label]
+            target_node = self.label_code[target_label]
 
         for fold in folds:
             self.logger.info(f"Interpretation of fold {fold}")

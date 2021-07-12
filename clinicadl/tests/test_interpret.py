@@ -6,14 +6,14 @@ import shutil
 import pytest
 
 
-@pytest.fixture(params=["group_image", "individual_image"])
+@pytest.fixture(params=["classification", "regression"])
 def cli_commands(request):
 
-    if request.param == "group_image":
+    if request.param == "classification":
         cnn_input = [
             "train",
             "image",
-            "cnn",
+            "classification",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
@@ -28,11 +28,11 @@ def cli_commands(request):
         ]
         interpret_input = ["interpret", "group", "results", "group-test"]
 
-    elif request.param == "individual_image":
+    elif request.param == "regression":
         cnn_input = [
             "train",
             "image",
-            "cnn",
+            "regression",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
