@@ -13,13 +13,13 @@ def cli_commands(request):
         command_dict = {
             "mode": "roi",
             "network_task": "regression",
-            "caps_dir": "data/dataset/random_example",
+            "caps_directory": "data/dataset/random_example",
             "preprocessing": "t1-linear",
             "tsv_path": "data/labels_list",
             "model": "Conv4_FC3",
             "epochs": 1,
             "n_splits": 2,
-            "split": [0],
+            "folds": [0],
         }
     else:
         raise NotImplementedError("Test %s is not implemented." % request.param)
@@ -29,6 +29,9 @@ def cli_commands(request):
 
 def test_train(cli_commands):
     import json
+
+    if os.path.exists("results"):
+        shutil.rmtree("results")
 
     json = json.dumps(cli_commands, skipkeys=True, indent=4)
     with open(os.path.join("commandline.json"), "w") as f:

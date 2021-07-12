@@ -89,7 +89,7 @@ class RegressionManager(TaskManager):
         validation_df,
         selection_threshold=None,
         use_labels=True,
-        method="soft",
+        method="hard",
     ):
         """
         Compute the results at the image-level by assembling the results on parts of the image.
@@ -116,13 +116,12 @@ class RegressionManager(TaskManager):
             )
 
         n_modes = validation_df[f"{self.mode}_id"].nunique()
-        weight_series = pd.DataFrame(np.ones((n_modes, 1)))
+        weight_series = np.ones(n_modes)
 
         # Sort to allow weighted average computation
         performance_df.sort_values(
             ["participant_id", "session_id", f"{self.mode}_id"], inplace=True
         )
-        weight_series.sort_index(inplace=True)
 
         # Soft majority vote
         df_final = pd.DataFrame(columns=self.columns)
