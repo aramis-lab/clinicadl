@@ -826,7 +826,12 @@ def parse_command_line():
 
     train_image_cla_parser = train_image_subparser.add_parser(
         "classification",
-        parents=[parent_parser, train_parent_parser, transfer_learning_parent],
+        parents=[
+            parent_parser,
+            train_parent_parser,
+            classification_parent,
+            transfer_learning_parent,
+        ],
         help="Classification of the target label.",
     )
 
@@ -834,7 +839,12 @@ def parse_command_line():
 
     train_image_reg_parser = train_image_subparser.add_parser(
         "regression",
-        parents=[parent_parser, train_parent_parser, transfer_learning_parent],
+        parents=[
+            parent_parser,
+            train_parent_parser,
+            regression_parent,
+            transfer_learning_parent,
+        ],
         help="Regression of the target label.",
     )
 
@@ -1042,6 +1052,7 @@ def parse_command_line():
             parent_parser,
             train_parent_parser,
             train_slice_parent,
+            reconstruction_parent,
             transfer_learning_parent,
         ],
         help="Reconstruction of the input slices.",
@@ -1075,7 +1086,7 @@ def parse_command_line():
         help="Regression of the target label.",
     )
 
-    train_slice_cla_parser.set_defaults(func=train_func)
+    train_slice_reg_parser.set_defaults(func=train_func)
 
     #########################
     # FROM JSON

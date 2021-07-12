@@ -283,11 +283,8 @@ def check_and_complete(options, random_search=False):
             if not hasattr(namespace, name):
                 setattr(namespace, name, default_value)
 
-    filename = "random_search.json"
-
     default_values = {
         "accumulation_steps": 1,
-        "atlas_weight": 1,
         "baseline": False,
         "batch_size": 2,
         "data_augmentation": False,
@@ -297,7 +294,7 @@ def check_and_complete(options, random_search=False):
         "evaluation_steps": 0,
         "learning_rate": 4,
         "loss": "default",
-        "merged_tsv_path": None,
+        "multi": False,
         "multi_cohort": False,
         "n_splits": 0,
         "nproc": 2,
@@ -305,7 +302,8 @@ def check_and_complete(options, random_search=False):
         "unnormalize": False,
         "patience": 0,
         "predict_atlas_intensities": None,
-        "split": None,
+        "folds": None,
+        "selection_metrics": ["loss"],
         "tolerance": 0.0,
         "transfer_learning_path": None,
         "transfer_learning_selection": "best_loss",
@@ -335,6 +333,15 @@ def check_and_complete(options, random_search=False):
         },
         "image": {},
     }
+
+    task_default_values = {
+        "classification": {
+            "label": "diagnosis",
+        },
+        "regression": {
+            "label": "age",
+        },
+    }
     if random_search:
         default_values["d_reduction"] = "MaxPooling"
         default_values["network_normalization"] = "BatchNorm"
@@ -344,10 +351,10 @@ def check_and_complete(options, random_search=False):
     set_default(options, default_values)
 
     mandatory_arguments = [
-        "network_type",
+        "network_task",
         "mode",
         "tsv_path",
-        "caps_dir",
+        "caps_directory",
         "preprocessing",
     ]
     if random_search:
@@ -356,19 +363,26 @@ def check_and_complete(options, random_search=False):
     for argument in mandatory_arguments:
         if not hasattr(options, argument):
             raise ValueError(
-                f"The argument {argument} must be specified in {filename}."
+                f"The argument {argument} must be specified in the parameters."
             )
 
     if random_search:
         for mode, mode_dict in mode_default_values.items():
             set_default(options, mode_dict)
+        # TODO: manage default values for tasks
     else:
         if options.mode not in mode_default_values:
             raise NotImplementedError(
-                f"The mode optional arguments corresponding to mode {options.mode}"
+                f"The mode default arguments corresponding to {options.mode} were not implemented."
+            )
+        if options.network_task not in task_default_values:
+            raise NotImplementedError(
+                f"The task default arguments corresponding to {options.network_task} were not implemented."
             )
         mode_dict = mode_default_values[options.mode]
+        task_dict = task_default_values[options.network_task]
         set_default(options, mode_dict)
+        set_default(options, task_dict)
 
 
 def set_default_dropout(args):

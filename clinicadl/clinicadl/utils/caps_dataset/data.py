@@ -31,6 +31,7 @@ class CapsDataset(Dataset):
         augmentation_transformations=None,
         multi_cohort=False,
     ):
+        print(f"CapsDataset label {label}")
         self.caps_dict = self.create_caps_dict(caps_directory, multi_cohort)
         self.transformations = transformations
         self.augmentation_transformations = augmentation_transformations
@@ -319,6 +320,7 @@ class CapsDatasetImage(CapsDataset):
 
         """
         self.mode = "image"
+        print(f"Image label {label}")
         super().__init__(
             caps_directory,
             data_file,
@@ -810,6 +812,7 @@ class CapsDatasetSlice(CapsDataset):
 
         self.mode = "slice"
         self.prepare_dl = prepare_dl
+        print(f"Slice label {label}")
         super().__init__(
             caps_directory,
             data_file,
@@ -928,6 +931,7 @@ def return_dataset(
     Returns:
          (Dataset) the corresponding dataset.
     """
+    print(f"return_dataset label {label}")
 
     if cnn_index is not None and mode in ["image"]:
         raise ValueError("Multi-CNN is not implemented for %s mode." % mode)
@@ -983,7 +987,7 @@ def return_dataset(
             preprocessing=preprocessing,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
-            mri_plane=params.mri_plane,
+            mri_plane=params.slice_direction,
             prepare_dl=prepare_dl,
             discarded_slices=params.discarded_slices,
             slice_index=cnn_index,

@@ -948,7 +948,7 @@ class MapsManager:
         for arg in mandatory_arguments:
             if arg not in parameters:
                 raise ValueError(
-                    f"The values of mandatory arguments {mandatory_arguments} should be set."
+                    f"The values of mandatory arguments {mandatory_arguments} should be set. "
                     f"No value was given for {arg}."
                 )
 
