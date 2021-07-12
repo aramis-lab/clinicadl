@@ -104,7 +104,6 @@ class CNN(Network):
         self.convolutions = convolutions.to(self.device)
         self.classifier = classifier.to(self.device)
         self.n_classes = n_classes
-        assert self.classifier[-1].out_features == n_classes
 
     @property
     def layers(self):

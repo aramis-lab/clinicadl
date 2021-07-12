@@ -19,12 +19,12 @@ def cli_commands(request):
 
     if request.param == "rs_image_cnn":
         arg_dict = {
-            "caps_dir": "data/dataset/random_example",
+            "caps_directory": "data/dataset/random_example",
             "tsv_path": "data/labels_list",
             "preprocessing": "t1-linear",
             "diagnoses": ["AD", "CN"],
             "mode": "image",
-            "network_type": "cnn",
+            "network_task": "classification",
             "epochs": 1,
             "patience": 0,
             "tolerance": 0.0,

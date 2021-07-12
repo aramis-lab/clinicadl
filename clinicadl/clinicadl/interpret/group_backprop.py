@@ -11,8 +11,6 @@ def group_backprop(options):
         options.caps_dir = maps_manager.caps_directory
     if options.tsv_path is None:
         options.tsv_path = maps_manager.tsv_path
-    if options.target_diagnosis is None:
-        options.target_diagnosis = options.diagnosis
     if options.selection is not None:
         options.selection = [selection[5::] for selection in options.selection]
 
@@ -24,7 +22,7 @@ def group_backprop(options):
         multi_cohort=options.multi_cohort,
         diagnoses=[options.diagnosis],
         baseline=options.baseline,
-        target_label=options.target_diagnosis,
+        target_node=options.target_node,
         save_individual=False,
         batch_size=options.batch_size,
         num_workers=options.nproc,

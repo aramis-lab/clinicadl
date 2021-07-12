@@ -336,7 +336,6 @@ class MapsManager:
         diagnoses=None,
         baseline=False,
         target_node=0,
-        target_label=None,
         save_individual=False,
         prepare_dl=None,
         batch_size=None,
@@ -362,8 +361,6 @@ class MapsManager:
                 Default uses the same as in training step.
             baseline (bool): If True baseline sessions only are used for interpretation.
             target_node (int): Node from which the interpretation is computed.
-            target_label (str or int): Value of the target (for example "AD", "Female"...) corresponding to a final node
-                in classification setting. If given will override the value of target_node.
             save_individual (bool): If True saves the individual map of each participant / session couple.
             prepare_dl (bool): If given, sets the value of prepare_dl, else use the same as in training step.
             batch_size (bool): If given, sets the value of batch_size, else use the same as in training step.
@@ -422,9 +419,6 @@ class MapsManager:
             num_workers=num_workers if num_workers is not None else self.num_workers,
         )
 
-        if target_label is not None:
-            target_node = self.label_code[target_label]
-
         for fold in folds:
             self.logger.info(f"Interpretation of fold {fold}")
             if selection_metrics is None:
@@ -441,7 +435,6 @@ class MapsManager:
                     interpretation=True,
                     params_dict={
                         "target_node": target_node,
-                        "target_label": target_label,
                         "preprocessing": preprocessing,
                         "diagnoses": diagnoses,
                     },

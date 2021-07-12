@@ -1553,10 +1553,10 @@ def parse_command_line():
         help="The images corresponding to this diagnosis only will be loaded.",
     )
     interpret_data_group.add_argument(
-        "--target_diagnosis",
-        default=None,
+        "--target_node",
+        default=0,
         type=str,
-        help="Which class the gradients explain. If None is given will be equal to diagnosis.",
+        help="Which target node the gradients explain. Default takes the first output node.",
     )
     interpret_data_group.add_argument(
         "--baseline",

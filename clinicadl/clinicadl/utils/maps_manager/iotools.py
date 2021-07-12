@@ -369,7 +369,12 @@ def check_and_complete(options, random_search=False):
     if random_search:
         for mode, mode_dict in mode_default_values.items():
             set_default(options, mode_dict)
-        # TODO: manage default values for tasks
+        if options.network_task not in task_default_values:
+            raise NotImplementedError(
+                f"The task default arguments corresponding to {options.network_task} were not implemented."
+            )
+        task_dict = task_default_values[options.network_task]
+        set_default(options, task_dict)
     else:
         if options.mode not in mode_default_values:
             raise NotImplementedError(

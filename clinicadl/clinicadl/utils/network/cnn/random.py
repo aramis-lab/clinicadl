@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import numpy as np
 
-from clinicadl.utils.network.models.modules import *
+from clinicadl.utils.network.network_utils import *
 from clinicadl.utils.network.sub_network import CNN
 
 
@@ -39,7 +39,7 @@ class RandomArchitecture(CNN):
             convolutional_block = self.define_convolutional_block(item)
             convolutions.add_module(key, convolutional_block)
 
-        classifier = nn.Sequential(Flatten(), nn.Dropout(p=dropout))
+        classifier = nn.Sequential(nn.Flatten(), nn.Dropout(p=dropout))
 
         fc, flattened_shape = self.fc_dict_design(
             n_fcblocks, convolutions_dict, input_size, output_size
