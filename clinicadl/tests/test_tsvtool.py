@@ -4,7 +4,8 @@ from os import path
 
 import pandas as pd
 
-from clinicadl.utils.caps_dataset.data import load_data, load_data_test
+from clinicadl.utils.caps_dataset.data import load_data_test
+from clinicadl.utils.split_manager import KFoldSplit
 
 merged_tsv = "data/tsvtool/anonymous_BIDS.tsv"
 missing_mods = "data/tsvtool/anonymous_missing_mods"
@@ -164,13 +165,9 @@ def test_split():
     flag_load = True
     try:
         _ = load_data_test(path.join(reference_path, "test"), diagnoses.split(" "))
-        for fold in range(n_splits):
-            _, _ = load_data(
-                path.join(reference_path, "train"),
-                diagnoses.split(" "),
-                fold,
-                n_splits=n_splits,
-            )
+        split_manager = KFoldSplit(".", train_path, diagnoses.split(" "), n_splits)
+        for fold in split_manager.fold_iterator():
+            _ = split_manager[fold]
     except FileNotFoundError:
         flag_load = False
     assert flag_load
