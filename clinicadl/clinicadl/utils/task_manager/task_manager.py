@@ -6,6 +6,8 @@ import torch
 from clinicadl.utils.metric_module import MetricModule
 
 
+# TODO: add function to check that the output size corresponds to what is expected to
+#  perform the task
 class TaskManager:
     def __init__(
         self,

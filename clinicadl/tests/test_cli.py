@@ -12,7 +12,7 @@ import clinicadl.cli as cli
         "extract_tensor",
         "generate",
         "quality_check",
-        "classify",
+        "predict",
         "train_image",
         "train_slice",
         "train_patch",
@@ -77,7 +77,7 @@ def generate_cli_commands(request):
             'task',
             'preprocessing_task',
             'preprocessing',
-            'caps_dir',
+            'caps_directory',
             'output_path',
             'subjects_sessions_tsv',
             'threshold',
@@ -96,16 +96,16 @@ def generate_cli_commands(request):
         keys_output = [
             'task',
             'mode',
-            'caps_dir',
+            'caps_directory',
             'preprocessing',
             'output_dir',
             'n_subjects',
             'mean',
             'sigma']
 
-    if request.param == 'classify':
+    if request.param == 'predict':
         test_input = [
-            'classify',
+            'predict',
             '/dir/caps',
             '/dir/tsv_file',
             '/dir/model_path/',

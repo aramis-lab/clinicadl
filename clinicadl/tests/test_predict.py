@@ -8,20 +8,20 @@ import pytest
 
 @pytest.fixture(
     params=[
-        "classify_image",
-        "classify_roi",
-        "classify_slice",
-        "classify_patch",
-        "classify_roi_multi",
-        "classify_roi_ae",
+        "predict_image_classification",
+        "predict_roi_regression",
+        "predict_slice_classification",
+        "predict_patch_regression",
+        "predict_roi_multi_classification",
+        "predict_roi_reconstruction",
     ]
 )
-def classify_commands(request):
+def predict_commands(request):
     out_dir = "fold-0/best-loss/test-RANDOM"
-    if request.param == "classify_image":
+    if request.param == "predict_image_classification":
         model_folder = "data/models/maps_image/"
         test_input = [
-            "classify",
+            "predict",
             "data/dataset/OasisCaps_example",
             "data/dataset/OasisCaps_example/data.tsv",
             model_folder,
@@ -29,10 +29,10 @@ def classify_commands(request):
             "-cpu",
             "--selection_metrics loss",
         ]
-    elif request.param == "classify_slice":
+    elif request.param == "predict_slice_classification":
         model_folder = "data/models/maps_slice/"
         test_input = [
-            "classify",
+            "predict",
             "data/dataset/OasisCaps_example",
             "data/dataset/OasisCaps_example/data.tsv",
             model_folder,
@@ -40,10 +40,10 @@ def classify_commands(request):
             "-cpu",
             "--selection_metrics loss",
         ]
-    elif request.param == "classify_patch":
+    elif request.param == "predict_patch_regression":
         model_folder = "data/models/maps_patch/"
         test_input = [
-            "classify",
+            "predict",
             "data/dataset/OasisCaps_example",
             "data/dataset/OasisCaps_example/data.tsv",
             model_folder,
@@ -52,10 +52,10 @@ def classify_commands(request):
             "-nl",
             "--selection_metrics loss",
         ]
-    elif request.param == "classify_roi":
+    elif request.param == "predict_roi_regression":
         model_folder = "data/models/maps_roi/"
         test_input = [
-            "classify",
+            "predict",
             "data/dataset/OasisCaps_example",
             "data/dataset/OasisCaps_example/data.tsv",
             model_folder,
@@ -64,10 +64,10 @@ def classify_commands(request):
             "-nl",
             "--selection_metrics loss",
         ]
-    elif request.param == "classify_roi_multi":
+    elif request.param == "predict_roi_multi_classification":
         model_folder = "data/models/maps_roi_multi/"
         test_input = [
-            "classify",
+            "predict",
             "data/dataset/OasisCaps_example",
             "data/dataset/OasisCaps_example/data.tsv",
             model_folder,
@@ -75,10 +75,10 @@ def classify_commands(request):
             "-cpu",
             "--selection_metrics loss",
         ]
-    elif request.param == "classify_roi_ae":
+    elif request.param == "predict_roi_reconstruction":
         model_folder = "data/models/maps_roi_ae/"
         test_input = [
-            "classify",
+            "predict",
             "data/dataset/OasisCaps_example",
             "data/dataset/OasisCaps_example/data.tsv",
             model_folder,
@@ -93,9 +93,9 @@ def classify_commands(request):
     return test_input, output_files
 
 
-def test_classify(classify_commands):
-    test_input = classify_commands[0]
-    out_dir = classify_commands[1]
+def test_predict(predict_commands):
+    test_input = predict_commands[0]
+    out_dir = predict_commands[1]
 
     if os.path.exists(out_dir):
         shutil.rmtree(out_dir)
