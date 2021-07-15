@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import torch
+from torch import nn
 from torch.nn.functional import softmax
 from torch.utils.data import sampler
 
@@ -171,3 +172,7 @@ class ClassificationManager(TaskManager):
             results = None
 
         return df_final, results
+
+    @staticmethod
+    def get_criterion():
+        return nn.CrossEntropyLoss()

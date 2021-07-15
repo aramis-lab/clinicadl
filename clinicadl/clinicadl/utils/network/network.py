@@ -10,7 +10,6 @@ class Network(nn.Module):
 
     def __init__(self, use_cpu=False):
         super(Network, self).__init__()
-        # TODO: check if gpu is available
         self.device = self._select_device(use_cpu)
 
     @classproperty

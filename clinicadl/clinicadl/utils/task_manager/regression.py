@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from torch import nn
 from torch.utils.data import sampler
 
 from clinicadl.utils.task_manager.task_manager import TaskManager
@@ -142,3 +143,7 @@ class RegressionManager(TaskManager):
             results = None
 
         return df_final, results
+
+    @staticmethod
+    def get_criterion():
+        return nn.MSELoss()

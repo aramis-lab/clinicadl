@@ -129,6 +129,16 @@ class TaskManager:
         """
         pass
 
+    @staticmethod
+    @abstractmethod
+    def get_criterion():
+        """
+        Gives the optimization criterion
+
+        # TODO: implement a choice
+        """
+        pass
+
     def test(self, model, dataloader, criterion, use_labels=True):
         """
         Computes the predictions and evaluation metrics.

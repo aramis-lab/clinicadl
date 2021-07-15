@@ -64,7 +64,7 @@ class Conv5_FC3(CNN):
         # fmt: on
         super().__init__(
             convolutions=convolutions,
-            classifier=classifier,
+            classifier=classifier,  # TODO: rename FC part
             n_classes=output_size,
             use_cpu=use_cpu,
         )

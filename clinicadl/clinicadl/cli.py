@@ -1,7 +1,6 @@
 # coding: utf8
 
 import argparse
-from distutils.util import strtobool
 
 from colorama import Fore
 
@@ -27,10 +26,6 @@ TRAIN_CATEGORIES = {
     "ROI": "%sROI-based parameters%s" % (Fore.BLUE, Fore.RESET),
     # Other optional arguments
     "OPTIONAL": "%sOther options%s" % (Fore.BLUE, Fore.RESET),
-    # Model selection
-    "MODEL": "%sModel selection%s" % (Fore.BLUE, Fore.RESET),
-    # Display
-    "DISPLAY": "%sResults display%s" % (Fore.BLUE, Fore.RESET),
 }
 
 
@@ -57,8 +52,8 @@ def qc_func(args):
     )
 
     if args.preprocessing == "t1-linear":
-        linear_qc(
-            args.caps_dir,
+        linear_qc.quality_check(
+            args.caps_directory,
             args.output_path,
             tsv_path=args.subjects_sessions_tsv,
             threshold=args.threshold,
@@ -67,7 +62,7 @@ def qc_func(args):
             gpu=not args.use_cpu,
         )
     elif args.preprocessing == "t1-volume":
-        volume_qc(args.caps_dir, args.output_dir, args.group_label)
+        volume_qc.quality_check(args.caps_directory, args.output_dir, args.group_label)
 
 
 def generate_data_func(args):
@@ -79,7 +74,7 @@ def generate_data_func(args):
 
     if args.mode == "random":
         generate_random_dataset(
-            caps_dir=args.caps_dir,
+            caps_directory=args.caps_directory,
             tsv_path=args.subjects_sessions_tsv,
             output_dir=args.output_dir,
             n_subjects=args.n_subjects,
@@ -89,7 +84,7 @@ def generate_data_func(args):
         )
     elif args.mode == "trivial":
         generate_trivial_dataset(
-            caps_dir=args.caps_dir,
+            caps_directory=args.caps_directory,
             tsv_path=args.subjects_sessions_tsv,
             output_dir=args.output_dir,
             n_subjects=args.n_subjects,
@@ -147,12 +142,12 @@ def train_func(args):
     train(args, erase_existing=False)
 
 
-# Function to dispatch command line options from classify to corresponding
+# Function to dispatch command line options from predict to corresponding
 # function
-def classify_func(args):
-    from clinicadl.infer.infer import classify
+def predict_func(args):
+    from clinicadl.predict.predict import predict_cli
 
-    classify(
+    predict_cli(
         args.caps_directory,
         args.tsv_path,
         args.model_path,
@@ -236,15 +231,9 @@ def tsv_analysis_func(args):
 
 
 def interpret_func(args):
-    from .interpret.group_backprop import group_backprop
-    from .interpret.individual_backprop import individual_backprop
+    from .interpret.interpret import interpret_cli
 
-    if args.task == "group":
-        group_backprop(args)
-    elif args.task == "individual":
-        individual_backprop(args)
-    else:
-        raise ValueError("Unknown task %s for interpretation" % args.task)
+    interpret_cli(args)
 
 
 def parse_command_line():
@@ -257,7 +246,7 @@ def parse_command_line():
         "--logname",
         dest="logname",
         default="clinicaDL.log",
-        metavar=("file.log"),
+        metavar="file.log",
         help="Define the log file name (default: clinicaDL.log)",
     )
     parser.add_argument(
@@ -299,7 +288,7 @@ def parse_command_line():
     # Positional arguments
     generate_rs_parent_parser = argparse.ArgumentParser(add_help=False)
     generate_rs_parent_parser.add_argument(
-        "caps_dir", help="Data using CAPS structure.", default=None
+        "caps_directory", help="Data using CAPS structure.", default=None
     )
     generate_rs_parent_parser.add_argument(
         "preprocessing",
@@ -464,7 +453,7 @@ def parse_command_line():
     clinica_comp.add_argument(
         "modality",
         help="""For which modality the tensor will be extracted.
-            't1-linear': images prepocessed with t1-linear pipeline.
+            't1-linear': images preprocessed with t1-linear pipeline.
             't1-extensive': images preprocessed with t1-extensive pipeline.
             'custom': find images with a custom suffix in their filename and
             transform them to tensor format.""",
@@ -591,7 +580,7 @@ def parse_command_line():
         "t1-linear", help="Performs quality check on t1-linear pipeline."
     )
     qc_linear_parser.add_argument(
-        "caps_dir", help="Data using CAPS structure.", type=str
+        "caps_directory", help="Data using CAPS structure.", type=str
     )
     qc_linear_parser.add_argument(
         "output_path", help="Path to the output tsv file (filename included).", type=str
@@ -637,7 +626,7 @@ def parse_command_line():
         "t1-volume", help="Performs quality check on t1-volume pipeline."
     )
     qc_volume_parser.add_argument(
-        "caps_dir", help="Data using CAPS structure.", type=str
+        "caps_directory", help="Data using CAPS structure.", type=str
     )
     qc_volume_parser.add_argument(
         "output_dir",
@@ -1121,60 +1110,59 @@ def parse_command_line():
 
     resume_parser.set_defaults(func=resume_func)
 
-    # Classify - Classify a subject or a list of tsv files with the CNN
+    # Predict - Predict the output value of a subject or a list defined in a TSV file
     # provided as argument.
-    # classify_parser: get command line arguments and options
 
-    classify_parser = subparser.add_parser(
-        "classify",
+    predict_parser = subparser.add_parser(
+        "predict",
         parents=[parent_parser],
-        help="""Classify one image or a list of images with your previously
-                 trained model.""",
+        help="""Performs the individual predictions of a list of subject in tsv_path. 
+        If labels are given, will also compute global metrics on the data set.""",
     )
-    classify_pos_group = classify_parser.add_argument_group(
+    predict_pos_group = predict_parser.add_argument_group(
         TRAIN_CATEGORIES["POSITIONAL"]
     )
-    classify_pos_group.add_argument(
+    predict_pos_group.add_argument(
         "caps_directory", help="Data using CAPS structure.", default=None
     )
-    classify_pos_group.add_argument(
+    predict_pos_group.add_argument(
         "tsv_path",
         help="""Path to the file with subjects/sessions to process.
         If it includes the filename will load the tsv file directly.
         Else will load the baseline tsv files of wanted diagnoses produced by tsvtool.""",
         default=None,
     )
-    classify_pos_group.add_argument(
+    predict_pos_group.add_argument(
         "model_path",
         help="""Path to the folder where the model is stored. Folder structure
                 should be the same obtained during the training.""",
         default=None,
     )
-    classify_pos_group.add_argument(
+    predict_pos_group.add_argument(
         "prefix_output",
-        help="Prefix to name the files resulting from the classify task.",
+        help="Prefix to name the files resulting from the prediction task.",
         type=str,
     )
 
     # Computational resources
-    classify_comput_group = classify_parser.add_argument_group(
+    predict_comput_group = predict_parser.add_argument_group(
         TRAIN_CATEGORIES["COMPUTATIONAL"]
     )
-    classify_comput_group.add_argument(
+    predict_comput_group.add_argument(
         "-cpu",
         "--use_cpu",
         action="store_true",
         help="Uses CPU instead of GPU.",
         default=False,
     )
-    classify_comput_group.add_argument(
+    predict_comput_group.add_argument(
         "-np",
         "--nproc",
         help="Number of cores used during the task.",
         type=int,
         default=2,
     )
-    classify_comput_group.add_argument(
+    predict_comput_group.add_argument(
         "--batch_size",
         default=2,
         type=int,
@@ -1182,32 +1170,31 @@ def parse_command_line():
     )
 
     # Specific classification arguments
-    classify_specific_group = classify_parser.add_argument_group(
+    predict_specific_group = predict_parser.add_argument_group(
         TRAIN_CATEGORIES["OPTIONAL"]
     )
-    classify_specific_group.add_argument(
+    predict_specific_group.add_argument(
         "-nl",
         "--no_labels",
         action="store_true",
         help="Add this flag if your dataset does not contain a ground truth.",
         default=False,
     )
-    classify_specific_group.add_argument(
+    predict_specific_group.add_argument(
         "--use_extracted_features",
         help="""If True the extract slices or patche are used, otherwise the they
                 will be extracted on the fly (if necessary).""",
         default=False,
         action="store_true",
     )
-    classify_specific_group.add_argument(
+    predict_specific_group.add_argument(
         "--selection_metrics",
         help="""List of metrics to find the best models to evaluate. Default will
-        classify best model based on balanced accuracy.""",
-        choices=["loss", "balanced_accuracy"],
-        default=["balanced_accuracy"],
+        perform a prediction on the best model based on the loss.""",
+        default=["loss"],
         nargs="+",
     )
-    classify_specific_group.add_argument(
+    predict_specific_group.add_argument(
         "--diagnoses",
         help="List of participants that will be classified.",
         nargs="+",
@@ -1215,14 +1202,14 @@ def parse_command_line():
         choices=["AD", "CN", "MCI", "sMCI", "pMCI"],
         default=None,
     )
-    classify_specific_group.add_argument(
+    predict_specific_group.add_argument(
         "--multi_cohort",
         help="Performs multi-cohort classification. In this case, caps_directory and tsv_path must be paths to TSV files.",
         action="store_true",
         default=False,
     )
 
-    classify_parser.set_defaults(func=classify_func)
+    predict_parser.set_defaults(func=predict_func)
 
     tsv_parser = subparser.add_parser(
         "tsvtool", help="""Handle tsv files for metadata processing and data splits."""
@@ -1463,19 +1450,6 @@ def parse_command_line():
 
     tsv_analysis_subparser.set_defaults(func=tsv_analysis_func)
 
-    interpret_parser = subparser.add_parser(
-        "interpret",
-        help="""Interpret classification performed by a CNN with saliency maps.""",
-    )
-
-    interpret_subparser = interpret_parser.add_subparsers(
-        title="""Type of saliency map to perform:""",
-        description="""Do you want to perform a group saliency map or individual ones?""",
-        dest="task",
-        help="""****** Saliency maps proposed by clinicadl ******""",
-    )
-    interpret_subparser.required = True
-
     interpret_parent_parser = argparse.ArgumentParser(add_help=False)
 
     interpret_pos_group = interpret_parent_parser.add_argument_group(
@@ -1516,12 +1490,11 @@ def parse_command_line():
         TRAIN_CATEGORIES["MODEL"]
     )
     interpret_model_group.add_argument(
-        "--selection",
-        default=["best_loss"],
+        "--selection_metrics",
+        default=["loss"],
         type=str,
         nargs="+",
-        choices=["best_loss", "best_balanced_accuracy"],
-        help="Loads the model selected on minimal loss or maximum accuracy on validation.",
+        help="Loads the model selected on the metrics given.",
     )
 
     interpret_data_group = interpret_parent_parser.add_argument_group(
@@ -1534,14 +1507,14 @@ def parse_command_line():
         help="TSV path with subjects/sessions to process, if different from classification task.",
     )
     interpret_data_group.add_argument(
-        "--caps_dir",
+        "--caps_directory",
         type=str,
         default=None,
-        help="Path to input dir of the MRI (preprocessed CAPS_dir), if different from classification task",
+        help="Data using CAPS structure, if different from classification task",
     )
     interpret_data_group.add_argument(
         "--multi_cohort",
-        help="Performs multi-cohort interpretation. In this case, caps_dir and tsv_path must be paths to TSV files.",
+        help="Performs multi-cohort interpretation. In this case, caps_directory and tsv_path must be paths to TSV files.",
         action="store_true",
         default=False,
     )
@@ -1565,43 +1538,19 @@ def parse_command_line():
         help="If provided, only the baseline sessions are used for training.",
     )
     interpret_data_group.add_argument(
-        "--keep_true",
-        type=lambda x: bool(strtobool(x)),
-        default=None,
-        help="Chooses false or true positive values of the classification. No selection by default",
-    )
-    interpret_data_group.add_argument(
-        "--nifti_template_path",
+        "--save_individual",
         type=str,
         default=None,
-        help="Path to a nifti template to retrieve affine values.",
+        help="Saves individual saliency maps in addition to the mean saliency map.",
     )
 
-    interpret_display_group = interpret_parent_parser.add_argument_group(
-        TRAIN_CATEGORIES["DISPLAY"]
-    )
-    interpret_display_group.add_argument(
-        "--vmax",
-        type=float,
-        default=0.5,
-        help="Maximum value used in 2D image display.",
-    )
-
-    interpret_group_parser = interpret_subparser.add_parser(
-        "group",
+    interpret_parser = subparser.add_parser(
+        "interpret",
         parents=[parent_parser, interpret_parent_parser],
-        help="Mean saliency map over a list of sessions",
+        help="""Interpret the prediction of a CNN with saliency maps.""",
     )
 
-    interpret_group_parser.set_defaults(func=interpret_func)
-
-    interpret_individual_parser = interpret_subparser.add_parser(
-        "individual",
-        parents=[parent_parser, interpret_parent_parser],
-        help="Individual saliency maps for each session in the input TSV file.",
-    )
-
-    interpret_individual_parser.set_defaults(func=interpret_func)
+    interpret_parser.set_defaults(func=interpret_func)
 
     return parser
 
@@ -1673,7 +1622,7 @@ def return_train_parent_parser():
     train_data_group = train_parent_parser.add_argument_group(TRAIN_CATEGORIES["DATA"])
     train_data_group.add_argument(
         "--multi_cohort",
-        help="Performs multi-cohort training. In this case, caps_dir and tsv_path must be paths to TSV files.",
+        help="Performs multi-cohort training. In this case, caps_directory and tsv_path must be paths to TSV files.",
         action="store_true",
         default=False,
     )
@@ -1786,10 +1735,5 @@ def return_train_parent_parser():
         nargs="+",
         type=str,
     )
-    # train_optim_group.add_argument(
-    #     "--loss",
-    #     help="Replaces default losses: cross-entropy for CNN and MSE for autoencoders.",
-    #     type=str, default="default",
-    #     choices=["default", "L1", "L1Norm", "SmoothL1", "SmoothL1Norm"])
 
     return train_parent_parser

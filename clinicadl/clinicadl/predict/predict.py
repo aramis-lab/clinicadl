@@ -2,8 +2,8 @@
 from clinicadl import MapsManager
 
 
-def classify(
-    caps_dir,
+def predict_cli(
+    caps_directory,
     tsv_path,
     model_path,
     prefix_output,
@@ -18,15 +18,14 @@ def classify(
     multi_cohort=False,
 ):
     """
-    This function verifies the input folders, and the existence of the json file
-    then it launch the inference stage from a specific model.
-
-    It writes the outputs in <model_path>/fold-<fold>/cnn_classification.
+    This function loads a MAPS and predicts the global metrics and individual values
+    for all the models selected using a metric in selection_metrics.
 
     Args:
-        caps_dir: folder containing the tensor files (.pt version of MRI)
-        tsv_path: file with the name of the MRIs to process (single or multiple)
-        model_path: file with the model (pth format).
+        caps_directory (str): path to the CAPS folder. For more information please refer to
+            [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
+        tsv_path (str): path to a TSV file containing the list of participants and sessions to interpret.
+        model_path (str): file with the model (pth format).
         prefix_output: prefix of all classification outputs.
         labels: by default is True. If False no metrics tsv files will be written.
         gpu: if true, it uses gpu.
@@ -44,7 +43,7 @@ def classify(
 
     maps_manager = MapsManager(model_path, verbose=verbose_list[verbose])
     maps_manager.predict(
-        caps_dir,
+        caps_directory,
         tsv_path,
         prefix_output,
         selection_metrics=selection_metrics,

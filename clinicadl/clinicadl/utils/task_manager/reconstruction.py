@@ -1,3 +1,4 @@
+from torch import nn
 from torch.utils.data import sampler
 
 from clinicadl.utils.task_manager.task_manager import TaskManager
@@ -86,3 +87,7 @@ class ReconstructionManager(TaskManager):
             None
         """
         return None, None
+
+    @staticmethod
+    def get_criterion():
+        return nn.MSELoss()

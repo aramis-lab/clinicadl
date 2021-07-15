@@ -202,7 +202,7 @@ class MapsManager:
                 Default uses the same as in training step.
             use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
             prepare_dl (bool): If given, sets the value of prepare_dl, else use the same as in training step.
-            batch_size (bool): If given, sets the value of batch_size, else use the same as in training step.
+            batch_size (int): If given, sets the value of batch_size, else use the same as in training step.
             num_workers (int): If given, sets the value of num_workers, else use the same as in training step.
             use_cpu (bool): If given, a new value for the device of the model will be computed.
             overwrite (bool): If True erase the occurrences of prefix.
@@ -237,7 +237,7 @@ class MapsManager:
 
         self._check_leakage(test_df)
 
-        criterion = self._get_criterion()
+        criterion = self.task_manager.get_criterion()
 
         for fold in folds:
             if self.multi:
@@ -326,9 +326,9 @@ class MapsManager:
 
     def interpret(
         self,
-        caps_directory,
-        tsv_path,
         prefix,
+        caps_directory=None,
+        tsv_path=None,
         folds=None,
         selection_metrics=None,
         multi_cohort=False,
@@ -350,7 +350,9 @@ class MapsManager:
         Args:
             caps_directory (str): path to the CAPS folder. For more information please refer to
                 [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
+                Default use caps_directory of the training step.
             tsv_path (str): path to a TSV file containing the list of participants and sessions to interpret.
+                Default use tsv_path of the training step.
             prefix (str): name of the data group interpreted.
             folds (List[int]): list of folds to interpret. Default perform interpretation on all folds available.
             selection_metrics (List[str]): list of selection metrics to interpret.
@@ -394,14 +396,14 @@ class MapsManager:
         )
 
         test_df = load_data_test(
-            tsv_path,
+            tsv_path if tsv_path is not None else self.tsv_path,
             diagnoses if diagnoses is not None else self.diagnoses,
             multi_cohort=multi_cohort,
             baseline=baseline,
         )
         data_test = return_dataset(
             self.mode,
-            caps_directory,
+            caps_directory if caps_directory is not None else self.caps_directory,
             test_df,
             preprocessing if preprocessing is not None else self.preprocessing,
             all_transformations=all_transforms,
@@ -684,7 +686,7 @@ class MapsManager:
         """
 
         model, beginning_epoch = self._init_model(fold=fold, resume=resume)
-        criterion = self._get_criterion()
+        criterion = self.task_manager.get_criterion()
         optimizer = self._init_optimizer(model, fold=fold, resume=resume)
 
         model.train()
@@ -1380,18 +1382,6 @@ class MapsManager:
     ###############################
     # Objects initialization      #
     ###############################
-    def _get_criterion(self):
-        """Gets the optimization criterion specified in training parameters."""
-        # TODO: move this to task_manager as soon as choice is implemented.
-
-        loss_dict = {
-            "reconstruction": torch.nn.MSELoss(),
-            "classification": torch.nn.CrossEntropyLoss(),
-            "regression": torch.nn.MSELoss(),
-        }
-
-        return loss_dict[self.network_task]
-
     def _init_model(
         self,
         transfer_path=None,
