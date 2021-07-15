@@ -26,7 +26,7 @@ def cli_commands(request):
             "--folds",
             "0",
         ]
-        interpret_input = ["interpret", "group", "results", "group-test"]
+        interpret_input = ["interpret", "results", "group-test"]
 
     elif request.param == "regression":
         cnn_input = [
@@ -45,7 +45,7 @@ def cli_commands(request):
             "--folds",
             "0",
         ]
-        interpret_input = ["interpret", "individual", "results", "individual-test"]
+        interpret_input = ["interpret", "results", "individual-test"]
     else:
         raise NotImplementedError("Test %s is not implemented." % request.param)
 

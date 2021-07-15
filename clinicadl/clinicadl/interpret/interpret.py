@@ -8,7 +8,7 @@ def interpret_cli(options):
     maps_manager = MapsManager(maps_path, verbose=verbose_list[options.verbose])
 
     maps_manager.interpret(
-        caps_directory=options.caps_dir,
+        caps_directory=options.caps_directory,
         tsv_path=options.tsv_path,
         prefix=options.name,
         selection_metrics=options.selection_metrics,
