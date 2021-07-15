@@ -140,7 +140,7 @@ pipeline {
                      cd $WORKSPACE/clinicadl/tests
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
-                     ln -s /mnt/data/data_CI/models data/models
+                     ln -s /mnt/data/data_CI/models/models_new data/models
                      pytest \
                         --junitxml=../../test-reports/test_predict_report.xml \
                         --verbose \
