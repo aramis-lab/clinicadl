@@ -24,18 +24,12 @@ def automatic_resume(model_path, verbose=0):
             if fold[:4:] == "fold"
         ]
     )
-    finished_folds = [
-        fold
-        for fold in fold_list
-        if "cnn_classification" in os.listdir(path.join(model_path, f"fold-{fold}"))
-    ]
     stopped_folds = [
         fold
         for fold in fold_list
-        if fold not in finished_folds
-        and "checkpoint.pth.tar"
-        in os.listdir(path.join(model_path, f"fold-{fold}", "models"))
+        if "tmp" in os.listdir(path.join(model_path, f"fold-{fold}"))
     ]
+    finished_folds = [fold for fold in fold_list if fold not in stopped_folds]
 
     split_manager = maps_manager._init_split_manager()
     fold_iterator = split_manager.fold_iterator()

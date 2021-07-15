@@ -561,6 +561,8 @@ class MapsManager:
                 self.selection_metrics,
             )
 
+            self._erase_tmp(fold)
+
     def _train_multi(self, folds=None, resume=False):
         """
         Trains a single CNN per element in the image.
@@ -665,6 +667,8 @@ class MapsManager:
                 fold,
                 self.selection_metrics,
             )
+
+            self._erase_tmp(fold)
 
     def _train(
         self,
@@ -819,8 +823,6 @@ class MapsManager:
             )
 
             epoch += 1
-
-        self._erase_tmp(fold)
 
         self._test_loader(
             train_loader,
