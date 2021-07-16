@@ -1,35 +1,31 @@
 # coding: utf8
 
 import argparse
-from distutils.util import strtobool
 
 from colorama import Fore
 
 TRAIN_CATEGORIES = {
     # General parent group
     "POSITIONAL": "%sPositional arguments%s" % (Fore.BLUE, Fore.RESET),
+    "MODEL": "%sModel specific arguments%s" % (Fore.BLUE, Fore.RESET),
     "COMPUTATIONAL": "%sComputational resources%s" % (Fore.BLUE, Fore.RESET),
     "DATA": "%sData management%s" % (Fore.BLUE, Fore.RESET),
     "CROSS-VALIDATION": "%sCross-validation arguments%s" % (Fore.BLUE, Fore.RESET),
     "OPTIMIZATION": "%sOptimization parameters%s" % (Fore.BLUE, Fore.RESET),
     # Other parent groups
     "TRANSFER LEARNING": "%sTransfer learning%s" % (Fore.BLUE, Fore.RESET),
-    "AUTOENCODER": "%sAutoencoder specific%s" % (Fore.BLUE, Fore.RESET),
+    # Tasks
+    "RECONSTRUCTION": "%sReconstruction specific%s" % (Fore.BLUE, Fore.RESET),
+    "CLASSIFICATION": "%sClassification specific%s" % (Fore.BLUE, Fore.RESET),
+    "REGRESSION": "%sRegression specific%s" % (Fore.BLUE, Fore.RESET),
     # Slice-level
     "SLICE": "%sSlice-level parameters%s" % (Fore.BLUE, Fore.RESET),
-    "SLICE CNN": "%sSlice-level CNN parameters%s" % (Fore.BLUE, Fore.RESET),
     # Patch arguments
     "PATCH": "%sPatch-level parameters%s" % (Fore.BLUE, Fore.RESET),
-    "PATCH CNN": "%sPatch-level CNN parameters%s" % (Fore.BLUE, Fore.RESET),
     # ROI-based arguments
     "ROI": "%sROI-based parameters%s" % (Fore.BLUE, Fore.RESET),
-    "ROI CNN": "%sROI-based CNN parameters%s" % (Fore.BLUE, Fore.RESET),
     # Other optional arguments
     "OPTIONAL": "%sOther options%s" % (Fore.BLUE, Fore.RESET),
-    # Model selection
-    "MODEL": "%sModel selection%s" % (Fore.BLUE, Fore.RESET),
-    # Display
-    "DISPLAY": "%sResults display%s" % (Fore.BLUE, Fore.RESET),
 }
 
 
@@ -56,8 +52,8 @@ def qc_func(args):
     )
 
     if args.preprocessing == "t1-linear":
-        linear_qc(
-            args.caps_dir,
+        linear_qc.quality_check(
+            args.caps_directory,
             args.output_path,
             tsv_path=args.subjects_sessions_tsv,
             threshold=args.threshold,
@@ -66,7 +62,7 @@ def qc_func(args):
             gpu=not args.use_cpu,
         )
     elif args.preprocessing == "t1-volume":
-        volume_qc(args.caps_dir, args.output_dir, args.group_label)
+        volume_qc.quality_check(args.caps_directory, args.output_dir, args.group_label)
 
 
 def generate_data_func(args):
@@ -78,7 +74,7 @@ def generate_data_func(args):
 
     if args.mode == "random":
         generate_random_dataset(
-            caps_dir=args.caps_dir,
+            caps_directory=args.caps_directory,
             tsv_path=args.subjects_sessions_tsv,
             output_dir=args.output_dir,
             n_subjects=args.n_subjects,
@@ -88,7 +84,7 @@ def generate_data_func(args):
         )
     elif args.mode == "trivial":
         generate_trivial_dataset(
-            caps_dir=args.caps_dir,
+            caps_directory=args.caps_directory,
             tsv_path=args.subjects_sessions_tsv,
             output_dir=args.output_dir,
             n_subjects=args.n_subjects,
@@ -133,50 +129,25 @@ def retrain_func(args):
 def resume_func(args):
     from clinicadl.train.resume import automatic_resume
 
-    if args.use_cpu and args.use_gpu:
-        raise ValueError(
-            "The flags --use_cpu and --use_gpu cannot be specified at the same time."
-        )
-    elif args.use_cpu:
-        gpu = False
-    elif args.use_gpu:
-        gpu = True
-    else:
-        gpu = None
-
     automatic_resume(
         model_path=args.model_path,
-        gpu=gpu,
-        batch_size=args.batch_size,
-        num_workers=args.nproc,
-        evaluation_steps=args.evaluation_steps,
         verbose=args.verbose,
     )
 
 
 # Function to dispatch training to corresponding function
 def train_func(args):
-    from .train import train_autoencoder, train_multi_cnn, train_single_cnn
+    from .train import train
 
-    if args.network_type == "autoencoder":
-        args.transfer_learning_selection = "best_loss"
-        train_autoencoder(args)
-    elif args.network_type == "cnn":
-        train_single_cnn(args)
-    elif args.network_type == "multicnn":
-        train_multi_cnn(args)
-    else:
-        raise NotImplementedError(
-            "Framework %s not implemented in clinicadl" % args.network_type
-        )
+    train(args, erase_existing=False)
 
 
-# Function to dispatch command line options from classify to corresponding
+# Function to dispatch command line options from predict to corresponding
 # function
-def classify_func(args):
-    from clinicadl.infer.infer import classify
+def predict_func(args):
+    from clinicadl.predict.predict import predict_cli
 
-    classify(
+    predict_cli(
         args.caps_directory,
         args.tsv_path,
         args.model_path,
@@ -260,15 +231,9 @@ def tsv_analysis_func(args):
 
 
 def interpret_func(args):
-    from .interpret.group_backprop import group_backprop
-    from .interpret.individual_backprop import individual_backprop
+    from .interpret.interpret import interpret_cli
 
-    if args.task == "group":
-        group_backprop(args)
-    elif args.task == "individual":
-        individual_backprop(args)
-    else:
-        raise ValueError("Unknown task %s for interpretation" % args.task)
+    interpret_cli(args)
 
 
 def parse_command_line():
@@ -281,7 +246,7 @@ def parse_command_line():
         "--logname",
         dest="logname",
         default="clinicaDL.log",
-        metavar=("file.log"),
+        metavar="file.log",
         help="Define the log file name (default: clinicaDL.log)",
     )
     parser.add_argument(
@@ -323,7 +288,7 @@ def parse_command_line():
     # Positional arguments
     generate_rs_parent_parser = argparse.ArgumentParser(add_help=False)
     generate_rs_parent_parser.add_argument(
-        "caps_dir", help="Data using CAPS structure.", default=None
+        "caps_directory", help="Data using CAPS structure.", default=None
     )
     generate_rs_parent_parser.add_argument(
         "preprocessing",
@@ -488,7 +453,7 @@ def parse_command_line():
     clinica_comp.add_argument(
         "modality",
         help="""For which modality the tensor will be extracted.
-            't1-linear': images prepocessed with t1-linear pipeline.
+            't1-linear': images preprocessed with t1-linear pipeline.
             't1-extensive': images preprocessed with t1-extensive pipeline.
             'custom': find images with a custom suffix in their filename and
             transform them to tensor format.""",
@@ -615,7 +580,7 @@ def parse_command_line():
         "t1-linear", help="Performs quality check on t1-linear pipeline."
     )
     qc_linear_parser.add_argument(
-        "caps_dir", help="Data using CAPS structure.", type=str
+        "caps_directory", help="Data using CAPS structure.", type=str
     )
     qc_linear_parser.add_argument(
         "output_path", help="Path to the output tsv file (filename included).", type=str
@@ -661,7 +626,7 @@ def parse_command_line():
         "t1-volume", help="Performs quality check on t1-volume pipeline."
     )
     qc_volume_parser.add_argument(
-        "caps_dir", help="Data using CAPS structure.", type=str
+        "caps_directory", help="Data using CAPS structure.", type=str
     )
     qc_volume_parser.add_argument(
         "output_dir",
@@ -772,17 +737,53 @@ def parse_command_line():
         type=str,
         default=None,
     )
-
-    # Autoencoder
-    autoencoder_parent = argparse.ArgumentParser(add_help=False)
-    autoencoder_group = autoencoder_parent.add_argument_group(
-        TRAIN_CATEGORIES["AUTOENCODER"]
+    transfer_learning_group.add_argument(
+        "--transfer_learning_selection",
+        help="If transfer_learning from CNN, chooses which best transfer model is selected.",
+        type=str,
+        default="loss",
     )
-    autoencoder_group.add_argument(
+
+    # Reconstruction
+    reconstruction_parent = argparse.ArgumentParser(add_help=False)
+    reconstruction_group = reconstruction_parent.add_argument_group(
+        TRAIN_CATEGORIES["RECONSTRUCTION"]
+    )
+    reconstruction_group.add_argument(
         "--visualization",
         help="Save examples of image reconstructions.",
         action="store_true",
         default=False,
+    )
+
+    # Classification
+    classification_parent = argparse.ArgumentParser(add_help=False)
+    classification_group = classification_parent.add_argument_group(
+        TRAIN_CATEGORIES["CLASSIFICATION"]
+    )
+    classification_group.add_argument(
+        "--label",
+        default="diagnosis",
+        help="Target label of the classification task. Must correspond to a categorical variable.",
+    )
+    classification_group.add_argument(
+        "--selection_threshold",
+        help="""Threshold on the balanced accuracies to compute the
+                image-level performance. Parts are selected if their balanced
+                accuracy > threshold. Default corresponds to no selection.""",
+        type=float,
+        default=0.0,
+    )
+
+    # Regression
+    regression_parent = argparse.ArgumentParser(add_help=False)
+    regression_group = regression_parent.add_argument_group(
+        TRAIN_CATEGORIES["REGRESSION"]
+    )
+    regression_group.add_argument(
+        "--label",
+        default="age",
+        help="Target label of the regression task. Must correspond to a continuous variable.",
     )
 
     ######################
@@ -794,40 +795,49 @@ def parse_command_line():
 
     train_image_subparser = train_image_parser.add_subparsers(
         title="""Task to be performed""",
-        description="""Autoencoder reconstruction or cnn classification ?""",
-        dest="network_type",
-        help="""****** Choose a type of network ******""",
+        dest="network_task",
+        help="""****** Choose a task ******""",
     )
 
     train_parent_parser = return_train_parent_parser()
-    train_image_ae_parser = train_image_subparser.add_parser(
-        "autoencoder",
+    train_image_rec_parser = train_image_subparser.add_parser(
+        "reconstruction",
         parents=[
             parent_parser,
             train_parent_parser,
-            autoencoder_parent,
+            reconstruction_parent,
             transfer_learning_parent,
         ],
-        help="Train an image-level autoencoder.",
+        help="Reconstruction of the input image.",
     )
 
-    train_image_ae_parser.set_defaults(func=train_func)
+    train_image_rec_parser.set_defaults(func=train_func)
 
-    train_image_cnn_parser = train_image_subparser.add_parser(
-        "cnn",
-        parents=[parent_parser, train_parent_parser, transfer_learning_parent],
-        help="Train an image-level CNN.",
-    )
-    # /!\ If parents list is changed the arguments won't be in the right group anymore !
-    train_image_cnn_parser._action_groups[-1].add_argument(
-        "--transfer_learning_selection",
-        help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-        type=str,
-        default="best_balanced_accuracy",
-        choices=["best_loss", "best_balanced_accuracy"],
+    train_image_cla_parser = train_image_subparser.add_parser(
+        "classification",
+        parents=[
+            parent_parser,
+            train_parent_parser,
+            classification_parent,
+            transfer_learning_parent,
+        ],
+        help="Classification of the target label.",
     )
 
-    train_image_cnn_parser.set_defaults(func=train_func)
+    train_image_cla_parser.set_defaults(func=train_func)
+
+    train_image_reg_parser = train_image_subparser.add_parser(
+        "regression",
+        parents=[
+            parent_parser,
+            train_parent_parser,
+            regression_parent,
+            transfer_learning_parent,
+        ],
+        help="Regression of the target label.",
+    )
+
+    train_image_reg_parser.set_defaults(func=train_func)
 
     #########################
     # PATCH
@@ -854,91 +864,51 @@ def parse_command_line():
 
     train_patch_subparser = train_patch_parser.add_subparsers(
         title="""Task to be performed""",
-        description="""Autoencoder reconstruction or (multi)cnn classification ?""",
-        dest="network_type",
-        help="""****** Choose a type of network ******""",
+        dest="network_task",
+        help="""****** Choose a task ******""",
     )
     train_patch_subparser.required = True
 
     train_patch_ae_parser = train_patch_subparser.add_parser(
-        "autoencoder",
+        "reconstruction",
         parents=[
             parent_parser,
             train_parent_parser,
             train_patch_parent,
-            autoencoder_parent,
+            reconstruction_parent,
             transfer_learning_parent,
         ],
-        help="Train a 3D patch-level autoencoder.",
+        help="Reconstruction of the input patches.",
     )
 
     train_patch_ae_parser.set_defaults(func=train_func)
 
-    train_patch_cnn_parser = train_patch_subparser.add_parser(
-        "cnn",
+    train_patch_cla_parser = train_patch_subparser.add_parser(
+        "classification",
         parents=[
             parent_parser,
             train_parent_parser,
             train_patch_parent,
+            classification_parent,
             transfer_learning_parent,
         ],
-        help="Train a 3D patch-level CNN.",
-    )
-    # /!\ If parents list is changed the arguments won't be in the right group anymore !
-    train_patch_cnn_parser._action_groups[-1].add_argument(
-        "--transfer_learning_selection",
-        help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-        type=str,
-        default="best_balanced_accuracy",
-        choices=["best_loss", "best_balanced_accuracy"],
+        help="Classification of the target label.",
     )
 
-    train_patch_cnn_group = train_patch_cnn_parser.add_argument_group(
-        TRAIN_CATEGORIES["PATCH CNN"]
-    )
-    train_patch_cnn_group.add_argument(
-        "--selection_threshold",
-        help="""Threshold on the balanced accuracies to compute the
-             subject-level performance. Patches are selected if their balanced
-             accuracy > threshold. Default corresponds to no selection.""",
-        type=float,
-        default=0.0,
-    )
+    train_patch_cla_parser.set_defaults(func=train_func)
 
-    train_patch_cnn_parser.set_defaults(func=train_func)
-
-    train_patch_multicnn_parser = train_patch_subparser.add_parser(
-        "multicnn",
+    train_patch_reg_parser = train_patch_subparser.add_parser(
+        "regression",
         parents=[
             parent_parser,
             train_parent_parser,
             train_patch_parent,
+            regression_parent,
             transfer_learning_parent,
         ],
-        help="Train a 3D patch-level multi-CNN (one CNN is trained per patch location).",
+        help="Regression of the target label.",
     )
-    # /!\ If parents list is changed the arguments won't be in the right group anymore !
-    train_patch_multicnn_parser._action_groups[-1].add_argument(
-        "--transfer_learning_selection",
-        help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-        type=str,
-        default="best_balanced_accuracy",
-        choices=["best_loss", "best_balanced_accuracy"],
-    )
-
-    train_patch_multicnn_group = train_patch_multicnn_parser.add_argument_group(
-        TRAIN_CATEGORIES["PATCH CNN"]
-    )
-    train_patch_multicnn_group.add_argument(
-        "--selection_threshold",
-        help="""Threshold on the balanced accuracies to compute the
-                 subject-level performance. Patches are selected if their balanced
-                 accuracy > threshold. Default corresponds to no selection.""",
-        type=float,
-        default=0.0,
-    )
-
-    train_patch_multicnn_parser.set_defaults(func=train_func)
+    train_patch_reg_parser.set_defaults(func=train_func)
 
     #########################
     # ROI
@@ -975,91 +945,52 @@ def parse_command_line():
 
     train_roi_subparser = train_roi_parser.add_subparsers(
         title="""Task to be performed""",
-        description="""Autoencoder reconstruction or cnn classification ?""",
-        dest="network_type",
-        help="""****** Choose a type of network ******""",
+        dest="network_task",
+        help="""****** Choose a task ******""",
     )
     train_roi_subparser.required = True
 
-    train_roi_ae_parser = train_roi_subparser.add_parser(
-        "autoencoder",
+    train_roi_rec_parser = train_roi_subparser.add_parser(
+        "reconstruction",
         parents=[
             parent_parser,
             train_parent_parser,
             train_roi_parent,
-            autoencoder_parent,
+            reconstruction_parent,
             transfer_learning_parent,
         ],
-        help="Train a ROI-based autoencoder.",
+        help="Reconstruction of the input regions.",
     )
 
-    train_roi_ae_parser.set_defaults(func=train_func)
+    train_roi_rec_parser.set_defaults(func=train_func)
 
-    train_roi_cnn_parser = train_roi_subparser.add_parser(
-        "cnn",
+    train_roi_cla_parser = train_roi_subparser.add_parser(
+        "classification",
         parents=[
             parent_parser,
             train_parent_parser,
             train_roi_parent,
+            classification_parent,
             transfer_learning_parent,
         ],
-        help="Train a ROI-based CNN.",
-    )
-    # /!\ If parents list is changed the arguments won't be in the right group anymore !
-    train_roi_cnn_parser._action_groups[-1].add_argument(
-        "--transfer_learning_selection",
-        help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-        type=str,
-        default="best_balanced_accuracy",
-        choices=["best_loss", "best_balanced_accuracy"],
+        help="Classification of the target label.",
     )
 
-    train_roi_cnn_group = train_roi_cnn_parser.add_argument_group(
-        TRAIN_CATEGORIES["ROI CNN"]
-    )
-    train_roi_cnn_group.add_argument(
-        "--selection_threshold",
-        help="""Threshold on the balanced accuracies to compute the
-             subject-level performance. ROIs are selected if their balanced
-             accuracy > threshold. Default corresponds to no selection.""",
-        type=float,
-        default=0.0,
-    )
+    train_roi_cla_parser.set_defaults(func=train_func)
 
-    train_roi_cnn_parser.set_defaults(func=train_func)
-
-    train_roi_multicnn_parser = train_roi_subparser.add_parser(
-        "multicnn",
+    train_roi_reg_parser = train_roi_subparser.add_parser(
+        "regression",
         parents=[
             parent_parser,
             train_parent_parser,
             train_roi_parent,
+            regression_parent,
             transfer_learning_parent,
         ],
-        help="Train a ROI-based multi-CNN (one CNN is trained per patch location).",
-    )
-    # /!\ If parents list is changed the arguments won't be in the right group anymore !
-    train_roi_multicnn_parser._action_groups[-1].add_argument(
-        "--transfer_learning_selection",
-        help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-        type=str,
-        default="best_balanced_accuracy",
-        choices=["best_loss", "best_balanced_accuracy"],
+        help="Regression of the target label.",
     )
 
-    train_roi_multicnn_group = train_roi_multicnn_parser.add_argument_group(
-        TRAIN_CATEGORIES["ROI CNN"]
-    )
-    train_roi_multicnn_group.add_argument(
-        "--selection_threshold",
-        help="""Threshold on the balanced accuracies to compute the
-                     subject-level performance. Patches are selected if their balanced
-                     accuracy > threshold. Default corresponds to no selection.""",
-        type=float,
-        default=0.0,
-    )
-
-    train_roi_multicnn_parser.set_defaults(func=train_func)
+    train_roi_reg_parser.set_defaults(func=train_func)
 
     #########################
     # SLICE
@@ -1070,9 +1001,8 @@ def parse_command_line():
 
     train_slice_subparser = train_slice_parser.add_subparsers(
         title="""Task to be performed""",
-        description="""Autoencoder reconstruction or cnn classification ?""",
-        dest="network_type",
-        help="""****** Choose a type of network ******""",
+        dest="network_task",
+        help="""****** Choose a task ******""",
     )
     train_slice_subparser.required = True
 
@@ -1105,84 +1035,47 @@ def parse_command_line():
         action="store_true",
     )
 
-    train_slice_ae_parser = train_slice_subparser.add_parser(
-        "autoencoder",
+    train_slice_rec_parser = train_slice_subparser.add_parser(
+        "reconstruction",
         parents=[
             parent_parser,
             train_parent_parser,
             train_slice_parent,
+            reconstruction_parent,
             transfer_learning_parent,
         ],
-        help="Train a 2D slice-level autoencoder.",
+        help="Reconstruction of the input slices.",
     )
 
-    train_slice_ae_parser.set_defaults(func=train_func)
+    train_slice_rec_parser.set_defaults(func=train_func)
 
-    train_slice_cnn_parser = train_slice_subparser.add_parser(
-        "cnn",
+    train_slice_cla_parser = train_slice_subparser.add_parser(
+        "classification",
         parents=[
             parent_parser,
             train_parent_parser,
             train_slice_parent,
+            classification_parent,
             transfer_learning_parent,
         ],
-        help="Train a 2D slice-level CNN.",
-    )
-    # /!\ If parents list is changed the arguments won't be in the right group anymore !
-    train_slice_cnn_parser._action_groups[-1].add_argument(
-        "--transfer_learning_selection",
-        help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-        type=str,
-        default="best_balanced_accuracy",
-        choices=["best_loss", "best_balanced_accuracy"],
+        help="Classification of the target label.",
     )
 
-    train_slice_cnn_group = train_slice_cnn_parser.add_argument_group(
-        TRAIN_CATEGORIES["SLICE CNN"]
-    )
-    train_slice_cnn_group.add_argument(
-        "--selection_threshold",
-        help="""Threshold on the balanced accuracies to compute the
-             subject-level performance. Slices are selected if their balanced
-             accuracy > threshold. Default corresponds to no selection.""",
-        type=float,
-        default=0.0,
-    )
+    train_slice_cla_parser.set_defaults(func=train_func)
 
-    train_slice_cnn_parser.set_defaults(func=train_func)
-
-    train_slice_multicnn_parser = train_slice_subparser.add_parser(
-        "multicnn",
+    train_slice_reg_parser = train_slice_subparser.add_parser(
+        "regression",
         parents=[
             parent_parser,
             train_parent_parser,
             train_slice_parent,
+            regression_parent,
             transfer_learning_parent,
         ],
-        help="Train a 2D slice-level multi-CNN.",
-    )
-    # /!\ If parents list is changed the arguments won't be in the right group anymore !
-    train_slice_multicnn_parser._action_groups[-1].add_argument(
-        "--transfer_learning_selection",
-        help="If transfer_learning from CNN, chooses which best transfer model is selected.",
-        type=str,
-        default="best_balanced_accuracy",
-        choices=["best_loss", "best_balanced_accuracy"],
+        help="Regression of the target label.",
     )
 
-    train_slice_multicnn_group = train_slice_multicnn_parser.add_argument_group(
-        TRAIN_CATEGORIES["SLICE CNN"]
-    )
-    train_slice_multicnn_group.add_argument(
-        "--selection_threshold",
-        help="""Threshold on the balanced accuracies to compute the
-                 subject-level performance. Slices are selected if their balanced
-                 accuracy > threshold. Default corresponds to no selection.""",
-        type=float,
-        default=0.0,
-    )
-
-    train_slice_multicnn_parser.set_defaults(func=train_func)
+    train_slice_reg_parser.set_defaults(func=train_func)
 
     #########################
     # FROM JSON
@@ -1215,103 +1108,61 @@ def parse_command_line():
         "model_path", type=str, help="Directory containing the random_search.json file."
     )
 
-    resume_comp_group = resume_parser.add_argument_group(
-        TRAIN_CATEGORIES["COMPUTATIONAL"]
-    )
-    resume_comp_group.add_argument(
-        "-np",
-        "--nproc",
-        help="Number of cores used the quality check. "
-        "Default will reuse the same value than in training.",
-        type=int,
-        default=None,
-    )
-    resume_comp_group.add_argument(
-        "-cpu",
-        "--use_cpu",
-        action="store_true",
-        default=False,
-        help="Override the previous command line to use CPU.",
-    )
-    resume_comp_group.add_argument(
-        "-gpu",
-        "--use_gpu",
-        action="store_true",
-        default=False,
-        help="Override the previous command line to use GPU.",
-    )
-    resume_comp_group.add_argument(
-        "--batch_size",
-        default=None,
-        type=int,
-        help="Batch size for data loading. "
-        "Default will reuse the same value than in training.",
-    )
-    resume_comp_group.add_argument(
-        "--evaluation_steps",
-        "-esteps",
-        default=None,
-        type=int,
-        help="Fix the number of iterations to perform before computing an evaluation. "
-        "Default will reuse the same value than in training.",
-    )
-
     resume_parser.set_defaults(func=resume_func)
 
-    # Classify - Classify a subject or a list of tsv files with the CNN
+    # Predict - Predict the output value of a subject or a list defined in a TSV file
     # provided as argument.
-    # classify_parser: get command line arguments and options
 
-    classify_parser = subparser.add_parser(
-        "classify",
+    predict_parser = subparser.add_parser(
+        "predict",
         parents=[parent_parser],
-        help="""Classify one image or a list of images with your previously
-                 trained model.""",
+        help="""Performs the individual predictions of a list of subject in tsv_path. 
+        If labels are given, will also compute global metrics on the data set.""",
     )
-    classify_pos_group = classify_parser.add_argument_group(
+    predict_pos_group = predict_parser.add_argument_group(
         TRAIN_CATEGORIES["POSITIONAL"]
     )
-    classify_pos_group.add_argument(
+    predict_pos_group.add_argument(
         "caps_directory", help="Data using CAPS structure.", default=None
     )
-    classify_pos_group.add_argument(
+    predict_pos_group.add_argument(
         "tsv_path",
         help="""Path to the file with subjects/sessions to process.
         If it includes the filename will load the tsv file directly.
         Else will load the baseline tsv files of wanted diagnoses produced by tsvtool.""",
         default=None,
     )
-    classify_pos_group.add_argument(
+    predict_pos_group.add_argument(
         "model_path",
         help="""Path to the folder where the model is stored. Folder structure
                 should be the same obtained during the training.""",
         default=None,
     )
-    classify_pos_group.add_argument(
+    predict_pos_group.add_argument(
         "prefix_output",
-        help="Prefix to name the files resulting from the classify task.",
+        help="Prefix to name the files resulting from the prediction task.",
         type=str,
     )
 
     # Computational resources
-    classify_comput_group = classify_parser.add_argument_group(
+    predict_comput_group = predict_parser.add_argument_group(
         TRAIN_CATEGORIES["COMPUTATIONAL"]
     )
-    classify_comput_group.add_argument(
+    predict_comput_group.add_argument(
         "-cpu",
         "--use_cpu",
         action="store_true",
         help="Uses CPU instead of GPU.",
         default=False,
     )
-    classify_comput_group.add_argument(
+    predict_comput_group.add_argument(
         "-np",
         "--nproc",
         help="Number of cores used during the task.",
         type=int,
         default=2,
     )
-    classify_comput_group.add_argument(
+    predict_comput_group.add_argument(
         "--batch_size",
         default=2,
         type=int,
@@ -1319,32 +1170,31 @@ def parse_command_line():
     )
 
     # Specific classification arguments
-    classify_specific_group = classify_parser.add_argument_group(
+    predict_specific_group = predict_parser.add_argument_group(
         TRAIN_CATEGORIES["OPTIONAL"]
     )
-    classify_specific_group.add_argument(
+    predict_specific_group.add_argument(
         "-nl",
         "--no_labels",
         action="store_true",
         help="Add this flag if your dataset does not contain a ground truth.",
         default=False,
     )
-    classify_specific_group.add_argument(
+    predict_specific_group.add_argument(
         "--use_extracted_features",
         help="""If True the extract slices or patche are used, otherwise the they
                 will be extracted on the fly (if necessary).""",
         default=False,
         action="store_true",
     )
-    classify_specific_group.add_argument(
+    predict_specific_group.add_argument(
         "--selection_metrics",
         help="""List of metrics to find the best models to evaluate. Default will
-        classify best model based on balanced accuracy.""",
-        choices=["loss", "balanced_accuracy"],
-        default=["balanced_accuracy"],
+        perform a prediction on the best model based on the loss.""",
+        default=["loss"],
         nargs="+",
     )
-    classify_specific_group.add_argument(
+    predict_specific_group.add_argument(
         "--diagnoses",
         help="List of participants that will be classified.",
         nargs="+",
@@ -1352,14 +1202,14 @@ def parse_command_line():
         choices=["AD", "CN", "MCI", "sMCI", "pMCI"],
         default=None,
     )
-    classify_specific_group.add_argument(
+    predict_specific_group.add_argument(
         "--multi_cohort",
-        help="Performs multi-cohort classification. In this case, caps_dir and tsv_path must be paths to TSV files.",
+        help="Performs multi-cohort classification. In this case, caps_directory and tsv_path must be paths to TSV files.",
         action="store_true",
         default=False,
     )
 
-    classify_parser.set_defaults(func=classify_func)
+    predict_parser.set_defaults(func=predict_func)
 
     tsv_parser = subparser.add_parser(
         "tsvtool", help="""Handle tsv files for metadata processing and data splits."""
@@ -1600,19 +1450,6 @@ def parse_command_line():
 
     tsv_analysis_subparser.set_defaults(func=tsv_analysis_func)
 
-    interpret_parser = subparser.add_parser(
-        "interpret",
-        help="""Interpret classification performed by a CNN with saliency maps.""",
-    )
-
-    interpret_subparser = interpret_parser.add_subparsers(
-        title="""Type of saliency map to perform:""",
-        description="""Do you want to perform a group saliency map or individual ones?""",
-        dest="task",
-        help="""****** Saliency maps proposed by clinicadl ******""",
-    )
-    interpret_subparser.required = True
-
     interpret_parent_parser = argparse.ArgumentParser(add_help=False)
 
     interpret_pos_group = interpret_parent_parser.add_argument_group(
@@ -1653,12 +1490,11 @@ def parse_command_line():
         TRAIN_CATEGORIES["MODEL"]
     )
     interpret_model_group.add_argument(
-        "--selection",
-        default=["best_loss"],
+        "--selection_metrics",
+        default=["loss"],
         type=str,
         nargs="+",
-        choices=["best_loss", "best_balanced_accuracy"],
-        help="Loads the model selected on minimal loss or maximum accuracy on validation.",
+        help="Loads the model selected on the metrics given.",
     )
 
     interpret_data_group = interpret_parent_parser.add_argument_group(
@@ -1671,14 +1507,14 @@ def parse_command_line():
         help="TSV path with subjects/sessions to process, if different from classification task.",
     )
     interpret_data_group.add_argument(
-        "--caps_dir",
+        "--caps_directory",
         type=str,
         default=None,
-        help="Path to input dir of the MRI (preprocessed CAPS_dir), if different from classification task",
+        help="Data using CAPS structure, if different from classification task",
     )
     interpret_data_group.add_argument(
         "--multi_cohort",
-        help="Performs multi-cohort interpretation. In this case, caps_dir and tsv_path must be paths to TSV files.",
+        help="Performs multi-cohort interpretation. In this case, caps_directory and tsv_path must be paths to TSV files.",
         action="store_true",
         default=False,
     )
@@ -1690,10 +1526,10 @@ def parse_command_line():
         help="The images corresponding to this diagnosis only will be loaded.",
     )
     interpret_data_group.add_argument(
-        "--target_diagnosis",
-        default=None,
+        "--target_node",
+        default=0,
         type=str,
-        help="Which class the gradients explain. If None is given will be equal to diagnosis.",
+        help="Which target node the gradients explain. Default takes the first output node.",
     )
     interpret_data_group.add_argument(
         "--baseline",
@@ -1702,43 +1538,19 @@ def parse_command_line():
         help="If provided, only the baseline sessions are used for training.",
     )
     interpret_data_group.add_argument(
-        "--keep_true",
-        type=lambda x: bool(strtobool(x)),
-        default=None,
-        help="Chooses false or true positive values of the classification. No selection by default",
-    )
-    interpret_data_group.add_argument(
-        "--nifti_template_path",
+        "--save_individual",
         type=str,
         default=None,
-        help="Path to a nifti template to retrieve affine values.",
+        help="Saves individual saliency maps in addition to the mean saliency map.",
     )
 
-    interpret_display_group = interpret_parent_parser.add_argument_group(
-        TRAIN_CATEGORIES["DISPLAY"]
-    )
-    interpret_display_group.add_argument(
-        "--vmax",
-        type=float,
-        default=0.5,
-        help="Maximum value used in 2D image display.",
-    )
-
-    interpret_group_parser = interpret_subparser.add_parser(
-        "group",
+    interpret_parser = subparser.add_parser(
+        "interpret",
         parents=[parent_parser, interpret_parent_parser],
-        help="Mean saliency map over a list of sessions",
+        help="""Interpret the prediction of a CNN with saliency maps.""",
     )
 
-    interpret_group_parser.set_defaults(func=interpret_func)
-
-    interpret_individual_parser = interpret_subparser.add_parser(
-        "individual",
-        parents=[parent_parser, interpret_parent_parser],
-        help="Individual saliency maps for each session in the input TSV file.",
-    )
-
-    interpret_individual_parser.set_defaults(func=interpret_func)
+    interpret_parser.set_defaults(func=interpret_func)
 
     return parser
 
@@ -1750,7 +1562,7 @@ def return_train_parent_parser():
         TRAIN_CATEGORIES["POSITIONAL"]
     )
     train_pos_group.add_argument(
-        "caps_dir", help="Data using CAPS structure.", default=None
+        "caps_directory", help="Data using CAPS structure.", default=None
     )
     train_pos_group.add_argument(
         "preprocessing",
@@ -1766,6 +1578,16 @@ def return_train_parent_parser():
     )
     train_pos_group.add_argument(
         "model", help="CNN Model to be used during the training.", default="Conv5_FC3"
+    )
+
+    train_model_group = train_parent_parser.add_argument_group(
+        TRAIN_CATEGORIES["MODEL"]
+    )
+    train_model_group.add_argument(
+        "--multi",
+        action="store_true",
+        help="If provided uses a multi-network framework.",
+        default=False,
     )
 
     train_comput_group = train_parent_parser.add_argument_group(
@@ -1800,7 +1622,7 @@ def return_train_parent_parser():
     train_data_group = train_parent_parser.add_argument_group(TRAIN_CATEGORIES["DATA"])
     train_data_group.add_argument(
         "--multi_cohort",
-        help="Performs multi-cohort training. In this case, caps_dir and tsv_path must be paths to TSV files.",
+        help="Performs multi-cohort training. In this case, caps_directory and tsv_path must be paths to TSV files.",
         action="store_true",
         default=False,
     )
@@ -1841,26 +1663,6 @@ def return_train_parent_parser():
         type=str,
         choices=["random", "weighted"],
     )
-    train_data_group.add_argument(
-        "--predict_atlas_intensities",
-        help="Atlases used in t1-volume pipeline to make intensities prediction.",
-        default=None,
-        type=str,
-        choices=["AAL2", "AICHA", "Hammers", "LPBA40", "Neuromorphometrics"],
-    )
-    train_data_group.add_argument(
-        "--atlas_weight",
-        help="Weight to put on the MSE loss used to compute the error on atlas intensities.",
-        default=1,
-        type=float,
-    )
-    train_data_group.add_argument(
-        "--merged_tsv_path",
-        default="",
-        type=str,
-        help="Path to the output of clinica iotools merged-tsv (concatenation for multi-cohort). "
-        "Can accelerate training if atlas intensities are predicted.",
-    )
 
     train_cv_group = train_parent_parser.add_argument_group(
         TRAIN_CATEGORIES["CROSS-VALIDATION"]
@@ -1873,7 +1675,7 @@ def return_train_parent_parser():
         default=0,
     )
     train_cv_group.add_argument(
-        "--split",
+        "--folds",
         help="Train the list of given folds. By default train all folds.",
         type=int,
         default=None,
@@ -1926,10 +1728,12 @@ def return_train_parent_parser():
         default=1,
         type=int,
     )
-    # train_optim_group.add_argument(
-    #     "--loss",
-    #     help="Replaces default losses: cross-entropy for CNN and MSE for autoencoders.",
-    #     type=str, default="default",
-    #     choices=["default", "L1", "L1Norm", "SmoothL1", "SmoothL1Norm"])
+    train_optim_group.add_argument(
+        "--selection_metrics",
+        help="Metrics used for the selection of the best models according to validation performance.",
+        default=["loss"],
+        nargs="+",
+        type=str,
+    )
 
     return train_parent_parser

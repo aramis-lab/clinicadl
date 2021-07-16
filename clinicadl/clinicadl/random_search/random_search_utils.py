@@ -44,29 +44,32 @@ def random_sampling(rs_options, options):
         "atlas_weight": "uniform",
         "baseline": "choice",
         "batch_size": "fixed",
-        "caps_dir": "fixed",
+        "caps_directory": "fixed",
         "channels_limit": "fixed",
         "data_augmentation": "fixed",
         "diagnoses": "fixed",
         "dropout": "uniform",
         "epochs": "fixed",
         "evaluation_steps": "fixed",
+        "label": "fixed",
         "learning_rate": "exponent",
         "loss": "choice",
         "merged_tsv_path": "fixed",
         "mode": "choice",
+        "multi": "choice",
         "multi_cohort": "fixed",
         "n_fcblocks": "randint",
         "n_splits": "fixed",
         "nproc": "fixed",
-        "network_type": "choice",
+        "network_task": "choice",
         "network_normalization": "choice",
         "optimizer": "choice",
         "patience": "fixed",
         "preprocessing": "choice",
         "predict_atlas_intensities": "fixed",
+        "selection_metrics": "fixed",
         "sampler": "choice",
-        "split": "fixed",
+        "folds": "fixed",
         "tolerance": "fixed",
         "transfer_learning_path": "choice",
         "transfer_learning_selection": "choice",
@@ -120,7 +123,7 @@ def random_sampling(rs_options, options):
     options.evaluation_steps = find_evaluation_steps(
         options.accumulation_steps, goal=options.evaluation_steps
     )
-    options.convolutions = random_conv_sampling(rs_options)
+    options.convolutions_dict = random_conv_sampling(rs_options)
 
     return options
 

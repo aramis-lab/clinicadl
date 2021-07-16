@@ -1,9 +1,10 @@
 # coding: utf8
 
-import pytest
+import json
 import os
 import shutil
-import json
+
+import pytest
 
 launch_dir = "results"
 name_dir = "job-1"
@@ -18,12 +19,12 @@ def cli_commands(request):
 
     if request.param == "rs_image_cnn":
         arg_dict = {
-            "caps_dir": "data/dataset/random_example",
+            "caps_directory": "data/dataset/random_example",
             "tsv_path": "data/labels_list",
             "preprocessing": "t1-linear",
             "diagnoses": ["AD", "CN"],
             "mode": "image",
-            "network_type": "cnn",
+            "network_task": "classification",
             "epochs": 1,
             "patience": 0,
             "tolerance": 0.0,
@@ -34,15 +35,17 @@ def cli_commands(request):
             "n_fcblocks": [1, 2],
         }
         generate_input = ["random-search", "generate", launch_dir, name_dir]
-        log_input = ["random-search", "analysis", launch_dir]
     else:
         raise NotImplementedError("Test %s is not implemented." % request.param)
 
-    return arg_dict, generate_input, log_input
+    return arg_dict, generate_input
 
 
 def test_random_search(cli_commands):
-    arg_dict, generate_input, log_input = cli_commands
+    arg_dict, generate_input = cli_commands
+
+    if os.path.exists(launch_dir):
+        shutil.rmtree(launch_dir)
 
     # Write random_search.json file
     os.makedirs(launch_dir, exist_ok=True)
@@ -53,16 +56,8 @@ def test_random_search(cli_commands):
 
     flag_error_generate = not os.system("clinicadl " + " ".join(generate_input))
     performances_flag = os.path.exists(
-        os.path.join(launch_dir, name_dir, "fold-0", "cnn_classification")
+        os.path.join(launch_dir, name_dir, "fold-0", "best-loss", "train")
     )
-    flag_error_log = not os.system("clinicadl " + " ".join(log_input))
-    analysis_flag = True
-    for metric in ["loss", "balanced_accuracy"]:
-        analysis_flag = analysis_flag and os.path.exists(
-            os.path.join(launch_dir, f"analysis_{metric}.tsv")
-        )
     assert flag_error_generate
     assert performances_flag
-    assert flag_error_log
-    assert analysis_flag
     shutil.rmtree(launch_dir)

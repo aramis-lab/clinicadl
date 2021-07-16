@@ -1,11 +1,12 @@
 # coding: utf8
 
-import pytest
 import os
 import shutil
 from os import path
-import numpy as np
+
 import nibabel as nib
+import numpy as np
+import pytest
 
 caps_dir = "data/dataset/random_example"
 
@@ -18,7 +19,7 @@ def cli_commands(request):
         test_input = [
             "train",
             "roi",
-            "cnn",
+            "classification",
             caps_dir,
             "t1-linear",
             "data/labels_list",
@@ -28,7 +29,7 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
             "--roi_list",
             "random1",
@@ -38,7 +39,7 @@ def cli_commands(request):
         test_input = [
             "train",
             "roi",
-            "multicnn",
+            "classification",
             caps_dir,
             "t1-linear",
             "data/labels_list",
@@ -48,10 +49,11 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
             "--roi_list",
             "random1 random2",
+            "--multi",
         ]
     else:
         raise NotImplementedError("Test %s is not implemented." % request.param)
@@ -60,6 +62,9 @@ def cli_commands(request):
 
 
 def test_train(cli_commands):
+    if os.path.exists("results"):
+        shutil.rmtree("results")
+
     roi_list, test_input = cli_commands
     crop_size = (50, 50, 50)
     os.makedirs(
@@ -86,7 +91,7 @@ def test_train(cli_commands):
 
     flag_error = not os.system("clinicadl " + " ".join(test_input))
     performances_flag = os.path.exists(
-        os.path.join("results", "fold-0", "cnn_classification")
+        os.path.join("results", "fold-0", "best-loss", "train")
     )
     assert flag_error
     assert performances_flag

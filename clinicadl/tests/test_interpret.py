@@ -1,18 +1,19 @@
 # coding: utf8
 
-import pytest
 import os
 import shutil
 
+import pytest
 
-@pytest.fixture(params=["group_image", "individual_image"])
+
+@pytest.fixture(params=["classification", "regression"])
 def cli_commands(request):
 
-    if request.param == "group_image":
+    if request.param == "classification":
         cnn_input = [
             "train",
             "image",
-            "cnn",
+            "classification",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
@@ -22,16 +23,16 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
-        interpret_input = ["interpret", "group", "results", "group-test"]
+        interpret_input = ["interpret", "results", "group-test"]
 
-    elif request.param == "individual_image":
+    elif request.param == "regression":
         cnn_input = [
             "train",
             "image",
-            "cnn",
+            "regression",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
@@ -41,10 +42,10 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
-        interpret_input = ["interpret", "individual", "results", "individual-test"]
+        interpret_input = ["interpret", "results", "individual-test"]
     else:
         raise NotImplementedError("Test %s is not implemented." % request.param)
 
@@ -53,9 +54,14 @@ def cli_commands(request):
 
 def test_interpret(cli_commands):
     cnn_input, interpret_input = cli_commands
+    if os.path.exists("results"):
+        shutil.rmtree("results")
+
     train_error = not os.system("clinicadl " + " ".join(cnn_input))
     interpret_error = not os.system("clinicadl " + " ".join(interpret_input))
-    interpret_flag = os.path.exists(os.path.join("results", "fold-0", "gradients"))
+    interpret_flag = os.path.exists(
+        os.path.join("results", "fold-0", "best-loss", "interpretation")
+    )
     assert train_error
     assert interpret_error
     assert interpret_flag

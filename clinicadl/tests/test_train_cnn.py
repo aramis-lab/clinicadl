@@ -1,8 +1,11 @@
 # coding: utf8
 
-import pytest
 import os
 import shutil
+
+import pytest
+
+output_dir = "results"
 
 
 @pytest.fixture(
@@ -21,103 +24,105 @@ def cli_commands(request):
         test_input = [
             "train",
             "slice",
-            "cnn",
+            "classification",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
-            "results",
+            output_dir,
             "resnet18",
             "--epochs",
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
     elif request.param == "train_image_cnn":
         test_input = [
             "train",
             "image",
-            "cnn",
+            "regression",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
-            "results",
+            output_dir,
             "Conv5_FC3",
             "--epochs",
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
     elif request.param == "train_patch_cnn":
         test_input = [
             "train",
             "patch",
-            "cnn",
+            "classification",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
-            "results",
+            output_dir,
             "Conv4_FC3",
             "--epochs",
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
     elif request.param == "train_patch_multicnn":
         test_input = [
             "train",
             "patch",
-            "multicnn",
+            "classification",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
-            "results",
+            output_dir,
             "Conv4_FC3",
             "--epochs",
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
+            "--multi",
         ]
     elif request.param == "train_roi_cnn":
         test_input = [
             "train",
             "roi",
-            "cnn",
+            "classification",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
-            "results",
+            output_dir,
             "Conv4_FC3",
             "--epochs",
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
     elif request.param == "train_roi_multicnn":
         test_input = [
             "train",
             "roi",
-            "multicnn",
+            "classification",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
-            "results",
+            output_dir,
             "Conv4_FC3",
             "--epochs",
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
+            "--multi",
         ]
     else:
         raise NotImplementedError("Test %s is not implemented." % request.param)
@@ -127,10 +132,12 @@ def cli_commands(request):
 
 def test_train(cli_commands):
     test_input = cli_commands
+    if os.path.exists(output_dir):
+        shutil.rmtree(output_dir)
     flag_error = not os.system("clinicadl " + " ".join(test_input))
     performances_flag = os.path.exists(
-        os.path.join("results", "fold-0", "cnn_classification")
+        os.path.join("results", "fold-0", "best-loss", "train")
     )
     assert flag_error
     assert performances_flag
-    shutil.rmtree("results")
+    shutil.rmtree(output_dir)

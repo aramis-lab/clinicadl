@@ -1,14 +1,13 @@
-import pytest
 import os
 import shutil
+
+import pytest
 
 
 # Everything is tested on roi except for cnn --> multicnn (patch) as multicnn is not implemented for roi.
 @pytest.fixture(
     params=[
-        "transfer_smallAE_largeAE",
         "transfer_ae_ae",
-        "transfer_smallAE_largeCNN",
         "transfer_ae_cnn",
         "transfer_cnn_cnn",
         "transfer_cnn_multicnn",
@@ -16,107 +15,37 @@ import shutil
 )
 def cli_commands(request):
 
-    if request.param == "transfer_smallAE_largeAE":
+    if request.param == "transfer_ae_ae":
         source_task = [
             "train",
             "roi",
-            "autoencoder",
+            "reconstruction",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
             "results_source",
-            "Conv5_FC3",
+            "AE_Conv4_FC3",
             "--epochs",
             "1",
             "--n_splits",
             "2",
-            "--split",
-            "0",
-        ]
-        target_task = [
-            "train",
-            "image",
-            "autoencoder",
-            "data/dataset/random_example",
-            "t1-linear",
-            "data/labels_list",
-            "results_target",
-            "Conv6_FC3",
-            "--epochs",
-            "1",
-            "--n_splits",
-            "2",
-            "--split",
-            "0",
-            "--transfer_learning_path",
-            "results_source",
-        ]
-    elif request.param == "transfer_ae_ae":
-        source_task = [
-            "train",
-            "roi",
-            "autoencoder",
-            "data/dataset/random_example",
-            "t1-linear",
-            "data/labels_list",
-            "results_source",
-            "Conv4_FC3",
-            "--epochs",
-            "1",
-            "--n_splits",
-            "2",
-            "--split",
+            "--folds",
             "0",
         ]
         target_task = [
             "train",
             "roi",
-            "autoencoder",
+            "reconstruction",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
             "results_target",
-            "Conv4_FC3",
+            "AE_Conv4_FC3",
             "--epochs",
             "1",
             "--n_splits",
             "2",
-            "--split",
-            "0",
-            "--transfer_learning_path",
-            "results_source",
-        ]
-    elif request.param == "transfer_smallAE_largeCNN":
-        source_task = [
-            "train",
-            "roi",
-            "autoencoder",
-            "data/dataset/random_example",
-            "t1-linear",
-            "data/labels_list",
-            "results_source",
-            "Conv5_FC3",
-            "--epochs",
-            "1",
-            "--n_splits",
-            "2",
-            "--split",
-            "0",
-        ]
-        target_task = [
-            "train",
-            "image",
-            "cnn",
-            "data/dataset/random_example",
-            "t1-linear",
-            "data/labels_list",
-            "results_target",
-            "Conv6_FC3",
-            "--epochs",
-            "1",
-            "--n_splits",
-            "2",
-            "--split",
+            "--folds",
             "0",
             "--transfer_learning_path",
             "results_source",
@@ -125,23 +54,23 @@ def cli_commands(request):
         source_task = [
             "train",
             "roi",
-            "autoencoder",
+            "reconstruction",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
             "results_source",
-            "Conv4_FC3",
+            "AE_Conv4_FC3",
             "--epochs",
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
         target_task = [
             "train",
             "roi",
-            "cnn",
+            "classification",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
@@ -151,7 +80,7 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
             "--transfer_learning_path",
             "results_source",
@@ -160,7 +89,7 @@ def cli_commands(request):
         source_task = [
             "train",
             "roi",
-            "cnn",
+            "classification",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
@@ -170,13 +99,13 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
         target_task = [
             "train",
             "roi",
-            "cnn",
+            "classification",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
@@ -186,7 +115,7 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
             "--transfer_learning_path",
             "results_source",
@@ -195,7 +124,7 @@ def cli_commands(request):
         source_task = [
             "train",
             "patch",
-            "cnn",
+            "classification",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
@@ -205,13 +134,13 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
         target_task = [
             "train",
             "patch",
-            "multicnn",
+            "classification",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
@@ -221,10 +150,11 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
             "--transfer_learning_path",
             "results_source",
+            "--multi",
         ]
     else:
         raise NotImplementedError("Test %s is not implemented." % request.param)
@@ -233,6 +163,11 @@ def cli_commands(request):
 
 
 def test_transfer(cli_commands):
+    if os.path.exists("results_source"):
+        shutil.rmtree("results_source")
+    if os.path.exists("results_target"):
+        shutil.rmtree("results_target")
+
     source_task, target_task = cli_commands
     flag_source = not os.system("clinicadl " + " ".join(source_task))
     flag_target = not os.system("clinicadl " + " ".join(target_task))

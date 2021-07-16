@@ -1,8 +1,9 @@
 # coding: utf8
 
-import pytest
 import os
 import shutil
+
+import pytest
 
 
 @pytest.fixture(
@@ -17,51 +18,51 @@ def cli_commands(request):
         test_input = [
             "train",
             "image",
-            "autoencoder",
+            "reconstruction",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
             "results",
-            "Conv5_FC3",
+            "AE_Conv5_FC3",
             "--epochs",
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
     elif request.param == "train_patch_ae":
         test_input = [
             "train",
             "patch",
-            "autoencoder",
+            "reconstruction",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
             "results",
-            "Conv4_FC3",
+            "AE_Conv4_FC3",
             "--epochs",
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
     elif request.param == "train_roi_ae":
         test_input = [
             "train",
             "roi",
-            "autoencoder",
+            "reconstruction",
             "data/dataset/random_example",
             "t1-linear",
             "data/labels_list",
             "results",
-            "Conv4_FC3",
+            "AE_Conv4_FC3",
             "--epochs",
             "1",
             "--n_splits",
             "2",
-            "--split",
+            "--folds",
             "0",
         ]
     else:
@@ -71,7 +72,12 @@ def cli_commands(request):
 
 
 def test_train(cli_commands):
+    if os.path.exists("results"):
+        shutil.rmtree("results")
+
     test_input = cli_commands
+    if os.path.exists("results"):
+        shutil.rmtree("results")
     flag_error = not os.system("clinicadl " + " ".join(test_input))
     assert flag_error
     shutil.rmtree("results")

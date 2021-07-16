@@ -91,7 +91,7 @@ pipeline {
       }
       stage('Functional tests') {
         parallel {
-          stage('Generate and Classify') {
+          stage('Generate and Predict') {
             stages{
               stage('Generate tests Linux') {
                 environment {
@@ -124,12 +124,12 @@ pipeline {
                   }
                 } 
               }
-              stage('Classify tests Linux') {
+              stage('Predict tests Linux') {
                 environment {
                   PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
                 }  
                 steps {
-                  echo 'Testing classify...'
+                  echo 'Testing predict...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
                   //sh 'conda env remove --name "clinicadl_test"'
                   sh '''#!/usr/bin/env bash
@@ -140,18 +140,19 @@ pipeline {
                      cd $WORKSPACE/clinicadl/tests
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
-                     ln -s /mnt/data/data_CI/models data/models
+                     tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
+                     ln -s /mnt/data/data_CI/models/models_new data/models
                      pytest \
-                        --junitxml=../../test-reports/test_classify_report.xml \
+                        --junitxml=../../test-reports/test_predict_report.xml \
                         --verbose \
                         --disable-warnings \
-                        test_classify.py
+                        test_predict.py
                      conda deactivate
                      '''
                 }
                 post {
                   always {
-                    junit 'test-reports/test_classify_report.xml'
+                    junit 'test-reports/test_predict_report.xml'
                     sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
                   }
                 } 

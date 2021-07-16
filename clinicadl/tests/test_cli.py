@@ -12,11 +12,10 @@ import clinicadl.cli as cli
         "extract_tensor",
         "generate",
         "quality_check",
-        "classify",
-        "train_subject",
+        "predict",
+        "train_image",
         "train_slice",
         "train_patch",
-        "train_multipatch",
     ]
 )
 def generate_cli_commands(request):
@@ -78,7 +77,7 @@ def generate_cli_commands(request):
             'task',
             'preprocessing_task',
             'preprocessing',
-            'caps_dir',
+            'caps_directory',
             'output_path',
             'subjects_sessions_tsv',
             'threshold',
@@ -97,16 +96,16 @@ def generate_cli_commands(request):
         keys_output = [
             'task',
             'mode',
-            'caps_dir',
+            'caps_directory',
             'preprocessing',
             'output_dir',
             'n_subjects',
             'mean',
             'sigma']
 
-    if request.param == 'classify':
+    if request.param == 'predict':
         test_input = [
-            'classify',
+            'predict',
             '/dir/caps',
             '/dir/tsv_file',
             '/dir/model_path/',
@@ -124,7 +123,7 @@ def generate_cli_commands(request):
         test_input = [
             'train',
             'slice',
-            'cnn',
+            'classification',
             '/dir/caps',
             't1-linear',
             '/dir/tsv_path/',
@@ -133,18 +132,18 @@ def generate_cli_commands(request):
         keys_output = [
             'task',
             'mode',
-            'network_type',
-            'caps_dir',
+            'network_task',
+            'caps_directory',
             'preprocessing',
             'tsv_path',
             'output_dir',
             'model']
 
-    if request.param == 'train_subject':
+    if request.param == 'train_image':
         test_input = [
             'train',
             'image',
-            'cnn',
+            'reconstruction',
             '/dir/caps',
             't1-linear',
             '/dir/tsv_path/',
@@ -153,8 +152,8 @@ def generate_cli_commands(request):
         keys_output = [
             'task',
             'mode',
-            'network_type',
-            'caps_dir',
+            'network_task',
+            'caps_directory',
             'preprocessing',
             'tsv_path',
             'output_dir',
@@ -163,7 +162,7 @@ def generate_cli_commands(request):
         test_input = [
             'train',
             'patch',
-            'cnn',
+            'regression',
             '/dir/caps',
             't1-linear',
             '/dir/tsv_path/',
@@ -172,27 +171,8 @@ def generate_cli_commands(request):
         keys_output = [
             'task',
             'mode',
-            'network_type',
-            'caps_dir',
-            'preprocessing',
-            'tsv_path',
-            'output_dir',
-            'model']
-    if request.param == 'train_multipatch':
-        test_input = [
-            'train',
-            'patch',
-            'multicnn',
-            '/dir/caps',
-            't1-linear',
-            '/dir/tsv_path/',
-            '/dir/output/',
-            'Conv5_FC3']
-        keys_output = [
-            'task',
-            'mode',
-            'network_type',
-            'caps_dir',
+            'network_task',
+            'caps_directory',
             'preprocessing',
             'tsv_path',
             'output_dir',
