@@ -63,6 +63,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Installation: Installation.md
+  - Contributions: Contribute.md
   - Prepare your imaging data:
     - Introduction: Preprocessing/Introduction.md
     - t1-linear pipeline: Preprocessing/T1_Linear.md

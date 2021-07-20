@@ -6,11 +6,11 @@
 
 ## Installation
 
+See [Installation](./Installation.md) section for detailed instructions.
+
 `clinicadl` can be installed on Mac OS X and Linux machines, and possibly on Windows computers with a Linux Virtual Machine.
 
-We assume that users installing and using `clinicadl` are comfortable with using the command line.
-
-- [Installation](./Installation.md)
+We assume that users installing and using `clinicadl` are comfortable using the command line.
 
 ## User documentation (`clinicadl`)
 
@@ -34,18 +34,22 @@ We assume that users installing and using `clinicadl` are comfortable with using
 - `clinicadl tsvtool` - [Handle TSV files for metadata processing and data splits](./TSVTools.md)
 
 
-## Pretrained models
+[//]:## Pretrained models
 
-Pretrained models for the CNN networks implemented in ClinicaDL can be obtained here:
-<https://zenodo.org/record/3491003>  
+[//]:Pretrained models for the CNN networks implemented in ClinicaDL can be obtained here:
+[//]:<https://zenodo.org/record/3491003>  
 
-These models were obtained during the experiments for publication.
-They correspond to a previous version of ClinicaDL, hence their file system is not compatible with the current version.
-Updated versions of most representative models are available [here](https://aramislab.paris.inria.fr/files/data/models/dl/models_v002/).
+[//]:These models were obtained during the experiments for publication.
+[//]:They correspond to a previous version of ClinicaDL, hence their file system is not compatible with the current version.
+[//]:Updated versions of most representative models are available [here](https://aramislab.paris.inria.fr/files/data/models/dl/models_v002/).
 
 ## Support
 - [Report an issue on GitHub](https://github.com/aramis-lab/clinicadl/issues)
 - Use the [`clinicadl` Google Group](https://groups.google.com/forum/#!forum/clinica-user) to ask for help!
+
+## Contributions
+If you want to contribute but are not familiar with GitHub, please read the [Contribute](./Contribute.md) section.
+You will also find how to run the test suite to check that your modifications are ready to be integrated.
 
 ## License
 `clinicadl` is distributed under the terms of the MIT license given [here](https://github.com/aramis-lab/clinicadl/blob/dev/LICENSE.txt).
