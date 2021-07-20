@@ -45,7 +45,7 @@ where:
   included) OR the path to the test folder of a split directory obtained with `clinicadl tsvtool split`.
 - `model_path` (str) is a path to the folder where the model and the json file
   are stored.
-- `prefix_output` (str) is a prefix to name the data set used for the prediction
+- `prefix` (str) is a prefix to name the data set used for the prediction
   task.
 
 Optional arguments:
@@ -80,12 +80,12 @@ the following file system:
     ├── ...  
     └── fold-<fold>
         └── best-<metric>
-                └── prefix
+                └── <prefix>
                     ├── description.log
-                    ├── <prefix_output>_image_level_metrics.tsv
-                    ├── <prefix_output>_image_level_prediction.tsv
-                    ├── <prefix_output>_{patch|roi|slice}_level_metrics.tsv
-                    └── <prefix_output>_{patch|roi|slice}_level_prediction.tsv
+                    ├── <prefix>_image_level_metrics.tsv
+                    ├── <prefix>_image_level_prediction.tsv
+                    ├── <prefix>_{patch|roi|slice}_level_metrics.tsv
+                    └── <prefix>_{patch|roi|slice}_level_prediction.tsv
 
 ```
 The last two TSV files will be absent if the model takes as input the whole
