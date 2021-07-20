@@ -25,7 +25,7 @@ We assume that users installing and using `clinicadl` are comfortable using the 
 ### Train & test your classifier
 - `clinicadl random-search` - [Explore hyperparameters space by training random models](./RandomSearch.md)
 - `clinicadl train` - [Train with your data and create a model](./Train/Introduction.md)
-- `clinicadl classify` - [Classify one image or a list of images with your previously trained CNN](./Classify.md)
+- `clinicadl predict` - [Predicts one image or a list of images with your previously trained CNN](Predict.md)
 - `clinicadl interpret`- [Interpret trained CNNs on individual or group of images](./Interpret.md)
 
 ### Utilitaries <!--used for the preparation of imaging data and/or training your classifier-->

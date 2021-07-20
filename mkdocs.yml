@@ -81,7 +81,7 @@ nav:
     - Resume: Train/Resume.md
     - Custom experiment: Train/Custom.md
     - Implementation details: Train/Details.md
-  - Classify: Classify.md
+  - Predict: Predict.md
   - Interpret: Interpret.md
   - Generate: Generate.md
   - TSV Tools: TSVTools.md

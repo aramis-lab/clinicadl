@@ -50,7 +50,7 @@ conda activate clinicadlEnv
     ```Text
     (clinicadlEnv)$ clinicadl -h
     usage: clinicadl [-h] [--verbose]
-                     {generate,preprocessing,extract,train,classify,tsvtool} ...
+                     {generate,preprocessing,extract,train,predict,tsvtool} ...
 
     Deep learning software for neuroimaging datasets
     
