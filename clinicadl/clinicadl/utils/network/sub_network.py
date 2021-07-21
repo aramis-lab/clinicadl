@@ -7,7 +7,6 @@ from clinicadl.utils.network.network import Network
 from clinicadl.utils.network.network_utils import CropMaxUnpool3d, PadMaxPool3d
 
 
-# TODO: implement visualization of autoencoder output
 class AutoEncoder(Network):
     def __init__(self, encoder, decoder, use_cpu=False):
         super().__init__(use_cpu=use_cpu)

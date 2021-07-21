@@ -32,6 +32,14 @@ class TaskManager:
         """
         pass
 
+    @property
+    @abstractmethod
+    def save_outputs(self):
+        """
+        Boolean value indicating if the output values should be saved as tensor for this task.
+        """
+        pass
+
     @abstractmethod
     def generate_test_row(self, idx, data, outputs):
         """

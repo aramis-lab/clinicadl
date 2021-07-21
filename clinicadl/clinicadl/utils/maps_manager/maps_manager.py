@@ -183,6 +183,7 @@ class MapsManager:
         num_workers=None,
         use_cpu=None,
         overwrite=False,
+        save_tensors=False,
     ):
         """
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -205,6 +206,7 @@ class MapsManager:
             num_workers (int): If given, sets the value of num_workers, else use the same as in training step.
             use_cpu (bool): If given, a new value for the device of the model will be computed.
             overwrite (bool): If True erase the occurrences of prefix.
+            save_tensors (bool): If True the input and output tensors will be saved.
         Raises:
             ValueError: If the predictions with prefix name already exist and overwrite is False.
         """
@@ -283,6 +285,22 @@ class MapsManager:
                         network=network,
                     )
 
+                    if save_tensors:
+                        if not self.task_manager.save_outputs:
+                            self.logger.warning(
+                                f"Output tensors saving is disabled for task {self.task}.\n"
+                                f"Outputs will not be saved"
+                            )
+                        else:
+                            self._compute_output_tensors(
+                                data_test,
+                                prefix,
+                                fold,
+                                self.selection_metrics,
+                                use_cpu=use_cpu,
+                                network=network,
+                            )
+
             else:
                 data_test = return_dataset(
                     self.mode,
@@ -322,6 +340,92 @@ class MapsManager:
                     use_cpu=use_cpu,
                 )
             self._ensemble_prediction(prefix, fold, selection_metrics, use_labels)
+
+    def save_training_tensors(
+        self,
+        folds=None,
+        selection_metrics=None,
+        prepare_dl=None,
+        use_cpu=None,
+    ):
+
+        """
+        Computes and saves the input and output tensors of the training and validation sets.
+
+        Args:
+            folds (List[int]): list of folds to test. Default perform prediction on all folds available.
+            selection_metrics (List[str]): list of selection metrics to test.
+                Default performs the prediction on all selection metrics available.
+            prepare_dl (bool): If given, sets the value of prepare_dl, else use the same as in training step.
+            use_cpu (bool): If given, a new value for the device of the model will be computed.
+        """
+        if folds is None:
+            folds = self._find_folds()
+
+        _, all_transforms = get_transforms(
+            self.mode,
+            minmaxnormalization=self.minmaxnormalization,
+            data_augmentation=self.data_augmentation,
+        )
+
+        split_manager = self._init_split_manager(folds)
+        for fold in split_manager.fold_iterator():
+            self.logger.info(f"Saving tensors of fold {fold}")
+            if selection_metrics is None:
+                selection_metrics = self._find_selection_metrics(fold)
+
+            fold_df_dict = split_manager[fold]
+
+            if self.multi:
+                for network in range(self.num_networks):
+                    for set_prefix in ["train", "validation"]:
+                        dataset = return_dataset(
+                            self.mode,
+                            self.caps_directory,
+                            fold_df_dict[set_prefix],
+                            self.preprocessing,
+                            all_transformations=all_transforms,
+                            prepare_dl=prepare_dl
+                            if prepare_dl is not None
+                            else self.prepare_dl,
+                            multi_cohort=self.multi_cohort,
+                            label=self.label,
+                            label_code=self.label_code,
+                            params=self,
+                            cnn_index=network,
+                        )
+                        self._compute_output_tensors(
+                            dataset,
+                            set_prefix,
+                            fold,
+                            selection_metrics,
+                            use_cpu=use_cpu,
+                            network=network,
+                        )
+
+            else:
+                for set_prefix in ["train", "validation"]:
+                    dataset = return_dataset(
+                        self.mode,
+                        self.caps_directory,
+                        fold_df_dict[set_prefix],
+                        self.preprocessing,
+                        all_transformations=all_transforms,
+                        prepare_dl=prepare_dl
+                        if prepare_dl is not None
+                        else self.prepare_dl,
+                        multi_cohort=self.multi_cohort,
+                        label=self.label,
+                        label_code=self.label_code,
+                        params=self,
+                    )
+                    self._compute_output_tensors(
+                        dataset,
+                        set_prefix,
+                        fold,
+                        selection_metrics,
+                        use_cpu=use_cpu,
+                    )
 
     def interpret(
         self,
@@ -840,6 +944,24 @@ class MapsManager:
             network=network,
         )
 
+        if self.task_manager.save_outputs:
+            self._compute_output_tensors(
+                train_loader.dataset,
+                "train",
+                fold,
+                self.selection_metrics,
+                nb_images=1,
+                network=network,
+            )
+            self._compute_output_tensors(
+                train_loader.dataset,
+                "validation",
+                fold,
+                self.selection_metrics,
+                nb_images=1,
+                network=network,
+            )
+
     def _test_loader(
         self,
         dataloader,
@@ -896,6 +1018,64 @@ class MapsManager:
             self._mode_level_to_tsv(
                 prediction_df, metrics, fold, selection_metric, prefix=prefix
             )
+
+    def _compute_output_tensors(
+        self,
+        dataset,
+        prefix,
+        fold,
+        selection_metrics,
+        nb_images=None,
+        use_cpu=None,
+        network=None,
+    ):
+        """
+        Compute the output tensors and saves them in the MAPS.
+
+        Args:
+            dataset (clinicadl.utils.caps_dataset.data.CapsDataset): wrapper of the data set.
+            prefix (str): name of the data group used for the task.
+            fold (int): Fold number.
+            selection_metrics (List[str]): metrics used for model selection.
+            nb_images (int): number of full images to write. Default computes the outputs of the whole data set.
+            use_cpu (bool): If given, a new value for the device of the model will be computed.
+            network (int): Index of the network tested (only used in multi-network setting).
+        """
+        for selection_metric in selection_metrics:
+            # load the best trained model during the training
+            model, _ = self._init_model(
+                transfer_path=self.maps_path,
+                fold=fold,
+                transfer_selection=selection_metric,
+                use_cpu=use_cpu,
+                network=network,
+            )
+
+            tensor_path = path.join(
+                self.maps_path,
+                f"fold-{fold}",
+                f"best-{selection_metric}",
+                prefix,
+                "tensors",
+            )
+            makedirs(tensor_path, exist_ok=True)
+
+            if nb_images is None:  # Compute outputs for the whole data set
+                nb_modes = len(dataset)
+            else:
+                nb_modes = nb_images * dataset.elem_per_image
+
+            for i in range(nb_modes):
+                data = dataset[i]
+                image = data["image"]
+                output = model.predict(image.unsqueeze(0)).squeeze(0).cpu()
+                participant_id = data["participant_id"]
+                session_id = data["session_id"]
+                mode_id = data[f"{self.mode}_id"]
+                input_filename = f"sub-{participant_id}_ses-{session_id}_{self.mode}-{mode_id}_input.pt"
+                output_filename = f"sub-{participant_id}_ses-{session_id}_{self.mode}-{mode_id}_output.pt"
+                torch.save(image, path.join(tensor_path, input_filename))
+                torch.save(output, path.join(tensor_path, output_filename))
 
     def _ensemble_prediction(
         self,

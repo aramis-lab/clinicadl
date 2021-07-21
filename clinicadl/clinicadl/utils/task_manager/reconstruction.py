@@ -22,6 +22,13 @@ class ReconstructionManager(TaskManager):
     def evaluation_metrics(self):
         return ["MSE", "MAE"]
 
+    @property
+    def save_outputs(self):
+        """
+        Boolean value indicating if the output values should be saved as tensor for this task.
+        """
+        return True
+
     def generate_test_row(self, idx, data, outputs):
         y = data["image"][idx]
         y_pred = outputs[idx].cpu()
