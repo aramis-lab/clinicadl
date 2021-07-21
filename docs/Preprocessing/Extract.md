@@ -13,9 +13,9 @@ Currently, only outputs from the [`t1-linear` pipeline](T1_Linear.md) can be pro
     Results are equivalent.
 
 ## Prerequisites
-<!-- Depending on the type of feature or the type of modality you want to use, you will need to execute either the [`t1-linear` pipeline](../T1_Linear) , the [`t1-volume` pipeline](../T1_Volume) and/or the [`pet-volume` pipeline](../PET_Volume)  prior to running this pipeline. -->
-
-You need to have performed the [`t1-linear` pipeline](T1_Linear.md) on your T1-weighted MRI.
+Depending on the type of feature or modality you want to use, 
+you will need to execute either the pipeline corresponding to the `modality`
+argument before running this pipeline.
 
 ## Running the pipeline
 The pipeline can be run with the following command line:
@@ -25,46 +25,19 @@ clinicadl preprocessing extract-tensor <caps_directory> <modality> <tensor_forma
 
 where:
 
-- `caps_directory` (str) is the folder containing the results of the
-  [`t1-linear` pipeline](T1_Linear.md) and the output of the present command,
-  both in a [CAPS
-  hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
-- `modality` is the name of the preprocessing done in the original images. It
-  can be `t1-linear` or `t1-extensive`. You can chose `custom` if you want to get a
+- `caps_directory` (str) is the folder in a [CAPS
+  hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/)
+  containing the images corresponding to the `modality` asked.
+- `modality` (str) is the name of the preprocessing done in the original images. It
+  can be `t1-linear` or `pet-linear`. You can choose `custom` if you want to get a
   tensor from a custom filename.
-- `tensor_format` (str) is the format of the extracted tensors.
-You can choose between `image` to convert to PyTorch tensor the whole 3D image,
-`patch` to extract 3D patches and `slice` to extract 2D slices from the image.
-
-By default the features are extracted from the cropped image (see the
-documentation of the [`t1-linear` pipeline](T1_Linear.md). You can deactivate
-this behaviour with the `--use_uncropped_image` flag.
-
-Pipeline options if you use `patch` extraction:
-
-- `--patch_size`: (int) patch size. Default value: `50`.
-- `--stride_size`:  (int) stride size. Default value: `50`.
-
-Pipeline options if you use `slice` extraction:
-
-- `--slice_direction`: (int) slice direction.
-You can choose between `0` (sagittal plane), `1`(coronal plane) or `2` (axial plane).
-Default value: `0`.
-- `--slice_mode`: (str) slice mode.
-You can choose between `rgb` (will save the slice in three identical channels)
-or `single` (will save the slice in a single channel). Default value: `rgb`.
-
-Pipeline options if you use `custom` modality:
-
-- `--custom_suffix`: suffix of the filename that should be converted to the
-  tensor format. The output will be saved into a folder named `custom` but the
-  processed files will kep their original name. E.g.: you can convert the
-  images from the segmentation of the grey matter registered on the
-  Ixi549Space. This images are obtained by running `t1-volume` pipeline (and
-  SPM underhood). The suffix for these images is
-  "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz".
-
-!!! note "Regarding the default values"
+- `tensor_format` (str) is the format of the extracted tensors:
+    - `image` to convert the whole 3D image,
+    - `patch` to extract 3D patches walking through the entire image, 
+    - `roi` to extract a list of regions defined by masks at the root in `caps_directory`,
+    - `slice` to extract 2D slices from the image.
+  
+!!! note "Default values"
   When using patch or slice extraction, default values were set according to
   [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)].
 
@@ -73,43 +46,152 @@ Pipeline options if you use `custom` modality:
     parameters.
 
 ## Outputs
-In the following subsections, files with the `.pt` extension denote tensors in PyTorch format.
 
-The full list of output files can be found in the
-[ClinicA Processed Structure (CAPS) Specification](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Specifications/#deeplearning-prepare-data-prepare-input-data-for-deep-learning-with-pytorch).
+Results are stored in following folder of the
+[CAPS hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Specifications/):
+`subjects/<participant_id>/<session_id>/deeplearning_prepare_data/<tensor_format>_based/<modality_folder>`.
+`<modality_folder>` is equal to `modality` with all `-` replaced by a `_`.
 
-### Image-based outputs
-Results are stored in the following folder of the [CAPS hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/):
-`subjects/<subject_id>/<session_id>/deeplearning_prepare_data/image_based/t1_linear`.
+Files are saved with the `.pt` extension and contains tensors in PyTorch format.
 
-The main output files are:
+## `modality` options
 
-- `<source_file>_space-MNI152NLin2009cSym[_desc-Crop]_res-1x1x1_T1w.pt`: tensor version of the 3D T1w image registered to the
-[`MNI152NLin2009cSym` template](https://bids-specification.readthedocs.io/en/stable/99-appendices/08-coordinate-systems.html)
-and optionally cropped.
+### `t1-linear`
 
-### Patch-based outputs
+- `--use_uncropped_image`: by default the features are extracted from 
+  the cropped image (see the documentation of the [`t1-linear` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Linear/)). 
+  You can deactivate this behaviour with the `--use_uncropped_image` flag.
 
-Results are stored in the following folder of the [CAPS hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/):
-`subjects/<subject_id>/<session_id>/deeplearning_prepare_data/patch_based/t1_linear`.
+### `pet-linear`
 
-The main output files are:
+- `--use_uncropped_image`: by default the features are extracted from 
+  the cropped image (see the documentation of the [`pet-linear` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/PET_Linear/)). 
+  You can deactivate this behaviour with the `--use_uncropped_image` flag.
+- `--acq_label`: the label given to the PET acquisition, specifying the tracer used 
+  (`acq-<acq_label>`). It can be for instance 'fdg' for <sup>18</sup>F-fluorodeoxyglucose 
+  or 'av45' for <sup>18</sup>F-florbetapir.
+- `--suvr_reference_region`: the reference region used to perform intensity normalization 
+  (i.e. dividing each voxel of the image by the average uptake in this region) resulting 
+  in a standardized uptake value ratio (SUVR) map. It can be `cerebellumPons` or `cerebellumPons2`
+  (used for amyloid tracers) and `pons` or `pons2` (used for FDG). See 
+  [PET introduction](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/PET_Introduction/) 
+  for more details about masks versions.
 
-- `<source_file>_space-MNI152NLin2009cSym[_desc-Crop]_res-1x1x1_patchsize-<N>_stride-<M>_patch-<i>_T1w.pt`:
-tensor version of the `<i>`-th 3D isotropic patch of size `<N>` with a stride of `<M>`.
-Each patch is extracted from the T1w image registered to the
-[`MNI152NLin2009cSym` template](https://bids-specification.readthedocs.io/en/stable/99-appendices/08-coordinate-systems.html)
-and optionally cropped.
+### `custom`
 
-### Slice-based outputs
+- `--custom_suffix`: suffix of the filename that should be converted to the
+  tensor format. The output will be saved into a folder named `custom` but the
+  processed files will kep their original name. E.g.: you can convert the
+  images from the segmentation of the grey matter registered on the
+  Ixi549Space. These images are obtained by running 
+  [`t1-volume`](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Volume/) 
+  pipeline. The suffix for these images is
+  "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz".
 
-Results are stored in the following folder of the [CAPS hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/):
-`subjects/<subject_id>/<session_id>/deeplearning_prepare_data/slice_based/t1_linear`.
+## `tensor_format` options
 
-The main output files are:
+In this section we consider the options needed and outputs produced for different
+`tensor_format` values. Each time we consider that the input is named `<input_pattern>_<suffix>.nii.gz`.
+The suffix represents the initial modality (it can be for example `T1w`).
 
-- `<source_file>_space-MNI152NLin2009cSym[_desc-Crop]_res-1x1x1_axis-{sag|cor|axi}_channel-{single|rgb}_T1w.pt`:
-tensor version of the `<i>`-th 2D slice in `sag`ittal, `cor`onal or `axi`al plane using three identical channels (`rgb`)
-or one channel (`single`). Each slice is extracted from the T1w image registered to the
-[`MNI152NLin2009cSym` template](https://bids-specification.readthedocs.io/en/stable/99-appendices/08-coordinate-systems.html)
-and optionally cropped.
+### `image`
+
+The `image` format saves all the input values. It does not require any option.
+The output filename is `<input_pattern>_<suffix>.pt`.  
+
+### `patch`
+
+The `patch` tensor format creates `N` patches which cover the whole image.
+Each patch is a 3D tensor of size `patch_size`x`patch_size`x`patch_size`.
+The center of the patches are separated by `stride_size` voxels. Then if 
+`stride_size` < `patch_size` the patches will have some overlap, otherwise
+some voxels will not be seen.
+
+Options:
+
+- `--patch_size` (int) patch size. Default value: `50`.
+- `--stride_size`  (int) stride size. Default value: `50`.
+
+The output files are `<input_pattern>_patchsize-<L>_stride-<S>_patch-<i>_<suffix>.pt`:
+tensor version of the `<i>`-th 3D isotropic patch of size `<L>` with a stride of `<S>`.
+
+### `roi`
+
+The `roi` format saves `N` regions defined by binary masks saved in the CAPS folder.
+
+Options:
+
+- `--roi_list`: list of `N` regions to be extracted. 
+  The masks corresponding to these regions should be
+  written in `<caps_directory>/masks/tpl-<tpl_name>`.
+- `--roi_uncrop_output`: disables cropping option, so the output 
+  tensors have the same size as the whole image instead of the ROI size.
+- `--custom_template` (mandatory for `custom`): only used when `modality` is set to `custom`.
+  Sets the value of `<tpl_name>`.
+- `--custom_mask_pattern` (optional): only used when `modality` is set to `custom`.
+  Allows to choose a particular mask with a name following the given pattern.
+  
+!!! note "ROI masks"
+    ROI masks are compressed nifti files (.nii.gz) containing a binary mask of the same size as the
+    input data it corresponds to. All masks must follow the pattern 
+    `tpl-<tpl_name>_*_roi-<roi_name>_mask.nii.gz`.
+
+    If the defined region is not cubic, `deeplearning-prepare-data` will automatically extract
+    the smallest bounding box around the region and fill the remaining values with 0 (unless
+    `--roi_uncrop_output` is specified).
+
+    Masks must correspond to the template used in the pipeline for registration. For `t1-linear`
+    and `pet-linear` it is automatically set to `MNI152NLin2009cSym`. For a `custom` modality
+    this value must be set using `custom_template`.
+
+    The chosen mask will correspond to the mask with the shortest name following the wanted pattern.
+
+Example of a valid CAPS hierarchy:
+
+```console
+CAPS_DIRECTORY
+├── masks
+│       ├── tpl-<tpl_name>
+│       │       ├── tpl-<tpl_name>[_custom_pattern]_roi-<roi_1>_mask.nii.gz
+│       │       ├── ...
+│       │       └── tpl-<tpl_name>[_custom_pattern]_roi-<roi_N>_mask.nii.gz
+│       └── tpl-MNI152NLin2009cSym
+│               ├── tpl-MNI152NLin2009cSym_desc-Crop_res-1x1x1_roi-<roi_1>_mask.nii.gz
+│               ├── tpl-MNI152NLin2009cSym_desc-Crop_res-1x1x1_roi-<roi_2>_mask.nii.gz
+│               ├── tpl-MNI152NLin2009cSym_res-1x1x1_roi-<roi_1>_mask.nii.gz
+│               └── tpl-MNI152NLin2009cSym_res-1x1x1_roi-<roi_2>_mask.nii.gz
+└── subjects
+        └── ...
+```
+
+The first two masks in `tpl-MNI152NLin2009cSym/` contain `desc-Crop`, hence they can only be
+applied to cropped input images, and their size will be (169x208x179). On the contrary the last two masks
+in the same folder do not contain `desc-Crop` hence they can only be applied to uncropped
+input images, and their size will be (193x229x193).
+
+The output files are `<source_file>_space-<tpl_name>[_desc-{CropRoi|CropImage|Crop}][_other_descriptors]_roi-<roi_name>_<suffix>.pt`:
+tensor version of the selected 3D region of interest. 
+Here `<source_file>` corresponds to all the descriptors found in `<input_pattern>` before the `space` key.
+Other descriptors are computed according to the mask descriptors.
+
+The key value following `desc` depends on the input and output image:
+
+- `desc-CropROI`: the input image contains `desc-Crop` and ROI cropping is enabled,
+- `desc-CropImage`: the input image contains `desc-Crop` and ROI cropping is disabled,
+- `desc-Crop`: the input image do not contain `desc-Crop` and ROI cropping is enabled,
+- `<no_descriptor>`: the input image do not contain `desc-Crop` and ROI cropping is disabled.
+
+### `slice`
+
+Options:
+
+- `--slice_direction`: (int) slice direction.
+You can choose between `0` (sagittal plane), `1`(coronal plane) or `2` (axial plane).
+Default value: `0`.
+- `--slice_mode`: (str) slice mode.
+You can choose between `rgb` (will save the slice in three identical channels)
+or `single` (will save the slice in a single channel). Default value: `rgb`.
+
+The output files are `<input_pattern>_axis-{sag|cor|axi}_channel-{single|rgb}_slice-<i>_<suffix>.pt`:
+tensor version of the `<i>`-th 2D slice in `sag`ittal, `cor`onal or `axi`al
+plane using three identical channels (`rgb`) or one channel (`single`).

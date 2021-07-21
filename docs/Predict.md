@@ -7,7 +7,7 @@ tasks. It can also use any pretrained models if they are structured like a [MAPS
 !!! warning
     For `patch`, `roi` and `slice` models, the predictions of the models on the
     validation set are needed to perform unbiased ensemble predictions at the image level. 
-    If the tsv files in `fold-<fold>/best_<metric>/validation` were erased the task cannot
+    If the tsv files in `fold-<fold>/best-<metric>/validation` were erased the task cannot
     be run.
 
 ## Prerequisites
@@ -43,8 +43,7 @@ where:
   [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
 - `tsv_file` (str) is a path to a TSV file with subjects/sessions to process (filename
   included) OR the path to the test folder of a split directory obtained with `clinicadl tsvtool split`.
-- `model_path` (str) is a path to the folder where the model and the json file
-  are stored.
+- `model_path` (str) is the path to the MAPS of the pretrained model.
 - `prefix` (str) is a prefix to name the data set used for the prediction
   task.
 
@@ -72,7 +71,7 @@ Optional arguments:
 
 ## Outputs
 
-Results are stored in the results folder given by `model_path`, according to
+Results are stored in the MAPS of path `model_path`, according to
 the following file system:
 ```
 <model_path>
@@ -90,4 +89,4 @@ the following file system:
 ```
 The last two TSV files will be absent if the model takes as input the whole
 image. Moreover, `*_metrics.tsv` files are not computed if `--no_labels` is given.
-The content of `_prediction.tsv` files depend on the task performed during the training task.
+The content of `*_prediction.tsv` files depend on the task performed during the training task.
