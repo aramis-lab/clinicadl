@@ -1068,12 +1068,18 @@ class MapsManager:
             for i in range(nb_modes):
                 data = dataset[i]
                 image = data["image"]
-                output = model.predict(image.unsqueeze(0)).squeeze(0).cpu()
+                output = (
+                    model.predict(image.unsqueeze(0).to(model.device)).squeeze(0).cpu()
+                )
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
                 mode_id = data[f"{self.mode}_id"]
-                input_filename = f"sub-{participant_id}_ses-{session_id}_{self.mode}-{mode_id}_input.pt"
-                output_filename = f"sub-{participant_id}_ses-{session_id}_{self.mode}-{mode_id}_output.pt"
+                input_filename = (
+                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
+                )
+                output_filename = (
+                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
+                )
                 torch.save(image, path.join(tensor_path, input_filename))
                 torch.save(output, path.join(tensor_path, output_filename))
 
@@ -1131,6 +1137,9 @@ class MapsManager:
                 )
 
         self.parameters = parameters
+        self.task_manager = self._init_task_manager()
+        if self.parameters["model"] is None:
+            self.parameters["model"] = self.task_manager.get_default_network()
 
         train_parameters = self._compute_train_args()
         self.parameters.update(train_parameters)
@@ -1140,6 +1149,17 @@ class MapsManager:
                 f"Invalid training arguments: cannot train a multi-network "
                 f"framework with only {self.parameters['num_networks']} element "
                 f"per image."
+            )
+        possible_selection_metrics_set = set(self.task_manager.evaluation_metrics) | {
+            "loss"
+        }
+        if not set(self.parameters["selection_metrics"]).issubset(
+            possible_selection_metrics_set
+        ):
+            raise ValueError(
+                f"Selection metrics {self.parameters['selection_metrics']} "
+                f"must be a subset of metrics used for evaluation "
+                f"{possible_selection_metrics_set}."
             )
 
         # TODO: add default values manager
@@ -1157,7 +1177,6 @@ class MapsManager:
 
         split_manager = self._init_split_manager(None)
         train_df = split_manager[0]["train"]
-        self.task_manager = self._init_task_manager()
         label_code = self.task_manager.generate_label_code(train_df, self.label)
         full_dataset = return_dataset(
             self.mode,
@@ -1584,9 +1603,6 @@ class MapsManager:
             network (int): Index of the network trained (used in multi-network setting only).
         """
         import clinicadl.utils.network as network_package
-
-        if self.model is None:
-            self.model = self.task_manager.get_default_network()
 
         self.logger.debug(f"Initialization of model {self.model}")
         # or choose to implement a dictionary

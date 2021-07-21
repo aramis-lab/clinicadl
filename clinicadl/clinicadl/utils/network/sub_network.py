@@ -4,7 +4,12 @@ import torch
 from torch import nn
 
 from clinicadl.utils.network.network import Network
-from clinicadl.utils.network.network_utils import CropMaxUnpool3d, PadMaxPool3d
+from clinicadl.utils.network.network_utils import (
+    CropMaxUnpool2d,
+    CropMaxUnpool3d,
+    PadMaxPool2d,
+    PadMaxPool3d,
+)
 
 
 class AutoEncoder(Network):
@@ -43,14 +48,16 @@ class AutoEncoder(Network):
         pad_list = []
         for layer in self.encoder:
             if (
-                isinstance(layer, PadMaxPool3d)
+                (isinstance(layer, PadMaxPool3d) or isinstance(layer, PadMaxPool2d))
                 and layer.return_indices
                 and layer.return_pad
             ):
                 x, indices, pad = layer(x)
                 indices_list.append(indices)
                 pad_list.append(pad)
-            elif isinstance(layer, nn.MaxPool3d) and layer.return_indices:
+            elif (
+                isinstance(layer, nn.MaxPool3d) or isinstance(layer, nn.MaxPool2d)
+            ) and layer.return_indices:
                 x, indices = layer(x)
                 indices_list.append(indices)
             else:
@@ -59,9 +66,9 @@ class AutoEncoder(Network):
         code = x.clone()
 
         for layer in self.decoder:
-            if isinstance(layer, CropMaxUnpool3d):
+            if isinstance(layer, CropMaxUnpool3d) or isinstance(layer, CropMaxUnpool2d):
                 x = layer(x, indices_list.pop(), pad_list.pop())
-            elif isinstance(layer, nn.MaxUnpool3d):
+            elif isinstance(layer, nn.MaxUnpool3d) or isinstance(layer, nn.MaxUnpool2d):
                 x = layer(x, indices_list.pop())
             else:
                 x = layer(x)

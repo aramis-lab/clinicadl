@@ -128,7 +128,7 @@ def generate_cli_commands(request):
             't1-linear',
             '/dir/tsv_path/',
             '/dir/output/',
-            'Conv5_FC3']
+            '--model', 'resnet18']
         keys_output = [
             'task',
             'mode',
@@ -148,7 +148,7 @@ def generate_cli_commands(request):
             't1-linear',
             '/dir/tsv_path/',
             '/dir/output/',
-            'Conv5_FC3']
+            '--model', 'Conv5_FC3']
         keys_output = [
             'task',
             'mode',
@@ -167,7 +167,7 @@ def generate_cli_commands(request):
             't1-linear',
             '/dir/tsv_path/',
             '/dir/output/',
-            'Conv5_FC3']
+            '--model', 'Conv4_FC3']
         keys_output = [
             'task',
             'mode',

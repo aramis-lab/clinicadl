@@ -5,15 +5,15 @@ from torch import nn
 from torchvision.models.resnet import BasicBlock
 
 from clinicadl.utils.network.cnn.resnet import ResNetDesigner, model_urls
-from clinicadl.utils.network.network_utils import PadMaxPool3d
+from clinicadl.utils.network.network_utils import PadMaxPool2d, PadMaxPool3d
 from clinicadl.utils.network.sub_network import CNN
 
 
-def get_conv_fn(input_size):
+def get_layers_fn(input_size):
     if len(input_size) == 4:
-        return nn.Conv3d
+        return nn.Conv3d, nn.BatchNorm3d, PadMaxPool3d
     elif len(input_size) == 3:
-        return nn.Conv2d
+        return nn.Conv2d, nn.BatchNorm2d, PadMaxPool2d
     else:
         raise ValueError(
             f"The input is neither linked to a 2D or 3D image.\n "
@@ -27,33 +27,33 @@ class Conv5_FC3(CNN):
     """
 
     def __init__(self, input_size, use_cpu=False, output_size=2, dropout=0.5):
-        conv = get_conv_fn(input_size)
+        conv, norm, pool = get_layers_fn(input_size)
         # fmt: off
         convolutions = nn.Sequential(
-            conv(1, 8, 3, padding=1),
-            nn.BatchNorm3d(8),
+            conv(input_size[0], 8, 3, padding=1),
+            norm(8),
             nn.ReLU(),
-            PadMaxPool3d(2, 2),
+            pool(2, 2),
 
             conv(8, 16, 3, padding=1),
-            nn.BatchNorm3d(16),
+            norm(16),
             nn.ReLU(),
-            PadMaxPool3d(2, 2),
+            pool(2, 2),
 
             conv(16, 32, 3, padding=1),
-            nn.BatchNorm3d(32),
+            norm(32),
             nn.ReLU(),
-            PadMaxPool3d(2, 2),
+            pool(2, 2),
 
             conv(32, 64, 3, padding=1),
-            nn.BatchNorm3d(64),
+            norm(64),
             nn.ReLU(),
-            PadMaxPool3d(2, 2),
+            pool(2, 2),
 
             conv(64, 128, 3, padding=1),
-            nn.BatchNorm3d(128),
+            norm(128),
             nn.ReLU(),
-            PadMaxPool3d(2, 2),
+            pool(2, 2),
         )
 
         # Compute the size of the first FC layer
@@ -87,33 +87,33 @@ class Conv4_FC3(CNN):
     """
 
     def __init__(self, input_size, use_cpu=False, output_size=2, dropout=0.5):
-        conv = get_conv_fn(input_size)
+        conv, norm, pool = get_layers_fn(input_size)
         # fmt: off
         convolutions = nn.Sequential(
-            conv(1, 8, 3, padding=1),
-            nn.BatchNorm3d(8),
+            conv(input_size[0], 8, 3, padding=1),
+            norm(8),
             nn.ReLU(),
-            PadMaxPool3d(2, 2),
+            pool(2, 2),
 
             conv(8, 16, 3, padding=1),
-            nn.BatchNorm3d(16),
+            norm(16),
             nn.ReLU(),
-            PadMaxPool3d(2, 2),
+            pool(2, 2),
 
             conv(16, 32, 3, padding=1),
-            nn.BatchNorm3d(32),
+            norm(32),
             nn.ReLU(),
-            PadMaxPool3d(2, 2),
+            pool(2, 2),
 
             conv(32, 64, 3, padding=1),
-            nn.BatchNorm3d(64),
+            norm(64),
             nn.ReLU(),
-            PadMaxPool3d(2, 2),
+            pool(2, 2),
 
             conv(64, 128, 3, padding=1),
-            nn.BatchNorm3d(128),
+            norm(128),
             nn.ReLU(),
-            PadMaxPool3d(2, 2),
+            pool(2, 2),
         )
 
         # Compute the size of the first FC layer
