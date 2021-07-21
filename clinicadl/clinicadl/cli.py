@@ -1541,8 +1541,8 @@ def parse_command_line():
     )
     interpret_data_group.add_argument(
         "--save_individual",
-        type=str,
-        default=None,
+        action="store_true",
+        default=False,
         help="Saves individual saliency maps in addition to the mean saliency map.",
     )
 
