@@ -6,7 +6,7 @@ import torch
 from clinicadl.utils.metric_module import MetricModule
 
 
-# TODO: add function to check that the output size corresponds to what is expected to
+# TODO: add function to check that the output size of the network corresponds to what is expected to
 #  perform the task
 class TaskManager:
     def __init__(
@@ -139,6 +139,12 @@ class TaskManager:
 
         # TODO: implement a choice
         """
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def get_default_network():
+        """Returns the default network to use when no architecture is specified."""
         pass
 
     def test(self, model, dataloader, criterion, use_labels=True):

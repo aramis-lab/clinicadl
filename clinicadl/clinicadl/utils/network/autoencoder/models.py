@@ -5,9 +5,7 @@ from clinicadl.utils.network.sub_network import AutoEncoder
 
 class AE_Conv5_FC3(AutoEncoder):
     """
-    Classifier for a binary classification task
-
-    Image level architecture
+    Autoencoder derived from the convolutional part of CNN Conv5_FC3
     """
 
     def __init__(self, input_size, use_cpu=False):
@@ -22,9 +20,7 @@ class AE_Conv5_FC3(AutoEncoder):
 
 class AE_Conv4_FC3(AutoEncoder):
     """
-    Classifier for a binary classification task
-
-    Image level architecture
+    Autoencoder derived from the convolutional part of CNN Conv4_FC3
     """
 
     def __init__(self, input_size, use_cpu=False):

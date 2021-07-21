@@ -147,3 +147,7 @@ class RegressionManager(TaskManager):
     @staticmethod
     def get_criterion():
         return nn.MSELoss()
+
+    @staticmethod
+    def get_default_network():
+        return "Conv5_FC3"

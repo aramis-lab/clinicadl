@@ -1182,7 +1182,7 @@ def parse_command_line():
     )
     predict_specific_group.add_argument(
         "--use_extracted_features",
-        help="""If True the extract slices or patche are used, otherwise the they
+        help="""If True the extracted slices, regions or patches are used, otherwise they
                 will be extracted on the fly (if necessary).""",
         default=False,
         action="store_true",
@@ -1204,7 +1204,8 @@ def parse_command_line():
     )
     predict_specific_group.add_argument(
         "--multi_cohort",
-        help="Performs multi-cohort classification. In this case, caps_directory and tsv_path must be paths to TSV files.",
+        help="Performs multi-cohort classification. "
+        "In this case, caps_directory and tsv_path must be paths to TSV files.",
         action="store_true",
         default=False,
     )
@@ -1514,7 +1515,8 @@ def parse_command_line():
     )
     interpret_data_group.add_argument(
         "--multi_cohort",
-        help="Performs multi-cohort interpretation. In this case, caps_directory and tsv_path must be paths to TSV files.",
+        help="Performs multi-cohort interpretation. "
+        "In this case, caps_directory and tsv_path must be paths to TSV files.",
         action="store_true",
         default=False,
     )
@@ -1576,18 +1578,27 @@ def return_train_parent_parser():
     train_pos_group.add_argument(
         "output_dir", help="Folder containing results of the training.", default=None
     )
-    train_pos_group.add_argument(
-        "model", help="CNN Model to be used during the training.", default="Conv5_FC3"
-    )
 
     train_model_group = train_parent_parser.add_argument_group(
         TRAIN_CATEGORIES["MODEL"]
+    )
+    train_model_group.add_argument(
+        "--model",
+        help="Model to be used during the training. Default will load the default model according "
+        "to the task manager.",
+        default=None,
     )
     train_model_group.add_argument(
         "--multi",
         action="store_true",
         help="If provided uses a multi-network framework.",
         default=False,
+    )
+    train_model_group.add_argument(
+        "--dropout",
+        help="rate of dropout that will be applied to dropout layers in CNN.",
+        default=0,
+        type=float,
     )
 
     train_comput_group = train_parent_parser.add_argument_group(
@@ -1700,12 +1711,6 @@ def return_train_parent_parser():
         "-wd",
         help="Weight decay value used in optimization.",
         default=1e-4,
-        type=float,
-    )
-    train_optim_group.add_argument(
-        "--dropout",
-        help="rate of dropout that will be applied to dropout layers in CNN.",
-        default=0,
         type=float,
     )
     train_optim_group.add_argument(

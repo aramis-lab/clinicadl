@@ -22,7 +22,6 @@ level_dict = {
     "critical": logging.CRITICAL,
 }
 
-# TODO: replace "fold" with "split"
 # TODO save weights on CPU for better compatibility
 
 
@@ -1405,6 +1404,9 @@ class MapsManager:
             network (int): Index of the network trained (used in multi-network setting only).
         """
         import clinicadl.utils.network as network_package
+
+        if self.model is None:
+            self.model = self.task_manager.get_default_network()
 
         self.logger.debug(f"Initialization of model {self.model}")
         # or choose to implement a dictionary

@@ -91,3 +91,7 @@ class ReconstructionManager(TaskManager):
     @staticmethod
     def get_criterion():
         return nn.MSELoss()
+
+    @staticmethod
+    def get_default_network():
+        return "AE_Conv5_FC3"

@@ -9,37 +9,48 @@ from clinicadl.utils.network.network_utils import PadMaxPool3d
 from clinicadl.utils.network.sub_network import CNN
 
 
+def get_conv_fn(input_size):
+    if len(input_size) == 4:
+        return nn.Conv3d
+    elif len(input_size) == 3:
+        return nn.Conv2d
+    else:
+        raise ValueError(
+            f"The input is neither linked to a 2D or 3D image.\n "
+            f"Input size is {input_size}."
+        )
+
+
 class Conv5_FC3(CNN):
     """
-    Classifier for a binary classification task
-
-    Image level architecture
+    Reduce the 2D or 3D input image to an array of size output_size.
     """
 
     def __init__(self, input_size, use_cpu=False, output_size=2, dropout=0.5):
+        conv = get_conv_fn(input_size)
         # fmt: off
         convolutions = nn.Sequential(
-            nn.Conv3d(1, 8, 3, padding=1),
+            conv(1, 8, 3, padding=1),
             nn.BatchNorm3d(8),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
 
-            nn.Conv3d(8, 16, 3, padding=1),
+            conv(8, 16, 3, padding=1),
             nn.BatchNorm3d(16),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
 
-            nn.Conv3d(16, 32, 3, padding=1),
+            conv(16, 32, 3, padding=1),
             nn.BatchNorm3d(32),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
 
-            nn.Conv3d(32, 64, 3, padding=1),
+            conv(32, 64, 3, padding=1),
             nn.BatchNorm3d(64),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
 
-            nn.Conv3d(64, 128, 3, padding=1),
+            conv(64, 128, 3, padding=1),
             nn.BatchNorm3d(128),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
@@ -49,11 +60,11 @@ class Conv5_FC3(CNN):
         input_tensor = torch.zeros(input_size).unsqueeze(0)
         output_convolutions = convolutions(input_tensor)
 
-        classifier = nn.Sequential(
+        fc = nn.Sequential(
             nn.Flatten(),
             nn.Dropout(p=dropout),
 
-            nn.Linear(np.prod(list(output_convolutions.shape)), 1300),
+            nn.Linear(np.prod(list(output_convolutions.shape)).item(), 1300),
             nn.ReLU(),
 
             nn.Linear(1300, 50),
@@ -64,7 +75,7 @@ class Conv5_FC3(CNN):
         # fmt: on
         super().__init__(
             convolutions=convolutions,
-            classifier=classifier,  # TODO: rename FC part
+            fc=fc,
             n_classes=output_size,
             use_cpu=use_cpu,
         )
@@ -72,35 +83,34 @@ class Conv5_FC3(CNN):
 
 class Conv4_FC3(CNN):
     """
-    Classifier for a binary classification task
-
-    Image level architecture
+    Reduce the 2D or 3D input image to an array of size output_size.
     """
 
     def __init__(self, input_size, use_cpu=False, output_size=2, dropout=0.5):
+        conv = get_conv_fn(input_size)
         # fmt: off
         convolutions = nn.Sequential(
-            nn.Conv3d(1, 8, 3, padding=1),
+            conv(1, 8, 3, padding=1),
             nn.BatchNorm3d(8),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
 
-            nn.Conv3d(8, 16, 3, padding=1),
+            conv(8, 16, 3, padding=1),
             nn.BatchNorm3d(16),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
 
-            nn.Conv3d(16, 32, 3, padding=1),
+            conv(16, 32, 3, padding=1),
             nn.BatchNorm3d(32),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
 
-            nn.Conv3d(32, 64, 3, padding=1),
+            conv(32, 64, 3, padding=1),
             nn.BatchNorm3d(64),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
 
-            nn.Conv3d(64, 128, 3, padding=1),
+            conv(64, 128, 3, padding=1),
             nn.BatchNorm3d(128),
             nn.ReLU(),
             PadMaxPool3d(2, 2),
@@ -110,11 +120,11 @@ class Conv4_FC3(CNN):
         input_tensor = torch.zeros(input_size).unsqueeze(0)
         output_convolutions = convolutions(input_tensor)
 
-        classifier = nn.Sequential(
+        fc = nn.Sequential(
             nn.Flatten(),
             nn.Dropout(p=dropout),
 
-            nn.Linear(np.prod(list(output_convolutions.shape)), 50),
+            nn.Linear(np.prod(list(output_convolutions.shape)).item(), 50),
             nn.ReLU(),
 
             nn.Linear(50, 40),
@@ -125,7 +135,7 @@ class Conv4_FC3(CNN):
         # fmt: on
         super().__init__(
             convolutions=convolutions,
-            classifier=classifier,
+            fc=fc,
             n_classes=output_size,
             use_cpu=use_cpu,
         )
@@ -149,13 +159,13 @@ class resnet18(CNN):
         )
 
         # add a fc layer on top of the transfer_learning model and a softmax classifier
-        classifier = nn.Sequential(nn.Flatten(), model.fc)
-        classifier.add_module("drop_out", nn.Dropout(p=dropout))
-        classifier.add_module("fc_out", nn.Linear(1000, output_size))
+        fc = nn.Sequential(nn.Flatten(), model.fc)
+        fc.add_module("drop_out", nn.Dropout(p=dropout))
+        fc.add_module("fc_out", nn.Linear(1000, output_size))
 
         super().__init__(
             convolutions=convolutions,
-            classifier=classifier,
+            fc=fc,
             n_classes=output_size,
             use_cpu=use_cpu,
         )

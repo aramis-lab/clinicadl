@@ -176,3 +176,7 @@ class ClassificationManager(TaskManager):
     @staticmethod
     def get_criterion():
         return nn.CrossEntropyLoss()
+
+    @staticmethod
+    def get_default_network():
+        return "Conv5_FC3"
