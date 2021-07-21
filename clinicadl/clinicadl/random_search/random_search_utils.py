@@ -61,7 +61,7 @@ def random_sampling(rs_options, options):
         "n_fcblocks": "randint",
         "n_splits": "fixed",
         "nproc": "fixed",
-        "network_task": "choice",
+        "network_task": "fixed",
         "network_normalization": "choice",
         "optimizer": "choice",
         "patience": "fixed",

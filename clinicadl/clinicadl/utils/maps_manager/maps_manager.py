@@ -561,22 +561,27 @@ class MapsManager:
 
                 interpreter = VanillaBackProp(model)
 
-                mean_map = 0
+                cum_maps = [0] * data_test.elem_per_image
                 for data in test_loader:
                     images = data["image"].to(model.device)
 
                     map_pt = interpreter.generate_gradients(images, target_node)
-                    mean_map += map_pt.sum(axis=0)
-                    if save_individual:
-                        for i in range(len(data["participant_id"])):
+                    for i in range(len(data["participant_id"])):
+                        mode_id = data["mode_id"][i]
+                        cum_maps[mode_id] += map_pt[i]
+                        if save_individual:
                             single_path = path.join(
                                 results_path,
                                 f"participant-{data['participant_id'][i]}_session-{data['session_id'][i]}_"
                                 f"{self.mode}-{data[f'{self.mode}_id'][i]}_map.pt",
                             )
                             torch.save(map_pt, single_path)
-                mean_map /= len(data_test)
-                torch.save(mean_map, path.join(results_path, f"mean_map.pt"))
+                for i, mode_map in enumerate(cum_maps):
+                    mode_map /= len(data_test)
+                    torch.save(
+                        mode_map,
+                        path.join(results_path, f"mean_{self.mode}-{i}_map.pt"),
+                    )
 
     ###################################
     # High-level functions templates  #
@@ -1928,7 +1933,9 @@ class MapsManager:
                 f"No prediction corresponding to prefix {prefix} was found."
             )
         if participant_id is None and session_id is None:
-            map_pt = torch.load(path.join(map_dir, "mean_map.pt"))
+            map_pt = torch.load(
+                path.join(map_dir, f"mean_{self.mode}-{mode_id}_map.pt")
+            )
         elif participant_id is None or session_id is None:
             raise ValueError(
                 f"To load the mean interpretation map, "
@@ -1939,7 +1946,7 @@ class MapsManager:
             map_pt = torch.load(
                 path.join(
                     map_dir,
-                    f"participant-{participant_id}_session-{session_id}_{self.mode}-{mode_id}_map.pt",
+                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_map.pt",
                 )
             )
         return map_pt

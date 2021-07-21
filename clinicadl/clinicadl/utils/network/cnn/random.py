@@ -54,7 +54,7 @@ class RandomArchitecture(CNN):
 
         super().__init__(
             convolutions=convolutions,
-            classifier=classifier,
+            fc=classifier,
             n_classes=output_size,
             use_cpu=use_cpu,
         )

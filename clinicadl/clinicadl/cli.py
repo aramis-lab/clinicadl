@@ -108,16 +108,14 @@ def generate_data_func(args):
 
 def rs_func(args):
     from clinicadl.random_search.random_search import launch_search
-    from clinicadl.utils.meta_maps.random_search_analysis import random_search_analysis
 
-    if args.random_task == "generate":
-        launch_search(args)
-    elif args.random_task == "analysis":
-        random_search_analysis(
-            args.launch_dir,
-        )
-    else:
-        raise ValueError("This task was not implemented in random-search.")
+    launch_search(args)
+
+
+def ma_func(args):
+    from clinicadl.utils.meta_maps.getter import meta_maps_analysis
+
+    meta_maps_analysis(args.launch_dir, args.evaluation_metric)
 
 
 def retrain_func(args):
@@ -640,38 +638,21 @@ def parse_command_line():
     )
     qc_volume_parser.set_defaults(func=qc_func)
 
-    # random search parsers
+    # random search
     rs_parser = subparser.add_parser(
         "random-search",
         parents=[parent_parser],
         help="Generate random networks to explore hyper parameters space.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    rs_subparsers = rs_parser.add_subparsers(
-        title="""Possibilities for random network training""",
-        description="""You can generate and train a new random network,
-        or relaunch a previous random job with some alterations.""",
-        dest="random_task",
-        help="""****** Possible tasks ******""",
-    )
 
-    rs_subparsers.required = True
-
-    rs_generate_parser = rs_subparsers.add_parser(
-        "generate",
-        parents=[parent_parser],
-        help="Sample a new network and train it.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    rs_pos_group = rs_generate_parser.add_argument_group(TRAIN_CATEGORIES["POSITIONAL"])
+    rs_pos_group = rs_parser.add_argument_group(TRAIN_CATEGORIES["POSITIONAL"])
     rs_pos_group.add_argument(
         "launch_dir", type=str, help="Directory containing the random_search.json file."
     )
     rs_pos_group.add_argument("name", type=str, help="Name of the job.")
 
-    rs_comp_group = rs_generate_parser.add_argument_group(
-        TRAIN_CATEGORIES["COMPUTATIONAL"]
-    )
+    rs_comp_group = rs_parser.add_argument_group(TRAIN_CATEGORIES["COMPUTATIONAL"])
     rs_comp_group.add_argument(
         "-cpu",
         "--use_cpu",
@@ -698,19 +679,7 @@ def parse_command_line():
         "perform one evaluation at the end of each epoch.",
     )
 
-    rs_generate_parser.set_defaults(func=rs_func)
-
-    rs_analysis_parser = rs_subparsers.add_parser(
-        "analysis",
-        help="Performs the analysis of all jobs in launch_dir",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-
-    rs_analysis_parser.add_argument(
-        "launch_dir", type=str, help="Directory containing the random_search.json file."
-    )
-
-    rs_analysis_parser.set_defaults(func=rs_func)
+    rs_parser.set_defaults(func=rs_func)
 
     train_parser = subparser.add_parser(
         "train", help="Train with your data and create a model."
@@ -1211,6 +1180,28 @@ def parse_command_line():
     )
 
     predict_parser.set_defaults(func=predict_func)
+
+    # random search
+    ma_parser = subparser.add_parser(
+        "maps-analysis",
+        parents=[parent_parser],
+        help="Retrieve image-level validation performance of MAPS grouped in the same directory.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    ma_pos_group = ma_parser.add_argument_group(TRAIN_CATEGORIES["POSITIONAL"])
+    ma_pos_group.add_argument(
+        "launch_dir", type=str, help="Directory containing a series of MAPS folders."
+    )
+    ma_opt_group = ma_parser.add_argument_group(TRAIN_CATEGORIES["OPTIONAL"])
+    ma_opt_group.add_argument(
+        "--evaluation_metric",
+        "-metric",
+        type=str,
+        default="loss",
+        help="Metric corresponding to validation performance.",
+    )
+
+    ma_parser.set_defaults(func=ma_func)
 
     tsv_parser = subparser.add_parser(
         "tsvtool", help="""Handle tsv files for metadata processing and data splits."""
