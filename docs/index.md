@@ -48,8 +48,8 @@ We assume that users installing and using `clinicadl` are comfortable using the 
 - Use the [`clinicadl` Google Group](https://groups.google.com/forum/#!forum/clinica-user) to ask for help!
 
 ## Contributions
-If you want to contribute but are not familiar with GitHub, please read the [Contribute](./Contribute.md) section.
-You will also find how to run the test suite to check that your modifications are ready to be integrated.
+If you want to contribute but are not familiar with GitHub, please read the [Contribute](Contribute/Newcomers.md) section.
+You will also find how to [run the test suite](Contribute/Test.md) to check that your modifications are ready to be integrated.
 
 ## License
 `clinicadl` is distributed under the terms of the MIT license given [here](https://github.com/aramis-lab/clinicadl/blob/dev/LICENSE.txt).

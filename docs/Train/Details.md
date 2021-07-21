@@ -142,4 +142,4 @@ The `tsv_path` variable points to a TSV file with two columns:
 or [`kfold`](../TSVTools.md#kfold---k-fold-split) methods.
 - `diagnoses` the diagnoses that will be used in the cohort. Must correspond to a single string with labels accepted by
 `clinicadl train` (`AD`, `BV`, `CN`, `MCI`, `sMCI` or `pMCI`) separated by commas.
-See the [dedicated section](./Custom.md#custom-labels) to use custom labels.
+See the [dedicated section](../Contribute/Custom.md#custom-labels) to use custom labels.

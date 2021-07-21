@@ -63,7 +63,10 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Installation: Installation.md
-  - Contributions: Contribute.md
+  - Contribute to ClinicaDL:
+      - Help for newcomers: Contribute/Newcomers.md
+      - Customize your training: Contribute/Custom.md
+      - Test your modifications: Contribute/Test.md
   - Prepare your imaging data:
     - Introduction: Preprocessing/Introduction.md
     - t1-linear pipeline: Preprocessing/T1_Linear.md
@@ -79,7 +82,6 @@ nav:
     - ROI-based: Train/ROI.md
     - JSON defined: Train/Retrain.md
     - Resume: Train/Resume.md
-    - Custom experiment: Train/Custom.md
     - Implementation details: Train/Details.md
   - Predict: Predict.md
   - Interpret: Interpret.md

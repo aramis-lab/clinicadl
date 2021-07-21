@@ -12,7 +12,7 @@ One architecture is implemented in `clinicadl` for the `patch` mode:
 
 !!! info "Adding a custom architecture"
     It is possible to add a custom architecture and train it with `clinicadl`.
-    Detailed instructions can be found [here](./Custom.md).
+    Detailed instructions can be found [here](../Contribute/Custom.md).
 
 ## `train patch autoencoder` - Train autoencoders using 3D patches
 

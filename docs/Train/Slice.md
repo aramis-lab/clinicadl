@@ -9,7 +9,7 @@ of a ResNet-18 trained on ImageNet.
 
 !!! info "Adding a custom architecture"
     It is possible to add a custom architecture and train it with `clinicadl`.
-    Detailed instructions can be found [here](./Custom.md).
+    Detailed instructions can be found [here](../Contribute/Custom.md).
 
 ## `train slice autoencoder` - Train autoencoders using 2D slices
 

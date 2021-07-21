@@ -24,9 +24,6 @@ class ReconstructionManager(TaskManager):
 
     @property
     def save_outputs(self):
-        """
-        Boolean value indicating if the output values should be saved as tensor for this task.
-        """
         return True
 
     def generate_test_row(self, idx, data, outputs):

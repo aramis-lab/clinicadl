@@ -77,11 +77,12 @@ the following file system:
                 └── intepretation
                     └── <name>
                         ├── description.log
-                        ├── mean_map.pt
+                        ├── mean_<mode>-<k>_map.pt
                         └── sub-<i>_ses-<j>_<mode>-<k>.pt
 ```
 - `description.log` is a text file describing the options used to interpret the network,
-- `mean_map.pt` is the tensor of the mean saliency map across the data set used (always saved),
+- `mean_<mode>-<k>_map.pt` is the tensor of the mean saliency map for mode `k` 
+  across the data set used (always saved),
 - `sub-<i>_ses-<j>_<mode>-<k>.pt` is the tensor of the saliency map for participant `i`, session `j`
   and mode_id `k` (saved only if flag `--save_individual` was given).
   

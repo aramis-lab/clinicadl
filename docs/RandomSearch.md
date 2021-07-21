@@ -1,6 +1,4 @@
-# `clinicadl random-search` - Launch and analyse random search results
-
-## `clinicadl random-search generate`- Train random models sampled from a defined hyperparameter space
+# `clinicadl random-search generate`- Train random models sampled from a defined hyperparameter space
 
 This functionality trains a random model with hyperparameters sampled from a predefined space. 
 The hyperparameter space is defined in a `random_search.json` file that must be manually filled
@@ -23,14 +21,14 @@ the options of the [train function](./Train/Introduction.md) except for the
 that are defined with the commandline arguments.
 Some variables were also added to sample the architecture of the network.
 
-### Prerequisites
+## Prerequisites
 
 You need to execute the [`clinicadl tsvtool getlabels`](TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease) 
 and [`clinicadl tsvtool {split|kfold}`](TSVTools.md#split---single-split-observing-similar-age-and-sex-distributions) commands
 prior to running this task to have the correct TSV file organization.
 Moreover, there should be a CAPS, obtained running the `t1-linear` pipeline of ClinicaDL.
 
-### Running the task
+## Running the task
 
 This task can be run with the following command line:
 ```Text
@@ -42,7 +40,7 @@ where:
 - `launch_directory` (str) is the parent directory of output folder containing the file `random_search.json`.
 - `name` (str) is the name of the output folder containing the experiment.
 
-### Content of `random_search.json`
+## Content of `random_search.json`
 
 `random_search.json` must be present in `launch_dir` before running the command. 
 An example of this file can be found in 
@@ -52,10 +50,11 @@ Mandatory variables:
 
 - `mode` (str) is the type of input used. Must be chosen between `image`, `patch`, `roi` and `slice`. 
 Sampling function: `choice`.
-- `network_type` (str) is the type of network used. 
-The options depend on the type of input used, but at most it can be chosen between `autoencoder`, `cnn` and `multicnn`.
-Sampling function: `choice`.
-- `caps_dir` (str) is the input folder containing the neuroimaging data in a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
+- `network_task` (str) is the task learnt by the network. 
+  Must be chosen between `classification` and `regression`
+  (random sampling for`reconstruction` is not implemented yet).
+  Sampling function: `fixed`.
+- `caps_directory` (str) is the input folder containing the neuroimaging data in a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
 Sampling function: `fixed`.
 - `preprocessing` (str) corresponds to the preprocessing pipeline whose outputs will be used for training. 
 Sampling function: `choice`.
@@ -144,18 +143,18 @@ Mode-dependent variables:
     - `use_extracted_patches` (bool) if set to `True`, the outputs of `clinicadl extract` are used.
     Otherwise, the whole 3D MR volumes are loaded and patches are extracted on-the-fly.
 - `roi`
-    - `selection_threshold` (float) threshold on the balanced accuracies to compute the 
-    [image-level performance](Train/Details.md#soft-voting). 
-    Patches are selected if their balanced accuracy is greater than the threshold.
-    Sampling function: `uniform`. Default will perform no selection.
+    - `roi_list` (list[str]) list of regions to be extracted. The masks corresponding to these 
+      regions must be written in `<caps_directory>/masks/tpl-<tpl_name>` (see [roi extract 
+      section](./Preprocessing/Extract.md#roi) for more information)
+    - `use_extracted_roi` (bool) if set to `True`, the outputs of `clinicadl extract` are used.
+    Otherwise, the whole 3D MR volumes are loaded and regions are extracted on-the-fly.
+    - `uncropped_roi` (bool) if set to `True` the data loader will not crop the region according
+    to the smallest bounding box around the region. Then the input will have the same size as the
+    whole image.
 - `slice`
     - `discarded_slices` (list of int) number of slices discarded from respectively the beginning and the end of the MRI volume. 
     If only one argument is given, it will be used for both sides.
     Sampling function: `randint`. Default: `20`.
-    - `selection_threshold` (float) threshold on the balanced accuracies to compute the 
-    [image-level performance](Train/Details.md#soft-voting). 
-    Slices are selected if their balanced accuracy is greater than the threshold. 
-    Sampling function: `uniform`. Default corresponds to no selection.
     - `slice_direction` (int) axis along which the MR volume is sliced.
     Sampling function: `choice`. Default: `0`.
         - 0 corresponds to the sagittal plane,
@@ -168,7 +167,15 @@ Mode-dependent variables:
 !!! note "Sampling different modes"
     The mode-dependent variables are used only if the corresponding mode is sampled.
 
-### Outputs
+Task-dependent parameters:
+- `classification`
+  - `label`
+  - `selection_threhold`: (float) threshold on the balanced accuracies to compute the 
+    [image-level performance](Train/Details.md#soft-voting) if mode is not equal to image. 
+    Parts of the image are selected if their balanced accuracy is greater than the threshold
+    on the validation set. Sampling function: `uniform`. Default will perform no selection.
+
+## Outputs
 
 Results are stored in the results folder given by `launch_dir`, according to
 the following file system:
@@ -178,18 +185,18 @@ the following file system:
     └── <name>
 ```
 
-### Example of setting
+## Example of setting
 
 In the following we give an example of a `random_search.json` file and 
 two possible sets of options that can be sampled from it.
 
-#### `random_search.json`
+### `random_search.json`
 
 ```
 {"mode": ["patch", "image"],
-"network_type": "cnn",
+"network_task": "classification",
 
-"caps_dir": "/path/to/caps",
+"caps_directory": "/path/to/caps",
 "preprocessing": "t1-linear",
 "tsv_path": "/path/to/tsv",
 
@@ -210,13 +217,13 @@ two possible sets of options that can be sampled from it.
 "n_fcblocks": [1, 3]}
 ```
 
-#### Options #1
+### Options #1
 
 ```
 {"mode": "image",
-"network_type": "cnn",
+"network_task": "classification",
 
-"caps_dir": "/path/to/caps",
+"caps_directory": "/path/to/caps",
 "preprocessing": "t1-linear",
 "tsv_path": "/path/to/tsv",
 
@@ -268,13 +275,13 @@ The scheme of the corresponding architecture is the following:
 ![Illustration of the CNN corresponding to options #1](images/random1.png)
 
 
-#### Options #2
+### Options #2
 
 ```
 {"mode": "patch",
-"network_type": "cnn",
+"network_task": "classification",
 
-"caps_dir": "/path/to/caps",
+"caps_directory": "/path/to/caps",
 "preprocessing": "t1-linear",
 "tsv_path": "/path/to/tsv",
 
@@ -319,48 +326,3 @@ number of layers for each convolutional block, described in the `conv` dictionna
 The scheme of the corresponding architecture is the following:
 
 ![Illustration of the CNN corresponding to options #2](images/random2.png)
-
-
-## `clinicadl random-search analysis` - Find best performing jobs
-
-This tool allows to parse all the jobs trained with ClinicaDL and 
-produces a TSV files that indicates how many jobs have a validation balanced accuracy
-higher than a threshold (from 0.50 to 0.95).
-
-### Prerequisites
-
-A random search must have run in `launch_directory`, so 
-`clinicadl random-search generate <launch_directory>` must have been executed at least one time.
-
-### Running the task
-
-This task can be run with the following command line:
-```Text
-clinicadl random-search analysis <launch_directory>
-
-```
-where `launch_directory` (str) is the parent directory of output folder containing the file `random_search.json`.
-
-### Outputs
-
-Two TSV files are produced in `launch_directory`:
-- `analysis_balanced_accuracy.tsv` which gives the results of the best models according to validation balanced accuracy,
-- `analysis_balanced_accuracy.tsv` which gives the results of the best models according to validation loss.
-
-The content of these TSV files is as follows:
-
-```
-	    run >0.5	>0.55	...	>0.85	>0.9	>0.95	folds
-job-0	1	1	    1	    	0	    0	    0	    4
-job-1	1	1	    1       	0	    0	    0	    3
-...
-job-10	1	1	    1       	1	    0	    0	    3
-total   9   8       8           2       1       0       32
-```
-
-where:
-- the column `run` indicates if the job has run are not (it can crash at the beginning because the
-architecture chosen is too large for the GPU).
-- the columns `>XX` indicates if the job has a validation balanced accuracy higher than `XX`.
-- the columns `folds` indicates how many folds were found for this job,
-- the last row `total` is the sum of all the previous rows.
