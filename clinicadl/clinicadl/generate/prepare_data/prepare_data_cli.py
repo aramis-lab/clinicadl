@@ -97,7 +97,7 @@ cmd_name = "prepare-data"
     "-ct",
     type=str,
     default=None,
-    help="""Custom template if EXTRACT_METHOD is `roi`. 
+    help="""Custom template if EXTRACT_METHOD is `roi`.
         Name of the template used when modality is set to custom.""",
 )
 @click.option(
@@ -105,7 +105,7 @@ cmd_name = "prepare-data"
     "-cmp",
     type=str,
     default=None,
-    help="""Custom mask pattern if EXTRACT_METHOD is `roi`. 
+    help="""Custom mask pattern if EXTRACT_METHOD is `roi`.
             If given will select only the masks containing the string given.
             The mask with the shortest name is taken.
             This argument is taken into account only of the modality is custom.""",

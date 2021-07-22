@@ -9,7 +9,7 @@ cmd_name = "train"
 @cli_param.argument.caps_directory
 @cli_param.argument.output_maps
 @cli_param.argument.preprocessing_json
-## train option
+# train option
 @cli_param.option.use_gpu
 @cli_param.option.n_proc
 @cli_param.option.batch_size
@@ -27,7 +27,7 @@ cmd_name = "train"
     type=bool,
     default=False,
     is_flag=True,
-    help="""If provided the outputs of extract preprocessing are used, else the whole 
+    help="""If provided the outputs of extract preprocessing are used, else the whole
             MRI is loaded.""",
 )
 # Data

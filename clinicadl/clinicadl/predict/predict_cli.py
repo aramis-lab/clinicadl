@@ -47,7 +47,7 @@ cmd_name = "classify"
     type=bool,
     default=False,
     is_flag=True,
-    help="""Performs multi-cohort classification. 
+    help="""Performs multi-cohort classification.
             In this case, CAPS_DIRECTORY and PARTICIPANTS_TSV must be paths to TSV files.""",
 )
 @click.option(

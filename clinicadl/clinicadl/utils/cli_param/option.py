@@ -10,7 +10,7 @@ subjects_sessions_tsv = click.option(
     help="TSV file containing a list of subjects with their sessions.",
 )
 
-## TSV TOOLS
+# TSV TOOLS
 diagnoses = click.option(
     "--diagnoses",
     "-d",
@@ -40,7 +40,7 @@ subset_name = click.option(
     help="Name of the subset that is complementary to train.",
 )
 
-## GENERATE
+# GENERATE
 n_subjects = click.option(
     "--n_subjects",
     type=int,
@@ -54,7 +54,7 @@ preprocessing = click.option(
     help="Preprocessing used to generate synthetic data.",
 )
 
-## TRAIN
+# TRAIN
 # Computational
 use_gpu = click.option(
     "--gpu/--no-gpu",
