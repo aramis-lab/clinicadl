@@ -10,16 +10,16 @@ cmd_name = "restrict"
 @cli_param.argument.merged_tsv
 @cli_param.argument.results_directory
 def cli(dataset, merged_tsv, results_directory):
-    """
-    """
+    """ """
     # import function to execute
     from .restrict import aibl_restriction, oasis_restriction
+
     # run function
     if dataset == "AIBL":
         aibl_restriction(merged_tsv, results_directory)
     elif dataset == "OASIS":
         oasis_restriction(merged_tsv, results_directory)
-    
+
 
 if __name__ == "__main__":
     cli()

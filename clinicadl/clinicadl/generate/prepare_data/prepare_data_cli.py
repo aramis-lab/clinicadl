@@ -62,25 +62,30 @@ cmd_name = "prepare-data"
 )
 @click.option(
     "--discarded_slices",
-    type=int, default=0,
+    type=int,
+    default=0,
     multiple=True,
     help="""Discarded slices if EXTRACT_METHOD is `slice`. Number of slices discarded from respectively the beginning and
         the end of the MRI volume.  If only one argument is given, it will be
         used for both sides.""",
-    )
+)
 @click.option(
     "--roi_list",
     type=str,
-    multiple=True, default=None,
+    multiple=True,
+    default=None,
     help="ROI list if EXTRACT_METHOD is `roi`. List of regions to be extracted",
 )
 @click.option(
     "--roi_uncrop_output",
-    type=bool, default=False, is_flag=True,
+    type=bool,
+    default=False,
+    is_flag=True,
     help="Uncrop outputs if EXTRACT_METHOD is `roi`. Disable cropping option so the output tensors have the same size than the whole image.",
 )
 @click.option(
-    "--roi_custom_suffix", "-cn",
+    "--roi_custom_suffix",
+    "-cn",
     type=str,
     default="",
     help="""Custom suffix if EXTRACT_METHOD is `roi`. Custom suffix filename, e.g.:
@@ -88,13 +93,16 @@ cmd_name = "prepare-data"
         'segm-whitematter_probability.nii.gz' """,
 )
 @click.option(
-    "--roi_custom_template", "-ct",
-    type=str, default=None,
+    "--roi_custom_template",
+    "-ct",
+    type=str,
+    default=None,
     help="""Custom template if EXTRACT_METHOD is `roi`. 
         Name of the template used when modality is set to custom.""",
 )
 @click.option(
-    "--roi_custom_mask_pattern", "-cmp",
+    "--roi_custom_mask_pattern",
+    "-cmp",
     type=str,
     default=None,
     help="""Custom mask pattern if EXTRACT_METHOD is `roi`. 
@@ -153,12 +161,11 @@ def cli(
     subjects_sessions_tsv: Optional[str] = None,
     n_procs: Optional[int] = None,
 ) -> None:
-    """
-    """
+    """ """
     from .prepare_data import DeepLearningPrepareData
 
     parameters = {
-        "modality": modality,        
+        "modality": modality,
         # custom
         "custom_suffix": custom_suffix,
         "extract_method": extract_method,

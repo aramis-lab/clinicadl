@@ -22,16 +22,26 @@ cmd_name = "kfold"
     type=str,
     default=None,
 )
-
-def cli(formatted_data_directory, n_splits, no_MCI_sub_categories, subset_name, stratification):
-    """
-    """
+def cli(
+    formatted_data_directory,
+    n_splits,
+    no_MCI_sub_categories,
+    subset_name,
+    stratification,
+):
+    """ """
     # import function to execute
     from .kfold import split_diagnoses
+
     # run function
-    split_diagnoses(formatted_data_directory, n_splits=n_splits,
-        subset_name=subset_name, MCI_sub_categories=no_MCI_sub_categories,
-        stratification=stratification)
+    split_diagnoses(
+        formatted_data_directory,
+        n_splits=n_splits,
+        subset_name=subset_name,
+        MCI_sub_categories=no_MCI_sub_categories,
+        stratification=stratification,
+    )
+
 
 if __name__ == "__main__":
     cli()

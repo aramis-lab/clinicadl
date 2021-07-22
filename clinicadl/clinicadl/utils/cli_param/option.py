@@ -12,20 +12,25 @@ subjects_sessions_tsv = click.option(
 
 ## TSV TOOLS
 diagnoses = click.option(
-    "--diagnoses", "-d",
+    "--diagnoses",
+    "-d",
     type=click.Choice(["AD", "CN", "MCI", "sMCI", "pMCI", "BV"]),
     multiple=True,
     default=("AD", "CN"),
     help="Labels selected for the demographic analysis.",
 )
 modality = click.option(
-    "--modality", "-mod",
-    default="t1w", type=str,
+    "--modality",
+    "-mod",
+    default="t1w",
+    type=str,
     help="Modality to select sessions. Sessions which do not include the modality will be excluded.",
 )
 no_MCI_sub_categories = click.option(
     "--no_MCI_sub_categories",
-    type=bool, default=True, is_flag=False,
+    type=bool,
+    default=True,
+    is_flag=False,
     help="Deactivate default managing of MCI sub-categories to avoid data leakage.",
 )
 subset_name = click.option(
@@ -54,16 +59,19 @@ preprocessing = click.option(
 use_gpu = click.option(
     "--gpu/--no-gpu",
     default=True,
-    help="Use GPU by default. Please specify  --no-gpu  to use CPU instead."
+    help="Use GPU by default. Please specify  --no-gpu  to use CPU instead.",
 )
 n_proc = click.option(
-    "-np", "--nproc",
-    type=int, default=2,
+    "-np",
+    "--nproc",
+    type=int,
+    default=2,
     help="Number of cores used during the task.",
 )
 batch_size = click.option(
     "--batch_size",
-    default=2, show_default=True,
+    default=2,
+    show_default=True,
     type=int,
     help="Batch size for data loading.",
 )

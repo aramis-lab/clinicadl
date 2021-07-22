@@ -11,17 +11,13 @@ cmd_name = "analysis"
 @cli_param.argument.results_directory
 @cli_param.option.diagnoses
 def cli(merged_tsv, formatted_data_directory, results_directory, diagnoses):
-    """
-    """
+    """ """
     # import function to execute
     from .analysis import demographics_analysis
 
     # run function
     demographics_analysis(
-        merged_tsv,
-        formatted_data_directory,
-        results_directory,
-        diagnoses
+        merged_tsv, formatted_data_directory, results_directory, diagnoses
     )
 
 

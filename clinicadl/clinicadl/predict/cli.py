@@ -9,10 +9,12 @@ class RegistrationOrderGroup(click.Group):
     def list_commands(self, ctx):
         return self.commands.keys()
 
+
 @click.group(cls=RegistrationOrderGroup, name="infer")
 def cli() -> None:
     """Descrption"""
     pass
+
 
 cli.add_command(infer_cli)
 

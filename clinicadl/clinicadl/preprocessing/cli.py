@@ -7,10 +7,12 @@ class RegistrationOrderGroup(click.Group):
     def list_commands(self, ctx):
         return self.commands.keys()
 
+
 @click.group(name="preprocessing")
 def cli() -> None:
     """Descrption"""
     pass
+
 
 cli.add_command()
 

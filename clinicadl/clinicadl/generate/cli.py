@@ -11,12 +11,14 @@ class RegistrationOrderGroup(click.Group):
     def list_commands(self, ctx):
         return self.commands.keys()
 
+
 @click.group(cls=RegistrationOrderGroup, name="generate-tensor")
 def cli() -> None:
     """
     Generation a synthetic dataset
     """
     pass
+
 
 cli.add_command(generate_random_cli)
 cli.add_command(generate_trivial_cli)

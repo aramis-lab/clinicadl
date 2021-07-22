@@ -13,11 +13,12 @@ class RegistrationOrderGroup(click.Group):
     def list_commands(self, ctx):
         return self.commands.keys()
 
+
 @click.group(cls=RegistrationOrderGroup, name="tsvtool")
 def cli() -> None:
-    """
-    """
+    """ """
     pass
+
 
 cli.add_command(analysis_cli)
 cli.add_command(getlabels_cli)

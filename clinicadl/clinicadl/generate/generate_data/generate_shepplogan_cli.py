@@ -35,23 +35,32 @@ cmd_name = "shepplogan"
     default=False,
     help="Adds random smoothing to generated data.",
 )
-def cli(generated_caps, img_size, AD_subtypes_distribution, CN_subtypes_distribution, n_subjects, smoothing):
+def cli(
+    generated_caps,
+    img_size,
+    AD_subtypes_distribution,
+    CN_subtypes_distribution,
+    n_subjects,
+    smoothing,
+):
     """
-    Generate a dataset of 2D images at OUTPUT_CAPS_DIRECTORY including 
+    Generate a dataset of 2D images at OUTPUT_CAPS_DIRECTORY including
     3 subtypes based on Shepp Logan phantom.
     """
     from .generate import generate_shepplogan_dataset
+
     labels_distribution = {
-            "AD": AD_subtypes_distribution,
-            "CN": CN_subtypes_distribution,
-        }
+        "AD": AD_subtypes_distribution,
+        "CN": CN_subtypes_distribution,
+    }
     generate_shepplogan_dataset(
         output_dir=generated_caps,
         img_size=img_size,
         labels_distribution=labels_distribution,
         samples=n_subjects,
-        smoothing=smoothing
+        smoothing=smoothing,
     )
+
 
 if __name__ == "__main__":
     cli()

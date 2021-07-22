@@ -1,31 +1,29 @@
-
-
 def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_path):
     from os import path
     from torch import save as save_tensor
     from clinica.utils.inputs import check_caps_folder
     from clinica.utils.participant import get_subject_session_list
     from clinica.utils.exceptions import (
-            ClinicaBIDSError,
-            ClinicaCAPSError,
-            ClinicaException,
-        )
+        ClinicaBIDSError,
+        ClinicaCAPSError,
+        ClinicaException,
+    )
     from clinica.utils.input_files import (
-            T1W_EXTENSIVE,
-            T1W_LINEAR,
-            T1W_LINEAR_CROPPED,
-            pet_linear_nii,
-        )
+        T1W_EXTENSIVE,
+        T1W_LINEAR,
+        T1W_LINEAR_CROPPED,
+        pet_linear_nii,
+    )
     from clinica.utils.inputs import clinica_file_reader
     from clinica.utils.nipype import container_from_filename
     from clinicadl.utils.preprossing import write_preprocessing
     from .prepare_data_utils import (
-            check_mask_list,
-            extract_patches,
-            extract_roi,
-            extract_slices,
-            save_as_pt,
-        )
+        check_mask_list,
+        extract_patches,
+        extract_roi,
+        extract_slices,
+        save_as_pt,
+    )
 
     # Get subject and session list
     check_caps_folder(caps_directory)
@@ -65,9 +63,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
 
     # Input file:
     try:
-        input_files = clinica_file_reader(
-            subjects, sessions, caps_directory, FILE_TYPE
-        )
+        input_files = clinica_file_reader(subjects, sessions, caps_directory, FILE_TYPE)
     except ClinicaException as e:
         err = (
             "Clinica faced error(s) while trying to read files in your CAPS directory.\n"
@@ -79,24 +75,24 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
     for file in input_files:
         container = container_from_filename(file)
         # Extract the wanted tensor
-        if parameters["extract_method"]=="image":
+        if parameters["extract_method"] == "image":
             subfolder = "image_based"
             output_mode = save_as_pt(file)
-        elif parameters["extract_method"]=="slice":
+        elif parameters["extract_method"] == "slice":
             subfolder = "slice_based"
             output_file_rgb, output_file_original = extract_slices(
                 file,
                 slice_direction=parameters["slice_direction"],
                 slice_mode=parameters["slice_mode"],
             )
-        elif parameters["extract_method"]=="patch":
+        elif parameters["extract_method"] == "patch":
             subfolder = "patch_based"
             output_mode = extract_patches(
                 file,
                 patch_size=parameters["patch_size"],
                 stride_size=parameters["stride_size"],
             )
-        elif parameters["extract_method"]=="roi":
+        elif parameters["extract_method"] == "roi":
             subfolder = "roi_based"
             if parameters["modality"] == "custom":
                 parameters["roi_template"] = parameters["roi_custom_template"]
@@ -106,6 +102,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
                     )
             else:
                 from .prepare_data_utils import TEMPLATE_DICT
+
                 parameters["roi_template"] = TEMPLATE_DICT[parameters["modality"]]
             parameters["masks_location"] = path.join(
                 caps_directory, "masks", f"tpl-{parameters['roi_template']}"
@@ -125,9 +122,9 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
                 file,
                 masks_location=parameters["masks_location"],
                 mask_pattern=parameters["roi_custom_mask_pattern"],
-                cropped_input=None 
-                            if parameters["use_uncropped_image"] is None
-                            else not parameters["use_uncropped_image"],
+                cropped_input=None
+                if parameters["use_uncropped_image"] is None
+                else not parameters["use_uncropped_image"],
                 roi_list=parameters["roi_list"],
                 uncrop_output=parameters["roi_uncrop_output"],
             )
@@ -139,10 +136,9 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
                 "deep_learning_prepare_data",
                 subfolder,
                 mod_subfolder,
-                tensor[0]
+                tensor[0],
             )
             save_tensor(tensor[1], output_file_path)
 
-        
     # Save parameters dictionnary
     write_preprocessing(parameters, preprocessing_path)

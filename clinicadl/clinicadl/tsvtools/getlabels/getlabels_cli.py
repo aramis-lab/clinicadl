@@ -34,19 +34,37 @@ cmd_name = "getlabels"
 @click.option(
     "--keep_smc",
     help="This flag allows to keep SMC participants, else they are removed.",
-    type=bool, default=False, is_flag=True
+    type=bool,
+    default=False,
+    is_flag=True,
 )
-def cli(merged_tsv, missing_mods_directory, results_directory, diagnoses,
-        modality, restriction_path, time_horizon, 
-        variables_of_interest, remove_smc):
-    """
-    """
+def cli(
+    merged_tsv,
+    missing_mods_directory,
+    results_directory,
+    diagnoses,
+    modality,
+    restriction_path,
+    time_horizon,
+    variables_of_interest,
+    remove_smc,
+):
+    """ """
     # import function to execute
     from .getlabels import get_labels
+
     # run function
-    get_labels(merged_tsv, missing_mods_directory, results_directory, diagnoses,
-        modality=modality, restriction_path=restriction_path, time_horizon=time_horizon,
-        variables_of_interest=variables_of_interest, remove_smc=remove_smc)
+    get_labels(
+        merged_tsv,
+        missing_mods_directory,
+        results_directory,
+        diagnoses,
+        modality=modality,
+        restriction_path=restriction_path,
+        time_horizon=time_horizon,
+        variables_of_interest=variables_of_interest,
+        remove_smc=remove_smc,
+    )
 
 
 if __name__ == "__main__":

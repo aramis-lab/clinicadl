@@ -4,6 +4,7 @@ from clinicadl.utils import cli_param
 
 cmd_name = "classify"
 
+
 @click.command(name=cmd_name)
 @cli_param.argument.caps_directory
 @cli_param.argument.input_maps
@@ -26,12 +27,15 @@ cmd_name = "classify"
 )
 @click.option(
     "--use_extracted_features",
-    type=bool, default=False, is_flag=True,
+    type=bool,
+    default=False,
+    is_flag=True,
     help="""If True the extract slices or patche are used, otherwise the they
             will be extracted on the fly (if necessary).""",
 )
 @click.option(
-    "--selection_metrics", "-sm",
+    "--selection_metrics",
+    "-sm",
     type=click.Choice(["loss", "balanced_accuracy"]),
     default=("balanced_accuracy"),
     multiple=True,
@@ -40,23 +44,37 @@ cmd_name = "classify"
 )
 @click.option(
     "--multi_cohort",
-    type=bool, default=False, is_flag=True,
+    type=bool,
+    default=False,
+    is_flag=True,
     help="""Performs multi-cohort classification. 
             In this case, CAPS_DIRECTORY and PARTICIPANTS_TSV must be paths to TSV files.""",
 )
 @click.option(
-    "--diagnoses", "-d",
+    "--diagnoses",
+    "-d",
     type=click.Choice(["AD", "CN", "MCI", "sMCI", "pMCI"]),
     default=None,
     multiple=True,
     help="List of participants that will be classified.",
 )
-def cli(caps_directory, participants_tsv, input_maps, inference_prefix,
-        use_gpu, n_proc, batch_size, labels, use_extracted_features,
-        selection_metrics, diagnoses, multi_cohort):
-    """
-    """
+def cli(
+    caps_directory,
+    participants_tsv,
+    input_maps,
+    inference_prefix,
+    use_gpu,
+    n_proc,
+    batch_size,
+    labels,
+    use_extracted_features,
+    selection_metrics,
+    diagnoses,
+    multi_cohort,
+):
+    """ """
     from .infer import classify
+
     classify(
         caps_dir=caps_directory,
         tsv_path=participants_tsv,

@@ -18,13 +18,15 @@ cmd_name = "split"
     default=100.0,
 )
 @click.option(
-    "--p_sex_threshold", "-ps",
+    "--p_sex_threshold",
+    "-ps",
     help="The threshold used for the chi2 test on sex distributions.",
     default=0.80,
     type=float,
 )
 @click.option(
-    "--p_age_threshold", "-pa",
+    "--p_age_threshold",
+    "-pa",
     help="The threshold used for the T-test on age distributions.",
     default=0.80,
     type=float,
@@ -32,7 +34,8 @@ cmd_name = "split"
 @click.option(
     "--ignore_demographics",
     help="If True do not use age and sex to create the splits.",
-    default=False, is_flag=True,
+    default=False,
+    is_flag=True,
     type=bool,
 )
 @click.option(
@@ -42,15 +45,23 @@ cmd_name = "split"
     default=None,
     type=str,
 )
-def cli(formatted_data_directory, subset_name, n_test, no_MCI_sub_categories,
-        p_sex_threshold, p_age_threshold, ignore_demographics,
-        categorical_split_variable):
+def cli(
+    formatted_data_directory,
+    subset_name,
+    n_test,
+    no_MCI_sub_categories,
+    p_sex_threshold,
+    p_age_threshold,
+    ignore_demographics,
+    categorical_split_variable,
+):
     """
     Split each label tsv files at FORMATTED_DATA_DIRECTORY in twi subset (train and validation
     for instance), with respect to sex and age distributions in both sets produced.
     """
     # import function to execute
     from .split import split_diagnoses
+
     # run function
     split_diagnoses(
         formatted_data_directory,
@@ -62,6 +73,7 @@ def cli(formatted_data_directory, subset_name, n_test, no_MCI_sub_categories,
         ignore_demographics=ignore_demographics,
         categorical_split_variable=categorical_split_variable,
     )
+
 
 if __name__ == "__main__":
     cli()
