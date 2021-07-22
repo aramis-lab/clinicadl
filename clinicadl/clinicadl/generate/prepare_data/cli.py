@@ -1,6 +1,6 @@
 import click
 
-from .predict_cli import cli as infer_cli
+from .prepare_data_cli import cli as prepare_data_cli
 
 
 class RegistrationOrderGroup(click.Group):
@@ -10,13 +10,16 @@ class RegistrationOrderGroup(click.Group):
         return self.commands.keys()
 
 
-@click.group(cls=RegistrationOrderGroup, name="predict")
+@click.group(cls=RegistrationOrderGroup, name="extract-tensor")
 def cli() -> None:
-    """Descrption"""
+    """
+    Extraction of pytorch tensor from nifty images.
+    """
     pass
 
 
-cli.add_command(infer_cli)
+cli.add_command(prepare_data_cli)
+
 
 if __name__ == "__main__":
     cli()

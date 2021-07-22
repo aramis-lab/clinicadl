@@ -2,7 +2,7 @@ import click
 
 from clinicadl.utils import cli_param
 
-cmd_name = "classify"
+cmd_name = "predict"
 
 
 @click.command(name=cmd_name)

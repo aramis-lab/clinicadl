@@ -1,8 +1,8 @@
 import click
 
-from .generate.generate_shepplogan_cli import cli as generate_shepplogan_cli
-from .generate.generate_random_cli import cli as generate_random_cli
-from .generate.generate_trivial_cli import cli as generate_trivial_cli
+from .generate_shepplogan_cli import cli as generate_shepplogan_cli
+from .generate_random_cli import cli as generate_random_cli
+from .generate_trivial_cli import cli as generate_trivial_cli
 
 
 class RegistrationOrderGroup(click.Group):
@@ -12,10 +12,10 @@ class RegistrationOrderGroup(click.Group):
         return self.commands.keys()
 
 
-@click.group(cls=RegistrationOrderGroup, name="generate-tensor")
+@click.group(cls=RegistrationOrderGroup, name="generate-dataset")
 def cli() -> None:
     """
-    Generation a synthetic dataset
+    Generation of synthetic dataset.
     """
     pass
 
@@ -23,6 +23,7 @@ def cli() -> None:
 cli.add_command(generate_random_cli)
 cli.add_command(generate_trivial_cli)
 cli.add_command(generate_shepplogan_cli)
+
 
 if __name__ == "__main__":
     cli()

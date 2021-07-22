@@ -3,8 +3,9 @@
 import click
 
 from clinicadl.train.train_cli import cli as train_cli
-from clinicadl.generate.cli import cli as generate_cli
-from clinicadl.infer.cli import cli as infer_cli
+from clinicadl.generate.generate_data.cli import cli as generate_cli
+from clinicadl.generate.prepare_data.cli import cli as extract_cli
+from clinicadl.predict.cli import cli as predict_cli
 from clinicadl.interpret.cli import cli as interpret_cli
 from clinicadl.tsvtools.cli import cli as tsvtools_cli
 
@@ -55,7 +56,8 @@ def cli(verbosity):
 cli.add_command(tsvtools_cli)
 cli.add_command(train_cli)
 cli.add_command(generate_cli)
-cli.add_command(infer_cli)
+cli.add_command(extract_cli)
+cli.add_command(predict_cli)
 cli.add_command(interpret_cli)
 
 

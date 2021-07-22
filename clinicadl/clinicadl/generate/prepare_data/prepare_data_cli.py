@@ -140,7 +140,7 @@ cmd_name = "prepare-data"
     ),
 )
 @cli_param.option.subjects_sessions_tsv
-@cli_param.option.n_procs
+@cli_param.option.n_proc
 def cli(
     caps_directory: str,
     modality: str,
@@ -159,7 +159,7 @@ def cli(
     suvr_reference_region: Optional[str] = None,
     custom_suffix: str = "",
     subjects_sessions_tsv: Optional[str] = None,
-    n_procs: Optional[int] = None,
+    n_proc: Optional[int] = None,
 ) -> None:
     """ """
     from .prepare_data import DeepLearningPrepareData
