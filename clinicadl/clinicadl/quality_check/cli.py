@@ -8,9 +8,9 @@ class RegistrationOrderGroup(click.Group):
         return self.commands.keys()
 
 
-@click.group(name="preprocessing")
+@click.group(name="quality-check")
 def cli() -> None:
-    """Descrption"""
+    """Quality check of clinica t1-linear and t1-volume pipeline's outputs"""
     pass
 
 
