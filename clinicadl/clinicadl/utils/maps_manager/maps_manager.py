@@ -567,7 +567,7 @@ class MapsManager:
 
                     map_pt = interpreter.generate_gradients(images, target_node)
                     for i in range(len(data["participant_id"])):
-                        mode_id = data["mode_id"][i]
+                        mode_id = data[f"{self.mode}_id"][i]
                         cum_maps[mode_id] += map_pt[i]
                         if save_individual:
                             single_path = path.join(
