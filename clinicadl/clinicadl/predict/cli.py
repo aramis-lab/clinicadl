@@ -1,6 +1,6 @@
 import click
 
-from .infer_cli import cli as infer_cli
+from .predict_cli import cli as infer_cli
 
 
 class RegistrationOrderGroup(click.Group):
