@@ -17,6 +17,7 @@ clinicadl.egg-info
 # Editor's files
 .idea
 .vscode
+.env
 
 # Code coverage and crash log files
 .coverage

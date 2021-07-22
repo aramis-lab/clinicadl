@@ -1,0 +1,63 @@
+# coding: utf8
+
+import click
+
+from clinicadl.train.train_cli import cli as train_cli
+from clinicadl.generate.cli import cli as generate_cli
+from clinicadl.infer.cli import cli as infer_cli
+from clinicadl.interpret.cli import cli as interpret_cli
+from clinicadl.tsvtools.cli import cli as tsvtools_cli
+
+CONTEXT_SETTINGS = dict(
+    # Extend content width to avoid shortening of pipeline help.
+    max_content_width=160,
+    # Display help string with -h, in addition to --help.
+    help_option_names=["-h", "--help"],
+)
+
+
+def setup_logging(verbosity: int = 0) -> None:
+    """
+    Setup Clinica's logging facilities.
+    Args:
+        verbosity (int): The desired level of verbosity for logging.
+            (0 (default): WARNING, 1: INFO, 2: DEBUG)
+    """
+    from logging import DEBUG, INFO, WARNING, getLogger
+    from sys import stdout
+
+    # from colorlog import ColoredFormatter, StreamHandler
+
+    # Cap max verbosity level to 2.
+    verbosity = min(verbosity, 2)
+
+    # # Define the module level logger.
+    # logger = getLogger("clinica")
+    # logger.setLevel([WARNING, INFO, DEBUG][verbosity])
+
+    # # Add console handler with custom formatting.
+    # console_handler = StreamHandler(stdout)
+    # console_handler.setFormatter(
+    #     ColoredFormatter("%(log_color)s%(asctime)s:%(levelname)s:%(message)s")
+    # )
+    # logger.addHandler(console_handler)
+
+
+@click.group(context_settings=CONTEXT_SETTINGS)
+@click.version_option()
+@click.option(
+    "-v", "--verbose", "verbosity", count=True, help="Increase logging verbosity."
+)
+def cli(verbosity):
+    setup_logging(verbosity=verbosity)
+
+
+cli.add_command(tsvtools_cli)
+cli.add_command(train_cli)
+cli.add_command(generate_cli)
+cli.add_command(infer_cli)
+cli.add_command(interpret_cli)
+
+
+if __name__ == "__main__":
+    cli()

@@ -1540,31 +1540,6 @@ def parse_command_line():
     )
 
     # Optional arguments
-    tsv_kfold_subparser.add_argument(
-        "--n_splits",
-        help="Number of folds in the k-fold split."
-        "If 0, there is no training set and the whole dataset is considered as a test set.",
-        type=int,
-        default=5,
-    )
-    tsv_kfold_subparser.add_argument(
-        "--MCI_sub_categories",
-        help="Deactivate default managing of MCI sub-categories to avoid data leakage.",
-        action="store_false",
-        default=True,
-    )
-    tsv_kfold_subparser.add_argument(
-        "--subset_name",
-        help="Name of the subset that is complementary to train.",
-        type=str,
-        default="validation",
-    )
-    tsv_kfold_subparser.add_argument(
-        "--stratification",
-        help="Name of a variable used to stratify the k-fold split.",
-        type=str,
-        default=None,
-    )
 
     tsv_kfold_subparser.set_defaults(func=tsv_kfold_func)
 
