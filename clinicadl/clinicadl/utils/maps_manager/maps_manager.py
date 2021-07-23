@@ -558,7 +558,7 @@ class MapsManager:
                     f"fold-{fold}",
                     f"best-{selection_metric}",
                     data_group,
-                    f"interpret_{name}",
+                    f"interpret-{name}",
                 )
 
                 if path.exists(results_path):
