@@ -8,7 +8,7 @@ standard](https://aramislab.paris.inria.fr/clinica/docs/public/latest/BIDS/).
 This standard is largely used in the neuroimaging community, and many data sets are available in this format,
 or tools were developed to convert them to BIDS.
 
-Clinica preprocess the images in BIDS format and outputs a [CAPS (ClinicA Processed
+Clinica preprocesses the images in BIDS format and outputs a [CAPS (ClinicA Processed
 Structure)](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/)
 folder in which preprocessed images are stored. The CAPS format can be seen as an extension of
 the BIDS.
@@ -17,7 +17,7 @@ Finally, ClinicaDL takes as input these preprocessed images to train deep neural
 To guarantee reproducibility, the training procedure outputs multiple files which are organized
 according to a specific structure: the MAPS (Model Analysis and Processing Structure).
 
-## Maps definition
+## MAPS definition
 
 A MAPS folder contains all the elements obtained during the training and other post-processing procedures
 applied to a particular deep learning framework. The hierarchy is organized according to the **fold**,
@@ -26,7 +26,7 @@ applied to a particular deep learning framework. The hierarchy is organized acco
 1. **fold**: In ClinicaDL, a training procedure consists in training one model per train / validation split defined by the validation
 procedure. Then the MAPS contains `N` folders named `fold-<i>` with i between 0 and N-1 containing the best networks obtained
 for the `i`-th train / validation split.
-2. **selection metric**: for each fold, one network is selected per `selection_metric` asked by the user (see [Implementation Details]()
+2. **selection metric**: for each fold, one network is selected per `selection_metric` asked by the user (see [Implementation Details](Train/Details.md#model-selection)
 for more information). The output folder containing all information linked to a network selected according to a metric `metric` is named
 `best-<metric>`.
 3. **data group**: Finally, network depending on a fold and a selection metric can be applied to any data group to [compute individual results
@@ -90,9 +90,9 @@ An example of a MAPS structure is given below:
 
 The different levels of the MAPS hierarchy are described in the following sections.
 
-### Level 1: validation procedure & groups
+### Level 1 - validation procedure & groups
 
-the first level of the MAPS hierarchy contains the following files:
+The first level of the MAPS hierarchy contains the following files:
 
 ```Text
 <maps_path>
@@ -137,7 +137,7 @@ may not be present if the user chose to train only a subset of folds.
     - `<data_group>` contains two files: `data.tsv` containing the list of participant_IDs, session_IDs and the label (if applicable), and
     `maps.json` the configuration file of the group which contains the path to the CAPS directory and the value of multi_cohort argument.
 
-### Level 2: metrics of selection & training logs
+### Level 2 - metrics of selection & training logs
 
 The second level corresponds to the content of folder `fold-<i>`. It contains the best models selected during training according to the validation
 performance according to a metric `metric`. It also contains the evolution of all evaluation metrics computed on the training
@@ -155,10 +155,10 @@ fold-<i>
            └── training.tsv
 ```
 
-### Level 3: model application to data groups
+### Level 3 - model application to data groups
 
 The last level corresponds to the content of `best-<metric>`. In this folder, the weights of the model is available (`best_model.pth.tar`)
-and its application to different data groups can be found:
+and their application to different data groups can be found:
 
 ```Text
 best-<metric>
@@ -169,5 +169,5 @@ best-<metric>
 ```
 
 `train` and `validation` data groups are automatically created as their predictions are computed during the training procedure.
-Other groups may exist if [predictions](./Predict.md), [interpretations](./Interpret.md) or [tensor serialization](./Tensors.md) was computed.
+Other groups may exist if [predictions](./Predict.md), [interpretations](./Interpret.md) or [tensor serialization](./Tensors.md) were computed.
 The content of the data group folders depend on the operations performed, then for more information please refer to the corresponding sections.

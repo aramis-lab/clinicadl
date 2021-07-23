@@ -76,13 +76,11 @@ the following file system:
     ├── ...  
     └── fold-<fold>
         └── best-<metric>
-                └── intepretation
-                    └── <name>
-                        ├── description.log
+                └── <data_group>
+                    └── interpret-<name>
                         ├── mean_<mode>-<k>_map.pt
                         └── sub-<i>_ses-<j>_<mode>-<k>.pt
 ```
-- `description.log` is a text file describing the options used to interpret the network,
 - `mean_<mode>-<k>_map.pt` is the tensor of the mean saliency map for mode `k` 
   across the data set used (always saved),
 - `sub-<i>_ses-<j>_<mode>-<k>.pt` is the tensor of the saliency map for participant `i`, session `j`

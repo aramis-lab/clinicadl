@@ -133,6 +133,14 @@ where:
 For the regression task, hard-voting is used, then the value of the output at the image level
 is simply the average of the values of all image parts.
 
+## Multi-network
+
+By default all images are used as input of a unique network. With the `--multi` flag,
+a network is trained per image part.
+
+The flag `--multi` cannot be used if the number of parts per image is 1 (for example in `image` mode
+or in `roi` mode if there is only one region).
+
 ## Multi-cohort
 
 Starting from version 0.2.1, it is possible to use ClinicaDL's functions on several datasets at the same time.

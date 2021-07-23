@@ -189,7 +189,6 @@ class MapsManager:
         num_workers=None,
         use_cpu=None,
         overwrite=False,
-        save_tensors=False,
     ):
         """
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -213,7 +212,6 @@ class MapsManager:
             num_workers (int): If given, sets the value of num_workers, else use the same as in training step.
             use_cpu (bool): If given, a new value for the device of the model will be computed.
             overwrite (bool): If True erase the occurrences of data_group.
-            save_tensors (bool): If True the input and output tensors will be saved.
 
         Raises:
             ValueError:
@@ -286,23 +284,6 @@ class MapsManager:
                         use_cpu=use_cpu,
                         network=network,
                     )
-
-                    if save_tensors:
-                        if not self.task_manager.save_outputs:
-                            self.logger.warning(
-                                f"Output tensors saving is disabled for task {self.task}.\n"
-                                f"Outputs will not be saved"
-                            )
-                        else:
-                            self._compute_output_tensors(
-                                data_test,
-                                data_group,
-                                fold,
-                                self.selection_metrics,
-                                use_cpu=use_cpu,
-                                network=network,
-                            )
-
             else:
                 data_test = return_dataset(
                     self.mode,
@@ -990,7 +971,7 @@ class MapsManager:
             network=network,
         )
 
-        if self.task_manager.save_outputs:
+        if self.task_manager.save_outputs and self.visualization:
             self._compute_output_tensors(
                 train_loader.dataset,
                 "train",
@@ -1227,6 +1208,8 @@ class MapsManager:
 
         if "label" not in self.parameters:
             self.parameters["label"] = None
+        if "visualization" not in self.parameters:
+            self.parameters["visualization"] = False
         if "selection_threshold" not in self.parameters:
             self.parameters["selection_threshold"] = None
 
