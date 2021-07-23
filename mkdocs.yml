@@ -64,10 +64,6 @@ nav:
   - Home: index.md
   - Installation: Installation.md
   - Introduction to ClinicaDL: Introduction.md
-  - Contribute to the project:
-      - Help for newcomers: Contribute/Newcomers.md
-      - Customize your training: Contribute/Custom.md
-      - Test your modifications: Contribute/Test.md
   - Commands:
     - Prepare your metadata: TSVTools.md
     - Prepare your imaging data:
@@ -87,3 +83,7 @@ nav:
       - Predict: Predict.md
       - Tensor serialization: Tensors.md
       - Interpret: Interpret.md
+  - Advanced user guide:
+      - Customize your training: Contribute/Custom.md
+      - Test your modifications: Contribute/Test.md
+      - Contribute to the project: Contribute/Newcomers.md

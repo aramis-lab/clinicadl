@@ -1404,7 +1404,9 @@ class MapsManager:
         )
         train_df = train_df[["participant_id", "session_id"]]
         if self.transfer_path is not None:
-            transfer_train_path = path.join(self.transfer_path, "train_data.tsv")
+            transfer_train_path = path.join(
+                self.transfer_path, "group", "train+validation.tsv"
+            )
             transfer_train_df = pd.read_csv(transfer_train_path, sep="\t")
             transfer_train_df = transfer_train_df[["participant_id", "session_id"]]
             train_df = pd.concat([train_df, transfer_train_df])
