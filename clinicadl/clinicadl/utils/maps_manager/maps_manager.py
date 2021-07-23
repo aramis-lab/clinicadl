@@ -1481,7 +1481,9 @@ class MapsManager:
                 )
                 makedirs(group_path, exist_ok=True)
 
-                columns = ["participant_id", "session_id", self.label]
+                columns = ["participant_id", "session_id"]
+                if self.label is not None:
+                    columns.append(self.label)
 
                 df.to_csv(path.join(group_path, "data.tsv"), sep="\t", columns=columns)
                 self.write_parameters(
