@@ -449,6 +449,7 @@ class MapsManager:
         folds=None,
         selection_metrics=None,
         multi_cohort=False,
+        diagnoses=None,
         preprocessing=None,
         target_node=0,
         save_individual=False,
@@ -471,16 +472,12 @@ class MapsManager:
                 Default will load the value of an existing data group.
             tsv_path (str): path to a TSV file containing the list of participants and sessions to test.
                 Default will load the DataFrame of an existing data group.
-
             folds (list[int]): list of folds to interpret. Default perform interpretation on all folds available.
             selection_metrics (list[str]): list of selection metrics to interpret.
                 Default performs the interpretation on all selection metrics available.
             multi_cohort (bool): If True considers that tsv_path is the path to a multi-cohort TSV.
-            preprocessing (str): Name of the preprocessing used. Default uses the same as in training step.
-            multi_cohort (bool): If True considers that tsv_path is the path to a multi-cohort TSV.
             diagnoses (list[str]): List of diagnoses to load if tsv_path is a split_directory.
                 Default uses the same as in training step.
-            baseline (bool): If True baseline sessions only are used for interpretation.
             target_node (int): Node from which the interpretation is computed.
             save_individual (bool): If True saves the individual map of each participant / session couple.
             prepare_dl (bool): If given, sets the value of prepare_dl, else use the same as in training step.
@@ -1405,7 +1402,7 @@ class MapsManager:
         train_df = train_df[["participant_id", "session_id"]]
         if self.transfer_path is not None:
             transfer_train_path = path.join(
-                self.transfer_path, "group", "train+validation.tsv"
+                self.transfer_path, "groups", "train+validation.tsv"
             )
             transfer_train_df = pd.read_csv(transfer_train_path, sep="\t")
             transfer_train_df = transfer_train_df[["participant_id", "session_id"]]
@@ -1466,7 +1463,7 @@ class MapsManager:
                 )
                 makedirs(group_path, exist_ok=True)
 
-                columns = ["participant_id", "session_id"]
+                columns = ["participant_id", "session_id", "cohort"]
                 if self.label is not None:
                     columns.append(self.label)
 

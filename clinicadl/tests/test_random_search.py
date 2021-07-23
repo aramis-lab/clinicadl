@@ -34,7 +34,7 @@ def cli_commands(request):
             "first_conv_width": [1, 3],
             "n_fcblocks": [1, 2],
         }
-        generate_input = ["random-search", "generate", launch_dir, name_dir]
+        generate_input = ["random-search", launch_dir, name_dir]
     else:
         raise NotImplementedError("Test %s is not implemented." % request.param)
 
