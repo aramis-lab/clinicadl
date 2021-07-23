@@ -13,7 +13,7 @@ prior to running this task to have the correct TSV file organization.
 Moreover, there should be a CAPS, obtained running the preprocessing pipeline wanted.
 
 !!! note "Parcellation prediction"
-    It is now possible to predict the intensities in different regions of a neuronatomical atlas
+    It is now possible to predict the intensities in different regions of a neuroanatomical atlas
     with the binary classification task. In this case the outputs of the preprocessing pipeline
     `clinica run t1-volume` must exist in the CAPS.
     
@@ -92,36 +92,6 @@ Options shared for all values of `mode` are organized in groups:
 
 ## Outputs
 
-At the first level of the file system, outputs are identical regardless of the `mode` and `network_type`.
-Below is an example of the output file system for a network trained with data split between train and validation sets 
-corresponding to a 5-fold cross-validation.
-
-<pre>
-results
-├── commandline.json
-├── environment.txt
-├── <b>fold-0</b>
-├── <b>fold-1</b>
-├── <b>fold-2</b>
-├── <b>fold-3</b>
-└── <b>fold-4</b>
-</pre>
-
-where:
-
-- `commandline.json` is a file containing all the arguments necessary to reproduce the experiment,
-- `environment.txt` contains description of the environment used for the experiment,
-- `fold-<i>` is a folder containing the result of the run on the `i`-th split of the 5-fold cross-validation.
-
-!!! note "Validation procedure"
-    A run of `clinicadl train` is necessarily associated to a TSV file system defining a series of data splits (k-fold cross-validation or single split). 
-    In the case of a single split the `results` folder will only contain a folder named `fold-0`.
-
-The structure of the `fold-<i>` folders partly depends on the type of network trained. They may contain the following folders:
-
-- `models` is the folder containing checkpoints saved at the end of each epoch, 
-as well as the best model according to a specific metric on the validation set. 
-The selection of a best model is only performed at the end of an epoch (a model cannot be selected based on internal evaluations in an epoch).
-- `tensorboard_logs` contains logs that can be visualized with [TensorBoard](https://www.tensorflow.org/tensorboard).
-- `cnn_classification` *specific to `(multi)cnn`* contains TSV files corresponding to the evaluation of the best models as saved in `models`.
-- `autoencoder_reconstruction` *specific to `autoencoder`* contains reconstructions of the best model selected on the validation loss.
+The `clinicadl train` command outputs a [MAPS file system]() in which there are only two data groups: `train` and `validation`.
+To limit the size of the MAPS produced, tensor inputs and outputs of each group are only produced thanks to one image of the data set
+(for more information on input and output tensor serialization report to [the dedicated section](../Tensor.md)).

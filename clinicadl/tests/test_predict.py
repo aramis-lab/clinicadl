@@ -5,6 +5,8 @@ from os.path import exists, join
 
 import pytest
 
+from clinicadl import MapsManager
+
 
 @pytest.fixture(
     params=[
@@ -17,90 +19,44 @@ import pytest
     ]
 )
 def predict_commands(request):
-    out_dir = "fold-0/best-loss/test-RANDOM"
     if request.param == "predict_image_classification":
         model_folder = "data/models/maps_image/"
-        test_input = [
-            "predict",
-            "data/dataset/OasisCaps_example",
-            "data/dataset/OasisCaps_example/data.tsv",
-            model_folder,
-            "test-RANDOM",
-            "-cpu",
-            "--selection_metrics loss",
-        ]
+        use_labels = True
     elif request.param == "predict_slice_classification":
         model_folder = "data/models/maps_slice/"
-        test_input = [
-            "predict",
-            "data/dataset/OasisCaps_example",
-            "data/dataset/OasisCaps_example/data.tsv",
-            model_folder,
-            "test-RANDOM",
-            "-cpu",
-            "--selection_metrics loss",
-        ]
+        use_labels = True
     elif request.param == "predict_patch_regression":
         model_folder = "data/models/maps_patch/"
-        test_input = [
-            "predict",
-            "data/dataset/OasisCaps_example",
-            "data/dataset/OasisCaps_example/data.tsv",
-            model_folder,
-            "test-RANDOM",
-            "-cpu",
-            "-nl",
-            "--selection_metrics loss",
-        ]
+        use_labels = False
     elif request.param == "predict_roi_regression":
         model_folder = "data/models/maps_roi/"
-        test_input = [
-            "predict",
-            "data/dataset/OasisCaps_example",
-            "data/dataset/OasisCaps_example/data.tsv",
-            model_folder,
-            "test-RANDOM",
-            "-cpu",
-            "-nl",
-            "--selection_metrics loss",
-        ]
+        use_labels = False
     elif request.param == "predict_roi_multi_classification":
         model_folder = "data/models/maps_roi_multi/"
-        test_input = [
-            "predict",
-            "data/dataset/OasisCaps_example",
-            "data/dataset/OasisCaps_example/data.tsv",
-            model_folder,
-            "test-RANDOM",
-            "-cpu",
-            "--selection_metrics loss",
-        ]
+        use_labels = False
     elif request.param == "predict_roi_reconstruction":
         model_folder = "data/models/maps_roi_ae/"
-        test_input = [
-            "predict",
-            "data/dataset/OasisCaps_example",
-            "data/dataset/OasisCaps_example/data.tsv",
-            model_folder,
-            "test-RANDOM",
-            "-cpu",
-            "--selection_metrics loss",
-        ]
+        use_labels = False
     else:
         raise NotImplementedError("Test %s is not implemented." % request.param)
 
-    output_files = join(model_folder, out_dir)
-    return test_input, output_files
+    return model_folder, use_labels
 
 
 def test_predict(predict_commands):
-    test_input = predict_commands[0]
-    out_dir = predict_commands[1]
+    model_folder, use_labels = predict_commands
+    out_dir = join(model_folder, "fold-0/best-loss/test-RANDOM")
 
     if os.path.exists(out_dir):
         shutil.rmtree(out_dir)
 
-    flag_error = not os.system("clinicadl " + " ".join(test_input))
-
-    assert flag_error
-    assert exists(out_dir)
+    maps_manager = MapsManager(model_folder, verbose="debug")
+    maps_manager.predict(
+        data_group="test-RANDOM",
+        caps_directory="data/dataset/OasisCaps_example",
+        tsv_path="data/dataset/OasisCaps_example/data.tsv",
+        use_labels=use_labels,
+        overwrite=True,
+    )
+    maps_manager.get_prediction(data_group="test-RANDOM")
+    maps_manager.get_metrics(data_group="test-RANDOM")

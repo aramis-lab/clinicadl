@@ -56,7 +56,7 @@ as soon as you want on the original repo, to inform / ask advice from the admins
 If you did not run any tests (see next section), you can first open a draft pull request to avoid running the continuous integration
 on your code.
 
-## Add documentation
+# Add documentation
 
 Documentation of ClinicaDL is deployed by [readthedocs](https://readthedocs.org/).
 Source files are available in the `docs` folder of the repo.

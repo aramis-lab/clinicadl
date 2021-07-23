@@ -24,13 +24,21 @@ tar xf model_exp3_splits_1.tar.gz
 ## Running the task
 This task can be run with the following command line:
 ```Text
-clinicadl interpret <model_path> <name>
+clinicadl interpret <model_path> <data_group> <name>
 
 ```
 where:
 
 - `model_path` (str) is the path to the MAPS of the pretrained model.
+- `data_group` (str) is the data is the name of the data group used for the interpretation.
 - `name` (str) is the name of the saliency map task.
+
+!!! warning "data group consistency"
+    For ClinicaDL, a data group is linked to a list of participants / sessions and a CAPS directory.
+    When performing a prediction, interpretation or tensor serialization the user must give a data group.
+    If this data group does not exist, the user MUST give a `caps_path` and a `tsv_path`.
+    If this data group already exists, the user MUST not give any `caps_path` or `tsv_path`, or set overwrite to True.
+
 
 Optional arguments:
 
@@ -46,20 +54,14 @@ Optional arguments:
     - `--tsv_path` (str) is a path to a directory containing one TSV file per diagnosis
     (see output tree of [getlabels](./TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease)). 
     Default will use the same participants than those used during the training task.
-    - `--caps_dir` (str) is the path to a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
+    - `--caps_directory` (str) is the path to a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
     Default will use the same CAPS than during the training task.
-    - `--diagnosis` (str) is the diagnosis that will be loaded in `tsv_path`. Default value: `AD`.
-    - `--target_diagnosis` (str) is the class the gradients explain. Default will explain
-    the given diaggnosis.
-    - `--baseline` (bool) is a flag to load only `_baseline.tsv` files instead of `.tsv` files comprising all the sessions. Default: `False`.
-    - `--keep_true` (bool) allows to choose only the images correctly (`True`) or badly (`False`)
-    classified by the CNN. Default will not perform any selection.
-    - `--nifti_template_path` (str) is a path to a nifti template to retrieve the affine values
-    needed to write Nifti files for 3D saliency maps. Default will use the identity matrix for the affine.
     - `--multi_cohort` (bool) is a flag indicated that [multi-cohort interpretation](Train/Details.md#multi-cohort) is performed.
     In this case, `caps_dir` and `tsv_path` must be paths to TSV files. If no new `caps_dir` and `tsv_path` are 
     given this argument is not taken into account. 
 - **Results**
+    - `--target_node` (str) is the class the gradients explain. Default will explain
+    the given diaggnosis.
     - `--save_individual` (bool) if this flag is given the individual saliency maps of each input will be saved. 
       Default will only save the mean saliency map across the data set.
    

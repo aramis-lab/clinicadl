@@ -14,12 +14,16 @@ We assume that users installing and using `clinicadl` are comfortable using the 
 
 ## User documentation (`clinicadl`)
 
+### Prepare your meta data
+- `clinicadl tsvtool` - [Handle TSV files for metadata processing and data splits](./TSVTools.md)
+
 ### Prepare your imaging data
 - `clinicadl preprocessing run` - [Preprocessing pipelines](Preprocessing/Introduction.md)
     - `t1-linear` - [Linear processing of T1w MR images](Preprocessing/T1_Linear.md): affine registration to the MNI standard space
     - `t1-extensive` - ['Extensive' processing of T1w MR images](Preprocessing/T1_Extensive.md): non linear registration to the MNI standard space
 - `clinicadl preprocessing quality-check` - [Quality control of preprocessed data](Preprocessing/QualityCheck.md): use a pretrained network [[Fonov et al., 2018](https://www.biorxiv.org/content/10.1101/303487v1)] to classify adequately registered images.
 - `clinicadl preprocessing extract-tensor` - [Prepare input data for deep learning with PyTorch](Preprocessing/Extract.md)
+- `clinicadl generate` - [Generate synthetic data for functional tests](./Generate.md)
 
 
 ### Train & test your classifier
@@ -27,12 +31,6 @@ We assume that users installing and using `clinicadl` are comfortable using the 
 - `clinicadl train` - [Train with your data and create a model](./Train/Introduction.md)
 - `clinicadl predict` - [Predicts one image or a list of images with your previously trained CNN](Predict.md)
 - `clinicadl interpret`- [Interpret trained CNNs on individual or group of images](./Interpret.md)
-
-### Utilitaries <!--used for the preparation of imaging data and/or training your classifier-->
-
-- `clinicadl generate` - [Generate synthetic data for functional tests](./Generate.md)
-- `clinicadl tsvtool` - [Handle TSV files for metadata processing and data splits](./TSVTools.md)
-
 
 [//]:## Pretrained models
 

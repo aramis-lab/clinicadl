@@ -63,27 +63,31 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Installation: Installation.md
-  - Contribute to ClinicaDL:
+  - Introduction to ClinicaDL: Introduction.md
+  - Contribute to the project:
       - Help for newcomers: Contribute/Newcomers.md
       - Customize your training: Contribute/Custom.md
       - Test your modifications: Contribute/Test.md
-  - Prepare your imaging data:
-    - Introduction: Preprocessing/Introduction.md
-    - t1-linear pipeline: Preprocessing/T1_Linear.md
-    - t1-extensive pipeline: Preprocessing/T1_Extensive.md
-    - extract tensors: Preprocessing/Extract.md
-    - quality check: Preprocessing/QualityCheck.md
-  - Random Search: RandomSearch.md
-  - Train:
-    - Introduction: Train/Introduction.md
-    - Image-based: Train/Image.md
-    - Patch-based: Train/Patch.md
-    - Slice-based: Train/Slice.md
-    - ROI-based: Train/ROI.md
-    - JSON defined: Train/Retrain.md
-    - Resume: Train/Resume.md
-    - Implementation details: Train/Details.md
-  - Predict: Predict.md
-  - Interpret: Interpret.md
-  - Generate: Generate.md
-  - TSV Tools: TSVTools.md
+  - Commands:
+    - Prepare your metadata: TSVTools.md
+    - Prepare your imaging data:
+      - Introduction: Preprocessing/Introduction.md
+      - t1-linear pipeline: Preprocessing/T1_Linear.md
+      - t1-extensive pipeline: Preprocessing/T1_Extensive.md
+      - extract tensors: Preprocessing/Extract.md
+      - quality check: Preprocessing/QualityCheck.md
+      - generate synthetic data sets: Generate.md
+    - Random Search: RandomSearch.md
+    - Train:
+      - Introduction: Train/Introduction.md
+      - Image-based: Train/Image.md
+      - Patch-based: Train/Patch.md
+      - Slice-based: Train/Slice.md
+      - ROI-based: Train/ROI.md
+      - JSON defined: Train/Retrain.md
+      - Resume: Train/Resume.md
+      - Implementation details: Train/Details.md
+    - Trained network applications:
+      - Predict: Predict.md
+      - Tensor serialization: Tensors.md
+      - Interpret: Interpret.md

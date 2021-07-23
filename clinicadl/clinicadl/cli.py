@@ -149,7 +149,7 @@ def predict_func(args):
         args.caps_directory,
         args.tsv_path,
         args.model_path,
-        args.prefix_output,
+        args.data_group,
         labels=not args.no_labels,
         gpu=not args.use_cpu,
         prepare_dl=args.use_extracted_features,
@@ -157,6 +157,7 @@ def predict_func(args):
         diagnoses=args.diagnoses,
         verbose=args.verbose,
         multi_cohort=args.multi_cohort,
+        overwrite=args.overwrite,
     )
 
 
@@ -1092,23 +1093,13 @@ def parse_command_line():
         TRAIN_CATEGORIES["POSITIONAL"]
     )
     predict_pos_group.add_argument(
-        "caps_directory", help="Data using CAPS structure.", default=None
-    )
-    predict_pos_group.add_argument(
-        "tsv_path",
-        help="""Path to the file with subjects/sessions to process.
-        If it includes the filename will load the tsv file directly.
-        Else will load the baseline tsv files of wanted diagnoses produced by tsvtool.""",
-        default=None,
-    )
-    predict_pos_group.add_argument(
         "model_path",
         help="""Path to the folder where the model is stored. Folder structure
                 should be the same obtained during the training.""",
         default=None,
     )
     predict_pos_group.add_argument(
-        "prefix_output",
+        "data_group",
         help="Prefix to name the files resulting from the prediction task.",
         type=str,
     )
@@ -1141,6 +1132,16 @@ def parse_command_line():
     # Specific classification arguments
     predict_specific_group = predict_parser.add_argument_group(
         TRAIN_CATEGORIES["OPTIONAL"]
+    )
+    predict_pos_group.add_argument(
+        "--caps_directory", help="Data using CAPS structure.", default=None
+    )
+    predict_pos_group.add_argument(
+        "--tsv_path",
+        help="""Path to the file with subjects/sessions to process.
+            If it includes the filename will load the tsv file directly.
+            Else will load the baseline tsv files of wanted diagnoses produced by tsvtool.""",
+        default=None,
     )
     predict_specific_group.add_argument(
         "-nl",
@@ -1175,6 +1176,13 @@ def parse_command_line():
         "--multi_cohort",
         help="Performs multi-cohort classification. "
         "In this case, caps_directory and tsv_path must be paths to TSV files.",
+        action="store_true",
+        default=False,
+    )
+    predict_specific_group.add_argument(
+        "--overwrite",
+        help="If given, the data group will be erased and redefined according to"
+        "caps_directory, tsv_path and multi_cohort values.",
         action="store_true",
         default=False,
     )
@@ -1451,6 +1459,9 @@ def parse_command_line():
         "model_path", type=str, help="Path to the model output directory."
     )
     interpret_pos_group.add_argument(
+        "data_group", type=str, help="Name of the data group."
+    )
+    interpret_pos_group.add_argument(
         "name", type=str, help="Name of the interpretation map."
     )
 
@@ -1511,26 +1522,16 @@ def parse_command_line():
         action="store_true",
         default=False,
     )
-    interpret_data_group.add_argument(
-        "--diagnosis",
-        "-d",
-        default="AD",
-        type=str,
-        help="The images corresponding to this diagnosis only will be loaded.",
+    interpret_results_group = interpret_parent_parser.add_argument_group(
+        "%sInterpretation specific%s" % (Fore.BLUE, Fore.RESET)
     )
-    interpret_data_group.add_argument(
+    interpret_results_group.add_argument(
         "--target_node",
         default=0,
         type=str,
         help="Which target node the gradients explain. Default takes the first output node.",
     )
-    interpret_data_group.add_argument(
-        "--baseline",
-        action="store_true",
-        default=False,
-        help="If provided, only the baseline sessions are used for training.",
-    )
-    interpret_data_group.add_argument(
+    interpret_results_group.add_argument(
         "--save_individual",
         action="store_true",
         default=False,

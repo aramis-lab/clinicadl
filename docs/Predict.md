@@ -12,7 +12,6 @@ tasks. It can also use any pretrained models if they are structured like a [MAPS
 
 ## Prerequisites
 
-In order to execute this task, the input images must be listed in a `tsv_file`.
 Please check which preprocessing needs to
 be performed in the `maps.json` file in the results folder. If it has
 not been performed, execute the preprocessing pipeline as well as `clinicadl
@@ -32,20 +31,18 @@ tar xf model_exp3_splits_1.tar.gz
 ## Running the task
 This task can be run with the following command line:
 ```Text
-clinicadl predict <caps_directory> <tsv_file> <model_path> <prefix_output>
-
+clinicadl predict <model_path> <data_group>
 ```
 where:
 
-- `caps_directory` (str) is the input folder containing the neuroimaging data
-  (tensor version of images, output of [`clinicadl extract`
-  pipeline](Preprocessing/Extract.md)) in a
-  [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
-- `tsv_file` (str) is a path to a TSV file with subjects/sessions to process (filename
-  included) OR the path to the test folder of a split directory obtained with `clinicadl tsvtool split`.
 - `model_path` (str) is the path to the MAPS of the pretrained model.
-- `prefix` (str) is a prefix to name the data set used for the prediction
-  task.
+- `data_group` (str) is the name of the data group used for the prediction.
+
+!!! warning "data group consistency"
+    For ClinicaDL, a data group is linked to a list of participants / sessions and a CAPS directory.
+    When performing a prediction, interpretation or tensor serialization the user must give a data group.
+    If this data group does not exist, the user MUST give a `caps_path` and a `tsv_path`.
+    If this data group already exists, the user MUST not give any `caps_path` or `tsv_path`, or set overwrite to True.
 
 Optional arguments:
 
@@ -55,6 +52,12 @@ Optional arguments:
     - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
 - **Other options**
+    - `--caps_directory` (str) is the input folder containing the neuroimaging data
+      (tensor version of images, output of [`clinicadl extract`
+      pipeline](Preprocessing/Extract.md)) in a
+      [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
+    - `--tsv_file` (str) is a path to a TSV file with subjects/sessions to process (filename
+      included) OR the path to the test folder of a split directory obtained with `clinicadl tsvtool split`.
     - `--no_labels` (bool) is a flag to add if the dataset does not contain ground truth labels. 
       Default behaviour will look for ground truth labels and raise an error if not found.
     - `--use_extracted_features` (bool) is a flag to use extracted slices or
@@ -68,6 +71,8 @@ Optional arguments:
     - `--multi_cohort` (bool) is a flag indicated that [multi-cohort classification](Train/Details.md#multi-cohort)
      is performed.
     In this case, `caps_directory` and `tsv_path` must be paths to TSV files.
+    - `--overwrite` (bool) is a flag allowing to overwrite a data group to redefine it. All results obtained
+    for this data group will be erased.
 
 ## Outputs
 
@@ -77,9 +82,9 @@ the following file system:
 <model_path>
     ├── fold-0  
     ├── ...  
-    └── fold-<fold>
+    └── fold-<i>
         └── best-<metric>
-                └── <prefix>
+                └── <data_group>
                     ├── description.log
                     ├── <prefix>_image_level_metrics.tsv
                     ├── <prefix>_image_level_prediction.tsv

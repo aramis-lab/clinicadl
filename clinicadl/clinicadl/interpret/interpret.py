@@ -10,11 +10,10 @@ def interpret_cli(options):
     maps_manager.interpret(
         caps_directory=options.caps_directory,
         tsv_path=options.tsv_path,
-        prefix=options.name,
+        data_group=options.data_group,
+        name=options.name,
         selection_metrics=options.selection_metrics,
         multi_cohort=options.multi_cohort,
-        diagnoses=[options.diagnosis],
-        baseline=options.baseline,
         target_node=options.target_node,
         save_individual=options.save_individual,
         batch_size=options.batch_size,
