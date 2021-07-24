@@ -10,7 +10,7 @@
   ClinicaDL
 </h1>
 
-<p align="center"><strong>Framework for the reproducible classification of Alzheimer's disease using deep learning</strong></p>
+<p align="center"><strong>Framework for the reproducible processing of neuroimaging data with deep learning methods</strong></p>
 
 <p align="center">
   <a href="https://ci.inria.fr/clinicadl/job/AD-DL/job/master/">
