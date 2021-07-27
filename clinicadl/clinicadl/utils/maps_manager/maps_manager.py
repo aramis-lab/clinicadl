@@ -1021,14 +1021,6 @@ class MapsManager:
                 dataloader.dataset.caps_dict,
                 dataloader.dataset.df,
             )
-            self.write_parameters(
-                log_dir,
-                {
-                    "caps_directory": dataloader.dataset.caps_directory,
-                    "preprocessing": dataloader.dataset.preprocessing,
-                },
-                self.logger,
-            )
 
             # load the best trained model during the training
             model, _ = self._init_model(

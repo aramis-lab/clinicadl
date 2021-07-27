@@ -56,12 +56,10 @@ An example of a MAPS structure is given below:
 │       │       ├── model.pth.tar
 │       │       ├── train
 │       │       │       ├── description.log
-│       │       │       ├── maps.json
 │       │       │       ├── train_image_level_metrics.tsv
 │       │       │       └── train_image_level_prediction.tsv
 │       │       └── validation
 │       │               ├── description.log
-│       │               ├── maps.json
 │       │               ├── validation_image_level_metrics.tsv
 │       │               └── validation_image_level_prediction.tsv
 │       └── training_logs
