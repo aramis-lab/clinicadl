@@ -17,7 +17,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
     from clinica.utils.inputs import clinica_file_reader
     from clinica.utils.nipype import container_from_filename
     from clinicadl.utils.preprossing import write_preprocessing
-    from .prepare_data_utils import (
+    from .extract_utils import (
         check_mask_list,
         extract_patches,
         extract_roi,

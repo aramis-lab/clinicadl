@@ -1,6 +1,6 @@
 import click
 
-from .prepare_data_cli import cli as prepare_data_cli
+from .extract_cli import cli as prepare_data_cli
 
 
 class RegistrationOrderGroup(click.Group):
@@ -10,7 +10,7 @@ class RegistrationOrderGroup(click.Group):
         return self.commands.keys()
 
 
-@click.group(cls=RegistrationOrderGroup, name="extract-tensor")
+@click.group(cls=RegistrationOrderGroup, name="extract")
 def cli() -> None:
     """
     Extraction of pytorch tensor from nifty images.

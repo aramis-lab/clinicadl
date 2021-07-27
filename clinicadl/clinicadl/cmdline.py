@@ -3,11 +3,13 @@
 import click
 
 from clinicadl.train.train_cli import cli as train_cli
-from clinicadl.generate.generate_data.cli import cli as generate_cli
-from clinicadl.generate.prepare_data.cli import cli as extract_cli
+from clinicadl.generate.cli import cli as generate_cli
+from clinicadl.extract.cli import cli as extract_cli
+from clinicadl.quality_check.cli import cli as qc_cli
 from clinicadl.predict.cli import cli as predict_cli
 from clinicadl.interpret.cli import cli as interpret_cli
 from clinicadl.tsvtools.cli import cli as tsvtools_cli
+from clinicadl.random_search.random_search_cli import cli as random_search_cli
 
 CONTEXT_SETTINGS = dict(
     # Extend content width to avoid shortening of pipeline help.
@@ -59,7 +61,8 @@ cli.add_command(generate_cli)
 cli.add_command(extract_cli)
 cli.add_command(predict_cli)
 cli.add_command(interpret_cli)
-
+cli.add_command(qc_cli)
+cli.add_command(random_search_cli)
 
 if __name__ == "__main__":
     cli()

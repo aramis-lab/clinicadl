@@ -12,7 +12,7 @@ class RegistrationOrderGroup(click.Group):
         return self.commands.keys()
 
 
-@click.group(cls=RegistrationOrderGroup, name="generate-dataset")
+@click.group(cls=RegistrationOrderGroup, name="generate")
 def cli() -> None:
     """
     Generation of synthetic dataset.

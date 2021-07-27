@@ -2,7 +2,7 @@ import click
 
 from clinicadl.utils import cli_param
 
-cmd_name = "trivial"
+cmd_name = "random"
 
 
 @click.command(name=cmd_name)
@@ -12,37 +12,40 @@ cmd_name = "trivial"
 @cli_param.option.n_subjects
 @cli_param.option.preprocessing
 @click.option(
-    "--mask_path",
-    type=str,
-    default=None,
-    help="path to the extracted masks to generate the two labels.",
+    "--mean",
+    type=float,
+    default=0,
+    help="Mean value of the noise added for the random dataset.",
 )
 @click.option(
-    "--atrophy_percent",
+    "--sigma",
     type=float,
-    default=60.0,
-    help="Percentage of atrophy applied",
+    default=0.5,
+    help="Standard deviation of the noise added for the random dataset.",
 )
 def cli(
     caps_directory,
     participant_list,
     generated_caps,
     n_subjects,
+    mean,
+    sigma,
     preprocessing,
-    mask_path,
-    atrophy_percent,
 ):
-    """ """
-    from .generate import generate_trivial_dataset
+    """
+    Generate a random dataset OUTPUT_CAPS_DIRECTORY in which gaussian noise is added
+    to brain images of INPUT_CAPS_DIRECTORY. 
+    """
+    from .generate import generate_shepplogan_dataset
 
-    generate_trivial_dataset(
+    generate_shepplogan_dataset(
         caps_dir=caps_directory,
         tsv_path=participant_list,
         output_dir=generated_caps,
         n_subjects=n_subjects,
+        mean=mean,
+        sigma=sigma,
         preprocessing=preprocessing,
-        mask_path=mask_path,
-        atrophy_percent=atrophy_percent,
     )
 
 

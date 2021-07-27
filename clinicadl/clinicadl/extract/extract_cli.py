@@ -162,7 +162,7 @@ def cli(
     n_proc: Optional[int] = None,
 ) -> None:
     """ """
-    from .prepare_data import DeepLearningPrepareData
+    from .extract import DeepLearningPrepareData
 
     parameters = {
         "modality": modality,
