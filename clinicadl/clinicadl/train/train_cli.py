@@ -1,23 +1,62 @@
 import click
+import toml
+import os
 
 from clinicadl.utils import cli_param
 
+current_file_path = os.path.dirname(os.path.abspath(__file__))
+config_path = os.path.join(
+    *os.path.split(current_file_path)[:-1],
+    "resources",
+    "config",
+    "train_config.toml"
+)
+
 cmd_name = "train"
-
-
 @click.command(name=cmd_name)
+@click.argument(
+    "network_task",
+    type=click.Choice(["classification", "regression", "reconstruction"])
+)
 @cli_param.argument.caps_directory
-@cli_param.argument.output_maps
 @cli_param.argument.preprocessing_json
+@click.argument(
+    "tsv_directory",
+    type=click.Path(exists=True),
+)
+@cli_param.argument.output_maps
 # train option
-@cli_param.option.use_gpu
-@cli_param.option.n_proc
-@cli_param.option.batch_size
+@click.option(
+    "--configuration_toml",
+    "-c",
+    type=click.File(),
+    default=config_path,
+    help="Path to the toml file containing all training configuration",
+)
+@click.option(
+    "--gpu/--no-gpu",
+    # default=True,
+    help="Use GPU by default. Please specify  --no-gpu  to use CPU instead.",
+)
+@click.option(
+    "-np",
+    "--nproc",
+    type=int,
+    # default=2,
+    help="Number of cores used during the task.",
+)
+@click.option(
+    "--batch_size",
+    # default=2,
+    show_default=True,
+    type=int,
+    help="Batch size for data loading.",
+)
 @click.option(
     "--evaluation_steps",
     "-esteps",
     type=int,
-    default=0,
+    # default=0,
     help="Fix the number of iterations to perform before computing an evaluation. Default will only "
     "perform one evaluation at the end of each epoch.",
 )
@@ -25,7 +64,7 @@ cmd_name = "train"
 @click.option(
     "--use_extracted_features",
     type=bool,
-    default=False,
+    # default=False,
     is_flag=True,
     help="""If provided the outputs of extract preprocessing are used, else the whole
             MRI is loaded.""",
@@ -34,7 +73,7 @@ cmd_name = "train"
 @click.option(
     "--multi_cohort",
     type=bool,
-    default=False,
+    # default=False,
     is_flag=True,
     help="Performs multi-cohort training. In this case, caps_dir and tsv_path must be paths to TSV files.",
 )
@@ -42,54 +81,53 @@ cmd_name = "train"
     "--diagnoses",
     "-d",
     type=click.Choice(["AD", "BV", "CN", "MCI", "sMCI", "pMCI"]),
-    default=("AD", "CN"),
+    # default=(),
     multiple=True,
-    show_default=True,
     help="List of diagnoses that will be selected for training.",
 )
 @click.option(
     "--baseline",
     type=bool,
-    default=False,
+    # default=False,
     is_flag=True,
     help="If provided, only the baseline sessions are used for training.",
 )
 @click.option(
     "--normalize/--unnormalize",
-    default=False,
+    # default=False,
     help="Disable default MinMaxNormalization.",
 )
 @click.option(
     "--data_augmentation",
     "-da",
     type=click.Choice(["None", "Noise", "Erasing", "CropPad", "Smoothing"]),
-    default=False,
+    #default=(),
     multiple=True,
     help="Randomly applies transforms on the training set.",
 )
 @click.option(
     "--sampler",
-    "-s",
+    "-s", 
     type=click.Choice(["random", "weighted"]),
-    default="random",
+    # default="random",
     help="Sampler choice (random, or weighted for imbalanced datasets)",
 )
 @click.option(
     "--predict_atlas_intensities",
     type=click.Choice(["AAL2", "AICHA", "Hammers", "LPBA40", "Neuromorphometrics"]),
-    default=None,
+    # default=(),
     help="Atlases used in t1-volume pipeline to make intensities prediction.",
 )
 @click.option(
     "--atlas_weight",
     type=float,
-    default=1,
+    # default=1,
     help="Weight to put on the MSE loss used to compute the error on atlas intensities.",
 )
 @click.option(
     "--merged_tsv",
     type=click.File(),
-    default="",
+    # default="",
     help="Path to the output of clinica iotools merged-tsv (concatenation for multi-cohort). "
     "Can accelerate training if atlas intensities are predicted.",
 )
@@ -97,7 +135,7 @@ cmd_name = "train"
 @click.option(
     "--n_splits",
     type=int,
-    default=0,
+    # default=0,
     help="If a value is given for k will load data of a k-fold CV. "
     "Default value (0) will load a single split.",
 )
@@ -105,7 +143,7 @@ cmd_name = "train"
     "--split",
     "-s",
     type=int,
-    default=None,
+    #default=(),
     multiple=True,
     help="Train the list of given folds. By default train all folds.",
 )
@@ -113,56 +151,72 @@ cmd_name = "train"
 @click.option(
     "--epochs",
     type=int,
-    default=20,
+    # default=20,
     help="Maximum number of epochs.",
 )
 @click.option(
     "--learning_rate",
     "-lr",
     type=float,
-    default=1e-4,
+    # default=1e-4,
     help="Learning rate of the optimization.",
 )
 @click.option(
     "--weight_decay",
     "-wd",
     type=float,
-    default=1e-4,
+    # default=1e-4,
     help="Weight decay value used in optimization.",
 )
 @click.option(
     "--dropout",
     type=float,
-    default=0,
+    # default=0,
     help="rate of dropout that will be applied to dropout layers in CNN.",
 )
 @click.option(
     "--patience",
     type=int,
-    default=0,
+    # default=0,
     help="Number of epochs for early stopping patience.",
 )
 @click.option(
     "--tolerance",
     type=float,
-    default=0.0,
+    # default=0.0,
     help="Value for the early stopping tolerance.",
 )
 @click.option(
     "--accumulation_steps",
     "-asteps",
     type=int,
-    default=1,
+    # default=1,
     help="Accumulates gradients during the given number of iterations before performing the weight update "
     "in order to virtually increase the size of the batch.",
 )
+# transfert learning
+@click.option(
+    "-tlp", "--transfer_learning_path",
+    type=click.Path(),
+    # default=0.0,
+    help="Path of model used for transfert learning",
+)
+@click.option(
+    "-tls", "--transfer_learning_selection",
+    type=str,
+    # default="best_loss",
+    help="Transfert learning selection metric",
+)
 def cli(
-    caps_directory,
-    output_maps,
+    network_task,
+    input_caps_directory,
     preprocessing_json,
+    tsv_directory,
+    output_maps_directory,
+    configuration_toml,
     use_extracted_features,
-    use_gpu,
-    n_proc,
+    gpu,
+    nproc,
     batch_size,
     evaluation_steps,
     multi_cohort,
@@ -183,42 +237,166 @@ def cli(
     patience,
     tolerance,
     accumulation_steps,
+    transfer_learning_path,
+    transfer_learning_selection
 ):
     """
-    Train a deep learning model on INPUT_CAPS_DIRECTORY data.
-    Save the results in OUTPUT_MAPS_DIRECTORY.
+    Train a deep learning model for NETWORK_TASK on INPUT_CAPS_DIRECTORY data.
+    The list of data in loaded from TSV_DIRECTORY.
     Data will be selected with respect to PREPROCESSING_JSON parameters.
+    Results will be saved in OUTPUT_MAPS_DIRECTORY.
     """
-    from .train import launch
+    from .launch import train
 
-    launch(
-        caps_directory=caps_directory,
-        maps_directory=output_maps,
-        preprocessing_json=preprocessing_json,
-        use_extracted_features=use_extracted_features,
-        use_gpu=use_gpu,
-        n_proc=n_proc,
-        batch_size=batch_size,
-        evaluation_steps=evaluation_steps,
-        multi_cohort=multi_cohort,
-        diagnoses=diagnoses,
-        baseline=baseline,
-        normalize=normalize,
-        data_augmentation=data_augmentation,
-        sampler=sampler,
-        predict_atlas_intensities=predict_atlas_intensities,
-        atlas_weight=atlas_weight,
-        merged_tsv=merged_tsv,
-        n_splits=n_splits,
-        split=split,
-        epochs=epochs,
-        learning_rate=learning_rate,
-        weight_decay=weight_decay,
-        dropout=dropout,
-        patience=patience,
-        tolerance=tolerance,
-        accumulation_steps=accumulation_steps,
-    )
+    config_dict = toml.load(configuration_toml)
+    train_dict = get_train_dict(config_dict, preprocessing_json, network_task)
+
+    # Add arguments
+    train_dict["network_task"] = network_task
+    train_dict["caps_directory"] = input_caps_directory
+    train_dict["tsv_path"] = tsv_directory
+
+    if "func" in train_dict:
+        del train_dict["func"]
+
+    if accumulation_steps is not None:
+        train_dict["accumulation_steps"] = accumulation_steps
+    if baseline is not None:
+        train_dict["baseline"] = baseline
+    if batch_size is not None:
+        train_dict["batch_size"] = batch_size
+    if data_augmentation!=():
+        train_dict["data_augmentation"] = data_augmentation
+    if diagnoses!=():
+        train_dict["diagnoses"] = diagnoses
+    if dropout is not None:
+        train_dict["dropout"] = dropout
+    if epochs is not None:
+        train_dict["epochs"] = epochs
+    if evaluation_steps is not None:
+        train_dict["evaluation_steps"] = evaluation_steps
+    if gpu is not None:
+        train_dict["use_cpu"] = not gpu
+    if learning_rate is not None:
+        train_dict["learning_rate"] = learning_rate
+    if multi_cohort is not None:
+        train_dict["multi_cohort"] = multi_cohort
+    if n_splits is not None:
+        train_dict["n_splits"] = n_splits
+    if nproc is not None:
+        train_dict["num_workers"] = nproc
+    if normalize is not None:
+        train_dict["unnormalize"] = not normalize
+    if patience is not None:
+        train_dict["patience"] = patience
+    if split!=():
+        train_dict["folds"] = split
+    if tolerance is not None:
+        train_dict["tolerance"] = tolerance
+    if transfer_learning_path is not None:
+        train_dict["transfer_learning_path"] = transfer_learning_path
+    if transfer_learning_selection is not None:
+        train_dict["transfer_learning_selection"] = transfer_learning_selection
+    if use_extracted_features is not None:
+        train_dict["use_extracted_features"] = use_extracted_features
+    if weight_decay is not None:
+        train_dict["weight_decay"] = weight_decay
+    if sampler is not None:
+        train_dict["sampler"] = sampler
+
+    # Splits
+    if train_dict["n_splits"] > 1:
+        train_dict["validation"] = "KFoldSplit"
+    else:
+        train_dict["validation"] = "SingleSplit"
+
+    # use extracted features
+    if "use_extracted_features" in train_dict:
+        train_dict["prepare_dl"] = train_dict["use_extracted_features"]
+    elif "use_extracted_patches" in train_dict:
+        train_dict["prepare_dl"] = train_dict["use_extracted_patches"]
+    elif "use_extracted_slices" in train_dict:
+        train_dict["prepare_dl"] = train_dict["use_extracted_slices"]
+    elif "use_extracted_roi" in train_dict:
+        train_dict["prepare_dl"] = train_dict["use_extracted_roi"]
+    else:
+        train_dict["prepare_dl"] = False
+
+    train(output_maps_directory, train_dict, split)
+
+
+def get_train_dict(config_dict, preprocessing_json, task):
+    # From config file
+    train_dict = {
+        "accumulation_steps": config_dict["Optimization"]["accumulation_steps"],
+        "baseline": config_dict["Data"]["baseline"],
+        "batch_size": config_dict["Computational"]["batch_size"],
+        "data_augmentation": config_dict["Data"]["data_augmentation"],
+        "diagnoses": config_dict["Data"]["diagnoses"],
+        "dropout": config_dict["Architecture"]["dropout"],
+        "epochs": config_dict["Optimization"]["epochs"],
+        "evaluation_steps": config_dict["Computational"]["evaluation_steps"],
+        "learning_rate": config_dict["Optimization"]["learning_rate"],
+        "multi": config_dict["Model"]["multi"],
+        "multi_cohort": config_dict["Data"]["multi_cohort"],
+        "n_splits": config_dict["Cross_validation"]["n_splits"],
+        "num_workers": config_dict["Computational"]["n_proc"],
+        "patience": config_dict["Optimization"]["patience"],
+        # "predict_atlas_intensities": config_dict[],
+        "folds": config_dict["Cross_validation"]["split"],
+        "tolerance": config_dict["Optimization"]["tolerance"],
+        "transfer_learning_path": config_dict["Transfert_learning"]["transfer_path"],
+        "transfer_learning_selection": config_dict["Transfert_learning"]["transfer_selection_metric"],
+        "unnormalize": not config_dict["Data"]["normalize"],
+        "use_cpu": not config_dict["Computational"]["use_gpu"],
+        # "wd_bool": config_dict[],
+        "weight_decay": config_dict["Optimization"]["weight_decay"],
+        "sampler": config_dict["Data"]["sampler"],
+    }
+
+    # task
+    if task == "classification":
+        train_dict["loss"] = config_dict["Classification"]["optimization_metric"]
+        train_dict["selection_metrics"] = config_dict["Classification"]["selection_metrics"]
+    elif task == "regression":
+        train_dict["loss"] = config_dict["Regression"]["optimization_metric"]
+        train_dict["selection_metrics"] = config_dict["Regression"]["selection_metrics"]
+    elif task == "reconstruction":
+        train_dict["loss"] = config_dict["Reconstruction"]["optimization_metric"]
+        train_dict["selection_metrics"] = config_dict["Reconstruction"]["selection_metrics"]
+    else: raise ValueError("Invalid network_task")
+
+    # Mode and preprocessing
+    from clinicadl.utils.preprocessing import read_preprocessing
+    preprocessing_dict = read_preprocessing(preprocessing_json.name)
+
+    train_dict["preprocessing"] = preprocessing_dict["modality"]
+    train_dict["mode"] = preprocessing_dict["extract_method"]
+    if train_dict["mode"]=="slice":
+        train_dict["slice_direction"] = preprocessing_dict["slice_direction"]
+        train_dict["slice_mode"] = preprocessing_dict["slice_mode"]
+        train_dict["discarded_slices"] = preprocessing_dict["discarded_slices"]
+    elif train_dict["mode"]=="patch":
+        train_dict["patch_size"] = preprocessing_dict["patch_size"]
+        train_dict["stride_size"] = preprocessing_dict["stride_size"]
+    elif train_dict["mode"]=="roi":
+        train_dict["roi_list"] = preprocessing_dict["roi_list"]
+        train_dict["roi_uncrop_output"] = preprocessing_dict["roi_uncrop_output"]
+    
+    if train_dict["preprocessing"]=="custom":
+        train_dict["custom_suffix"] = preprocessing_dict["custom_suffix"]
+        train_dict["use_uncropped_image"] = preprocessing_dict["use_uncropped_image"]
+    elif train_dict["preprocessing"]=="pet":
+        train_dict["acq_label"] = preprocessing_dict["acq_label"]
+        train_dict["suvr_reference_region"] = preprocessing_dict["suvr_reference_region"]
+
+    #optimizer
+    train_dict["optimizer"] = "Adam"
+
+    # use extracted features
+    train_dict["use_extracted_features"] = config_dict["Mode"]["use_extracted_features"]
+
+    return train_dict
 
 
 if __name__ == "__main__":

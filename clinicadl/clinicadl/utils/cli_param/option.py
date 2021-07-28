@@ -54,7 +54,6 @@ preprocessing = click.option(
     help="Preprocessing used to generate synthetic data.",
 )
 
-# TRAIN
 # Computational
 use_gpu = click.option(
     "--gpu/--no-gpu",

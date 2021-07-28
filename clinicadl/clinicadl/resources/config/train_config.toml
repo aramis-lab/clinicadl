@@ -1,36 +1,33 @@
 # CONFIG FILE FOR TRAIN PIPELINE WITH DEFAULT ARGUMENTS
 
-[Meta_parametre]
-info = """
-Commentaire
-""" # Sera écrit dans le train.log
+# [Meta_parametre]
+# info = '''
+# Commentaire
+# ''' # Sera écrit dans le train.log
 
 [Model]
-architecture = "VAE"
-mutli = false
+architecture = "Conv5_FC3"
+multi = false
 
+[Architecture]
 # CNN
-architecture.dropout = 0.0 # between 0 and 1
+dropout = 0.0 # between 0 and 1
 # architecture.n_layers = 4
 # VAE
-architecture.latent_space_dimension = 64
-architecture.latent_space_size = 2
-
-# [Metrics]
-# selection_metrics = [""]
-# optimization_metric = "CE"
+latent_space_dimension = 64
+latent_space_size = 2
 
 [Classification]
-classification_selection_metrics = ["BA", "PRECISION"]
-classification_optimization_metric = "CE"
+selection_metrics = ["loss"]
+optimization_metric = "default"
 
 [Regression]
-classification_selection_metrics = [""]
-classification_optimization_metric = "MSE"
+selection_metrics = ["loss"]
+optimization_metric = "default"
 
 [Reconstruction]
-classification_selection_metrics = [""]
-classification_optimization_metric = "MSE"
+selection_metrics = ["loss"]
+optimization_metric = "default"
 latent_space_size = 64
 latent_space_dimension = 2
 
@@ -41,8 +38,8 @@ batch_size = 2
 evaluation_steps = 0
 
 [Transfert_learning]
-transfer_path = "/path/to/maps"
-transfer_selection_metric = "loss"
+transfer_path = ""
+transfer_selection_metric = "best_loss"
 
 [Mode]
 # require to manually generate preprocessing json
@@ -52,7 +49,7 @@ use_extracted_features = false
 multi_cohort = false
 diagnoses = ["AD", "CN"]
 baseline = false
-normalize = false
+normalize = true
 data_augmentation = false
 sampler = "random"
 
