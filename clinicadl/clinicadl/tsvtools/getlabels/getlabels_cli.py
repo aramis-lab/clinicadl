@@ -18,7 +18,7 @@ cmd_name = "getlabels"
     type=int,
 )
 @click.option(
-    "--restriction_path",
+    "--restriction_tsv",
     help="Path to a tsv containing the sessions that can be included.",
     type=str,
     default=None,
