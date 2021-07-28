@@ -1,9 +1,8 @@
 from typing import Optional
-
+import os
 import click
 
 from clinicadl.utils import cli_param
-
 from clinica.utils.pet import LIST_SUVR_REFERENCE_REGIONS
 
 cmd_name = "prepare-data"
@@ -13,13 +12,17 @@ cmd_name = "prepare-data"
 @cli_param.argument.caps_directory
 @click.argument(
     "modality",
-    type=click.Choice(["t1-linear", "t1-extensive", "pet-linear", "custom"]),
-    default="t1-linear",
+    type=click.Choice(["t1-linear", "pet-linear", "custom"]),
 )
 @click.argument(
     "extract-method",
     type=click.Choice(["image", "slice", "patch", "roi"]),
-    default="image",
+)
+@click.option(
+    "--preprocessing_json",
+    type=click.File('wb'),
+    default=os.path.join(os.getcwd(), "preprocessing.json"),
+    help="json file where preprocessing information is stored in order to be reused to load tensor in train function"
 )
 @click.option(
     "-uui",
@@ -145,11 +148,13 @@ def cli(
     caps_directory: str,
     modality: str,
     extract_method: str,
+    preprocessing_json: str,
     use_uncropped_image: bool = False,
     patch_size: int = 50,
     stride_size: int = 50,
     slice_direction: int = 0,
     slice_mode: str = "rgb",
+    discarded_slices: int = 0,
     roi_list: list = [],
     roi_uncrop_output: bool = False,
     roi_custom_suffix: str = "",
@@ -166,32 +171,47 @@ def cli(
 
     parameters = {
         "modality": modality,
-        # custom
-        "custom_suffix": custom_suffix,
         "extract_method": extract_method,
-        "use_uncropped_image": use_uncropped_image,
-        # patch
-        "patch_size": patch_size,
-        "stride_size": stride_size,
-        # slice
-        "slice_direction": slice_direction,
-        "slice_mode": slice_mode,
-        # roi
-        "roi_list": roi_list,
-        "roi_uncrop_output": roi_uncrop_output,
-        "roi_custom_suffix": roi_custom_suffix,
-        "roi_custom_template": roi_custom_template,
-        "roi_custom_mask_pattern": roi_custom_mask_pattern,
-        # pet
-        "acq_label": acq_label,
-        "suvr_reference_region": suvr_reference_region,
+        # # patch
+        # "patch_size": patch_size,
+        # "stride_size": stride_size,
+        # # slice
+        # "slice_direction": slice_direction,
+        # "slice_mode": slice_mode,
+        # # roi
+        # "roi_list": roi_list,
+        # "roi_uncrop_output": roi_uncrop_output,
+        # "roi_custom_suffix": roi_custom_suffix,
+        # "roi_custom_template": roi_custom_template,
+        # "roi_custom_mask_pattern": roi_custom_mask_pattern,
     }
+    if extract_method=="slice":
+        parameters["slice_direction"] = slice_direction
+        parameters["slice_mode"] = slice_mode
+        parameters["discarded_slices"] = discarded_slices
+    elif extract_method=="patch":
+        parameters["patch_size"] = patch_size
+        parameters["stride_size"] = stride_size
+    elif extract_method=="roi":
+        parameters["roi_list"] = roi_list
+        parameters["roi_uncrop_output"] = roi_uncrop_output
+        parameters["roi_custom_suffix"] = roi_custom_suffix
+        parameters["roi_custom_template"] = roi_custom_template
+        parameters["roi_custom_mask_pattern"] = roi_custom_mask_pattern
+
+    if modality=="custom":
+        parameters["custom_suffix"] = custom_suffix
+        parameters["use_uncropped_image"] = use_uncropped_image
+
+    if modality=="pet-linear":
+        parameters["acq_label"] = acq_label
+        parameters["suvr_reference_region"] = suvr_reference_region
 
     DeepLearningPrepareData(
         caps_directory=caps_directory,
         tsv_file=subjects_sessions_tsv,
         parameters=parameters,
-        preprocessing_path=processing_path,
+        preprocessing_json=preprocessing_json,
     )
 
 

@@ -1,4 +1,4 @@
-def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_path):
+def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_json):
     from os import path
     from torch import save as save_tensor
     from clinica.utils.inputs import check_caps_folder
@@ -16,7 +16,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
     )
     from clinica.utils.inputs import clinica_file_reader
     from clinica.utils.nipype import container_from_filename
-    from clinicadl.utils.preprossing import write_preprocessing
+    from clinicadl.utils.preprocessing import write_preprocessing
     from .extract_utils import (
         check_mask_list,
         extract_patches,
@@ -141,4 +141,4 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
             save_tensor(tensor[1], output_file_path)
 
     # Save parameters dictionnary
-    write_preprocessing(parameters, preprocessing_path)
+    write_preprocessing(parameters, preprocessing_json)
