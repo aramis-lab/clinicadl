@@ -25,9 +25,9 @@ results_directory = click.argument("results_directory", type=click.Path())
 participant_list = click.argument("participants_tsv", type=click.File())
 generated_caps = click.argument("output_caps_directory", type=click.Path())
 
-# INFER
+# PREDICT
 
-inference_prefix = click.argument("output_prefix", type=str)
+predict_prefix = click.argument("output_prefix", type=str)
 
 # TRAIN
 

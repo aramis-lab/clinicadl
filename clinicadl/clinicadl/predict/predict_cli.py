@@ -2,13 +2,11 @@ import click
 
 from clinicadl.utils import cli_param
 
-cmd_name = "predict"
 
-
-@click.command(name=cmd_name)
+@click.command(name="predict")
 @cli_param.argument.caps_directory
 @cli_param.argument.input_maps
-@cli_param.argument.inference_prefix
+@cli_param.argument.predict_prefix
 @cli_param.option.use_gpu
 @cli_param.option.n_proc
 @cli_param.option.batch_size
@@ -72,7 +70,10 @@ def cli(
     diagnoses,
     multi_cohort,
 ):
-    """ """
+    """
+    Compute prediction of INPUT_CAPS_DIRECTORY data with INPUT_MAPS_DIRECTORY models 
+    on OUTPUT_PREFIX images subset.
+    """
     from .infer import classify
 
     classify(
