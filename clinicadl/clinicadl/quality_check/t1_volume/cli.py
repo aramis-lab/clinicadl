@@ -4,6 +4,7 @@ from clinicadl.utils import cli_param
 
 cmd_name = "t1-volume"
 
+
 @click.command(name=cmd_name)
 @cli_param.argument.caps_directory
 @click.argument(

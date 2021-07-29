@@ -1,7 +1,8 @@
 from clinicadl import MapsManager
 
 
-def interpret(model_path,
+def interpret(
+    model_path,
     caps_directory,
     tsv_path,
     prefix_name,
@@ -15,7 +16,7 @@ def interpret(model_path,
     nproc,
     use_cpu,
     verbose=0,
-    ):
+):
     maps_path = model_path
     verbose_list = ["warning", "info", "debug"]
 

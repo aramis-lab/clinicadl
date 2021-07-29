@@ -71,7 +71,7 @@ def cli(
     multi_cohort,
 ):
     """
-    Compute prediction of INPUT_CAPS_DIRECTORY data with INPUT_MAPS_DIRECTORY models 
+    Compute prediction of INPUT_CAPS_DIRECTORY data with INPUT_MAPS_DIRECTORY models
     on OUTPUT_PREFIX images subset.
     """
     from .infer import classify

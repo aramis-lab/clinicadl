@@ -16,7 +16,9 @@ class RegistrationOrderGroup(click.Group):
 
 @click.group(cls=RegistrationOrderGroup, name="tsvtool")
 def cli() -> None:
-    """ """
+    """
+    Manipulation of TSV files to prepare and manage input data.
+    """
     pass
 
 

@@ -2,9 +2,11 @@ import click
 
 from clinicadl.utils import cli_param
 
+
 @click.command("interpret")
 @click.argument(
-    "model_directory", type=click.Path(),
+    "model_directory",
+    type=click.Path(),
 )
 @click.argument(
     "interpretation_method",
@@ -39,7 +41,8 @@ from clinicadl.utils import cli_param
     help="Performs multi-cohort interpretation. In this case, caps_directory and tsv_path must be paths to TSV files.",
 )
 @click.option(
-    "-d", "--diagnosis",
+    "-d",
+    "--diagnosis",
     default="AD",
     type=str,
     help="The images corresponding to this diagnosis only will be loaded.",
@@ -66,7 +69,8 @@ from clinicadl.utils import cli_param
 @cli_param.option.n_proc
 @cli_param.option.use_gpu
 @cli_param.option.batch_size
-def cli(model_directory,
+def cli(
+    model_directory,
     interpretation_method,
     caps_directory,
     participants_tsv,
@@ -80,7 +84,7 @@ def cli(model_directory,
     n_proc,
     use_gpu,
     # verbose,
-    ):
+):
     """
     Interpret the prediction of MODEL_DIRECTORY with the chosen INTERPRETATION_METHOD.
     """

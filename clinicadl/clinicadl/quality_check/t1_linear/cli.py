@@ -10,7 +10,8 @@ from clinicadl.utils import cli_param
     type=str,
 )
 @click.option(
-    "-tsv", "--subjects_sessions_tsv",
+    "-tsv",
+    "--subjects_sessions_tsv",
     type=str,
     default=None,
     help="TSV file containing a list of subjects with their sessions.",
@@ -29,7 +30,8 @@ from clinicadl.utils import cli_param
     help="Batch size used in DataLoader (default=1).",
 )
 @click.option(
-    "-np", "--nproc",
+    "-np",
+    "--nproc",
     type=int,
     default=2,
     help="Number of cores used the quality check. (default=2)",
@@ -45,7 +47,7 @@ def cli(
     use_gpu,
 ):
     """
-    Clinica t1-linear outputs quality check 
+    Clinica t1-linear outputs quality check
     """
     from quality_check import quality_check as linear_qc
 

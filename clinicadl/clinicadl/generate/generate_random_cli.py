@@ -34,7 +34,7 @@ def cli(
 ):
     """
     Generate a random dataset OUTPUT_CAPS_DIRECTORY in which gaussian noise is added
-    to brain images of INPUT_CAPS_DIRECTORY. 
+    to brain images of INPUT_CAPS_DIRECTORY.
     """
     from .generate import generate_shepplogan_dataset
 

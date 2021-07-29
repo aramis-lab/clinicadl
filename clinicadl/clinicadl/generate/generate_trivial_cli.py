@@ -33,7 +33,7 @@ def cli(
     atrophy_percent,
 ):
     """
-    Generate a trivial dataset OUTPUT_CAPS_DIRECTORY in which gaussian half of the brain is atrophied. 
+    Generate a trivial dataset OUTPUT_CAPS_DIRECTORY in which gaussian half of the brain is atrophied.
     """
     from .generate import generate_trivial_dataset
 

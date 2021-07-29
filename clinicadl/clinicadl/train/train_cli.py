@@ -6,17 +6,16 @@ from clinicadl.utils import cli_param
 
 current_file_path = os.path.dirname(os.path.abspath(__file__))
 config_path = os.path.join(
-    *os.path.split(current_file_path)[:-1],
-    "resources",
-    "config",
-    "train_config.toml"
+    *os.path.split(current_file_path)[:-1], "resources", "config", "train_config.toml"
 )
 
 cmd_name = "train"
+
+
 @click.command(name=cmd_name)
 @click.argument(
     "network_task",
-    type=click.Choice(["classification", "regression", "reconstruction"])
+    type=click.Choice(["classification", "regression", "reconstruction"]),
 )
 @cli_param.argument.caps_directory
 @cli_param.argument.preprocessing_json
@@ -62,7 +61,8 @@ cmd_name = "train"
 )
 # Model
 @click.option(
-    "-a", "--architecture",
+    "-a",
+    "--architecture",
     type=str,
     # default=0,
     help="Architecture of the chosen model to train. A set of model is available in ClinicaDL, default architecture depends on the NETWORK_TASK (see the documentation for more information).",
@@ -115,13 +115,13 @@ cmd_name = "train"
     "--data_augmentation",
     "-da",
     type=click.Choice(["None", "Noise", "Erasing", "CropPad", "Smoothing"]),
-    #default=(),
+    # default=(),
     multiple=True,
     help="Randomly applies transforms on the training set.",
 )
 @click.option(
     "--sampler",
-    "-s", 
+    "-s",
     type=click.Choice(["random", "weighted"]),
     # default="random",
     help="Sampler choice (random, or weighted for imbalanced datasets)",
@@ -151,7 +151,7 @@ cmd_name = "train"
     "--split",
     "-s",
     type=int,
-    #default=(),
+    # default=(),
     multiple=True,
     help="Train the list of given folds. By default train all folds.",
 )
@@ -204,13 +204,15 @@ cmd_name = "train"
 )
 # transfert learning
 @click.option(
-    "-tlp", "--transfer_learning_path",
+    "-tlp",
+    "--transfer_learning_path",
     type=click.Path(),
     # default=0.0,
     help="Path of model used for transfert learning",
 )
 @click.option(
-    "-tls", "--transfer_learning_selection",
+    "-tls",
+    "--transfer_learning_selection",
     type=str,
     # default="best_loss",
     help="Transfert learning selection metric",
@@ -247,7 +249,7 @@ def cli(
     tolerance,
     accumulation_steps,
     transfer_learning_path,
-    transfer_learning_selection
+    transfer_learning_selection,
 ):
     """
     Train a deep learning model for NETWORK_TASK on INPUT_CAPS_DIRECTORY data.
@@ -261,7 +263,6 @@ def cli(
     train_dict = get_train_dict(config_dict, preprocessing_json, network_task)
 
     # user's toml
-
 
     # Add arguments
     train_dict["network_task"] = network_task
@@ -278,9 +279,9 @@ def cli(
         train_dict["baseline"] = baseline
     if batch_size is not None:
         train_dict["batch_size"] = batch_size
-    if data_augmentation!=():
+    if data_augmentation != ():
         train_dict["data_augmentation"] = data_augmentation
-    if diagnoses!=():
+    if diagnoses != ():
         train_dict["diagnoses"] = diagnoses
     if dropout is not None:
         train_dict["dropout"] = dropout
@@ -306,7 +307,7 @@ def cli(
         train_dict["unnormalize"] = not normalize
     if patience is not None:
         train_dict["patience"] = patience
-    if split!=():
+    if split != ():
         train_dict["folds"] = split
     if tolerance is not None:
         train_dict["tolerance"] = tolerance
@@ -340,7 +341,7 @@ def get_train_dict(config_dict, preprocessing_json, task):
     # From config file
     train_dict = {
         "accumulation_steps": config_dict["Optimization"]["accumulation_steps"],
-        "architecture": config_dict["Model"]["architecture"]
+        "architecture": config_dict["Model"]["architecture"],
         "baseline": config_dict["Data"]["baseline"],
         "batch_size": config_dict["Computational"]["batch_size"],
         "data_augmentation": config_dict["Data"]["data_augmentation"],
@@ -357,7 +358,9 @@ def get_train_dict(config_dict, preprocessing_json, task):
         "folds": config_dict["Cross_validation"]["split"],
         "tolerance": config_dict["Optimization"]["tolerance"],
         "transfer_learning_path": config_dict["Transfert_learning"]["transfer_path"],
-        "transfer_learning_selection": config_dict["Transfert_learning"]["transfer_selection_metric"],
+        "transfer_learning_selection": config_dict["Transfert_learning"][
+            "transfer_selection_metric"
+        ],
         "unnormalize": not config_dict["Data"]["normalize"],
         "use_cpu": not config_dict["Computational"]["use_gpu"],
         "weight_decay": config_dict["Optimization"]["weight_decay"],
@@ -367,40 +370,48 @@ def get_train_dict(config_dict, preprocessing_json, task):
     # task
     if task == "classification":
         train_dict["loss"] = config_dict["Classification"]["optimization_metric"]
-        train_dict["selection_metrics"] = config_dict["Classification"]["selection_metrics"]
+        train_dict["selection_metrics"] = config_dict["Classification"][
+            "selection_metrics"
+        ]
     elif task == "regression":
         train_dict["loss"] = config_dict["Regression"]["optimization_metric"]
         train_dict["selection_metrics"] = config_dict["Regression"]["selection_metrics"]
     elif task == "reconstruction":
         train_dict["loss"] = config_dict["Reconstruction"]["optimization_metric"]
-        train_dict["selection_metrics"] = config_dict["Reconstruction"]["selection_metrics"]
-    else: raise ValueError("Invalid network_task")
+        train_dict["selection_metrics"] = config_dict["Reconstruction"][
+            "selection_metrics"
+        ]
+    else:
+        raise ValueError("Invalid network_task")
 
     # Mode and preprocessing
     from clinicadl.utils.preprocessing import read_preprocessing
+
     preprocessing_dict = read_preprocessing(preprocessing_json.name)
 
     train_dict["preprocessing"] = preprocessing_dict["modality"]
     train_dict["mode"] = preprocessing_dict["extract_method"]
-    if train_dict["mode"]=="slice":
+    if train_dict["mode"] == "slice":
         train_dict["slice_direction"] = preprocessing_dict["slice_direction"]
         train_dict["slice_mode"] = preprocessing_dict["slice_mode"]
         train_dict["discarded_slices"] = preprocessing_dict["discarded_slices"]
-    elif train_dict["mode"]=="patch":
+    elif train_dict["mode"] == "patch":
         train_dict["patch_size"] = preprocessing_dict["patch_size"]
         train_dict["stride_size"] = preprocessing_dict["stride_size"]
-    elif train_dict["mode"]=="roi":
+    elif train_dict["mode"] == "roi":
         train_dict["roi_list"] = preprocessing_dict["roi_list"]
         train_dict["roi_uncrop_output"] = preprocessing_dict["roi_uncrop_output"]
-    
-    if train_dict["preprocessing"]=="custom":
+
+    if train_dict["preprocessing"] == "custom":
         train_dict["custom_suffix"] = preprocessing_dict["custom_suffix"]
         train_dict["use_uncropped_image"] = preprocessing_dict["use_uncropped_image"]
-    elif train_dict["preprocessing"]=="pet":
+    elif train_dict["preprocessing"] == "pet":
         train_dict["acq_label"] = preprocessing_dict["acq_label"]
-        train_dict["suvr_reference_region"] = preprocessing_dict["suvr_reference_region"]
+        train_dict["suvr_reference_region"] = preprocessing_dict[
+            "suvr_reference_region"
+        ]
 
-    #optimizer
+    # optimizer
     train_dict["optimizer"] = "Adam"
 
     # use extracted features

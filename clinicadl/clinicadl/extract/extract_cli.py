@@ -20,9 +20,9 @@ cmd_name = "prepare-data"
 )
 @click.option(
     "--preprocessing_json",
-    type=click.File('wb'),
+    type=click.File("wb"),
     default=os.path.join(os.getcwd(), "preprocessing.json"),
-    help="json file where preprocessing information is stored in order to be reused to load tensor in train function"
+    help="json file where preprocessing information is stored in order to be reused to load tensor in train function",
 )
 @click.option(
     "-uui",
@@ -185,25 +185,25 @@ def cli(
         # "roi_custom_template": roi_custom_template,
         # "roi_custom_mask_pattern": roi_custom_mask_pattern,
     }
-    if extract_method=="slice":
+    if extract_method == "slice":
         parameters["slice_direction"] = slice_direction
         parameters["slice_mode"] = slice_mode
         parameters["discarded_slices"] = discarded_slices
-    elif extract_method=="patch":
+    elif extract_method == "patch":
         parameters["patch_size"] = patch_size
         parameters["stride_size"] = stride_size
-    elif extract_method=="roi":
+    elif extract_method == "roi":
         parameters["roi_list"] = roi_list
         parameters["roi_uncrop_output"] = roi_uncrop_output
         parameters["roi_custom_suffix"] = roi_custom_suffix
         parameters["roi_custom_template"] = roi_custom_template
         parameters["roi_custom_mask_pattern"] = roi_custom_mask_pattern
 
-    if modality=="custom":
+    if modality == "custom":
         parameters["custom_suffix"] = custom_suffix
         parameters["use_uncropped_image"] = use_uncropped_image
 
-    if modality=="pet-linear":
+    if modality == "pet-linear":
         parameters["acq_label"] = acq_label
         parameters["suvr_reference_region"] = suvr_reference_region
 
