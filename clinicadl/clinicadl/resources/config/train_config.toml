@@ -6,7 +6,7 @@
 # ''' # Sera écrit dans le train.log
 
 [Model]
-architecture = "Conv5_FC3"
+architecture = "default" # ex : Conv5_FC3
 multi = false
 
 [Architecture]

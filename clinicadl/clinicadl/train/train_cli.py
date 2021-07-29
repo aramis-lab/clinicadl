@@ -60,6 +60,20 @@ cmd_name = "train"
     help="Fix the number of iterations to perform before computing an evaluation. Default will only "
     "perform one evaluation at the end of each epoch.",
 )
+# Model
+@click.option(
+    "-a", "--architecture",
+    type=str,
+    # default=0,
+    help="Architecture of the chosen model to train. A set of model is available in ClinicaDL, default architecture depends on the NETWORK_TASK (see the documentation for more information).",
+)
+@click.option(
+    "--multi",
+    type=bool,
+    is_flag=True,
+    # default=false,
+    help="If provided uses a multi-network framework.",
+)
 # Mode
 @click.option(
     "--use_extracted_features",
@@ -111,12 +125,6 @@ cmd_name = "train"
     type=click.Choice(["random", "weighted"]),
     # default="random",
     help="Sampler choice (random, or weighted for imbalanced datasets)",
-)
-@click.option(
-    "--predict_atlas_intensities",
-    type=click.Choice(["AAL2", "AICHA", "Hammers", "LPBA40", "Neuromorphometrics"]),
-    # default=(),
-    help="Atlases used in t1-volume pipeline to make intensities prediction.",
 )
 @click.option(
     "--atlas_weight",
@@ -219,13 +227,14 @@ def cli(
     nproc,
     batch_size,
     evaluation_steps,
+    architecture,
+    multi,
     multi_cohort,
     diagnoses,
     baseline,
     normalize,
     data_augmentation,
     sampler,
-    predict_atlas_intensities,
     atlas_weight,
     merged_tsv,
     n_splits,
@@ -251,11 +260,15 @@ def cli(
     config_dict = toml.load(configuration_toml)
     train_dict = get_train_dict(config_dict, preprocessing_json, network_task)
 
+    # user's toml
+
+
     # Add arguments
     train_dict["network_task"] = network_task
     train_dict["caps_directory"] = input_caps_directory
     train_dict["tsv_path"] = tsv_directory
 
+    # Delete useless key-value
     if "func" in train_dict:
         del train_dict["func"]
 
@@ -275,6 +288,10 @@ def cli(
         train_dict["epochs"] = epochs
     if evaluation_steps is not None:
         train_dict["evaluation_steps"] = evaluation_steps
+    if architecture is not None:
+        train_dict["architecture"] = architecture
+    if multi is not None:
+        train_dict["multi"] = multi
     if gpu is not None:
         train_dict["use_cpu"] = not gpu
     if learning_rate is not None:
@@ -313,12 +330,6 @@ def cli(
     # use extracted features
     if "use_extracted_features" in train_dict:
         train_dict["prepare_dl"] = train_dict["use_extracted_features"]
-    elif "use_extracted_patches" in train_dict:
-        train_dict["prepare_dl"] = train_dict["use_extracted_patches"]
-    elif "use_extracted_slices" in train_dict:
-        train_dict["prepare_dl"] = train_dict["use_extracted_slices"]
-    elif "use_extracted_roi" in train_dict:
-        train_dict["prepare_dl"] = train_dict["use_extracted_roi"]
     else:
         train_dict["prepare_dl"] = False
 
@@ -329,6 +340,7 @@ def get_train_dict(config_dict, preprocessing_json, task):
     # From config file
     train_dict = {
         "accumulation_steps": config_dict["Optimization"]["accumulation_steps"],
+        "architecture": config_dict["Model"]["architecture"]
         "baseline": config_dict["Data"]["baseline"],
         "batch_size": config_dict["Computational"]["batch_size"],
         "data_augmentation": config_dict["Data"]["data_augmentation"],
@@ -342,14 +354,12 @@ def get_train_dict(config_dict, preprocessing_json, task):
         "n_splits": config_dict["Cross_validation"]["n_splits"],
         "num_workers": config_dict["Computational"]["n_proc"],
         "patience": config_dict["Optimization"]["patience"],
-        # "predict_atlas_intensities": config_dict[],
         "folds": config_dict["Cross_validation"]["split"],
         "tolerance": config_dict["Optimization"]["tolerance"],
         "transfer_learning_path": config_dict["Transfert_learning"]["transfer_path"],
         "transfer_learning_selection": config_dict["Transfert_learning"]["transfer_selection_metric"],
         "unnormalize": not config_dict["Data"]["normalize"],
         "use_cpu": not config_dict["Computational"]["use_gpu"],
-        # "wd_bool": config_dict[],
         "weight_decay": config_dict["Optimization"]["weight_decay"],
         "sampler": config_dict["Data"]["sampler"],
     }
