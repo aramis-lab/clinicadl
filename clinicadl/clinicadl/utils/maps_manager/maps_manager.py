@@ -287,9 +287,9 @@ class MapsManager:
             else:
                 data_test = return_dataset(
                     self.mode,
-                    caps_directory,
                     group_parameters["caps_directory"],
                     group_df,
+                    preprocessing=self.preprocessing,
                     all_transformations=all_transforms,
                     prepare_dl=prepare_dl
                     if prepare_dl is not None
@@ -1320,16 +1320,12 @@ class MapsManager:
         """
         group_path = path.join(self.maps_path, "groups", data_group)
         self.logger.debug(f"Group path {group_path}")
-        self.logger.debug("test 1")
         if path.exists(group_path):
-            self.logger.debug("test 2")
             if overwrite:
-                self.logger.debug("test 3")
                 if data_group in ["train", "validation"]:
                     raise ValueError("Cannot overwrite train or validation data group.")
                 else:
                     shutil.rmtree(group_path)
-                    self.logger.debug("test 4")
             elif None not in (df, caps_directory):
                 raise ValueError(
                     f"Data group {data_group} is already defined. "
@@ -1337,7 +1333,6 @@ class MapsManager:
                     f"To erase {data_group} please set overwrite to True."
                 )
             else:
-                self.logger.debug("test 5")
                 return self.get_group_info(data_group, fold)
 
         if caps_directory is None or df is None:
