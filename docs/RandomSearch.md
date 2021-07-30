@@ -1,4 +1,4 @@
-# `clinicadl random-search generate`- Train random models sampled from a defined hyperparameter space
+# `random-search`- Hyperparameters exploration
 
 This functionality trains a random model with hyperparameters sampled from a predefined space. 
 The hyperparameter space is defined in a `random_search.json` file that must be manually filled
@@ -87,7 +87,7 @@ Optional variables:
     Must include only `BatchNorm`, `InstanceNorm` or `None`.
     Sampling function: `choice`. Default:  `BatchNorm`.
 - **Computational resources**
-    - `--use_cpu` (bool) forces to use CPU. Default behaviour is to try to use a GPU and to raise an error if it is not found.
+    - `--use_cpu` (bool) forces using CPUs. Default behaviour is to try to use a GPU and to raise an error if it is not found.
     - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
     - `--evaluation_steps` (int) gives the number of iterations to perform an [evaluation internal to an epoch](Train/Details.md#evaluation). 
@@ -104,7 +104,7 @@ Optional variables:
     Sampling function: `choice`. Default: `random`.
 - **Cross-validation arguments**
     - `--n_splits` (int) is a number of splits k to load in the case of a k-fold cross-validation. Default will load a single-split.
-    - `--folds` (list of int) is a subset of folds that will be used for training. By default all splits available are used. 
+    - `--folds` (list of int) is a subset of folds that will be used for training. By default, all splits available are used. 
 - **Optimization parameters**
     - `learning_rate` (float) is the learning rate used to perform weight update. 
     Sampling function: `exponent`. Default: `4` (leading to a value of `1e-4`).
@@ -123,7 +123,7 @@ Optional variables:
     - `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
     The best model of this folder will be used to initialize the network as 
     explained in the [implementation details](Train/Details.md#transfer-learning). 
-    If nothing is given the initialization will be random.
+    If nothing is given then the initialization will be random.
     - `--transfer_learning_selection` (str) corresponds to the metric according to which the 
     [best model](Train/Details.md#model-selection) of `transfer_learning_path` will be loaded. 
     This argument will only be taken into account if the source network is a CNN. 
@@ -135,7 +135,7 @@ Mode-dependent variables:
     - `patch_size` (int) size of the patches in voxels. 
     Sampling function: `randint`. Default: `50`.
     - `selection_threshold` (float) threshold on the balanced accuracies to compute the 
-    [image-level performance](Train/Details.md#soft-voting). 
+    [image-level performance](Train/Details.md#image-level-results). 
     Patches are selected if their balanced accuracy is greater than the threshold.
     Sampling function: `uniform`. Default will perform no selection.
     - `stride_size` (int) length between the centers of successive patches in voxels.
@@ -171,7 +171,7 @@ Task-dependent parameters:
 - `classification`
   - `label`
   - `selection_threhold`: (float) threshold on the balanced accuracies to compute the 
-    [image-level performance](Train/Details.md#soft-voting) if mode is not equal to image. 
+    [image-level performance](Train/Details.md#image-level-results) if mode is not equal to image. 
     Parts of the image are selected if their balanced accuracy is greater than the threshold
     on the validation set. Sampling function: `uniform`. Default will perform no selection.
 
@@ -266,7 +266,7 @@ architecture are the following:
 "n_fcblocks": 2
 ```
 `n_conv` is sampled independently for each convolutional block, leading to a different
-number of layers for each convolutional block, described in the `conv` dictionnary.
+number of layers for each convolutional block, described in the `conv` dictionary.
 The number of features in fully-connected layers is computed such as the ratio between
 each layer is equal (here 16128 / 180 ≈ 180 / 2).
 
@@ -321,7 +321,7 @@ architecture are the following:
 "n_fcblocks": 1
 ```
 `n_conv` is sampled independently for each convolutional block, leading to a different
-number of layers for each convolutional block, described in the `conv` dictionnary.
+number of layers for each convolutional block, described in the `conv` dictionary.
 
 The scheme of the corresponding architecture is the following:
 

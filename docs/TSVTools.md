@@ -1,4 +1,4 @@
-# `tsvtool` - Tools to handle metadata in tsv files
+# `tsvtool` - Prepare your metadata
 
 This collection of tools aims at handling metadata of BIDS-formatted datasets.
 These tools perform three main tasks:
@@ -106,7 +106,7 @@ The similarity of the age and sex distributions is assessed by a T-test
 and a chi-square test, respectively.
 
 By default, there is a special treatment of the MCI set and its subsets (sMCI and pMCI) to avoid
-data leakage. However if there are too few patients, this can prevent finding a split
+data leakage. However, if there are too few patients, this can prevent finding a split
 with similar demographics for these labels.
 
 ### Running the task
@@ -237,7 +237,7 @@ clinicadl tsvtool analysis <merged_tsv> <formatted_data_path> <results_path>
 where:
 
   - `merged_tsv` (str) is the output file of the `clinica iotools merge-tsv` or `clinicadl tsvtool restrict` commands.
-  - `formatted_data_path` (str) is a folder containing oane tsv file per label (output of `clinicadl tsvtool getlabels|split|kfold`).
+  - `formatted_data_path` (str) is a folder containing one TSV file per label (output of `clinicadl tsvtool getlabels|split|kfold`).
   - `results_path` (str) is the path to the tsv file that will be written (filename included).
 
 Options:

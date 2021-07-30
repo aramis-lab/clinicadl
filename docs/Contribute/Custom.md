@@ -81,5 +81,5 @@ This metric will only be used to evaluate specific tasks, then the `evaluation_m
 the corresponding `TaskManager` must be updated in `clinicadl/utils/task_manager`.
 
 Finally, to use this metric as a selection metric, please the `metric_optimum` dict in
-`clinicadl/utils/metric_module.py`. The key is the name of your metric, and the content
-`min` or `max` depending if the performance improves when the metric decreases or increases.
+`clinicadl/utils/metric_module.py`. The key is the name of your metric, and the content is respectively
+`min` or `max` if the performance improves when the metric respectively decreases or increases.

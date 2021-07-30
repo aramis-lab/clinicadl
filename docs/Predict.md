@@ -1,8 +1,8 @@
-# `clinicadl predict` - Inference using pretrained models
+# `predict` - Inference using pretrained models
 
 This functionality performs individual prediction and metrics computation on a set of data using models trained with
 [`clinicadl train`](./Train/Introduction.md) or [`clinicadl random-search generate`](./RandomSearch.md)
-tasks. It can also use any pretrained models if they are structured like a [MAPS](./MAPS.md).
+tasks. It can also use any pretrained models if they are structured like a [MAPS](./Introduction.md).
 
 !!! warning
     For `patch`, `roi` and `slice` models, the predictions of the models on the
@@ -17,7 +17,7 @@ be performed in the `maps.json` file in the results folder. If it has
 not been performed, execute the preprocessing pipeline as well as `clinicadl
 extract` to obtain the tensor versions of the images.
 
-<--!Some pretrained models are available to [download
+<!--Some pretrained models are available to [download
 here](https://aramislab.paris.inria.fr/files/data/models/dl/models_v002/). You
 can download them using your navigator or the command line. For example, to get
 the model "Image-based" with a single split type:
@@ -47,7 +47,7 @@ where:
 Optional arguments:
 
 - **Computational resources**
-    - `--use_cpu` (bool) forces to use CPU. Default behaviour is to try to use a
+    - `--use_cpu` (bool) forces using CPUs. Default behaviour is to try to use a
       GPU and to raise an error if it is not found.
     - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
@@ -57,7 +57,7 @@ Optional arguments:
       pipeline](Preprocessing/Extract.md)) in a
       [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
     - `--tsv_file` (str) is a path to a TSV file with subjects/sessions to process (filename
-      included) OR the path to the test folder of a split directory obtained with `clinicadl tsvtool split`.
+      included), OR the path to the test folder of a split directory obtained with `clinicadl tsvtool split`.
     - `--no_labels` (bool) is a flag to add if the dataset does not contain ground truth labels. 
       Default behaviour will look for ground truth labels and raise an error if not found.
     - `--use_extracted_features` (bool) is a flag to use extracted slices or

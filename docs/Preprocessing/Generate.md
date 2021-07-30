@@ -1,14 +1,14 @@
-# `generate` - Produce synthetic data for debugging & functional tests
+# `generate` - Generate synthetic data sets
 
 This command generates a synthetic dataset for a binary classification task from a CAPS-formatted dataset. 
 It produces a new CAPS containing either `trivial` or `random` data:
 
-- Trivial data should be perfectly classified by a classifier. Each label corresponds to images whose intensities of 
-respectively the right or the left hemisphere are strongly decreased.
+- Trivial data should be perfectly classified by a classifier. Each label corresponds to brain images whose intensities of 
+respectively the right or left hemisphere are strongly decreased.
 - Random data cannot be correctly classified. All the images from this dataset comes from the same image to which random noise is added. 
 Then the images are randomly distributed between the two labels.
 
-![Schemes of trivial and random data](./images/generate.png)
+![Schemes of trivial and random data](../images/generate.png)
 
 Both variants were used for functional testing of the final models proposed in 
 [[Wen et al., 2020](https://www.sciencedirect.com/science/article/abs/pii/S1361841520300591)].
@@ -42,8 +42,8 @@ Options:
 - `--n_subjects` (int) number of subjects per label in the synthetic dataset. Default value: `300`.
 - `--preprocessing` (str) preprocessing pipeline used in the input `caps_directory`. Must be `t1-linear` 
 (t1-extensive to be added soon !). Default value: `t1-linear`.
-- `--mean` (float) Specific to random. Mean value of the gaussian noise added to images. Default value: `0`.
-- `--sigma` (float) Specific to random. Standard deviation of the gaussian noise added to images. Default value: `0.5`.
+- `--mean` (float) Specific to random. Mean value of the gaussian noise added to brain images. Default value: `0`.
+- `--sigma` (float) Specific to random. Standard deviation of the gaussian noise added to brain images. Default value: `0.5`.
 - `--mask_path` (str) Specific to trivial. Path to the atrophy masks used to generate the two labels. 
 Default will download masks based on AAL2 in `clinicadl/resources/masks`.
 - `--atrophy_percent` (float) Specific to trivial. Percentage of intensity decrease applied to the regions targeted by the masks. Default value: 60. 

@@ -1,10 +1,12 @@
-# `train` - Train deep learning networks for neuroimaging classification
+# `train` - Train deep learning networks
 
-This task enables the training of a convolutional neural network (CNN) classifier or an autoencoder using 
-different formats of inputs  (whole 3D images, 3D patches or 2D slices), as defined in 
-[[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)]. 
-It mainly relies on the PyTorch deep learning library 
+This functionality enables the training of a network using
+different formats of inputs (whole 3D images, 3D patches or 2D slices), as defined in
+[[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)].
+It mainly relies on the PyTorch deep learning library
 [[Paszke et al., 2019](https://papers.nips.cc/paper/9015-pytorch-an-imperative-style-high-performance-deep-learning-library)].
+
+Different tasks can be learnt by a network: `classification`, `reconstruction` and `regression` (see below).
 
 ## Prerequisites
 You need to execute the [`clinicadl tsvtool getlabels`](../TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease) 
@@ -91,23 +93,22 @@ Options shared for all values of `mode` and `network_task` are organized in grou
 
 
 A few options depend on the task performed:
+
 - **classification**
     The objective of the `classification` is to attribute a class to input images.
     The criterion loss is the cross entropy between the ground truth and the network output.
     The evaluation metrics are the accuracy, sensitivity, specificity, positive predictive value (PPV),
     negative predictive value (NPV) and balanced accuracy (BA).
-
     - `--label` (str) is the name of the column containing the label for the classification task.
     It must be a categorical variable, but may be of any type. Default: `diagnosis`.
     - --selection_threshold` (float) threshold on the balanced accuracies to compute the
-    [image-level performance](./Details.md#soft-voting).
+    [image-level performance](./Details.md#image-level-results).
     Parts of the image are selected if their balanced accuracy is greater than the threshold.
     Default corresponds to no selection.
 - **regression**
     The objective of the `regression` is to learn the value of a continuous variable given an image.
     The criterion loss is the mean squared error between the ground truth and the network output.
     The evaluation metrics are the mean squared error (MSE) and mean absolute error (MAE).
-
     - `--label` (str) is the name of the column containing the label for the regression task.
     It must be a continuous variable (float or int). Default: `age`.
 - **reconstruction**

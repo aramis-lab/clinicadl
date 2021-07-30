@@ -98,6 +98,7 @@ The first level of the MAPS hierarchy contains the following files:
 ├── fold-0
 ├── ...
 ├── fold-<N-1>
+├── groups
 └── maps.json
 ```
 
@@ -133,7 +134,8 @@ may not be present if the user chose to train only a subset of folds.
     - `train` and `validation` data groups contains one folder per fold in the validation procedure. Then each fold contains the same
     files than `<data_group>`.
     - `<data_group>` contains two files: `data.tsv` containing the list of participant_IDs, session_IDs and the label (if applicable), and
-    `maps.json` the configuration file of the group which contains the path to the CAPS directory and the value of multi_cohort argument.
+    `maps.json` the configuration file of the group which contains the path to the CAPS directory and a boolean value defining if the group
+    is using a [multi-cohort setting](./Train/Details.md#multi-cohort).
 
 ### Level 2 - metrics of selection & training logs
 

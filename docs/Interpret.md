@@ -1,4 +1,4 @@
-# `clinicadl interpret` - Interpretation with saliency maps
+# `interpret` - Interpretation with gradient maps
 
 This functionality allows interpreting pretrained models by computing a mean saliency map
 across a group of images. It takes as input MAPS-like model folders.
@@ -43,7 +43,7 @@ where:
 Optional arguments:
 
 - **Computational resources**
-    - `--use_cpu` (bool) forces to use CPU. Default behaviour is to try to use a
+    - `--use_cpu` (bool) forces using CPUs. Default behaviour is to try to use a
       GPU and to raise an error if it is not found.
     - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
@@ -53,15 +53,15 @@ Optional arguments:
 - **Data management**
     - `--tsv_path` (str) is a path to a directory containing one TSV file per diagnosis
     (see output tree of [getlabels](./TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease)). 
-    Default will use the same participants than those used during the training task.
+    Default will use the same participants as those used during the training task.
     - `--caps_directory` (str) is the path to a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
-    Default will use the same CAPS than during the training task.
+    Default will use the same CAPS as during the training task.
     - `--multi_cohort` (bool) is a flag indicated that [multi-cohort interpretation](Train/Details.md#multi-cohort) is performed.
     In this case, `caps_dir` and `tsv_path` must be paths to TSV files. If no new `caps_dir` and `tsv_path` are 
     given this argument is not taken into account. 
 - **Results**
     - `--target_node` (str) is the class the gradients explain. Default will explain
-    the given diaggnosis.
+    the given diagnosis.
     - `--save_individual` (bool) if this flag is given the individual saliency maps of each input will be saved. 
       Default will only save the mean saliency map across the data set.
    

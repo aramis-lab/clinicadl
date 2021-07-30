@@ -1,3 +1,12 @@
+# `save-tensors` - Network output serialization
+
+This tool allows to save the output tensors of a whole data group, associated with the tensor
+corresponding to their input.
+This can be useful for the `reconstruction` task, for which the user may want to perform
+extra analyses directly on the images reconstructed by a trained network, or simply visualize
+them for a qualitative check.
+
+
 !!! warning "Coming soon"
     Tensor generation was not added yet to the command line.
 

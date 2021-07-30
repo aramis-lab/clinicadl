@@ -135,7 +135,7 @@ is simply the average of the values of all image parts.
 
 ## Multi-network
 
-By default all images are used as input of a unique network. With the `--multi` flag,
+By default, all images are used as input of a unique network. With the `--multi` flag,
 a network is trained per image part.
 
 The flag `--multi` cannot be used if the number of parts per image is 1 (for example in `image` mode
