@@ -29,7 +29,6 @@ cmd_name = "train"
     "--configuration_toml",
     "-c",
     type=click.File(),
-    default=config_path,
     help="Path to the toml file containing all training configuration",
 )
 @click.option(
@@ -259,8 +258,7 @@ def cli(
     """
     from .launch import train
 
-    config_dict = toml.load(configuration_toml)
-    train_dict = get_train_dict(config_dict, preprocessing_json, network_task)
+    train_dict = get_train_dict(configuration_toml, preprocessing_json, network_task)
 
     # user's toml
 
@@ -337,7 +335,20 @@ def cli(
     train(output_maps_directory, train_dict, split)
 
 
-def get_train_dict(config_dict, preprocessing_json, task):
+def get_train_dict(configuration_toml, preprocessing_json, task):
+    # read default values
+    config_dict = toml.load(config_path)
+    # read user specified config
+    if configuration_toml is not None:
+        user_config = toml.load(configuration_toml)
+        for config_section in user_config:
+            if config_section not in config_dict:
+                raise IOError(f"{config_section} section is not valid in TOML configuration file. Please see the documentation to see the list of option in TOML configuration file")
+            for key in config_section:
+                if key not in config_dict[config_section]:
+                    raise IOError(f"{key} option in {config_section} is not valid in TOML configuration file. Please see the documentation to see the list of option in TOML configuration file")
+                config_dict[config_section[key]] = user_config[config_dict[key]]
+
     # From config file
     train_dict = {
         "accumulation_steps": config_dict["Optimization"]["accumulation_steps"],
