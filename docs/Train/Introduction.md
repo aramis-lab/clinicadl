@@ -71,7 +71,9 @@ Options shared for all values of `mode` and `network_task` are organized in grou
     In this case, `caps_directory` and `tsv_path` must be paths to TSV files.
 - **Cross-validation arguments**
     - `--n_splits` (int) is a number of splits k to load in the case of a k-fold cross-validation. Default will load a single-split.
-    - `--folds` (list of int) is a subset of folds that will be used for training. By default all splits available are used. 
+    - `--folds` (list of int) is a subset of folds that will be used for training. By default all splits available are used.
+- **Reproducibility**
+    - `--seed` (int) is the value used to set the seed of all random operations. Default samples a seed and uses it for the experiment.
 - **Optimization parameters**
     - `--epochs` (int) is the [maximum number of epochs](Details.md#stopping-criterion). Default: `20`.
     - `--learning_rate` (float) is the learning rate used to perform weight update. Default: `1e-4`.

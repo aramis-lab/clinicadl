@@ -1,4 +1,4 @@
-# `generate` - Produce synthetic data for debugging & functional tests
+# `generate` - Generate synthetic data sets
 
 This command generates a synthetic dataset for a binary classification task from a CAPS-formatted dataset. 
 It produces a new CAPS containing either `trivial` or `random` data:
@@ -8,7 +8,7 @@ respectively the right or the left hemisphere are strongly decreased.
 - Random data cannot be correctly classified. All the images from this dataset comes from the same image to which random noise is added. 
 Then the images are randomly distributed between the two labels.
 
-![Schemes of trivial and random data](./images/generate.png)
+![Schemes of trivial and random data](../images/generate.png)
 
 Both variants were used for functional testing of the final models proposed in 
 [[Wen et al., 2020](https://www.sciencedirect.com/science/article/abs/pii/S1361841520300591)].

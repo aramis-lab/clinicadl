@@ -1685,6 +1685,30 @@ def return_train_parent_parser():
         nargs="+",
     )
 
+    train_repro_group = train_parent_parser.add_argument_group(
+        f"{Fore.BLUE}Reproducibility{Fore.RESET}"
+    )
+    train_repro_group.add_argument(
+        "--seed",
+        help="Value to set the seed for all random operations."
+        "Default will sample a random value for the seed.",
+        default=None,
+        type=int,
+    )
+    train_repro_group.add_argument(
+        "--torch_deterministic",
+        help="Forces Pytorch to be deterministic even when using a GPU. "
+        "Will raise a RuntimeError if a non-deterministic function is encountered.",
+        default=False,
+        action="store_true",
+    )
+    train_repro_group.add_argument(
+        "--compensation",
+        help="Allow the user to choose how CUDA will compensate the deterministic behaviour.",
+        choices=["memory", "time"],
+        default="memory",
+        type=str,
+    )
     train_optim_group = train_parent_parser.add_argument_group(
         TRAIN_CATEGORIES["OPTIMIZATION"]
     )

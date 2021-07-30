@@ -31,6 +31,11 @@ class SplitManager:
             self.logger = logger
 
     @abc.abstractmethod
+    def max_length(self) -> int:
+        """Maximum number of folds"""
+        pass
+
+    @abc.abstractmethod
     def __len__(self):
         pass
 
@@ -95,8 +100,8 @@ class SplitManager:
             fold=fold,
             cohort_path=cohort_path if cohort_path is not None else self.tsv_path,
         )
-        self.logger.info(f"Training data loaded at {train_path}")
-        self.logger.info(f"Validation data loaded at {valid_path}")
+        self.logger.debug(f"Training data loaded at {train_path}")
+        self.logger.debug(f"Validation data loaded at {valid_path}")
         if cohort_diagnoses is None:
             cohort_diagnoses = self.diagnoses
 
@@ -146,8 +151,8 @@ class SplitManager:
         pass
 
     def _check_item(self, item):
-        if not isinstance(item, int) or item < 0 or item >= len(self):
-            raise ValueError("Fold index out of range")
+        if not isinstance(item, int) or item < 0 or item >= self.max_length():
+            raise ValueError(f"Fold index {item} out of range")
 
     @staticmethod
     def _create_caps_dict(caps_directory, multi_cohort):
