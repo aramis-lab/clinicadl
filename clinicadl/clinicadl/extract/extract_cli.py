@@ -5,10 +5,8 @@ import click
 from clinicadl.utils import cli_param
 from clinica.utils.pet import LIST_SUVR_REFERENCE_REGIONS
 
-cmd_name = "prepare-data"
 
-
-@click.command(name=cmd_name)
+@click.command(name="extract")
 @cli_param.argument.caps_directory
 @click.argument(
     "modality",
@@ -166,24 +164,14 @@ def cli(
     subjects_sessions_tsv: Optional[str] = None,
     n_proc: Optional[int] = None,
 ) -> None:
-    """ """
+    """
+    Extraction of pytorch tensor from nifti images.
+    """
     from .extract import DeepLearningPrepareData
 
     parameters = {
         "modality": modality,
         "extract_method": extract_method,
-        # # patch
-        # "patch_size": patch_size,
-        # "stride_size": stride_size,
-        # # slice
-        # "slice_direction": slice_direction,
-        # "slice_mode": slice_mode,
-        # # roi
-        # "roi_list": roi_list,
-        # "roi_uncrop_output": roi_uncrop_output,
-        # "roi_custom_suffix": roi_custom_suffix,
-        # "roi_custom_template": roi_custom_template,
-        # "roi_custom_mask_pattern": roi_custom_mask_pattern,
     }
     if extract_method == "slice":
         parameters["slice_direction"] = slice_direction
