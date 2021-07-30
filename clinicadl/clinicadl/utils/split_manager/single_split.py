@@ -18,6 +18,9 @@ class SingleSplit(SplitManager):
             caps_directory, tsv_path, diagnoses, baseline, multi_cohort, folds, logger
         )
 
+    def max_length(self) -> int:
+        return 1
+
     def __len__(self):
         return 1
 
@@ -30,7 +33,7 @@ class SingleSplit(SplitManager):
         return train_path, valid_path
 
     def _check_folds(self):
-        if self.folds is not None or set(self.folds) != set([0]):
+        if self.folds is not None or set(self.folds) != {0}:
             raise ValueError(
                 "Single Split will only perform one fold. "
                 "Please do not specify any folds or [0]."

@@ -30,30 +30,30 @@ class Conv5_FC3(CNN):
         conv, norm, pool = get_layers_fn(input_size)
         # fmt: off
         convolutions = nn.Sequential(
-            conv(input_size[0], 8, 3, padding=1),
+            conv(input_size[0], 8, 3, padding=1, stride=2),
             norm(8),
             nn.ReLU(),
-            pool(2, 2),
+            # pool(2, 2),
 
-            conv(8, 16, 3, padding=1),
+            conv(8, 16, 3, padding=1, stride=2),
             norm(16),
             nn.ReLU(),
-            pool(2, 2),
+#             pool(2, 2),
 
-            conv(16, 32, 3, padding=1),
+            conv(16, 32, 3, padding=1, stride=2),
             norm(32),
             nn.ReLU(),
-            pool(2, 2),
+            # pool(2, 2),
 
-            conv(32, 64, 3, padding=1),
+            conv(32, 64, 3, padding=1, stride=2),
             norm(64),
             nn.ReLU(),
-            pool(2, 2),
+#             pool(2, 2),
 
-            conv(64, 128, 3, padding=1),
+            conv(64, 128, 3, padding=1, stride=2),
             norm(128),
             nn.ReLU(),
-            pool(2, 2),
+#             pool(2, 2),
         )
 
         # Compute the size of the first FC layer

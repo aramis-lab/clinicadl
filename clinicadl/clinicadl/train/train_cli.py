@@ -56,6 +56,27 @@ from clinicadl.utils import cli_param
     help="Fix the number of iterations to perform before computing an evaluation. Default will only "
     "perform one evaluation at the end of each epoch.",
 )
+# Reproducibility
+@click.option(
+    "--seed",
+    help="Value to set the seed for all random operations."
+    "Default will sample a random value for the seed.",
+    # default=None,
+    type=int,
+)
+@click.option(
+    "--nondeterministic/--deterministic",
+    help="Forces Pytorch to be deterministic even when using a GPU. "
+    "Will raise a RuntimeError if a non-deterministic function is encountered.",
+)
+@click.option(
+    "--compensation",
+    help="Allow the user to choose how CUDA will compensate the deterministic behaviour.",
+    choices=["memory", "time"],
+    # default="memory",
+    show_choices=True,
+    type=str,
+)
 # Model
 @click.option(
     "-a",
@@ -214,6 +235,9 @@ def cli(
     nproc,
     batch_size,
     evaluation_steps,
+    seed,
+    nondeterministic,
+    compensation,
     architecture,
     multi_network,
     multi_cohort,
@@ -315,6 +339,12 @@ def cli(
         train_dict["weight_decay"] = weight_decay
     if sampler is not None:
         train_dict["sampler"] = sampler
+    if seed is not None:
+        train_dict["seed"] = seed
+    if nondeterministic is not None:
+        train_dict["torch_deterministic"] = not nondeterministic
+    if compensation is not None:
+        train_dict["compensation"] = compensation
 
     # Splits
     if train_dict["n_splits"] > 1:

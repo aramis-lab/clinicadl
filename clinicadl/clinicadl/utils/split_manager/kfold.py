@@ -20,6 +20,9 @@ class KFoldSplit(SplitManager):
         )
         self.n_splits = n_splits
 
+    def max_length(self) -> int:
+        return self.n_splits
+
     def __len__(self):
         if self.folds is None:
             return self.n_splits

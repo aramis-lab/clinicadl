@@ -34,7 +34,9 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
         "architecture": config_dict["Model"]["architecture"],
         "baseline": config_dict["Data"]["baseline"],
         "batch_size": config_dict["Computational"]["batch_size"],
+        "compensation": config_dict["Reproducibility"]["compensation"],
         "data_augmentation": config_dict["Data"]["data_augmentation"],
+        "deterministic": config_dict["Reproducibility"]["deterministic"],
         "diagnoses": config_dict["Data"]["diagnoses"],
         "dropout": config_dict["Architecture"]["dropout"],
         "epochs": config_dict["Optimization"]["epochs"],
@@ -47,6 +49,7 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
         "num_workers": config_dict["Computational"]["n_proc"],
         "patience": config_dict["Optimization"]["patience"],
         "folds": config_dict["Cross_validation"]["split"],
+        "seed": config_dict["Reproducibility"]["seed"],
         "tolerance": config_dict["Optimization"]["tolerance"],
         "transfer_path": config_dict["Transfer_learning"]["transfer_path"],
         "transfer_learning_selection": config_dict["Transfer_learning"][

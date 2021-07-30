@@ -101,14 +101,14 @@ class LogWriter:
 
         # Write tensorboard logs
         global_step = i + epoch * len_epoch
-        for selection in self.evaluation_metrics:
+        for metric in self.evaluation_metrics:
             self.writer_train.add_scalar(
-                selection,
-                metrics_train[selection],
+                metric,
+                metrics_train[metric],
                 global_step,
             )
             self.writer_valid.add_scalar(
-                selection,
-                metrics_valid[selection],
+                metric,
+                metrics_valid[metric],
                 global_step,
             )
