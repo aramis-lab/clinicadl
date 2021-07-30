@@ -11,8 +11,8 @@ These tools perform three main tasks:
 
 ### Description
 
-In the [original paper](https://www.sciencedirect.com/science/article/abs/pii/S1361841520300591), 
-specific restrictions were applied to datasets used for testing:
+In [(Wen et al., 2020)](https://www.sciencedirect.com/science/article/abs/pii/S1361841520300591) whose
+source code is the former version of ClinicaDL, the specific restrictions were applied to datasets used for testing:
 
 - in **OASIS**, cognitively normal subjects who were younger than the youngest demented patient (62 years old) were removed,
 - in **AIBL**, subjects whose age could not be retrieved (because it is missing for all their sessions) were removed.
@@ -27,8 +27,8 @@ where:
 
   - `dataset` (str) is the name of the dataset. Choices are `OASIS` or `AIBL`.
   - `merged_tsv` (str) is the output file of the `clinica iotools merge-tsv` command.
-  - `results_path` (str) is the path to the output tsv file (filename included).
-  This tsv file comprises the same columns as `merged_tsv`.
+  - `results_path` (str) is the path to the output TSV file (filename included).
+  This TSV file comprises the same columns as `merged_tsv`.
 
 !!! tip
     Add your custom restrictions in `clinicadl/tools/tsv/restriction.py` to make
@@ -38,7 +38,7 @@ where:
 
 ### Description
 
-This tool writes a tsv file for each label asked by the user.
+This tool writes a TSV file for each label asked by the user.
 The labels correspond to the following description:
 
 - CN (cognitively normal): sessions of subjects who were diagnosed as cognitively normal during all their follow-up;
@@ -51,6 +51,16 @@ and progressed to dementia during the `time_horizon` period following the curren
 remained stable during the 36 months `time_horizon` period following the current visit and 
 never progressed to dementia nor converted back to the cognitively normal status.
 
+These labels are specific to the Alzheimer's disease context and can only be extracted from
+cohorts used in [(Wen et al., 2020)](https://www.sciencedirect.com/science/article/abs/pii/S1361841520300591).
+
+However, users can define other label lists manually and give them in inputs of other functions of
+`tsvtools`. These TSV files will have to include the following columns: `participant_id`,
+`session_id`, and the name of the value used for the label (for example `diagnosis`).
+Other functions of `tsvtool` may also try to have similar distributions according to the age and the sex
+of the participants. To benefit from this feature, the user must also include these two columns in
+their TSV files.
+
 ### Running the task
 
 ```bash
@@ -60,19 +70,19 @@ where:
 
   - `merged_tsv` (str) is the output file of the `clinica iotools merge-tsv` or `clinicadl tsvtool restrict` commands.
   - `missing_mods` (str) is the folder containing the outputs of the `clinica iotools missing-mods` command.
-  - `results_path` (str) is the path to the folder where output tsv files will be written.
+  - `results_path` (str) is the path to the folder where output TSV files will be written.
 
 Options:
 
   - `--modality` (str) Modality for which the sessions are selected. 
   Sessions which do not include the modality will be excluded from the outputs.
-  The name of the modality must correspond to a column of the tsv files in `missing_mods`.
+  The name of the modality must correspond to a column of the TSV files in `missing_mods`.
   Default value: `t1w`.
   - `--diagnoses` (list of str) is the list of the labels that will be extracted.
    These labels must be chosen from {AD,CN,MCI,sMCI,pMCI}. Default will only process AD and CN labels.
   - `--time_horizon` (int) is the time horizon in months that is used to assess the stability of the MCI subjects.
   Default value: `36`.
-  - `--restriction_path` (str) is a path to a tsv file containing the list of sessions that should be used.
+  - `--restriction_path` (str) is a path to a TSV file containing the list of sessions that should be used.
   This argument is useful to integrate the result of a quality check procedure. Default will not perform any restriction.
   - `--variables_of_interest` (list of str) is a list of columns present in `merged_tsv` that will be included
   in the outputs.
@@ -81,7 +91,7 @@ Options:
 
 ### Output tree
 
-The command will output one tsv file per label:
+The command will output one TSV file per label:
 <pre>
 └── &lt;results_path&gt;
     ├── AD.tsv
@@ -91,7 +101,7 @@ The command will output one tsv file per label:
     └── pMCI.tsv
 </pre>
 
-Each tsv file comprises the `participant_id` and `session_id` values of all the sessions that correspond to the label.
+Each TSV file comprises the `participant_id` and `session_id` values of all the sessions that correspond to the label.
 The values of the column `diagnosis` are equal to the label name.
 The age and sex are also included in the TSV files. The names of these columns depend on the 
 columns of `merged_tsv`.
@@ -116,7 +126,7 @@ clinicadl tsvtool split <formatted_data_path>
 ```
 where:
 
-  - `formatted_data_path` (str) is the folder containing a tsv file per label which is going to be split 
+  - `formatted_data_path` (str) is the folder containing a TSV file per label which is going to be split 
   (output of `clinicadl tsvtool getlabels|split|kfold`).
 
 Options:
@@ -160,7 +170,7 @@ The command will generate the following output tree:
         └── label-n_baseline.tsv 
 </pre>
 
-The columns of the produced tsv files are `participant_id`, `session_id` and `diagnosis`.
+The columns of the produced TSV files are `participant_id`, `session_id` and `diagnosis`.
 TSV files ending with `_baseline.tsv` only include the baseline session of each subject (or
 the session closest to baseline if the latter does not exist).
 
@@ -175,7 +185,7 @@ This tool independently splits each label to perform a k-fold cross-validation.
 ```bash
 clinicadl tsvtool kfold <formatted_data_path>
 ```
-where `formatted_data_path` (str) is the folder containing a tsv file per label which is going to be split
+where `formatted_data_path` (str) is the folder containing a TSV file per label which is going to be split
 (output of `clinicadl tsvtool getlabels|split|kfold`).
 
 Options:
@@ -215,7 +225,7 @@ The command will generate the following output tree:
             └── label-n_baseline.tsv  
 </pre>
 
-The columns of the produced tsv files are `participant_id`, `session_id` and `diagnosis`.
+The columns of the produced TSV files are `participant_id`, `session_id` and `diagnosis`.
 TSV files ending with `_baseline.tsv` only include the baseline session of each subject (or
 the session closest to baseline if the latter does not exist).
 
@@ -223,7 +233,7 @@ the session closest to baseline if the latter does not exist).
 
 ### Description
 
-This tool writes a tsv file that summarizes the demographics and clinical distributions of the
+This tool writes a TSV file that summarizes the demographics and clinical distributions of the
 asked labels.
 Continuous variables are described with statistics (mean, standard deviation, minimum and maximum),
 whereas categorical values are grouped by categories.
@@ -238,7 +248,7 @@ where:
 
   - `merged_tsv` (str) is the output file of the `clinica iotools merge-tsv` or `clinicadl tsvtool restrict` commands.
   - `formatted_data_path` (str) is a folder containing one TSV file per label (output of `clinicadl tsvtool getlabels|split|kfold`).
-  - `results_path` (str) is the path to the tsv file that will be written (filename included).
+  - `results_path` (str) is the path to the TSV file that will be written (filename included).
 
 Options:
 
