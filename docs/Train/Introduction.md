@@ -72,8 +72,13 @@ Options shared for all values of `mode` and `network_task` are organized in grou
 - **Cross-validation arguments**
     - `--n_splits` (int) is a number of splits k to load in the case of a k-fold cross-validation. Default will load a single-split.
     - `--folds` (list of int) is a subset of folds that will be used for training. By default all splits available are used.
-- **Reproducibility**
+- **Reproducibility** (for more information refer to the [implementation details](./Details.md#deterministic-algorithms)
     - `--seed` (int) is the value used to set the seed of all random operations. Default samples a seed and uses it for the experiment.
+    - `--torch_deterministic` (bool) forces the training process to be deterministic.
+    If any non-deterministic behaviour is encountered will raise a RuntimeError. Default: `False`.
+    - `--compensation` (str) allow to choose how CUDA will compensate to obtain a deterministic behaviour.
+    The computation time will be longer, or the computations will require more memory space. Default: `memory`.
+    Must be chosen between `time` and `memory`.
 - **Optimization parameters**
     - `--epochs` (int) is the [maximum number of epochs](Details.md#stopping-criterion). Default: `20`.
     - `--learning_rate` (float) is the learning rate used to perform weight update. Default: `1e-4`.

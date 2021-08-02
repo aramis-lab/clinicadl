@@ -3,6 +3,23 @@
 Details of implementation corresponding to modules used in the provided architectures, autoencoder construction, 
 transfer learning or training details are provided in this section.
 
+## Deterministic algorithms
+
+ClinicaDL allows to set the seed of the pseudo-random libraries used by the library (`numpy`, `random`,
+and `torch`). This seed is also used in train data loaders, to avoid [the randomness 
+in data loading introduced by Pytorch](https://pytorch.org/docs/stable/data.html#data-loading-randomness).
+
+However, this is not sufficient to guarantee the exact reproducibility when using GPU (though the results will
+be more close than with two different seeds). To obtain exactly the same results with the same GPU environment,
+the user must specify the flag `--torch_deterministic`. This will force CUDA to use a
+deterministic behaviour, but at the cost of the computation time, or the memory use.
+
+!!! warning "Non-deterministic functions in Pytorch"
+    Pytorch library is currently improving the reproducibility of their methods, 
+    however all the functions do not have a reproducible equivalent yet.
+    If you want to be deterministic, you may need to adapt your architecture or 
+    wait until Pytorch implements the deterministic version of the function you need.
+
 ## Adaptive padding in pooling layers
 
 Pooling layers reduce the size of their input feature maps. 
@@ -23,7 +40,7 @@ To avoid this, pooling layers with adaptive padding `PadMaxPool3d` were implemen
 
 ## Autoencoders construction from CNN architectures
 
-In `clinicadl`, autoencoders acn be derived from a CNN architecture. In this case:
+In `clinicadl`, autoencoders can be derived from a CNN architecture. In this case:
 
 - the encoder corresponds to the convolutional part of the CNN,
 - the decoder is composed of the transposed version of the operations used in the encoder.
@@ -135,7 +152,7 @@ is simply the average of the values of all image parts.
 
 ## Multi-network
 
-By default all images are used as input of a unique network. With the `--multi` flag,
+By default, all images are used as input of a unique network. With the `--multi` flag,
 a network is trained per image part.
 
 The flag `--multi` cannot be used if the number of parts per image is 1 (for example in `image` mode
