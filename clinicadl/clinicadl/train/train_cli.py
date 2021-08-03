@@ -409,7 +409,7 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
         train_dict["stride_size"] = preprocessing_dict["stride_size"]
     elif train_dict["mode"] == "roi":
         train_dict["roi_list"] = preprocessing_dict["roi_list"]
-        train_dict["roi_uncrop_output"] = preprocessing_dict["roi_uncrop_output"]
+        train_dict["uncropped_roi"] = preprocessing_dict["roi_uncrop_output"]
 
     if train_dict["preprocessing"] == "custom":
         train_dict["custom_suffix"] = preprocessing_dict["custom_suffix"]
