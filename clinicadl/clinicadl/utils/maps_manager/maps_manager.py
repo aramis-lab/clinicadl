@@ -806,7 +806,7 @@ class MapsManager:
             # Save checkpoints and best models
             best_dict = retain_best.step(metrics_valid)
             self._write_weights(
-                {"model": model.state_dict(), "epoch": epoch, "name": self.model},
+                {"model": model.state_dict(), "epoch": epoch, "name": self.architecture},
                 best_dict,
                 fold,
                 network=network,
@@ -941,7 +941,6 @@ class MapsManager:
             "preprocessing",
             "mode",
             "network_task",
-            "model",
         ]
 
         for arg in mandatory_arguments:
@@ -1153,7 +1152,7 @@ class MapsManager:
             multi_cohort=self.multi_cohort,
         )
         train_df = train_df[["participant_id", "session_id"]]
-        if self.transfer_path is not None:
+        if self.transfer_path!="":
             transfer_train_path = path.join(self.transfer_path, "train_data.tsv")
             transfer_train_df = pd.read_csv(transfer_train_path, sep="\t")
             transfer_train_df = transfer_train_df[["participant_id", "session_id"]]
@@ -1406,9 +1405,9 @@ class MapsManager:
         """
         import clinicadl.utils.network as network_package
 
-        self.logger.debug(f"Initialization of model {self.model}")
+        self.logger.debug(f"Initialization of model {self.architecture}")
         # or choose to implement a dictionary
-        model_class = getattr(network_package, self.model)
+        model_class = getattr(network_package, self.architecture)
         args = list(
             model_class.__init__.__code__.co_varnames[
                 : model_class.__init__.__code__.co_argcount
@@ -1481,7 +1480,6 @@ class MapsManager:
         kwargs = {"folds": folds, "logger": self.logger}
         for arg in args:
             kwargs[arg] = self.parameters[arg]
-
         return split_class(**kwargs)
 
     def _init_task_manager(self):

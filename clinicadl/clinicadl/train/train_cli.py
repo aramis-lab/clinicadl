@@ -260,8 +260,6 @@ def cli(
 
     train_dict = get_train_dict(configuration_toml, preprocessing_json, network_task)
 
-    # user's toml
-
     # Add arguments
     train_dict["network_task"] = network_task
     train_dict["caps_directory"] = input_caps_directory
@@ -310,7 +308,7 @@ def cli(
     if tolerance is not None:
         train_dict["tolerance"] = tolerance
     if transfer_learning_path is not None:
-        train_dict["transfer_learning_path"] = transfer_learning_path
+        train_dict["transfer_path"] = transfer_learning_path
     if transfer_learning_selection is not None:
         train_dict["transfer_learning_selection"] = transfer_learning_selection
     if use_extracted_features is not None:
@@ -361,6 +359,7 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
         "epochs": config_dict["Optimization"]["epochs"],
         "evaluation_steps": config_dict["Computational"]["evaluation_steps"],
         "learning_rate": config_dict["Optimization"]["learning_rate"],
+        "minmaxnormalization": config_dict["Data"]["normalize"],
         "multi": config_dict["Model"]["multi"],
         "multi_cohort": config_dict["Data"]["multi_cohort"],
         "n_splits": config_dict["Cross_validation"]["n_splits"],
@@ -368,11 +367,10 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
         "patience": config_dict["Optimization"]["patience"],
         "folds": config_dict["Cross_validation"]["split"],
         "tolerance": config_dict["Optimization"]["tolerance"],
-        "transfer_learning_path": config_dict["Transfert_learning"]["transfer_path"],
+        "transfer_path": config_dict["Transfert_learning"]["transfer_path"],
         "transfer_learning_selection": config_dict["Transfert_learning"][
             "transfer_selection_metric"
         ],
-        "unnormalize": not config_dict["Data"]["normalize"],
         "use_cpu": not config_dict["Computational"]["use_gpu"],
         "weight_decay": config_dict["Optimization"]["weight_decay"],
         "sampler": config_dict["Data"]["sampler"],
@@ -427,6 +425,12 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
 
     # use extracted features
     train_dict["use_extracted_features"] = config_dict["Mode"]["use_extracted_features"]
+
+    # label (default values, TODO: add option and toml value)
+    if task == "classification":
+        train_dict["label"] = "diagnosis"
+    elif task == "regression":
+        train_dict["label"] = "age"
 
     return train_dict
 
