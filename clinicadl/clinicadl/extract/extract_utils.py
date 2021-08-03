@@ -1,7 +1,7 @@
 # coding: utf8
 
 
-def extract_slices(input_tensor, slice_direction=0, slice_mode="single"):
+def extract_slices(input_img, slice_direction=0, slice_mode="single"):
     """Extracts the slices from three directions
     This function extracts slices form the preprocessed nifti image.  The
     direction of extraction can be defined either on sagital direction (0),
@@ -9,7 +9,7 @@ def extract_slices(input_tensor, slice_direction=0, slice_mode="single"):
     stores following two modes: single (1 channel) ou RGB (3 channels, all the
     same).
     Args:
-        input_tensor: tensor version of the nifti MRI.
+        input_img: nifti format MRI image.
         slice_direction: which axis direction that the slices were extracted
         slice_mode: 'single' or 'RGB'.
     Returns:
@@ -18,9 +18,11 @@ def extract_slices(input_tensor, slice_direction=0, slice_mode="single"):
     """
     import os
 
+    import nibabel as nib
     import torch
 
-    image_tensor = torch.load(input_tensor)
+    image_array = nib.load(input_img).get_fdata(dtype="float32")
+    image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
     # reshape the tensor, delete the first dimension for slice-level
     image_tensor = image_tensor.view(
         image_tensor.shape[1], image_tensor.shape[2], image_tensor.shape[3]
@@ -34,14 +36,13 @@ def extract_slices(input_tensor, slice_direction=0, slice_mode="single"):
         M, image_tensor.shape[0] - N
     )  # delete the first M slices and last N slices
 
-    input_tensor_filename = os.path.basename(input_tensor)
+    input_img_filename = os.path.basename(input_img)
 
-    txt_idx = input_tensor_filename.rfind("_")
-    it_filename_prefix = input_tensor_filename[0:txt_idx]
-    it_filename_suffix = input_tensor_filename[txt_idx:]
+    txt_idx = input_img_filename.rfind("_")
+    it_filename_prefix = input_img_filename[0:txt_idx]
+    it_filename_suffix = input_img_filename[txt_idx:]
 
-    output_file_original = []
-    output_file_rgb = []
+    output_slices = []
     if slice_direction == 0:
         for index_slice, index_slice_list in zip(
             slice_list_sag, range(len(slice_list_sag))
@@ -64,7 +65,7 @@ def extract_slices(input_tensor, slice_direction=0, slice_mode="single"):
 
             # save into .pt format
             if slice_mode == "single":
-                output_file_original.append(
+                output_slices.append(
                     (
                         it_filename_prefix
                         + "_axis-sag_channel-single_slice-"
@@ -74,7 +75,7 @@ def extract_slices(input_tensor, slice_direction=0, slice_mode="single"):
                     )
                 )
             elif slice_mode == "rgb":
-                output_file_rgb.append(
+                output_slices.append(
                     (
                         it_filename_prefix
                         + "_axis-sag_channel-rgb_slice-"
@@ -111,7 +112,7 @@ def extract_slices(input_tensor, slice_direction=0, slice_mode="single"):
 
             # save into .pt format
             if slice_mode == "single":
-                output_file_original.append(
+                output_slices.append(
                     (
                         it_filename_prefix
                         + "_axis-cor_channel-single_slice-"
@@ -120,12 +121,8 @@ def extract_slices(input_tensor, slice_direction=0, slice_mode="single"):
                         extracted_slice_original_cor.clone(),
                     )
                 )
-                # torch.save(
-                #     extracted_slice_original_cor.clone(),
-                #     output_file_original[index_slice_list],
-                # )
             elif slice_mode == "rgb":
-                output_file_rgb.append(
+                output_slices.append(
                     (
                         it_filename_prefix
                         + "_axis-cor_channel-rgb_slice-"
@@ -134,9 +131,6 @@ def extract_slices(input_tensor, slice_direction=0, slice_mode="single"):
                         extracted_slice_rgb_cor.clone(),
                     )
                 )
-                # torch.save(
-                #     extracted_slice_rgb_cor.clone(), output_file_rgb[index_slice_list]
-                # )
 
     else:
 
@@ -165,7 +159,7 @@ def extract_slices(input_tensor, slice_direction=0, slice_mode="single"):
 
             # save into .pt format
             if slice_mode == "single":
-                output_file_original.append(
+                output_slices.append(
                     (
                         it_filename_prefix
                         + "_axis-axi_channel-single_slice-"
@@ -176,7 +170,7 @@ def extract_slices(input_tensor, slice_direction=0, slice_mode="single"):
                 )
 
             elif slice_mode == "rgb":
-                output_file_rgb.append(
+                output_slices.append(
                     (
                         it_filename_prefix
                         + "_axis-axi_channel-rgb_slice-"
@@ -187,10 +181,10 @@ def extract_slices(input_tensor, slice_direction=0, slice_mode="single"):
                 )
 
 
-    return output_file_rgb, output_file_original
+    return output_slices
 
 
-def extract_patches(input_tensor, patch_size, stride_size):
+def extract_patches(input_img, patch_size, stride_size):
     """Extracts the patches
     This function extracts patches form the preprocessed nifti image. Patch size
     if provided as input and also the stride size. If stride size is smaller
@@ -198,7 +192,7 @@ def extract_patches(input_tensor, patch_size, stride_size):
     size is equal to path size there is no overlap. Otherwise, unprocessed
     zones can exits.
     Args:
-        input_tensor: tensor version of the nifti MRI.
+        input_img: nifti format MRI image.
         patch_size: size of a single patch.
         stride_size: size of the stride leading to next patch.
     Returns:
@@ -207,9 +201,11 @@ def extract_patches(input_tensor, patch_size, stride_size):
     """
     import os
 
+    import nibabel as nib
     import torch
 
-    image_tensor = torch.load(input_tensor)
+    image_array = nib.load(input_img).get_fdata(dtype="float32")
+    image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
 
     # use classifiers tensor.upfold to crop the patch.
     patches_tensor = (
@@ -221,10 +217,10 @@ def extract_patches(input_tensor, patch_size, stride_size):
     # the dimension of patch_tensor should be [1, patch_num1, patch_num2, patch_num3, patch_size1, patch_size2, patch_size3]
     patches_tensor = patches_tensor.view(-1, patch_size, patch_size, patch_size)
 
-    input_tensor_filename = os.path.basename(input_tensor)
-    txt_idx = input_tensor_filename.rfind("_")
-    it_filename_prefix = input_tensor_filename[0:txt_idx]
-    it_filename_suffix = input_tensor_filename[txt_idx:]
+    input_img_filename = os.path.basename(input_img)
+    txt_idx = input_img_filename.rfind("_")
+    it_filename_prefix = input_img_filename[0:txt_idx]
+    it_filename_suffix = input_img_filename[txt_idx:]
 
     output_patch = []
     for index_patch in range(patches_tensor.shape[0]):
@@ -255,7 +251,7 @@ def extract_images(input_img):
     This function convert nifti image to tensor (.pt) version of the image.
     Tensor version is saved at the same location than input_img.
     Args:
-        input_tensor: tensor version of the nifti MRI.
+        input_img: nifti format MRI image.
     Returns:
         filename (str): single tensor file  saved on the disk. Same location than input file.
     """
@@ -364,7 +360,7 @@ def compute_output_pattern(mask_path, crop_output):
 
 
 def extract_roi(
-    input_tensor,
+    input_img,
     masks_location,
     mask_pattern,
     cropped_input,
@@ -376,7 +372,7 @@ def extract_roi(
     The regions are defined using binary masks that must be located in the CAPS
     at `masks/tpl-<template>`.
     Args:
-        input_path: path to the tensor version of the nifti MRI.
+        input_img: nifti format MRI image.
         masks_location: path to the masks
         mask_pattern: pattern to identify the masks
         cropped_input: if the input is cropped or not (contains desc-Crop)
@@ -392,19 +388,15 @@ def extract_roi(
     import numpy as np
     import torch
 
-    from clinica.pipelines.deeplearning_prepare_data.deeplearning_prepare_data_utils import (
-        compute_output_pattern,
-        find_mask_path,
-    )
+    image_array = nib.load(input_img).get_fdata(dtype="float32")
+    image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
 
-    image_tensor = torch.load(input_tensor)
+    input_img_filename = os.path.basename(input_img)
 
-    input_tensor_filename = os.path.basename(input_tensor)
-
-    sub_ses_prefix = "_".join(input_tensor_filename.split("_")[0:3:])
+    sub_ses_prefix = "_".join(input_img_filename.split("_")[0:3:])
     if not sub_ses_prefix.endswith("_T1w"):
-        sub_ses_prefix = "_".join(input_tensor_filename.split("_")[0:2:])
-    input_suffix = input_tensor_filename.split("_")[-1].split(".")[0]
+        sub_ses_prefix = "_".join(input_img_filename.split("_")[0:2:])
+    input_suffix = input_img_filename.split("_")[-1].split(".")[0]
 
     output_roi = []
     for index_roi, roi in enumerate(roi_list):

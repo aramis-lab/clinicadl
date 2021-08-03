@@ -62,10 +62,10 @@ from clinica.utils.pet import LIST_SUVR_REFERENCE_REGIONS
     ),
 )
 @click.option(
-    "--discarded_slices",
+    "-ds", "--discarded_slices",
     type=int,
-    default=0,
-    multiple=True,
+    default=(0,0),
+    multiple=2,
     help="""Discarded slices if EXTRACT_METHOD is `slice`. Number of slices discarded from respectively the beginning and
         the end of the MRI volume.  If only one argument is given, it will be
         used for both sides.""",

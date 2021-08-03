@@ -74,7 +74,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
             output_mode = extract_images(file)
         elif parameters["extract_method"] == "slice":
             subfolder = "slice_based"
-            output_file_rgb, output_file_original = extract_slices(
+            output_mode = extract_slices(
                 file,
                 slice_direction=parameters["slice_direction"],
                 slice_mode=parameters["slice_mode"],
@@ -95,7 +95,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
                         "A custom template must be defined when the modality is set to custom."
                     )
             else:
-                from .prepare_data_utils import TEMPLATE_DICT
+                from .extract_utils import TEMPLATE_DICT
 
                 parameters["roi_template"] = TEMPLATE_DICT[parameters["modality"]]
             parameters["masks_location"] = path.join(
