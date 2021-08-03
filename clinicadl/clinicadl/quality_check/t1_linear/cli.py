@@ -38,25 +38,25 @@ from clinicadl.utils import cli_param
 )
 @cli_param.option.use_gpu
 def cli(
-    caps_directory,
+    input_caps_directory,
     output_tsv,
     subjects_sessions_tsv,
     threshold,
     batch_size,
     nproc,
-    use_gpu,
+    gpu,
 ):
     """
-    Clinica t1-linear outputs quality check
+    Performs quality check on t1-volume pipeline.
     """
-    from quality_check import quality_check as linear_qc
+    from .quality_check import quality_check as linear_qc
 
     linear_qc(
-        caps_directory,
+        input_caps_directory,
         output_tsv,
         tsv_path=subjects_sessions_tsv,
         threshold=threshold,
         batch_size=batch_size,
         num_workers=nproc,
-        gpu=use_gpu,
+        gpu=gpu,
     )

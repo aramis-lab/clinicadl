@@ -57,11 +57,11 @@ from clinicadl.utils import cli_param
     help="List of participants that will be classified.",
 )
 def cli(
-    caps_directory,
+    input_caps_directory,
     participants_tsv,
     input_maps,
     inference_prefix,
-    use_gpu,
+    gpu,
     n_proc,
     batch_size,
     labels,
@@ -77,12 +77,12 @@ def cli(
     from .infer import classify
 
     classify(
-        caps_dir=caps_directory,
+        caps_dir=input_caps_directory,
         tsv_path=participants_tsv,
         model_path=input_maps,
         prefix_output=inference_prefix,
         labels=labels,
-        gpu=use_gpu,
+        gpu=gpu,
         num_workers=n_proc,
         batch_size=batch_size,
         prepare_dl=use_extracted_features,
