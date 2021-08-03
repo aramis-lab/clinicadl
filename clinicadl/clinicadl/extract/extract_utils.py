@@ -34,7 +34,6 @@ def extract_slices(input_tensor, slice_direction=0, slice_mode="single"):
         M, image_tensor.shape[0] - N
     )  # delete the first M slices and last N slices
 
-    basedir = os.getcwd()
     input_tensor_filename = os.path.basename(input_tensor)
 
     txt_idx = input_tensor_filename.rfind("_")
@@ -67,36 +66,24 @@ def extract_slices(input_tensor, slice_direction=0, slice_mode="single"):
             if slice_mode == "single":
                 output_file_original.append(
                     (
-                        os.path.join(
-                            basedir,
-                            it_filename_prefix
-                            + "_axis-sag_channel-single_slice-"
-                            + str(index_slice)
-                            + it_filename_suffix,
-                        ),
+                        it_filename_prefix
+                        + "_axis-sag_channel-single_slice-"
+                        + str(index_slice)
+                        + it_filename_suffix,
                         extracted_slice_original_sag.clone(),
                     )
                 )
-                # torch.save(
-                #     extracted_slice_original_sag.clone(),
-                #     output_file_original[index_slice_list],
-                # )
             elif slice_mode == "rgb":
                 output_file_rgb.append(
                     (
-                        os.path.join(
-                            basedir,
-                            it_filename_prefix
-                            + "_axis-sag_channel-rgb_slice-"
-                            + str(index_slice)
-                            + it_filename_suffix,
-                        ),
+                        it_filename_prefix
+                        + "_axis-sag_channel-rgb_slice-"
+                        + str(index_slice)
+                        + it_filename_suffix,
                         extracted_slice_rgb_sag.clone(),
                     )
                 )
-                # torch.save(
-                #     extracted_slice_rgb_sag.clone(), output_file_rgb[index_slice_list]
-                # )
+
 
     elif slice_direction == 1:
         # cornal
@@ -126,13 +113,10 @@ def extract_slices(input_tensor, slice_direction=0, slice_mode="single"):
             if slice_mode == "single":
                 output_file_original.append(
                     (
-                        os.path.join(
-                            basedir,
-                            it_filename_prefix
-                            + "_axis-cor_channel-single_slice-"
-                            + str(index_slice)
-                            + it_filename_suffix,
-                        ),
+                        it_filename_prefix
+                        + "_axis-cor_channel-single_slice-"
+                        + str(index_slice)
+                        + it_filename_suffix,
                         extracted_slice_original_cor.clone(),
                     )
                 )
@@ -143,13 +127,10 @@ def extract_slices(input_tensor, slice_direction=0, slice_mode="single"):
             elif slice_mode == "rgb":
                 output_file_rgb.append(
                     (
-                        os.path.join(
-                            basedir,
-                            it_filename_prefix
-                            + "_axis-cor_channel-rgb_slice-"
-                            + str(index_slice)
-                            + it_filename_suffix,
-                        ),
+                        it_filename_prefix
+                        + "_axis-cor_channel-rgb_slice-"
+                        + str(index_slice)
+                        + it_filename_suffix,
                         extracted_slice_rgb_cor.clone(),
                     )
                 )
@@ -186,36 +167,25 @@ def extract_slices(input_tensor, slice_direction=0, slice_mode="single"):
             if slice_mode == "single":
                 output_file_original.append(
                     (
-                        os.path.join(
-                            basedir,
-                            it_filename_prefix
-                            + "_axis-axi_channel-single_slice-"
-                            + str(index_slice)
-                            + it_filename_suffix,
-                        ),
+                        it_filename_prefix
+                        + "_axis-axi_channel-single_slice-"
+                        + str(index_slice)
+                        + it_filename_suffix,
                         extracted_slice_original_axi.clone(),
                     )
                 )
-                # torch.save(
-                #     extracted_slice_original_axi.clone(),
-                #     output_file_original[index_slice_list],
-                # )
+
             elif slice_mode == "rgb":
                 output_file_rgb.append(
                     (
-                        os.path.join(
-                            basedir,
-                            it_filename_prefix
-                            + "_axis-axi_channel-rgb_slice-"
-                            + str(index_slice)
-                            + it_filename_suffix,
-                        ),
+                        it_filename_prefix
+                        + "_axis-axi_channel-rgb_slice-"
+                        + str(index_slice)
+                        + it_filename_suffix,
                         extracted_slice_rgb_axi.clone(),
                     )
                 )
-                # torch.save(
-                #     extracted_slice_rgb_axi.clone(), output_file_rgb[index_slice_list]
-                # )
+
 
     return output_file_rgb, output_file_original
 
@@ -239,7 +209,6 @@ def extract_patches(input_tensor, patch_size, stride_size):
 
     import torch
 
-    basedir = os.getcwd()
     image_tensor = torch.load(input_tensor)
 
     # use classifiers tensor.upfold to crop the patch.
@@ -265,17 +234,14 @@ def extract_patches(input_tensor, patch_size, stride_size):
         # save into .pt format
         output_patch.append(
             (
-                os.path.join(
-                    basedir,
-                    it_filename_prefix
-                    + "_patchsize-"
-                    + str(patch_size)
-                    + "_stride-"
-                    + str(stride_size)
-                    + "_patch-"
-                    + str(index_patch)
-                    + it_filename_suffix,
-                ),
+                it_filename_prefix
+                + "_patchsize-"
+                + str(patch_size)
+                + "_stride-"
+                + str(stride_size)
+                + "_patch-"
+                + str(index_patch)
+                + it_filename_suffix,
                 extracted_patch.clone(),
             )
         )
@@ -284,8 +250,8 @@ def extract_patches(input_tensor, patch_size, stride_size):
     return output_patch
 
 
-def save_as_pt(input_img):
-    """Saves PyTorch tensor version of the nifti image
+def extract_images(input_img):
+    """Extract the images
     This function convert nifti image to tensor (.pt) version of the image.
     Tensor version is saved at the same location than input_img.
     Args:
@@ -299,16 +265,13 @@ def save_as_pt(input_img):
     import nibabel as nib
     import torch
 
-    basedir = os.getcwd()
     image_array = nib.load(input_img).get_fdata(dtype="float32")
     image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
     # make sure the tensor dtype is torch.float32
     output_file = (
-        os.path.join(basedir, os.path.basename(input_img).split(".nii.gz")[0] + ".pt"),
+        os.path.basename(input_img).split(".nii.gz")[0] + ".pt",
         image_tensor.clone(),
     )
-    # save
-    # torch.save(image_tensor.clone(), output_file)
 
     return [output_file]
 
@@ -414,7 +377,6 @@ def extract_roi(
     at `masks/tpl-<template>`.
     Args:
         input_path: path to the tensor version of the nifti MRI.
-        basedir: path to the extracted files.
         masks_location: path to the masks
         mask_pattern: pattern to identify the masks
         cropped_input: if the input is cropped or not (contains desc-Crop)
@@ -436,7 +398,6 @@ def extract_roi(
     )
 
     image_tensor = torch.load(input_tensor)
-    basedir = os.getcwd()
 
     input_tensor_filename = os.path.basename(input_tensor)
 
@@ -468,14 +429,10 @@ def extract_roi(
         output_pattern = compute_output_pattern(mask_path, not uncrop_output)
         output_roi.append(
             (
-                os.path.join(
-                    basedir, f"{sub_ses_prefix}_{output_pattern}_{input_suffix}.pt"
-                ),
+                f"{sub_ses_prefix}_{output_pattern}_{input_suffix}.pt",
                 extracted_roi.clone(),
             )
         )
-        # os.makedirs(basedir, exist_ok=True)
-        # torch.save(extracted_roi.clone(), output_roi[index_roi])
 
     return output_roi
 

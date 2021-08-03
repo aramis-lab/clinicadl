@@ -1,4 +1,5 @@
 def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_json):
+    import os
     from os import path
     from torch import save as save_tensor
     from clinica.utils.inputs import check_caps_folder
@@ -22,14 +23,14 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
         extract_patches,
         extract_roi,
         extract_slices,
-        save_as_pt,
+        extract_images,
     )
 
     # Get subject and session list
     check_caps_folder(caps_directory)
     input_dir = caps_directory
     is_bids_dir = False
-    subjects, sessions = get_subject_session_list(
+    sessions, subjects = get_subject_session_list(
         input_dir, tsv_file, is_bids_dir, False, None
     )
 
@@ -62,14 +63,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
     parameters["file_type"] = FILE_TYPE
 
     # Input file:
-    try:
-        input_files = clinica_file_reader(subjects, sessions, caps_directory, FILE_TYPE)
-    except ClinicaException as e:
-        err = (
-            "Clinica faced error(s) while trying to read files in your CAPS directory.\n"
-            + str(e)
-        )
-        raise ClinicaBIDSError(err)
+    input_files = clinica_file_reader(subjects, sessions, caps_directory, FILE_TYPE)
 
     # Loop on the images
     for file in input_files:
@@ -77,7 +71,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
         # Extract the wanted tensor
         if parameters["extract_method"] == "image":
             subfolder = "image_based"
-            output_mode = save_as_pt(file)
+            output_mode = extract_images(file)
         elif parameters["extract_method"] == "slice":
             subfolder = "slice_based"
             output_file_rgb, output_file_original = extract_slices(
@@ -130,15 +124,16 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
             )
         # Write the extracted tensor on a .pt file
         for tensor in output_mode:
-            output_file_path = path.join(
+            output_file_dir = path.join(
                 caps_directory,
                 container,
-                "deep_learning_prepare_data",
+                "deeplearning_prepare_data",
                 subfolder,
                 mod_subfolder,
-                tensor[0],
             )
-            save_tensor(tensor[1], output_file_path)
+            if not path.exists(output_file_dir):
+                os.makedirs(output_file_dir)
+            save_tensor(tensor[1], path.join(output_file_dir, tensor[0]))
 
     # Save parameters dictionnary
     write_preprocessing(parameters, preprocessing_json)
