@@ -1442,7 +1442,7 @@ class MapsManager:
                 network=network,
                 map_location=model.device,
             )
-            transfer_class = getattr(network_package, transfer_maps.model)
+            transfer_class = getattr(network_package, transfer_maps.architecture)
             self.logger.debug(f"Transfer from {transfer_class}")
             model.transfer_weights(transfer_state["model"], transfer_class)
 
