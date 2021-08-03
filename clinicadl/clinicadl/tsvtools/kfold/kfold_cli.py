@@ -29,11 +29,11 @@ def cli(
     subset_name,
     stratification,
 ):
-    """ """
-    # import function to execute
+    """
+    Performs a k-fold split at FORMATTED_DATA_DIRECTORY in N_SPLITS subsets.
+    """
     from .kfold import split_diagnoses
 
-    # run function
     split_diagnoses(
         formatted_data_directory,
         n_splits=n_splits,

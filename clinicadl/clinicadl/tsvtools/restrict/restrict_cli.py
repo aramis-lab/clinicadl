@@ -8,17 +8,22 @@ cmd_name = "restrict"
 @click.command(name=cmd_name)
 @cli_param.argument.dataset
 @cli_param.argument.merged_tsv
-@cli_param.argument.results_directory
-def cli(dataset, merged_tsv, results_directory):
-    """ """
-    # import function to execute
+@click.argument(
+    "results_tsv",
+    type=str,
+)
+def cli(dataset, merged_tsv, results_tsv):
+    """
+    Reproduce restrictions applied to AIBL and OASIS datasets. 
+    MERGED_TSV is the path to the file obtained by the command `clinica iotools merge-tsv`.
+    Outputs are stored in RESULTS_TSV.
+    """
     from .restrict import aibl_restriction, oasis_restriction
 
-    # run function
     if dataset == "AIBL":
-        aibl_restriction(merged_tsv, results_directory)
+        aibl_restriction(merged_tsv, results_tsv)
     elif dataset == "OASIS":
-        oasis_restriction(merged_tsv, results_directory)
+        oasis_restriction(merged_tsv, results_tsv)
 
 
 if __name__ == "__main__":

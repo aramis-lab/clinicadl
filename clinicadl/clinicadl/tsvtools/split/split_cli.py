@@ -56,13 +56,11 @@ def cli(
     categorical_split_variable,
 ):
     """
-    Split each label tsv files at FORMATTED_DATA_DIRECTORY in twi subset (train and validation
+    Split each label tsv files at FORMATTED_DATA_DIRECTORY (output of tsvtool getlabel) in two subsets (train and validation
     for instance), with respect to sex and age distributions in both sets produced.
     """
-    # import function to execute
     from .split import split_diagnoses
 
-    # run function
     split_diagnoses(
         formatted_data_directory,
         n_test=n_test,
