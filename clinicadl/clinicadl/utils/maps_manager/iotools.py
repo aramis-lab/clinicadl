@@ -110,7 +110,7 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
     This is a function to write the python argparse object into a json file.
     This helps for DL when searching for hyperparameters
     Args:
-        commandline: (Namespace or dict) the output of `parser.parse_known_args()`
+        commandline: (dict) the output of `parser.parse_known_args()`
         logger: (logging object) writer to stdout and stderr
         filename: (str) name of the JSON file.
 
@@ -146,19 +146,18 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
 
 def read_json(options=None, json_path=None, test=False, read_computational=False):
     """
-    Read a json file to update python argparse Namespace.
+    Read a json file to update options dictionnary.
     Ensures retro-compatibility with previous namings in clinicadl.
 
     Args:
-        options: (argparse.Namespace) options of the model.
+        options: (dict) options of the model.
         json_path: (str) If given path to the json file, else found with options.model_path.
         test: (bool) If given the reader will ignore some options specific to data.
         read_computational: (bool) if set to True, the computational arguments are also read.
     Returns:
-        options (args.Namespace) options of the model updated
+        options (dict) options of the model updated
     """
     import json
-    from argparse import Namespace
     from os import path
 
     if options is None:
