@@ -17,12 +17,6 @@ from clinica.utils.pet import LIST_SUVR_REFERENCE_REGIONS
     type=click.Choice(["image", "slice", "patch", "roi"]),
 )
 @click.option(
-    "--preprocessing_json",
-    type=str,
-    default=os.path.join(os.getcwd(), "preprocessing.json"),
-    help="json file where preprocessing information is stored in order to be reused to load tensor in train function",
-)
-@click.option(
     "-uui",
     "--use_uncropped_image",
     is_flag=True, default=False,
@@ -146,7 +140,6 @@ def cli(
     input_caps_directory: str,
     modality: str,
     extract_method: str,
-    preprocessing_json: str,
     use_uncropped_image: bool = False,
     patch_size: int = 50,
     stride_size: int = 50,
@@ -171,8 +164,8 @@ def cli(
     from .extract import DeepLearningPrepareData
 
     parameters = {
-        "modality": modality,
-        "extract_method": extract_method,
+        "preprocessing": modality,
+        "mode": extract_method,
         "use_uncropped_image": use_uncropped_image,
     }
     if extract_method == "slice":
@@ -184,7 +177,7 @@ def cli(
         parameters["stride_size"] = stride_size
     elif extract_method == "roi":
         parameters["roi_list"] = roi_list
-        parameters["roi_uncrop_output"] = roi_uncrop_output
+        parameters["uncropped_roi"] = roi_uncrop_output
         parameters["roi_custom_suffix"] = roi_custom_suffix
         parameters["roi_custom_template"] = roi_custom_template
         parameters["roi_custom_mask_pattern"] = roi_custom_mask_pattern
@@ -200,7 +193,6 @@ def cli(
         caps_directory=input_caps_directory,
         tsv_file=subjects_sessions_tsv,
         parameters=parameters,
-        preprocessing_json=preprocessing_json,
     )
 
 

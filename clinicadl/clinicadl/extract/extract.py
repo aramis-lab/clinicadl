@@ -1,4 +1,4 @@
-def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_json):
+def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
     import os
     from os import path
     from torch import save as save_tensor
@@ -36,24 +36,24 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
 
     # Select the correct filetype corresponding to modality
     # and select the right folder output name corresponding to modality
-    if parameters["modality"] == "t1-linear":
+    if parameters["preprocessing"] == "t1-linear":
         mod_subfolder = "t1_linear"
         if parameters["use_uncropped_image"]:
             FILE_TYPE = T1W_LINEAR
         else:
             FILE_TYPE = T1W_LINEAR_CROPPED
-    if parameters["modality"] == "t1-extensive":
+    if parameters["preprocessing"] == "t1-extensive":
         mod_subfolder = "t1_extensive"
         FILE_TYPE = T1W_EXTENSIVE
         parameters["uncropped_image"] = None
-    if parameters["modality"] == "pet-linear":
+    if parameters["preprocessing"] == "pet-linear":
         mod_subfolder = "pet_linear"
         FILE_TYPE = pet_linear_nii(
             parameters["acq_label"],
             parameters["suvr_reference_region"],
             parameters["use_uncropped_image"],
         )
-    if parameters["modality"] == "custom":
+    if parameters["preprocessing"] == "custom":
         mod_subfolder = "custom"
         FILE_TYPE = {
             "pattern": f"*{parameters['custom_suffix']}",
@@ -69,26 +69,26 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
     for file in input_files:
         container = container_from_filename(file)
         # Extract the wanted tensor
-        if parameters["extract_method"] == "image":
+        if parameters["mode"] == "image":
             subfolder = "image_based"
             output_mode = extract_images(file)
-        elif parameters["extract_method"] == "slice":
+        elif parameters["mode"] == "slice":
             subfolder = "slice_based"
             output_mode = extract_slices(
                 file,
                 slice_direction=parameters["slice_direction"],
                 slice_mode=parameters["slice_mode"],
             )
-        elif parameters["extract_method"] == "patch":
+        elif parameters["mode"] == "patch":
             subfolder = "patch_based"
             output_mode = extract_patches(
                 file,
                 patch_size=parameters["patch_size"],
                 stride_size=parameters["stride_size"],
             )
-        elif parameters["extract_method"] == "roi":
+        elif parameters["mode"] == "roi":
             subfolder = "roi_based"
-            if parameters["modality"] == "custom":
+            if parameters["preprocessing"] == "custom":
                 parameters["roi_template"] = parameters["roi_custom_template"]
                 if parameters["roi_custom_template"] is None:
                     raise ValueError(
@@ -97,7 +97,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
             else:
                 from .extract_utils import TEMPLATE_DICT
 
-                parameters["roi_template"] = TEMPLATE_DICT[parameters["modality"]]
+                parameters["roi_template"] = TEMPLATE_DICT[parameters["preprocessing"]]
             parameters["masks_location"] = path.join(
                 caps_directory, "masks", f"tpl-{parameters['roi_template']}"
             )
@@ -120,7 +120,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
                 if parameters["use_uncropped_image"] is None
                 else not parameters["use_uncropped_image"],
                 roi_list=parameters["roi_list"],
-                uncrop_output=parameters["roi_uncrop_output"],
+                uncrop_output=parameters["uncropped_roi"],
             )
         # Write the extracted tensor on a .pt file
         for tensor in output_mode:
@@ -136,4 +136,4 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters, preprocessing_
             save_tensor(tensor[1], path.join(output_file_dir, tensor[0]))
 
     # Save parameters dictionnary
-    write_preprocessing(parameters, preprocessing_json)
+    write_preprocessing(parameters, caps_directory)

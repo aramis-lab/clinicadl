@@ -253,7 +253,7 @@ def cli(
     """
     Train a deep learning model for NETWORK_TASK on INPUT_CAPS_DIRECTORY data.
     The list of data in loaded from TSV_DIRECTORY.
-    Data will be selected with respect to PREPROCESSING_JSON parameters.
+    Data will be selected with respect to PREPROCESSING_JSON file stored in INPUT_CAPS_DIRECTORY.
     Results will be saved in OUTPUT_MAPS_DIRECTORY.
     """
     from .launch import train
@@ -395,30 +395,8 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
 
     # Mode and preprocessing
     from clinicadl.utils.preprocessing import read_preprocessing
-
     preprocessing_dict = read_preprocessing(preprocessing_json.name)
-
-    train_dict["preprocessing"] = preprocessing_dict["modality"]
-    train_dict["mode"] = preprocessing_dict["extract_method"]
-    if train_dict["mode"] == "slice":
-        train_dict["slice_direction"] = preprocessing_dict["slice_direction"]
-        train_dict["slice_mode"] = preprocessing_dict["slice_mode"]
-        train_dict["discarded_slices"] = preprocessing_dict["discarded_slices"]
-    elif train_dict["mode"] == "patch":
-        train_dict["patch_size"] = preprocessing_dict["patch_size"]
-        train_dict["stride_size"] = preprocessing_dict["stride_size"]
-    elif train_dict["mode"] == "roi":
-        train_dict["roi_list"] = preprocessing_dict["roi_list"]
-        train_dict["uncropped_roi"] = preprocessing_dict["roi_uncrop_output"]
-
-    if train_dict["preprocessing"] == "custom":
-        train_dict["custom_suffix"] = preprocessing_dict["custom_suffix"]
-        train_dict["use_uncropped_image"] = preprocessing_dict["use_uncropped_image"]
-    elif train_dict["preprocessing"] == "pet":
-        train_dict["acq_label"] = preprocessing_dict["acq_label"]
-        train_dict["suvr_reference_region"] = preprocessing_dict[
-            "suvr_reference_region"
-        ]
+    train_dict.update(preprocessing_dict)
 
     # optimizer
     train_dict["optimizer"] = "Adam"

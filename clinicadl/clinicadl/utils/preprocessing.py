@@ -2,10 +2,27 @@ import json
 import errno
 import os
 
+import logging
+logger = logging.getLogger("clinicadl")
 
-def write_preprocessing(preprocessing_dict, json_path):
+
+def write_preprocessing(preprocessing_dict, caps_directory):
+    import time
+
+    extract_dir = os.path.join(
+        caps_directory,
+        "tensor_extraction",
+    )
+    if not os.path.exists(extract_dir):
+        os.mkdir(extract_dir)
+    json_path = os.path.join(
+        extract_dir,
+        "extract_" + str(int(time.time())) + ".json"
+    )
     with open(json_path, "w") as json_file:
         json.dump(preprocessing_dict, json_file)
+
+    logger.info(f"Preprocessing JSON file saved at {json_file.name}.")
 
 
 def read_preprocessing(json_path):
