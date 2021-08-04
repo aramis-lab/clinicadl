@@ -21,29 +21,29 @@ CONTEXT_SETTINGS = dict(
 
 def setup_logging(verbosity: int = 0) -> None:
     """
-    Setup Clinica's logging facilities.
+    Setup Clinicadl's logging facilities.
     Args:
         verbosity (int): The desired level of verbosity for logging.
             (0 (default): WARNING, 1: INFO, 2: DEBUG)
     """
-    from logging import DEBUG, INFO, WARNING, getLogger
+    from logging import DEBUG, INFO, WARNING, getLogger, StreamHandler, Formatter
     from sys import stdout
 
-    # from colorlog import ColoredFormatter, StreamHandler
 
     # Cap max verbosity level to 2.
     verbosity = min(verbosity, 2)
 
-    # # Define the module level logger.
-    # logger = getLogger("clinica")
-    # logger.setLevel([WARNING, INFO, DEBUG][verbosity])
+    # Define the module level logger.
+    logger = getLogger("clinicadl")
+    logger.setLevel([WARNING, INFO, DEBUG][verbosity])
 
-    # # Add console handler with custom formatting.
-    # console_handler = StreamHandler(stdout)
-    # console_handler.setFormatter(
-    #     ColoredFormatter("%(log_color)s%(asctime)s:%(levelname)s:%(message)s")
-    # )
-    # logger.addHandler(console_handler)
+    # Add console handler
+    console_handler = StreamHandler(stdout)
+    # create formatter
+    formatter = Formatter("%(asctime)s - %(levelname)s: %(message)s", "%H:%M:%S")
+    console_handler.setFormatter(formatter)
+    
+    logger.addHandler(console_handler)
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
