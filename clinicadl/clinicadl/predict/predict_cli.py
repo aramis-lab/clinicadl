@@ -74,10 +74,10 @@ def cli(
     Compute prediction of INPUT_CAPS_DIRECTORY data with INPUT_MAPS_DIRECTORY models
     on OUTPUT_PREFIX images subset.
     """
-    from .infer import classify
+    from .predict import predict
 
-    classify(
-        caps_dir=input_caps_directory,
+    predict(
+        caps_directory=input_caps_directory,
         tsv_path=participants_tsv,
         model_path=input_maps,
         prefix_output=inference_prefix,

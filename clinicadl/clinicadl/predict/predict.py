@@ -2,7 +2,7 @@
 from clinicadl import MapsManager
 
 
-def predict_cli(
+def predict(
     caps_directory,
     tsv_path,
     model_path,
