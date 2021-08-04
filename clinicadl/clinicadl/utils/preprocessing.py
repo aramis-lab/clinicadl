@@ -2,9 +2,6 @@ import json
 import errno
 import os
 
-import logging
-logger = logging.getLogger("clinicadl")
-
 
 def write_preprocessing(preprocessing_dict, caps_directory):
     import time
@@ -21,8 +18,7 @@ def write_preprocessing(preprocessing_dict, caps_directory):
     )
     with open(json_path, "w") as json_file:
         json.dump(preprocessing_dict, json_file)
-
-    logger.info(f"Preprocessing JSON file saved at {json_file.name}.")
+    return json_path
 
 
 def read_preprocessing(json_path):

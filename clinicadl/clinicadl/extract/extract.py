@@ -1,3 +1,5 @@
+from logging import getLogger
+
 def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
     import os
     from os import path
@@ -26,16 +28,23 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
         extract_images,
     )
 
+    logger = getLogger("clinicadl")
+
     # Get subject and session list
     check_caps_folder(caps_directory)
     input_dir = caps_directory
+    logger.debug(f"CAPS directory : {input_dir}.")
     is_bids_dir = False
     sessions, subjects = get_subject_session_list(
         input_dir, tsv_file, is_bids_dir, False, None
     )
+    logger.info(f"{parameters['mode']}s will be extracted in Pytorch tensor from {len(sessions)} images.")
+    logger.debug(f"List of subjects: \n{subjects}.")
+    logger.debug(f"List of sessions: \n{sessions}.")
 
     # Select the correct filetype corresponding to modality
     # and select the right folder output name corresponding to modality
+    logger.debug(f"Selected images are preprocessed with {parameters['preprocessing']} pipeline`.")
     if parameters["preprocessing"] == "t1-linear":
         mod_subfolder = "t1_linear"
         if parameters["use_uncropped_image"]:
@@ -67,11 +76,13 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
 
     # Loop on the images
     for file in input_files:
+        logger.debug(f"  Processing of {file}.")
         container = container_from_filename(file)
         # Extract the wanted tensor
         if parameters["mode"] == "image":
             subfolder = "image_based"
             output_mode = extract_images(file)
+            logger.debug(f"    Image extracted.")
         elif parameters["mode"] == "slice":
             subfolder = "slice_based"
             output_mode = extract_slices(
@@ -79,6 +90,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
                 slice_direction=parameters["slice_direction"],
                 slice_mode=parameters["slice_mode"],
             )
+            logger.debug(f"    {len(output_mode)} slices extracted.")
         elif parameters["mode"] == "patch":
             subfolder = "patch_based"
             output_mode = extract_patches(
@@ -86,6 +98,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
                 patch_size=parameters["patch_size"],
                 stride_size=parameters["stride_size"],
             )
+            logger.debug(f"    {len(output_mode)} patches extracted.")
         elif parameters["mode"] == "roi":
             subfolder = "roi_based"
             if parameters["preprocessing"] == "custom":
@@ -96,7 +109,6 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
                     )
             else:
                 from .extract_utils import TEMPLATE_DICT
-
                 parameters["roi_template"] = TEMPLATE_DICT[parameters["preprocessing"]]
             parameters["masks_location"] = path.join(
                 caps_directory, "masks", f"tpl-{parameters['roi_template']}"
@@ -122,6 +134,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
                 roi_list=parameters["roi_list"],
                 uncrop_output=parameters["uncropped_roi"],
             )
+            logger.debug(f"    ROI extracted.")
         # Write the extracted tensor on a .pt file
         for tensor in output_mode:
             output_file_dir = path.join(
@@ -133,7 +146,10 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
             )
             if not path.exists(output_file_dir):
                 os.makedirs(output_file_dir)
-            save_tensor(tensor[1], path.join(output_file_dir, tensor[0]))
+            output_file = path.join(output_file_dir, tensor[0])
+            save_tensor(tensor[1], output_file)
+            logger.debug(f"    Output tensor saved at {output_file}")
 
     # Save parameters dictionnary
-    write_preprocessing(parameters, caps_directory)
+    preprocessing_json_path = write_preprocessing(parameters, caps_directory)
+    logger.info(f"Preprocessing JSON saved at {preprocessing_json_path}.")
