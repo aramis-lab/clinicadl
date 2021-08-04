@@ -20,10 +20,12 @@ latent_space_size = 2
 [Classification]
 selection_metrics = ["loss"]
 optimization_metric = "default"
+label = "diagnosis"
 
 [Regression]
 selection_metrics = ["loss"]
 optimization_metric = "default"
+label = "age"
 
 [Reconstruction]
 selection_metrics = ["loss"]

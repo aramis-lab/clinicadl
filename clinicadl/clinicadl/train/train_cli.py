@@ -32,6 +32,11 @@ cmd_name = "train"
     help="Path to the toml file containing all training configuration",
 )
 @click.option(
+    "--label",
+    type=str,
+    help="Target label to use for training.",
+)
+@click.option(
     "--gpu/--no-gpu",
     # default=True,
     help="Use GPU by default. Please specify  --no-gpu  to use CPU instead.",
@@ -123,7 +128,7 @@ cmd_name = "train"
     "-s",
     type=click.Choice(["random", "weighted"]),
     # default="random",
-    help="Sampler choice (random, or weighted for imbalanced datasets)",
+    help="Sampler choice (random, or weighted for imbalanced datasets).",
 )
 @click.option(
     "--atlas_weight",
@@ -223,6 +228,7 @@ def cli(
     tsv_directory,
     output_maps_directory,
     configuration_toml,
+    label,
     use_extracted_features,
     gpu,
     nproc,
@@ -265,10 +271,9 @@ def cli(
     train_dict["caps_directory"] = input_caps_directory
     train_dict["tsv_path"] = tsv_directory
 
-    # Delete useless key-value
-    if "func" in train_dict:
-        del train_dict["func"]
-
+    # Change value in train dict depending on user provided options
+    if label is not None:
+        train_dict["label"] = label
     if accumulation_steps is not None:
         train_dict["accumulation_steps"] = accumulation_steps
     if baseline is not None:
@@ -376,15 +381,17 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
         "sampler": config_dict["Data"]["sampler"],
     }
 
-    # task
+    # task dependent
     if task == "classification":
         train_dict["loss"] = config_dict["Classification"]["optimization_metric"]
         train_dict["selection_metrics"] = config_dict["Classification"][
             "selection_metrics"
         ]
+        train_dict["label"] = config_dict["Classification"]["label"]
     elif task == "regression":
         train_dict["loss"] = config_dict["Regression"]["optimization_metric"]
         train_dict["selection_metrics"] = config_dict["Regression"]["selection_metrics"]
+        train_dict["label"] = config_dict["Regression"]["label"]
     elif task == "reconstruction":
         train_dict["loss"] = config_dict["Reconstruction"]["optimization_metric"]
         train_dict["selection_metrics"] = config_dict["Reconstruction"][
@@ -393,22 +400,16 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
     else:
         raise ValueError("Invalid network_task")
 
-    # Mode and preprocessing
-    from clinicadl.utils.preprocessing import read_preprocessing
-    preprocessing_dict = read_preprocessing(preprocessing_json.name)
-    train_dict.update(preprocessing_dict)
-
     # optimizer
     train_dict["optimizer"] = "Adam"
 
     # use extracted features
     train_dict["use_extracted_features"] = config_dict["Mode"]["use_extracted_features"]
 
-    # label (default values, TODO: add option and toml value)
-    if task == "classification":
-        train_dict["label"] = "diagnosis"
-    elif task == "regression":
-        train_dict["label"] = "age"
+    # Mode and preprocessing
+    from clinicadl.utils.preprocessing import read_preprocessing
+    preprocessing_dict = read_preprocessing(preprocessing_json.name)
+    train_dict.update(preprocessing_dict)
 
     return train_dict
 
