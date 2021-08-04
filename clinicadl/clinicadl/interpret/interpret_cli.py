@@ -4,10 +4,7 @@ from clinicadl.utils import cli_param
 
 
 @click.command("interpret")
-@click.argument(
-    "model_directory",
-    type=click.Path(),
-)
+@cli_param.argument.input_maps
 @click.argument(
     "interpretation_method",
     type=str,
@@ -70,7 +67,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.use_gpu
 @cli_param.option.batch_size
 def cli(
-    model_directory,
+    input_maps_directory,
     interpretation_method,
     caps_directory,
     participants_tsv,
@@ -86,12 +83,12 @@ def cli(
     # verbose,
 ):
     """
-    Interpret the prediction of MODEL_DIRECTORY with the chosen INTERPRETATION_METHOD.
+    Interpret the prediction of INPUT_MAPS_DIRECTORY with the chosen INTERPRETATION_METHOD.
     """
     from .interpret import interpret
 
     interpret(
-        model_path=model_directory,
+        model_path=input_maps_directory,
         caps_directory=caps_directory,
         tsv_path=participants_tsv,
         name=interpretation_method,
