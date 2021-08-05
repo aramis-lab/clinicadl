@@ -1,9 +1,9 @@
 # `train` - Custom experiments
 
-The aim of `clinicadl` is not only to provide a collection of tools, 
+The aim of ClinicaDL is not only to provide a collection of tools, 
 but also to allow users to add their own in the framework.
 Before starting, please fork and clone the [github repo](https://github.com/aramis-lab/clinicadl]) or
-read the [newcomers section](./Newcomers.md) if you are not familiar with GitHub.
+read the ["Contribute to the project section"](./Newcomers.md) if you are not familiar with GitHub.
 
 !!! tip
     Do not hesitate to ask for help on [GitHub](https://github.com/aramis-lab/clinicadl/issues/new), 
@@ -15,7 +15,7 @@ read the [newcomers section](./Newcomers.md) if you are not familiar with GitHub
 Custom architectures can be added to ClinicaDL by adding a model class in `clinicadl/utils/network` 
 and importing it in `clinicadl/utils/network/__init__.py`.
 
-This model class must be a child of the abstract `Network` class in `clinicadl/utils/network/network.py`.
+This model class inherits from  the abstract `Network` class in `clinicadl/utils/network/network.py`.
 
 Three abstract methods must be implemented to make it work
 1. `forward`: computes the forward pass of the network, it may return several outputs
@@ -60,7 +60,7 @@ elif mode==<mode_name>:
 
 Available tasks in ClinicaDL are `classification`, `regression` and `reconstruction`.
 You can implement a new task `task` by adding its corresponding TaskManager in 
-`clinicadl/utils/task_manager/<task>.py`. This new class must be a child from the abstract class
+`clinicadl/utils/task_manager/<task>.py`. This new class must inherits from the abstract class
 `TaskManager` in `clinicadl/utils/task_manager/task_manager.py`.
 
 Then modify the `_init_task_manager` function in the class `MapsManager` at 
