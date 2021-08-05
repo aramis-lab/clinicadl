@@ -7,8 +7,8 @@ cmd_name = "trivial"
 
 @click.command(name=cmd_name)
 @cli_param.argument.caps_directory
-@cli_param.argument.participant_list
 @cli_param.argument.generated_caps
+@cli_param.option.participant_list
 @cli_param.option.n_subjects
 @cli_param.option.preprocessing
 @click.option(
@@ -25,8 +25,8 @@ cmd_name = "trivial"
 )
 def cli(
     caps_directory,
-    participant_list,
     generated_caps,
+    participants_tsv,
     n_subjects,
     preprocessing,
     mask_path,
@@ -39,7 +39,7 @@ def cli(
 
     generate_trivial_dataset(
         caps_dir=caps_directory,
-        tsv_path=participant_list,
+        tsv_path=participants_tsv,
         output_dir=generated_caps,
         n_subjects=n_subjects,
         preprocessing=preprocessing,
