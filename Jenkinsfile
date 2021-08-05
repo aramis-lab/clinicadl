@@ -187,7 +187,7 @@ pipeline {
 //                     sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
 //                   }
 //                 }
-              }
+//              }
             }
           }
           stage('Train / transfer learning / interpretation / random search') {
