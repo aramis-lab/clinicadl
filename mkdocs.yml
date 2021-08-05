@@ -63,24 +63,25 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Installation: Installation.md
+  - First steps: Introduction.md
+  - Prepare your metadata: TSVTools.md
   - Prepare your imaging data:
     - Introduction: Preprocessing/Introduction.md
     - t1-linear pipeline: Preprocessing/T1_Linear.md
     - t1-extensive pipeline: Preprocessing/T1_Extensive.md
     - extract tensors: Preprocessing/Extract.md
     - quality check: Preprocessing/QualityCheck.md
-  - Random Search: RandomSearch.md
-  - Train:
+    - generate synthetic data sets: Generate.md
+  - Hyperparameters exploration: RandomSearch.md
+  - Train deep learning networks:
     - Introduction: Train/Introduction.md
-    - Image-based: Train/Image.md
-    - Patch-based: Train/Patch.md
-    - Slice-based: Train/Slice.md
-    - ROI-based: Train/ROI.md
     - JSON defined: Train/Retrain.md
     - Resume: Train/Resume.md
-    - Custom experiment: Train/Custom.md
     - Implementation details: Train/Details.md
-  - Classify: Classify.md
-  - Interpret: Interpret.md
-  - Generate: Generate.md
-  - TSV Tools: TSVTools.md
+  - Inference using pretrained models: Predict.md
+  - Network output serialization: Tensors.md
+  - Interpretation with gradient maps: Interpret.md
+  - Advanced user guide:
+      - Customize your training: Contribute/Custom.md
+      - Test your modifications: Contribute/Test.md
+      - Contribute to the project: Contribute/Newcomers.md

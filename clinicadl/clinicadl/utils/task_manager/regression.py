@@ -27,6 +27,10 @@ class RegressionManager(TaskManager):
     def evaluation_metrics(self):
         return ["MSE", "MAE"]
 
+    @property
+    def save_outputs(self):
+        return False
+
     def generate_test_row(self, idx, data, outputs):
         return [
             [
@@ -147,3 +151,7 @@ class RegressionManager(TaskManager):
     @staticmethod
     def get_criterion():
         return nn.MSELoss()
+
+    @staticmethod
+    def get_default_network():
+        return "Conv5_FC3"

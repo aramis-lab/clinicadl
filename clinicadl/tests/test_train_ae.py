@@ -11,6 +11,7 @@ import pytest
         "train_image_ae",
         "train_patch_ae",
         "train_roi_ae",
+        "train_slice_ae",
     ]
 )
 def cli_commands(request):
@@ -23,7 +24,6 @@ def cli_commands(request):
             "t1-linear",
             "data/labels_list",
             "results",
-            "AE_Conv5_FC3",
             "--epochs",
             "1",
             "--n_splits",
@@ -40,7 +40,7 @@ def cli_commands(request):
             "t1-linear",
             "data/labels_list",
             "results",
-            "AE_Conv4_FC3",
+            "--model AE_Conv4_FC3",
             "--epochs",
             "1",
             "--n_splits",
@@ -57,7 +57,22 @@ def cli_commands(request):
             "t1-linear",
             "data/labels_list",
             "results",
-            "AE_Conv4_FC3",
+            "--epochs",
+            "1",
+            "--n_splits",
+            "2",
+            "--folds",
+            "0",
+        ]
+    elif request.param == "train_slice_ae":
+        test_input = [
+            "train",
+            "slice",
+            "reconstruction",
+            "data/dataset/random_example",
+            "t1-linear",
+            "data/labels_list",
+            "results",
             "--epochs",
             "1",
             "--n_splits",

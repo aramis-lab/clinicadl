@@ -16,6 +16,7 @@ def predict_cli(
     diagnoses=None,
     verbose=0,
     multi_cohort=False,
+    overwrite=False,
 ):
     """
     This function loads a MAPS and predicts the global metrics and individual values
@@ -37,7 +38,7 @@ def predict_cli(
         diagnoses: list of diagnoses to be tested if tsv_path is a folder.
         verbose: level of verbosity.
         multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
-
+        overwrite (bool): If True former definition of data group is erased
     """
     verbose_list = ["warning", "info", "debug"]
 
@@ -54,4 +55,5 @@ def predict_cli(
         batch_size=batch_size,
         num_workers=num_workers,
         use_cpu=not gpu,
+        overwrite=overwrite,
     )

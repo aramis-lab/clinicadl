@@ -157,6 +157,37 @@ pipeline {
                   }
                 } 
               }
+//               stage('Meta-maps analysis') {
+//                 environment {
+//                   PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
+//                 }
+//                 steps {
+//                   echo 'Testing maps-analysis task...'
+//                     sh 'echo "Agent name: ${NODE_NAME}"'
+//                     //sh 'conda env remove --name "clinicadl_test"'
+//                     sh '''#!/usr/bin/env bash
+//                       set +x
+//                       eval "$(conda shell.bash hook)"
+//                       source ./.jenkins/scripts/find_env.sh
+//                       conda activate clinicadl_test
+//                       cd $WORKSPACE/clinicadl/tests
+//                       mkdir -p ./data/dataset
+//                       tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
+//                       pytest \
+//                         --junitxml=../../test-reports/test_meta-analysis_report.xml \
+//                         --verbose \
+//                         --disable-warnings \
+//                         test_meta_maps.py
+//                       conda deactivate
+//                       '''
+//                 }
+//                 post {
+//                   always {
+//                     junit 'test-reports/test_meta-analysis_report.xml'
+//                     sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
+//                   }
+//                 }
+//              }
             }
           }
           stage('Train / transfer learning / interpretation / random search') {

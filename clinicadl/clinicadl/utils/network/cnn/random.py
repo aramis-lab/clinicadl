@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 import numpy as np
 
 from clinicadl.utils.network.network_utils import *
@@ -23,10 +21,10 @@ class RandomArchitecture(CNN):
         Args:
             convolutions_dict: (dict) description of the convolutional blocks.
             n_fcblocks: (int) number of FC blocks in the network.
-            input_shape: (list) gives the structure of the input of the network.
+            input_size: (list) gives the structure of the input of the network.
             dropout: (float) rate of the dropout.
             network_normalization: (str) type of normalization layer in the network.
-            n_classes: (int) Number of output neurones of the network.
+            output_size: (int) Number of output neurones of the network.
             use_cpu: (bool) If True the network weights are stored on a CPU, else GPU.
         """
         self.dimension = len(input_size) - 1
@@ -54,17 +52,17 @@ class RandomArchitecture(CNN):
 
         super().__init__(
             convolutions=convolutions,
-            classifier=classifier,
+            fc=classifier,
             n_classes=output_size,
             use_cpu=use_cpu,
         )
 
     def define_convolutional_block(self, conv_dict):
         """
-        Design a convolutional block from the dictionnary conv_dict.
+        Design a convolutional block from the dictionary conv_dict.
 
         Args:
-            conv_dict: (dict) A dictionnary with the specifications to build a convolutional block
+            conv_dict: (dict) A dictionary with the specifications to build a convolutional block
             - n_conv (int) number of convolutional layers in the block
             - in_channels (int) number of input channels
             - out_channels (int) number of output channels (2 * in_channels or threshold = 512)
@@ -160,10 +158,10 @@ class RandomArchitecture(CNN):
     @staticmethod
     def define_fc_layer(fc_dict, last_block=False):
         """
-        Implement the FC block from the dictionnary fc_dict.
+        Implement the FC block from the dictionary fc_dict.
 
         Args:
-            fc_dict: (dict) A dictionnary with the specifications to build a FC block
+            fc_dict: (dict) A dictionary with the specifications to build a FC block
             - in_features (int) number of input neurones
             - out_features (int) number of output neurones
             last_block: (bool) indicates if the current FC layer is the last one of the network.

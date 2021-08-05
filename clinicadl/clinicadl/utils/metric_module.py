@@ -222,7 +222,7 @@ class RetainBest:
                 self.best_metrics[selection] = -np.inf
             else:
                 raise ValueError(
-                    f"Objective {objective} unknown for metric {name}."
+                    f"Objective {metric_optimum[selection]} unknown for metric {selection}."
                     f"Please choose between 'min' and 'max'."
                 )
 

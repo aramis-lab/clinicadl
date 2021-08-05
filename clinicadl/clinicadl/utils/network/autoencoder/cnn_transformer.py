@@ -29,9 +29,9 @@ class CNN_Transformer(nn.Module):
             self.decoder = self.construct_inv_layers(model)
 
             for i, layer in enumerate(self.encoder):
-                if isinstance(layer, PadMaxPool3d):
+                if isinstance(layer, PadMaxPool3d) or isinstance(layer, PadMaxPool2d):
                     self.encoder[i].set_new_return()
-                elif isinstance(layer, nn.MaxPool3d):
+                elif isinstance(layer, nn.MaxPool3d) or isinstance(layer, nn.MaxPool2d):
                     self.encoder[i].return_indices = True
         else:
             self.encoder = nn.Sequential()
@@ -39,31 +39,6 @@ class CNN_Transformer(nn.Module):
 
     def __len__(self):
         return len(self.encoder)
-
-    def forward(self, x):
-
-        indices_list = []
-        pad_list = []
-        for layer in self.encoder:
-            if isinstance(layer, PadMaxPool3d):
-                x, indices, pad = layer(x)
-                indices_list.append(indices)
-                pad_list.append(pad)
-            elif isinstance(layer, nn.MaxPool3d):
-                x, indices = layer(x)
-                indices_list.append(indices)
-            else:
-                x = layer(x)
-
-        for layer in self.decoder:
-            if isinstance(layer, CropMaxUnpool3d):
-                x = layer(x, indices_list.pop(), pad_list.pop())
-            elif isinstance(layer, nn.MaxUnpool3d):
-                x = layer(x, indices_list.pop())
-            else:
-                x = layer(x)
-
-        return x
 
     def construct_inv_layers(self, model):
         """
@@ -79,6 +54,17 @@ class CNN_Transformer(nn.Module):
             if isinstance(layer, nn.Conv3d):
                 inv_layers.append(
                     nn.ConvTranspose3d(
+                        layer.out_channels,
+                        layer.in_channels,
+                        layer.kernel_size,
+                        stride=layer.stride,
+                        padding=layer.padding,
+                    )
+                )
+                self.level += 1
+            elif isinstance(layer, nn.Conv2d):
+                inv_layers.append(
+                    nn.ConvTranspose2d(
                         layer.out_channels,
                         layer.in_channels,
                         layer.kernel_size,

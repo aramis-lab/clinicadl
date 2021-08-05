@@ -13,6 +13,7 @@ import clinicadl.cli as cli
         "generate",
         "quality_check",
         "predict",
+        "interpret",
         "train_image",
         "train_slice",
         "train_patch",
@@ -106,17 +107,35 @@ def generate_cli_commands(request):
     if request.param == 'predict':
         test_input = [
             'predict',
-            '/dir/caps',
-            '/dir/tsv_file',
             '/dir/model_path/',
-            'DB_XXXXX'
+            'DB_XXXXX',
+            '--caps_directory', '/dir/caps',
+            '--tsv_path', '/dir/tsv_file',
         ]
         keys_output = [
             'task',
+            'model_path',
+            'data_group',
             'caps_directory',
             'tsv_path',
+        ]
+
+    if request.param == 'interpret':
+        test_input = [
+            'interpret',
+            '/dir/model_path/',
+            'DB_XXXXX',
+            'GradCAM',
+            '--caps_directory', '/dir/caps',
+            '--tsv_path', '/dir/tsv_file',
+        ]
+        keys_output = [
+            'task',
             'model_path',
-            'prefix_output'
+            'data_group',
+            'name',
+            'caps_directory',
+            'tsv_path',
         ]
 
     if request.param == 'train_slice':
@@ -128,7 +147,7 @@ def generate_cli_commands(request):
             't1-linear',
             '/dir/tsv_path/',
             '/dir/output/',
-            'Conv5_FC3']
+            '--model', 'resnet18']
         keys_output = [
             'task',
             'mode',
@@ -148,7 +167,7 @@ def generate_cli_commands(request):
             't1-linear',
             '/dir/tsv_path/',
             '/dir/output/',
-            'Conv5_FC3']
+            '--model', 'Conv5_FC3']
         keys_output = [
             'task',
             'mode',
@@ -167,7 +186,7 @@ def generate_cli_commands(request):
             't1-linear',
             '/dir/tsv_path/',
             '/dir/output/',
-            'Conv5_FC3']
+            '--model', 'Conv4_FC3']
         keys_output = [
             'task',
             'mode',

@@ -8,8 +8,13 @@ from os import listdir, makedirs, path
 
 import pandas as pd
 import torch
+from torch.utils.data import DataLoader
 
-from clinicadl.utils.caps_dataset.data import get_transforms, return_dataset
+from clinicadl.utils.caps_dataset.data import (
+    get_transforms,
+    load_data_test,
+    return_dataset,
+)
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.maps_manager.logwriter import LogWriter, StdLevelFilter
 from clinicadl.utils.metric_module import RetainBest
@@ -22,7 +27,6 @@ level_dict = {
     "critical": logging.CRITICAL,
 }
 
-# TODO: replace "fold" with "split"
 # TODO save weights on CPU for better compatibility
 
 
@@ -31,7 +35,7 @@ class MapsManager:
         """
         Args:
             maps_path (str): path of the MAPS
-            parameters (Dict[str:object]): parameters of the training step. If given a new MAPS is created.
+            parameters (dict[str:object]): parameters of the training step. If given a new MAPS is created.
             verbose (str): Logging level ("debug", "info", "warning", "error", "critical")
         """
         self.maps_path = maps_path
@@ -59,11 +63,13 @@ class MapsManager:
                     f"this already corresponds to a file or a non-empty folder. \n"
                     f"Please remove it or choose another location."
                 )
+            makedirs(path.join(self.maps_path, "groups"))
             self.logger.info(f"A new MAPS was created at {maps_path}")
             self._check_args(parameters)
-            self._write_parameters()
+            self.write_parameters(self.maps_path, self.parameters, self.logger)
             self._write_requirements_version()
             self._write_training_data()
+            self._write_train_val_groups()
 
     def __getattr__(self, name):
         """Allow to directly get the values in parameters attribute"""
@@ -109,7 +115,7 @@ class MapsManager:
         Performs the training task for a defined list of folds
 
         Args:
-            folds (List[int]): list of folds on which the training task is performed.
+            folds (list[int]): list of folds on which the training task is performed.
                 Default trains all folds.
             overwrite (bool): If True previously trained folds that are going to be trained
                 are erased.
@@ -144,7 +150,7 @@ class MapsManager:
         Resumes the training task for a defined list of folds
 
         Args:
-            folds (List[int]): list of folds on which the training task is performed.
+            folds (list[int]): list of folds on which the training task is performed.
                 Default trains all folds.
 
         Raises:
@@ -170,13 +176,12 @@ class MapsManager:
 
     def predict(
         self,
-        caps_directory,
-        tsv_path,
-        prefix,
+        data_group,
+        caps_directory=None,
+        tsv_path=None,
         folds=None,
         selection_metrics=None,
         multi_cohort=False,
-        preprocessing=None,
         diagnoses=None,
         use_labels=True,
         prepare_dl=None,
@@ -189,39 +194,33 @@ class MapsManager:
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
 
         Args:
+            data_group (str): name of the data group tested.
             caps_directory (str): path to the CAPS folder. For more information please refer to
                 [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
+                Default will load the value of an existing data group
             tsv_path (str): path to a TSV file containing the list of participants and sessions to test.
-            prefix (str): name of the data group tested.
-            folds (List[int]): list of folds to test. Default perform prediction on all folds available.
-            selection_metrics (List[str]): list of selection metrics to test.
+                Default will load the DataFrame of an existing data group
+            folds (list[int]): list of folds to test. Default perform prediction on all folds available.
+            selection_metrics (list[str]): list of selection metrics to test.
                 Default performs the prediction on all selection metrics available.
             multi_cohort (bool): If True considers that tsv_path is the path to a multi-cohort TSV.
-            preprocessing (str): Name of the preprocessing used. Default uses the same as in training step.
-            diagnoses (List[str]): List of diagnoses to load if tsv_path is a split_directory.
+            diagnoses (list[str]): List of diagnoses to load if tsv_path is a split_directory.
                 Default uses the same as in training step.
             use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
             prepare_dl (bool): If given, sets the value of prepare_dl, else use the same as in training step.
             batch_size (int): If given, sets the value of batch_size, else use the same as in training step.
             num_workers (int): If given, sets the value of num_workers, else use the same as in training step.
             use_cpu (bool): If given, a new value for the device of the model will be computed.
-            overwrite (bool): If True erase the occurrences of prefix.
+            overwrite (bool): If True erase the occurrences of data_group.
+
         Raises:
-            ValueError: If the predictions with prefix name already exist and overwrite is False.
+            ValueError:
+                when trying to overwrite train or validation data groups
+                when caps_directory or df are given but data group already exists
+                when caps_directory or df are not given and data group does not exist
         """
-        from torch.utils.data import DataLoader
-
-        from clinicadl.utils.caps_dataset.data import load_data_test
-
         if folds is None:
             folds = self._find_folds()
-
-        self._check_prefix(
-            prefix,
-            folds=folds,
-            selection_metrics=selection_metrics,
-            overwrite=overwrite,
-        )
 
         _, all_transforms = get_transforms(
             self.mode,
@@ -229,31 +228,33 @@ class MapsManager:
             data_augmentation=self.data_augmentation,
         )
 
-        test_df = load_data_test(
-            tsv_path,
-            diagnoses if diagnoses is not None else self.diagnoses,
-            multi_cohort=multi_cohort,
-        )
-
-        self._check_leakage(test_df)
+        group_df = None
+        if tsv_path is not None:
+            group_df = load_data_test(
+                tsv_path,
+                diagnoses if diagnoses is not None else self.diagnoses,
+                multi_cohort=multi_cohort,
+            )
 
         criterion = self.task_manager.get_criterion()
 
         for fold in folds:
+            group_df, group_parameters = self._check_data_group(
+                data_group, fold, caps_directory, group_df, multi_cohort, overwrite
+            )
+
             if self.multi:
                 for network in range(self.num_networks):
                     data_test = return_dataset(
                         self.mode,
-                        caps_directory,
-                        test_df,
-                        preprocessing
-                        if preprocessing is not None
-                        else self.preprocessing,
+                        group_parameters["caps_directory"],
+                        group_df,
+                        self.preprocessing,
                         all_transformations=all_transforms,
                         prepare_dl=prepare_dl
                         if prepare_dl is not None
                         else self.prepare_dl,
-                        multi_cohort=multi_cohort,
+                        multi_cohort=group_parameters["multi_cohort"],
                         label_presence=use_labels,
                         label=self.label,
                         label_code=self.label_code,
@@ -274,7 +275,7 @@ class MapsManager:
                     self._test_loader(
                         test_loader,
                         criterion,
-                        prefix,
+                        data_group,
                         fold,
                         selection_metrics
                         if selection_metrics is not None
@@ -283,18 +284,17 @@ class MapsManager:
                         use_cpu=use_cpu,
                         network=network,
                     )
-
             else:
                 data_test = return_dataset(
                     self.mode,
-                    caps_directory,
-                    test_df,
-                    preprocessing if preprocessing is not None else self.preprocessing,
+                    group_parameters["caps_directory"],
+                    group_df,
+                    preprocessing=self.preprocessing,
                     all_transformations=all_transforms,
                     prepare_dl=prepare_dl
                     if prepare_dl is not None
                     else self.prepare_dl,
-                    multi_cohort=multi_cohort,
+                    multi_cohort=group_parameters["multi_cohort"],
                     label_presence=use_labels,
                     label=self.label,
                     label_code=self.label_code,
@@ -314,7 +314,7 @@ class MapsManager:
                 self._test_loader(
                     test_loader,
                     criterion,
-                    prefix,
+                    data_group,
                     fold,
                     selection_metrics
                     if selection_metrics is not None
@@ -322,19 +322,135 @@ class MapsManager:
                     use_labels=use_labels,
                     use_cpu=use_cpu,
                 )
-            self._ensemble_prediction(prefix, fold, selection_metrics, use_labels)
+            self._ensemble_prediction(data_group, fold, selection_metrics, use_labels)
 
-    def interpret(
+    def save_tensors(
         self,
-        prefix,
+        data_group,
         caps_directory=None,
         tsv_path=None,
         folds=None,
         selection_metrics=None,
         multi_cohort=False,
-        preprocessing=None,
         diagnoses=None,
-        baseline=False,
+        prepare_dl=None,
+        use_cpu=None,
+        overwrite=False,
+    ):
+
+        """
+        Computes and saves the input and output tensors of the set data_group.
+
+        Args:
+            data_group (str): name of the data group on which extraction is performed.
+            caps_directory (str): path to the CAPS folder. For more information please refer to
+                [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
+                Default will load the value of an existing data group.
+            tsv_path (str): path to a TSV file containing the list of participants and sessions to test.
+                Default will load the DataFrame of an existing data group.
+            folds (list[int]): list of folds to test. Default perform prediction on all folds available.
+            selection_metrics (list[str]): list of selection metrics to test.
+                Default performs the prediction on all selection metrics available.
+            multi_cohort (bool): If True considers that tsv_path is the path to a multi-cohort TSV.
+            diagnoses (list[str]): List of diagnoses to load if tsv_path is a split_directory.
+            prepare_dl (bool): If given, sets the value of prepare_dl, else use the same as in training step.
+            use_cpu (bool): If given, a new value for the device of the model will be computed.
+            overwrite (bool): If True erase the occurrences of data_group.
+
+        Raises:
+            ValueError:
+                when trying to overwrite train or validation data groups
+                when caps_directory or df are given but data group already exists
+                when caps_directory or df are not given and data group does not exist
+        """
+        if folds is None:
+            folds = self._find_folds()
+
+        _, all_transforms = get_transforms(
+            self.mode,
+            minmaxnormalization=self.minmaxnormalization,
+            data_augmentation=self.data_augmentation,
+        )
+
+        group_df = None
+        if tsv_path is not None:
+            group_df = load_data_test(
+                tsv_path,
+                diagnoses if diagnoses is not None else self.diagnoses,
+                multi_cohort=multi_cohort,
+            )
+
+        split_manager = self._init_split_manager(folds)
+        for fold in split_manager.fold_iterator():
+            self.logger.info(f"Saving tensors of fold {fold}")
+
+            group_df, group_parameters = self._check_data_group(
+                data_group, fold, caps_directory, group_df, multi_cohort, overwrite
+            )
+
+            if selection_metrics is None:
+                selection_metrics = self._find_selection_metrics(fold)
+
+            if self.multi:
+                for network in range(self.num_networks):
+                    dataset = return_dataset(
+                        self.mode,
+                        group_parameters["caps_directory"],
+                        group_df,
+                        self.preprocessing,
+                        all_transformations=all_transforms,
+                        prepare_dl=prepare_dl
+                        if prepare_dl is not None
+                        else self.prepare_dl,
+                        multi_cohort=group_parameters["multi_cohort"],
+                        label=self.label,
+                        label_code=self.label_code,
+                        params=self,
+                        cnn_index=network,
+                    )
+                    self._compute_output_tensors(
+                        dataset,
+                        data_group,
+                        fold,
+                        selection_metrics,
+                        use_cpu=use_cpu,
+                        network=network,
+                    )
+
+            else:
+                dataset = return_dataset(
+                    self.mode,
+                    group_parameters["caps_directory"],
+                    group_df,
+                    self.preprocessing,
+                    all_transformations=all_transforms,
+                    prepare_dl=prepare_dl
+                    if prepare_dl is not None
+                    else self.prepare_dl,
+                    multi_cohort=self.multi_cohort,
+                    label=self.label,
+                    label_code=self.label_code,
+                    params=self,
+                )
+                self._compute_output_tensors(
+                    dataset,
+                    data_group,
+                    fold,
+                    selection_metrics,
+                    use_cpu=use_cpu,
+                )
+
+    def interpret(
+        self,
+        data_group,
+        name,
+        caps_directory=None,
+        tsv_path=None,
+        folds=None,
+        selection_metrics=None,
+        multi_cohort=False,
+        diagnoses=None,
+        preprocessing=None,
         target_node=0,
         save_individual=False,
         prepare_dl=None,
@@ -342,41 +458,45 @@ class MapsManager:
         num_workers=None,
         use_cpu=None,
         overwrite=False,
+        overwrite_name=False,
     ):
         """
         Performs the interpretation task on a subset of caps_directory defined in a TSV file.
         The mean interpretation is always saved, to save the individual interpretations set save_individual to True.
 
         Args:
+            data_group (str): name of the data group interpreted.
+            name (str): name of the interpretation procedure.
             caps_directory (str): path to the CAPS folder. For more information please refer to
                 [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
-                Default use caps_directory of the training step.
-            tsv_path (str): path to a TSV file containing the list of participants and sessions to interpret.
-                Default use tsv_path of the training step.
-            prefix (str): name of the data group interpreted.
-            folds (List[int]): list of folds to interpret. Default perform interpretation on all folds available.
-            selection_metrics (List[str]): list of selection metrics to interpret.
+                Default will load the value of an existing data group.
+            tsv_path (str): path to a TSV file containing the list of participants and sessions to test.
+                Default will load the DataFrame of an existing data group.
+            folds (list[int]): list of folds to interpret. Default perform interpretation on all folds available.
+            selection_metrics (list[str]): list of selection metrics to interpret.
                 Default performs the interpretation on all selection metrics available.
             multi_cohort (bool): If True considers that tsv_path is the path to a multi-cohort TSV.
-            preprocessing (str): Name of the preprocessing used. Default uses the same as in training step.
-            diagnoses (List[str]): List of diagnoses to load if tsv_path is a split_directory.
+            diagnoses (list[str]): List of diagnoses to load if tsv_path is a split_directory.
                 Default uses the same as in training step.
-            baseline (bool): If True baseline sessions only are used for interpretation.
             target_node (int): Node from which the interpretation is computed.
             save_individual (bool): If True saves the individual map of each participant / session couple.
             prepare_dl (bool): If given, sets the value of prepare_dl, else use the same as in training step.
             batch_size (bool): If given, sets the value of batch_size, else use the same as in training step.
             num_workers (int): If given, sets the value of num_workers, else use the same as in training step.
             use_cpu (bool): If given, a new value for the device of the model will be computed.
-            overwrite (bool): If True erase the occurrences of prefix.
+            overwrite (bool): If True erase the occurrences of data_group.
+            overwrite_name (bool): If True erase the occurrences of name.
         Raises:
-            ValueError: If the predictions with prefix name already exist and overwrite is False.
+            ValueError:
+                when trying to overwrite train or validation data groups
+                when caps_directory or df are given but data group already exists
+                when caps_directory or df are not given and data group does not exist
+                when name already exists and overwrite_name is False
         """
 
         from torch.utils.data import DataLoader
 
         from clinicadl.interpret.gradients import VanillaBackProp
-        from clinicadl.utils.caps_dataset.data import load_data_test
 
         if folds is None:
             folds = self._find_folds()
@@ -385,9 +505,6 @@ class MapsManager:
             raise NotImplementedError(
                 "The interpretation of multi-network framework is not implemented."
             )
-        self._check_prefix(
-            prefix, folds, selection_metrics, overwrite, interpretation=True
-        )
 
         _, all_transforms = get_transforms(
             self.mode,
@@ -395,59 +512,64 @@ class MapsManager:
             data_augmentation=self.data_augmentation,
         )
 
-        test_df = load_data_test(
-            tsv_path if tsv_path is not None else self.tsv_path,
-            diagnoses if diagnoses is not None else self.diagnoses,
-            multi_cohort=multi_cohort,
-            baseline=baseline,
-        )
-        data_test = return_dataset(
-            self.mode,
-            caps_directory if caps_directory is not None else self.caps_directory,
-            test_df,
-            preprocessing if preprocessing is not None else self.preprocessing,
-            all_transformations=all_transforms,
-            prepare_dl=prepare_dl if prepare_dl is not None else self.prepare_dl,
-            multi_cohort=multi_cohort,
-            label_presence=False,
-            label_code=self.label_code,
-            label=self.label,
-            params=self,
-        )
-        test_loader = DataLoader(
-            data_test,
-            batch_size=batch_size if batch_size is not None else self.batch_size,
-            shuffle=False,
-            num_workers=num_workers if num_workers is not None else self.num_workers,
-        )
+        group_df = None
+        if tsv_path is not None:
+            group_df = load_data_test(
+                tsv_path,
+                diagnoses if diagnoses is not None else self.diagnoses,
+                multi_cohort=multi_cohort,
+            )
 
         for fold in folds:
             self.logger.info(f"Interpretation of fold {fold}")
+            df_group, parameters_group = self._check_data_group(
+                data_group, fold, caps_directory, group_df, multi_cohort, overwrite
+            )
+
+            data_test = return_dataset(
+                self.mode,
+                parameters_group["caps_directory"],
+                df_group,
+                preprocessing if preprocessing is not None else self.preprocessing,
+                all_transformations=all_transforms,
+                prepare_dl=prepare_dl if prepare_dl is not None else self.prepare_dl,
+                multi_cohort=parameters_group["multi_cohort"],
+                label_presence=False,
+                label_code=self.label_code,
+                label=self.label,
+                params=self,
+            )
+            test_loader = DataLoader(
+                data_test,
+                batch_size=batch_size if batch_size is not None else self.batch_size,
+                shuffle=False,
+                num_workers=num_workers
+                if num_workers is not None
+                else self.num_workers,
+            )
+
             if selection_metrics is None:
                 selection_metrics = self._find_selection_metrics(fold)
 
             for selection_metric in selection_metrics:
                 self.logger.info(f"Interpretation of metric {selection_metric}")
-                self._write_description_log(
-                    prefix,
-                    fold,
-                    selection_metric,
-                    data_test.caps_dict,
-                    data_test.df,
-                    interpretation=True,
-                    params_dict={
-                        "target_node": target_node,
-                        "preprocessing": preprocessing,
-                        "diagnoses": diagnoses,
-                    },
-                )
                 results_path = path.join(
                     self.maps_path,
                     f"fold-{fold}",
                     f"best-{selection_metric}",
-                    "interpretation",
-                    prefix,
+                    data_group,
+                    f"interpret-{name}",
                 )
+
+                if path.exists(results_path):
+                    if overwrite_name:
+                        shutil.rmtree(results_path)
+                    else:
+                        raise ValueError(
+                            f"Interpretation name {name} is already written. "
+                            f"Please choose another name or set overwrite_name to True."
+                        )
+                makedirs(results_path)
 
                 model, _ = self._init_model(
                     transfer_path=self.maps_path,
@@ -458,22 +580,27 @@ class MapsManager:
 
                 interpreter = VanillaBackProp(model)
 
-                mean_map = 0
+                cum_maps = [0] * data_test.elem_per_image
                 for data in test_loader:
                     images = data["image"].to(model.device)
 
                     map_pt = interpreter.generate_gradients(images, target_node)
-                    mean_map += map_pt.sum(axis=0)
-                    if save_individual:
-                        for i in range(len(data["participant_id"])):
+                    for i in range(len(data["participant_id"])):
+                        mode_id = data[f"{self.mode}_id"][i]
+                        cum_maps[mode_id] += map_pt[i]
+                        if save_individual:
                             single_path = path.join(
                                 results_path,
                                 f"participant-{data['participant_id'][i]}_session-{data['session_id'][i]}_"
                                 f"{self.mode}-{data[f'{self.mode}_id'][i]}_map.pt",
                             )
                             torch.save(map_pt, single_path)
-                mean_map /= len(data_test)
-                torch.save(mean_map, path.join(results_path, f"mean_map.pt"))
+                for i, mode_map in enumerate(cum_maps):
+                    mode_map /= len(data_test)
+                    torch.save(
+                        mode_map,
+                        path.join(results_path, f"mean_{self.mode}-{i}_map.pt"),
+                    )
 
     ###################################
     # High-level functions templates  #
@@ -483,7 +610,7 @@ class MapsManager:
         Trains a single CNN for all inputs.
 
         Args:
-            folds (List[int]): list of folds that are trained.
+            folds (list[int]): list of folds that are trained.
             resume (bool): If True the job is resumed from checkpoint.
         """
         from torch.utils.data import DataLoader
@@ -568,7 +695,7 @@ class MapsManager:
         Trains a single CNN per element in the image.
 
         Args:
-            folds (List[int]): list of folds that are trained.
+            folds (list[int]): list of folds that are trained.
             resume (bool): If True the job is resumed from checkpoint.
         """
         from torch.utils.data import DataLoader
@@ -841,11 +968,29 @@ class MapsManager:
             network=network,
         )
 
+        if self.task_manager.save_outputs and self.visualization:
+            self._compute_output_tensors(
+                train_loader.dataset,
+                "train",
+                fold,
+                self.selection_metrics,
+                nb_images=1,
+                network=network,
+            )
+            self._compute_output_tensors(
+                train_loader.dataset,
+                "validation",
+                fold,
+                self.selection_metrics,
+                nb_images=1,
+                network=network,
+            )
+
     def _test_loader(
         self,
         dataloader,
         criterion,
-        prefix,
+        data_group,
         fold,
         selection_metrics,
         use_labels=True,
@@ -856,24 +1001,27 @@ class MapsManager:
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
 
         Args:
-            dataloader (torch.utils.data.DataLoader): DataLoader wrapping the test set.
+            dataloader (torch.utils.data.DataLoader): DataLoader wrapping the test CapsDataset.
             criterion (torch.nn.modules.loss._Loss): optimization criterion used during training.
-            prefix (str): name of the data group used for the testing task.
+            data_group (str): name of the data group used for the testing task.
             fold (int): Index of the fold used to train the model tested.
-            selection_metrics (List[str]): List of metrics used to select the best models which are tested.
+            selection_metrics (list[str]): List of metrics used to select the best models which are tested.
             use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
             use_cpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network tested (only used in multi-network setting).
         """
         for selection_metric in selection_metrics:
 
-            self._write_description_log(
-                prefix,
-                fold,
-                selection_metric,
+            log_dir = path.join(
+                self.maps_path, f"fold-{fold}", f"best-{selection_metric}", data_group
+            )
+            self.write_description_log(
+                log_dir,
+                data_group,
                 dataloader.dataset.caps_dict,
                 dataloader.dataset.df,
             )
+
             # load the best trained model during the training
             model, _ = self._init_model(
                 transfer_path=self.maps_path,
@@ -890,17 +1038,81 @@ class MapsManager:
                 if network is not None:
                     metrics[f"{self.mode}_id"] = network
                 self.logger.info(
-                    f"{self.mode} level {prefix} loss is {metrics['loss']} for model selected on {selection_metric}"
+                    f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
                 )
 
             # Replace here
             self._mode_level_to_tsv(
-                prediction_df, metrics, fold, selection_metric, prefix=prefix
+                prediction_df, metrics, fold, selection_metric, data_group=data_group
             )
+
+    def _compute_output_tensors(
+        self,
+        dataset,
+        data_group,
+        fold,
+        selection_metrics,
+        nb_images=None,
+        use_cpu=None,
+        network=None,
+    ):
+        """
+        Compute the output tensors and saves them in the MAPS.
+
+        Args:
+            dataset (clinicadl.utils.caps_dataset.data.CapsDataset): wrapper of the data set.
+            data_group (str): name of the data group used for the task.
+            fold (int): Fold number.
+            selection_metrics (list[str]): metrics used for model selection.
+            nb_images (int): number of full images to write. Default computes the outputs of the whole data set.
+            use_cpu (bool): If given, a new value for the device of the model will be computed.
+            network (int): Index of the network tested (only used in multi-network setting).
+        """
+        for selection_metric in selection_metrics:
+            # load the best trained model during the training
+            model, _ = self._init_model(
+                transfer_path=self.maps_path,
+                fold=fold,
+                transfer_selection=selection_metric,
+                use_cpu=use_cpu,
+                network=network,
+            )
+
+            tensor_path = path.join(
+                self.maps_path,
+                f"fold-{fold}",
+                f"best-{selection_metric}",
+                data_group,
+                "tensors",
+            )
+            makedirs(tensor_path, exist_ok=True)
+
+            if nb_images is None:  # Compute outputs for the whole data set
+                nb_modes = len(dataset)
+            else:
+                nb_modes = nb_images * dataset.elem_per_image
+
+            for i in range(nb_modes):
+                data = dataset[i]
+                image = data["image"]
+                output = (
+                    model.predict(image.unsqueeze(0).to(model.device)).squeeze(0).cpu()
+                )
+                participant_id = data["participant_id"]
+                session_id = data["session_id"]
+                mode_id = data[f"{self.mode}_id"]
+                input_filename = (
+                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
+                )
+                output_filename = (
+                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
+                )
+                torch.save(image, path.join(tensor_path, input_filename))
+                torch.save(output, path.join(tensor_path, output_filename))
 
     def _ensemble_prediction(
         self,
-        prefix,
+        data_group,
         fold,
         selection_metrics,
         use_labels=True,
@@ -916,14 +1128,14 @@ class MapsManager:
                 self._ensemble_to_tsv(
                     fold,
                     selection=selection_metric,
-                    prefix=prefix,
+                    data_group=data_group,
                     use_labels=use_labels,
                 )
             elif self.mode != "image":
                 self._mode_to_image_tsv(
                     fold,
                     selection=selection_metric,
-                    prefix=prefix,
+                    data_group=data_group,
                     use_labels=use_labels,
                 )
 
@@ -952,6 +1164,9 @@ class MapsManager:
                 )
 
         self.parameters = parameters
+        self.task_manager = self._init_task_manager()
+        if self.parameters["model"] is None:
+            self.parameters["model"] = self.task_manager.get_default_network()
 
         train_parameters = self._compute_train_args()
         self.parameters.update(train_parameters)
@@ -962,6 +1177,17 @@ class MapsManager:
                 f"framework with only {self.parameters['num_networks']} element "
                 f"per image."
             )
+        possible_selection_metrics_set = set(self.task_manager.evaluation_metrics) | {
+            "loss"
+        }
+        if not set(self.parameters["selection_metrics"]).issubset(
+            possible_selection_metrics_set
+        ):
+            raise ValueError(
+                f"Selection metrics {self.parameters['selection_metrics']} "
+                f"must be a subset of metrics used for evaluation "
+                f"{possible_selection_metrics_set}."
+            )
 
         # TODO: add default values manager
         # click passing context @click.command / @click.passcontext (config.json)
@@ -971,6 +1197,8 @@ class MapsManager:
 
         if "label" not in self.parameters:
             self.parameters["label"] = None
+        if "visualization" not in self.parameters:
+            self.parameters["visualization"] = False
         if "selection_threshold" not in self.parameters:
             self.parameters["selection_threshold"] = None
 
@@ -978,7 +1206,6 @@ class MapsManager:
 
         split_manager = self._init_split_manager(None)
         train_df = split_manager[0]["train"]
-        self.task_manager = self._init_task_manager()
         label_code = self.task_manager.generate_label_code(train_df, self.label)
         full_dataset = return_dataset(
             self.mode,
@@ -1039,93 +1266,100 @@ class MapsManager:
                 )
         return selection_metric
 
-    def _check_prefix(
-        self,
-        prefix,
-        folds=None,
-        selection_metrics=None,
-        overwrite=False,
-        interpretation=False,
-    ):
+    def _check_leakage(self, data_group, test_df):
         """
-        Check that a prefix is available for a list of folds and selection metrics.
+        Checks that no intersection exist between the participants used for training and those used for testing.
 
         Args:
-            prefix (str): name whose presence is checked.
-            folds (List[int]): list of folds checked. Default checks all folds available.
-            selection_metrics (List[str]): list of selection metrics checked.
-                Default checks all selection metrics available.
-            overwrite (bool): If True erase the occurrences of prefix.
-            interpretation (bool): If True looks for interpretation prefix, else test prefix.
+            data_group (str): name of the data group
+            test_df (pd.DataFrame): Table of participant_id / session_id of the data group
         Raises:
-            ValueError: if an occurrence of prefix is found and overwrite is set to False.
+            ValueError: if data_group not in ["train", "validation"] and there is an intersection
+                between the participant IDs in test_df and the ones used for training.
         """
-        already_evaluated = []
-        split_manager = self._init_split_manager(folds)
-        for fold in split_manager.fold_iterator():
-            if selection_metrics is None:
-                selection_metrics = self._find_selection_metrics(fold)
-            for selection_metric in selection_metrics:
-                self._check_selection_metric(fold, selection_metric)
-                if interpretation:
-                    prediction_dir = path.join(
-                        self.maps_path,
-                        f"fold-{fold}",
-                        f"best-{selection_metric}",
-                        "interpretation",
-                        prefix,
-                    )
+        if data_group not in ["train", "validation"]:
+            train_path = path.join(self.maps_path, "groups", "train+validation.tsv")
+            train_df = pd.read_csv(train_path, sep="\t")
+            participants_train = set(train_df.participant_id.values)
+            participants_test = set(test_df.participant_id.values)
+            intersection = participants_test & participants_train
+
+            if len(intersection) > 0:
+                raise ValueError(
+                    "Your evaluation set contains participants who were already seen during "
+                    "the training step. The list of common participants is the following: "
+                    f"{intersection}."
+                )
+
+    def _check_data_group(
+        self,
+        data_group,
+        fold,
+        caps_directory=None,
+        df=None,
+        multi_cohort=False,
+        overwrite=False,
+    ):
+        """
+        Check if a data group is already available if other arguments are None.
+        Else creates a new data_group.
+
+        Args:
+            data_group (str): name of the data group
+            fold (int): fold number (used to load train and validation folds)
+            caps_directory  (str): input CAPS directory
+            df (pd.DataFrame): Table of participant_id / session_id of the data group
+            multi_cohort (bool): indicates if the input data comes from several CAPS
+            overwrite (bool): If True former definition of data group is erased
+
+        Raises:
+            ValueError:
+                when trying to overwrite train or validation data groups
+                when caps_directory or df are given but data group already exists
+                when caps_directory or df are not given and data group does not exist
+        """
+        group_path = path.join(self.maps_path, "groups", data_group)
+        self.logger.debug(f"Group path {group_path}")
+        if path.exists(group_path):
+            if overwrite:
+                if data_group in ["train", "validation"]:
+                    raise ValueError("Cannot overwrite train or validation data group.")
                 else:
-                    prediction_dir = path.join(
-                        self.maps_path,
-                        f"fold-{fold}",
-                        f"best-{selection_metric}",
-                        prefix,
-                    )
-                if path.exists(prediction_dir):
-                    if overwrite:
-                        shutil.rmtree(prediction_dir)
-                    else:
-                        already_evaluated.append(
-                            f"- fold {fold}, selection_metric {selection_metric}\n"
-                        )
+                    shutil.rmtree(group_path)
+            elif None not in (df, caps_directory):
+                raise ValueError(
+                    f"Data group {data_group} is already defined. "
+                    f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
+                    f"To erase {data_group} please set overwrite to True."
+                )
+            else:
+                return self.get_group_info(data_group, fold)
 
-        if len(already_evaluated) > 0:
-            error_message = (
-                f"Evaluations corresponding to prefix {prefix} were found. \n"
-                f"Please use overwrite to erase the evaluations previously done. \n"
-                f"List of evaluations already performed:\n"
-            )
-            for message in already_evaluated:
-                error_message += message
-            raise ValueError(error_message)
-
-    def _check_leakage(self, test_df):
-        """Checks that no intersection exist between the participants used for training and those used for testing."""
-        train_path = path.join(self.maps_path, "train_data.tsv")
-        train_df = pd.read_csv(train_path, sep="\t")
-        participants_train = set(train_df.participant_id.values)
-        participants_test = set(test_df.participant_id.values)
-        intersection = participants_test & participants_train
-
-        if len(intersection) > 0:
+        if caps_directory is None or df is None:
             raise ValueError(
-                "Your evaluation set contains participants who were already seen during "
-                "the training step. The list of common participants is the following: "
-                f"{intersection}."
+                f"The data group {data_group} does not already exist. "
+                f"Please specify a caps_directory and a tsv_path to create this data group."
             )
+        else:
+            self._check_leakage(data_group, df)
+            self._write_data_group(data_group, df, caps_directory, multi_cohort)
+            return df, {"caps_directory": caps_directory, "multi_cohort": multi_cohort}
 
     ###############################
     # File writers                #
     ###############################
-    def _write_parameters(self):
-        """Write the JSON file of parameters."""
-        makedirs(self.maps_path, exist_ok=True)
+    @staticmethod
+    def write_parameters(json_path, parameters, logger=None):
+        """Write JSON files of parameters."""
+        if logger is None:
+            logger = logging
+
+        makedirs(json_path, exist_ok=True)
 
         # save to json file
-        json_data = json.dumps(self.parameters, skipkeys=True, indent=4)
-        json_path = path.join(self.maps_path, "maps.json")
-        self.logger.info(f"Path of json file: {json_path}")
+        json_data = json.dumps(parameters, skipkeys=True, indent=4)
+        json_path = path.join(json_path, "maps.json")
+        logger.info(f"Path of json file: {json_path}")
         with open(json_path, "w") as f:
             f.write(json_data)
 
@@ -1154,15 +1388,80 @@ class MapsManager:
         )
         train_df = train_df[["participant_id", "session_id"]]
         if self.transfer_path is not None:
-            transfer_train_path = path.join(self.transfer_path, "train_data.tsv")
+            transfer_train_path = path.join(
+                self.transfer_path, "groups", "train+validation.tsv"
+            )
             transfer_train_df = pd.read_csv(transfer_train_path, sep="\t")
             transfer_train_df = transfer_train_df[["participant_id", "session_id"]]
             train_df = pd.concat([train_df, transfer_train_df])
             train_df.drop_duplicates(inplace=True)
 
         train_df.to_csv(
-            path.join(self.maps_path, "train_data.tsv"), sep="\t", index=False
+            path.join(self.maps_path, "groups", "train+validation.tsv"),
+            sep="\t",
+            index=False,
         )
+
+    def _write_data_group(
+        self,
+        data_group,
+        df,
+        caps_directory=None,
+        multi_cohort=None,
+    ):
+        """
+        Check that a data_group is not already written and writes the characteristics of the data group
+        (TSV file with a list of participant / session + JSON file containing the CAPS and the preprocessing).
+
+        Args:
+            data_group (str): name whose presence is checked.
+            df (pd.DataFrame): DataFrame containing the participant_id and session_id (and label if use_labels is True)
+            caps_directory (str): caps_directory if different from the training caps_directory,
+            multi_cohort (bool): multi_cohort used if different from the training multi_cohort.
+        """
+        group_path = path.join(self.maps_path, "groups", data_group)
+        makedirs(group_path)
+
+        columns = ["participant_id", "session_id"]
+        if self.label in df.columns.values:
+            columns += [self.label]
+
+        df.to_csv(path.join(group_path, "data.tsv"), sep="\t", columns=columns)
+        self.write_parameters(
+            group_path,
+            {
+                "caps_directory": caps_directory
+                if caps_directory is not None
+                else self.caps_directory,
+                "multi_cohort": multi_cohort
+                if multi_cohort is not None
+                else self.multi_cohort,
+            },
+        )
+
+    def _write_train_val_groups(self):
+        """Defines the training and validation groups at the initialization"""
+        split_manager = self._init_split_manager()
+        for fold in split_manager.fold_iterator():
+            for data_group in ["train", "validation"]:
+                df = split_manager[fold][data_group]
+                group_path = path.join(
+                    self.maps_path, "groups", data_group, f"fold-{fold}"
+                )
+                makedirs(group_path, exist_ok=True)
+
+                columns = ["participant_id", "session_id", "cohort"]
+                if self.label is not None:
+                    columns.append(self.label)
+
+                df.to_csv(path.join(group_path, "data.tsv"), sep="\t", columns=columns)
+                self.write_parameters(
+                    group_path,
+                    {
+                        "caps_directory": self.caps_directory,
+                        "multi_cohort": self.multi_cohort,
+                    },
+                )
 
     def _write_weights(
         self, state, metrics_dict, fold, network=None, filename="checkpoint.pth.tar"
@@ -1172,9 +1471,11 @@ class MapsManager:
         If no metrics_dict is given, only the checkpoint is saved.
 
         Args:
-            state: (Dict[str,object]) state of the training (model weights, epoch...)
-            metrics_dict: (Dict[str,bool]) output of RetainBest step
-            fold: (int) fold number
+            state (dict[str,Any]): state of the training (model weights, epoch...)
+            metrics_dict (dict[str,bool]): output of RetainBest step
+            fold (int): fold number
+            network (int): network number (multi-network framework)
+            filename (str): name of the checkpoint file
         """
         checkpoint_dir = path.join(self.maps_path, f"fold-{fold}", "tmp")
         makedirs(checkpoint_dir, exist_ok=True)
@@ -1202,49 +1503,29 @@ class MapsManager:
         tmp_path = path.join(self.maps_path, f"fold-{fold}", "tmp")
         shutil.rmtree(tmp_path)
 
-    def _write_description_log(
-        self,
-        prefix,
-        fold,
-        selection_metric,
-        caps_directory,
+    @staticmethod
+    def write_description_log(
+        log_dir,
+        data_group,
+        caps_dict,
         df,
-        interpretation=False,
-        params_dict=None,
     ):
         """
-        Write description log associated to predict or interpret task.
+        Write description log file associated to a data group.
 
         Args:
-            prefix (str): name of the data group used for the task.
-            fold (int): Index of the fold used for training.
-            selection_metric (str): selection metric used to select the best model.
-            caps_directory (str): CAPS used for the task
+            log_dir (str): path to the log file directory.
+            data_group (str): name of the data group used for the task.
+            caps_dict (dict[str, str]): Dictionary of the CAPS folders used for the task
             df (pd.DataFrame): DataFrame of the meta-data used for the task.
-            interpretation (bool): If True looks for interpretation prefix, else test prefix.
-            params_dict (Dict[str, Any]): set of parameters used for the task.
         """
-        if interpretation:
-            log_dir = path.join(
-                self.maps_path,
-                f"fold-{fold}",
-                f"best-{selection_metric}",
-                "interpretation",
-                prefix,
-            )
-        else:
-            log_dir = path.join(
-                self.maps_path, f"fold-{fold}", f"best-{selection_metric}", prefix
-            )
         makedirs(log_dir, exist_ok=True)
         log_path = path.join(log_dir, "description.log")
         with open(log_path, "w") as f:
-            f.write(f"Evaluation of {prefix} group - {datetime.now()}\n")
-            f.write(f"Data loaded from CAPS directories: {caps_directory}\n")
+            f.write(f"Prediction {data_group} group - {datetime.now()}\n")
+            f.write(f"Data loaded from CAPS directories: {caps_dict}\n")
             f.write(f"Number of participants: {df.participant_id.nunique()}\n")
             f.write(f"Number of sessions: {len(df)}\n")
-            if params_dict:
-                f.write(f"Other parameters: {params_dict}")
 
     def _mode_level_to_tsv(
         self,
@@ -1252,7 +1533,7 @@ class MapsManager:
         metrics,
         fold,
         selection,
-        prefix="train",
+        data_group="train",
     ):
         """
         Writes the outputs of the test function in tsv files.
@@ -1262,15 +1543,15 @@ class MapsManager:
             metrics: (dict or DataFrame) the performances obtained on a series of metrics.
             fold: (int) the fold for which the performances were obtained.
             selection: (str) the metrics on which the model was selected (BA, loss...)
-            prefix: (str) the prefix referring to the data group on which evaluation is performed.
+            data_group: (str) the name referring to the data group on which evaluation is performed.
         """
         performance_dir = path.join(
-            self.maps_path, f"fold-{fold}", f"best-{selection}", prefix
+            self.maps_path, f"fold-{fold}", f"best-{selection}", data_group
         )
 
         makedirs(performance_dir, exist_ok=True)
         performance_path = path.join(
-            performance_dir, f"{prefix}_{self.mode}_level_prediction.tsv"
+            performance_dir, f"{data_group}_{self.mode}_level_prediction.tsv"
         )
 
         if not path.exists(performance_path):
@@ -1281,7 +1562,7 @@ class MapsManager:
             )
 
         metrics_path = path.join(
-            performance_dir, f"{prefix}_{self.mode}_level_metrics.tsv"
+            performance_dir, f"{data_group}_{self.mode}_level_metrics.tsv"
         )
         if metrics is not None:
             if not path.exists(metrics_path):
@@ -1297,7 +1578,7 @@ class MapsManager:
         self,
         fold,
         selection,
-        prefix="test",
+        data_group="test",
         use_labels=True,
     ):
         """
@@ -1306,23 +1587,25 @@ class MapsManager:
         Args:
             fold: (int) fold number of the cross-validation.
             selection: (str) metric on which the model is selected (for example loss or BA).
-            prefix: (str) the prefix referring to the data group on which evaluation is performed.
+            data_group: (str) the name referring to the data group on which evaluation is performed.
                 If different from training or validation, the weights of soft voting will be computed
                 on validation accuracies.
             use_labels: (bool) If True the labels are added to the final tsv
         """
         # Choose which dataset is used to compute the weights of soft voting.
-        if prefix in ["train", "validation"]:
-            validation_dataset = prefix
+        if data_group in ["train", "validation"]:
+            validation_dataset = data_group
         else:
             validation_dataset = "validation"
-        test_df = self.get_prediction(prefix, fold, selection, self.mode, verbose=False)
+        test_df = self.get_prediction(
+            data_group, fold, selection, self.mode, verbose=False
+        )
         validation_df = self.get_prediction(
             validation_dataset, fold, selection, self.mode, verbose=False
         )
 
         performance_dir = path.join(
-            self.maps_path, f"fold-{fold}", f"best-{selection}", prefix
+            self.maps_path, f"fold-{fold}", f"best-{selection}", data_group
         )
         makedirs(performance_dir, exist_ok=True)
 
@@ -1335,48 +1618,52 @@ class MapsManager:
 
         if df_final is not None:
             df_final.to_csv(
-                path.join(performance_dir, f"{prefix}_image_level_prediction.tsv"),
+                path.join(performance_dir, f"{data_group}_image_level_prediction.tsv"),
                 index=False,
                 sep="\t",
             )
         if metrics is not None:
             pd.DataFrame(metrics, index=[0]).to_csv(
-                path.join(performance_dir, f"{prefix}_image_level_metrics.tsv"),
+                path.join(performance_dir, f"{data_group}_image_level_metrics.tsv"),
                 index=False,
                 sep="\t",
             )
 
-    def _mode_to_image_tsv(self, fold, selection, prefix="test", use_labels=True):
+    def _mode_to_image_tsv(self, fold, selection, data_group="test", use_labels=True):
         """
         Copy mode-level TSV files to name them as image-level TSV files
 
         Args:
             fold: (int) Fold number of the cross-validation.
             selection: (str) metric on which the model is selected (for example loss or BA)
-            prefix: (str) the prefix referring to the data group on which evaluation is performed.
+            data_group: (str) the name referring to the data group on which evaluation is performed.
             use_labels: (bool) If True the labels are added to the final tsv
 
         """
-        sub_df = self.get_prediction(prefix, fold, selection, self.mode, verbose=False)
+        sub_df = self.get_prediction(
+            data_group, fold, selection, self.mode, verbose=False
+        )
         sub_df.rename(columns={f"{self.mode}_id": "image_id"}, inplace=True)
 
         performance_dir = path.join(
-            self.maps_path, f"fold-{fold}", f"best-{selection}", prefix
+            self.maps_path, f"fold-{fold}", f"best-{selection}", data_group
         )
         sub_df.to_csv(
-            path.join(performance_dir, f"{prefix}_image_level_prediction.tsv"),
+            path.join(performance_dir, f"{data_group}_image_level_prediction.tsv"),
             index=False,
             sep="\t",
         )
         if use_labels:
             metrics_df = pd.read_csv(
-                path.join(performance_dir, f"{prefix}_{self.mode}_level_metrics.tsv"),
+                path.join(
+                    performance_dir, f"{data_group}_{self.mode}_level_metrics.tsv"
+                ),
                 sep="\t",
             )
             if f"{self.mode}_id" in metrics_df:
                 del metrics_df[f"{self.mode}_id"]
             metrics_df.to_csv(
-                path.join(performance_dir, f"{prefix}_image_level_metrics.tsv"),
+                path.join(performance_dir, f"{data_group}_image_level_metrics.tsv"),
                 index=False,
                 sep="\t",
             )
@@ -1507,33 +1794,56 @@ class MapsManager:
     # Getters                     #
     ###############################
     def _print_description_log(
-        self, prefix, fold, selection_metric, interpretation=False
+        self,
+        data_group,
+        fold,
+        selection_metric,
     ):
         """
         Print the description log associated to a prediction or interpretation.
 
         Args:
-            prefix (str): name of the data group used for the task.
+            data_group (str): name of the data group used for the task.
             fold (int): Index of the fold used for training.
             selection_metric (str): Metric used for best weights selection.
-            interpretation (bool): If True looks for interpretation prefix, else test prefix.
         """
-        if interpretation:
-            log_dir = path.join(
-                self.maps_path,
-                f"fold-{fold}",
-                f"best-{selection_metric}",
-                "interpretation",
-                prefix,
-            )
-        else:
-            log_dir = path.join(
-                self.maps_path, f"fold-{fold}", f"best-{selection_metric}", prefix
-            )
+        log_dir = path.join(
+            self.maps_path, f"fold-{fold}", f"best-{selection_metric}", data_group
+        )
         log_path = path.join(log_dir, "description.log")
         with open(log_path, "r") as f:
             content = f.read()
             print(content)
+
+    def get_group_info(self, data_group, fold=None):
+        """
+        Gets information from corresponding data group
+        (list of participant_id / session_id + configuration parameters).
+        fold is only needed if data_group is train or validation.
+        """
+        group_path = path.join(self.maps_path, "groups", data_group)
+        if not path.exists(group_path):
+            raise ValueError(
+                f"Data group {data_group} is not defined. "
+                f"Please run a prediction to create this data group."
+            )
+        if data_group in ["train", "validation"]:
+            if fold is None:
+                raise ValueError(
+                    f"Information on train or validation data can only be "
+                    f"loaded if a fold number is given"
+                )
+            elif not path.exists(path.join(group_path, f"fold-{fold}")):
+                raise ValueError(f"fold {fold} is not available.")
+            else:
+                group_path = path.join(group_path, f"fold-{fold}")
+
+        df = pd.read_csv(path.join(group_path, "data.tsv"), sep="\t")
+        json_path = path.join(group_path, "maps.json")
+        with open(json_path, "r") as f:
+            parameters = json.load(f)
+
+        return df, parameters
 
     def get_parameters(self):
         """Returns the training parameters dictionary."""
@@ -1626,14 +1936,14 @@ class MapsManager:
         return torch.load(model_path, map_location=map_location)
 
     def get_prediction(
-        self, prefix, fold=0, selection_metric=None, mode="image", verbose=True
+        self, data_group, fold=0, selection_metric=None, mode="image", verbose=True
     ):
         """
         Get the individual predictions for each participant corresponding to one group
-        of participants identified by its prefix.
+        of participants identified by its data group.
 
         Args:
-            prefix (str): name of the data group used for the prediction task.
+            data_group (str): name of the data group used for the prediction task.
             fold (int): Index of the fold used for training.
             selection_metric (str): Metric used for best weights selection.
             mode (str): level of the prediction.
@@ -1644,66 +1954,70 @@ class MapsManager:
         """
         selection_metric = self._check_selection_metric(fold, selection_metric)
         if verbose:
-            self._print_description_log(prefix, fold, selection_metric)
+            self._print_description_log(data_group, fold, selection_metric)
         prediction_dir = path.join(
-            self.maps_path, f"fold-{fold}", f"best-{selection_metric}", prefix
+            self.maps_path, f"fold-{fold}", f"best-{selection_metric}", data_group
         )
         if not path.exists(prediction_dir):
             raise ValueError(
-                f"No prediction corresponding to prefix {prefix} was found."
+                f"No prediction corresponding to data group {data_group} was found."
             )
         df = pd.read_csv(
-            path.join(prediction_dir, f"{prefix}_{mode}_level_prediction.tsv"), sep="\t"
+            path.join(prediction_dir, f"{data_group}_{mode}_level_prediction.tsv"),
+            sep="\t",
         )
         df.set_index(["participant_id", "session_id"], inplace=True, drop=True)
         return df
 
     def get_metrics(
-        self, prefix, fold=0, selection_metric=None, mode="image", verbose=True
+        self, data_group, fold=0, selection_metric=None, mode="image", verbose=True
     ):
         """
-        Get the metrics corresponding to a group of participants identified by its prefix.
+        Get the metrics corresponding to a group of participants identified by its data_group.
 
         Args:
-            prefix (str): name of the data group used for the prediction task.
+            data_group (str): name of the data group used for the prediction task.
             fold (int): Index of the fold used for training.
             selection_metric (str): Metric used for best weights selection.
             mode (str): level of the prediction
             verbose (bool): if True will print associated prediction.log
         Returns:
-            (Dict[str:float]): Values of the metrics
+            (dict[str:float]): Values of the metrics
         """
         selection_metric = self._check_selection_metric(fold, selection_metric)
         if verbose:
-            self._print_description_log(prefix, fold, selection_metric)
+            self._print_description_log(data_group, fold, selection_metric)
         prediction_dir = path.join(
-            self.maps_path, f"fold-{fold}", f"best-{selection_metric}", prefix
+            self.maps_path, f"fold-{fold}", f"best-{selection_metric}", data_group
         )
         if not path.exists(prediction_dir):
             raise ValueError(
-                f"No prediction corresponding to prefix {prefix} was found."
+                f"No prediction corresponding to data group {data_group} was found."
             )
         df = pd.read_csv(
-            path.join(prediction_dir, f"{prefix}_{mode}_level_metrics.tsv"), sep="\t"
+            path.join(prediction_dir, f"{data_group}_{mode}_level_metrics.tsv"),
+            sep="\t",
         )
         return df.to_dict("records")[0]
 
     def get_interpretation(
         self,
-        prefix,
+        data_group,
+        name,
         fold=0,
         selection_metric=None,
         verbose=True,
         participant_id=None,
         session_id=None,
         mode_id=0,
-    ):
+    ) -> torch.Tensor:
         """
         Get the individual interpretation maps for one session if participant_id and session_id are filled.
         Else load the mean interpretation map.
 
         Args:
-            prefix (str): Name of the data group used for the interpretation task.
+            data_group (str): Name of the data group used for the interpretation task.
+            name (str): name of the interpretation task.
             fold (int): Index of the fold used for training.
             selection_metric (str): Metric used for best weights selection.
             verbose (bool): if True will print associated prediction.log.
@@ -1713,24 +2027,26 @@ class MapsManager:
         Returns:
             (torch.Tensor): Tensor of the interpretability map.
         """
+
         selection_metric = self._check_selection_metric(fold, selection_metric)
         if verbose:
-            self._print_description_log(
-                prefix, fold, selection_metric, interpretation=True
-            )
+            self._print_description_log(data_group, fold, selection_metric)
         map_dir = path.join(
             self.maps_path,
             f"fold-{fold}",
             f"best-{selection_metric}",
-            "interpretation",
-            prefix,
+            data_group,
+            f"interpret-{name}",
         )
         if not path.exists(map_dir):
             raise ValueError(
-                f"No prediction corresponding to prefix {prefix} was found."
+                f"No prediction corresponding to data group {data_group} and "
+                f"interpretation {name} was found."
             )
         if participant_id is None and session_id is None:
-            map_pt = torch.load(path.join(map_dir, "mean_map.pt"))
+            map_pt = torch.load(
+                path.join(map_dir, f"mean_{self.mode}-{mode_id}_map.pt")
+            )
         elif participant_id is None or session_id is None:
             raise ValueError(
                 f"To load the mean interpretation map, "
@@ -1741,7 +2057,7 @@ class MapsManager:
             map_pt = torch.load(
                 path.join(
                     map_dir,
-                    f"participant-{participant_id}_session-{session_id}_{self.mode}-{mode_id}_map.pt",
+                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_map.pt",
                 )
             )
         return map_pt

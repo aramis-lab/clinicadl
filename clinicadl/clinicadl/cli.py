@@ -108,16 +108,14 @@ def generate_data_func(args):
 
 def rs_func(args):
     from clinicadl.random_search.random_search import launch_search
-    from clinicadl.utils.meta_maps.random_search_analysis import random_search_analysis
 
-    if args.random_task == "generate":
-        launch_search(args)
-    elif args.random_task == "analysis":
-        random_search_analysis(
-            args.launch_dir,
-        )
-    else:
-        raise ValueError("This task was not implemented in random-search.")
+    launch_search(args)
+
+
+def ma_func(args):
+    from clinicadl.utils.meta_maps.getter import meta_maps_analysis
+
+    meta_maps_analysis(args.launch_dir, args.evaluation_metric)
 
 
 def retrain_func(args):
@@ -151,7 +149,7 @@ def predict_func(args):
         args.caps_directory,
         args.tsv_path,
         args.model_path,
-        args.prefix_output,
+        args.data_group,
         labels=not args.no_labels,
         gpu=not args.use_cpu,
         prepare_dl=args.use_extracted_features,
@@ -159,6 +157,7 @@ def predict_func(args):
         diagnoses=args.diagnoses,
         verbose=args.verbose,
         multi_cohort=args.multi_cohort,
+        overwrite=args.overwrite,
     )
 
 
@@ -640,38 +639,21 @@ def parse_command_line():
     )
     qc_volume_parser.set_defaults(func=qc_func)
 
-    # random search parsers
+    # random search
     rs_parser = subparser.add_parser(
         "random-search",
         parents=[parent_parser],
         help="Generate random networks to explore hyper parameters space.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    rs_subparsers = rs_parser.add_subparsers(
-        title="""Possibilities for random network training""",
-        description="""You can generate and train a new random network,
-        or relaunch a previous random job with some alterations.""",
-        dest="random_task",
-        help="""****** Possible tasks ******""",
-    )
 
-    rs_subparsers.required = True
-
-    rs_generate_parser = rs_subparsers.add_parser(
-        "generate",
-        parents=[parent_parser],
-        help="Sample a new network and train it.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    rs_pos_group = rs_generate_parser.add_argument_group(TRAIN_CATEGORIES["POSITIONAL"])
+    rs_pos_group = rs_parser.add_argument_group(TRAIN_CATEGORIES["POSITIONAL"])
     rs_pos_group.add_argument(
         "launch_dir", type=str, help="Directory containing the random_search.json file."
     )
     rs_pos_group.add_argument("name", type=str, help="Name of the job.")
 
-    rs_comp_group = rs_generate_parser.add_argument_group(
-        TRAIN_CATEGORIES["COMPUTATIONAL"]
-    )
+    rs_comp_group = rs_parser.add_argument_group(TRAIN_CATEGORIES["COMPUTATIONAL"])
     rs_comp_group.add_argument(
         "-cpu",
         "--use_cpu",
@@ -698,19 +680,7 @@ def parse_command_line():
         "perform one evaluation at the end of each epoch.",
     )
 
-    rs_generate_parser.set_defaults(func=rs_func)
-
-    rs_analysis_parser = rs_subparsers.add_parser(
-        "analysis",
-        help="Performs the analysis of all jobs in launch_dir",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-
-    rs_analysis_parser.add_argument(
-        "launch_dir", type=str, help="Directory containing the random_search.json file."
-    )
-
-    rs_analysis_parser.set_defaults(func=rs_func)
+    rs_parser.set_defaults(func=rs_func)
 
     train_parser = subparser.add_parser(
         "train", help="Train with your data and create a model."
@@ -1123,23 +1093,13 @@ def parse_command_line():
         TRAIN_CATEGORIES["POSITIONAL"]
     )
     predict_pos_group.add_argument(
-        "caps_directory", help="Data using CAPS structure.", default=None
-    )
-    predict_pos_group.add_argument(
-        "tsv_path",
-        help="""Path to the file with subjects/sessions to process.
-        If it includes the filename will load the tsv file directly.
-        Else will load the baseline tsv files of wanted diagnoses produced by tsvtool.""",
-        default=None,
-    )
-    predict_pos_group.add_argument(
         "model_path",
         help="""Path to the folder where the model is stored. Folder structure
                 should be the same obtained during the training.""",
         default=None,
     )
     predict_pos_group.add_argument(
-        "prefix_output",
+        "data_group",
         help="Prefix to name the files resulting from the prediction task.",
         type=str,
     )
@@ -1173,6 +1133,16 @@ def parse_command_line():
     predict_specific_group = predict_parser.add_argument_group(
         TRAIN_CATEGORIES["OPTIONAL"]
     )
+    predict_pos_group.add_argument(
+        "--caps_directory", help="Data using CAPS structure.", default=None
+    )
+    predict_pos_group.add_argument(
+        "--tsv_path",
+        help="""Path to the file with subjects/sessions to process.
+            If it includes the filename will load the tsv file directly.
+            Else will load the baseline tsv files of wanted diagnoses produced by tsvtool.""",
+        default=None,
+    )
     predict_specific_group.add_argument(
         "-nl",
         "--no_labels",
@@ -1182,7 +1152,7 @@ def parse_command_line():
     )
     predict_specific_group.add_argument(
         "--use_extracted_features",
-        help="""If True the extract slices or patche are used, otherwise the they
+        help="""If True the extracted slices, regions or patches are used, otherwise they
                 will be extracted on the fly (if necessary).""",
         default=False,
         action="store_true",
@@ -1204,12 +1174,42 @@ def parse_command_line():
     )
     predict_specific_group.add_argument(
         "--multi_cohort",
-        help="Performs multi-cohort classification. In this case, caps_directory and tsv_path must be paths to TSV files.",
+        help="Performs multi-cohort classification. "
+        "In this case, caps_directory and tsv_path must be paths to TSV files.",
+        action="store_true",
+        default=False,
+    )
+    predict_specific_group.add_argument(
+        "--overwrite",
+        help="If given, the data group will be erased and redefined according to"
+        "caps_directory, tsv_path and multi_cohort values.",
         action="store_true",
         default=False,
     )
 
     predict_parser.set_defaults(func=predict_func)
+
+    # random search
+    ma_parser = subparser.add_parser(
+        "maps-analysis",
+        parents=[parent_parser],
+        help="Retrieve image-level validation performance of MAPS grouped in the same directory.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    ma_pos_group = ma_parser.add_argument_group(TRAIN_CATEGORIES["POSITIONAL"])
+    ma_pos_group.add_argument(
+        "launch_dir", type=str, help="Directory containing a series of MAPS folders."
+    )
+    ma_opt_group = ma_parser.add_argument_group(TRAIN_CATEGORIES["OPTIONAL"])
+    ma_opt_group.add_argument(
+        "--evaluation_metric",
+        "-metric",
+        type=str,
+        default="loss",
+        help="Metric corresponding to validation performance.",
+    )
+
+    ma_parser.set_defaults(func=ma_func)
 
     tsv_parser = subparser.add_parser(
         "tsvtool", help="""Handle tsv files for metadata processing and data splits."""
@@ -1459,6 +1459,9 @@ def parse_command_line():
         "model_path", type=str, help="Path to the model output directory."
     )
     interpret_pos_group.add_argument(
+        "data_group", type=str, help="Name of the data group."
+    )
+    interpret_pos_group.add_argument(
         "name", type=str, help="Name of the interpretation map."
     )
 
@@ -1514,33 +1517,24 @@ def parse_command_line():
     )
     interpret_data_group.add_argument(
         "--multi_cohort",
-        help="Performs multi-cohort interpretation. In this case, caps_directory and tsv_path must be paths to TSV files.",
+        help="Performs multi-cohort interpretation. "
+        "In this case, caps_directory and tsv_path must be paths to TSV files.",
         action="store_true",
         default=False,
     )
-    interpret_data_group.add_argument(
-        "--diagnosis",
-        "-d",
-        default="AD",
-        type=str,
-        help="The images corresponding to this diagnosis only will be loaded.",
+    interpret_results_group = interpret_parent_parser.add_argument_group(
+        "%sInterpretation specific%s" % (Fore.BLUE, Fore.RESET)
     )
-    interpret_data_group.add_argument(
+    interpret_results_group.add_argument(
         "--target_node",
         default=0,
         type=str,
         help="Which target node the gradients explain. Default takes the first output node.",
     )
-    interpret_data_group.add_argument(
-        "--baseline",
+    interpret_results_group.add_argument(
+        "--save_individual",
         action="store_true",
         default=False,
-        help="If provided, only the baseline sessions are used for training.",
-    )
-    interpret_data_group.add_argument(
-        "--save_individual",
-        type=str,
-        default=None,
         help="Saves individual saliency maps in addition to the mean saliency map.",
     )
 
@@ -1576,18 +1570,27 @@ def return_train_parent_parser():
     train_pos_group.add_argument(
         "output_dir", help="Folder containing results of the training.", default=None
     )
-    train_pos_group.add_argument(
-        "model", help="CNN Model to be used during the training.", default="Conv5_FC3"
-    )
 
     train_model_group = train_parent_parser.add_argument_group(
         TRAIN_CATEGORIES["MODEL"]
+    )
+    train_model_group.add_argument(
+        "--model",
+        help="Model to be used during the training. Default will load the default model according "
+        "to the task manager.",
+        default=None,
     )
     train_model_group.add_argument(
         "--multi",
         action="store_true",
         help="If provided uses a multi-network framework.",
         default=False,
+    )
+    train_model_group.add_argument(
+        "--dropout",
+        help="rate of dropout that will be applied to dropout layers in CNN.",
+        default=0,
+        type=float,
     )
 
     train_comput_group = train_parent_parser.add_argument_group(
@@ -1700,12 +1703,6 @@ def return_train_parent_parser():
         "-wd",
         help="Weight decay value used in optimization.",
         default=1e-4,
-        type=float,
-    )
-    train_optim_group.add_argument(
-        "--dropout",
-        help="rate of dropout that will be applied to dropout layers in CNN.",
-        default=0,
         type=float,
     )
     train_optim_group.add_argument(
