@@ -288,9 +288,9 @@ class MapsManager:
             else:
                 data_test = return_dataset(
                     self.mode,
-                    caps_directory,
                     group_parameters["caps_directory"],
                     group_df,
+                    self.preprocessing,
                     all_transformations=all_transforms,
                     prepare_dl=prepare_dl
                     if prepare_dl is not None

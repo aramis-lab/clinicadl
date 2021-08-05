@@ -26,6 +26,7 @@ class Network(nn.Module):
             os.system("nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp")
             memory_available = [int(x.split()[2]) for x in open("tmp", "r").readlines()]
             free_gpu = argmax(memory_available)
+            os.remove("tmp")
             return f"cuda:{free_gpu}"
 
     @abc.abstractmethod
