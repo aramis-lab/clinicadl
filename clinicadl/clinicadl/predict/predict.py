@@ -44,9 +44,9 @@ def predict(
 
     maps_manager = MapsManager(model_path, verbose=verbose_list[verbose])
     maps_manager.predict(
-        caps_directory,
-        tsv_path,
         prefix_output,
+        caps_directory=caps_directory,
+        tsv_path=tsv_path,
         selection_metrics=selection_metrics,
         multi_cohort=multi_cohort,
         diagnoses=diagnoses,
