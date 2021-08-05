@@ -35,7 +35,7 @@ from clinicadl.utils import cli_param
     "--selection_metrics",
     "-sm",
     type=click.Choice(["loss", "balanced_accuracy"]),
-    default=("balanced_accuracy"),
+    default=["balanced_accuracy"],
     multiple=True,
     help="""List of metrics to find the best models to evaluate. Default will
     classify best model based on balanced accuracy.""",
@@ -52,7 +52,7 @@ from clinicadl.utils import cli_param
     "--diagnoses",
     "-d",
     type=click.Choice(["AD", "CN", "MCI", "sMCI", "pMCI"]),
-    default=(),
+    # default=(),
     multiple=True,
     help="List of participants that will be classified.",
 )
