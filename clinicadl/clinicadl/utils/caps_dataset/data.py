@@ -31,6 +31,7 @@ class CapsDataset(Dataset):
         augmentation_transformations=None,
         multi_cohort=False,
     ):
+        self.caps_directory = caps_directory
         self.caps_dict = self.create_caps_dict(caps_directory, multi_cohort)
         self.transformations = transformations
         self.augmentation_transformations = augmentation_transformations

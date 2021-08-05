@@ -315,18 +315,15 @@ def check_and_complete(options, random_search=False):
         "patch": {
             "patch_size": 50,
             "stride_size": 50,
-            "selection_threshold": 0,
             "use_extracted_patches": False,
         },
         "roi": {
             "roi_list": [],
-            "selection_threshold": 0,
             "uncropped_roi": False,
             "use_extracted_roi": False,
         },
         "slice": {
             "discarded_slices": 20,
-            "selection_threshold": 0,
             "slice_direction": 0,
             "use_extracted_slices": False,
         },
@@ -336,6 +333,7 @@ def check_and_complete(options, random_search=False):
     task_default_values = {
         "classification": {
             "label": "diagnosis",
+            "selection_threshold": 0,
         },
         "regression": {
             "label": "age",

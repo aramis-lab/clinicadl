@@ -22,6 +22,10 @@ class ReconstructionManager(TaskManager):
     def evaluation_metrics(self):
         return ["MSE", "MAE"]
 
+    @property
+    def save_outputs(self):
+        return True
+
     def generate_test_row(self, idx, data, outputs):
         y = data["image"][idx]
         y_pred = outputs[idx].cpu()
@@ -91,3 +95,7 @@ class ReconstructionManager(TaskManager):
     @staticmethod
     def get_criterion():
         return nn.MSELoss()
+
+    @staticmethod
+    def get_default_network():
+        return "AE_Conv5_FC3"

@@ -2,8 +2,6 @@ import abc
 
 from torch import nn
 
-from clinicadl.utils.descriptors import classproperty
-
 
 class Network(nn.Module):
     """Abstract Template for all networks used in ClinicaDL"""
@@ -11,10 +9,6 @@ class Network(nn.Module):
     def __init__(self, use_cpu=False):
         super(Network, self).__init__()
         self.device = self._select_device(use_cpu)
-
-    @classproperty
-    def possible_tasks(cls):
-        return cls._possible_tasks
 
     @staticmethod
     def _select_device(use_cpu):

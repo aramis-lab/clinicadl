@@ -31,6 +31,10 @@ class ClassificationManager(TaskManager):
     def evaluation_metrics(self):
         return ["accuracy", "sensitivity", "specificity", "PPV", "NPV", "BA"]
 
+    @property
+    def save_outputs(self):
+        return False
+
     def generate_test_row(self, idx, data, outputs):
 
         prediction = torch.argmax(outputs[idx].data).item()
@@ -176,3 +180,7 @@ class ClassificationManager(TaskManager):
     @staticmethod
     def get_criterion():
         return nn.CrossEntropyLoss()
+
+    @staticmethod
+    def get_default_network():
+        return "Conv5_FC3"

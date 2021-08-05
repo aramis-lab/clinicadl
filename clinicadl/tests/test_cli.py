@@ -89,17 +89,35 @@ def generate_cli_commands(request):
     if request.param == 'predict':
         test_input = [
             'predict',
-            '/dir/caps',
             '/dir/model_path/',
-            'DB_XXXXX'
-            '--participants_tsv', '/dir/tsv_file',
+            'DB_XXXXX',
+            '--caps_directory', '/dir/caps',
+            '--tsv_path', '/dir/tsv_file',
         ]
         keys_output = [
             'task',
+            'model_path',
+            'data_group',
             'caps_directory',
             'tsv_path',
+        ]
+
+    if request.param == 'interpret':
+        test_input = [
+            'interpret',
+            '/dir/model_path/',
+            'DB_XXXXX',
+            'GradCAM',
+            '--caps_directory', '/dir/caps',
+            '--tsv_path', '/dir/tsv_file',
+        ]
+        keys_output = [
+            'task',
             'model_path',
-            'prefix_output'
+            'data_group',
+            'name',
+            'caps_directory',
+            'tsv_path',
         ]
 
     if request.param == 'train':

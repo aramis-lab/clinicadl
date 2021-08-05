@@ -5,6 +5,8 @@ import shutil
 
 import pytest
 
+from clinicadl import MapsManager
+
 
 @pytest.fixture(params=["classification", "regression"])
 def cli_commands(request):
@@ -18,7 +20,7 @@ def cli_commands(request):
             "t1-linear",
             "data/labels_list",
             "results",
-            "Conv5_FC3",
+            "--model Conv5_FC3",
             "--epochs",
             "1",
             "--n_splits",
@@ -26,7 +28,6 @@ def cli_commands(request):
             "--folds",
             "0",
         ]
-        interpret_input = ["interpret", "results", "group-test"]
 
     elif request.param == "regression":
         cnn_input = [
@@ -37,7 +38,7 @@ def cli_commands(request):
             "t1-linear",
             "data/labels_list",
             "results",
-            "Conv5_FC3",
+            "--model Conv5_FC3",
             "--epochs",
             "1",
             "--n_splits",
@@ -45,24 +46,20 @@ def cli_commands(request):
             "--folds",
             "0",
         ]
-        interpret_input = ["interpret", "results", "individual-test"]
     else:
         raise NotImplementedError("Test %s is not implemented." % request.param)
 
-    return cnn_input, interpret_input
+    return cnn_input
 
 
 def test_interpret(cli_commands):
-    cnn_input, interpret_input = cli_commands
+    cnn_input = cli_commands
     if os.path.exists("results"):
         shutil.rmtree("results")
 
     train_error = not os.system("clinicadl " + " ".join(cnn_input))
-    interpret_error = not os.system("clinicadl " + " ".join(interpret_input))
-    interpret_flag = os.path.exists(
-        os.path.join("results", "fold-0", "best-loss", "interpretation")
-    )
+    maps_manager = MapsManager("results", verbose="debug")
+    maps_manager.interpret("train", "test")
+    interpret_map = maps_manager.get_interpretation("train", "test")
     assert train_error
-    assert interpret_error
-    assert interpret_flag
     shutil.rmtree("results")

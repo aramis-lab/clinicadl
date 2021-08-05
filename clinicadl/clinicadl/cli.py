@@ -29,18 +29,93 @@ TRAIN_CATEGORIES = {
 }
 
 
-def rs_func(args):
-    from clinicadl.random_search.random_search import launch_search
-    from clinicadl.utils.meta_maps.random_search_analysis import random_search_analysis
+def extract_tensors(args):
+    import sys
 
-    if args.random_task == "generate":
-        launch_search(args)
-    elif args.random_task == "analysis":
-        random_search_analysis(
-            args.launch_dir,
+    from clinica.pipelines.deeplearning_prepare_data.deeplearning_prepare_data_cli import (
+        DeepLearningPrepareDataCLI,
+    )
+    from clinica.utils.stream import FilterOut
+
+    sys.stdout = FilterOut(sys.stdout)
+
+    dl_prepare_data_cli = DeepLearningPrepareDataCLI()
+    dl_prepare_data_cli.run_command(args)
+
+
+def qc_func(args):
+    from clinicadl.preprocessing.quality_check.t1_linear import (
+        quality_check as linear_qc,
+    )
+    from clinicadl.preprocessing.quality_check.t1_volume import (
+        quality_check as volume_qc,
+    )
+
+    if args.preprocessing == "t1-linear":
+        linear_qc.quality_check(
+            args.caps_directory,
+            args.output_path,
+            tsv_path=args.subjects_sessions_tsv,
+            threshold=args.threshold,
+            batch_size=args.batch_size,
+            num_workers=args.nproc,
+            gpu=not args.use_cpu,
+        )
+    elif args.preprocessing == "t1-volume":
+        volume_qc.quality_check(args.caps_directory, args.output_dir, args.group_label)
+
+
+def generate_data_func(args):
+    from clinicadl.generate.generate import (
+        generate_random_dataset,
+        generate_shepplogan_dataset,
+        generate_trivial_dataset,
+    )
+
+    if args.mode == "random":
+        generate_random_dataset(
+            caps_directory=args.caps_directory,
+            tsv_path=args.subjects_sessions_tsv,
+            output_dir=args.output_dir,
+            n_subjects=args.n_subjects,
+            mean=args.mean,
+            sigma=args.sigma,
+            preprocessing=args.preprocessing,
+        )
+    elif args.mode == "trivial":
+        generate_trivial_dataset(
+            caps_directory=args.caps_directory,
+            tsv_path=args.subjects_sessions_tsv,
+            output_dir=args.output_dir,
+            n_subjects=args.n_subjects,
+            preprocessing=args.preprocessing,
+            mask_path=args.mask_path,
+            atrophy_percent=args.atrophy_percent,
         )
     else:
-        raise ValueError("This task was not implemented in random-search.")
+        labels_distribution = {
+            "AD": args.AD_subtypes_distribution,
+            "CN": args.CN_subtypes_distribution,
+        }
+        generate_shepplogan_dataset(
+            output_dir=args.output_dir,
+            img_size=args.image_size,
+            labels_distribution=labels_distribution,
+            samples=args.n_subjects,
+            smoothing=args.smoothing,
+        )
+
+
+def rs_func(args):
+    from clinicadl.random_search.random_search import launch_search
+
+    launch_search(args)
+
+
+def ma_func(args):
+    from clinicadl.utils.meta_maps.getter import meta_maps_analysis
+
+    meta_maps_analysis(args.launch_dir, args.evaluation_metric)
 
 
 def retrain_func(args):
@@ -51,17 +126,6 @@ def retrain_func(args):
 
 def resume_func(args):
     from clinicadl.train.resume import automatic_resume
-
-    if args.use_cpu and args.use_gpu:
-        raise ValueError(
-            "The flags --use_cpu and --use_gpu cannot be specified at the same time."
-        )
-    elif args.use_cpu:
-        gpu = False
-    elif args.use_gpu:
-        gpu = True
-    else:
-        gpu = None
 
     automatic_resume(
         model_path=args.model_path,
@@ -78,14 +142,14 @@ def train_func(args):
 
 # Function to dispatch command line options from predict to corresponding
 # function
-def classify_func(args):
-    from clinicadl.infer.infer import classify
+def predict_func(args):
+    from clinicadl.predict.predict import predict_cli
 
     predict_cli(
         args.caps_directory,
         args.tsv_path,
         args.model_path,
-        args.prefix_output,
+        args.data_group,
         labels=not args.no_labels,
         gpu=not args.use_cpu,
         prepare_dl=args.use_extracted_features,
@@ -93,6 +157,7 @@ def classify_func(args):
         diagnoses=args.diagnoses,
         verbose=args.verbose,
         multi_cohort=args.multi_cohort,
+        overwrite=args.overwrite,
     )
 
 
@@ -202,38 +267,393 @@ def parse_command_line():
         help="""****** Tasks proposed by clinicadl ******""",
     )
 
-    # random search parsers
+    # subparser.required = True
+
+    # Generate synthetic data
+    generate_parser = subparser.add_parser(
+        "generate", help="Generate synthetic data for functional tests."
+    )
+
+    generate_subparser = generate_parser.add_subparsers(
+        title="""Type of synthetic data generated""",
+        description="""What type of synthetic data do you want to generate?
+                (random, shepplogan, trivial).""",
+        dest="mode",
+        help="""****** Synthetic datasets proposed by clinicadl ******""",
+    )
+
+    # generate_subparser.required = True
+
+    # Positional arguments
+    generate_rs_parent_parser = argparse.ArgumentParser(add_help=False)
+    generate_rs_parent_parser.add_argument(
+        "caps_directory", help="Data using CAPS structure.", default=None
+    )
+    generate_rs_parent_parser.add_argument(
+        "preprocessing",
+        type=str,
+        choices=["t1-linear", "t1-extensive"],
+        help="Preprocessing used to generate synthetic data.",
+    )
+    generate_rs_parent_parser.add_argument(
+        "output_dir",
+        help="Folder containing the synthetic dataset.",
+    )
+    generate_rs_parent_parser.add_argument(
+        "--subjects_sessions_tsv",
+        "-tsv",
+        help="TSV file containing a list of subjects with their sessions.",
+        type=str,
+        default=None,
+    )
+    generate_rs_parent_parser.add_argument(
+        "--n_subjects",
+        type=int,
+        default=300,
+        help="Number of subjects in each class of the synthetic dataset.",
+    )
+
+    generate_random_parser = generate_subparser.add_parser(
+        "random",
+        parents=[parent_parser, generate_rs_parent_parser],
+        help="Generate a random dataset in which gaussian noise is added to brain images.",
+    )
+    generate_random_parser.add_argument(
+        "--mean",
+        type=float,
+        default=0,
+        help="Mean value of the noise added for the random dataset.",
+    )
+    generate_random_parser.add_argument(
+        "--sigma",
+        type=float,
+        default=0.5,
+        help="Standard deviation of the noise added for the random dataset.",
+    )
+    generate_random_parser.set_defaults(func=generate_data_func)
+
+    generate_trivial_parser = generate_subparser.add_parser(
+        "trivial",
+        parents=[parent_parser, generate_rs_parent_parser],
+        help="Generate a trivial dataset in which gaussian half of the brain is atrophied.",
+    )
+    generate_trivial_parser.add_argument(
+        "--mask_path",
+        type=str,
+        help="path to the extracted masks to generate the two labels.",
+        default=None,
+    )
+    generate_trivial_parser.add_argument(
+        "--atrophy_percent",
+        type=float,
+        default=60,
+        help="percentage of atrophy applied",
+    )
+    generate_trivial_parser.set_defaults(func=generate_data_func)
+
+    generate_shepplogan_parser = generate_subparser.add_parser(
+        "shepplogan",
+        help="Generate a dataset of 2D images including 3 subtypes based on Shepp Logan phantom.",
+    )
+    generate_shepplogan_parser.add_argument(
+        "output_dir",
+        help="Folder containing the synthetic dataset.",
+    )
+    generate_shepplogan_parser.add_argument(
+        "--n_subjects",
+        type=int,
+        default=300,
+        help="Number of subjects in each class of the synthetic dataset.",
+    )
+    generate_shepplogan_parser.add_argument(
+        "--image_size",
+        type=int,
+        default=128,
+        help="Size in pixels of the squared images.",
+    )
+    generate_shepplogan_parser.add_argument(
+        "--CN_subtypes_distribution",
+        "-Csd",
+        type=float,
+        nargs="+",
+        default=[1.0, 0.0, 0.0],
+        help="Probability of each subtype to be drawn in CN label.",
+    )
+    generate_shepplogan_parser.add_argument(
+        "--AD_subtypes_distribution",
+        "-Asd",
+        type=float,
+        nargs="+",
+        default=[0.05, 0.85, 0.10],
+        help="Probability of each subtype to be drawn in AD label.",
+    )
+    generate_shepplogan_parser.add_argument(
+        "--smoothing",
+        action="store_true",
+        default=False,
+        help="Adds random smoothing to generated data.",
+    )
+    generate_shepplogan_parser.set_defaults(func=generate_data_func)
+
+    # Preprocessing
+    from clinica.engine.cmdparser import init_cmdparser_objects
+    from clinica.pipelines.t1_linear.t1_linear_cli import T1LinearCLI
+
+    from clinicadl.preprocessing.run.t1_extensive.t1_extensive_cli import T1ExtensiveCli
+
+    preprocessing_parser = subparser.add_parser(
+        "preprocessing",
+        help="Preprocess T1w-weighted images with t1-linear or t1-extensive pipelines.",
+    )
+
+    preprocessing_subparser = preprocessing_parser.add_subparsers(
+        title="""Preprocessing task to execute with clinicadl""",
+        description="""What kind of task do you want to perform with clinicadl?
+                (run, quality-check, extract-tensor).""",
+        dest="preprocessing_task",
+        help="""****** Tasks proposed by clinicadl ******""",
+    )
+    preprocessing_subparser.required = True
+
+    run_parser = preprocessing_subparser.add_parser(
+        "run",
+        help="Preprocess T1w-weighted images with t1-linear or t1-extensive pipelines.",
+    )
+    run_parser._positionals.title = (
+        "%sclinicadl preprocessing expects one of the following pipelines%s"
+        % (Fore.GREEN, Fore.RESET)
+    )
+
+    def preprocessing_help(args):
+        print(
+            "%sNo pipeline was specified. Type clinica preprocessing -h for details%s"
+            % (Fore.RED, Fore.RESET)
+        )
+
+    run_parser.set_defaults(func=preprocessing_help)
+
+    init_cmdparser_objects(
+        parser,
+        run_parser.add_subparsers(dest="preprocessing"),
+        [
+            T1LinearCLI(),
+            T1ExtensiveCli(),
+        ],
+    )
+
+    extract_parser = preprocessing_subparser.add_parser(
+        "extract-tensor",
+        help="Prepare data generated Clinica for PyTorch with Tensor extraction (image, patches or slices).",
+    )
+    clinica_comp = extract_parser.add_argument_group(
+        "%sClinica mandatory arguments%s" % (Fore.BLUE, Fore.RESET)
+    )
+    clinica_comp.add_argument("caps_directory", help="Path to the CAPS directory.")
+    clinica_comp.add_argument(
+        "modality",
+        help="""For which modality the tensor will be extracted.
+            't1-linear': images preprocessed with t1-linear pipeline.
+            't1-extensive': images preprocessed with t1-extensive pipeline.
+            'custom': find images with a custom suffix in their filename and
+            transform them to tensor format.""",
+        choices=["t1-linear", "t1-extensive", "custom"],
+        default="t1-linear",
+    )
+
+    clinica_comp.add_argument(
+        "extract_method",
+        help="""Format of the extracted features. Three options:
+        'image' to convert to PyTorch tensor the complete 3D image,
+        'patch' to extract 3D volumetric patches and
+        'slice' to extract 2D slices from the image.
+        By default the features are extracted from the cropped image.""",
+        choices=["image", "slice", "patch"],
+        default="image",
+    )
+
+    optional = extract_parser.add_argument_group(
+        "%sPipeline options%s" % (Fore.BLUE, Fore.RESET)
+    )
+    optional.add_argument(
+        "-uui",
+        "--use_uncropped_image",
+        help="""Use the uncropped image instead of the
+        cropped image generated by t1-linear.""",
+        default=False,
+        action="store_true",
+    )
+
+    optional_patch = extract_parser.add_argument_group(
+        "%sPipeline options if you chose ‘patch’ extraction%s" % (Fore.BLUE, Fore.RESET)
+    )
+    optional_patch.add_argument(
+        "-ps",
+        "--patch_size",
+        help="""Patch size (default: --patch_size 50).""",
+        type=int,
+        default=50,
+    )
+    optional_patch.add_argument(
+        "-ss",
+        "--stride_size",
+        help="""Stride size (default: --stride_size 50).""",
+        type=int,
+        default=50,
+    )
+    optional_slice = extract_parser.add_argument_group(
+        "%sPipeline options if you chose ‘slice’ extraction%s" % (Fore.BLUE, Fore.RESET)
+    )
+    optional_slice.add_argument(
+        "-sd",
+        "--slice_direction",
+        help="""Slice direction. Three options:
+            '0' -> Sagittal plane,
+            '1' -> Coronal plane or
+            '2' -> Axial plane
+            (default: sagittal plane i.e. --slice_direction 0)""",
+        type=int,
+        default=0,
+    )
+    optional_slice.add_argument(
+        "-sm",
+        "--slice_mode",
+        help="""Slice mode. Two options: 'rgb' to save the slice in
+            three identical channels, ‘single’ to save the slice in a
+            single channel (default: --slice_mode rgb).""",
+        choices=["rgb", "single"],
+        default="rgb",
+    )
+    optional_custom = extract_parser.add_argument_group(
+        "%sPipeline options if you chose ‘custom’ modality%s" % (Fore.BLUE, Fore.RESET)
+    )
+    optional_custom.add_argument(
+        "-cn",
+        "--custom_suffix",
+        help="""Custom suffix filename, e.g.:
+            'graymatter_space-Ixi549Space_modulated-off_probability.nii.gz', or
+            'segm-whitematter_probability.nii.gz'
+            """,
+        type=str,
+        default="",
+    )
+
+    # Clinica standard arguments (e.g. --n_procs)
+    clinica_standard_options = extract_parser.add_argument_group(
+        "%sClinica standard options%s" % (Fore.BLUE, Fore.RESET)
+    )
+    clinica_standard_options.add_argument(
+        "-tsv",
+        "--subjects_sessions_tsv",
+        help="TSV file containing a list of subjects with their sessions.",
+    )
+    clinica_standard_options.add_argument(
+        "-wd",
+        "--working_directory",
+        help="Temporary directory to store pipelines intermediate results.",
+    )
+    clinica_standard_options.add_argument(
+        "-np",
+        "--n_procs",
+        metavar="N",
+        type=int,
+        help="Number of cores used to run in parallel.",
+    )
+
+    extract_parser.set_defaults(func=extract_tensors)
+
+    qc_parser = preprocessing_subparser.add_parser(
+        "quality-check",
+        help="Performs quality check procedure for t1-linear pipeline."
+        "Original code can be found at https://github.com/vfonov/deep-qc",
+    )
+
+    qc_subparsers = qc_parser.add_subparsers(
+        title="""Preprocessing pipelines available""",
+        description="""Which preprocessing pipeline do you want to check?""",
+        dest="preprocessing",
+        help="""****** Preprocessing pipelines ******""",
+    )
+
+    qc_subparsers.required = True
+    qc_linear_parser = qc_subparsers.add_parser(
+        "t1-linear", help="Performs quality check on t1-linear pipeline."
+    )
+    qc_linear_parser.add_argument(
+        "caps_directory", help="Data using CAPS structure.", type=str
+    )
+    qc_linear_parser.add_argument(
+        "output_path", help="Path to the output tsv file (filename included).", type=str
+    )
+
+    qc_linear_parser.add_argument(
+        "--subjects_sessions_tsv",
+        "-tsv",
+        help="TSV file containing a list of subjects with their sessions.",
+        type=str,
+        default=None,
+    )
+    qc_linear_parser.add_argument(
+        "--threshold",
+        help="The threshold on the output probability to decide if the image "
+        "passed or failed. (default=0.5)",
+        type=float,
+        default=0.5,
+    )
+    qc_linear_parser.add_argument(
+        "--batch_size",
+        help="Batch size used in DataLoader (default=1).",
+        default=1,
+        type=int,
+    )
+    qc_linear_parser.add_argument(
+        "-np",
+        "--nproc",
+        help="Number of cores used the quality check. (default=2)",
+        type=int,
+        default=2,
+    )
+    qc_linear_parser.add_argument(
+        "-cpu",
+        "--use_cpu",
+        action="store_true",
+        help="If provided, will use CPU instead of GPU.",
+        default=False,
+    )
+    qc_linear_parser.set_defaults(func=qc_func)
+
+    qc_volume_parser = qc_subparsers.add_parser(
+        "t1-volume", help="Performs quality check on t1-volume pipeline."
+    )
+    qc_volume_parser.add_argument(
+        "caps_directory", help="Data using CAPS structure.", type=str
+    )
+    qc_volume_parser.add_argument(
+        "output_dir",
+        help="Path to the output directory containing TSV files.",
+        type=str,
+    )
+    qc_volume_parser.add_argument(
+        "group_label",
+        help="Identifier for the group of subjects used to create the DARTEL template.",
+        type=str,
+    )
+    qc_volume_parser.set_defaults(func=qc_func)
+
+    # random search
     rs_parser = subparser.add_parser(
         "random-search",
         parents=[parent_parser],
         help="Generate random networks to explore hyper parameters space.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    rs_subparsers = rs_parser.add_subparsers(
-        title="""Possibilities for random network training""",
-        description="""You can generate and train a new random network,
-        or relaunch a previous random job with some alterations.""",
-        dest="random_task",
-        help="""****** Possible tasks ******""",
-    )
 
-    rs_subparsers.required = True
-
-    rs_generate_parser = rs_subparsers.add_parser(
-        "generate",
-        parents=[parent_parser],
-        help="Sample a new network and train it.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    rs_pos_group = rs_generate_parser.add_argument_group(TRAIN_CATEGORIES["POSITIONAL"])
+    rs_pos_group = rs_parser.add_argument_group(TRAIN_CATEGORIES["POSITIONAL"])
     rs_pos_group.add_argument(
         "launch_dir", type=str, help="Directory containing the random_search.json file."
     )
     rs_pos_group.add_argument("name", type=str, help="Name of the job.")
 
-    rs_comp_group = rs_generate_parser.add_argument_group(
-        TRAIN_CATEGORIES["COMPUTATIONAL"]
-    )
+    rs_comp_group = rs_parser.add_argument_group(TRAIN_CATEGORIES["COMPUTATIONAL"])
     rs_comp_group.add_argument(
         "-cpu",
         "--use_cpu",
@@ -260,19 +680,7 @@ def parse_command_line():
         "perform one evaluation at the end of each epoch.",
     )
 
-    rs_generate_parser.set_defaults(func=rs_func)
-
-    rs_analysis_parser = rs_subparsers.add_parser(
-        "analysis",
-        help="Performs the analysis of all jobs in launch_dir",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-
-    rs_analysis_parser.add_argument(
-        "launch_dir", type=str, help="Directory containing the random_search.json file."
-    )
-
-    rs_analysis_parser.set_defaults(func=rs_func)
+    rs_parser.set_defaults(func=rs_func)
 
     train_parser = subparser.add_parser(
         "train", help="Train with your data and create a model."
@@ -685,23 +1093,13 @@ def parse_command_line():
         TRAIN_CATEGORIES["POSITIONAL"]
     )
     predict_pos_group.add_argument(
-        "caps_directory", help="Data using CAPS structure.", default=None
-    )
-    predict_pos_group.add_argument(
-        "tsv_path",
-        help="""Path to the file with subjects/sessions to process.
-        If it includes the filename will load the tsv file directly.
-        Else will load the baseline tsv files of wanted diagnoses produced by tsvtool.""",
-        default=None,
-    )
-    predict_pos_group.add_argument(
         "model_path",
         help="""Path to the folder where the model is stored. Folder structure
                 should be the same obtained during the training.""",
         default=None,
     )
     predict_pos_group.add_argument(
-        "prefix_output",
+        "data_group",
         help="Prefix to name the files resulting from the prediction task.",
         type=str,
     )
@@ -735,6 +1133,16 @@ def parse_command_line():
     predict_specific_group = predict_parser.add_argument_group(
         TRAIN_CATEGORIES["OPTIONAL"]
     )
+    predict_pos_group.add_argument(
+        "--caps_directory", help="Data using CAPS structure.", default=None
+    )
+    predict_pos_group.add_argument(
+        "--tsv_path",
+        help="""Path to the file with subjects/sessions to process.
+            If it includes the filename will load the tsv file directly.
+            Else will load the baseline tsv files of wanted diagnoses produced by tsvtool.""",
+        default=None,
+    )
     predict_specific_group.add_argument(
         "-nl",
         "--no_labels",
@@ -744,7 +1152,7 @@ def parse_command_line():
     )
     predict_specific_group.add_argument(
         "--use_extracted_features",
-        help="""If True the extract slices or patche are used, otherwise the they
+        help="""If True the extracted slices, regions or patches are used, otherwise they
                 will be extracted on the fly (if necessary).""",
         default=False,
         action="store_true",
@@ -766,12 +1174,281 @@ def parse_command_line():
     )
     predict_specific_group.add_argument(
         "--multi_cohort",
-        help="Performs multi-cohort classification. In this case, caps_directory and tsv_path must be paths to TSV files.",
+        help="Performs multi-cohort classification. "
+        "In this case, caps_directory and tsv_path must be paths to TSV files.",
+        action="store_true",
+        default=False,
+    )
+    predict_specific_group.add_argument(
+        "--overwrite",
+        help="If given, the data group will be erased and redefined according to"
+        "caps_directory, tsv_path and multi_cohort values.",
         action="store_true",
         default=False,
     )
 
     predict_parser.set_defaults(func=predict_func)
+
+    # random search
+    ma_parser = subparser.add_parser(
+        "maps-analysis",
+        parents=[parent_parser],
+        help="Retrieve image-level validation performance of MAPS grouped in the same directory.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    ma_pos_group = ma_parser.add_argument_group(TRAIN_CATEGORIES["POSITIONAL"])
+    ma_pos_group.add_argument(
+        "launch_dir", type=str, help="Directory containing a series of MAPS folders."
+    )
+    ma_opt_group = ma_parser.add_argument_group(TRAIN_CATEGORIES["OPTIONAL"])
+    ma_opt_group.add_argument(
+        "--evaluation_metric",
+        "-metric",
+        type=str,
+        default="loss",
+        help="Metric corresponding to validation performance.",
+    )
+
+    ma_parser.set_defaults(func=ma_func)
+
+    tsv_parser = subparser.add_parser(
+        "tsvtool", help="""Handle tsv files for metadata processing and data splits."""
+    )
+
+    tsv_subparser = tsv_parser.add_subparsers(
+        title="""Task to execute with tsv tool:""",
+        description="""What kind of task do you want to use with tsv tool?
+                (restrict, getlabels, split, kfold, analysis).""",
+        dest="tsv_task",
+        help="""****** Tasks proposed by clinicadl tsv tool ******""",
+    )
+
+    tsv_subparser.required = True
+
+    tsv_restrict_subparser = tsv_subparser.add_parser(
+        "restrict", help="Reproduce restrictions applied to AIBL and OASIS datasets"
+    )
+
+    tsv_restrict_subparser.add_argument(
+        "dataset",
+        help="dataset on which the restriction is performed.",
+        choices=["AIBL", "OASIS"],
+        type=str,
+    )
+
+    tsv_restrict_subparser.add_argument(
+        "merged_tsv",
+        help="Path to the file obtained by the command clinica iotools merge-tsv.",
+        type=str,
+    )
+    tsv_restrict_subparser.add_argument(
+        "results_path",
+        help="Path to the output tsv file (filename included).",
+        type=str,
+    )
+
+    tsv_restrict_subparser.set_defaults(func=tsv_restrict_func)
+
+    tsv_getlabels_subparser = tsv_subparser.add_parser(
+        "getlabels", parents=[parent_parser], help="Get labels in separate tsv files."
+    )
+
+    tsv_getlabels_subparser.add_argument(
+        "merged_tsv",
+        help="Path to the file obtained by the command clinica iotools merge-tsv.",
+        type=str,
+    )
+    tsv_getlabels_subparser.add_argument(
+        "missing_mods",
+        help="Path to the folder where the outputs of clinica iotools missing-mods are.",
+        type=str,
+    )
+    tsv_getlabels_subparser.add_argument(
+        "results_path",
+        type=str,
+        help="Path to the folder where tsv files are extracted.",
+    )
+
+    # Optional arguments
+    tsv_getlabels_subparser.add_argument(
+        "--modality",
+        "-mod",
+        help="Modality to select sessions. Sessions which do not include the modality will be excluded.",
+        default="t1w",
+        type=str,
+    )
+    tsv_getlabels_subparser.add_argument(
+        "--diagnoses",
+        help="Labels that must be extracted from merged_tsv.",
+        nargs="+",
+        type=str,
+        choices=["AD", "BV", "CN", "MCI", "sMCI", "pMCI"],
+        default=["AD", "CN"],
+    )
+    tsv_getlabels_subparser.add_argument(
+        "--time_horizon",
+        help="Time horizon to analyse stability of MCI subjects.",
+        default=36,
+        type=int,
+    )
+    tsv_getlabels_subparser.add_argument(
+        "--restriction_path",
+        help="Path to a tsv containing the sessions that can be included.",
+        type=str,
+        default=None,
+    )
+    tsv_getlabels_subparser.add_argument(
+        "--variables_of_interest",
+        help="Variables of interest that will be kept in the final lists."
+        "Default will keep the diagnosis, age and the sex needed for the split procedure.",
+        type=str,
+        nargs="+",
+        default=None,
+    )
+    tsv_getlabels_subparser.add_argument(
+        "--keep_smc",
+        help="This flag allows to keep SMC participants, else they are removed.",
+        default=False,
+        action="store_true",
+    )
+
+    tsv_getlabels_subparser.set_defaults(func=tsv_getlabels_func)
+
+    tsv_split_subparser = tsv_subparser.add_parser(
+        "split",
+        parents=[parent_parser],
+        help="Performs one stratified shuffle split on participant level.",
+    )
+
+    tsv_split_subparser.add_argument(
+        "formatted_data_path",
+        help="Path to the folder containing data extracted by clinicadl tsvtool getlabels.",
+        type=str,
+    )
+
+    # Optional arguments
+    tsv_split_subparser.add_argument(
+        "--n_test",
+        help="If >= 1, number of subjects to put in set with name 'subset_name'. "
+        "If < 1, proportion of subjects to put set with name 'subset_name'. "
+        "If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name.",
+        type=float,
+        default=100.0,
+    )
+    tsv_split_subparser.add_argument(
+        "--MCI_sub_categories",
+        help="Deactivate default managing of MCI sub-categories to avoid data leakage.",
+        action="store_false",
+        default=True,
+    )
+    tsv_split_subparser.add_argument(
+        "--p_sex_threshold",
+        "-ps",
+        help="The threshold used for the chi2 test on sex distributions.",
+        default=0.80,
+        type=float,
+    )
+    tsv_split_subparser.add_argument(
+        "--p_age_threshold",
+        "-pa",
+        help="The threshold used for the T-test on age distributions.",
+        default=0.80,
+        type=float,
+    )
+    tsv_split_subparser.add_argument(
+        "--subset_name",
+        help="Name of the subset that is complementary to train.",
+        type=str,
+        default="test",
+    )
+    tsv_split_subparser.add_argument(
+        "--ignore_demographics",
+        help="If True do not use age and sex to create the splits.",
+        default=False,
+        action="store_true",
+    )
+    tsv_split_subparser.add_argument(
+        "--categorical_split_variable",
+        help="Name of a categorical variable used for a stratified shuffle split "
+        "(in addition to age and sex selection).",
+        default=None,
+        type=str,
+    )
+
+    tsv_split_subparser.set_defaults(func=tsv_split_func)
+
+    tsv_kfold_subparser = tsv_subparser.add_parser(
+        "kfold",
+        parents=[parent_parser],
+        help="Performs a k-fold split on participant level.",
+    )
+
+    tsv_kfold_subparser.add_argument(
+        "formatted_data_path",
+        help="Path to the folder containing data extracted by clinicadl tsvtool getlabels.",
+        type=str,
+    )
+
+    # Optional arguments
+    tsv_kfold_subparser.add_argument(
+        "--n_splits",
+        help="Number of folds in the k-fold split."
+        "If 0, there is no training set and the whole dataset is considered as a test set.",
+        type=int,
+        default=5,
+    )
+    tsv_kfold_subparser.add_argument(
+        "--MCI_sub_categories",
+        help="Deactivate default managing of MCI sub-categories to avoid data leakage.",
+        action="store_false",
+        default=True,
+    )
+    tsv_kfold_subparser.add_argument(
+        "--subset_name",
+        help="Name of the subset that is complementary to train.",
+        type=str,
+        default="validation",
+    )
+    tsv_kfold_subparser.add_argument(
+        "--stratification",
+        help="Name of a variable used to stratify the k-fold split.",
+        type=str,
+        default=None,
+    )
+
+    tsv_kfold_subparser.set_defaults(func=tsv_kfold_func)
+
+    tsv_analysis_subparser = tsv_subparser.add_parser(
+        "analysis", help="Produces a demographic analysis of the extracted labels."
+    )
+
+    tsv_analysis_subparser.add_argument(
+        "merged_tsv",
+        help="Path to the file obtained by the command clinica iotools merge-tsv.",
+        type=str,
+    )
+    tsv_analysis_subparser.add_argument(
+        "formatted_data_path",
+        help="Path to the folder containing data extracted by clinicadl tsvtool getlabels.",
+        type=str,
+    )
+    tsv_analysis_subparser.add_argument(
+        "results_path",
+        help="Path to the output tsv file (filename included).",
+        type=str,
+    )
+
+    # Modality selection
+    tsv_analysis_subparser.add_argument(
+        "--diagnoses",
+        help="Labels selected for the demographic analysis.",
+        default=["AD", "CN"],
+        nargs="+",
+        type=str,
+        choices=["AD", "BV", "CN", "MCI", "sMCI", "pMCI"],
+    )
+
+    tsv_analysis_subparser.set_defaults(func=tsv_analysis_func)
 
     interpret_parent_parser = argparse.ArgumentParser(add_help=False)
 
@@ -780,6 +1457,9 @@ def parse_command_line():
     )
     interpret_pos_group.add_argument(
         "model_path", type=str, help="Path to the model output directory."
+    )
+    interpret_pos_group.add_argument(
+        "data_group", type=str, help="Name of the data group."
     )
     interpret_pos_group.add_argument(
         "name", type=str, help="Name of the interpretation map."
@@ -837,33 +1517,24 @@ def parse_command_line():
     )
     interpret_data_group.add_argument(
         "--multi_cohort",
-        help="Performs multi-cohort interpretation. In this case, caps_directory and tsv_path must be paths to TSV files.",
+        help="Performs multi-cohort interpretation. "
+        "In this case, caps_directory and tsv_path must be paths to TSV files.",
         action="store_true",
         default=False,
     )
-    interpret_data_group.add_argument(
-        "--diagnosis",
-        "-d",
-        default="AD",
-        type=str,
-        help="The images corresponding to this diagnosis only will be loaded.",
+    interpret_results_group = interpret_parent_parser.add_argument_group(
+        "%sInterpretation specific%s" % (Fore.BLUE, Fore.RESET)
     )
-    interpret_data_group.add_argument(
+    interpret_results_group.add_argument(
         "--target_node",
         default=0,
         type=str,
         help="Which target node the gradients explain. Default takes the first output node.",
     )
-    interpret_data_group.add_argument(
-        "--baseline",
+    interpret_results_group.add_argument(
+        "--save_individual",
         action="store_true",
         default=False,
-        help="If provided, only the baseline sessions are used for training.",
-    )
-    interpret_data_group.add_argument(
-        "--save_individual",
-        type=str,
-        default=None,
         help="Saves individual saliency maps in addition to the mean saliency map.",
     )
 
@@ -899,18 +1570,27 @@ def return_train_parent_parser():
     train_pos_group.add_argument(
         "output_dir", help="Folder containing results of the training.", default=None
     )
-    train_pos_group.add_argument(
-        "model", help="CNN Model to be used during the training.", default="Conv5_FC3"
-    )
 
     train_model_group = train_parent_parser.add_argument_group(
         TRAIN_CATEGORIES["MODEL"]
+    )
+    train_model_group.add_argument(
+        "--model",
+        help="Model to be used during the training. Default will load the default model according "
+        "to the task manager.",
+        default=None,
     )
     train_model_group.add_argument(
         "--multi",
         action="store_true",
         help="If provided uses a multi-network framework.",
         default=False,
+    )
+    train_model_group.add_argument(
+        "--dropout",
+        help="rate of dropout that will be applied to dropout layers in CNN.",
+        default=0,
+        type=float,
     )
 
     train_comput_group = train_parent_parser.add_argument_group(
@@ -1023,12 +1703,6 @@ def return_train_parent_parser():
         "-wd",
         help="Weight decay value used in optimization.",
         default=1e-4,
-        type=float,
-    )
-    train_optim_group.add_argument(
-        "--dropout",
-        help="rate of dropout that will be applied to dropout layers in CNN.",
-        default=0,
         type=float,
     )
     train_optim_group.add_argument(
