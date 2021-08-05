@@ -2,42 +2,27 @@
 
 import pytest
 
-import clinicadl.cli as cli
+import clinicadl.cmdline as cli
 
 
 @pytest.fixture(
     params=[
-        "preprocessing_run_t1_linear",
-        "preprocessing_run_t1_extensive",
-        "extract_tensor",
+        "extract",
         "generate",
-        "quality_check",
+        "interpret",
         "predict",
-        "train_image",
-        "train_slice",
-        "train_patch",
+        "random_search"
+        "quality_check",
+        "train",
+        "tsvtool",
     ]
 )
 def generate_cli_commands(request):
-    if request.param == "preprocessing_run_t1_linear":
-        test_input = ["preprocessing", "run", "t1-linear", "/dir/bids/", "/dir/caps/"]
-        keys_output = [
-            "task",
-            "preprocessing_task",
-            "preprocessing",
-            "bids_directory",
-            "caps_directory",
-        ]
-
-    if request.param == "preprocessing_run_t1_extensive":
-        test_input = ["preprocessing", "run", "t1-extensive", "/dir/caps/"]
-        keys_output = ["task", "preprocessing_task", "preprocessing", "caps_directory"]
 
     # fmt: off
-    if request.param == 'extract_tensor':
+    if request.param == 'extract':
         test_input = [
-            'preprocessing',
-            'extract-tensor',
+            'extract',
             '/dir/caps',
             't1-linear',
             'slice',
@@ -65,7 +50,6 @@ def generate_cli_commands(request):
         ]
     if request.param == 'quality_check':
         test_input = [
-            'preprocessing',
             'quality-check',
             't1-linear',
             '/dir/caps',
@@ -88,7 +72,6 @@ def generate_cli_commands(request):
             'generate',
             'random',
             '/dir/caps',
-            't1-linear',
             '/dir/output/',
             '--n_subjects', '10',
             '--mean', '0.5',
@@ -107,9 +90,9 @@ def generate_cli_commands(request):
         test_input = [
             'predict',
             '/dir/caps',
-            '/dir/tsv_file',
             '/dir/model_path/',
             'DB_XXXXX'
+            '--participants_tsv', '/dir/tsv_file',
         ]
         keys_output = [
             'task',
@@ -119,55 +102,14 @@ def generate_cli_commands(request):
             'prefix_output'
         ]
 
-    if request.param == 'train_slice':
+    if request.param == 'train':
         test_input = [
             'train',
-            'slice',
             'classification',
             '/dir/caps',
-            't1-linear',
+            'preprocessing json', # TODO
             '/dir/tsv_path/',
-            '/dir/output/',
-            'Conv5_FC3']
-        keys_output = [
-            'task',
-            'mode',
-            'network_task',
-            'caps_directory',
-            'preprocessing',
-            'tsv_path',
-            'output_dir',
-            'model']
-
-    if request.param == 'train_image':
-        test_input = [
-            'train',
-            'image',
-            'reconstruction',
-            '/dir/caps',
-            't1-linear',
-            '/dir/tsv_path/',
-            '/dir/output/',
-            'Conv5_FC3']
-        keys_output = [
-            'task',
-            'mode',
-            'network_task',
-            'caps_directory',
-            'preprocessing',
-            'tsv_path',
-            'output_dir',
-            'model']
-    if request.param == 'train_patch':
-        test_input = [
-            'train',
-            'patch',
-            'regression',
-            '/dir/caps',
-            't1-linear',
-            '/dir/tsv_path/',
-            '/dir/output/',
-            'Conv5_FC3']
+            '/dir/output/']
         keys_output = [
             'task',
             'mode',
@@ -185,8 +127,7 @@ def generate_cli_commands(request):
 def test_cli(generate_cli_commands):
     import re
 
-    test_input = generate_cli_commands[0]
-    keys_output = generate_cli_commands[1]
+    test_input, keys_output = generate_cli_commands
     print("Value of test_input is:", type(test_input), test_input)
     regex = re.compile(r"\-.*$")
     test_input_filtered = [i for i in test_input if not regex.match(i)]
