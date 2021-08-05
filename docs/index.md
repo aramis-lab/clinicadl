@@ -9,6 +9,8 @@ and [data set restriction](TSVTools.md#restrict---reproduce-restrictions-on-spec
 are still specific to Alzheimer's disease context. For more information on this clinical context, please
 refer to [our tutorial](https://aramislab.paris.inria.fr/clinicadl/tuto/Notebooks-AD-DL/clinical.html).
 
+If you are new to ClinicaDL, please consider reading the [First steps section](./Introduction.md)
+before starting your project!
 
 !!! tip "ClinicaDL tutorial"
     Visit our [hands-on tutorial web site](https://aramislab.paris.inria.fr/clinicadl/tuto/intro.html) 

@@ -81,6 +81,7 @@ the following file system:
                         ├── mean_<mode>-<k>_map.pt
                         └── sub-<i>_ses-<j>_<mode>-<k>.pt
 ```
+
 - `mean_<mode>-<k>_map.pt` is the tensor of the mean saliency map for mode `k` 
   across the data set used (always saved),
 - `sub-<i>_ses-<j>_<mode>-<k>.pt` is the tensor of the saliency map for participant `i`, session `j`

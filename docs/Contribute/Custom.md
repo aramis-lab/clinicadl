@@ -17,7 +17,8 @@ and importing it in `clinicadl/utils/network/__init__.py`.
 
 This model class inherits from  the abstract `Network` class in `clinicadl/utils/network/network.py`.
 
-Three abstract methods must be implemented to make it work
+Three abstract methods must be implemented to make it work:
+
 1. `forward`: computes the forward pass of the network, it may return several outputs
    needed to compute the loss.
 2. `predict`: computes the forward pass of the network and only returns the main output.

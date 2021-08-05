@@ -63,7 +63,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Installation: Installation.md
-  - Introduction to ClinicaDL: Introduction.md
+  - First steps: Introduction.md
   - Prepare your metadata: TSVTools.md
   - Prepare your imaging data:
     - Introduction: Preprocessing/Introduction.md
