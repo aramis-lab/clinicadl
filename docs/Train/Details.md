@@ -23,7 +23,7 @@ To avoid this, pooling layers with adaptive padding `PadMaxPool3d` were implemen
 
 ## Autoencoders construction from CNN architectures
 
-In `clinicadl`, autoencoders acn be derived from a CNN architecture. In this case:
+In ClinicaDL, autoencoders can be derived from a CNN architecture. In this case:
 
 - the encoder corresponds to the convolutional part of the CNN,
 - the decoder is composed of the transposed version of the operations used in the encoder.
