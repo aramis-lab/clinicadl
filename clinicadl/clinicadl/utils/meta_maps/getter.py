@@ -10,6 +10,15 @@ from clinicadl import MapsManager
 
 
 def meta_maps_analysis(launch_dir, evaluation_metric="loss"):
+    """
+    This function summarizes the validation performance according to `evaluation_metric`
+    of several MAPS stored in the folder `launch_dir`.
+    The output TSV files are written in `launch_dir`.
+
+    Args:
+        launch_dir (str): Path to the directory containing several MAPS.
+        evaluation_metric (str): Name of the metric used for validation evaluation.
+    """
 
     jobs_list = [
         job
