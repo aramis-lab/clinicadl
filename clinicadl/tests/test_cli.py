@@ -107,7 +107,7 @@ def generate_cli_commands(request):
             'train',
             'classification',
             '/dir/caps',
-            'preprocessing json', # TODO
+            '/dir/caps/preprocessing.json',
             '/dir/tsv_path/',
             '/dir/output/']
         keys_output = [
