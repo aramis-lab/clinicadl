@@ -113,7 +113,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
             parameters["masks_location"] = path.join(
                 caps_directory, "masks", f"tpl-{parameters['roi_template']}"
             )
-            if parameters["roi_list"] is None:
+            if len(parameters["roi_list"])==0:
                 raise ValueError("A list of regions must be given.")
             else:
                 check_mask_list(

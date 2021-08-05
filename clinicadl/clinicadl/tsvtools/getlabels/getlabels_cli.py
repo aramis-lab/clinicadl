@@ -29,7 +29,7 @@ cmd_name = "getlabels"
     "Default will keep the diagnosis, age and the sex needed for the split procedure.",
     type=str,
     multiple=True,
-    default=None,
+    default=(),
 )
 @click.option(
     "--keep_smc",
@@ -56,6 +56,9 @@ def cli(
     Outputs are stored in RESULTS_TSV.
     """
     from .getlabels import get_labels
+
+    if len(variables_of_interest)==0:
+        variables_of_interest = None
 
     get_labels(
         merged_tsv,

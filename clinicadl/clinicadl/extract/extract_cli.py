@@ -68,7 +68,7 @@ from clinica.utils.pet import LIST_SUVR_REFERENCE_REGIONS
     "--roi_list",
     type=str,
     multiple=True,
-    default=None,
+    default=(),
     help="ROI list if EXTRACT_METHOD is `roi`. List of regions to be extracted",
 )
 @click.option(

@@ -52,7 +52,7 @@ from clinicadl.utils import cli_param
     "--diagnoses",
     "-d",
     type=click.Choice(["AD", "CN", "MCI", "sMCI", "pMCI"]),
-    default=[],
+    default=(),
     multiple=True,
     help="List of participants that will be classified.",
 )
