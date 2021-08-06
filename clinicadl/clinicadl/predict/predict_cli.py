@@ -4,12 +4,14 @@ from clinicadl.utils import cli_param
 
 
 @click.command(name="predict")
-@cli_param.argument.caps_directory
 @cli_param.argument.input_maps
-@cli_param.argument.predict_prefix
-@cli_param.option.use_gpu
-@cli_param.option.n_proc
-@cli_param.option.batch_size
+@cli_param.argument.data_group
+@click.option(
+    "--caps_directory",
+    type=click.Path(exists=True),
+    default=None,
+    help="Data using CAPS structure, if different from classification task",
+)
 @click.option(
     "--participants_tsv",
     default=None,
@@ -54,13 +56,16 @@ from clinicadl.utils import cli_param
     type=click.Choice(["AD", "CN", "MCI", "sMCI", "pMCI"]),
     # default=(),
     multiple=True,
-    help="List of participants that will be classified.",
+    help="List of participants diagnoses that will be classified.",
 )
+@cli_param.option.use_gpu
+@cli_param.option.n_proc
+@cli_param.option.batch_size
 def cli(
-    input_caps_directory,
-    participants_tsv,
     input_maps,
-    inference_prefix,
+    data_group,
+    caps_directory,
+    participants_tsv,
     gpu,
     n_proc,
     batch_size,
@@ -71,16 +76,15 @@ def cli(
     multi_cohort,
 ):
     """
-    Compute prediction of INPUT_CAPS_DIRECTORY data with INPUT_MAPS_DIRECTORY models
-    on OUTPUT_PREFIX images subset.
+    Compute prediction of DATA_GROUP data with INPUT_MAPS_DIRECTORY models.
     """
     from .predict import predict
 
     predict(
-        caps_directory=input_caps_directory,
+        maps_dir=input_maps,
+        data_group=data_group,
+        caps_directory=caps_directory,
         tsv_path=participants_tsv,
-        model_path=input_maps,
-        prefix_output=inference_prefix,
         labels=labels,
         gpu=gpu,
         num_workers=n_proc,

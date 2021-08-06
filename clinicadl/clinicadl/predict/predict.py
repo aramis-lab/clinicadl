@@ -3,10 +3,10 @@ from clinicadl import MapsManager
 
 
 def predict(
+    maps_dir,
+    data_group,
     caps_directory,
     tsv_path,
-    model_path,
-    prefix_output,
     labels=True,
     gpu=True,
     num_workers=0,
@@ -14,7 +14,6 @@ def predict(
     prepare_dl=True,
     selection_metrics=None,
     diagnoses=None,
-    verbose=0,
     multi_cohort=False,
     overwrite=False,
 ):
@@ -23,11 +22,11 @@ def predict(
     for all the models selected using a metric in selection_metrics.
 
     Args:
+        maps_dir (str): file with the model (pth format).
+        data_group: prefix of all classification outputs.
         caps_directory (str): path to the CAPS folder. For more information please refer to
             [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
         tsv_path (str): path to a TSV file containing the list of participants and sessions to interpret.
-        model_path (str): file with the model (pth format).
-        prefix_output: prefix of all classification outputs.
         labels: by default is True. If False no metrics tsv files will be written.
         gpu: if true, it uses gpu.
         num_workers: num_workers used in DataLoader
@@ -42,9 +41,9 @@ def predict(
     """
     verbose_list = ["warning", "info", "debug"]
 
-    maps_manager = MapsManager(model_path, verbose=verbose_list[verbose])
+    maps_manager = MapsManager(maps_dir, verbose=verbose_list[0])
     maps_manager.predict(
-        prefix_output,
+        data_group,
         caps_directory=caps_directory,
         tsv_path=tsv_path,
         selection_metrics=selection_metrics,
