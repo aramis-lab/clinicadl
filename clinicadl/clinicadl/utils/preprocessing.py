@@ -1,5 +1,5 @@
-import json
 import errno
+import json
 import os
 
 
@@ -12,12 +12,9 @@ def write_preprocessing(preprocessing_dict, caps_directory):
     )
     if not os.path.exists(extract_dir):
         os.mkdir(extract_dir)
-    json_path = os.path.join(
-        extract_dir,
-        "extract_" + str(int(time.time())) + ".json"
-    )
+    json_path = os.path.join(extract_dir, "extract_" + str(int(time.time())) + ".json")
     with open(json_path, "w") as json_file:
-        json.dump(preprocessing_dict, json_file)
+        json.dump(preprocessing_dict, json_file, indent=2)
     return json_path
 
 
