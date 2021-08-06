@@ -1,157 +1,90 @@
 # coding: utf8
 
 import pytest
+from click.testing import CliRunner
 
 import clinicadl.cmdline as cli
 
+# Test to ensure that the help string at the command line is invoked without errors
 
+# Test for the first level at the command line
 @pytest.fixture(
     params=[
         "extract",
         "generate",
         "interpret",
         "predict",
-        "random_search"
-        "quality_check",
+        # "random-search"
+        "quality-check",
         "train",
         "tsvtool",
     ]
 )
-def generate_cli_commands(request):
-
-    # fmt: off
-    if request.param == 'extract':
-        test_input = [
-            'extract',
-            '/dir/caps',
-            't1-linear',
-            'slice',
-            '-ps', '50',
-            '-ss', '50',
-            '-sd', '0',
-            '-sm', 'rgb',
-            '-tsv', '/dir/tsv.file',
-            '-wd', '/dir/work/dir',
-            '-np', '1',
-        ]
-        keys_output = [
-            'task',
-            'preprocessing_task',
-            'caps_directory',
-            'modality',
-            'extract_method',
-            'patch_size',
-            'stride_size',
-            'slice_direction',
-            'slice_mode',
-            'subjects_sessions_tsv',
-            'working_directory',
-            'n_procs',
-        ]
-    if request.param == 'quality_check':
-        test_input = [
-            'quality-check',
-            't1-linear',
-            '/dir/caps',
-            '/dir/res.tsv',
-            '-tsv', '/dir/tsv.file',
-            '--threshold', '0.5',
-            '--batch_size', '8']
-        keys_output = [
-            'task',
-            'preprocessing_task',
-            'preprocessing',
-            'caps_directory',
-            'output_path',
-            'subjects_sessions_tsv',
-            'threshold',
-            'batch_size']
-
-    if request.param == 'generate':
-        test_input = [
-            'generate',
-            'random',
-            '/dir/caps',
-            '/dir/output/',
-            '--n_subjects', '10',
-            '--mean', '0.5',
-            '--sigma', '0.5']
-        keys_output = [
-            'task',
-            'mode',
-            'caps_directory',
-            'preprocessing',
-            'output_dir',
-            'n_subjects',
-            'mean',
-            'sigma']
-
-    if request.param == 'predict':
-        test_input = [
-            'predict',
-            '/dir/model_path/',
-            'DB_XXXXX',
-            '--caps_directory', '/dir/caps',
-            '--tsv_path', '/dir/tsv_file',
-        ]
-        keys_output = [
-            'task',
-            'model_path',
-            'data_group',
-            'caps_directory',
-            'tsv_path',
-        ]
-
-    if request.param == 'interpret':
-        test_input = [
-            'interpret',
-            '/dir/model_path/',
-            'DB_XXXXX',
-            'GradCAM',
-            '--caps_directory', '/dir/caps',
-            '--tsv_path', '/dir/tsv_file',
-        ]
-        keys_output = [
-            'task',
-            'model_path',
-            'data_group',
-            'name',
-            'caps_directory',
-            'tsv_path',
-        ]
-
-    if request.param == 'train':
-        test_input = [
-            'train',
-            'classification',
-            '/dir/caps',
-            '/dir/caps/preprocessing.json',
-            '/dir/tsv_path/',
-            '/dir/output/']
-        keys_output = [
-            'task',
-            'mode',
-            'network_task',
-            'caps_directory',
-            'preprocessing',
-            'tsv_path',
-            'output_dir',
-            'model']
-    # fmt: on
-
-    return test_input, keys_output
+def generate_cli_first_lv(request):
+    task = request.param
+    return task
 
 
-def test_cli(generate_cli_commands):
-    import re
+def test_first_lv(generate_cli_first_lv):
+    runner = CliRunner()
+    cli_input = generate_cli_first_lv
+    print(f"Testing input cli {cli_input}")
+    result = runner.invoke(cli, f"{cli_input} -h")
+    assert result.exit_code == 0
 
-    test_input, keys_output = generate_cli_commands
-    print("Value of test_input is:", type(test_input), test_input)
-    regex = re.compile(r"\-.*$")
-    test_input_filtered = [i for i in test_input if not regex.match(i)]
-    parser = cli.parse_command_line()
-    args = parser.parse_args(test_input)
-    arguments = vars(args)
-    outputs = [str(arguments[x]) for x in keys_output]
-    print(outputs)
-    assert outputs == test_input_filtered
+
+# Test for the generate cli (second level)
+@pytest.fixture(
+    params=[
+        "shepplogan",
+        "random",
+        "trivial",
+    ]
+)
+def generate_cli_second_lv_generate(request):
+    task = request.param
+    return task
+
+
+def test_second_lv_generate(generate_cli_second_lv_generate):
+    runner = CliRunner()
+    cli_input = generate_cli_second_lv_generate
+    print(f"Testing input cli generate {cli_input}")
+    result = runner.invoke(cli, f"generate {cli_input} -h")
+    assert result.exit_code == 0
+
+
+@pytest.fixture(params=["t1-linear", "t1-volume"])
+def generate_cli_second_lv_quality_check(request):
+    task = request.param
+    return task
+
+
+def test_second_lv_quality_check(generate_cli_second_lv_quality_check):
+    runner = CliRunner()
+    cli_input = generate_cli_second_lv_quality_check
+    print(f"Testing input cli quality-check {cli_input}")
+    result = runner.invoke(cli, f"quality-check {cli_input} -h")
+    assert result.exit_code == 0
+
+
+@pytest.fixture(
+    params=[
+        "analysis",
+        "getlabels",
+        "kfold",
+        "restrict",
+        "split",
+    ]
+)
+def generate_cli_second_lv_tsvtool(request):
+    task = request.param
+    return task
+
+
+def test_second_lv_tsvtool(generate_cli_second_lv_tsvtool):
+    runner = CliRunner()
+    cli_input = generate_cli_second_lv_tsvtool
+    print(f"Testing input cli tsvtool {cli_input}")
+    result = runner.invoke(cli, f"tsvtool {cli_input} -h")
+    assert result.exit_code == 0
