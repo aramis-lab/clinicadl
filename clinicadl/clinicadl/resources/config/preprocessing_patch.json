@@ -1,6 +1,0 @@
-{
-    "modality": "t1-linear",
-    "extract_method": "patch",
-    "patch_size": "50",
-    "stride_size": "50"
-}
