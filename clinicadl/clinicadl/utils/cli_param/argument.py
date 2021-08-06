@@ -1,7 +1,6 @@
 """Common CLI arguments used by ClinicaDL pipelines."""
 import click
 
-
 caps_directory = click.argument("input_caps_directory", type=click.Path(exists=True))
 input_maps = click.argument("input_maps_directory", type=click.Path(exists=True))
 output_maps = click.argument("output_maps_directory", type=click.Path())
@@ -23,7 +22,7 @@ results_directory = click.argument("results_directory", type=click.Path())
 generated_caps = click.argument("output_caps_directory", type=click.Path())
 
 # PREDICT
-predict_prefix = click.argument("output_prefix", type=str)
+data_group = click.argument("data_group", type=str)
 
 # TRAIN
 preprocessing_json = click.argument("preprocessing_json", type=click.File())
