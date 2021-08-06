@@ -263,6 +263,15 @@ def read_json(options=None, json_path=None, test=False, read_computational=False
     if "n_splits" in options and options["n_splits"] is None:
         options["n_splits"] = 0
 
+    if not hasattr(options, "seed"):
+        options.seed = None
+
+    if not hasattr(options, "torch_deterministic"):
+        options.torch_deterministic = False
+
+    if not hasattr(options, "compensation"):
+        options.compensation = "memory"
+
     return options
 
 
