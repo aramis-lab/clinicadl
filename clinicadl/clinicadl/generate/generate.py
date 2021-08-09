@@ -14,7 +14,7 @@ import pandas as pd
 import torch
 from clinica.utils.inputs import RemoteFileStructure, fetch_file
 
-from clinicadl.utils.caps_dataset.data import MRIDataset
+from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.inputs import FILENAME_TYPE
 from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
 from clinicadl.utils.tsvtools_utils import extract_baseline
@@ -72,7 +72,7 @@ def generate_random_dataset(
         }
     )
     # Transform caps_dir in dict
-    caps_dict = MRIDataset.create_caps_dict(caps_dir, multi_cohort=multi_cohort)
+    caps_dict = CapsDataset.create_caps_dict(caps_dir, multi_cohort=multi_cohort)
 
     # Read DataFrame
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
@@ -181,7 +181,7 @@ def generate_trivial_dataset(
     )
 
     # Transform caps_dir in dict
-    caps_dict = MRIDataset.create_caps_dict(caps_dir, multi_cohort=multi_cohort)
+    caps_dict = CapsDataset.create_caps_dict(caps_dir, multi_cohort=multi_cohort)
 
     # Read DataFrame
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
