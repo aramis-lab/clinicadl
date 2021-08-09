@@ -11,15 +11,14 @@ def cli_commands(request):
 
     if request.param == "train_roi_regression":
         command_dict = {
-            "mode": "roi",
             "network_task": "regression",
             "caps_directory": "data/dataset/random_example",
-            "preprocessing": "t1-linear",
+            "preprocessing": "path/to/preprocessing",
             "tsv_path": "data/labels_list",
-            "model": "Conv4_FC3",
+            "architecture": "Conv4_FC3",
             "epochs": 1,
             "n_splits": 2,
-            "folds": [0],
+            "split": [0],
         }
     else:
         raise NotImplementedError("Test %s is not implemented." % request.param)
