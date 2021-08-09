@@ -31,13 +31,13 @@ cmd_name = "getlabels"
     multiple=True,
     default=(),
 )
-@click.option(
-    "--keep_smc",
-    help="This flag allows to keep SMC participants, else they are removed.",
-    type=bool,
-    default=False,
-    is_flag=True,
-)
+# @click.option(
+#     "--keep_smc",
+#     help="This flag allows to keep SMC participants, else they are removed.",
+#     type=bool,
+#     default=False,
+#     is_flag=True,
+# )
 def cli(
     merged_tsv,
     missing_mods_directory,
@@ -47,7 +47,7 @@ def cli(
     restriction_tsv,
     time_horizon,
     variables_of_interest,
-    keep_smc,
+    # keep_smc,
 ):
     """
     Get labels in separate tsv files.
@@ -69,7 +69,7 @@ def cli(
         restriction_path=restriction_tsv,
         time_horizon=time_horizon,
         variables_of_interest=variables_of_interest,
-        remove_smc=not keep_smc,
+        # remove_smc=not keep_smc,
     )
 
 
