@@ -24,8 +24,8 @@ cmd_name = "random"
     help="Standard deviation of the noise added for the random dataset.",
 )
 def cli(
-    caps_directory,
-    generated_caps,
+    input_caps_directory,
+    output_caps_directory,
     participants_tsv,
     n_subjects,
     mean,
@@ -39,9 +39,9 @@ def cli(
     from .generate import generate_shepplogan_dataset
 
     generate_shepplogan_dataset(
-        caps_dir=caps_directory,
+        caps_dir=input_caps_directory,
         tsv_path=participants_tsv,
-        output_dir=generated_caps,
+        output_dir=output_caps_directory,
         n_subjects=n_subjects,
         mean=mean,
         sigma=sigma,

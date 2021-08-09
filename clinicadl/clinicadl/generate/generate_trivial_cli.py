@@ -24,8 +24,8 @@ cmd_name = "trivial"
     help="Percentage of atrophy applied",
 )
 def cli(
-    caps_directory,
-    generated_caps,
+    input_caps_directory,
+    output_caps_directory,
     participants_tsv,
     n_subjects,
     preprocessing,
@@ -38,9 +38,9 @@ def cli(
     from .generate import generate_trivial_dataset
 
     generate_trivial_dataset(
-        caps_dir=caps_directory,
+        caps_dir=input_caps_directory,
         tsv_path=participants_tsv,
-        output_dir=generated_caps,
+        output_dir=output_caps_directory,
         n_subjects=n_subjects,
         preprocessing=preprocessing,
         mask_path=mask_path,
