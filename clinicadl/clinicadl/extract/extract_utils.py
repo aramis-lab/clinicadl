@@ -85,7 +85,6 @@ def extract_slices(input_img, slice_direction=0, slice_mode="single"):
                     )
                 )
 
-
     elif slice_direction == 1:
         # cornal
         slice_list_cor = range(
@@ -179,7 +178,6 @@ def extract_slices(input_img, slice_direction=0, slice_mode="single"):
                         extracted_slice_rgb_axi.clone(),
                     )
                 )
-
 
     return output_slices
 

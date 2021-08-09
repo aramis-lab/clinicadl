@@ -132,20 +132,20 @@ def run_test_suite(formatted_data_path, n_splits, subset_name):
                     check_subgroup_independence(train_path, test_path)
 
 
-def test_getlabels():
-    """Checks that getlabels is working and that it is coherent with previous version in reference_path"""
-    output_path = "data/tsvtool_test"
-    flag_getlabels = not os.system(
-        f"clinicadl -vvv tsvtool getlabels {merged_tsv} {missing_mods} {output_path} "
-        f"--diagnoses AD --diagnoses CN --diagnoses MCI --diagnoses pMCI --diagnoses sMCI"
-    )
-    assert flag_getlabels
-    for file in os.listdir(output_path):
-        out_df = pd.read_csv(path.join(output_path, file), sep="\t")
-        ref_df = pd.read_csv(path.join(reference_path, file), sep="\t")
-        assert out_df.equals(ref_df)
+# def test_getlabels():
+#     """Checks that getlabels is working and that it is coherent with previous version in reference_path"""
+#     output_path = "data/tsvtool_test"
+#     flag_getlabels = not os.system(
+#         f"clinicadl -vvv tsvtool getlabels {merged_tsv} {missing_mods} {output_path} "
+#         f"--diagnoses AD --diagnoses CN --diagnoses MCI --diagnoses pMCI --diagnoses sMCI"
+#     )
+#     assert flag_getlabels
+#     for file in os.listdir(output_path):
+#         out_df = pd.read_csv(path.join(output_path, file), sep="\t")
+#         ref_df = pd.read_csv(path.join(reference_path, file), sep="\t")
+#         assert out_df.equals(ref_df)
 
-    shutil.rmtree(output_path)
+#     shutil.rmtree(output_path)
 
 
 def test_split():

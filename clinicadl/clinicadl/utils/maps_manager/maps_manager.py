@@ -934,7 +934,11 @@ class MapsManager:
             # Save checkpoints and best models
             best_dict = retain_best.step(metrics_valid)
             self._write_weights(
-                {"model": model.state_dict(), "epoch": epoch, "name": self.architecture},
+                {
+                    "model": model.state_dict(),
+                    "epoch": epoch,
+                    "name": self.architecture,
+                },
                 best_dict,
                 fold,
                 network=network,
@@ -1387,7 +1391,7 @@ class MapsManager:
             multi_cohort=self.multi_cohort,
         )
         train_df = train_df[["participant_id", "session_id"]]
-        if self.transfer_path!="":
+        if self.transfer_path != "":
             transfer_train_path = path.join(
                 self.transfer_path, "groups", "train+validation.tsv"
             )
@@ -1721,7 +1725,7 @@ class MapsManager:
             checkpoint_state = torch.load(checkpoint_path, map_location=device)
             model.load_state_dict(checkpoint_state["model"])
             current_epoch = checkpoint_state["epoch"]
-        elif transfer_path!="":
+        elif transfer_path != "":
             self.logger.debug(f"Transfer weights from MAPS at {transfer_path}")
             transfer_maps = MapsManager(transfer_path)
             transfer_state = transfer_maps.get_state_dict(

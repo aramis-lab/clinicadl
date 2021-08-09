@@ -14,7 +14,7 @@ cmd_name = "restrict"
 )
 def cli(dataset, merged_tsv, results_tsv):
     """
-    Reproduce restrictions applied to AIBL and OASIS datasets. 
+    Reproduce restrictions applied to AIBL and OASIS datasets.
     MERGED_TSV is the path to the file obtained by the command `clinica iotools merge-tsv`.
     Outputs are stored in RESULTS_TSV.
     """

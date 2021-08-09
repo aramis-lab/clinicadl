@@ -24,6 +24,6 @@ def read_preprocessing(json_path):
     try:
         with open(json_path, "r") as f:
             preprocessing_dict = json.load(f)
-    except:
+    except IOError:
         raise IOError(f"cannot open json preprocessing file {json_path}")
     return preprocessing_dict
