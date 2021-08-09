@@ -44,7 +44,7 @@ def cli(
     results_directory,
     diagnoses,
     modality,
-    restriction_path,
+    restriction_tsv,
     time_horizon,
     variables_of_interest,
     remove_smc,
@@ -57,7 +57,7 @@ def cli(
     """
     from .getlabels import get_labels
 
-    if len(variables_of_interest)==0:
+    if len(variables_of_interest) == 0:
         variables_of_interest = None
 
     get_labels(
@@ -66,7 +66,7 @@ def cli(
         results_directory,
         diagnoses,
         modality=modality,
-        restriction_path=restriction_path,
+        restriction_path=restriction_tsv,
         time_horizon=time_horizon,
         variables_of_interest=variables_of_interest,
         remove_smc=remove_smc,
