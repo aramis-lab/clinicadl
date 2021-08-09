@@ -47,7 +47,7 @@ def cli(
     restriction_tsv,
     time_horizon,
     variables_of_interest,
-    remove_smc,
+    keep_smc,
 ):
     """
     Get labels in separate tsv files.
@@ -69,7 +69,7 @@ def cli(
         restriction_path=restriction_tsv,
         time_horizon=time_horizon,
         variables_of_interest=variables_of_interest,
-        remove_smc=remove_smc,
+        remove_smc=not keep_smc,
     )
 
 
