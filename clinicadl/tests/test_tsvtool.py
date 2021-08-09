@@ -137,7 +137,7 @@ def test_getlabels():
     output_path = "data/tsvtool_test"
     flag_getlabels = not os.system(
         f"clinicadl -vvv tsvtool getlabels {merged_tsv} {missing_mods} {output_path} "
-        f"--diagnoses AD --diagnoses <CN --diagnoses MCI --diagnoses pMCI --diagnoses sMCI"
+        f"--diagnoses AD --diagnoses CN --diagnoses MCI --diagnoses pMCI --diagnoses sMCI"
     )
     assert flag_getlabels
     for file in os.listdir(output_path):
@@ -185,7 +185,7 @@ def test_analysis():
     ref_analysis_path = path.join("data", "tsvtool", "anonymous_analysis.tsv")
     flag_analysis = not os.system(
         f"clinicadl tsvtool analysis {merged_tsv} {reference_path} {results_path} "
-        f"--diagnoses AD --diagnoses <CN --diagnoses MCI --diagnoses pMCI --diagnoses sMCI"
+        f"--diagnoses AD --diagnoses CN --diagnoses MCI --diagnoses pMCI --diagnoses sMCI"
     )
     assert flag_analysis
     ref_df = pd.read_csv(ref_analysis_path, sep="\t")

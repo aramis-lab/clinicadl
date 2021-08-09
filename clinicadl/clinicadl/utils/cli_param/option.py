@@ -2,7 +2,6 @@
 
 import click
 
-
 subjects_sessions_tsv = click.option(
     "-tsv",
     "--subjects_sessions_tsv",
@@ -26,8 +25,8 @@ modality = click.option(
     type=str,
     help="Modality to select sessions. Sessions which do not include the modality will be excluded.",
 )
-no_MCI_sub_categories = click.option(
-    "--no_MCI_sub_categories",
+no_mci_sub_categories = click.option(
+    "--no_mci_sub_categories",
     type=bool,
     default=True,
     is_flag=False,
@@ -44,7 +43,7 @@ subset_name = click.option(
 participant_list = click.option(
     "--participants_tsv",
     type=click.File(),
-    help="Path to tsv file of list of subjects/sessions."
+    help="Path to tsv file of list of subjects/sessions.",
 )
 n_subjects = click.option(
     "--n_subjects",

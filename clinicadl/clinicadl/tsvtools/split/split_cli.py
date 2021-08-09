@@ -2,13 +2,11 @@ import click
 
 from clinicadl.utils import cli_param
 
-cmd_name = "split"
 
-
-@click.command(name=cmd_name)
+@click.command(name="split")
 @cli_param.argument.formatted_data_directory
 @cli_param.option.subset_name
-@cli_param.option.no_MCI_sub_categories
+@cli_param.option.no_mci_sub_categories
 @click.option(
     "--n_test",
     help="If >= 1, number of subjects to put in set with name 'subset_name'. "
@@ -49,7 +47,7 @@ def cli(
     formatted_data_directory,
     subset_name,
     n_test,
-    no_MCI_sub_categories,
+    no_mci_sub_categories,
     p_sex_threshold,
     p_age_threshold,
     ignore_demographics,
@@ -65,7 +63,7 @@ def cli(
         formatted_data_directory,
         n_test=n_test,
         subset_name=subset_name,
-        MCI_sub_categories=no_MCI_sub_categories,
+        MCI_sub_categories=no_mci_sub_categories,
         p_age_threshold=p_age_threshold,
         p_sex_threshold=p_sex_threshold,
         ignore_demographics=ignore_demographics,

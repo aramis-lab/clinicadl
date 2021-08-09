@@ -2,12 +2,10 @@ import click
 
 from clinicadl.utils import cli_param
 
-cmd_name = "kfold"
 
-
-@click.command(name=cmd_name)
+@click.command(name="kfold")
 @cli_param.argument.formatted_data_directory
-@cli_param.option.no_MCI_sub_categories
+@cli_param.option.no_mci_sub_categories
 @cli_param.option.subset_name
 @click.option(
     "--n_splits",
@@ -25,7 +23,7 @@ cmd_name = "kfold"
 def cli(
     formatted_data_directory,
     n_splits,
-    no_MCI_sub_categories,
+    no_mci_sub_categories,
     subset_name,
     stratification,
 ):
@@ -38,7 +36,7 @@ def cli(
         formatted_data_directory,
         n_splits=n_splits,
         subset_name=subset_name,
-        MCI_sub_categories=no_MCI_sub_categories,
+        MCI_sub_categories=no_mci_sub_categories,
         stratification=stratification,
     )
 
