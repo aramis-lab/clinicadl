@@ -39,8 +39,6 @@ We assume that users installing and using `clinicadl` are comfortable using the 
 ### Train deep learning networks
 - `clinicadl train` - [Train with your data and create a model](./Train/Introduction.md)
 - `clinicadl train resume` [Resume a prematurely stopped job](./Train/Resume.md)
-- `clinicadl predict` - [Predict the output of a trained model](./Classify.md)
-- `clinicadl interpret`- [Interpret trained CNNs on individual or group of images](./Interpret.md)
 
 ### Inference using pretrained models
 - `clinicadl predict` - [Predicts one image or a list of images with your previously trained network](Predict.md)

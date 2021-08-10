@@ -31,18 +31,18 @@ tar xf model_exp3_splits_1.tar.gz
 ## Running the task
 This task can be run with the following command line:
 ```Text
-clinicadl predict <model_path> <data_group>
+clinicadl predict INPUT_MAPS_DIRECTORY DATA_GROUP
 ```
 where:
 
-- `model_path` (str) is the path to the MAPS of the pretrained model.
-- `data_group` (str) is the name of the data group used for the prediction.
+- `INPUT_MAPS_DIRECTORY` (path) is the path to the MAPS of the pretrained model.
+- `DATA_GROUP` (str) is the name of the data group used for the prediction.
 
 !!! warning "data group consistency"
     For ClinicaDL, a data group is linked to a list of participants / sessions and a CAPS directory.
     When performing a prediction, interpretation or tensor serialization the user must give a data group.
-    If this data group does not exist, the user MUST give a `caps_path` and a `tsv_path`.
-    If this data group already exists, the user MUST not give any `caps_path` or `tsv_path`, or set overwrite to True.
+    If this data group does not exist, the user MUST give a `caps_directory` and a `participants_tsv`.
+    If this data group already exists, the user MUST not give any `caps_directory` or `participants_tsv`, or set overwrite to True.
 
 Optional arguments:
 
@@ -56,7 +56,7 @@ Optional arguments:
       (tensor version of images, output of [`clinicadl extract`
       pipeline](Preprocessing/Extract.md)) in a
       [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
-    - `--tsv_file` (str) is a path to a TSV file with subjects/sessions to process (filename
+    - `--participants_tsv` (str) is a path to a TSV file with subjects/sessions to process (filename
       included), OR the path to the test folder of a split directory obtained with `clinicadl tsvtool split`.
     - `--no_labels` (bool) is a flag to add if the dataset does not contain ground truth labels. 
       Default behaviour will look for ground truth labels and raise an error if not found.

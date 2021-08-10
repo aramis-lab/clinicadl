@@ -50,7 +50,7 @@ Optional arguments:
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
 - **Model selection**
     - `--selection_metrics` (list of str) corresponds to the metrics according to which the 
-    [best models](Train/Details.md#model-selection) of `model_path` will be loaded. 
+    [best models](Train/Details.md#model-selection) of `INPUT_MAPS_DIRECTORY` will be loaded. 
     Choices are `best_loss` and `best_balanced_accuracy`. Default: `best_loss`.
 - **Data management**
     - `--participants_tsv` (str) is a path to a directory containing one TSV file per diagnosis
@@ -72,8 +72,8 @@ Optional arguments:
 - **Results display**
     - `--vmax` (float) is the maximum value used for 2D saliency maps display. Default value: `0.5`.
 - **Other options**
-    - `--target_node` .
-    - `save_individual` .
+    - `--target_node` (str) is the node the gradients explain. By default it will target the first output node.
+    - `save_individual` (str) is an option to save individual saliency maps in addition to the mean saliency map.
    
 
 ## Outputs
@@ -81,7 +81,7 @@ Optional arguments:
 Results for the `DATA_GROUP` level are stored in the results folder given by `INPUT_MAPS_DIRECTORY`, according to
 the following file system:
 ```
-<model_path>
+<maps_directory>
     ├── fold-0  
     ├── ...  
     └── fold-<fold>
