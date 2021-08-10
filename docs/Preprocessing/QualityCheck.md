@@ -2,7 +2,7 @@
 
 Two different quality check procedures are available in ClinicaDL:
 one for the `t1-linear` preprocessing pipeline and another for the `t1-volume` 
-pipeline (necessary step before performing `t1-extensive` preprocessing).
+pipeline.
 
 
 ## `quality-check t1-linear` - Evaluate `t1-linear` registration
@@ -22,19 +22,19 @@ Their original code can be found on [GitHub](https://github.com/vfonov/deep-qc).
 
 
 ### Prerequisites
-You need to execute the `clinica run t1-linear` and `clinica run deeplearning-prepare-data` pipelines 
+You need to execute the `clinica run t1-linear` and `clinicadl extract` pipelines 
 prior to running this task.
 
 ### Running the task
 The task can be run with the following command line:
 ```
-clinicadl preprocessing quality-check t1-linear <caps_directory> <output_path>
+clinicadl preprocessing quality-check t1-linear INPUT_CAPS_DIRECTORY OUTPUT_TSV
 ```
 where:
 
-- `caps_directory` (str) is the folder containing the results of the [`t1-linear` pipeline](T1_Linear.md) 
+- `INPUT_CAPS_DIRECTORY` (path) is the folder containing the results of the [`t1-linear` pipeline](T1_Linear.md) 
 and the output of the present command, both in a [CAPS hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
-- `output_path` (str) is the path to the output TSV file (filename included).
+- `OUTPUT_TSV` (str) is the path to the output TSV file (filename included).
 
 
 Options:
@@ -45,7 +45,7 @@ Default will process all sessions available in `caps_directory`.
 Default value: `0.5`.
 - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `1`.
 - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
-- `--use_cpu` (bool) forces to use CPU. Default behaviour is to try to use a GPU and to raise an error if it is not found.
+- `--gpu/--no-gpu` (bool) Use GPU for computing optimization. Default behaviour is to try to use a GPU and to raise an error if it is not found.
 
 ### Outputs
 
@@ -83,14 +83,14 @@ You need to execute the `clinica run t1-volume` pipeline prior to running this t
 ### Running the task
 The task can be run with the following command line:
 ```
-clinicadl preprocessing quality-check t1-volume <caps_directory> <output_path> <group_label>
+clinicadl preprocessing quality-check t1-volume INPUT_CAPS_DIRECTORY OUTPUT_TSV GROUP_LABEL
 ```
 where:
 
-- `caps_directory` (str) is the folder containing the results of the [`t1-volume` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Volume/) 
+- `INPUT_CAPS_DIRECTORY` (path) is the folder containing the results of the [`t1-volume` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Volume/) 
 and the output of the present command, both in a [CAPS hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
-- `output_path` (str) is the path to an output directory in which TSV files will be created.
-- `group_label` (str) is the identifier for the group of subjects used to create the DARTEL template.
+- `OUTPUT_TSV` (str) is the path to an output directory in which TSV files will be created.
+- `GROUP_LABEL` (str) is the identifier for the group of subjects used to create the DARTEL template.
 You can check which groups are available in the `groups/` folder of your `caps_directory`.
 
 

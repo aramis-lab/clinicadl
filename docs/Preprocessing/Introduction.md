@@ -22,18 +22,24 @@ and many are implemented in software tools.
 either globally (rigid and affine registration) or locally (non-rigid registration), 
 so that voxels in corresponding positions contain comparable information.
 
+Concerning PET image, preprocessing include:
+- **Image registration:** Medical image registration consists in spatially aligning two or more images, 
+either globally (rigid and affine registration) or locally (non-rigid registration), 
+so that voxels in corresponding positions contain comparable information.
+- **Intensity normalization:** using the average PET uptake in a reference regions resulting in a standardized uptake value ratio (SUVR) map. Indeed PET images intensity vary a lot depending on patient anatomy, physiology, and the quantity of tracer injected. So it is necessary to perform this intensity normalization to avoid any bias.
 
-## Available pipelines
 
-For the experiments of [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)], two preprocessing pipelines were developed:
+## Clinica's pipelines
 
-- [`t1-linear` pipeline](Run/T1_Linear) (called "Minimal" preprocessing in the paper) where bias field correction and an **affine** registration to the MNI standard space are performed with the [ANTs](http://stnava.github.io/ANTs/) software.
+For the preprocessing of your neuroimages, we encourage to use [Clinica](https://aramislab.paris.inria.fr/clinica/docs/public/latest/) pipelines that were developed:
 
-- [`t1-extensive` pipeline](Run/T1_Extensive) (called "Extensive" preprocessing in the paper) where bias field correction, **non linear** registration to the MNI standard space and skull stripping are performed with the [SPM](http://www.fil.ion.ucl.ac.uk/spm/) software.
+- [`t1-linear` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Linear/) for T1W MRI (called "Minimal" preprocessing in the paper) where bias field correction and an **affine** registration to the MNI standard space are performed with the [ANTs](http://stnava.github.io/ANTs/) software.
 
-After running a preprocessing pipeline with `clinicadl preprocessing run`, its outputs can be formatted
+- [`pet-linear` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/PET_Linear/) for PET scans where spatial normalization to the MNI space and intensity normalization are performed with the [ANTs](http://stnava.github.io/ANTs/) software.
+
+After running a preprocessing pipeline with `clinica run`, its outputs can be formatted
 into [PyTorch tensor format](Extract.md) and the quality of the preprocessing can be [evaluated](QualityCheck.md)
 to remove sessions for which the preprocessing procedure has crashed. 
 
-!!! info "Which pipeline should I use?"
-    In [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)] we showed that the “Minimal” and “Extensive” procedures led to comparable classification accuracies in the context of Alzheimer's disease. Our advice would be to use the `t1-linear` pipeline for its simplicity.
+!!! info "Why should I use `t1-linear` ?"
+    In [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)] we showed that the “Minimal” and “Extensive” (the extensive option has been deprecated) procedures led to comparable classification accuracies in the context of Alzheimer's disease. Our advice would be to use the `t1-linear` pipeline for its simplicity.
