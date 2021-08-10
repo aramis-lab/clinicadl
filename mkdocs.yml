@@ -69,14 +69,14 @@ nav:
     - Introduction: Preprocessing/Introduction.md
     - Extract tensors: Preprocessing/Extract.md
     - Quality check: Preprocessing/QualityCheck.md
-    - Generate synthetic data sets: Generate.md
+    - Generate synthetic data sets: Preprocessing/Generate.md
   - Hyperparameters exploration: RandomSearch.md
   - Train deep learning networks:
     - Introduction: Train/Introduction.md
     - JSON defined: Train/Retrain.md
     - Resume: Train/Resume.md
     - Implementation details: Train/Details.md
-  - Inference using pretrained models: Predict.md
+  - Inference using trained models: Predict.md
   - Network output serialization: Tensors.md
   - Interpretation with gradient maps: Interpret.md
   - Advanced user guide:
