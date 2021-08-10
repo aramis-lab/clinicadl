@@ -53,7 +53,7 @@ Options shared for all values of `network_task` are organized in groups:
         - for `reconstruction` the network outputs an image of the same size as the input.
     If you want to use custom architecture, be sure to respect the output size needed for the learnt task.
 
-_ **Tensor extraction**
+- **Tensor extraction**
     - `--use_extracted_features` (bool) is an option to extract tensor on the fly during training if you can't save them in your CAPS directory. In this case the argument `PREPROCESSING_JSON` contain the wanted parameters for extraction.
 - **Computational resources**
     - `--gpu/--no-gpu` (bool) Use GPU acceleration. Default behavior is to try to use a GPU and to raise an error if it is not found. Please specify `--no-gpu` to use CPU instead.
