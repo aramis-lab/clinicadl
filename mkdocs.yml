@@ -67,9 +67,9 @@ nav:
   - Prepare your metadata: TSVTools.md
   - Prepare your imaging data:
     - Introduction: Preprocessing/Introduction.md
-    - extract tensors: Preprocessing/Extract.md
-    - quality check: Preprocessing/QualityCheck.md
-    - generate synthetic data sets: Generate.md
+    - Extract tensors: Preprocessing/Extract.md
+    - Quality check: Preprocessing/QualityCheck.md
+    - Generate synthetic data sets: Generate.md
   - Hyperparameters exploration: RandomSearch.md
   - Train deep learning networks:
     - Introduction: Train/Introduction.md
