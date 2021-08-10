@@ -14,7 +14,7 @@ from clinicadl.utils import cli_param
     type=click.Choice(["t1-linear", "pet-linear", "custom"]),
 )
 @click.argument(
-    "extract-method",
+    "extract_method",
     type=click.Choice(["image", "slice", "patch", "roi"]),
 )
 @click.option(
