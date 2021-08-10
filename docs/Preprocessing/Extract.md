@@ -45,6 +45,17 @@ Results are stored in following folder of the
 
 Files are saved with the `.pt` extension and contains tensors in PyTorch format.
 
+A JSON file with timestamp is also stored in the CAPS hierarchy under the `tensor_extraction` folder:
+```console
+CAPS_DIRECTORY
+├── tensor_extraction
+│       ├── extract_XXXXXXXXXX.json
+│       ├── ...
+│       ├── extract_YYYYYYYYY.json
+│
+```
+These files are compulsory to run the [train](..Train/Introduction.md/#running-the-task) command. They provide all the information of the processing realized during extract job that will be necessary to read the tensors.
+
 ## `modality` options
 
 ### `t1-linear`
