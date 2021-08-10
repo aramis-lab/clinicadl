@@ -67,8 +67,6 @@ nav:
   - Prepare your metadata: TSVTools.md
   - Prepare your imaging data:
     - Introduction: Preprocessing/Introduction.md
-    - t1-linear pipeline: Preprocessing/T1_Linear.md
-    - t1-extensive pipeline: Preprocessing/T1_Extensive.md
     - extract tensors: Preprocessing/Extract.md
     - quality check: Preprocessing/QualityCheck.md
     - generate synthetic data sets: Generate.md
