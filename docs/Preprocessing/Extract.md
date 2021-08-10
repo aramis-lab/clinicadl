@@ -11,7 +11,7 @@ argument before running this pipeline.
 ## Running the pipeline
 The pipeline can be run with the following command line:
 ```{.sourceCode .bash}
-clinicadl extract INPUT_CAPS_DIRECTORY MODALITY EXTRACT-METHOD
+clinicadl extract INPUT_CAPS_DIRECTORY MODALITY EXTRACT_METHOD
 ```
 
 where:
@@ -22,7 +22,7 @@ where:
 - `MODALITY` (str) is the name of the preprocessing done in the original images. It
   can be `t1-linear` or `pet-linear`. You can choose `custom` if you want to get a
   tensor from a custom filename.
-- `EXTRACT-METHOD` (str) is the format of the extracted tensors:
+- `EXTRACT_METHOD` (str) is the format of the extracted tensors:
     - `image` to convert the whole 3D image,
     - `patch` to extract 3D patches walking through the entire image, 
     - `roi` to extract a list of regions defined by masks at the root in `INPUT_CAPS_DIRECTORY`,
@@ -90,10 +90,10 @@ These files are compulsory to run the [train](..Train/Introduction.md/#running-t
   pipeline. The suffix for these images is
   "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz".
 
-## `EXTRACT-METHOD` options
+## `EXTRACT_METHOD` options
 
 In this section we consider the options needed and outputs produced for different
-`EXTRACT-METHOD` values. Each time we consider that the input is named `<input_pattern>_<suffix>.nii.gz`.
+`EXTRACT_METHOD` values. Each time we consider that the input is named `<input_pattern>_<suffix>.nii.gz`.
 The suffix represents the initial modality (it can be for example `T1w`).
 
 ### `image`
