@@ -3,10 +3,10 @@
 import click
 
 from clinicadl.extract.extract_cli import cli as extract_cli
-from clinicadl.generate.cli import cli as generate_cli
+from clinicadl.generate.generate_cli import cli as generate_cli
 from clinicadl.interpret.interpret_cli import cli as interpret_cli
 from clinicadl.predict.predict_cli import cli as predict_cli
-from clinicadl.quality_check.cli import cli as qc_cli
+from clinicadl.quality_check.qc_cli import cli as qc_cli
 from clinicadl.random_search.random_search_cli import cli as random_search_cli
 from clinicadl.train.train_cli import cli as train_cli
 from clinicadl.tsvtools.cli import cli as tsvtools_cli
