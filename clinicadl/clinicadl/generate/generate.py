@@ -28,7 +28,7 @@ from .generate_utils import (
 
 
 def generate_random_dataset(
-    caps_dir,
+    caps_directory,
     output_dir,
     n_subjects,
     tsv_path=None,
@@ -45,7 +45,7 @@ def generate_random_dataset(
     one are ignored. Degree of noise can be parameterized.
 
     Args:
-        caps_dir: (str) Path to the (input) CAPS directory.
+        caps_directory: (str) Path to the (input) CAPS directory.
         output_dir: (str) folder containing the synthetic dataset in (output)
             CAPS format.
         n_subjects: (int) number of subjects in each class of the
@@ -64,15 +64,15 @@ def generate_random_dataset(
     commandline_to_json(
         {
             "output_dir": output_dir,
-            "caps_dir": caps_dir,
+            "caps_dir": caps_directory,
             "preprocessing": preprocessing,
             "n_subjects": n_subjects,
             "mean": mean,
             "sigma": sigma,
         }
     )
-    # Transform caps_dir in dict
-    caps_dict = CapsDataset.create_caps_dict(caps_dir, multi_cohort=multi_cohort)
+    # Transform caps_directory in dict
+    caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=multi_cohort)
 
     # Read DataFrame
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
@@ -134,7 +134,7 @@ def generate_random_dataset(
 
 
 def generate_trivial_dataset(
-    caps_dir,
+    caps_directory,
     output_dir,
     n_subjects,
     tsv_path=None,
@@ -152,7 +152,7 @@ def generate_trivial_dataset(
     processed and image with half-left processed)
 
     Args:
-        caps_dir: (str) path to the CAPS directory.
+        caps_directory: (str) path to the CAPS directory.
         output_dir: (str) folder containing the synthetic dataset in CAPS format.
         n_subjects: (int) number of subjects in each class of the synthetic
             dataset.
@@ -173,15 +173,15 @@ def generate_trivial_dataset(
     commandline_to_json(
         {
             "output_dir": output_dir,
-            "caps_dir": caps_dir,
+            "caps_dir": caps_directory,
             "preprocessing": preprocessing,
             "n_subjects": n_subjects,
             "atrophy_percent": atrophy_percent,
         }
     )
 
-    # Transform caps_dir in dict
-    caps_dict = CapsDataset.create_caps_dict(caps_dir, multi_cohort=multi_cohort)
+    # Transform caps_directory in dict
+    caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=multi_cohort)
 
     # Read DataFrame
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)

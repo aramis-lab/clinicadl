@@ -1,7 +1,3 @@
-if __name__ == "__main__":
-    cli()
-
-
 import click
 
 from .t1_linear.cli import cli as t1_linear_cli

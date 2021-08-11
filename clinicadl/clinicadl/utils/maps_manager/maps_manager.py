@@ -1391,7 +1391,7 @@ class MapsManager:
             multi_cohort=self.multi_cohort,
         )
         train_df = train_df[["participant_id", "session_id"]]
-        if self.transfer_path != "":
+        if not self.transfer_path:
             transfer_train_path = path.join(
                 self.transfer_path, "groups", "train+validation.tsv"
             )
@@ -1725,7 +1725,7 @@ class MapsManager:
             checkpoint_state = torch.load(checkpoint_path, map_location=device)
             model.load_state_dict(checkpoint_state["model"])
             current_epoch = checkpoint_state["epoch"]
-        elif transfer_path != "":
+        elif not transfer_path:
             self.logger.debug(f"Transfer weights from MAPS at {transfer_path}")
             transfer_maps = MapsManager(transfer_path)
             transfer_state = transfer_maps.get_state_dict(

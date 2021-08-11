@@ -132,20 +132,20 @@ def run_test_suite(formatted_data_path, n_splits, subset_name):
                     check_subgroup_independence(train_path, test_path)
 
 
-# def test_getlabels():
-#     """Checks that getlabels is working and that it is coherent with previous version in reference_path"""
-#     output_path = "data/tsvtool_test"
-#     flag_getlabels = not os.system(
-#         f"clinicadl -vvv tsvtool getlabels {merged_tsv} {missing_mods} {output_path} "
-#         f"--diagnoses AD --diagnoses CN --diagnoses MCI --diagnoses pMCI --diagnoses sMCI"
-#     )
-#     assert flag_getlabels
-#     for file in os.listdir(output_path):
-#         out_df = pd.read_csv(path.join(output_path, file), sep="\t")
-#         ref_df = pd.read_csv(path.join(reference_path, file), sep="\t")
-#         assert out_df.equals(ref_df)
+def test_getlabels():
+    """Checks that getlabels is working and that it is coherent with previous version in reference_path"""
+    output_path = "data/tsvtool_test"
+    flag_getlabels = not os.system(
+        f"clinicadl -vvv tsvtool getlabels {merged_tsv} {missing_mods} {output_path} "
+        f"--diagnoses AD --diagnoses CN --diagnoses MCI --diagnoses pMCI --diagnoses sMCI"
+    )
+    assert flag_getlabels
+    for file in os.listdir(output_path):
+        out_df = pd.read_csv(path.join(output_path, file), sep="\t")
+        ref_df = pd.read_csv(path.join(reference_path, file), sep="\t")
+        assert out_df.equals(ref_df)
 
-#     shutil.rmtree(output_path)
+    shutil.rmtree(output_path)
 
 
 def test_split():
@@ -162,21 +162,21 @@ def test_split():
     )
     assert flag_split
     assert flag_kfold
-    # flag_load = True
-    # try:
-    #     _ = load_data_test(path.join(reference_path, "test"), diagnoses.split(" "))
-    #     split_manager = KFoldSplit(".", train_path, diagnoses.split(" "), n_splits)
-    #     for fold in split_manager.fold_iterator():
-    #         _ = split_manager[fold]
-    # except FileNotFoundError:
-    #     flag_load = False
-    # assert flag_load
+    flag_load = True
+    try:
+        _ = load_data_test(path.join(reference_path, "test"), diagnoses.split(" "))
+        split_manager = KFoldSplit(".", train_path, diagnoses.split(" "), n_splits)
+        for fold in split_manager.fold_iterator():
+            _ = split_manager[fold]
+    except FileNotFoundError:
+        flag_load = False
+    assert flag_load
 
-    # run_test_suite(reference_path, 0, "test")
-    # run_test_suite(path.join(reference_path, "train"), n_splits, "validation")
+    run_test_suite(reference_path, 0, "test")
+    run_test_suite(path.join(reference_path, "train"), n_splits, "validation")
 
-    # shutil.rmtree(path.join(reference_path, "train"))
-    # shutil.rmtree(path.join(reference_path, "test"))
+    shutil.rmtree(path.join(reference_path, "train"))
+    shutil.rmtree(path.join(reference_path, "test"))
 
 
 def test_analysis():
@@ -188,9 +188,8 @@ def test_analysis():
         f"--diagnoses AD --diagnoses CN --diagnoses MCI --diagnoses pMCI --diagnoses sMCI"
     )
 
-
-#     assert flag_analysis
-#     ref_df = pd.read_csv(ref_analysis_path, sep="\t")
-#     out_df = pd.read_csv(results_path, sep="\t")
-#     assert out_df.equals(ref_df)
-#     os.remove(results_path)
+    assert flag_analysis
+    ref_df = pd.read_csv(ref_analysis_path, sep="\t")
+    out_df = pd.read_csv(results_path, sep="\t")
+    assert out_df.equals(ref_df)
+    os.remove(results_path)

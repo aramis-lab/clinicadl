@@ -14,8 +14,8 @@ def cli(merged_tsv, formatted_data_directory, results_directory, diagnoses):
     """
     Produces a demographic analysis of the extracted labels.
     MERGED_TSV is the output of `clinica iotools merge-tsv`.
-    MISSING_MODS_DIRECTORY is  the outputs of `clinicadl tsvtool getlabels`.
-    Outputs are stored in RESULTS_TSV.
+    FORMATTED_DATA_DIRECTORY is  the outputs of `clinicadl tsvtool getlabels`.
+    Outputs are stored in RESULTS_DIRECTORY.
     """
     from .analysis import demographics_analysis
 

@@ -1,9 +1,5 @@
 # CONFIG FILE FOR TRAIN PIPELINE WITH DEFAULT ARGUMENTS
 
-# [Meta_parametre]
-# info = '''
-# Commentaire
-# ''' # Sera écrit dans le train.log
 
 [Model]
 architecture = "default" # ex : Conv5_FC3

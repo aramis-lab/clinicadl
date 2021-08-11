@@ -19,7 +19,7 @@ from clinicadl.utils import cli_param
 @cli_param.argument.output_maps
 # train option
 @click.option(
-    "--configuration_toml",
+    "--config_file",
     "-c",
     type=click.File(),
     help="Path to the toml file containing all training configuration",
@@ -150,7 +150,7 @@ from clinicadl.utils import cli_param
     type=int,
     # default=(),
     multiple=True,
-    help="Train the list of given folds. By default train all folds.",
+    help="Train the list of given folds. By default, all the folds are trained.",
 )
 # Optimization
 @click.option(
@@ -177,7 +177,7 @@ from clinicadl.utils import cli_param
     "--dropout",
     type=float,
     # default=0,
-    help="rate of dropout that will be applied to dropout layers in CNN.",
+    help="Rate value applied to dropout layers in a CNN architecture.",
 )
 @click.option(
     "--patience",
@@ -205,14 +205,14 @@ from clinicadl.utils import cli_param
     "--transfer_learning_path",
     type=click.Path(),
     # default=0.0,
-    help="Path of model used for transfert learning",
+    help="Path of model used for transfer learning",
 )
 @click.option(
     "-tls",
     "--transfer_learning_selection",
     type=str,
     # default="best_loss",
-    help="Transfert learning selection metric",
+    help="Transfer learning selection metric",
 )
 def cli(
     network_task,

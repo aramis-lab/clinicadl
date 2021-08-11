@@ -16,7 +16,7 @@ diagnoses = click.option(
     type=click.Choice(["AD", "CN", "MCI", "sMCI", "pMCI", "BV"]),
     multiple=True,
     default=("AD", "CN"),
-    help="Labels selected for the demographic analysis.",
+    help="Labels selected for the demographic analysis used in the context of Alzheimer's Disease classification.",
 )
 modality = click.option(
     "--modality",

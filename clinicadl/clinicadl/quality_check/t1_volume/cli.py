@@ -22,6 +22,8 @@ def cli(
 ):
     """
     Performs quality check on t1-volume pipeline.
+
+    OUTPUT_TSV is the path to the tsv file where results will be saved.
     """
     from .quality_check import quality_check as volume_qc
 
