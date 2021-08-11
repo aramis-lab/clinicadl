@@ -35,7 +35,7 @@ n_proc = 2
 batch_size = 2
 evaluation_steps = 0
 
-[Transfert_learning]
+[Transfer_learning]
 transfer_path = ""
 transfer_selection_metric = "best_loss"
 

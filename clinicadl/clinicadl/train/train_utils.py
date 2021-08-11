@@ -48,8 +48,8 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
         "patience": config_dict["Optimization"]["patience"],
         "folds": config_dict["Cross_validation"]["split"],
         "tolerance": config_dict["Optimization"]["tolerance"],
-        "transfer_path": config_dict["Transfert_learning"]["transfer_path"],
-        "transfer_learning_selection": config_dict["Transfert_learning"][
+        "transfer_path": config_dict["Transfer_learning"]["transfer_path"],
+        "transfer_learning_selection": config_dict["Transfer_learning"][
             "transfer_selection_metric"
         ],
         "use_cpu": not config_dict["Computational"]["use_gpu"],
