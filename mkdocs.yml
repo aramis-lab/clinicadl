@@ -3,8 +3,7 @@ site_name: ClinicaDL Documentation
 site_author: ClinicaDL contributors
 site_url: https://clinicadl.readthedocs.io/
 site_description: >-
-  Framework for the reproducible classification of Alzheimer's disease
-  using deep learning
+  Open-source deep learning software for reproducible neuroimaging processing
 
 # Repository
 repo_name: aramislab/clinicadl
@@ -12,7 +11,7 @@ repo_url: https://github.com/aramis-lab/clinicadl
 #edit_uri: master/edit/doc
 
 # Copyright
-copyright: Copyright &copy; 2020 ClinicaDL contributors
+copyright: Copyright &copy; 2021 ClinicaDL contributors
 
 # Google Analytics
 google_analytics:
@@ -70,7 +69,7 @@ nav:
     - Extract tensors: Preprocessing/Extract.md
     - Quality check: Preprocessing/QualityCheck.md
     - Generate synthetic data sets: Preprocessing/Generate.md
-  - Hyperparameters exploration: RandomSearch.md
+  - Hyperparameter exploration: RandomSearch.md
   - Train deep learning networks:
     - Introduction: Train/Introduction.md
     - JSON defined: Train/Retrain.md

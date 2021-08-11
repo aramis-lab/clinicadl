@@ -141,6 +141,7 @@ Options:
         with name `subset_name`.
 
     Default value: `100`.
+
   - `--MCI_sub_categories` (bool) is a flag that disables the special treatment of the MCI set and its subsets.
   This will allow sets with more similar age and sex distributions, but it will cause 
   data leakage for transfer learning tasks involving these sets. Default value: `False`.

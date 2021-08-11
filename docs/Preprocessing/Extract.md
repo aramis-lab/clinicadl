@@ -19,7 +19,7 @@ where:
 - `INPUT_CAPS_DIRECTORY` (path) is the folder in a [CAPS
   hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/)
   containing the images corresponding to the `MODALITY` asked.
-- `MODALITY` (str) is the name of the preprocessing done in the original images. It
+- `MODALITY` (str) is the name of the preprocessing performed on the original images. It
   can be `t1-linear` or `pet-linear`. You can choose `custom` if you want to get a
   tensor from a custom filename.
 - `EXTRACT_METHOD` (str) is the format of the extracted tensors:
@@ -33,7 +33,7 @@ where:
     [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)].
 
 !!! tip
-    type `clinicadl extract --help` to see the full list of
+    Type `clinicadl extract --help` to see the full list of
     parameters.
 
 ## Outputs
@@ -54,7 +54,7 @@ CAPS_DIRECTORY
 │       ├── extract_YYYYYYYYY.json
 │
 ```
-These files are compulsory to run the [train](..Train/Introduction.md/#running-the-task) command. They provide all the information of the processing realized during extract job that will be necessary to read the tensors.
+These files are compulsory to run the [train](..Train/Introduction.md/#running-the-task) command. They provide all the details of the processing performed by the `extract` command that will be necessary when reading the tensors.
 
 ## `modality` options
 

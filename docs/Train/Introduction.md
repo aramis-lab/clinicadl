@@ -32,7 +32,8 @@ In case of [multi-cohort training](Details.md#multi-cohort), must be a path to a
 - `OUTPUT_MAPS_DIRECTORY` (path) is the folder where the results are stored.
 
 The training can be configured through a Toml configuration file or by using the command line options. If you have a Toml configuration file (see [the section below](Introduction.md/#Configuration-file) page for more information) you can use the following option to load it:
-- `--configuration_toml` (File) is the name of the Toml configuration file for training job. This file contain the value for the options thats you want to specify (to avoid too long command line).
+
+- `--config_file` (File) is the name of the Toml configuration file for training job. This file contain the value for the options thats you want to specify (to avoid too long command line).
 
 If an option is specified twice (in the configuration file and then as an option in command line) then **the value specified in the command line will be used for the job**.
 
@@ -40,21 +41,22 @@ Options shared for all values of `network_task` are organized in groups:
 
 - **Architecture management**
     - `--architecture` (str) is the name of the architecture used. Default depends on the task.
-    It must correspond to a class that inherits from `nn.Module` imported in `tools/deep_learning/models/__init__.py`.
+    It must correspond to a class that inherits from `nn.Module` imported in `clinicadl/utils/network/__init__.py`.
     To implement custom models please refer to [this section](../Contribute/Custom.md#custom-architecture).
     - `--multi` (bool) is a flag to ask for a [multi-network framework](./Details.md#multi-cohort).
     Default trains only one network on all images.
     - `--dropout` (float) is the rate of dropout applied in dropout layers. Default: `0`.
 
-!!! warning "architecture limitations"
+!!! warning "Architecture limitations"
     Depending on the task, the output size needed to learn the task may vary:
+
         - for `classification` the network must output a vector of length equals to the number of classes,
         - for `regression` the network has only one output node,
         - for `reconstruction` the network outputs an image of the same size as the input.
     If you want to use custom architecture, be sure to respect the output size needed for the learnt task.
 
 - **Tensor extraction**
-    - `--use_extracted_features` (bool) is an option to extract tensor on the fly during training if you can't save them in your CAPS directory. In this case the argument `PREPROCESSING_JSON` contain the wanted parameters for extraction.
+    - `--use_extracted_features` (bool) is an option to extract tensors on the fly during training if you cannot save them in your CAPS directory. In this case the argument `PREPROCESSING_JSON` contains the wanted parameters for extraction.
 - **Computational resources**
     - `--gpu/--no-gpu` (bool) Use GPU acceleration. Default behavior is to try to use a GPU and to raise an error if it is not found. Please specify `--no-gpu` to use CPU instead.
     - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
@@ -84,7 +86,7 @@ Options shared for all values of `network_task` are organized in groups:
     - `--accumulation_steps` (int) gives the number of iterations during which gradients are accumulated before performing the [weights update](Details.md#optimization). 
     This allows to virtually increase the size of the batch. Default: `1`.
 - **Transfert learning parameters**
-    - `--transfer_learning_path` (path) is the path of model used for transfer learning.
+    - `--transfer_learning_path` (path) is the path to the model used for transfer learning.
     - `--transfer_learning_selection` (str) is the transfer learning selection metric.
     See [Implementation details](Details.md/#transfer-learning) for more information about transfer learning.
 
@@ -103,12 +105,7 @@ A few options depend on the task performed:
     negative predictive value (NPV) and balanced accuracy (BA).
     - `--label` (str) is the name of the column containing the label for the classification task.
     It must be a categorical variable, but may be of any type. Default: `diagnosis`.
-    <!---
-    - `--selection_threshold` (float) threshold on the balanced accuracies to compute the
-    [image-level performance](./Details.md#image-level-results).
-    Parts of the image are selected if their balanced accuracy is greater than the threshold.
-    Default corresponds to no selection.
-    -->
+
 - **regression**
     The objective of the `regression` is to learn the value of a continuous variable given an image.
     The criterion loss is the mean squared error between the ground truth and the network output.
@@ -128,11 +125,11 @@ A few options depend on the task performed:
 
 ## Configuration file
 
-Since the train pipeline has a lot of different options, the command line can be hard to use. To avoid this we created the `--configuration_toml` that allow the user to give a configuration file with all the option he need to the command line. The command line will then first load the default values, then overwrite the loaded values with the one specified in the configuration file before running the job. 
+Since the train pipeline has a many options, the command line can be long and difficult to use. To avoid this we created the `--config_file` option that allows the user to give a configuration file with all the options they need to the command line. The command line will then first load the default values, then overwrite the loaded values with the one specified in the configuration file before running the job. 
 
 [TOML format](https://toml.io/en/) is a human readable format, thus it is easy to write a configuration file with any text editor. The user just needs to specify the value of the option in front of the option name in the file. 
 
-Here is an example of TOML configuration file with all the default values:
+Here is an example of a TOML configuration file with all the default values:
 ```toml
 # CONFIG FILE FOR TRAIN PIPELINE WITH DEFAULT ARGUMENTS
 
@@ -169,7 +166,7 @@ n_proc = 2
 batch_size = 2
 evaluation_steps = 0
 
-[Transfert_learning]
+[Transfer_learning]
 transfer_path = ""
 transfer_selection_metric = "best_loss"
 
@@ -198,10 +195,10 @@ tolerance = 0.0
 accumulation_steps = 1
 ```
 
-This file is available at `clinicadl/resources/config/train_config.toml` in ClinicaDL folder (or on [GitHub](https://github.com/aramislab/clinicadl/clinicadl/resources/config/train_config.toml)).
+This file is available at `clinicadl/resources/config/train_config.toml` in the ClinicaDL folder (or on [GitHub](https://github.com/aramislab/clinicadl/clinicadl/resources/config/train_config.toml)).
 
 !!! Warning
-    Be careful the structure of the file should respect the one given in example otherwise ClinicaDL won't be able to read the options. For instance if you want to specify a value `batch_size` option, the key should be in the `[Computational]` section of the configuration file as shown above.
+    Ensure that the structure of the file respects the one given in example otherwise ClinicaDL won't be able to read the options. For instance if you want to specify a value for the `batch_size` option, the key should be in the `[Computational]` section of the configuration file as shown above.
 
 ## Outputs
 

@@ -142,7 +142,7 @@ may not be present if the user chose to train only a subset of folds.
 The second level corresponds to the content of folder `fold-<i>`. It contains the best models selected during training according to the validation
 performance according to a metric `metric`. It also contains the evolution of all evaluation metrics computed on the training
  and validation sets in two different formats:
-- `tensorboard` is a folder contains logs which can be visualized with command `tensorboard --logdir <maps_directory>/fold-<i>/training_logs/tensorboard`,
+- `tensorboard` is a folder containing logs that can be visualized with the command `tensorboard --logdir <maps_directory>/fold-<i>/training_logs/tensorboard`,
 - `training.tsv` is a TSV file.
 
 ```Text

@@ -55,14 +55,14 @@ Optional arguments:
 - **Data management**
     - `--participants_tsv` (str) is a path to a directory containing one TSV file per diagnosis
     (see output tree of [getlabels](./TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease)). 
-    Default will use the same participants than those used during the training task.
+    Default will use the same participants as those used during the training task.
     - `--caps_directory` (str) is the path to a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
-    Default will use the same CAPS than during the training task.
+    Default will use the same CAPS as during the training task.
     - `--diagnosis` (str) is the diagnosis that will be loaded in `participants_tsv`. Default value: `AD`.
     - `--target_diagnosis` (str) is the class the gradients explain. Default will explain
     the given diagnosis.
     - `--baseline` (bool) is a flag to load only `_baseline.tsv` files instead of `.tsv` files comprising all the sessions. Default: `False`.
-    - `--keep_true` (bool) allows to choose only the images correctly (`True`) or badly (`False`)
+    - `--keep_true` (bool) allows choosing only the images correctly (`True`) or badly (`False`)
     classified by the CNN. Default will not perform any selection.
     - `--nifti_template_path` (str) is a path to a nifti template to retrieve the affine values
     needed to write Nifti files for 3D saliency maps. Default will use the identity matrix for the affine.

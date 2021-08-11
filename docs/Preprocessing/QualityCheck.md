@@ -97,6 +97,7 @@ You can check which groups are available in the `groups/` folder of your `caps_d
 ### Outputs
 
 This pipeline outputs 4 files:
+
 - `QC_metrics.tsv` containing the three QC metrics for all the images,
 - `pass_step-1.tsv` including only the images which passed the first step,
 - `pass_step-2.tsv` including only the images which passed the two first steps,

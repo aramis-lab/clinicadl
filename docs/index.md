@@ -33,15 +33,15 @@ We assume that users installing and using `clinicadl` are comfortable using the 
 - `clinicadl quality-check` - [Quality control of preprocessed data](Preprocessing/QualityCheck.md): use a pretrained network [[Fonov et al., 2018](https://www.biorxiv.org/content/10.1101/303487v1)] to classify adequately registered images.
 - `clinicadl extract` - [Prepare input data for deep learning with PyTorch](Preprocessing/Extract.md)
 
-### Hyperparameters exploration
-- `clinicadl random-search` - [Explore hyperparameters space by training random models](./RandomSearch.md)
+### Hyperparameter exploration
+- `clinicadl random-search` - [Explore hyperparameter space by training random models](./RandomSearch.md)
 
 ### Train deep learning networks
 - `clinicadl train` - [Train with your data and create a model](./Train/Introduction.md)
 - `clinicadl train resume` [Resume a prematurely stopped job](./Train/Resume.md)
 
 ### Inference using pretrained models
-- `clinicadl predict` - [Predicts one image or a list of images with your previously trained network](Predict.md)
+- `clinicadl predict` - [Predict one image or a list of images with your previously trained network](Predict.md)
   
 ### Network output serialization
 - `clinicadl save-tensors` - [Write series of input / output tensors for custom analyses](./Tensors.md)
