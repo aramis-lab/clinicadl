@@ -13,8 +13,8 @@ class RegistrationOrderGroup(click.Group):
 
 @click.group(cls=RegistrationOrderGroup, name="quality-check")
 def cli() -> None:
-    """
-    Performs quality check procedure for t1-linear or t1-volume pipelines.
+    """Performs quality check procedure for t1-linear or t1-volume pipelines.
+
     Original code can be found at https://github.com/vfonov/deep-qc
     """
     pass

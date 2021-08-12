@@ -51,6 +51,13 @@ def setup_logging(verbosity: int = 0) -> None:
     "-v", "--verbose", "verbosity", count=True, help="Increase logging verbosity."
 )
 def cli(verbosity):
+    """ClinicaDL command line.
+
+    For more information please read the doc: https://clinicadl.readthedocs.io/en/latest/ .
+    Source code is available on GitHub: https://github.com/aramis-lab/clinicaDL .
+
+    Do not hesitate to create an issue to report a bug or suggest an improvement.
+    """
     setup_logging(verbosity=verbosity)
 
 

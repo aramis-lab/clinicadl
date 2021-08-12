@@ -2,10 +2,8 @@ import click
 
 from clinicadl.utils import cli_param
 
-cmd_name = "trivial"
 
-
-@click.command(name=cmd_name)
+@click.command(name="trivial")
 @cli_param.argument.caps_directory
 @cli_param.argument.generated_caps
 @cli_param.option.participant_list
@@ -32,8 +30,10 @@ def cli(
     mask_path,
     atrophy_percent,
 ):
-    """
-    Generate a trivial dataset GENERATED_CAPS_DIRECTORY in which gaussian half of the brain is atrophied.
+    """Generation of trivial dataset with addition of synthetic brain atrophy.
+
+    CAPS_DIRECTORY is the CAPS folder from where input brain images will be loaded.
+    GENERATED_CAPS_DIRECTORY is a CAPS folder where the trivial dataset will be saved.
     """
     from .generate import generate_trivial_dataset
 

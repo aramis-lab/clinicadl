@@ -11,11 +11,11 @@ cmd_name = "analysis"
 @cli_param.argument.results_directory
 @cli_param.option.diagnoses
 def cli(merged_tsv, formatted_data_directory, results_directory, diagnoses):
-    """
-    Produces a demographic analysis of the extracted labels.
+    """Demographic analysis of the extracted labels.
+
     MERGED_TSV is the output of `clinica iotools merge-tsv`.
-    FORMATTED_DATA_DIRECTORY is  the outputs of `clinicadl tsvtool getlabels`.
-    Outputs are stored in RESULTS_DIRECTORY.
+    FORMATTED_DATA_DIRECTORY is the outputs of `clinicadl tsvtool getlabels`.
+    Results are stored in RESULTS_DIRECTORY.
     """
     from .analysis import demographics_analysis
 

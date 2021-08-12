@@ -14,9 +14,7 @@ class RegistrationOrderGroup(click.Group):
 
 @click.group(cls=RegistrationOrderGroup, name="generate")
 def cli() -> None:
-    """
-    Generation of synthetic dataset.
-    """
+    """Generation of synthetic dataset."""
     pass
 
 

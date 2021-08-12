@@ -2,10 +2,8 @@ import click
 
 from clinicadl.utils import cli_param
 
-cmd_name = "shepplogan"
 
-
-@click.command(name=cmd_name)
+@click.command(name="shepplogan")
 @cli_param.argument.generated_caps
 @cli_param.option.n_subjects
 @click.option(
@@ -43,9 +41,10 @@ def cli(
     n_subjects,
     smoothing,
 ):
-    """
+    """Random generation of 2D Shepp-Logan phantoms.
+
     Generate a dataset of 2D images at GENERATED_CAPS_DIRECTORY including
-    3 subtypes based on Shepp Logan phantom.
+    3 subtypes based on Shepp-Logan phantom.
     """
     from .generate import generate_shepplogan_dataset
 

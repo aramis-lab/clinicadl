@@ -249,11 +249,18 @@ def cli(
     transfer_learning_path,
     transfer_learning_selection,
 ):
-    """
-    Train a deep learning model for NETWORK_TASK on CAPS_DIRECTORY data.
-    The list of data in loaded from TSV_DIRECTORY.
-    Data will be selected with respect to PREPROCESSING_JSON file stored in CAPS_DIRECTORY.
-    Results will be saved in OUTPUT_MAPS_DIRECTORY.
+    """Train a deep learning model on your neuroimages.
+
+    NETWORK_TASK is the task learnt by the network [classification|regression|reconstruction]
+    CAPS_DIRECTORY is the CAPS folder from where tensors will be loaded.
+    TSV_DIRECTORY is a folder were TSV files defining train and validation sets are stored.
+    PREPROCESSING_JSON is the name of the JSON file in CAPS_DIRECTORY were all the information about extraction are
+    stored in orther to read the wanted tensors.
+    OUTPUT_MAPS_DIRECTORY is the path to the MAPS folder where outputs and results will be saved.
+
+    This pipeline includes many options. To make its usage easier, you can write all the configuration
+    in a TOML file as explained in the documentation:
+    https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
     """
     from .launch import train
     from .train_utils import get_train_dict

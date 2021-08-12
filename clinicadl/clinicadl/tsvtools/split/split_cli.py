@@ -53,9 +53,10 @@ def cli(
     ignore_demographics,
     categorical_split_variable,
 ):
-    """
-    Split each label tsv files at FORMATTED_DATA_DIRECTORY (output of tsvtool getlabel) in two subsets (train and validation
-    for instance), with respect to sex and age distributions in both sets produced.
+    """Performs a single split to prepare training.
+
+    FORMATTED_DATA_DIRECTORY is the path to the folder where the outputs of tsvtool getlabels command are stored.
+    The split is done with respect to age and sex distribution.
     """
     from .split import split_diagnoses
 

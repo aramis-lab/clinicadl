@@ -7,7 +7,7 @@ from clinicadl.utils import cli_param
 @cli_param.argument.input_maps
 @cli_param.argument.data_group
 @click.argument(
-    "interpretation_method",
+    "name",
     type=str,
 )
 # Model
@@ -70,7 +70,7 @@ from clinicadl.utils import cli_param
 def cli(
     input_maps_directory,
     data_group,
-    interpretation_method,
+    name,
     caps_directory,
     participants_tsv,
     selection_metrics,
@@ -83,15 +83,18 @@ def cli(
     n_proc,
     use_gpu,
 ):
-    """
-    Interpret the prediction of INPUT_MAPS_DIRECTORY on DATA_GROUP with the chosen INTERPRETATION_METHOD.
+    """Interpretation of trained models using saliency map method.
+
+    INPUT_MAPS_DIRECTORY is the MAPS folder from where the model to interpret will be loaded.
+    DATA_GROUP is the name of the subjects and sessions list used for the interpretation.
+    NAME is the name of the saliency map task.
     """
     from .interpret import interpret
 
     interpret(
         maps_dir=input_maps_directory,
         data_group=data_group,
-        name=interpretation_method,
+        name=name,
         caps_directory=caps_directory,
         tsv_path=participants_tsv,
         selection_metrics=selection_metrics,

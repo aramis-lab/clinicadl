@@ -75,8 +75,10 @@ def cli(
     diagnoses,
     multi_cohort,
 ):
-    """
-    Compute prediction of DATA_GROUP data with INPUT_MAPS_DIRECTORY models.
+    """Infer the outputs of a trained model on a test set.
+
+    INPUT_MAPS_DIRECTORY is the MAPS folder from where the model used for prediction will be loaded.
+    DATA_GROUP is the name of the subjects and sessions list used for the interpretation.
     """
     from .predict import predict
 

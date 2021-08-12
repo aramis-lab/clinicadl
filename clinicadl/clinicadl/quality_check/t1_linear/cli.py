@@ -46,9 +46,9 @@ def cli(
     nproc,
     gpu,
 ):
-    """
-    Performs quality check on t1-volume pipeline.
+    """Performs quality check on t1-linear pipeline.
 
+    CAPS_DIRECTORY is the CAPS folder where t1-linear outputs are stored.
     OUTPUT_TSV is the path to the tsv file where results will be saved.
     """
     from .quality_check import quality_check as linear_qc
