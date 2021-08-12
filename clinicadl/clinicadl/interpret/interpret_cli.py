@@ -86,7 +86,9 @@ def cli(
     """Interpretation of trained models using saliency map method.
 
     INPUT_MAPS_DIRECTORY is the MAPS folder from where the model to interpret will be loaded.
+
     DATA_GROUP is the name of the subjects and sessions list used for the interpretation.
+
     NAME is the name of the saliency map task.
     """
     from .interpret import interpret

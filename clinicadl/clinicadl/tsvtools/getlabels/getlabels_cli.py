@@ -52,7 +52,9 @@ def cli(
     """Get labels in separate tsv files.
 
     MERGED_TSV is the output of `clinica iotools merge-tsv`.
+
     MISSING_MODS_DIRECTORY is  the outputs of `clinica iotools missing-mods`.
+
     Outputs are stored in RESULTS_TSV.
     """
     from .getlabels import get_labels

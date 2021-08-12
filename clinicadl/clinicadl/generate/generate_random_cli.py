@@ -33,6 +33,7 @@ def cli(
     """Addition of random gaussian noise to brain images.
 
     CAPS_DIRECTORY is the CAPS folder from where input brain images will be loaded.
+
     GENERATED_CAPS_DIRECTORY is a CAPS folder where the random dataset will be saved.
     """
     from .generate import generate_random_dataset

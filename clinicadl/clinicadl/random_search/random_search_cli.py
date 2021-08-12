@@ -31,6 +31,7 @@ def rs_generate_cli(
     """Hyperparameter exploration using random search.
 
     LAUNCH_DIRECTORY is the path to the parents folder where results of random search will be saved.
+
     NAME is the name of the output folder containing the experiment.
     """
     from .random_search import launch_search

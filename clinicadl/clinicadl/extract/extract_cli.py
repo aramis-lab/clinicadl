@@ -160,10 +160,12 @@ def cli(
     subjects_sessions_tsv: Optional[str] = None,
     nproc: Optional[int] = None,
 ) -> None:
-    """Extract Pytorch tensor from nifti images.
+    """Extract Pytorch tensors from nifti images.
 
     CAPS_DIRECTORY is the CAPS folder where nifti images are stored and tensor will be saved.
+
     MODALITY is the clinica pipeline name used for image preprocessing.
+
     EXTRACT_METHOD [image|patch|slice|roi] is the mode of extraction of tensors.
     """
     from .extract import DeepLearningPrepareData

@@ -56,6 +56,7 @@ def cli(
     """Performs a single split to prepare training.
 
     FORMATTED_DATA_DIRECTORY is the path to the folder where the outputs of tsvtool getlabels command are stored.
+
     The split is done with respect to age and sex distribution.
     """
     from .split import split_diagnoses
