@@ -216,7 +216,7 @@ from clinicadl.utils import cli_param
 )
 def cli(
     network_task,
-    input_caps_directory,
+    caps_directory,
     preprocessing_json,
     tsv_directory,
     output_maps_directory,
@@ -250,9 +250,9 @@ def cli(
     transfer_learning_selection,
 ):
     """
-    Train a deep learning model for NETWORK_TASK on INPUT_CAPS_DIRECTORY data.
+    Train a deep learning model for NETWORK_TASK on CAPS_DIRECTORY data.
     The list of data in loaded from TSV_DIRECTORY.
-    Data will be selected with respect to PREPROCESSING_JSON file stored in INPUT_CAPS_DIRECTORY.
+    Data will be selected with respect to PREPROCESSING_JSON file stored in CAPS_DIRECTORY.
     Results will be saved in OUTPUT_MAPS_DIRECTORY.
     """
     from .launch import train
@@ -262,7 +262,7 @@ def cli(
 
     # Add arguments
     train_dict["network_task"] = network_task
-    train_dict["caps_directory"] = input_caps_directory
+    train_dict["caps_directory"] = caps_directory
     train_dict["tsv_path"] = tsv_directory
 
     # Change value in train dict depending on user provided options

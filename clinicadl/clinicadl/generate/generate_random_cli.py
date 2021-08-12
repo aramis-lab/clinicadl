@@ -24,8 +24,8 @@ cmd_name = "random"
     help="Standard deviation of the noise added for the random dataset.",
 )
 def cli(
-    input_caps_directory,
-    output_caps_directory,
+    caps_directory,
+    generated_caps_directory,
     participants_tsv,
     n_subjects,
     mean,
@@ -33,15 +33,15 @@ def cli(
     preprocessing,
 ):
     """
-    Generate a random dataset OUTPUT_CAPS_DIRECTORY in which gaussian noise is added
-    to brain images of INPUT_CAPS_DIRECTORY.
+    Generate a random dataset GENERATED_CAPS_DIRECTORY in which gaussian noise is added
+    to brain images of CAPS_DIRECTORY.
     """
     from .generate import generate_random_dataset
 
     generate_random_dataset(
-        caps_dir=input_caps_directory,
+        caps_dir=caps_directory,
         tsv_path=participants_tsv,
-        output_dir=output_caps_directory,
+        output_dir=generated_caps_directory,
         n_subjects=n_subjects,
         mean=mean,
         sigma=sigma,

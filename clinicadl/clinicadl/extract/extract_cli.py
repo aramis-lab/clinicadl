@@ -140,7 +140,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.subjects_sessions_tsv
 @cli_param.option.n_proc
 def cli(
-    input_caps_directory: str,
+    caps_directory: str,
     modality: str,
     extract_method: str,
     use_uncropped_image: bool = False,
@@ -161,7 +161,7 @@ def cli(
     nproc: Optional[int] = None,
 ) -> None:
     """
-    Extraction of pytorch tensor from nifti images of INPUT_CAPS_DIRECTORY preprocessed
+    Extraction of pytorch tensor from nifti images of CAPS_DIRECTORY preprocessed
     with MODALITY clinica pipeline following EXTRACT_METHOD.
     """
     from .extract import DeepLearningPrepareData
@@ -193,7 +193,7 @@ def cli(
         parameters["suvr_reference_region"] = suvr_reference_region
 
     DeepLearningPrepareData(
-        caps_directory=input_caps_directory,
+        caps_directory=caps_directory,
         tsv_file=subjects_sessions_tsv,
         parameters=parameters,
     )

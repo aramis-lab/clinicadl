@@ -38,7 +38,7 @@ from clinicadl.utils import cli_param
 )
 @cli_param.option.use_gpu
 def cli(
-    input_caps_directory,
+    caps_directory,
     output_tsv,
     subjects_sessions_tsv,
     threshold,
@@ -54,7 +54,7 @@ def cli(
     from .quality_check import quality_check as linear_qc
 
     linear_qc(
-        input_caps_directory,
+        caps_directory,
         output_tsv,
         tsv_path=subjects_sessions_tsv,
         threshold=threshold,

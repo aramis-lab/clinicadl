@@ -24,8 +24,8 @@ cmd_name = "trivial"
     help="Percentage of atrophy applied",
 )
 def cli(
-    input_caps_directory,
-    output_caps_directory,
+    caps_directory,
+    generated_caps_directory,
     participants_tsv,
     n_subjects,
     preprocessing,
@@ -33,14 +33,14 @@ def cli(
     atrophy_percent,
 ):
     """
-    Generate a trivial dataset OUTPUT_CAPS_DIRECTORY in which gaussian half of the brain is atrophied.
+    Generate a trivial dataset GENERATED_CAPS_DIRECTORY in which gaussian half of the brain is atrophied.
     """
     from .generate import generate_trivial_dataset
 
     generate_trivial_dataset(
-        caps_dir=input_caps_directory,
+        caps_dir=caps_directory,
         tsv_path=participants_tsv,
-        output_dir=output_caps_directory,
+        output_dir=generated_caps_directory,
         n_subjects=n_subjects,
         preprocessing=preprocessing,
         mask_path=mask_path,

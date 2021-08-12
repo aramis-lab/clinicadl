@@ -16,7 +16,7 @@ cmd_name = "t1-volume"
     type=str,
 )
 def cli(
-    input_caps_directory,
+    caps_directory,
     output_tsv,
     group_label,
 ):
@@ -28,7 +28,7 @@ def cli(
     from .quality_check import quality_check as volume_qc
 
     volume_qc(
-        input_caps_directory,
+        caps_directory,
         output_tsv,
         group_label,
     )
