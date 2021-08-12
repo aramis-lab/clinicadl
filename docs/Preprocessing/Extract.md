@@ -84,7 +84,7 @@ These files are compulsory to run the [train](..Train/Introduction.md/#running-t
 - `--custom_suffix`: suffix of the filename that should be converted to the
   tensor format. The output will be saved into a folder named `custom` but the
   processed files will kep their original name. E.g.: you can convert the
-  images from the segmentation of the grey matter registered on the
+  images from the segmentation of the gray matter registered on the
   Ixi549Space. These images are obtained by running 
   [`t1-volume`](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Volume/) 
   pipeline. The suffix for these images is

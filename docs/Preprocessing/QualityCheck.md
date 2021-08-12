@@ -61,7 +61,7 @@ An example of TSV file is:
 | sub-CLNC04         | ses-M00        | 0.1549495905637741     | False     |
 | ...                |  ...           |  ...                   |  ...      |
 
-## `quality-check t1-volume` - Evaluate `t1-volume` registration and grey matter segmentation
+## `quality-check t1-volume` - Evaluate `t1-volume` registration and gray matter segmentation
 
 The quality check procedure is based on thresholds on different statistics that were empirically
 linked to images of bad quality. Three steps are performed to remove images with the following characteristics:

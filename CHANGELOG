@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   parameters defined in a JSON file.
 - New functionality `clinicadl train resume` to resume a prematurely stopped
   training task.
-- Possibility to learn the grey matter intensities with the binary
+- Possibility to learn the gray matter intensities with the binary
   classification during training, based on `t1-volume` outputs.
 - Refactor code style using Black tool.
 
