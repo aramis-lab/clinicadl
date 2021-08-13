@@ -1,4 +1,4 @@
-# `clinicadl preprocessing` - Image preprocessing pipelines
+# Image preprocessing pipelines: prepare your data for deep learning.
 
 ## Introduction
 
