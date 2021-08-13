@@ -144,17 +144,17 @@ or in `roi` mode if there is only one region).
 ## Multi-cohort
 
 Starting from version 0.2.1, it is possible to use ClinicaDL's functions on several datasets at the same time.
-In this case, the `multi-cohort` flag must be given, and the `INPUT_CAPS_DIRECTORY` and the `TSV_DIRECTORY`
+In this case, the `multi-cohort` flag must be given, and the `CAPS_DIRECTORY` and the `TSV_DIRECTORY`
 correspond to TSV files.
 
-The `INPUT_CAPS_DIRECTORY` argument must lead to a TSV file with two columns:
+The `CAPS_DIRECTORY` argument must lead to a TSV file with two columns:
 
 - `cohort` the name of the cohort (must correspond to the values in `TSV_DIRECTORY`),
 - `path` the path to the corresponding [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
 
 The `TSV_DIRECTORY` argument points to a TSV file with two columns:
 
-- `cohort` the name of the cohort (must correspond to the values in `INPUT_CAPS_DIRECTORY`),
+- `cohort` the name of the cohort (must correspond to the values in `CAPS_DIRECTORY`),
 - `path` the path to the corresponding labels list, outputs of [`split`](../TSVTools.md#split---single-split-observing-similar-age-and-sex-distributions) 
 or [`kfold`](../TSVTools.md#kfold---k-fold-split) methods.
 - `diagnoses` the diagnoses that will be used in the cohort. Must correspond to a single string with labels accepted by

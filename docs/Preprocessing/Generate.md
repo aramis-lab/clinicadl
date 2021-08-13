@@ -27,12 +27,12 @@ You need to execute the `clinica run` and `clinicadl extract` pipelines prior to
 ### `trivial`
 The task can be run with the following command line:
 ```
-clinicadl generate trivial INPUT_CAPS_DIRECTORY OUTPUT_CAPS_DIRECTORY
+clinicadl generate trivial CAPS_DIRECTORY GENERATED_CAPS_DIRECTORY
 ```
 where:
 
-- `INPUT_CAPS_DIRECTORY` (str) is the input folder containing the neuroimaging data in a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
-- `OUTPUT_CAPS_DIRECTORY` (str) is the folder where the synthetic CAPS is stored.
+- `CAPS_DIRECTORY` (str) is the input folder containing the neuroimaging data in a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
+- `GENERATED_CAPS_DIRECTORY` (str) is the folder where the synthetic CAPS is stored.
 
 Options:
 
@@ -47,12 +47,12 @@ Default will download masks based on AAL2 in `clinicadl/resources/masks`.
 ### `random`
 The task can be run with the following command line:
 ```
-clinicadl generate random INPUT_CAPS_DIRECTORY OUTPUT_CAPS_DIRECTORY
+clinicadl generate random CAPS_DIRECTORY GENERATED_CAPS_DIRECTORY
 ```
 where:
 
-- `INPUT_CAPS_DIRECTORY` (str) is the input folder containing the neuroimaging data in a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
-- `OUTPUT_CAPS_DIRECTORY` (str) is the folder where the synthetic CAPS is stored.
+- `CAPS_DIRECTORY` (str) is the input folder containing the neuroimaging data in a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
+- `GENERATED_CAPS_DIRECTORY` (str) is the folder where the synthetic CAPS is stored.
 
 Options:
 

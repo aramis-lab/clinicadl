@@ -11,12 +11,12 @@ argument before running this pipeline.
 ## Running the pipeline
 The pipeline can be run with the following command line:
 ```{.sourceCode .bash}
-clinicadl extract INPUT_CAPS_DIRECTORY MODALITY EXTRACT_METHOD
+clinicadl extract CAPS_DIRECTORY MODALITY EXTRACT_METHOD
 ```
 
 where:
 
-- `INPUT_CAPS_DIRECTORY` (path) is the folder in a [CAPS
+- `CAPS_DIRECTORY` (path) is the folder in a [CAPS
   hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/)
   containing the images corresponding to the `MODALITY` asked.
 - `MODALITY` (str) is the name of the preprocessing performed on the original images. It
@@ -25,7 +25,7 @@ where:
 - `EXTRACT_METHOD` (str) is the format of the extracted tensors:
     - `image` to convert the whole 3D image,
     - `patch` to extract 3D patches walking through the entire image, 
-    - `roi` to extract a list of regions defined by masks at the root in `INPUT_CAPS_DIRECTORY`,
+    - `roi` to extract a list of regions defined by masks at the root in `CAPS_DIRECTORY`,
     - `slice` to extract 2D slices from the image.
   
 !!! note "Default values"

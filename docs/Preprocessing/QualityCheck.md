@@ -28,11 +28,11 @@ prior to running this task.
 ### Running the task
 The task can be run with the following command line:
 ```
-clinicadl preprocessing quality-check t1-linear INPUT_CAPS_DIRECTORY OUTPUT_TSV
+clinicadl preprocessing quality-check t1-linear CAPS_DIRECTORY OUTPUT_TSV
 ```
 where:
 
-- `INPUT_CAPS_DIRECTORY` (path) is the folder containing the results of the [`t1-linear` pipeline](T1_Linear.md) 
+- `CAPS_DIRECTORY` (path) is the folder containing the results of the [`t1-linear` pipeline](T1_Linear.md) 
 and the output of the present command, both in a [CAPS hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
 - `OUTPUT_TSV` (str) is the path to the output TSV file (filename included).
 
@@ -83,11 +83,11 @@ You need to execute the `clinica run t1-volume` pipeline prior to running this t
 ### Running the task
 The task can be run with the following command line:
 ```
-clinicadl preprocessing quality-check t1-volume INPUT_CAPS_DIRECTORY OUTPUT_TSV GROUP_LABEL
+clinicadl preprocessing quality-check t1-volume CAPS_DIRECTORY OUTPUT_TSV GROUP_LABEL
 ```
 where:
 
-- `INPUT_CAPS_DIRECTORY` (path) is the folder containing the results of the [`t1-volume` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Volume/) 
+- `CAPS_DIRECTORY` (path) is the folder containing the results of the [`t1-volume` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Volume/) 
 and the output of the present command, both in a [CAPS hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
 - `OUTPUT_TSV` (str) is the path to an output directory in which TSV files will be created.
 - `GROUP_LABEL` (str) is the identifier for the group of subjects used to create the DARTEL template.
