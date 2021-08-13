@@ -71,9 +71,8 @@ nav:
     - Generate synthetic data sets: Preprocessing/Generate.md
   - Hyperparameter exploration: RandomSearch.md
   - Train deep learning networks:
-    - Introduction: Train/Introduction.md
-    - JSON defined: Train/Retrain.md
-    - Resume: Train/Resume.md
+    - Train: Train/Introduction.md
+    - Resume training: Train/Resume.md
     - Implementation details: Train/Details.md
   - Inference using trained models: Predict.md
   - Network output serialization: Tensors.md
