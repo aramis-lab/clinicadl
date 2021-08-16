@@ -7,7 +7,7 @@ from clinicadl.utils import cli_param
 @cli_param.argument.input_maps
 @cli_param.argument.data_group
 @click.argument(
-    "interpretation_method",
+    "name",
     type=str,
 )
 # Model
@@ -38,26 +38,26 @@ from clinicadl.utils import cli_param
     is_flag=True,
     help="Performs multi-cohort interpretation. In this case, caps_directory and tsv_path must be paths to TSV files.",
 )
-@click.option(
-    "-d",
-    "--diagnosis",
-    default="AD",
-    type=str,
-    help="The images corresponding to this diagnosis only will be loaded.",
-)
+# @click.option(
+#     "-d",
+#     "--diagnosis",
+#     default="AD",
+#     type=str,
+#     help="The images corresponding to this diagnosis only will be loaded.",
+# )
 @click.option(
     "--target_node",
     default=0,
     type=str,
     help="Which target node the gradients explain. Default takes the first output node.",
 )
-@click.option(
-    "--baseline",
-    type=bool,
-    default=False,
-    is_flag=True,
-    help="If provided, only the baseline sessions are used for interpretation.",
-)
+# @click.option(
+#     "--baseline",
+#     type=bool,
+#     default=False,
+#     is_flag=True,
+#     help="If provided, only the baseline sessions are used for interpretation.",
+# )
 @click.option(
     "--save_individual",
     type=str,
@@ -70,13 +70,13 @@ from clinicadl.utils import cli_param
 def cli(
     input_maps_directory,
     data_group,
-    interpretation_method,
+    name,
     caps_directory,
     participants_tsv,
     selection_metrics,
     multi_cohort,
-    diagnosis,
-    baseline,
+    # diagnosis,
+    # baseline,
     target_node,
     save_individual,
     batch_size,
@@ -84,14 +84,14 @@ def cli(
     use_gpu,
 ):
     """
-    Interpret the prediction of INPUT_MAPS_DIRECTORY on DATA_GROUP with the chosen INTERPRETATION_METHOD.
+    Interpret the prediction of INPUT_MAPS_DIRECTORY on DATA_GROUP.
     """
     from .interpret import interpret
 
     interpret(
         maps_dir=input_maps_directory,
         data_group=data_group,
-        name=interpretation_method,
+        name=name,
         caps_directory=caps_directory,
         tsv_path=participants_tsv,
         selection_metrics=selection_metrics,
