@@ -29,9 +29,25 @@ from clinicadl.utils import cli_param
     type=str,
     help="Target label used for training (if NETWORK_TASK in [`regression`, `classification`]).",
 )
-@cli_param.option.use_gpu
-@cli_param.option.n_proc
-@cli_param.option.batch_size
+# Computational
+@click.option(
+    "--gpu/--no-gpu",
+    # default=True,
+    help="Use GPU by default. Please specify `--no-gpu` to force using CPU.",
+)
+@click.option(
+    "-np",
+    "--nproc",
+    type=int,
+    # default=2,
+    help="Number of cores used during the task.",
+)
+@click.option(
+    "--batch_size",
+    type=int,
+    # default=2,
+    help="Batch size for data loading.",
+)
 @click.option(
     "--evaluation_steps",
     "-esteps",
