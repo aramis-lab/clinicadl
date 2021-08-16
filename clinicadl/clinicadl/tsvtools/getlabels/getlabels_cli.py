@@ -29,7 +29,7 @@ cmd_name = "getlabels"
     "Default will keep the diagnosis, age and the sex needed for the split procedure.",
     type=str,
     multiple=True,
-    default="",
+    default=["diagnosis", "age", "sex"],
 )
 @click.option(
     "--keep_smc",
