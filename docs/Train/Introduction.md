@@ -33,7 +33,7 @@ In case of [multi-cohort training](Details.md#multi-cohort), must be a path to a
 
 The training can be configured through a Toml configuration file or by using the command line options. If you have a Toml configuration file (see [the section below](Introduction.md/#Configuration-file) page for more information) you can use the following option to load it:
 
-- `--config_file` (File) is the name of the Toml configuration file for training job. This file contain the value for the options thats you want to specify (to avoid too long command line).
+- `--config_file` (File) is the name of the Toml configuration file for training job. This file contain the value for the options that you want to specify (to avoid too long command line).
 
 If an option is specified twice (in the configuration file and then as an option in command line) then **the value specified in the command line will be used for the job**.
 
@@ -43,7 +43,7 @@ Options shared for all values of `network_task` are organized in groups:
     - `--architecture` (str) is the name of the architecture used. Default depends on the task.
     It must correspond to a class that inherits from `nn.Module` imported in `clinicadl/utils/network/__init__.py`.
     To implement custom models please refer to [this section](../Contribute/Custom.md#custom-architecture).
-    - `--multi` (bool) is a flag to ask for a [multi-network framework](./Details.md#multi-cohort).
+    - `--multi_network` (bool) is a flag to ask for a [multi-network framework](./Details.md#multi-cohort).
     Default trains only one network on all images.
     - `--dropout` (float) is the rate of dropout applied in dropout layers. Default: `0`.
 
@@ -85,7 +85,7 @@ Options shared for all values of `network_task` are organized in groups:
     - `--tolerance` (float) is the value used for [early stopping](Details.md#stopping-criterion) tolerance. Default: `0`.
     - `--accumulation_steps` (int) gives the number of iterations during which gradients are accumulated before performing the [weights update](Details.md#optimization). 
     This allows to virtually increase the size of the batch. Default: `1`.
-- **Transfert learning parameters**
+- **Transfer learning parameters**
     - `--transfer_learning_path` (path) is the path to the model used for transfer learning.
     - `--transfer_learning_selection` (str) is the transfer learning selection metric.
     See [Implementation details](Details.md/#transfer-learning) for more information about transfer learning.
@@ -135,7 +135,7 @@ Here is an example of a TOML configuration file with all the default values:
 
 [Model]
 architecture = "default" # ex : Conv5_FC3
-multi = false
+multi_network = false
 
 [Architecture]
 # CNN
