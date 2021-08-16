@@ -54,7 +54,7 @@ CAPS_DIRECTORY
 │       ├── extract_YYYYYYYYY.json
 │
 ```
-These files are compulsory to run the [train](..Train/Introduction.md/#running-the-task) command. They provide all the details of the processing performed by the `extract` command that will be necessary when reading the tensors.
+These files are compulsory to run the [train](../Train/Introduction.md#running-the-task) command. They provide all the details of the processing performed by the `extract` command that will be necessary when reading the tensors.
 
 ## `modality` options
 

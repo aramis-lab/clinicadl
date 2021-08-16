@@ -112,7 +112,7 @@ of epochs `epochs` is reached.
 <SCRIPT SRC='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></SCRIPT>
 <SCRIPT>MathJax.Hub.Config({ tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}})</SCRIPT> 
 
-For classification a regression tasks that take as input a part of the MRI volume (*patch, roi or slice*), 
+For classification or regression tasks that take as input a part of the MRI volume (*patch, roi or slice*), 
 an ensemble operation is needed to obtain the label at the image level.
 
 For classification task, soft-voting was implemented as all inputs are not equally meaningful.

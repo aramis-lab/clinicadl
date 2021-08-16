@@ -16,7 +16,7 @@ Their original code can be found on [GitHub](https://github.com/vfonov/deep-qc).
 !!! warning
     This quality check procedure is specific to the `t1-linear` pipeline and should not be applied 
     to other preprocessing procedures as the results may not be reliable.
-    Moreover you should be aware that this procedure may not be well adapted to anonymized data 
+    Moreover, you should be aware that this procedure may not be well adapted to de-identified data 
     (for example images from OASIS-1) where parts of the images were removed (e.g. the face)
     or modified to guarantee anonymization.
 
@@ -32,7 +32,7 @@ clinicadl preprocessing quality-check t1-linear CAPS_DIRECTORY OUTPUT_TSV
 ```
 where:
 
-- `CAPS_DIRECTORY` (path) is the folder containing the results of the [`t1-linear` pipeline](T1_Linear.md) 
+- `CAPS_DIRECTORY` (path) is the folder containing the results of the [`t1-linear` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Linear/) 
 and the output of the present command, both in a [CAPS hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
 - `OUTPUT_TSV` (str) is the path to the output TSV file (filename included).
 

@@ -29,8 +29,7 @@ clinicadl interpret INPUT_MAPS_DIRECTORY DATA_GROUP NAME
 ```
 where:
 
-- `INPUT_MAPS_DIRECTORY` (path) is a path to the MAPS folder where the model and the json file
-  are stored.
+- `INPUT_MAPS_DIRECTORY` (path) is a path to the MAPS folder containing the model which will be interpreted.
 - `DATA_GROUP` (str) is a prefix to name the files resulting from the interpretation task.
 - `NAME` (str) is the name of the saliency map task.
 
@@ -72,7 +71,7 @@ Optional arguments:
 - **Results display**
     - `--vmax` (float) is the maximum value used for 2D saliency maps display. Default value: `0.5`.
 - **Other options**
-    - `--target_node` (str) is the node the gradients explain. By default it will target the first output node.
+    - `--target_node` (str) is the node the gradients explain. By default, it will target the first output node.
     - `save_individual` (str) is an option to save individual saliency maps in addition to the mean saliency map.
    
 
