@@ -199,7 +199,7 @@ def cli(
     batch_size,
     evaluation_steps,
     architecture,
-    multi,
+    multi_network,
     multi_cohort,
     diagnoses,
     baseline,
@@ -267,7 +267,7 @@ def cli(
     if architecture is not None:
         train_dict["architecture"] = architecture
     if multi is not None:
-        train_dict["multi"] = multi
+        train_dict["multi_network"] = multi_network
     if gpu is not None:
         train_dict["use_cpu"] = not gpu
     if learning_rate is not None:

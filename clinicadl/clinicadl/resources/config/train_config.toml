@@ -3,7 +3,7 @@
 
 [Model]
 architecture = "default" # ex : Conv5_FC3
-multi = false
+multi_network = false
 
 [Architecture]
 # CNN
