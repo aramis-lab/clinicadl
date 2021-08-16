@@ -16,20 +16,21 @@ from clinicadl.utils import cli_param
     default=["loss"],
     type=str,
     multiple=True,
-    help="Loads the model selected on the metrics given.",
+    help="Load the model selected on the metrics given.",
 )
 # Data
 @click.option(
     "--participants_tsv",
     type=click.File(),
     default=None,
-    help="TSV path with subjects/sessions to process, if different from classification task.",
+    help="Path to a TSV file with participants/sessions to process, "
+         "if different from the one used during network training.",
 )
 @click.option(
     "--caps_directory",
     type=click.Path(exists=True),
     default=None,
-    help="Data using CAPS structure, if different from classification task",
+    help="Input CAPS directory, if different from the one used during network training.",
 )
 @click.option(
     "--multi_cohort",
@@ -62,7 +63,7 @@ from clinicadl.utils import cli_param
     "--save_individual",
     type=str,
     default=None,
-    help="Saves individual saliency maps in addition to the mean saliency map.",
+    help="Save individual saliency maps in addition to the mean saliency map.",
 )
 @cli_param.option.n_proc
 @cli_param.option.use_gpu

@@ -36,7 +36,7 @@ from clinicadl.utils import cli_param
     "--stride_size",
     default=50,
     show_default=True,
-    help="Stride size if EXTRACT_METHOD is ``patch.",
+    help="Stride size if EXTRACT_METHOD is `patch`.",
 )
 @click.option(
     "-sd",
@@ -79,7 +79,8 @@ from clinicadl.utils import cli_param
     type=bool,
     default=False,
     is_flag=True,
-    help="Uncrop outputs if EXTRACT_METHOD is `roi`. Disable cropping option so the output tensors have the same size than the whole image.",
+    help="Uncrop outputs if EXTRACT_METHOD is `roi`. Disable cropping option so the output tensors "
+         "have the same size than the whole image.",
 )
 @click.option(
     "--roi_custom_suffix",
@@ -95,26 +96,25 @@ from clinicadl.utils import cli_param
     "-ct",
     type=str,
     default=None,
-    help="""Custom template if EXTRACT_METHOD is `roi`.
-        Name of the template used when modality is set to custom.""",
+    help="""Template name if EXTRACT_METHOD is `roi` and MODALITY is `custom`.
+        Name of the template used for registration during the preprocessing procedure.""",
 )
 @click.option(
     "--roi_custom_mask_pattern",
     "-cmp",
     type=str,
     default=None,
-    help="""Custom mask pattern if EXTRACT_METHOD is `roi`.
+    help="""Mask pattern if EXTRACT_METHOD is `roi` and MODALITY is `custom`.
             If given will select only the masks containing the string given.
-            The mask with the shortest name is taken.
-            This argument is taken into account only of the modality is custom.""",
+            The mask with the shortest name is taken.""",
 )
 @click.option(
     "--acq_label",
     type=click.Choice(["av45", "fdg"]),
     help=(
+        "Acquisition label if MODALITY is `pet-linear`. "
         "Name of the label given to the PET acquisition, specifying  the tracer used (acq-<acq_label>). "
-        "For instance it can be 'fdg' for fluorodeoxyglucose or 'av45' for florbetapir. This option only applies to "
-        "the `pet-linear` pipeline."
+        "For instance it can be 'fdg' for fluorodeoxyglucose or 'av45' for florbetapir."
     ),
 )
 @click.option(
@@ -122,9 +122,10 @@ from clinicadl.utils import cli_param
     "--suvr_reference_region",
     type=click.Choice(LIST_SUVR_REFERENCE_REGIONS),
     help=(
+        "Regions used for normalization if MODALITY is `pet-linear`. "
         "Intensity normalization using the average PET uptake in reference regions resulting in a standardized uptake "
         "value ratio (SUVR) map. It can be cerebellumPons or cerebellumPon2 (used for amyloid tracers) or pons or "
-        "pons2 (used for 18F-FDG tracers). This option only applies to `pet-linear` pipeline."
+        "pons2 (used for 18F-FDG tracers)."
     ),
 )
 @click.option(
@@ -132,13 +133,13 @@ from clinicadl.utils import cli_param
     "--custom_suffix",
     default="",
     help=(
-        "Suffix to append to filenames for a custom modality, for instance "
+        "Suffix of output files if MODALITY is `custom`. "
+        "Suffix to append to filenames, for instance "
         "`graymatter_space-Ixi549Space_modulated-off_probability.nii.gz`, or "
         "`segm-whitematter_probability.nii.gz`"
     ),
 )
 @cli_param.option.subjects_sessions_tsv
-@cli_param.option.n_proc
 def cli(
     caps_directory: str,
     modality: str,
@@ -158,13 +159,12 @@ def cli(
     suvr_reference_region: Optional[str] = None,
     custom_suffix: str = "",
     subjects_sessions_tsv: Optional[str] = None,
-    nproc: Optional[int] = None,
 ) -> None:
     """Extract Pytorch tensors from nifti images.
 
     CAPS_DIRECTORY is the CAPS folder where nifti images are stored and tensor will be saved.
 
-    MODALITY is the clinica pipeline name used for image preprocessing.
+    MODALITY [t1-linear|pet-linear|custom] is the clinica pipeline name used for image preprocessing.
 
     EXTRACT_METHOD [image|patch|slice|roi] is the mode of extraction of tensors.
     """

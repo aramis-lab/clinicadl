@@ -10,44 +10,44 @@ from clinicadl.utils import cli_param
     "--caps_directory",
     type=click.Path(exists=True),
     default=None,
-    help="Data using CAPS structure, if different from classification task",
+    help="Data using CAPS structure, if different from the one used during network training.",
 )
 @click.option(
     "--participants_tsv",
     default=None,
     type=click.Path(),
-    help="""Path to the file with subjects/sessions to process.
-    If it includes the filename will load the tsv file directly.
-    Else will load the baseline tsv files of wanted diagnoses produced by tsvtool.""",
+    help="""Path to the file with subjects/sessions to process, if different from the one used during network training.
+    If it includes the filename will load the TSV file directly.
+    Else will load the baseline TSV files of wanted diagnoses produced by `tsvtool split`.""",
 )
 @click.option(
     "--labels/--no_labels",
     default=False,
-    help="Set this to --label if your dataset does not contain a ground truth.",
+    help="Set this option to --no_labels if your dataset does not contain ground truth labels.",
 )
 @click.option(
     "--use_extracted_features",
     type=bool,
     default=False,
     is_flag=True,
-    help="""If True the extract slices or patche are used, otherwise the they
-            will be extracted on the fly (if necessary).""",
+    help="""If True the extracted modes are used, otherwise they
+            will be extracted on-the-fly from the image (if mode != `image`).""",
 )
 @click.option(
     "--selection_metrics",
     "-sm",
     type=click.Choice(["loss", "balanced_accuracy"]),
-    default=["balanced_accuracy"],
+    default=["loss"],
     multiple=True,
-    help="""List of metrics to find the best models to evaluate. Default will
-    classify best model based on balanced accuracy.""",
+    help="""Allow to select a list of models based on their selection metric. Default will
+    only infer the result of the best model selected on loss.""",
 )
 @click.option(
     "--multi_cohort",
     type=bool,
     default=False,
     is_flag=True,
-    help="""Performs multi-cohort classification.
+    help="""Allow to use multiple CAPS directories.
             In this case, CAPS_DIRECTORY and PARTICIPANTS_TSV must be paths to TSV files.""",
 )
 @click.option(
@@ -56,7 +56,7 @@ from clinicadl.utils import cli_param
     type=click.Choice(["AD", "CN", "MCI", "sMCI", "pMCI"]),
     # default=(),
     multiple=True,
-    help="List of participants diagnoses that will be classified.",
+    help="List of diagnoses used for inference. Is used only if PARTICIPANTS_TSV leads to a folder.",
 )
 @cli_param.option.use_gpu
 @cli_param.option.n_proc

@@ -9,8 +9,9 @@ from clinicadl.utils import cli_param
 @cli_param.option.subset_name
 @click.option(
     "--n_splits",
-    help="Number of folds in the k-fold split."
+    help="Number of folds in the k-fold split. "
     "If 0, there is no training set and the whole dataset is considered as a test set.",
+    show_default=True,
     type=int,
     default=5,
 )

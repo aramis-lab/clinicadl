@@ -19,17 +19,17 @@ cmd_name = "getlabels"
 )
 @click.option(
     "--restriction_tsv",
-    help="Path to a tsv containing the sessions that can be included.",
+    help="Path to a TSV file containing the sessions that can be included.",
     type=str,
     default=None,
 )
 @click.option(
     "--variables_of_interest",
-    help="Variables of interest that will be kept in the final lists."
-    "Default will keep the diagnosis, age and the sex needed for the split procedure.",
+    help="Variables of interest that will be kept in the final lists. "
+    "Will always keep the diagnosis, age and sex needed for the split procedure.",
     type=str,
     multiple=True,
-    default="",
+    default=[],
 )
 @click.option(
     "--keep_smc",

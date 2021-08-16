@@ -158,6 +158,6 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
             save_tensor(tensor[1], output_file)
             logger.debug(f"    Output tensor saved at {output_file}")
 
-    # Save parameters dictionnary
+    # Save parameters dictionary
     preprocessing_json_path = write_preprocessing(parameters, caps_directory)
     logger.info(f"Preprocessing JSON saved at {preprocessing_json_path}.")

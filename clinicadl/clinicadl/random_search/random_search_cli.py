@@ -3,7 +3,7 @@ import click
 from clinicadl.utils import cli_param
 
 
-@click.command(name="generate")
+@click.command("random-search")
 @click.argument(
     "launch_directory",
     type=str,
@@ -20,7 +20,7 @@ from clinicadl.utils import cli_param
     help="""Fix the number of iterations to perform before computing an evaluation. Default will only
     perform one evaluation at the end of each epoch.""",
 )
-def rs_generate_cli(
+def cli(
     launch_directory,
     name,
     use_gpu,
@@ -45,37 +45,6 @@ def rs_generate_cli(
 
     launch_search(launch_directory, name, options)
 
-
-@click.command(name="analysis")
-@click.argument(
-    "launch_directory",
-    type=str,
-)
-def rs_analysis_cli(launch_directory):
-    """Performs the analysis of all jobs in random search directory.
-
-    LAUNCH_DIRECTORY is the path to the parents folder where al results of random search are saved.
-    """
-    from clinicadl.utils.meta_maps.random_search_analysis import random_search_analysis
-
-    random_search_analysis(launch_directory)
-
-
-class RegistrationOrderGroup(click.Group):
-    """CLI group which lists commands by order or registration."""
-
-    def list_commands(self, ctx):
-        return self.commands.keys()
-
-
-@click.group(cls=RegistrationOrderGroup, name="random-search")
-def cli() -> None:
-    """Generate random networks to explore hyper parameters space."""
-    pass
-
-
-cli.add_command(rs_generate_cli)
-cli.add_command(rs_analysis_cli)
 
 if __name__ == "__main__":
     cli()

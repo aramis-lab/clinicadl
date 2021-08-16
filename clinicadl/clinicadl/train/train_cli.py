@@ -22,32 +22,16 @@ from clinicadl.utils import cli_param
     "--config_file",
     "-c",
     type=click.File(),
-    help="Path to the toml file containing all training configuration",
+    help="Path to the TOML file containing the values of the options needed for training.",
 )
 @click.option(
     "--label",
     type=str,
-    help="Target label to use for training.",
+    help="Target label used for training (if NETWORK_TASK in [`regression`, `classification`]).",
 )
-@click.option(
-    "--gpu/--no-gpu",
-    # default=True,
-    help="Use GPU by default. Please specify  --no-gpu  to use CPU instead.",
-)
-@click.option(
-    "-np",
-    "--nproc",
-    type=int,
-    # default=2,
-    help="Number of cores used during the task.",
-)
-@click.option(
-    "--batch_size",
-    # default=2,
-    show_default=True,
-    type=int,
-    help="Batch size for data loading.",
-)
+@cli_param.option.use_gpu
+@cli_param.option.n_proc
+@cli_param.option.batch_size
 @click.option(
     "--evaluation_steps",
     "-esteps",
@@ -65,7 +49,7 @@ from clinicadl.utils import cli_param
     help="Architecture of the chosen model to train. A set of model is available in ClinicaDL, default architecture depends on the NETWORK_TASK (see the documentation for more information).",
 )
 @click.option(
-    "--multi",
+    "--multi_network",
     type=bool,
     is_flag=True,
     # default=false,
@@ -94,7 +78,7 @@ from clinicadl.utils import cli_param
     type=click.Choice(["AD", "BV", "CN", "MCI", "sMCI", "pMCI"]),
     # default=(),
     multiple=True,
-    help="List of diagnoses that will be selected for training.",
+    help="List of diagnoses used for training.",
 )
 @click.option(
     "--baseline",
@@ -121,20 +105,7 @@ from clinicadl.utils import cli_param
     "-s",
     type=click.Choice(["random", "weighted"]),
     # default="random",
-    help="Sampler choice (random, or weighted for imbalanced datasets).",
-)
-@click.option(
-    "--atlas_weight",
-    type=float,
-    # default=1,
-    help="Weight to put on the MSE loss used to compute the error on atlas intensities.",
-)
-@click.option(
-    "--merged_tsv",
-    type=click.File(),
-    # default="",
-    help="Path to the output of clinica iotools merged-tsv (concatenation for multi-cohort). "
-    "Can accelerate training if atlas intensities are predicted.",
+    help="Sampler used to load the training data set.",
 )
 # Cross validation
 @click.option(
@@ -189,7 +160,7 @@ from clinicadl.utils import cli_param
     "--tolerance",
     type=float,
     # default=0.0,
-    help="Value for the early stopping tolerance.",
+    help="Value for early stopping tolerance.",
 )
 @click.option(
     "--accumulation_steps",
@@ -205,14 +176,14 @@ from clinicadl.utils import cli_param
     "--transfer_learning_path",
     type=click.Path(),
     # default=0.0,
-    help="Path of model used for transfer learning",
+    help="Path of to a MAPS used for transfer learning.",
 )
 @click.option(
     "-tls",
     "--transfer_learning_selection",
     type=str,
     # default="best_loss",
-    help="Transfer learning selection metric",
+    help="Metric used to select the model for transfer learning in the MAPS defined by transfer_learning_path.",
 )
 def cli(
     network_task,
@@ -235,8 +206,6 @@ def cli(
     normalize,
     data_augmentation,
     sampler,
-    atlas_weight,
-    merged_tsv,
     n_splits,
     split,
     epochs,
@@ -249,7 +218,7 @@ def cli(
     transfer_learning_path,
     transfer_learning_selection,
 ):
-    """Train a deep learning model on your neuroimages.
+    """Train a deep learning model on your neuroimaging dataset.
 
     NETWORK_TASK is the task learnt by the network [classification|regression|reconstruction]
 
@@ -257,8 +226,8 @@ def cli(
 
     TSV_DIRECTORY is a folder were TSV files defining train and validation sets are stored.
 
-    PREPROCESSING_JSON is the name of the JSON file in CAPS_DIRECTORY were all the information about extraction are
-    stored in orther to read the wanted tensors.
+    PREPROCESSING_JSON is the name of the JSON file in CAPS_DIRECTORY where all information about extraction are
+    stored in order to read the wanted tensors.
 
     OUTPUT_MAPS_DIRECTORY is the path to the MAPS folder where outputs and results will be saved.
 

@@ -141,7 +141,7 @@ class MapsManager:
                 f"specify a list of folds not intersecting the previous list, "
                 f"or use overwrite to erase previously trained folds."
             )
-        if self.multi:
+        if self.multi_network:
             self._train_multi(folds, resume=False)
         else:
             self._train_single(folds, resume=False)
@@ -170,7 +170,7 @@ class MapsManager:
                 f"Please try train command on these folds and resume only others."
             )
 
-        if self.multi:
+        if self.multi_network:
             self._train_multi(folds, resume=True)
         else:
             self._train_single(folds, resume=True)
@@ -244,7 +244,7 @@ class MapsManager:
                 data_group, fold, caps_directory, group_df, multi_cohort, overwrite
             )
 
-            if self.multi:
+            if self.multi_network:
                 for network in range(self.num_networks):
                     data_test = return_dataset(
                         self.mode,
@@ -392,7 +392,7 @@ class MapsManager:
             if selection_metrics is None:
                 selection_metrics = self._find_selection_metrics(fold)
 
-            if self.multi:
+            if self.multi_network:
                 for network in range(self.num_networks):
                     dataset = return_dataset(
                         self.mode,
@@ -502,7 +502,7 @@ class MapsManager:
         if folds is None:
             folds = self._find_folds()
 
-        if self.multi:
+        if self.multi_network:
             raise NotImplementedError(
                 "The interpretation of multi-network framework is not implemented."
             )
@@ -1175,7 +1175,7 @@ class MapsManager:
         train_parameters = self._compute_train_args()
         self.parameters.update(train_parameters)
 
-        if self.parameters["num_networks"] < 2 and self.multi:
+        if self.parameters["num_networks"] < 2 and self.multi_network:
             raise ValueError(
                 f"Invalid training arguments: cannot train a multi-network "
                 f"framework with only {self.parameters['num_networks']} element "
@@ -1911,7 +1911,7 @@ class MapsManager:
             (Dict): dictionary of results (weights, epoch number, metrics values)
         """
         selection_metric = self._check_selection_metric(fold, selection_metric)
-        if self.multi:
+        if self.multi_network:
             if network is None:
                 raise ValueError(
                     "Please precise the network number that must be loaded."

@@ -35,6 +35,7 @@ no_mci_sub_categories = click.option(
 subset_name = click.option(
     "--subset_name",
     type=str,
+    show_default=True,
     default="validation",
     help="Name of the subset that is complementary to train.",
 )
@@ -43,7 +44,7 @@ subset_name = click.option(
 participant_list = click.option(
     "--participants_tsv",
     type=click.File(),
-    help="Path to tsv file of list of subjects/sessions.",
+    help="Path to a TSV file including a list of participants/sessions.",
 )
 n_subjects = click.option(
     "--n_subjects",
@@ -62,13 +63,14 @@ preprocessing = click.option(
 use_gpu = click.option(
     "--gpu/--no-gpu",
     default=True,
-    help="Use GPU by default. Please specify  --no-gpu  to use CPU instead.",
+    help="Use GPU by default. Please specify `--no-gpu` to force using CPU.",
 )
 n_proc = click.option(
     "-np",
     "--nproc",
     type=int,
     default=2,
+    show_default=True,
     help="Number of cores used during the task.",
 )
 batch_size = click.option(

@@ -9,11 +9,12 @@ from clinicadl.utils import cli_param
 @cli_param.option.no_mci_sub_categories
 @click.option(
     "--n_test",
-    help="If >= 1, number of subjects to put in set with name 'subset_name'. "
-    "If < 1, proportion of subjects to put set with name 'subset_name'. "
-    "If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name.",
+    help="- If >= 1, number of subjects to put in set with name 'subset_name'.\n\n "
+    "- If < 1, proportion of subjects to put set with name 'subset_name'.\n\n "
+    "- If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name'.",
     type=float,
     default=100.0,
+    show_default=True,
 )
 @click.option(
     "--p_sex_threshold",
@@ -31,7 +32,7 @@ from clinicadl.utils import cli_param
 )
 @click.option(
     "--ignore_demographics",
-    help="If True do not use age and sex to create the splits.",
+    help="If given do not use age and sex to balance the split.",
     default=False,
     is_flag=True,
     type=bool,

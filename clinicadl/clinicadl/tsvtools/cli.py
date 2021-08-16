@@ -22,11 +22,11 @@ def cli() -> None:
     pass
 
 
-cli.add_command(analysis_cli)
-cli.add_command(getlabels_cli)
-cli.add_command(kfold_cli)
 cli.add_command(restrict_cli)
+cli.add_command(getlabels_cli)
+cli.add_command(analysis_cli)
 cli.add_command(split_cli)
+cli.add_command(kfold_cli)
 
 if __name__ == "__main__":
     cli()
