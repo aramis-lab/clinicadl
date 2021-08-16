@@ -1178,6 +1178,8 @@ class MapsManager:
             self.parameters["architecture"] = self.task_manager.get_default_network()
         if "selection_threshold" not in self.parameters:
             self.parameters["selection_threshold"] = None
+        if "seed" not in self.parameters:
+            self.parameters["seed"] = None
 
         train_parameters = self._compute_train_args()
         self.parameters.update(train_parameters)
