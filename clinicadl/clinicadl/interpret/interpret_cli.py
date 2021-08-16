@@ -24,7 +24,7 @@ from clinicadl.utils import cli_param
     type=click.File(),
     default=None,
     help="Path to a TSV file with participants/sessions to process, "
-         "if different from the one used during network training.",
+    "if different from the one used during network training.",
 )
 @click.option(
     "--caps_directory",
@@ -81,7 +81,7 @@ def cli(
     target_node,
     save_individual,
     batch_size,
-    n_proc,
+    nproc,
     use_gpu,
 ):
     """Interpretation of trained models using saliency map method.
@@ -105,7 +105,7 @@ def cli(
         target_node=target_node,
         save_individual=save_individual,
         batch_size=batch_size,
-        nproc=n_proc,
+        nproc=nproc,
         use_cpu=not use_gpu,
         # verbose=verbose,
     )

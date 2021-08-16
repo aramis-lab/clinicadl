@@ -6,7 +6,7 @@ input_maps = click.argument("input_maps_directory", type=click.Path(exists=True)
 output_maps = click.argument("output_maps_directory", type=click.Path())
 
 # TSV TOOLS
-merged_tsv = click.argument("merged_tsv", type=click.File())
+merged_tsv = click.argument("merged_tsv", type=click.Path(exists=True))
 
 formatted_data_directory = click.argument(
     "formatted_data_directory", type=click.Path(exists=True)
