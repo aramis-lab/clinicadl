@@ -1,11 +1,10 @@
 from logging import getLogger
 
+
 def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
     import os
     from os import path
-    from torch import save as save_tensor
-    from clinica.utils.inputs import check_caps_folder
-    from clinica.utils.participant import get_subject_session_list
+
     from clinica.utils.exceptions import (
         ClinicaBIDSError,
         ClinicaCAPSError,
@@ -17,15 +16,19 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
         T1W_LINEAR_CROPPED,
         pet_linear_nii,
     )
-    from clinica.utils.inputs import clinica_file_reader
+    from clinica.utils.inputs import check_caps_folder, clinica_file_reader
     from clinica.utils.nipype import container_from_filename
+    from clinica.utils.participant import get_subject_session_list
+    from torch import save as save_tensor
+
     from clinicadl.utils.preprocessing import write_preprocessing
+
     from .extract_utils import (
         check_mask_list,
+        extract_images,
         extract_patches,
         extract_roi,
         extract_slices,
-        extract_images,
     )
 
     logger = getLogger("clinicadl")
@@ -38,13 +41,17 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
     sessions, subjects = get_subject_session_list(
         input_dir, tsv_file, is_bids_dir, False, None
     )
-    logger.info(f"{parameters['mode']}s will be extracted in Pytorch tensor from {len(sessions)} images.")
+    logger.info(
+        f"{parameters['mode']}s will be extracted in Pytorch tensor from {len(sessions)} images."
+    )
     logger.debug(f"List of subjects: \n{subjects}.")
     logger.debug(f"List of sessions: \n{sessions}.")
 
     # Select the correct filetype corresponding to modality
     # and select the right folder output name corresponding to modality
-    logger.debug(f"Selected images are preprocessed with {parameters['preprocessing']} pipeline`.")
+    logger.debug(
+        f"Selected images are preprocessed with {parameters['preprocessing']} pipeline`."
+    )
     if parameters["preprocessing"] == "t1-linear":
         mod_subfolder = "t1_linear"
         if parameters["use_uncropped_image"]:
@@ -109,11 +116,12 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
                     )
             else:
                 from .extract_utils import TEMPLATE_DICT
+
                 parameters["roi_template"] = TEMPLATE_DICT[parameters["preprocessing"]]
             parameters["masks_location"] = path.join(
                 caps_directory, "masks", f"tpl-{parameters['roi_template']}"
             )
-            if len(parameters["roi_list"])==0:
+            if len(parameters["roi_list"]) == 0:
                 raise ValueError("A list of regions must be given.")
             else:
                 check_mask_list(

@@ -18,26 +18,24 @@ def cli_commands(request):
     if request.param == "train_image_ae":
         test_input = [
             "train",
-            "image",
             "reconstruction",
             "data/dataset/random_example",
-            "t1-linear",
+            "path/to/preprocessing",
             "data/labels_list",
             "results",
             "--epochs",
             "1",
             "--n_splits",
             "2",
-            "--folds",
+            "--split",
             "0",
         ]
     elif request.param == "train_patch_ae":
         test_input = [
             "train",
-            "patch",
             "reconstruction",
             "data/dataset/random_example",
-            "t1-linear",
+            "path/to/preprocessing",
             "data/labels_list",
             "results",
             "--model AE_Conv4_FC3",
@@ -45,39 +43,37 @@ def cli_commands(request):
             "1",
             "--n_splits",
             "2",
-            "--folds",
+            "--split",
             "0",
         ]
     elif request.param == "train_roi_ae":
         test_input = [
             "train",
-            "roi",
             "reconstruction",
             "data/dataset/random_example",
-            "t1-linear",
+            "path/to/preprocessing",
             "data/labels_list",
             "results",
             "--epochs",
             "1",
             "--n_splits",
             "2",
-            "--folds",
+            "--split",
             "0",
         ]
     elif request.param == "train_slice_ae":
         test_input = [
             "train",
-            "slice",
             "reconstruction",
             "data/dataset/random_example",
-            "t1-linear",
+            "path/to/preprocessing",
             "data/labels_list",
             "results",
             "--epochs",
             "1",
             "--n_splits",
             "2",
-            "--folds",
+            "--split",
             "0",
         ]
     else:

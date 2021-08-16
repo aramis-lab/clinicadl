@@ -8,7 +8,7 @@ from clinicadl.utils import cli_param
     "launch_directory",
     type=str,
 )
-@click.argument("job_name", type=str)
+@click.argument("name", type=str)
 @cli_param.option.use_gpu
 @cli_param.option.n_proc
 @cli_param.option.batch_size
@@ -22,14 +22,17 @@ from clinicadl.utils import cli_param
 )
 def rs_generate_cli(
     launch_directory,
-    job_name,
+    name,
     use_gpu,
     n_proc,
     batch_size,
     evaluation_steps,
 ):
-    """
-    Create a new JOB_NAME, sample a new network and train it. Results will be saved in LAUNCH_DIRECTORY.
+    """Hyperparameter exploration using random search.
+
+    LAUNCH_DIRECTORY is the path to the parents folder where results of random search will be saved.
+
+    NAME is the name of the output folder containing the experiment.
     """
     from .random_search import launch_search
 
@@ -40,11 +43,7 @@ def rs_generate_cli(
         "use_cpu": not use_gpu,
     }
 
-    launch_search(
-        launch_directory,
-        job_name,
-        options
-    )
+    launch_search(launch_directory, name, options)
 
 
 @click.command(name="analysis")
@@ -53,8 +52,9 @@ def rs_generate_cli(
     type=str,
 )
 def rs_analysis_cli(launch_directory):
-    """
-    Performs the analysis of all jobs in LAUNCH_DIRECTORY
+    """Performs the analysis of all jobs in random search directory.
+
+    LAUNCH_DIRECTORY is the path to the parents folder where al results of random search are saved.
     """
     from clinicadl.utils.meta_maps.random_search_analysis import random_search_analysis
 

@@ -110,8 +110,8 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
     This is a function to write the python argparse object into a json file.
     This helps for DL when searching for hyperparameters
     Args:
-        commandline: (dict) the output of `parser.parse_known_args()`
-        logger: (logging object) writer to stdout and stderr
+        commandline: (dict) dictionnary with all the command line options values.
+        logger: (logging object) writer to stdout and stderr.
         filename: (str) name of the JSON file.
 
     :return:

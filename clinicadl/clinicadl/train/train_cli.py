@@ -1,18 +1,11 @@
-import click
-import toml
 import os
+
+import click
 
 from clinicadl.utils import cli_param
 
-current_file_path = os.path.dirname(os.path.abspath(__file__))
-config_path = os.path.join(
-    *os.path.split(current_file_path)[:-1], "resources", "config", "train_config.toml"
-)
 
-cmd_name = "train"
-
-
-@click.command(name=cmd_name)
+@click.command(name="train")
 @click.argument(
     "network_task",
     type=click.Choice(["classification", "regression", "reconstruction"]),
@@ -26,7 +19,7 @@ cmd_name = "train"
 @cli_param.argument.output_maps
 # train option
 @click.option(
-    "--configuration_toml",
+    "--config_file",
     "-c",
     type=click.File(),
     help="Path to the toml file containing all training configuration",
@@ -157,7 +150,7 @@ cmd_name = "train"
     type=int,
     # default=(),
     multiple=True,
-    help="Train the list of given folds. By default train all folds.",
+    help="Train the list of given folds. By default, all the folds are trained.",
 )
 # Optimization
 @click.option(
@@ -184,7 +177,7 @@ cmd_name = "train"
     "--dropout",
     type=float,
     # default=0,
-    help="rate of dropout that will be applied to dropout layers in CNN.",
+    help="Rate value applied to dropout layers in a CNN architecture.",
 )
 @click.option(
     "--patience",
@@ -212,18 +205,18 @@ cmd_name = "train"
     "--transfer_learning_path",
     type=click.Path(),
     # default=0.0,
-    help="Path of model used for transfert learning",
+    help="Path of model used for transfer learning",
 )
 @click.option(
     "-tls",
     "--transfer_learning_selection",
     type=str,
     # default="best_loss",
-    help="Transfert learning selection metric",
+    help="Transfer learning selection metric",
 )
 def cli(
     network_task,
-    input_caps_directory,
+    caps_directory,
     preprocessing_json,
     tsv_directory,
     output_maps_directory,
@@ -256,19 +249,31 @@ def cli(
     transfer_learning_path,
     transfer_learning_selection,
 ):
-    """
-    Train a deep learning model for NETWORK_TASK on INPUT_CAPS_DIRECTORY data.
-    The list of data in loaded from TSV_DIRECTORY.
-    Data will be selected with respect to PREPROCESSING_JSON file stored in INPUT_CAPS_DIRECTORY.
-    Results will be saved in OUTPUT_MAPS_DIRECTORY.
+    """Train a deep learning model on your neuroimages.
+
+    NETWORK_TASK is the task learnt by the network [classification|regression|reconstruction]
+
+    CAPS_DIRECTORY is the CAPS folder from where tensors will be loaded.
+
+    TSV_DIRECTORY is a folder were TSV files defining train and validation sets are stored.
+
+    PREPROCESSING_JSON is the name of the JSON file in CAPS_DIRECTORY were all the information about extraction are
+    stored in orther to read the wanted tensors.
+
+    OUTPUT_MAPS_DIRECTORY is the path to the MAPS folder where outputs and results will be saved.
+
+    This pipeline includes many options. To make its usage easier, you can write all the configuration
+    in a TOML file as explained in the documentation:
+    https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
     """
     from .launch import train
+    from .train_utils import get_train_dict
 
     train_dict = get_train_dict(configuration_toml, preprocessing_json, network_task)
 
     # Add arguments
     train_dict["network_task"] = network_task
-    train_dict["caps_directory"] = input_caps_directory
+    train_dict["caps_directory"] = caps_directory
     train_dict["tsv_path"] = tsv_directory
 
     # Change value in train dict depending on user provided options
@@ -336,82 +341,6 @@ def cli(
         train_dict["prepare_dl"] = False
 
     train(output_maps_directory, train_dict, split)
-
-
-def get_train_dict(configuration_toml, preprocessing_json, task):
-    # read default values
-    config_dict = toml.load(config_path)
-    # read user specified config
-    if configuration_toml is not None:
-        user_config = toml.load(configuration_toml)
-        for config_section in user_config:
-            if config_section not in config_dict:
-                raise IOError(f"{config_section} section is not valid in TOML configuration file. Please see the documentation to see the list of option in TOML configuration file")
-            for key in config_section:
-                if key not in config_dict[config_section]:
-                    raise IOError(f"{key} option in {config_section} is not valid in TOML configuration file. Please see the documentation to see the list of option in TOML configuration file")
-                config_dict[config_section[key]] = user_config[config_dict[key]]
-
-    # From config file
-    train_dict = {
-        "accumulation_steps": config_dict["Optimization"]["accumulation_steps"],
-        "architecture": config_dict["Model"]["architecture"],
-        "baseline": config_dict["Data"]["baseline"],
-        "batch_size": config_dict["Computational"]["batch_size"],
-        "data_augmentation": config_dict["Data"]["data_augmentation"],
-        "diagnoses": config_dict["Data"]["diagnoses"],
-        "dropout": config_dict["Architecture"]["dropout"],
-        "epochs": config_dict["Optimization"]["epochs"],
-        "evaluation_steps": config_dict["Computational"]["evaluation_steps"],
-        "learning_rate": config_dict["Optimization"]["learning_rate"],
-        "minmaxnormalization": config_dict["Data"]["normalize"],
-        "multi": config_dict["Model"]["multi"],
-        "multi_cohort": config_dict["Data"]["multi_cohort"],
-        "n_splits": config_dict["Cross_validation"]["n_splits"],
-        "num_workers": config_dict["Computational"]["n_proc"],
-        "patience": config_dict["Optimization"]["patience"],
-        "folds": config_dict["Cross_validation"]["split"],
-        "tolerance": config_dict["Optimization"]["tolerance"],
-        "transfer_path": config_dict["Transfert_learning"]["transfer_path"],
-        "transfer_learning_selection": config_dict["Transfert_learning"][
-            "transfer_selection_metric"
-        ],
-        "use_cpu": not config_dict["Computational"]["use_gpu"],
-        "weight_decay": config_dict["Optimization"]["weight_decay"],
-        "sampler": config_dict["Data"]["sampler"],
-    }
-
-    # task dependent
-    if task == "classification":
-        train_dict["loss"] = config_dict["Classification"]["optimization_metric"]
-        train_dict["selection_metrics"] = config_dict["Classification"][
-            "selection_metrics"
-        ]
-        train_dict["label"] = config_dict["Classification"]["label"]
-    elif task == "regression":
-        train_dict["loss"] = config_dict["Regression"]["optimization_metric"]
-        train_dict["selection_metrics"] = config_dict["Regression"]["selection_metrics"]
-        train_dict["label"] = config_dict["Regression"]["label"]
-    elif task == "reconstruction":
-        train_dict["loss"] = config_dict["Reconstruction"]["optimization_metric"]
-        train_dict["selection_metrics"] = config_dict["Reconstruction"][
-            "selection_metrics"
-        ]
-    else:
-        raise ValueError("Invalid network_task")
-
-    # optimizer
-    train_dict["optimizer"] = "Adam"
-
-    # use extracted features
-    train_dict["use_extracted_features"] = config_dict["Mode"]["use_extracted_features"]
-
-    # Mode and preprocessing
-    from clinicadl.utils.preprocessing import read_preprocessing
-    preprocessing_dict = read_preprocessing(preprocessing_json.name)
-    train_dict.update(preprocessing_dict)
-
-    return train_dict
 
 
 if __name__ == "__main__":

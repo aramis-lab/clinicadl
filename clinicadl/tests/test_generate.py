@@ -1,8 +1,9 @@
 # coding: utf8
 
-import pytest
 import os
-from os.path import join, exists, abspath
+from os.path import abspath, exists, join
+
+import pytest
 
 
 @pytest.fixture(params=["generate_trivial", "generate_random"])
@@ -14,8 +15,9 @@ def generate_commands(request):
             "generate",
             "trivial",
             data_caps_folder,
-            "t1-linear",
             output_folder,
+            "--preprocessing",
+            "t1-linear",
             "--n_subjects",
             "4",
         ]
@@ -41,8 +43,9 @@ def generate_commands(request):
             "generate",
             "random",
             data_caps_folder,
-            "t1-linear",
             output_folder,
+            "--preprocessing",
+            "t1-linear",
             "--n_subjects",
             "10",
             "--mean",

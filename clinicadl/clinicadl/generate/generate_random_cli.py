@@ -2,10 +2,8 @@ import click
 
 from clinicadl.utils import cli_param
 
-cmd_name = "random"
 
-
-@click.command(name=cmd_name)
+@click.command(name="random")
 @cli_param.argument.caps_directory
 @cli_param.argument.generated_caps
 @cli_param.option.participant_list
@@ -25,23 +23,25 @@ cmd_name = "random"
 )
 def cli(
     caps_directory,
-    generated_caps,
+    generated_caps_directory,
     participants_tsv,
     n_subjects,
     mean,
     sigma,
     preprocessing,
 ):
-    """
-    Generate a random dataset OUTPUT_CAPS_DIRECTORY in which gaussian noise is added
-    to brain images of INPUT_CAPS_DIRECTORY.
-    """
-    from .generate import generate_shepplogan_dataset
+    """Addition of random gaussian noise to brain images.
 
-    generate_shepplogan_dataset(
+    CAPS_DIRECTORY is the CAPS folder from where input brain images will be loaded.
+
+    GENERATED_CAPS_DIRECTORY is a CAPS folder where the random dataset will be saved.
+    """
+    from .generate import generate_random_dataset
+
+    generate_random_dataset(
         caps_dir=caps_directory,
         tsv_path=participants_tsv,
-        output_dir=generated_caps,
+        output_dir=generated_caps_directory,
         n_subjects=n_subjects,
         mean=mean,
         sigma=sigma,

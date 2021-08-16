@@ -29,7 +29,7 @@ cmd_name = "getlabels"
     "Default will keep the diagnosis, age and the sex needed for the split procedure.",
     type=str,
     multiple=True,
-    default=(),
+    default="",
 )
 @click.option(
     "--keep_smc",
@@ -44,20 +44,22 @@ def cli(
     results_directory,
     diagnoses,
     modality,
-    restriction_path,
+    restriction_tsv,
     time_horizon,
     variables_of_interest,
-    remove_smc,
+    keep_smc,
 ):
-    """
-    Get labels in separate tsv files.
+    """Get labels in separate tsv files.
+
     MERGED_TSV is the output of `clinica iotools merge-tsv`.
+
     MISSING_MODS_DIRECTORY is  the outputs of `clinica iotools missing-mods`.
+
     Outputs are stored in RESULTS_TSV.
     """
     from .getlabels import get_labels
 
-    if len(variables_of_interest)==0:
+    if len(variables_of_interest) == 0:
         variables_of_interest = None
 
     get_labels(
@@ -66,10 +68,10 @@ def cli(
         results_directory,
         diagnoses,
         modality=modality,
-        restriction_path=restriction_path,
+        restriction_path=restriction_tsv,
         time_horizon=time_horizon,
         variables_of_interest=variables_of_interest,
-        remove_smc=remove_smc,
+        remove_smc=not keep_smc,
     )
 
 

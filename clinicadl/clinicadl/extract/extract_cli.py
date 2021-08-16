@@ -14,7 +14,7 @@ from clinicadl.utils import cli_param
     type=click.Choice(["t1-linear", "pet-linear", "custom"]),
 )
 @click.argument(
-    "extract-method",
+    "extract_method",
     type=click.Choice(["image", "slice", "patch", "roi"]),
 )
 @click.option(
@@ -140,7 +140,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.subjects_sessions_tsv
 @cli_param.option.n_proc
 def cli(
-    input_caps_directory: str,
+    caps_directory: str,
     modality: str,
     extract_method: str,
     use_uncropped_image: bool = False,
@@ -160,9 +160,13 @@ def cli(
     subjects_sessions_tsv: Optional[str] = None,
     nproc: Optional[int] = None,
 ) -> None:
-    """
-    Extraction of pytorch tensor from nifti images of INPUT_CAPS_DIRECTORY preprocessed
-    with MODALITY clinica pipeline following EXTRACT_METHOD.
+    """Extract Pytorch tensors from nifti images.
+
+    CAPS_DIRECTORY is the CAPS folder where nifti images are stored and tensor will be saved.
+
+    MODALITY is the clinica pipeline name used for image preprocessing.
+
+    EXTRACT_METHOD [image|patch|slice|roi] is the mode of extraction of tensors.
     """
     from .extract import DeepLearningPrepareData
 
@@ -193,7 +197,7 @@ def cli(
         parameters["suvr_reference_region"] = suvr_reference_region
 
     DeepLearningPrepareData(
-        caps_directory=input_caps_directory,
+        caps_directory=caps_directory,
         tsv_file=subjects_sessions_tsv,
         parameters=parameters,
     )

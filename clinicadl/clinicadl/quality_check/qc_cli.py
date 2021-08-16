@@ -1,7 +1,3 @@
-if __name__ == "__main__":
-    cli()
-
-
 import click
 
 from .t1_linear.cli import cli as t1_linear_cli
@@ -17,8 +13,8 @@ class RegistrationOrderGroup(click.Group):
 
 @click.group(cls=RegistrationOrderGroup, name="quality-check")
 def cli() -> None:
-    """
-    Performs quality check procedure for t1-linear or t1-volume pipelines.
+    """Performs quality check procedure for t1-linear or t1-volume pipelines.
+
     Original code can be found at https://github.com/vfonov/deep-qc
     """
     pass

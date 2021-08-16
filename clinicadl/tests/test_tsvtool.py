@@ -136,8 +136,8 @@ def test_getlabels():
     """Checks that getlabels is working and that it is coherent with previous version in reference_path"""
     output_path = "data/tsvtool_test"
     flag_getlabels = not os.system(
-        f"clinicadl tsvtool getlabels {merged_tsv} {missing_mods} {output_path} "
-        f"--diagnoses {diagnoses} -vvv"
+        f"clinicadl -vvv tsvtool getlabels {merged_tsv} {missing_mods} {output_path} "
+        f"--diagnoses AD --diagnoses CN --diagnoses MCI --diagnoses pMCI --diagnoses sMCI"
     )
     assert flag_getlabels
     for file in os.listdir(output_path):
@@ -156,9 +156,9 @@ def test_split():
     """
     n_splits = 5
     train_path = path.join(reference_path, "train")
-    flag_split = not os.system(f"clinicadl tsvtool split {reference_path} -vvv")
+    flag_split = not os.system(f"clinicadl -vvv tsvtool split {reference_path}")
     flag_kfold = not os.system(
-        f"clinicadl tsvtool kfold {train_path} --n_splits {n_splits} -vvv"
+        f"clinicadl -vvv tsvtool kfold {reference_path} --n_splits {n_splits}"
     )
     assert flag_split
     assert flag_kfold
@@ -185,8 +185,9 @@ def test_analysis():
     ref_analysis_path = path.join("data", "tsvtool", "anonymous_analysis.tsv")
     flag_analysis = not os.system(
         f"clinicadl tsvtool analysis {merged_tsv} {reference_path} {results_path} "
-        "--diagnoses AD CN MCI sMCI pMCI"
+        f"--diagnoses AD --diagnoses CN --diagnoses MCI --diagnoses pMCI --diagnoses sMCI"
     )
+
     assert flag_analysis
     ref_df = pd.read_csv(ref_analysis_path, sep="\t")
     out_df = pd.read_csv(results_path, sep="\t")

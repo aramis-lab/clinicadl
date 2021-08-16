@@ -1,7 +1,7 @@
 """Common CLI arguments used by ClinicaDL pipelines."""
 import click
 
-caps_directory = click.argument("input_caps_directory", type=click.Path(exists=True))
+caps_directory = click.argument("caps_directory", type=click.Path(exists=True))
 input_maps = click.argument("input_maps_directory", type=click.Path(exists=True))
 output_maps = click.argument("output_maps_directory", type=click.Path())
 
@@ -19,7 +19,7 @@ dataset = click.argument("dataset", type=click.Choice(["AIBL", "OASIS"]))
 results_directory = click.argument("results_directory", type=click.Path())
 
 # GENERATE
-generated_caps = click.argument("output_caps_directory", type=click.Path())
+generated_caps = click.argument("generated_caps_directory", type=click.Path())
 
 # PREDICT
 data_group = click.argument("data_group", type=str)
