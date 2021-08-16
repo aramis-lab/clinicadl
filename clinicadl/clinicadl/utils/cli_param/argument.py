@@ -25,4 +25,4 @@ generated_caps = click.argument("generated_caps_directory", type=click.Path())
 data_group = click.argument("data_group", type=str)
 
 # TRAIN
-preprocessing_json = click.argument("preprocessing_json", type=click.File())
+preprocessing_json = click.argument("preprocessing_json", type=str)

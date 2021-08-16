@@ -21,7 +21,7 @@ from clinicadl.utils import cli_param
 # Data
 @click.option(
     "--participants_tsv",
-    type=click.File(),
+    type=click.Path(exists=True),
     default=None,
     help="Path to a TSV file with participants/sessions to process, "
     "if different from the one used during network training.",

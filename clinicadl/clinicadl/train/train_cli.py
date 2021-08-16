@@ -207,7 +207,7 @@ def cli(
     preprocessing_json,
     tsv_directory,
     output_maps_directory,
-    configuration_toml,
+    config_file,
     label,
     use_extracted_features,
     gpu,
@@ -242,8 +242,8 @@ def cli(
 
     TSV_DIRECTORY is a folder were TSV files defining train and validation sets are stored.
 
-    PREPROCESSING_JSON is the name of the JSON file in CAPS_DIRECTORY where all information about extraction are
-    stored in order to read the wanted tensors.
+    PREPROCESSING_JSON is the name of the JSON file in CAPS_DIRECTORY/tensor_extraction folder where
+    all information about extraction are stored in order to read the wanted tensors.
 
     OUTPUT_MAPS_DIRECTORY is the path to the MAPS folder where outputs and results will be saved.
 
@@ -254,7 +254,10 @@ def cli(
     from .launch import train
     from .train_utils import get_train_dict
 
-    train_dict = get_train_dict(configuration_toml, preprocessing_json, network_task)
+    preprocessing_json = os.path.join(
+        caps_directory, "tensor_extraction", preprocessing_json
+    )
+    train_dict = get_train_dict(config_file, preprocessing_json, network_task)
 
     # Add arguments
     train_dict["network_task"] = network_task

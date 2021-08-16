@@ -43,7 +43,7 @@ subset_name = click.option(
 # GENERATE
 participant_list = click.option(
     "--participants_tsv",
-    type=click.File(),
+    type=click.Path(exists=True),
     help="Path to a TSV file including a list of participants/sessions.",
 )
 n_subjects = click.option(

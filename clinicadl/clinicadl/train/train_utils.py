@@ -85,7 +85,7 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
     # Mode and preprocessing
     from clinicadl.utils.preprocessing import read_preprocessing
 
-    preprocessing_dict = read_preprocessing(preprocessing_json.name)
+    preprocessing_dict = read_preprocessing(preprocessing_json)
     train_dict.update(preprocessing_dict)
 
     return train_dict
