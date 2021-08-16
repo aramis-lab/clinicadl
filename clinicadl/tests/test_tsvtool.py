@@ -143,7 +143,9 @@ def test_getlabels():
     for file in os.listdir(output_path):
         out_df = pd.read_csv(path.join(output_path, file), sep="\t")
         ref_df = pd.read_csv(path.join(reference_path, file), sep="\t")
-        assert out_df.equals(ref_df)
+        out_df_sorted = out_df.reindex(sorted(out_df.columns), axis=1)
+        ref_df_sorted = ref_df.reindex(sorted(ref_df.columns), axis=1)
+        assert out_df_sorted.equals(ref_df_sorted)
 
     shutil.rmtree(output_path)
 
@@ -191,5 +193,7 @@ def test_analysis():
     assert flag_analysis
     ref_df = pd.read_csv(ref_analysis_path, sep="\t")
     out_df = pd.read_csv(results_path, sep="\t")
-    assert out_df.equals(ref_df)
+    out_df_sorted = out_df.reindex(sorted(out_df.columns), axis=1)
+    ref_df_sorted = ref_df.reindex(sorted(ref_df.columns), axis=1)
+    assert out_df_sorted.equals(ref_df_sorted)
     os.remove(results_path)
