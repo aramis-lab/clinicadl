@@ -20,7 +20,7 @@ def cli_commands(request):
             "train",
             "reconstruction",
             "data/dataset/random_example",
-            "path/to/preprocessing",
+            "extract_1629205602.json",
             "data/labels_list",
             "results",
             "--epochs",
@@ -35,7 +35,7 @@ def cli_commands(request):
             "train",
             "reconstruction",
             "data/dataset/random_example",
-            "path/to/preprocessing",
+            "extract_1629205602.json",
             "data/labels_list",
             "results",
             "--model AE_Conv4_FC3",
@@ -51,7 +51,7 @@ def cli_commands(request):
             "train",
             "reconstruction",
             "data/dataset/random_example",
-            "path/to/preprocessing",
+            "extract_1629205602.json",
             "data/labels_list",
             "results",
             "--epochs",
@@ -66,7 +66,7 @@ def cli_commands(request):
             "train",
             "reconstruction",
             "data/dataset/random_example",
-            "path/to/preprocessing",
+            "extract_1629205602.json",
             "data/labels_list",
             "results",
             "--epochs",
@@ -79,7 +79,7 @@ def cli_commands(request):
     else:
         raise NotImplementedError("Test %s is not implemented." % request.param)
 
-    return test_input
+    return test_input:while
 
 
 def test_train(cli_commands):
