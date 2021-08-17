@@ -1860,6 +1860,7 @@ class MapsManager:
         # New arg with default hard-coded value --> discarded_slice --> 20
         retro_change_name = {
             "network": "model",
+            "model": "architecture",
             "pretrained_path": "transfer_learning_path",
             "pretrained_difference": "transfer_learning_difference",
             "patch_stride": "stride_size",
