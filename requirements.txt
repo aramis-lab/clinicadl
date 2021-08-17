@@ -4,7 +4,7 @@
 ##  Other requirements different from these of Clinica ##
 
 #nipype==0.12.1
-clinica>=0.3.6
+clinica==0.4.1
 nilearn
 nipy
 torch
