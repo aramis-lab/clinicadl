@@ -166,19 +166,23 @@ def test_split():
     assert flag_kfold
     flag_load = True
     try:
-        _ = load_data_test(path.join(reference_path, "test"), diagnoses.split(" "))
-        split_manager = KFoldSplit(".", train_path, diagnoses.split(" "), n_splits)
+        _ = load_data_test(
+            path.join(reference_path, "validation"), diagnoses.split(" ")
+        )
+        split_manager = KFoldSplit(".", reference_path, diagnoses.split(" "), n_splits)
         for fold in split_manager.fold_iterator():
             _ = split_manager[fold]
     except FileNotFoundError:
         flag_load = False
     assert flag_load
 
-    run_test_suite(reference_path, 0, "test")
-    run_test_suite(path.join(reference_path, "train"), n_splits, "validation")
+    run_test_suite(reference_path, 0, "validation")
+    run_test_suite(reference_path, n_splits, "validation")
 
     shutil.rmtree(path.join(reference_path, "train"))
-    shutil.rmtree(path.join(reference_path, "test"))
+    shutil.rmtree(path.join(reference_path, "validation"))
+    shutil.rmtree(path.join(reference_path, "train_splits-5"))
+    shutil.rmtree(path.join(reference_path, "validation_splits-5"))
 
 
 def test_analysis():
