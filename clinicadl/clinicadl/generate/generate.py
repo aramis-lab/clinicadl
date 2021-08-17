@@ -138,7 +138,7 @@ def generate_trivial_dataset(
     output_dir,
     n_subjects,
     tsv_path=None,
-    preprocessing="linear",
+    preprocessing="t1-linear",
     mask_path=None,
     atrophy_percent=60,
     multi_cohort=False,
