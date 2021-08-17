@@ -79,7 +79,7 @@ def cli_commands(request):
     else:
         raise NotImplementedError("Test %s is not implemented." % request.param)
 
-    return test_input:while
+    return test_input
 
 
 def test_train(cli_commands):
