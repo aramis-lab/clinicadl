@@ -50,7 +50,7 @@ def cli_commands(request):
             "--n_splits",
             "2",
             "--folds",
-            "0",
+            "1",
         ]
     elif request.param == "train_patch_cnn":
         test_input = [
@@ -66,7 +66,7 @@ def cli_commands(request):
             "--n_splits",
             "2",
             "--folds",
-            "0",
+            "1",
         ]
     elif request.param == "train_patch_multicnn":
         test_input = [
