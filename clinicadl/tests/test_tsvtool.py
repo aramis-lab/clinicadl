@@ -143,7 +143,9 @@ def test_getlabels():
     for file in os.listdir(output_path):
         out_df = pd.read_csv(path.join(output_path, file), sep="\t")
         ref_df = pd.read_csv(path.join(reference_path, file), sep="\t")
-        assert out_df.equals(ref_df)
+        out_df_sorted = out_df.reindex(sorted(out_df.columns), axis=1)
+        ref_df_sorted = ref_df.reindex(sorted(ref_df.columns), axis=1)
+        assert out_df_sorted.equals(ref_df_sorted)
 
     shutil.rmtree(output_path)
 
@@ -164,19 +166,23 @@ def test_split():
     assert flag_kfold
     flag_load = True
     try:
-        _ = load_data_test(path.join(reference_path, "test"), diagnoses.split(" "))
-        split_manager = KFoldSplit(".", train_path, diagnoses.split(" "), n_splits)
+        _ = load_data_test(
+            path.join(reference_path, "validation"), diagnoses.split(" ")
+        )
+        split_manager = KFoldSplit(".", reference_path, diagnoses.split(" "), n_splits)
         for fold in split_manager.fold_iterator():
             _ = split_manager[fold]
     except FileNotFoundError:
         flag_load = False
     assert flag_load
 
-    run_test_suite(reference_path, 0, "test")
-    run_test_suite(path.join(reference_path, "train"), n_splits, "validation")
+    run_test_suite(reference_path, 0, "validation")
+    run_test_suite(reference_path, n_splits, "validation")
 
     shutil.rmtree(path.join(reference_path, "train"))
-    shutil.rmtree(path.join(reference_path, "test"))
+    shutil.rmtree(path.join(reference_path, "validation"))
+    shutil.rmtree(path.join(reference_path, "train_splits-5"))
+    shutil.rmtree(path.join(reference_path, "validation_splits-5"))
 
 
 def test_analysis():
@@ -191,5 +197,7 @@ def test_analysis():
     assert flag_analysis
     ref_df = pd.read_csv(ref_analysis_path, sep="\t")
     out_df = pd.read_csv(results_path, sep="\t")
-    assert out_df.equals(ref_df)
+    out_df_sorted = out_df.reindex(sorted(out_df.columns), axis=1)
+    ref_df_sorted = ref_df.reindex(sorted(ref_df.columns), axis=1)
+    assert out_df_sorted.equals(ref_df_sorted)
     os.remove(results_path)
