@@ -285,7 +285,7 @@ def cli(
         train_dict["evaluation_steps"] = evaluation_steps
     if architecture is not None:
         train_dict["architecture"] = architecture
-    if multi is not None:
+    if multi_network is not None:
         train_dict["multi_network"] = multi_network
     if gpu is not None:
         train_dict["use_cpu"] = not gpu
