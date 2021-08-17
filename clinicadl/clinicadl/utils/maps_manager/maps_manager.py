@@ -1864,6 +1864,7 @@ class MapsManager:
             "pretrained_difference": "transfer_learning_difference",
             "patch_stride": "stride_size",
             "selection": "transfer_learning_selection",
+            "multi": "multi_network",
         }
         retro_change_value = {
             "preprocessing": {"mni": "t1-extensive", "linear": "t1-linear"}
