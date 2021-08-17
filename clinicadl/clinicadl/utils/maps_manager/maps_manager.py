@@ -1169,8 +1169,8 @@ class MapsManager:
 
         self.parameters = parameters
         self.task_manager = self._init_task_manager()
-        if self.parameters["model"] is None:
-            self.parameters["model"] = self.task_manager.get_default_network()
+        if self.parameters["architecture"] is None:
+            self.parameters["architecture"] = self.task_manager.get_default_network()
 
         train_parameters = self._compute_train_args()
         self.parameters.update(train_parameters)
@@ -1391,7 +1391,7 @@ class MapsManager:
             multi_cohort=self.multi_cohort,
         )
         train_df = train_df[["participant_id", "session_id"]]
-        if not self.transfer_path:
+        if self.transfer_path:
             transfer_train_path = path.join(
                 self.transfer_path, "groups", "train+validation.tsv"
             )
@@ -1725,7 +1725,7 @@ class MapsManager:
             checkpoint_state = torch.load(checkpoint_path, map_location=device)
             model.load_state_dict(checkpoint_state["model"])
             current_epoch = checkpoint_state["epoch"]
-        elif not transfer_path:
+        elif transfer_path:
             self.logger.debug(f"Transfer weights from MAPS at {transfer_path}")
             transfer_maps = MapsManager(transfer_path)
             transfer_state = transfer_maps.get_state_dict(

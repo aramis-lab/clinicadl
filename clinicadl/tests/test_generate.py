@@ -16,8 +16,6 @@ def generate_commands(request):
             "trivial",
             data_caps_folder,
             output_folder,
-            "--preprocessing",
-            "t1-linear",
             "--n_subjects",
             "4",
         ]
@@ -44,8 +42,6 @@ def generate_commands(request):
             "random",
             data_caps_folder,
             output_folder,
-            "--preprocessing",
-            "t1-linear",
             "--n_subjects",
             "10",
             "--mean",
