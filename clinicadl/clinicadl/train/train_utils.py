@@ -41,7 +41,7 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
         "evaluation_steps": config_dict["Computational"]["evaluation_steps"],
         "learning_rate": config_dict["Optimization"]["learning_rate"],
         "minmaxnormalization": config_dict["Data"]["normalize"],
-        "multi": config_dict["Model"]["multi"],
+        "multi_network": config_dict["Model"]["multi_network"],
         "multi_cohort": config_dict["Data"]["multi_cohort"],
         "n_splits": config_dict["Cross_validation"]["n_splits"],
         "num_workers": config_dict["Computational"]["n_proc"],
