@@ -657,6 +657,15 @@ class CapsDatasetRoi(CapsDataset):
 
         else:
             roi_mask = self.mask_list[roi_idx]
+            if len(roi_mask.shape) == 3:
+                roi_mask = np.expand_dims(roi_mask, axis=0)
+            elif len(roi_mask.shape) == 4:
+                assert roi_mask[0] == 1
+            else:
+                raise ValueError(
+                    "ROI masks must be 3D or 4D tensors. "
+                    f"The dimension of your ROI mask is {len(roi_mask.shape)}."
+                )
             extracted_roi = image_tensor * roi_mask
             if self.cropped_roi:
                 extracted_roi = extracted_roi[
@@ -702,7 +711,6 @@ class CapsDatasetRoi(CapsDataset):
                 mask_path = path.join(
                     caps_directory,
                     "masks",
-                    "roi_based",
                     "tpl-%s" % template,
                     "tpl-%s%s_roi-%s_mask.nii.gz" % (template, mask_pattern, roi),
                 )
