@@ -44,7 +44,7 @@ def write_splits(
         test_df (DataFrame) subjects in the test set
     """
 
-    baseline_df = extract_baseline(diagnosis_df, diagnosis)
+    baseline_df = extract_baseline(diagnosis_df)
     if split_label is None:
         diagnoses_list = list(baseline_df.diagnosis)
         unique = list(set(diagnoses_list))
