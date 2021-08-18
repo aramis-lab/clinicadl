@@ -72,10 +72,8 @@ from clinicadl.utils import cli_param
 @click.option(
     "--compensation",
     help="Allow the user to choose how CUDA will compensate the deterministic behaviour.",
-    choices=["memory", "time"],
     # default="memory",
-    show_choices=True,
-    type=str,
+    type=click.Choice(["memory", "time"]),
 )
 # Model
 @click.option(
