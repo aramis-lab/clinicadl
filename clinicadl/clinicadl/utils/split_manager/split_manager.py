@@ -152,7 +152,7 @@ class SplitManager:
         pass
 
     def _check_item(self, item):
-        if not item not in self.allowed_folds_list:
+        if item not in self.allowed_folds_list:
             raise ValueError(
                 f"Fold index {item} out of allowed folds {self.allowed_folds_list}."
             )
