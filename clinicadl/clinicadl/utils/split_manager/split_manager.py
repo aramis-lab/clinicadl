@@ -152,8 +152,10 @@ class SplitManager:
         pass
 
     def _check_item(self, item):
-        if not isinstance(item, int) or item < 0 or item >= self.allowed_folds_list:
-            raise ValueError("Fold index out of range")
+        if not item not in self.allowed_folds_list:
+            raise ValueError(
+                f"Fold index {item} out of allowed folds {self.allowed_folds_list}."
+            )
 
     @staticmethod
     def _create_caps_dict(caps_directory, multi_cohort):
