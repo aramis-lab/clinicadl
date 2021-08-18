@@ -10,16 +10,17 @@ from clinicadl.train import train
 from clinicadl.utils.maps_manager import check_and_complete, read_json
 
 
-def launch_search(options):
+def launch_search(launch_directory, job_name, options,):
 
-    rs_options = argparse.Namespace()
+    # TODO: Change default values according to config TOML
     rs_options = read_json(
-        rs_options, path.join(options.launch_dir, "random_search.json")
+        json_path=path.join(launch_directory, "random_search.json")
     )
     check_and_complete(rs_options, random_search=True)
-    random_sampling(rs_options, options)
+    options = random_sampling(rs_options, options)
 
-    options.output_dir = path.join(options.launch_dir, options.name)
-    options.model = "RandomArchitecture"
+    maps_directory = path.join(launch_directory, job_name)
+    folds = options.pop("split")
+    options["architecture"] = "RandomArchitecture"
 
-    train(options)
+    train(maps_directory, options, folds)
