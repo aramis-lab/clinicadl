@@ -11,6 +11,10 @@
     "modality": "t1w",
     "restriction_path": null,
     "time_horizon": 36,
-    "variables_of_interest": null,
+    "variables_of_interest": [
+        "diagnosis",
+        "age",
+        "sex"
+    ],
     "remove_smc": true
 }

@@ -5,6 +5,8 @@
 
 #nipype==0.12.1
 clinica==0.4.1
+click >= 7.0
+toml
 nilearn
 nipy
 torch

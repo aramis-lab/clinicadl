@@ -158,8 +158,8 @@ def find_borders_of_one_roi(output_path, i, tsv_atlas):
             total_mask.append(mask)
 
     first_mask = total_mask[0]
-    for l in total_mask[1:]:
-        first_mask = first_mask + l
+    for i in total_mask[1:]:
+        first_mask = first_mask + i
     first_mask[first_mask > 0] = 1
 
     return first_mask

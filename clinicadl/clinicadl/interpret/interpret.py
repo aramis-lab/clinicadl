@@ -1,22 +1,35 @@
 from clinicadl import MapsManager
 
 
-def interpret_cli(options):
-    maps_path = options.model_path
+def interpret(
+    maps_dir,
+    data_group,
+    name,
+    caps_directory,
+    tsv_path,
+    selection_metrics,
+    multi_cohort,
+    target_node,
+    save_individual,
+    batch_size,
+    nproc,
+    use_cpu,
+    verbose=0,
+):
     verbose_list = ["warning", "info", "debug"]
 
-    maps_manager = MapsManager(maps_path, verbose=verbose_list[options.verbose])
+    maps_manager = MapsManager(maps_dir, verbose=verbose_list[verbose])
 
     maps_manager.interpret(
-        caps_directory=options.caps_directory,
-        tsv_path=options.tsv_path,
-        data_group=options.data_group,
-        name=options.name,
-        selection_metrics=options.selection_metrics,
-        multi_cohort=options.multi_cohort,
-        target_node=options.target_node,
-        save_individual=options.save_individual,
-        batch_size=options.batch_size,
-        num_workers=options.nproc,
-        use_cpu=options.use_cpu,
+        data_group=data_group,
+        name=name,
+        caps_directory=caps_directory,
+        tsv_path=tsv_path,
+        selection_metrics=selection_metrics,
+        multi_cohort=multi_cohort,
+        target_node=target_node,
+        save_individual=save_individual,
+        batch_size=batch_size,
+        num_workers=nproc,
+        use_cpu=use_cpu,
     )

@@ -27,6 +27,7 @@ level_dict = {
     "critical": logging.CRITICAL,
 }
 
+# TODO: replace "fold" with "split"
 # TODO save weights on CPU for better compatibility
 
 
@@ -140,7 +141,7 @@ class MapsManager:
                 f"specify a list of folds not intersecting the previous list, "
                 f"or use overwrite to erase previously trained folds."
             )
-        if self.multi:
+        if self.multi_network:
             self._train_multi(folds, resume=False)
         else:
             self._train_single(folds, resume=False)
@@ -169,7 +170,7 @@ class MapsManager:
                 f"Please try train command on these folds and resume only others."
             )
 
-        if self.multi:
+        if self.multi_network:
             self._train_multi(folds, resume=True)
         else:
             self._train_single(folds, resume=True)
@@ -243,7 +244,7 @@ class MapsManager:
                 data_group, fold, caps_directory, group_df, multi_cohort, overwrite
             )
 
-            if self.multi:
+            if self.multi_network:
                 for network in range(self.num_networks):
                     data_test = return_dataset(
                         self.mode,
@@ -391,7 +392,7 @@ class MapsManager:
             if selection_metrics is None:
                 selection_metrics = self._find_selection_metrics(fold)
 
-            if self.multi:
+            if self.multi_network:
                 for network in range(self.num_networks):
                     dataset = return_dataset(
                         self.mode,
@@ -501,7 +502,7 @@ class MapsManager:
         if folds is None:
             folds = self._find_folds()
 
-        if self.multi:
+        if self.multi_network:
             raise NotImplementedError(
                 "The interpretation of multi-network framework is not implemented."
             )
@@ -933,7 +934,11 @@ class MapsManager:
             # Save checkpoints and best models
             best_dict = retain_best.step(metrics_valid)
             self._write_weights(
-                {"model": model.state_dict(), "epoch": epoch, "name": self.model},
+                {
+                    "model": model.state_dict(),
+                    "epoch": epoch,
+                    "name": self.architecture,
+                },
                 best_dict,
                 fold,
                 network=network,
@@ -1153,7 +1158,6 @@ class MapsManager:
             "preprocessing",
             "mode",
             "network_task",
-            "model",
         ]
 
         for arg in mandatory_arguments:
@@ -1165,13 +1169,13 @@ class MapsManager:
 
         self.parameters = parameters
         self.task_manager = self._init_task_manager()
-        if self.parameters["model"] is None:
-            self.parameters["model"] = self.task_manager.get_default_network()
+        if self.parameters["architecture"] is None:
+            self.parameters["architecture"] = self.task_manager.get_default_network()
 
         train_parameters = self._compute_train_args()
         self.parameters.update(train_parameters)
 
-        if self.parameters["num_networks"] < 2 and self.multi:
+        if self.parameters["num_networks"] < 2 and self.multi_network:
             raise ValueError(
                 f"Invalid training arguments: cannot train a multi-network "
                 f"framework with only {self.parameters['num_networks']} element "
@@ -1387,7 +1391,7 @@ class MapsManager:
             multi_cohort=self.multi_cohort,
         )
         train_df = train_df[["participant_id", "session_id"]]
-        if self.transfer_path is not None:
+        if self.transfer_path:
             transfer_train_path = path.join(
                 self.transfer_path, "groups", "train+validation.tsv"
             )
@@ -1693,9 +1697,9 @@ class MapsManager:
         """
         import clinicadl.utils.network as network_package
 
-        self.logger.debug(f"Initialization of model {self.model}")
+        self.logger.debug(f"Initialization of model {self.architecture}")
         # or choose to implement a dictionary
-        model_class = getattr(network_package, self.model)
+        model_class = getattr(network_package, self.architecture)
         args = list(
             model_class.__init__.__code__.co_varnames[
                 : model_class.__init__.__code__.co_argcount
@@ -1721,7 +1725,7 @@ class MapsManager:
             checkpoint_state = torch.load(checkpoint_path, map_location=device)
             model.load_state_dict(checkpoint_state["model"])
             current_epoch = checkpoint_state["epoch"]
-        elif transfer_path is not None:
+        elif transfer_path:
             self.logger.debug(f"Transfer weights from MAPS at {transfer_path}")
             transfer_maps = MapsManager(transfer_path)
             transfer_state = transfer_maps.get_state_dict(
@@ -1730,7 +1734,7 @@ class MapsManager:
                 network=network,
                 map_location=model.device,
             )
-            transfer_class = getattr(network_package, transfer_maps.model)
+            transfer_class = getattr(network_package, transfer_maps.architecture)
             self.logger.debug(f"Transfer from {transfer_class}")
             model.transfer_weights(transfer_state["model"], transfer_class)
 
@@ -1768,7 +1772,6 @@ class MapsManager:
         kwargs = {"folds": folds, "logger": self.logger}
         for arg in args:
             kwargs[arg] = self.parameters[arg]
-
         return split_class(**kwargs)
 
     def _init_task_manager(self):
@@ -1857,10 +1860,12 @@ class MapsManager:
         # New arg with default hard-coded value --> discarded_slice --> 20
         retro_change_name = {
             "network": "model",
+            "model": "architecture",
             "pretrained_path": "transfer_learning_path",
             "pretrained_difference": "transfer_learning_difference",
             "patch_stride": "stride_size",
             "selection": "transfer_learning_selection",
+            "multi": "multi_network",
         }
         retro_change_value = {
             "preprocessing": {"mni": "t1-extensive", "linear": "t1-linear"}
@@ -1908,7 +1913,7 @@ class MapsManager:
             (Dict): dictionary of results (weights, epoch number, metrics values)
         """
         selection_metric = self._check_selection_metric(fold, selection_metric)
-        if self.multi:
+        if self.multi_network:
             if network is None:
                 raise ValueError(
                     "Please precise the network number that must be loaded."
