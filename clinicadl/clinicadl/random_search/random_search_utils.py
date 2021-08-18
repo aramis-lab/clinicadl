@@ -67,7 +67,7 @@ def random_sampling(rs_options, options):
         "predict_atlas_intensities": "fixed",
         "selection_metrics": "fixed",
         "sampler": "choice",
-        "folds": "fixed",
+        "split": "fixed",
         "tolerance": "fixed",
         "transfer_learning_path": "choice",
         "transfer_learning_selection": "choice",
@@ -101,27 +101,27 @@ def random_sampling(rs_options, options):
     }
 
     for name, sampling_type in sampling_dict.items():
-        sampled_value = sampling_fn(getattr(rs_options, name), sampling_type)
-        setattr(options, name, sampled_value)
+        sampled_value = sampling_fn(rs_options[name], sampling_type)
+        options[name] = sampled_value
 
-    if options.mode not in additional_mode_dict.keys():
+    if options["mode"] not in additional_mode_dict.keys():
         raise NotImplementedError(
             "Mode %s was not correctly implemented for random search" % options.mode
         )
 
-    additional_dict = additional_mode_dict[options.mode]
+    additional_dict = additional_mode_dict[options["mode"]]
     for name, sampling_type in additional_dict.items():
-        sampled_value = sampling_fn(getattr(rs_options, name), sampling_type)
-        setattr(options, name, sampled_value)
+        sampled_value = sampling_fn(rs_options[name], sampling_type)
+        options[name] = sampled_value
 
     # Exceptions to classical sampling functions
-    if not options.wd_bool:
-        options.weight_decay = 0
+    if not options["wd_bool"]:
+        options["weight_decay"] = 0
 
-    options.evaluation_steps = find_evaluation_steps(
-        options.accumulation_steps, goal=options.evaluation_steps
+    options["evaluation_steps"] = find_evaluation_steps(
+        options["accumulation_steps"], goal=options["evaluation_steps"]
     )
-    options.convolutions_dict = random_conv_sampling(rs_options)
+    options["convolutions_dict"] = random_conv_sampling(rs_options)
 
     return options
 
@@ -148,9 +148,9 @@ def random_conv_sampling(rs_options):
     Returns
         (dict) parameters of the architecture
     """
-    n_convblocks = sampling_fn(rs_options.n_convblocks, "randint")
-    first_conv_width = sampling_fn(rs_options.first_conv_width, "choice")
-    d_reduction = sampling_fn(rs_options.d_reduction, "choice")
+    n_convblocks = sampling_fn(rs_options["n_convblocks"], "randint")
+    first_conv_width = sampling_fn(rs_options["first_conv_width"], "choice")
+    d_reduction = sampling_fn(rs_options["d_reduction"], "choice")
 
     # Sampling the parameters of each convolutional block
     convolutions = dict()
@@ -162,9 +162,9 @@ def random_conv_sampling(rs_options):
         conv_dict["out_channels"] = current_out_channels
 
         current_in_channels, current_out_channels = update_channels(
-            current_out_channels, rs_options.channels_limit
+            current_out_channels, rs_options["channels_limit"]
         )
-        conv_dict["n_conv"] = sampling_fn(rs_options.n_conv, "choice")
+        conv_dict["n_conv"] = sampling_fn(rs_options["n_conv"], "choice")
         conv_dict["d_reduction"] = d_reduction
         convolutions["conv" + str(i)] = conv_dict
 

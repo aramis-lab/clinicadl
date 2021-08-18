@@ -23,8 +23,8 @@ from clinicadl.utils import cli_param
 def cli(
     launch_directory,
     name,
-    use_gpu,
-    n_proc,
+    gpu,
+    nproc,
     batch_size,
     evaluation_steps,
 ):
@@ -39,8 +39,8 @@ def cli(
     options = {
         "batch_size": batch_size,
         "evaluation_steps": evaluation_steps,
-        "n_proc": n_proc,
-        "use_cpu": not use_gpu,
+        "nproc": nproc,
+        "use_cpu": not gpu,
     }
 
     launch_search(launch_directory, name, options)

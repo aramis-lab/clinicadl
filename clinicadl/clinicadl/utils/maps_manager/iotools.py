@@ -240,8 +240,7 @@ def read_json(options=None, json_path=None, test=False, read_computational=False
         options["loss"] = "default"
 
     if "dropout" not in options or options["dropout"] is None:
-        options["dropout"] = None
-        set_default_dropout(options)
+        options["dropout"] = 0
 
     if "uncropped_roi" not in options:
         options["uncropped_roi"] = False
@@ -301,7 +300,7 @@ def check_and_complete(options, random_search=False):
         "unnormalize": False,
         "patience": 0,
         "predict_atlas_intensities": [],
-        "folds": [],
+        "split": [],
         "selection_metrics": ["loss"],
         "tolerance": 0.0,
         "transfer_learning_path": "",
@@ -385,17 +384,6 @@ def check_and_complete(options, random_search=False):
         task_dict = task_default_values[options["network_task"]]
         set_default(options, mode_dict)
         set_default(options, task_dict)
-
-
-def set_default_dropout(args):
-    if args.dropout is None:
-        if args.mode == "image":
-            args.dropout = 0.5
-        elif args.mode == "slice":
-            args.dropout = 0.8
-        else:
-            args.dropout = 0
-
 
 def memReport():
     import gc
