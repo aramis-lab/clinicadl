@@ -240,10 +240,10 @@ def cli(
 
     CAPS_DIRECTORY is the CAPS folder from where tensors will be loaded.
 
-    TSV_DIRECTORY is a folder were TSV files defining train and validation sets are stored.
-
     PREPROCESSING_JSON is the name of the JSON file in CAPS_DIRECTORY/tensor_extraction folder where
     all information about extraction are stored in order to read the wanted tensors.
+
+    TSV_DIRECTORY is a folder were TSV files defining train and validation sets are stored.
 
     OUTPUT_MAPS_DIRECTORY is the path to the MAPS folder where outputs and results will be saved.
 
