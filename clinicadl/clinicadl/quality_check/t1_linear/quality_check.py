@@ -15,6 +15,8 @@ from clinicadl.utils.caps_dataset.data import CapsDataset
 
 from .utils import QCDataset, resnet_qc_18
 
+from logging import getLogger
+
 
 def quality_check(
     caps_dir,
@@ -26,6 +28,8 @@ def quality_check(
     gpu=True,
 ):
 
+    logger = getLogger("clinicadl")
+
     if splitext(output_path)[1] != ".tsv":
         raise ValueError("Please provide an output path to a tsv file")
 
@@ -33,6 +37,7 @@ def quality_check(
     home = str(Path.home())
     cache_clinicadl = join(home, ".cache", "clinicadl", "models")
     url_aramis = "https://aramislab.paris.inria.fr/files/data/models/dl/qc/"
+    logger.info("Downloading quality check model.")
     FILE1 = RemoteFileStructure(
         filename="resnet18.pth.tar",
         url=url_aramis,
@@ -50,16 +55,19 @@ def quality_check(
             print("Unable to download required model for QC process:", err)
 
     # Load QC model
+    logger.debug("Loading quality check model.")
     model = resnet_qc_18()
     model.load_state_dict(torch.load(model_file))
     model.eval()
     if gpu:
+        logger.debug("Working on GPU.")
         model.cuda()
 
     # Transform caps_dir in dict
     caps_dict = CapsDataset.create_caps_dict(caps_dir, multi_cohort=False)
 
     # Load DataFrame
+    logger.debug("Loading data to check.")
     df = load_and_check_tsv(tsv_path, caps_dict, dirname(abspath(output_path)))
 
     dataset = QCDataset(caps_dir, df)
@@ -70,8 +78,10 @@ def quality_check(
     columns = ["participant_id", "session_id", "pass_probability", "pass"]
     qc_df = pd.DataFrame(columns=columns)
     softmax = torch.nn.Softmax(dim=1)
+    logger.info(f"Quality check will be performed over {len(dataloader)} images.")
 
     for data in dataloader:
+        logger.debug(f"Processing subject {data['participant_id']}.")
         inputs = data["image"]
         if gpu:
             inputs = inputs.cuda()
@@ -87,8 +97,10 @@ def quality_check(
                     pass_probability > threshold,
                 ]
             ]
+            logger.debug(f"Quality score is {pass_probability}.")
             row_df = pd.DataFrame(row, columns=columns)
             qc_df = qc_df.append(row_df)
 
     qc_df.sort_values("pass_probability", ascending=False, inplace=True)
     qc_df.to_csv(output_path, sep="\t", index=False)
+    logger.info(f"Results are stored at {output_path}.")

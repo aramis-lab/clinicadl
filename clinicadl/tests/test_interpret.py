@@ -14,36 +14,34 @@ def cli_commands(request):
     if request.param == "classification":
         cnn_input = [
             "train",
-            "image",
             "classification",
             "data/dataset/random_example",
-            "t1-linear",
+            "extract_1629205602.json",
             "data/labels_list",
             "results",
-            "--model Conv5_FC3",
+            "--architecture Conv5_FC3",
             "--epochs",
             "1",
             "--n_splits",
             "2",
-            "--folds",
+            "--split",
             "0",
         ]
 
     elif request.param == "regression":
         cnn_input = [
             "train",
-            "image",
             "regression",
             "data/dataset/random_example",
-            "t1-linear",
+            "extract_1629271314.json",
             "data/labels_list",
             "results",
-            "--model Conv5_FC3",
+            "--architecture Conv5_FC3",
             "--epochs",
             "1",
             "--n_splits",
             "2",
-            "--folds",
+            "--split",
             "0",
         ]
     else:

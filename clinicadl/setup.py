@@ -25,7 +25,7 @@ setup(
     zip_safe=False,
     entry_points={
         "console_scripts": [
-            "clinicadl = clinicadl.main:main",
+            "clinicadl = clinicadl.cmdline:cli",
         ],
     },
     classifiers=[

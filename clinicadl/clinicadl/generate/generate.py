@@ -45,15 +45,15 @@ def generate_random_dataset(
     one are ignored. Degree of noise can be parameterized.
 
     Args:
-        caps_directory (str): Path to the (input) CAPS directory.
-        output_dir (str): folder containing the synthetic dataset in (output)
+        caps_directory: (str) Path to the (input) CAPS directory.
+        output_dir: (str) folder containing the synthetic dataset in (output)
             CAPS format.
-        n_subjects (int): number of subjects in each class of the
+        n_subjects: (int) number of subjects in each class of the
             synthetic dataset
-        tsv_path (str): path to tsv file of list of subjects/sessions.
-        mean (float): mean of the gaussian noise
-        sigma (float): standard deviation of the gaussian noise
-        preprocessing (str): preprocessing performed. Must be in ['t1-linear', 't1-extensive'].
+        tsv_path: (str) path to tsv file of list of subjects/sessions.
+        mean: (float) mean of the gaussian noise
+        sigma: (float) standard deviation of the gaussian noise
+        preprocessing: (str) preprocessing performed. Must be in ['t1-linear', 't1-extensive'].
         multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
 
     Returns:
@@ -64,7 +64,7 @@ def generate_random_dataset(
     commandline_to_json(
         {
             "output_dir": output_dir,
-            "caps_directory": caps_directory,
+            "caps_dir": caps_directory,
             "preprocessing": preprocessing,
             "n_subjects": n_subjects,
             "mean": mean,
@@ -138,7 +138,7 @@ def generate_trivial_dataset(
     output_dir,
     n_subjects,
     tsv_path=None,
-    preprocessing="linear",
+    preprocessing="t1-linear",
     mask_path=None,
     atrophy_percent=60,
     multi_cohort=False,
@@ -152,14 +152,14 @@ def generate_trivial_dataset(
     processed and image with half-left processed)
 
     Args:
-        caps_directory (str): path to the CAPS directory.
-        output_dir (str): folder containing the synthetic dataset in CAPS format.
-        n_subjects (int): number of subjects in each class of the synthetic
+        caps_directory: (str) path to the CAPS directory.
+        output_dir: (str) folder containing the synthetic dataset in CAPS format.
+        n_subjects: (int) number of subjects in each class of the synthetic
             dataset.
-        tsv_path (str): path to tsv file of list of subjects/sessions.
-        preprocessing (str): preprocessing performed. Must be in ['linear', 'extensive'].
-        mask_path (str): path to the extracted masks to generate the two labels.
-        atrophy_percent (float): percentage of atrophy applied.
+        tsv_path: (str) path to tsv file of list of subjects/sessions.
+        preprocessing: (str) preprocessing performed. Must be in ['linear', 'extensive'].
+        mask_path: (str) path to the extracted masks to generate the two labels.
+        atrophy_percent: (float) percentage of atrophy applied.
         multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
 
     Returns:
@@ -173,7 +173,7 @@ def generate_trivial_dataset(
     commandline_to_json(
         {
             "output_dir": output_dir,
-            "caps_directory": caps_directory,
+            "caps_dir": caps_directory,
             "preprocessing": preprocessing,
             "n_subjects": n_subjects,
             "atrophy_percent": atrophy_percent,
