@@ -110,8 +110,8 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
     This is a function to write the python argparse object into a json file.
     This helps for DL when searching for hyperparameters
     Args:
-        commandline: (Namespace or dict) the output of `parser.parse_known_args()`
-        logger: (logging object) writer to stdout and stderr
+        commandline: (dict) dictionnary with all the command line options values.
+        logger: (logging object) writer to stdout and stderr.
         filename: (str) name of the JSON file.
 
     :return:
@@ -146,28 +146,27 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
 
 def read_json(options=None, json_path=None, test=False, read_computational=False):
     """
-    Read a json file to update python argparse Namespace.
+    Read a json file to update options dictionnary.
     Ensures retro-compatibility with previous namings in clinicadl.
 
     Args:
-        options: (argparse.Namespace) options of the model.
+        options: (dict) options of the model.
         json_path: (str) If given path to the json file, else found with options.model_path.
         test: (bool) If given the reader will ignore some options specific to data.
         read_computational: (bool) if set to True, the computational arguments are also read.
     Returns:
-        options (args.Namespace) options of the model updated
+        options (dict) options of the model updated
     """
     import json
-    from argparse import Namespace
     from os import path
 
     if options is None:
-        options = Namespace()
+        options = {}
 
     evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
     prep_compatibility_dict = {"mni": "t1-extensive", "linear": "t1-linear"}
     if json_path is None:
-        json_path = path.join(options.model_path, "commandline.json")
+        json_path = path.join(options["model_path"], "commandline.json")
 
     with open(json_path, "r") as f:
         json_data = json.load(f)
@@ -180,90 +179,89 @@ def read_json(options=None, json_path=None, test=False, read_computational=False
         if test and key in evaluation_parameters:
             pass
         else:
-            setattr(options, key, item)
+            options[key] = item
 
     # Retro-compatibility with runs of previous versions
-    if hasattr(options, "network"):
-        options.model = options.network
-        del options.network
+    if "network" in options:
+        options["model"] = options["network"]
+        del options["network"]
 
-    if not hasattr(options, "discarded_slices"):
-        options.discarded_slices = 20
+    if "discarded_slices" not in options:
+        options["discarded_slices"] = 20
 
-    if isinstance(options.preprocessing, str):
-        if options.preprocessing in prep_compatibility_dict.keys():
-            options.preprocessing = prep_compatibility_dict[options.preprocessing]
+    if isinstance(options["preprocessing"], str):
+        if options["preprocessing"] in prep_compatibility_dict.keys():
+            options["preprocessing"] = prep_compatibility_dict[options["preprocessing"]]
 
-    if hasattr(options, "mri_plane"):
-        options.slice_direction = options.mri_plane
-        del options.mri_plane
+    if "mri_plane" in options:
+        options["slice_direction"] = options["mri_plane"]
+        del options["mri_plane"]
 
-    if hasattr(options, "hippocampus_roi"):
-        if options.hippocampus_roi:
-            options.mode = "roi"
-            del options.hippocampus_roi
+    if "hippocampus_roi" in options:
+        if options["hippocampus_roi"]:
+            options["mode"] = "roi"
+            del options["hippocampus_roi"]
 
-    if hasattr(options, "pretrained_path"):
-        options.transfer_learning_path = options.pretrained_path
-        del options.pretrained_path
+    if "pretrained_path" in options:
+        options["transfer_learning_path"] = options["pretrained_path"]
+        del options["pretrained_path"]
 
-    if hasattr(options, "pretrained_difference"):
-        options.transfer_learning_difference = options.pretrained_difference
-        del options.pretrained_difference
+    if "pretrained_difference" in options:
+        options["transfer_learning_difference"] = options["pretrained_difference"]
+        del options["pretrained_difference"]
 
-    if hasattr(options, "patch_stride"):
-        options.stride_size = options.patch_stride
+    if "patch_stride" in options:
+        options["stride_size"] = options["patch_stride"]
 
-    if hasattr(options, "use_gpu"):
-        options.use_cpu = not options.use_gpu
+    if "use_gpu" in options:
+        options["use_cpu"] = not options["use_gpu"]
 
-    if hasattr(options, "mode"):
-        if options.mode == "subject":
-            options.mode = "image"
-        if options.mode == "slice" and not hasattr(options, "network_type"):
-            options.network_type = "cnn"
-        if options.mode == "patch" and hasattr(options, "network_type"):
-            if options.network_type == "multi":
-                options.network_type = "multicnn"
+    if "mode" in options:
+        if options["mode"] == "subject":
+            options["mode"] = "image"
+        if options["mode"] == "slice" and "network_type" not in options:
+            options["network_type"] = "cnn"
+        if options["mode"] == "patch" and "network_type" in options:
+            if options["network_type"] == "multi":
+                options["network_type"] = "multicnn"
 
-    if not hasattr(options, "network_type"):
-        if hasattr(options, "mode_task"):
-            options.network_type = options.mode_task
-        elif hasattr(options, "train_autoencoder"):
-            options.network_type = "autoencoder"
+    if "network_type" not in options:
+        if "mode_task" in options:
+            options["network_type"] = options["mode_task"]
+        elif "train_autoencoder" in options:
+            options["network_type"] = "autoencoder"
         else:
-            options.network_type = "cnn"
+            options["network_type"] = "cnn"
 
-    if hasattr(options, "selection"):
-        options.transfer_learning_selection = options.selection
+    if "selection" in options:
+        options["transfer_learning_selection"] = options["selection"]
 
-    if not hasattr(options, "loss"):
-        options.loss = "default"
+    if "loss" not in options:
+        options["loss"] = "default"
 
-    if not hasattr(options, "dropout") or options.dropout is None:
-        options.dropout = None
-        set_default_dropout(options)
+    if "dropout" not in options or options["dropout"] is None:
+        options["dropout"] = 0
 
-    if not hasattr(options, "uncropped_roi"):
-        options.uncropped_roi = False
+    if "uncropped_roi" not in options:
+        options["uncropped_roi"] = False
 
-    if not hasattr(options, "roi_list"):
-        options.roi_list = None
+    if "roi_list" not in options:
+        options["roi_list"] = None
 
-    if not hasattr(options, "multi_cohort"):
-        options.multi_cohort = False
+    if "multi_cohort" not in options:
+        options["multi_cohort"] = False
 
-    if not hasattr(options, "predict_atlas_intensities"):
-        options.predict_atlas_intensities = None
+    if "predict_atlas_intensities" not in options:
+        options["predict_atlas_intensities"] = None
 
-    if not hasattr(options, "merged_tsv_path"):
-        options.merged_tsv_path = None
+    if "merged_tsv_path" not in options:
+        options["merged_tsv_path"] = None
 
-    if not hasattr(options, "atlas_weight"):
-        options.atlas_weight = 1
+    if "atlas_weight" not in options:
+        options["atlas_weight"] = 1
 
-    if hasattr(options, "n_splits") and options.n_splits is None:
-        options.n_splits = 0
+    if "n_splits" in options and options["n_splits"] is None:
+        options["n_splits"] = 0
 
     return options
 
@@ -274,14 +272,14 @@ def check_and_complete(options, random_search=False):
     Some fields are mandatory and cannot be initialized by default; this will raise an issue if they are missing.
 
     Args:
-        options: (Namespace) the options used for training.
+        options: (dict) the options used for training.
         random_search: (bool) If True the options are looking for mandatory values of random-search.
     """
 
-    def set_default(namespace, default_dict):
+    def set_default(params_dict, default_dict):
         for name, default_value in default_dict.items():
-            if not hasattr(namespace, name):
-                setattr(namespace, name, default_value)
+            if name not in params_dict:
+                params_dict[name] = default_value
 
     default_values = {
         "accumulation_steps": 1,
@@ -301,11 +299,11 @@ def check_and_complete(options, random_search=False):
         "optimizer": "Adam",
         "unnormalize": False,
         "patience": 0,
-        "predict_atlas_intensities": None,
-        "folds": None,
+        "predict_atlas_intensities": [],
+        "split": [],
         "selection_metrics": ["loss"],
         "tolerance": 0.0,
-        "transfer_learning_path": None,
+        "transfer_learning_path": "",
         "transfer_learning_selection": "best_loss",
         "use_cpu": False,
         "wd_bool": True,
@@ -319,7 +317,7 @@ def check_and_complete(options, random_search=False):
             "use_extracted_patches": False,
         },
         "roi": {
-            "roi_list": None,
+            "roi_list": [],
             "uncropped_roi": False,
             "use_extracted_roi": False,
         },
@@ -359,7 +357,7 @@ def check_and_complete(options, random_search=False):
         mandatory_arguments += ["n_convblocks", "first_conv_width", "n_fcblocks"]
 
     for argument in mandatory_arguments:
-        if not hasattr(options, argument):
+        if argument not in options:
             raise ValueError(
                 f"The argument {argument} must be specified in the parameters."
             )
@@ -367,36 +365,25 @@ def check_and_complete(options, random_search=False):
     if random_search:
         for mode, mode_dict in mode_default_values.items():
             set_default(options, mode_dict)
-        if options.network_task not in task_default_values:
+        if options["network_task"] not in task_default_values:
             raise NotImplementedError(
-                f"The task default arguments corresponding to {options.network_task} were not implemented."
+                f"The task default arguments corresponding to {options['network_task']} were not implemented."
             )
-        task_dict = task_default_values[options.network_task]
+        task_dict = task_default_values[options["network_task"]]
         set_default(options, task_dict)
     else:
-        if options.mode not in mode_default_values:
+        if options["mode"] not in mode_default_values:
             raise NotImplementedError(
-                f"The mode default arguments corresponding to {options.mode} were not implemented."
+                f"The mode default arguments corresponding to {options['mode']} were not implemented."
             )
-        if options.network_task not in task_default_values:
+        if options["network_task"] not in task_default_values:
             raise NotImplementedError(
-                f"The task default arguments corresponding to {options.network_task} were not implemented."
+                f"The task default arguments corresponding to {options['network_task']} were not implemented."
             )
-        mode_dict = mode_default_values[options.mode]
-        task_dict = task_default_values[options.network_task]
+        mode_dict = mode_default_values[options["mode"]]
+        task_dict = task_default_values[options["network_task"]]
         set_default(options, mode_dict)
         set_default(options, task_dict)
-
-
-def set_default_dropout(args):
-    if args.dropout is None:
-        if args.mode == "image":
-            args.dropout = 0.5
-        elif args.mode == "slice":
-            args.dropout = 0.8
-        else:
-            args.dropout = 0
-
 
 def memReport():
     import gc

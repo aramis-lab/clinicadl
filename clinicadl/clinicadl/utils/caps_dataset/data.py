@@ -702,7 +702,6 @@ class CapsDatasetRoi(CapsDataset):
                 mask_path = path.join(
                     caps_directory,
                     "masks",
-                    "roi_based",
                     "tpl-%s" % template,
                     "tpl-%s%s_roi-%s_mask.nii.gz" % (template, mask_pattern, roi),
                 )
