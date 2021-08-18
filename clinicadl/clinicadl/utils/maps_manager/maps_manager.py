@@ -978,7 +978,7 @@ class MapsManager:
             network=network,
         )
 
-        if self.task_manager.save_outputs and self.visualization:
+        if self.task_manager.save_outputs:
             self._compute_output_tensors(
                 train_loader.dataset,
                 "train",
