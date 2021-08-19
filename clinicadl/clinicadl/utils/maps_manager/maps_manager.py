@@ -1173,10 +1173,6 @@ class MapsManager:
                 )
 
         self.parameters = parameters
-        if self.parameters["architecture"] is None:
-            self.parameters["architecture"] = self.task_manager.get_default_network()
-        if "selection_threshold" not in self.parameters:
-            self.parameters["selection_threshold"] = None
 
         _, transformations = get_transforms(self.mode, self.minmaxnormalization)
 
@@ -1186,6 +1182,10 @@ class MapsManager:
             self.parameters["label"] = None
 
         self.task_manager = self._init_task_manager(df=train_df)
+        if self.parameters["architecture"] == "default":
+            self.parameters["architecture"] = self.task_manager.get_default_network()
+        if "selection_threshold" not in self.parameters:
+            self.parameters["selection_threshold"] = None
         label_code = self.task_manager.generate_label_code(train_df, self.label)
         full_dataset = return_dataset(
             self.mode,

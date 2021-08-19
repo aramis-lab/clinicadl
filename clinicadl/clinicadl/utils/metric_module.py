@@ -51,9 +51,8 @@ class MetricModule:
 
             for metric_key, metric_fn in self.metrics.items():
                 metric_args = list(metric_fn.__code__.co_varnames)
-                if "n_classes" in metric_args:
-                    results[metric_key] = metric_fn(y, y_pred, self.n_classes)
-                elif "class_number" in metric_args:
+                print(metric_key, metric_args)
+                if "class_number" in metric_args:
                     for class_number in range(self.n_classes):
                         results[f"{metric_key}-{class_number}"] = metric_fn(
                             y, y_pred, class_number
@@ -63,6 +62,7 @@ class MetricModule:
         else:
             results = dict()
 
+        print(results)
         return results
 
     @staticmethod
@@ -175,19 +175,19 @@ class MetricModule:
             return 0.0
 
     @staticmethod
-    def ba_fn(y, y_pred, n_classes):
+    def ba_fn(y, y_pred, class_number):
         """
         Args:
             y (List): list of labels
             y_pred (List): list of predictions
-            n_classes (int): total number of classes
+            class_number (int): number of the class studied
         Returns:
             (float) balanced accuracy
         """
 
         return (
-            MetricModule.sensitivity_fn(y, y_pred)
-            + MetricModule.specificity_fn(y, y_pred)
+            MetricModule.sensitivity_fn(y, y_pred, class_number)
+            + MetricModule.specificity_fn(y, y_pred, class_number)
         ) / 2
 
     @staticmethod

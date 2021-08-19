@@ -16,11 +16,10 @@ class ClassificationManager(TaskManager):
         df=None,
         label=None,
     ):
-        if n_classes is not None:
-            self.n_classes = n_classes
-        else:
-            self.n_classes = self.output_size(None, df, label)
-        super().__init__(mode)
+        if n_classes is None:
+            n_classes = self.output_size(None, df, label)
+        self.n_classes = n_classes
+        super().__init__(mode, n_classes)
 
     @property
     def columns(self):
