@@ -13,7 +13,7 @@ Here is a 2D example of the standard layer of pytorch `nn.MaxPool2d`:
 <img src="https://drive.google.com/uc?id=1qh9M9r9mfpZeSD1VjOGQAl8zWqBLmcKz" style="height: 200px;" alt="animation of classical max pooling">
 
 The last column may not be used depending on the size of the kernel/input and stride value. 
-To avoid this, pooling layers with adaptive padding `PadMaxPool3d` were implemented in `clinicadl` to exploit information from the whole feature map.
+To avoid this, pooling layers with adaptive padding `PadMaxPool3d` were implemented in ClinicaDL to exploit information from the whole feature map.
 
 <img src="https://drive.google.com/uc?id=14R_LCTiV0N6ZXm-3wQCj_Gtc1LsXdQq_" style="height: 200px;" alt="animation of max pooling with adaptive pooling">
 
