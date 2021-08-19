@@ -12,7 +12,14 @@ class ClassificationManager(TaskManager):
     def __init__(
         self,
         mode,
+        n_classes=None,
+        df=None,
+        label=None,
     ):
+        if n_classes is not None:
+            self.n_classes = n_classes
+        else:
+            self.n_classes = self.output_size(None, df, label)
         super().__init__(mode)
 
     @property
@@ -23,9 +30,7 @@ class ClassificationManager(TaskManager):
             f"{self.mode}_id",
             "true_label",
             "predicted_label",
-            "proba0",
-            "proba1",
-        ]
+        ] + [f"proba{i}" for i in range(self.n_classes)]
 
     @property
     def evaluation_metrics(self):
@@ -46,9 +51,8 @@ class ClassificationManager(TaskManager):
                 data[f"{self.mode}_id"][idx].item(),
                 data["label"][idx].item(),
                 prediction,
-                normalized_output[0].item(),
-                normalized_output[1].item(),
             ]
+            + [normalized_output[i].item() for i in range(self.n_classes)]
         ]
 
     def compute_metrics(self, results_df):
@@ -162,11 +166,12 @@ class ClassificationManager(TaskManager):
             ["participant_id", "session_id"]
         ):
             label = subject_df["true_label"].unique().item()
-            proba0 = np.average(subject_df["proba0"], weights=weight_series)
-            proba1 = np.average(subject_df["proba1"], weights=weight_series)
-            proba_list = [proba0, proba1]
+            proba_list = [
+                np.average(subject_df[f"proba{i}"], weights=weight_series)
+                for i in range(self.n_classes)
+            ]
             prediction = proba_list.index(max(proba_list))
-            row = [[subject, session, 0, label, prediction, proba0, proba1]]
+            row = [[subject, session, 0, label, prediction] + proba_list]
             row_df = pd.DataFrame(row, columns=self.columns)
             df_final = df_final.append(row_df)
 
