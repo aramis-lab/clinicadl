@@ -19,7 +19,7 @@ output_dir = "results"
     ]
 )
 def cli_commands(request):
-
+    split = "0"
     if request.param == "train_slice_cnn":
         test_input = [
             "train",
@@ -35,9 +35,10 @@ def cli_commands(request):
             "--n_splits",
             "2",
             "--split",
-            "0",
+            split,
         ]
     elif request.param == "train_image_cnn":
+        split = "1"
         test_input = [
             "train",
             "regression",
@@ -52,9 +53,10 @@ def cli_commands(request):
             "--n_splits",
             "2",
             "--split",
-            "0",
+            split,
         ]
     elif request.param == "train_patch_cnn":
+        split = "1"
         test_input = [
             "train",
             "classification",
@@ -69,7 +71,7 @@ def cli_commands(request):
             "--n_splits",
             "2",
             "--split",
-            "0",
+            split,
         ]
     elif request.param == "train_patch_multicnn":
         test_input = [
@@ -86,7 +88,7 @@ def cli_commands(request):
             "--n_splits",
             "2",
             "--split",
-            "0",
+            split,
             "--multi_network",
         ]
     elif request.param == "train_roi_cnn":
@@ -104,7 +106,7 @@ def cli_commands(request):
             "--n_splits",
             "2",
             "--split",
-            "0",
+            split,
         ]
     elif request.param == "train_roi_multicnn":
         test_input = [
@@ -121,22 +123,22 @@ def cli_commands(request):
             "--n_splits",
             "2",
             "--split",
-            "0",
+            split,
             "--multi_network",
         ]
     else:
         raise NotImplementedError("Test %s is not implemented." % request.param)
 
-    return test_input
+    return test_input, split
 
 
 def test_train(cli_commands):
-    test_input = cli_commands
+    test_input, split = cli_commands
     if os.path.exists(output_dir):
         shutil.rmtree(output_dir)
     flag_error = not os.system("clinicadl " + " ".join(test_input))
     performances_flag = os.path.exists(
-        os.path.join("results", "fold-0", "best-loss", "train")
+        os.path.join("results", f"fold-{split}", "best-loss", "train")
     )
     assert flag_error
     assert performances_flag

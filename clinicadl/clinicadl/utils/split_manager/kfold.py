@@ -29,6 +29,10 @@ class KFoldSplit(SplitManager):
         else:
             return len(self.folds)
 
+    @property
+    def allowed_folds_list(self):
+        return [i for i in range(self.n_splits)]
+
     def fold_iterator(self):
         if self.folds is None:
             return range(self.n_splits)
@@ -43,11 +47,3 @@ class KFoldSplit(SplitManager):
             cohort_path, f"validation_splits-{self.n_splits}", f"split-{fold}"
         )
         return train_path, valid_path
-
-    def _check_folds(self):
-        possible_folds = {i for i in range(self.n_splits)}
-        if self.folds is not None or set(self.folds).issubset(possible_folds):
-            raise ValueError(
-                f"Folds list is set to {self.folds}. "
-                f"Please use only folds in {possible_folds}."
-            )

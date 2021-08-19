@@ -39,6 +39,17 @@ class SplitManager:
     def __len__(self):
         pass
 
+    @property
+    @abc.abstractmethod
+    def allowed_folds_list(self):
+        """
+        List of possible folds if no restriction was applied
+
+        Returns:
+            list[int]: list of all possible folds
+        """
+        pass
+
     def __getitem__(self, item):
         """
         Returns a dictionary of DataFrames with train and validation data.
@@ -145,14 +156,11 @@ class SplitManager:
         """Returns an iterable to iterate on all folds wanted."""
         pass
 
-    @abc.abstractmethod
-    def _check_folds(self):
-        """Check that folds asked by the user at initialization can be performed."""
-        pass
-
     def _check_item(self, item):
-        if not isinstance(item, int) or item < 0 or item >= self.max_length():
-            raise ValueError(f"Fold index {item} out of range")
+        if item not in self.allowed_folds_list:
+            raise ValueError(
+                f"Fold index {item} out of allowed folds {self.allowed_folds_list}."
+            )
 
     @staticmethod
     def _create_caps_dict(caps_directory, multi_cohort):
