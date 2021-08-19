@@ -1169,7 +1169,7 @@ class MapsManager:
 
         self.parameters = parameters
         self.task_manager = self._init_task_manager()
-        if self.parameters["architecture"] is None:
+        if self.parameters["architecture"] == "default":
             self.parameters["architecture"] = self.task_manager.get_default_network()
 
         train_parameters = self._compute_train_args()
