@@ -18,6 +18,9 @@ class SingleSplit(SplitManager):
             caps_directory, tsv_path, diagnoses, baseline, multi_cohort, folds, logger
         )
 
+    def max_length(self) -> int:
+        return 1
+
     def __len__(self):
         return 1
 

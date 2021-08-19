@@ -263,6 +263,15 @@ def read_json(options=None, json_path=None, test=False, read_computational=False
     if "n_splits" in options and options["n_splits"] is None:
         options["n_splits"] = 0
 
+    if not hasattr(options, "seed"):
+        options.seed = None
+
+    if not hasattr(options, "torch_deterministic"):
+        options.torch_deterministic = False
+
+    if not hasattr(options, "compensation"):
+        options.compensation = "memory"
+
     return options
 
 
@@ -285,6 +294,7 @@ def check_and_complete(options, random_search=False):
         "accumulation_steps": 1,
         "baseline": False,
         "batch_size": 2,
+        "compensation": "memory",
         "data_augmentation": False,
         "diagnoses": ["AD", "CN"],
         "dropout": 0,
@@ -301,8 +311,10 @@ def check_and_complete(options, random_search=False):
         "patience": 0,
         "predict_atlas_intensities": [],
         "split": [],
+        "seed": None,
         "selection_metrics": ["loss"],
         "tolerance": 0.0,
+        "deterministic": False,
         "transfer_learning_path": "",
         "transfer_learning_selection": "best_loss",
         "use_cpu": False,
