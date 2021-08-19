@@ -1211,7 +1211,7 @@ class MapsManager:
 
         split_manager = self._init_split_manager(None)
         train_df = split_manager[0]["train"]
-        if not "label" in self.parameters:
+        if "label" not in self.parameters:
             self.parameters["label"] = None
         label_code = self.task_manager.generate_label_code(train_df, self.label)
         full_dataset = return_dataset(
