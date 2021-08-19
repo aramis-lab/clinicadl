@@ -13,10 +13,10 @@ them for a qualitative check.
 
 ## Outputs
 
-Results are stored in the MAPS of path `model_path`, according to
+Results are stored in the MAPS of path `maps_directory`, according to
 the following file system:
 ```
-<model_path>
+<maps_directory>
     ├── fold-0  
     ├── ...  
     └── fold-<fold>

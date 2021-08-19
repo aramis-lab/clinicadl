@@ -16,37 +16,51 @@ Moreover, trivial data are useful for debugging a framework: hyper parameters ca
 fewer data samples are required and convergence should be reached faster as the classification task is simpler.
 
 ## Prerequisites
-You need to execute the `clinicadl preprocessing` and `clinicadl extract` pipelines prior to running this task.
-Future versions will include the possibility to perform `generate` on the tensors extracted from another preprocessing pipeline, 
-`t1-extensive`.
+You need to execute the `clinica run` and `clinicadl extract` pipelines prior to running this task.
 
 !!! note
     The `trivial` option can synthesize at most a number of images per label that is equal to the total number of images 
     in the input CAPS , while the `random` option can synthesize as many images as wanted with only one input image.
 
 ## Running the task
+
+### `trivial`
 The task can be run with the following command line:
 ```
-clinicadl generate <dataset> <caps_directory> <tsv_path> <output_dir>
+clinicadl generate trivial CAPS_DIRECTORY GENERATED_CAPS_DIRECTORY
 ```
 where:
 
-- `dataset` (str) is the type of synthetic data wanted. Choices are `random` or `trivial`.
-- `caps_directory` (str) is the input folder containing the neuroimaging data in a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
-- `tsv_path` (str) is the path to a tsv file containing the subjects/sessions list for data generation.
-- `output_dir` (str) is the folder where the synthetic CAPS is stored.
-
+- `CAPS_DIRECTORY` (str) is the input folder containing the neuroimaging data in a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
+- `GENERATED_CAPS_DIRECTORY` (str) is the folder where the synthetic CAPS is stored.
 
 Options:
 
+- `--participants_tsv` (str) is the path to a tsv file containing the subjects/sessions list for data generation.
 - `--n_subjects` (int) number of subjects per label in the synthetic dataset. Default value: `300`.
-- `--preprocessing` (str) preprocessing pipeline used in the input `caps_directory`. Must be `t1-linear` 
-(t1-extensive to be added soon !). Default value: `t1-linear`.
-- `--mean` (float) Specific to random. Mean value of the gaussian noise added to brain images. Default value: `0`.
-- `--sigma` (float) Specific to random. Standard deviation of the gaussian noise added to brain images. Default value: `0.5`.
-- `--mask_path` (str) Specific to trivial. Path to the atrophy masks used to generate the two labels. 
+- `--preprocessing` (str) preprocessing pipeline used in the input `caps_directory`. Default value: `t1-linear`.
+- `--mask_path` (str) Path to the atrophy masks used to generate the two labels. 
 Default will download masks based on AAL2 in `clinicadl/resources/masks`.
-- `--atrophy_percent` (float) Specific to trivial. Percentage of intensity decrease applied to the regions targeted by the masks. Default value: 60. 
+- `--atrophy_percent` (float) Percentage of intensity decrease applied to the regions targeted by the masks. Default value: 60. 
+
+
+### `random`
+The task can be run with the following command line:
+```
+clinicadl generate random CAPS_DIRECTORY GENERATED_CAPS_DIRECTORY
+```
+where:
+
+- `CAPS_DIRECTORY` (str) is the input folder containing the neuroimaging data in a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
+- `GENERATED_CAPS_DIRECTORY` (str) is the folder where the synthetic CAPS is stored.
+
+Options:
+
+- `--participants_tsv` (str) is the path to a tsv file containing the subjects/sessions list for data generation.
+- `--n_subjects` (int) number of subjects per label in the synthetic dataset. Default value: `300`.
+- `--preprocessing` (str) preprocessing pipeline used in the input `caps_directory`. Default value: `t1-linear`.
+- `--mean` (float) Mean value of the gaussian noise added to images. Default value: `0`.
+- `--sigma` (float) Standard deviation of the gaussian noise added to images. Default value: `0.5`.
 
 !!! tip
     Do not hesitate to type `clinicadl generate --help` to see the full list of parameters.
