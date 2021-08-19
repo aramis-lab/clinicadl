@@ -78,7 +78,7 @@ def next_session(subject_df, session_orig):
         raise ValueError("The argument session is the last session")
 
 
-def extract_baseline(diagnosis_df, diagnosis, set_index=True):
+def extract_baseline(diagnosis_df, set_index=True):
     from copy import deepcopy
 
     if set_index:
@@ -96,7 +96,6 @@ def extract_baseline(diagnosis_df, diagnosis, set_index=True):
         )
         result_df = pd.concat([result_df, subject_baseline_df])
 
-    result_df["diagnosis"] = [diagnosis] * len(result_df)
     result_df.reset_index(inplace=True, drop=True)
 
     return result_df
