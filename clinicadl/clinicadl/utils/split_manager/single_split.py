@@ -21,6 +21,9 @@ class SingleSplit(SplitManager):
     def __len__(self):
         return 1
 
+    def allowed_folds_list(self):
+        return [1]
+
     def fold_iterator(self):
         return range(1)
 
@@ -28,10 +31,3 @@ class SingleSplit(SplitManager):
         train_path = path.join(cohort_path, "train")
         valid_path = path.join(cohort_path, "validation")
         return train_path, valid_path
-
-    def _check_folds(self):
-        if self.folds is not None or set(self.folds) != set([0]):
-            raise ValueError(
-                "Single Split will only perform one fold. "
-                "Please do not specify any folds or [0]."
-            )
