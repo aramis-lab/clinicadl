@@ -3,8 +3,7 @@ site_name: ClinicaDL Documentation
 site_author: ClinicaDL contributors
 site_url: https://clinicadl.readthedocs.io/
 site_description: >-
-  Framework for the reproducible classification of Alzheimer's disease
-  using deep learning
+  Open-source deep learning software for reproducible neuroimaging processing
 
 # Repository
 repo_name: aramislab/clinicadl
@@ -12,7 +11,7 @@ repo_url: https://github.com/aramis-lab/clinicadl
 #edit_uri: master/edit/doc
 
 # Copyright
-copyright: Copyright &copy; 2020 ClinicaDL contributors
+copyright: Copyright &copy; 2021 ClinicaDL contributors
 
 # Google Analytics
 google_analytics:
@@ -67,18 +66,15 @@ nav:
   - Prepare your metadata: TSVTools.md
   - Prepare your imaging data:
     - Introduction: Preprocessing/Introduction.md
-    - t1-linear pipeline: Preprocessing/T1_Linear.md
-    - t1-extensive pipeline: Preprocessing/T1_Extensive.md
-    - extract tensors: Preprocessing/Extract.md
-    - quality check: Preprocessing/QualityCheck.md
-    - generate synthetic data sets: Generate.md
-  - Hyperparameters exploration: RandomSearch.md
+    - Extract tensors: Preprocessing/Extract.md
+    - Quality check: Preprocessing/QualityCheck.md
+    - Generate synthetic data sets: Preprocessing/Generate.md
+  - Hyperparameter exploration: RandomSearch.md
   - Train deep learning networks:
-    - Introduction: Train/Introduction.md
-    - JSON defined: Train/Retrain.md
-    - Resume: Train/Resume.md
+    - Train: Train/Introduction.md
+    - Resume training: Train/Resume.md
     - Implementation details: Train/Details.md
-  - Inference using pretrained models: Predict.md
+  - Inference using trained models: Predict.md
   - Network output serialization: Tensors.md
   - Interpretation with gradient maps: Interpret.md
   - Advanced user guide:

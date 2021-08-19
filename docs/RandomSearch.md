@@ -8,7 +8,7 @@ This file contains the fixed values or intervals / sets to sample from.
 The sampling function are the following:
 
 - `choice` samples one element from a list,
-- `uniform` draws samples from a uniform distribution over the interval [`min`, `max`],
+- `uniform` samples from a uniform distribution over the interval [`min`, `max`],
 - `exponent` draws `x` from a uniform distribution over the interval [`min`, `max`] and return 10<sup>-x</sup>.
 - `randint` returns an integer in [`min`, `max`].
 

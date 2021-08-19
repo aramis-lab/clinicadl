@@ -24,14 +24,14 @@ tar xf model_exp3_splits_1.tar.gz
 ## Running the task
 This task can be run with the following command line:
 ```Text
-clinicadl interpret <model_path> <data_group> <name>
+clinicadl interpret INPUT_MAPS_DIRECTORY DATA_GROUP NAME
 
 ```
 where:
 
-- `model_path` (str) is the path to the MAPS of the pretrained model.
-- `data_group` (str) is the data is the name of the data group used for the interpretation.
-- `name` (str) is the name of the saliency map task.
+- `INPUT_MAPS_DIRECTORY` (path) is a path to the MAPS folder containing the model which will be interpreted.
+- `DATA_GROUP` (str) is a prefix to name the files resulting from the interpretation task.
+- `NAME` (str) is the name of the saliency map task.
 
 !!! warning "data group consistency"
     For ClinicaDL, a data group is linked to a list of participants / sessions and a CAPS directory.
@@ -49,29 +49,38 @@ Optional arguments:
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
 - **Model selection**
     - `--selection_metrics` (list of str) corresponds to the metrics according to which the 
-    [best models](Train/Details.md#model-selection) of `model_path` will be loaded. Default: `loss`.
+    [best models](Train/Details.md#model-selection) of `INPUT_MAPS_DIRECTORY` will be loaded. 
+    Choices are `best_loss` and `best_balanced_accuracy`. Default: `best_loss`.
 - **Data management**
-    - `--tsv_path` (str) is a path to a directory containing one TSV file per diagnosis
+    - `--participants_tsv` (str) is a path to a directory containing one TSV file per diagnosis
     (see output tree of [getlabels](./TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease)). 
     Default will use the same participants as those used during the training task.
     - `--caps_directory` (str) is the path to a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
     Default will use the same CAPS as during the training task.
-    - `--multi_cohort` (bool) is a flag indicated that [multi-cohort interpretation](Train/Details.md#multi-cohort) is performed.
-    In this case, `caps_dir` and `tsv_path` must be paths to TSV files. If no new `caps_dir` and `tsv_path` are 
-    given this argument is not taken into account. 
-- **Results**
-    - `--target_node` (str) is the class the gradients explain. Default will explain
+    - `--diagnosis` (str) is the diagnosis that will be loaded in `participants_tsv`. Default value: `AD`.
+    - `--target_diagnosis` (str) is the class the gradients explain. Default will explain
     the given diagnosis.
-    - `--save_individual` (bool) if this flag is given the individual saliency maps of each input will be saved. 
-      Default will only save the mean saliency map across the data set.
+    - `--baseline` (bool) is a flag to load only `_baseline.tsv` files instead of `.tsv` files comprising all the sessions. Default: `False`.
+    - `--keep_true` (bool) allows choosing only the images correctly (`True`) or badly (`False`)
+    classified by the CNN. Default will not perform any selection.
+    - `--nifti_template_path` (str) is a path to a nifti template to retrieve the affine values
+    needed to write Nifti files for 3D saliency maps. Default will use the identity matrix for the affine.
+    - `--multi_cohort` (bool) is a flag indicated that [multi-cohort interpretation](Train/Details.md#multi-cohort) is performed.
+    In this case, `caps_directory` and `participants_tsv` must be paths to TSV files. If no new `caps_directory` and `participants_tsv` are 
+    given this argument is not taken into account. 
+- **Results display**
+    - `--vmax` (float) is the maximum value used for 2D saliency maps display. Default value: `0.5`.
+- **Other options**
+    - `--target_node` (str) is the node the gradients explain. By default, it will target the first output node.
+    - `save_individual` (str) is an option to save individual saliency maps in addition to the mean saliency map.
    
 
 ## Outputs
 
-Results are stored in the MAPS of path `model_path`, according to
+Results for the `DATA_GROUP` level are stored in the results folder given by `INPUT_MAPS_DIRECTORY`, according to
 the following file system:
 ```
-<model_path>
+<maps_directory>
     ├── fold-0  
     ├── ...  
     └── fold-<fold>
