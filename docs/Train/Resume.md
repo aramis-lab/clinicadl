@@ -1,4 +1,4 @@
-# `clinicadl train resume` - Resume a prematurely stopped job
+# `resume` - Resume a prematurely stopped job
 
 This functionality allows to resume a prematurely stopped job trained with
 [`clinicadl train`](Introduction.md) of [`clinicadl random-search generate`](../RandomSearch.md) tasks.
@@ -25,7 +25,7 @@ extract` to obtain the tensor versions of the images.
 ## Running the task
 This task can be run with the following command line:
 ```Text
-clinicadl train resume <model_path>
+clinicadl resume <model_path>
 
 ```
 where `model_path` (str) is a path to the [MAPS folder](../Introduction.md) of the model.

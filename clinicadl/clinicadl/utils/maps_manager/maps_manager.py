@@ -18,6 +18,7 @@ from clinicadl.utils.caps_dataset.data import (
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.maps_manager.logwriter import LogWriter, StdLevelFilter
 from clinicadl.utils.metric_module import RetainBest
+from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
 
 level_dict = {
     "debug": logging.DEBUG,
@@ -50,7 +51,7 @@ class MapsManager:
                     f"To initiate a new MAPS please give a train_dict."
                 )
             self.parameters = self.get_parameters()
-            self.task_manager = self._init_task_manager()
+            self.task_manager = self._init_task_manager(n_classes=self.output_size)
 
         # Initiate MAPS
         else:
@@ -625,6 +626,7 @@ class MapsManager:
         split_manager = self._init_split_manager(folds)
         for fold in split_manager.fold_iterator():
             self.logger.info(f"Training fold {fold}")
+            seed_everything(self.seed, self.torch_deterministic, self.compensation)
 
             fold_df_dict = split_manager[fold]
 
@@ -662,6 +664,7 @@ class MapsManager:
                 batch_size=self.batch_size,
                 sampler=train_sampler,
                 num_workers=self.num_workers,
+                worker_init_fn=pl_worker_init_function,
             )
 
             valid_loader = DataLoader(
@@ -710,6 +713,7 @@ class MapsManager:
         split_manager = self._init_split_manager(folds)
         for fold in split_manager.fold_iterator():
             self.logger.info(f"Training fold {fold}")
+            seed_everything(self.seed, self.torch_deterministic, self.compensation)
 
             fold_df_dict = split_manager[fold]
 
@@ -767,6 +771,7 @@ class MapsManager:
                     batch_size=self.batch_size,
                     sampler=train_sampler,
                     num_workers=self.num_workers,
+                    worker_init_fn=pl_worker_init_function,
                 )
 
                 valid_loader = DataLoader(
@@ -831,7 +836,7 @@ class MapsManager:
 
         log_writer = LogWriter(
             self.maps_path,
-            self.task_manager.evaluation_metrics,
+            self.task_manager.evaluation_metrics + ["loss"],
             fold,
             resume=resume,
             beginning_epoch=beginning_epoch,
@@ -973,7 +978,7 @@ class MapsManager:
             network=network,
         )
 
-        if self.task_manager.save_outputs and self.visualization:
+        if self.task_manager.save_outputs:
             self._compute_output_tensors(
                 train_loader.dataset,
                 "train",
@@ -1168,12 +1173,43 @@ class MapsManager:
                 )
 
         self.parameters = parameters
-        self.task_manager = self._init_task_manager()
+        _, transformations = get_transforms(self.mode, self.minmaxnormalization)
+
+        split_manager = self._init_split_manager(None)
+        train_df = split_manager[0]["train"]
+        if "label" not in self.parameters:
+            self.parameters["label"] = None
+
+        self.task_manager = self._init_task_manager(df=train_df)
+
         if self.parameters["architecture"] == "default":
             self.parameters["architecture"] = self.task_manager.get_default_network()
+        if "selection_threshold" not in self.parameters:
+            self.parameters["selection_threshold"] = None
+        label_code = self.task_manager.generate_label_code(train_df, self.label)
+        full_dataset = return_dataset(
+            self.mode,
+            self.caps_directory,
+            train_df,
+            self.preprocessing,
+            label=self.label,
+            label_code=label_code,
+            train_transformations=None,
+            all_transformations=transformations,
+            params=self,
+        )
+        self.parameters.update(
+            {
+                "num_networks": full_dataset.elem_per_image,
+                "label_code": label_code,
+                "output_size": self.task_manager.output_size(
+                    full_dataset.size, full_dataset.df, self.label
+                ),
+                "input_size": full_dataset.size,
+            }
+        )
 
-        train_parameters = self._compute_train_args()
-        self.parameters.update(train_parameters)
+        self.parameters["seed"] = get_seed(self.parameters["seed"])
 
         if self.parameters["num_networks"] < 2 and self.multi_network:
             raise ValueError(
@@ -1196,41 +1232,6 @@ class MapsManager:
         # TODO: add default values manager
         # click passing context @click.command / @click.passcontext (config.json)
         # or default parameters in click --> from config_param import learning_rate --> @learning_rate
-
-    def _compute_train_args(self):
-
-        if "label" not in self.parameters:
-            self.parameters["label"] = None
-        if "visualization" not in self.parameters:
-            self.parameters["visualization"] = False
-        if "selection_threshold" not in self.parameters:
-            self.parameters["selection_threshold"] = None
-
-        _, transformations = get_transforms(self.mode, self.minmaxnormalization)
-
-        split_manager = self._init_split_manager(None)
-        train_df = split_manager[0]["train"]
-        label_code = self.task_manager.generate_label_code(train_df, self.label)
-        full_dataset = return_dataset(
-            self.mode,
-            self.caps_directory,
-            train_df,
-            self.preprocessing,
-            label=self.label,
-            label_code=label_code,
-            train_transformations=None,
-            all_transformations=transformations,
-            params=self,
-        )
-
-        return {
-            "num_networks": full_dataset.elem_per_image,
-            "label_code": label_code,
-            "output_size": self.task_manager.output_size(
-                full_dataset.size, full_dataset.df, self.label
-            ),
-            "input_size": full_dataset.size,
-        }
 
     def _find_folds(self):
         """Find which folds were trained in the MAPS."""
@@ -1774,7 +1775,7 @@ class MapsManager:
             kwargs[arg] = self.parameters[arg]
         return split_class(**kwargs)
 
-    def _init_task_manager(self):
+    def _init_task_manager(self, df=None, n_classes=None):
         from clinicadl.utils.task_manager import (
             ClassificationManager,
             ReconstructionManager,
@@ -1782,7 +1783,10 @@ class MapsManager:
         )
 
         if self.network_task == "classification":
-            return ClassificationManager(self.mode)
+            if n_classes is not None:
+                return ClassificationManager(self.mode, n_classes=n_classes)
+            else:
+                return ClassificationManager(self.mode, df=df, label=self.label)
         elif self.network_task == "regression":
             return RegressionManager(self.mode)
         elif self.network_task == "reconstruction":

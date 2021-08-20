@@ -2,6 +2,7 @@
 import logging
 from os import makedirs, path
 
+import numpy as np
 import pandas as pd
 
 
@@ -91,8 +92,26 @@ class LogWriter:
 
         t_current = time() - self.beginning_time
         general_row = [epoch, i, t_current]
-        train_row = [metrics_train[selection] for selection in self.evaluation_metrics]
-        valid_row = [metrics_valid[selection] for selection in self.evaluation_metrics]
+        train_row = list()
+        valid_row = list()
+        for selection in self.evaluation_metrics:
+            if selection in metrics_train:
+                train_row.append(metrics_train[selection])
+                valid_row.append(metrics_valid[selection])
+            else:
+                # Multi-class case, there is one metric per class (i.e. sensitivity-0, sensitivity-1...)
+                train_values = [
+                    metrics_train[key]
+                    for key in metrics_train.keys()
+                    if selection in key
+                ]
+                valid_values = [
+                    metrics_valid[key]
+                    for key in metrics_valid.keys()
+                    if selection in key
+                ]
+                train_row.append(np.mean(train_values))
+                valid_row.append(np.mean(valid_values))
 
         row = [general_row + train_row + valid_row]
         row_df = pd.DataFrame(row, columns=self.columns)
@@ -101,14 +120,14 @@ class LogWriter:
 
         # Write tensorboard logs
         global_step = i + epoch * len_epoch
-        for selection in self.evaluation_metrics:
+        for metric_idx, metric in enumerate(self.evaluation_metrics):
             self.writer_train.add_scalar(
-                selection,
-                metrics_train[selection],
+                metric,
+                train_row[metric_idx],
                 global_step,
             )
             self.writer_valid.add_scalar(
-                selection,
-                metrics_valid[selection],
+                metric,
+                valid_row[metric_idx],
                 global_step,
             )

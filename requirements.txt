@@ -10,7 +10,7 @@ pynvml
 toml
 nilearn
 nipy
-torch
+torch >= 1.8
 pandas
 colorama
 tensorboard

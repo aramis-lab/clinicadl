@@ -69,7 +69,7 @@ def create_split(
         sup_train_sex = []
         sup_train_age = []
 
-    baseline_df = extract_baseline(diagnosis_df, diagnosis)
+    baseline_df = extract_baseline(diagnosis_df)
 
     if n_test >= 1:
         n_test = int(n_test)
@@ -277,7 +277,7 @@ def split_diagnoses(
             )
 
         else:
-            baseline_df = extract_baseline(diagnosis_df, diagnosis)
+            baseline_df = extract_baseline(diagnosis_df)
             test_df = baseline_df[interest_columns]
             test_df.to_csv(
                 path.join(test_path, f"{diagnosis}_baseline.tsv"), sep="\t", index=False
@@ -292,7 +292,7 @@ def split_diagnoses(
         # Extraction of MCI subjects without intersection with the sMCI / pMCI train
         diagnosis_df = pd.read_csv(path.join(results_path, "MCI.tsv"), sep="\t")
         MCI_df = diagnosis_df.set_index(["participant_id", "session_id"])
-        baseline_df = extract_baseline(MCI_df, set_index=False, diagnosis="MCI")
+        baseline_df = extract_baseline(MCI_df, set_index=False)
 
         if n_test > 1:
             n_test = int(n_test)
@@ -330,7 +330,7 @@ def split_diagnoses(
 
         # MCI selection
         MCI_df.reset_index(inplace=True)
-        baseline_df = extract_baseline(MCI_df, "MCI")
+        baseline_df = extract_baseline(MCI_df)
 
         train_df, test_df = create_split(
             "MCI",

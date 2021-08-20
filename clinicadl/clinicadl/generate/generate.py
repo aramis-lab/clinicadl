@@ -185,7 +185,7 @@ def generate_trivial_dataset(
 
     # Read DataFrame
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
-    data_df = extract_baseline(data_df, "None")
+    data_df = extract_baseline(data_df)
 
     home = str(Path.home())
     cache_clinicadl = join(home, ".cache", "clinicadl", "ressources", "masks")
