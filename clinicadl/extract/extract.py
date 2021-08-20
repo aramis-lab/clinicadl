@@ -41,9 +41,18 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
     sessions, subjects = get_subject_session_list(
         input_dir, tsv_file, is_bids_dir, False, None
     )
-    logger.info(
-        f"{parameters['mode']}s will be extracted in Pytorch tensor from {len(sessions)} images."
-    )
+    if parameters["prepare_dl"]:
+        logger.info(
+            f"{parameters['mode']}s will be extracted in Pytorch tensor from {len(sessions)} images."
+        )
+    else:
+        logger.info(
+            f"Images will be extracted in Pytorch tensor from {len(sessions)} images."
+        )
+        logger.info(
+            f"Information for {parameters['mode']} will be saved in output JSON file and will be used "
+            f"during training for on-the-fly extraction."
+        )
     logger.debug(f"List of subjects: \n{subjects}.")
     logger.debug(f"List of sessions: \n{sessions}.")
 
@@ -86,11 +95,11 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
         logger.debug(f"  Processing of {file}.")
         container = container_from_filename(file)
         # Extract the wanted tensor
-        if parameters["mode"] == "image":
+        if parameters["mode"] == "image" or not parameters["prepare_dl"]:
             subfolder = "image_based"
             output_mode = extract_images(file)
             logger.debug(f"    Image extracted.")
-        elif parameters["mode"] == "slice":
+        elif parameters["prepare_dl"] and parameters["mode"] == "slice":
             subfolder = "slice_based"
             output_mode = extract_slices(
                 file,
@@ -99,7 +108,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
                 discarded_slices=parameters["discarded_slices"],
             )
             logger.debug(f"    {len(output_mode)} slices extracted.")
-        elif parameters["mode"] == "patch":
+        elif parameters["prepare_dl"] and parameters["mode"] == "patch":
             subfolder = "patch_based"
             output_mode = extract_patches(
                 file,
@@ -107,7 +116,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
                 stride_size=parameters["stride_size"],
             )
             logger.debug(f"    {len(output_mode)} patches extracted.")
-        elif parameters["mode"] == "roi":
+        elif parameters["prepare_dl"] and parameters["mode"] == "roi":
             subfolder = "roi_based"
             if parameters["preprocessing"] == "custom":
                 parameters["roi_template"] = parameters["roi_custom_template"]

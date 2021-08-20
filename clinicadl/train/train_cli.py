@@ -90,6 +90,7 @@ from clinicadl.utils import cli_param
     default=None,
     help="If provided uses a multi-network framework.",
 )
+<<<<<<< HEAD:clinicadl/train/train_cli.py
 # Mode
 @click.option(
     "--use_extracted_features",
@@ -107,6 +108,8 @@ from clinicadl.utils import cli_param
 
     Will only be used if num_networks > 1.""",
 )
+=======
+>>>>>>> Changed used_extracted_features option from train to extract:clinicadl/clinicadl/train/train_cli.py
 # Data
 @click.option(
     "--multi_cohort/--single_cohort",
@@ -235,8 +238,11 @@ def cli(
     output_maps_directory,
     config_file,
     label,
+<<<<<<< HEAD:clinicadl/train/train_cli.py
     use_extracted_features,
     selection_threshold,
+=======
+>>>>>>> Changed used_extracted_features option from train to extract:clinicadl/clinicadl/train/train_cli.py
     gpu,
     n_proc,
     batch_size,
@@ -353,14 +359,7 @@ def cli(
     else:
         train_dict["validation"] = "SingleSplit"
 
-    # use extracted features
-    if "use_extracted_features" in train_dict:
-        train_dict["prepare_dl"] = train_dict["use_extracted_features"]
-    else:
-        train_dict["prepare_dl"] = False
-
     train(output_maps_directory, train_dict, train_dict.pop("folds"))
-
 
 if __name__ == "__main__":
     cli()

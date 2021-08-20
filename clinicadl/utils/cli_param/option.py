@@ -76,6 +76,14 @@ batch_size = click.option(
 )
 
 # Extract
+use_extracted_features = click.option(
+    "--use_extracted_features",
+    type=bool,
+    default=False,
+    is_flag=True,
+    help="""If provided the outputs of extract preprocessing are used, else the whole
+            MRI is loaded.""",
+)
 subjects_sessions_tsv = click.option(
     "-tsv",
     "--subjects_sessions_tsv",

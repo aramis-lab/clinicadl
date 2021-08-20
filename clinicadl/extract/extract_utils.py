@@ -5,6 +5,7 @@ from typing import Union
 def get_parameters_dict(
     modality,
     extract_method,
+    use_extracted_features,
     use_uncropped_image,
     custom_suffix,
     acq_label,
@@ -15,12 +16,16 @@ def get_parameters_dict(
         "mode": extract_method,
         "use_uncropped_image": use_uncropped_image,
     }
+    # use extracted features
+
+    parameters["prepare_dl"] = use_extracted_features
+
     if modality == "custom":
         parameters["custom_suffix"] = custom_suffix
-
     if modality == "pet-linear":
         parameters["acq_label"] = acq_label
         parameters["suvr_reference_region"] = suvr_reference_region
+
     return parameters
 
 
