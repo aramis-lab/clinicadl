@@ -1,9 +1,22 @@
 import os
+from typing import Any, Dict, Optional
 
 import toml
 
 
-def get_train_dict(configuration_toml, preprocessing_json, task):
+def get_train_dict(
+    user_dict: Optional[Dict[str, Dict[str, Any]]], preprocessing_json: str, task: str
+) -> Dict[str, Any]:
+    """
+    Update the user configuration dict with default values of ClinicaDL.
+
+    Args:
+        user_dict: user configuration read from TOML file.
+        preprocessing_json: path to the JSON file containing preprocessing configuration.
+        task: task learnt by the network (example: classification, regression, reconstruction...).
+    Returns:
+        dictionary of values ready to use for the MapsManager
+    """
     # read default values
     current_file_path = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(
@@ -14,8 +27,7 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
     )
     config_dict = toml.load(config_path)
     # read user specified config and replace default values
-    if configuration_toml is not None:
-        user_dict = toml.load(configuration_toml)
+    if user_dict is not None:
         for section_name in user_dict:
             if section_name not in config_dict:
                 raise IOError(

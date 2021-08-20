@@ -1,6 +1,7 @@
 import os
 
 import click
+import toml
 
 from clinicadl.utils import cli_param
 
@@ -279,7 +280,10 @@ def cli(
     preprocessing_json = os.path.join(
         caps_directory, "tensor_extraction", preprocessing_json
     )
-    train_dict = get_train_dict(config_file, preprocessing_json, network_task)
+    user_dict = None
+    if config_file:
+        user_dict = toml.load(config_file)
+    train_dict = get_train_dict(user_dict, preprocessing_json, network_task)
 
     # Add arguments
     train_dict["network_task"] = network_task

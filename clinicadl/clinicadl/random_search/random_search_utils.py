@@ -1,8 +1,58 @@
 import random
+from typing import Any, Dict
 
-"""
-All the architectures are built here
-"""
+from clinicadl.clinicadl.train.train_utils import get_train_dict
+
+
+def get_space_dict(toml_options: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    """Transforms the TOML dictionary in one dimension dictionary."""
+    if "Random_Search" not in toml_options:
+        raise ValueError(
+            "Category 'Random_Search' must be defined in the random_search.toml file. "
+            "All random search arguments AND options must be defined in this category."
+        )
+
+    space_dict = dict()
+    for key in toml_options["Random_Search"]:
+        space_dict[key] = toml_options[key]
+
+    # Check presence of mandatory arguments
+    mandatory_arguments = [
+        "network_task",
+        "mode",
+        "tsv_path",
+        "caps_directory",
+        "preprocessing",
+        "n_convblocks",
+        "first_conv_width",
+        "n_fcblocks",
+    ]
+
+    for argument in mandatory_arguments:
+        if argument not in space_dict:
+            raise ValueError(
+                f"The argument {argument} must be specified in the random_search.toml file (Random_Search category)."
+            )
+
+    # Default of specific options of random search
+    random_search_specific_options = {
+        "d_reduction": "MaxPooling",
+        "network_normalization": "BatchNorm",
+        "channels_limit": 512,
+        "n_conv": 1,
+    }
+
+    for option, value in random_search_specific_options.items():
+        if option not in space_dict:
+            space_dict[option] = value
+
+    del toml_options["Random_Search"]
+    train_default = get_train_dict(
+        toml_options, space_dict.pop("preprocessing_json"), space_dict["network_task"]
+    )
+    space_dict.update(train_default)
+
+    return space_dict
 
 
 def sampling_fn(value, sampling_type):
