@@ -24,8 +24,9 @@ class SingleSplit(SplitManager):
     def __len__(self):
         return 1
 
+    @property
     def allowed_folds_list(self):
-        return [1]
+        return [0]
 
     def fold_iterator(self):
         return range(1)

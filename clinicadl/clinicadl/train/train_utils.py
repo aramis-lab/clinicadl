@@ -44,12 +44,12 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
 
     # Delete all sections related to other tasks
     for other_task in task_list:
-        del config_dict[other_task.upper()]
+        del config_dict[other_task.capitalize()]
 
     # Standard arguments
     for config_section in config_dict:
         for key in config_dict[config_section]:
-            train_dict[key] = config_dict[config_section]
+            train_dict[key] = config_dict[config_section][key]
 
     renamed_dict = {
         "normalize": "minmaxnormalization",

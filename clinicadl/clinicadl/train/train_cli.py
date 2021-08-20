@@ -205,7 +205,7 @@ from clinicadl.utils import cli_param
     help="Accumulates gradients during the given number of iterations before performing the weight update "
     "in order to virtually increase the size of the batch.",
 )
-# transfert learning
+# transfer learning
 @click.option(
     "-tp",
     "--transfer_path",
@@ -217,7 +217,7 @@ from clinicadl.utils import cli_param
     "-tsm",
     "--transfer_selection_metric",
     type=str,
-    # default="best_loss",
+    # default="loss",
     help="Metric used to select the model for transfer learning in the MAPS defined by transfer_path.",
 )
 def cli(
@@ -280,6 +280,7 @@ def cli(
         caps_directory, "tensor_extraction", preprocessing_json
     )
     train_dict = get_train_dict(config_file, preprocessing_json, network_task)
+    print(train_dict)
 
     # Add arguments
     train_dict["network_task"] = network_task
@@ -304,7 +305,7 @@ def cli(
         "n_splits",
         "patience",
         "tolerance",
-        "transfer_learning_selection",
+        "transfer_selection_metric",
         "use_extracted_features",
         "weight_decay",
         "sampler",
@@ -314,7 +315,7 @@ def cli(
     ]
 
     for option in standard_options_list:
-        if option:
+        if eval(option):
             train_dict[option] = eval(option)
 
     if gpu:
@@ -328,8 +329,9 @@ def cli(
     if nondeterministic:
         train_dict["deterministic"] = not nondeterministic
 
+    print(train_dict)
     # Splits
-    if train_dict["n_splits"] > 1:
+    if train_dict["n_splits"] and train_dict["n_splits"] > 1:
         train_dict["validation"] = "KFoldSplit"
     else:
         train_dict["validation"] = "SingleSplit"
