@@ -266,8 +266,8 @@ def read_json(options=None, json_path=None, test=False, read_computational=False
     if not hasattr(options, "seed"):
         options.seed = None
 
-    if not hasattr(options, "torch_deterministic"):
-        options.torch_deterministic = False
+    if not hasattr(options, "deterministic"):
+        options.deterministic = False
 
     if not hasattr(options, "compensation"):
         options.compensation = "memory"
@@ -396,6 +396,7 @@ def check_and_complete(options, random_search=False):
         task_dict = task_default_values[options["network_task"]]
         set_default(options, mode_dict)
         set_default(options, task_dict)
+
 
 def memReport():
     import gc
