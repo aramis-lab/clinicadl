@@ -12,7 +12,7 @@ from .extract_utils import get_parameters_dict
 @click.command(name="image")
 @cli_param.argument.caps_directory
 @cli_param.argument.modality
-@cli_param.option.use_extracted_features
+@cli_param.option.save_features
 @cli_param.option.subjects_sessions_tsv
 @cli_param.option.use_uncropped_image
 @cli_param.option.acq_label
@@ -21,7 +21,7 @@ from .extract_utils import get_parameters_dict
 def image_cli(
     caps_directory: str,
     modality: str,
-    use_extracted_features: bool = False,
+    save_features: bool = False,
     subjects_sessions_tsv: Optional[str] = None,
     use_uncropped_image: bool = False,
     acq_label: Optional[str] = None,
@@ -37,7 +37,7 @@ def image_cli(
     parameters = get_parameters_dict(
         modality,
         "image",
-        use_extracted_features,
+        save_features,
         use_uncropped_image,
         custom_suffix,
         acq_label,
@@ -53,7 +53,7 @@ def image_cli(
 @click.command(name="patch")
 @cli_param.argument.caps_directory
 @cli_param.argument.modality
-@cli_param.option.use_extracted_features
+@cli_param.option.save_features
 @cli_param.option.subjects_sessions_tsv
 @cli_param.option.use_uncropped_image
 @click.option(
@@ -69,7 +69,7 @@ def image_cli(
 def patch_cli(
     caps_directory: str,
     modality: str,
-    use_extracted_features: bool = False,
+    save_features: bool = False,
     subjects_sessions_tsv: Optional[str] = None,
     use_uncropped_image: bool = False,
     patch_size: int = 50,
@@ -86,7 +86,7 @@ def patch_cli(
     parameters = get_parameters_dict(
         modality,
         "patch",
-        use_extracted_features,
+        save_features,
         use_uncropped_image,
         custom_suffix,
         acq_label,
@@ -104,7 +104,7 @@ def patch_cli(
 @click.command(name="slice")
 @cli_param.argument.caps_directory
 @cli_param.argument.modality
-@cli_param.option.use_extracted_features
+@cli_param.option.save_features
 @cli_param.option.subjects_sessions_tsv
 @cli_param.option.use_uncropped_image
 @click.option(
@@ -149,7 +149,7 @@ def patch_cli(
 def slice_cli(
     caps_directory: str,
     modality: str,
-    use_extracted_features: bool = False,
+    save_features: bool = False,
     subjects_sessions_tsv: Optional[str] = None,
     use_uncropped_image: bool = False,
     stride_size: int = 50,
@@ -169,7 +169,7 @@ def slice_cli(
     parameters = get_parameters_dict(
         modality,
         "slice",
-        use_extracted_features,
+        save_features,
         use_uncropped_image,
         custom_suffix,
         acq_label,
@@ -190,7 +190,7 @@ def slice_cli(
 @click.command(name="roi")
 @cli_param.argument.caps_directory
 @cli_param.argument.modality
-@cli_param.option.use_extracted_features
+@cli_param.option.save_features
 @cli_param.option.subjects_sessions_tsv
 @cli_param.option.use_uncropped_image
 @click.option(
@@ -240,7 +240,7 @@ def slice_cli(
 def roi_cli(
     caps_directory: str,
     modality: str,
-    use_extracted_features: bool = False,
+    save_features: bool = False,
     subjects_sessions_tsv: Optional[str] = None,
     use_uncropped_image: bool = False,
     roi_list: list = [],
@@ -261,7 +261,7 @@ def roi_cli(
     parameters = get_parameters_dict(
         modality,
         "roi",
-        use_extracted_features,
+        save_features,
         use_uncropped_image,
         custom_suffix,
         acq_label,

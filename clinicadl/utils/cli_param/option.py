@@ -76,13 +76,13 @@ batch_size = click.option(
 )
 
 # Extract
-use_extracted_features = click.option(
-    "--use_extracted_features",
+save_features = click.option(
+    "--save_features",
     type=bool,
     default=False,
     is_flag=True,
-    help="""If provided the outputs of extract preprocessing are used, else the whole
-            MRI is loaded.""",
+    help="""Extract the selected mode to save the tensor. By default, the pipeline only save images and the mode extraction
+            is done when images are loaded in the train.""",
 )
 subjects_sessions_tsv = click.option(
     "-tsv",
