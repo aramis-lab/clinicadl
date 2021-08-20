@@ -106,7 +106,7 @@ class CNN(Network):
                     if "encoder" in k
                 ]
             )
-            self.encoder.load_state_dict(convolutions_dict)
+            self.convolutions.load_state_dict(convolutions_dict)
         else:
             raise ValueError(
                 f"Cannot transfer weights from {transfer_class} " f"to CNN."
