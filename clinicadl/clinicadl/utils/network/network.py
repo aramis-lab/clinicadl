@@ -1,5 +1,7 @@
 import abc
+from logging import getLogger
 
+import torch.cuda
 from torch import nn
 
 
@@ -16,17 +18,33 @@ class Network(nn.Module):
 
         from numpy import argmax
 
+        logger = getLogger("clinicadl")
+
         if use_cpu:
             return "cpu"
         else:
-            # TODO: check on cluster (add try except)
-            # Add option gpu_device (user chooses the gpu)
+            # TODO: Add option gpu_device (user chooses the gpu)
             # How to perform multi-GPU ?
-            # Use get device properties de pytorch instead of nvidia-smi
-            os.system("nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp")
-            memory_available = [int(x.split()[2]) for x in open("tmp", "r").readlines()]
-            free_gpu = argmax(memory_available)
-            return f"cuda:{free_gpu}"
+            try:
+                # In this case, the GPU seen by cuda are restricted and we let cuda choose
+                _ = os.environ["CUDA_VISIBLE_DEVICES"]
+                return "cuda"
+            except KeyError:
+                # Else we choose ourselves the GPU with the greatest amount of memory
+                from pynvml import (
+                    nvmlDeviceGetHandleByIndex,
+                    nvmlDeviceGetMemoryInfo,
+                    nvmlInit,
+                )
+
+                logger.info(torch.cuda.device_count())
+                nvmlInit()
+                memory_list = [
+                    nvmlDeviceGetMemoryInfo(nvmlDeviceGetHandleByIndex(i)).free
+                    for i in range(torch.cuda.device_count())
+                ]
+                free_gpu = argmax(memory_list)
+                return f"cuda:{free_gpu}"
 
     @abc.abstractmethod
     def predict(self, x):

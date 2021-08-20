@@ -99,8 +99,6 @@ def cli_commands(request):
             "extract_1629205602.json",
             "data/labels_list",
             output_dir,
-            "--architecture",
-            "Conv5_FC3",
             "--epochs",
             "1",
             "--n_splits",

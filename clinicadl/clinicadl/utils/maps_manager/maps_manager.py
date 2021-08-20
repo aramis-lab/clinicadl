@@ -1173,7 +1173,6 @@ class MapsManager:
                 )
 
         self.parameters = parameters
-
         _, transformations = get_transforms(self.mode, self.minmaxnormalization)
 
         split_manager = self._init_split_manager(None)
@@ -1182,6 +1181,7 @@ class MapsManager:
             self.parameters["label"] = None
 
         self.task_manager = self._init_task_manager(df=train_df)
+
         if self.parameters["architecture"] == "default":
             self.parameters["architecture"] = self.task_manager.get_default_network()
         if "selection_threshold" not in self.parameters:
