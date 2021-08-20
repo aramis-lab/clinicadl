@@ -104,7 +104,7 @@ from clinicadl.utils import cli_param
     "--selection_threshold",
     type=float,
     # default=0,
-    help="""Selection threshold for soft-voting when network_task is 'classification'. 
+    help="""Selection threshold for soft-voting when network_task is 'classification'.
     Will only be used if num_networks > 1.""",
 )
 # Data
