@@ -195,8 +195,8 @@ def slice_cli(
 @click.option(
     "--roi_list",
     type=str,
+    required=True,
     multiple=True,
-    # default=(),
     help="ROI list if EXTRACT_METHOD is `roi`. List of regions to be extracted",
 )
 @click.option(
