@@ -1,6 +1,6 @@
 # Installation
 
-You will find below the steps for installing `clinicadl` on Linux or Mac.
+You will find below the steps for installing ClinicaDL on Linux or Mac.
 Please do not hesitate to contact us on the
 [forum](https://groups.google.com/forum/#!forum/clinica-user) or
 [GitHub](https://github.com/aramis-lab/clinicadl/issues)

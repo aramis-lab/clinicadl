@@ -16,6 +16,7 @@ from clinicadl.cmdline import cli
         "predict",
         "quality-check",
         "random-search",
+        "resume",
         "train",
         "tsvtool",
     ]

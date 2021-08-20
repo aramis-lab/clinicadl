@@ -14,7 +14,9 @@ metric_optimum = {
 
 
 class MetricModule:
-    def __init__(self, metrics):
+    def __init__(self, metrics, n_classes=2):
+
+        self.n_classes = n_classes
 
         # Check if wanted metrics are implemented
         list_fn = [
@@ -48,10 +50,19 @@ class MetricModule:
             y_pred = np.array(y_pred)
 
             for metric_key, metric_fn in self.metrics.items():
-                results[metric_key] = metric_fn(y, y_pred)
+                metric_args = list(metric_fn.__code__.co_varnames)
+                print(metric_key, metric_args)
+                if "class_number" in metric_args:
+                    for class_number in range(self.n_classes):
+                        results[f"{metric_key}-{class_number}"] = metric_fn(
+                            y, y_pred, class_number
+                        )
+                else:
+                    results[metric_key] = metric_fn(y, y_pred)
         else:
             results = dict()
 
+        print(results)
         return results
 
     @staticmethod
@@ -87,26 +98,22 @@ class MetricModule:
         Returns:
             (float) accuracy
         """
-        true_positive = np.sum((y_pred == 1) & (y == 1))
-        true_negative = np.sum((y_pred == 0) & (y == 0))
-        false_positive = np.sum((y_pred == 1) & (y == 0))
-        false_negative = np.sum((y_pred == 0) & (y == 1))
+        true = np.sum(y_pred == y)
 
-        return (true_positive + true_negative) / (
-            true_positive + true_negative + false_positive + false_negative
-        )
+        return true / len(y)
 
     @staticmethod
-    def sensitivity_fn(y, y_pred):
+    def sensitivity_fn(y, y_pred, class_number):
         """
         Args:
             y (List): list of labels
             y_pred (List): list of predictions
+            class_number (int): number of the class studied
         Returns:
             (float) sensitivity
         """
-        true_positive = np.sum((y_pred == 1) & (y == 1))
-        false_negative = np.sum((y_pred == 0) & (y == 1))
+        true_positive = np.sum((y_pred == class_number) & (y == class_number))
+        false_negative = np.sum((y_pred != class_number) & (y == class_number))
 
         if (true_positive + false_negative) != 0:
             return true_positive / (true_positive + false_negative)
@@ -114,16 +121,17 @@ class MetricModule:
             return 0.0
 
     @staticmethod
-    def specificity_fn(y, y_pred):
+    def specificity_fn(y, y_pred, class_number):
         """
         Args:
             y (List): list of labels
             y_pred (List): list of predictions
+            class_number (int): number of the class studied
         Returns:
             (float) specificity
         """
-        true_negative = np.sum((y_pred == 0) & (y == 0))
-        false_positive = np.sum((y_pred == 1) & (y == 0))
+        true_negative = np.sum((y_pred != class_number) & (y != class_number))
+        false_positive = np.sum((y_pred == class_number) & (y != class_number))
 
         if (false_positive + true_negative) != 0:
             return true_negative / (false_positive + true_negative)
@@ -131,16 +139,17 @@ class MetricModule:
             return 0.0
 
     @staticmethod
-    def ppv_fn(y, y_pred):
+    def ppv_fn(y, y_pred, class_number):
         """
         Args:
             y (List): list of labels
             y_pred (List): list of predictions
+            class_number (int): number of the class studied
         Returns:
             (float) positive predictive value
         """
-        true_positive = np.sum((y_pred == 1) & (y == 1))
-        false_positive = np.sum((y_pred == 1) & (y == 0))
+        true_positive = np.sum((y_pred == class_number) & (y == class_number))
+        false_positive = np.sum((y_pred == class_number) & (y != class_number))
 
         if (true_positive + false_positive) != 0:
             return true_positive / (true_positive + false_positive)
@@ -148,16 +157,17 @@ class MetricModule:
             return 0.0
 
     @staticmethod
-    def npv_fn(y, y_pred):
+    def npv_fn(y, y_pred, class_number):
         """
         Args:
             y (List): list of labels
             y_pred (List): list of predictions
+            class_number (int): number of the class studied
         Returns:
             (float) negative predictive value
         """
-        true_negative = np.sum((y_pred == 0) & (y == 0))
-        false_negative = np.sum((y_pred == 0) & (y == 1))
+        true_negative = np.sum((y_pred != class_number) & (y != class_number))
+        false_negative = np.sum((y_pred != class_number) & (y == class_number))
 
         if (true_negative + false_negative) != 0:
             return true_negative / (true_negative + false_negative)
@@ -165,18 +175,19 @@ class MetricModule:
             return 0.0
 
     @staticmethod
-    def ba_fn(y, y_pred):
+    def ba_fn(y, y_pred, class_number):
         """
         Args:
             y (List): list of labels
             y_pred (List): list of predictions
+            class_number (int): number of the class studied
         Returns:
             (float) balanced accuracy
         """
 
         return (
-            MetricModule.sensitivity_fn(y, y_pred)
-            + MetricModule.specificity_fn(y, y_pred)
+            MetricModule.sensitivity_fn(y, y_pred, class_number)
+            + MetricModule.specificity_fn(y, y_pred, class_number)
         ) / 2
 
     @staticmethod
