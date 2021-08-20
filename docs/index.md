@@ -1,4 +1,4 @@
-# `clinicadl` Documentation
+# ClinicaDL Documentation
 
 ClinicaDL is the deep learning extension of [Clinica](https://aramislab.paris.inria.fr/clinica/docs/public/latest/),
 an open-source Python library for neuroimaging preprocessing and analysis.
@@ -20,11 +20,11 @@ before starting your project!
 
 See [Installation](./Installation.md) section for detailed instructions.
 
-`clinicadl` can be installed on Mac OS X and Linux machines, and possibly on Windows computers with a Linux Virtual Machine.
+ClinicaDL can be installed on Mac OS X and Linux machines, and possibly on Windows computers with a Linux Virtual Machine.
 
-We assume that users installing and using `clinicadl` are comfortable using the command line.
+We assume that users installing and using ClinicaDL are comfortable using the command line.
 
-## User documentation (`clinicadl`)
+## User documentation (ClinicaDL)
 
 ### Prepare your metadata
 - `clinicadl tsvtool` - [Handle TSV files for metadata processing and data splits](./TSVTools.md)
@@ -60,22 +60,22 @@ Updated versions of most representative models are available [here](https://aram
 
 ## Support
 - [Report an issue on GitHub](https://github.com/aramis-lab/clinicadl/issues)
-- Use the [`clinicadl` Google Group](https://groups.google.com/forum/#!forum/clinica-user) to ask for help!
+- Use the [ClinicaDL GitHub Discussion](https://github.com/aramis-lab/clinicadl/discussions) to ask for help!
 
 ## Contributions
 If you want to contribute but are not familiar with GitHub, please read the [Contribute](Contribute/Newcomers.md) section.
 You will also find how to [run the test suite](Contribute/Test.md) to check that your modifications are ready to be integrated.
 
 ## License
-`clinicadl` is distributed under the terms of the MIT license given [here](https://github.com/aramis-lab/clinicadl/blob/dev/LICENSE.txt).
+ClinicaDL is distributed under the terms of the MIT license given [here](https://github.com/aramis-lab/clinicadl/blob/dev/LICENSE.txt).
 
-## Citing `clinicadl`
-For publications or communications using `clinicadl`, please cite [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)] 
+## Citing ClinicaDL
+For publications or communications using ClinicaDL, please cite [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)] 
 as well as the references mentioned on the wiki page of the pipelines you used 
 (for example, citing PyTorch when using the `extract` pipeline).
 
 !!! info "Disclaimer"
-    `clinicadl` is a software for research studies. It is not intended for use in medical routine.
+    ClinicaDL is a software for research studies. It is not intended for use in medical routine.
 
 ---
 

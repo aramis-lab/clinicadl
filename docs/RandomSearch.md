@@ -18,7 +18,7 @@ that they should be given a unique value.
 The values of the variables that can be set in `random_search.json` correspond to
 the options of the [train function](./Train/Introduction.md) except for the 
 **Computational resources**, **Cross-validation arguments** and `output_directory`
-that are defined with the commandline arguments.
+that are defined with the command line arguments.
 Some variables were also added to sample the architecture of the network.
 
 ## Prerequisites
@@ -32,7 +32,7 @@ Moreover, there should be a CAPS, obtained running the `t1-linear` pipeline of C
 
 This task can be run with the following command line:
 ```Text
-clinicadl random-search generate <launch_directory> <name>
+clinicadl random-search <launch_directory> <name>
 
 ```
 where:
