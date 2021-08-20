@@ -323,7 +323,7 @@ def cli(
         train_dict["unnormalize"] = not normalize
     if patience is not None:
         train_dict["patience"] = patience
-    if split != ():
+    if split:
         train_dict["folds"] = split
     if tolerance is not None:
         train_dict["tolerance"] = tolerance
@@ -356,7 +356,7 @@ def cli(
     else:
         train_dict["prepare_dl"] = False
 
-    train(output_maps_directory, train_dict, split)
+    train(output_maps_directory, train_dict, train_dict["folds"])
 
 
 if __name__ == "__main__":

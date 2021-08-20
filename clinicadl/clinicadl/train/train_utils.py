@@ -13,20 +13,27 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
         "train_config.toml",
     )
     config_dict = toml.load(config_path)
-    # read user specified config
+    # read user specified config and replace default values
     if configuration_toml is not None:
-        user_config = toml.load(configuration_toml)
-        for config_section in user_config:
-            if config_section not in config_dict:
+        user_dict = toml.load(configuration_toml)
+        for section_name in user_dict:
+            if section_name not in config_dict:
                 raise IOError(
-                    f"{config_section} section is not valid in TOML configuration file. Please see the documentation to see the list of option in TOML configuration file"
+                    f"{section_name} section is not valid in TOML configuration file. "
+                    f"Please see the documentation to see the list of option in TOML configuration file."
                 )
-            for key in config_section:
-                if key not in config_dict[config_section]:
+            for key in user_dict[section_name]:
+                if key not in config_dict[section_name]:
                     raise IOError(
-                        f"{key} option in {config_section} is not valid in TOML configuration file. Please see the documentation to see the list of option in TOML configuration file"
+                        f"{key} option in {section_name} is not valid in TOML configuration file. "
+                        f"Please see the documentation to see the list of option in TOML configuration file."
                     )
-                config_dict[config_section[key]] = user_config[config_dict[key]]
+                config_dict[section_name][key] = user_dict[section_name][key]
+
+    # Fill train_dict
+    # for config_section in config_dict:
+    #     for key in config_section:
+    #         train_dict[key] = config_dict[config_section]
 
     # From config file
     train_dict = {
