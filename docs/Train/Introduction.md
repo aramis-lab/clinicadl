@@ -154,6 +154,7 @@ latent_space_size = 2
 [Classification]
 selection_metrics = ["loss"]
 label = "diagnosis"
+selection_threshold = 0.0 # Will only be used if num_networks != 1
 
 [Regression]
 selection_metrics = ["loss"]
