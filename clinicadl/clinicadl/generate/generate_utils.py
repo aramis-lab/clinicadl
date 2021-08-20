@@ -91,16 +91,6 @@ def find_image_path(caps_dict, participant_id, session_id, cohort, preprocessing
     return image_path
 
 
-def binary_t1_pgm(im_data):
-    """
-    :param im_data: probability gray maps
-    :return: binarized probability gray maps
-    """
-    m = im_data > 0.0
-    m = m.astype("float32")
-    return m
-
-
 def im_loss_roi_gaussian_distribution(im_data, atlas_to_mask, min_value):
     gm_masked = np.array(im_data, copy=True)
     gm_masked[atlas_to_mask == 0] = 0
@@ -128,65 +118,6 @@ def im_loss_roi_gaussian_distribution(im_data, atlas_to_mask, min_value):
     im_with_loss_gm_roi = normal_region + gm_loss
 
     return im_with_loss_gm_roi
-
-
-def find_borders_of_one_roi(output_path, i, tsv_atlas):
-    """
-
-    :param output_path: where I have saved my borders
-    :param i: index of the ROI
-    :param tsv_atlas: tsv atlas
-    :return: mask with 1 where there are the borders of roi 'i' with the other regions
-    """
-    import os
-
-    import nibabel as nib
-
-    total_mask = []
-
-    border_1 = nib.load(
-        os.path.join(output_path, "borders-" + str(i) + ".nii")
-    ).get_data()
-    for j in set(tsv_atlas.label):
-        if j not in [0, i]:
-            border_2 = nib.load(
-                os.path.join(output_path, "borders-" + str(j) + ".nii")
-            ).get_data()
-            image_sum = border_1 + border_2
-            mask = image_sum > 1
-            mask = mask.astype("float32")
-            total_mask.append(mask)
-
-    first_mask = total_mask[0]
-    for i in total_mask[1:]:
-        first_mask = first_mask + i
-    first_mask[first_mask > 0] = 1
-
-    return first_mask
-
-
-def find_border_of_prob_gm_and_atlas(output_path, i, tsv_atlas, im_data):
-    """
-
-    :param output_path:
-    :param i:
-    :param tsv_atlas:
-    :param im_data:
-    :return:
-    """
-    mask_of_ROI_AAL2 = find_borders_of_one_roi(output_path, i, tsv_atlas)
-    gm = binary_t1_pgm(im_data)
-    final_mask_for_gaussian = (
-        mask_of_ROI_AAL2 + gm
-    )  # AAL2 borders between the ROIS + T1w GM
-    f_g = final_mask_for_gaussian > 1
-    f_g = f_g.astype("float32")
-
-    idx = np.nonzero(f_g)
-    coordinates = []
-    for i in range(len(idx[0])):
-        coordinates.append([idx[0][i], idx[1][i], idx[2][i]])
-    return coordinates
 
 
 def generate_scales(size):
