@@ -57,7 +57,7 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
         "split": "folds",
     }
 
-    for command_name, code_name in renamed_dict:
+    for command_name, code_name in renamed_dict.items():
         train_dict[code_name] = train_dict.pop(command_name)
 
     # GPU exception
