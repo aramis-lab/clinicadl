@@ -626,7 +626,7 @@ class MapsManager:
         split_manager = self._init_split_manager(folds)
         for fold in split_manager.fold_iterator():
             self.logger.info(f"Training fold {fold}")
-            seed_everything(self.seed, self.torch_deterministic, self.compensation)
+            seed_everything(self.seed, self.deterministic, self.compensation)
 
             fold_df_dict = split_manager[fold]
 
@@ -713,7 +713,7 @@ class MapsManager:
         split_manager = self._init_split_manager(folds)
         for fold in split_manager.fold_iterator():
             self.logger.info(f"Training fold {fold}")
-            seed_everything(self.seed, self.torch_deterministic, self.compensation)
+            seed_everything(self.seed, self.deterministic, self.compensation)
 
             fold_df_dict = split_manager[fold]
 
@@ -822,7 +822,12 @@ class MapsManager:
             resume (bool): If True the job is resumed from the checkpoint.
         """
 
-        model, beginning_epoch = self._init_model(fold=fold, resume=resume)
+        model, beginning_epoch = self._init_model(
+            fold=fold,
+            resume=resume,
+            transfer_path=self.transfer_path,
+            transfer_selection=self.transfer_selection_metric,
+        )
         criterion = self.task_manager.get_criterion()
         optimizer = self._init_optimizer(model, fold=fold, resume=resume)
 
