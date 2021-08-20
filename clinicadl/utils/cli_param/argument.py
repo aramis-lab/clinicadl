@@ -26,3 +26,9 @@ data_group = click.argument("data_group", type=str)
 
 # TRAIN
 preprocessing_json = click.argument("preprocessing_json", type=str)
+
+# EXTRACT
+modality = click.argument(
+    "modality",
+    type=click.Choice(["t1-linear", "pet-linear", "custom"]),
+)

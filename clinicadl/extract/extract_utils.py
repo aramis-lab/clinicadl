@@ -2,6 +2,28 @@
 from typing import Union
 
 
+def get_parameters_dict(
+    modality,
+    extract_method,
+    use_uncropped_image,
+    custom_suffix,
+    acq_label,
+    suvr_reference_region,
+):
+    parameters = {
+        "preprocessing": modality,
+        "mode": extract_method,
+        "use_uncropped_image": use_uncropped_image,
+    }
+    if modality == "custom":
+        parameters["custom_suffix"] = custom_suffix
+
+    if modality == "pet-linear":
+        parameters["acq_label"] = acq_label
+        parameters["suvr_reference_region"] = suvr_reference_region
+    return parameters
+
+
 def extract_slices(
     nii_path: str,
     slice_direction: int = 0,
