@@ -12,7 +12,6 @@ from .extract_utils import get_parameters_dict
 @click.command(name="image")
 @cli_param.argument.caps_directory
 @cli_param.argument.modality
-@cli_param.option.save_features
 @cli_param.option.subjects_sessions_tsv
 @cli_param.option.use_uncropped_image
 @cli_param.option.acq_label
@@ -37,7 +36,7 @@ def image_cli(
     parameters = get_parameters_dict(
         modality,
         "image",
-        save_features,
+        False,
         use_uncropped_image,
         custom_suffix,
         acq_label,
@@ -63,6 +62,13 @@ def image_cli(
     show_default=True,
     help="Patch size if EXTRACT_METHOD is `patch`.",
 )
+@click.option(
+    "-ss",
+    "--stride_size",
+    default=50,
+    show_default=True,
+    help="Stride size if EXTRACT_METHOD is `patch`.",
+)
 @cli_param.option.acq_label
 @cli_param.option.suvr_reference_region
 @cli_param.option.custom_suffix
@@ -73,6 +79,7 @@ def patch_cli(
     subjects_sessions_tsv: Optional[str] = None,
     use_uncropped_image: bool = False,
     patch_size: int = 50,
+    stride_size: int = 50,
     acq_label: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,
     custom_suffix: str = "",
@@ -93,6 +100,7 @@ def patch_cli(
         suvr_reference_region,
     )
     parameters["patch_size"] = patch_size
+    parameters["stride_size"] = stride_size
 
     DeepLearningPrepareData(
         caps_directory=caps_directory,
@@ -107,13 +115,6 @@ def patch_cli(
 @cli_param.option.save_features
 @cli_param.option.subjects_sessions_tsv
 @cli_param.option.use_uncropped_image
-@click.option(
-    "-ss",
-    "--stride_size",
-    default=50,
-    show_default=True,
-    help="Stride size if EXTRACT_METHOD is `patch`.",
-)
 @click.option(
     "-sd",
     "--slice_direction",
@@ -152,7 +153,6 @@ def slice_cli(
     save_features: bool = False,
     subjects_sessions_tsv: Optional[str] = None,
     use_uncropped_image: bool = False,
-    stride_size: int = 50,
     slice_direction: int = 0,
     slice_mode: str = "rgb",
     discarded_slices: int = 0,
@@ -175,7 +175,6 @@ def slice_cli(
         acq_label,
         suvr_reference_region,
     )
-    parameters["stride_size"] = stride_size
     parameters["slice_direction"] = slice_direction
     parameters["slice_mode"] = slice_mode
     parameters["discarded_slices"] = discarded_slices
