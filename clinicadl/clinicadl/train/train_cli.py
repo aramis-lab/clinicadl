@@ -280,7 +280,6 @@ def cli(
         caps_directory, "tensor_extraction", preprocessing_json
     )
     train_dict = get_train_dict(config_file, preprocessing_json, network_task)
-    print(train_dict)
 
     # Add arguments
     train_dict["network_task"] = network_task
@@ -329,7 +328,6 @@ def cli(
     if nondeterministic:
         train_dict["deterministic"] = not nondeterministic
 
-    print(train_dict)
     # Splits
     if train_dict["n_splits"] and train_dict["n_splits"] > 1:
         train_dict["validation"] = "KFoldSplit"
