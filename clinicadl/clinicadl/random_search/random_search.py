@@ -21,7 +21,7 @@ def launch_search(launch_directory, job_name, options):
     options = random_sampling(space_options, options)
 
     maps_directory = path.join(launch_directory, job_name)
-    folds = options.pop("split")
+    folds = options.pop("folds")
     options["architecture"] = "RandomArchitecture"
 
     train(maps_directory, options, folds)
