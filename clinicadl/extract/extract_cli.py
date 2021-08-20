@@ -60,14 +60,14 @@ def image_cli(
     "--patch_size",
     default=50,
     show_default=True,
-    help="Patch size if EXTRACT_METHOD is `patch`.",
+    help="Patch size.",
 )
 @click.option(
     "-ss",
     "--stride_size",
     default=50,
     show_default=True,
-    help="Stride size if EXTRACT_METHOD is `patch`.",
+    help="Stride size.",
 )
 @cli_param.option.acq_label
 @cli_param.option.suvr_reference_region
@@ -121,7 +121,7 @@ def patch_cli(
     type=click.IntRange(0, 2),
     default=0,
     show_default=True,
-    help="Slice direction if EXTRACT_METHOD is `slice`. 0: Sagittal plane, 1: Coronal plane, 2: Axial plane.",
+    help="Slice direction. 0: Sagittal plane, 1: Coronal plane, 2: Axial plane.",
 )
 @click.option(
     "-sm",
@@ -130,7 +130,7 @@ def patch_cli(
     default="rgb",
     show_default=True,
     help=(
-        "Slice mode if EXTRACT_METHOD is `slice`. rgb: Save the slice in three identical channels, "
+        "rgb: Save the slice in three identical channels, "
         "single: Save the slice in a single channel."
     ),
 )
@@ -140,7 +140,7 @@ def patch_cli(
     type=int,
     default=(0, 0),
     multiple=2,
-    help="""Discarded slices if EXTRACT_METHOD is `slice`. Number of slices discarded from respectively the beginning and
+    help="""Number of slices discarded from respectively the beginning and
         the end of the MRI volume.  If only one argument is given, it will be
         used for both sides.""",
 )
@@ -197,14 +197,14 @@ def slice_cli(
     type=str,
     required=True,
     multiple=True,
-    help="ROI list if EXTRACT_METHOD is `roi`. List of regions to be extracted",
+    help="List of regions to be extracted",
 )
 @click.option(
     "--roi_uncrop_output",
     type=bool,
     default=False,
     is_flag=True,
-    help="Uncrop outputs if EXTRACT_METHOD is `roi`. Disable cropping option so the output tensors "
+    help="Disable cropping option so the output tensors "
     "have the same size than the whole image.",
 )
 @click.option(
@@ -212,7 +212,7 @@ def slice_cli(
     "-cn",
     type=str,
     default="",
-    help="""Custom suffix if EXTRACT_METHOD is `roi`. Custom suffix filename, e.g.:
+    help="""Custom suffix filename, e.g.:
         'graymatter_space-Ixi549Space_modulated-off_probability.nii.gz', or
         'segm-whitematter_probability.nii.gz' """,
 )
@@ -221,7 +221,7 @@ def slice_cli(
     "-ct",
     type=str,
     default="",
-    help="""Template name if EXTRACT_METHOD is `roi` and MODALITY is `custom`.
+    help="""Template name if MODALITY is `custom`.
         Name of the template used for registration during the preprocessing procedure.""",
 )
 @click.option(
@@ -229,7 +229,7 @@ def slice_cli(
     "-cmp",
     type=str,
     default="",
-    help="""Mask pattern if EXTRACT_METHOD is `roi` and MODALITY is `custom`.
+    help="""Mask pattern if MODALITY is `custom`.
             If given will select only the masks containing the string given.
             The mask with the shortest name is taken.""",
 )
