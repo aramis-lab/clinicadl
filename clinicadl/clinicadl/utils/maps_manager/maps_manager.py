@@ -1734,7 +1734,7 @@ class MapsManager:
             model.load_state_dict(checkpoint_state["model"])
             current_epoch = checkpoint_state["epoch"]
         elif transfer_path:
-            self.logger.info(f"Transfer weights from MAPS at {transfer_path}")
+            self.logger.debug(f"Transfer weights from MAPS at {transfer_path}")
             transfer_maps = MapsManager(transfer_path)
             transfer_state = transfer_maps.get_state_dict(
                 fold,
@@ -1743,7 +1743,7 @@ class MapsManager:
                 map_location=model.device,
             )
             transfer_class = getattr(network_package, transfer_maps.architecture)
-            self.logger.info(f"Transfer from {transfer_class}")
+            self.logger.debug(f"Transfer from {transfer_class}")
             model.transfer_weights(transfer_state["model"], transfer_class)
 
         return model, current_epoch
