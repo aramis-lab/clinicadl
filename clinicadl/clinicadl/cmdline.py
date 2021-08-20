@@ -8,6 +8,7 @@ from clinicadl.interpret.interpret_cli import cli as interpret_cli
 from clinicadl.predict.predict_cli import cli as predict_cli
 from clinicadl.quality_check.qc_cli import cli as qc_cli
 from clinicadl.random_search.random_search_cli import cli as random_search_cli
+from clinicadl.train.resume_cli import cli as resume_cli
 from clinicadl.train.train_cli import cli as train_cli
 from clinicadl.tsvtools.cli import cli as tsvtools_cli
 
@@ -63,6 +64,7 @@ def cli(verbosity):
 
 cli.add_command(tsvtools_cli)
 cli.add_command(train_cli)
+cli.add_command(resume_cli)
 cli.add_command(generate_cli)
 cli.add_command(extract_cli)
 cli.add_command(predict_cli)
