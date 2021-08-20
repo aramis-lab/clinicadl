@@ -91,7 +91,20 @@ def find_image_path(caps_dict, participant_id, session_id, cohort, preprocessing
     return image_path
 
 
+# Generate trivial
 def im_loss_roi_gaussian_distribution(im_data, atlas_to_mask, min_value):
+    """
+    Create a smooth atrophy in the input image on the region in the mask.
+    The value of the atrophy is computed with a Gaussian so it will appear smooth and
+    more realistic.
+
+    Args:
+        im_data (array): Input image that will be atrophied (obtained from a nifti file).
+        atlas_to_mask (array): Binary mask of the region to atrophy.
+        min_value (float): Percentage of atrophy between 0 and 100.
+    Returns:
+        im_with_loss_gm_roi (array): Image with atrophy in the specified ROI.
+    """
     gm_masked = np.array(im_data, copy=True)
     gm_masked[atlas_to_mask == 0] = 0
 
@@ -120,6 +133,7 @@ def im_loss_roi_gaussian_distribution(im_data, atlas_to_mask, min_value):
     return im_with_loss_gm_roi
 
 
+# Generate SheppLogan
 def generate_scales(size):
     if size == "large":
         return random.uniform(1, 1.2), random.uniform(1, 1.2)
@@ -132,6 +146,20 @@ def generate_scales(size):
 
 
 def generate_shepplogan_phantom(img_size, label=0, smoothing=True):
+    """
+    Generate 2D Shepp-Logan phantom with random regions size. Phantoms also
+    simulate different kind of AD by generating smaller ROIs.
+
+    Args:
+        img_size (int): Size of the generated image (img_size x img_size).
+        label (int): Take 0 or 1 or 2. Label of the generated image.
+            If 0, the ROIs simulate a CN subject.
+            If 1, the ROIs simulate type 1 of AD.
+            if 2, the ROIs simulate type 2 of AD.
+        smoothing (bool): Default True. Apply Gaussian smoothing to the image.
+    Returns:
+        img (array): 2D Sheep Logan phantom with specified label.
+    """
     img = np.zeros((img_size, img_size))
     center = (img_size + 1.0) / 2.0
     a = center - 2
