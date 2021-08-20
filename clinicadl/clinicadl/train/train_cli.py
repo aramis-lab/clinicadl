@@ -100,6 +100,13 @@ from clinicadl.utils import cli_param
     help="""If provided the outputs of extract preprocessing are used, else the whole
             MRI is loaded.""",
 )
+@click.option(
+    "--selection_threshold",
+    type=float,
+    # default=0,
+    help="""Selection threshold for soft-voting when network_task is 'classification'. 
+    Will only be used if num_networks > 1.""",
+)
 # Data
 @click.option(
     "--multi_cohort",
