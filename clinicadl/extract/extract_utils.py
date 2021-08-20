@@ -5,7 +5,7 @@ from typing import Union
 def get_parameters_dict(
     modality,
     extract_method,
-    use_extracted_features,
+    save_features,
     use_uncropped_image,
     custom_suffix,
     acq_label,
@@ -14,11 +14,11 @@ def get_parameters_dict(
     parameters = {
         "preprocessing": modality,
         "mode": extract_method,
-        "use_uncropped_image": use_uncropped_image,
+        "use_uncropped_image": save_features,
     }
     # use extracted features
 
-    parameters["prepare_dl"] = use_extracted_features
+    parameters["prepare_dl"] = save_features
 
     if modality == "custom":
         parameters["custom_suffix"] = custom_suffix
