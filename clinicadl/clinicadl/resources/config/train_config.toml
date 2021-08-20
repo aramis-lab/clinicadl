@@ -27,7 +27,7 @@ latent_space_size = 64
 latent_space_dimension = 2
 
 [Computational]
-use_gpu = true
+gpu = true
 n_proc = 2
 batch_size = 2
 evaluation_steps = 0

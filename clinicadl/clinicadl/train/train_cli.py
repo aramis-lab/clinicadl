@@ -340,7 +340,7 @@ def cli(
     else:
         train_dict["prepare_dl"] = False
 
-    train(output_maps_directory, train_dict, train_dict["folds"])
+    train(output_maps_directory, train_dict, train_dict.pop("folds"))
 
 
 if __name__ == "__main__":

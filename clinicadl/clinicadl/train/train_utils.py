@@ -30,8 +30,23 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
                     )
                 config_dict[section_name][key] = user_dict[section_name][key]
 
-    # Fill train_dict
     train_dict = dict()
+
+    # task dependent
+    task_list = ["classification", "regression", "reconstruction"]
+
+    if task not in task_list:
+        raise ValueError(
+            f"Invalid value for network_task {task}. "
+            f"Please task choose in {task_list}."
+        )
+    task_list.remove(task)
+
+    # Delete all sections related to other tasks
+    for other_task in task_list:
+        del config_dict[other_task.upper()]
+
+    # Standard arguments
     for config_section in config_dict:
         for key in config_dict[config_section]:
             train_dict[key] = config_dict[config_section]
@@ -46,24 +61,7 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
         train_dict[code_name] = train_dict.pop(command_name)
 
     # GPU exception
-    train_dict["use_cpu"] = not train_dict.pop("use_gpu")
-
-    # task dependent
-    if task == "classification":
-        train_dict["selection_metrics"] = config_dict["Classification"][
-            "selection_metrics"
-        ]
-        train_dict["label"] = config_dict["Classification"]["label"]
-    elif task == "regression":
-        train_dict["selection_metrics"] = config_dict["Regression"]["selection_metrics"]
-        train_dict["label"] = config_dict["Regression"]["label"]
-    elif task == "reconstruction":
-        train_dict["selection_metrics"] = config_dict["Reconstruction"][
-            "selection_metrics"
-        ]
-        del train_dict["label"]
-    else:
-        raise ValueError("Invalid network_task")
+    train_dict["use_cpu"] = not train_dict.pop("gpu")
 
     # Hard-coded optimizer
     train_dict["optimizer"] = "Adam"
