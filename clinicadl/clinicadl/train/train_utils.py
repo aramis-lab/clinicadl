@@ -31,66 +31,43 @@ def get_train_dict(configuration_toml, preprocessing_json, task):
                 config_dict[section_name][key] = user_dict[section_name][key]
 
     # Fill train_dict
-    # for config_section in config_dict:
-    #     for key in config_section:
-    #         train_dict[key] = config_dict[config_section]
+    train_dict = dict()
+    for config_section in config_dict:
+        for key in config_dict[config_section]:
+            train_dict[key] = config_dict[config_section]
 
-    # From config file
-    train_dict = {
-        "accumulation_steps": config_dict["Optimization"]["accumulation_steps"],
-        "architecture": config_dict["Model"]["architecture"],
-        "baseline": config_dict["Data"]["baseline"],
-        "batch_size": config_dict["Computational"]["batch_size"],
-        "compensation": config_dict["Reproducibility"]["compensation"],
-        "data_augmentation": config_dict["Data"]["data_augmentation"],
-        "deterministic": config_dict["Reproducibility"]["deterministic"],
-        "diagnoses": config_dict["Data"]["diagnoses"],
-        "dropout": config_dict["Architecture"]["dropout"],
-        "epochs": config_dict["Optimization"]["epochs"],
-        "evaluation_steps": config_dict["Computational"]["evaluation_steps"],
-        "learning_rate": config_dict["Optimization"]["learning_rate"],
-        "minmaxnormalization": config_dict["Data"]["normalize"],
-        "multi_network": config_dict["Model"]["multi_network"],
-        "multi_cohort": config_dict["Data"]["multi_cohort"],
-        "n_splits": config_dict["Cross_validation"]["n_splits"],
-        "num_workers": config_dict["Computational"]["n_proc"],
-        "patience": config_dict["Optimization"]["patience"],
-        "folds": config_dict["Cross_validation"]["split"],
-        "seed": config_dict["Reproducibility"]["seed"],
-        "tolerance": config_dict["Optimization"]["tolerance"],
-        "transfer_path": config_dict["Transfer_learning"]["transfer_path"],
-        "transfer_learning_selection": config_dict["Transfer_learning"][
-            "transfer_selection_metric"
-        ],
-        "use_cpu": not config_dict["Computational"]["use_gpu"],
-        "weight_decay": config_dict["Optimization"]["weight_decay"],
-        "sampler": config_dict["Data"]["sampler"],
+    renamed_dict = {
+        "normalize": "minmaxnormalization",
+        "n_proc": "num_workers",
+        "split": "folds",
+        "transfer_selection_metric": "transfer_learning_selection",
     }
+
+    for command_name, code_name in renamed_dict:
+        train_dict[code_name] = train_dict.pop(command_name)
+
+    # GPU exception
+    train_dict["use_cpu"] = not train_dict.pop("use_gpu")
 
     # task dependent
     if task == "classification":
-        train_dict["loss"] = config_dict["Classification"]["optimization_metric"]
         train_dict["selection_metrics"] = config_dict["Classification"][
             "selection_metrics"
         ]
         train_dict["label"] = config_dict["Classification"]["label"]
     elif task == "regression":
-        train_dict["loss"] = config_dict["Regression"]["optimization_metric"]
         train_dict["selection_metrics"] = config_dict["Regression"]["selection_metrics"]
         train_dict["label"] = config_dict["Regression"]["label"]
     elif task == "reconstruction":
-        train_dict["loss"] = config_dict["Reconstruction"]["optimization_metric"]
         train_dict["selection_metrics"] = config_dict["Reconstruction"][
             "selection_metrics"
         ]
+        del train_dict["label"]
     else:
         raise ValueError("Invalid network_task")
 
-    # optimizer
+    # Hard-coded optimizer
     train_dict["optimizer"] = "Adam"
-
-    # use extracted features
-    train_dict["use_extracted_features"] = config_dict["Mode"]["use_extracted_features"]
 
     # Mode and preprocessing
     from clinicadl.utils.preprocessing import read_preprocessing
