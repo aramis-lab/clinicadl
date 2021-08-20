@@ -1,0 +1,64 @@
+# CONFIG FILE FOR TRAIN PIPELINE WITH DEFAULT ARGUMENTS
+
+
+[Model]
+architecture = "default" # ex : Conv5_FC3
+multi_network = false
+
+[Architecture]
+# CNN
+dropout = 0.0 # between 0 and 1
+# architecture.n_layers = 4
+# VAE
+latent_space_dimension = 64
+latent_space_size = 2
+
+[Classification]
+selection_metrics = ["loss"]
+label = "diagnosis"
+
+[Regression]
+selection_metrics = ["loss"]
+label = "age"
+
+[Reconstruction]
+selection_metrics = ["loss"]
+
+[Computational]
+gpu = true
+n_proc = 2
+batch_size = 2
+evaluation_steps = 0
+
+[Reproducibility]
+seed = 0
+deterministic = false
+compensation = "memory" # Only used if deterministic = true
+
+[Transfer_learning]
+transfer_path = ""
+transfer_selection_metric = "loss"
+
+[Mode]
+# require to manually generate preprocessing json
+use_extracted_features = false
+
+[Data]
+multi_cohort = false
+diagnoses = ["AD", "CN"]
+baseline = false
+normalize = true
+data_augmentation = false
+sampler = "random"
+
+[Cross_validation]
+n_splits = 0
+split = []
+
+[Optimization]
+epochs = 20
+learning_rate = 1e-4
+weight_decay = 1e-4
+patience = 0
+tolerance = 0.0
+accumulation_steps = 1
