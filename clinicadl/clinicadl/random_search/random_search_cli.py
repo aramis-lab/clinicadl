@@ -24,7 +24,7 @@ def cli(
     launch_directory,
     name,
     gpu,
-    nproc,
+    n_proc,
     batch_size,
     evaluation_steps,
 ):
@@ -39,7 +39,7 @@ def cli(
     options = {
         "batch_size": batch_size,
         "evaluation_steps": evaluation_steps,
-        "nproc": nproc,
+        "n_proc": n_proc,
         "use_cpu": not gpu,
     }
 

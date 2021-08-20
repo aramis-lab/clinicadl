@@ -81,7 +81,7 @@ def cli(
     target_node,
     save_individual,
     batch_size,
-    nproc,
+    n_proc,
     use_gpu,
 ):
     """Interpretation of trained models using saliency map method.
@@ -105,7 +105,7 @@ def cli(
         target_node=target_node,
         save_individual=save_individual,
         batch_size=batch_size,
-        nproc=nproc,
+        nproc=n_proc,
         use_cpu=not use_gpu,
         # verbose=verbose,
     )
