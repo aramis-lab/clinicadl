@@ -46,7 +46,7 @@ def cli_commands(request):
             "train",
             "reconstruction",
             "data/dataset/random_example",
-            "extract_1629205602.json",
+            "extract_1629458899.json",
             "data/labels_list",
             "results",
             "-c",

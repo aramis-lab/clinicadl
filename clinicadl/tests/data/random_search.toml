@@ -1,7 +1,7 @@
 [Random_Search]
 caps_directory = "data/dataset/random_example"
 tsv_path = "data/labels_list"
-preprocessing_json = "extract_1629205602.json"
+preprocessing_json = "extract_1629458899.json"
 network_task = "classification"
 n_convblocks = [3, 5]
 first_conv_width = [1, 3]
