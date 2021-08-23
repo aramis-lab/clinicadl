@@ -283,6 +283,11 @@ def cli(
     in a TOML file as explained in the documentation:
     https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
     """
+    from clinicadl.utils.cmdline_utils import check_gpu
+
+    if gpu:
+        check_gpu()
+
     from .launch import train
     from .train_utils import get_train_dict
 

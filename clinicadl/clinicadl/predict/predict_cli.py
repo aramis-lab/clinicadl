@@ -81,6 +81,11 @@ def cli(
 
     DATA_GROUP is the name of the subjects and sessions list used for the interpretation.
     """
+    from clinicadl.utils.cmdline_utils import check_gpu
+
+    if gpu:
+        check_gpu()
+
     from .predict import predict
 
     predict(
