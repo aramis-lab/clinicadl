@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## ClinicaDL 1.0
 
-Welcome in **ClinicaDL 1.0** ! 
+Welcome in **ClinicaDL 1.0.0** ! 
 
 This is a new version of ClinicaDL with some major changes in the source code. All the main pipelines 
 have been refactored. ClinicaDL now used is now working with classes instead of function for easier maintenance 
