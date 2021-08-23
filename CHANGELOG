@@ -14,7 +14,7 @@ have been refactored. ClinicaDL now used is now working with classes instead of 
 and better scalability. We introduce in this version our new data structure called MAPS to unify ClinicaDL outputs.
 
 This release also include a major command line refactoring with the introduction of [Click](https://click.palletsprojects.com/en/8.0.x/) library.
-Major changes in several pipelines command line has been implemented. For instance the preprocessing pipeline has been 
+Major changes in several pipelines interfaces have been implemented. For instance the preprocessing pipeline has been 
 split. Train pipeline has also been refactored to reduce the number of options. The goal is to make ClinicaDL more easy to use, to maintain, 
 and adapt the command line to the MAPS.
 
