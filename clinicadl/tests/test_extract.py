@@ -1,141 +1,93 @@
 # coding: utf8
 
-import os
+import warnings
+from os import pardir
 
-import pytest
+from clinica.test.nonregression.testing_tools import clean_folder, compare_folders
 
-
-@pytest.fixture(
-    params=[
-        "extract_t1_image",
-        "extract_t1_patch",
-        "extract_t1_slice",
-        "extract_t1_roi",
-    ]
-)
-def cli_extract_t1(request):
-    preprocessing = "t1-linear"
-    caps_directory = ""
-    if request.param == "extract_t1_image":
-        test_input = [
-            "extract",
-            "image",
-            caps_directory,
-            preprocessing,
-        ]
-    elif request.param == "extract_t1_patch":
-        test_input = [
-            "extract",
-            "patch",
-            caps_directory,
-            preprocessing,
-            "--patch_size",
-            "50",
-            "--stride_size",
-            "50",
-        ]
-    elif request.param == "extract_t1_slice":
-        test_input = [
-            "extract",
-            "slice",
-            caps_directory,
-            preprocessing,
-            "slice_mode",
-            "rgb",
-            "slice_direction",
-            "0",
-        ]
-    elif request.param == "extract_t1_roi":
-        test_input = [
-            "extract",
-            "roi",
-            caps_directory,
-            preprocessing,
-            "--roi_list",
-            "['rightHippocampusBox', 'leftHippocampusBox']",
-            "--roi_uncropped_image",
-            "True",
-        ]
+warnings.filterwarnings("ignore")
 
 
-def test_extract_t1(cli_extract_t1):
-    test_input = cli_extract_t1
+def test_extract():
+    import shutil
+    from os.path import abspath, dirname, join
 
-    flag_error = not os.system("clinicadl " + " ".join(test_input))
-    assert flag_error
+    root = dirname(abspath(join(abspath(__file__), pardir, pardir)))
+    root = join(root, "data", "DeepLearningPrepareData")
 
+    # Remove potential residual of previous UT
+    clean_folder(join(root, "out", "caps"), recreate=False)
 
-@pytest.fixture(
-    params=[
-        "extract_pet_image",
-        "extract_pet_patch",
-        "extract_pet_slice",
-        "extract_pet_roi",
-    ]
-)
-def cli_extract_pet(request):
-    preprocessing = "pet-linear"
-    caps_directory = ""
-    if request.param == "extract_t1_image":
-        test_input = [
-            "extract",
-            "image",
-            caps_directory,
-            preprocessing,
-            "--acq_label",
-            "av45",
-            "--suvr_reference_region",
-            "pons2",
-        ]
-    elif request.param == "extract_t1_patch":
-        test_input = [
-            "extract",
-            "patch",
-            caps_directory,
-            preprocessing,
-            "--patch_size",
-            "50",
-            "--stride_size",
-            "50",
-            "--acq_label",
-            "av45",
-            "--suvr_reference_region",
-            "pons2",
-        ]
-    elif request.param == "extract_t1_slice":
-        test_input = [
-            "extract",
-            "slice",
-            caps_directory,
-            preprocessing,
-            "slice_mode",
-            "rgb",
-            "slice_direction",
-            "0",
-            "--acq_label",
-            "av45",
-            "--suvr_reference_region",
-            "pons2",
-        ]
-    elif request.param == "extract_t1_roi":
-        test_input = [
-            "extract",
-            "roi",
-            caps_directory,
-            preprocessing,
-            "--roi_list",
-            "['rightHippocampusBox', 'leftHippocampusBox']",
-            "--roi_uncropped_image",
-            "True",
-            "--acq_label",
-            "av45",
-            "--suvr_reference_region",
-            "pons2",
-        ]
+    # Copy necessary data from in to out
+    shutil.copytree(join(root, "in", "caps"), join(root, "out", "caps"))
+
+    # Prepare test for different parameters
+
+    modalities = ["t1-linear", "pet-linear", "custom"]
+
+    uncropped_image = [True, False]
+
+    image_params = {"extract_method": "image"}
+    slice_params = {"extract_method": "patch", "patch_size": 50, "stride_size": 50}
+    patch_params = {
+        "extract_method": "slice",
+        "slice_mode": "rgb",
+        "slice_direction": 0,
+    }
+    roi_params = {
+        "extract_method": "roi",
+        "roi_list": ["rightHippocampusBox", "leftHippocampusBox"],
+        "use_uncropped_image": True,
+    }
+
+    data = [image_params, slice_params, patch_params, roi_params]
+
+    for parameters in data:
+
+        for modality in modalities:
+
+            parameters["modality"] = modality
+
+            if modality == "pet-linear":
+                parameters["acq_label"] = "av45"
+                parameters["suvr_reference_region"] = "pons2"
+                parameters["use_uncropped_image"] = False
+                extract_generic(root, parameters)
+
+            elif modality == "custom":
+                parameters["use_uncropped_image"] = True
+                parameters["custom_template"] = "Ixi549Space"
+                parameters[
+                    "custom_suffix"
+                ] = "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
+                extract_generic(root, parameters)
+
+            elif modality == "t1-linear":
+                for flag in uncropped_image:
+                    parameters["use_uncropped_image"] = flag
+                    extract_generic(root, parameters)
+            else:
+                raise NotImplementedError(
+                    f"Test for modality {modality} was not implemented."
+                )
+
+    # Check output vs ref
+    out_folder = join(root, "out")
+    ref_folder = join(root, "ref")
+
+    compare_folders(out_folder, ref_folder, shared_folder_name="caps")
+
+    clean_folder(join(root, "out", "caps"), recreate=False)
 
 
-def test_extract_pet(cli_extract_pet):
-    test_input = cli_extract_pet
+def extract_generic(root, parameters):
 
-    flag_error = not os.system("clinicadl " + " ".join(test_input))
-    assert flag_error
+    from os.path import join
+
+    from clinicadl.extract import DeepLearningPrepareData
+
+    DeepLearningPrepareData(
+        caps_directory=join(root, "out", "caps"),
+        tsv_file=join(root, "in", "subjects.tsv"),
+        parameters=parameters,
+    )
