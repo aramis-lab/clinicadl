@@ -82,7 +82,7 @@ def cli(
     save_individual,
     batch_size,
     nproc,
-    use_gpu,
+    gpu,
 ):
     """Interpretation of trained models using saliency map method.
 
@@ -92,6 +92,11 @@ def cli(
 
     NAME is the name of the saliency map task.
     """
+    from clinicadl.utils.cmdline_utils import check_gpu
+
+    if gpu:
+        check_gpu()
+
     from .interpret import interpret
 
     interpret(
@@ -106,6 +111,6 @@ def cli(
         save_individual=save_individual,
         batch_size=batch_size,
         nproc=nproc,
-        use_cpu=not use_gpu,
+        use_cpu=not gpu,
         # verbose=verbose,
     )
