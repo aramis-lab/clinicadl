@@ -17,7 +17,7 @@ This bias field induces variations in the intensity of the same tissue in differ
  of image analysis algorithms such as registration.
 - **Skull stripping:** Extracranial tissues can be an obstacle for image analysis algorithms.
 A large number of methods have been developed for brain extraction, also called skull stripping,
-and many are implemented in software tools.
+and many are already implemented in other software tools.
 - **Image registration:** Medical image registration consists in spatially aligning two or more images,
 either globally (rigid and affine registration) or locally (non-rigid registration),
 so that voxels in corresponding positions contain comparable information.
