@@ -140,7 +140,10 @@ def test_getlabels():
         f"--diagnoses AD --diagnoses CN --diagnoses MCI --diagnoses pMCI --diagnoses sMCI"
     )
     assert flag_getlabels
-    for file in os.listdir(output_path):
+    tsv_list = [
+        tsv_file for tsv_file in os.listdir(output_path) if tsv_file.endswith(".tsv")
+    ]
+    for file in tsv_list:
         out_df = pd.read_csv(path.join(output_path, file), sep="\t")
         ref_df = pd.read_csv(path.join(reference_path, file), sep="\t")
         out_df_sorted = out_df.reindex(sorted(out_df.columns), axis=1)
