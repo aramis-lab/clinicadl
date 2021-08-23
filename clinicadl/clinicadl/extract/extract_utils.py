@@ -1,8 +1,12 @@
 # coding: utf8
+from typing import Union
 
 
 def extract_slices(
-    input_img, slice_direction=0, slice_mode="single", discarded_slices=0
+    nii_path: str,
+    slice_direction: int = 0,
+    slice_mode: str = "single",
+    discarded_slices: Union[int, tuple] = 0,
 ):
     """Extracts the slices from three directions
     This function extracts slices form the preprocessed nifti image.  The
@@ -11,7 +15,7 @@ def extract_slices(
     stores following two modes: single (1 channel) ou RGB (3 channels, all the
     same).
     Args:
-        input_img: nifti format MRI image.
+        nii_path: nifti format MRI image.
         slice_direction: which axis direction that the slices were extracted
         slice_mode: 'single' or 'RGB'.
         discarded_slices: Number of slices to discard at the beginning and the end of the image.
@@ -26,24 +30,35 @@ def extract_slices(
     import nibabel as nib
     import torch
 
-    image_array = nib.load(input_img).get_fdata(dtype="float32")
+    direction_dict = {0: "sag", 1: "cor", 2: "axi"}
+
+    image_array = nib.load(nii_path).get_fdata(dtype="float32")
     image_tensor = torch.from_numpy(image_array).float()
 
     # Remove discarded slices
     if isinstance(discarded_slices, int):
         begin_discard, end_discard = discarded_slices, discarded_slices
+    elif len(discarded_slices) == 1:
+        begin_discard, end_discard = discarded_slices[0], discarded_slices[0]
+    elif len(discarded_slices) == 2:
+        begin_discard, end_discard = discarded_slices[0], discarded_slices[1]
     else:
-        begin_discard, end_discard = discarded_slices
+        raise ValueError(
+            f"Maximum two number of discarded slices can be defined. "
+            f"You gave discarded slices = {discarded_slices}."
+        )
     slice_list = range(begin_discard, image_tensor.shape[slice_direction] - end_discard)
 
-    input_img_filename = os.path.basename(input_img)
+    input_img_filename = os.path.basename(nii_path)
 
     txt_idx = input_img_filename.rfind("_")
     it_filename_prefix = input_img_filename[0:txt_idx]
     it_filename_suffix = input_img_filename[txt_idx:]
+    it_filename_suffix = it_filename_suffix.replace(".nii.gz", ".pt")
 
     output_slices = []
-    for i, slice_index in enumerate(slice_list):
+    for slice_index in slice_list:
+        # Allow to select the slice `slice_index` in dimension `slice_direction`
         idx_tuple = tuple(
             [slice(None)] * slice_direction
             + [slice_index]
@@ -52,24 +67,18 @@ def extract_slices(
         slice_selected = image_tensor[idx_tuple]
         slice_selected.unsqueeze_(0)  # shape is 1 * W * L
 
-        # save into .pt format
-        if slice_mode == "single":
-            output_slices.append(
-                (
-                    f"{it_filename_prefix}_axis-sag_channel-single_slice-{i}{it_filename_suffix}",
-                    slice_selected.clone(),
-                )
-            )
-        elif slice_mode == "rgb":
-            slice_selected = torch.stack(
+        if slice_mode == "rgb":
+            slice_selected = torch.cat(
                 (slice_selected, slice_selected, slice_selected)
             )  # shape is 3 * W * L
-            output_slices.append(
-                (
-                    f"{it_filename_prefix}_axis-sag_channel-rgb_slice-{i}{it_filename_suffix}",
-                    slice_selected.clone(),
-                )
+
+        output_slices.append(
+            (
+                f"{it_filename_prefix}_axis-{direction_dict[slice_direction]}"
+                f"_channel-{slice_mode}_slice-{slice_index}{it_filename_suffix}",
+                slice_selected.clone(),
             )
+        )
 
     return output_slices
 
@@ -111,6 +120,7 @@ def extract_patches(input_img, patch_size, stride_size):
     txt_idx = input_img_filename.rfind("_")
     it_filename_prefix = input_img_filename[0:txt_idx]
     it_filename_suffix = input_img_filename[txt_idx:]
+    it_filename_suffix = it_filename_suffix.replace(".nii.gz", ".pt")
 
     output_patch = []
     for index_patch in range(patches_tensor.shape[0]):

@@ -96,6 +96,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
                 file,
                 slice_direction=parameters["slice_direction"],
                 slice_mode=parameters["slice_mode"],
+                discarded_slices=parameters["discarded_slices"],
             )
             logger.debug(f"    {len(output_mode)} slices extracted.")
         elif parameters["mode"] == "patch":
