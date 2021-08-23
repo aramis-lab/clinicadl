@@ -120,12 +120,12 @@ Optional variables:
      Sampling function: `fixed`. Default: `0.0`.
 "accumulation_steps": 1
 - **Transfer learning**
-    - `--transfer_learning_path` (str) is the path to a result folder (output of `clinicadl train`). 
+    - `--transfer_path` (str) is the path to a result folder (output of `clinicadl train`). 
     The best model of this folder will be used to initialize the network as 
     explained in the [implementation details](Train/Details.md#transfer-learning). 
     If nothing is given then the initialization will be random.
-    - `--transfer_learning_selection` (str) corresponds to the metric according to which the 
-    [best model](Train/Details.md#model-selection) of `transfer_learning_path` will be loaded. 
+    - `--transfer_selection_metric` (str) corresponds to the metric according to which the 
+    [best model](Train/Details.md#model-selection) of `transfer_path` will be loaded. 
     This argument will only be taken into account if the source network is a CNN. 
     Choices are `best_loss` and `best_balanced_accuracy`. Default: `best_balanced_accuracy`.
 

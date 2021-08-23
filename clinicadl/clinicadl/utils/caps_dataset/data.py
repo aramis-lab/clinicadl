@@ -660,7 +660,7 @@ class CapsDatasetRoi(CapsDataset):
             if len(roi_mask.shape) == 3:
                 roi_mask = np.expand_dims(roi_mask, axis=0)
             elif len(roi_mask.shape) == 4:
-                assert roi_mask[0] == 1
+                assert roi_mask.shape[0] == 1
             else:
                 raise ValueError(
                     "ROI masks must be 3D or 4D tensors. "

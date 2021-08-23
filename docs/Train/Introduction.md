@@ -93,8 +93,8 @@ Options shared for all values of `network_task` are organized in groups:
     - `--accumulation_steps` (int) gives the number of iterations during which gradients are accumulated before performing the [weights update](Details.md#optimization). 
     This allows to virtually increase the size of the batch. Default: `1`.
 - **Transfer learning parameters**
-    - `--transfer_learning_path` (path) is the path to the model used for transfer learning.
-    - `--transfer_learning_selection` (str) is the transfer learning selection metric.
+    - `--transfer_path` (path) is the path to the model used for transfer learning.
+    - `--transfer_selection_metric` (str) is the transfer learning selection metric.
     See [Implementation details](Details.md/#transfer-learning) for more information about transfer learning.
 
 <!---
@@ -141,7 +141,7 @@ Here is an example of a TOML configuration file with all the default values:
 # CONFIG FILE FOR TRAIN PIPELINE WITH DEFAULT ARGUMENTS
 
 [Model]
-architecture = "default" # ex : Conv5_FC3
+architecture = "default" # ex : Conv5_FC3 for classification and regression tasks
 multi_network = false
 
 [Architecture]
@@ -153,33 +153,30 @@ latent_space_size = 2
 
 [Classification]
 selection_metrics = ["loss"]
-optimization_metric = "default"
 label = "diagnosis"
+selection_threshold = 0.0 # Will only be used if num_networks != 1
 
 [Regression]
 selection_metrics = ["loss"]
-optimization_metric = "default"
 label = "age"
 
 [Reconstruction]
 selection_metrics = ["loss"]
-optimization_metric = "default"
-latent_space_size = 64
-latent_space_dimension = 2
 
 [Computational]
-use_gpu = true
+gpu = true
 n_proc = 2
 batch_size = 2
 evaluation_steps = 0
 
+[Reproducibility]
+seed = 0
+deterministic = false
+compensation = "memory" # Only used if deterministic = true
+
 [Transfer_learning]
 transfer_path = ""
-transfer_selection_metric = "best_loss"
-
-[Mode]
-# require to manually generate preprocessing json
-use_extracted_features = false
+transfer_selection_metric = "loss"
 
 [Data]
 multi_cohort = false

@@ -281,7 +281,7 @@ def mci_stability(bids_df, horizon_time=36, logger=None):
     bids_copy_df = copy(bids_df)
     for subject, subject_df in bids_df.groupby(level=0):
         session_list = [int(session[5::]) for _, session in subject_df.index.values]
-        # print(subject_df.diagnosis)
+
         for _, session in subject_df.index.values:
             diagnosis = subject_df.loc[(subject, session), "diagnosis"]
 

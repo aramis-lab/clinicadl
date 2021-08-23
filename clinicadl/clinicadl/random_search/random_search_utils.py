@@ -1,8 +1,65 @@
 import random
+from os import path
+from typing import Any, Dict
 
-"""
-All the architectures are built here
-"""
+from clinicadl.train.train_utils import get_train_dict
+
+
+def get_space_dict(toml_options: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    """Transforms the TOML dictionary in one dimension dictionary."""
+    if "Random_Search" not in toml_options:
+        raise ValueError(
+            "Category 'Random_Search' must be defined in the random_search.toml file. "
+            "All random search arguments AND options must be defined in this category."
+        )
+
+    space_dict = dict()
+    for key in toml_options["Random_Search"]:
+        space_dict[key] = toml_options["Random_Search"][key]
+
+    # Check presence of mandatory arguments
+    mandatory_arguments = [
+        "network_task",
+        "tsv_path",
+        "caps_directory",
+        "preprocessing_json",
+        "n_convblocks",
+        "first_conv_width",
+        "n_fcblocks",
+    ]
+
+    for argument in mandatory_arguments:
+        if argument not in space_dict:
+            raise ValueError(
+                f"The argument {argument} must be specified in the random_search.toml file (Random_Search category)."
+            )
+
+    # Default of specific options of random search
+    random_search_specific_options = {
+        "d_reduction": "MaxPooling",
+        "network_normalization": "BatchNorm",
+        "channels_limit": 512,
+        "n_conv": 1,
+        "wd_bool": True,
+    }
+
+    for option, value in random_search_specific_options.items():
+        if option not in space_dict:
+            space_dict[option] = value
+
+    del toml_options["Random_Search"]
+
+    preprocessing_json = path.join(
+        space_dict["caps_directory"],
+        "tensor_extraction",
+        space_dict.pop("preprocessing_json"),
+    )
+    train_default = get_train_dict(
+        toml_options, preprocessing_json, space_dict["network_task"]
+    )
+    space_dict.update(train_default)
+
+    return space_dict
 
 
 def sampling_fn(value, sampling_type):
@@ -36,46 +93,43 @@ def random_sampling(rs_options, options):
     Returns:
         options (Namespace), options updated to train the model generated randomly
     """
+    print(rs_options)
 
     sampling_dict = {
         "accumulation_steps": "randint",
-        "atlas_weight": "uniform",
         "baseline": "choice",
         "batch_size": "fixed",
         "caps_directory": "fixed",
         "channels_limit": "fixed",
         "compensation": "fixed",
         "data_augmentation": "fixed",
+        "deterministic": "fixed",
         "diagnoses": "fixed",
         "dropout": "uniform",
         "epochs": "fixed",
         "evaluation_steps": "fixed",
+        "folds": "fixed",
         "label": "fixed",
         "learning_rate": "exponent",
-        "loss": "choice",
-        "merged_tsv_path": "fixed",
+        "minmaxnormalization": "choice",
         "mode": "choice",
-        "multi": "choice",
         "multi_cohort": "fixed",
+        "multi_network": "choice",
         "n_fcblocks": "randint",
         "n_splits": "fixed",
-        "nproc": "fixed",
+        "num_workers": "fixed",
         "network_task": "fixed",
         "network_normalization": "choice",
         "optimizer": "choice",
         "patience": "fixed",
         "preprocessing": "choice",
-        "predict_atlas_intensities": "fixed",
         "seed": "fixed",
         "selection_metrics": "fixed",
         "sampler": "choice",
-        "split": "fixed",
         "tolerance": "fixed",
-        "torch_deterministic": "fixed",
-        "transfer_learning_path": "choice",
-        "transfer_learning_selection": "choice",
+        "transfer_path": "choice",
+        "transfer_selection_metric": "choice",
         "tsv_path": "fixed",
-        "unnormalize": "choice",
         "use_cpu": "fixed",
         "wd_bool": "choice",
         "weight_decay": "exponent",
@@ -87,19 +141,19 @@ def random_sampling(rs_options, options):
             "patch_size": "randint",
             "selection_threshold": "uniform",
             "stride_size": "randint",
-            "use_extracted_patches": "fixed",
+            "use_extracted_features": "fixed",
         },
         "roi": {
             "selection_threshold": "uniform",
             "roi_list": "fixed",
-            "use_extracted_roi": "fixed",
+            "use_extracted_features": "fixed",
             "uncropped_roi": "fixed",
         },
         "slice": {
             "discarded_slices": "randint",
             "selection_threshold": "uniform",
             "slice_direction": "choice",
-            "use_extracted_slices": "fixed",
+            "use_extracted_features": "fixed",
         },
     }
 
@@ -125,6 +179,17 @@ def random_sampling(rs_options, options):
         options["accumulation_steps"], goal=options["evaluation_steps"]
     )
     options["convolutions_dict"] = random_conv_sampling(rs_options)
+
+    # Hard-coded options
+    if options["n_splits"] and options["n_splits"] > 1:
+        options["validation"] = "KFoldSplit"
+    else:
+        options["validation"] = "SingleSplit"
+    if "use_extracted_features" in options:
+        options["prepare_dl"] = options["use_extracted_features"]
+    else:
+        options["prepare_dl"] = False
+    options["optimizer"] = "Adam"
 
     return options
 

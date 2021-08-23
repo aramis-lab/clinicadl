@@ -297,41 +297,41 @@ pipeline {
                   }
                 }
               }
-              // stage('Random search tests Linux') {
-              //   agent { label 'linux && gpu' }
-              //   environment {
-              //     PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
-              //   }
-              //   steps {
-              //     echo 'Testing random search...'
-              //     sh 'echo "Agent name: ${NODE_NAME}"'
-              //     //sh 'conda env remove --name "clinicadl_test"'
-              //     sh '''#!/usr/bin/env bash
-              //        set +x
-              //        eval "$(conda shell.bash hook)"
-              //        source ./.jenkins/scripts/find_env.sh
-              //        conda activate clinicadl_test
-              //        clinicadl --help
-              //        cd $WORKSPACE/clinicadl/tests
-              //        mkdir -p ./data/dataset
-              //        tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
-              //        cp -r /mnt/data/data_CI/labels_list ./data/
-              //        pytest \
-              //           --junitxml=../../test-reports/test_random_search_report.xml \
-              //           --verbose \
-              //           --disable-warnings \
-              //           test_random_search.py
-              //        conda deactivate
-              //        '''
-              //   }
-              //   post {
-              //     always {
-              //       junit 'test-reports/test_random_search_report.xml'
-              //       sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
-              //       sh 'rm -rf $WORKSPACE/clinicadl/tests/data/labels_list'
-              //     }
-              //   }
-              // }
+              stage('Random search tests Linux') {
+                agent { label 'linux && gpu' }
+                environment {
+                  PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
+                }
+                steps {
+                  echo 'Testing random search...'
+                  sh 'echo "Agent name: ${NODE_NAME}"'
+                  //sh 'conda env remove --name "clinicadl_test"'
+                  sh '''#!/usr/bin/env bash
+                     set +x
+                     eval "$(conda shell.bash hook)"
+                     source ./.jenkins/scripts/find_env.sh
+                     conda activate clinicadl_test
+                     clinicadl --help
+                     cd $WORKSPACE/clinicadl/tests
+                     mkdir -p ./data/dataset
+                     tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
+                     cp -r /mnt/data/data_CI/labels_list ./data/
+                     pytest \
+                        --junitxml=../../test-reports/test_random_search_report.xml \
+                        --verbose \
+                        --disable-warnings \
+                        test_random_search.py
+                     conda deactivate
+                     '''
+                }
+                post {
+                  always {
+                    junit 'test-reports/test_random_search_report.xml'
+                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
+                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/labels_list'
+                  }
+                }
+              }
             }
           }
         }

@@ -1,6 +1,7 @@
 import os
 
 import click
+import toml
 
 from clinicadl.utils import cli_param
 
@@ -37,7 +38,7 @@ from clinicadl.utils import cli_param
 )
 @click.option(
     "-np",
-    "--nproc",
+    "--n_proc",
     type=int,
     # default=2,
     help="Number of cores used during the task.",
@@ -98,6 +99,13 @@ from clinicadl.utils import cli_param
     is_flag=True,
     help="""If provided the outputs of extract preprocessing are used, else the whole
             MRI is loaded.""",
+)
+@click.option(
+    "--selection_threshold",
+    type=float,
+    # default=0,
+    help="""Selection threshold for soft-voting when network_task is 'classification'.
+    Will only be used if num_networks > 1.""",
 )
 # Data
 @click.option(
@@ -205,20 +213,20 @@ from clinicadl.utils import cli_param
     help="Accumulates gradients during the given number of iterations before performing the weight update "
     "in order to virtually increase the size of the batch.",
 )
-# transfert learning
+# transfer learning
 @click.option(
-    "-tlp",
-    "--transfer_learning_path",
+    "-tp",
+    "--transfer_path",
     type=click.Path(),
     # default=0.0,
     help="Path of to a MAPS used for transfer learning.",
 )
 @click.option(
-    "-tls",
-    "--transfer_learning_selection",
+    "-tsm",
+    "--transfer_selection_metric",
     type=str,
-    # default="best_loss",
-    help="Metric used to select the model for transfer learning in the MAPS defined by transfer_learning_path.",
+    # default="loss",
+    help="Metric used to select the model for transfer learning in the MAPS defined by transfer_path.",
 )
 def cli(
     network_task,
@@ -229,8 +237,9 @@ def cli(
     config_file,
     label,
     use_extracted_features,
+    selection_threshold,
     gpu,
-    nproc,
+    n_proc,
     batch_size,
     evaluation_steps,
     seed,
@@ -253,8 +262,8 @@ def cli(
     patience,
     tolerance,
     accumulation_steps,
-    transfer_learning_path,
-    transfer_learning_selection,
+    transfer_path,
+    transfer_selection_metric,
 ):
     """Train a deep learning model on your neuroimaging dataset.
 
@@ -279,7 +288,10 @@ def cli(
     preprocessing_json = os.path.join(
         caps_directory, "tensor_extraction", preprocessing_json
     )
-    train_dict = get_train_dict(config_file, preprocessing_json, network_task)
+    user_dict = None
+    if config_file:
+        user_dict = toml.load(config_file)
+    train_dict = get_train_dict(user_dict, preprocessing_json, network_task)
 
     # Add arguments
     train_dict["network_task"] = network_task
@@ -287,65 +299,50 @@ def cli(
     train_dict["tsv_path"] = tsv_directory
 
     # Change value in train dict depending on user provided options
-    if label is not None:
-        train_dict["label"] = label
-    if accumulation_steps is not None:
-        train_dict["accumulation_steps"] = accumulation_steps
-    if baseline is not None:
-        train_dict["baseline"] = baseline
-    if batch_size is not None:
-        train_dict["batch_size"] = batch_size
-    if data_augmentation != ():
-        train_dict["data_augmentation"] = data_augmentation
-    if diagnoses != ():
-        train_dict["diagnoses"] = diagnoses
-    if dropout is not None:
-        train_dict["dropout"] = dropout
-    if epochs is not None:
-        train_dict["epochs"] = epochs
-    if evaluation_steps is not None:
-        train_dict["evaluation_steps"] = evaluation_steps
-    if architecture is not None:
-        train_dict["architecture"] = architecture
-    if multi_network is not None:
-        train_dict["multi_network"] = multi_network
-    if gpu is not None:
+    standard_options_list = [
+        "label",
+        "accumulation_steps",
+        "baseline",
+        "batch_size",
+        "data_augmentation",
+        "diagnoses",
+        "dropout",
+        "epochs",
+        "evaluation_steps",
+        "architecture",
+        "multi_network",
+        "learning_rate",
+        "multi_cohort",
+        "n_splits",
+        "patience",
+        "tolerance",
+        "transfer_selection_metric",
+        "use_extracted_features",
+        "selection_threshold",
+        "weight_decay",
+        "sampler",
+        "seed",
+        "compensation",
+        "transfer_path",
+    ]
+
+    for option in standard_options_list:
+        if eval(option):
+            train_dict[option] = eval(option)
+
+    if gpu:
         train_dict["use_cpu"] = not gpu
-    if learning_rate is not None:
-        train_dict["learning_rate"] = learning_rate
-    if multi_cohort is not None:
-        train_dict["multi_cohort"] = multi_cohort
-    if n_splits is not None:
-        train_dict["n_splits"] = n_splits
-    if nproc is not None:
-        train_dict["num_workers"] = nproc
-    if normalize is not None:
-        train_dict["unnormalize"] = not normalize
-    if patience is not None:
-        train_dict["patience"] = patience
-    if split != ():
+    if n_proc:
+        train_dict["num_workers"] = n_proc
+    if normalize:
+        train_dict["minmaxnormalization"] = normalize
+    if split:
         train_dict["folds"] = split
-    if tolerance is not None:
-        train_dict["tolerance"] = tolerance
-    if transfer_learning_path is not None:
-        train_dict["transfer_path"] = transfer_learning_path
-    if transfer_learning_selection is not None:
-        train_dict["transfer_learning_selection"] = transfer_learning_selection
-    if use_extracted_features is not None:
-        train_dict["use_extracted_features"] = use_extracted_features
-    if weight_decay is not None:
-        train_dict["weight_decay"] = weight_decay
-    if sampler is not None:
-        train_dict["sampler"] = sampler
-    if seed is not None:
-        train_dict["seed"] = seed
-    if nondeterministic is not None:
-        train_dict["torch_deterministic"] = not nondeterministic
-    if compensation is not None:
-        train_dict["compensation"] = compensation
+    if nondeterministic:
+        train_dict["deterministic"] = not nondeterministic
 
     # Splits
-    if train_dict["n_splits"] > 1:
+    if train_dict["n_splits"] and train_dict["n_splits"] > 1:
         train_dict["validation"] = "KFoldSplit"
     else:
         train_dict["validation"] = "SingleSplit"
@@ -356,7 +353,7 @@ def cli(
     else:
         train_dict["prepare_dl"] = False
 
-    train(output_maps_directory, train_dict, split)
+    train(output_maps_directory, train_dict, train_dict.pop("folds"))
 
 
 if __name__ == "__main__":

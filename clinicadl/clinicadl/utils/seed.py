@@ -54,7 +54,7 @@ def get_seed(seed: int = None) -> int:
     return seed
 
 
-def seed_everything(seed, torch_deterministic=False, compensation="memory") -> None:
+def seed_everything(seed, deterministic=False, compensation="memory") -> None:
     """
     Function that sets seed for pseudo-random number generators in:
     pytorch, numpy, python.random
@@ -64,8 +64,8 @@ def seed_everything(seed, torch_deterministic=False, compensation="memory") -> N
 
     Args:
         seed (int): Value of the seed for all pseudo-random number generators
-        torch_deterministic (bool): If set to True will raise an error if non-deterministic behaviour is encountered
-        compensation (str): Chooses which computational aspect is affected when torch_deterministic is set to True.
+        deterministic (bool): If set to True will raise an error if non-deterministic behaviour is encountered
+        compensation (str): Chooses which computational aspect is affected when deterministic is set to True.
             Must be chosen between time and memory.
 
     Raises:
@@ -84,7 +84,7 @@ def seed_everything(seed, torch_deterministic=False, compensation="memory") -> N
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
-    if torch_deterministic:
+    if deterministic:
         torch.backends.cudnn.benchmark = False
         if compensation == "memory":
             os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"

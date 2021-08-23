@@ -28,7 +28,7 @@ class AutoEncoder(Network):
         elif issubclass(transfer_class, CNN):
             encoder_dict = OrderedDict(
                 [
-                    (k.replace("convolutions", "encoder"), v)
+                    (k.replace("convolutions.", ""), v)
                     for k, v in state_dict.items()
                     if "convolutions" in k
                 ]
@@ -101,12 +101,12 @@ class CNN(Network):
         elif issubclass(transfer_class, AutoEncoder):
             convolutions_dict = OrderedDict(
                 [
-                    (k.replace("encoder", "convolutions"), v)
+                    (k.replace("encoder.", ""), v)
                     for k, v in state_dict.items()
                     if "encoder" in k
                 ]
             )
-            self.encoder.load_state_dict(convolutions_dict)
+            self.convolutions.load_state_dict(convolutions_dict)
         else:
             raise ValueError(
                 f"Cannot transfer weights from {transfer_class} " f"to CNN."

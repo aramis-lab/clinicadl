@@ -24,7 +24,7 @@ class KFoldSplit(SplitManager):
         return self.n_splits
 
     def __len__(self):
-        if self.folds is None:
+        if not self.folds:
             return self.n_splits
         else:
             return len(self.folds)
@@ -34,7 +34,7 @@ class KFoldSplit(SplitManager):
         return [i for i in range(self.n_splits)]
 
     def fold_iterator(self):
-        if self.folds is None:
+        if not self.folds:
             return range(self.n_splits)
         else:
             return self.folds
