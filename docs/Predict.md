@@ -47,8 +47,8 @@ where:
 Optional arguments:
 
 - **Computational resources**
-    - `--use_cpu` (bool) forces using CPUs. Default behaviour is to try to use a
-      GPU and to raise an error if it is not found.
+    - `--gpu / --no-gpu` (bool) Uses GPU acceleration or nots. Default behaviour is to try to use a
+      GPU. If not available an error is raised. Use the option `--no-gpu` if running in CPU.
     - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
 - **Other options**
@@ -61,7 +61,7 @@ Optional arguments:
     - `--no_labels` (bool) is a flag to add if the dataset does not contain ground truth labels. 
       Default behaviour will look for ground truth labels and raise an error if not found.
     - `--use_extracted_features` (bool) is a flag to use extracted slices or
-      patches, if not specified they will be extracted on the fly from the complete
+      patches, if not specified they will be extracted on-the-fly from the complete
       image (if necessary). Default value: `False`.
     - `--selection_metrics` (list[str]) is a list of metrics to find the best models to evaluate.
       Default will predict the results for best model based on the loss only.
