@@ -31,7 +31,7 @@ In case of [multi-cohort training](Details.md#multi-cohort), must be a path to a
 In case of [multi-cohort training](Details.md#multi-cohort), must be a path to a TSV file.
 - `OUTPUT_MAPS_DIRECTORY` (path) is the folder where the results are stored.
 
-The training can be configured through a Toml configuration file or by using the command line options. If you have a Toml configuration file (see [the section below](Introduction.md/#Configuration-file) page for more information) you can use the following option to load it:
+The training can be configured through a Toml configuration file or by using the command line options. If you have a Toml configuration file (see [the section below](#configuration-file) page for more information) you can use the following option to load it:
 
 - `--config_file` (File) is the name of the Toml configuration file for training job. This file contain the value for the options that you want to specify (to avoid too long command line).
 
