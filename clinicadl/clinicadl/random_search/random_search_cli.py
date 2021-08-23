@@ -34,6 +34,11 @@ def cli(
 
     NAME is the name of the output folder containing the experiment.
     """
+    from clinicadl.utils.cmdline_utils import check_gpu
+
+    if gpu:
+        check_gpu()
+
     from .random_search import launch_search
 
     options = {

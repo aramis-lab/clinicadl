@@ -36,6 +36,11 @@ def cli(
 
     OUTPUT_TSV is the path to the tsv file where results will be saved.
     """
+    from clinicadl.utils.cmdline_utils import check_gpu
+
+    if gpu:
+        check_gpu()
+
     from .quality_check import quality_check as linear_qc
 
     linear_qc(
