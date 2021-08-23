@@ -6,7 +6,7 @@ different formats of inputs (whole 3D images, 3D patches or 2D slices), as defin
 It mainly relies on the PyTorch deep learning library
 [[Paszke et al., 2019](https://papers.nips.cc/paper/9015-pytorch-an-imperative-style-high-performance-deep-learning-library)].
 
-Different tasks can be learnt by a network: `classification`, `reconstruction` and `regression` (see below).
+Different tasks can be learnt by a network: `classification`, `reconstruction` and `regression` ([see below](#running-the-task)).
 
 ## Prerequisites
 You need to execute the [`clinicadl tsvtool getlabels`](../TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease) 
