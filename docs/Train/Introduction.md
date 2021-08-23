@@ -58,7 +58,10 @@ Options shared for all values of `network_task` are organized in groups:
     If you want to use custom architecture, be sure to respect the output size needed for the learnt task.
 
 - **Tensor extraction**
-    - `--use_extracted_features` (bool) is an option to extract tensors on the fly during training if you cannot save them in your CAPS directory. In this case the argument `PREPROCESSING_JSON` contains the wanted parameters for extraction.
+    - `--use_extracted_features` (bool) is an option to extract tensors
+      on-the-fly during training. This option is useful if you want to avoid
+      saving tensor files in your CAPS directory. In this case the argument
+      `PREPROCESSING_JSON` contains the wanted parameters for extraction.
 - **Computational resources**
     - `--gpu/--no-gpu` (bool) Use GPU acceleration. Default behavior is to try to use a GPU and to raise an error if it is not found. Please specify `--no-gpu` to use CPU instead.
     - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
@@ -81,7 +84,7 @@ Options shared for all values of `network_task` are organized in groups:
     - `--split` (list of int) is a subset of folds that will be used for training. By default all splits available are used.
 - **Reproducibility** (for more information refer to the [implementation details](./Details.md#deterministic-algorithms)
     - `--seed` (int) is the value used to set the seed of all random operations. Default samples a seed and uses it for the experiment.
-    - `--torch_deterministic` (bool) forces the training process to be deterministic.
+    - `--nondeterministic/--deterministic` (bbol) forces the training process to be deterministic.
     If any non-deterministic behaviour is encountered will raise a RuntimeError. Default: `False`.
     - `--compensation` (str) allow to choose how CUDA will compensate to obtain a deterministic behaviour.
     The computation time will be longer, or the computations will require more memory space. Default: `memory`.
