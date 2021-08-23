@@ -1,7 +1,9 @@
 # coding: utf8
 
 
-def extract_slices(input_img, slice_direction=0, slice_mode="single"):
+def extract_slices(
+    input_img, slice_direction=0, slice_mode="single", discarded_slices=0
+):
     """Extracts the slices from three directions
     This function extracts slices form the preprocessed nifti image.  The
     direction of extraction can be defined either on sagital direction (0),
@@ -12,6 +14,9 @@ def extract_slices(input_img, slice_direction=0, slice_mode="single"):
         input_img: nifti format MRI image.
         slice_direction: which axis direction that the slices were extracted
         slice_mode: 'single' or 'RGB'.
+        discarded_slices: Number of slices to discard at the beginning and the end of the image.
+            Will be a tuple of two integers if the number of slices to discard at the beginning
+            and at the end differ.
     Returns:
         file: multiple tensors saved on the disk, suffixes corresponds to
             indexes of the slices. Same location than input file.
@@ -22,19 +27,14 @@ def extract_slices(input_img, slice_direction=0, slice_mode="single"):
     import torch
 
     image_array = nib.load(input_img).get_fdata(dtype="float32")
-    image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
-    # reshape the tensor, delete the first dimension for slice-level
-    image_tensor = image_tensor.view(
-        image_tensor.shape[1], image_tensor.shape[2], image_tensor.shape[3]
-    )
+    image_tensor = torch.from_numpy(image_array).float()
 
-    # sagital
-    # M and N correspond to the first and last slices (if need to remove)
-    M = 0
-    N = 0
-    slice_list_sag = range(
-        M, image_tensor.shape[0] - N
-    )  # delete the first M slices and last N slices
+    # Remove discarded slices
+    if isinstance(discarded_slices, int):
+        begin_discard, end_discard = discarded_slices, discarded_slices
+    else:
+        begin_discard, end_discard = discarded_slices
+    slice_list = range(begin_discard, image_tensor.shape[slice_direction] - end_discard)
 
     input_img_filename = os.path.basename(input_img)
 
@@ -43,141 +43,33 @@ def extract_slices(input_img, slice_direction=0, slice_mode="single"):
     it_filename_suffix = input_img_filename[txt_idx:]
 
     output_slices = []
-    if slice_direction == 0:
-        for index_slice, index_slice_list in zip(
-            slice_list_sag, range(len(slice_list_sag))
-        ):
-            # for i in slice_list:
-            # sagital
-            slice_select_sag = image_tensor[index_slice, :, :]
+    for i, slice_index in enumerate(slice_list):
+        idx_tuple = tuple(
+            [slice(None)] * slice_direction
+            + [slice_index]
+            + [slice(None)] * (2 - slice_direction)
+        )
+        slice_selected = image_tensor[idx_tuple]
+        slice_selected.unsqueeze_(0)  # shape is 1 * W * L
 
-            extracted_slice_original_sag = slice_select_sag.unsqueeze(
-                0
-            )  # shape should be 1 * W * L
-
-            # train for transfer learning, creating the fake RGB image.
-            slice_select_sag = (slice_select_sag - slice_select_sag.min()) / (
-                slice_select_sag.max() - slice_select_sag.min()
+        # save into .pt format
+        if slice_mode == "single":
+            output_slices.append(
+                (
+                    f"{it_filename_prefix}_axis-sag_channel-single_slice-{i}{it_filename_suffix}",
+                    slice_selected.clone(),
+                )
             )
-            extracted_slice_rgb_sag = torch.stack(
-                (slice_select_sag, slice_select_sag, slice_select_sag)
-            )  # shape should be 3 * W * L
-
-            # save into .pt format
-            if slice_mode == "single":
-                output_slices.append(
-                    (
-                        it_filename_prefix
-                        + "_axis-sag_channel-single_slice-"
-                        + str(index_slice)
-                        + it_filename_suffix,
-                        extracted_slice_original_sag.clone(),
-                    )
+        elif slice_mode == "rgb":
+            slice_selected = torch.stack(
+                (slice_selected, slice_selected, slice_selected)
+            )  # shape is 3 * W * L
+            output_slices.append(
+                (
+                    f"{it_filename_prefix}_axis-sag_channel-rgb_slice-{i}{it_filename_suffix}",
+                    slice_selected.clone(),
                 )
-            elif slice_mode == "rgb":
-                output_slices.append(
-                    (
-                        it_filename_prefix
-                        + "_axis-sag_channel-rgb_slice-"
-                        + str(index_slice)
-                        + it_filename_suffix,
-                        extracted_slice_rgb_sag.clone(),
-                    )
-                )
-
-    elif slice_direction == 1:
-        # cornal
-        slice_list_cor = range(
-            M, image_tensor.shape[1] - N
-        )  # delete the first M slices and last N slices
-        for index_slice, index_slice_list in zip(
-            slice_list_cor, range(len(slice_list_cor))
-        ):
-            # for i in slice_list:
-            # sagital
-            slice_select_cor = image_tensor[:, index_slice, :]
-
-            extracted_slice_original_cor = slice_select_cor.unsqueeze(
-                0
-            )  # shape should be 1 * W * L
-
-            # train for transfer learning, creating the fake RGB image.
-            slice_select_cor = (slice_select_cor - slice_select_cor.min()) / (
-                slice_select_cor.max() - slice_select_cor.min()
             )
-            extracted_slice_rgb_cor = torch.stack(
-                (slice_select_cor, slice_select_cor, slice_select_cor)
-            )  # shape should be 3 * W * L
-
-            # save into .pt format
-            if slice_mode == "single":
-                output_slices.append(
-                    (
-                        it_filename_prefix
-                        + "_axis-cor_channel-single_slice-"
-                        + str(index_slice)
-                        + it_filename_suffix,
-                        extracted_slice_original_cor.clone(),
-                    )
-                )
-            elif slice_mode == "rgb":
-                output_slices.append(
-                    (
-                        it_filename_prefix
-                        + "_axis-cor_channel-rgb_slice-"
-                        + str(index_slice)
-                        + it_filename_suffix,
-                        extracted_slice_rgb_cor.clone(),
-                    )
-                )
-
-    else:
-
-        # axial
-        slice_list_axi = range(
-            M, image_tensor.shape[2] - N
-        )  # delete the first M slices and last N slices
-        for index_slice, index_slice_list in zip(
-            slice_list_axi, range(len(slice_list_axi))
-        ):
-            # for i in slice_list:
-            # sagital
-            slice_select_axi = image_tensor[:, :, index_slice]
-
-            extracted_slice_original_axi = slice_select_axi.unsqueeze(
-                0
-            )  # shape should be 1 * W * L
-
-            # train for transfer learning, creating the fake RGB image.
-            slice_select_axi = (slice_select_axi - slice_select_axi.min()) / (
-                slice_select_axi.max() - slice_select_axi.min()
-            )
-            extracted_slice_rgb_axi = torch.stack(
-                (slice_select_axi, slice_select_axi, slice_select_axi)
-            )  # shape should be 3 * W * L
-
-            # save into .pt format
-            if slice_mode == "single":
-                output_slices.append(
-                    (
-                        it_filename_prefix
-                        + "_axis-axi_channel-single_slice-"
-                        + str(index_slice)
-                        + it_filename_suffix,
-                        extracted_slice_original_axi.clone(),
-                    )
-                )
-
-            elif slice_mode == "rgb":
-                output_slices.append(
-                    (
-                        it_filename_prefix
-                        + "_axis-axi_channel-rgb_slice-"
-                        + str(index_slice)
-                        + it_filename_suffix,
-                        extracted_slice_rgb_axi.clone(),
-                    )
-                )
 
     return output_slices
 
