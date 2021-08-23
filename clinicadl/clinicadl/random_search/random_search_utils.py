@@ -141,19 +141,19 @@ def random_sampling(rs_options, options):
             "patch_size": "randint",
             "selection_threshold": "uniform",
             "stride_size": "randint",
-            "use_extracted_patches": "fixed",
+            "use_extracted_features": "fixed",
         },
         "roi": {
             "selection_threshold": "uniform",
             "roi_list": "fixed",
-            "use_extracted_roi": "fixed",
+            "use_extracted_features": "fixed",
             "uncropped_roi": "fixed",
         },
         "slice": {
             "discarded_slices": "randint",
             "selection_threshold": "uniform",
             "slice_direction": "choice",
-            "use_extracted_slices": "fixed",
+            "use_extracted_features": "fixed",
         },
     }
 
