@@ -132,8 +132,8 @@ Options:
   masks should be available in a folder named
   `<caps_directory>/masks/tpl-MNI152NLin2009cSym/`. For full (uncropped)
   images, the filenames of these masks are:
-  `tpl-MNI152NLin2009cSym_desc-Crop_roi-leftHippocampusBox_mask.nii.gz`,
-  `tpl-MNI152NLin2009cSym_desc-Crop_roi-rightHippocampusBox_mask.nii.gz`. Then,
+  `tpl-MNI152NLin2009cSym_res-1x1x1_roi-leftHippocampusBox_mask.nii.gz`,
+  `tpl-MNI152NLin2009cSym_res-1x1x1_roi-rightHippocampusBox_mask.nii.gz`. Then,
   the command to invoque the extraction is:
 ```
 clinicadl extract CAPS_DIRECTORY t1-linear roi --roi_list rightHippocampusBox --roi_list leftHippocampusBox
@@ -151,7 +151,7 @@ clinicadl extract CAPS_DIRECTORY t1-linear roi --roi_list rightHippocampusBox --
     input data it corresponds to. All masks must follow the pattern 
     `tpl-<tpl_name>_*_roi-<roi_name>_mask.nii.gz`.
 
-    If the defined region is not cubic, `deeplearning-prepare-data` will automatically extract
+    If the defined region is not cubic, `clinicadl extract` will automatically extract
     the smallest bounding box around the region and fill the remaining values with 0 (unless
     `--roi_uncrop_output` is specified).
 
