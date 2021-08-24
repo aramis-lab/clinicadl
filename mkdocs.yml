@@ -28,17 +28,17 @@ theme:
   logo: images/clinicadl_logo.png
   favicon: images/favicon.png
   palette:
-    - scheme: default
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
       toggle:
         primary: deep purple
         accent: indigo  
-        icon: material/eye-outline
+        icon: material/toggle-switch-off-outline
         name: Switch to dark mode
-    - scheme: slate
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
       toggle:
-        primary: teal
-        accent: cyan
-        icon: material/eye
+        icon: material/toggle-switch
         name: Switch to light mode
 
 # Version panel
