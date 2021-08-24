@@ -13,7 +13,7 @@ from clinicadl.utils import cli_param
     type=str,
     default=None,
     help="Path to the extracted masks to generate the two labels. "
-         "Default will try to download masks and store them at '~/.cache/clinicadl'.",
+    "Default will try to download masks and store them at '~/.cache/clinicadl'.",
 )
 @click.option(
     "--atrophy_percent",
@@ -21,6 +21,9 @@ from clinicadl.utils import cli_param
     default=60.0,
     help="Percentage of atrophy applied.",
 )
+@cli_param.option.use_uncropped_image
+@cli_param.option.acq_label
+@cli_param.option.suvr_reference_region
 def cli(
     caps_directory,
     generated_caps_directory,
@@ -28,6 +31,9 @@ def cli(
     n_subjects,
     mask_path,
     atrophy_percent,
+    use_uncropped_image,
+    acq_label,
+    suvr_reference_region,
 ):
     """Generation of trivial dataset with addition of synthetic brain atrophy.
 
@@ -44,6 +50,9 @@ def cli(
         n_subjects=n_subjects,
         mask_path=mask_path,
         atrophy_percent=atrophy_percent,
+        uncropped_image=use_uncropped_image,
+        acq_label=acq_label,
+        suvr_reference_region=suvr_reference_region,
     )
 
 
