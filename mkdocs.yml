@@ -25,9 +25,19 @@ theme:
   icon:
     repo: material/github
   language: en
+  logo: images/clinicadl_logo.png
+  favicon: images/favicon.png
   palette:
-    primary: green
-    accent: green
+    - scheme: default
+      toggle:
+        primary: deep purple
+        accent: indigo  
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
 
 # Version panel
 extra_javascript:
