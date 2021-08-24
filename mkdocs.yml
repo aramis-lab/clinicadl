@@ -11,7 +11,7 @@ repo_url: https://github.com/aramis-lab/clinicadl
 #edit_uri: master/edit/doc
 
 # Copyright
-copyright: Copyright &copy; 2021 ClinicaDL contributors
+copyright: Copyright &copy; 2019-2021 ClinicaDL contributors
 
 # Google Analytics
 google_analytics:
@@ -27,12 +27,12 @@ theme:
   language: en
   logo: images/clinicadl_logo.png
   favicon: images/favicon.png
+  #palette:
+  #  primary: deep purple
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
       toggle:
-        primary: purple
-        accent: indigo  
         icon: material/toggle-switch-off-outline
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
@@ -59,6 +59,8 @@ extra:
   version:
     default: stable
 
+extra_css:
+  - stylesheets/extra.css
 
 # Extensions
 markdown_extensions:
