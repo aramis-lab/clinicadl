@@ -50,7 +50,7 @@ pipeline {
               --junitxml=./test-reports/test_cli_report.xml \
               --verbose \
               --disable-warnings \
-            $WORKSPACE/clinicadl/tests/test_cli.py
+            $WORKSPACE/tests/test_cli.py
             conda deactivate
             '''
         }
@@ -74,7 +74,7 @@ pipeline {
             eval "$(conda shell.bash hook)"
             source ./.jenkins/scripts/find_env.sh
             conda activate clinicadl_test
-            cd $WORKSPACE/clinicadl/tests
+            cd $WORKSPACE/tests
             pytest \
               --junitxml=../../test-reports/test_tsvtool_report.xml \
               --verbose \
@@ -106,7 +106,7 @@ pipeline {
                       eval "$(conda shell.bash hook)"
                       source ./.jenkins/scripts/find_env.sh
                       conda activate clinicadl_test
-                      cd $WORKSPACE/clinicadl/tests
+                      cd $WORKSPACE/tests
                       mkdir -p ./data/dataset
                       tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
                       pytest \
@@ -120,7 +120,7 @@ pipeline {
                 post {
                   always {
                     junit 'test-reports/test_generate_report.xml'
-                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
+                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
                   }
                 } 
               }
@@ -137,7 +137,7 @@ pipeline {
                      eval "$(conda shell.bash hook)"
                      source ./.jenkins/scripts/find_env.sh
                      conda activate clinicadl_test
-                     cd $WORKSPACE/clinicadl/tests
+                     cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
@@ -153,7 +153,7 @@ pipeline {
                 post {
                   always {
                     junit 'test-reports/test_predict_report.xml'
-                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
+                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
                   }
                 } 
               }
@@ -170,7 +170,7 @@ pipeline {
 //                       eval "$(conda shell.bash hook)"
 //                       source ./.jenkins/scripts/find_env.sh
 //                       conda activate clinicadl_test
-//                       cd $WORKSPACE/clinicadl/tests
+//                       cd $WORKSPACE/tests
 //                       mkdir -p ./data/dataset
 //                       tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
 //                       pytest \
@@ -184,7 +184,7 @@ pipeline {
 //                 post {
 //                   always {
 //                     junit 'test-reports/test_meta-analysis_report.xml'
-//                     sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
+//                     sh 'rm -rf $WORKSPACE/tests/data/dataset'
 //                   }
 //                 }
 //              }
@@ -207,7 +207,7 @@ pipeline {
                      source ./.jenkins/scripts/find_env.sh
                      conda activate clinicadl_test
                      clinicadl --help
-                     cd $WORKSPACE/clinicadl/tests
+                     cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      cp -r /mnt/data/data_CI/labels_list ./data/
@@ -222,8 +222,8 @@ pipeline {
                 post {
                   always {
                     junit 'test-reports/test_train_report.xml'
-                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
-                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/labels_list'
+                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
+                    sh 'rm -rf $WORKSPACE/tests/data/labels_list'
                   }
                 }
               }
@@ -242,7 +242,7 @@ pipeline {
                      source ./.jenkins/scripts/find_env.sh
                      conda activate clinicadl_test
                      clinicadl --help
-                     cd $WORKSPACE/clinicadl/tests
+                     cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      cp -r /mnt/data/data_CI/labels_list ./data/
@@ -257,8 +257,8 @@ pipeline {
                 post {
                   always {
                     junit 'test-reports/test_transfer_learning_report.xml'
-                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
-                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/labels_list'
+                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
+                    sh 'rm -rf $WORKSPACE/tests/data/labels_list'
                   }
                 }
               }
@@ -277,7 +277,7 @@ pipeline {
                      source ./.jenkins/scripts/find_env.sh
                      conda activate clinicadl_test
                      clinicadl --help
-                     cd $WORKSPACE/clinicadl/tests
+                     cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      cp -r /mnt/data/data_CI/labels_list ./data/
@@ -292,8 +292,8 @@ pipeline {
                 post {
                   always {
                     junit 'test-reports/test_interpret_report.xml'
-                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
-                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/labels_list'
+                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
+                    sh 'rm -rf $WORKSPACE/tests/data/labels_list'
                   }
                 }
               }
@@ -312,7 +312,7 @@ pipeline {
                      source ./.jenkins/scripts/find_env.sh
                      conda activate clinicadl_test
                      clinicadl --help
-                     cd $WORKSPACE/clinicadl/tests
+                     cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      cp -r /mnt/data/data_CI/labels_list ./data/
@@ -327,8 +327,8 @@ pipeline {
                 post {
                   always {
                     junit 'test-reports/test_random_search_report.xml'
-                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/dataset'
-                    sh 'rm -rf $WORKSPACE/clinicadl/tests/data/labels_list'
+                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
+                    sh 'rm -rf $WORKSPACE/tests/data/labels_list'
                   }
                 }
               }
@@ -357,7 +357,7 @@ pipeline {
              '''
              withCredentials([usernamePassword(credentialsId: 'jenkins-pass-for-pypi-aramis', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                sh '''#!/usr/bin/env bash
-                 cd $WORKSPACE/clinicadl
+                 cd $WORKSPACE/
                  twine upload \
                    -u ${USERNAME} \
                    -p ${PASSWORD} ./dist/*
