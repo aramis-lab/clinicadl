@@ -112,7 +112,7 @@ def random_sampling(rs_options, options):
         "label": "fixed",
         "learning_rate": "exponent",
         "minmaxnormalization": "choice",
-        "mode": "choice",
+        "mode": "fixed",
         "multi_cohort": "fixed",
         "multi_network": "choice",
         "n_fcblocks": "randint",
@@ -122,7 +122,7 @@ def random_sampling(rs_options, options):
         "network_normalization": "choice",
         "optimizer": "choice",
         "patience": "fixed",
-        "preprocessing": "choice",
+        "preprocessing_dict": "fixed",
         "seed": "fixed",
         "selection_metrics": "fixed",
         "sampler": "choice",
@@ -135,39 +135,7 @@ def random_sampling(rs_options, options):
         "weight_decay": "exponent",
     }
 
-    additional_mode_dict = {
-        "image": {},
-        "patch": {
-            "patch_size": "randint",
-            "selection_threshold": "uniform",
-            "stride_size": "randint",
-            "use_extracted_features": "fixed",
-        },
-        "roi": {
-            "selection_threshold": "uniform",
-            "roi_list": "fixed",
-            "use_extracted_features": "fixed",
-            "uncropped_roi": "fixed",
-        },
-        "slice": {
-            "discarded_slices": "randint",
-            "selection_threshold": "uniform",
-            "slice_direction": "choice",
-            "use_extracted_features": "fixed",
-        },
-    }
-
     for name, sampling_type in sampling_dict.items():
-        sampled_value = sampling_fn(rs_options[name], sampling_type)
-        options[name] = sampled_value
-
-    if options["mode"] not in additional_mode_dict.keys():
-        raise NotImplementedError(
-            "Mode %s was not correctly implemented for random search" % options.mode
-        )
-
-    additional_dict = additional_mode_dict[options["mode"]]
-    for name, sampling_type in additional_dict.items():
         sampled_value = sampling_fn(rs_options[name], sampling_type)
         options[name] = sampled_value
 
@@ -185,10 +153,6 @@ def random_sampling(rs_options, options):
         options["validation"] = "KFoldSplit"
     else:
         options["validation"] = "SingleSplit"
-    if "use_extracted_features" in options:
-        options["prepare_dl"] = options["use_extracted_features"]
-    else:
-        options["prepare_dl"] = False
     options["optimizer"] = "Adam"
 
     return options
