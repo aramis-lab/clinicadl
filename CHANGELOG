@@ -162,4 +162,5 @@ Be careful this version breaks the backward compatibility with previous versions
   ClinicaDL will now select a free GPU that as permission.
 - Fix an error where diagnosis column was automatically overwritten
   by the name of the file during split or kfold.
+- Fix multi-class classification.
 
