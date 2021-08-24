@@ -32,7 +32,7 @@ theme:
       toggle:
         primary: deep purple
         accent: indigo  
-        icon: material/eye-outline-outline
+        icon: material/eye-outline
         name: Switch to dark mode
     - scheme: slate
       toggle:
