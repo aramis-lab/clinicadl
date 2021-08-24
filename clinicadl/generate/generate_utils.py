@@ -6,8 +6,6 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
 
-from clinicadl.utils.inputs import FILENAME_TYPE
-
 
 def load_and_check_tsv(tsv_path, caps_dict, output_path):
     from os.path import join
