@@ -27,8 +27,8 @@ theme:
   language: en
   logo: images/clinicadl_logo.png
   favicon: images/favicon.png
-  #palette:
-  #  primary: deep purple
+  features:
+    - header.autohide
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default

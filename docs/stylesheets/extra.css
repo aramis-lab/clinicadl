@@ -3,3 +3,6 @@
   --md-primary-fg-color--light: #4455af;
   --md-primary-fg-color--dark:  #303fa1;
 }
+[data-md-color-scheme="slate"] {
+  --md-hue: 200; /* [0, 360] */
+}
