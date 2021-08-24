@@ -5,17 +5,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
     import os
     from os import path
 
-    from clinica.utils.exceptions import (
-        ClinicaBIDSError,
-        ClinicaCAPSError,
-        ClinicaException,
-    )
-    from clinica.utils.input_files import (
-        T1W_EXTENSIVE,
-        T1W_LINEAR,
-        T1W_LINEAR_CROPPED,
-        pet_linear_nii,
-    )
+    from clinica.utils.input_files import T1W_LINEAR, T1W_LINEAR_CROPPED, pet_linear_nii
     from clinica.utils.inputs import check_caps_folder, clinica_file_reader
     from clinica.utils.nipype import container_from_filename
     from clinica.utils.participant import get_subject_session_list
@@ -67,24 +57,24 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
             FILE_TYPE = T1W_LINEAR
         else:
             FILE_TYPE = T1W_LINEAR_CROPPED
-    if parameters["preprocessing"] == "t1-extensive":
-        mod_subfolder = "t1_extensive"
-        FILE_TYPE = T1W_EXTENSIVE
-        parameters["uncropped_image"] = None
-    if parameters["preprocessing"] == "pet-linear":
+    elif parameters["preprocessing"] == "pet-linear":
         mod_subfolder = "pet_linear"
         FILE_TYPE = pet_linear_nii(
             parameters["acq_label"],
             parameters["suvr_reference_region"],
             parameters["use_uncropped_image"],
         )
-    if parameters["preprocessing"] == "custom":
+    elif parameters["preprocessing"] == "custom":
         mod_subfolder = "custom"
         FILE_TYPE = {
             "pattern": f"*{parameters['custom_suffix']}",
             "description": "Custom suffix",
         }
         parameters["use_uncropped_image"] = None
+    else:
+        raise NotImplementedError(
+            f"Extraction of preprocessing {parameters['preprocessing']} is not implemented."
+        )
     parameters["file_type"] = FILE_TYPE
 
     # Input file:
@@ -124,10 +114,15 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
                         "A custom template must be defined when the modality is set to custom."
                     )
                 parameters["roi_template"] = parameters["roi_custom_template"]
+                parameters["roi_mask_pattern"] = parameters["roi_custom_mask_pattern"]
             else:
-                from .extract_utils import TEMPLATE_DICT
+                from .extract_utils import PATTERN_DICT, TEMPLATE_DICT
 
                 parameters["roi_template"] = TEMPLATE_DICT[parameters["preprocessing"]]
+                parameters["roi_mask_pattern"] = PATTERN_DICT[
+                    parameters["preprocessing"]
+                ]
+
             parameters["masks_location"] = path.join(
                 caps_directory, "masks", f"tpl-{parameters['roi_template']}"
             )
@@ -137,7 +132,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
                 check_mask_list(
                     parameters["masks_location"],
                     parameters["roi_list"],
-                    parameters["roi_custom_mask_pattern"],
+                    parameters["roi_mask_pattern"],
                     None
                     if parameters["use_uncropped_image"] is None
                     else not parameters["use_uncropped_image"],
@@ -145,16 +140,20 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
             output_mode = extract_roi(
                 file,
                 masks_location=parameters["masks_location"],
-                mask_pattern=parameters["roi_custom_mask_pattern"],
+                mask_pattern=parameters["roi_mask_pattern"],
                 cropped_input=None
                 if parameters["use_uncropped_image"] is None
                 else not parameters["use_uncropped_image"],
-                roi_list=parameters["roi_list"],
+                roi_names=parameters["roi_list"],
                 uncrop_output=parameters["uncropped_roi"],
             )
             logger.debug(f"    ROI extracted.")
+        else:
+            raise NotImplementedError(
+                f"Extraction is not implemented for mode {parameters['mode']}."
+            )
         # Write the extracted tensor on a .pt file
-        for tensor in output_mode:
+        for filename, tensor in output_mode:
             output_file_dir = path.join(
                 caps_directory,
                 container,
@@ -164,8 +163,8 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
             )
             if not path.exists(output_file_dir):
                 os.makedirs(output_file_dir)
-            output_file = path.join(output_file_dir, tensor[0])
-            save_tensor(tensor[1], output_file)
+            output_file = path.join(output_file_dir, filename)
+            save_tensor(tensor, output_file)
             logger.debug(f"    Output tensor saved at {output_file}")
 
     # Save parameters dictionary
