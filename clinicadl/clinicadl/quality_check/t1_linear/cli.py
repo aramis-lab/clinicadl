@@ -24,7 +24,7 @@ from clinicadl.utils import cli_param
 def cli(
     caps_directory,
     output_tsv,
-    subjects_sessions_tsv,
+    participants_tsv,
     threshold,
     batch_size,
     n_proc,
@@ -46,7 +46,7 @@ def cli(
     linear_qc(
         caps_directory,
         output_tsv,
-        tsv_path=subjects_sessions_tsv,
+        tsv_path=participants_tsv,
         threshold=threshold,
         batch_size=batch_size,
         num_workers=n_proc,

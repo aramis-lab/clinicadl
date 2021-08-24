@@ -1178,6 +1178,7 @@ class MapsManager:
                 )
 
         self.parameters = parameters
+
         _, transformations = get_transforms(self.mode, self.minmaxnormalization)
 
         split_manager = self._init_split_manager(None)

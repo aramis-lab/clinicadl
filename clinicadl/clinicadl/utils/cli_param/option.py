@@ -67,7 +67,7 @@ use_gpu = click.option(
 )
 n_proc = click.option(
     "-np",
-    "--nproc",
+    "--n_proc",
     type=int,
     default=2,
     show_default=True,

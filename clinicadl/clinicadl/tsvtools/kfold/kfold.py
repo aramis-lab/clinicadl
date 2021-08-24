@@ -56,6 +56,7 @@ def write_splits(
 
     splits = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=2)
 
+    print(f"Label {diagnosis}")
     for i, indices in enumerate(splits.split(np.zeros(len(y)), y)):
         print(f"Split {i}")
         train_index, test_index = indices
@@ -164,9 +165,10 @@ def split_diagnoses(
         os.mkdir(path.join(test_path, f"split-{i}"))
 
     diagnosis_df_paths = os.listdir(results_path)
-    diagnosis_df_paths = [x for x in diagnosis_df_paths if x.endswith(".tsv")]
     diagnosis_df_paths = [
-        x for x in diagnosis_df_paths if not x.endswith("_baseline.tsv")
+        x
+        for x in diagnosis_df_paths
+        if (x.endswith(".tsv") and not x.endswith("_baseline.tsv"))
     ]
 
     MCI_special_treatment = False
