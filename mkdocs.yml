@@ -32,13 +32,13 @@ theme:
       toggle:
         primary: deep purple
         accent: indigo  
-        icon: material/toggle-switch-off-outline
+        icon: material/eye-outline-outline
         name: Switch to dark mode
     - scheme: slate
       toggle:
         primary: teal
         accent: cyan
-        icon: material/toggle-switch
+        icon: material/eye
         name: Switch to light mode
 
 # Version panel
