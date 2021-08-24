@@ -1,6 +1,6 @@
 import random
 from os import path
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from clinicadl.train.train_utils import get_train_dict
 
@@ -62,7 +62,7 @@ def get_space_dict(toml_options: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
     return space_dict
 
 
-def sampling_fn(value, sampling_type):
+def sampling_fn(value, sampling_type: str):
     if isinstance(value, (tuple, list)):
         if sampling_type is "fixed":
             return value
@@ -84,14 +84,16 @@ def sampling_fn(value, sampling_type):
             return value
 
 
-def random_sampling(rs_options, options):
+def random_sampling(
+    rs_options: Dict[str, Any], options: Dict[str, Any]
+) -> Dict[str, Any]:
     """
     Samples all the hyperparameters of the model.
     Args:
-        rs_options: (Namespace) parameters of the random search
-        options: (Namespace) options of the training
+        rs_options: parameters of the random search
+        options: options of the training
     Returns:
-        options (Namespace), options updated to train the model generated randomly
+        options updated to train the model generated randomly
     """
 
     sampling_dict = {
@@ -157,13 +159,14 @@ def random_sampling(rs_options, options):
     return options
 
 
-def find_evaluation_steps(accumulation_steps, goal=18):
+def find_evaluation_steps(accumulation_steps: int, goal: int = 18) -> int:
     """
     Compute the evaluation steps to be a multiple of accumulation steps as close possible as the goal.
     Args:
-        accumulation_steps: (int) number of times the gradients are accumulated before parameters update.
+        accumulation_steps: number of times the gradients are accumulated before parameters update.
+        goal: ideal value for evaluation_steps
     Returns:
-        (int) number of evaluation_steps
+        number of evaluation_steps
     """
     if goal == 0 or goal % accumulation_steps == 0:
         return goal
@@ -171,13 +174,13 @@ def find_evaluation_steps(accumulation_steps, goal=18):
         return (goal // accumulation_steps + 1) * accumulation_steps
 
 
-def random_conv_sampling(rs_options):
+def random_conv_sampling(rs_options: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     """
     Generate random parameters for a random architecture (convolutional part).
     Args:
-        rs_options: (Namespace) parameters of the random search
+        rs_options: parameters of the random search
     Returns
-        (dict) parameters of the architecture
+        parameters of the convolutions
     """
     n_convblocks = sampling_fn(rs_options["n_convblocks"], "randint")
     first_conv_width = sampling_fn(rs_options["first_conv_width"], "choice")
@@ -202,7 +205,7 @@ def random_conv_sampling(rs_options):
     return convolutions
 
 
-def update_channels(out_channels, channels_limit=512):
+def update_channels(out_channels: int, channels_limit: int = 512) -> Tuple[int, int]:
     in_channels = out_channels
     if out_channels < channels_limit:
         out_channels = 2 * out_channels
