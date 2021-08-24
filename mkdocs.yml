@@ -36,6 +36,8 @@ theme:
         name: Switch to dark mode
     - scheme: slate
       toggle:
+        primary: teal
+        accent: cyan
         icon: material/toggle-switch
         name: Switch to light mode
 
