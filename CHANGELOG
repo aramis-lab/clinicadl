@@ -93,6 +93,10 @@ Be careful this version breaks the backward compatibility with previous versions
 - Fix tsvtools when diagnosis column value is not identical to tsv file name.
 - Fix `clinicadl tsvtool split` when n_test is 1.
 - Fix ROI when user provides 3D tensor for ROI.
+- Fix the use of GPU on a machine with more than ong GPU (such a computer cluster). 
+  ClinicaDL will now select a free GPU that as permission.
+- Fix an error where diagnosis column was automatically overwritten
+  by the name of the file during split or kfold.
 
 ### Security
 
@@ -158,9 +162,4 @@ Be careful this version breaks the backward compatibility with previous versions
 ### Fixed
 
 - Fix broken file when running preprocessing in t1-extensive.
-- Fix the use of GPU on a machine with more than ong GPU (such a computer cluster). 
-  ClinicaDL will now select a free GPU that as permission.
-- Fix an error where diagnosis column was automatically overwritten
-  by the name of the file during split or kfold.
-- Fix multi-class classification.
 
