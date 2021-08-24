@@ -12,7 +12,9 @@ Different tasks can be learnt by a network: `classification`, `reconstruction` a
 You need to execute the [`clinicadl tsvtool getlabels`](../TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease) 
 and [`clinicadl tsvtool {split|kfold}`](../TSVTools.md#split---single-split-observing-similar-age-and-sex-distributions) commands
 prior to running this task to have the correct TSV file organization.
-Moreover, there should be a CAPS, obtained running the preprocessing pipeline wanted.
+Moreover, there should be a CAPS, obtained running the preprocessing pipeline
+wanted (currently only `t1-Linear` preprocessing is supported, but others will
+be soon).
 
 ## Running the task
 The training task can be run with the following command line:
