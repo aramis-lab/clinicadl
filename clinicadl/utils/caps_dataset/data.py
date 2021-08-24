@@ -1,6 +1,7 @@
 # coding: utf8
 
 import abc
+from logging import getLogger
 from os import path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -22,11 +23,12 @@ from clinicadl.extract.extract_utils import (
     find_mask_path,
 )
 
+logger = getLogger("clinicadl")
+
+
 #################################
 # Datasets loaders
 #################################
-
-
 class CapsDataset(Dataset):
     """Abstract class for all derived CapsDatasets."""
 
@@ -558,7 +560,10 @@ class CapsDatasetRoi(CapsDataset):
 
         mask_paths, mask_arrays = list(), list()
         for roi in self.roi_list:
-            mask_path, _ = find_mask_path(mask_location, roi, pattern, True)
+            logger.info(f"Find mask for roi {roi}.")
+            mask_path, desc = find_mask_path(mask_location, roi, pattern, True)
+            if mask_path is None:
+                raise ValueError(desc)
             mask_nii = nib.load(mask_path)
             mask_paths.append(mask_path)
             mask_arrays.append(mask_nii.get_fdata())

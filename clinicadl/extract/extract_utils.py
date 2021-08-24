@@ -292,11 +292,6 @@ def find_mask_path(
     # Check that pattern begins and ends with _ to avoid mixing keys
     if mask_pattern is None:
         mask_pattern = ""
-    elif len(mask_pattern) != 0:
-        if not mask_pattern.endswith("_"):
-            mask_pattern += "_"
-        if not mask_pattern[0] == "_":
-            mask_pattern = "_" + mask_pattern
 
     candidates_pattern = path.join(
         masks_location, f"*{mask_pattern}*_roi-{roi}_mask.nii*"
@@ -407,7 +402,7 @@ def extract_roi_tensor(
     if len(mask_np.shape) == 3:
         mask_np = np.expand_dims(mask_np, axis=0)
     elif len(mask_np.shape) == 4:
-        assert mask_np[0] == 1
+        assert mask_np.shape[0] == 1
     else:
         raise ValueError(
             "ROI masks must be 3D or 4D tensors. "
