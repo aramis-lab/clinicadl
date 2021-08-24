@@ -15,7 +15,7 @@ setup(
     description="Deep learning classification with clinica",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/aramis-lab/AD-DL",
+    url="https://github.com/aramis-lab/clinicadl",
     license="MIT license",
     author="ARAMIS Lab",
     maintainer="Mauricio DIAZ",

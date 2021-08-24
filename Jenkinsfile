@@ -23,9 +23,9 @@ pipeline {
              conda create -y -n clinicadl_test python=3.7
              conda activate clinicadl_test
              echo "Install clinicadl using pip..."
-             cd $WORKSPACE/clinicadl
+             cd $WORKSPACE
              pip install -e .
-             pip install -r ../requirements-dev.txt
+             pip install -r ./requirements-dev.txt
              # Show clinicadl help message
              echo "Display clinicadl help message"
              clinicadl --help
