@@ -93,7 +93,6 @@ def random_sampling(rs_options, options):
     Returns:
         options (Namespace), options updated to train the model generated randomly
     """
-    print(rs_options)
 
     sampling_dict = {
         "accumulation_steps": "randint",
