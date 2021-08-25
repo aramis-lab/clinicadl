@@ -51,7 +51,6 @@ class MetricModule:
 
             for metric_key, metric_fn in self.metrics.items():
                 metric_args = list(metric_fn.__code__.co_varnames)
-                print(metric_key, metric_args)
                 if "class_number" in metric_args:
                     for class_number in range(self.n_classes):
                         results[f"{metric_key}-{class_number}"] = metric_fn(
@@ -62,7 +61,6 @@ class MetricModule:
         else:
             results = dict()
 
-        print(results)
         return results
 
     @staticmethod
