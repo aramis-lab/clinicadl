@@ -6,7 +6,7 @@ with open(join(dirname(__file__), "clinicadl/VERSION"), "rb") as f:
     version = f.read().decode("ascii").strip()
 
 this_directory = abspath(dirname(__file__))
-with open(join(this_directory, pardir, "README.md"), encoding="utf-8") as f:
+with open(join(this_directory, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 setup(
@@ -15,7 +15,7 @@ setup(
     description="Deep learning classification with clinica",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/aramis-lab/AD-DL",
+    url="https://github.com/aramis-lab/clinicadl",
     license="MIT license",
     author="ARAMIS Lab",
     maintainer="Mauricio DIAZ",

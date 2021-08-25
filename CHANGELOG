@@ -5,24 +5,98 @@ Main changes to this code/ project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## ClinicaDL 1.0
+
+Welcome in **ClinicaDL 1.0.0** ! 
+
+This is a new version of ClinicaDL with some major changes in the source code. All the main pipelines 
+have been refactored. ClinicaDL now used is now working with classes instead of function for easier maintenance 
+and better scalability. We introduce in this version our new data structure called MAPS to unify ClinicaDL outputs.
+
+This release also include a major command line refactoring with the introduction of [Click](https://click.palletsprojects.com/en/8.0.x/) library.
+Major changes in several pipelines interfaces have been implemented. For instance the preprocessing pipeline has been 
+split. Train pipeline has also been refactored to reduce the number of options. The goal is to make ClinicaDL more easy to use, to maintain, 
+and adapt the command line to the MAPS.
+
+ClinicaDL aim for more reproducibility: some configuration files are saved in the MAPS to reproduce experiments in the same condition 
+(with same environnement and same parameters). In addition we added some options to fix the random processes seed and use Pytorch 
+latest enhancement for a deterministic behavior.
+
+Other improvement and small fix have also been implemented.
+
+Be careful this version breaks the backward compatibility with previous versions.
 
 ### Added
 
--
--
--
+**Pipelines:**
+
+- New `extract` pipeline to convert nifti images in Pytorch tensors. This pipeline now saves a preprocessing json file 
+    with all the information needed for the train pipeline.
+
+**Core:**
+
+- New folder structure: MAPS (Model Analysis and Processing Structure) for ClinicaDL outputs.
+- New class MapsManager for MAPS to ease the interface with the MAPS: launch various tasks such as 
+    training and prediction, save outputs, read files...
+- Other new classes to make ClinicaDL code more scalable: SplitManager, TaskManager, Network...
+- Now takes pet-linear images as possible data modality.
+- Possibility to fix the seed for a deterministic behavior.
+
+**Other:**
+
+- New arguments for ROI in random search.
 
 ### Changed
 
--
--
+**Pipelines:**
+
+- `train` pipeline has now a new command line. Please see the doc for more information.
+- `train` now accept a TOML configuration file to simplify the command line.
+- `train resume` is now named `resume`.
+- `random-search generate` is now named `random-search`
+- `random-search`now use TOML configuration file instead of JSON.
+- `generate` pipeline to generate synthetic dataset (random, trivial and Shepp-Logan).
+- `quality-check` pipeline to perform quality check on Clinica t1-linear and t1-volume outputs.
+
+**Core:**
+
+- Major refactoring of the source code repository organization: now ClinicaDL core 
+  respects the command line hierarchy as is in Clinica repository.
+- Command line: we now use [Click](https://click.palletsprojects.com/en/8.0.x/) instead of Argparse.
+
+**Other:**
+
+- Console logs enhancement.
+- Replace tensorboardx dependency with torch.utils.tensorboard to remove tensorboardx from requirement.
+- GitHub repository name is now ClinicaDL and not AD-DL anymore.
+- We will now use [GitHub discussion](https://github.com/aramis-lab/clinicadl/discussions) instead of [Google Group](https://groups.google.com/g/clinica-user).
 
 ### Deprecated
 
 ### Removed
 
+**Pipelines:**
+
+- `clinicadl preprocessing` pipelines have been removed. They now have new names (see above).
+- `clinicadl preprocessing run` has now completely been removed. Please use Clinica for preprocessing.
+- `train_from_json` pipeline has been replaced with TOML configuration file.
+- `clinicadl random-search analysis` pipeline has been removed.
+
+**Core:**
+
+- T1-extensive preprocessing is not supported by ClinicaDL anymore.
+
 ### Fixed
+
+- Fix multi-class classification.
+- Fix classification when only one ROI is given.
+- Fix tsvtools when diagnosis column value is not identical to tsv file name.
+- Fix `clinicadl tsvtool split` when n_test is 1.
+- Fix ROI when user provides 3D tensor for ROI.
+- Fix the use of GPU on a machine with more than ong GPU (such a computer cluster). 
+  ClinicaDL will now select a free GPU that as permission.
+- Fix an error where diagnosis column was automatically overwritten
+  by the name of the file during split or kfold.
 
 ### Security
 

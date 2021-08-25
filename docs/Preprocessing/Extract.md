@@ -119,13 +119,26 @@ tensor version of the `<i>`-th 3D isotropic patch of size `<L>` with a stride of
 
 ### `roi`
 
-The `roi` format saves `N` regions defined by binary masks saved in the CAPS folder.
+The `roi` format saves the regions defined by binary masks saved in the CAPS folder.
+Binary mask must be provided by the user, by using the option `--roi_list`.
 
 Options:
 
-- `--roi_list`: list of `N` regions to be extracted. 
-  The masks corresponding to these regions should be
-  written in `<caps_directory>/masks/tpl-<tpl_name>`.
+- `--roi_list`: list of `N` regions to be extracted.  The masks corresponding
+  to these regions should be written in
+  `<caps_directory>/masks/tpl-<tpl_name>`.  For example, if one wants to
+  extracts ROI corresponding to the right and left hipocamppus using the
+  publicly available `MNI152NLin2009cSym` template, two files containing the
+  masks should be available in a folder named
+  `<caps_directory>/masks/tpl-MNI152NLin2009cSym/`. For full (uncropped)
+  images, the filenames of these masks are:
+  `tpl-MNI152NLin2009cSym_res-1x1x1_roi-leftHippocampusBox_mask.nii.gz`,
+  `tpl-MNI152NLin2009cSym_res-1x1x1_roi-rightHippocampusBox_mask.nii.gz`. Then,
+  the command to invoque the extraction is:
+```
+clinicadl extract CAPS_DIRECTORY t1-linear roi --roi_list rightHippocampusBox --roi_list leftHippocampusBox
+```
+
 - `--roi_uncrop_output`: disables cropping option, so the output 
   tensors have the same size as the whole image instead of the ROI size.
 - `--custom_template` (mandatory for `custom`): only used when `modality` is set to `custom`.
@@ -138,7 +151,7 @@ Options:
     input data it corresponds to. All masks must follow the pattern 
     `tpl-<tpl_name>_*_roi-<roi_name>_mask.nii.gz`.
 
-    If the defined region is not cubic, `deeplearning-prepare-data` will automatically extract
+    If the defined region is not cubic, `clinicadl extract` will automatically extract
     the smallest bounding box around the region and fill the remaining values with 0 (unless
     `--roi_uncrop_output` is specified).
 
