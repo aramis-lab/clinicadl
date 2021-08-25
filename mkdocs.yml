@@ -3,8 +3,7 @@ site_name: ClinicaDL Documentation
 site_author: ClinicaDL contributors
 site_url: https://clinicadl.readthedocs.io/
 site_description: >-
-  Framework for the reproducible classification of Alzheimer's disease
-  using deep learning
+  Open-source deep learning software for reproducible neuroimaging processing
 
 # Repository
 repo_name: aramislab/clinicadl
@@ -12,7 +11,7 @@ repo_url: https://github.com/aramis-lab/clinicadl
 #edit_uri: master/edit/doc
 
 # Copyright
-copyright: Copyright &copy; 2020 ClinicaDL contributors
+copyright: Copyright &copy; 2019-2021 ClinicaDL contributors
 
 # Google Analytics
 google_analytics:
@@ -26,9 +25,21 @@ theme:
   icon:
     repo: material/github
   language: en
+  logo: images/clinicadl_logo.png
+  favicon: images/favicon.png
+  features:
+    - header.autohide
   palette:
-    primary: green
-    accent: green
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
 
 # Version panel
 extra_javascript:
@@ -48,6 +59,8 @@ extra:
   version:
     default: stable
 
+extra_css:
+  - stylesheets/extra.css
 
 # Extensions
 markdown_extensions:
@@ -63,24 +76,22 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Installation: Installation.md
+  - First steps: Introduction.md
+  - Prepare your metadata: TSVTools.md
   - Prepare your imaging data:
     - Introduction: Preprocessing/Introduction.md
-    - t1-linear pipeline: Preprocessing/T1_Linear.md
-    - t1-extensive pipeline: Preprocessing/T1_Extensive.md
-    - extract tensors: Preprocessing/Extract.md
-    - quality check: Preprocessing/QualityCheck.md
-  - Random Search: RandomSearch.md
-  - Train:
-    - Introduction: Train/Introduction.md
-    - Image-based: Train/Image.md
-    - Patch-based: Train/Patch.md
-    - Slice-based: Train/Slice.md
-    - ROI-based: Train/ROI.md
-    - JSON defined: Train/Retrain.md
-    - Resume: Train/Resume.md
-    - Custom experiment: Train/Custom.md
+    - Extract tensors: Preprocessing/Extract.md
+    - Quality check: Preprocessing/QualityCheck.md
+    - Generate synthetic data sets: Preprocessing/Generate.md
+  - Hyperparameter exploration: RandomSearch.md
+  - Train deep learning networks:
+    - Train: Train/Introduction.md
+    - Resume training: Train/Resume.md
     - Implementation details: Train/Details.md
-  - Classify: Classify.md
-  - Interpret: Interpret.md
-  - Generate: Generate.md
-  - TSV Tools: TSVTools.md
+  - Inference using trained models: Predict.md
+  - Network output serialization: Tensors.md
+  - Interpretation with gradient maps: Interpret.md
+  - Advanced user guide:
+      - Customize your training: Contribute/Custom.md
+      - Test your modifications: Contribute/Test.md
+      - Contribute to the project: Contribute/Newcomers.md

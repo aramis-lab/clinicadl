@@ -3,6 +3,23 @@
 Details of implementation corresponding to modules used in the provided architectures, autoencoder construction, 
 transfer learning or training details are provided in this section.
 
+## Deterministic algorithms
+
+ClinicaDL allows to set the seed of the pseudo-random libraries used by the library (`numpy`, `random`,
+and `torch`). This seed is also used in train data loaders, to avoid [the randomness 
+in data loading introduced by Pytorch](https://pytorch.org/docs/stable/data.html#data-loading-randomness).
+
+However, this is not sufficient to guarantee the exact reproducibility when using GPU (though the results will
+be more close than with two different seeds). To obtain exactly the same results with the same GPU environment,
+the user must specify the flag `--torch_deterministic`. This will force CUDA to use a
+deterministic behaviour, but at the cost of the computation time, or the memory use.
+
+!!! warning "Non-deterministic functions in Pytorch"
+    Pytorch library is currently improving the reproducibility of their methods, 
+    however all the functions do not have a reproducible equivalent yet.
+    If you want to be deterministic, you may need to adapt your architecture or 
+    wait until Pytorch implements the deterministic version of the function you need.
+
 ## Adaptive padding in pooling layers
 
 Pooling layers reduce the size of their input feature maps. 
@@ -13,7 +30,7 @@ Here is a 2D example of the standard layer of pytorch `nn.MaxPool2d`:
 <img src="https://drive.google.com/uc?id=1qh9M9r9mfpZeSD1VjOGQAl8zWqBLmcKz" style="height: 200px;" alt="animation of classical max pooling">
 
 The last column may not be used depending on the size of the kernel/input and stride value. 
-To avoid this, pooling layers with adaptive padding `PadMaxPool3d` were implemented in `clinicadl` to exploit information from the whole feature map.
+To avoid this, pooling layers with adaptive padding `PadMaxPool3d` were implemented in ClinicaDL to exploit information from the whole feature map.
 
 <img src="https://drive.google.com/uc?id=14R_LCTiV0N6ZXm-3wQCj_Gtc1LsXdQq_" style="height: 200px;" alt="animation of max pooling with adaptive pooling">
 
@@ -23,7 +40,7 @@ To avoid this, pooling layers with adaptive padding `PadMaxPool3d` were implemen
 
 ## Autoencoders construction from CNN architectures
 
-In `clinicadl`, an autoencoder is derived from a CNN architecture:
+In ClinicaDL, autoencoders can be derived from a CNN architecture. In this case:
 
 - the encoder corresponds to the convolutional part of the CNN,
 - the decoder is composed of the transposed version of the operations used in the encoder.
@@ -41,17 +58,25 @@ The list of the transposed version of the modules can be found below:
 - `LeakyReLU` → `LeakyReLU` with the inverse value of alpha,
 - other → copy of itself
 
+To easily transform a custom CNN architecture (without skip connections) in autoencoder, you can use the
+`CNN_Transformer` class in `clinicadl/utils/network/autoencoder/cnn_transformer.py`. In this way, 
+
 ## Transfer learning
 
-It is possible to transfer trainable parameters between models. In the following list the weights are transferred from `source task` to `target task`:
+!!! warning "Model identity"
+    Weights can be transferred between the source and target networks only if their layers are named
+    the same way (i.e. the models are identical). To ensure transfer learning between a `CNN` and an 
+    `Autoencoder`, please use the `CNN_transformer` (see section above).
 
-- `autoencoder` to `cnn`: The trainable parameters of the convolutional part of the `cnn` 
+It is possible to transfer trainable parameters between models. 
+In the following list the weights are transferred from `source task` to `target task`:
+
+- `AutoEncoder` to `CNN`: The trainable parameters of the convolutional part of the `CNN` 
 (convolutions and batch normalization layers) take the values of the trainable parameters of the encoder part of the source autoencoder.
-- `cnn` to `cnn`: All the trainable parameters are transferred between the two models.
-- `autoencoder` to `multicnn`: The convolutional part of each CNN of the `multicnn` run is initialized
- with the weights of the encoder of the source autoencoder.
-- `cnn` to `multicnn`: Each CNN of the `multicnn` run is initialized with the weights of the source CNN.
-- `multicnn` to `multicnn`: Each CNN is initialized with the weights of the corresponding one in the source experiment.
+- `CNN` to `AutoEncoder`: The encoder takes the values of the convolutional part of the `CNN`.
+- between identical networks: All the trainable parameters are transferred between the two models.
+- `single` to `multi`: The single network is used to initialize each network of the multi-network framework.
+- `multi` to `multi`: Each network is initialized with the weights of the corresponding one in the source experiment.
 
 ## Optimization
 
@@ -73,7 +98,7 @@ In some frameworks, the training loss may be approximated using the sum of the l
 batches of data seen by the network. In ClinicaDL, set (train or validation) performance is always evaluated
 on all the images of the set.
 
-By default during training, the network performance on train and validation is evaluated at the end of each epoch.
+By default, during training the network performance on train and validation is evaluated at the end of each epoch.
 It is possible to perform inner epoch evaluations by setting the value of `evaluation_steps` to the number of 
 weight updates before evaluation. Inner epoch evaluations allow better evaluating the progression of the network
 during training. 
@@ -83,10 +108,7 @@ during training.
 
 ## Model selection
 
-The selection of a model is associated to a metric evaluated on the validation set:
-
-- autoencoders are selected based on the loss (mean squared error),
-- CNNs are selected based on the balanced accuracy and the loss (cross-entropy loss).
+The selection of a model is associated to a metric evaluated on the validation set.
 
 At the end of each epoch, if the validation performance of the current state is better than the best one ever seen, 
 the current state of the model is saved in the corresponding best model folder.
@@ -102,44 +124,55 @@ loss ever seen * (1 - `tolerance`). Early stopping can be disabled by setting `p
 If early stopping is disabled, or if its stopping criterion was never reached, training stops when the maximum number
 of epochs `epochs` is reached.
 
-## Soft voting
+## Image-level results
 
 <SCRIPT SRC='https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML'></SCRIPT>
 <SCRIPT>MathJax.Hub.Config({ tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}})</SCRIPT> 
 
-For classification tasks that take as input a part of the MRI volume (*patch, roi or slice*), 
+For classification or regression tasks that take as input a part of the MRI volume (*patch, roi or slice*), 
 an ensemble operation is needed to obtain the label at the image level.
 
-For example, size and stride of 50 voxels on linear preprocessing leads to the classification of 36 patches,
-but they are not all equally meaningful.
-Patches that are in the corners of the image are mainly composed of background and skull and may be misleading,
+For classification task, soft-voting was implemented as all inputs are not equally meaningful.
+For example, patches that are in the corners of the image are mainly composed of background and skull and may be misleading,
 whereas patches within the brain may be more useful.
 
 ![Comparison of meaningful and misleading patches](../images/patches.png)
 
-Then the image-level probability of AD *p<sup>AD</sup>* will be:
+Then the image-level probability of label 1 *p<sup>1</sup>* will be:
 
-$$ p^{AD} = {\sum_{i=0}^{35} bacc_i * p_i^{AD}}$$
+$$ p^{1} = {\sum_{i=0}^{35} bacc_i * p_i^{1}}$$
 
 where:
 
-- *p<sub>i</sub><sup>AD</sup>* is the probability of AD for patch *i*,
+- *p<sub>i</sub><sup>1</sup>* is the probability of label 1 for patch *i*,
 - *bacc<sub>i</sub>* is the validation balanced accuracy for patch *i*.
+
+For the regression task, hard-voting is used, then the value of the output at the image level
+is simply the average of the values of all image parts.
+
+## Multi-network
+
+By default, all images are used as input of a unique network. With the `--multi` flag,
+a network is trained per image part.
+
+The flag `--multi` cannot be used if the number of parts per image is 1 (for example in `image` mode
+or in `roi` mode if there is only one region).
 
 ## Multi-cohort
 
 Starting from version 0.2.1, it is possible to use ClinicaDL's functions on several datasets at the same time.
-In this case, the `multi-cohort` flag must be given, and the `caps_directory` and the `tsv_path`
+In this case, the `multi-cohort` flag must be given, and the `CAPS_DIRECTORY` and the `TSV_DIRECTORY`
 correspond to TSV files.
 
-The `caps_directory` variable must lead to a TSV file with two columns:
-- `cohort` the name of the cohort (must correspond to the values in `tsv_path`),
+The `CAPS_DIRECTORY` argument must lead to a TSV file with two columns:
+
+- `cohort` the name of the cohort (must correspond to the values in `TSV_DIRECTORY`),
 - `path` the path to the corresponding [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
 
-The `tsv_path` variable points to a TSV file with two columns:
-- `cohort` the name of the cohort (must correspond to the values in `caps_directory`),
+The `TSV_DIRECTORY` argument points to a TSV file with two columns:
+
+- `cohort` the name of the cohort (must correspond to the values in `CAPS_DIRECTORY`),
 - `path` the path to the corresponding labels list, outputs of [`split`](../TSVTools.md#split---single-split-observing-similar-age-and-sex-distributions) 
 or [`kfold`](../TSVTools.md#kfold---k-fold-split) methods.
 - `diagnoses` the diagnoses that will be used in the cohort. Must correspond to a single string with labels accepted by
 `clinicadl train` (`AD`, `BV`, `CN`, `MCI`, `sMCI` or `pMCI`) separated by commas.
-See the [dedicated section](./Custom.md#custom-labels) to use custom labels.

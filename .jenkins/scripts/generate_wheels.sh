@@ -14,8 +14,8 @@ echo $CURRENT_DIR
 # ensure we are in the right dir
 SCRIPT_DIR=`dirname $0`
 cd $SCRIPT_DIR
-echo "Entering ${SCRIPT_DIR}/../../clinicadl/"
-cd "${SCRIPT_DIR}/../../clinicadl"
+echo "Entering ${SCRIPT_DIR}/../../"
+cd "${SCRIPT_DIR}/../../"
 ls 
 
 # clean pycache stuff
