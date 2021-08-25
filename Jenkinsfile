@@ -375,15 +375,15 @@ pipeline {
         }
       }
     }  
-    post {
-      failure {
-        mail to: 'clinicadl-ci@inria.fr',
-          subject: "Failed Pipeline: ${currentBuild.fullDisplayName}",
-          body: "Something is wrong with ${env.BUILD_URL}"
-        mattermostSend( 
-          color: "#FF0000",
-          message: "CLinicaDL Build FAILED:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
-        )
-      }
-    }
+    // post {
+    //   failure {
+    //     mail to: 'clinicadl-ci@inria.fr',
+    //       subject: "Failed Pipeline: ${currentBuild.fullDisplayName}",
+    //       body: "Something is wrong with ${env.BUILD_URL}"
+    //     mattermostSend( 
+    //       color: "#FF0000",
+    //       message: "CLinicaDL Build FAILED:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
+    //     )
+    //   }
+    // }
   }
