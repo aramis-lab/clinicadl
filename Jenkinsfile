@@ -57,7 +57,7 @@ pipeline {
         }
         post {
           always {
-            junit 'test/test-reports/test_cli_report.xml'
+            junit 'tests/test-reports/test_cli_report.xml'
           }
         }
       }
@@ -90,7 +90,7 @@ pipeline {
                 }
                 post {
                   always {
-                    junit 'test/test-reports/test_tsvtool_report.xml'
+                    junit 'tests/test-reports/test_tsvtool_report.xml'
                   }
                 }
               }
@@ -153,7 +153,7 @@ pipeline {
                 }
                 post {
                   always {
-                    junit 'test/test-reports/test_predict_report.xml'
+                    junit 'tests/test-reports/test_predict_report.xml'
                     sh 'rm -rf $WORKSPACE/tests/data/dataset'
                   }
                 } 
