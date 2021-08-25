@@ -85,10 +85,9 @@ from clinicadl.utils import cli_param
     help="Architecture of the chosen model to train. A set of model is available in ClinicaDL, default architecture depends on the NETWORK_TASK (see the documentation for more information).",
 )
 @click.option(
-    "--multi_network",
+    "--multi_network/--single_network",
     type=bool,
-    is_flag=True,
-    # default=false,
+    default=None,
     help="If provided uses a multi-network framework.",
 )
 # Mode
@@ -110,10 +109,9 @@ from clinicadl.utils import cli_param
 )
 # Data
 @click.option(
-    "--multi_cohort",
+    "--multi_cohort/--single_cohort",
     type=bool,
-    # default=False,
-    is_flag=True,
+    default=None,
     help="Performs multi-cohort training. In this case, caps_dir and tsv_path must be paths to TSV files.",
 )
 @click.option(
@@ -125,15 +123,15 @@ from clinicadl.utils import cli_param
     help="List of diagnoses used for training.",
 )
 @click.option(
-    "--baseline",
+    "--baseline/--longitudinal",
     type=bool,
-    # default=False,
-    is_flag=True,
+    default=None,
     help="If provided, only the baseline sessions are used for training.",
 )
 @click.option(
     "--normalize/--unnormalize",
-    # default=False,
+    type=bool,
+    default=None,
     help="Disable default MinMaxNormalization.",
 )
 @click.option(
@@ -333,14 +331,16 @@ def cli(
     ]
 
     for option in standard_options_list:
-        if eval(option):
+        if (eval(option) is not None and not isinstance(eval(option), tuple)) or (
+            isinstance(eval(option), tuple) and len(eval(option)) != 0
+        ):
             train_dict[option] = eval(option)
 
-    if gpu:
+    if gpu is not None:
         train_dict["use_cpu"] = not gpu
     if n_proc:
         train_dict["num_workers"] = n_proc
-    if normalize:
+    if normalize is not None:
         train_dict["minmaxnormalization"] = normalize
     if split:
         train_dict["folds"] = split
