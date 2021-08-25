@@ -131,6 +131,7 @@ Optional variables:
 
         
 Mode-dependent variables:
+
 - `patch`
     - `patch_size` (int) size of the patches in voxels. 
     Sampling function: `randint`. Default: `50`.
@@ -168,6 +169,7 @@ Mode-dependent variables:
     The mode-dependent variables are used only if the corresponding mode is sampled.
 
 Task-dependent parameters:
+
 - `classification`
   - `label`
   - `selection_threhold`: (float) threshold on the balanced accuracies to compute the 

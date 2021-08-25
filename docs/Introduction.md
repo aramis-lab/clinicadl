@@ -26,7 +26,7 @@ applied to a particular deep learning framework. The hierarchy is organized acco
 1. **fold**: In ClinicaDL, a training procedure consists in training one model per train / validation split defined by the validation
 procedure. Then the MAPS contains `N` folders named `fold-<i>` with i between 0 and N-1 containing the best networks obtained
 for the `i`-th train / validation split.
-2. **selection metric**: for each fold, one network is selected per `selection_metric` asked by the user (see [Implementation Details](Train/Details.md#model-selection)
+2. **selection metric**: for each fold, one network is selected per `selection_metrics` asked by the user (see [Implementation Details](Train/Details.md#model-selection)
 for more information). The output folder containing all information linked to a network selected according to a metric `metric` is named
 `best-<metric>`.
 3. **data group**: Finally, network depending on a fold and a selection metric can be applied to any data group to [compute individual results

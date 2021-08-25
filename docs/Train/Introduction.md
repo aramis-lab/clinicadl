@@ -6,13 +6,15 @@ different formats of inputs (whole 3D images, 3D patches or 2D slices), as defin
 It mainly relies on the PyTorch deep learning library
 [[Paszke et al., 2019](https://papers.nips.cc/paper/9015-pytorch-an-imperative-style-high-performance-deep-learning-library)].
 
-Different tasks can be learnt by a network: `classification`, `reconstruction` and `regression` (see below).
+Different tasks can be learnt by a network: `classification`, `reconstruction` and `regression` ([see below](#running-the-task)).
 
 ## Prerequisites
 You need to execute the [`clinicadl tsvtool getlabels`](../TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease) 
 and [`clinicadl tsvtool {split|kfold}`](../TSVTools.md#split---single-split-observing-similar-age-and-sex-distributions) commands
 prior to running this task to have the correct TSV file organization.
-Moreover, there should be a CAPS, obtained running the preprocessing pipeline wanted.
+Moreover, there should be a CAPS, obtained running the preprocessing pipeline
+wanted (currently only `t1-Linear` preprocessing is supported, but others will
+be soon).
 
 ## Running the task
 The training task can be run with the following command line:
@@ -31,11 +33,13 @@ In case of [multi-cohort training](Details.md#multi-cohort), must be a path to a
 In case of [multi-cohort training](Details.md#multi-cohort), must be a path to a TSV file.
 - `OUTPUT_MAPS_DIRECTORY` (path) is the folder where the results are stored.
 
-The training can be configured through a Toml configuration file or by using the command line options. If you have a Toml configuration file (see [the section below](Introduction.md/#Configuration-file) page for more information) you can use the following option to load it:
+The training can be configured through a Toml configuration file or by using the command line options. If you have a Toml configuration file (see [the section below](#configuration-file) for more information) you can use the following option to load it:
 
 - `--config_file` (File) is the name of the Toml configuration file for training job. This file contain the value for the options that you want to specify (to avoid too long command line).
 
-If an option is specified twice (in the configuration file and then as an option in command line) then **the value specified in the command line will be used for the job**.
+If an option is specified twice (in the configuration file and as an
+option in command line) then **the value specified in the command line will have a
+higher priority when running the job**.
 
 Options shared for all values of `network_task` are organized in groups:
 
@@ -56,7 +60,10 @@ Options shared for all values of `network_task` are organized in groups:
     If you want to use custom architecture, be sure to respect the output size needed for the learnt task.
 
 - **Tensor extraction**
-    - `--use_extracted_features` (bool) is an option to extract tensors on the fly during training if you cannot save them in your CAPS directory. In this case the argument `PREPROCESSING_JSON` contains the wanted parameters for extraction.
+    - `--use_extracted_features` (bool) is an option to extract tensors
+      on-the-fly during training. This option is useful if you want to avoid
+      saving tensor files in your CAPS directory. In this case the argument
+      `PREPROCESSING_JSON` contains the wanted parameters for extraction.
 - **Computational resources**
     - `--gpu/--no-gpu` (bool) Use GPU acceleration. Default behavior is to try to use a GPU and to raise an error if it is not found. Please specify `--no-gpu` to use CPU instead.
     - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
@@ -79,7 +86,7 @@ Options shared for all values of `network_task` are organized in groups:
     - `--split` (list of int) is a subset of folds that will be used for training. By default all splits available are used.
 - **Reproducibility** (for more information refer to the [implementation details](./Details.md#deterministic-algorithms)
     - `--seed` (int) is the value used to set the seed of all random operations. Default samples a seed and uses it for the experiment.
-    - `--torch_deterministic` (bool) forces the training process to be deterministic.
+    - `--nondeterministic/--deterministic` (bbol) forces the training process to be deterministic.
     If any non-deterministic behaviour is encountered will raise a RuntimeError. Default: `False`.
     - `--compensation` (str) allow to choose how CUDA will compensate to obtain a deterministic behaviour.
     The computation time will be longer, or the computations will require more memory space. Default: `memory`.
