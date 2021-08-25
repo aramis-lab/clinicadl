@@ -49,34 +49,30 @@ conda activate clinicadlEnv
     basic `clinicadl -h` command and get the help screen:
     ```Text
     (clinicadlEnv)$ clinicadl -h
-    usage: clinicadl [-h] [--verbose]
-                     {generate,preprocessing,extract,train,predict,tsvtool} ...
+    Usage: clinicadl [OPTIONS] COMMAND [ARGS]...
 
-    Deep learning software for neuroimaging datasets
-    
-    optional arguments:
-      -h, --help            show this help message and exit
-      -l file.log, --logname file.log
-                            Define the log file name (default: clinicaDL.log)
-      -V, --version         ClinicaDL's installed version
-    
-    Task to execute with clinicadl:
-      What kind of task do you want to use with clinicadl?
-    
-      {generate,preprocessing,random-search,train,predict,tsvtool,interpret}
-                            ****** Tasks proposed by clinicadl ******
-        generate            Generate synthetic data for functional tests.
-        preprocessing       Preprocess T1w-weighted images with t1-linear or
-                            t1-extensive pipelines.
-        random-search       Generate random networks to explore hyper parameters
-                            space.
-        train               Train with your data and create a model.
-        predict             Performs the individual predictions of a list of
-                            subject in tsv_path. If labels are given, will also
-                            compute global metrics on the data set.
-        tsvtool             Handle tsv files for metadata processing and data
-                            splits.
-        interpret           Interpret the prediction of a CNN with saliency maps.
+      ClinicaDL command line.
+
+      For more information please read the doc: https://clinicadl.readthedocs.io/en/latest/
+      Source code is available on GitHub: https://github.com/aramis-lab/clinicaDL .
+
+      Do not hesitate to create an issue to report a bug or suggest an improvement.
+
+    Options:
+      --version      Show the version and exit.
+      -v, --verbose  Increase logging verbosity.  [x>=0]
+      -h, --help     Show this message and exit.
+
+    Commands:
+      extract        Extract Pytorch tensors from nifti images.
+      generate       Generation of synthetic dataset.
+      interpret      Interpretation of trained models using saliency map method.
+      predict        Infer the outputs of a trained model on a test set.
+      quality-check  Performs quality check procedure for t1-linear or t1-volume...
+      random-search  Hyperparameter exploration using random search.
+      resume         Resume training job in specified maps.
+      train          Train a deep learning model on your neuroimaging dataset.
+      tsvtool        Manipulation of TSV files to prepare and manage input data.
     ```
 
 
