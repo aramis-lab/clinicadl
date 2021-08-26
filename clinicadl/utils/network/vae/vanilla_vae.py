@@ -8,17 +8,17 @@ from clinicadl.utils.network.vae.vae_utils import VAE_Decoder, VAE_Encoder
 class VanillaVAE(Network):
     def __init__(
         self,
-        input_shape,
-        feature_size,
-        latent_size,
-        latent_dim,
-        n_conv,
-        io_layer_channel,
+        input_size,
+        feature_size=1024,
+        latent_size=64,
+        latent_dim=1,
+        n_conv=4,
+        io_layer_channel=32,
         train=False,
     ):
         super(VanillaVAE, self).__init__()
 
-        self.input_shape = input_shape
+        self.input_size = input_size
         self.latent_dim = latent_dim
         self.feature_size = feature_size
         self.latent_size = latent_size
@@ -28,7 +28,7 @@ class VanillaVAE(Network):
         self.training = train
 
         self.encoder = VAE_Encoder(
-            input_shape=self.input_shape,
+            input_shape=self.input_size,
             feature_size=self.feature_size,
             latent_dim=self.latent_dim,
             n_conv=self.n_conv,
@@ -55,7 +55,7 @@ class VanillaVAE(Network):
             )
 
         self.decoder = VAE_Decoder(
-            input_shape=self.input_shape,
+            input_shape=self.input_size,
             latent_size=self.latent_size,
             feature_size=self.feature_size,
             latent_dim=self.latent_dim,
