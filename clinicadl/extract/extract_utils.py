@@ -14,11 +14,9 @@ def get_parameters_dict(
     parameters = {
         "preprocessing": modality,
         "mode": extract_method,
-        "use_uncropped_image": save_features,
+        "use_uncropped_image": use_uncropped_image,
+        "prepare_dl": save_features,
     }
-    # use extracted features
-
-    parameters["prepare_dl"] = save_features
 
     if modality == "custom":
         parameters["custom_suffix"] = custom_suffix
