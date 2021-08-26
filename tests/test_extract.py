@@ -3,9 +3,89 @@
 import warnings
 from os import pardir
 
-from clinica.test.nonregression.testing_tools import clean_folder, compare_folders
-
 warnings.filterwarnings("ignore")
+
+
+def clean_folder(path, recreate=True):
+    from os import makedirs
+    from os.path import abspath, exists
+    from shutil import rmtree
+
+    abs_path = abspath(path)
+    if exists(abs_path):
+        rmtree(abs_path)
+    if recreate:
+        makedirs(abs_path)
+
+
+def compare_folders(out, ref, shared_folder_name):
+    from filecmp import cmp
+    from os import remove
+    from os.path import join
+
+    out_txt = join(out, "out_folder.txt")
+    ref_txt = join(ref, "ref_folder.txt")
+
+    list_files(join(out, shared_folder_name), filename=out_txt)
+    list_files(join(ref, shared_folder_name), filename=ref_txt)
+
+    # Compare them
+    if not cmp(out_txt, ref_txt):
+        with open(out_txt, "r") as fin:
+            out_message = fin.read()
+        with open(ref_txt, "r") as fin:
+            ref_message = fin.read()
+        remove(out_txt)
+        remove(ref_txt)
+        raise ValueError(
+            "Comparison of out and ref directories shows mismatch :\n "
+            "OUT :\n" + out_message + "\n REF :\n" + ref_message
+        )
+
+    # Clean folders
+    remove(out_txt)
+    remove(ref_txt)
+
+
+def list_files(startpath, filename=None):
+    """
+    Args:
+        startpath: starting point for the tree listing. Does not list hidden
+        files (to avoid problems with .DS_store for example
+        filename: if None, display to stdout, otherwise write in the file
+    Returns:
+        void
+    """
+    from os import remove, sep, walk
+    from os.path import abspath, basename, exists, expanduser, expandvars
+
+    if exists(filename):
+        remove(filename)
+
+    expanded_path = abspath(expanduser(expandvars(startpath)))
+    for root, dirs, files in walk(expanded_path):
+        level = root.replace(startpath, "").count(sep)
+        indent = " " * 4 * (level)
+        rootstring = "{}{}/".format(indent, basename(root))
+        # Do not deal with hidden files
+        if not basename(root).startswith("."):
+            if filename is not None:
+                # 'a' stands for 'append' rather than 'w' for 'write'. We must
+                # manually jump line with \n otherwise everything is
+                # concatenated
+                with open(filename, "a") as fin:
+                    fin.write(rootstring + "\n")
+            else:
+                print(rootstring)
+            subindent = " " * 4 * (level + 1)
+            for f in files:
+                filestring = "{}{}".format(subindent, f)
+                if not basename(f).startswith("."):
+                    if filename is not None:
+                        with open(filename, "a") as fin:
+                            fin.write(filestring + "\n")
+                    else:
+                        print(filestring)
 
 
 def test_extract():
