@@ -92,8 +92,8 @@ def test_extract():
     import shutil
     from os.path import abspath, dirname, join
 
-    root = dirname(abspath(join(abspath(__file__), pardir, pardir)))
-    root = join(root, "data", "DeepLearningPrepareData")
+    root = dirname(abspath(join(abspath(__file__))))
+    root = join(root, "data", "dataset", "DeepLearningPrepareData")
 
     # Remove potential residual of previous UT
     clean_folder(join(root, "out", "caps"), recreate=False)
@@ -164,7 +164,7 @@ def extract_generic(root, parameters):
 
     from os.path import join
 
-    from clinicadl.extract import DeepLearningPrepareData
+    from clinicadl.extract.extract import DeepLearningPrepareData
 
     DeepLearningPrepareData(
         caps_directory=join(root, "out", "caps"),
