@@ -107,26 +107,29 @@ def test_extract():
 
     uncropped_image = [True, False]
 
-    image_params = {"extract_method": "image"}
-    slice_params = {"extract_method": "patch", "patch_size": 50, "stride_size": 50}
+    image_params = {"mode": "image"}
+    slice_params = {"mode": "patch", "patch_size": 50, "stride_size": 50}
     patch_params = {
-        "extract_method": "slice",
+        "mode": "slice",
         "slice_mode": "rgb",
         "slice_direction": 0,
+        "discarded_slices": [0, 0],
     }
     roi_params = {
-        "extract_method": "roi",
+        "mode": "roi",
         "roi_list": ["rightHippocampusBox", "leftHippocampusBox"],
-        "use_uncropped_image": True,
+        "uncropped_roi": True,
     }
 
     data = [image_params, slice_params, patch_params, roi_params]
 
     for parameters in data:
 
+        parameters["prepare_dl"] = True
+
         for modality in modalities:
 
-            parameters["modality"] = modality
+            parameters["preprocessing"] = modality
 
             if modality == "pet-linear":
                 parameters["acq_label"] = "av45"
@@ -136,7 +139,6 @@ def test_extract():
 
             elif modality == "custom":
                 parameters["use_uncropped_image"] = True
-                parameters["custom_template"] = "Ixi549Space"
                 parameters[
                     "custom_suffix"
                 ] = "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
