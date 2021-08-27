@@ -140,7 +140,7 @@ pipeline {
                       conda activate clinicadl_test
                       cd $WORKSPACE/tests
                       mkdir -p ./data/dataset
-                      tar xf /path/to/clinica/tests -C ./data/dataset
+                      tar xf /mnt/data/data_CI/dataset/DLPrepareData.tar.gz -C ./data/dataset
                       pytest \
                         --junitxml=./test-reports/test_extract_report.xml \
                         --verbose \
