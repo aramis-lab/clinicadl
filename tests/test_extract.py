@@ -119,6 +119,9 @@ def test_extract():
         "mode": "roi",
         "roi_list": ["rightHippocampusBox", "leftHippocampusBox"],
         "uncropped_roi": True,
+        "roi_custom_suffix": "",
+        "roi_custom_template": "",
+        "roi_custom_mask_pattern": "",
     }
 
     data = [image_params, slice_params, patch_params, roi_params]
