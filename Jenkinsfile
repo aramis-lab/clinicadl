@@ -125,6 +125,37 @@ pipeline {
                   }
                 } 
               }
+              stage('Extract tests Linux') {
+                environment {
+                  PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
+                }
+                steps {
+                  echo 'Testing extract task...'
+                    sh 'echo "Agent name: ${NODE_NAME}"'
+                    //sh 'conda env remove --name "clinicadl_test"'
+                    sh '''#!/usr/bin/env bash
+                      set +x
+                      eval "$(conda shell.bash hook)"
+                      source ./.jenkins/scripts/find_env.sh
+                      conda activate clinicadl_test
+                      cd $WORKSPACE/tests
+                      mkdir -p ./data/dataset
+                      tar xf /path/to/clinica/tests -C ./data/dataset
+                      pytest \
+                        --junitxml=./test-reports/test_extract_report.xml \
+                        --verbose \
+                        --disable-warnings \
+                        test_extract.py
+                      conda deactivate
+                      '''
+                }
+                post {
+                  always {
+                    junit 'tests/test-reports/test_extract_report.xml'
+                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
+                  }
+                } 
+              }
               stage('Predict tests Linux') {
                 environment {
                   PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
