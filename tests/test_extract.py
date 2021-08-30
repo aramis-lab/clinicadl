@@ -19,6 +19,7 @@ def clean_folder(path, recreate=True):
 
 
 def compare_folders(out, ref, shared_folder_name):
+    from difflib import unified_diff
     from filecmp import cmp
     from os import remove
     from os.path import join
@@ -35,11 +36,14 @@ def compare_folders(out, ref, shared_folder_name):
             out_message = fin.read()
         with open(ref_txt, "r") as fin:
             ref_message = fin.read()
+        with open(out_txt, "r") as out:
+            with open(ref_txt, "r") as ref:
+                diff = unified_diff(out, ref, fromfile="reference", tofile="output")
         remove(out_txt)
         remove(ref_txt)
         raise ValueError(
             "Comparison of out and ref directories shows mismatch :\n "
-            "OUT :\n" + out_message + "\n REF :\n" + ref_message
+            "OUT :\n" + out_message + "\n REF :\n" + ref_message + "\nDiff :\n" + diff
         )
 
     # Clean folders
