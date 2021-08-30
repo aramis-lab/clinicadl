@@ -38,7 +38,12 @@ def compare_folders(out, ref, shared_folder_name):
             ref_message = fin.read()
         with open(out_txt, "r") as out:
             with open(ref_txt, "r") as ref:
-                diff = unified_diff(out, ref, fromfile="reference", tofile="output")
+                diff = unified_diff(
+                    out.readlines(),
+                    ref.readlines(),
+                    fromfile="reference",
+                    tofile="output",
+                )
         diff_text = ""
         for line in diff:
             diff_text = diff_text + line + "\n"
