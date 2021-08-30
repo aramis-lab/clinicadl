@@ -103,7 +103,7 @@ def test_extract():
 
     # Prepare test for different parameters
 
-    modalities = ["t1-linear", "pet-linear", "custom"]
+    modalities = ["t1-linear", "pet-linear"]
 
     uncropped_image = [True, False]
 
