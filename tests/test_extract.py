@@ -103,7 +103,7 @@ def test_extract():
 
     # Prepare test for different parameters
 
-    modalities = ["t1-linear", "pet-linear"]
+    modalities = ["t1-linear", "pet-linear", "custom"]
 
     uncropped_image = [True, False]
 
@@ -139,12 +139,13 @@ def test_extract():
                 parameters["use_uncropped_image"] = False
                 extract_generic(root, parameters)
 
-            # elif modality == "custom":
-            #     parameters["use_uncropped_image"] = True
-            #     parameters[
-            #         "custom_suffix"
-            #     ] = "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
-            #     extract_generic(root, parameters)
+            elif modality == "custom":
+                parameters["use_uncropped_image"] = True
+                parameters[
+                    "custom_suffix"
+                ] = "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
+                parameters["roi_custom_template"] = "Ixi549Space"
+                extract_generic(root, parameters)
 
             elif modality == "t1-linear":
                 for flag in uncropped_image:
