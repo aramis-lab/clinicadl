@@ -279,7 +279,11 @@ def compute_output_pattern(mask_path, crop_output):
             mask_descriptors = ["desc-CropImage"] + mask_descriptors
 
     mask_pattern = "_".join(mask_descriptors)
-    output_pattern = f"space-{template_id}_{mask_pattern}_roi-{roi_id}"
+
+    if mask_pattern == "":
+        output_pattern = f"space-{template_id}_roi-{roi_id}"
+    else:
+        output_pattern = f"space-{template_id}_{mask_pattern}_roi-{roi_id}"
 
     return output_pattern
 

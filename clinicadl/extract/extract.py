@@ -119,11 +119,11 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
         elif parameters["prepare_dl"] and parameters["mode"] == "roi":
             subfolder = "roi_based"
             if parameters["preprocessing"] == "custom":
-                parameters["roi_template"] = parameters["roi_custom_template"]
                 if not parameters["roi_custom_template"]:
                     raise ValueError(
                         "A custom template must be defined when the modality is set to custom."
                     )
+                parameters["roi_template"] = parameters["roi_custom_template"]
             else:
                 from .extract_utils import TEMPLATE_DICT
 
