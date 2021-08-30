@@ -160,7 +160,7 @@ def test_extract():
     out_folder = join(root, "out")
     ref_folder = join(root, "ref")
 
-    compare_folders(out_folder, ref_folder, shared_folder_name="caps")
+    compare_folders(out_folder, ref_folder, shared_folder_name="caps/subjects")
 
     clean_folder(join(root, "out", "caps"), recreate=False)
 
