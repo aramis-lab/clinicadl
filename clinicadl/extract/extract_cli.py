@@ -208,15 +208,6 @@ def slice_cli(
     "have the same size than the whole image.",
 )
 @click.option(
-    "--roi_custom_suffix",
-    "-cn",
-    type=str,
-    default="",
-    help="""Custom suffix filename, e.g.:
-        'graymatter_space-Ixi549Space_modulated-off_probability.nii.gz', or
-        'segm-whitematter_probability.nii.gz' """,
-)
-@click.option(
     "--roi_custom_template",
     "-ct",
     type=str,
@@ -244,7 +235,6 @@ def roi_cli(
     use_uncropped_image: bool = False,
     roi_list: list = [],
     roi_uncrop_output: bool = False,
-    roi_custom_suffix: str = "",
     roi_custom_template: str = "",
     roi_custom_mask_pattern: str = "",
     acq_label: Optional[str] = None,
@@ -268,7 +258,6 @@ def roi_cli(
     )
     parameters["roi_list"] = roi_list
     parameters["uncropped_roi"] = roi_uncrop_output
-    parameters["roi_custom_suffix"] = roi_custom_suffix
     parameters["roi_custom_template"] = roi_custom_template
     parameters["roi_custom_mask_pattern"] = roi_custom_mask_pattern
 

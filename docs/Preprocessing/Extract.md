@@ -119,7 +119,6 @@ clinicadl extract CAPS_DIRECTORY t1-linear roi --roi_list rightHippocampusBox --
 
 - `--roi_uncrop_output`: disables cropping option, so the output 
   tensors have the same size as the whole image instead of the ROI size.
-- `--roi_custom_suffix`: Custom suffix filename for custom modality filename.
 - `--roi_custom_template` (mandatory for `custom`): only used when `modality` is set to `custom`.
   Sets the value of `<tpl_name>`.
 - `--roi_custom_mask_pattern` (optional): only used when `modality` is set to `custom`.
