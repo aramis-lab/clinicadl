@@ -39,11 +39,19 @@ def compare_folders(out, ref, shared_folder_name):
         with open(out_txt, "r") as out:
             with open(ref_txt, "r") as ref:
                 diff = unified_diff(out, ref, fromfile="reference", tofile="output")
+        diff_text = ""
+        for line in diff:
+            diff_text = diff_text + line + "\n"
         remove(out_txt)
         remove(ref_txt)
         raise ValueError(
             "Comparison of out and ref directories shows mismatch :\n "
-            "OUT :\n" + out_message + "\n REF :\n" + ref_message + "\nDiff :\n" + diff
+            "OUT :\n"
+            + out_message
+            + "\n REF :\n"
+            + ref_message
+            + "\nDiff :\n"
+            + diff_text
         )
 
     # Clean folders
