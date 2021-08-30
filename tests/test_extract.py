@@ -140,12 +140,12 @@ def test_extract():
                 parameters["use_uncropped_image"] = False
                 extract_generic(root, parameters)
 
-            elif modality == "custom":
-                parameters["use_uncropped_image"] = True
-                parameters[
-                    "custom_suffix"
-                ] = "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
-                extract_generic(root, parameters)
+            # elif modality == "custom":
+            #     parameters["use_uncropped_image"] = True
+            #     parameters[
+            #         "custom_suffix"
+            #     ] = "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
+            #     extract_generic(root, parameters)
 
             elif modality == "t1-linear":
                 for flag in uncropped_image:
