@@ -92,14 +92,6 @@ from clinicadl.utils import cli_param
 )
 # Mode
 @click.option(
-    "--use_extracted_features",
-    type=bool,
-    # default=False,
-    is_flag=True,
-    help="""If provided the outputs of extract preprocessing are used, else the whole
-            MRI is loaded.""",
-)
-@click.option(
     "--selection_threshold",
     type=float,
     # default=0,
@@ -235,7 +227,6 @@ def cli(
     output_maps_directory,
     config_file,
     label,
-    use_extracted_features,
     selection_threshold,
     gpu,
     n_proc,
@@ -321,7 +312,6 @@ def cli(
         "patience",
         "tolerance",
         "transfer_selection_metric",
-        "use_extracted_features",
         "selection_threshold",
         "weight_decay",
         "sampler",
@@ -352,12 +342,6 @@ def cli(
         train_dict["validation"] = "KFoldSplit"
     else:
         train_dict["validation"] = "SingleSplit"
-
-    # use extracted features
-    if "use_extracted_features" in train_dict:
-        train_dict["prepare_dl"] = train_dict["use_extracted_features"]
-    else:
-        train_dict["prepare_dl"] = False
 
     train(output_maps_directory, train_dict, train_dict.pop("folds"))
 

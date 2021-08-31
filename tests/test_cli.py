@@ -35,15 +35,6 @@ def test_first_lv(cli_args_first_lv):
 
 
 # Test for extract cli, second level
-@pytest.fixture(
-    params=[
-        "t1-linear",
-        "pet-linear",
-        "custom",
-    ]
-)
-def extract_cli_arg1(request):
-    return request.param
 
 
 @pytest.fixture(
@@ -52,6 +43,17 @@ def extract_cli_arg1(request):
         "slice",
         "patch",
         "roi",
+    ]
+)
+def extract_cli_arg1(request):
+    return request.param
+
+
+@pytest.fixture(
+    params=[
+        "t1-linear",
+        "pet-linear",
+        "custom",
     ]
 )
 def extract_cli_arg2(request):

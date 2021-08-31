@@ -2,6 +2,31 @@
 from typing import Union
 
 
+def get_parameters_dict(
+    modality,
+    extract_method,
+    save_features,
+    use_uncropped_image,
+    custom_suffix,
+    acq_label,
+    suvr_reference_region,
+):
+    parameters = {
+        "preprocessing": modality,
+        "mode": extract_method,
+        "use_uncropped_image": use_uncropped_image,
+        "prepare_dl": save_features,
+    }
+
+    if modality == "custom":
+        parameters["custom_suffix"] = custom_suffix
+    if modality == "pet-linear":
+        parameters["acq_label"] = acq_label
+        parameters["suvr_reference_region"] = suvr_reference_region
+
+    return parameters
+
+
 def extract_slices(
     nii_path: str,
     slice_direction: int = 0,
@@ -254,7 +279,11 @@ def compute_output_pattern(mask_path, crop_output):
             mask_descriptors = ["desc-CropImage"] + mask_descriptors
 
     mask_pattern = "_".join(mask_descriptors)
-    output_pattern = f"space-{template_id}_{mask_pattern}_roi-{roi_id}"
+
+    if mask_pattern == "":
+        output_pattern = f"space-{template_id}_roi-{roi_id}"
+    else:
+        output_pattern = f"space-{template_id}_{mask_pattern}_roi-{roi_id}"
 
     return output_pattern
 
