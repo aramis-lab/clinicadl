@@ -400,7 +400,7 @@ def extract_roi(
         mask_np = nib.load(mask_path).get_fdata()
 
         roi_tensor = extract_roi_tensor(image_tensor, mask_np, uncrop_output)
-        roi_path = extract_roi_path(nii_path, mask_np, uncrop_output)
+        roi_path = extract_roi_path(nii_path, mask_path, uncrop_output)
 
         roi_list.append((roi_path, roi_tensor))
 
