@@ -1,20 +1,35 @@
 # coding: utf8
 from os import path
-from typing import List, Optional, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 import torch
 
 
 def get_parameters_dict(
-    modality,
-    extract_method,
-    save_features,
-    use_uncropped_image,
-    custom_suffix,
-    acq_label,
-    suvr_reference_region,
-):
+    modality: str,
+    extract_method: str,
+    save_features: bool,
+    use_uncropped_image: bool,
+    custom_suffix: str,
+    acq_label: str,
+    suvr_reference_region: str,
+) -> Dict[str, Any]:
+    """
+    Args:
+        modality: preprocessing procedure performed with Clinica.
+        extract_method: mode of extraction (image, slice, patch, roi).
+        save_features: If True modes are extracted, else images are extracted
+            and the extraction of modes is done on-the-fly during training.
+        use_uncropped_image: If True the cropped version of the image is used
+            (specific to t1-linear and pet-linear).
+        custom_suffix: string used to identify images when modality is custom.
+        acq_label: name of the tracer (specific to PET pipelines).
+        suvr_reference_region: name of the reference region for normalization
+            specific to PET pipelines)
+    Returns:
+        The dictionary of parameters specific to the preprocessing
+    """
     parameters = {
         "preprocessing": modality,
         "mode": extract_method,
@@ -29,7 +44,6 @@ def get_parameters_dict(
         parameters["suvr_reference_region"] = suvr_reference_region
 
     return parameters
-
 
 
 ############
