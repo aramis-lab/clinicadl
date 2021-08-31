@@ -349,7 +349,7 @@ class CapsDatasetPatch(CapsDataset):
         self.stride_size = preprocessing_dict["stride_size"]
         self.patch_index = patch_index
         self.mode = "patch"
-        self.prepare_dl = preprocessing_dict["save_features"]
+        self.prepare_dl = preprocessing_dict["prepare_dl"]
         super().__init__(
             caps_directory,
             data_file,
@@ -453,7 +453,7 @@ class CapsDatasetRoi(CapsDataset):
         self.mode = "roi"
         self.roi_list = preprocessing_dict["roi_list"]
         self.uncropped_roi = preprocessing_dict["uncropped_roi"]
-        self.prepare_dl = preprocessing_dict["save_features"]
+        self.prepare_dl = preprocessing_dict["prepare_dl"]
         self.mask_paths, self.mask_arrays = self._get_mask_paths_and_tensors(
             caps_directory, preprocessing_dict
         )
@@ -604,7 +604,7 @@ class CapsDatasetSlice(CapsDataset):
         self.slice_mode = preprocessing_dict["slice_mode"]
         self.discarded_slices = preprocessing_dict["discarded_slices"]
         self.mode = "slice"
-        self.prepare_dl = preprocessing_dict["save_features"]
+        self.prepare_dl = preprocessing_dict["prepare_dl"]
         super().__init__(
             caps_directory,
             data_file,
