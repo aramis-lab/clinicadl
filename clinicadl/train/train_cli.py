@@ -33,7 +33,8 @@ from clinicadl.utils import cli_param
 # Computational
 @click.option(
     "--gpu/--no-gpu",
-    # default=True,
+    type=bool,
+    default=None,
     help="Use GPU by default. Please specify `--no-gpu` to force using CPU.",
 )
 @click.option(
@@ -67,6 +68,8 @@ from clinicadl.utils import cli_param
 )
 @click.option(
     "--nondeterministic/--deterministic",
+    type=bool,
+    default=None,
     help="Forces Pytorch to be deterministic even when using a GPU. "
     "Will raise a RuntimeError if a non-deterministic function is encountered.",
 )
