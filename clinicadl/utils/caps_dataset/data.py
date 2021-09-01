@@ -9,12 +9,14 @@ import numpy as np
 import pandas as pd
 import torch
 import torchvision.transforms as transforms
+from clinica.utils.exceptions import ClinicaCAPSError
 from torch.utils.data import Dataset
 
 from clinicadl.extract.extract_utils import (
     PATTERN_DICT,
     TEMPLATE_DICT,
     compute_discarded_slices,
+    compute_folder_and_file_type,
     extract_patch_path,
     extract_patch_tensor,
     extract_roi_path,
@@ -142,22 +144,33 @@ class CapsDataset(Dataset):
         """
         from clinica.utils.inputs import clinica_file_reader
 
-        file_type = self.preprocessing_dict["file_type"]
-        results = clinica_file_reader(
-            [participant], [session], self.caps_dict[cohort], file_type
-        )
-        image_filename = path.basename(results[0]).replace(".nii.gz", ".pt")
-        image_dir = path.join(
-            self.caps_dict[cohort],
-            "subjects",
-            participant,
-            session,
-            "deeplearning_prepare_data",
-            "image_based",
-            self.preprocessing_dict["preprocessing"],
-        )
+        # Try to find .nii.gz file
+        try:
+            file_type = self.preprocessing_dict["file_type"]
+            results = clinica_file_reader(
+                [participant], [session], self.caps_dict[cohort], file_type
+            )
+            image_filename = path.basename(results[0]).replace(".nii.gz", ".pt")
+            folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
+            image_dir = path.join(
+                self.caps_dict[cohort],
+                "subjects",
+                participant,
+                session,
+                "deeplearning_prepare_data",
+                "image_based",
+                folder,
+            )
+            image_path = path.join(image_dir, image_filename)
+        # Try to find .pt file
+        except ClinicaCAPSError:
+            file_type = self.preprocessing_dict["file_type"].replace(".nii.gz", ".pt")
+            results = clinica_file_reader(
+                [participant], [session], self.caps_dict[cohort], file_type
+            )
+            image_path = results[0]
 
-        return path.join(image_dir, image_filename)
+        return image_path
 
     def _get_meta_data(self, idx: int) -> Tuple[str, str, str, int, int]:
         """
