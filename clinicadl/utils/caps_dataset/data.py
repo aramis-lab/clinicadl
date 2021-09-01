@@ -164,7 +164,8 @@ class CapsDataset(Dataset):
             image_path = path.join(image_dir, image_filename)
         # Try to find .pt file
         except ClinicaCAPSError:
-            file_type = self.preprocessing_dict["file_type"].replace(".nii.gz", ".pt")
+            file_type = self.preprocessing_dict["file_type"]
+            file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
             results = clinica_file_reader(
                 [participant], [session], self.caps_dict[cohort], file_type
             )
