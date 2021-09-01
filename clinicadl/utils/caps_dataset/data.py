@@ -881,17 +881,18 @@ class MinMaxNormalization(object):
         return (image - image.min()) / (image.max() - image.min())
 
 
-def get_transforms(mode, minmaxnormalization=True, data_augmentation=None):
+def get_transforms(
+    minmaxnormalization: bool = True, data_augmentation: List[str] = None
+) -> Tuple[transforms.Compose, transforms.Compose]:
     """
     Outputs the transformations that will be applied to the dataset
 
     Args:
-        mode (str): input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
-        minmaxnormalization (bool): if True will perform MinMaxNormalization.
-        data_augmentation (List[str]): list of data augmentation performed on the training set.
+        minmaxnormalization: if True will perform MinMaxNormalization.
+        data_augmentation: list of data augmentation performed on the training set.
+
     Returns:
-    - container transforms.Compose including transforms to apply in train and evaluation mode.
-    - container transforms.Compose including transforms to apply in evaluation mode only.
+        transforms to apply in train and evaluation mode / transforms to apply in evaluation mode only.
     """
     augmentation_dict = {
         "Noise": RandomNoising(sigma=0.1),
@@ -911,14 +912,6 @@ def get_transforms(mode, minmaxnormalization=True, data_augmentation=None):
         transformations_list = [MinMaxNormalization()]
     else:
         transformations_list = []
-
-    if mode == "slice":
-        trg_size = (224, 224)
-        transformations_list += [
-            transforms.ToPILImage(),
-            transforms.Resize(trg_size),
-            transforms.ToTensor(),
-        ]
 
     all_transformations = transforms.Compose(transformations_list)
     train_transformations = transforms.Compose(augmentation_list)

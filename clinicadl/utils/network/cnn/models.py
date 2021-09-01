@@ -142,15 +142,12 @@ class Conv4_FC3(CNN):
 
 
 class resnet18(CNN):
-    def __init__(self, use_cpu=False, output_size=2, dropout=0.5):
-        model = ResNetDesigner(BasicBlock, [2, 2, 2, 2])
+    def __init__(self, input_size, use_cpu=False, output_size=2, dropout=0.5):
+        model = ResNetDesigner(input_size, BasicBlock, [2, 2, 2, 2])
         model.load_state_dict(model_zoo.load_url(model_urls["resnet18"]))
 
         convolutions = nn.Sequential(
-            model.conv1,
-            model.bn1,
-            model.relu,
-            model.maxpool,
+            model.first_layers,
             model.layer1,
             model.layer2,
             model.layer3,
