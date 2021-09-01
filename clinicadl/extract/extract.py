@@ -5,7 +5,6 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
     import os
     from os import path
 
-    from clinica.utils.input_files import T1W_LINEAR, T1W_LINEAR_CROPPED, pet_linear_nii
     from clinica.utils.inputs import check_caps_folder, clinica_file_reader
     from clinica.utils.nipype import container_from_filename
     from clinica.utils.participant import get_subject_session_list
@@ -15,6 +14,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
 
     from .extract_utils import (
         check_mask_list,
+        compute_folder_and_file_type,
         extract_images,
         extract_patches,
         extract_roi,
@@ -51,34 +51,11 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
     logger.debug(
         f"Selected images are preprocessed with {parameters['preprocessing']} pipeline`."
     )
-    if parameters["preprocessing"] == "t1-linear":
-        mod_subfolder = "t1_linear"
-        if parameters["use_uncropped_image"]:
-            FILE_TYPE = T1W_LINEAR
-        else:
-            FILE_TYPE = T1W_LINEAR_CROPPED
-    elif parameters["preprocessing"] == "pet-linear":
-        mod_subfolder = "pet_linear"
-        FILE_TYPE = pet_linear_nii(
-            parameters["acq_label"],
-            parameters["suvr_reference_region"],
-            parameters["use_uncropped_image"],
-        )
-    elif parameters["preprocessing"] == "custom":
-        mod_subfolder = "custom"
-        FILE_TYPE = {
-            "pattern": f"*{parameters['custom_suffix']}",
-            "description": "Custom suffix",
-        }
-        parameters["use_uncropped_image"] = None
-    else:
-        raise NotImplementedError(
-            f"Extraction of preprocessing {parameters['preprocessing']} is not implemented."
-        )
-    parameters["file_type"] = FILE_TYPE
+    mod_subfolder, file_type = compute_folder_and_file_type(parameters)
+    parameters["file_type"] = file_type
 
     # Input file:
-    input_files = clinica_file_reader(subjects, sessions, caps_directory, FILE_TYPE)
+    input_files = clinica_file_reader(subjects, sessions, caps_directory, file_type)
 
     # Loop on the images
     for file in input_files:

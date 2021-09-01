@@ -14,6 +14,7 @@ from torch.utils.data import Dataset
 from clinicadl.extract.extract_utils import (
     PATTERN_DICT,
     TEMPLATE_DICT,
+    compute_discarded_slices,
     extract_patch_path,
     extract_patch_tensor,
     extract_roi_path,
@@ -602,7 +603,9 @@ class CapsDatasetSlice(CapsDataset):
         self.slice_index = slice_index
         self.slice_direction = preprocessing_dict["slice_direction"]
         self.slice_mode = preprocessing_dict["slice_mode"]
-        self.discarded_slices = preprocessing_dict["discarded_slices"]
+        self.discarded_slices = compute_discarded_slices(
+            preprocessing_dict["discarded_slices"]
+        )
         self.mode = "slice"
         self.prepare_dl = preprocessing_dict["prepare_dl"]
         super().__init__(

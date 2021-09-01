@@ -46,9 +46,57 @@ def get_parameters_dict(
     return parameters
 
 
+def compute_folder_and_file_type(
+    parameters: Dict[str, Any]
+) -> Tuple[str, Dict[str, str]]:
+    from clinica.utils.input_files import T1W_LINEAR, T1W_LINEAR_CROPPED, pet_linear_nii
+
+    if parameters["preprocessing"] == "t1-linear":
+        mod_subfolder = "t1_linear"
+        if parameters["use_uncropped_image"]:
+            file_type = T1W_LINEAR
+        else:
+            file_type = T1W_LINEAR_CROPPED
+    elif parameters["preprocessing"] == "pet-linear":
+        mod_subfolder = "pet_linear"
+        file_type = pet_linear_nii(
+            parameters["acq_label"],
+            parameters["suvr_reference_region"],
+            parameters["use_uncropped_image"],
+        )
+    elif parameters["preprocessing"] == "custom":
+        mod_subfolder = "custom"
+        file_type = {
+            "pattern": f"*{parameters['custom_suffix']}",
+            "description": "Custom suffix",
+        }
+        parameters["use_uncropped_image"] = None
+    else:
+        raise NotImplementedError(
+            f"Extraction of preprocessing {parameters['preprocessing']} is not implemented."
+        )
+
+    return mod_subfolder, file_type
+
+
 ############
 # SLICE    #
 ############
+def compute_discarded_slices(discarded_slices: Union[int, tuple]) -> Tuple[int, int]:
+    if isinstance(discarded_slices, int):
+        begin_discard, end_discard = discarded_slices, discarded_slices
+    elif len(discarded_slices) == 1:
+        begin_discard, end_discard = discarded_slices[0], discarded_slices[0]
+    elif len(discarded_slices) == 2:
+        begin_discard, end_discard = discarded_slices[0], discarded_slices[1]
+    else:
+        raise ValueError(
+            f"Maximum two number of discarded slices can be defined. "
+            f"You gave discarded slices = {discarded_slices}."
+        )
+    return begin_discard, end_discard
+
+
 def extract_slices(
     nii_path: str,
     slice_direction: int = 0,
@@ -78,20 +126,9 @@ def extract_slices(
     import nibabel as nib
 
     image_array = nib.load(nii_path).get_fdata(dtype="float32")
-    image_tensor = torch.from_numpy(image_array).float()
+    image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
 
-    # Remove discarded slices
-    if isinstance(discarded_slices, int):
-        begin_discard, end_discard = discarded_slices, discarded_slices
-    elif len(discarded_slices) == 1:
-        begin_discard, end_discard = discarded_slices[0], discarded_slices[0]
-    elif len(discarded_slices) == 2:
-        begin_discard, end_discard = discarded_slices[0], discarded_slices[1]
-    else:
-        raise ValueError(
-            f"Maximum two number of discarded slices can be defined. "
-            f"You gave discarded slices = {discarded_slices}."
-        )
+    begin_discard, end_discard = compute_discarded_slices(discarded_slices)
     index_list = range(begin_discard, image_tensor.shape[slice_direction] - end_discard)
 
     slice_list = []
@@ -116,12 +153,11 @@ def extract_slice_tensor(
 ) -> torch.Tensor:
     # Allow to select the slice `slice_index` in dimension `slice_direction`
     idx_tuple = tuple(
-        [slice(None)] * slice_direction
+        [slice(None)] * (slice_direction + 1)
         + [slice_index]
         + [slice(None)] * (2 - slice_direction)
     )
-    slice_tensor = image_tensor[idx_tuple]
-    slice_tensor.unsqueeze_(0)  # shape is 1 * W * L
+    slice_tensor = image_tensor[idx_tuple]  # shape is 1 * W * L
 
     if slice_mode == "rgb":
         slice_tensor = torch.cat(
