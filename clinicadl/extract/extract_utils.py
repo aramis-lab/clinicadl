@@ -129,7 +129,9 @@ def extract_slices(
     image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
 
     begin_discard, end_discard = compute_discarded_slices(discarded_slices)
-    index_list = range(begin_discard, image_tensor.shape[slice_direction] - end_discard)
+    index_list = range(
+        begin_discard, image_tensor.shape[slice_direction + 1] - end_discard
+    )
 
     slice_list = []
     for slice_index in index_list:
