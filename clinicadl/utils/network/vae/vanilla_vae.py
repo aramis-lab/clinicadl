@@ -1,25 +1,28 @@
 import torch
 from torch import nn
 
-from clinicadl.utils.network.network import Network
-from clinicadl.utils.network.vae.vae_utils import VAE_Decoder, VAE_Encoder
+from clinicadl.utils.network.vae.base_vae import BaseVAE
+from clinicadl.utils.network.vae.vae_utils import (
+    DecoderLayer3D,
+    EncoderLayer3D,
+    VAE_Decoder,
+    VAE_Encoder,
+)
 
 
-class VanillaVAE(Network):
+class VanillaDenseVAE(BaseVAE):
     def __init__(
         self,
         input_size,
         feature_size=1024,
         latent_size=64,
-        latent_dim=1,
         n_conv=4,
         io_layer_channel=32,
         train=False,
     ):
-        super(VanillaVAE, self).__init__()
+        super(VanillaDenseVAE, self).__init__()
 
         self.input_size = input_size
-        self.latent_dim = latent_dim
         self.feature_size = feature_size
         self.latent_size = latent_size
         self.n_conv = n_conv
@@ -35,24 +38,10 @@ class VanillaVAE(Network):
             first_layer_channels=self.io_layer_channel,
         )
 
-        if self.latent_dim == 1:
-            # hidden => mu
-            self.fc1 = nn.Linear(self.feature_size, self.latent_size)
-            # hidden => logvar
-            self.fc2 = nn.Linear(self.feature_size, self.latent_size)
-        elif self.latent_dim == 2:
-            # hidden => mu
-            self.fc1 = nn.Conv2d(
-                self.feature_size, self.latent_size, 3, stride=1, padding=1, bias=False
-            )
-            # hidden => logvar
-            self.fc2 = nn.Conv2d(
-                self.feature_size, self.latent_size, 3, stride=1, padding=1, bias=False
-            )
-        else:
-            raise AttributeError(
-                "Bad latent dimension specified. Latent dimension must be 1 or 2"
-            )
+        # hidden => mu
+        self.fc1 = nn.Linear(self.feature_size, self.latent_size)
+        # hidden => logvar
+        self.fc2 = nn.Linear(self.feature_size, self.latent_size)
 
         self.decoder = VAE_Decoder(
             input_shape=self.input_size,
@@ -63,42 +52,152 @@ class VanillaVAE(Network):
             last_layer_channels=self.io_layer_channel,
         )
 
-    def encode(self, x):
-        h = self.encoder(x)
-        mu, logvar = self.fc1(h), self.fc2(h)
-        return mu, logvar
 
-    def decode(self, z):
-        z = self.decoder(z)
-        return z
+class VanillaSpatialVAE(BaseVAE):
+    def __init__(
+        self,
+        input_size,
+        feature_size=1024,
+        latent_size=64,
+        n_conv=4,
+        io_layer_channel=32,
+        train=False,
+    ):
+        super(VanillaSpatialVAE, self).__init__()
 
-    def reparameterize(self, mu, logvar):
-        if self.training:
-            std = torch.exp(0.5 * logvar)
-            eps = torch.randn_like(std)
-            return eps.mul(std).add_(mu)
-        else:
-            return mu
+        self.input_size = input_size
+        self.feature_size = feature_size
+        self.latent_size = latent_size
+        self.n_conv = n_conv
+        self.io_layer_channel = io_layer_channel
 
-    def reparameterize_eval(self, mu, logvar):
-        std = torch.exp(0.5 * logvar)
-        eps = torch.randn_like(std)
-        return eps.mul(std).add_(mu)
+        self.training = train
 
-    def predict(self, x):
-        output = self.forward(x)
-        return output
+        self.encoder = VAE_Encoder(
+            input_shape=self.input_size,
+            feature_size=self.feature_size,
+            latent_dim=self.latent_dim,
+            n_conv=self.n_conv,
+            first_layer_channels=self.io_layer_channel,
+        )
 
-    def forward(self, x):
-        mu, logvar = self.encode(x)
-        z = self.reparameterize(mu, logvar)
-        return self.decode(z), mu, logvar
+        # hidden => mu
+        self.fc1 = nn.Conv2d(
+            self.feature_size, self.latent_size, 3, stride=1, padding=1, bias=False
+        )
+        # hidden => logvar
+        self.fc2 = nn.Conv2d(
+            self.feature_size, self.latent_size, 3, stride=1, padding=1, bias=False
+        )
 
-    def compute_outputs_and_loss(self, input_dict, criterion, use_labels=False):
+        self.decoder = VAE_Decoder(
+            input_shape=self.input_size,
+            latent_size=self.latent_size,
+            feature_size=self.feature_size,
+            latent_dim=self.latent_dim,
+            n_conv=self.n_conv,
+            last_layer_channels=self.io_layer_channel,
+        )
 
-        images = input_dict["image"].to(self.device)
-        recon_images, mu, log_var = self.forward(images)
 
-        loss = criterion(recon_images, images, mu, log_var)
+class Vanilla3DVAE(BaseVAE):
+    def __init__(
+        self,
+        input_size,
+        n_conv,
+        first_layer_channels,
+        last_layer_channels,
+        feature_size,
+        latent_size,
+    ):
 
-        return recon_images, loss
+        self.input_size = input_size
+
+        self.input_c = self.input_size[0]
+        self.input_h = self.input_size[1]
+        self.input_w = self.input_size[2]
+
+        ## Encoder
+        encoder_layers = []
+
+        # Input Layer
+        encoder_layers.append(EncoderLayer3D(self.input_c, first_layer_channels))
+
+        # Conv Layers
+        for i in range(n_conv - 1):
+            encoder_layers.append(
+                EncoderLayer3D(
+                    first_layer_channels * 2 ** i, first_layer_channels * 2 ** (i + 1)
+                )
+            )
+
+        encoder_layers.append(
+            nn.Sequential(
+                nn.Conv2d(
+                    first_layer_channels * 2 ** (n_conv - 1),
+                    feature_size,
+                    3,
+                    stride=1,
+                    padding=1,
+                    bias=False,
+                ),
+                nn.ReLU(),
+            )
+        )
+
+        self.encoder = nn.Sequential(*encoder_layers)
+
+        ## Latent space
+        # hidden => mu
+        self.fc1 = nn.Conv3d(
+            feature_size, latent_size, 3, stride=1, padding=1, bias=False
+        )
+        # hidden => logvar
+        self.fc2 = nn.Conv3d(
+            feature_size, latent_size, 3, stride=1, padding=1, bias=False
+        )
+
+        ## Decoder
+
+        decoder_layers = []
+
+        decoder_layers.append(
+            nn.Sequential(
+                nn.ConvTranspose3d(
+                    latent_size, feature_size, 3, stride=1, padding=1, bias=False
+                ),
+                nn.ReLU(),
+                nn.ConvTranspose2d(
+                    feature_size,
+                    last_layer_channels * 2 ** (n_conv - 1),
+                    3,
+                    stride=1,
+                    padding=1,
+                    bias=False,
+                ),
+                nn.ReLU(),
+            )
+        )
+
+        for i in range(n_conv - 1, 0, -1):
+            decoder_layers.append(
+                DecoderLayer3D(
+                    last_layer_channels * 2 ** (i), last_layer_channels * 2 ** (i - 1)
+                )
+            )
+
+        decoder_layers.append(
+            nn.Sequential(
+                nn.ConvTranspose2d(
+                    last_layer_channels,
+                    self.input_c,
+                    4,
+                    stride=2,
+                    padding=1,
+                    bias=False,
+                ),
+                nn.Sigmoid(),
+            )
+        )
+
+        self.decoder = nn.Sequential(*self.decoder_layers)

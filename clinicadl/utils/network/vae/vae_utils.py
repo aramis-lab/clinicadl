@@ -3,7 +3,7 @@ import torch.nn.functional as F
 from torch import nn
 
 
-class EncoderLayer(nn.Module):
+class EncoderLayer2D(nn.Module):
     """
     Class defining the encoder's part of the Autoencoder.
     This layer is composed of one 2D convolutional layer,
@@ -14,7 +14,7 @@ class EncoderLayer(nn.Module):
     def __init__(
         self, input_channels, output_channels, kernel_size=4, stride=2, padding=1
     ):
-        super(EncoderLayer, self).__init__()
+        super(EncoderLayer2D, self).__init__()
         self.layer = nn.Sequential(
             nn.Conv2d(
                 input_channels,
@@ -32,7 +32,7 @@ class EncoderLayer(nn.Module):
         return x
 
 
-class DecoderLayer(nn.Module):
+class DecoderLayer2D(nn.Module):
     """
     Class defining the decoder's part of the Autoencoder.
     This layer is composed of one 2D transposed convolutional layer,
@@ -42,7 +42,7 @@ class DecoderLayer(nn.Module):
     def __init__(
         self, input_channels, output_channels, kernel_size=4, stride=2, padding=1
     ):
-        super(DecoderLayer, self).__init__()
+        super(DecoderLayer2D, self).__init__()
         self.layer = nn.Sequential(
             nn.ConvTranspose2d(
                 input_channels,
@@ -53,6 +53,63 @@ class DecoderLayer(nn.Module):
                 bias=False,
             ),
             nn.BatchNorm2d(output_channels),
+        )
+
+    def forward(self, x):
+        x = F.relu(self.layer(x), inplace=True)
+        return x
+
+
+class EncoderLayer3D(nn.Module):
+    """
+    Class defining the encoder's part of the Autoencoder.
+    This layer is composed of one 3D convolutional layer,
+    a batch normalization layer with a leaky relu
+    activation function.
+    """
+
+    def __init__(
+        self, input_channels, output_channels, kernel_size=4, stride=2, padding=1
+    ):
+        super(EncoderLayer3D, self).__init__()
+        self.layer = nn.Sequential(
+            nn.Conv3d(
+                input_channels,
+                output_channels,
+                kernel_size,
+                stride=stride,
+                padding=padding,
+                bias=False,
+            ),
+            nn.BatchNorm3d(output_channels),
+        )
+
+    def forward(self, x):
+        x = F.leaky_relu(self.layer(x), negative_slope=0.2, inplace=True)
+        return x
+
+
+class DecoderLayer3D(nn.Module):
+    """
+    Class defining the decoder's part of the Autoencoder.
+    This layer is composed of one 3D transposed convolutional layer,
+    a batch normalization layer with a relu activation function.
+    """
+
+    def __init__(
+        self, input_channels, output_channels, kernel_size=4, stride=2, padding=1
+    ):
+        super(DecoderLayer3D, self).__init__()
+        self.layer = nn.Sequential(
+            nn.ConvTranspose3d(
+                input_channels,
+                output_channels,
+                kernel_size,
+                stride=stride,
+                padding=padding,
+                bias=False,
+            ),
+            nn.BatchNorm3d(output_channels),
         )
 
     def forward(self, x):
@@ -100,12 +157,12 @@ class VAE_Encoder(nn.Module):
         self.layers = []
 
         # Input Layer
-        self.layers.append(EncoderLayer(self.input_c, first_layer_channels))
+        self.layers.append(EncoderLayer2D(self.input_c, first_layer_channels))
 
         # Conv Layers
         for i in range(n_conv - 1):
             self.layers.append(
-                EncoderLayer(
+                EncoderLayer2D(
                     first_layer_channels * 2 ** i, first_layer_channels * 2 ** (i + 1)
                 )
             )
@@ -216,7 +273,7 @@ class VAE_Decoder(nn.Module):
 
         for i in range(n_conv - 1, 0, -1):
             self.layers.append(
-                DecoderLayer(
+                DecoderLayer2D(
                     last_layer_channels * 2 ** (i), last_layer_channels * 2 ** (i - 1)
                 )
             )
