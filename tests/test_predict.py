@@ -1,4 +1,5 @@
 # coding: utf8
+import json
 import os
 import shutil
 from os.path import exists, join
@@ -53,8 +54,18 @@ def test_predict(predict_commands):
     model_folder, use_labels, modes = predict_commands
     out_dir = join(model_folder, "fold-0/best-loss/test-RANDOM")
 
-    if os.path.exists(out_dir):
+    if exists(out_dir):
         shutil.rmtree(out_dir)
+
+    # Correction of JSON file for ROI
+    if "roi" in modes:
+        json_path = join(model_folder, "maps.json")
+        with open(json_path, "r") as f:
+            parameters = json.load(f)
+        parameters["roi_list"] = ["leftHippocampusBox", "rightHippocampusBox"]
+        json_data = json.dumps(parameters, skipkeys=True, indent=4)
+        with open(json_path, "w") as f:
+            f.write(json_data)
 
     maps_manager = MapsManager(model_folder, verbose="debug")
     maps_manager.predict(
