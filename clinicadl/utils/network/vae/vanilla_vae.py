@@ -104,12 +104,14 @@ class Vanilla3DVAE(BaseVAE):
     def __init__(
         self,
         input_size,
-        n_conv,
-        first_layer_channels,
-        last_layer_channels,
-        feature_size,
-        latent_size,
     ):
+        super(Vanilla3DVAE, self).__init__()
+
+        n_conv = 4
+        first_layer_channels = 32
+        last_layer_channels = 32
+        feature_size = 512
+        latent_size = 64
 
         self.input_size = input_size
 
@@ -119,10 +121,8 @@ class Vanilla3DVAE(BaseVAE):
 
         ## Encoder
         encoder_layers = []
-
         # Input Layer
         encoder_layers.append(EncoderLayer3D(self.input_c, first_layer_channels))
-
         # Conv Layers
         for i in range(n_conv - 1):
             encoder_layers.append(
@@ -130,7 +130,6 @@ class Vanilla3DVAE(BaseVAE):
                     first_layer_channels * 2 ** i, first_layer_channels * 2 ** (i + 1)
                 )
             )
-
         encoder_layers.append(
             nn.Sequential(
                 nn.Conv2d(
@@ -144,7 +143,6 @@ class Vanilla3DVAE(BaseVAE):
                 nn.ReLU(),
             )
         )
-
         self.encoder = nn.Sequential(*encoder_layers)
 
         ## Latent space
@@ -158,9 +156,7 @@ class Vanilla3DVAE(BaseVAE):
         )
 
         ## Decoder
-
         decoder_layers = []
-
         decoder_layers.append(
             nn.Sequential(
                 nn.ConvTranspose3d(
@@ -178,14 +174,12 @@ class Vanilla3DVAE(BaseVAE):
                 nn.ReLU(),
             )
         )
-
         for i in range(n_conv - 1, 0, -1):
             decoder_layers.append(
                 DecoderLayer3D(
                     last_layer_channels * 2 ** (i), last_layer_channels * 2 ** (i - 1)
                 )
             )
-
         decoder_layers.append(
             nn.Sequential(
                 nn.ConvTranspose2d(
@@ -199,5 +193,4 @@ class Vanilla3DVAE(BaseVAE):
                 nn.Sigmoid(),
             )
         )
-
         self.decoder = nn.Sequential(*self.decoder_layers)
