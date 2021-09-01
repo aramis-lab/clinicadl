@@ -1,10 +1,57 @@
 # coding: utf8
 
 import random
+from typing import Dict
 
 import numpy as np
+import pandas as pd
+from clinica.utils.input_files import T1W_LINEAR, T1W_LINEAR_CROPPED, pet_linear_nii
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
+
+
+def find_file_type(
+    preprocessing: str,
+    uncropped_image: bool,
+    acq_label: str,
+    suvr_reference_region: str,
+) -> Dict[str, str]:
+    if preprocessing == "t1-linear":
+        if uncropped_image:
+            file_type = T1W_LINEAR
+        else:
+            file_type = T1W_LINEAR_CROPPED
+    elif preprocessing == "pet-linear":
+        if acq_label is None or suvr_reference_region is None:
+            raise ValueError(
+                "acq_label and suvr_reference_region must be defined "
+                "when using `pet-linear` preprocessing."
+            )
+        file_type = pet_linear_nii(acq_label, suvr_reference_region, uncropped_image)
+    else:
+        raise NotImplementedError(
+            f"Generation of synthetic data is not implemented for preprocessing {preprocessing}"
+        )
+
+    return file_type
+
+
+def write_missing_mods(output_dir: str, output_df: pd.DataFrame):
+    from copy import copy
+    from os import makedirs
+    from os.path import join
+
+    missing_path = join(output_dir, "missing_mods")
+    makedirs(missing_path, exist_ok=True)
+
+    sessions = output_df.session_id.unique()
+    for session in sessions:
+        session_df = output_df[output_df.session_id == session]
+        out_df = copy(session_df[["participant_id"]])
+        out_df["synthetic"] = [1] * len(out_df)
+        out_df.to_csv(
+            join(missing_path, f"missing_mods_{session}.tsv"), sep="\t", index=False
+        )
 
 
 def load_and_check_tsv(tsv_path, caps_dict, output_path):
