@@ -42,6 +42,7 @@ class VanillaDenseVAE(BaseVAE):
             padding=encoder.decoder_padding,
         )
 
+<<<<<<< HEAD
         super(VanillaDenseVAE, self).__init__(
             encoder,
             decoder,
@@ -51,6 +52,20 @@ class VanillaDenseVAE(BaseVAE):
             is_3D=False,
             recons_weight=10,
             KL_weight=0.1,
+=======
+        # hidden => mu
+        self.mu_layer = nn.Linear(self.feature_size, self.latent_size)
+        # hidden => logvar
+        self.var_layer = nn.Linear(self.feature_size, self.latent_size)
+
+        self.decoder = VAE_Decoder(
+            input_shape=self.input_size,
+            latent_size=self.latent_size,
+            feature_size=self.feature_size,
+            latent_dim=self.latent_dim,
+            n_conv=self.n_conv,
+            last_layer_channels=self.io_layer_channel,
+>>>>>>> simplify the base class
         )
 
 
@@ -72,6 +87,7 @@ class VanillaSpatialVAE(BaseVAE):
             n_conv=n_conv,
             first_layer_channels=io_layer_channel,
         )
+<<<<<<< HEAD
         mu_layer = nn.Conv2d(
             feature_size, latent_size, 3, stride=1, padding=1, bias=False
         )
@@ -86,6 +102,16 @@ class VanillaSpatialVAE(BaseVAE):
             n_conv=n_conv,
             last_layer_channels=io_layer_channel,
             padding=encoder.decoder_padding,
+=======
+
+        # hidden => mu
+        self.mu_layer = nn.Conv2d(
+            self.feature_size, self.latent_size, 3, stride=1, padding=1, bias=False
+        )
+        # hidden => logvar
+        self.var_layer = nn.Conv2d(
+            self.feature_size, self.latent_size, 3, stride=1, padding=1, bias=False
+>>>>>>> simplify the base class
         )
 
         super(VanillaSpatialVAE, self).__init__(
@@ -145,11 +171,23 @@ class Vanilla3DVAE(BaseVAE):
         )
         encoder = nn.Sequential(*encoder_layers)
 
+<<<<<<< HEAD
         # Latent space
         mu_layer = nn.Conv3d(
             feature_size, latent_size, 3, stride=1, padding=1, bias=False
         )
         var_layer = nn.Conv3d(
+=======
+        self.encoder = nn.Sequential(*encoder_layers)
+
+        ## Latent space
+        # hidden => mu
+        self.mu_layer = nn.Conv3d(
+            feature_size, latent_size, 3, stride=1, padding=1, bias=False
+        )
+        # hidden => logvar
+        self.var_layer = nn.Conv3d(
+>>>>>>> simplify the base class
             feature_size, latent_size, 3, stride=1, padding=1, bias=False
         )
 
