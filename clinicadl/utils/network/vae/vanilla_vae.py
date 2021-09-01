@@ -39,9 +39,9 @@ class VanillaDenseVAE(BaseVAE):
         )
 
         # hidden => mu
-        self.fc1 = nn.Linear(self.feature_size, self.latent_size)
+        self.mu_layer = nn.Linear(self.feature_size, self.latent_size)
         # hidden => logvar
-        self.fc2 = nn.Linear(self.feature_size, self.latent_size)
+        self.var_layer = nn.Linear(self.feature_size, self.latent_size)
 
         self.decoder = VAE_Decoder(
             input_shape=self.input_size,
@@ -82,11 +82,11 @@ class VanillaSpatialVAE(BaseVAE):
         )
 
         # hidden => mu
-        self.fc1 = nn.Conv2d(
+        self.mu_layer = nn.Conv2d(
             self.feature_size, self.latent_size, 3, stride=1, padding=1, bias=False
         )
         # hidden => logvar
-        self.fc2 = nn.Conv2d(
+        self.var_layer = nn.Conv2d(
             self.feature_size, self.latent_size, 3, stride=1, padding=1, bias=False
         )
 
@@ -149,11 +149,11 @@ class Vanilla3DVAE(BaseVAE):
 
         ## Latent space
         # hidden => mu
-        self.fc1 = nn.Conv3d(
+        self.mu_layer = nn.Conv3d(
             feature_size, latent_size, 3, stride=1, padding=1, bias=False
         )
         # hidden => logvar
-        self.fc2 = nn.Conv3d(
+        self.var_layer = nn.Conv3d(
             feature_size, latent_size, 3, stride=1, padding=1, bias=False
         )
 

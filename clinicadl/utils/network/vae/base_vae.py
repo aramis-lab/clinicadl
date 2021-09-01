@@ -7,6 +7,7 @@ class BaseVAE(Network):
     def __init__(self):
         super(BaseVAE, self).__init__()
 
+    # Network specific
     def predict(self, x):
         output = self.forward(x)
         return output
@@ -30,9 +31,10 @@ class BaseVAE(Network):
 
         return recon_images, loss
 
+    # VAE specific
     def encode(self, x):
         h = self.encoder(x)
-        mu, logvar = self.fc1(h), self.fc2(h)
+        mu, logvar = self.mu_layer(h), self.var_layer(h)
         return mu, logvar
 
     def decode(self, z):
@@ -40,14 +42,6 @@ class BaseVAE(Network):
         return z
 
     def reparameterize(self, mu, logvar):
-        if self.training:
-            std = torch.exp(0.5 * logvar)
-            eps = torch.randn_like(std)
-            return eps.mul(std).add_(mu)
-        else:
-            return mu
-
-    def reparameterize_eval(self, mu, logvar):
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
         return eps.mul(std).add_(mu)
