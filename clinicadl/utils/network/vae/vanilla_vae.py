@@ -14,13 +14,14 @@ class VanillaDenseVAE(BaseVAE):
     def __init__(
         self,
         input_size,
+        use_cpu=False,
         feature_size=1024,
         latent_size=64,
         n_conv=4,
         io_layer_channel=32,
         train=False,
     ):
-        super(VanillaDenseVAE, self).__init__()
+        super(VanillaDenseVAE, self).__init__(use_cpu=use_cpu)
 
         self.input_size = input_size
         self.feature_size = feature_size
@@ -57,13 +58,14 @@ class VanillaSpatialVAE(BaseVAE):
     def __init__(
         self,
         input_size,
+        use_cpu=False,
         feature_size=1024,
         latent_size=64,
         n_conv=4,
         io_layer_channel=32,
         train=False,
     ):
-        super(VanillaSpatialVAE, self).__init__()
+        super(VanillaSpatialVAE, self).__init__(use_cpu=use_cpu)
 
         self.input_size = input_size
         self.feature_size = feature_size
@@ -104,8 +106,9 @@ class Vanilla3DVAE(BaseVAE):
     def __init__(
         self,
         input_size,
+        use_cpu=False,
     ):
-        super(Vanilla3DVAE, self).__init__()
+        super(Vanilla3DVAE, self).__init__(use_cpu=use_cpu)
 
         n_conv = 4
         first_layer_channels = 32
@@ -193,4 +196,4 @@ class Vanilla3DVAE(BaseVAE):
                 nn.Sigmoid(),
             )
         )
-        self.decoder = nn.Sequential(*self.decoder_layers)
+        self.decoder = nn.Sequential(*decoder_layers)

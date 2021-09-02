@@ -4,8 +4,8 @@ from clinicadl.utils.network.network import Network
 
 
 class BaseVAE(Network):
-    def __init__(self):
-        super(BaseVAE, self).__init__()
+    def __init__(self, use_cpu=False):
+        super(BaseVAE, self).__init__(use_cpu=use_cpu)
 
     # Network specific
     def predict(self, x):
