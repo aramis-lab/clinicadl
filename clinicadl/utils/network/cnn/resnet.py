@@ -10,20 +10,20 @@ class ResNetDesigner(nn.Module):
     def __init__(self, input_size, block, layers, num_classes=1000):
         self.inplanes = 64
         super(ResNetDesigner, self).__init__()
-        self.first_layers = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-        )
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
 
         # Compute avgpool size
-        input_tensor = torch.zeros(input_size).squeeze(0)
-        out = self.first_layers(input_tensor)
+        input_tensor = torch.zeros(input_size).unsqueeze(0)
+        out = self.conv1(input_tensor)
+        out = self.relu(self.bn1(out))
+        out = self.maxpool(out)
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)

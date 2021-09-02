@@ -147,7 +147,10 @@ class resnet18(CNN):
         model.load_state_dict(model_zoo.load_url(model_urls["resnet18"]))
 
         convolutions = nn.Sequential(
-            model.first_layers,
+            model.conv1,
+            model.bn1,
+            model.relu,
+            model.maxpool,
             model.layer1,
             model.layer2,
             model.layer3,
