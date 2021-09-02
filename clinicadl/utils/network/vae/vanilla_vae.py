@@ -114,7 +114,12 @@ class Vanilla3DVAE(BaseVAE):
         first_layer_channels = 32
         last_layer_channels = 32
         feature_size = 512
-        latent_size = 64
+        latent_size = 1
+        decoder_output_padding = [
+            [1, 0, 0],
+            [0, 0, 0],
+            [0, 0, 1],
+        ]
 
         self.input_size = input_size
 
@@ -135,11 +140,11 @@ class Vanilla3DVAE(BaseVAE):
             )
         encoder_layers.append(
             nn.Sequential(
-                nn.Conv2d(
+                nn.Conv3d(
                     first_layer_channels * 2 ** (n_conv - 1),
                     feature_size,
-                    3,
-                    stride=1,
+                    4,
+                    stride=2,
                     padding=1,
                     bias=False,
                 ),
@@ -166,12 +171,13 @@ class Vanilla3DVAE(BaseVAE):
                     latent_size, feature_size, 3, stride=1, padding=1, bias=False
                 ),
                 nn.ReLU(),
-                nn.ConvTranspose2d(
+                nn.ConvTranspose3d(
                     feature_size,
                     last_layer_channels * 2 ** (n_conv - 1),
-                    3,
-                    stride=1,
+                    4,
+                    stride=2,
                     padding=1,
+                    output_padding=[0, 1, 1],
                     bias=False,
                 ),
                 nn.ReLU(),
@@ -180,17 +186,20 @@ class Vanilla3DVAE(BaseVAE):
         for i in range(n_conv - 1, 0, -1):
             decoder_layers.append(
                 DecoderLayer3D(
-                    last_layer_channels * 2 ** (i), last_layer_channels * 2 ** (i - 1)
+                    last_layer_channels * 2 ** (i),
+                    last_layer_channels * 2 ** (i - 1),
+                    output_padding=decoder_output_padding[-i],
                 )
             )
         decoder_layers.append(
             nn.Sequential(
-                nn.ConvTranspose2d(
+                nn.ConvTranspose3d(
                     last_layer_channels,
                     self.input_c,
                     4,
                     stride=2,
                     padding=1,
+                    output_padding=[1, 0, 1],
                     bias=False,
                 ),
                 nn.Sigmoid(),

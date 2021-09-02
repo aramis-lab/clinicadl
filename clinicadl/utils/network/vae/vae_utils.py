@@ -97,7 +97,13 @@ class DecoderLayer3D(nn.Module):
     """
 
     def __init__(
-        self, input_channels, output_channels, kernel_size=4, stride=2, padding=1
+        self,
+        input_channels,
+        output_channels,
+        kernel_size=4,
+        stride=2,
+        padding=1,
+        output_padding=0,
     ):
         super(DecoderLayer3D, self).__init__()
         self.layer = nn.Sequential(
@@ -107,6 +113,7 @@ class DecoderLayer3D(nn.Module):
                 kernel_size,
                 stride=stride,
                 padding=padding,
+                output_padding=output_padding,
                 bias=False,
             ),
             nn.BatchNorm3d(output_channels),

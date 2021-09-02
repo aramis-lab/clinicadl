@@ -9,7 +9,7 @@ class BaseVAE(Network):
 
     # Network specific
     def predict(self, x):
-        output = self.forward(x)
+        output, _, _ = self.forward(x)
         return output
 
     def forward(self, x):
@@ -22,9 +22,9 @@ class BaseVAE(Network):
         images = input_dict["image"].to(self.device)
         recon_images, mu, log_var = self.forward(images)
 
-        recon_loss = criterion(recon_images, images, mu, log_var)
-        kd_loss = torch.mean(
-            -0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim=1), dim=0
+        recon_loss = criterion(recon_images, images)
+        kd_loss = -0.5 * torch.mean(
+            torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim=1)
         )
 
         loss = recon_loss + kd_loss
