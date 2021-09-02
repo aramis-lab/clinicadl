@@ -73,7 +73,6 @@ class MapsManager:
             self._write_requirements_version()
             self._write_training_data()
             self._write_train_val_groups()
-        print(self.num_workers)
 
     def __getattr__(self, name):
         """Allow to directly get the values in parameters attribute"""
