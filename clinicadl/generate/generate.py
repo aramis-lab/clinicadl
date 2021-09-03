@@ -6,36 +6,65 @@ This file generates data for trivial or intractable (random) data for binary cla
 import tarfile
 from copy import copy
 from os import makedirs
-from os.path import exists, join
+from os.path import basename, exists, join
+from typing import Dict, Optional
 
 import nibabel as nib
 import numpy as np
 import pandas as pd
 import torch
-from clinica.utils.inputs import RemoteFileStructure, fetch_file
+from clinica.utils.input_files import T1W_LINEAR, T1W_LINEAR_CROPPED, pet_linear_nii
+from clinica.utils.inputs import RemoteFileStructure, clinica_file_reader, fetch_file
 
 from clinicadl.utils.caps_dataset.data import CapsDataset
-from clinicadl.utils.inputs import FILENAME_TYPE
 from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
 from clinicadl.utils.tsvtools_utils import extract_baseline
 
 from .generate_utils import (
-    find_image_path,
     generate_shepplogan_phantom,
     im_loss_roi_gaussian_distribution,
     load_and_check_tsv,
 )
 
 
+def find_file_type(
+    preprocessing: str,
+    uncropped_image: bool,
+    acq_label: str,
+    suvr_reference_region: str,
+) -> Dict[str, str]:
+    if preprocessing == "t1-linear":
+        if uncropped_image:
+            file_type = T1W_LINEAR
+        else:
+            file_type = T1W_LINEAR_CROPPED
+    elif preprocessing == "pet-linear":
+        if acq_label is None or suvr_reference_region is None:
+            raise ValueError(
+                "acq_label and suvr_reference_region must be defined "
+                "when using `pet-linear` preprocessing."
+            )
+        file_type = pet_linear_nii(acq_label, suvr_reference_region, uncropped_image)
+    else:
+        raise NotImplementedError(
+            f"Generation of synthetic data is not implemented for preprocessing {preprocessing}"
+        )
+
+    return file_type
+
+
 def generate_random_dataset(
-    caps_directory,
-    output_dir,
-    n_subjects,
-    tsv_path=None,
-    mean=0,
-    sigma=0.5,
-    preprocessing="t1-linear",
-    multi_cohort=False,
+    caps_directory: str,
+    output_dir: str,
+    n_subjects: int,
+    tsv_path: Optional[str] = None,
+    mean: float = 0,
+    sigma: float = 0.5,
+    preprocessing: str = "t1-linear",
+    multi_cohort: bool = False,
+    uncropped_image: bool = False,
+    acq_label: Optional[str] = None,
+    suvr_reference_region: Optional[str] = None,
 ):
     """
     Generates a random dataset.
@@ -45,16 +74,19 @@ def generate_random_dataset(
     one are ignored. Degree of noise can be parameterized.
 
     Args:
-        caps_directory: (str) Path to the (input) CAPS directory.
-        output_dir: (str) folder containing the synthetic dataset in (output)
+        caps_directory: Path to the (input) CAPS directory.
+        output_dir: folder containing the synthetic dataset in (output)
             CAPS format.
-        n_subjects: (int) number of subjects in each class of the
+        n_subjects: number of subjects in each class of the
             synthetic dataset
-        tsv_path: (str) path to tsv file of list of subjects/sessions.
-        mean: (float) mean of the gaussian noise
-        sigma: (float) standard deviation of the gaussian noise
-        preprocessing: (str) preprocessing performed. Must be in ['t1-linear', 't1-extensive'].
-        multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
+        tsv_path: path to tsv file of list of subjects/sessions.
+        mean: mean of the gaussian noise
+        sigma: standard deviation of the gaussian noise
+        preprocessing: preprocessing performed. Must be in ['t1-linear', 't1-extensive'].
+        multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
+        uncropped_image: If True the uncropped image of `t1-linear` or `pet-linear` will be used.
+        acq_label: name of the tracer when using `pet-linear` preprocessing.
+        suvr_reference_region: name of the reference region when using `pet-linear` preprocessing.
 
     Returns:
         A folder written on the output_dir location (in CAPS format), also a
@@ -85,10 +117,15 @@ def generate_random_dataset(
     session_id = data_df.loc[0, "session_id"]
     cohort = data_df.loc[0, "cohort"]
 
-    image_path = find_image_path(
-        caps_dict, participant_id, session_id, cohort, preprocessing
+    # Find appropriate preprocessing file type
+    file_type = find_file_type(
+        preprocessing, uncropped_image, acq_label, suvr_reference_region
     )
-    image_nii = nib.load(image_path)
+
+    image_paths = clinica_file_reader(
+        [participant_id], [session_id], caps_dict[cohort], file_type
+    )
+    image_nii = nib.load(image_paths[0])
     image = image_nii.get_data()
 
     # Create output tsv file
@@ -104,6 +141,8 @@ def generate_random_dataset(
     output_df["sex"] = "F"
     output_df.to_csv(join(output_dir, "data.tsv"), sep="\t", index=False)
 
+    input_filename = basename(image_paths[0])
+    filename_pattern = "_".join(input_filename.split("_")[2::])
     for i in range(2 * n_subjects):
         gauss = np.random.normal(mean, sigma, image.shape)
         participant_id = f"sub-RAND{i}"
@@ -114,9 +153,7 @@ def generate_random_dataset(
         noisy_image_nii_path = join(
             output_dir, "subjects", participant_id, "ses-M00", "t1_linear"
         )
-        noisy_image_nii_filename = (
-            participant_id + "_ses-M00" + FILENAME_TYPE["cropped"] + ".nii.gz"
-        )
+        noisy_image_nii_filename = f"{participant_id}_ses-M00_{filename_pattern}"
         makedirs(noisy_image_nii_path, exist_ok=True)
         nib.save(noisy_image_nii, join(noisy_image_nii_path, noisy_image_nii_filename))
 
@@ -134,14 +171,17 @@ def generate_random_dataset(
 
 
 def generate_trivial_dataset(
-    caps_directory,
-    output_dir,
-    n_subjects,
-    tsv_path=None,
-    preprocessing="t1-linear",
-    mask_path=None,
-    atrophy_percent=60,
-    multi_cohort=False,
+    caps_directory: str,
+    output_dir: str,
+    n_subjects: int,
+    tsv_path: Optional[str] = None,
+    preprocessing: str = "t1-linear",
+    mask_path: Optional[str] = None,
+    atrophy_percent: float = 60,
+    multi_cohort: bool = False,
+    uncropped_image: bool = False,
+    acq_label: str = "fdg",
+    suvr_reference_region: str = "pons",
 ):
     """
     Generates a fully separable dataset.
@@ -152,15 +192,17 @@ def generate_trivial_dataset(
     processed and image with half-left processed)
 
     Args:
-        caps_directory: (str) path to the CAPS directory.
-        output_dir: (str) folder containing the synthetic dataset in CAPS format.
-        n_subjects: (int) number of subjects in each class of the synthetic
-            dataset.
-        tsv_path: (str) path to tsv file of list of subjects/sessions.
-        preprocessing: (str) preprocessing performed. Must be in ['linear', 'extensive'].
-        mask_path: (str) path to the extracted masks to generate the two labels.
-        atrophy_percent: (float) percentage of atrophy applied.
-        multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
+        caps_directory: path to the CAPS directory.
+        output_dir: folder containing the synthetic dataset in CAPS format.
+        n_subjects: number of subjects in each class of the synthetic dataset.
+        tsv_path: path to tsv file of list of subjects/sessions.
+        preprocessing: preprocessing performed. Must be in ['linear', 'extensive'].
+        mask_path: path to the extracted masks to generate the two labels.
+        atrophy_percent: percentage of atrophy applied.
+        multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
+        uncropped_image: If True the uncropped image of `t1-linear` or `pet-linear` will be used.
+        acq_label: name of the tracer when using `pet-linear` preprocessing.
+        suvr_reference_region: name of the reference region when using `pet-linear` preprocessing.
 
     Returns:
         Folder structure where images are stored in CAPS format.
@@ -234,6 +276,11 @@ def generate_trivial_dataset(
     output_df = pd.DataFrame(columns=columns)
     diagnosis_list = ["AD", "CN"]
 
+    # Find appropriate preprocessing file type
+    file_type = find_file_type(
+        preprocessing, uncropped_image, acq_label, suvr_reference_region
+    )
+
     for i in range(2 * n_subjects):
         data_idx = i // 2
         label = i % 2
@@ -241,18 +288,21 @@ def generate_trivial_dataset(
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
         cohort = data_df.loc[data_idx, "cohort"]
-        filename = f"sub-TRIV{i}_ses-M00" + FILENAME_TYPE["cropped"] + ".nii.gz"
-        path_image = join(
-            output_dir, "subjects", f"sub-TRIV{i}", "ses-M00", "t1_linear"
+        image_paths = clinica_file_reader(
+            [participant_id], [session_id], caps_dict[cohort], file_type
         )
-
-        makedirs(path_image, exist_ok=True)
-
-        image_path = find_image_path(
-            caps_dict, participant_id, session_id, cohort, preprocessing
-        )
-        image_nii = nib.load(image_path)
+        image_nii = nib.load(image_paths[0])
         image = image_nii.get_data()
+
+        input_filename = basename(image_paths[0])
+        filename_pattern = "_".join(input_filename.split("_")[2::])
+
+        trivial_image_nii_dir = join(
+            output_dir, "subjects", participant_id, "ses-M00", "t1_linear"
+        )
+        trivial_image_nii_filename = f"{participant_id}_ses-M00_{filename_pattern}"
+
+        makedirs(trivial_image_nii_dir, exist_ok=True)
 
         atlas_to_mask = nib.load(join(mask_path, f"mask-{label + 1}.nii")).get_data()
 
@@ -261,7 +311,9 @@ def generate_trivial_dataset(
             image, atlas_to_mask, atrophy_percent
         )
         trivial_image_nii = nib.Nifti1Image(trivial_image, affine=image_nii.affine)
-        trivial_image_nii.to_filename(join(path_image, filename))
+        trivial_image_nii.to_filename(
+            join(trivial_image_nii_dir, trivial_image_nii_filename)
+        )
 
         # Append row to output tsv
         row = [f"sub-TRIV{i}", "ses-M00", diagnosis_list[label], 60, "F"]

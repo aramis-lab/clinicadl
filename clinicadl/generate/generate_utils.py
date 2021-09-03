@@ -6,8 +6,6 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
 
-from clinicadl.utils.inputs import FILENAME_TYPE
-
 
 def load_and_check_tsv(tsv_path, caps_dict, output_path):
     from os.path import join
@@ -52,46 +50,16 @@ def load_and_check_tsv(tsv_path, caps_dict, output_path):
     return df
 
 
-def find_image_path(caps_dict, participant_id, session_id, cohort, preprocessing):
-    from os import path
-
-    if cohort not in caps_dict.keys():
-        raise ValueError("Cohort names in labels and CAPS definitions do not match.")
-
-    if preprocessing == "t1-linear":
-        image_path = path.join(
-            caps_dict[cohort],
-            "subjects",
-            participant_id,
-            session_id,
-            "t1_linear",
-            participant_id + "_" + session_id + FILENAME_TYPE["cropped"] + ".nii.gz",
-        )
-    elif preprocessing == "t1-extensive":
-        image_path = path.join(
-            caps_dict[cohort],
-            "subjects",
-            participant_id,
-            session_id,
-            "t1",
-            "spm",
-            "segmentation",
-            "normalized_space",
-            participant_id
-            + "_"
-            + session_id
-            + FILENAME_TYPE["skull_stripped"]
-            + ".nii.gz",
-        )
-    else:
-        raise ValueError(
-            "Preprocessing %s must be in ['t1-linear', 't1-extensive']." % preprocessing
-        )
-
-    return image_path
+def binary_t1_pgm(im_data):
+    """
+    :param im_data: probability gray maps
+    :return: binarized probability gray maps
+    """
+    m = im_data > 0.0
+    m = m.astype("float32")
+    return m
 
 
-# Generate trivial
 def im_loss_roi_gaussian_distribution(im_data, atlas_to_mask, min_value):
     """
     Create a smooth atrophy in the input image on the region in the mask.

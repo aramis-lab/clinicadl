@@ -1,4 +1,3 @@
-import os
 from typing import Optional
 
 import click
@@ -20,7 +19,6 @@ from .extract_utils import get_parameters_dict
 def image_cli(
     caps_directory: str,
     modality: str,
-    save_features: bool = False,
     subjects_sessions_tsv: Optional[str] = None,
     use_uncropped_image: bool = False,
     acq_label: Optional[str] = None,

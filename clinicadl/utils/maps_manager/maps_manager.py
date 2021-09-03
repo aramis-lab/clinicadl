@@ -10,6 +10,7 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 
+from clinicadl.extract.extract_utils import compute_folder_and_file_type
 from clinicadl.utils.caps_dataset.data import (
     get_transforms,
     load_data_test,
@@ -186,7 +187,6 @@ class MapsManager:
         multi_cohort=False,
         diagnoses=None,
         use_labels=True,
-        prepare_dl=None,
         batch_size=None,
         num_workers=None,
         use_cpu=None,
@@ -209,7 +209,6 @@ class MapsManager:
             diagnoses (list[str]): List of diagnoses to load if tsv_path is a split_directory.
                 Default uses the same as in training step.
             use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
-            prepare_dl (bool): If given, sets the value of prepare_dl, else use the same as in training step.
             batch_size (int): If given, sets the value of batch_size, else use the same as in training step.
             num_workers (int): If given, sets the value of num_workers, else use the same as in training step.
             use_cpu (bool): If given, a new value for the device of the model will be computed.
@@ -248,19 +247,14 @@ class MapsManager:
             if self.multi_network:
                 for network in range(self.num_networks):
                     data_test = return_dataset(
-                        self.mode,
                         group_parameters["caps_directory"],
                         group_df,
-                        self.preprocessing,
+                        self.preprocessing_dict,
                         all_transformations=all_transforms,
-                        prepare_dl=prepare_dl
-                        if prepare_dl is not None
-                        else self.prepare_dl,
                         multi_cohort=group_parameters["multi_cohort"],
                         label_presence=use_labels,
                         label=self.label,
                         label_code=self.label_code,
-                        params=self,
                         cnn_index=network,
                     )
                     test_loader = DataLoader(
@@ -288,19 +282,14 @@ class MapsManager:
                     )
             else:
                 data_test = return_dataset(
-                    self.mode,
                     group_parameters["caps_directory"],
                     group_df,
-                    preprocessing=self.preprocessing,
+                    self.preprocessing_dict,
                     all_transformations=all_transforms,
-                    prepare_dl=prepare_dl
-                    if prepare_dl is not None
-                    else self.prepare_dl,
                     multi_cohort=group_parameters["multi_cohort"],
                     label_presence=use_labels,
                     label=self.label,
                     label_code=self.label_code,
-                    params=self,
                 )
                 test_loader = DataLoader(
                     data_test,
@@ -335,7 +324,6 @@ class MapsManager:
         selection_metrics=None,
         multi_cohort=False,
         diagnoses=None,
-        prepare_dl=None,
         use_cpu=None,
         overwrite=False,
     ):
@@ -355,7 +343,6 @@ class MapsManager:
                 Default performs the prediction on all selection metrics available.
             multi_cohort (bool): If True considers that tsv_path is the path to a multi-cohort TSV.
             diagnoses (list[str]): List of diagnoses to load if tsv_path is a split_directory.
-            prepare_dl (bool): If given, sets the value of prepare_dl, else use the same as in training step.
             use_cpu (bool): If given, a new value for the device of the model will be computed.
             overwrite (bool): If True erase the occurrences of data_group.
 
@@ -396,18 +383,13 @@ class MapsManager:
             if self.multi_network:
                 for network in range(self.num_networks):
                     dataset = return_dataset(
-                        self.mode,
                         group_parameters["caps_directory"],
                         group_df,
-                        self.preprocessing,
+                        self.preprocessing_dict,
                         all_transformations=all_transforms,
-                        prepare_dl=prepare_dl
-                        if prepare_dl is not None
-                        else self.prepare_dl,
                         multi_cohort=group_parameters["multi_cohort"],
                         label=self.label,
                         label_code=self.label_code,
-                        params=self,
                         cnn_index=network,
                     )
                     self._compute_output_tensors(
@@ -421,18 +403,13 @@ class MapsManager:
 
             else:
                 dataset = return_dataset(
-                    self.mode,
                     group_parameters["caps_directory"],
                     group_df,
-                    self.preprocessing,
+                    self.preprocessing_dict,
                     all_transformations=all_transforms,
-                    prepare_dl=prepare_dl
-                    if prepare_dl is not None
-                    else self.prepare_dl,
                     multi_cohort=self.multi_cohort,
                     label=self.label,
                     label_code=self.label_code,
-                    params=self,
                 )
                 self._compute_output_tensors(
                     dataset,
@@ -452,10 +429,8 @@ class MapsManager:
         selection_metrics=None,
         multi_cohort=False,
         diagnoses=None,
-        preprocessing=None,
         target_node=0,
         save_individual=False,
-        prepare_dl=None,
         batch_size=None,
         num_workers=None,
         use_cpu=None,
@@ -482,7 +457,6 @@ class MapsManager:
                 Default uses the same as in training step.
             target_node (int): Node from which the interpretation is computed.
             save_individual (bool): If True saves the individual map of each participant / session couple.
-            prepare_dl (bool): If given, sets the value of prepare_dl, else use the same as in training step.
             batch_size (bool): If given, sets the value of batch_size, else use the same as in training step.
             num_workers (int): If given, sets the value of num_workers, else use the same as in training step.
             use_cpu (bool): If given, a new value for the device of the model will be computed.
@@ -529,17 +503,14 @@ class MapsManager:
             )
 
             data_test = return_dataset(
-                self.mode,
                 parameters_group["caps_directory"],
                 df_group,
-                preprocessing if preprocessing is not None else self.preprocessing,
+                self.preprocessing_dict,
                 all_transformations=all_transforms,
-                prepare_dl=prepare_dl if prepare_dl is not None else self.prepare_dl,
                 multi_cohort=parameters_group["multi_cohort"],
                 label_presence=False,
                 label_code=self.label_code,
                 label=self.label,
-                params=self,
             )
             test_loader = DataLoader(
                 data_test,
@@ -631,30 +602,24 @@ class MapsManager:
             fold_df_dict = split_manager[fold]
 
             data_train = return_dataset(
-                self.mode,
                 self.caps_directory,
                 fold_df_dict["train"],
-                self.preprocessing,
+                self.preprocessing_dict,
                 train_transformations=train_transforms,
                 all_transformations=all_transforms,
-                prepare_dl=self.prepare_dl,
                 multi_cohort=self.multi_cohort,
                 label=self.label,
                 label_code=self.label_code,
-                params=self,
             )
             data_valid = return_dataset(
-                self.mode,
                 self.caps_directory,
                 fold_df_dict["validation"],
-                self.preprocessing,
+                self.preprocessing_dict,
                 train_transformations=train_transforms,
                 all_transformations=all_transforms,
-                prepare_dl=self.prepare_dl,
                 multi_cohort=self.multi_cohort,
                 label=self.label,
                 label_code=self.label_code,
-                params=self,
             )
 
             train_sampler = self.task_manager.generate_sampler(data_train, self.sampler)
@@ -734,32 +699,26 @@ class MapsManager:
                 self.logger.info(f"Train network {network}")
 
                 data_train = return_dataset(
-                    self.mode,
                     self.caps_directory,
                     fold_df_dict["train"],
-                    self.preprocessing,
+                    self.preprocessing_dict,
                     train_transformations=train_transforms,
                     all_transformations=all_transforms,
-                    prepare_dl=self.prepare_dl,
                     multi_cohort=self.multi_cohort,
                     label=self.label,
                     label_code=self.label_code,
                     cnn_index=network,
-                    params=self,
                 )
                 data_valid = return_dataset(
-                    self.mode,
                     self.caps_directory,
                     fold_df_dict["validation"],
-                    self.preprocessing,
+                    self.preprocessing_dict,
                     train_transformations=train_transforms,
                     all_transformations=all_transforms,
-                    prepare_dl=self.prepare_dl,
                     multi_cohort=self.multi_cohort,
                     label=self.label,
                     label_code=self.label_code,
                     cnn_index=network,
-                    params=self,
                 )
 
                 train_sampler = self.task_manager.generate_sampler(
@@ -1165,7 +1124,7 @@ class MapsManager:
         mandatory_arguments = [
             "caps_directory",
             "tsv_path",
-            "preprocessing",
+            "preprocessing_dict",
             "mode",
             "network_task",
         ]
@@ -1194,15 +1153,13 @@ class MapsManager:
             self.parameters["selection_threshold"] = None
         label_code = self.task_manager.generate_label_code(train_df, self.label)
         full_dataset = return_dataset(
-            self.mode,
             self.caps_directory,
             train_df,
-            self.preprocessing,
+            self.preprocessing_dict,
             label=self.label,
             label_code=label_code,
             train_transformations=None,
             all_transformations=transformations,
-            params=self,
         )
         self.parameters.update(
             {
@@ -1869,26 +1826,14 @@ class MapsManager:
         # Change arg value: ex for preprocessing: mni --> t1-extensive
         # New arg with default hard-coded value --> discarded_slice --> 20
         retro_change_name = {
-            "network": "model",
             "model": "architecture",
-            "pretrained_path": "transfer_learning_path",
-            "pretrained_difference": "transfer_learning_difference",
-            "patch_stride": "stride_size",
-            "selection": "transfer_learning_selection",
             "multi": "multi_network",
         }
         retro_change_value = {
-            "preprocessing": {"mni": "t1-extensive", "linear": "t1-linear"}
+            # "preprocessing": {"mni": "t1-extensive", "linear": "t1-linear"}
         }
         retro_add = {
-            "discarded_slices": 20,
             "loss": "default",
-            "uncropped_roi": False,
-            "roi_list": None,
-            "multi_cohort": False,
-            "predict_atlas_intensities": None,  # To remove after multi-task implementation
-            "merged_tsv_path": None,  # To remove after multi-task implementation
-            "atlas_weight": 1,  # To remove after multi-task implementation
         }
 
         for old_name, new_name in retro_change_name.items():
@@ -1903,6 +1848,55 @@ class MapsManager:
         for name, value in retro_add.items():
             if name not in parameters:
                 parameters[name] = value
+
+        # Build preprocessing_dict
+        if "preprocessing_dict" not in parameters:
+            parameters["preprocessing_dict"] = {"mode": parameters["mode"]}
+            preprocessing_options = [
+                "preprocessing",
+                "use_uncropped_image",
+                "prepare_dl" "custom_suffix",
+                "acq_label",
+                "suvr_reference_region",
+                "patch_size",
+                "stride_size",
+                "slice_direction",
+                "slice_mode",
+                "discarded_slices",
+                "roi_list",
+                "uncropped_roi",
+                "roi_custom_suffix",
+                "roi_custom_template",
+                "roi_custom_mask_pattern",
+            ]
+            for preprocessing_var in preprocessing_options:
+                if preprocessing_var in parameters:
+                    parameters["preprocessing_dict"][preprocessing_var] = parameters[
+                        preprocessing_var
+                    ]
+                    del parameters[preprocessing_var]
+
+        # Add missing parameters in previous version of extract
+        if "use_uncropped_image" not in parameters["preprocessing_dict"]:
+            parameters["preprocessing_dict"]["use_uncropped_image"] = False
+
+        if (
+            "prepare_dl" not in parameters["preprocessing_dict"]
+            and parameters["mode"] != "image"
+        ):
+            parameters["preprocessing_dict"]["prepare_dl"] = False
+
+        if (
+            parameters["mode"] == "slice"
+            and "slice_mode" not in parameters["preprocessing_dict"]
+        ):
+            parameters["preprocessing_dict"]["slice_mode"] = "rgb"
+
+        if "file_type" not in parameters["preprocessing_dict"]:
+            _, file_type = compute_folder_and_file_type(
+                parameters["preprocessing_dict"]
+            )
+            parameters["preprocessing_dict"]["file_type"] = file_type
 
         return parameters
 

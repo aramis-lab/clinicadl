@@ -125,8 +125,8 @@ def test_extract():
     uncropped_image = [True, False]
 
     image_params = {"mode": "image"}
-    slice_params = {"mode": "patch", "patch_size": 50, "stride_size": 50}
-    patch_params = {
+    patch_params = {"mode": "patch", "patch_size": 50, "stride_size": 50}
+    slice_params = {
         "mode": "slice",
         "slice_mode": "rgb",
         "slice_direction": 0,

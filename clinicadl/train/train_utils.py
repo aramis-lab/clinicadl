@@ -82,6 +82,7 @@ def get_train_dict(
     from clinicadl.utils.preprocessing import read_preprocessing
 
     preprocessing_dict = read_preprocessing(preprocessing_json)
-    train_dict.update(preprocessing_dict)
+    train_dict["preprocessing_dict"] = preprocessing_dict
+    train_dict["mode"] = preprocessing_dict["mode"]
 
     return train_dict

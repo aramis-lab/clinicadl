@@ -1,6 +1,6 @@
 import random
 from os import path
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from clinicadl.train.train_utils import get_train_dict
 
@@ -62,7 +62,7 @@ def get_space_dict(toml_options: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
     return space_dict
 
 
-def sampling_fn(value, sampling_type):
+def sampling_fn(value, sampling_type: str):
     if isinstance(value, (tuple, list)):
         if sampling_type is "fixed":
             return value
@@ -84,16 +84,17 @@ def sampling_fn(value, sampling_type):
             return value
 
 
-def random_sampling(rs_options, options):
+def random_sampling(
+    rs_options: Dict[str, Any], options: Dict[str, Any]
+) -> Dict[str, Any]:
     """
     Samples all the hyperparameters of the model.
     Args:
-        rs_options: (Namespace) parameters of the random search
-        options: (Namespace) options of the training
+        rs_options: parameters of the random search
+        options: options of the training
     Returns:
-        options (Namespace), options updated to train the model generated randomly
+        options updated to train the model generated randomly
     """
-    print(rs_options)
 
     sampling_dict = {
         "accumulation_steps": "randint",
@@ -112,7 +113,7 @@ def random_sampling(rs_options, options):
         "label": "fixed",
         "learning_rate": "exponent",
         "minmaxnormalization": "choice",
-        "mode": "choice",
+        "mode": "fixed",
         "multi_cohort": "fixed",
         "multi_network": "choice",
         "n_fcblocks": "randint",
@@ -122,7 +123,7 @@ def random_sampling(rs_options, options):
         "network_normalization": "choice",
         "optimizer": "choice",
         "patience": "fixed",
-        "preprocessing": "choice",
+        "preprocessing_dict": "fixed",
         "seed": "fixed",
         "selection_metrics": "fixed",
         "sampler": "choice",
@@ -135,39 +136,7 @@ def random_sampling(rs_options, options):
         "weight_decay": "exponent",
     }
 
-    additional_mode_dict = {
-        "image": {},
-        "patch": {
-            "patch_size": "randint",
-            "selection_threshold": "uniform",
-            "stride_size": "randint",
-            "use_extracted_features": "fixed",
-        },
-        "roi": {
-            "selection_threshold": "uniform",
-            "roi_list": "fixed",
-            "use_extracted_features": "fixed",
-            "uncropped_roi": "fixed",
-        },
-        "slice": {
-            "discarded_slices": "randint",
-            "selection_threshold": "uniform",
-            "slice_direction": "choice",
-            "use_extracted_features": "fixed",
-        },
-    }
-
     for name, sampling_type in sampling_dict.items():
-        sampled_value = sampling_fn(rs_options[name], sampling_type)
-        options[name] = sampled_value
-
-    if options["mode"] not in additional_mode_dict.keys():
-        raise NotImplementedError(
-            "Mode %s was not correctly implemented for random search" % options.mode
-        )
-
-    additional_dict = additional_mode_dict[options["mode"]]
-    for name, sampling_type in additional_dict.items():
         sampled_value = sampling_fn(rs_options[name], sampling_type)
         options[name] = sampled_value
 
@@ -185,22 +154,19 @@ def random_sampling(rs_options, options):
         options["validation"] = "KFoldSplit"
     else:
         options["validation"] = "SingleSplit"
-    if "use_extracted_features" in options:
-        options["prepare_dl"] = options["use_extracted_features"]
-    else:
-        options["prepare_dl"] = False
     options["optimizer"] = "Adam"
 
     return options
 
 
-def find_evaluation_steps(accumulation_steps, goal=18):
+def find_evaluation_steps(accumulation_steps: int, goal: int = 18) -> int:
     """
     Compute the evaluation steps to be a multiple of accumulation steps as close possible as the goal.
     Args:
-        accumulation_steps: (int) number of times the gradients are accumulated before parameters update.
+        accumulation_steps: number of times the gradients are accumulated before parameters update.
+        goal: ideal value for evaluation_steps
     Returns:
-        (int) number of evaluation_steps
+        number of evaluation_steps
     """
     if goal == 0 or goal % accumulation_steps == 0:
         return goal
@@ -208,13 +174,13 @@ def find_evaluation_steps(accumulation_steps, goal=18):
         return (goal // accumulation_steps + 1) * accumulation_steps
 
 
-def random_conv_sampling(rs_options):
+def random_conv_sampling(rs_options: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     """
     Generate random parameters for a random architecture (convolutional part).
     Args:
-        rs_options: (Namespace) parameters of the random search
+        rs_options: parameters of the random search
     Returns
-        (dict) parameters of the architecture
+        parameters of the convolutions
     """
     n_convblocks = sampling_fn(rs_options["n_convblocks"], "randint")
     first_conv_width = sampling_fn(rs_options["first_conv_width"], "choice")
@@ -239,7 +205,7 @@ def random_conv_sampling(rs_options):
     return convolutions
 
 
-def update_channels(out_channels, channels_limit=512):
+def update_channels(out_channels: int, channels_limit: int = 512) -> Tuple[int, int]:
     in_channels = out_channels
     if out_channels < channels_limit:
         out_channels = 2 * out_channels

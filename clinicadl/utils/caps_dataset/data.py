@@ -1,7 +1,9 @@
 # coding: utf8
 
 import abc
+from logging import getLogger
 from os import path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -9,27 +11,39 @@ import torch
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 
-from clinicadl.utils.inputs import FILENAME_TYPE, MASK_PATTERN
+from clinicadl.extract.extract_utils import (
+    PATTERN_DICT,
+    TEMPLATE_DICT,
+    compute_discarded_slices,
+    extract_patch_path,
+    extract_patch_tensor,
+    extract_roi_path,
+    extract_roi_tensor,
+    extract_slice_path,
+    extract_slice_tensor,
+    find_mask_path,
+)
+
+logger = getLogger("clinicadl")
+
 
 #################################
 # Datasets loaders
 #################################
-
-
 class CapsDataset(Dataset):
     """Abstract class for all derived CapsDatasets."""
 
     def __init__(
         self,
-        caps_directory,
-        data_df,
-        preprocessing,
-        transformations,
-        label_presence,
-        label=None,
-        label_code=None,
-        augmentation_transformations=None,
-        multi_cohort=False,
+        caps_directory: str,
+        data_df: pd.DataFrame,
+        preprocessing_dict: Dict[str, Any],
+        transformations: Optional[Callable],
+        label_presence: bool,
+        label: str = None,
+        label_code: Dict[Any, int] = None,
+        augmentation_transformations: Optional[Callable] = None,
+        multi_cohort: bool = False,
     ):
         self.caps_directory = caps_directory
         self.caps_dict = self.create_caps_dict(caps_directory, multi_cohort)
@@ -39,7 +53,7 @@ class CapsDataset(Dataset):
         self.label_presence = label_presence
         self.label = label
         self.label_code = label_code
-        self.preprocessing = preprocessing
+        self.preprocessing_dict = preprocessing_dict
 
         if not hasattr(self, "elem_index"):
             raise ValueError(
@@ -47,7 +61,7 @@ class CapsDataset(Dataset):
             )
         if not hasattr(self, "mode"):
             raise ValueError("Child class of CapsDataset must set mode attribute.")
-        # Check the format of the tsv file here
+
         self.df = data_df
 
         mandatory_col = {"participant_id", "session_id", "cohort"}
@@ -68,14 +82,14 @@ class CapsDataset(Dataset):
     def elem_index(self):
         pass
 
-    def label_fn(self, target):
+    def label_fn(self, target: Union[str, float, int]) -> Union[float, int]:
         """
         Returns the label value usable in criterion.
 
         Args:
-            target (str or float or int): value of the target.
+            target: value of the target.
         Returns:
-            label (int or float): value of the label usable in criterion.
+            label: value of the label usable in criterion.
         """
         # Reconstruction case (no label)
         if self.label is None:
@@ -87,11 +101,11 @@ class CapsDataset(Dataset):
         else:
             return self.label_code[target]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.df) * self.elem_per_image
 
     @staticmethod
-    def create_caps_dict(caps_directory, multi_cohort):
+    def create_caps_dict(caps_directory: str, multi_cohort: bool) -> Dict[str, str]:
 
         from clinica.utils.inputs import check_caps_folder
 
@@ -115,84 +129,30 @@ class CapsDataset(Dataset):
 
         return caps_dict
 
-    def _get_path(self, participant, session, cohort, mode="image"):
+    def _get_image_path(self, participant: str, session: str, cohort: str) -> str:
         """
         Gets the path to the tensor image (*.pt)
 
         Args:
-            participant (str): ID of the participant.
-            session (str): ID of the session.
-            cohort (str): Name of the cohort.
-            mode (str): Type of mode used (image, patch, slice or roi).
+            participant: ID of the participant.
+            session: ID of the session.
+            cohort: Name of the cohort.
         Returns:
-            image_path (str): path to the image
+            image_path: path to the tensor containing the whole image.
         """
+        from clinica.utils.inputs import clinica_file_reader
 
-        if cohort not in self.caps_dict.keys():
-            raise ValueError(
-                "Cohort names in labels and CAPS definitions do not match."
-            )
+        file_type = self.preprocessing_dict["file_type"]
+        file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
+        results = clinica_file_reader(
+            [participant], [session], self.caps_dict[cohort], file_type
+        )
 
-        if self.preprocessing == "t1-linear":
-            image_path = path.join(
-                self.caps_dict[cohort],
-                "subjects",
-                participant,
-                session,
-                "deeplearning_prepare_data",
-                "%s_based" % mode,
-                "t1_linear",
-                participant + "_" + session + FILENAME_TYPE["cropped"] + ".pt",
-            )
-        elif self.preprocessing == "t1-linear-downsampled":
-            image_path = path.join(
-                self.caps_dict[cohort],
-                "subjects",
-                participant,
-                session,
-                "deeplearning_prepare_data",
-                "%s_based" % mode,
-                "t1_linear",
-                participant + "_" + session + FILENAME_TYPE["downsampled"] + ".pt",
-            )
-        elif self.preprocessing == "t1-extensive":
-            image_path = path.join(
-                self.caps_dict[cohort],
-                "subjects",
-                participant,
-                session,
-                "deeplearning_prepare_data",
-                "%s_based" % mode,
-                "t1_extensive",
-                participant + "_" + session + FILENAME_TYPE["skull_stripped"] + ".pt",
-            )
-        elif self.preprocessing == "t1-volume":
-            image_path = path.join(
-                self.caps_dict[cohort],
-                "subjects",
-                participant,
-                session,
-                "deeplearning_prepare_data",
-                "%s_based" % mode,
-                "custom",
-                participant + "_" + session + FILENAME_TYPE["gm_maps"] + ".pt",
-            )
-        elif self.preprocessing == "shepplogan":
-            image_path = path.join(
-                self.caps_dict[cohort],
-                "subjects",
-                "%s_%s%s.pt" % (participant, session, FILENAME_TYPE["shepplogan"]),
-            )
-        else:
-            raise NotImplementedError(
-                "The path to preprocessing %s is not implemented" % self.preprocessing
-            )
+        return results[0]
 
-        return image_path
-
-    def _get_meta_data(self, idx):
+    def _get_meta_data(self, idx: int) -> Tuple[str, str, str, int, int]:
         """
-        Gets all meta data necessary to compute the path with _get_path
+        Gets all meta data necessary to compute the path with _get_image_path
 
         Args:
             idx (int): row number of the meta-data contained in self.df
@@ -221,50 +181,44 @@ class CapsDataset(Dataset):
 
         return participant, session, cohort, elem_idx, label
 
-    def _get_full_image(self):
+    def _get_full_image(self) -> torch.Tensor:
         """
         Allows to get the an example of the image mode corresponding to the dataset.
         Useful to compute the number of elements if mode != image.
 
         Returns:
-            image (torch.Tensor) tensor of the full image.
+            image tensor of the full image first image.
         """
         import nibabel as nib
-
-        from clinicadl.generate.generate_utils import find_image_path as get_nii_path
+        from clinica.utils.inputs import clinica_file_reader
 
         participant_id = self.df.loc[0, "participant_id"]
         session_id = self.df.loc[0, "session_id"]
         cohort = self.df.loc[0, "cohort"]
 
         try:
-            image_path = self._get_path(
-                participant_id, session_id, cohort, mode="image"
-            )
+            image_path = self._get_image_path(participant_id, session_id, cohort)
             image = torch.load(image_path)
-        except FileNotFoundError:
-            image_path = get_nii_path(
-                self.caps_dict,
-                participant_id,
-                session_id,
-                cohort=cohort,
-                preprocessing=self.preprocessing,
+        except IndexError:
+            file_type = self.preprocessing_dict["file_type"]
+            results = clinica_file_reader(
+                [participant_id], [session_id], self.caps_dict[cohort], file_type
             )
-            image_nii = nib.load(image_path)
+            image_nii = nib.load(results[0])
             image_np = image_nii.get_fdata()
             image = ToTensor()(image_np)
 
         return image
 
     @abc.abstractmethod
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Dict[str, Any]:
         """
         Gets the sample containing all the information needed for training and testing tasks.
 
         Args:
-            idx (int): row number of the meta-data contained in self.df
+            idx: row number of the meta-data contained in self.df
         Returns:
-            Dict[str, Any]: dictionary with following items:
+            dictionary with following items:
                 - "image" (torch.Tensor): the input given to the model,
                 - "label" (int or float): the label used in criterion,
                 - "participant_id" (str): ID of the participant,
@@ -276,7 +230,7 @@ class CapsDataset(Dataset):
         pass
 
     @abc.abstractmethod
-    def num_elem_per_image(self):
+    def num_elem_per_image(self) -> int:
         """Computes the number of elements per image based on the full image."""
         pass
 
@@ -296,34 +250,34 @@ class CapsDatasetImage(CapsDataset):
 
     def __init__(
         self,
-        caps_directory,
-        data_file,
-        preprocessing="t1-linear",
-        train_transformations=None,
-        label_presence=True,
-        label=None,
-        label_code=None,
-        all_transformations=None,
-        multi_cohort=False,
+        caps_directory: str,
+        data_file: pd.DataFrame,
+        preprocessing_dict: Dict[str, Any],
+        train_transformations: Optional[Callable] = None,
+        label_presence: bool = True,
+        label: str = None,
+        label_code: Dict[Any, int] = None,
+        all_transformations: Optional[Callable] = None,
+        multi_cohort: bool = False,
     ):
         """
         Args:
-            caps_directory (string): Directory of all the images.
-            data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
-            preprocessing (string): Defines the path to the data in CAPS.
-            train_transformations (callable, optional): Optional transform to be applied only on training mode.
-            label_presence (bool): If True the diagnosis will be extracted from the given DataFrame.
-            label (str): Name of the column in data_df containing the label.
-            label_code (Dict[str, int]): label code that links the output node number to label value.
-            all_transformations (callable, options): Optional transform to be applied during training and evaluation.
-            multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
+            caps_directory: Directory of all the images.
+            data_file: Path to the tsv file or DataFrame containing the subject/session list.
+            preprocessing_dict: preprocessing dict contained in the JSON file of extract.
+            train_transformations: Optional transform to be applied only on training mode.
+            label_presence: If True the diagnosis will be extracted from the given DataFrame.
+            label: Name of the column in data_df containing the label.
+            label_code: label code that links the output node number to label value.
+            all_transformations: Optional transform to be applied during training and evaluation.
+            multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
 
         """
         self.mode = "image"
         super().__init__(
             caps_directory,
             data_file,
-            preprocessing,
+            preprocessing_dict,
             augmentation_transformations=train_transformations,
             label_presence=label_presence,
             label=label,
@@ -339,7 +293,7 @@ class CapsDatasetImage(CapsDataset):
     def __getitem__(self, idx):
         participant, session, cohort, _, label = self._get_meta_data(idx)
 
-        image_path = self._get_path(participant, session, cohort, "image")
+        image_path = self._get_image_path(participant, session, cohort)
         image = torch.load(image_path)
 
         if self.transformations:
@@ -366,51 +320,41 @@ class CapsDatasetImage(CapsDataset):
 class CapsDatasetPatch(CapsDataset):
     def __init__(
         self,
-        caps_directory,
-        data_file,
-        patch_size,
-        stride_size,
-        train_transformations=None,
-        prepare_dl=False,
-        patch_index=None,
-        preprocessing="t1-linear",
-        label_presence=True,
-        label=None,
-        label_code=None,
-        all_transformations=None,
-        multi_cohort=False,
+        caps_directory: str,
+        data_file: pd.DataFrame,
+        preprocessing_dict: Dict[str, Any],
+        train_transformations: Optional[Callable] = None,
+        patch_index: Optional[int] = None,
+        label_presence: bool = True,
+        label: str = None,
+        label_code: Dict[str, int] = None,
+        all_transformations: Optional[Callable] = None,
+        multi_cohort: bool = False,
     ):
         """
         Args:
-            caps_directory (string): Directory of all the images.
-            data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
-            preprocessing (string): Defines the path to the data in CAPS.
-            train_transformations (callable, optional): Optional transform to be applied only on training mode.
-            prepare_dl (bool): If true pre-extracted patches will be loaded.
-            patch_index (int, optional): If a value is given the same patch location will be extracted for each image.
+            caps_directory: Directory of all the images.
+            data_file: Path to the tsv file or DataFrame containing the subject/session list.
+            preprocessing_dict: preprocessing dict contained in the JSON file of extract.
+            train_transformations: Optional transform to be applied only on training mode.
+            patch_index: If a value is given the same patch location will be extracted for each image.
                 else the dataset will load all the patches possible for one image.
-            patch_size (int): size of the regular cubic patch.
-            stride_size (int): length between the centers of two patches.
-            label_presence (bool): If True the diagnosis will be extracted from the given DataFrame.
-            label (str): Name of the column in data_df containing the label.
-            label_code (Dict[str, int]): label code that links the output node number to label value.
-            all_transformations (callable, options): Optional transform to be applied during training and evaluation.
-            multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
+            label_presence: If True the diagnosis will be extracted from the given DataFrame.
+            label: Name of the column in data_df containing the label.
+            label_code: label code that links the output node number to label value.
+            all_transformations: Optional transform to be applied during training and evaluation.
+            multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
 
         """
-        if preprocessing == "shepplogan":
-            raise ValueError(
-                "Patch mode is not available for preprocessing %s" % preprocessing
-            )
-        self.patch_size = patch_size
-        self.stride_size = stride_size
+        self.patch_size = preprocessing_dict["patch_size"]
+        self.stride_size = preprocessing_dict["stride_size"]
         self.patch_index = patch_index
         self.mode = "patch"
-        self.prepare_dl = prepare_dl
+        self.prepare_dl = preprocessing_dict["prepare_dl"]
         super().__init__(
             caps_directory,
             data_file,
-            preprocessing,
+            preprocessing_dict,
             augmentation_transformations=train_transformations,
             label_presence=label_presence,
             label=label,
@@ -425,33 +369,31 @@ class CapsDatasetPatch(CapsDataset):
 
     def __getitem__(self, idx):
         participant, session, cohort, patch_idx, label = self._get_meta_data(idx)
+        image_path = self._get_image_path(participant, session, cohort)
 
         if self.prepare_dl:
-            patch_path = path.join(
-                self._get_path(participant, session, cohort, "patch")[0:-7]
-                + "_patchsize-"
-                + str(self.patch_size)
-                + "_stride-"
-                + str(self.stride_size)
-                + "_patch-"
-                + str(patch_idx)
-                + "_T1w.pt"
+            patch_dir = path.join(
+                path.dirname(path.dirname(image_path)), f"{self.mode}_based"
+            )
+            patch_filename = extract_patch_path(
+                image_path, self.patch_size, self.stride_size, patch_idx
+            )
+            patch_tensor = torch.load(path.join(patch_dir, patch_filename))
+
+        else:
+            image = torch.load(image_path)
+            patch_tensor = extract_patch_tensor(
+                image, self.patch_size, self.stride_size, patch_idx
             )
 
-            image = torch.load(patch_path)
-        else:
-            image_path = self._get_path(participant, session, cohort, "image")
-            full_image = torch.load(image_path)
-            image = self.extract_patch_from_mri(full_image, patch_idx)
-
         if self.transformations:
-            image = self.transformations(image)
+            patch_tensor = self.transformations(patch_tensor)
 
         if self.augmentation_transformations and not self.eval_mode:
-            image = self.augmentation_transformations(image)
+            patch_tensor = self.augmentation_transformations(patch_tensor)
 
         sample = {
-            "image": image,
+            "image": patch_tensor,
             "label": label,
             "participant_id": participant,
             "session_id": session,
@@ -478,80 +420,48 @@ class CapsDatasetPatch(CapsDataset):
         num_patches = patches_tensor.shape[0]
         return num_patches
 
-    def extract_patch_from_mri(self, image_tensor, patch_idx):
-        """
-        Extracts the patch corresponding to patch_idx
-
-        Args:
-            image_tensor (torch.Tensor): tensor of the full image.
-            patch_idx (int): Index of the patch wanted.
-        Returns:
-            extracted_patch (torch.Tensor): the tensor of the patch.
-        """
-
-        patches_tensor = (
-            image_tensor.unfold(1, self.patch_size, self.stride_size)
-            .unfold(2, self.patch_size, self.stride_size)
-            .unfold(3, self.patch_size, self.stride_size)
-            .contiguous()
-        )
-        patches_tensor = patches_tensor.view(
-            -1, self.patch_size, self.patch_size, self.patch_size
-        )
-        extracted_patch = patches_tensor[patch_idx, ...].unsqueeze_(0).clone()
-
-        return extracted_patch
-
 
 class CapsDatasetRoi(CapsDataset):
     def __init__(
         self,
-        caps_directory,
-        data_file,
-        roi_list=None,
-        cropped_roi=True,
-        roi_index=None,
-        preprocessing="t1-linear",
-        train_transformations=None,
-        prepare_dl=False,
-        label_presence=True,
-        label=None,
-        label_code=None,
-        all_transformations=None,
-        multi_cohort=False,
+        caps_directory: str,
+        data_file: pd.DataFrame,
+        preprocessing_dict: Dict[str, Any],
+        roi_index: Optional[int] = None,
+        train_transformations: Optional[Callable] = None,
+        label_presence: bool = True,
+        label: str = None,
+        label_code: Dict[str, int] = None,
+        all_transformations: Optional[Callable] = None,
+        multi_cohort: bool = False,
     ):
         """
         Args:
-            caps_directory (string): Directory of all the images.
-            data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
-            roi_list (list): Defines the regions used in the classification.
-            cropped_roi (bool): If True the image is cropped according to the smallest bounding box possible.
-            roi_index (int, optional): If a value is given the same region will be extracted for each image.
+            caps_directory: Directory of all the images.
+            data_file: Path to the tsv file or DataFrame containing the subject/session list.
+            preprocessing_dict: preprocessing dict contained in the JSON file of extract.
+            roi_index: If a value is given the same region will be extracted for each image.
                 else the dataset will load all the regions possible for one image.
-            preprocessing (string): Defines the path to the data in CAPS.
-            train_transformations (callable, optional): Optional transform to be applied only on training mode.
-            prepare_dl (bool): If true pre-extracted patches will be loaded.
-            label_presence (bool): If True the diagnosis will be extracted from the given DataFrame.
-            label (str): Name of the column in data_df containing the label.
-            label_code (Dict[str, int]): label code that links the output node number to label value.
-            all_transformations (callable, options): Optional transform to be applied during training and evaluation.
-            multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
+            train_transformations: Optional transform to be applied only on training mode.
+            label_presence: If True the diagnosis will be extracted from the given DataFrame.
+            label: Name of the column in data_df containing the label.
+            label_code: label code that links the output node number to label value.
+            all_transformations: Optional transform to be applied during training and evaluation.
+            multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
 
         """
-        if preprocessing == "shepplogan":
-            raise ValueError(
-                "ROI mode is not available for preprocessing %s" % preprocessing
-            )
         self.roi_index = roi_index
         self.mode = "roi"
-        self.roi_list = roi_list
-        self.cropped_roi = cropped_roi
-        self.prepare_dl = prepare_dl
-        self.mask_list = self.find_masks(caps_directory, preprocessing)
+        self.roi_list = preprocessing_dict["roi_list"]
+        self.uncropped_roi = preprocessing_dict["uncropped_roi"]
+        self.prepare_dl = preprocessing_dict["prepare_dl"]
+        self.mask_paths, self.mask_arrays = self._get_mask_paths_and_tensors(
+            caps_directory, preprocessing_dict
+        )
         super().__init__(
             caps_directory,
             data_file,
-            preprocessing,
+            preprocessing_dict,
             augmentation_transformations=train_transformations,
             label_presence=label_presence,
             label=label,
@@ -566,32 +476,35 @@ class CapsDatasetRoi(CapsDataset):
 
     def __getitem__(self, idx):
         participant, session, cohort, roi_idx, label = self._get_meta_data(idx)
+        image_path = self._get_image_path(participant, session, cohort)
+
+        if self.roi_list is None:
+            raise NotImplementedError(
+                "Default regions are not available anymore in ClinicaDL. "
+                "Please define appropriate masks and give a roi_list."
+            )
 
         if self.prepare_dl:
-            if self.roi_list is None:
-                raise NotImplementedError(
-                    "The extraction of ROIs prior to training is not implemented for default ROIs."
-                    "Please disable --use_extracted_rois or precise the regions in --roi_names."
-                )
-
-            # read the regions directly
-            roi_path = self._get_path(participant, session, cohort, "roi")
-            roi_path = self.compute_roi_filename(roi_path, roi_idx)
-            patch = torch.load(roi_path)
+            mask_path = self.mask_paths[roi_idx]
+            roi_dir = path.join(
+                path.dirname(path.dirname(image_path)), f"{self.mode}_based"
+            )
+            roi_filename = extract_roi_path(image_path, mask_path, self.uncropped_roi)
+            roi_tensor = torch.load(path.join(roi_dir, roi_filename))
 
         else:
-            image_path = self._get_path(participant, session, cohort, "image")
             image = torch.load(image_path)
-            patch = self.extract_roi_from_mri(image, roi_idx)
+            mask_array = self.mask_arrays[roi_idx]
+            roi_tensor = extract_roi_tensor(image, mask_array, self.uncropped_roi)
 
         if self.transformations:
-            patch = self.transformations(patch)
+            roi_tensor = self.transformations(roi_tensor)
 
         if self.augmentation_transformations and not self.eval_mode:
-            patch = self.augmentation_transformations(patch)
+            roi_tensor = self.augmentation_transformations(roi_tensor)
 
         sample = {
-            "image": patch,
+            "image": roi_tensor,
             "label": label,
             "participant_id": participant,
             "session_id": session,
@@ -608,221 +521,97 @@ class CapsDatasetRoi(CapsDataset):
         else:
             return len(self.roi_list)
 
-    def extract_roi_from_mri(self, image_tensor, roi_idx):
-        """
-        Extracts the region of interest corresponding to the roi_idx-th mask given to the dataset
-
-        Args:
-            image_tensor (torch.Tensor): tensor of the full image.
-            roi_idx (int): Index of the region wanted.
-        Returns:
-            extracted_roi (torch.Tensor): the tensor of the region.
-        """
-
-        if self.roi_list is None:
-
-            if self.preprocessing == "t1-linear":
-                if roi_idx == 1:
-                    # the center of the left hippocampus
-                    crop_center = (61, 96, 68)
-                else:
-                    # the center of the right hippocampus
-                    crop_center = (109, 96, 68)
-            else:
-                raise NotImplementedError(
-                    "The extraction of hippocampi was not implemented for "
-                    "preprocessing %s" % self.preprocessing
-                )
-            crop_size = (50, 50, 50)  # the output cropped hippocampus size
-
-            if self.cropped_roi:
-
-                extracted_roi = image_tensor[
-                    :,
-                    crop_center[0]
-                    - crop_size[0] // 2 : crop_center[0]
-                    + crop_size[0] // 2 :,
-                    crop_center[1]
-                    - crop_size[1] // 2 : crop_center[1]
-                    + crop_size[1] // 2 :,
-                    crop_center[2]
-                    - crop_size[2] // 2 : crop_center[2]
-                    + crop_size[2] // 2 :,
-                ].clone()
-
-            else:
-                raise NotImplementedError(
-                    "The uncropped option for the default ROI was not implemented."
-                )
-
-        else:
-            roi_mask = self.mask_list[roi_idx]
-            if len(roi_mask.shape) == 3:
-                roi_mask = np.expand_dims(roi_mask, axis=0)
-            elif len(roi_mask.shape) == 4:
-                assert roi_mask.shape[0] == 1
-            else:
-                raise ValueError(
-                    "ROI masks must be 3D or 4D tensors. "
-                    f"The dimension of your ROI mask is {len(roi_mask.shape)}."
-                )
-            extracted_roi = image_tensor * roi_mask
-            if self.cropped_roi:
-                extracted_roi = extracted_roi[
-                    np.ix_(
-                        roi_mask.any((1, 2, 3)),
-                        roi_mask.any((0, 2, 3)),
-                        roi_mask.any((0, 1, 3)),
-                        roi_mask.any((0, 1, 2)),
-                    )
-                ]
-
-        return extracted_roi.float()
-
-    def find_masks(self, caps_directory, preprocessing):
+    def _get_mask_paths_and_tensors(
+        self, caps_directory: str, preprocessing_dict: Dict[str, Any]
+    ) -> Tuple[List[str], List]:
         """Loads the masks necessary to regions extraction"""
         import nibabel as nib
 
-        # TODO should be mutualized with deeplearning-prepare-data
-        templates_dict = {
-            "t1-linear": "MNI152NLin2009cSym",
-            "t1-volume": "Ixi549Space",
-            "t1-extensive": "Ixi549Space",
-        }
-
-        if self.prepare_dl or self.roi_list is None:
-            return None
-        else:
-            mask_list = []
-            for roi in self.roi_list:
-                template = templates_dict[preprocessing]
-                if preprocessing == "t1-linear":
-                    mask_pattern = MASK_PATTERN["cropped"]
-                elif preprocessing == "t1-volume":
-                    mask_pattern = MASK_PATTERN["gm_maps"]
-                elif preprocessing == "t1-extensive":
-                    mask_pattern = MASK_PATTERN["skull_stripped"]
-                else:
-                    raise NotImplementedError(
-                        "Roi extraction for %s preprocessing was not implemented."
-                        % preprocessing
-                    )
-
-                mask_path = path.join(
-                    caps_directory,
-                    "masks",
-                    "tpl-%s" % template,
-                    "tpl-%s%s_roi-%s_mask.nii.gz" % (template, mask_pattern, roi),
+        # Find template name
+        if preprocessing_dict["preprocessing"] == "custom":
+            template_name = preprocessing_dict["roi_custom_template"]
+            if template_name is None:
+                raise ValueError(
+                    f"Please provide a name for the template when preprocessing is `custom`."
                 )
-                mask_nii = nib.load(mask_path)
-                mask_list.append(mask_nii.get_fdata())
-
-        return mask_list
-
-    def compute_roi_filename(self, image_path, roi_index):
-        # TODO should be mutualized with deeplearning-prepare-data
-        from os import path
-
-        image_dir = path.dirname(image_path)
-        image_filename = path.basename(image_path)
-        image_descriptors = image_filename.split("_")
-        if "desc-Crop" not in image_descriptors and self.cropped_roi:
-            image_descriptors = self.insert_descriptor(
-                image_descriptors, "desc-CropRoi", "space"
+        elif preprocessing_dict["preprocessing"] in TEMPLATE_DICT:
+            template_name = TEMPLATE_DICT[preprocessing_dict["preprocessing"]]
+        else:
+            raise NotImplementedError(
+                f"Template of preprocessing {preprocessing_dict['preprocessing']} "
+                f"is not defined."
             )
 
-        elif "desc-Crop" in image_descriptors:
-            image_descriptors = [
-                descriptor
-                for descriptor in image_descriptors
-                if descriptor != "desc-Crop"
-            ]
-            if self.cropped_roi:
-                image_descriptors = self.insert_descriptor(
-                    image_descriptors, "desc-CropRoi", "space"
+        # Find mask pattern
+        if preprocessing_dict["preprocessing"] == "custom":
+            pattern = preprocessing_dict["roi_custom_mask_pattern"]
+            if pattern is None:
+                raise ValueError(
+                    f"Please provide a pattern for the masks when preprocessing is `custom`."
                 )
-            else:
-                image_descriptors = self.insert_descriptor(
-                    image_descriptors, "desc-CropImage", "space"
-                )
+        elif preprocessing_dict["preprocessing"] in PATTERN_DICT:
+            pattern = PATTERN_DICT[preprocessing_dict["preprocessing"]]
+        else:
+            raise NotImplementedError(
+                f"Pattern of mask for preprocessing {preprocessing_dict['preprocessing']} "
+                f"is not defined."
+            )
 
-        return (
-            path.join(image_dir, "_".join(image_descriptors))[0:-7]
-            + f"_roi-{self.roi_list[roi_index]}_T1w.pt"
-        )
+        mask_location = path.join(caps_directory, "masks", f"tpl-{template_name}")
 
-    @staticmethod
-    def insert_descriptor(image_descriptors, descriptor_to_add, key_to_follow):
-        # TODO should be mutualized with deeplearning-prepare-data
+        mask_paths, mask_arrays = list(), list()
+        for roi in self.roi_list:
+            logger.info(f"Find mask for roi {roi}.")
+            mask_path, desc = find_mask_path(mask_location, roi, pattern, True)
+            if mask_path is None:
+                raise ValueError(desc)
+            mask_nii = nib.load(mask_path)
+            mask_paths.append(mask_path)
+            mask_arrays.append(mask_nii.get_fdata())
 
-        for i, desc in enumerate(image_descriptors):
-            if key_to_follow in desc:
-                image_descriptors.insert(i + 1, descriptor_to_add)
-
-        return image_descriptors
+        return mask_paths, mask_arrays
 
 
 class CapsDatasetSlice(CapsDataset):
     def __init__(
         self,
-        caps_directory,
-        data_file,
-        slice_index=None,
-        preprocessing="t1-linear",
-        train_transformations=None,
-        mri_plane=0,
-        prepare_dl=False,
-        discarded_slices=20,
-        label_presence=True,
-        label=None,
-        label_code=None,
-        all_transformations=None,
-        multi_cohort=False,
+        caps_directory: str,
+        data_file: pd.DataFrame,
+        preprocessing_dict: Dict[str, Any],
+        slice_index: Optional[int] = None,
+        train_transformations: Optional[Callable] = None,
+        label_presence: bool = True,
+        label: str = None,
+        label_code: Dict[str, int] = None,
+        all_transformations: Optional[Callable] = None,
+        multi_cohort: bool = False,
     ):
         """
         Args:
-            caps_directory (string): Directory of all the images.
-            data_file (string or DataFrame): Path to the tsv file or DataFrame containing the subject/session list.
-            preprocessing (string): Defines the path to the data in CAPS.
-            slice_index (int, optional): If a value is given the same slice will be extracted for each image.
+            caps_directory: Directory of all the images.
+            data_file: Path to the tsv file or DataFrame containing the subject/session list.
+            preprocessing_dict: preprocessing dict contained in the JSON file of extract.
+            slice_index: If a value is given the same slice will be extracted for each image.
                 else the dataset will load all the slices possible for one image.
-            train_transformations (callable, optional): Optional transform to be applied only on training mode.
-            prepare_dl (bool): If true pre-extracted patches will be loaded.
-            mri_plane (int): Defines which mri plane is used for slice extraction.
-            discarded_slices (int or list): number of slices discarded at the beginning and the end of the image.
-                If one single value is given, the same amount is discarded at the beginning and at the end.
-            label_presence (bool): If True the diagnosis will be extracted from the given DataFrame.
-            label (str): Name of the column in data_df containing the label.
-            label_code (Dict[str, int]): label code that links the output node number to label value.
-            all_transformations (callable, options): Optional transform to be applied during training and evaluation.
-            multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
+            train_transformations: Optional transform to be applied only on training mode.
+            label_presence: If True the diagnosis will be extracted from the given DataFrame.
+            label: Name of the column in data_df containing the label.
+            label_code: label code that links the output node number to label value.
+            all_transformations: Optional transform to be applied during training and evaluation.
+            multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
         """
-        # Rename MRI plane
-        if preprocessing == "shepplogan":
-            raise ValueError(
-                "Slice mode is not available for preprocessing %s" % preprocessing
-            )
         self.slice_index = slice_index
-        self.mri_plane = mri_plane
-        self.direction_list = ["sag", "cor", "axi"]
-        if self.mri_plane >= len(self.direction_list):
-            raise ValueError(
-                "mri_plane value %i > %i" % (self.mri_plane, len(self.direction_list))
-            )
-
-        # Manage discarded_slices
-        if isinstance(discarded_slices, int):
-            discarded_slices = [discarded_slices, discarded_slices]
-        if isinstance(discarded_slices, list) and len(discarded_slices) == 1:
-            discarded_slices = discarded_slices * 2
-        self.discarded_slices = discarded_slices
-
+        self.slice_direction = preprocessing_dict["slice_direction"]
+        self.slice_mode = preprocessing_dict["slice_mode"]
+        self.discarded_slices = compute_discarded_slices(
+            preprocessing_dict["discarded_slices"]
+        )
         self.mode = "slice"
-        self.prepare_dl = prepare_dl
+        self.prepare_dl = preprocessing_dict["prepare_dl"]
         super().__init__(
             caps_directory,
             data_file,
-            preprocessing,
+            preprocessing_dict,
             augmentation_transformations=train_transformations,
             label_presence=label_presence,
             label=label,
@@ -838,28 +627,32 @@ class CapsDatasetSlice(CapsDataset):
     def __getitem__(self, idx):
         participant, session, cohort, slice_idx, label = self._get_meta_data(idx)
         slice_idx = slice_idx + self.discarded_slices[0]
+        image_path = self._get_image_path(participant, session, cohort)
 
         if self.prepare_dl:
-            # read the slices directly
-            slice_path = path.join(
-                self._get_path(participant, session, cohort, "slice")[0:-7]
-                + "_axis-%s" % self.direction_list[self.mri_plane]
-                + "_channel-rgb_slice-%i_T1w.pt" % slice_idx
+            slice_dir = path.join(
+                path.dirname(path.dirname(image_path)), f"{self.mode}_based"
             )
-            image = torch.load(slice_path)
+            slice_filename = extract_slice_path(
+                image_path, self.slice_direction, self.slice_mode, slice_idx
+            )
+            slice_tensor = torch.load(path.join(slice_dir, slice_filename))
+
         else:
-            image_path = self._get_path(participant, session, cohort, "image")
-            full_image = torch.load(image_path)
-            image = self.extract_slice_from_mri(full_image, slice_idx)
+            image_path = self._get_image_path(participant, session, cohort)
+            image = torch.load(image_path)
+            slice_tensor = extract_slice_tensor(
+                image, self.slice_direction, self.slice_mode, slice_idx
+            )
 
         if self.transformations:
-            image = self.transformations(image)
+            slice_tensor = self.transformations(slice_tensor)
 
         if self.augmentation_transformations and not self.eval_mode:
-            image = self.augmentation_transformations(image)
+            slice_tensor = self.augmentation_transformations(slice_tensor)
 
         sample = {
-            "image": image,
+            "image": slice_tensor,
             "label": label,
             "participant_id": participant,
             "session_id": session,
@@ -874,78 +667,52 @@ class CapsDatasetSlice(CapsDataset):
 
         image = self._get_full_image()
         return (
-            image.size(self.mri_plane + 1)
+            image.size(self.slice_direction + 1)
             - self.discarded_slices[0]
             - self.discarded_slices[1]
         )
 
-    def extract_slice_from_mri(self, image, index_slice):
-        """
-        This function extracts one slice along one axis and creates a RGB image
-        (the slice is duplicated in each channel).
-
-        To note:
-        Axial_view = "[:, :, slice_i]"
-        Coronal_view = "[:, slice_i, :]"
-        Sagittal_view= "[slice_i, :, :]"
-
-        Args:
-            image (torch.Tensor): tensor of the full image.
-            index_slice (int): index of the wanted slice.
-        Returns:
-            triple_slice (torch.Tensor): tensor of the slice with 3 channels.
-        """
-        image = image.squeeze(0)
-        simple_slice = image[(slice(None),) * self.mri_plane + (index_slice,)]
-        triple_slice = torch.stack((simple_slice, simple_slice, simple_slice))
-
-        return triple_slice
-
 
 def return_dataset(
-    mode,
-    input_dir,
-    data_df,
-    preprocessing,
-    all_transformations,
-    params,
-    label=None,
-    label_code=None,
-    train_transformations=None,
-    cnn_index=None,
-    label_presence=True,
-    multi_cohort=False,
-    prepare_dl=False,
-):
+    input_dir: str,
+    data_df: pd.DataFrame,
+    preprocessing_dict: Dict[str, Any],
+    all_transformations: Optional[Callable],
+    label: str = None,
+    label_code: Dict[Any, int] = None,
+    train_transformations: Optional[Callable] = None,
+    cnn_index: int = None,
+    label_presence: bool = True,
+    multi_cohort: bool = False,
+) -> CapsDataset:
     """
     Return appropriate Dataset according to given options.
     Args:
-        mode (str): input used by the network. Chosen from ['image', 'patch', 'roi', 'slice'].
-        input_dir (str): path to a directory containing a CAPS structure.
-        data_df (pd.DataFrame): List subjects, sessions and diagnoses.
-        preprocessing (str): type of preprocessing wanted ('t1-linear' or 't1-extensive')
-        train_transformations (callable, optional): Optional transform to be applied during training only.
-        all_transformations (callable, optional): Optional transform to be applied during training and evaluation.
-        params (clinicadl.MapsManager): options used by specific modes.
-        label (str): Name of the column in data_df containing the label.
-        label_code (Dict[str, int]): label code that links the output node number to label value.
-        cnn_index (int): Index of the CNN in a multi-CNN paradigm (optional).
-        label_presence (bool): If True the diagnosis will be extracted from the given DataFrame.
-        multi_cohort (bool): If True caps_directory is the path to a TSV file linking cohort names and paths.
-        prepare_dl (bool): If true pre-extracted slices / patches / regions will be loaded.
+        input_dir: path to a directory containing a CAPS structure.
+        data_df: List subjects, sessions and diagnoses.
+        preprocessing_dict: preprocessing dict contained in the JSON file of extract.
+        train_transformations: Optional transform to be applied during training only.
+        all_transformations: Optional transform to be applied during training and evaluation.
+        label: Name of the column in data_df containing the label.
+        label_code: label code that links the output node number to label value.
+        cnn_index: Index of the CNN in a multi-CNN paradigm (optional).
+        label_presence: If True the diagnosis will be extracted from the given DataFrame.
+        multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
 
     Returns:
-         (Dataset) the corresponding dataset.
+         the corresponding dataset.
     """
 
-    if cnn_index is not None and mode in ["image"]:
-        raise ValueError("Multi-CNN is not implemented for %s mode." % mode)
+    if cnn_index is not None and preprocessing_dict["mode"] == "image":
+        raise ValueError(
+            f"Multi-CNN is not implemented for {preprocessing_dict['mode']} mode."
+        )
 
-    if mode == "image":
+    if preprocessing_dict["mode"] == "image":
         return CapsDatasetImage(
             input_dir,
             data_df,
-            preprocessing,
+            preprocessing_dict,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
             label_presence=label_presence,
@@ -953,48 +720,39 @@ def return_dataset(
             label_code=label_code,
             multi_cohort=multi_cohort,
         )
-    elif mode == "patch":
+    elif preprocessing_dict["mode"] == "patch":
         return CapsDatasetPatch(
             input_dir,
             data_df,
-            params.patch_size,
-            params.stride_size,
-            preprocessing=preprocessing,
+            preprocessing_dict,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
-            prepare_dl=prepare_dl,
             patch_index=cnn_index,
             label_presence=label_presence,
             label=label,
             label_code=label_code,
             multi_cohort=multi_cohort,
         )
-    elif mode == "roi":
+    elif preprocessing_dict["mode"] == "roi":
         return CapsDatasetRoi(
             input_dir,
             data_df,
-            roi_list=params.roi_list,
-            cropped_roi=not params.uncropped_roi,
-            preprocessing=preprocessing,
+            preprocessing_dict,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
-            prepare_dl=prepare_dl,
             roi_index=cnn_index,
             label_presence=label_presence,
             label=label,
             label_code=label_code,
             multi_cohort=multi_cohort,
         )
-    elif mode == "slice":
+    elif preprocessing_dict["mode"] == "slice":
         return CapsDatasetSlice(
             input_dir,
             data_df,
-            preprocessing=preprocessing,
+            preprocessing_dict,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
-            mri_plane=params.slice_direction,
-            prepare_dl=prepare_dl,
-            discarded_slices=params.discarded_slices,
             slice_index=cnn_index,
             label_presence=label_presence,
             label=label,
@@ -1002,7 +760,7 @@ def return_dataset(
             multi_cohort=multi_cohort,
         )
     else:
-        raise ValueError("Mode %s is not implemented." % mode)
+        raise ValueError(f"Mode {preprocessing_dict['mode']} is not implemented.")
 
 
 ##################################
