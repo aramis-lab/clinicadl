@@ -277,9 +277,6 @@ def cli(
     """
     from clinicadl.utils.cmdline_utils import check_gpu
 
-    if gpu:
-        check_gpu()
-
     from .launch import train
     from .train_utils import get_train_dict
 
@@ -331,7 +328,9 @@ def cli(
 
     if gpu is not None:
         train_dict["use_cpu"] = not gpu
-    if n_proc:
+    if not train_dict["use_cpu"]:
+        check_gpu()
+    if n_proc is not None:
         train_dict["num_workers"] = n_proc
     if normalize is not None:
         train_dict["minmaxnormalization"] = normalize
