@@ -16,7 +16,7 @@ from clinicadl.utils import cli_param
     "--cn_subtypes_distribution",
     "-csd",
     type=float,
-    multiple=True,
+    multiple=3,
     default=(1.0, 0.0, 0.0),
     help="Probability of each subtype to be drawn in CN label.",
 )
@@ -24,7 +24,7 @@ from clinicadl.utils import cli_param
     "--ad_subtypes_distribution",
     "-asd",
     type=float,
-    multiple=True,
+    multiple=3,
     default=(0.05, 0.85, 0.10),
     help="Probability of each subtype to be drawn in AD label.",
 )

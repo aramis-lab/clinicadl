@@ -54,10 +54,11 @@ def write_missing_mods(output_dir: str, output_df: pd.DataFrame):
         )
 
 
-def load_and_check_tsv(tsv_path, caps_dict, output_path):
+def load_and_check_tsv(
+    tsv_path: str, caps_dict: Dict[str, str], output_path: str
+) -> pd.DataFrame:
     from os.path import join
 
-    import pandas as pd
     from clinica.iotools.utils.data_handling import create_subs_sess_list
 
     from clinicadl.utils.caps_dataset.data import check_multi_cohort_tsv
@@ -97,28 +98,33 @@ def load_and_check_tsv(tsv_path, caps_dict, output_path):
     return df
 
 
-def binary_t1_pgm(im_data):
+def binary_t1_pgm(im_data: np.ndarray) -> np.ndarray:
     """
-    :param im_data: probability gray maps
-    :return: binarized probability gray maps
+    Args:
+        im_data: probability gray maps
+
+    Returns:
+        binarized probability gray maps
     """
     m = im_data > 0.0
     m = m.astype("float32")
     return m
 
 
-def im_loss_roi_gaussian_distribution(im_data, atlas_to_mask, min_value):
+def im_loss_roi_gaussian_distribution(
+    im_data: np.ndarray, atlas_to_mask: np.ndarray, min_value: float
+) -> np.ndarray:
     """
     Create a smooth atrophy in the input image on the region in the mask.
     The value of the atrophy is computed with a Gaussian so it will appear smooth and
     more realistic.
 
     Args:
-        im_data (array): Input image that will be atrophied (obtained from a nifti file).
-        atlas_to_mask (array): Binary mask of the region to atrophy.
-        min_value (float): Percentage of atrophy between 0 and 100.
+        im_data: Input image that will be atrophied (obtained from a nifti file).
+        atlas_to_mask: Binary mask of the region to atrophy.
+        min_value: Percentage of atrophy between 0 and 100.
     Returns:
-        im_with_loss_gm_roi (array): Image with atrophy in the specified ROI.
+        im_with_loss_gm_roi: Image with atrophy in the specified ROI.
     """
     gm_masked = np.array(im_data, copy=True)
     gm_masked[atlas_to_mask == 0] = 0
@@ -160,20 +166,22 @@ def generate_scales(size):
         )
 
 
-def generate_shepplogan_phantom(img_size, label=0, smoothing=True):
+def generate_shepplogan_phantom(
+    img_size: int, label: int = 0, smoothing: bool = True
+) -> np.ndarray:
     """
     Generate 2D Shepp-Logan phantom with random regions size. Phantoms also
     simulate different kind of AD by generating smaller ROIs.
 
     Args:
-        img_size (int): Size of the generated image (img_size x img_size).
-        label (int): Take 0 or 1 or 2. Label of the generated image.
+        img_size: Size of the generated image (img_size x img_size).
+        label: Take 0 or 1 or 2. Label of the generated image.
             If 0, the ROIs simulate a CN subject.
             If 1, the ROIs simulate type 1 of AD.
             if 2, the ROIs simulate type 2 of AD.
-        smoothing (bool): Default True. Apply Gaussian smoothing to the image.
+        smoothing: Default True. Apply Gaussian smoothing to the image.
     Returns:
-        img (array): 2D Sheep Logan phantom with specified label.
+        img: 2D Sheep Logan phantom with specified label.
     """
     img = np.zeros((img_size, img_size))
     center = (img_size + 1.0) / 2.0
