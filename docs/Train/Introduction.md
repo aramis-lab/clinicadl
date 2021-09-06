@@ -35,19 +35,20 @@ In case of [multi-cohort training](Details.md#multi-cohort), must be a path to a
 
 The training can be configured through a Toml configuration file or by using the command line options. If you have a Toml configuration file (see [the section below](#configuration-file) for more information) you can use the following option to load it:
 
-- `--config_file` (File) is the name of the Toml configuration file for training job. This file contain the value for the options that you want to specify (to avoid too long command line).
+- `--config_file` (path) is the path to a Toml configuration file. This file contains the value for the options
+that you want to specify (to avoid too long command line).
 
 If an option is specified twice (in the configuration file and as an
 option in command line) then **the value specified in the command line will have a
 higher priority when running the job**.
 
-Options shared for all values of `network_task` are organized in groups:
+Options shared for all values of `NETWORK_TASK` are organized in groups:
 
 - **Architecture management**
     - `--architecture` (str) is the name of the architecture used. Default depends on the task.
     It must correspond to a class that inherits from `nn.Module` imported in `clinicadl/utils/network/__init__.py`.
     To implement custom models please refer to [this section](../Contribute/Custom.md#custom-architecture).
-    - `--multi_network` (bool) is a flag to ask for a [multi-network framework](./Details.md#multi-cohort).
+    - `--multi_network/--single_network` (bool) is a flag to ask for a [multi-network framework](./Details.md#multi-cohort).
     Default trains only one network on all images.
     - `--dropout` (float) is the rate of dropout applied in dropout layers. Default: `0`.
 
@@ -59,23 +60,19 @@ Options shared for all values of `network_task` are organized in groups:
         - for `reconstruction` the network outputs an image of the same size as the input.
     If you want to use custom architecture, be sure to respect the output size needed for the learnt task.
 
-- **Tensor extraction**
-    - `--use_extracted_features` (bool) is an option to extract tensors
-      on-the-fly during training. This option is useful if you want to avoid
-      saving tensor files in your CAPS directory. In this case the argument
-      `PREPROCESSING_JSON` contains the wanted parameters for extraction.
 - **Computational resources**
     - `--gpu/--no-gpu` (bool) Use GPU acceleration. Default behavior is to try to use a GPU and to raise an error if it is not found. Please specify `--no-gpu` to use CPU instead.
-    - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
-    - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
+    - `--n_proc` (int) is the number of workers used by the DataLoader. Default: `2`.
+    - `--batch_size` (int) is the size of the batch used in the DataLoader. Default: `2`.
     - `--evaluation_steps` (int) gives the number of iterations to perform an [evaluation internal to an epoch](Details.md#evaluation). 
     Default will only perform an evaluation at the end of each epoch.
 - **Data management**
-    - `--diagnoses` (list of str) is the list of the labels that will be used for training. 
-    These labels must be chosen from {AD,CN,MCI,sMCI,pMCI}. Default will use AD and CN labels.
-    - `--baseline` (bool) is a flag to load only `_baseline.tsv` files instead of `.tsv` files comprising all the sessions. Default: `False`.
+    - `--diagnoses` (List[str]) is the list of the files which will be used for training.
+    Default will look for AD and CN TSV files.
+    - `--baseline/--longitudinal` (bool) is a flag to load only `_baseline.tsv` files instead of `.tsv` files comprising all the sessions.
+    Default: `--longitudinal`.
     - `--normalize/--unnormalize` (bool) is a flag to disable min-max normalization that is performed by default. Default: `--normalize`.
-    - `--data_augmentation` (list of str) is the list of data augmentation transforms applied to the training data.
+    - `--data_augmentation` (List[str]) is the list of data augmentation transforms applied to the training data.
     Must be chosen in [`None`, `Noise`, `Erasing`, `CropPad`, `Smoothing`]. Default: no data augmentation.
     - `--sampler` (str) is the sampler used on the training set. It must be chosen in [`random`, `weighted`]. 
     `weighted` will give a stronger weight to underrepresented classes. Default: `random`.
@@ -86,8 +83,8 @@ Options shared for all values of `network_task` are organized in groups:
     - `--split` (list of int) is a subset of folds that will be used for training. By default all splits available are used.
 - **Reproducibility** (for more information refer to the [implementation details](./Details.md#deterministic-algorithms)
     - `--seed` (int) is the value used to set the seed of all random operations. Default samples a seed and uses it for the experiment.
-    - `--nondeterministic/--deterministic` (bbol) forces the training process to be deterministic.
-    If any non-deterministic behaviour is encountered will raise a RuntimeError. Default: `False`.
+    - `--nondeterministic/--deterministic` (bool) forces the training process to be deterministic.
+    If any non-deterministic behaviour is encountered will raise a RuntimeError. Default: `--nondeterministic`.
     - `--compensation` (str) allow to choose how CUDA will compensate to obtain a deterministic behaviour.
     The computation time will be longer, or the computations will require more memory space. Default: `memory`.
     Must be chosen between `time` and `memory`.
@@ -126,16 +123,12 @@ A few options depend on the task performed:
     The evaluation metrics are the mean squared error (MSE) and mean absolute error (MAE).
     - `--label` (str) is the name of the column containing the label for the regression task.
     It must be a continuous variable (float or int). Default: `age`.
-<!---
+
 - **reconstruction**
     The objective of the `reconstruction` is to learn to reconstruct images given in input.
     The criterion loss is the mean squared error between the input and the network output.
     The evaluation metrics are the mean squared error (MSE) and mean absolute error (MAE).
 
-    - `--visualization` (bool) if this flag is given, inputs of the train and
-    the validation sets corresponding to one image and their corresponding reconstructions are written in the MAPS.
-    See the section on [tensor serialization](../Tensors.md#outputs) for more insight on the output structure.
--->
 
 ## Configuration file
 

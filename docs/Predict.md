@@ -4,7 +4,7 @@ This functionality performs individual prediction and metrics computation on a s
 [`clinicadl train`](./Train/Introduction.md) or [`clinicadl random-search generate`](./RandomSearch.md)
 tasks. It can also use any pretrained models if they are structured like a [MAPS](./Introduction.md).
 
-!!! warning
+!!! warning "unbiased image-level results"
     For `patch`, `roi` and `slice` models, the predictions of the models on the
     validation set are needed to perform unbiased ensemble predictions at the image level. 
     If the tsv files in `fold-<fold>/best-<metric>/validation` were erased the task cannot
@@ -47,27 +47,23 @@ where:
 Optional arguments:
 
 - **Computational resources**
-    - `--gpu / --no-gpu` (bool) Uses GPU acceleration or nots. Default behaviour is to try to use a
+    - `--gpu / --no-gpu` (bool) Uses GPU acceleration or not. Default behaviour is to try to use a
       GPU. If not available an error is raised. Use the option `--no-gpu` if running in CPU.
-    - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
-    - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
+    - `--n_proc` (int) is the number of workers used by the DataLoader. Default: `2`.
+    - `--batch_size` (int) is the size of the batch used in the DataLoader. Default: `2`.
 - **Other options**
-    - `--caps_directory` (str) is the input folder containing the neuroimaging data
+    - `--caps_directory` (path) is the input folder containing the neuroimaging data
       (tensor version of images, output of [`clinicadl extract`
       pipeline](Preprocessing/Extract.md)) in a
       [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
-    - `--participants_tsv` (str) is a path to a TSV file with subjects/sessions to process (filename
+    - `--participants_tsv` (path) is a path to a TSV file with subjects/sessions to process (filename
       included), OR the path to the test folder of a split directory obtained with `clinicadl tsvtool split`.
-    - `--no_labels` (bool) is a flag to add if the dataset does not contain ground truth labels. 
+    - `--labels/--no_labels` (bool) is a flag to add if the dataset does not contain ground truth labels. 
       Default behaviour will look for ground truth labels and raise an error if not found.
-    - `--use_extracted_features` (bool) is a flag to use extracted slices or
-      patches, if not specified they will be extracted on-the-fly from the complete
-      image (if necessary). Default value: `False`.
-    - `--selection_metrics` (list[str]) is a list of metrics to find the best models to evaluate.
+    - `--selection_metrics` (List[str]) is a list of metrics to find the best models to evaluate.
       Default will predict the results for best model based on the loss only.
-    - `--diagnoses` (list[str]) if `tsv_file` is a split directory, then will only load the labels wanted.
+    - `--diagnoses` (List[str]) if `tsv_file` is a split directory, then will only load the labels wanted.
     Default will look for the same labels used during the training task.
-    Choices available are `AD`, `CN`, `MCI`, `sMCI` and `pMCI`.
     - `--multi_cohort` (bool) is a flag indicated that [multi-cohort classification](Train/Details.md#multi-cohort)
      is performed.
     In this case, `caps_directory` and `tsv_path` must be paths to TSV files.

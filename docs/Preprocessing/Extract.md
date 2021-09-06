@@ -29,11 +29,9 @@ which have the same arguments:
   can be `t1-linear` or `pet-linear`. You can choose `custom` if you want to get a
   tensor from a custom filename.
 
-Each sub-command has its own set of options. There are still a few generic options:
+Each sub-command has its own set of options. There is one generic option:
 
-- `--save_features`: (not available for `image`. Flag to specify if you want to save the patches|slices|ROIs as tensor in the CAPS. By default the pipeline only extracts the images and saves configuration. Then patches|slices|ROIs are extracted during training job when data are loaded according to the saved configuration.
-Be aware tensor files might be heavy to save on the disk.
-- `--subjects_sessions_tsv`: 
+- `--subjects_sessions_tsv` (path) is a path to a TSV file listing participant and session IDs. 
 
 !!! note "Default values"
     When using patch or slice extraction, default values were set according to
@@ -55,13 +53,14 @@ Files are saved with the `.pt` extension and contains tensors in PyTorch format.
 A JSON file with timestamp is also stored in the CAPS hierarchy under the `tensor_extraction` folder:
 ```console
 CAPS_DIRECTORY
-├── tensor_extraction
-│       ├── extract_XXXXXXXXXX.json
-│       ├── ...
-│       ├── extract_YYYYYYYYY.json
-│
+└── tensor_extraction
+        ├── extract_XXXXXXXXXX.json
+        ├── ...
+        └── extract_YYYYYYYYY.json
+ 
 ```
-These files are compulsory to run the [train](../Train/Introduction.md#running-the-task) command. They provide all the details of the processing performed by the `extract` command that will be necessary when reading the tensors.
+These files are compulsory to run the [train](../Train/Introduction.md#running-the-task) command. 
+They provide all the details of the processing performed by the `extract` command that will be necessary when reading the tensors.
 
 ## Extraction method
 
@@ -90,7 +89,9 @@ some voxels will not be seen.
 Options:
 
 - `--patch_size` (int) patch size. Default value: `50`.
-- `--stride_size`  (int) stride size. Default value: `50`.
+- `--stride_size` (int) stride size. Default value: `50`.
+- `--save_features` (bool) Flag to specify if you want to save the patches as tensors in the CAPS.
+By default, the pipeline only extracts the images and specified patches are then extracted on-the-fly.
 
 The output files are `<input_pattern>_patchsize-<L>_stride-<S>_patch-<i>_<suffix>.pt`:
 tensor version of the `<i>`-th 3D isotropic patch of size `<L>` with a stride of `<S>`.
@@ -105,7 +106,7 @@ Options:
 - `--roi_list`: list of `N` regions to be extracted.  The masks corresponding
   to these regions should be written in
   `<caps_directory>/masks/tpl-<tpl_name>`.  For example, if one wants to
-  extracts ROI corresponding to the right and left hipocamppus using the
+  extract ROI corresponding to the right and left hippocampus using the
   publicly available `MNI152NLin2009cSym` template, two files containing the
   masks should be available in a folder named
   `<caps_directory>/masks/tpl-MNI152NLin2009cSym/`. For full (uncropped)
@@ -123,6 +124,8 @@ clinicadl extract CAPS_DIRECTORY t1-linear roi --roi_list rightHippocampusBox --
   Sets the value of `<tpl_name>`.
 - `--roi_custom_mask_pattern` (optional): only used when `modality` is set to `custom`.
   Allows to choose a particular mask with a name following the given pattern.
+- `--save_features` (bool) Flag to specify if you want to save the regions as tensors in the CAPS.
+By default, the pipeline only extracts the images and specified regions are then extracted on-the-fly.
   
 !!! note "ROI masks"
     ROI masks are compressed nifti files (.nii.gz) containing a binary mask of the same size as the
@@ -185,6 +188,8 @@ Default value: `0`.
 You can choose between `rgb` (will save the slice in three identical channels)
 or `single` (will save the slice in a single channel). Default value: `rgb`.
 - `--discarded_slices`: (int) Number of slices discarded from respectively the beginning and the end of the MRI volume.
+- `--save_features` (bool) Flag to specify if you want to save the slices as tensors in the CAPS.
+By default, the pipeline only extracts the images and specified slices are then extracted on-the-fly.
 
 The output files are `<input_pattern>_axis-{sag|cor|axi}_channel-{single|rgb}_slice-<i>_<suffix>.pt`:
 tensor version of the `<i>`-th 2D slice in `sag`ittal, `cor`onal or `axi`al

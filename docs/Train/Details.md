@@ -11,7 +11,7 @@ in data loading introduced by Pytorch](https://pytorch.org/docs/stable/data.html
 
 However, this is not sufficient to guarantee the exact reproducibility when using GPU (though the results will
 be more close than with two different seeds). To obtain exactly the same results with the same GPU environment,
-the user must specify the flag `--torch_deterministic`. This will force CUDA to use a
+the user must specify the flag `--deterministic`. This will force CUDA to use a
 deterministic behaviour, but at the cost of the computation time, or the memory use.
 
 !!! warning "Non-deterministic functions in Pytorch"
@@ -58,13 +58,13 @@ The list of the transposed version of the modules can be found below:
 - `LeakyReLU` → `LeakyReLU` with the inverse value of alpha,
 - other → copy of itself
 
-To easily transform a custom CNN architecture (without skip connections) in autoencoder, you can use the
-`CNN_Transformer` class in `clinicadl/utils/network/autoencoder/cnn_transformer.py`. In this way, 
+To easily transform a custom CNN architecture (without skip connections) in an autoencoder, you can use the
+`CNN_Transformer` class in `clinicadl/utils/network/autoencoder/cnn_transformer.py`.
 
 ## Transfer learning
 
 !!! warning "Model identity"
-    Weights can be transferred between the source and target networks only if their layers are named
+    Weights can be transferred between a source and a target network only if their layers are named
     the same way (i.e. the models are identical). To ensure transfer learning between a `CNN` and an 
     `Autoencoder`, please use the `CNN_transformer` (see section above).
 
@@ -174,5 +174,4 @@ The `TSV_DIRECTORY` argument points to a TSV file with two columns:
 - `cohort` the name of the cohort (must correspond to the values in `CAPS_DIRECTORY`),
 - `path` the path to the corresponding labels list, outputs of [`split`](../TSVTools.md#split---single-split-observing-similar-age-and-sex-distributions) 
 or [`kfold`](../TSVTools.md#kfold---k-fold-split) methods.
-- `diagnoses` the diagnoses that will be used in the cohort. Must correspond to a single string with labels accepted by
-`clinicadl train` (`AD`, `BV`, `CN`, `MCI`, `sMCI` or `pMCI`) separated by commas.
+- `diagnoses` the diagnoses that will be used in the cohort. Must correspond to a single string with labels separated by commas.

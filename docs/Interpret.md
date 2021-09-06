@@ -43,36 +43,27 @@ where:
 Optional arguments:
 
 - **Computational resources**
-    - `--use_cpu` (bool) forces using CPUs. Default behaviour is to try to use a
-      GPU and to raise an error if it is not found.
-    - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
-    - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
+    - `--gpu / --no-gpu` (bool) Uses GPU acceleration or not. Default behaviour is to try to use a
+      GPU. If not available an error is raised. Use the option `--no-gpu` if running in CPU.
+    - `--n_proc` (int) is the number of workers used by the DataLoader. Default: `2`.
+    - `--batch_size` (int) is the size of the batch used in the DataLoader. Default: `2`.
 - **Model selection**
-    - `--selection_metrics` (list of str) corresponds to the metrics according to which the 
-    [best models](Train/Details.md#model-selection) of `INPUT_MAPS_DIRECTORY` will be loaded. 
-    Choices are `best_loss` and `best_balanced_accuracy`. Default: `best_loss`.
+    - `--selection_metrics` (List[str]) is a list of metrics to find the best models to evaluate.
+      Default will predict the results for best model based on the loss only.
 - **Data management**
-    - `--participants_tsv` (str) is a path to a directory containing one TSV file per diagnosis
+    - `--participants_tsv` (path) is a path to a directory containing one TSV file per diagnosis
     (see output tree of [getlabels](./TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease)). 
     Default will use the same participants as those used during the training task.
-    - `--caps_directory` (str) is the path to a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
+    - `--caps_directory` (path) is the path to a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
     Default will use the same CAPS as during the training task.
-    - `--diagnosis` (str) is the diagnosis that will be loaded in `participants_tsv`. Default value: `AD`.
-    - `--target_diagnosis` (str) is the class the gradients explain. Default will explain
-    the given diagnosis.
-    - `--baseline` (bool) is a flag to load only `_baseline.tsv` files instead of `.tsv` files comprising all the sessions. Default: `False`.
-    - `--keep_true` (bool) allows choosing only the images correctly (`True`) or badly (`False`)
-    classified by the CNN. Default will not perform any selection.
-    - `--nifti_template_path` (str) is a path to a nifti template to retrieve the affine values
-    needed to write Nifti files for 3D saliency maps. Default will use the identity matrix for the affine.
-    - `--multi_cohort` (bool) is a flag indicated that [multi-cohort interpretation](Train/Details.md#multi-cohort) is performed.
-    In this case, `caps_directory` and `participants_tsv` must be paths to TSV files. If no new `caps_directory` and `participants_tsv` are 
-    given this argument is not taken into account. 
-- **Results display**
-    - `--vmax` (float) is the maximum value used for 2D saliency maps display. Default value: `0.5`.
+    - `--multi_cohort` (bool) is a flag indicated that [multi-cohort classification](Train/Details.md#multi-cohort)
+     is performed.
+    In this case, `caps_directory` and `tsv_path` must be paths to TSV files.
+    - `--diagnoses` (List[str]) if `tsv_file` is a split directory, then will only load the labels wanted.
+    Default will look for the same labels used during the training task.
 - **Other options**
-    - `--target_node` (str) is the node the gradients explain. By default, it will target the first output node.
-    - `save_individual` (str) is an option to save individual saliency maps in addition to the mean saliency map.
+    - `--target_node` (int) is the node the gradients explain. By default, it will target the first output node.
+    - `--save_individual` (bool) is an option to save individual saliency maps in addition to the mean saliency map.
    
 
 ## Outputs

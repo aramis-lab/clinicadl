@@ -25,21 +25,10 @@ extract` to obtain the tensor versions of the images.
 ## Running the task
 This task can be run with the following command line:
 ```Text
-clinicadl resume <model_path>
+clinicadl resume INPUT_MAPS_DIRECTORY
 
 ```
-where `model_path` (str) is a path to the [MAPS folder](../Introduction.md) of the model.
-
-By default, the arguments corresponding to computational resources will be the same
-as the ones defined in `commandline.json`. However, it is possible to change them
-by using the following options:
-
-- `--nproc` (int) changes the number of workers used by the DataLoader.
-- `--use_cpu` (bool) forces using CPUs.
-- `--use_gpu` (bool) forces using a GPU.
-- `--batch_size` (int) changes the size of the batch used in the DataLoader.
-- `--evaluation_steps` (int) changes the number of iterations to perform before
-computing an evaluation.
+where `INPUT_MAPS_DIRECTORY` (str) is a path to the [MAPS folder](../Introduction.md) of the model.
 
 ## Outputs
 

@@ -28,7 +28,7 @@ prior to running this task.
 ### Running the task
 The task can be run with the following command line:
 ```
-clinicadl preprocessing quality-check t1-linear CAPS_DIRECTORY OUTPUT_TSV
+clinicadl quality-check t1-linear CAPS_DIRECTORY OUTPUT_TSV
 ```
 where:
 
@@ -39,12 +39,12 @@ and the output of the present command, both in a [CAPS hierarchy](https://aramis
 
 Options:
 
-- `--subjects_sessions_tsv` (str) is the path to a TSV file containing the subjects/sessions list to check (filename included).
+- `--subjects_sessions_tsv` (path) is the path to a TSV file containing the subjects/sessions list to check (filename included).
 Default will process all sessions available in `caps_directory`.
 - `--threshold` (float) is the threshold applied to the output probability when deciding if the image passed or failed. 
 Default value: `0.5`.
 - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `1`.
-- `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
+- `--n_proc` (int) is the number of workers used by the DataLoader. Default value: `2`.
 - `--gpu/--no-gpu` (bool) Use GPU for computing optimization. Default behaviour is to try to use a GPU and to raise an error if it is not found.
 
 ### Outputs
@@ -89,7 +89,7 @@ where:
 
 - `CAPS_DIRECTORY` (path) is the folder containing the results of the [`t1-volume` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Volume/) 
 and the output of the present command, both in a [CAPS hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
-- `OUTPUT_TSV` (str) is the path to an output directory in which TSV files will be created.
+- `OUTPUT_TSV` (path) is the path to an output directory in which TSV files will be created.
 - `GROUP_LABEL` (str) is the identifier for the group of subjects used to create the DARTEL template.
 You can check which groups are available in the `groups/` folder of your `caps_directory`.
 
