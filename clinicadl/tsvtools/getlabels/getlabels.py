@@ -3,7 +3,7 @@
 """
 Source files can be obtained by running the following commands on a BIDS folder:
  - clinica iotools merge-tsv
- - clinica iotools missing-mods
+ - clinica iotools check-missing-modalities
 To download Clinica follow the instructions at http://www.clinica.run/doc/#installation
 
 NB: Other preprocessing may be needed on the merged file obtained: for example the selection of subjects older than 62
@@ -419,7 +419,7 @@ def get_labels(
 
     Args:
         merged_tsv (str): Path to the file obtained by the command clinica iotools merge-tsv.
-        missing_mods (str): Path to the folder where the outputs of clinica iotools missing-mods are.
+        missing_mods (str): Path to the folder where the outputs of clinica iotools check-missing-modalities are.
         results_path (str): Path to the folder where tsv files are extracted.
         diagnoses (list): Labels that must be extracted from merged_tsv.
         modality (str): Modality to select sessions. Sessions which do not include the modality will be excluded.
