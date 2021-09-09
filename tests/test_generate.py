@@ -18,6 +18,8 @@ def generate_commands(request):
             output_folder,
             "--n_subjects",
             "4",
+            "--preprocessing",
+            "t1-linear",
         ]
         output_reference = [
             "data.tsv",
@@ -48,6 +50,8 @@ def generate_commands(request):
             "4000",
             "--sigma",
             "1000",
+            "--preprocessing",
+            "t1-linear",
         ]
         output_reference = [
             "data.tsv",
