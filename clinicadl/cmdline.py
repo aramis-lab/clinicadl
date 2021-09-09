@@ -22,13 +22,31 @@ CONTEXT_SETTINGS = dict(
 
 def setup_logging(verbosity: int = 0) -> None:
     """
-    Setup Clinicadl's logging facilities.
+    Setup ClinicaDL's logging facilities.
     Args:
         verbosity (int): The desired level of verbosity for logging.
             (0 (default): WARNING, 1: INFO, 2: DEBUG)
     """
-    from logging import DEBUG, INFO, WARNING, Formatter, StreamHandler, getLogger
-    from sys import stdout
+    from logging import (
+        DEBUG,
+        INFO,
+        WARNING,
+        Filter,
+        Formatter,
+        StreamHandler,
+        getLogger,
+    )
+    from sys import stderr, stdout
+
+    class StdLevelFilter(Filter):
+        def __init__(self, err=False):
+            super().__init__()
+            self.err = err
+
+        def filter(self, record):
+            if record.levelno <= INFO:
+                return not self.err
+            return self.err
 
     # Cap max verbosity level to 2.
     verbosity = min(verbosity, 2)
@@ -37,13 +55,22 @@ def setup_logging(verbosity: int = 0) -> None:
     logger = getLogger("clinicadl")
     logger.setLevel([WARNING, INFO, DEBUG][verbosity])
 
-    # Add console handler
-    console_handler = StreamHandler(stdout)
+    if logger.hasHandlers():
+        logger.handlers.clear()
+
+    stdout = StreamHandler(stdout)
+    stdout.addFilter(StdLevelFilter())
+    stderr = StreamHandler(stderr)
+    stderr.addFilter(StdLevelFilter(err=True))
     # create formatter
     formatter = Formatter("%(asctime)s - %(levelname)s: %(message)s", "%H:%M:%S")
-    console_handler.setFormatter(formatter)
-
-    logger.addHandler(console_handler)
+    # add formatter to ch
+    stdout.setFormatter(formatter)
+    stderr.setFormatter(formatter)
+    # add ch to logger
+    logger.addHandler(stdout)
+    logger.addHandler(stderr)
+    logger.propagate = False
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
