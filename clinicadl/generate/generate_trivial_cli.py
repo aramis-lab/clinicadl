@@ -6,6 +6,7 @@ from clinicadl.utils import cli_param
 @click.command(name="trivial")
 @cli_param.argument.caps_directory
 @cli_param.argument.generated_caps
+@cli_param.option.preprocessing
 @cli_param.option.participant_list
 @cli_param.option.n_subjects
 @click.option(
@@ -27,6 +28,7 @@ from clinicadl.utils import cli_param
 def cli(
     caps_directory,
     generated_caps_directory,
+    preprocessing,
     participants_tsv,
     n_subjects,
     mask_path,
@@ -46,6 +48,7 @@ def cli(
     generate_trivial_dataset(
         caps_directory=caps_directory,
         tsv_path=participants_tsv,
+        preprocessing=preprocessing,
         output_dir=generated_caps_directory,
         n_subjects=n_subjects,
         mask_path=mask_path,
