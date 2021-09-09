@@ -4,8 +4,19 @@ from clinicadl.utils.network.network import Network
 
 
 class BaseVAE(Network):
-    def __init__(self, use_cpu=False):
+    def __init__(self, encoder, decoder, mu_layer, var_layer, use_cpu=False):
         super(BaseVAE, self).__init__(use_cpu=use_cpu)
+
+        self.encoder = encoder.to(self.device)
+        self.mu_layer = mu_layer.to(self.device)
+        self.var_layer = var_layer.to(self.device)
+        self.decoder = decoder.to(self.device)
+
+    @property
+    def layers(self):
+        return torch.nn.Sequential(
+            self.encoder, self.mu_layer, self.var_layer, self.decoder
+        )
 
     # Network specific
     def predict(self, x):

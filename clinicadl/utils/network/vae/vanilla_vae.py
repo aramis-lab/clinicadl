@@ -19,38 +19,27 @@ class VanillaDenseVAE(BaseVAE):
         latent_size=64,
         n_conv=4,
         io_layer_channel=32,
-        train=False,
     ):
-        super(VanillaDenseVAE, self).__init__(use_cpu=use_cpu)
-
-        self.input_size = input_size
-        self.feature_size = feature_size
-        self.latent_size = latent_size
-        self.n_conv = n_conv
-        self.io_layer_channel = io_layer_channel
-
-        self.training = train
-
-        self.encoder = VAE_Encoder(
-            input_shape=self.input_size,
-            feature_size=self.feature_size,
-            latent_dim=self.latent_dim,
-            n_conv=self.n_conv,
-            first_layer_channels=self.io_layer_channel,
+        encoder = VAE_Encoder(
+            input_shape=input_size,
+            feature_size=feature_size,
+            latent_dim=1,
+            n_conv=n_conv,
+            first_layer_channels=io_layer_channel,
+        )
+        mu_layer = nn.Linear(feature_size, latent_size)
+        var_layer = nn.Linear(feature_size, latent_size)
+        decoder = VAE_Decoder(
+            input_shape=input_size,
+            latent_size=latent_size,
+            feature_size=feature_size,
+            latent_dim=1,
+            n_conv=n_conv,
+            last_layer_channels=io_layer_channel,
         )
 
-        # hidden => mu
-        self.mu_layer = nn.Linear(self.feature_size, self.latent_size)
-        # hidden => logvar
-        self.var_layer = nn.Linear(self.feature_size, self.latent_size)
-
-        self.decoder = VAE_Decoder(
-            input_shape=self.input_size,
-            latent_size=self.latent_size,
-            feature_size=self.feature_size,
-            latent_dim=self.latent_dim,
-            n_conv=self.n_conv,
-            last_layer_channels=self.io_layer_channel,
+        super(VanillaDenseVAE, self).__init__(
+            encoder, decoder, mu_layer, var_layer, use_cpu=use_cpu
         )
 
 
@@ -63,42 +52,31 @@ class VanillaSpatialVAE(BaseVAE):
         latent_size=64,
         n_conv=4,
         io_layer_channel=32,
-        train=False,
     ):
-        super(VanillaSpatialVAE, self).__init__(use_cpu=use_cpu)
-
-        self.input_size = input_size
-        self.feature_size = feature_size
-        self.latent_size = latent_size
-        self.n_conv = n_conv
-        self.io_layer_channel = io_layer_channel
-
-        self.training = train
-
-        self.encoder = VAE_Encoder(
-            input_shape=self.input_size,
-            feature_size=self.feature_size,
-            latent_dim=self.latent_dim,
-            n_conv=self.n_conv,
-            first_layer_channels=self.io_layer_channel,
+        encoder = VAE_Encoder(
+            input_shape=input_size,
+            feature_size=feature_size,
+            latent_dim=2,
+            n_conv=n_conv,
+            first_layer_channels=io_layer_channel,
+        )
+        mu_layer = nn.Conv2d(
+            feature_size, latent_size, 3, stride=1, padding=1, bias=False
+        )
+        var_layer = nn.Conv2d(
+            feature_size, latent_size, 3, stride=1, padding=1, bias=False
+        )
+        decoder = VAE_Decoder(
+            input_shape=input_size,
+            latent_size=latent_size,
+            feature_size=feature_size,
+            latent_dim=2,
+            n_conv=n_conv,
+            last_layer_channels=io_layer_channel,
         )
 
-        # hidden => mu
-        self.mu_layer = nn.Conv2d(
-            self.feature_size, self.latent_size, 3, stride=1, padding=1, bias=False
-        )
-        # hidden => logvar
-        self.var_layer = nn.Conv2d(
-            self.feature_size, self.latent_size, 3, stride=1, padding=1, bias=False
-        )
-
-        self.decoder = VAE_Decoder(
-            input_shape=self.input_size,
-            latent_size=self.latent_size,
-            feature_size=self.feature_size,
-            latent_dim=self.latent_dim,
-            n_conv=self.n_conv,
-            last_layer_channels=self.io_layer_channel,
+        super(VanillaSpatialVAE, self).__init__(
+            encoder, decoder, mu_layer, var_layer, use_cpu=use_cpu
         )
 
 
@@ -108,8 +86,6 @@ class Vanilla3DVAE(BaseVAE):
         input_size,
         use_cpu=False,
     ):
-        super(Vanilla3DVAE, self).__init__(use_cpu=use_cpu)
-
         n_conv = 4
         first_layer_channels = 32
         last_layer_channels = 32
@@ -121,16 +97,14 @@ class Vanilla3DVAE(BaseVAE):
             [0, 0, 1],
         ]
 
-        self.input_size = input_size
-
-        self.input_c = self.input_size[0]
-        self.input_h = self.input_size[1]
-        self.input_w = self.input_size[2]
+        input_c = input_size[0]
+        # input_h = input_size[1]
+        # input_w = input_size[2]
 
         ## Encoder
         encoder_layers = []
         # Input Layer
-        encoder_layers.append(EncoderLayer3D(self.input_c, first_layer_channels))
+        encoder_layers.append(EncoderLayer3D(input_c, first_layer_channels))
         # Conv Layers
         for i in range(n_conv - 1):
             encoder_layers.append(
@@ -151,15 +125,15 @@ class Vanilla3DVAE(BaseVAE):
                 nn.ReLU(),
             )
         )
-        self.encoder = nn.Sequential(*encoder_layers)
+        encoder = nn.Sequential(*encoder_layers)
 
         ## Latent space
         # hidden => mu
-        self.mu_layer = nn.Conv3d(
+        mu_layer = nn.Conv3d(
             feature_size, latent_size, 3, stride=1, padding=1, bias=False
         )
         # hidden => logvar
-        self.var_layer = nn.Conv3d(
+        var_layer = nn.Conv3d(
             feature_size, latent_size, 3, stride=1, padding=1, bias=False
         )
 
@@ -195,7 +169,7 @@ class Vanilla3DVAE(BaseVAE):
             nn.Sequential(
                 nn.ConvTranspose3d(
                     last_layer_channels,
-                    self.input_c,
+                    input_c,
                     4,
                     stride=2,
                     padding=1,
@@ -205,4 +179,8 @@ class Vanilla3DVAE(BaseVAE):
                 nn.Sigmoid(),
             )
         )
-        self.decoder = nn.Sequential(*decoder_layers)
+        decoder = nn.Sequential(*decoder_layers)
+
+        super(Vanilla3DVAE, self).__init__(
+            encoder, decoder, mu_layer, var_layer, use_cpu=use_cpu
+        )
