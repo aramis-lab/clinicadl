@@ -62,7 +62,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.n_proc
 @cli_param.option.batch_size
 def cli(
-    input_maps,
+    input_maps_directory,
     data_group,
     caps_directory,
     participants_tsv,
@@ -89,7 +89,7 @@ def cli(
     from .predict import predict
 
     predict(
-        maps_dir=input_maps,
+        maps_dir=input_maps_directory,
         data_group=data_group,
         caps_directory=caps_directory,
         tsv_path=participants_tsv,
