@@ -8,6 +8,7 @@ from clinicadl.interpret.interpret_cli import cli as interpret_cli
 from clinicadl.predict.predict_cli import cli as predict_cli
 from clinicadl.quality_check.qc_cli import cli as qc_cli
 from clinicadl.random_search.random_search_cli import cli as random_search_cli
+from clinicadl.save_tensor.save_tensor_cli import cli as save_tensor_cli
 from clinicadl.train.resume_cli import cli as resume_cli
 from clinicadl.train.train_cli import cli as train_cli
 from clinicadl.tsvtools.cli import cli as tsvtools_cli
@@ -71,6 +72,7 @@ cli.add_command(predict_cli)
 cli.add_command(interpret_cli)
 cli.add_command(qc_cli)
 cli.add_command(random_search_cli)
+cli.add_command(save_tensor_cli)
 
 if __name__ == "__main__":
     cli()
