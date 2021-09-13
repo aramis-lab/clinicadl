@@ -196,7 +196,7 @@ class Vanilla3DdenseVAE(BaseVAE):
         input_size,
         use_cpu=False,
     ):
-        n_conv = 3
+        n_conv = 4
         first_layer_channels = 16
         last_layer_channels = 16
         feature_size = 1024
