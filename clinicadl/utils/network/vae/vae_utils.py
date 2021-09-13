@@ -129,15 +129,29 @@ class Flatten(nn.Module):
         return input.view(input.size(0), -1)
 
 
-class Unflatten(nn.Module):
+class Unflatten2D(nn.Module):
     def __init__(self, channel, height, width):
-        super(Unflatten, self).__init__()
+        super(Unflatten2D, self).__init__()
         self.channel = channel
         self.height = height
         self.width = width
 
     def forward(self, input):
         return input.view(input.size(0), self.channel, self.height, self.width)
+
+
+class Unflatten3D(nn.Module):
+    def __init__(self, channel, height, width, depth):
+        super(Unflatten2D, self).__init__()
+        self.channel = channel
+        self.height = height
+        self.width = width
+        self.depth = depth
+
+    def forward(self, input):
+        return input.view(
+            input.size(0), self.channel, self.height, self.width, self.depth
+        )
 
 
 class VAE_Encoder(nn.Module):
@@ -247,7 +261,7 @@ class VAE_Decoder(nn.Module):
                     nn.ReLU(),
                     nn.Linear(feature_size, n_pix),
                     nn.ReLU(),
-                    Unflatten(
+                    Unflatten2D(
                         last_layer_channels * 2 ** (n_conv - 1),
                         self.input_h // (2 ** n_conv),
                         self.input_w // (2 ** n_conv),
