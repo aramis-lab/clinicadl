@@ -18,9 +18,9 @@ class VanillaDenseVAE(BaseVAE):
         input_size,
         use_cpu=False,
     ):
-        feature_size = (1024,)
-        latent_size = (64,)
-        n_conv = (4,)
+        feature_size = 1024
+        latent_size = 64
+        n_conv = 4
         io_layer_channel = 32
 
         encoder = VAE_Encoder(
@@ -52,9 +52,9 @@ class VanillaSpatialVAE(BaseVAE):
         input_size,
         use_cpu=False,
     ):
-        feature_size = (1024,)
-        latent_size = (64,)
-        n_conv = (4,)
+        feature_size = 1024
+        latent_size = 64
+        n_conv = 4
         io_layer_channel = 32
 
         encoder = VAE_Encoder(
