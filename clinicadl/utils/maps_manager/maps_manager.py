@@ -1127,6 +1127,7 @@ class MapsManager:
             self.caps_directory,
             train_df,
             self.preprocessing_dict,
+            multi_cohort=self.multi_cohort,
             label=self.label,
             label_code=label_code,
             train_transformations=None,

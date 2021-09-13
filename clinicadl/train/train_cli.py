@@ -1,9 +1,11 @@
 import os
+from logging import getLogger
 
 import click
 import toml
 
 from clinicadl.utils import cli_param
+from clinicadl.utils.caps_dataset.data import CapsDataset
 
 
 @click.command(name="train")
@@ -280,9 +282,32 @@ def cli(
     from .launch import train
     from .train_utils import get_train_dict
 
-    preprocessing_json = os.path.join(
-        caps_directory, "tensor_extraction", preprocessing_json
-    )
+    logger = getLogger("clinicadl")
+
+    if not multi_cohort:
+        preprocessing_json = os.path.join(
+            caps_directory, "tensor_extraction", preprocessing_json
+        )
+    else:
+        caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort)
+        json_found = False
+        for caps_name, caps_path in caps_dict.items():
+            if os.path.exists(
+                os.path.join(caps_path, "tensor_extraction", preprocessing_json)
+            ):
+                preprocessing_json = os.path.join(
+                    caps_path, "tensor_extraction", preprocessing_json
+                )
+                logger.info(
+                    f"Preprocessing JSON {preprocessing_json} found in CAPS {caps_name}."
+                )
+                json_found = True
+        if not json_found:
+            raise ValueError(
+                f"Preprocessing JSON {preprocessing_json} was not found for any CAPS "
+                f"in {caps_dict}."
+            )
+
     user_dict = None
     if config_file:
         user_dict = toml.load(config_file)
