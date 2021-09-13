@@ -194,10 +194,10 @@ class Vanilla3DdenseVAE(BaseVAE):
         input_size,
         use_cpu=False,
     ):
-        n_conv = 4
-        first_layer_channels = 32
-        last_layer_channels = 32
-        feature_size = 2048
+        n_conv = 3
+        first_layer_channels = 16
+        last_layer_channels = 16
+        feature_size = 1024
         latent_size = 64
         decoder_output_padding = [
             [1, 0, 0],
