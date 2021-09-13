@@ -142,7 +142,7 @@ class Unflatten2D(nn.Module):
 
 class Unflatten3D(nn.Module):
     def __init__(self, channel, height, width, depth):
-        super(Unflatten2D, self).__init__()
+        super(Unflatten3D, self).__init__()
         self.channel = channel
         self.height = height
         self.width = width
