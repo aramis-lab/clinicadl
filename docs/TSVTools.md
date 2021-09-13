@@ -132,7 +132,7 @@ where:
 Options:
 
   - `--subset_name` (str) is the name of the subset that is complementary to train.
-  Default value: `test`.
+  Default value: `validation`.
   - `--n_test` (float) gives the number of subjects that will be put in the set complementary to train:
 
     - If > 1, corresponds to the number of subjects to put in set with name `subset_name`.
