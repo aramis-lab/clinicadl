@@ -45,6 +45,10 @@ class Network(nn.Module):
                 free_gpu = argmax(memory_list)
                 return f"cuda:{free_gpu}"
 
+    @abc.abstractproperty
+    def layers(self):
+        pass
+
     @abc.abstractmethod
     def predict(self, x):
         pass
