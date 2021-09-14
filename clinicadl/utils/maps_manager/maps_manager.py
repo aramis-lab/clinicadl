@@ -4,7 +4,7 @@ import subprocess
 from datetime import datetime
 from logging import getLogger
 from os import listdir, makedirs, path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import torch
@@ -1359,7 +1359,7 @@ class MapsManager:
         group_path = path.join(self.maps_path, "groups", data_group)
         makedirs(group_path)
 
-        columns = ["participant_id", "session_id"]
+        columns = ["participant_id", "session_id", "cohort"]
         if self.label in df.columns.values:
             columns += [self.label]
 
@@ -1401,18 +1401,23 @@ class MapsManager:
                 )
 
     def _write_weights(
-        self, state, metrics_dict, fold, network=None, filename="checkpoint.pth.tar"
+        self,
+        state: Dict[str, Any],
+        metrics_dict: Optional[Dict[str, bool]],
+        fold: int,
+        network: int = None,
+        filename: str = "checkpoint.pth.tar",
     ):
         """
         Update checkpoint and save the best model according to a set of metrics.
         If no metrics_dict is given, only the checkpoint is saved.
 
         Args:
-            state (dict[str,Any]): state of the training (model weights, epoch...)
-            metrics_dict (dict[str,bool]): output of RetainBest step
-            fold (int): fold number
-            network (int): network number (multi-network framework)
-            filename (str): name of the checkpoint file
+            state: state of the training (model weights, epoch...)
+            metrics_dict: output of RetainBest step
+            fold: fold number
+            network: network number (multi-network framework)
+            filename: name of the checkpoint file
         """
         checkpoint_dir = path.join(self.maps_path, f"fold-{fold}", "tmp")
         makedirs(checkpoint_dir, exist_ok=True)
