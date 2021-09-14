@@ -22,7 +22,7 @@ from clinicadl.utils import cli_param
 )
 @click.option(
     "--labels/--no_labels",
-    default=False,
+    default=True,
     help="Set this option to --no_labels if your dataset does not contain ground truth labels.",
 )
 @click.option(
