@@ -156,7 +156,7 @@ class MapsManager:
         folds=None,
         selection_metrics=None,
         multi_cohort=False,
-        diagnoses=None,
+        diagnoses=(),
         use_labels=True,
         batch_size=None,
         num_workers=None,
@@ -294,7 +294,7 @@ class MapsManager:
         folds=None,
         selection_metrics=None,
         multi_cohort=False,
-        diagnoses=None,
+        diagnoses=(),
         use_cpu=None,
         overwrite=False,
     ):
@@ -399,7 +399,7 @@ class MapsManager:
         folds=None,
         selection_metrics=None,
         multi_cohort=False,
-        diagnoses=None,
+        diagnoses=(),
         target_node=0,
         save_individual=False,
         batch_size=None,
@@ -428,7 +428,7 @@ class MapsManager:
                 Default uses the same as in training step.
             target_node (int): Node from which the interpretation is computed.
             save_individual (bool): If True saves the individual map of each participant / session couple.
-            batch_size (bool): If given, sets the value of batch_size, else use the same as in training step.
+            batch_size (int): If given, sets the value of batch_size, else use the same as in training step.
             num_workers (int): If given, sets the value of num_workers, else use the same as in training step.
             use_cpu (bool): If given, a new value for the device of the model will be computed.
             overwrite (bool): If True erase the occurrences of data_group.

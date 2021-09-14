@@ -52,6 +52,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.use_gpu
 @cli_param.option.n_proc
 @cli_param.option.batch_size
+@cli_param.option.overwrite
 def cli(
     input_maps_directory,
     data_group,
@@ -64,6 +65,7 @@ def cli(
     selection_metrics,
     diagnoses,
     multi_cohort,
+    overwrite,
 ):
     """Infer the outputs of a trained model on a test set.
 
@@ -90,4 +92,5 @@ def cli(
         selection_metrics=selection_metrics,
         diagnoses=diagnoses,
         multi_cohort=multi_cohort,
+        overwrite=overwrite,
     )

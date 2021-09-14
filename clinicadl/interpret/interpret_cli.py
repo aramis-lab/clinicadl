@@ -46,13 +46,6 @@ from clinicadl.utils import cli_param
     multiple=True,
     help="List of diagnoses used for inference. Is used only if PARTICIPANTS_TSV leads to a folder.",
 )
-# @click.option(
-#     "-d",
-#     "--diagnosis",
-#     default="AD",
-#     type=str,
-#     help="The images corresponding to this diagnosis only will be loaded.",
-# )
 @click.option(
     "--target_node",
     default=0,
@@ -75,6 +68,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.n_proc
 @cli_param.option.use_gpu
 @cli_param.option.batch_size
+@cli_param.option.overwrite
 def cli(
     input_maps_directory,
     data_group,
@@ -89,6 +83,7 @@ def cli(
     batch_size,
     n_proc,
     gpu,
+    overwrite,
 ):
     """Interpretation of trained models using saliency map method.
 
@@ -119,5 +114,6 @@ def cli(
         batch_size=batch_size,
         nproc=n_proc,
         use_cpu=not gpu,
+        overwrite=overwrite,
         # verbose=verbose,
     )
