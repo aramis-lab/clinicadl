@@ -69,6 +69,13 @@ from clinicadl.utils import cli_param
 @cli_param.option.use_gpu
 @cli_param.option.batch_size
 @cli_param.option.overwrite
+@click.option(
+    "--overwrite_name",
+    "-on",
+    is_flag=True,
+    default=False,
+    help="Overwrite the name if it already exists.",
+)
 def cli(
     input_maps_directory,
     data_group,
@@ -84,6 +91,7 @@ def cli(
     n_proc,
     gpu,
     overwrite,
+    overwrite_name,
 ):
     """Interpretation of trained models using saliency map method.
 
@@ -115,5 +123,6 @@ def cli(
         n_proc=n_proc,
         gpu=gpu,
         overwrite=overwrite,
+        overwrite_name=overwrite_name,
         # verbose=verbose,
     )

@@ -19,6 +19,7 @@ def interpret(
     gpu: bool,
     verbose=0,
     overwrite: bool = False,
+    overwrite_name: bool = False,
 ):
     """
     This function loads a MAPS and interprets all the models selected using a metric in selection_metrics.
@@ -38,7 +39,8 @@ def interpret(
         diagnoses: list of diagnoses to be tested if tsv_path is a folder.
         multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
         verbose: level of verbosity (0: warning, 1: info, 2: debug).
-        overwrite: If True former definition of data group is erased
+        overwrite: If True former definition of data group is erased.
+        overwrite_name: If True former interpretability map with the same name is erased.
     """
     verbose_list = ["warning", "info", "debug"]
     if verbose > 2:
@@ -62,4 +64,5 @@ def interpret(
         num_workers=n_proc,
         use_cpu=not gpu,
         overwrite=overwrite,
+        overwrite_name=overwrite_name,
     )
