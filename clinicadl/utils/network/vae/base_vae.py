@@ -4,8 +4,20 @@ from clinicadl.utils.network.network import Network
 
 
 class BaseVAE(Network):
-    def __init__(self, encoder, decoder, mu_layer, var_layer, use_cpu=False):
+    def __init__(
+        self,
+        encoder,
+        decoder,
+        mu_layer,
+        var_layer,
+        use_cpu=False,
+        recons_weight=1,
+        KD_weight=1,
+    ):
         super(BaseVAE, self).__init__(use_cpu=use_cpu)
+
+        self.lambda1 = recons_weight
+        self.lambda2 = KD_weight
 
         self.encoder = encoder.to(self.device)
         self.mu_layer = mu_layer.to(self.device)
@@ -38,9 +50,15 @@ class BaseVAE(Network):
             torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim=1)
         )
 
-        loss = recon_loss + kd_loss
+        loss = self.lambda1 * recon_loss + self.lambda2 * kd_loss
 
-        return recon_images, loss
+        loss_dict = {
+            "loss": loss,
+            "recon_loss": recon_loss,
+            "kd_loss": kd_loss,
+        }
+
+        return recon_images, loss_dict
 
     # VAE specific
     def encode(self, x):
