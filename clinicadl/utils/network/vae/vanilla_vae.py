@@ -445,9 +445,11 @@ class Vanilla3DdenseVAE(BaseVAE):
         input_size,
         use_cpu=False,
     ):
+        recons_weight = 10
+        kd_weight = 1
         n_conv = 4
-        first_layer_channels = 16
-        last_layer_channels = 16
+        first_layer_channels = 8
+        last_layer_channels = 8
         feature_size = 1024
         latent_size = 64
         decoder_output_padding = [
@@ -532,5 +534,11 @@ class Vanilla3DdenseVAE(BaseVAE):
         decoder = nn.Sequential(*decoder_layers)
 
         super(Vanilla3DdenseVAE, self).__init__(
-            encoder, decoder, mu_layer, var_layer, use_cpu=use_cpu
+            encoder,
+            decoder,
+            mu_layer,
+            var_layer,
+            use_cpu=use_cpu,
+            recons_weight=recons_weight,
+            KD_weight=kd_weight,
         )
