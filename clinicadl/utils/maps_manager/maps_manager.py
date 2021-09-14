@@ -204,7 +204,7 @@ class MapsManager:
         if tsv_path is not None:
             group_df = load_data_test(
                 tsv_path,
-                diagnoses if diagnoses is not None else self.diagnoses,
+                diagnoses if len(diagnoses) != 0 else self.diagnoses,
                 multi_cohort=multi_cohort,
             )
 
@@ -336,7 +336,7 @@ class MapsManager:
         if tsv_path is not None:
             group_df = load_data_test(
                 tsv_path,
-                diagnoses if diagnoses is not None else self.diagnoses,
+                diagnoses if len(diagnoses) != 0 else self.diagnoses,
                 multi_cohort=multi_cohort,
             )
 
@@ -463,7 +463,7 @@ class MapsManager:
         if tsv_path is not None:
             group_df = load_data_test(
                 tsv_path,
-                diagnoses if diagnoses is not None else self.diagnoses,
+                diagnoses if len(diagnoses) != 0 else self.diagnoses,
                 multi_cohort=multi_cohort,
             )
 

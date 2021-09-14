@@ -11,7 +11,6 @@ def predict(
     gpu=True,
     num_workers=0,
     batch_size=1,
-    prepare_dl=True,
     selection_metrics=None,
     diagnoses=None,
     multi_cohort=False,
@@ -31,7 +30,6 @@ def predict(
         gpu: if true, it uses gpu.
         num_workers: num_workers used in DataLoader
         batch_size: batch size of the DataLoader
-        prepare_dl: if true, uses extracted patches/slices otherwise extract them
         on-the-fly.
         selection_metrics: list of metrics to find best models to be evaluated.
         diagnoses: list of diagnoses to be tested if tsv_path is a folder.
@@ -50,7 +48,6 @@ def predict(
         multi_cohort=multi_cohort,
         diagnoses=diagnoses,
         use_labels=labels,
-        prepare_dl=prepare_dl,
         batch_size=batch_size,
         num_workers=num_workers,
         use_cpu=not gpu,
