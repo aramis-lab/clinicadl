@@ -23,8 +23,8 @@ def predict(
     for all the models selected using a metric in selection_metrics.
 
     Args:
-        maps_dir: file with the model (pth format).
-        data_group: prefix of all classification outputs.
+        maps_dir: path to the MAPS.
+        data_group: name of the data group tested.
         caps_directory: path to the CAPS folder. For more information please refer to
             [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
         tsv_path: path to a TSV file containing the list of participants and sessions to interpret.
@@ -32,7 +32,6 @@ def predict(
         gpu: if true, it uses gpu.
         num_workers: num_workers used in DataLoader
         batch_size: batch size of the DataLoader
-        on-the-fly.
         selection_metrics: list of metrics to find best models to be evaluated.
         diagnoses: list of diagnoses to be tested if tsv_path is a folder.
         multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.

@@ -112,8 +112,8 @@ def cli(
         target_node=target_node,
         save_individual=save_individual,
         batch_size=batch_size,
-        nproc=n_proc,
-        use_cpu=not gpu,
+        n_proc=n_proc,
+        gpu=gpu,
         overwrite=overwrite,
         # verbose=verbose,
     )
