@@ -9,12 +9,14 @@ import numpy as np
 import pandas as pd
 import torch
 import torchvision.transforms as transforms
+from clinica.utils.exceptions import ClinicaCAPSError
 from torch.utils.data import Dataset
 
 from clinicadl.extract.extract_utils import (
     PATTERN_DICT,
     TEMPLATE_DICT,
     compute_discarded_slices,
+    compute_folder_and_file_type,
     extract_patch_path,
     extract_patch_tensor,
     extract_roi_path,
@@ -142,13 +144,34 @@ class CapsDataset(Dataset):
         """
         from clinica.utils.inputs import clinica_file_reader
 
-        file_type = self.preprocessing_dict["file_type"]
-        file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
-        results = clinica_file_reader(
-            [participant], [session], self.caps_dict[cohort], file_type
-        )
+        # Try to find .nii.gz file
+        try:
+            file_type = self.preprocessing_dict["file_type"]
+            results = clinica_file_reader(
+                [participant], [session], self.caps_dict[cohort], file_type
+            )
+            image_filename = path.basename(results[0]).replace(".nii.gz", ".pt")
+            folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
+            image_dir = path.join(
+                self.caps_dict[cohort],
+                "subjects",
+                participant,
+                session,
+                "deeplearning_prepare_data",
+                "image_based",
+                folder,
+            )
+            image_path = path.join(image_dir, image_filename)
+        # Try to find .pt file
+        except ClinicaCAPSError:
+            file_type = self.preprocessing_dict["file_type"]
+            file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
+            results = clinica_file_reader(
+                [participant], [session], self.caps_dict[cohort], file_type
+            )
+            image_path = results[0]
 
-        return results[0]
+        return image_path
 
     def _get_meta_data(self, idx: int) -> Tuple[str, str, str, int, int]:
         """
@@ -372,8 +395,8 @@ class CapsDatasetPatch(CapsDataset):
         image_path = self._get_image_path(participant, session, cohort)
 
         if self.prepare_dl:
-            patch_dir = path.join(
-                path.dirname(path.dirname(image_path)), f"{self.mode}_based"
+            patch_dir = path.dirname(image_path).replace(
+                "image_based", f"{self.mode}_based"
             )
             patch_filename = extract_patch_path(
                 image_path, self.patch_size, self.stride_size, patch_idx
@@ -486,8 +509,8 @@ class CapsDatasetRoi(CapsDataset):
 
         if self.prepare_dl:
             mask_path = self.mask_paths[roi_idx]
-            roi_dir = path.join(
-                path.dirname(path.dirname(image_path)), f"{self.mode}_based"
+            roi_dir = path.dirname(image_path).replace(
+                "image_based", f"{self.mode}_based"
             )
             roi_filename = extract_roi_path(image_path, mask_path, self.uncropped_roi)
             roi_tensor = torch.load(path.join(roi_dir, roi_filename))
@@ -606,6 +629,10 @@ class CapsDatasetSlice(CapsDataset):
         self.discarded_slices = compute_discarded_slices(
             preprocessing_dict["discarded_slices"]
         )
+        self.num_slices = None
+        if "num_slices" in preprocessing_dict:
+            self.num_slices = preprocessing_dict["num_slices"]
+
         self.mode = "slice"
         self.prepare_dl = preprocessing_dict["prepare_dl"]
         super().__init__(
@@ -630,8 +657,8 @@ class CapsDatasetSlice(CapsDataset):
         image_path = self._get_image_path(participant, session, cohort)
 
         if self.prepare_dl:
-            slice_dir = path.join(
-                path.dirname(path.dirname(image_path)), f"{self.mode}_based"
+            slice_dir = path.dirname(image_path).replace(
+                "image_based", f"{self.mode}_based"
             )
             slice_filename = extract_slice_path(
                 image_path, self.slice_direction, self.slice_mode, slice_idx
@@ -664,6 +691,9 @@ class CapsDatasetSlice(CapsDataset):
     def num_elem_per_image(self):
         if self.elem_index is not None:
             return 1
+
+        if self.num_slices is not None:
+            return self.num_slices
 
         image = self._get_full_image()
         return (

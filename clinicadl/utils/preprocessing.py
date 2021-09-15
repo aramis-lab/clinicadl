@@ -1,9 +1,10 @@
 import errno
 import json
 import os
+from typing import Any, Dict
 
 
-def write_preprocessing(preprocessing_dict, caps_directory):
+def write_preprocessing(preprocessing_dict: Dict[str, Any], caps_directory: str):
     import time
 
     extract_dir = os.path.join(
@@ -18,7 +19,7 @@ def write_preprocessing(preprocessing_dict, caps_directory):
     return json_path
 
 
-def read_preprocessing(json_path):
+def read_preprocessing(json_path: str) -> Dict[str, Any]:
     if not os.path.isfile(json_path):
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), json_path)
     try:

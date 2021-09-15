@@ -10,15 +10,16 @@ NB: Other preprocessing may be needed on the merged file obtained: for example t
 in the OASIS dataset is not done in this script. Moreover a quality check may be needed at the end of preprocessing
 pipelines, leading to the removal of some subjects.
 """
-import logging
 import os
 from copy import copy
+from logging import getLogger
 from os import path
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
 
-from clinicadl.utils.maps_manager.iotools import commandline_to_json, return_logger
+from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.tsvtools_utils import (
     after_end_screening,
     find_label,
@@ -27,14 +28,15 @@ from clinicadl.utils.tsvtools_utils import (
     neighbour_session,
 )
 
+logger = getLogger("clinicadl")
 
-def cleaning_nan_diagnoses(bids_df, logger):
+
+def cleaning_nan_diagnoses(bids_df: pd.DataFrame) -> pd.DataFrame:
     """
     Printing the number of missing diagnoses and filling it partially for ADNI datasets
 
     Args:
         bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-        logger: Logger object from logging library
 
     Returns:
         cleaned DataFrame
@@ -85,14 +87,13 @@ def cleaning_nan_diagnoses(bids_df, logger):
     return bids_copy_df
 
 
-def infer_or_drop_diagnosis(bids_df, logger):
+def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
     """
     Deduce the diagnosis when missing from previous and following sessions of the subject. If not identical, the session
     is dropped. Sessions with no diagnosis are also dropped when there are the last sessions of the follow-up.
 
     Args:
         bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-        logger: Logger object from logging library
 
     Returns:
         cleaned DataFrame
@@ -146,13 +147,15 @@ def infer_or_drop_diagnosis(bids_df, logger):
     return bids_copy_df
 
 
-def mod_selection(bids_df, missing_mods_dict, mod="t1w"):
+def mod_selection(
+    bids_df: pd.DataFrame, missing_mods_dict: Dict[str, pd.DataFrame], mod: str = "t1w"
+) -> pd.DataFrame:
     """
     Select only sessions for which the modality is present
 
     Args:
         bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-        missing_mods_dict: dictionnary of the DataFrames of missing modalities
+        missing_mods_dict: dictionary of the DataFrames of missing modalities
         mod: the modality used for selection
 
     Returns:
@@ -165,31 +168,27 @@ def mod_selection(bids_df, missing_mods_dict, mod="t1w"):
                 mod_present = missing_mods_dict[session].loc[subject, mod]
                 if not mod_present:
                     bids_copy_df.drop((subject, session), inplace=True)
-            except Exception:
+            except KeyError:
                 bids_copy_df.drop((subject, session), inplace=True)
 
     return bids_copy_df
 
 
-def stable_selection(bids_df, diagnosis="AD", logger=None):
+def stable_selection(bids_df: pd.DataFrame, diagnosis: str = "AD") -> pd.DataFrame:
     """
     Select only subjects whom diagnosis is identical during the whole follow-up.
 
     Args:
         bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-        logger: Logger object from logging library
-        diagnosis: (str) diagnosis selected
+        diagnosis: diagnosis selected
 
     Returns:
         DataFrame containing only the patients a the stable diagnosis
     """
-    if logger is None:
-        logger = logging
-        logger.basicConfig(level=logging.DEBUG)
 
     # Keep diagnosis at baseline
     bids_df = bids_df[bids_df.baseline_diagnosis == diagnosis]
-    bids_df = cleaning_nan_diagnoses(bids_df, logger=logger)
+    bids_df = cleaning_nan_diagnoses(bids_df)
 
     # Drop if not stable
     bids_copy_df = copy(bids_df)
@@ -215,30 +214,26 @@ def stable_selection(bids_df, diagnosis="AD", logger=None):
     bids_df = copy(bids_copy_df)
     logger.debug("Number of unstable subjects dropped: %i" % n_subjects)
 
-    bids_df = infer_or_drop_diagnosis(bids_df, logger)
+    bids_df = infer_or_drop_diagnosis(bids_df)
     return bids_df
 
 
-def mci_stability(bids_df, horizon_time=36, logger=None):
+def mci_stability(bids_df: pd.DataFrame, horizon_time: int = 36) -> pd.DataFrame:
     """
     A method to label all MCI sessions depending on their stability on the time horizon
 
     Args:
         bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-        horizon_time: (int) time horizon in months
-        logger: Logger object from logging library
+        horizon_time: time horizon in months
 
     Returns:
         DataFrame with new labels
     """
-    if logger is None:
-        logger = logging
-        logger.basicConfig(level=logging.DEBUG)
 
     diagnosis_list = ["MCI", "EMCI", "LMCI"]
     bids_df = bids_df[(bids_df.baseline_diagnosis.isin(diagnosis_list))]
-    bids_df = cleaning_nan_diagnoses(bids_df, logger)
-    bids_df = infer_or_drop_diagnosis(bids_df, logger)
+    bids_df = cleaning_nan_diagnoses(bids_df)
+    bids_df = infer_or_drop_diagnosis(bids_df)
 
     # Check possible double change in diagnosis in time
     bids_copy_df = copy(bids_df)
@@ -349,7 +344,7 @@ def mci_stability(bids_df, horizon_time=36, logger=None):
     return bids_copy_df
 
 
-def diagnosis_removal(MCI_df, diagnosis_list):
+def diagnosis_removal(MCI_df: pd.DataFrame, diagnosis_list: List[str]) -> pd.DataFrame:
     """
     Removes subjects whom last diagnosis is in the list provided (avoid to keep rMCI and pMCI in sMCI lists).
 
@@ -374,7 +369,7 @@ def diagnosis_removal(MCI_df, diagnosis_list):
     return output_df
 
 
-def apply_restriction(bids_df, restriction_path):
+def apply_restriction(bids_df: pd.DataFrame, restriction_path: str) -> pd.DataFrame:
     """
     Application of a restriction (for example after the removal of some subjects after a preprocessing pipeline)
 
@@ -403,36 +398,30 @@ def apply_restriction(bids_df, restriction_path):
 
 
 def get_labels(
-    merged_tsv,
-    missing_mods,
-    results_path,
-    diagnoses,
-    modality="t1w",
-    restriction_path=None,
-    time_horizon=36,
-    variables_of_interest=None,
-    remove_smc=True,
-    verbose=0,
+    merged_tsv: str,
+    missing_mods: str,
+    results_path: str,
+    diagnoses: List[str],
+    modality: str = "t1w",
+    restriction_path: str = None,
+    time_horizon: int = 36,
+    variables_of_interest: List[str] = None,
+    remove_smc: bool = True,
 ):
     """
-    Writes one tsv file per label in diagnoses argument based on merged_tsv and missing_mods.
+    Writes one TSV file per label in diagnoses argument based on merged_tsv and missing_mods.
 
     Args:
-        merged_tsv (str): Path to the file obtained by the command clinica iotools merge-tsv.
-        missing_mods (str): Path to the folder where the outputs of clinica iotools missing-mods are.
-        results_path (str): Path to the folder where tsv files are extracted.
-        diagnoses (list): Labels that must be extracted from merged_tsv.
-        modality (str): Modality to select sessions. Sessions which do not include the modality will be excluded.
-        restriction_path (str): Path to a tsv containing the sessions that can be included.
-        time_horizon (int): Time horizon to analyse stability of MCI subjects.
-        variables_of_interest (list[str]): columns that should be kept in the output tsv files.
-        remove_smc (bool): if True SMC participants are removed from the lists.
-        verbose (int): level of verbosity.
-
-    Returns:
-         writes one tsv file per label at results_path/<label>.tsv
+        merged_tsv: Path to the file obtained by the command clinica iotools merge-tsv.
+        missing_mods: Path to the folder where the outputs of clinica iotools missing-mods are.
+        results_path: Path to the folder where tsv files are extracted.
+        diagnoses: Labels that must be extracted from merged_tsv.
+        modality: Modality to select sessions. Sessions which do not include the modality will be excluded.
+        restriction_path: Path to a tsv containing the sessions that can be included.
+        time_horizon: Time horizon to analyse stability of MCI subjects.
+        variables_of_interest: columns that should be kept in the output tsv files.
+        remove_smc: if True SMC participants are removed from the lists.
     """
-    logger = return_logger(verbose, "getlabels")
 
     commandline_to_json(
         {
@@ -457,7 +446,7 @@ def get_labels(
         variables_list.append(find_label(bids_df.columns.values, "age"))
         variables_list.append(find_label(bids_df.columns.values, "sex"))
     except ValueError:
-        logger.warn("The age or sex values were not found in the dataset.")
+        logger.warning("The age or sex values were not found in the dataset.")
     if variables_of_interest is not None:
         variables_set = set(variables_of_interest) | set(variables_list)
         variables_list = list(variables_set)
@@ -477,7 +466,7 @@ def get_labels(
             missing_mods_df = pd.read_csv(path.join(missing_mods, file), sep="\t")
             if len(missing_mods_df) == 0:
                 raise ValueError(
-                    "Empty DataFrame at path %s" % path.join(missing_mods, file)
+                    f"Empty DataFrame at path {path.join(missing_mods, file)}"
                 )
 
             missing_mods_df.set_index("participant_id", drop=True, inplace=True)
@@ -507,7 +496,7 @@ def get_labels(
     time_MCI_df = None
     if "AD" in diagnoses:
         logger.info("Beginning the selection of AD label")
-        output_df = stable_selection(bids_df, diagnosis="AD", logger=logger)
+        output_df = stable_selection(bids_df, diagnosis="AD")
         output_df = mod_selection(output_df, missing_mods_dict, modality)
         output_df = apply_restriction(output_df, restriction_path)
 
@@ -517,13 +506,12 @@ def get_labels(
             diagnosis_df.reset_index().groupby("participant_id")["session_id"].nunique()
         )
         logger.info(
-            "Found %s AD subjects for a total of %s sessions\n"
-            % (len(sub_df), len(diagnosis_df))
+            f"Found {len(sub_df)} AD subjects for a total of {len(diagnosis_df)} sessions\n"
         )
 
     if "BV" in diagnoses:
         logger.info("Beginning the selection of BV label")
-        output_df = stable_selection(bids_df, diagnosis="BV", logger=logger)
+        output_df = stable_selection(bids_df, diagnosis="BV")
         output_df = mod_selection(output_df, missing_mods_dict, modality)
         output_df = apply_restriction(output_df, restriction_path)
 
@@ -539,7 +527,7 @@ def get_labels(
 
     if "CN" in diagnoses:
         logger.info("Beginning the selection of CN label")
-        output_df = stable_selection(bids_df, diagnosis="CN", logger=logger)
+        output_df = stable_selection(bids_df, diagnosis="CN")
         output_df = mod_selection(output_df, missing_mods_dict, modality)
         output_df = apply_restriction(output_df, restriction_path)
 
@@ -556,7 +544,7 @@ def get_labels(
     if "MCI" in diagnoses:
         logger.info("Beginning of the selection of MCI label")
         MCI_df = mci_stability(
-            bids_df, 10 ** 4, logger=logger
+            bids_df, 10 ** 4
         )  # Remove rMCI independently from time horizon
         output_df = diagnosis_removal(MCI_df, diagnosis_list=["rMCI"])
         output_df = mod_selection(output_df, missing_mods_dict, modality)
@@ -577,7 +565,7 @@ def get_labels(
 
     if "sMCI" in diagnoses:
         logger.info("Beginning of the selection of sMCI label")
-        time_MCI_df = mci_stability(bids_df, time_horizon, logger=logger)
+        time_MCI_df = mci_stability(bids_df, time_horizon)
         output_df = diagnosis_removal(time_MCI_df, diagnosis_list=["rMCI", "pMCI"])
         output_df = output_df[output_df.diagnosis == "sMCI"]
         output_df = mod_selection(output_df, missing_mods_dict, modality)
