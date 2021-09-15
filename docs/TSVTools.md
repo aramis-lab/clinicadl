@@ -26,8 +26,8 @@ clinicadl tsvtool restrict DATASET MERGED_TSV RESULTS_TSV
 where:
 
   - `DATASET` (str) is the name of the dataset. Choices are `OASIS` or `AIBL`.
-  - `MERGED_TSV` (path) is the output file of the `clinica iotools merge-tsv` command.
-  - `RESULTS_TSV` (path) is the path to the output TSV file (filename included).
+  - `MERGED_TSV` (Path) is the output file of the `clinica iotools merge-tsv` command.
+  - `RESULTS_TSV` (Path) is the path to the output TSV file (filename included).
   This TSV file comprises the same columns as `merged_tsv`.
 
 !!! tip
@@ -68,9 +68,9 @@ clinicadl tsvtool getlabels MERGED_TSV MISSING_MODS_DIRECTORY RESULTS_DIRECTORY
 ```
 where:
 
-  - `MERGED_TSV` (path) is the output file of the `clinica iotools merge-tsv` or `clinicadl tsvtool restrict` commands.
-  - `MISSING_MODS_DIRECTORY` (path) is the folder containing the outputs of the `clinica iotools missing-mods` command.
-  - `RESULTS_DIRECTORY` (path) is the path to the folder where output TSV files will be written.
+  - `MERGED_TSV` (Path) is the output file of the `clinica iotools merge-tsv` or `clinicadl tsvtool restrict` commands.
+  - `MISSING_MODS_DIRECTORY` (Path) is the folder containing the outputs of the `clinica iotools missing-mods` command.
+  - `RESULTS_DIRECTORY` (Path) is the path to the folder where output TSV files will be written.
 
 Options:
 
@@ -82,7 +82,7 @@ Options:
    These labels must be chosen from {AD,CN,MCI,sMCI,pMCI}. Default will only process AD and CN labels.
   - `--time_horizon` (int) is the time horizon in months that is used to assess the stability of the MCI subjects.
   Default value: `36`.
-  - `--restriction_path` (path) is a path to a TSV file containing the list of sessions that should be used.
+  - `--restriction_path` (Path) is a path to a TSV file containing the list of sessions that should be used.
   This argument is useful to integrate the result of a quality check procedure. Default will not perform any restriction.
   - `--variables_of_interest` (List[str]) is a list of columns present in `MERGED_TSV` that will be included
   in the outputs.
@@ -126,7 +126,7 @@ clinicadl tsvtool split FORMATTED_DATA_DIRECTORY
 ```
 where:
 
-  - `FORMATTED_DATA_DIRECTORY` (path) is the folder containing a TSV file per label which is going to be split 
+  - `FORMATTED_DATA_DIRECTORY` (Path) is the folder containing a TSV file per label which is going to be split 
   (output of `clinicadl tsvtool getlabels|split|kfold`).
 
 Options:
@@ -248,9 +248,9 @@ clinicadl tsvtool analysis MERGED_TSV FORMATTED_DATA_DIRECTORY RESULTS_DIRECTORY
 ```
 where:
 
-  - `MERGED_TSV` (path) is the output file of the `clinica iotools merge-tsv` or `clinicadl tsvtool restrict` commands.
-  - `FORMATTED_DATA_DIRECTORY` (path) is a folder containing one TSV file per label (output of `clinicadl tsvtool getlabels|split|kfold`).
-  - `RESULTS_DIRECTORY` (path) is the path to the TSV file that will be written (filename included).
+  - `MERGED_TSV` (Path) is the output file of the `clinica iotools merge-tsv` or `clinicadl tsvtool restrict` commands.
+  - `FORMATTED_DATA_DIRECTORY` (Path) is a folder containing one TSV file per label (output of `clinicadl tsvtool getlabels|split|kfold`).
+  - `RESULTS_DIRECTORY` (Path) is the path to the TSV file that will be written (filename included).
 
 Options:
 

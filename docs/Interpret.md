@@ -29,7 +29,7 @@ clinicadl interpret INPUT_MAPS_DIRECTORY DATA_GROUP NAME
 ```
 where:
 
-- `INPUT_MAPS_DIRECTORY` (path) is a path to the MAPS folder containing the model which will be interpreted.
+- `INPUT_MAPS_DIRECTORY` (Path) is a path to the MAPS folder containing the model which will be interpreted.
 - `DATA_GROUP` (str) is a prefix to name the files resulting from the interpretation task.
 - `NAME` (str) is the name of the saliency map task.
 
@@ -51,10 +51,10 @@ Optional arguments:
     - `--selection_metrics` (List[str]) is a list of metrics to find the best models to evaluate.
       Default will predict the results for best model based on the loss only.
 - **Data management**
-    - `--participants_tsv` (path) is a path to a directory containing one TSV file per diagnosis
+    - `--participants_tsv` (Path) is a path to a directory containing one TSV file per diagnosis
     (see output tree of [getlabels](./TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease)). 
     Default will use the same participants as those used during the training task.
-    - `--caps_directory` (path) is the path to a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
+    - `--caps_directory` (Path) is the path to a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
     Default will use the same CAPS as during the training task.
     - `--multi_cohort` (bool) is a flag indicated that [multi-cohort classification](Train/Details.md#multi-cohort)
      is performed.

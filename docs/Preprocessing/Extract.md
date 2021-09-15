@@ -22,7 +22,7 @@ The command has four sub-commands:
 
 which have the same arguments:
 
-- `CAPS_DIRECTORY` (path) is the folder in a [CAPS
+- `CAPS_DIRECTORY` (Path) is the folder in a [CAPS
   hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/)
   containing the images corresponding to the `MODALITY` asked.
 - `MODALITY` (str) is the name of the preprocessing performed on the original images. It
@@ -31,7 +31,7 @@ which have the same arguments:
 
 Each sub-command has its own set of options. There is one generic option:
 
-- `--subjects_sessions_tsv` (path) is a path to a TSV file listing participant and session IDs. 
+- `--subjects_sessions_tsv` (Path) is a path to a TSV file listing participant and session IDs. 
 
 !!! note "Default values"
     When using patch or slice extraction, default values were set according to

@@ -35,7 +35,7 @@ clinicadl predict INPUT_MAPS_DIRECTORY DATA_GROUP
 ```
 where:
 
-- `INPUT_MAPS_DIRECTORY` (path) is the path to the MAPS of the pretrained model.
+- `INPUT_MAPS_DIRECTORY` (Path) is the path to the MAPS of the pretrained model.
 - `DATA_GROUP` (str) is the name of the data group used for the prediction.
 
 !!! warning "data group consistency"
@@ -52,11 +52,11 @@ Optional arguments:
     - `--n_proc` (int) is the number of workers used by the DataLoader. Default: `2`.
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default: `2`.
 - **Other options**
-    - `--caps_directory` (path) is the input folder containing the neuroimaging data
+    - `--caps_directory` (Path) is the input folder containing the neuroimaging data
       (tensor version of images, output of [`clinicadl extract`
       pipeline](Preprocessing/Extract.md)) in a
       [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
-    - `--participants_tsv` (path) is a path to a TSV file with subjects/sessions to process (filename
+    - `--participants_tsv` (Path) is a path to a TSV file with subjects/sessions to process (filename
       included), OR the path to the test folder of a split directory obtained with `clinicadl tsvtool split`.
     - `--labels/--no_labels` (bool) is a flag to add if the dataset does not contain ground truth labels. 
       Default behaviour will look for ground truth labels and raise an error if not found.

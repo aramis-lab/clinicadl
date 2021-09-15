@@ -36,7 +36,7 @@ clinicadl random-search LAUNCH_DIRECTORY NAME
 ```
 where:
 
-- `LAUNCH_DIRECTORY` (path) is the parent directory of output folder containing the file `random_search.toml`.
+- `LAUNCH_DIRECTORY` (Path) is the parent directory of output folder containing the file `random_search.toml`.
 - `NAME` (str) is the name of the output folder containing the experiment.
 
 ## Content of `random_search.toml`
