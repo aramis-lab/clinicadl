@@ -112,7 +112,7 @@ from clinicadl.utils import cli_param
 @click.option(
     "--diagnoses",
     "-d",
-    type=click.Choice(["AD", "BV", "CN", "MCI", "sMCI", "pMCI"]),
+    type=str,
     # default=(),
     multiple=True,
     help="List of diagnoses used for training.",
