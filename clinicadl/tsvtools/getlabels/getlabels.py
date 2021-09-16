@@ -81,8 +81,8 @@ def cleaning_nan_diagnoses(bids_df: pd.DataFrame) -> pd.DataFrame:
             if isinstance(diagnosis, float):
                 missing_diag += 1
 
-    logger.debug("Missing diagnoses: %i" % missing_diag)
-    logger.debug("Missing diagnoses not found: %i" % (missing_diag - found_diag))
+    logger.debug(f"Missing diagnoses: {missing_diag}")
+    logger.debug(f"Missing diagnoses not found: {missing_diag - found_diag}")
 
     return bids_copy_df
 
@@ -142,7 +142,7 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
                     else:
                         bids_copy_df.drop((subject, session), inplace=True)
 
-    logger.debug("Inferred diagnosis: %i" % found_diag_interpol)
+    logger.debug(f"Inferred diagnosis: {found_diag_interpol}")
 
     return bids_copy_df
 
@@ -199,8 +199,7 @@ def stable_selection(bids_df: pd.DataFrame, diagnosis: str = "AD") -> pd.DataFra
             diagnosis_bl = subject_df.loc[(subject, "ses-M00"), "baseline_diagnosis"]
         except KeyError:
             raise KeyError(
-                "The baseline session is necessary for labels selection. It is missing for subject %s"
-                % subject
+                f"The baseline session is necessary for labels selection. It is missing for subject {subject}."
             )
         diagnosis_values = subject_df.diagnosis.values
         for diagnosis in diagnosis_values:
@@ -212,7 +211,7 @@ def stable_selection(bids_df: pd.DataFrame, diagnosis: str = "AD") -> pd.DataFra
         if subject_drop:
             bids_copy_df.drop(subject, inplace=True)
     bids_df = copy(bids_copy_df)
-    logger.debug("Number of unstable subjects dropped: %i" % n_subjects)
+    logger.debug(f"Number of unstable subjects dropped: {n_subjects}")
 
     bids_df = infer_or_drop_diagnosis(bids_df)
     return bids_df
@@ -263,7 +262,7 @@ def mci_stability(bids_df: pd.DataFrame, horizon_time: int = 36) -> pd.DataFrame
             nb_subjects += 1
             bids_copy_df.drop(subject, inplace=True)
 
-    logger.debug("Dropped subjects: %i" % nb_subjects)
+    logger.debug(f"Dropped subjects: {nb_subjects}")
     bids_df = copy(bids_copy_df)
 
     # Stability of sessions
@@ -521,8 +520,7 @@ def get_labels(
             diagnosis_df.reset_index().groupby("participant_id")["session_id"].nunique()
         )
         logger.info(
-            "Found %s BV subjects for a total of %s sessions\n"
-            % (len(sub_df), len(diagnosis_df))
+            f"Found {len(sub_df)} BV subjects for a total of {len(diagnosis_df)} sessions\n"
         )
 
     if "CN" in diagnoses:
@@ -537,8 +535,7 @@ def get_labels(
             diagnosis_df.reset_index().groupby("participant_id")["session_id"].nunique()
         )
         logger.info(
-            "Found %s CN subjects for a total of %s sessions\n"
-            % (len(sub_df), len(diagnosis_df))
+            f"Found {len(sub_df)} CN subjects for a total of {len(diagnosis_df)} sessions\n"
         )
 
     if "MCI" in diagnoses:
@@ -559,8 +556,7 @@ def get_labels(
             diagnosis_df.reset_index().groupby("participant_id")["session_id"].nunique()
         )
         logger.info(
-            "Found %s MCI subjects for a total of %s sessions\n"
-            % (len(sub_df), len(diagnosis_df))
+            f"Found {len(sub_df)} MCI subjects for a total of {len(diagnosis_df)} sessions\n"
         )
 
     if "sMCI" in diagnoses:
@@ -577,8 +573,7 @@ def get_labels(
             diagnosis_df.reset_index().groupby("participant_id")["session_id"].nunique()
         )
         logger.info(
-            "Found %s sMCI subjects for a total of %s sessions\n"
-            % (len(sub_df), len(diagnosis_df))
+            f"Found {len(sub_df)} sMCI subjects for a total of {len(diagnosis_df)} sessions\n"
         )
 
     if "pMCI" in diagnoses:
@@ -595,6 +590,5 @@ def get_labels(
             diagnosis_df.reset_index().groupby("participant_id")["session_id"].nunique()
         )
         logger.info(
-            "Found %s pMCI subjects for a total of %s sessions\n"
-            % (len(sub_df), len(diagnosis_df))
+            f"Found {len(sub_df)} pMCI subjects for a total of {len(diagnosis_df)} sessions\n"
         )

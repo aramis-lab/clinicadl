@@ -1,10 +1,10 @@
 import json
-import logging
 import shutil
 import subprocess
-import sys
 from datetime import datetime
+from logging import getLogger
 from os import listdir, makedirs, path
+from typing import Any, Dict, List
 
 import pandas as pd
 import torch
@@ -17,32 +17,35 @@ from clinicadl.utils.caps_dataset.data import (
     return_dataset,
 )
 from clinicadl.utils.early_stopping import EarlyStopping
-from clinicadl.utils.maps_manager.logwriter import LogWriter, StdLevelFilter
+from clinicadl.utils.maps_manager.logwriter import LogWriter, setup_logging
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
 
-level_dict = {
-    "debug": logging.DEBUG,
-    "info": logging.INFO,
-    "warning": logging.WARNING,
-    "error": logging.ERROR,
-    "critical": logging.CRITICAL,
-}
+logger = getLogger("clinicadl")
 
+
+level_list: List[str] = ["warning", "info", "debug"]
 # TODO: replace "fold" with "split"
 # TODO save weights on CPU for better compatibility
 
 
 class MapsManager:
-    def __init__(self, maps_path, parameters=None, verbose="warning"):
+    def __init__(
+        self,
+        maps_path: str,
+        parameters: Dict[str, Any] = None,
+        verbose: str = "warning",
+    ):
         """
         Args:
-            maps_path (str): path of the MAPS
-            parameters (dict[str:object]): parameters of the training step. If given a new MAPS is created.
-            verbose (str): Logging level ("debug", "info", "warning", "error", "critical")
+            maps_path: path of the MAPS
+            parameters: parameters of the training step. If given a new MAPS is created.
+            verbose: Logging level ("debug", "info", "warning")
         """
         self.maps_path = maps_path
-        self.set_verbose(verbose)
+        if verbose not in level_list:
+            raise ValueError(f"verbose value {verbose} must be in {level_list}.")
+        setup_logging(level_list.index(verbose))
 
         # Existing MAPS
         if parameters is None:
@@ -67,9 +70,9 @@ class MapsManager:
                     f"Please remove it or choose another location."
                 )
             makedirs(path.join(self.maps_path, "groups"))
-            self.logger.info(f"A new MAPS was created at {maps_path}")
+            logger.info(f"A new MAPS was created at {maps_path}")
             self._check_args(parameters)
-            self.write_parameters(self.maps_path, self.parameters, self.logger)
+            self.write_parameters(self.maps_path, self.parameters)
             self._write_requirements_version()
             self._write_training_data()
             self._write_train_val_groups()
@@ -80,38 +83,6 @@ class MapsManager:
             return self.parameters[name]
         else:
             raise AttributeError(f"'MapsManager' object has no attribute '{name}'")
-
-    def set_verbose(self, verbose="warning"):
-        """
-        Set the verbose to a new level.
-
-        Args:
-            verbose (str): Logging level ("debug", "info", "warning", "error", "critical")
-        """
-        if verbose not in level_dict:
-            raise ValueError(
-                f"Your verbose value {verbose} is incorrect."
-                f"Please choose between the following values {level_dict.keys()}."
-            )
-        self.logger = logging.getLogger("clinicadl")
-        self.logger.setLevel(level_dict[verbose])
-
-        if self.logger.hasHandlers():
-            self.logger.handlers.clear()
-
-        stdout = logging.StreamHandler(sys.stdout)
-        stdout.addFilter(StdLevelFilter())
-        stderr = logging.StreamHandler(sys.stderr)
-        stderr.addFilter(StdLevelFilter(err=True))
-        # create formatter
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(message)s")
-        # add formatter to ch
-        stdout.setFormatter(formatter)
-        stderr.setFormatter(formatter)
-        # add ch to logger
-        self.logger.addHandler(stdout)
-        self.logger.addHandler(stderr)
-        self.logger.propagate = False
 
     def train(self, folds=None, overwrite=False):
         """
@@ -371,7 +342,7 @@ class MapsManager:
 
         split_manager = self._init_split_manager(folds)
         for fold in split_manager.fold_iterator():
-            self.logger.info(f"Saving tensors of fold {fold}")
+            logger.info(f"Saving tensors of fold {fold}")
 
             group_df, group_parameters = self._check_data_group(
                 data_group, fold, caps_directory, group_df, multi_cohort, overwrite
@@ -497,7 +468,7 @@ class MapsManager:
             )
 
         for fold in folds:
-            self.logger.info(f"Interpretation of fold {fold}")
+            logger.info(f"Interpretation of fold {fold}")
             df_group, parameters_group = self._check_data_group(
                 data_group, fold, caps_directory, group_df, multi_cohort, overwrite
             )
@@ -525,7 +496,7 @@ class MapsManager:
                 selection_metrics = self._find_selection_metrics(fold)
 
             for selection_metric in selection_metrics:
-                self.logger.info(f"Interpretation of metric {selection_metric}")
+                logger.info(f"Interpretation of metric {selection_metric}")
                 results_path = path.join(
                     self.maps_path,
                     f"fold-{fold}",
@@ -596,7 +567,7 @@ class MapsManager:
 
         split_manager = self._init_split_manager(folds)
         for fold in split_manager.fold_iterator():
-            self.logger.info(f"Training fold {fold}")
+            logger.info(f"Training fold {fold}")
             seed_everything(self.seed, self.deterministic, self.compensation)
 
             fold_df_dict = split_manager[fold]
@@ -677,7 +648,7 @@ class MapsManager:
 
         split_manager = self._init_split_manager(folds)
         for fold in split_manager.fold_iterator():
-            self.logger.info(f"Training fold {fold}")
+            logger.info(f"Training fold {fold}")
             seed_everything(self.seed, self.deterministic, self.compensation)
 
             fold_df_dict = split_manager[fold]
@@ -696,7 +667,7 @@ class MapsManager:
                     resume = False
 
             for network in range(first_network, self.num_networks):
-                self.logger.info(f"Train network {network}")
+                logger.info(f"Train network {network}")
 
                 data_train = return_dataset(
                     self.caps_directory,
@@ -811,7 +782,7 @@ class MapsManager:
         retain_best = RetainBest(selection_metrics=self.selection_metrics)
 
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
-            self.logger.info(f"Beginning epoch {epoch}.")
+            logger.info(f"Beginning epoch {epoch}.")
 
             model.zero_grad()
             evaluation_flag, step_flag = True, True
@@ -852,11 +823,11 @@ class MapsManager:
                             metrics_valid,
                             len(train_loader),
                         )
-                        self.logger.info(
+                        logger.info(
                             f"{self.mode} level training loss is {metrics_train['loss']} "
                             f"at the end of iteration {i}"
                         )
-                        self.logger.info(
+                        logger.info(
                             f"{self.mode} level validation loss is {metrics_valid['loss']} "
                             f"at the end of iteration {i}"
                         )
@@ -869,7 +840,7 @@ class MapsManager:
 
             # If no evaluation has been performed, warn the user
             elif evaluation_flag and self.evaluation_steps != 0:
-                self.logger.warning(
+                logger.warning(
                     f"Your evaluation steps {self.evaluation_steps} are too big "
                     f"compared to the size of the dataset. "
                     f"The model is evaluated only once at the end epochs."
@@ -882,7 +853,7 @@ class MapsManager:
 
             # Always test the results and save them once at the end of the epoch
             model.zero_grad()
-            self.logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
+            logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
             _, metrics_train = self.task_manager.test(model, train_loader, criterion)
             _, metrics_valid = self.task_manager.test(model, valid_loader, criterion)
@@ -891,11 +862,11 @@ class MapsManager:
             train_loader.dataset.train()
 
             log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
-            self.logger.info(
+            logger.info(
                 f"{self.mode} level training loss is {metrics_train['loss']} "
                 f"at the end of iteration {i}"
             )
-            self.logger.info(
+            logger.info(
                 f"{self.mode} level validation loss is {metrics_valid['loss']} "
                 f"at the end of iteration {i}"
             )
@@ -1011,7 +982,7 @@ class MapsManager:
             if use_labels:
                 if network is not None:
                     metrics[f"{self.mode}_id"] = network
-                self.logger.info(
+                logger.info(
                     f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
                 )
 
@@ -1287,7 +1258,7 @@ class MapsManager:
                 when caps_directory or df are not given and data group does not exist
         """
         group_path = path.join(self.maps_path, "groups", data_group)
-        self.logger.debug(f"Group path {group_path}")
+        logger.debug(f"Group path {group_path}")
         if path.exists(group_path):
             if overwrite:
                 if data_group in ["train", "validation"]:
@@ -1317,11 +1288,8 @@ class MapsManager:
     # File writers                #
     ###############################
     @staticmethod
-    def write_parameters(json_path, parameters, logger=None):
+    def write_parameters(json_path, parameters):
         """Write JSON files of parameters."""
-        if logger is None:
-            logger = logging
-
         makedirs(json_path, exist_ok=True)
 
         # save to json file
@@ -1340,7 +1308,7 @@ class MapsManager:
             with open(path.join(self.maps_path, "environment.txt"), "w") as file:
                 file.write(env_variables)
         except subprocess.CalledProcessError:
-            self.logger.warning(
+            logger.warning(
                 "You do not have the right to execute pip freeze. Your environment will not be written"
             )
 
@@ -1661,7 +1629,7 @@ class MapsManager:
         """
         import clinicadl.utils.network as network_package
 
-        self.logger.debug(f"Initialization of model {self.architecture}")
+        logger.debug(f"Initialization of model {self.architecture}")
         # or choose to implement a dictionary
         model_class = getattr(network_package, self.architecture)
         args = list(
@@ -1690,7 +1658,7 @@ class MapsManager:
             model.load_state_dict(checkpoint_state["model"])
             current_epoch = checkpoint_state["epoch"]
         elif transfer_path:
-            self.logger.debug(f"Transfer weights from MAPS at {transfer_path}")
+            logger.debug(f"Transfer weights from MAPS at {transfer_path}")
             transfer_maps = MapsManager(transfer_path)
             transfer_state = transfer_maps.get_state_dict(
                 fold,
@@ -1699,7 +1667,7 @@ class MapsManager:
                 map_location=model.device,
             )
             transfer_class = getattr(network_package, transfer_maps.architecture)
-            self.logger.debug(f"Transfer from {transfer_class}")
+            logger.debug(f"Transfer from {transfer_class}")
             model.transfer_weights(transfer_state["model"], transfer_class)
 
         return model, current_epoch
@@ -1732,8 +1700,7 @@ class MapsManager:
         )
         args.remove("self")
         args.remove("folds")
-        args.remove("logger")
-        kwargs = {"folds": folds, "logger": self.logger}
+        kwargs = {"folds": folds}
         for arg in args:
             kwargs[arg] = self.parameters[arg]
         return split_class(**kwargs)
@@ -1937,7 +1904,7 @@ class MapsManager:
                 "model.pth.tar",
             )
 
-        self.logger.info(
+        logger.info(
             f"Loading model trained for fold {fold} "
             f"selected according to best validation {selection_metric} "
             f"at path {model_path}."

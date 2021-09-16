@@ -1,9 +1,11 @@
 import abc
-import logging
+from logging import getLogger
 from os import path
 
 import pandas as pd
 from clinica.utils.inputs import check_caps_folder
+
+logger = getLogger("clinicadl")
 
 
 class SplitManager:
@@ -15,7 +17,6 @@ class SplitManager:
         baseline=False,
         multi_cohort=False,
         folds=None,
-        logger=None,
     ):
         self._check_tsv_path(tsv_path, multi_cohort)
         self.tsv_path = tsv_path
@@ -24,11 +25,6 @@ class SplitManager:
         self.diagnoses = diagnoses
         self.baseline = baseline
         self.folds = folds
-
-        if logger is None:
-            self.logger = logging
-        else:
-            self.logger = logger
 
     @abc.abstractmethod
     def max_length(self) -> int:
@@ -111,8 +107,8 @@ class SplitManager:
             fold=fold,
             cohort_path=cohort_path if cohort_path is not None else self.tsv_path,
         )
-        self.logger.debug(f"Training data loaded at {train_path}")
-        self.logger.debug(f"Validation data loaded at {valid_path}")
+        logger.debug(f"Training data loaded at {train_path}")
+        logger.debug(f"Validation data loaded at {valid_path}")
         if cohort_diagnoses is None:
             cohort_diagnoses = self.diagnoses
 

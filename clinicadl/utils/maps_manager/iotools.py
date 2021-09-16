@@ -5,39 +5,6 @@ import sys
 LOG_LEVELS = [logging.WARNING, logging.INFO, logging.DEBUG]
 
 
-class StdLevelFilter(logging.Filter):
-    def __init__(self, err=False):
-        super().__init__()
-        self.err = err
-
-    def filter(self, record):
-        if record.levelno <= logging.INFO:
-            return not self.err
-        return self.err
-
-
-def return_logger(verbose, name_fn):
-    logger = logging.getLogger(name_fn)
-    if verbose < len(LOG_LEVELS):
-        logger.setLevel(LOG_LEVELS[verbose])
-    else:
-        logger.setLevel(logging.DEBUG)
-    stdout = logging.StreamHandler(sys.stdout)
-    stdout.addFilter(StdLevelFilter())
-    stderr = logging.StreamHandler(sys.stderr)
-    stderr.addFilter(StdLevelFilter(err=True))
-    # create formatter
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(message)s")
-    # add formatter to ch
-    stdout.setFormatter(formatter)
-    stderr.setFormatter(formatter)
-    # add ch to logger
-    logger.addHandler(stdout)
-    logger.addHandler(stderr)
-
-    return logger
-
-
 computational_list = ["gpu", "batch_size", "num_workers", "evaluation_steps"]
 
 

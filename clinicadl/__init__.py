@@ -1,4 +1,6 @@
-__all__ = ["__version__"]
+from .utils.maps_manager import MapsManager
+
+__all__ = ["__version__", "MapsManager"]
 
 # Load the Clinica package version
 import pkgutil
@@ -12,8 +14,6 @@ version = __version__
 # __version__ = version
 
 # python 3.6 minimum version is required
-if sys.version_info < (3, 6):
-    print(f"ClinicaDL {__version__} requires Python 3.6")
+if sys.version_info < (3, 7):
+    print(f"ClinicaDL {__version__} requires Python 3.7")
     sys.exit(1)
-
-from .utils.maps_manager.maps_manager import MapsManager
