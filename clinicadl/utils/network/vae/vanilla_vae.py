@@ -18,8 +18,8 @@ class VanillaDenseVAE(BaseVAE):
         input_size,
         use_cpu=False,
     ):
-        feature_size = 1024
-        latent_size = 64
+        feature_size = 64
+        latent_size = 1
         n_conv = 4
         io_layer_channel = 32
 
