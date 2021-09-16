@@ -10,7 +10,6 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 
-from clinicadl.cmdline import setup_logging
 from clinicadl.extract.extract_utils import compute_folder_and_file_type
 from clinicadl.utils.caps_dataset.data import (
     get_transforms,
@@ -18,7 +17,7 @@ from clinicadl.utils.caps_dataset.data import (
     return_dataset,
 )
 from clinicadl.utils.early_stopping import EarlyStopping
-from clinicadl.utils.maps_manager.logwriter import LogWriter
+from clinicadl.utils.maps_manager.logwriter import LogWriter, setup_logging
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
 
