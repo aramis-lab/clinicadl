@@ -69,7 +69,7 @@ clinicadl tsvtool getlabels MERGED_TSV MISSING_MODS_DIRECTORY RESULTS_DIRECTORY
 where:
 
   - `MERGED_TSV` (Path) is the output file of the `clinica iotools merge-tsv` or `clinicadl tsvtool restrict` commands.
-  - `MISSING_MODS_DIRECTORY` (Path) is the folder containing the outputs of the `clinica iotools missing-mods` command.
+  - `MISSING_MODS_DIRECTORY` (Path) is the folder containing the outputs of the `clinica iotools check-missing-modalities` command.
   - `RESULTS_DIRECTORY` (Path) is the path to the folder where output TSV files will be written.
 
 Options:
@@ -82,7 +82,7 @@ Options:
    These labels must be chosen from {AD,CN,MCI,sMCI,pMCI}. Default will only process AD and CN labels.
   - `--time_horizon` (int) is the time horizon in months that is used to assess the stability of the MCI subjects.
   Default value: `36`.
-  - `--restriction_path` (Path) is a path to a TSV file containing the list of sessions that should be used.
+  - `--restriction_tsv` (Path) is a path to a TSV file containing the list of sessions that should be used.
   This argument is useful to integrate the result of a quality check procedure. Default will not perform any restriction.
   - `--variables_of_interest` (List[str]) is a list of columns present in `MERGED_TSV` that will be included
   in the outputs.
@@ -132,7 +132,7 @@ where:
 Options:
 
   - `--subset_name` (str) is the name of the subset that is complementary to train.
-  Default value: `test`.
+  Default value: `validation`.
   - `--n_test` (float) gives the number of subjects that will be put in the set complementary to train:
 
     - If > 1, corresponds to the number of subjects to put in set with name `subset_name`.

@@ -9,7 +9,7 @@
         "sMCI"
     ],
     "modality": "t1w",
-    "restriction_path": null,
+    "restriction_tsv": null,
     "time_horizon": 36,
     "variables_of_interest": [
         "diagnosis",

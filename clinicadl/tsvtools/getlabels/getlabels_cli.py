@@ -53,7 +53,7 @@ def cli(
 
     MERGED_TSV is the output of `clinica iotools merge-tsv`.
 
-    MISSING_MODS_DIRECTORY is  the outputs of `clinica iotools missing-mods`.
+    MISSING_MODS_DIRECTORY is  the outputs of `clinica iotools check-missing-modalities`.
 
     Outputs are stored in RESULTS_TSV.
     """
