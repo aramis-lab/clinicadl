@@ -1266,7 +1266,7 @@ class MapsManager:
                     raise ValueError("Cannot overwrite train or validation data group.")
                 else:
                     shutil.rmtree(group_path)
-            elif None not in (df, caps_directory):
+            elif df is not None or caps_directory is not None:
                 raise ValueError(
                     f"Data group {data_group} is already defined. "
                     f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
