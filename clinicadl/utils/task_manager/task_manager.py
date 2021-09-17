@@ -100,7 +100,7 @@ class TaskManager:
 
     @staticmethod
     @abstractmethod
-    def generate_label_code(df: pd.DataFrame, label: str) -> Dict[Any, int]:
+    def generate_label_code(df: pd.DataFrame, label: str) -> Dict[str, int]:
         """
         Generates a label code that links the output node number to label value.
 
