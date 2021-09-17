@@ -19,6 +19,7 @@ from clinicadl.utils.caps_dataset.data import (
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.maps_manager.logwriter import LogWriter, setup_logging
 from clinicadl.utils.metric_module import RetainBest
+from clinicadl.utils.network.network import Network
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
 
 logger = getLogger("clinicadl")
@@ -1872,6 +1873,19 @@ class MapsManager:
             parameters["preprocessing_dict"]["file_type"] = file_type
 
         return parameters
+
+    def get_model(
+        self, fold: int = 0, selection_metric: str = None, network: int = None
+    ) -> Network:
+        selection_metric = self._check_selection_metric(fold, selection_metric)
+        if self.multi_network:
+            if network is None:
+                raise ValueError(
+                    "Please precise the network number that must be loaded."
+                )
+        return self._init_model(
+            self.maps_path, selection_metric, fold, network=network
+        )[0]
 
     def get_state_dict(
         self, fold=0, selection_metric=None, network=None, map_location=None
