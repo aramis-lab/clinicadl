@@ -21,6 +21,10 @@ def cli(
     architecture,
     input_size,
 ):
+    """Show the list of available models in ClinicaDL.
+
+    If you choose a specific model with architecture, this pipeline will show the whole model layers.
+    """
     from .list_models import get_model_list
 
     get_model_list(architecture, input_size)
