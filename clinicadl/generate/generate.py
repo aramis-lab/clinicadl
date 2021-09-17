@@ -263,9 +263,9 @@ def generate_trivial_dataset(
         filename_pattern = "_".join(input_filename.split("_")[2::])
 
         trivial_image_nii_dir = join(
-            output_dir, "subjects", f"sub-TRIV{i}", "ses-M00", "t1_linear"
+            output_dir, "subjects", f"sub-TRIV{i}", session_id, preprocessing
         )
-        trivial_image_nii_filename = f"sub-TRIV{i}_ses-M00_{filename_pattern}"
+        trivial_image_nii_filename = f"sub-TRIV{i}_{session_id}_{filename_pattern}"
 
         makedirs(trivial_image_nii_dir, exist_ok=True)
 
@@ -282,7 +282,7 @@ def generate_trivial_dataset(
         print(join(trivial_image_nii_dir, trivial_image_nii_filename))
 
         # Append row to output tsv
-        row = [f"sub-TRIV{i}", "ses-M00", diagnosis_list[label], 60, "F"]
+        row = [f"sub-TRIV{i}", session_id, diagnosis_list[label], 60, "F"]
         row_df = pd.DataFrame([row], columns=columns)
         output_df = output_df.append(row_df)
 
