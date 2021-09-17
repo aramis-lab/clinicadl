@@ -26,8 +26,8 @@ clinicadl tsvtool restrict DATASET MERGED_TSV RESULTS_TSV
 where:
 
   - `DATASET` (str) is the name of the dataset. Choices are `OASIS` or `AIBL`.
-  - `MERGED_TSV` (str) is the output file of the `clinica iotools merge-tsv` command.
-  - `RESULTS_TSV` (str) is the path to the output TSV file (filename included).
+  - `MERGED_TSV` (Path) is the output file of the `clinica iotools merge-tsv` command.
+  - `RESULTS_TSV` (Path) is the path to the output TSV file (filename included).
   This TSV file comprises the same columns as `merged_tsv`.
 
 !!! tip
@@ -68,9 +68,9 @@ clinicadl tsvtool getlabels MERGED_TSV MISSING_MODS_DIRECTORY RESULTS_DIRECTORY
 ```
 where:
 
-  - `MERGED_TSV` (str) is the output file of the `clinica iotools merge-tsv` or `clinicadl tsvtool restrict` commands.
-  - `MISSING_MODS_DIRECTORY` (path) is the folder containing the outputs of the `clinica iotools check-missing-modalities` command.
-  - `RESULTS_DIRECTORY` (path) is the path to the folder where output TSV files will be written.
+  - `MERGED_TSV` (Path) is the output file of the `clinica iotools merge-tsv` or `clinicadl tsvtool restrict` commands.
+  - `MISSING_MODS_DIRECTORY` (Path) is the folder containing the outputs of the `clinica iotools check-missing-modalities` command.
+  - `RESULTS_DIRECTORY` (Path) is the path to the folder where output TSV files will be written.
 
 Options:
 
@@ -78,13 +78,13 @@ Options:
   Sessions which do not include the modality will be excluded from the outputs.
   The name of the modality must correspond to a column of the TSV files in `missing_mods`.
   Default value: `t1w`.
-  - `--diagnoses` (list of str) is the list of the labels that will be extracted.
+  - `--diagnoses` (List[str]) is the list of the labels that will be extracted.
    These labels must be chosen from {AD,CN,MCI,sMCI,pMCI}. Default will only process AD and CN labels.
   - `--time_horizon` (int) is the time horizon in months that is used to assess the stability of the MCI subjects.
   Default value: `36`.
-  - `--restriction_tsv` (str) is a path to a TSV file containing the list of sessions that should be used.
+  - `--restriction_tsv` (Path) is a path to a TSV file containing the list of sessions that should be used.
   This argument is useful to integrate the result of a quality check procedure. Default will not perform any restriction.
-  - `--variables_of_interest` (list of str) is a list of columns present in `MERGED_TSV` that will be included
+  - `--variables_of_interest` (List[str]) is a list of columns present in `MERGED_TSV` that will be included
   in the outputs.
   - `--keep_smc` (bool) if given the SMC participants are kept in the `CN.tsv` file.
   Default setting remove these participants.
@@ -126,7 +126,7 @@ clinicadl tsvtool split FORMATTED_DATA_DIRECTORY
 ```
 where:
 
-  - `FORMATTED_DATA_DIRECTORY` (path) is the folder containing a TSV file per label which is going to be split 
+  - `FORMATTED_DATA_DIRECTORY` (Path) is the folder containing a TSV file per label which is going to be split 
   (output of `clinicadl tsvtool getlabels|split|kfold`).
 
 Options:
@@ -145,9 +145,9 @@ Options:
   - `--MCI_sub_categories` (bool) is a flag that disables the special treatment of the MCI set and its subsets.
   This will allow sets with more similar age and sex distributions, but it will cause 
   data leakage for transfer learning tasks involving these sets. Default value: `False`.
-  - `--p_age_threshold` is the threshold on the p-value used for the T-test on age distributions.
+  - `--p_age_threshold` (float) is the threshold on the p-value used for the T-test on age distributions.
   Default value: `0.80`.
-  - `--p_sex_threshold` is the threshold on the p-value used for the chi2 test on sex distributions.
+  - `--p_sex_threshold` (float) is the threshold on the p-value used for the chi2 test on sex distributions.
   Default value: `0.80`.
 
 ### Output tree
@@ -192,7 +192,7 @@ Options:
 
   - `--subset_name` (str) is the name of the subset that is complementary to train.
   Default value: `validation`.
-  - `--n_splits` (int) Value of k. If 0 is given, all subjects are considered as test subjects.
+  - `--n_splits` (int) is the value of k. If 0 is given, all subjects are considered as test subjects.
   Default value: `5`.
   - `--no-mci_sub_categories` (bool) is a flag that disables the special treatment of the MCI set and its subsets.
   This will cause data leakage for transfer learning tasks involving these sets. Default value: `False`.
@@ -248,11 +248,11 @@ clinicadl tsvtool analysis MERGED_TSV FORMATTED_DATA_DIRECTORY RESULTS_DIRECTORY
 ```
 where:
 
-  - `MERGED_TSV` (str) is the output file of the `clinica iotools merge-tsv` or `clinicadl tsvtool restrict` commands.
-  - `FORMATTED_DATA_DIRECTORY` (path) is a folder containing one TSV file per label (output of `clinicadl tsvtool getlabels|split|kfold`).
-  - `RESULTS_DIRECTORY` (path) is the path to the TSV file that will be written (filename included).
+  - `MERGED_TSV` (Path) is the output file of the `clinica iotools merge-tsv` or `clinicadl tsvtool restrict` commands.
+  - `FORMATTED_DATA_DIRECTORY` (Path) is a folder containing one TSV file per label (output of `clinicadl tsvtool getlabels|split|kfold`).
+  - `RESULTS_DIRECTORY` (Path) is the path to the TSV file that will be written (filename included).
 
 Options:
 
-  - `--diagnoses` (list of str) is the list of the labels that will be extracted.
+  - `--diagnoses` (List[str]) is the list of the labels that will be extracted.
    These labels must be chosen from {AD,CN,MCI,sMCI,pMCI}. Default will only process AD and CN labels.

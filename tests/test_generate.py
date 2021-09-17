@@ -1,12 +1,13 @@
 # coding: utf8
 
 import os
-from os.path import abspath, exists, join
+from os.path import abspath
+from typing import List
 
 import pytest
 
 
-@pytest.fixture(params=["generate_trivial", "generate_random"])
+@pytest.fixture(params=["generate_trivial", "generate_random", "generate_shepplogan"])
 def generate_commands(request):
     if request.param == "generate_trivial":
         data_caps_folder = "data/dataset/OasisCaps_example/"
@@ -21,9 +22,7 @@ def generate_commands(request):
         ]
         output_reference = [
             "data.tsv",
-            "subjects_sessions_list.tsv",
             "missing_mods_ses-M00.tsv",
-            "subjects_sessions_list.tsv",
             "sub-TRIV0_ses-M00_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
             "sub-TRIV1_ses-M00_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
             "sub-TRIV2_ses-M00_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
@@ -51,7 +50,6 @@ def generate_commands(request):
         ]
         output_reference = [
             "data.tsv",
-            "subjects_sessions_list.tsv",
             "missing_mods_ses-M00.tsv",
             "sub-RAND0_ses-M00_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
             "sub-RAND1_ses-M00_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
@@ -74,37 +72,61 @@ def generate_commands(request):
             "sub-RAND8_ses-M00_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
             "sub-RAND9_ses-M00_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
         ]
+
+    elif request.param == "generate_shepplogan":
+        n_subjects = 10
+        output_folder = "data/dataset/shepplogan_example"
+        test_input = [
+            "generate",
+            "shepplogan",
+            output_folder,
+            "--n_subjects",
+            f"{n_subjects}",
+        ]
+        output_reference = (
+            ["data.tsv", "missing_mods_ses-M00.tsv"]
+            + [
+                f"sub-CLNC%i%04d_ses-M00_space-SheppLogan_axis-axi_channel-single_slice-0_phantom.pt"
+                % (i, j)
+                for i in range(2)
+                for j in range(n_subjects)
+            ]
+            + [
+                f"sub-CLNC%i%04d_ses-M00_space-SheppLogan_phantom.nii.gz" % (i, j)
+                for i in range(2)
+                for j in range(n_subjects)
+            ]
+        )
     else:
-        raise NotImplementedError("Test %s is not implemented." % request.param)
+        raise NotImplementedError(f"Test {request.param} is not implemented.")
 
     return test_input, output_folder, output_reference
 
 
 def test_generate(generate_commands):
 
-    test_input = generate_commands[0]
-    output_folder = generate_commands[1]
-    output_ref = generate_commands[2]
+    test_input, output_folder, output_ref = generate_commands
 
     flag_error = not os.system("clinicadl " + " ".join(test_input))
 
     assert flag_error
-    # assert exists(output_folder)
-    assert not compare_folder_with_files(abspath(output_folder), output_ref)
+    assert compare_folder_with_files(abspath(output_folder), output_ref)
 
 
-def compare_folder_with_files(folder1, list_of_files):
+def compare_folder_with_files(folder: str, file_list: List[str]) -> bool:
     """Compare file existing in two folders
 
     Args:
-        folder1: first folder to compare
-        list_of_files: list of files in a second folder to compare
+        folder: path to a folder
+        file_list: list of files which must be found in folder
 
-    Output: list of files not present in folder1
+    Returns:
+        True if files in file_list were all found in folder.
     """
 
-    files1 = []
-    for root, dirs, files in os.walk(folder1):
-        files1.extend(files)
+    folder_list = []
+    for root, dirs, files in os.walk(folder):
+        folder_list.extend(files)
 
-    return [f for f in files if f not in files1]
+    print(f"Missing files {set(file_list) - set(folder_list)}")
+    return set(file_list).issubset(set(folder_list))

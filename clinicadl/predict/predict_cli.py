@@ -26,14 +26,6 @@ from clinicadl.utils import cli_param
     help="Set this option to --no_labels if your dataset does not contain ground truth labels.",
 )
 @click.option(
-    "--use_extracted_features",
-    type=bool,
-    default=False,
-    is_flag=True,
-    help="""If True the extracted modes are used, otherwise they
-            will be extracted on-the-fly from the image (if mode != `image`).""",
-)
-@click.option(
     "--selection_metrics",
     "-sm",
     type=click.Choice(["loss", "balanced_accuracy"]),
@@ -53,8 +45,7 @@ from clinicadl.utils import cli_param
 @click.option(
     "--diagnoses",
     "-d",
-    type=click.Choice(["AD", "CN", "MCI", "sMCI", "pMCI"]),
-    # default=(),
+    type=str,
     multiple=True,
     help="List of diagnoses used for inference. Is used only if PARTICIPANTS_TSV leads to a folder.",
 )
@@ -62,7 +53,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.n_proc
 @cli_param.option.batch_size
 def cli(
-    input_maps,
+    input_maps_directory,
     data_group,
     caps_directory,
     participants_tsv,
@@ -89,7 +80,7 @@ def cli(
     from .predict import predict
 
     predict(
-        maps_dir=input_maps,
+        maps_dir=input_maps_directory,
         data_group=data_group,
         caps_directory=caps_directory,
         tsv_path=participants_tsv,

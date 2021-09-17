@@ -2,13 +2,15 @@
 
 import os
 import shutil
+from logging import getLogger
 from os import path
+from typing import List
 
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 
-from clinicadl.utils.maps_manager.iotools import commandline_to_json, return_logger
+from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.tsvtools_utils import (
     extract_baseline,
     remove_sub_labels,
@@ -16,32 +18,30 @@ from clinicadl.utils.tsvtools_utils import (
 )
 
 sex_dict = {"M": 0, "F": 1}
+logger = getLogger("clinicadl")
 
 
 def write_splits(
-    diagnosis,
-    diagnosis_df,
-    split_label,
-    n_splits,
-    train_path,
-    test_path,
-    supplementary_diagnoses=None,
-):
+    diagnosis: str,
+    diagnosis_df: pd.DataFrame,
+    split_label: str,
+    n_splits: int,
+    train_path: str,
+    test_path: str,
+    supplementary_diagnoses: List[str] = None,
+) -> None:
     """
     Split data at the subject-level in training and test to have equivalent distributions in split_label.
+    Writes test and train Dataframes.
 
     Args:
-        diagnosis: (str) diagnosis on which the split is done
+        diagnosis: diagnosis on which the split is done
         diagnosis_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-        split_label: (str) label on which the split is done (categorical variables)
-        n_splits: (int) Number of folds in the k-fold split
-        train_path: (str) Path to the training data.
-        test_path: (str) Path to the test data.
-        supplementary_diagnoses: (list of str) List of supplementary diagnoses to add to the data.
-
-    Returns:
-        train_df (DataFrame) subjects in the train set
-        test_df (DataFrame) subjects in the test set
+        split_label: label on which the split is done (categorical variables)
+        n_splits: Number of folds in the k-fold split
+        train_path: Path to the training data.
+        test_path: Path to the test data.
+        supplementary_diagnoses: List of supplementary diagnoses to add to the data.
     """
 
     baseline_df = extract_baseline(diagnosis_df)
@@ -108,34 +108,29 @@ def write_splits(
 
 
 def split_diagnoses(
-    formatted_data_path,
-    n_splits=5,
-    subset_name="validation",
-    MCI_sub_categories=True,
-    stratification=None,
-    verbose=0,
+    formatted_data_path: str,
+    n_splits: int = 5,
+    subset_name: str = "validation",
+    MCI_sub_categories: bool = True,
+    stratification: str = None,
 ):
     """
     Performs a k-fold split for each label independently on the subject level.
     The train folder will contain two lists per fold per diagnosis (baseline and longitudinal),
     whereas the test folder will only include the list of baseline sessions for each fold.
 
-    Args:
-        formatted_data_path (str): Path to the folder containing data extracted by clinicadl tsvtool getlabels.
-        n_splits (int): Number of folds in the k-fold split.
-        subset_name (str): Name of the subset that is complementary to train.
-        MCI_sub_categories (bool): If True, manages MCI sub-categories to avoid data leakage.
-        stratification (str): Name of variable used to stratify k-fold.
-        verbose (int): level of verbosity.
-
-    Returns:
-         writes three files per split per <label>.tsv file present in formatted_data_path:
+    Writes three files per split per <label>.tsv file present in formatted_data_path:
             - formatted_data_path/train_splits-<n_splits>/split-<split>/<label>.tsv
             - formatted_data_path/train_splits-<n_splits>/split-<split>/<label>_baseline.tsv
             - formatted_data_path/<subset_name>_splits-<n_splits>/split-<split>/<label>_baseline.tsv
-    """
-    logger = return_logger(verbose, "k-fold split")
 
+    Args:
+        formatted_data_path: Path to the folder containing data extracted by clinicadl tsvtool getlabels.
+        n_splits: Number of folds in the k-fold split.
+        subset_name: Name of the subset that is complementary to train.
+        MCI_sub_categories: If True, manages MCI sub-categories to avoid data leakage.
+        stratification: Name of variable used to stratify k-fold.
+    """
     commandline_to_json(
         {
             "output_dir": formatted_data_path,
@@ -200,7 +195,7 @@ def split_diagnoses(
         diagnosis_df = pd.read_csv(path.join(results_path, "MCI.tsv"), sep="\t")
         MCI_df = diagnosis_df.set_index(["participant_id", "session_id"])
         MCI_df, supplementary_diagnoses = remove_sub_labels(
-            MCI_df, ["sMCI", "pMCI"], diagnosis_df_paths, results_path, logger=logger
+            MCI_df, ["sMCI", "pMCI"], diagnosis_df_paths, results_path
         )
 
         if len(supplementary_diagnoses) == 0:

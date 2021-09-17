@@ -13,10 +13,9 @@ class KFoldSplit(SplitManager):
         baseline=False,
         multi_cohort=False,
         folds=None,
-        logger=None,
     ):
         super().__init__(
-            caps_directory, tsv_path, diagnoses, baseline, multi_cohort, folds, logger
+            caps_directory, tsv_path, diagnoses, baseline, multi_cohort, folds
         )
         self.n_splits = n_splits
 

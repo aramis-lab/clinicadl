@@ -1,10 +1,13 @@
 # coding: utf8
 
 from copy import copy
+from logging import getLogger
 from os import path
 
 import numpy as np
 import pandas as pd
+
+logger = getLogger("clinicadl")
 
 
 def neighbour_session(session, session_list, neighbour):
@@ -181,15 +184,7 @@ def retrieve_longitudinal(df, diagnosis_df):
     return final_df
 
 
-def remove_sub_labels(
-    diagnosis_df, sub_labels, diagnosis_df_paths, results_path, logger=None
-):
-
-    from clinicadl.utils.maps_manager.iotools import return_logger
-
-    if logger is None:
-        logger = return_logger(2, "remove sub labels")
-
+def remove_sub_labels(diagnosis_df, sub_labels, diagnosis_df_paths, results_path):
     supplementary_diagnoses = []
 
     logger.debug("Before subjects removal")
