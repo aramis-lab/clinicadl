@@ -39,6 +39,13 @@ from clinicadl.utils import cli_param
     is_flag=True,
     help="Performs multi-cohort interpretation. In this case, caps_directory and tsv_path must be paths to TSV files.",
 )
+@click.option(
+    "--diagnoses",
+    "-d",
+    type=str,
+    multiple=True,
+    help="List of diagnoses used for inference. Is used only if PARTICIPANTS_TSV leads to a folder.",
+)
 # @click.option(
 #     "-d",
 #     "--diagnosis",
@@ -49,7 +56,7 @@ from clinicadl.utils import cli_param
 @click.option(
     "--target_node",
     default=0,
-    type=str,
+    type=int,
     help="Which target node the gradients explain. Default takes the first output node.",
 )
 # @click.option(
@@ -76,8 +83,7 @@ def cli(
     participants_tsv,
     selection_metrics,
     multi_cohort,
-    # diagnosis,
-    # baseline,
+    diagnoses,
     target_node,
     save_individual,
     batch_size,
@@ -107,6 +113,7 @@ def cli(
         tsv_path=participants_tsv,
         selection_metrics=selection_metrics,
         multi_cohort=multi_cohort,
+        diagnoses=diagnoses,
         target_node=target_node,
         save_individual=save_individual,
         batch_size=batch_size,

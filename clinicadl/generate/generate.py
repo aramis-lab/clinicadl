@@ -4,53 +4,28 @@
 This file generates data for trivial or intractable (random) data for binary classification.
 """
 import tarfile
-from copy import copy
 from os import makedirs
-from os.path import basename, exists, join
-from typing import Dict, Optional
+from os.path import basename, dirname, exists, join
+from typing import Dict, Optional, Tuple
 
 import nibabel as nib
 import numpy as np
 import pandas as pd
 import torch
-from clinica.utils.input_files import T1W_LINEAR, T1W_LINEAR_CROPPED, pet_linear_nii
 from clinica.utils.inputs import RemoteFileStructure, clinica_file_reader, fetch_file
 
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
+from clinicadl.utils.preprocessing import write_preprocessing
 from clinicadl.utils.tsvtools_utils import extract_baseline
 
 from .generate_utils import (
+    find_file_type,
     generate_shepplogan_phantom,
     im_loss_roi_gaussian_distribution,
     load_and_check_tsv,
+    write_missing_mods,
 )
-
-
-def find_file_type(
-    preprocessing: str,
-    uncropped_image: bool,
-    acq_label: str,
-    suvr_reference_region: str,
-) -> Dict[str, str]:
-    if preprocessing == "t1-linear":
-        if uncropped_image:
-            file_type = T1W_LINEAR
-        else:
-            file_type = T1W_LINEAR_CROPPED
-    elif preprocessing == "pet-linear":
-        if acq_label is None or suvr_reference_region is None:
-            raise ValueError(
-                "acq_label and suvr_reference_region must be defined "
-                "when using `pet-linear` preprocessing."
-            )
-        file_type = pet_linear_nii(acq_label, suvr_reference_region, uncropped_image)
-    else:
-        raise NotImplementedError(
-            f"Generation of synthetic data is not implemented for preprocessing {preprocessing}"
-        )
-
-    return file_type
 
 
 def generate_random_dataset(
@@ -157,17 +132,7 @@ def generate_random_dataset(
         makedirs(noisy_image_nii_path, exist_ok=True)
         nib.save(noisy_image_nii, join(noisy_image_nii_path, noisy_image_nii_filename))
 
-    missing_path = join(output_dir, "missing_mods")
-    makedirs(missing_path, exist_ok=True)
-
-    sessions = output_df.session_id.unique()
-    for session in sessions:
-        session_df = output_df[output_df.session_id == session]
-        out_df = copy(session_df[["participant_id"]])
-        out_df["synthetic"] = [1] * len(out_df)
-        out_df.to_csv(
-            join(missing_path, f"missing_mods_{session}.tsv"), sep="\t", index=False
-        )
+    write_missing_mods(output_dir, output_df)
 
 
 def generate_trivial_dataset(
@@ -187,7 +152,7 @@ def generate_trivial_dataset(
     Generates a fully separable dataset.
 
     Generates a dataset, based on the images of the CAPS directory, where a
-    half of the image is processed using a mask to oclude a specific region.
+    half of the image is processed using a mask to occlude a specific region.
     This procedure creates a dataset fully separable (images with half-right
     processed and image with half-left processed)
 
@@ -298,9 +263,9 @@ def generate_trivial_dataset(
         filename_pattern = "_".join(input_filename.split("_")[2::])
 
         trivial_image_nii_dir = join(
-            output_dir, "subjects", participant_id, session_id, preprocessing
+            output_dir, "subjects", f"sub-TRIV{i}", session_id, preprocessing
         )
-        trivial_image_nii_filename = f"{participant_id}_{session_id}_{filename_pattern}"
+        trivial_image_nii_filename = f"sub-TRIV{i}_{session_id}_{filename_pattern}"
 
         makedirs(trivial_image_nii_dir, exist_ok=True)
 
@@ -314,6 +279,7 @@ def generate_trivial_dataset(
         trivial_image_nii.to_filename(
             join(trivial_image_nii_dir, trivial_image_nii_filename)
         )
+        print(join(trivial_image_nii_dir, trivial_image_nii_filename))
 
         # Append row to output tsv
         row = [f"sub-TRIV{i}", session_id, diagnosis_list[label], 60, "F"]
@@ -322,81 +288,15 @@ def generate_trivial_dataset(
 
     output_df.to_csv(join(output_dir, "data.tsv"), sep="\t", index=False)
 
-    missing_path = join(output_dir, "missing_mods")
-    makedirs(missing_path, exist_ok=True)
-
-    sessions = output_df.session_id.unique()
-    for session in sessions:
-        session_df = output_df[output_df.session_id == session]
-        out_df = copy(session_df[["participant_id"]])
-        out_df["synthetic"] = [1] * len(out_df)
-        out_df.to_csv(
-            join(missing_path, f"missing_mods_{session}.tsv"), sep="\t", index=False
-        )
+    write_missing_mods(output_dir, output_df)
 
 
 def generate_shepplogan_dataset(
-    output_dir, img_size, labels_distribution, samples=100, smoothing=True
-):
-
-    check_and_clean(join(output_dir, "subjects"))
-    commandline_to_json(
-        {
-            "output_dir": output_dir,
-            "img_size": img_size,
-            "labels_distribution": labels_distribution,
-            "samples": samples,
-            "smoothing": smoothing,
-        }
-    )
-    columns = ["participant_id", "session_id", "diagnosis", "subtype"]
-    data_df = pd.DataFrame(columns=columns)
-
-    for i, label in enumerate(labels_distribution.keys()):
-        samples_per_subtype = np.array(labels_distribution[label]) * samples
-        for subtype in range(len(samples_per_subtype)):
-            for j in range(int(samples_per_subtype[subtype])):
-                participant_id = "sub-CLNC%i%04d" % (
-                    i,
-                    j + np.sum(samples_per_subtype[:subtype:]).astype(int),
-                )
-                session_id = "ses-M00"
-                row_df = pd.DataFrame(
-                    [[participant_id, session_id, label, subtype]], columns=columns
-                )
-                data_df = data_df.append(row_df)
-
-                # Image generation
-                path_out = join(
-                    output_dir,
-                    "subjects",
-                    "%s_%s%s.pt"
-                    % (participant_id, session_id, FILENAME_TYPE["shepplogan"]),
-                )
-                img = generate_shepplogan_phantom(
-                    img_size, label=subtype, smoothing=smoothing
-                )
-                torch_img = torch.from_numpy(img).float().unsqueeze(0)
-                torch.save(torch_img, path_out)
-
-    data_df.to_csv(join(output_dir, "data.tsv"), sep="\t", index=False)
-
-    missing_path = join(output_dir, "missing_mods")
-    if not exists(missing_path):
-        makedirs(missing_path)
-
-    sessions = data_df.session_id.unique()
-    for session in sessions:
-        session_df = data_df[data_df.session_id == session]
-        out_df = copy(session_df[["participant_id"]])
-        out_df["t1w"] = [1] * len(out_df)
-        out_df.to_csv(
-            join(missing_path, "missing_mods_%s.tsv" % session), sep="\t", index=False
-        )
-
-
-def generate_shepplogan_dataset(
-    output_dir, img_size, labels_distribution, samples=100, smoothing=True
+    output_dir: str,
+    img_size: int,
+    labels_distribution: Dict[str, Tuple[float, float, float]],
+    samples: int = 100,
+    smoothing: bool = True,
 ):
 
     check_and_clean(join(output_dir, "subjects"))
@@ -425,29 +325,56 @@ def generate_shepplogan_dataset(
             data_df = data_df.append(row_df)
 
             # Image generation
-            path_out = join(
+            slice_path = join(
                 output_dir,
                 "subjects",
-                "%s_%s%s.pt"
-                % (participant_id, session_id, FILENAME_TYPE["shepplogan"]),
+                participant_id,
+                session_id,
+                "deeplearning_prepare_data",
+                "slice_based",
+                "custom",
+                f"{participant_id}_{session_id}_space-SheppLogan_axis-axi_channel-single_slice-0_phantom.pt",
             )
-            img = generate_shepplogan_phantom(
+            slice_dir = dirname(slice_path)
+            makedirs(slice_dir, exist_ok=True)
+
+            slice_np = generate_shepplogan_phantom(
                 img_size, label=subtype, smoothing=smoothing
             )
-            torch_img = torch.from_numpy(img).float().unsqueeze(0)
-            torch.save(torch_img, path_out)
+            slice_tensor = torch.from_numpy(slice_np).float().unsqueeze(0)
+            torch.save(slice_tensor, slice_path)
 
+            image_path = join(
+                output_dir,
+                "subjects",
+                participant_id,
+                session_id,
+                "shepplogan",
+                f"{participant_id}_{session_id}_space-SheppLogan_phantom.nii.gz",
+            )
+            image_dir = dirname(image_path)
+            makedirs(image_dir, exist_ok=True)
+            with open(image_path, "w") as f:
+                f.write("0")
+
+    # Save data
     data_df.to_csv(join(output_dir, "data.tsv"), sep="\t", index=False)
 
-    missing_path = join(output_dir, "missing_mods")
-    if not exists(missing_path):
-        makedirs(missing_path)
-
-    sessions = data_df.session_id.unique()
-    for session in sessions:
-        session_df = data_df[data_df.session_id == session]
-        out_df = copy(session_df[["participant_id"]])
-        out_df["t1w"] = [1] * len(out_df)
-        out_df.to_csv(
-            join(missing_path, "missing_mods_%s.tsv" % session), sep="\t", index=False
-        )
+    # Save preprocessing JSON file
+    preprocessing_dict = {
+        "preprocessing": "custom",
+        "mode": "slice",
+        "use_uncropped_image": False,
+        "prepare_dl": True,
+        "slice_direction": 2,
+        "slice_mode": "single",
+        "discarded_slices": 0,
+        "num_slices": 1,
+        "file_type": {
+            "pattern": f"*_space-SheppLogan_phantom.nii.gz",
+            "description": "Custom suffix",
+            "needed_pipeline": "shepplogan",
+        },
+    }
+    write_preprocessing(preprocessing_dict, output_dir)
+    write_missing_mods(output_dir, data_df)

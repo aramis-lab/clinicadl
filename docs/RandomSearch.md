@@ -31,13 +31,13 @@ Moreover, there should be a CAPS, obtained running the `t1-linear` pipeline of C
 
 This task can be run with the following command line:
 ```Text
-clinicadl random-search <launch_directory> <name>
+clinicadl random-search LAUNCH_DIRECTORY NAME
 
 ```
 where:
 
-- `launch_directory` (str) is the parent directory of output folder containing the file `random_search.toml`.
-- `name` (str) is the name of the output folder containing the experiment.
+- `LAUNCH_DIRECTORY` (Path) is the parent directory of output folder containing the file `random_search.toml`.
+- `NAME` (str) is the name of the output folder containing the experiment.
 
 ## Content of `random_search.toml`
 
@@ -265,7 +265,7 @@ The scheme of the corresponding architecture is the following:
     "conv1": {"in_channels": 16, "out_channels": 32, "n_conv": 3, "d_reduction": "stride"}, 
     "conv2": {"in_channels": 32, "out_channels": 64, "n_conv": 2, "d_reduction": "stride"}},
   "fc": 
-    {"FC0": {"in_features": 21952, "out_features": 2}},
+    {"FC0": {"in_features": 21952, "out_features": 2}}
 }
 ```
 

@@ -3,7 +3,7 @@ import click
 from clinicadl.utils import cli_param
 
 
-@click.command(name="predict")
+@click.command(name="save-tensor")
 @cli_param.argument.input_maps
 @cli_param.argument.data_group
 @click.option(
@@ -20,11 +20,14 @@ from clinicadl.utils import cli_param
     If it includes the filename will load the TSV file directly.
     Else will load the baseline TSV files of wanted diagnoses produced by `tsvtool split`.""",
 )
-@click.option(
-    "--labels/--no_labels",
-    default=False,
-    help="Set this option to --no_labels if your dataset does not contain ground truth labels.",
-)
+# @click.option(
+#     "--use_extracted_features",
+#     type=bool,
+#     default=False,
+#     is_flag=True,
+#     help="""If True the extracted modes are used, otherwise they
+#             will be extracted on-the-fly from the image (if mode != `image`).""",
+# )
 @click.option(
     "--selection_metrics",
     "-sm",
@@ -45,7 +48,8 @@ from clinicadl.utils import cli_param
 @click.option(
     "--diagnoses",
     "-d",
-    type=str,
+    type=click.Choice(["AD", "CN", "MCI", "sMCI", "pMCI"]),
+    # default=(),
     multiple=True,
     help="List of diagnoses used for inference. Is used only if PARTICIPANTS_TSV leads to a folder.",
 )
@@ -60,35 +64,33 @@ def cli(
     gpu,
     n_proc,
     batch_size,
-    labels,
-    use_extracted_features,
+    # use_extracted_features,
     selection_metrics,
     diagnoses,
     multi_cohort,
 ):
-    """Infer the outputs of a trained model on a test set.
+    """Save the output tensors of a trained model on a test set.
 
     INPUT_MAPS_DIRECTORY is the MAPS folder from where the model used for prediction will be loaded.
 
-    DATA_GROUP is the name of the subjects and sessions list used for the interpretation.
+    DATA_GROUP is the name of the subjects and sessions list used to compute outputs.
     """
     from clinicadl.utils.cmdline_utils import check_gpu
 
     if gpu:
         check_gpu()
 
-    from .predict import predict
+    from .save_tensor import save_tensor
 
-    predict(
+    save_tensor(
         maps_dir=input_maps_directory,
         data_group=data_group,
         caps_directory=caps_directory,
         tsv_path=participants_tsv,
-        labels=labels,
         gpu=gpu,
         num_workers=n_proc,
         batch_size=batch_size,
-        prepare_dl=use_extracted_features,
+        # prepare_dl=use_extracted_features,
         selection_metrics=selection_metrics,
         diagnoses=diagnoses,
         multi_cohort=multi_cohort,

@@ -13,18 +13,18 @@ from clinicadl.utils import cli_param
     default=128,
 )
 @click.option(
-    "--CN_subtypes_distribution",
-    "-Csd",
+    "--cn_subtypes_distribution",
+    "-csd",
     type=float,
-    multiple=True,
+    multiple=3,
     default=(1.0, 0.0, 0.0),
     help="Probability of each subtype to be drawn in CN label.",
 )
 @click.option(
-    "--AD_subtypes_distribution",
-    "-Asd",
+    "--ad_subtypes_distribution",
+    "-asd",
     type=float,
-    multiple=True,
+    multiple=3,
     default=(0.05, 0.85, 0.10),
     help="Probability of each subtype to be drawn in AD label.",
 )
@@ -35,9 +35,9 @@ from clinicadl.utils import cli_param
 )
 def cli(
     generated_caps_directory,
-    img_size,
-    AD_subtypes_distribution,
-    CN_subtypes_distribution,
+    image_size,
+    ad_subtypes_distribution,
+    cn_subtypes_distribution,
     n_subjects,
     smoothing,
 ):
@@ -49,12 +49,12 @@ def cli(
     from .generate import generate_shepplogan_dataset
 
     labels_distribution = {
-        "AD": AD_subtypes_distribution,
-        "CN": CN_subtypes_distribution,
+        "AD": ad_subtypes_distribution,
+        "CN": cn_subtypes_distribution,
     }
     generate_shepplogan_dataset(
         output_dir=generated_caps_directory,
-        img_size=img_size,
+        img_size=image_size,
         labels_distribution=labels_distribution,
         samples=n_subjects,
         smoothing=smoothing,

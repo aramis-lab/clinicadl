@@ -1,8 +1,8 @@
 # coding: utf8
 
-import logging
 import os
 import shutil
+from logging import getLogger
 from os import path
 
 import numpy as np
@@ -10,7 +10,7 @@ import pandas as pd
 from scipy.stats import ttest_ind
 from sklearn.model_selection import StratifiedShuffleSplit
 
-from clinicadl.utils.maps_manager.iotools import commandline_to_json, return_logger
+from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.tsvtools_utils import (
     category_conversion,
     chi2,
@@ -23,6 +23,7 @@ from clinicadl.utils.tsvtools_utils import (
 )
 
 sex_dict = {"M": 0, "F": 1}
+logger = getLogger("clinicadl")
 
 
 def create_split(
@@ -34,7 +35,6 @@ def create_split(
     p_sex_threshold=0.80,
     supplementary_train_df=None,
     ignore_demographics=False,
-    logger=None,
 ):
     """
     Split data at the subject-level in training and test set with equivalent age, sex and split_label distributions
@@ -51,16 +51,11 @@ def create_split(
         supplementary_train_df: (DataFrame) Add data that must be included in the train set.
         ignore_demographics: (bool): If True the diagnoses are split without taking into account the demographics
             distributions (age, sex).
-        logger: Logger object from logging library
 
     Returns:
         train_df (DataFrame) subjects in the train set
         test_df (DataFrame) subjects in the test set
     """
-
-    if logger is None:
-        logger = logging
-        logger.basicConfig(level=logging.DEBUG)
 
     if supplementary_train_df is not None:
         sup_train_sex = [sex_dict[x] for x in supplementary_train_df.sex.values]
@@ -135,9 +130,7 @@ def create_split(
                         train_df.reset_index(drop=True, inplace=True)
 
                 n_try += 1
-        logger.info(
-            "Split for diagnosis %s was found after %i trials" % (diagnosis, n_try)
-        )
+        logger.info(f"Split for diagnosis {diagnosis} was found after {n_try} trials.")
 
     else:
         idx = np.arange(len(baseline_df))
@@ -189,8 +182,6 @@ def split_diagnoses(
             - formatted_data_path/train/<label>_baseline.tsv
             - formatted_data_path/<subset_name>/<label>_baseline.tsv
     """
-    logger = return_logger(verbose, "split")
-
     commandline_to_json(
         {
             "output_dir": formatted_data_path,
@@ -255,7 +246,6 @@ def split_diagnoses(
                 p_age_threshold=p_age_threshold,
                 p_sex_threshold=p_sex_threshold,
                 ignore_demographics=ignore_demographics,
-                logger=logger,
             )
             # Save baseline splits
             train_df.to_csv(
@@ -300,7 +290,7 @@ def split_diagnoses(
             n_test = int(n_test * len(baseline_df))
 
         MCI_df, supplementary_diagnoses = remove_sub_labels(
-            MCI_df, ["sMCI", "pMCI"], diagnosis_df_paths, results_path, logger=logger
+            MCI_df, ["sMCI", "pMCI"], diagnosis_df_paths, results_path
         )
         if len(supplementary_diagnoses) == 0:
             raise ValueError(
@@ -340,7 +330,6 @@ def split_diagnoses(
             p_age_threshold=p_age_threshold,
             p_sex_threshold=p_sex_threshold,
             ignore_demographics=ignore_demographics,
-            logger=logger,
             supplementary_train_df=supplementary_train_df,
         )
 
