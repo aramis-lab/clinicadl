@@ -5,6 +5,7 @@ import click
 from clinicadl.extract.extract_cli import cli as extract_cli
 from clinicadl.generate.generate_cli import cli as generate_cli
 from clinicadl.interpret.interpret_cli import cli as interpret_cli
+from clinicadl.list_models.list_models_cli import cli as list_models
 from clinicadl.predict.predict_cli import cli as predict_cli
 from clinicadl.quality_check.qc_cli import cli as qc_cli
 from clinicadl.random_search.random_search_cli import cli as random_search_cli
@@ -46,6 +47,7 @@ cli.add_command(predict_cli)
 cli.add_command(interpret_cli)
 cli.add_command(qc_cli)
 cli.add_command(random_search_cli)
+cli.add_command(list_models)
 
 if __name__ == "__main__":
     cli()
