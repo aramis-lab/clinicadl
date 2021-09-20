@@ -129,3 +129,12 @@ custom_suffix = click.option(
         "`segm-whitematter_probability.nii.gz`"
     ),
 )
+# Data group
+overwrite = click.option(
+    "--overwrite",
+    "-o",
+    default=False,
+    is_flag=True,
+    help="Will overwrite data group if existing. Please give caps_directory and partcipants_tsv to"
+    " define new data group.",
+)

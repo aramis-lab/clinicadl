@@ -4,7 +4,7 @@ import subprocess
 from datetime import datetime
 from logging import getLogger
 from os import listdir, makedirs, path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import torch
@@ -19,6 +19,7 @@ from clinicadl.utils.caps_dataset.data import (
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.maps_manager.logwriter import LogWriter, setup_logging
 from clinicadl.utils.metric_module import RetainBest
+from clinicadl.utils.network.network import Network
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
 
 logger = getLogger("clinicadl")
@@ -156,7 +157,7 @@ class MapsManager:
         folds=None,
         selection_metrics=None,
         multi_cohort=False,
-        diagnoses=None,
+        diagnoses=(),
         use_labels=True,
         batch_size=None,
         num_workers=None,
@@ -204,7 +205,7 @@ class MapsManager:
         if tsv_path is not None:
             group_df = load_data_test(
                 tsv_path,
-                diagnoses if diagnoses is not None else self.diagnoses,
+                diagnoses if len(diagnoses) != 0 else self.diagnoses,
                 multi_cohort=multi_cohort,
             )
 
@@ -294,7 +295,7 @@ class MapsManager:
         folds=None,
         selection_metrics=None,
         multi_cohort=False,
-        diagnoses=None,
+        diagnoses=(),
         use_cpu=None,
         overwrite=False,
     ):
@@ -336,7 +337,7 @@ class MapsManager:
         if tsv_path is not None:
             group_df = load_data_test(
                 tsv_path,
-                diagnoses if diagnoses is not None else self.diagnoses,
+                diagnoses if len(diagnoses) != 0 else self.diagnoses,
                 multi_cohort=multi_cohort,
             )
 
@@ -399,7 +400,7 @@ class MapsManager:
         folds=None,
         selection_metrics=None,
         multi_cohort=False,
-        diagnoses=None,
+        diagnoses=(),
         target_node=0,
         save_individual=False,
         batch_size=None,
@@ -428,7 +429,7 @@ class MapsManager:
                 Default uses the same as in training step.
             target_node (int): Node from which the interpretation is computed.
             save_individual (bool): If True saves the individual map of each participant / session couple.
-            batch_size (bool): If given, sets the value of batch_size, else use the same as in training step.
+            batch_size (int): If given, sets the value of batch_size, else use the same as in training step.
             num_workers (int): If given, sets the value of num_workers, else use the same as in training step.
             use_cpu (bool): If given, a new value for the device of the model will be computed.
             overwrite (bool): If True erase the occurrences of data_group.
@@ -463,7 +464,7 @@ class MapsManager:
         if tsv_path is not None:
             group_df = load_data_test(
                 tsv_path,
-                diagnoses if diagnoses is not None else self.diagnoses,
+                diagnoses if len(diagnoses) != 0 else self.diagnoses,
                 multi_cohort=multi_cohort,
             )
 
@@ -1127,6 +1128,7 @@ class MapsManager:
             self.caps_directory,
             train_df,
             self.preprocessing_dict,
+            multi_cohort=self.multi_cohort,
             label=self.label,
             label_code=label_code,
             train_transformations=None,
@@ -1265,7 +1267,7 @@ class MapsManager:
                     raise ValueError("Cannot overwrite train or validation data group.")
                 else:
                     shutil.rmtree(group_path)
-            elif None not in (df, caps_directory):
+            elif df is not None or caps_directory is not None:
                 raise ValueError(
                     f"Data group {data_group} is already defined. "
                     f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
@@ -1358,7 +1360,7 @@ class MapsManager:
         group_path = path.join(self.maps_path, "groups", data_group)
         makedirs(group_path)
 
-        columns = ["participant_id", "session_id"]
+        columns = ["participant_id", "session_id", "cohort"]
         if self.label in df.columns.values:
             columns += [self.label]
 
@@ -1400,18 +1402,23 @@ class MapsManager:
                 )
 
     def _write_weights(
-        self, state, metrics_dict, fold, network=None, filename="checkpoint.pth.tar"
+        self,
+        state: Dict[str, Any],
+        metrics_dict: Optional[Dict[str, bool]],
+        fold: int,
+        network: int = None,
+        filename: str = "checkpoint.pth.tar",
     ):
         """
         Update checkpoint and save the best model according to a set of metrics.
         If no metrics_dict is given, only the checkpoint is saved.
 
         Args:
-            state (dict[str,Any]): state of the training (model weights, epoch...)
-            metrics_dict (dict[str,bool]): output of RetainBest step
-            fold (int): fold number
-            network (int): network number (multi-network framework)
-            filename (str): name of the checkpoint file
+            state: state of the training (model weights, epoch...)
+            metrics_dict: output of RetainBest step
+            fold: fold number
+            network: network number (multi-network framework)
+            filename: name of the checkpoint file
         """
         checkpoint_dir = path.join(self.maps_path, f"fold-{fold}", "tmp")
         makedirs(checkpoint_dir, exist_ok=True)
@@ -1866,6 +1873,19 @@ class MapsManager:
             parameters["preprocessing_dict"]["file_type"] = file_type
 
         return parameters
+
+    def get_model(
+        self, fold: int = 0, selection_metric: str = None, network: int = None
+    ) -> Network:
+        selection_metric = self._check_selection_metric(fold, selection_metric)
+        if self.multi_network:
+            if network is None:
+                raise ValueError(
+                    "Please precise the network number that must be loaded."
+                )
+        return self._init_model(
+            self.maps_path, selection_metric, fold, network=network
+        )[0]
 
     def get_state_dict(
         self, fold=0, selection_metric=None, network=None, map_location=None

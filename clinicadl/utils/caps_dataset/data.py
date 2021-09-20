@@ -101,7 +101,7 @@ class CapsDataset(Dataset):
             return np.float32([target])
         # Classification case (label + label_code dict)
         else:
-            return self.label_code[target]
+            return self.label_code[str(target)]
 
     def __len__(self) -> int:
         return len(self.df) * self.elem_per_image
@@ -279,7 +279,7 @@ class CapsDatasetImage(CapsDataset):
         train_transformations: Optional[Callable] = None,
         label_presence: bool = True,
         label: str = None,
-        label_code: Dict[Any, int] = None,
+        label_code: Dict[str, int] = None,
         all_transformations: Optional[Callable] = None,
         multi_cohort: bool = False,
     ):
@@ -709,7 +709,7 @@ def return_dataset(
     preprocessing_dict: Dict[str, Any],
     all_transformations: Optional[Callable],
     label: str = None,
-    label_code: Dict[Any, int] = None,
+    label_code: Dict[str, int] = None,
     train_transformations: Optional[Callable] = None,
     cnn_index: int = None,
     label_presence: bool = True,

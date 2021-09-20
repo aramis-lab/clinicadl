@@ -22,7 +22,7 @@ from clinicadl.utils import cli_param
 )
 @click.option(
     "--labels/--no_labels",
-    default=False,
+    default=True,
     help="Set this option to --no_labels if your dataset does not contain ground truth labels.",
 )
 @click.option(
@@ -52,6 +52,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.use_gpu
 @cli_param.option.n_proc
 @cli_param.option.batch_size
+@cli_param.option.overwrite
 def cli(
     input_maps_directory,
     data_group,
@@ -61,10 +62,10 @@ def cli(
     n_proc,
     batch_size,
     labels,
-    use_extracted_features,
     selection_metrics,
     diagnoses,
     multi_cohort,
+    overwrite,
 ):
     """Infer the outputs of a trained model on a test set.
 
@@ -88,8 +89,8 @@ def cli(
         gpu=gpu,
         num_workers=n_proc,
         batch_size=batch_size,
-        prepare_dl=use_extracted_features,
         selection_metrics=selection_metrics,
         diagnoses=diagnoses,
         multi_cohort=multi_cohort,
+        overwrite=overwrite,
     )
