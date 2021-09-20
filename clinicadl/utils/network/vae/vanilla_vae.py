@@ -42,7 +42,12 @@ class VanillaDenseVAE(BaseVAE):
         )
 
         super(VanillaDenseVAE, self).__init__(
-            encoder, decoder, mu_layer, var_layer, use_cpu=use_cpu
+            encoder,
+            decoder,
+            mu_layer,
+            var_layer,
+            use_cpu=use_cpu,
+            is_3D=False,
         )
 
 
@@ -80,7 +85,12 @@ class VanillaSpatialVAE(BaseVAE):
         )
 
         super(VanillaSpatialVAE, self).__init__(
-            encoder, decoder, mu_layer, var_layer, use_cpu=use_cpu
+            encoder,
+            decoder,
+            mu_layer,
+            var_layer,
+            use_cpu=use_cpu,
+            is_3D=False,
         )
 
 
@@ -186,7 +196,12 @@ class Vanilla3DVAE(BaseVAE):
         decoder = nn.Sequential(*decoder_layers)
 
         super(Vanilla3DVAE, self).__init__(
-            encoder, decoder, mu_layer, var_layer, use_cpu=use_cpu
+            encoder,
+            decoder,
+            mu_layer,
+            var_layer,
+            use_cpu=use_cpu,
+            is_3D=False,
         )
 
 
@@ -290,6 +305,7 @@ class Vanilla3DdenseVAE(BaseVAE):
             mu_layer,
             var_layer,
             use_cpu=use_cpu,
+            is_3D=False,
             recons_weight=recons_weight,
             KD_weight=kd_weight,
         )

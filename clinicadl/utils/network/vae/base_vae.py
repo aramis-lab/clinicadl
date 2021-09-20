@@ -11,6 +11,7 @@ class BaseVAE(Network):
         mu_layer,
         var_layer,
         use_cpu=False,
+        is_3D=False,
         recons_weight=1,
         KD_weight=1,
     ):
@@ -18,6 +19,8 @@ class BaseVAE(Network):
 
         self.lambda1 = recons_weight
         self.lambda2 = KD_weight
+
+        self.is_3D = is_3D
 
         self.encoder = encoder.to(self.device)
         self.mu_layer = mu_layer.to(self.device)
@@ -46,9 +49,12 @@ class BaseVAE(Network):
         recon_images, mu, log_var = self.forward(images)
 
         recon_loss = criterion(recon_images, images)
-        kd_loss = -0.5 * torch.mean(
-            torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim=1)
-        )
+        if self.is_3D:
+            kd_loss = -0.5 * torch.mean(
+                torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim=1)
+            )
+        else:
+            kd_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
 
         loss = self.lambda1 * recon_loss + self.lambda2 * kd_loss
 
