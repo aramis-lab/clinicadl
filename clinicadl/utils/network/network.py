@@ -37,7 +37,6 @@ class Network(nn.Module):
                     nvmlInit,
                 )
 
-                logger.info(torch.cuda.device_count())
                 nvmlInit()
                 memory_list = [
                     nvmlDeviceGetMemoryInfo(nvmlDeviceGetHandleByIndex(i)).free

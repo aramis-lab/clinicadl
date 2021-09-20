@@ -196,7 +196,6 @@ class MapsManager:
             folds = self._find_folds()
 
         _, all_transforms = get_transforms(
-            self.mode,
             minmaxnormalization=self.minmaxnormalization,
             data_augmentation=self.data_augmentation,
         )
@@ -328,7 +327,6 @@ class MapsManager:
             folds = self._find_folds()
 
         _, all_transforms = get_transforms(
-            self.mode,
             minmaxnormalization=self.minmaxnormalization,
             data_augmentation=self.data_augmentation,
         )
@@ -455,7 +453,6 @@ class MapsManager:
             )
 
         _, all_transforms = get_transforms(
-            self.mode,
             minmaxnormalization=self.minmaxnormalization,
             data_augmentation=self.data_augmentation,
         )
@@ -561,7 +558,6 @@ class MapsManager:
         from torch.utils.data import DataLoader
 
         train_transforms, all_transforms = get_transforms(
-            self.mode,
             minmaxnormalization=self.minmaxnormalization,
             data_augmentation=self.data_augmentation,
         )
@@ -642,7 +638,6 @@ class MapsManager:
         from torch.utils.data import DataLoader
 
         train_transforms, all_transforms = get_transforms(
-            self.mode,
             minmaxnormalization=self.minmaxnormalization,
             data_augmentation=self.data_augmentation,
         )
@@ -1110,7 +1105,7 @@ class MapsManager:
 
         self.parameters = parameters
 
-        _, transformations = get_transforms(self.mode, self.minmaxnormalization)
+        _, transformations = get_transforms(self.minmaxnormalization)
 
         split_manager = self._init_split_manager(None)
         train_df = split_manager[0]["train"]

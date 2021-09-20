@@ -142,8 +142,8 @@ class Conv4_FC3(CNN):
 
 
 class resnet18(CNN):
-    def __init__(self, use_cpu=False, output_size=2, dropout=0.5):
-        model = ResNetDesigner(BasicBlock, [2, 2, 2, 2])
+    def __init__(self, input_size, use_cpu=False, output_size=2, dropout=0.5):
+        model = ResNetDesigner(input_size, BasicBlock, [2, 2, 2, 2])
         model.load_state_dict(model_zoo.load_url(model_urls["resnet18"]))
 
         convolutions = nn.Sequential(

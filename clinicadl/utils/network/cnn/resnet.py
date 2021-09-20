@@ -1,12 +1,13 @@
 import math
 
+import torch
 from torch import nn
 
 model_urls = {"resnet18": "https://download.pytorch.org/models/resnet18-5c106cde.pth"}
 
 
 class ResNetDesigner(nn.Module):
-    def __init__(self, block, layers, num_classes=1000):
+    def __init__(self, input_size, block, layers, num_classes=1000):
         self.inplanes = 64
         super(ResNetDesigner, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
@@ -18,7 +19,17 @@ class ResNetDesigner(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
 
-        self.avgpool = nn.AvgPool2d(7, stride=1)
+        # Compute avgpool size
+        input_tensor = torch.zeros(input_size).unsqueeze(0)
+        out = self.conv1(input_tensor)
+        out = self.relu(self.bn1(out))
+        out = self.maxpool(out)
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+
+        self.avgpool = nn.AvgPool2d((out.size(2), out.size(3)), stride=1)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         for m in self.modules():
@@ -50,26 +61,3 @@ class ResNetDesigner(nn.Module):
             layers.append(block(self.inplanes, planes))
 
         return nn.Sequential(*layers)
-
-    def forward(self, x):
-        # fmt: off
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool(x)
-
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-
-        x = self.avgpool(x)
-        x = x.view(x.size(0), -1)
-        x = self.fc(x)
-
-        # Added top FC layer
-        x = self.drop_out(x)
-        x = self.fc_out(x)
-        # fmt: on
-
-        return x
