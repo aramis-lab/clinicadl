@@ -5,6 +5,32 @@ Main changes to this code/ project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## ClinicaDL 1.0.2
+
+### Changed
+
+**Core:**
+
+- Clinica version dependency.
+- Update documentation, with proofreading.
+- Change the test for `extract`.
+
+### Fixed
+
+- Use the GPU option on the command line interface.
+- Fix the train task when invoking the CLI.
+- Remplace the `predict` arguments passed through the CLI.
+- Fix issue when using multiple cohorts.
+
+## ClinicaDL 1.0.1
+
+### Changed
+
+**Functionalities:**
+
+- `extract` improve this functionality with more expressive and easy to understand flags.
+- Change the test for `extract`.
+
 ## ClinicaDL 1.0
 
 Welcome in **ClinicaDL 1.0.0** ! 
