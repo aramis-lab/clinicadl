@@ -115,7 +115,7 @@ class Vanilla3DVAE(BaseVAE):
         # input_h = input_size[1]
         # input_w = input_size[2]
 
-        ## Encoder
+        # Encoder
         encoder_layers = []
         # Input Layer
         encoder_layers.append(EncoderLayer3D(input_c, first_layer_channels))
