@@ -1696,9 +1696,9 @@ class MapsManager:
             kwargs["use_cpu"] = use_cpu
 
         model = model_class(**kwargs)
-        self.logger.debug(f"Model:\n{model.layers}")
+        logger.debug(f"Model:\n{model.layers}")
         device = model.device
-        self.logger.debug(f"Working on {device}")
+        logger.debug(f"Working on {device}")
         current_epoch = 0
 
         if resume:
