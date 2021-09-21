@@ -22,6 +22,7 @@ setup(
     maintainer_email="mauricio.diaz@inria.fr",
     packages=find_packages(exclude=("tests", "tests.*")),
     include_package_data=True,
+    data_files=["clinicadl/resources/config/train_config.toml"],
     zip_safe=False,
     entry_points={
         "console_scripts": [
