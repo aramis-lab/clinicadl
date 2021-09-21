@@ -141,17 +141,15 @@ class Vanilla3DVAE(BaseVAE):
         )
         encoder = nn.Sequential(*encoder_layers)
 
-        ## Latent space
-        # hidden => mu
+        # Latent space
         mu_layer = nn.Conv3d(
             feature_size, latent_size, 3, stride=1, padding=1, bias=False
         )
-        # hidden => logvar
         var_layer = nn.Conv3d(
             feature_size, latent_size, 3, stride=1, padding=1, bias=False
         )
 
-        ## Decoder
+        # Decoder
         decoder_layers = []
         decoder_layers.append(
             nn.Sequential(
@@ -229,7 +227,7 @@ class Vanilla3DdenseVAE(BaseVAE):
         input_w = input_size[2]
         input_d = input_size[3]
 
-        ## Encoder
+        # Encoder
         encoder_layers = []
         # Input Layer
         encoder_layers.append(EncoderLayer3D(input_c, first_layer_channels))
@@ -252,13 +250,11 @@ class Vanilla3DdenseVAE(BaseVAE):
         )
         encoder = nn.Sequential(*encoder_layers)
 
-        ## Latent space
-        # hidden => mu
+        # Latent space
         mu_layer = nn.Linear(feature_size, latent_size)
-        # hidden => logvar
         var_layer = nn.Linear(feature_size, latent_size)
 
-        ## Decoder
+        # Decoder
         decoder_layers = []
         decoder_layers.append(
             nn.Sequential(
