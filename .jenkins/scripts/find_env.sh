@@ -19,7 +19,7 @@ do
   then
     echo "Find Conda environment named $ENV, continue."
     conda activate $CLINICA_ENV_BRANCH
-    pip install -e $WORKSPACE/
+    pip install $WORKSPACE/
     conda deactivate
     ENV_EXISTS=1
     break
@@ -30,7 +30,7 @@ if [ "$ENV_EXISTS" = 0 ]; then
   conda create -y -n $CLINICA_ENV_BRANCH python=3.7
   echo "Conda env $CLINICA_ENV_BRANCH was created."
   conda activate $CLINICA_ENV_BRANCH
-  pip install -e $WORKSPACE/
+  pip install $WORKSPACE/
   pip install -r ./requirements-dev.txt
   echo "ClinicaDL has been installed in  $CLINICA_ENV_BRANCH."
   conda deactivate
