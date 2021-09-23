@@ -1294,7 +1294,7 @@ class MapsManager:
     # File writers                #
     ###############################
     @staticmethod
-    def write_parameters(json_path, parameters):
+    def write_parameters(json_path, parameters, verbose=True):
         """Write JSON files of parameters."""
         logger.debug("Writting parameters...")
         makedirs(json_path, exist_ok=True)
@@ -1302,7 +1302,8 @@ class MapsManager:
         # save to json file
         json_data = json.dumps(parameters, skipkeys=True, indent=4)
         json_path = path.join(json_path, "maps.json")
-        logger.info(f"Path of json file: {json_path}")
+        if verbose:
+            logger.info(f"Path of json file: {json_path}")
         with open(json_path, "w") as f:
             f.write(json_data)
 
@@ -1407,6 +1408,7 @@ class MapsManager:
                         "caps_directory": self.caps_directory,
                         "multi_cohort": self.multi_cohort,
                     },
+                    verbose=False,
                 )
 
     def _write_weights(
