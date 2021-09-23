@@ -39,7 +39,7 @@ setup(
     ],
     install_requires=[
         "numpy>=1.17",
-        "clinica==0.4.1",
+        "clinica>=0.5.0",
         "torch>=1.8",
         "tensorboard",
         "toml",
