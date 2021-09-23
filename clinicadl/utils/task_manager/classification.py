@@ -64,7 +64,7 @@ class ClassificationManager(TaskManager):
     def generate_label_code(df, label):
         unique_labels = list(set(getattr(df, label)))
         unique_labels.sort()
-        return {key: value for value, key in enumerate(unique_labels)}
+        return {str(key): value for value, key in enumerate(unique_labels)}
 
     @staticmethod
     def output_size(input_size, df, label):

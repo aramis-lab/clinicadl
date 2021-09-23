@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
 import torch
@@ -100,7 +100,7 @@ class TaskManager:
 
     @staticmethod
     @abstractmethod
-    def generate_label_code(df: pd.DataFrame, label: str) -> Dict[str, int]:
+    def generate_label_code(df: pd.DataFrame, label: str) -> Optional[Dict[str, int]]:
         """
         Generates a label code that links the output node number to label value.
 
@@ -165,7 +165,7 @@ class TaskManager:
     def test(
         self,
         model: Network,
-        dataloader: DataLoader[CapsDataset],
+        dataloader: DataLoader,
         criterion: _Loss,
         use_labels: bool = True,
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
