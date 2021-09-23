@@ -223,15 +223,16 @@ class RetainBest:
     """
 
     def __init__(self, selection_metrics, n_classes=0):
+        self.selection_metrics = selection_metrics
+
         if "loss" in selection_metrics:
             selection_metrics.remove("loss")
         metric_module = MetricModule(selection_metrics)
 
-        self.selection_metrics = selection_metrics
         implemented_metrics = set(metric_optimum.keys())
-        if not set(selection_metrics).issubset(implemented_metrics):
+        if not set(self.selection_metrics).issubset(implemented_metrics):
             raise NotImplementedError(
-                f"The selection metrics {selection_metrics} are not all implemented. "
+                f"The selection metrics {self.selection_metrics} are not all implemented. "
                 f"Available metrics are {implemented_metrics}."
             )
         self.best_metrics = dict()
