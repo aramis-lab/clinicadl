@@ -881,6 +881,11 @@ class MinMaxNormalization(object):
         return (image - image.min()) / (image.max() - image.min())
 
 
+class NanRemoval(object):
+    def __call__(self, image):
+        return torch.nan_to_num(image)
+
+
 def get_transforms(
     minmaxnormalization: bool = True, data_augmentation: List[str] = None
 ) -> Tuple[transforms.Compose, transforms.Compose]:
@@ -909,9 +914,9 @@ def get_transforms(
         augmentation_list = []
 
     if minmaxnormalization:
-        transformations_list = [MinMaxNormalization()]
+        transformations_list = [NanRemoval(), MinMaxNormalization()]
     else:
-        transformations_list = []
+        transformations_list = [NanRemoval()]
 
     all_transformations = transforms.Compose(transformations_list)
     train_transformations = transforms.Compose(augmentation_list)
