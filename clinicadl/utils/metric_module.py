@@ -1,3 +1,5 @@
+from logging import getLogger
+
 import numpy as np
 
 metric_optimum = {
@@ -11,6 +13,8 @@ metric_optimum = {
     "BA": "max",
     "loss": "min",
 }
+
+logger = getLogger("clinicadl")
 
 
 class MetricModule:
@@ -32,6 +36,7 @@ class MetricModule:
                 raise ValueError(
                     f"The metric {metric} is not implemented in the module"
                 )
+        logger.warning(f"Test1 {self.metrics}")
 
     def apply(self, y, y_pred):
         """
@@ -61,6 +66,7 @@ class MetricModule:
         else:
             results = dict()
 
+        logger.warning(f"Test2 {results}")
         return results
 
     @staticmethod
@@ -234,6 +240,8 @@ class RetainBest:
                     f"Objective {metric_optimum[selection]} unknown for metric {selection}."
                     f"Please choose between 'min' and 'max'."
                 )
+
+        logger.warning(f"Test3 {self.best_metrics}")
 
     def step(self, metrics_valid):
         """
