@@ -151,40 +151,44 @@ class MapsManager:
 
     def predict(
         self,
-        data_group,
-        caps_directory=None,
-        tsv_path=None,
-        folds=None,
-        selection_metrics=None,
-        multi_cohort=False,
-        diagnoses=(),
-        use_labels=True,
-        batch_size=None,
-        num_workers=None,
-        use_cpu=None,
-        overwrite=False,
+        data_group: str,
+        caps_directory: str = None,
+        tsv_path: str = None,
+        folds: List[int] = None,
+        selection_metrics: List[str] = None,
+        multi_cohort: bool = False,
+        diagnoses: List[str] = (),
+        use_labels: bool = True,
+        batch_size: int = None,
+        num_workers: int = None,
+        use_cpu: bool = None,
+        overwrite: bool = False,
+        label: str = "default",
+        label_code: Optional[Dict[str, int]] = "default",
     ):
         """
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
 
         Args:
-            data_group (str): name of the data group tested.
-            caps_directory (str): path to the CAPS folder. For more information please refer to
+            data_group: name of the data group tested.
+            caps_directory: path to the CAPS folder. For more information please refer to
                 [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
                 Default will load the value of an existing data group
-            tsv_path (str): path to a TSV file containing the list of participants and sessions to test.
+            tsv_path: path to a TSV file containing the list of participants and sessions to test.
                 Default will load the DataFrame of an existing data group
-            folds (list[int]): list of folds to test. Default perform prediction on all folds available.
+            folds: list of folds to test. Default perform prediction on all folds available.
             selection_metrics (list[str]): list of selection metrics to test.
                 Default performs the prediction on all selection metrics available.
-            multi_cohort (bool): If True considers that tsv_path is the path to a multi-cohort TSV.
-            diagnoses (list[str]): List of diagnoses to load if tsv_path is a split_directory.
+            multi_cohort: If True considers that tsv_path is the path to a multi-cohort TSV.
+            diagnoses: List of diagnoses to load if tsv_path is a split_directory.
                 Default uses the same as in training step.
-            use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
-            batch_size (int): If given, sets the value of batch_size, else use the same as in training step.
-            num_workers (int): If given, sets the value of num_workers, else use the same as in training step.
-            use_cpu (bool): If given, a new value for the device of the model will be computed.
-            overwrite (bool): If True erase the occurrences of data_group.
+            use_labels: If True, the labels must exist in test meta-data and metrics are computed.
+            batch_size: If given, sets the value of batch_size, else use the same as in training step.
+            num_workers: If given, sets the value of num_workers, else use the same as in training step.
+            use_cpu: If given, a new value for the device of the model will be computed.
+            overwrite: If True erase the occurrences of data_group.
+            label: Target label used for training (if network_task in [`regression`, `classification`]).
+            label_code: dictionary linking the target values to a node number.
 
         Raises:
             ValueError:
@@ -224,8 +228,10 @@ class MapsManager:
                         all_transformations=all_transforms,
                         multi_cohort=group_parameters["multi_cohort"],
                         label_presence=use_labels,
-                        label=self.label,
-                        label_code=self.label_code,
+                        label=self.label if label is "default" else label,
+                        label_code=self.label_code
+                        if label_code is "default"
+                        else label_code,
                         cnn_index=network,
                     )
                     test_loader = DataLoader(
