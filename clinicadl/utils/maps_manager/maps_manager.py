@@ -227,6 +227,10 @@ class MapsManager:
             logger.info(f"Prediction of fold {fold}")
             group_df, group_parameters = self.get_group_info(data_group, fold)
 
+            # Find label code if not given
+            if label is not None and label != self.label and label_code == "default":
+                self.task_manager.generate_label_code(group_df, label)
+
             if self.multi_network:
                 for network in range(self.num_networks):
                     data_test = return_dataset(
