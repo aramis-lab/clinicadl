@@ -58,7 +58,7 @@ Optional arguments:
       [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
     - `--participants_tsv` (Path) is a path to a TSV file with subjects/sessions to process (filename
       included), OR the path to the test folder of a split directory obtained with `clinicadl tsvtool split`.
-    - `--labels/--no_labels` (bool) is a flag to add if the dataset does not contain ground truth labels. 
+    - `--use_labels/--no_labels` (bool) is a flag to add if the dataset does not contain ground truth labels. 
       Default behaviour will look for ground truth labels and raise an error if not found.
     - `--selection_metrics` (List[str]) is a list of metrics to find the best models to evaluate.
       Default will predict the results for best model based on the loss only.
@@ -67,6 +67,8 @@ Optional arguments:
     - `--multi_cohort` (bool) is a flag indicated that [multi-cohort classification](Train/Details.md#multi-cohort)
      is performed.
     In this case, `caps_directory` and `tsv_path` must be paths to TSV files.
+    - `--label` (str) name of the target label used in classification and regression tasks.
+      Default will reuse the same label as in the training task.
     - `--overwrite` (bool) is a flag allowing to overwrite a data group to redefine it. All results obtained
     for this data group will be erased.
 
