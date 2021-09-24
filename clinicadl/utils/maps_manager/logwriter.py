@@ -49,7 +49,6 @@ def setup_logging(verbosity: int = 0) -> None:
     # add ch to logger
     logger.addHandler(stdout)
     logger.addHandler(stderr)
-    logger.propagate = False
 
 
 class LogWriter:

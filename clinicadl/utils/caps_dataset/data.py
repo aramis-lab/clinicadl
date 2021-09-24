@@ -296,6 +296,7 @@ class CapsDatasetImage(CapsDataset):
             multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
 
         """
+
         self.mode = "image"
         super().__init__(
             caps_directory,

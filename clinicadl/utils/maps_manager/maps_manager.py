@@ -4,7 +4,7 @@ import subprocess
 from datetime import datetime
 from logging import getLogger
 from os import listdir, makedirs, path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 import torch
@@ -163,7 +163,7 @@ class MapsManager:
         num_workers: int = None,
         use_cpu: bool = None,
         overwrite: bool = False,
-        label: str = "default",
+        label: str = None,
         label_code: Optional[Dict[str, int]] = "default",
     ):
         """
@@ -198,6 +198,7 @@ class MapsManager:
         """
         if folds is None:
             folds = self._find_folds()
+        logger.debug(f"List of folds found {folds}")
 
         _, all_transforms = get_transforms(
             minmaxnormalization=self.minmaxnormalization,
@@ -213,11 +214,18 @@ class MapsManager:
             )
 
         criterion = self.task_manager.get_criterion()
+        self._check_data_group(
+            data_group,
+            caps_directory,
+            group_df,
+            multi_cohort,
+            overwrite,
+            label=label,
+        )
 
         for fold in folds:
-            group_df, group_parameters = self._check_data_group(
-                data_group, fold, caps_directory, group_df, multi_cohort, overwrite
-            )
+            logger.info(f"Prediction of fold {fold}")
+            group_df, group_parameters = self.get_group_info(data_group, fold)
 
             if self.multi_network:
                 for network in range(self.num_networks):
@@ -228,7 +236,7 @@ class MapsManager:
                         all_transformations=all_transforms,
                         multi_cohort=group_parameters["multi_cohort"],
                         label_presence=use_labels,
-                        label=self.label if label is "default" else label,
+                        label=self.label if label is None else label,
                         label_code=self.label_code
                         if label_code is "default"
                         else label_code,
@@ -265,11 +273,12 @@ class MapsManager:
                     all_transformations=all_transforms,
                     multi_cohort=group_parameters["multi_cohort"],
                     label_presence=use_labels,
-                    label=self.label if label is "default" else label,
+                    label=self.label if label is None else label,
                     label_code=self.label_code
                     if label_code is "default"
                     else label_code,
                 )
+
                 test_loader = DataLoader(
                     data_test,
                     batch_size=batch_size
@@ -333,6 +342,7 @@ class MapsManager:
         """
         if folds is None:
             folds = self._find_folds()
+        logger.debug(f"List of folds found {folds}")
 
         _, all_transforms = get_transforms(
             minmaxnormalization=self.minmaxnormalization,
@@ -347,13 +357,14 @@ class MapsManager:
                 multi_cohort=multi_cohort,
             )
 
+        self._check_data_group(
+            data_group, caps_directory, group_df, multi_cohort, overwrite
+        )
+
         split_manager = self._init_split_manager(folds)
         for fold in split_manager.fold_iterator():
             logger.info(f"Saving tensors of fold {fold}")
-
-            group_df, group_parameters = self._check_data_group(
-                data_group, fold, caps_directory, group_df, multi_cohort, overwrite
-            )
+            group_df, group_parameters = self.get_group_info(data_group, fold)
 
             if selection_metrics is None:
                 selection_metrics = self._find_selection_metrics(fold)
@@ -454,6 +465,7 @@ class MapsManager:
 
         if folds is None:
             folds = self._find_folds()
+        logger.debug(f"List of folds found {folds}")
 
         if self.multi_network:
             raise NotImplementedError(
@@ -472,12 +484,13 @@ class MapsManager:
                 diagnoses if len(diagnoses) != 0 else self.diagnoses,
                 multi_cohort=multi_cohort,
             )
+        self._check_data_group(
+            data_group, caps_directory, group_df, multi_cohort, overwrite
+        )
 
         for fold in folds:
             logger.info(f"Interpretation of fold {fold}")
-            df_group, parameters_group = self._check_data_group(
-                data_group, fold, caps_directory, group_df, multi_cohort, overwrite
-            )
+            df_group, parameters_group = self.get_group_info(data_group, fold)
 
             data_test = return_dataset(
                 parameters_group["caps_directory"],
@@ -1247,11 +1260,11 @@ class MapsManager:
     def _check_data_group(
         self,
         data_group,
-        fold,
         caps_directory=None,
         df=None,
         multi_cohort=False,
         overwrite=False,
+        label=None,
     ):
         """
         Check if a data group is already available if other arguments are None.
@@ -1259,11 +1272,11 @@ class MapsManager:
 
         Args:
             data_group (str): name of the data group
-            fold (int): fold number (used to load train and validation folds)
             caps_directory  (str): input CAPS directory
             df (pd.DataFrame): Table of participant_id / session_id of the data group
             multi_cohort (bool): indicates if the input data comes from several CAPS
             overwrite (bool): If True former definition of data group is erased
+            label (str): label name if applicable
 
         Raises:
             ValueError:
@@ -1279,14 +1292,24 @@ class MapsManager:
                     raise ValueError("Cannot overwrite train or validation data group.")
                 else:
                     shutil.rmtree(group_path)
+                    folds = self._find_folds()
+                    for fold in folds:
+                        selection_metrics = self._find_selection_metrics(fold)
+                        for selection in selection_metrics:
+                            results_path = path.join(
+                                self.maps_path,
+                                f"fold-{fold}",
+                                f"best-{selection}",
+                                data_group,
+                            )
+                            if path.exists(results_path):
+                                shutil.rmtree(results_path)
             elif df is not None or caps_directory is not None:
                 raise ValueError(
                     f"Data group {data_group} is already defined. "
                     f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
                     f"To erase {data_group} please set overwrite to True."
                 )
-            else:
-                return self.get_group_info(data_group, fold)
 
         if caps_directory is None or df is None:
             raise ValueError(
@@ -1295,8 +1318,9 @@ class MapsManager:
             )
         else:
             self._check_leakage(data_group, df)
-            self._write_data_group(data_group, df, caps_directory, multi_cohort)
-            return df, {"caps_directory": caps_directory, "multi_cohort": multi_cohort}
+            self._write_data_group(
+                data_group, df, caps_directory, multi_cohort, label=label
+            )
 
     ###############################
     # File writers                #
@@ -1357,11 +1381,7 @@ class MapsManager:
         )
 
     def _write_data_group(
-        self,
-        data_group,
-        df,
-        caps_directory=None,
-        multi_cohort=None,
+        self, data_group, df, caps_directory=None, multi_cohort=None, label=None
     ):
         """
         Check that a data_group is not already written and writes the characteristics of the data group
@@ -1379,8 +1399,12 @@ class MapsManager:
         columns = ["participant_id", "session_id", "cohort"]
         if self.label in df.columns.values:
             columns += [self.label]
+        if label is not None and label in df.columns.values:
+            columns += [label]
 
-        df.to_csv(path.join(group_path, "data.tsv"), sep="\t", columns=columns)
+        df.to_csv(
+            path.join(group_path, "data.tsv"), sep="\t", columns=columns, index=False
+        )
         self.write_parameters(
             group_path,
             {
@@ -1778,7 +1802,9 @@ class MapsManager:
             content = f.read()
             print(content)
 
-    def get_group_info(self, data_group, fold=None):
+    def get_group_info(
+        self, data_group: str, fold: int = None
+    ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
         """
         Gets information from corresponding data group
         (list of participant_id / session_id + configuration parameters).
