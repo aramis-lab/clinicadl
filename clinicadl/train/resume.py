@@ -3,9 +3,12 @@ Automatic relaunch of jobs that were stopped before the end of training.
 Unfinished folds are detected as they do not contain a "performances" sub-folder
 """
 import os
+from logging import getLogger
 from os import path
 
 from clinicadl import MapsManager
+
+logger = getLogger("clinicadl")
 
 
 def replace_arg(options, key_name, value):
@@ -40,6 +43,9 @@ def automatic_resume(model_path, verbose=0):
         if fold not in finished_folds and fold not in stopped_folds
     ]
 
+    logger.info(f"List of finished folds {finished_folds}")
+    logger.info(f"List of stopped folds {stopped_folds}")
+    logger.info(f"List of absent folds {absent_folds}")
     # To ensure retro-compatibility with random search
     maps_manager.resume(stopped_folds)
     maps_manager.train(absent_folds)

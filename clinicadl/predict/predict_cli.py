@@ -28,7 +28,6 @@ from clinicadl.utils import cli_param
 @click.option(
     "--selection_metrics",
     "-sm",
-    type=click.Choice(["loss", "balanced_accuracy"]),
     default=["loss"],
     multiple=True,
     help="""Allow to select a list of models based on their selection metric. Default will
