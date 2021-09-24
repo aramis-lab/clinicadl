@@ -43,7 +43,7 @@ class MapsManager:
             parameters: parameters of the training step. If given a new MAPS is created.
             verbose: Logging level ("debug", "info", "warning")
         """
-        self.maps_path = maps_path
+        self.maps_path = path.abspath(maps_path)
         if verbose not in level_list:
             raise ValueError(f"verbose value {verbose} must be in {level_list}.")
         setup_logging(level_list.index(verbose))
