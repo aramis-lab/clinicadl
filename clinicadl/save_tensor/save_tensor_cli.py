@@ -20,14 +20,6 @@ from clinicadl.utils import cli_param
     If it includes the filename will load the TSV file directly.
     Else will load the baseline TSV files of wanted diagnoses produced by `tsvtool split`.""",
 )
-# @click.option(
-#     "--use_extracted_features",
-#     type=bool,
-#     default=False,
-#     is_flag=True,
-#     help="""If True the extracted modes are used, otherwise they
-#             will be extracted on-the-fly from the image (if mode != `image`).""",
-# )
 @click.option(
     "--selection_metrics",
     "-sm",

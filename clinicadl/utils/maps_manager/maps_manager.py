@@ -265,8 +265,10 @@ class MapsManager:
                     all_transformations=all_transforms,
                     multi_cohort=group_parameters["multi_cohort"],
                     label_presence=use_labels,
-                    label=self.label,
-                    label_code=self.label_code,
+                    label=self.label if label is "default" else label,
+                    label_code=self.label_code
+                    if label_code is "default"
+                    else label_code,
                 )
                 test_loader = DataLoader(
                     data_test,
