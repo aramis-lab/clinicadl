@@ -175,10 +175,20 @@ class VAE_Encoder(nn.Module):
         self.input_h = input_shape[1]
         self.input_w = input_shape[2]
 
+        decoder_padding = []
+        tensor_h, tensor_w = self.input_h, self.input_w
+
         self.layers = []
 
         # Input Layer
         self.layers.append(EncoderLayer2D(self.input_c, first_layer_channels))
+        padding_h, padding_w = 0, 0
+        if tensor_h % 2 != 0:
+            padding_h = 1
+        if tensor_w % 2 != 0:
+            padding_w = 1
+        decoder_padding.append([padding_h, padding_w])
+        tensor_h, tensor_w = tensor_h // 2, tensor_w // 2
 
         # Conv Layers
         for i in range(n_conv - 1):
@@ -187,6 +197,15 @@ class VAE_Encoder(nn.Module):
                     first_layer_channels * 2 ** i, first_layer_channels * 2 ** (i + 1)
                 )
             )
+            padding_h, padding_w = 0, 0
+            if tensor_h % 2 != 0:
+                padding_h = 1
+            if tensor_w % 2 != 0:
+                padding_w = 1
+            decoder_padding.append([padding_h, padding_w])
+            tensor_h, tensor_w = tensor_h // 2, tensor_w // 2
+
+        self.decoder_padding = decoder_padding
 
         # Final Layer
         if latent_dim == 1:
@@ -235,6 +254,7 @@ class VAE_Decoder(nn.Module):
         last_layer_channels=32,
         latent_dim=1,
         feature_size=1024,
+        padding=None,
     ):
         """
         Feature size is the size of the vector if latent_dim=1
@@ -245,6 +265,11 @@ class VAE_Decoder(nn.Module):
         self.input_c = input_shape[0]
         self.input_h = input_shape[1]
         self.input_w = input_shape[2]
+
+        if not padding:
+            output_padding = [[0, 0] for i in range(n_conv - 1)]
+        else:
+            output_padding = padding
 
         self.layers = []
 
@@ -295,7 +320,9 @@ class VAE_Decoder(nn.Module):
         for i in range(n_conv - 1, 0, -1):
             self.layers.append(
                 DecoderLayer2D(
-                    last_layer_channels * 2 ** (i), last_layer_channels * 2 ** (i - 1)
+                    last_layer_channels * 2 ** (i),
+                    last_layer_channels * 2 ** (i - 1),
+                    output_padding=output_padding[-i],
                 )
             )
 
@@ -307,6 +334,7 @@ class VAE_Decoder(nn.Module):
                     4,
                     stride=2,
                     padding=1,
+                    output_padding=output_padding[0],
                     bias=False,
                 ),
                 nn.Sigmoid(),
