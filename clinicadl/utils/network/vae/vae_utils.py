@@ -213,6 +213,7 @@ class VAE_Encoder(nn.Module):
             tensor_h, tensor_w = tensor_h // 2, tensor_w // 2
 
         self.decoder_padding = decoder_padding
+        print(self.decoder_padding)
 
         # Final Layer
         if latent_dim == 1:
