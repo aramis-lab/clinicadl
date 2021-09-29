@@ -250,7 +250,9 @@ class VAE_Encoder(nn.Module):
         self.sequential = nn.Sequential(*self.layers)
 
     def forward(self, x):
-        return self.sequential(x)
+        z = self.sequential(x)
+        print(z.shape)
+        return z
 
 
 class VAE_Decoder(nn.Module):
@@ -354,4 +356,6 @@ class VAE_Decoder(nn.Module):
         self.sequential = nn.Sequential(*self.layers)
 
     def forward(self, x):
-        return self.sequential(x)
+        y = self.sequential(x)
+        print(y.shape)
+        return y
