@@ -334,7 +334,7 @@ class VAE_Decoder(nn.Module):
                 DecoderLayer2D(
                     last_layer_channels * 2 ** (i),
                     last_layer_channels * 2 ** (i - 1),
-                    output_padding=output_padding[-i],
+                    output_padding=output_padding[i],
                 )
             )
 
