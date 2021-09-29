@@ -39,6 +39,7 @@ class VanillaDenseVAE(BaseVAE):
             latent_dim=1,
             n_conv=n_conv,
             last_layer_channels=io_layer_channel,
+            padding=encoder.decoder_padding,
         )
 
         super(VanillaDenseVAE, self).__init__(
@@ -82,6 +83,7 @@ class VanillaSpatialVAE(BaseVAE):
             latent_dim=2,
             n_conv=n_conv,
             last_layer_channels=io_layer_channel,
+            padding=encoder.decoder_padding,
         )
 
         super(VanillaSpatialVAE, self).__init__(
