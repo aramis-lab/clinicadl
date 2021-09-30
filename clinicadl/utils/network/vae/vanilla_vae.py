@@ -49,6 +49,8 @@ class VanillaDenseVAE(BaseVAE):
             var_layer,
             use_cpu=use_cpu,
             is_3D=False,
+            recons_weight=10,
+            KD_weight=0.1,
         )
 
 
