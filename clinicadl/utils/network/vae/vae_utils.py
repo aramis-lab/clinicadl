@@ -29,7 +29,6 @@ class EncoderLayer2D(nn.Module):
 
     def forward(self, x):
         x = F.leaky_relu(self.layer(x), negative_slope=0.2, inplace=True)
-        print(x.shape)
         return x
 
 
@@ -65,7 +64,6 @@ class DecoderLayer2D(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.layer(x), inplace=True)
-        print(x.shape)
         return x
 
 
@@ -215,7 +213,6 @@ class VAE_Encoder(nn.Module):
             tensor_h, tensor_w = tensor_h // 2, tensor_w // 2
 
         self.decoder_padding = decoder_padding
-        print(self.decoder_padding)
 
         # Final Layer
         if latent_dim == 1:
@@ -251,7 +248,6 @@ class VAE_Encoder(nn.Module):
 
     def forward(self, x):
         z = self.sequential(x)
-        print(z.shape)
         return z
 
 
@@ -357,5 +353,4 @@ class VAE_Decoder(nn.Module):
 
     def forward(self, x):
         y = self.sequential(x)
-        print(y.shape)
         return y
