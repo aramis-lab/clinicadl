@@ -99,7 +99,10 @@ class LogWriter:
             truncated_tsv = pd.read_csv(tsv_path, sep="\t")
             truncated_tsv.set_index(["epoch", "iteration"], inplace=True)
             truncated_tsv.drop(self.beginning_epoch, level=0, inplace=True)
-            self.beginning_time = time() + truncated_tsv.iloc[-1, -1]
+            if len(truncated_tsv) == 0:
+                self.beginning_time = 0
+            else:
+                self.beginning_time = time() + truncated_tsv.iloc[-1, 0]
             truncated_tsv.to_csv(tsv_path, index=True, sep="\t")
 
         self.writer_train = SummaryWriter(
