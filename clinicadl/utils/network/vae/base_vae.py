@@ -13,12 +13,12 @@ class BaseVAE(Network):
         use_cpu=False,
         is_3D=False,
         recons_weight=1,
-        KD_weight=1,
+        KL_weight=1,
     ):
         super(BaseVAE, self).__init__(use_cpu=use_cpu)
 
         self.lambda1 = recons_weight
-        self.lambda2 = KD_weight
+        self.lambda2 = KL_weight
 
         self.is_3D = is_3D
 
@@ -50,18 +50,18 @@ class BaseVAE(Network):
 
         recon_loss = criterion(recon_images, images)
         if self.is_3D:
-            kd_loss = -0.5 * torch.mean(
+            kl_loss = -0.5 * torch.mean(
                 torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim=1)
             )
         else:
-            kd_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
+            kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
 
-        loss = self.lambda1 * recon_loss + self.lambda2 * kd_loss
+        loss = self.lambda1 * recon_loss + self.lambda2 * kl_loss
 
         loss_dict = {
             "loss": loss,
             "recon_loss": recon_loss,
-            "kd_loss": kd_loss,
+            "kl_loss": kl_loss,
         }
 
         return recon_images, loss_dict

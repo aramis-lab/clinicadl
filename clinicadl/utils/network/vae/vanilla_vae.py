@@ -50,7 +50,7 @@ class VanillaDenseVAE(BaseVAE):
             use_cpu=use_cpu,
             is_3D=False,
             recons_weight=10,
-            KD_weight=0.1,
+            KL_weight=0.1,
         )
 
 
@@ -214,7 +214,7 @@ class Vanilla3DdenseVAE(BaseVAE):
         use_cpu=False,
     ):
         recons_weight = 10
-        kd_weight = 1
+        kl_weight = 1
         n_conv = 4
         first_layer_channels = 8
         last_layer_channels = 8
@@ -307,5 +307,5 @@ class Vanilla3DdenseVAE(BaseVAE):
             use_cpu=use_cpu,
             is_3D=False,
             recons_weight=recons_weight,
-            KD_weight=kd_weight,
+            KL_weight=kl_weight,
         )
