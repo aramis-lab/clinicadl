@@ -3,6 +3,28 @@ import torch.nn.functional as F
 from torch import nn
 
 
+def kl_divergence(z, mu, std):
+    # comes from:
+    # https://gist.github.com/williamFalcon/f2bcb25acb2f5b0e8005657b1a454126#file-mc_kl-py
+    # --------------------------
+    # Monte carlo KL divergence
+    # --------------------------
+    # 1. define the first two probabilities (in this case Normal for both)
+    p = torch.distributions.Normal(torch.zeros_like(mu), torch.ones_like(std))
+    q = torch.distributions.Normal(mu, std)
+
+    # 2. get the probabilities from the equation
+    log_qzx = q.log_prob(z)
+    log_pz = p.log_prob(z)
+
+    # kl
+    kl = log_qzx - log_pz
+
+    # sum over last dim to go from single dim distribution to multi-dim
+    kl = kl.sum(-1)
+    return kl
+
+
 class EncoderLayer2D(nn.Module):
     """
     Class defining the encoder's part of the Autoencoder.
