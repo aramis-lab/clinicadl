@@ -10,8 +10,7 @@ multi_network = false
 dropout = 0.0 # between 0 and 1
 # architecture.n_layers = 4
 # VAE
-latent_space_dimension = 64
-latent_space_size = 2
+latent_space_size = 248
 
 [Classification]
 selection_metrics = ["loss"]
