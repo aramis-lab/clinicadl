@@ -12,7 +12,7 @@ def predict(
     use_labels: bool = True,
     label: str = None,
     gpu: bool = True,
-    num_workers: int = 0,
+    n_proc: int = 0,
     batch_size: int = 1,
     selection_metrics: List[str] = None,
     diagnoses: List[str] = None,
@@ -32,7 +32,7 @@ def predict(
         use_labels: by default is True. If False no metrics tsv files will be written.
         label: Name of the target value, if different from training.
         gpu: if true, it uses gpu.
-        num_workers: num_workers used in DataLoader
+        n_proc: num_workers used in DataLoader
         batch_size: batch size of the DataLoader
         selection_metrics: list of metrics to find best models to be evaluated.
         diagnoses: list of diagnoses to be tested if tsv_path is a folder.
@@ -52,7 +52,7 @@ def predict(
         label=label,
         use_labels=use_labels,
         batch_size=batch_size,
-        num_workers=num_workers,
+        n_proc=n_proc,
         use_cpu=not gpu,
         overwrite=overwrite,
     )

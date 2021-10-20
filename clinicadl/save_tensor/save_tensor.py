@@ -8,7 +8,7 @@ def save_tensor(
     caps_directory,
     tsv_path,
     gpu=True,
-    num_workers=0,
+    n_proc=0,
     batch_size=1,
     # prepare_dl=True,
     selection_metrics=None,
@@ -28,7 +28,7 @@ def save_tensor(
         tsv_path (str): path to a TSV file containing the list of participants and sessions to interpret.
         labels: by default is True. If False no metrics tsv files will be written.
         gpu: if true, it uses gpu.
-        num_workers: num_workers used in DataLoader
+        n_proc: num_workers used in DataLoader
         batch_size: batch size of the DataLoader
         prepare_dl: if true, uses extracted patches/slices otherwise extract them
         on-the-fly.
@@ -50,7 +50,7 @@ def save_tensor(
         diagnoses=diagnoses,
         # prepare_dl=prepare_dl,
         # batch_size=batch_size,
-        # num_workers=num_workers,
+        # n_proc=n_proc,
         use_cpu=not gpu,
         overwrite=overwrite,
     )

@@ -49,6 +49,6 @@ def cli(
         tsv_path=participants_tsv,
         threshold=threshold,
         batch_size=batch_size,
-        num_workers=n_proc,
+        n_proc=n_proc,
         gpu=gpu,
     )

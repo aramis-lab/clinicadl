@@ -118,7 +118,7 @@ def random_sampling(
         "multi_network": "choice",
         "n_fcblocks": "randint",
         "n_splits": "fixed",
-        "num_workers": "fixed",
+        "n_proc": "fixed",
         "network_task": "fixed",
         "network_normalization": "choice",
         "optimizer": "choice",

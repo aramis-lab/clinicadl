@@ -61,7 +61,7 @@ def interpret(
         target_node=target_node,
         save_individual=save_individual,
         batch_size=batch_size,
-        num_workers=n_proc,
+        n_proc=n_proc,
         use_cpu=not gpu,
         overwrite=overwrite,
         overwrite_name=overwrite_name,

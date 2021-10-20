@@ -342,6 +342,7 @@ def cli(
         "multi_network",
         "learning_rate",
         "multi_cohort",
+        "n_proc",
         "n_splits",
         "patience",
         "tolerance",
@@ -365,8 +366,6 @@ def cli(
         train_dict["use_cpu"] = not gpu
     if not train_dict["use_cpu"]:
         check_gpu()
-    if n_proc is not None:
-        train_dict["num_workers"] = n_proc
     if normalize is not None:
         train_dict["minmaxnormalization"] = normalize
     if split:

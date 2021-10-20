@@ -160,7 +160,7 @@ class MapsManager:
         diagnoses: List[str] = (),
         use_labels: bool = True,
         batch_size: int = None,
-        num_workers: int = None,
+        n_proc: int = None,
         use_cpu: bool = None,
         overwrite: bool = False,
         label: str = None,
@@ -184,7 +184,7 @@ class MapsManager:
                 Default uses the same as in training step.
             use_labels: If True, the labels must exist in test meta-data and metrics are computed.
             batch_size: If given, sets the value of batch_size, else use the same as in training step.
-            num_workers: If given, sets the value of num_workers, else use the same as in training step.
+            n_proc: If given, sets the value of num_workers, else use the same as in training step.
             use_cpu: If given, a new value for the device of the model will be computed.
             overwrite: If True erase the occurrences of data_group.
             label: Target label used for training (if network_task in [`regression`, `classification`]).
@@ -252,9 +252,7 @@ class MapsManager:
                         if batch_size is not None
                         else self.batch_size,
                         shuffle=False,
-                        num_workers=num_workers
-                        if num_workers is not None
-                        else self.num_workers,
+                        num_workers=n_proc if n_proc is not None else self.n_proc,
                     )
 
                     self._test_loader(
@@ -289,9 +287,7 @@ class MapsManager:
                     if batch_size is not None
                     else self.batch_size,
                     shuffle=False,
-                    num_workers=num_workers
-                    if num_workers is not None
-                    else self.num_workers,
+                    num_workers=n_proc if n_proc is not None else self.n_proc,
                 )
 
                 self._test_loader(
@@ -425,7 +421,7 @@ class MapsManager:
         target_node=0,
         save_individual=False,
         batch_size=None,
-        num_workers=None,
+        n_proc=None,
         use_cpu=None,
         overwrite=False,
         overwrite_name=False,
@@ -451,7 +447,7 @@ class MapsManager:
             target_node (int): Node from which the interpretation is computed.
             save_individual (bool): If True saves the individual map of each participant / session couple.
             batch_size (int): If given, sets the value of batch_size, else use the same as in training step.
-            num_workers (int): If given, sets the value of num_workers, else use the same as in training step.
+            n_proc (int): If given, sets the value of num_workers, else use the same as in training step.
             use_cpu (bool): If given, a new value for the device of the model will be computed.
             overwrite (bool): If True erase the occurrences of data_group.
             overwrite_name (bool): If True erase the occurrences of name.
@@ -510,9 +506,7 @@ class MapsManager:
                 data_test,
                 batch_size=batch_size if batch_size is not None else self.batch_size,
                 shuffle=False,
-                num_workers=num_workers
-                if num_workers is not None
-                else self.num_workers,
+                num_workers=n_proc if n_proc is not None else self.n_proc,
             )
 
             if selection_metrics is None:
@@ -626,7 +620,7 @@ class MapsManager:
                 data_train,
                 batch_size=self.batch_size,
                 sampler=train_sampler,
-                num_workers=self.num_workers,
+                num_workers=self.n_proc,
                 worker_init_fn=pl_worker_init_function,
             )
             logger.debug(f"Train loader size is {len(train_loader)}")
@@ -634,7 +628,7 @@ class MapsManager:
                 data_valid,
                 batch_size=self.batch_size,
                 shuffle=False,
-                num_workers=self.num_workers,
+                num_workers=self.n_proc,
             )
             logger.debug(f"Validation loader size is {len(valid_loader)}")
 
@@ -727,7 +721,7 @@ class MapsManager:
                     data_train,
                     batch_size=self.batch_size,
                     sampler=train_sampler,
-                    num_workers=self.num_workers,
+                    num_workers=self.n_proc,
                     worker_init_fn=pl_worker_init_function,
                 )
 
@@ -735,7 +729,7 @@ class MapsManager:
                     data_valid,
                     batch_size=self.batch_size,
                     shuffle=False,
-                    num_workers=self.num_workers,
+                    num_workers=self.n_proc,
                 )
 
                 self._train(

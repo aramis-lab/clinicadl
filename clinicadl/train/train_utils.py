@@ -65,7 +65,6 @@ def get_train_dict(
 
     renamed_dict = {
         "normalize": "minmaxnormalization",
-        "n_proc": "num_workers",
         "split": "folds",
     }
 
