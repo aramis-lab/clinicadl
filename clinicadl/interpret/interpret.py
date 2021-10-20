@@ -62,7 +62,7 @@ def interpret(
         save_individual=save_individual,
         batch_size=batch_size,
         n_proc=n_proc,
-        use_cpu=not gpu,
+        gpu=gpu,
         overwrite=overwrite,
         overwrite_name=overwrite_name,
     )

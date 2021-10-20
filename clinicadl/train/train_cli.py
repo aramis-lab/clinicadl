@@ -329,8 +329,8 @@ def cli(
 
     # Change value in train dict depending on user provided options
     standard_options_list = [
-        "label",
         "accumulation_steps",
+        "architecture",
         "baseline",
         "batch_size",
         "data_augmentation",
@@ -338,10 +338,11 @@ def cli(
         "dropout",
         "epochs",
         "evaluation_steps",
-        "architecture",
-        "multi_network",
+        "gpu",
+        "label",
         "learning_rate",
         "multi_cohort",
+        "multi_network",
         "n_proc",
         "n_splits",
         "normalize",
@@ -363,9 +364,7 @@ def cli(
         ):
             train_dict[option] = eval(option)
 
-    if gpu is not None:
-        train_dict["use_cpu"] = not gpu
-    if not train_dict["use_cpu"]:
+    if not train_dict["gpu"]:
         check_gpu()
     if split:
         train_dict["folds"] = split

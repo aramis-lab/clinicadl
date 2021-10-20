@@ -70,9 +70,6 @@ def get_train_dict(
     for command_name, code_name in renamed_dict.items():
         train_dict[code_name] = train_dict.pop(command_name)
 
-    # GPU exception
-    train_dict["use_cpu"] = not train_dict.pop("gpu")
-
     # Hard-coded optimizer
     train_dict["optimizer"] = "Adam"
 

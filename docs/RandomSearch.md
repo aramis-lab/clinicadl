@@ -84,7 +84,7 @@ Optional variables:
     Must include only `BatchNorm`, `InstanceNorm` or `None`.
     Sampling function: `choice`. Default:  `BatchNorm`.
 - **Computational resources**
-    - `--use_cpu` (bool) forces using CPUs. Default behaviour is to try to use a GPU and to raise an error if it is not found.
+    - `--gpu/--no-gpu` (bool) forces using GPU / CPUs. Default behaviour is to try to use a GPU and to raise an error if it is not found.
     - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
     - `--evaluation_steps` (int) gives the number of iterations to perform an [evaluation internal to an epoch](Train/Details.md#evaluation). 

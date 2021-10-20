@@ -45,7 +45,7 @@ def cli(
         "batch_size": batch_size,
         "evaluation_steps": evaluation_steps,
         "n_proc": n_proc,
-        "use_cpu": not gpu,
+        "gpu": gpu,
     }
 
     launch_search(launch_directory, name, options)

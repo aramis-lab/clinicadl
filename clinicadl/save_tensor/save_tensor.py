@@ -51,6 +51,6 @@ def save_tensor(
         # prepare_dl=prepare_dl,
         # batch_size=batch_size,
         # n_proc=n_proc,
-        use_cpu=not gpu,
+        gpu=gpu,
         overwrite=overwrite,
     )

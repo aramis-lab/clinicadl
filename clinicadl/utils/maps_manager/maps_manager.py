@@ -161,7 +161,7 @@ class MapsManager:
         use_labels: bool = True,
         batch_size: int = None,
         n_proc: int = None,
-        use_cpu: bool = None,
+        gpu: bool = None,
         overwrite: bool = False,
         label: str = None,
         label_code: Optional[Dict[str, int]] = "default",
@@ -185,7 +185,7 @@ class MapsManager:
             use_labels: If True, the labels must exist in test meta-data and metrics are computed.
             batch_size: If given, sets the value of batch_size, else use the same as in training step.
             n_proc: If given, sets the value of num_workers, else use the same as in training step.
-            use_cpu: If given, a new value for the device of the model will be computed.
+            gpu: If given, a new value for the device of the model will be computed.
             overwrite: If True erase the occurrences of data_group.
             label: Target label used for training (if network_task in [`regression`, `classification`]).
             label_code: dictionary linking the target values to a node number.
@@ -264,7 +264,7 @@ class MapsManager:
                         if selection_metrics is not None
                         else self._find_selection_metrics(fold),
                         use_labels=use_labels,
-                        use_cpu=use_cpu,
+                        gpu=gpu,
                         network=network,
                     )
             else:
@@ -299,7 +299,7 @@ class MapsManager:
                     if selection_metrics is not None
                     else self._find_selection_metrics(fold),
                     use_labels=use_labels,
-                    use_cpu=use_cpu,
+                    gpu=gpu,
                 )
             self._ensemble_prediction(data_group, fold, selection_metrics, use_labels)
 
@@ -312,7 +312,7 @@ class MapsManager:
         selection_metrics=None,
         multi_cohort=False,
         diagnoses=(),
-        use_cpu=None,
+        gpu=None,
         overwrite=False,
     ):
 
@@ -331,7 +331,7 @@ class MapsManager:
                 Default performs the prediction on all selection metrics available.
             multi_cohort (bool): If True considers that tsv_path is the path to a multi-cohort TSV.
             diagnoses (list[str]): List of diagnoses to load if tsv_path is a split_directory.
-            use_cpu (bool): If given, a new value for the device of the model will be computed.
+            gpu (bool): If given, a new value for the device of the model will be computed.
             overwrite (bool): If True erase the occurrences of data_group.
 
         Raises:
@@ -386,7 +386,7 @@ class MapsManager:
                         data_group,
                         fold,
                         selection_metrics,
-                        use_cpu=use_cpu,
+                        gpu=gpu,
                         network=network,
                     )
 
@@ -405,7 +405,7 @@ class MapsManager:
                     data_group,
                     fold,
                     selection_metrics,
-                    use_cpu=use_cpu,
+                    gpu=gpu,
                 )
 
     def interpret(
@@ -422,7 +422,7 @@ class MapsManager:
         save_individual=False,
         batch_size=None,
         n_proc=None,
-        use_cpu=None,
+        gpu=None,
         overwrite=False,
         overwrite_name=False,
     ):
@@ -448,7 +448,7 @@ class MapsManager:
             save_individual (bool): If True saves the individual map of each participant / session couple.
             batch_size (int): If given, sets the value of batch_size, else use the same as in training step.
             n_proc (int): If given, sets the value of num_workers, else use the same as in training step.
-            use_cpu (bool): If given, a new value for the device of the model will be computed.
+            gpu (bool): If given, a new value for the device of the model will be computed.
             overwrite (bool): If True erase the occurrences of data_group.
             overwrite_name (bool): If True erase the occurrences of name.
         Raises:
@@ -536,7 +536,7 @@ class MapsManager:
                     transfer_path=self.maps_path,
                     fold=fold,
                     transfer_selection=selection_metric,
-                    use_cpu=use_cpu,
+                    gpu=gpu,
                 )
 
                 interpreter = VanillaBackProp(model)
@@ -962,7 +962,7 @@ class MapsManager:
         fold,
         selection_metrics,
         use_labels=True,
-        use_cpu=None,
+        gpu=None,
         network=None,
     ):
         """
@@ -975,7 +975,7 @@ class MapsManager:
             fold (int): Index of the fold used to train the model tested.
             selection_metrics (list[str]): List of metrics used to select the best models which are tested.
             use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
-            use_cpu (bool): If given, a new value for the device of the model will be computed.
+            gpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network tested (only used in multi-network setting).
         """
         for selection_metric in selection_metrics:
@@ -995,7 +995,7 @@ class MapsManager:
                 transfer_path=self.maps_path,
                 fold=fold,
                 transfer_selection=selection_metric,
-                use_cpu=use_cpu,
+                gpu=gpu,
                 network=network,
             )
 
@@ -1021,7 +1021,7 @@ class MapsManager:
         fold,
         selection_metrics,
         nb_images=None,
-        use_cpu=None,
+        gpu=None,
         network=None,
     ):
         """
@@ -1033,7 +1033,7 @@ class MapsManager:
             fold (int): Fold number.
             selection_metrics (list[str]): metrics used for model selection.
             nb_images (int): number of full images to write. Default computes the outputs of the whole data set.
-            use_cpu (bool): If given, a new value for the device of the model will be computed.
+            gpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network tested (only used in multi-network setting).
         """
         for selection_metric in selection_metrics:
@@ -1042,7 +1042,7 @@ class MapsManager:
                 transfer_path=self.maps_path,
                 fold=fold,
                 transfer_selection=selection_metric,
-                use_cpu=use_cpu,
+                gpu=gpu,
                 network=network,
             )
 
@@ -1664,7 +1664,7 @@ class MapsManager:
         transfer_selection=None,
         fold=None,
         resume=False,
-        use_cpu=None,
+        gpu=None,
         network=None,
     ):
         """
@@ -1675,7 +1675,7 @@ class MapsManager:
             transfer_selection (str): name of the metric used to find the source model.
             fold (int): Index of the fold (only used if transfer_path is not None of not resume).
             resume (bool): If True initialize the network with the checkpoint weights.
-            use_cpu (bool): If given, a new value for the device of the model will be computed.
+            gpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network trained (used in multi-network setting only).
         """
         import clinicadl.utils.network as network_package
@@ -1694,8 +1694,8 @@ class MapsManager:
             kwargs[arg] = self.parameters[arg]
 
         # Change device from the training parameters
-        if use_cpu is not None:
-            kwargs["use_cpu"] = use_cpu
+        if gpu is not None:
+            kwargs["gpu"] = gpu
 
         model = model_class(**kwargs)
         device = model.device

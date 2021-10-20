@@ -13,7 +13,7 @@ class RandomArchitecture(CNN):
         dropout=0.5,
         network_normalization="BatchNorm",
         output_size=2,
-        use_cpu=False,
+        gpu=True,
     ):
         """
         Construct the Architecture randomly chosen for Random Search.
@@ -25,7 +25,7 @@ class RandomArchitecture(CNN):
             dropout: (float) rate of the dropout.
             network_normalization: (str) type of normalization layer in the network.
             output_size: (int) Number of output neurones of the network.
-            use_cpu: (bool) If True the network weights are stored on a CPU, else GPU.
+            gpu: (bool) If True the network weights are stored on a CPU, else GPU.
         """
         self.dimension = len(input_size) - 1
         self.first_in_channels = input_size[0]
@@ -54,7 +54,7 @@ class RandomArchitecture(CNN):
             convolutions=convolutions,
             fc=classifier,
             n_classes=output_size,
-            use_cpu=use_cpu,
+            gpu=gpu,
         )
 
     def define_convolutional_block(self, conv_dict):

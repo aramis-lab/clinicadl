@@ -143,7 +143,7 @@ def read_json(options=None, json_path=None, test=False, read_computational=False
         options["stride_size"] = options["patch_stride"]
 
     if "use_gpu" in options:
-        options["use_cpu"] = not options["use_gpu"]
+        options["gpu"] = options["use_gpu"]
 
     if "mode" in options:
         if options["mode"] == "subject":
@@ -246,7 +246,7 @@ def check_and_complete(options, random_search=False):
         "deterministic": False,
         "transfer_learning_path": "",
         "transfer_learning_selection": "best_loss",
-        "use_cpu": False,
+        "gpu": True,
         "wd_bool": True,
         "weight_decay": 4,
         "sampler": "random",

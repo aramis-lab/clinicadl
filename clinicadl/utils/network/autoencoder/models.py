@@ -8,13 +8,13 @@ class AE_Conv5_FC3(AutoEncoder):
     Autoencoder derived from the convolutional part of CNN Conv5_FC3
     """
 
-    def __init__(self, input_size, use_cpu=False):
+    def __init__(self, input_size, gpu=True):
         # fmt: off
-        cnn_model = Conv5_FC3(input_size=input_size, use_cpu=use_cpu)
+        cnn_model = Conv5_FC3(input_size=input_size, gpu=gpu)
         autoencoder = CNN_Transformer(cnn_model)
         # fmt: on
         super().__init__(
-            encoder=autoencoder.encoder, decoder=autoencoder.decoder, use_cpu=use_cpu
+            encoder=autoencoder.encoder, decoder=autoencoder.decoder, gpu=gpu
         )
 
 
@@ -23,11 +23,11 @@ class AE_Conv4_FC3(AutoEncoder):
     Autoencoder derived from the convolutional part of CNN Conv4_FC3
     """
 
-    def __init__(self, input_size, use_cpu=False):
+    def __init__(self, input_size, gpu=True):
         # fmt: off
-        cnn_model = Conv4_FC3(input_size=input_size, use_cpu=use_cpu)
+        cnn_model = Conv4_FC3(input_size=input_size, gpu=gpu)
         autoencoder = CNN_Transformer(cnn_model)
         # fmt: on
         super().__init__(
-            encoder=autoencoder.encoder, decoder=autoencoder.decoder, use_cpu=use_cpu
+            encoder=autoencoder.encoder, decoder=autoencoder.decoder, gpu=gpu
         )

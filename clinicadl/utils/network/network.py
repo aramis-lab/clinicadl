@@ -8,19 +8,19 @@ from torch import nn
 class Network(nn.Module):
     """Abstract Template for all networks used in ClinicaDL"""
 
-    def __init__(self, use_cpu=False):
+    def __init__(self, gpu=True):
         super(Network, self).__init__()
-        self.device = self._select_device(use_cpu)
+        self.device = self._select_device(gpu)
 
     @staticmethod
-    def _select_device(use_cpu):
+    def _select_device(gpu):
         import os
 
         from numpy import argmax
 
         logger = getLogger("clinicadl")
 
-        if use_cpu:
+        if not gpu:
             return "cpu"
         else:
             # TODO: Add option gpu_device (user chooses the gpu)
