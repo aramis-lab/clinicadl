@@ -899,13 +899,13 @@ class NanRemoval(object):
 
 
 def get_transforms(
-    minmaxnormalization: bool = True, data_augmentation: List[str] = None
+    normalize: bool = True, data_augmentation: List[str] = None
 ) -> Tuple[transforms.Compose, transforms.Compose]:
     """
     Outputs the transformations that will be applied to the dataset
 
     Args:
-        minmaxnormalization: if True will perform MinMaxNormalization.
+        normalize: if True will perform MinMaxNormalization.
         data_augmentation: list of data augmentation performed on the training set.
 
     Returns:
@@ -925,7 +925,7 @@ def get_transforms(
     else:
         augmentation_list = []
 
-    if minmaxnormalization:
+    if normalize:
         transformations_list = [NanRemoval(), MinMaxNormalization()]
     else:
         transformations_list = [NanRemoval()]

@@ -64,7 +64,6 @@ def get_train_dict(
             train_dict[key] = config_dict[config_section][key]
 
     renamed_dict = {
-        "normalize": "minmaxnormalization",
         "split": "folds",
     }
 

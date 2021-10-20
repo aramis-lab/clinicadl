@@ -201,7 +201,7 @@ class MapsManager:
         logger.debug(f"List of folds found {folds}")
 
         _, all_transforms = get_transforms(
-            minmaxnormalization=self.minmaxnormalization,
+            normalize=self.normalize,
             data_augmentation=self.data_augmentation,
         )
 
@@ -345,7 +345,7 @@ class MapsManager:
         logger.debug(f"List of folds found {folds}")
 
         _, all_transforms = get_transforms(
-            minmaxnormalization=self.minmaxnormalization,
+            normalize=self.normalize,
             data_augmentation=self.data_augmentation,
         )
 

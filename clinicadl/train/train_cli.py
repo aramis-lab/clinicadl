@@ -344,6 +344,7 @@ def cli(
         "multi_cohort",
         "n_proc",
         "n_splits",
+        "normalize",
         "patience",
         "tolerance",
         "transfer_selection_metric",
@@ -366,8 +367,6 @@ def cli(
         train_dict["use_cpu"] = not gpu
     if not train_dict["use_cpu"]:
         check_gpu()
-    if normalize is not None:
-        train_dict["minmaxnormalization"] = normalize
     if split:
         train_dict["folds"] = split
     if nondeterministic:

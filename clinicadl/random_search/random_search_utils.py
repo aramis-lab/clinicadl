@@ -112,7 +112,7 @@ def random_sampling(
         "folds": "fixed",
         "label": "fixed",
         "learning_rate": "exponent",
-        "minmaxnormalization": "choice",
+        "normalize": "choice",
         "mode": "fixed",
         "multi_cohort": "fixed",
         "multi_network": "choice",
