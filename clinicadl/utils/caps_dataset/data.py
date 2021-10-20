@@ -883,8 +883,19 @@ class MinMaxNormalization(object):
 
 
 class NanRemoval(object):
+    def __init__(self):
+        self.nan_detected = False  # Avoid warning each time new data is seen
+
     def __call__(self, image):
-        return torch.nan_to_num(image)
+        if torch.isnan(image).any().item():
+            if not self.nan_detected:
+                logger.warning(
+                    "NaN values were found in your images and will be removed."
+                )
+                self.nan_detected = True
+            return torch.nan_to_num(image)
+        else:
+            return image
 
 
 def get_transforms(
