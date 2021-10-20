@@ -1290,7 +1290,7 @@ class MapsManager:
         """
         group_path = path.join(self.maps_path, "groups", data_group)
         logger.debug(f"Group path {group_path}")
-        if path.exists(group_path):
+        if path.exists(group_path):  # Data group already exists
             if overwrite:
                 if data_group in ["train", "validation"]:
                     raise ValueError("Cannot overwrite train or validation data group.")
@@ -1315,12 +1315,16 @@ class MapsManager:
                     f"To erase {data_group} please set overwrite to True."
                 )
 
-        if caps_directory is None or df is None:
+        if not path.exists(group_path) and (
+            caps_directory is None or df is None
+        ):  # Data group does not exist yet / was overwritten + missing data
             raise ValueError(
                 f"The data group {data_group} does not already exist. "
                 f"Please specify a caps_directory and a tsv_path to create this data group."
             )
-        else:
+        elif not path.exists(
+            group_path
+        ):  # Data group does not exist yet / was overwritten + all data is provided
             self._check_leakage(data_group, df)
             self._write_data_group(
                 data_group, df, caps_directory, multi_cohort, label=label
@@ -1827,7 +1831,9 @@ class MapsManager:
                     f"loaded if a fold number is given"
                 )
             elif not path.exists(path.join(group_path, f"fold-{fold}")):
-                raise ValueError(f"fold {fold} is not available.")
+                raise ValueError(
+                    f"fold {fold} is not available for data group {data_group}."
+                )
             else:
                 group_path = path.join(group_path, f"fold-{fold}")
 
