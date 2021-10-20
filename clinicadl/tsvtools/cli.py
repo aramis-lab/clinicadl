@@ -14,7 +14,7 @@ class RegistrationOrderGroup(click.Group):
         return self.commands.keys()
 
 
-@click.group(cls=RegistrationOrderGroup, name="tsvtool")
+@click.group(cls=RegistrationOrderGroup, name="tsvtool", no_args_is_help=True)
 def cli() -> None:
     """
     Manipulation of TSV files to prepare and manage input data.

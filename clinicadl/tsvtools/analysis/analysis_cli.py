@@ -2,10 +2,8 @@ import click
 
 from clinicadl.utils import cli_param
 
-cmd_name = "analysis"
 
-
-@click.command(name=cmd_name)
+@click.command(name="analysis", no_args_is_help=True)
 @cli_param.argument.merged_tsv
 @cli_param.argument.formatted_data_directory
 @cli_param.argument.results_directory

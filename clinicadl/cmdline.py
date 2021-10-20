@@ -22,7 +22,7 @@ CONTEXT_SETTINGS = dict(
 )
 
 
-@click.group(context_settings=CONTEXT_SETTINGS)
+@click.group(context_settings=CONTEXT_SETTINGS, no_args_is_help=True)
 @click.version_option()
 @click.option(
     "-v", "--verbose", "verbosity", count=True, help="Increase logging verbosity."
