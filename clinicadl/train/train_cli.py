@@ -69,7 +69,7 @@ from clinicadl.utils.caps_dataset.data import CapsDataset
     type=int,
 )
 @click.option(
-    "--nondeterministic/--deterministic",
+    "--deterministic/--nondeterministic",
     type=bool,
     default=None,
     help="Forces Pytorch to be deterministic even when using a GPU. "
@@ -247,7 +247,7 @@ def cli(
     batch_size,
     evaluation_steps,
     seed,
-    nondeterministic,
+    deterministic,
     compensation,
     architecture,
     multi_network,
@@ -334,6 +334,7 @@ def cli(
         "baseline",
         "batch_size",
         "data_augmentation",
+        "deterministic",
         "diagnoses",
         "dropout",
         "epochs",
@@ -368,8 +369,6 @@ def cli(
         check_gpu()
     if split:
         train_dict["folds"] = split
-    if nondeterministic:
-        train_dict["deterministic"] = not nondeterministic
 
     # Splits
     if train_dict["n_splits"] and train_dict["n_splits"] > 1:
