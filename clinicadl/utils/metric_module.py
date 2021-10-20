@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Dict
+from typing import Dict, List
 
 import numpy as np
 
@@ -222,12 +222,15 @@ class RetainBest:
     A class to retain the best and overfitting values for a set of wanted metrics.
     """
 
-    def __init__(self, selection_metrics, n_classes=0):
+    def __init__(self, selection_metrics: List[str], n_classes: int = 0):
         self.selection_metrics = selection_metrics
 
         if "loss" in selection_metrics:
             selection_metrics.remove("loss")
-        metric_module = MetricModule(selection_metrics)
+            metric_module = MetricModule(selection_metrics)
+            selection_metrics.append("loss")
+        else:
+            metric_module = MetricModule(selection_metrics)
 
         implemented_metrics = set(metric_optimum.keys())
         if not set(self.selection_metrics).issubset(implemented_metrics):
@@ -248,7 +251,7 @@ class RetainBest:
             else:
                 self.set_optimum(selection)
 
-    def set_optimum(self, selection):
+    def set_optimum(self, selection: str):
         if metric_optimum[selection] == "min":
             self.best_metrics[selection] = np.inf
         elif metric_optimum[selection] == "max":
