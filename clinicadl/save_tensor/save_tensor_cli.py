@@ -3,7 +3,7 @@ import click
 from clinicadl.utils import cli_param
 
 
-@click.command(name="save-tensor")
+@click.command(name="save-tensor", no_args_is_help=True)
 @cli_param.argument.input_maps
 @cli_param.argument.data_group
 @click.option(

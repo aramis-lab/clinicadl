@@ -8,7 +8,7 @@ from clinicadl.utils import cli_param
 from clinicadl.utils.caps_dataset.data import CapsDataset
 
 
-@click.command(name="train")
+@click.command(name="train", no_args_is_help=True)
 @click.argument(
     "network_task",
     type=click.Choice(["classification", "regression", "reconstruction"]),

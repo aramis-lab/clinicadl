@@ -11,7 +11,7 @@ class RegistrationOrderGroup(click.Group):
         return self.commands.keys()
 
 
-@click.group(cls=RegistrationOrderGroup, name="quality-check")
+@click.group(cls=RegistrationOrderGroup, name="quality-check", no_args_is_help=True)
 def cli() -> None:
     """Performs quality check procedure for t1-linear or t1-volume pipelines.
 

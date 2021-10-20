@@ -2,10 +2,8 @@ import click
 
 from clinicadl.utils import cli_param
 
-cmd_name = "getlabels"
 
-
-@click.command(name=cmd_name)
+@click.command(name="getlabels", no_args_is_help=True)
 @cli_param.argument.merged_tsv
 @cli_param.argument.missing_mods_directory
 @cli_param.argument.results_directory

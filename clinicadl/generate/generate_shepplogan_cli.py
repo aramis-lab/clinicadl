@@ -3,7 +3,7 @@ import click
 from clinicadl.utils import cli_param
 
 
-@click.command(name="shepplogan")
+@click.command(name="shepplogan", no_args_is_help=True)
 @cli_param.argument.generated_caps
 @cli_param.option.n_subjects
 @click.option(
