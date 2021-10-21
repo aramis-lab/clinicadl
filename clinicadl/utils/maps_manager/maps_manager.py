@@ -473,7 +473,7 @@ class MapsManager:
             )
 
         _, all_transforms = get_transforms(
-            minmaxnormalization=self.minmaxnormalization,
+            normalize=self.normalize,
             data_augmentation=self.data_augmentation,
         )
 
@@ -577,7 +577,7 @@ class MapsManager:
         from torch.utils.data import DataLoader
 
         train_transforms, all_transforms = get_transforms(
-            minmaxnormalization=self.minmaxnormalization,
+            normalize=self.normalize,
             data_augmentation=self.data_augmentation,
         )
 
@@ -663,7 +663,7 @@ class MapsManager:
         from torch.utils.data import DataLoader
 
         train_transforms, all_transforms = get_transforms(
-            minmaxnormalization=self.minmaxnormalization,
+            normalize=self.normalize,
             data_augmentation=self.data_augmentation,
         )
 
@@ -1133,7 +1133,7 @@ class MapsManager:
 
         self.parameters = parameters
 
-        _, transformations = get_transforms(self.minmaxnormalization)
+        _, transformations = get_transforms(self.normalize)
 
         split_manager = self._init_split_manager(None)
         train_df = split_manager[0]["train"]
@@ -1851,6 +1851,8 @@ class MapsManager:
         retro_change_name = {
             "model": "architecture",
             "multi": "multi_network",
+            "minmaxnormalization": "normalize",
+            "num_workers": "n_proc",
         }
         retro_change_value = {
             # "preprocessing": {"mni": "t1-extensive", "linear": "t1-linear"}
@@ -1871,6 +1873,14 @@ class MapsManager:
         for name, value in retro_add.items():
             if name not in parameters:
                 parameters[name] = value
+
+        # Value changes
+        if "use_cpu" in parameters:
+            parameters["gpu"] = not parameters["use_cpu"]
+            del parameters["use_cpu"]
+        if "nondeterministic" in parameters:
+            parameters["deterministic"] = not parameters["nondeterministic"]
+            del parameters["nondeterministic"]
 
         # Build preprocessing_dict
         if "preprocessing_dict" not in parameters:
