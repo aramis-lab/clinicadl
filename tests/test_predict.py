@@ -72,7 +72,7 @@ def test_predict(predict_commands):
         data_group="test-RANDOM",
         caps_directory="data/dataset/OasisCaps_example",
         tsv_path="data/dataset/OasisCaps_example/data.tsv",
-        gpu=True,
+        gpu=False,
         use_labels=use_labels,
         overwrite=True,
     )
