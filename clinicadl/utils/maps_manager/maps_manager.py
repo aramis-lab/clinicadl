@@ -12,7 +12,6 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 
-from clinicadl.extract.extract_utils import compute_folder_and_file_type
 from clinicadl.utils.caps_dataset.data import (
     get_transforms,
     load_data_test,
@@ -20,6 +19,10 @@ from clinicadl.utils.caps_dataset.data import (
 )
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.maps_manager.logwriter import LogWriter, setup_logging
+from clinicadl.utils.maps_manager.maps_manager_utils import (
+    add_default_values,
+    read_json,
+)
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.network.network import Network
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
@@ -1139,7 +1142,6 @@ class MapsManager:
     def _check_args(self, parameters):
         """
         Check the training parameters integrity
-        TODO: create independent class for train_parameters check
         """
         logger.debug("Checking arguments...")
         mandatory_arguments = [
@@ -1157,6 +1159,7 @@ class MapsManager:
                     f"No value was given for {arg}."
                 )
 
+        parameters = add_default_values(parameters)
         self.parameters = parameters
 
         _, transformations = get_transforms(self.normalize)
@@ -1897,97 +1900,7 @@ class MapsManager:
     def get_parameters(self):
         """Returns the training parameters dictionary."""
         json_path = path.join(self.maps_path, "maps.json")
-        with open(json_path, "r") as f:
-            parameters = json.load(f)
-
-        # Types of retro-compatibility
-        # Change arg name: ex network --> model
-        # Change arg value: ex for preprocessing: mni --> t1-extensive
-        # New arg with default hard-coded value --> discarded_slice --> 20
-        retro_change_name = {
-            "model": "architecture",
-            "multi": "multi_network",
-            "minmaxnormalization": "normalize",
-            "num_workers": "n_proc",
-        }
-        retro_change_value = {
-            # "preprocessing": {"mni": "t1-extensive", "linear": "t1-linear"}
-        }
-        retro_add = {
-            "loss": "default",
-        }
-
-        for old_name, new_name in retro_change_name.items():
-            if old_name in parameters:
-                parameters[new_name] = parameters[old_name]
-                del parameters[old_name]
-
-        for name, change_values in retro_change_value.items():
-            if parameters[name] in change_values:
-                parameters[name] = change_values[parameters[name]]
-
-        for name, value in retro_add.items():
-            if name not in parameters:
-                parameters[name] = value
-
-        # Value changes
-        if "use_cpu" in parameters:
-            parameters["gpu"] = not parameters["use_cpu"]
-            del parameters["use_cpu"]
-        if "nondeterministic" in parameters:
-            parameters["deterministic"] = not parameters["nondeterministic"]
-            del parameters["nondeterministic"]
-
-        # Build preprocessing_dict
-        if "preprocessing_dict" not in parameters:
-            parameters["preprocessing_dict"] = {"mode": parameters["mode"]}
-            preprocessing_options = [
-                "preprocessing",
-                "use_uncropped_image",
-                "prepare_dl" "custom_suffix",
-                "acq_label",
-                "suvr_reference_region",
-                "patch_size",
-                "stride_size",
-                "slice_direction",
-                "slice_mode",
-                "discarded_slices",
-                "roi_list",
-                "uncropped_roi",
-                "roi_custom_suffix",
-                "roi_custom_template",
-                "roi_custom_mask_pattern",
-            ]
-            for preprocessing_var in preprocessing_options:
-                if preprocessing_var in parameters:
-                    parameters["preprocessing_dict"][preprocessing_var] = parameters[
-                        preprocessing_var
-                    ]
-                    del parameters[preprocessing_var]
-
-        # Add missing parameters in previous version of extract
-        if "use_uncropped_image" not in parameters["preprocessing_dict"]:
-            parameters["preprocessing_dict"]["use_uncropped_image"] = False
-
-        if (
-            "prepare_dl" not in parameters["preprocessing_dict"]
-            and parameters["mode"] != "image"
-        ):
-            parameters["preprocessing_dict"]["prepare_dl"] = False
-
-        if (
-            parameters["mode"] == "slice"
-            and "slice_mode" not in parameters["preprocessing_dict"]
-        ):
-            parameters["preprocessing_dict"]["slice_mode"] = "rgb"
-
-        if "file_type" not in parameters["preprocessing_dict"]:
-            _, file_type = compute_folder_and_file_type(
-                parameters["preprocessing_dict"]
-            )
-            parameters["preprocessing_dict"]["file_type"] = file_type
-
-        return parameters
+        return read_json(json_path)
 
     def get_model(
         self, split: int = 0, selection_metric: str = None, network: int = None

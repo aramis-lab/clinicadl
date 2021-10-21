@@ -2,7 +2,6 @@ import os
 from logging import getLogger
 
 import click
-import toml
 
 from clinicadl.utils import cli_param
 from clinicadl.utils.caps_dataset.data import CapsDataset
@@ -25,7 +24,7 @@ from clinicadl.utils.caps_dataset.data import CapsDataset
     "--config_file",
     "-c",
     type=click.File(),
-    help="Path to the TOML file containing the values of the options needed for training.",
+    help="Path to the TOML or JSON file containing the values of the options needed for training.",
 )
 @click.option(
     "--label",
@@ -289,7 +288,7 @@ def cli(
     from clinicadl.utils.cmdline_utils import check_gpu
 
     from .launch import train
-    from .train_utils import get_train_dict
+    from .train_utils import get_user_dict
 
     logger = getLogger("clinicadl")
 
@@ -317,10 +316,10 @@ def cli(
                 f"in {caps_dict}."
             )
 
-    user_dict = None
     if config_file:
-        user_dict = toml.load(config_file)
-    train_dict = get_train_dict(user_dict, preprocessing_json, network_task)
+        train_dict = get_user_dict(config_file, preprocessing_json, network_task)
+    else:
+        train_dict = dict()
 
     # Add arguments
     train_dict["network_task"] = network_task
@@ -368,12 +367,6 @@ def cli(
 
     if train_dict["gpu"]:
         check_gpu()
-
-    # Splits
-    if train_dict["n_splits"] and train_dict["n_splits"] > 1:
-        train_dict["validation"] = "KFoldSplit"
-    else:
-        train_dict["validation"] = "SingleSplit"
 
     train(output_maps_directory, train_dict, train_dict.pop("split"))
 
