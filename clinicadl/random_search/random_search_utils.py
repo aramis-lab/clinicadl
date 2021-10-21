@@ -84,18 +84,16 @@ def sampling_fn(value, sampling_type: str):
             return value
 
 
-def random_sampling(
-    rs_options: Dict[str, Any], options: Dict[str, Any]
-) -> Dict[str, Any]:
+def random_sampling(rs_options: Dict[str, Any]) -> Dict[str, Any]:
     """
     Samples all the hyperparameters of the model.
     Args:
         rs_options: parameters of the random search
-        options: options of the training
     Returns:
         options updated to train the model generated randomly
     """
 
+    options = dict()
     sampling_dict = {
         "accumulation_steps": "randint",
         "baseline": "choice",
@@ -127,7 +125,7 @@ def random_sampling(
         "sampler": "choice",
         "seed": "fixed",
         "selection_metrics": "fixed",
-        "split": "fixed",
+        "folds": "fixed",
         "tolerance": "fixed",
         "transfer_path": "choice",
         "transfer_selection_metric": "choice",

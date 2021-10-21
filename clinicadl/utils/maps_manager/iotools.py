@@ -234,7 +234,7 @@ def check_and_complete(options, random_search=False):
         "multi": False,
         "multi_cohort": False,
         "n_splits": 0,
-        "nproc": 2,
+        "n_proc": 2,
         "optimizer": "Adam",
         "unnormalize": False,
         "patience": 0,
