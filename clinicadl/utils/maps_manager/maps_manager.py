@@ -77,9 +77,9 @@ class MapsManager:
             self._check_args(parameters)
             self.write_parameters(self.maps_path, self.parameters)
             self._write_requirements_version()
+            self.split_name = "split"  # Used only for retro-compatibility
             self._write_training_data()
             self._write_train_val_groups()
-            self.split_name = "split"  # Used only for retro-compatibility
 
     def __getattr__(self, name):
         """Allow to directly get the values in parameters attribute"""
