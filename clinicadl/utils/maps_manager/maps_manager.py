@@ -17,6 +17,7 @@ from clinicadl.utils.caps_dataset.data import (
     load_data_test,
     return_dataset,
 )
+from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.maps_manager.logwriter import LogWriter, setup_logging
 from clinicadl.utils.maps_manager.maps_manager_utils import (
@@ -1161,6 +1162,8 @@ class MapsManager:
 
         parameters = add_default_values(parameters)
         self.parameters = parameters
+        if self.parameters["gpu"]:
+            check_gpu()
 
         _, transformations = get_transforms(self.normalize)
 

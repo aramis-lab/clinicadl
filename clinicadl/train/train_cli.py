@@ -285,8 +285,6 @@ def cli(
     in a TOML file as explained in the documentation:
     https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
     """
-    from clinicadl.utils.cmdline_utils import check_gpu
-
     from .launch import train
     from .train_utils import get_user_dict
 
@@ -364,9 +362,6 @@ def cli(
             isinstance(eval(option), tuple) and len(eval(option)) != 0
         ):
             train_dict[option] = eval(option)
-
-    if train_dict["gpu"]:
-        check_gpu()
 
     train(output_maps_directory, train_dict, train_dict.pop("split"))
 
