@@ -113,7 +113,7 @@ def test_train(cli_commands):
     flag_error = not os.system("clinicadl " + " ".join(test_input))
     assert flag_error
     performances_flag = os.path.exists(
-        os.path.join("results", f"fold-{split}", "best-loss", "train")
+        os.path.join("results", f"split-{split}", "best-loss", "train")
     )
     assert performances_flag
     with open(os.path.join("results", "maps.json"), "r") as f:

@@ -12,10 +12,10 @@ class KFoldSplit(SplitManager):
         n_splits,
         baseline=False,
         multi_cohort=False,
-        folds=None,
+        split_list=None,
     ):
         super().__init__(
-            caps_directory, tsv_path, diagnoses, baseline, multi_cohort, folds
+            caps_directory, tsv_path, diagnoses, baseline, multi_cohort, split_list
         )
         self.n_splits = n_splits
 
@@ -23,26 +23,26 @@ class KFoldSplit(SplitManager):
         return self.n_splits
 
     def __len__(self):
-        if not self.folds:
+        if not self.split_list:
             return self.n_splits
         else:
-            return len(self.folds)
+            return len(self.split_list)
 
     @property
-    def allowed_folds_list(self):
+    def allowed_splits_list(self):
         return [i for i in range(self.n_splits)]
 
-    def fold_iterator(self):
-        if not self.folds:
+    def split_iterator(self):
+        if not self.split_list:
             return range(self.n_splits)
         else:
-            return self.folds
+            return self.split_list
 
-    def _get_tsv_paths(self, cohort_path, fold):
+    def _get_tsv_paths(self, cohort_path, split):
         train_path = path.join(
-            cohort_path, f"train_splits-{self.n_splits}", f"split-{fold}"
+            cohort_path, f"train_splits-{self.n_splits}", f"split-{split}"
         )
         valid_path = path.join(
-            cohort_path, f"validation_splits-{self.n_splits}", f"split-{fold}"
+            cohort_path, f"validation_splits-{self.n_splits}", f"split-{split}"
         )
         return train_path, valid_path

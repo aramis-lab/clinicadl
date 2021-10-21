@@ -56,7 +56,7 @@ class LogWriter:
         self,
         maps_path,
         evaluation_metrics,
-        fold,
+        split,
         resume=False,
         beginning_epoch=0,
         network=None,
@@ -77,7 +77,7 @@ class LogWriter:
         self.evaluation_metrics = evaluation_metrics
         self.maps_path = maps_path
 
-        self.file_dir = path.join(self.maps_path, f"fold-{fold}", "training_logs")
+        self.file_dir = path.join(self.maps_path, f"split-{split}", "training_logs")
         if network is not None:
             self.file_dir = path.join(self.file_dir, f"network-{network}")
         makedirs(self.file_dir, exist_ok=True)
@@ -92,7 +92,7 @@ class LogWriter:
         else:
             if not path.exists(tsv_path):
                 raise ValueError(
-                    f"The training.tsv file of the fold {fold} in the MAPS "
+                    f"The training.tsv file of the split {split} in the MAPS "
                     f"{self.maps_path} does not exist."
                 )
             truncated_tsv = pd.read_csv(tsv_path, sep="\t")

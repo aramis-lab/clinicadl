@@ -63,13 +63,6 @@ def get_train_dict(
         for key in config_dict[config_section]:
             train_dict[key] = config_dict[config_section][key]
 
-    renamed_dict = {
-        "split": "folds",
-    }
-
-    for command_name, code_name in renamed_dict.items():
-        train_dict[code_name] = train_dict.pop(command_name)
-
     # Hard-coded optimizer
     train_dict["optimizer"] = "Adam"
 

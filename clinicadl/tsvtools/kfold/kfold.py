@@ -38,7 +38,7 @@ def write_splits(
         diagnosis: diagnosis on which the split is done
         diagnosis_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
         split_label: label on which the split is done (categorical variables)
-        n_splits: Number of folds in the k-fold split
+        n_splits: Number of splits in the k-fold cross-validation.
         train_path: Path to the training data.
         test_path: Path to the test data.
         supplementary_diagnoses: List of supplementary diagnoses to add to the data.
@@ -117,7 +117,7 @@ def split_diagnoses(
     """
     Performs a k-fold split for each label independently on the subject level.
     The train folder will contain two lists per fold per diagnosis (baseline and longitudinal),
-    whereas the test folder will only include the list of baseline sessions for each fold.
+    whereas the test folder will only include the list of baseline sessions for each spli.
 
     Writes three files per split per <label>.tsv file present in formatted_data_path:
             - formatted_data_path/train_splits-<n_splits>/split-<split>/<label>.tsv
@@ -126,7 +126,7 @@ def split_diagnoses(
 
     Args:
         formatted_data_path: Path to the folder containing data extracted by clinicadl tsvtool getlabels.
-        n_splits: Number of folds in the k-fold split.
+        n_splits: Number of splits in the k-fold cross-validation.
         subset_name: Name of the subset that is complementary to train.
         MCI_sub_categories: If True, manages MCI sub-categories to avoid data leakage.
         stratification: Name of variable used to stratify k-fold.

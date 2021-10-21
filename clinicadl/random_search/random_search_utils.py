@@ -125,7 +125,7 @@ def random_sampling(rs_options: Dict[str, Any]) -> Dict[str, Any]:
         "sampler": "choice",
         "seed": "fixed",
         "selection_metrics": "fixed",
-        "folds": "fixed",
+        "split": "fixed",
         "tolerance": "fixed",
         "transfer_path": "choice",
         "transfer_selection_metric": "choice",

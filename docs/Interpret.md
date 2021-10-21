@@ -72,9 +72,9 @@ Results for the `DATA_GROUP` level are stored in the results folder given by `IN
 the following file system:
 ```
 <maps_directory>
-    ├── fold-0  
+    ├── split-0  
     ├── ...  
-    └── fold-<fold>
+    └── split-<split>
         └── best-<metric>
                 └── <data_group>
                     └── interpret-<name>

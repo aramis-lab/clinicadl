@@ -168,7 +168,7 @@ from clinicadl.utils.caps_dataset.data import CapsDataset
     type=int,
     # default=(),
     multiple=True,
-    help="Train the list of given folds. By default, all the folds are trained.",
+    help="Train the list of given splits. By default, all the splits are trained.",
 )
 # Optimization
 @click.option(
@@ -355,6 +355,7 @@ def cli(
         "weight_decay",
         "sampler",
         "seed",
+        "split",
         "compensation",
         "transfer_path",
     ]
@@ -365,10 +366,8 @@ def cli(
         ):
             train_dict[option] = eval(option)
 
-    if not train_dict["gpu"]:
+    if train_dict["gpu"]:
         check_gpu()
-    if split:
-        train_dict["folds"] = split
 
     # Splits
     if train_dict["n_splits"] and train_dict["n_splits"] > 1:
@@ -376,7 +375,7 @@ def cli(
     else:
         train_dict["validation"] = "SingleSplit"
 
-    train(output_maps_directory, train_dict, train_dict.pop("folds"))
+    train(output_maps_directory, train_dict, train_dict.pop("split"))
 
 
 if __name__ == "__main__":
