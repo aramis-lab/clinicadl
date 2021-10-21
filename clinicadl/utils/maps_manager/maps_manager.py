@@ -1,7 +1,9 @@
 import json
+import os
 import shutil
 import subprocess
 from datetime import datetime
+from glob import glob
 from logging import getLogger
 from os import listdir, makedirs, path
 from typing import Any, Dict, List, Optional, Union, Tuple
@@ -236,6 +238,22 @@ class MapsManager:
             if label is not None and label != self.label and label_code == "default":
                 self.task_manager.generate_label_code(group_df, label)
 
+            # Erase previous TSV files
+            if selection_metrics is None:
+                split_selection_metrics = self._find_selection_metrics(split)
+            else:
+                split_selection_metrics = selection_metrics
+            for selection in split_selection_metrics:
+                tsv_pattern = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection}",
+                    data_group,
+                    f"{data_group}*.tsv",
+                )
+                for tsv_file in glob(tsv_pattern):
+                    os.remove(tsv_file)
+
             if self.multi_network:
                 for network in range(self.num_networks):
                     data_test = return_dataset(
@@ -265,9 +283,7 @@ class MapsManager:
                         criterion,
                         data_group,
                         split,
-                        selection_metrics
-                        if selection_metrics is not None
-                        else self._find_selection_metrics(split),
+                        split_selection_metrics,
                         use_labels=use_labels,
                         gpu=gpu,
                         network=network,
@@ -300,9 +316,7 @@ class MapsManager:
                     criterion,
                     data_group,
                     split,
-                    selection_metrics
-                    if selection_metrics is not None
-                    else self._find_selection_metrics(split),
+                    split_selection_metrics,
                     use_labels=use_labels,
                     gpu=gpu,
                 )
