@@ -569,6 +569,7 @@ class MapsManager:
 
             fold_df_dict = split_manager[fold]
 
+            logger.debug("Loading training data...")
             data_train = return_dataset(
                 self.caps_directory,
                 fold_df_dict["train"],
@@ -579,6 +580,7 @@ class MapsManager:
                 label=self.label,
                 label_code=self.label_code,
             )
+            logger.debug("Loading validation data...")
             data_valid = return_dataset(
                 self.caps_directory,
                 fold_df_dict["validation"],
@@ -592,6 +594,9 @@ class MapsManager:
 
             train_sampler = self.task_manager.generate_sampler(data_train, self.sampler)
 
+            logger.debug(
+                f"Getting train and validation loader with batch size {self.batch_size}"
+            )
             train_loader = DataLoader(
                 data_train,
                 batch_size=self.batch_size,
@@ -599,13 +604,14 @@ class MapsManager:
                 num_workers=self.num_workers,
                 worker_init_fn=pl_worker_init_function,
             )
-
+            logger.debug(f"Train loader size is {len(train_loader)}")
             valid_loader = DataLoader(
                 data_valid,
                 batch_size=self.batch_size,
                 shuffle=False,
                 num_workers=self.num_workers,
             )
+            logger.debug(f"Validation loader size is {len(valid_loader)}")
 
             self._train(
                 train_loader,
@@ -755,7 +761,9 @@ class MapsManager:
             transfer_selection=self.transfer_selection_metric,
         )
         criterion = self.task_manager.get_criterion()
+        logger.debug(f"Criterion for {self.network_task} is {criterion}")
         optimizer = self._init_optimizer(model, fold=fold, resume=resume)
+        logger.debug(f"Optimizer used for training is optimizer")
 
         model.train()
         train_loader.dataset.train()
@@ -1088,6 +1096,7 @@ class MapsManager:
         Check the training parameters integrity
         TODO: create independent class for train_parameters check
         """
+        logger.debug("Checking arguments...")
         mandatory_arguments = [
             "caps_directory",
             "tsv_path",
@@ -1287,6 +1296,7 @@ class MapsManager:
     @staticmethod
     def write_parameters(json_path, parameters):
         """Write JSON files of parameters."""
+        logger.debug("Writting parameters...")
         makedirs(json_path, exist_ok=True)
 
         # save to json file
@@ -1298,6 +1308,7 @@ class MapsManager:
 
     def _write_requirements_version(self):
         """Writes the environment.txt file."""
+        logger.debug("Writting requirement version...")
         try:
             env_variables = subprocess.check_output("pip freeze", shell=True).decode(
                 "utf-8"
@@ -1311,6 +1322,7 @@ class MapsManager:
 
     def _write_training_data(self):
         """Writes the TSV file containing the participant and session IDs used for training."""
+        logger.debug("Writting training data...")
         from clinicadl.utils.caps_dataset.data import load_data_test
 
         train_df = load_data_test(
@@ -1374,6 +1386,7 @@ class MapsManager:
 
     def _write_train_val_groups(self):
         """Defines the training and validation groups at the initialization"""
+        logger.debug("Writting training and validation groups...")
         split_manager = self._init_split_manager()
         for fold in split_manager.fold_iterator():
             for data_group in ["train", "validation"]:
@@ -1650,6 +1663,7 @@ class MapsManager:
 
         model = model_class(**kwargs)
         device = model.device
+        logger.info(f"Working on {device}")
         current_epoch = 0
 
         if resume:
