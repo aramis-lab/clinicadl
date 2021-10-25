@@ -62,13 +62,6 @@ def get_user_dict(
             for key in toml_dict[config_section]:
                 train_dict[key] = toml_dict[config_section][key]
 
-        # Mode and preprocessing
-        from clinicadl.utils.preprocessing import read_preprocessing
-
-        preprocessing_dict = read_preprocessing(preprocessing_json)
-        train_dict["preprocessing_dict"] = preprocessing_dict
-        train_dict["mode"] = preprocessing_dict["mode"]
-
     elif config_file.endswith(".json"):
         train_dict = read_json(config_file)
     else:

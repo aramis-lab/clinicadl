@@ -5,6 +5,7 @@ import click
 
 from clinicadl.utils import cli_param
 from clinicadl.utils.caps_dataset.data import CapsDataset
+from clinicadl.utils.preprocessing import read_preprocessing
 
 
 @click.command(name="train", no_args_is_help=True)
@@ -318,6 +319,11 @@ def cli(
         train_dict = get_user_dict(config_file.name, preprocessing_json, network_task)
     else:
         train_dict = dict()
+
+    # Mode and preprocessing
+    preprocessing_dict = read_preprocessing(preprocessing_json)
+    train_dict["preprocessing_dict"] = preprocessing_dict
+    train_dict["mode"] = preprocessing_dict["mode"]
 
     # Add arguments
     train_dict["network_task"] = network_task
