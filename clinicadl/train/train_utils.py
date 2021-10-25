@@ -59,8 +59,8 @@ def get_user_dict(
 
         # Standard arguments
         for config_section in toml_dict:
-            for key in config_dict[config_section]:
-                train_dict[key] = config_dict[config_section][key]
+            for key in toml_dict[config_section]:
+                train_dict[key] = toml_dict[config_section][key]
 
         # Mode and preprocessing
         from clinicadl.utils.preprocessing import read_preprocessing
