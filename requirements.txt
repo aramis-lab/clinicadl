@@ -3,8 +3,8 @@
 ##### Requirements with Version Specifiers ######
 ##  Other requirements different from these of Clinica ##
 
-#nipype==0.12.1
-clinica==0.5.0
+#nipype == 0.12.1
+clinica >= 0.5.0
 click >= 7.0
 pynvml
 toml
