@@ -5,7 +5,7 @@ from typing import Any, Dict, Tuple
 import toml
 
 from clinicadl.train.train_utils import get_user_dict
-from clinicadl.utils.maps_manager.maps_manager_utils import add_default_values
+from clinicadl.utils.preprocessing import read_preprocessing
 
 
 def get_space_dict(launch_directory: str) -> Dict[str, Any]:
@@ -53,14 +53,19 @@ def get_space_dict(launch_directory: str) -> Dict[str, Any]:
         if option not in space_dict:
             space_dict[option] = value
 
+    train_default = get_user_dict(toml_path, space_dict["network_task"])
+
+    # Mode and preprocessing
     preprocessing_json = path.join(
         space_dict["caps_directory"],
         "tensor_extraction",
         space_dict.pop("preprocessing_json"),
     )
-    train_default = get_user_dict(
-        toml_path, preprocessing_json, space_dict["network_task"]
-    )
+
+    preprocessing_dict = read_preprocessing(preprocessing_json)
+    train_default["preprocessing_dict"] = preprocessing_dict
+    train_default["mode"] = preprocessing_dict["mode"]
+
     space_dict.update(train_default)
 
     return space_dict

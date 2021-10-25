@@ -316,7 +316,7 @@ def cli(
             )
 
     if config_file:
-        train_dict = get_user_dict(config_file.name, preprocessing_json, network_task)
+        train_dict = get_user_dict(config_file.name, network_task)
     else:
         train_dict = dict()
 

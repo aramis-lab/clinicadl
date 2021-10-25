@@ -9,16 +9,13 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
 )
 
 
-def get_user_dict(
-    config_file: str, preprocessing_json: str, task: str
-) -> Dict[str, Any]:
+def get_user_dict(config_file: str, task: str) -> Dict[str, Any]:
     """
     Read the configuration file given by the user.
     If it is a TOML file, ensures that the format corresponds to the one in resources.
 
     Args:
         config_file: path to a configuration file (JSON of TOML).
-        preprocessing_json: path to the JSON file containing preprocessing configuration.
         task: task learnt by the network (example: classification, regression, reconstruction...).
     Returns:
         dictionary of values ready to use for the MapsManager
