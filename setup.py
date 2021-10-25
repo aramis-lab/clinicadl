@@ -41,6 +41,7 @@ setup(
         "numpy>=1.17",
         "clinica>=0.5.0",
         "torch>=1.8",
+        "torchvision",
         "tensorboard",
         "toml",
         "click>=7.0",
