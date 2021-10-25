@@ -11,6 +11,7 @@ toml
 nilearn
 nipy
 torch >= 1.8
+torchvision
 pandas
 colorama
 tensorboard
