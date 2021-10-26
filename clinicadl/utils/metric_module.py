@@ -9,6 +9,8 @@ metric_optimum = {
     "PPV": "max",
     "NPV": "max",
     "BA": "max",
+    "PSNR": "max",
+    "SSIM": "max",
     "loss": "min",
 }
 
@@ -208,6 +210,32 @@ class MetricModule:
             "fp": false_positive,
             "fn": false_negative,
         }
+
+    @staticmethod
+    def ssim_fn(y, y_pred):
+        """
+        Args:
+            y (List): list of labels
+            y_pred (List): list of predictions
+        Returns:
+            (float) SSIM
+        """
+        from skimage.metrics import structural_similarity
+
+        return structural_similarity(y, y_pred)
+
+    @staticmethod
+    def ssim_fn(y, y_pred):
+        """
+        Args:
+            y (List): list of labels
+            y_pred (List): list of predictions
+        Returns:
+            (float) PSNR
+        """
+        from skimage.metrics import peak_signal_noise_ratio
+
+        return peak_signal_noise_ratio(y, y_pred)
 
 
 class RetainBest:

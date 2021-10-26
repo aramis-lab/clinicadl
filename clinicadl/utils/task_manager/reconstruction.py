@@ -20,7 +20,7 @@ class ReconstructionManager(TaskManager):
 
     @property
     def evaluation_metrics(self):
-        return ["MSE", "MAE"]
+        return ["MSE", "MAE", "PSNR", "SSIM"]
 
     @property
     def save_outputs(self):
