@@ -46,14 +46,18 @@ def get_parameters_dict(
         parameters["acq_label"] = acq_label
         parameters["suvr_reference_region"] = suvr_reference_region
 
-    if json_name is None:
-        parameters["json_name"] = f"extract_{int(time())}.json"
-    elif not json_name.endswith(".json"):
-        parameters["json_name"] = f"{json_name}.json"
-    else:
-        parameters["json_name"] = json_name
+    parameters["json_name"] = compute_json_name(json_name)
 
     return parameters
+
+
+def compute_json_name(json_name: str) -> str:
+    if json_name is None:
+        return f"extract_{int(time())}.json"
+    elif not json_name.endswith(".json"):
+        return f"{json_name}.json"
+    else:
+        return json_name
 
 
 def compute_folder_and_file_type(

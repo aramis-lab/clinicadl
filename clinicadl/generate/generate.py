@@ -14,6 +14,7 @@ import pandas as pd
 import torch
 from clinica.utils.inputs import RemoteFileStructure, clinica_file_reader, fetch_file
 
+from clinicadl.extract.extract_utils import compute_json_name
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
 from clinicadl.utils.preprocessing import write_preprocessing
@@ -295,9 +296,22 @@ def generate_shepplogan_dataset(
     output_dir: str,
     img_size: int,
     labels_distribution: Dict[str, Tuple[float, float, float]],
+    json_name: str = None,
     samples: int = 100,
     smoothing: bool = True,
 ):
+    """
+    Creates a CAPS data set of synthetic data based on Shepp-Logan phantom.
+    Source NifTi files are not extracted, but directly the slices as tensors.
+
+    Args:
+        output_dir: path to the CAPS created.
+        img_size: size of the square image.
+        labels_distribution: gives the proportions of the three subtypes (ordered in a tuple) for each label.
+        json_name: name of the JSON file in which generation details are stored.
+        samples: number of samples generated per class.
+        smoothing: if True, an additional random smoothing is performed on top of all operations on each image.
+    """
 
     check_and_clean(join(output_dir, "subjects"))
     commandline_to_json(
@@ -366,6 +380,7 @@ def generate_shepplogan_dataset(
         "mode": "slice",
         "use_uncropped_image": False,
         "prepare_dl": True,
+        "json_name": compute_json_name(json_name),
         "slice_direction": 2,
         "slice_mode": "single",
         "discarded_slices": 0,
