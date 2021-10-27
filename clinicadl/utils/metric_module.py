@@ -225,7 +225,7 @@ class MetricModule:
         return structural_similarity(y, y_pred)
 
     @staticmethod
-    def ssim_fn(y, y_pred):
+    def psnr_fn(y, y_pred):
         """
         Args:
             y (List): list of labels
