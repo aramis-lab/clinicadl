@@ -8,7 +8,7 @@ from clinicadl.utils import cli_param
 from clinicadl.utils.caps_dataset.data import CapsDataset
 
 
-@click.command(name="train")
+@click.command(name="train", no_args_is_help=True)
 @click.argument(
     "network_task",
     type=click.Choice(["classification", "regression", "reconstruction"]),
@@ -95,7 +95,15 @@ from clinicadl.utils.caps_dataset.data import CapsDataset
     default=None,
     help="If provided uses a multi-network framework.",
 )
-# Mode
+# Task
+@click.option(
+    "--selection_metrics",
+    "-sm",
+    default=["loss"],
+    multiple=True,
+    help="""Allow to save a list of models based on their selection metric. Default will
+    only save the best model selected on loss.""",
+)
 @click.option(
     "--selection_threshold",
     type=float,
@@ -232,6 +240,7 @@ def cli(
     output_maps_directory,
     config_file,
     label,
+    selection_metrics,
     selection_threshold,
     gpu,
     n_proc,
@@ -337,6 +346,7 @@ def cli(
         "patience",
         "tolerance",
         "transfer_selection_metric",
+        "selection_metrics",
         "selection_threshold",
         "weight_decay",
         "sampler",

@@ -3,7 +3,7 @@ import click
 from clinicadl.utils import cli_param
 
 
-@click.command(name="predict")
+@click.command(name="predict", no_args_is_help=True)
 @cli_param.argument.input_maps
 @cli_param.argument.data_group
 @click.option(

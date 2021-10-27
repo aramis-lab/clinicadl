@@ -3,7 +3,7 @@ import click
 from clinicadl.utils import cli_param
 
 
-@click.command(name="t1-linear")
+@click.command(name="t1-linear", no_args_is_help=True)
 @cli_param.argument.caps_directory
 @click.argument(
     "output_tsv",

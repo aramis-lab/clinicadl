@@ -2,10 +2,8 @@ import click
 
 from clinicadl.utils import cli_param
 
-cmd_name = "restrict"
 
-
-@click.command(name=cmd_name)
+@click.command(name="restrict", no_args_is_help=True)
 @cli_param.argument.dataset
 @cli_param.argument.merged_tsv
 @click.argument(

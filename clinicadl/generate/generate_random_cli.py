@@ -3,7 +3,7 @@ import click
 from clinicadl.utils import cli_param
 
 
-@click.command(name="random")
+@click.command(name="random", no_args_is_help=True)
 @cli_param.argument.caps_directory
 @cli_param.argument.generated_caps
 @cli_param.option.preprocessing

@@ -3,7 +3,7 @@ import click
 from clinicadl.utils import cli_param
 
 
-@click.command(name="kfold")
+@click.command(name="kfold", no_args_is_help=True)
 @cli_param.argument.formatted_data_directory
 @cli_param.option.no_mci_sub_categories
 @cli_param.option.subset_name

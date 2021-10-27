@@ -8,7 +8,7 @@ from .extract import DeepLearningPrepareData
 from .extract_utils import get_parameters_dict
 
 
-@click.command(name="image")
+@click.command(name="image", no_args_is_help=True)
 @cli_param.argument.caps_directory
 @cli_param.argument.modality
 @cli_param.option.subjects_sessions_tsv
@@ -47,7 +47,7 @@ def image_cli(
     )
 
 
-@click.command(name="patch")
+@click.command(name="patch", no_args_is_help=True)
 @cli_param.argument.caps_directory
 @cli_param.argument.modality
 @cli_param.option.save_features
@@ -107,7 +107,7 @@ def patch_cli(
     )
 
 
-@click.command(name="slice")
+@click.command(name="slice", no_args_is_help=True)
 @cli_param.argument.caps_directory
 @cli_param.argument.modality
 @cli_param.option.save_features
@@ -184,7 +184,7 @@ def slice_cli(
     )
 
 
-@click.command(name="roi")
+@click.command(name="roi", no_args_is_help=True)
 @cli_param.argument.caps_directory
 @cli_param.argument.modality
 @cli_param.option.save_features
@@ -273,7 +273,7 @@ class RegistrationOrderGroup(click.Group):
         return self.commands.keys()
 
 
-@click.group(cls=RegistrationOrderGroup, name="extract")
+@click.group(cls=RegistrationOrderGroup, name="extract", no_args_is_help=True)
 def cli() -> None:
     """Extract Pytorch tensors from nifti images."""
     pass

@@ -3,7 +3,7 @@ import click
 from clinicadl.utils import cli_param
 
 
-@click.command("interpret")
+@click.command("interpret", no_args_is_help=True)
 @cli_param.argument.input_maps
 @cli_param.argument.data_group
 @click.argument(

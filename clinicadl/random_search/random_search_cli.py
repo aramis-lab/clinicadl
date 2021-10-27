@@ -3,7 +3,7 @@ import click
 from clinicadl.utils import cli_param
 
 
-@click.command("random-search")
+@click.command("random-search", no_args_is_help=True)
 @click.argument(
     "launch_directory",
     type=str,
