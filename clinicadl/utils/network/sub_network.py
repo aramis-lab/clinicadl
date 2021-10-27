@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from logging import getLogger
 
 import torch
 from torch import nn
@@ -10,6 +11,8 @@ from clinicadl.utils.network.network_utils import (
     PadMaxPool2d,
     PadMaxPool3d,
 )
+
+logger = getLogger("clinicadl")
 
 
 class AutoEncoder(Network):

@@ -9,7 +9,8 @@ def predict(
     data_group: str,
     caps_directory: str,
     tsv_path: str,
-    labels: bool = True,
+    use_labels: bool = True,
+    label: str = None,
     gpu: bool = True,
     num_workers: int = 0,
     batch_size: int = 1,
@@ -28,7 +29,8 @@ def predict(
         caps_directory: path to the CAPS folder. For more information please refer to
             [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
         tsv_path: path to a TSV file containing the list of participants and sessions to interpret.
-        labels: by default is True. If False no metrics tsv files will be written.
+        use_labels: by default is True. If False no metrics tsv files will be written.
+        label: Name of the target value, if different from training.
         gpu: if true, it uses gpu.
         num_workers: num_workers used in DataLoader
         batch_size: batch size of the DataLoader
@@ -47,7 +49,8 @@ def predict(
         selection_metrics=selection_metrics,
         multi_cohort=multi_cohort,
         diagnoses=diagnoses,
-        use_labels=labels,
+        label=label,
+        use_labels=use_labels,
         batch_size=batch_size,
         num_workers=num_workers,
         use_cpu=not gpu,

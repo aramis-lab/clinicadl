@@ -296,6 +296,7 @@ class CapsDatasetImage(CapsDataset):
             multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
 
         """
+
         self.mode = "image"
         super().__init__(
             caps_directory,
@@ -881,6 +882,22 @@ class MinMaxNormalization(object):
         return (image - image.min()) / (image.max() - image.min())
 
 
+class NanRemoval(object):
+    def __init__(self):
+        self.nan_detected = False  # Avoid warning each time new data is seen
+
+    def __call__(self, image):
+        if torch.isnan(image).any().item():
+            if not self.nan_detected:
+                logger.warning(
+                    "NaN values were found in your images and will be removed."
+                )
+                self.nan_detected = True
+            return torch.nan_to_num(image)
+        else:
+            return image
+
+
 def get_transforms(
     minmaxnormalization: bool = True, data_augmentation: List[str] = None
 ) -> Tuple[transforms.Compose, transforms.Compose]:
@@ -909,9 +926,9 @@ def get_transforms(
         augmentation_list = []
 
     if minmaxnormalization:
-        transformations_list = [MinMaxNormalization()]
+        transformations_list = [NanRemoval(), MinMaxNormalization()]
     else:
-        transformations_list = []
+        transformations_list = [NanRemoval()]
 
     all_transformations = transforms.Compose(transformations_list)
     train_transformations = transforms.Compose(augmentation_list)

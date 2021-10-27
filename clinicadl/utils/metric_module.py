@@ -1,3 +1,6 @@
+from logging import getLogger
+from typing import Dict, List
+
 import numpy as np
 
 metric_optimum = {
@@ -11,6 +14,8 @@ metric_optimum = {
     "BA": "max",
     "loss": "min",
 }
+
+logger = getLogger("clinicadl")
 
 
 class MetricModule:
@@ -51,11 +56,13 @@ class MetricModule:
 
             for metric_key, metric_fn in self.metrics.items():
                 metric_args = list(metric_fn.__code__.co_varnames)
-                if "class_number" in metric_args:
+                if "class_number" in metric_args and self.n_classes > 2:
                     for class_number in range(self.n_classes):
                         results[f"{metric_key}-{class_number}"] = metric_fn(
                             y, y_pred, class_number
                         )
+                elif "class_number" in metric_args:
+                    results[f"{metric_key}"] = metric_fn(y, y_pred, 0)
                 else:
                     results[metric_key] = metric_fn(y, y_pred)
         else:
@@ -215,34 +222,54 @@ class RetainBest:
     A class to retain the best and overfitting values for a set of wanted metrics.
     """
 
-    def __init__(self, selection_metrics):
+    def __init__(self, selection_metrics: List[str], n_classes: int = 0):
         self.selection_metrics = selection_metrics
+
+        if "loss" in selection_metrics:
+            selection_metrics.remove("loss")
+            metric_module = MetricModule(selection_metrics)
+            selection_metrics.append("loss")
+        else:
+            metric_module = MetricModule(selection_metrics)
+
         implemented_metrics = set(metric_optimum.keys())
-        if not set(selection_metrics).issubset(implemented_metrics):
+        if not set(self.selection_metrics).issubset(implemented_metrics):
             raise NotImplementedError(
-                f"The selection metrics {selection_metrics} are not all implemented. "
+                f"The selection metrics {self.selection_metrics} are not all implemented. "
                 f"Available metrics are {implemented_metrics}."
             )
         self.best_metrics = dict()
         for selection in self.selection_metrics:
-            if metric_optimum[selection] == "min":
-                self.best_metrics[selection] = np.inf
-            elif metric_optimum[selection] == "max":
-                self.best_metrics[selection] = -np.inf
+            if n_classes > 2:
+                metric_fn = metric_module.metrics[selection]
+                metric_args = list(metric_fn.__code__.co_varnames)
+                if "class_number" in metric_args:
+                    for class_number in range(n_classes):
+                        self.set_optimum(f"{selection}-{class_number}")
+                else:
+                    self.set_optimum(selection)
             else:
-                raise ValueError(
-                    f"Objective {metric_optimum[selection]} unknown for metric {selection}."
-                    f"Please choose between 'min' and 'max'."
-                )
+                self.set_optimum(selection)
 
-    def step(self, metrics_valid):
+    def set_optimum(self, selection: str):
+        if metric_optimum[selection] == "min":
+            self.best_metrics[selection] = np.inf
+        elif metric_optimum[selection] == "max":
+            self.best_metrics[selection] = -np.inf
+        else:
+            raise ValueError(
+                f"Objective {metric_optimum[selection]} unknown for metric {selection}."
+                f"Please choose between 'min' and 'max'."
+            )
+
+    def step(self, metrics_valid: Dict[str, int]) -> Dict[str, bool]:
         """
-        Returns a dictionnary of boolean. A metric is associated to True if it the best value ever seen.
+        Computes for each metric if this is the best value ever seen.
 
         Args:
-            metrics_valid: (Dict[str:int]) metrics computed on the validation set
+            metrics_valid: metrics computed on the validation set
         Returns:
-            (Dict[str:bool])
+            metric is associated to True if it is the best value ever seen.
         """
 
         metrics_dict = dict()

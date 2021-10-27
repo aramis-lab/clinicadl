@@ -1,9 +1,13 @@
+from logging import getLogger
+
 import numpy as np
 import pandas as pd
 import torch
 from torch import nn
 from torch.nn.functional import softmax
 from torch.utils.data import sampler
+
+logger = getLogger("clinicadl")
 
 from clinicadl.utils.task_manager.task_manager import TaskManager
 
@@ -64,7 +68,7 @@ class ClassificationManager(TaskManager):
     def generate_label_code(df, label):
         unique_labels = list(set(getattr(df, label)))
         unique_labels.sort()
-        return {key: value for value, key in enumerate(unique_labels)}
+        return {str(key): value for value, key in enumerate(unique_labels)}
 
     @staticmethod
     def output_size(input_size, df, label):

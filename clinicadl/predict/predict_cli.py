@@ -21,14 +21,13 @@ from clinicadl.utils import cli_param
     Else will load the baseline TSV files of wanted diagnoses produced by `tsvtool split`.""",
 )
 @click.option(
-    "--labels/--no_labels",
+    "--use_labels/--no_labels",
     default=True,
     help="Set this option to --no_labels if your dataset does not contain ground truth labels.",
 )
 @click.option(
     "--selection_metrics",
     "-sm",
-    type=click.Choice(["loss", "balanced_accuracy"]),
     default=["loss"],
     multiple=True,
     help="""Allow to select a list of models based on their selection metric. Default will
@@ -49,6 +48,13 @@ from clinicadl.utils import cli_param
     multiple=True,
     help="List of diagnoses used for inference. Is used only if PARTICIPANTS_TSV leads to a folder.",
 )
+@click.option(
+    "--label",
+    type=str,
+    default=None,
+    help="Target label used for training (if NETWORK_TASK in [`regression`, `classification`]). "
+    "Default will reuse the same label as during the training task.",
+)
 @cli_param.option.use_gpu
 @cli_param.option.n_proc
 @cli_param.option.batch_size
@@ -61,7 +67,8 @@ def cli(
     gpu,
     n_proc,
     batch_size,
-    labels,
+    use_labels,
+    label,
     selection_metrics,
     diagnoses,
     multi_cohort,
@@ -85,7 +92,8 @@ def cli(
         data_group=data_group,
         caps_directory=caps_directory,
         tsv_path=participants_tsv,
-        labels=labels,
+        use_labels=use_labels,
+        label=label,
         gpu=gpu,
         num_workers=n_proc,
         batch_size=batch_size,
