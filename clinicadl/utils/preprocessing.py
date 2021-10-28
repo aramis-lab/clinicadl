@@ -10,7 +10,7 @@ def write_preprocessing(preprocessing_dict: Dict[str, Any], caps_directory: str)
         "tensor_extraction",
     )
     os.makedirs(extract_dir, exist_ok=True)
-    json_path = os.path.join(extract_dir, preprocessing_dict["json_name"])
+    json_path = os.path.join(extract_dir, preprocessing_dict["extract_json"])
     if os.path.exists(json_path):
         raise FileExistsError(
             f"JSON file at {json_path} already exists. "

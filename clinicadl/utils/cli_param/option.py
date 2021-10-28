@@ -90,9 +90,9 @@ subjects_sessions_tsv = click.option(
     type=click.Path(exists=True, resolve_path=True),
     help="TSV file containing a list of subjects with their sessions.",
 )
-json_name = click.option(
-    "-js",
-    "--json_name",
+extract_json = click.option(
+    "-ej",
+    "--extract_json",
     type=str,
     default=None,
     help="Name of the JSON file created to describe the tensor extraction. "

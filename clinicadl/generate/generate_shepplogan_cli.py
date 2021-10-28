@@ -6,7 +6,7 @@ from clinicadl.utils import cli_param
 @click.command(name="shepplogan")
 @cli_param.argument.generated_caps
 @cli_param.option.n_subjects
-@cli_param.option.json_name
+@cli_param.option.extract_json
 @click.option(
     "--image_size",
     help="Size in pixels of the squared images.",
@@ -37,7 +37,7 @@ from clinicadl.utils import cli_param
 def cli(
     generated_caps_directory,
     image_size,
-    json_name,
+    extract_json,
     ad_subtypes_distribution,
     cn_subtypes_distribution,
     n_subjects,
@@ -58,7 +58,7 @@ def cli(
         output_dir=generated_caps_directory,
         img_size=image_size,
         labels_distribution=labels_distribution,
-        json_name=json_name,
+        extract_json=extract_json,
         samples=n_subjects,
         smoothing=smoothing,
     )
