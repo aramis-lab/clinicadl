@@ -6,7 +6,7 @@ from datetime import datetime
 from glob import glob
 from logging import getLogger
 from os import listdir, makedirs, path
-from typing import Any, Dict, List, Optional, Union, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
@@ -183,7 +183,7 @@ class MapsManager:
                 Default will load the value of an existing data group
             tsv_path: path to a TSV file containing the list of participants and sessions to test.
                 Default will load the DataFrame of an existing data group
-            split_list: list of splits to test. Default perform prediction on all folds available.
+            split_list: list of splits to test. Default perform prediction on all splits available.
             selection_metrics (list[str]): list of selection metrics to test.
                 Default performs the prediction on all selection metrics available.
             multi_cohort: If True considers that tsv_path is the path to a multi-cohort TSV.
@@ -1325,13 +1325,13 @@ class MapsManager:
                     raise ValueError("Cannot overwrite train or validation data group.")
                 else:
                     shutil.rmtree(group_path)
-                    folds = self._find_folds()
-                    for fold in folds:
-                        selection_metrics = self._find_selection_metrics(fold)
+                    split_list = self._find_splits()
+                    for split in split_list:
+                        selection_metrics = self._find_selection_metrics(split)
                         for selection in selection_metrics:
                             results_path = path.join(
                                 self.maps_path,
-                                f"fold-{fold}",
+                                f"{self.split_name}-{split}",
                                 f"best-{selection}",
                                 data_group,
                             )

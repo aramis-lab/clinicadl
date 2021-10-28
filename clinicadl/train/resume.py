@@ -52,9 +52,9 @@ def automatic_resume(model_path, verbose=0):
         if split not in finished_splits and split not in stopped_splits
     ]
 
-    logger.info(f"List of finished folds {finished_folds}")
-    logger.info(f"List of stopped folds {stopped_folds}")
-    logger.info(f"List of absent folds {absent_folds}")
+    logger.info(f"List of finished splits {finished_splits}")
+    logger.info(f"List of stopped splits {stopped_splits}")
+    logger.info(f"List of absent splits {absent_splits}")
     # To ensure retro-compatibility with random search
     logger.info(
         f"Finished splits {finished_splits}\n"
