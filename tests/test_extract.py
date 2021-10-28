@@ -1,7 +1,6 @@
 # coding: utf8
 
 import warnings
-from os import pardir
 from typing import Any, Dict, List
 
 warnings.filterwarnings("ignore")
@@ -155,7 +154,7 @@ def test_extract():
                 parameters["acq_label"] = "av45"
                 parameters["suvr_reference_region"] = "pons2"
                 parameters["use_uncropped_image"] = False
-                parameters["json_name"] = f"{modality}_mode-{parameters['mode']}"
+                parameters["extract_json"] = f"{modality}_mode-{parameters['mode']}"
                 extract_generic(root, parameters)
 
             elif modality == "custom":
@@ -164,14 +163,14 @@ def test_extract():
                     "custom_suffix"
                 ] = "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
                 parameters["roi_custom_template"] = "Ixi549Space"
-                parameters["json_name"] = f"{modality}_mode-{parameters['mode']}"
+                parameters["extract_json"] = f"{modality}_mode-{parameters['mode']}"
                 extract_generic(root, parameters)
 
             elif modality == "t1-linear":
                 for flag in uncropped_image:
                     parameters["use_uncropped_image"] = flag
                     parameters[
-                        "json_name"
+                        "extract_json"
                     ] = f"{modality}_crop-{not flag}_mode-{parameters['mode']}"
                     extract_generic(root, parameters)
             else:
