@@ -1371,7 +1371,7 @@ class MapsManager:
     @staticmethod
     def write_parameters(json_path, parameters, verbose=True):
         """Write JSON files of parameters."""
-        logger.debug("Writting parameters...")
+        logger.debug("Writing parameters...")
         makedirs(json_path, exist_ok=True)
 
         # save to json file
@@ -1384,7 +1384,7 @@ class MapsManager:
 
     def _write_requirements_version(self):
         """Writes the environment.txt file."""
-        logger.debug("Writting requirement version...")
+        logger.debug("Writing requirement version...")
         try:
             env_variables = subprocess.check_output("pip freeze", shell=True).decode(
                 "utf-8"
@@ -1398,7 +1398,7 @@ class MapsManager:
 
     def _write_training_data(self):
         """Writes the TSV file containing the participant and session IDs used for training."""
-        logger.debug("Writting training data...")
+        logger.debug("Writing training data...")
         from clinicadl.utils.caps_dataset.data import load_data_test
 
         train_df = load_data_test(
@@ -1462,7 +1462,7 @@ class MapsManager:
 
     def _write_train_val_groups(self):
         """Defines the training and validation groups at the initialization"""
-        logger.debug("Writting training and validation groups...")
+        logger.debug("Writing training and validation groups...")
         split_manager = self._init_split_manager()
         for split in split_manager.split_iterator():
             for data_group in ["train", "validation"]:

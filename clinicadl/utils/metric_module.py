@@ -262,7 +262,7 @@ class RetainBest:
                 f"Please choose between 'min' and 'max'."
             )
 
-    def step(self, metrics_valid: Dict[str, int]) -> Dict[str, bool]:
+    def step(self, metrics_valid: Dict[str, float]) -> Dict[str, bool]:
         """
         Computes for each metric if this is the best value ever seen.
 
