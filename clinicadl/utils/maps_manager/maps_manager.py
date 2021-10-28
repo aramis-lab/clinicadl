@@ -825,7 +825,7 @@ class MapsManager:
         )
         epoch = log_writer.beginning_epoch
 
-        retain_best = RetainBest(selection_metrics=self.selection_metrics)
+        retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
 
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
