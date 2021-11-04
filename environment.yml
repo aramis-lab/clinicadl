@@ -1,0 +1,8 @@
+name: clinicadl_test
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.7
+  - poetry
+  
