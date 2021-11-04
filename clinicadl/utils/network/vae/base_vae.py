@@ -4,8 +4,8 @@ from clinicadl.utils.network.network import Network
 
 
 class BaseVAE(Network):
-    def __init__(self, encoder, decoder, mu_layer, var_layer, use_cpu=False):
-        super(BaseVAE, self).__init__(use_cpu=use_cpu)
+    def __init__(self, encoder, decoder, mu_layer, var_layer, gpu=True):
+        super(BaseVAE, self).__init__(gpu=gpu)
 
         self.encoder = encoder.to(self.device)
         self.mu_layer = mu_layer.to(self.device)

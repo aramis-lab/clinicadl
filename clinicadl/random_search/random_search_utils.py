@@ -84,18 +84,16 @@ def sampling_fn(value, sampling_type: str):
             return value
 
 
-def random_sampling(
-    rs_options: Dict[str, Any], options: Dict[str, Any]
-) -> Dict[str, Any]:
+def random_sampling(rs_options: Dict[str, Any]) -> Dict[str, Any]:
     """
     Samples all the hyperparameters of the model.
     Args:
         rs_options: parameters of the random search
-        options: options of the training
     Returns:
         options updated to train the model generated randomly
     """
 
+    options = dict()
     sampling_dict = {
         "accumulation_steps": "randint",
         "baseline": "choice",
@@ -109,29 +107,29 @@ def random_sampling(
         "dropout": "uniform",
         "epochs": "fixed",
         "evaluation_steps": "fixed",
-        "folds": "fixed",
+        "gpu": "fixed",
         "label": "fixed",
         "learning_rate": "exponent",
-        "minmaxnormalization": "choice",
+        "normalize": "choice",
         "mode": "fixed",
         "multi_cohort": "fixed",
         "multi_network": "choice",
         "n_fcblocks": "randint",
         "n_splits": "fixed",
-        "num_workers": "fixed",
+        "n_proc": "fixed",
         "network_task": "fixed",
         "network_normalization": "choice",
         "optimizer": "choice",
         "patience": "fixed",
         "preprocessing_dict": "fixed",
+        "sampler": "choice",
         "seed": "fixed",
         "selection_metrics": "fixed",
-        "sampler": "choice",
+        "split": "fixed",
         "tolerance": "fixed",
         "transfer_path": "choice",
         "transfer_selection_metric": "choice",
         "tsv_path": "fixed",
-        "use_cpu": "fixed",
         "wd_bool": "choice",
         "weight_decay": "exponent",
     }

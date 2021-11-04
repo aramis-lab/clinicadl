@@ -5,7 +5,7 @@ import sys
 LOG_LEVELS = [logging.WARNING, logging.INFO, logging.DEBUG]
 
 
-computational_list = ["gpu", "batch_size", "num_workers", "evaluation_steps"]
+computational_list = ["gpu", "batch_size", "n_proc", "evaluation_steps"]
 
 
 def write_requirements_version(output_path):
@@ -23,44 +23,6 @@ def write_requirements_version(output_path):
         warn(
             "You do not have the right to execute pip freeze. Your environment will not be written"
         )
-
-
-def translate_parameters(args):
-    """
-    Translate the names of the parameters between command line and source code.
-    """
-    args.gpu = not args.use_cpu
-    args.num_workers = args.nproc
-    args.optimizer = "Adam"
-    args.loss = "default"
-
-    if hasattr(args, "predict_atlas_intensities"):
-        args.atlas = args.predict_atlas_intensities
-    if hasattr(args, "caps_dir"):
-        args.input_dir = args.caps_dir
-    if hasattr(args, "unnormalize"):
-        args.minmaxnormalization = not args.unnormalize
-    if hasattr(args, "slice_direction"):
-        args.mri_plane = args.slice_direction
-    if hasattr(args, "network_type"):
-        args.mode_task = args.network_type
-
-    if not hasattr(args, "selection_threshold"):
-        args.selection_threshold = None
-
-    if not hasattr(args, "prepare_dl"):
-        if hasattr(args, "use_extracted_features"):
-            args.prepare_dl = args.use_extracted_features
-        elif hasattr(args, "use_extracted_patches") and args.mode == "patch":
-            args.prepare_dl = args.use_extracted_patches
-        elif hasattr(args, "use_extracted_slices") and args.mode == "slice":
-            args.prepare_dl = args.use_extracted_slices
-        elif hasattr(args, "use_extracted_roi") and args.mode == "roi":
-            args.prepare_dl = args.use_extracted_roi
-        else:
-            args.prepare_dl = False
-
-    return args
 
 
 def check_and_clean(d):
@@ -181,7 +143,7 @@ def read_json(options=None, json_path=None, test=False, read_computational=False
         options["stride_size"] = options["patch_stride"]
 
     if "use_gpu" in options:
-        options["use_cpu"] = not options["use_gpu"]
+        options["gpu"] = options["use_gpu"]
 
     if "mode" in options:
         if options["mode"] == "subject":
@@ -272,7 +234,7 @@ def check_and_complete(options, random_search=False):
         "multi": False,
         "multi_cohort": False,
         "n_splits": 0,
-        "nproc": 2,
+        "n_proc": 2,
         "optimizer": "Adam",
         "unnormalize": False,
         "patience": 0,
@@ -284,7 +246,7 @@ def check_and_complete(options, random_search=False):
         "deterministic": False,
         "transfer_learning_path": "",
         "transfer_learning_selection": "best_loss",
-        "use_cpu": False,
+        "gpu": True,
         "wd_bool": True,
         "weight_decay": 4,
         "sampler": "random",

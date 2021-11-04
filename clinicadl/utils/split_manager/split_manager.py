@@ -16,7 +16,7 @@ class SplitManager:
         diagnoses,
         baseline=False,
         multi_cohort=False,
-        folds=None,
+        split_list=None,
     ):
         self._check_tsv_path(tsv_path, multi_cohort)
         self.tsv_path = tsv_path
@@ -24,11 +24,11 @@ class SplitManager:
         self.multi_cohort = multi_cohort
         self.diagnoses = diagnoses
         self.baseline = baseline
-        self.folds = folds
+        self.split_list = split_list
 
     @abc.abstractmethod
     def max_length(self) -> int:
-        """Maximum number of folds"""
+        """Maximum number of splits"""
         pass
 
     @abc.abstractmethod
@@ -37,12 +37,12 @@ class SplitManager:
 
     @property
     @abc.abstractmethod
-    def allowed_folds_list(self):
+    def allowed_splits_list(self):
         """
-        List of possible folds if no restriction was applied
+        List of possible splits if no restriction was applied
 
         Returns:
-            list[int]: list of all possible folds
+            list[int]: list of all possible splits
         """
         pass
 
@@ -51,7 +51,7 @@ class SplitManager:
         Returns a dictionary of DataFrames with train and validation data.
 
         Args:
-            item (int): Index of the fold wanted.
+            item (int): Index of the split wanted.
         Returns:
             Dict[str:pd.DataFrame]: dictionary with two keys (train and validation).
         """
@@ -98,13 +98,13 @@ class SplitManager:
             "validation": valid_df,
         }
 
-    def concatenate_diagnoses(self, fold, cohort_path=None, cohort_diagnoses=None):
+    def concatenate_diagnoses(self, split, cohort_path=None, cohort_diagnoses=None):
         """Concatenated the diagnoses needed to form the train and validation sets."""
 
         train_df, valid_df = pd.DataFrame(), pd.DataFrame()
 
         train_path, valid_path = self._get_tsv_paths(
-            fold=fold,
+            split=split,
             cohort_path=cohort_path if cohort_path is not None else self.tsv_path,
         )
         logger.debug(f"Training data loaded at {train_path}")
@@ -134,13 +134,13 @@ class SplitManager:
         return train_df, valid_df
 
     @abc.abstractmethod
-    def _get_tsv_paths(self, cohort_path, fold):
+    def _get_tsv_paths(self, cohort_path, split):
         """
         Computes the paths to the TSV files needed depending on the split structure.
 
         Args:
             cohort_path (str): path to the split structure of a cohort.
-            fold (int): Index of the fold.
+            split (int): Index of the split.
         Returns:
             train_path (str): path to the directory containing training data.
             valid_path (str): path to the directory containing validation data.
@@ -148,14 +148,14 @@ class SplitManager:
         pass
 
     @abc.abstractmethod
-    def fold_iterator(self):
-        """Returns an iterable to iterate on all folds wanted."""
+    def split_iterator(self):
+        """Returns an iterable to iterate on all splits wanted."""
         pass
 
     def _check_item(self, item):
-        if item not in self.allowed_folds_list:
+        if item not in self.allowed_splits_list:
             raise ValueError(
-                f"Fold index {item} out of allowed folds {self.allowed_folds_list}."
+                f"Split index {item} out of allowed splits {self.allowed_splits_list}."
             )
 
     @staticmethod

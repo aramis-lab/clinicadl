@@ -95,7 +95,7 @@ def cli(
         use_labels=use_labels,
         label=label,
         gpu=gpu,
-        num_workers=n_proc,
+        n_proc=n_proc,
         batch_size=batch_size,
         selection_metrics=selection_metrics,
         diagnoses=diagnoses,

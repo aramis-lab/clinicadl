@@ -16,8 +16,8 @@ logger = getLogger("clinicadl")
 
 
 class AutoEncoder(Network):
-    def __init__(self, encoder, decoder, use_cpu=False):
-        super().__init__(use_cpu=use_cpu)
+    def __init__(self, encoder, decoder, gpu=False):
+        super().__init__(gpu=gpu)
         self.encoder = encoder.to(self.device)
         self.decoder = decoder.to(self.device)
 
@@ -88,8 +88,8 @@ class AutoEncoder(Network):
 
 
 class CNN(Network):
-    def __init__(self, convolutions, fc, n_classes, use_cpu=False):
-        super().__init__(use_cpu=use_cpu)
+    def __init__(self, convolutions, fc, n_classes, gpu=False):
+        super().__init__(gpu=gpu)
         self.convolutions = convolutions.to(self.device)
         self.fc = fc.to(self.device)
         self.n_classes = n_classes

@@ -84,8 +84,8 @@ Optional variables:
     Must include only `BatchNorm`, `InstanceNorm` or `None`.
     Sampling function: `choice`. Default:  `BatchNorm`.
 - **Computational resources**
-    - `--use_cpu` (bool) forces using CPUs. Default behaviour is to try to use a GPU and to raise an error if it is not found.
-    - `--nproc` (int) is the number of workers used by the DataLoader. Default value: `2`.
+    - `--gpu/--no-gpu` (bool) forces using GPU / CPUs. Default behaviour is to try to use a GPU and to raise an error if it is not found.
+    - `--n_proc` (int) is the number of workers used by the DataLoader. Default value: `2`.
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `2`.
     - `--evaluation_steps` (int) gives the number of iterations to perform an [evaluation internal to an epoch](Train/Details.md#evaluation). 
     Default will only perform an evaluation at the end of each epoch.
@@ -101,7 +101,7 @@ Optional variables:
     Sampling function: `choice`. Default: `random`.
 - **Cross-validation arguments**
     - `--n_splits` (int) is a number of splits k to load in the case of a k-fold cross-validation. Default will load a single-split.
-    - `--folds` (list of int) is a subset of folds that will be used for training. By default, all splits available are used. 
+    - `--split` (list of int) is a subset of splits that will be used for training. By default, all splits available are used. 
 - **Optimization parameters**
     - `learning_rate` (float) is the learning rate used to perform weight update. 
     Sampling function: `exponent`. Default: `4` (leading to a value of `1e-4`).

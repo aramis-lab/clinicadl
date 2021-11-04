@@ -52,7 +52,7 @@ def predict_commands(request):
 
 def test_predict(predict_commands):
     model_folder, use_labels, modes = predict_commands
-    out_dir = join(model_folder, "fold-0/best-loss/test-RANDOM")
+    out_dir = join(model_folder, "split-0/best-loss/test-RANDOM")
 
     if exists(out_dir):
         shutil.rmtree(out_dir)
@@ -72,7 +72,7 @@ def test_predict(predict_commands):
         data_group="test-RANDOM",
         caps_directory="data/dataset/OasisCaps_example",
         tsv_path="data/dataset/OasisCaps_example/data.tsv",
-        use_cpu=True,
+        gpu=False,
         use_labels=use_labels,
         overwrite=True,
     )

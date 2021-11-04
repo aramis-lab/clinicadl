@@ -63,18 +63,6 @@ def get_train_dict(
         for key in config_dict[config_section]:
             train_dict[key] = config_dict[config_section][key]
 
-    renamed_dict = {
-        "normalize": "minmaxnormalization",
-        "n_proc": "num_workers",
-        "split": "folds",
-    }
-
-    for command_name, code_name in renamed_dict.items():
-        train_dict[code_name] = train_dict.pop(command_name)
-
-    # GPU exception
-    train_dict["use_cpu"] = not train_dict.pop("gpu")
-
     # Hard-coded optimizer
     train_dict["optimizer"] = "Adam"
 

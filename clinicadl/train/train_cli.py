@@ -69,7 +69,7 @@ from clinicadl.utils.caps_dataset.data import CapsDataset
     type=int,
 )
 @click.option(
-    "--nondeterministic/--deterministic",
+    "--deterministic/--nondeterministic",
     type=bool,
     default=None,
     help="Forces Pytorch to be deterministic even when using a GPU. "
@@ -168,7 +168,7 @@ from clinicadl.utils.caps_dataset.data import CapsDataset
     type=int,
     # default=(),
     multiple=True,
-    help="Train the list of given folds. By default, all the folds are trained.",
+    help="Train the list of given splits. By default, all the splits are trained.",
 )
 # Optimization
 @click.option(
@@ -247,7 +247,7 @@ def cli(
     batch_size,
     evaluation_steps,
     seed,
-    nondeterministic,
+    deterministic,
     compensation,
     architecture,
     multi_network,
@@ -329,20 +329,24 @@ def cli(
 
     # Change value in train dict depending on user provided options
     standard_options_list = [
-        "label",
         "accumulation_steps",
+        "architecture",
         "baseline",
         "batch_size",
         "data_augmentation",
+        "deterministic",
         "diagnoses",
         "dropout",
         "epochs",
         "evaluation_steps",
-        "architecture",
-        "multi_network",
+        "gpu",
+        "label",
         "learning_rate",
         "multi_cohort",
+        "multi_network",
+        "n_proc",
         "n_splits",
+        "normalize",
         "patience",
         "tolerance",
         "transfer_selection_metric",
@@ -351,6 +355,7 @@ def cli(
         "weight_decay",
         "sampler",
         "seed",
+        "split",
         "compensation",
         "transfer_path",
     ]
@@ -361,18 +366,8 @@ def cli(
         ):
             train_dict[option] = eval(option)
 
-    if gpu is not None:
-        train_dict["use_cpu"] = not gpu
-    if not train_dict["use_cpu"]:
+    if train_dict["gpu"]:
         check_gpu()
-    if n_proc is not None:
-        train_dict["num_workers"] = n_proc
-    if normalize is not None:
-        train_dict["minmaxnormalization"] = normalize
-    if split:
-        train_dict["folds"] = split
-    if nondeterministic:
-        train_dict["deterministic"] = not nondeterministic
 
     # Splits
     if train_dict["n_splits"] and train_dict["n_splits"] > 1:
@@ -380,7 +375,7 @@ def cli(
     else:
         train_dict["validation"] = "SingleSplit"
 
-    train(output_maps_directory, train_dict, train_dict.pop("folds"))
+    train(output_maps_directory, train_dict, train_dict.pop("split"))
 
 
 if __name__ == "__main__":

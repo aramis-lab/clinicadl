@@ -11,10 +11,10 @@ class SingleSplit(SplitManager):
         diagnoses,
         baseline=False,
         multi_cohort=False,
-        folds=None,
+        split_list=None,
     ):
         super().__init__(
-            caps_directory, tsv_path, diagnoses, baseline, multi_cohort, folds
+            caps_directory, tsv_path, diagnoses, baseline, multi_cohort, split_list
         )
 
     def max_length(self) -> int:
@@ -24,13 +24,13 @@ class SingleSplit(SplitManager):
         return 1
 
     @property
-    def allowed_folds_list(self):
+    def allowed_splits_list(self):
         return [0]
 
-    def fold_iterator(self):
+    def split_iterator(self):
         return range(1)
 
-    def _get_tsv_paths(self, cohort_path, fold):
+    def _get_tsv_paths(self, cohort_path, split):
         train_path = path.join(cohort_path, "train")
         valid_path = path.join(cohort_path, "validation")
         return train_path, valid_path

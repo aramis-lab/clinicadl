@@ -79,7 +79,7 @@ def cli(
         caps_directory=caps_directory,
         tsv_path=participants_tsv,
         gpu=gpu,
-        num_workers=n_proc,
+        n_proc=n_proc,
         batch_size=batch_size,
         # prepare_dl=use_extracted_features,
         selection_metrics=selection_metrics,

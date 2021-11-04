@@ -27,28 +27,28 @@ def meta_maps_analysis(launch_dir, evaluation_metric="loss"):
     ]
 
     selection_set = set()  # Set of all selection metrics seen
-    folds_set = set()  # Set of all folds seen
+    split_set = set()  # Set of all splits seen
 
     performances_dict = dict()
     for job in jobs_list:
         performances_dict[job] = dict()
         maps_manager = MapsManager(path.join(launch_dir, job))
-        folds = maps_manager._find_folds()
-        folds_set = folds_set | set(folds)
-        for fold in folds:
-            performances_dict[job][fold] = dict()
-            selection_metrics = maps_manager._find_selection_metrics(fold)
+        split_list = maps_manager._find_splits()
+        split_set = split_set | set(split_list)
+        for split in split_set:
+            performances_dict[job][split] = dict()
+            selection_metrics = maps_manager._find_selection_metrics(split)
             selection_set = selection_set | set(selection_metrics)
             for metric in selection_metrics:
                 validation_metrics = maps_manager.get_metrics(
-                    "validation", fold, metric
+                    "validation", split, metric
                 )
                 if evaluation_metric not in validation_metrics:
                     raise ValueError(
                         f"Evaluation metric {evaluation_metric} not found in "
-                        f"MAPS {job}, for fold {fold} and selection {metric}."
+                        f"MAPS {job}, for split {split} and selection {metric}."
                     )
-                performances_dict[job][fold][metric] = validation_metrics[
+                performances_dict[job][split][metric] = validation_metrics[
                     evaluation_metric
                 ]
 
@@ -57,6 +57,6 @@ def meta_maps_analysis(launch_dir, evaluation_metric="loss"):
         df = pd.DataFrame()
         filename = f"analysis_metric-{evaluation_metric}_selection-{metric}.tsv"
         for job in jobs_list:
-            for fold in folds_set:
-                df.loc[job, f"fold-{fold}"] = performances_dict[job][fold][metric]
+            for split in split_set:
+                df.loc[job, f"split-{split}"] = performances_dict[job][split][metric]
         df.to_csv(path.join(launch_dir, filename), sep="\t")

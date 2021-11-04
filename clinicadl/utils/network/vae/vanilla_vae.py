@@ -14,7 +14,7 @@ class VanillaDenseVAE(BaseVAE):
     def __init__(
         self,
         input_size,
-        use_cpu=False,
+        gpu=False,
         feature_size=1024,
         latent_size=64,
         n_conv=4,
@@ -39,7 +39,7 @@ class VanillaDenseVAE(BaseVAE):
         )
 
         super(VanillaDenseVAE, self).__init__(
-            encoder, decoder, mu_layer, var_layer, use_cpu=use_cpu
+            encoder, decoder, mu_layer, var_layer, gpu=gpu
         )
 
 
@@ -47,7 +47,7 @@ class VanillaSpatialVAE(BaseVAE):
     def __init__(
         self,
         input_size,
-        use_cpu=False,
+        gpu=True,
         feature_size=1024,
         latent_size=64,
         n_conv=4,
@@ -76,7 +76,7 @@ class VanillaSpatialVAE(BaseVAE):
         )
 
         super(VanillaSpatialVAE, self).__init__(
-            encoder, decoder, mu_layer, var_layer, use_cpu=use_cpu
+            encoder, decoder, mu_layer, var_layer, gpu=gpu
         )
 
 
@@ -84,7 +84,7 @@ class Vanilla3DVAE(BaseVAE):
     def __init__(
         self,
         input_size,
-        use_cpu=False,
+        gpu=True,
     ):
         n_conv = 4
         first_layer_channels = 32
@@ -182,5 +182,5 @@ class Vanilla3DVAE(BaseVAE):
         decoder = nn.Sequential(*decoder_layers)
 
         super(Vanilla3DVAE, self).__init__(
-            encoder, decoder, mu_layer, var_layer, use_cpu=use_cpu
+            encoder, decoder, mu_layer, var_layer, gpu=gpu
         )

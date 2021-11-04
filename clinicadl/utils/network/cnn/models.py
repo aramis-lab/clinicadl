@@ -26,7 +26,7 @@ class Conv5_FC3(CNN):
     Reduce the 2D or 3D input image to an array of size output_size.
     """
 
-    def __init__(self, input_size, use_cpu=False, output_size=2, dropout=0.5):
+    def __init__(self, input_size, gpu=True, output_size=2, dropout=0.5):
         conv, norm, pool = get_layers_fn(input_size)
         # fmt: off
         convolutions = nn.Sequential(
@@ -77,7 +77,7 @@ class Conv5_FC3(CNN):
             convolutions=convolutions,
             fc=fc,
             n_classes=output_size,
-            use_cpu=use_cpu,
+            gpu=gpu,
         )
 
 
@@ -86,7 +86,7 @@ class Conv4_FC3(CNN):
     Reduce the 2D or 3D input image to an array of size output_size.
     """
 
-    def __init__(self, input_size, use_cpu=False, output_size=2, dropout=0.5):
+    def __init__(self, input_size, gpu=True, output_size=2, dropout=0.5):
         conv, norm, pool = get_layers_fn(input_size)
         # fmt: off
         convolutions = nn.Sequential(
@@ -137,12 +137,12 @@ class Conv4_FC3(CNN):
             convolutions=convolutions,
             fc=fc,
             n_classes=output_size,
-            use_cpu=use_cpu,
+            gpu=gpu,
         )
 
 
 class resnet18(CNN):
-    def __init__(self, input_size, use_cpu=False, output_size=2, dropout=0.5):
+    def __init__(self, input_size, gpu=False, output_size=2, dropout=0.5):
         model = ResNetDesigner(input_size, BasicBlock, [2, 2, 2, 2])
         model.load_state_dict(model_zoo.load_url(model_urls["resnet18"]))
 
@@ -167,5 +167,5 @@ class resnet18(CNN):
             convolutions=convolutions,
             fc=fc,
             n_classes=output_size,
-            use_cpu=use_cpu,
+            gpu=gpu,
         )

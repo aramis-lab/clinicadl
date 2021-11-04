@@ -38,7 +38,7 @@ def test_random_search(cli_commands):
 
     flag_error_generate = not os.system("clinicadl " + " ".join(generate_input))
     performances_flag = os.path.exists(
-        os.path.join(launch_dir, name_dir, "fold-0", "best-loss", "train")
+        os.path.join(launch_dir, name_dir, "split-0", "best-loss", "train")
     )
     assert flag_error_generate
     assert performances_flag

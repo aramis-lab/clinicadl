@@ -173,8 +173,8 @@ def test_split():
             path.join(reference_path, "validation"), diagnoses.split(" ")
         )
         split_manager = KFoldSplit(".", reference_path, diagnoses.split(" "), n_splits)
-        for fold in split_manager.fold_iterator():
-            _ = split_manager[fold]
+        for split in split_manager.split_iterator():
+            _ = split_manager[split]
     except FileNotFoundError:
         flag_load = False
     assert flag_load

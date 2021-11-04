@@ -1,6 +1,7 @@
 """
 This file contains all methods needed to perform the quality check procedure after t1-linear preprocessing.
 """
+from logging import getLogger
 from os import makedirs
 from os.path import abspath, dirname, exists, join, splitext
 from pathlib import Path
@@ -15,8 +16,6 @@ from clinicadl.utils.caps_dataset.data import CapsDataset
 
 from .utils import QCDataset, resnet_qc_18
 
-from logging import getLogger
-
 
 def quality_check(
     caps_dir,
@@ -24,7 +23,7 @@ def quality_check(
     tsv_path=None,
     threshold=0.5,
     batch_size=1,
-    num_workers=0,
+    n_proc=0,
     gpu=True,
 ):
 
@@ -72,7 +71,7 @@ def quality_check(
 
     dataset = QCDataset(caps_dir, df)
     dataloader = DataLoader(
-        dataset, num_workers=num_workers, batch_size=batch_size, pin_memory=True
+        dataset, num_workers=n_proc, batch_size=batch_size, pin_memory=True
     )
 
     columns = ["participant_id", "session_id", "pass_probability", "pass"]
