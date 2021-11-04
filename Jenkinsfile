@@ -20,12 +20,11 @@ pipeline {
           sh '''#!/usr/bin/env bash
              set +x
              eval "$(conda shell.bash hook)"
-             conda create -y -n clinicadl_test python=3.7
+             conda env create -y -f environement.yml
              conda activate clinicadl_test
-             echo "Install clinicadl using pip..."
+             echo "Install clinicadl using poetry..."
              cd $WORKSPACE
-             pip install  .
-             pip install -r ./requirements-dev.txt
+             poetry install
              # Show clinicadl help message
              echo "Display clinicadl help message"
              clinicadl --help
@@ -47,7 +46,7 @@ pipeline {
             source ./.jenkins/scripts/find_env.sh
             conda activate clinicadl_test
             cd $WORKSPACE/tests
-            pytest \
+            poetry pytest \
               --junitxml=./test-reports/test_cli_report.xml \
               --verbose \
               --disable-warnings \
@@ -80,7 +79,7 @@ pipeline {
                     source ./.jenkins/scripts/find_env.sh
                     conda activate clinicadl_test
                     cd $WORKSPACE/tests
-                    pytest \
+                    poetry pytest \
                       --junitxml=./test-reports/test_tsvtool_report.xml \
                       --verbose \
                       --disable-warnings \
@@ -110,7 +109,7 @@ pipeline {
                       cd $WORKSPACE/tests
                       mkdir -p ./data/dataset
                       tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
-                      pytest \
+                      poetry pytest \
                         --junitxml=./test-reports/test_generate_report.xml \
                         --verbose \
                         --disable-warnings \
@@ -141,7 +140,7 @@ pipeline {
                       cd $WORKSPACE/tests
                       mkdir -p ./data/dataset
                       tar xf /mnt/data/data_CI/dataset/DLPrepareData.tar.gz -C ./data/dataset
-                      pytest \
+                      poetry pytest \
                         --junitxml=./test-reports/test_extract_report.xml \
                         --verbose \
                         --disable-warnings \
@@ -174,7 +173,7 @@ pipeline {
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
                      ln -s /mnt/data/data_CI/models/models_new data/models
-                     pytest \
+                     poetry pytest \
                         --junitxml=./test-reports/test_predict_report.xml \
                         --verbose \
                         --disable-warnings \
@@ -243,7 +242,7 @@ pipeline {
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      cp -r /mnt/data/data_CI/labels_list ./data/
-                     pytest \
+                     poetry pytest \
                         --junitxml=./test-reports/test_train_report.xml \
                         --verbose \
                         --disable-warnings \
@@ -278,7 +277,7 @@ pipeline {
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      cp -r /mnt/data/data_CI/labels_list ./data/
-                     pytest \
+                     poetry pytest \
                         --junitxml=./test-reports/test_transfer_learning_report.xml \
                         --verbose \
                         --disable-warnings \
@@ -313,7 +312,7 @@ pipeline {
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      cp -r /mnt/data/data_CI/labels_list ./data/
-                     pytest \
+                     poetry pytest \
                         --junitxml=./test-reports/test_interpret_report.xml \
                         --verbose \
                         --disable-warnings \
@@ -348,7 +347,7 @@ pipeline {
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      cp -r /mnt/data/data_CI/labels_list ./data/
-                     pytest \
+                     poetry pytest \
                         --junitxml=./test-reports/test_random_search_report.xml \
                         --verbose \
                         --disable-warnings \
