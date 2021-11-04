@@ -230,15 +230,16 @@ class Vanilla3DdenseVAE(BaseVAE):
     def __init__(
         self,
         input_size,
-        latent_space_size,
-        feature_size,
-        recons_weight,
-        KL_weight,
+        latent_space_size=256,
+        feature_size=1024,
+        n_conv=4,
+        io_layer_channels=8,
+        recons_weight=1,
+        KL_weight=1,
         use_cpu=False,
     ):
-        n_conv = 4
-        first_layer_channels = 8
-        last_layer_channels = 8
+        first_layer_channels = io_layer_channels
+        last_layer_channels = io_layer_channels
         decoder_output_padding = [
             [1, 0, 0],
             [0, 0, 0],
@@ -328,3 +329,12 @@ class Vanilla3DdenseVAE(BaseVAE):
             recons_weight=recons_weight,
             KL_weight=KL_weight,
         )
+
+
+if __name__ == "__main__":
+
+    from clinicadl.utils.network.network_utils import torch_summarize
+
+    model = Vanilla3DdenseVAE((1, 200, 200, 200), 1024, 8192, 1, 1, use_cpu=True)
+
+    print(torch_summarize(model))
