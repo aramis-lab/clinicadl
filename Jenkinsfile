@@ -63,7 +63,7 @@ pipeline {
         always {
           cleanWS(deleteDirs: true,
                   notFailBuild: true,
-                  patterns: [[pattern: 'env', type: 'INCLUDE'])
+                  patterns: [[pattern: 'env', type: 'INCLUDE']])
         }
       }
       stage('Functional tests') {
@@ -221,7 +221,7 @@ pipeline {
               always {
                 cleanWS(deleteDirs: true,
                         notFailBuild: true,
-                        patterns: [[pattern: 'env', type: 'INCLUDE'])
+                        patterns: [[pattern: 'env', type: 'INCLUDE']])
               }
             }
           }
@@ -367,7 +367,7 @@ pipeline {
               always {
                 cleanWS(deleteDirs: true,
                         notFailBuild: true,
-                        patterns: [[pattern: 'env', type: 'INCLUDE'])
+                        patterns: [[pattern: 'env', type: 'INCLUDE']])
               }
             }
           }
