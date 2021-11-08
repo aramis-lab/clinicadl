@@ -20,8 +20,8 @@ pipeline {
           sh '''#!/usr/bin/env bash
              set +x
              eval "$(conda shell.bash hook)"
-             conda env create -y -f environement.yml
-             conda activate clinicadl_test
+             conda env create -y -f environement.yml -p "${WORKSPACE}/env
+             conda activate "${WORKSPACE}/env"
              echo "Install clinicadl using poetry..."
              cd $WORKSPACE
              poetry install
@@ -39,12 +39,10 @@ pipeline {
         steps {
           echo 'Testing pipeline instantation...'
             sh 'echo "Agent name: ${NODE_NAME}"'
-            //sh 'conda env remove --name "clinicadl_test"'
             sh '''#!/usr/bin/env bash
             set +x
             eval "$(conda shell.bash hook)"
-            source ./.jenkins/scripts/find_env.sh
-            conda activate clinicadl_test
+            conda activate "${WORKSPACE}/env"
             cd $WORKSPACE/tests
             poetry pytest \
               --junitxml=./test-reports/test_cli_report.xml \
@@ -60,6 +58,14 @@ pipeline {
           }
         }
       }
+      post {
+        // Clean after build
+        always {
+          cleanWS(deleteDirs: true,
+                  notFailBuild: true,
+                  patterns: [[pattern: 'env', type: 'INCLUDE'])
+        }
+      }
       stage('Functional tests') {
         parallel {
           stage('No GPU') {
@@ -72,12 +78,10 @@ pipeline {
                 steps {
                   echo 'Testing tsvtool tasks...'
                     sh 'echo "Agent name: ${NODE_NAME}"'
-                    //sh 'conda env remove --name "clinicadl_test"'
                     sh '''#!/usr/bin/env bash
                     set +x
                     eval "$(conda shell.bash hook)"
-                    source ./.jenkins/scripts/find_env.sh
-                    conda activate clinicadl_test
+                    conda activate "${WORKSPACE}/env"
                     cd $WORKSPACE/tests
                     poetry pytest \
                       --junitxml=./test-reports/test_tsvtool_report.xml \
@@ -100,12 +104,10 @@ pipeline {
                 steps {
                   echo 'Testing generate task...'
                     sh 'echo "Agent name: ${NODE_NAME}"'
-                    //sh 'conda env remove --name "clinicadl_test"'
                     sh '''#!/usr/bin/env bash
                       set +x
                       eval "$(conda shell.bash hook)"
-                      source ./.jenkins/scripts/find_env.sh
-                      conda activate clinicadl_test
+                      conda activate "${WORKSPACE}/env" 
                       cd $WORKSPACE/tests
                       mkdir -p ./data/dataset
                       tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
@@ -131,12 +133,10 @@ pipeline {
                 steps {
                   echo 'Testing extract task...'
                     sh 'echo "Agent name: ${NODE_NAME}"'
-                    //sh 'conda env remove --name "clinicadl_test"'
                     sh '''#!/usr/bin/env bash
                       set +x
                       eval "$(conda shell.bash hook)"
-                      source ./.jenkins/scripts/find_env.sh
-                      conda activate clinicadl_test
+                      conda activate "${WORKSPACE}/env" 
                       cd $WORKSPACE/tests
                       mkdir -p ./data/dataset
                       tar xf /mnt/data/data_CI/dataset/DLPrepareData.tar.gz -C ./data/dataset
@@ -162,12 +162,10 @@ pipeline {
                 steps {
                   echo 'Testing predict...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  //sh 'conda env remove --name "clinicadl_test"'
                   sh '''#!/usr/bin/env bash
                      set +x
                      eval "$(conda shell.bash hook)"
-                     source ./.jenkins/scripts/find_env.sh
-                     conda activate clinicadl_test
+                     conda activate "${WORKSPACE}/env" 
                      cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
@@ -195,12 +193,10 @@ pipeline {
 //                 steps {
 //                   echo 'Testing maps-analysis task...'
 //                     sh 'echo "Agent name: ${NODE_NAME}"'
-//                     //sh 'conda env remove --name "clinicadl_test"'
 //                     sh '''#!/usr/bin/env bash
 //                       set +x
 //                       eval "$(conda shell.bash hook)"
-//                       source ./.jenkins/scripts/find_env.sh
-//                       conda activate clinicadl_test
+//                       conda activate "${WORKSPACE}/env" 
 //                       cd $WORKSPACE/tests
 //                       mkdir -p ./data/dataset
 //                       tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
@@ -220,6 +216,14 @@ pipeline {
 //                 }
 //              }
             }
+            post {
+              // Clean after build
+              always {
+                cleanWS(deleteDirs: true,
+                        notFailBuild: true,
+                        patterns: [[pattern: 'env', type: 'INCLUDE'])
+              }
+            }
           }
           stage('GPU') {
             stages{
@@ -231,12 +235,12 @@ pipeline {
                 steps {
                   echo 'Testing train task...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  //sh 'conda env remove --name "clinicadl_test"'
                   sh '''#!/usr/bin/env bash
                      set +x
                      eval "$(conda shell.bash hook)"
-                     source ./.jenkins/scripts/find_env.sh
-                     conda activate clinicadl_test
+                     conda env create -y -f environement.yml -p "${WORKSPACE}/env
+                     poetry install
+                     conda activate "${WORKSPACE}/env" 
                      clinicadl --help
                      cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
@@ -266,12 +270,10 @@ pipeline {
                 steps {
                   echo 'Testing transfer learning...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  //sh 'conda env remove --name "clinicadl_test"'
                   sh '''#!/usr/bin/env bash
                      set +x
                      eval "$(conda shell.bash hook)"
-                     source ./.jenkins/scripts/find_env.sh
-                     conda activate clinicadl_test
+                     conda activate "${WORKSPACE}/env" 
                      clinicadl --help
                      cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
@@ -301,12 +303,10 @@ pipeline {
                 steps {
                   echo 'Testing interpret task...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  //sh 'conda env remove --name "clinicadl_test"'
                   sh '''#!/usr/bin/env bash
                      set +x
                      eval "$(conda shell.bash hook)"
-                     source ./.jenkins/scripts/find_env.sh
-                     conda activate clinicadl_test
+                     conda activate "${WORKSPACE}/env" 
                      clinicadl --help
                      cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
@@ -336,12 +336,10 @@ pipeline {
                 steps {
                   echo 'Testing random search...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  //sh 'conda env remove --name "clinicadl_test"'
                   sh '''#!/usr/bin/env bash
                      set +x
                      eval "$(conda shell.bash hook)"
-                     source ./.jenkins/scripts/find_env.sh
-                     conda activate clinicadl_test
+                     conda activate "${WORKSPACE}/env"
                      clinicadl --help
                      cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
@@ -364,6 +362,14 @@ pipeline {
                 }
               }
             }
+            post {
+              // Clean after build
+              always {
+                cleanWS(deleteDirs: true,
+                        notFailBuild: true,
+                        patterns: [[pattern: 'env', type: 'INCLUDE'])
+              }
+            }
           }
         }
       }
@@ -375,12 +381,10 @@ pipeline {
         steps {
           echo 'Create ClinicaDL package and upload to Pypi...'
           sh 'echo "Agent name: ${NODE_NAME}"'
-          //sh 'conda env remove --name "clinicadl_test"'
           sh '''#!/usr/bin/env bash
              set +x
              eval "$(conda shell.bash hook)"
-             source ./.jenkins/scripts/find_env.sh
-             conda activate clinicadl_test
+             conda activate "${WORKSPACE}/env" 
              clinicadl --help
              cd $WORKSPACE/.jenkins/scripts
              ./generate_wheels.sh
