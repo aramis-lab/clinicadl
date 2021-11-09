@@ -199,7 +199,7 @@ class Vanilla3DVAE(BaseVAE):
                 DecoderLayer3D(
                     last_layer_channels * 2 ** (i),
                     last_layer_channels * 2 ** (i - 1),
-                    output_padding=decoder_output_padding[-i],
+                    output_padding=decoder_output_padding[i],
                 )
             )
         decoder_layers.append(
