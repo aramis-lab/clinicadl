@@ -240,21 +240,25 @@ class Vanilla3DdenseVAE(BaseVAE):
     ):
         first_layer_channels = io_layer_channels
         last_layer_channels = io_layer_channels
+        # automatically compute padding
         decoder_output_padding = [
-            [1, 0, 0],
-            [0, 0, 0],
-            [0, 0, 1],
+            # [1, 0, 0],
+            # [0, 0, 0],
+            # [0, 0, 1],
         ]
 
         input_c = input_size[0]
-        input_h = input_size[1]
-        input_w = input_size[2]
-        input_d = input_size[3]
+        input_d = input_size[1]
+        input_h = input_size[2]
+        input_w = input_size[3]
+        d, h, w = input_d, input_h, input_w
 
         # Encoder
         encoder_layers = []
         # Input Layer
         encoder_layers.append(EncoderLayer3D(input_c, first_layer_channels))
+        decoder_output_padding.append([d % 2, h % 2, w % 2])
+        d, h, w = d // 2, h // 2, w // 2
         # Conv Layers
         for i in range(n_conv - 1):
             encoder_layers.append(
@@ -262,12 +266,17 @@ class Vanilla3DdenseVAE(BaseVAE):
                     first_layer_channels * 2 ** i, first_layer_channels * 2 ** (i + 1)
                 )
             )
+            # Construct output paddings
+            print(d, h, w)
+            decoder_output_padding.append([d % 2, h % 2, w % 2])
+            d, h, w = d // 2, h // 2, w // 2
+        print(decoder_output_padding)
         n_pix = (
             first_layer_channels
             * 2 ** (n_conv - 1)
+            * (input_d // (2 ** n_conv))
             * (input_h // (2 ** n_conv))
             * (input_w // (2 ** n_conv))
-            * (input_d // (2 ** n_conv))
         )
         encoder_layers.append(
             nn.Sequential(Flatten(), nn.Linear(n_pix, feature_size), nn.ReLU())
@@ -288,9 +297,9 @@ class Vanilla3DdenseVAE(BaseVAE):
                 nn.ReLU(),
                 Unflatten3D(
                     last_layer_channels * 2 ** (n_conv - 1),
+                    input_d // (2 ** n_conv),
                     input_h // (2 ** n_conv),
                     input_w // (2 ** n_conv),
-                    input_d // (2 ** n_conv),
                 ),
                 nn.ReLU(),
             )
@@ -311,7 +320,7 @@ class Vanilla3DdenseVAE(BaseVAE):
                     4,
                     stride=2,
                     padding=1,
-                    output_padding=[1, 0, 1],
+                    output_padding=decoder_output_padding[0],
                     bias=False,
                 ),
                 nn.Sigmoid(),
@@ -335,6 +344,17 @@ if __name__ == "__main__":
 
     from clinicadl.utils.network.network_utils import torch_summarize
 
-    model = Vanilla3DdenseVAE((1, 200, 200, 200), 1024, 8192, 1, 1, use_cpu=True)
+    model3D = Vanilla3DdenseVAE(
+        input_size=(1, 169, 208, 279),
+        latent_space_size=1024,
+        feature_size=8192,
+        n_conv=4,
+        io_layer_channels=8,
+        recons_weight=1,
+        KL_weight=1,
+        use_cpu=True,
+    )
+    print(torch_summarize(model3D))
 
-    print(torch_summarize(model))
+    # model2D = VanillaDenseVAE((1, 200, 200), 512, 8192, 1, 1, use_cpu=True)
+    # print(torch_summarize(model2D))
