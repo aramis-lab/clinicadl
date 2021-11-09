@@ -94,6 +94,7 @@ class DecoderLayer2D(nn.Module):
 
     def forward(self, x):
         x = F.relu(self.layer(x), inplace=True)
+        print(self.output_padding)
         print(x.shape)
         return x
 
@@ -144,6 +145,7 @@ class DecoderLayer3D(nn.Module):
         output_padding=0,
     ):
         super(DecoderLayer3D, self).__init__()
+        self.output_padding = output_padding
         self.layer = nn.Sequential(
             nn.ConvTranspose3d(
                 input_channels,
