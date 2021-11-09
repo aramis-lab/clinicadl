@@ -267,7 +267,6 @@ class Vanilla3DdenseVAE(BaseVAE):
                 )
             )
             # Construct output paddings
-            print(d, h, w)
             decoder_output_padding.append([d % 2, h % 2, w % 2])
             d, h, w = d // 2, h // 2, w // 2
         print(decoder_output_padding)
@@ -346,10 +345,10 @@ if __name__ == "__main__":
 
     model3D = Vanilla3DdenseVAE(
         input_size=(1, 169, 208, 279),
-        latent_space_size=1024,
-        feature_size=8192,
-        n_conv=4,
-        io_layer_channels=8,
+        latent_space_size=256,
+        feature_size=2048,
+        n_conv=6,
+        io_layer_channels=2,
         recons_weight=1,
         KL_weight=1,
         use_cpu=True,
