@@ -17,7 +17,7 @@ def cli_commands(request):
     split = "0"
     if request.param == "reproduce_image_classification":
         config_json = "data/reproducibility/maps.json"
-        hash_dict = "data/reproducibility/hashes_dict"
+        hash_dict = "data/reproducibility/hashes_dict.obj"
     else:
         raise NotImplementedError(f"Test {request.param} is not implemented.")
 
