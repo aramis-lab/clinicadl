@@ -35,7 +35,9 @@ def create_list_hashes(
     for subdir, dirs, files in os.walk(path_folder):
         files.sort()
         for file in files:
-            if not ignore_pattern(file, ignore_pattern_list):
+            if not ignore_pattern(file, ignore_pattern_list) and not ignore_pattern(
+                subdir, ignore_pattern_list
+            ):
                 all_files.append(os.path.join(subdir, file))
 
     dict_hashes = {

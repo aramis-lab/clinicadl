@@ -34,9 +34,17 @@ def test_train(cli_commands):
     )
     assert flag_error
     compare_folders_with_hashes(
-        output_dir, hash_dict, ignore_pattern_list=["maps.json", "training.tsv"]
+        output_dir,
+        hash_dict,
+        ignore_pattern_list=[
+            "maps.json",
+            "training_logs",
+            "description.log",
+            "environment.txt",
+        ],
     )
     # maps.json content may change as variable names may be changed, or new variables may be added.
-    # training.tsv may change as it measures the time taken for computation and it is not deterministic.
+    # training_logs may change as it measures the time taken for computation and it is not deterministic.
+    # description.log contains the date so it is not deterministic
 
     shutil.rmtree(output_dir)
