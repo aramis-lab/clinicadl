@@ -65,4 +65,5 @@ def cli(**kwargs):
     in a TOML file as explained in the documentation:
     https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
     """
-    task_launcher("regression", **kwargs)
+    task_specific_options = ["label", "selection_metrics"]
+    task_launcher("regression", task_specific_options, **kwargs)

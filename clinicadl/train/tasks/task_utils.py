@@ -1,16 +1,18 @@
 import os
 from logging import getLogger
+from typing import List
 
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.preprocessing import read_preprocessing
 
 
-def task_launcher(network_task: str, **kwargs):
+def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
     """
     Common training framework for all tasks
 
     Args:
         network_task: task learnt by the network.
+        task_options_list: list of options specific to the task.
         kwargs: other arguments and options for network training.
     """
     from ..train import train
@@ -74,7 +76,6 @@ def task_launcher(network_task: str, **kwargs):
         "epochs",
         "evaluation_steps",
         "gpu",
-        "label",
         "learning_rate",
         "multi_cohort",
         "multi_network",
@@ -84,8 +85,6 @@ def task_launcher(network_task: str, **kwargs):
         "patience",
         "tolerance",
         "transfer_selection_metric",
-        "selection_metrics",
-        "selection_threshold",
         "weight_decay",
         "sampler",
         "seed",
@@ -93,6 +92,7 @@ def task_launcher(network_task: str, **kwargs):
         "compensation",
         "transfer_path",
     ]
+    standard_options_list = standard_options_list + task_options_list
 
     for option in standard_options_list:
         if (kwargs[option] is not None and not isinstance(kwargs[option], tuple)) or (

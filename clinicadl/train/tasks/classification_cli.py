@@ -66,7 +66,8 @@ def cli(**kwargs):
     in a TOML file as explained in the documentation:
     https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
     """
-    task_launcher("classification", **kwargs)
+    task_specific_options = ["label", "selection_metrics", "selection_threshold"]
+    task_launcher("classification", task_specific_options, **kwargs)
 
 
 if __name__ == "__main__":
