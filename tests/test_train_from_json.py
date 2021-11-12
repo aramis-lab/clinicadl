@@ -33,6 +33,10 @@ def test_train(cli_commands):
         f"clinicadl train from_json {config_json} {output_dir} -s {split}"
     )
     assert flag_error
-    compare_folders_with_hashes(output_dir, hash_dict)
+    compare_folders_with_hashes(
+        output_dir, hash_dict, ignore_pattern_list=["maps.json", "training.tsv"]
+    )
+    # maps.json content may change as variable names may be changed, or new variables may be added.
+    # training.tsv may change as it measures the time taken for computation and it is not deterministic.
 
     shutil.rmtree(output_dir)

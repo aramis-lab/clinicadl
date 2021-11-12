@@ -1,13 +1,28 @@
-def create_list_hashes(path_folder, extensions_to_keep=(".nii.gz", ".tsv", ".json")):
+from typing import Dict, List
+
+
+def ignore_pattern(file_path: str, ignore_pattern_list: List[str]) -> bool:
+    if not ignore_pattern_list:
+        return False
+
+    for pattern in ignore_pattern_list:
+        if pattern in file_path:
+            return True
+    return False
+
+
+def create_list_hashes(
+    path_folder: str, ignore_pattern_list: List[str] = None
+) -> Dict[str, str]:
     """
     Computes a dictionary of files with their corresponding hashes
 
         Args:
-            (string) path_folder: starting point for the tree listing.
-            (tuple) extensions_to_keep: files with these extensions will have their hashes computed and tracked
+            path_folder: starting point for the tree listing.
+            ignore_pattern_list: list of patterns to be ignored to create hash dictionary.
 
         Returns:
-            (dictionary) all_files: a dictionary of the form {/path/to/file.extension: hash(file.extension)}
+            all_files: a dictionary of the form {/path/to/file.extension: hash(file.extension)}
     """
     import hashlib
     import os
@@ -20,7 +35,7 @@ def create_list_hashes(path_folder, extensions_to_keep=(".nii.gz", ".tsv", ".jso
     for subdir, dirs, files in os.walk(path_folder):
         files.sort()
         for file in files:
-            if file.lower().endswith(extensions_to_keep):
+            if not ignore_pattern(file, ignore_pattern_list):
                 all_files.append(os.path.join(subdir, file))
 
     dict_hashes = {
@@ -32,18 +47,21 @@ def create_list_hashes(path_folder, extensions_to_keep=(".nii.gz", ".tsv", ".jso
     return dict_hashes
 
 
-def compare_folders_with_hashes(path_folder, list_hashes):
+def compare_folders_with_hashes(
+    path_folder: str, hashes_path: str, ignore_pattern_list: List[str] = None
+):
     """
     Compares the files of a folder against a reference
 
         Args:
-            (string) path_folder: starting point for the tree listing.
-            (dictionary) list_hashes: a dictionary of the form {/path/to/file.extension: hash(file.extension)}
+            path_folder: starting point for the tree listing.
+            hashes_path: a dictionary of the form {/path/to/file.extension: hash(file.extension)}
+            ignore_pattern_list: list of patterns to be ignored to create hash dictionary.
     """
     import pickle
 
-    hashes_check = pickle.load(open(list_hashes, "rb"))
-    hashes_new = create_list_hashes(path_folder)
+    hashes_check = pickle.load(open(hashes_path, "rb"))
+    hashes_new = create_list_hashes(path_folder, ignore_pattern_list)
 
     if hashes_check != hashes_new:
         error_message1 = ""
