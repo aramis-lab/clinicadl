@@ -16,7 +16,6 @@ from clinicadl.cmdline import cli
         "predict",
         "quality-check",
         "random-search",
-        "resume",
         "train",
         "tsvtool",
     ]
@@ -35,8 +34,6 @@ def test_first_lv(cli_args_first_lv):
 
 
 # Test for extract cli, second level
-
-
 @pytest.fixture(
     params=[
         "image",
@@ -131,6 +128,8 @@ def test_second_lv_predict(predict_cli_arg1):
         "classification",
         "regression",
         "reconstruction",
+        "from_json",
+        "resume",
     ]
 )
 def train_cli_arg1(request):
