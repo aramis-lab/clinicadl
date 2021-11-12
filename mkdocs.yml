@@ -86,9 +86,10 @@ nav:
       - Generate synthetic data sets: Preprocessing/Generate.md
   - Hyperparameter exploration: RandomSearch.md
   - Train deep learning networks:
-      - Train: Train/Introduction.md
-      - Resume training: Train/Resume.md
-      - Implementation details: Train/Details.md
+    - TOML or command line definition: Train/Introduction.md
+    - Reproduce experiments: Train/Retrain.md
+    - Resume training: Train/Resume.md
+    - Implementation details: Train/Details.md
   - Inference using trained models: Predict.md
   - Network output serialization: Tensors.md
   - Interpretation with gradient maps: Interpret.md

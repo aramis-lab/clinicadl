@@ -1,4 +1,4 @@
-# `train` - Train deep learning networks
+# `train NETWORK_TASK` - Define a network task from TOML or command line
 
 This functionality enables the training of a network using
 different formats of inputs (whole 3D images, 3D patches or 2D slices), as defined in
