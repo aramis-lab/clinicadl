@@ -253,7 +253,7 @@ class Vanilla3DdenseVAE(BaseVAE):
         input_w = input_size[3]
         d, h, w = input_d, input_h, input_w
 
-        # Encoder
+        # ENCODER
         encoder_layers = []
         # Input Layer
         encoder_layers.append(EncoderLayer3D(input_c, first_layer_channels))
@@ -269,7 +269,6 @@ class Vanilla3DdenseVAE(BaseVAE):
             # Construct output paddings
             decoder_output_padding.append([d % 2, h % 2, w % 2])
             d, h, w = d // 2, h // 2, w // 2
-        print(decoder_output_padding)
         n_pix = (
             first_layer_channels
             * 2 ** (n_conv - 1)
@@ -277,32 +276,51 @@ class Vanilla3DdenseVAE(BaseVAE):
             * (input_h // (2 ** n_conv))
             * (input_w // (2 ** n_conv))
         )
-        encoder_layers.append(
-            nn.Sequential(Flatten(), nn.Linear(n_pix, feature_size), nn.ReLU())
-        )
+        # Flatten
+        encoder_layers.append(Flatten())
+        # Intermediate feature space
+        if feature_size == 0:
+            feature_space = n_pix
+        else:
+            feature_space = feature_size
+            encoder_layers.append(
+                nn.Sequential(nn.Linear(n_pix, feature_space), nn.ReLU())
+            )
         encoder = nn.Sequential(*encoder_layers)
 
-        # Latent space
-        mu_layer = nn.Linear(feature_size, latent_space_size)
-        var_layer = nn.Linear(feature_size, latent_space_size)
+        # LATENT SPACE
+        mu_layer = nn.Linear(feature_space, latent_space_size)
+        var_layer = nn.Linear(feature_space, latent_space_size)
 
-        # Decoder
+        # DECODER
         decoder_layers = []
+        # Intermediate feature space
+        if feature_size == 0:
+            decoder_layers.append(
+                nn.Sequential(
+                    nn.Linear(latent_space_size, n_pix),
+                    nn.ReLU(),
+                )
+            )
+        else:
+            decoder_layers.append(
+                nn.Sequential(
+                    nn.Linear(latent_space_size, feature_size),
+                    nn.ReLU(),
+                    nn.Linear(feature_size, n_pix),
+                    nn.ReLU(),
+                )
+            )
+        # Unflatten
         decoder_layers.append(
-            nn.Sequential(
-                nn.Linear(latent_space_size, feature_size),
-                nn.ReLU(),
-                nn.Linear(feature_size, n_pix),
-                nn.ReLU(),
-                Unflatten3D(
-                    last_layer_channels * 2 ** (n_conv - 1),
-                    input_d // (2 ** n_conv),
-                    input_h // (2 ** n_conv),
-                    input_w // (2 ** n_conv),
-                ),
-                nn.ReLU(),
+            Unflatten3D(
+                last_layer_channels * 2 ** (n_conv - 1),
+                input_d // (2 ** n_conv),
+                input_h // (2 ** n_conv),
+                input_w // (2 ** n_conv),
             )
         )
+        # Decoder layers
         for i in range(n_conv - 1, 0, -1):
             decoder_layers.append(
                 DecoderLayer3D(
@@ -311,6 +329,7 @@ class Vanilla3DdenseVAE(BaseVAE):
                     output_padding=decoder_output_padding[i],
                 )
             )
+        # Output layer
         decoder_layers.append(
             nn.Sequential(
                 nn.ConvTranspose3d(
@@ -346,8 +365,8 @@ if __name__ == "__main__":
     model3D = Vanilla3DdenseVAE(
         input_size=(1, 169, 208, 279),
         latent_space_size=256,
-        feature_size=2048,
-        n_conv=6,
+        feature_size=0,
+        n_conv=5,
         io_layer_channels=2,
         recons_weight=1,
         KL_weight=1,
