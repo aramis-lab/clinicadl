@@ -56,7 +56,7 @@ class BaseVAE(Network):
         else:
             kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
 
-        loss = self.lambda1 * recon_loss + self.lambda2 * kl_loss
+        loss = self.lambda1 * recon_loss + self.lambda2 * kl_loss / mu.shape[0]
 
         loss_dict = {
             "loss": loss,
