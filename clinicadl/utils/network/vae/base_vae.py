@@ -10,6 +10,7 @@ class BaseVAE(Network):
         decoder,
         mu_layer,
         var_layer,
+        latent_size,
         use_cpu=False,
         is_3D=False,
         recons_weight=1,
@@ -19,6 +20,7 @@ class BaseVAE(Network):
 
         self.lambda1 = recons_weight
         self.lambda2 = KL_weight
+        self.latent_size = latent_size
 
         self.is_3D = is_3D
 
@@ -56,7 +58,7 @@ class BaseVAE(Network):
         else:
             kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
 
-        loss = self.lambda1 * recon_loss + self.lambda2 * kl_loss / mu.shape[0]
+        loss = self.lambda1 * recon_loss + self.lambda2 * kl_loss / self.latent_size
 
         loss_dict = {
             "loss": loss,
