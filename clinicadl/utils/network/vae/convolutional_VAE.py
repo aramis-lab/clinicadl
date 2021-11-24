@@ -11,8 +11,6 @@ from clinicadl.utils.network.network import Network
 
 from .utilities.general_settings import Settings
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
 
 class CVAE_3D(Network):
     """
@@ -56,6 +54,8 @@ class CVAE_3D(Network):
         self.bn6 = nn.BatchNorm3d(64)
         self.bn7 = nn.BatchNorm3d(32)
 
+        self.to(self.device)
+
     def encoder(self, image):
         h1 = F.relu(self.bn1(self.conv1(image)))
         h2 = F.relu(self.bn2(self.conv2(h1)))
@@ -77,10 +77,10 @@ class CVAE_3D(Network):
 
     def reparametrize(self, mu, logVar):
         # Reparameterization takes in the input mu and logVar and sample the mu + std * eps
-        std = torch.exp(logVar / 2).to(device)
+        std = torch.exp(logVar / 2).to(self.device)
         eps = torch.normal(
             mean=torch.tensor([0 for i in range(std.shape[1])]).float(), std=1
-        ).to(device)
+        ).to(self.device)
         if self.beta != 0:  # beta VAE
             return mu + eps * std
         else:  # regular AE
