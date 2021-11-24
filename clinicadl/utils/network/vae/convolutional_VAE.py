@@ -6,9 +6,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from utilities.general_settings import Settings
 
 from clinicadl.utils.network.network import Network
+
+from .utilities.general_settings import Settings
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
