@@ -18,7 +18,7 @@ class GeneralSettings:
     ####################################################################################################################
 
     def __init__(self):
-        self.dimension = 4
+        self.dimension = 512
         self.output_dir = "output"
         self.preprocessing_dir = "preprocessing"
         #
