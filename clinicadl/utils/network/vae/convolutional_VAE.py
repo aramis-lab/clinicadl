@@ -40,7 +40,7 @@ class CVAE_3D(Network):
         self.fc11 = nn.Linear(153600, Settings().dimension)
 
         # Decoder
-        self.fc2 = nn.Linear(Settings().dimension, 307200)
+        self.fc2 = nn.Linear(Settings().dimension, 1683968)
         self.upconv1 = nn.ConvTranspose3d(
             256, 128, 3, stride=2, padding=1, output_padding=0
         )  # 64 x 10 x 12 x 10
