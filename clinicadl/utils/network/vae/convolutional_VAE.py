@@ -75,7 +75,7 @@ class CVAE_3D(Network):
 
     def decoder(self, encoded):
         print(encoded.shape)
-        h5 = F.relu(self.fc2(encoded)).reshape([encoded.size()[0], 256, 10, 12, 10])
+        h5 = F.relu(self.fc2(encoded)).reshape([encoded.size()[0], 128, 26, 22, 23])
         print(h5.shape)
         h6 = F.relu(self.bn5(self.upconv1(h5)))
         print(h6.shape)
