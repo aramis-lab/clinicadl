@@ -134,8 +134,8 @@ class CVAE_3D_half(Network):
     with the sole criterion of correctly reconstructing the data. Nothing longitudinal here.
     """
 
-    def __init__(self):
-        super(CVAE_3D_half, self).__init__()
+    def __init__(self, use_cpu):
+        super(CVAE_3D_half, self).__init__(use_cpu=use_cpu)
         nn.Module.__init__(self)
         self.beta = 5
         self.gamma = 10
