@@ -58,22 +58,32 @@ class CVAE_3D(Network):
         self.to(self.device)
 
     def encoder(self, image):
+        print(image.shape)
         h1 = F.relu(self.bn1(self.conv1(image)))
+        print(h1.shape)
         h2 = F.relu(self.bn2(self.conv2(h1)))
+        print(h2.shape)
         h3 = F.relu(self.bn3(self.conv3(h2)))
+        print(h3.shape)
         # h4 = F.relu(self.bn4(self.conv4(h3)))
         # h5 = F.relu(self.fc1(h4.flatten(start_dim=1)))
         h5 = h3.flatten(start_dim=1)
         mu = torch.tanh(self.fc10(h5))
+        print(mu.shape)
         logVar = self.fc11(h5)
         return mu, logVar
 
     def decoder(self, encoded):
+        print(encoded.shape)
         h5 = F.relu(self.fc2(encoded)).reshape([encoded.size()[0], 256, 10, 12, 10])
+        print(h5.shape)
         h6 = F.relu(self.bn5(self.upconv1(h5)))
+        print(h6.shape)
         h7 = F.relu(self.bn6(self.upconv2(h6)))
+        print(h7.shape)
         # h8 = F.relu(self.bn7(self.upconv3(h7)))
         reconstructed = F.relu(self.upconv4(h7))
+        print(reconstructed.shape)
         return reconstructed
 
     def reparametrize(self, mu, logVar):
