@@ -36,8 +36,8 @@ class CVAE_3D(Network):
         self.bn2 = nn.BatchNorm3d(64)
         self.bn3 = nn.BatchNorm3d(128)
         # self.bn4 = nn.BatchNorm3d(128)
-        self.fc10 = nn.Linear(153600, Settings().dimension)
-        self.fc11 = nn.Linear(153600, Settings().dimension)
+        self.fc10 = nn.Linear(1683968, Settings().dimension)
+        self.fc11 = nn.Linear(1683968, Settings().dimension)
 
         # Decoder
         self.fc2 = nn.Linear(Settings().dimension, 3367936)
