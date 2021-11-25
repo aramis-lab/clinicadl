@@ -28,9 +28,9 @@ class CVAE_3D(Network):
 
         # Encoder
         # Input size 1 x 169 x 208 x 179
-        self.conv1 = nn.Conv3d(1, 32, 3, stride=2, padding=1)  # 32 x 84 x 104 x 89
-        self.conv2 = nn.Conv3d(32, 64, 3, stride=2, padding=1)  # 64 x 42 x 52 x 44
-        self.conv3 = nn.Conv3d(64, 128, 3, stride=2, padding=1)  # 128 x 21 x 26 x 22
+        self.conv1 = nn.Conv3d(1, 32, 3, stride=2, padding=1)  # 32 x 85 x 104 x 90
+        self.conv2 = nn.Conv3d(32, 64, 3, stride=2, padding=1)  # 64 x 43 x 52 x 45
+        self.conv3 = nn.Conv3d(64, 128, 3, stride=2, padding=1)  # 128 x 22 x 26 x 23
         # self.conv4 = nn.Conv3d(128, 128, 3, stride=1, padding=1)            # 256 x 10 x 12 x 10
         self.bn1 = nn.BatchNorm3d(32)
         self.bn2 = nn.BatchNorm3d(64)
@@ -42,14 +42,14 @@ class CVAE_3D(Network):
         # Decoder
         self.fc2 = nn.Linear(Settings().dimension, 3367936)
         self.upconv1 = nn.ConvTranspose3d(
-            256, 128, 3, stride=2, padding=1, output_padding=0
+            256, 128, 3, stride=2, padding=1, output_padding=1
         )  # 64 x 10 x 12 x 10
         self.upconv2 = nn.ConvTranspose3d(
-            128, 64, 3, stride=2, padding=1, output_padding=[0, 0, 1]
+            128, 64, 3, stride=2, padding=1, output_padding=1
         )  # 64 x 20 x 24 x 20
         # self.upconv3 = nn.ConvTranspose3d(64, 32, 3, stride=1, padding=1)                     # 32 x 40 x 48 x 40
         self.upconv4 = nn.ConvTranspose3d(
-            64, 1, 3, stride=2, padding=1, output_padding=[1, 0, 1]
+            64, 1, 3, stride=2, padding=1, output_padding=1
         )  # 1 x 80 x 96 x 80
         self.bn5 = nn.BatchNorm3d(128)
         self.bn6 = nn.BatchNorm3d(64)
