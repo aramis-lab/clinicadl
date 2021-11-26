@@ -55,9 +55,11 @@ pipeline {
         post {
           always {
             junit 'tests/test-reports/test_cli_report.xml'
-            cleanWS(deleteDirs: true,
-                  notFailBuild: true,
-                  patterns: [[pattern: 'env', type: 'INCLUDE']])
+            cleanWs(
+              deleteDirs: true,
+              notFailBuild: true,
+              patterns: [[pattern: 'env', type: 'INCLUDE']]
+              )
           }
         }
       }
