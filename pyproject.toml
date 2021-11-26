@@ -27,8 +27,8 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "~3.7.1"
-clinica = "^0.5.0"
+python = "^3.7.1"
+clinica = "^0.5.3"
 torch = "^1.8.0"
 torchvision = "*"
 tensorboard = "*"
@@ -37,7 +37,7 @@ pandas = "^1.2"
 numpy = "^1.17"
 scikit-learn = "^0.23"
 scikit-image = "^0.16.2"
-click = "^7"
+click = "^8"
 click-option-group = "^0.5"
 pynvml = "*"
 # docs
