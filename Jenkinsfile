@@ -20,7 +20,7 @@ pipeline {
           sh '''#!/usr/bin/env bash
              set +x
              eval "$(conda shell.bash hook)"
-             conda env create -y -f environement.yml -p "${WORKSPACE}/env
+             conda env create -f environement.yml -p "${WORKSPACE}/env
              conda activate "${WORKSPACE}/env"
              echo "Install clinicadl using poetry..."
              cd $WORKSPACE
