@@ -351,13 +351,13 @@ pipeline {
             }
           }
         }
-        post {
-          // Clean after build
-          always {
-            cleanWS(deleteDirs: true,
-                    notFailBuild: true,
-                    patterns: [[pattern: 'env', type: 'INCLUDE']])
-          }
+      }
+      post {
+        // Clean after build
+        always {
+          cleanWS(deleteDirs: true,
+                  notFailBuild: true,
+                  patterns: [[pattern: 'env', type: 'INCLUDE']])
         }
       }
       stage('Deploy') {
