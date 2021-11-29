@@ -52,16 +52,6 @@ pipeline {
             conda deactivate
             '''
         }
-        post {
-          always {
-            junit 'tests/test-reports/test_cli_report.xml'
-            cleanWs(
-              deleteDirs: true,
-              notFailBuild: true,
-              patterns: [[pattern: 'env', type: 'INCLUDE']]
-              )
-          }
-        }
       }
       stage('Functional tests') {
         parallel {
@@ -359,14 +349,14 @@ pipeline {
                 }
               }
             }
-            post {
-              // Clean after build
-              always {
-                cleanWS(deleteDirs: true,
-                        notFailBuild: true,
-                        patterns: [[pattern: 'env', type: 'INCLUDE']])
-              }
-            }
+          }
+        }
+        post {
+          // Clean after build
+          always {
+            cleanWS(deleteDirs: true,
+                    notFailBuild: true,
+                    patterns: [[pattern: 'env', type: 'INCLUDE']])
           }
         }
       }
