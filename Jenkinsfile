@@ -10,71 +10,22 @@ pipeline {
   }
   agent any
     stages {
-      stage('Build Env') {
-        environment {
-        PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
-        }
-        //when { changeset "requirements.txt" }
-        steps {
-          echo 'Installing clinicadl sources in Linux...'
-          echo 'My branch name is ${BRANCH_NAME}'
-          sh 'echo "My branch name is ${BRANCH_NAME}"'
-          sh 'printenv'
-          sh 'echo "Agent name: ${NODE_NAME}"'
-          sh '''
-             set +x
-             eval "$(conda shell.bash hook)"
-             conda env create -f environment.yml -p "${WORKSPACE}/env"
-             conda activate "${WORKSPACE}/env"
-             echo "Install clinicadl using poetry..."
-             cd $WORKSPACE
-             poetry install
-             # Show clinicadl help message
-             echo "Display clinicadl help message"
-             clinicadl --help
-             conda deactivate
-             '''
-        }
-      }
-      stage('CLI tests Linux') {
-        environment {
-          PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
-        }
-        steps {
-          echo 'Testing pipeline instantation...'
-            sh 'echo "Agent name: ${NODE_NAME}"'
-            sh '''
-            set +x
-            echo $WORKSPACE
-            eval "$(conda shell.bash hook)"
-            conda activate "${WORKSPACE}/env"
-            conda list
-            cd $WORKSPACE/tests
-            poetry pytest \
-              --junitxml=./test-reports/test_cli_report.xml \
-              --verbose \
-              --disable-warnings \
-              test_cli.py
-            conda deactivate
-            '''
-        }
-      }
       stage('Functional tests') {
         parallel {
           stage('No GPU') {
+            agent { label 'linux && cpu' }
+            environment {
+              PATH = "$HOME/miniconda/bin:$PATH"
+            }
             stages {
               stage('Build Env') {
-                environment {
-                PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
-                }
-                //when { changeset "requirements.txt" }
                 steps {
                   echo 'Installing clinicadl sources in Linux...'
                   echo 'My branch name is ${BRANCH_NAME}'
                   sh 'echo "My branch name is ${BRANCH_NAME}"'
                   sh 'printenv'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  sh '''#!/usr/bin/env bash
+                  sh '''
                     set +x
                     eval "$(conda shell.bash hook)"
                     conda env create -f environment.yml -p "${WORKSPACE}/env"
@@ -90,16 +41,15 @@ pipeline {
                 }
               }
               stage('CLI tests Linux') {
-                environment {
-                  PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
-                }
                 steps {
                   echo 'Testing pipeline instantation...'
                     sh 'echo "Agent name: ${NODE_NAME}"'
-                    sh '''#!/usr/bin/env bash
+                    sh '''
                     set +x
+                    echo $WORKSPACE
                     eval "$(conda shell.bash hook)"
                     conda activate "${WORKSPACE}/env"
+                    conda list
                     cd $WORKSPACE/tests
                     poetry pytest \
                       --junitxml=./test-reports/test_cli_report.xml \
@@ -111,10 +61,6 @@ pipeline {
                 }
               }
               stage('TSVTOOL tests Linux') {
-                agent { label 'linux && cpu' }
-                environment {
-                  PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
-                }
                 steps {
                   echo 'Testing tsvtool tasks...'
                     sh 'echo "Agent name: ${NODE_NAME}"'
@@ -138,9 +84,6 @@ pipeline {
                 }
               }
               stage('Generate tests Linux') {
-                environment {
-                  PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
-                }
                 steps {
                   echo 'Testing generate task...'
                     sh 'echo "Agent name: ${NODE_NAME}"'
@@ -167,9 +110,6 @@ pipeline {
                 }
               }
               stage('Extract tests Linux') {
-                environment {
-                  PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
-                }
                 steps {
                   echo 'Testing extract task...'
                     sh 'echo "Agent name: ${NODE_NAME}"'
@@ -196,9 +136,6 @@ pipeline {
                 }
               }
               stage('Predict tests Linux') {
-                environment {
-                  PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
-                }
                 steps {
                   echo 'Testing predict...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
@@ -260,8 +197,9 @@ pipeline {
           stage('GPU') {
             stages {
               stage('Build Env') {
+                agent { label 'linux && gpu' }
                 environment {
-                PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
+                  PATH = "$HOME/miniconda3/bin:$PATH"
                 }
                 //when { changeset "requirements.txt" }
                 steps {
@@ -270,7 +208,7 @@ pipeline {
                   sh 'echo "My branch name is ${BRANCH_NAME}"'
                   sh 'printenv'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  sh '''#!/usr/bin/env bash
+                  sh '''
                     set +x
                     eval "$(conda shell.bash hook)"
                     conda env create -f environment.yml -p "${WORKSPACE}/env"
@@ -287,13 +225,10 @@ pipeline {
               }
               stage('Train tests Linux') {
                 agent { label 'linux && gpu' }
-                environment {
-                  PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
-                }
                 steps {
                   echo 'Testing train task...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  sh '''#!/usr/bin/env bash
+                  sh '''
                      set +x
                      eval "$(conda shell.bash hook)"
                      conda activate "${WORKSPACE}/env"
@@ -319,14 +254,10 @@ pipeline {
                 }
               }
               stage('Transfer learning tests Linux') {
-                agent { label 'linux && gpu' }
-                environment {
-                  PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
-                }
                 steps {
                   echo 'Testing transfer learning...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  sh '''#!/usr/bin/env bash
+                  sh '''
                      set +x
                      eval "$(conda shell.bash hook)"
                      conda activate "${WORKSPACE}/env"
@@ -353,13 +284,10 @@ pipeline {
               }
               stage('Interpretation tests Linux') {
                 agent { label 'linux && gpu' }
-                environment {
-                  PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
-                }
                 steps {
                   echo 'Testing interpret task...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  sh '''#!/usr/bin/env bash
+                  sh '''
                      set +x
                      eval "$(conda shell.bash hook)"
                      conda activate "${WORKSPACE}/env"
@@ -386,13 +314,10 @@ pipeline {
               }
               stage('Random search tests Linux') {
                 agent { label 'linux && gpu' }
-                environment {
-                  PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
-                }
                 steps {
                   echo 'Testing random search...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  sh '''#!/usr/bin/env bash
+                  sh '''
                      set +x
                      eval "$(conda shell.bash hook)"
                      conda activate "${WORKSPACE}/env"
