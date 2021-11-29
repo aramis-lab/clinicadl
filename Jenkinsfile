@@ -196,7 +196,7 @@ pipeline {
               stage('Build Env') {
                 agent { label 'linux && gpu' }
                 environment {
-                  PATH = "$HOME/miniconda3/bin:$PATH"
+                  CONDA_HOME = "$HOME/miniconda3"
                 }
                 //when { changeset "requirements.txt" }
                 steps {
@@ -206,7 +206,6 @@ pipeline {
                   sh 'printenv'
                   sh 'echo "Agent name: ${NODE_NAME}"'
                   sh '''
-                    set +x
                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
                     conda env create -f environment.yml -p "${WORKSPACE}/env"
                     conda activate "${WORKSPACE}/env"
@@ -226,7 +225,6 @@ pipeline {
                   echo 'Testing train task...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
                   sh '''
-                     set +x
                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
                      conda activate "${WORKSPACE}/env"
                      clinicadl --help
@@ -255,7 +253,6 @@ pipeline {
                   echo 'Testing transfer learning...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
                   sh '''
-                     set +x
                      eval "$(conda shell.bash hook)"
                      conda activate "${WORKSPACE}/env"
                      clinicadl --help
