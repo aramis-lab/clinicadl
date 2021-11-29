@@ -224,7 +224,7 @@ pipeline {
                 steps {
                   echo 'Testing train task...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  sh '''
+                  sh '''#!/usr/bin/env bash
                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
                      conda activate "${WORKSPACE}/env"
                      clinicadl --help
@@ -252,8 +252,8 @@ pipeline {
                 steps {
                   echo 'Testing transfer learning...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  sh '''
-                     eval "$(conda shell.bash hook)"
+                  sh '''#!/usr/bin/env bash
+                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
                      conda activate "${WORKSPACE}/env"
                      clinicadl --help
                      cd $WORKSPACE/tests
@@ -281,9 +281,9 @@ pipeline {
                 steps {
                   echo 'Testing interpret task...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  sh '''
+                  sh '''#!/usr/bin/env bash
                      set +x
-                     eval "$(conda shell.bash hook)"
+                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
                      conda activate "${WORKSPACE}/env"
                      clinicadl --help
                      cd $WORKSPACE/tests
@@ -311,9 +311,9 @@ pipeline {
                 steps {
                   echo 'Testing random search...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  sh '''
+                  sh '''#!/usr/bin/env bash
                      set +x
-                     eval "$(conda shell.bash hook)"
+                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
                      conda activate "${WORKSPACE}/env"
                      clinicadl --help
                      cd $WORKSPACE/tests
