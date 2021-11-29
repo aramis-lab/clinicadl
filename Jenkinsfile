@@ -15,7 +15,7 @@ pipeline {
           stage('No GPU') {
             agent { label 'linux && cpu' }
             environment {
-              PATH = "$HOME/miniconda/bin:$PATH"
+              CONDA_HOME = "$HOME/miniconda"
             }
             stages {
               stage('Build Env') {
@@ -27,7 +27,7 @@ pipeline {
                   sh 'echo "Agent name: ${NODE_NAME}"'
                   sh '''
                     set +x
-                    eval "$(conda shell.bash hook)"
+                    source "${CONDA_HOME}/etc/profile.d/conda.sh"
                     conda env create -f environment.yml -p "${WORKSPACE}/env"
                     conda activate "${WORKSPACE}/env"
                     echo "Install clinicadl using poetry..."
@@ -47,7 +47,7 @@ pipeline {
                     sh '''
                     set +x
                     echo $WORKSPACE
-                    eval "$(conda shell.bash hook)"
+                    source "${CONDA_HOME}/etc/profile.d/conda.sh"
                     conda activate "${WORKSPACE}/env"
                     conda list
                     cd $WORKSPACE/tests
@@ -64,9 +64,8 @@ pipeline {
                 steps {
                   echo 'Testing tsvtool tasks...'
                     sh 'echo "Agent name: ${NODE_NAME}"'
-                    sh '''#!/usr/bin/env bash
-                    set +x
-                    eval "$(conda shell.bash hook)"
+                    sh '''
+                    source "${CONDA_HOME}/etc/profile.d/conda.sh"
                     conda activate "${WORKSPACE}/env"
                     cd $WORKSPACE/tests
                     poetry pytest \
@@ -87,9 +86,8 @@ pipeline {
                 steps {
                   echo 'Testing generate task...'
                     sh 'echo "Agent name: ${NODE_NAME}"'
-                    sh '''#!/usr/bin/env bash
-                      set +x
-                      eval "$(conda shell.bash hook)"
+                    sh '''
+                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
                       conda activate "${WORKSPACE}/env"
                       cd $WORKSPACE/tests
                       mkdir -p ./data/dataset
@@ -113,9 +111,8 @@ pipeline {
                 steps {
                   echo 'Testing extract task...'
                     sh 'echo "Agent name: ${NODE_NAME}"'
-                    sh '''#!/usr/bin/env bash
-                      set +x
-                      eval "$(conda shell.bash hook)"
+                    sh '''
+                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
                       conda activate "${WORKSPACE}/env"
                       cd $WORKSPACE/tests
                       mkdir -p ./data/dataset
@@ -139,9 +136,8 @@ pipeline {
                 steps {
                   echo 'Testing predict...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  sh '''#!/usr/bin/env bash
-                     set +x
-                     eval "$(conda shell.bash hook)"
+                  sh '''
+                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
                      conda activate "${WORKSPACE}/env"
                      cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
@@ -210,7 +206,7 @@ pipeline {
                   sh 'echo "Agent name: ${NODE_NAME}"'
                   sh '''
                     set +x
-                    eval "$(conda shell.bash hook)"
+                    source "${CONDA_HOME}/etc/profile.d/conda.sh"
                     conda env create -f environment.yml -p "${WORKSPACE}/env"
                     conda activate "${WORKSPACE}/env"
                     echo "Install clinicadl using poetry..."
@@ -230,7 +226,7 @@ pipeline {
                   sh 'echo "Agent name: ${NODE_NAME}"'
                   sh '''
                      set +x
-                     eval "$(conda shell.bash hook)"
+                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
                      conda activate "${WORKSPACE}/env"
                      clinicadl --help
                      cd $WORKSPACE/tests
