@@ -8,7 +8,7 @@ pipeline {
     timeout(time: 1, unit: 'HOURS')
     disableConcurrentBuilds(abortPrevious: true)
   }
-  agent any
+  agent none
     stages {
       stage('Functional tests') {
         failFast false
@@ -223,7 +223,6 @@ pipeline {
                 }
               }
               stage('Train tests Linux') {
-                agent { label 'linux && gpu' }
                 steps {
                   echo 'Testing train task...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
@@ -280,7 +279,6 @@ pipeline {
                 }
               }
               stage('Interpretation tests Linux') {
-                agent { label 'linux && gpu' }
                 steps {
                   echo 'Testing interpret task...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
@@ -310,7 +308,6 @@ pipeline {
                 }
               }
               stage('Random search tests Linux') {
-                agent { label 'linux && gpu' }
                 steps {
                   echo 'Testing random search...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
