@@ -203,14 +203,6 @@ pipeline {
             //                 }
             //              }
             }
-            post {
-              // Clean after build
-              always {
-                cleanWS(deleteDirs: true,
-                        notFailBuild: true,
-                        patterns: [[pattern: 'env', type: 'INCLUDE']])
-              }
-            }
           }
           stage('GPU') {
             stages {
@@ -352,14 +344,6 @@ pipeline {
           }
         }
       }
-      post {
-        // Clean after build
-        always {
-          cleanWS(deleteDirs: true,
-                  notFailBuild: true,
-                  patterns: [[pattern: 'env', type: 'INCLUDE']])
-        }
-      }
       stage('Deploy') {
         when { buildingTag() }
         environment {
@@ -394,6 +378,14 @@ pipeline {
             )
           }
         }
+      }
+    }
+    post {
+      // Clean after build
+      cleanup {
+        cleanWS(deleteDirs: true,
+                notFailBuild: true,
+                patterns: [[pattern: 'env', type: 'INCLUDE']])
       }
     }
 // post {
