@@ -14,7 +14,9 @@ pipeline {
         failFast false
         parallel {
           stage('No GPU') {
-            agent { label 'linux && cpu' }
+            agent {
+              label 'cpu'
+            }
             environment {
               CONDA_HOME = "$HOME/miniconda"
             }
@@ -192,13 +194,14 @@ pipeline {
             }
           }
           stage('GPU') {
+            agent {
+              label 'gpu'
+            }
+            environment {
+              CONDA_HOME = "$HOME/miniconda3"
+            }
             stages {
               stage('Build Env') {
-                agent { label 'linux && gpu' }
-                environment {
-                  CONDA_HOME = "$HOME/miniconda3"
-                }
-                //when { changeset "requirements.txt" }
                 steps {
                   echo 'Installing clinicadl sources in Linux...'
                   echo 'My branch name is ${BRANCH_NAME}'
@@ -206,7 +209,7 @@ pipeline {
                   sh 'printenv'
                   sh 'echo "Agent name: ${NODE_NAME}"'
                   sh '''#!/usr/bin/env bash
-                    source "${CONDA_PREFIX}/etc/profile.d/conda.sh"
+                    source "${CONDA_HOME}/etc/profile.d/conda.sh"
                     conda env create -f environment.yml -p "${WORKSPACE}/env"
                     conda activate "${WORKSPACE}/env"
                     echo "Install clinicadl using poetry..."
@@ -225,7 +228,7 @@ pipeline {
                   echo 'Testing train task...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
                   sh '''#!/usr/bin/env bash
-                     source "${CONDA_PREfIX}/etc/profile.d/conda.sh"
+                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
                      conda activate "${WORKSPACE}/env"
                      clinicadl --help
                      cd $WORKSPACE/tests
