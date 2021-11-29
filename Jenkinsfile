@@ -379,7 +379,7 @@ pipeline {
     post {
       // Clean after build
       cleanup {
-        cleanWS(deleteDirs: true,
+        cleanWs(deleteDirs: true,
                 notFailBuild: true,
                 patterns: [[pattern: 'env', type: 'INCLUDE']])
       }
