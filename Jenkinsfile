@@ -61,6 +61,53 @@ pipeline {
         parallel {
           stage('No GPU') {
             stages {
+              stage('Build Env') {
+                environment {
+                PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
+                }
+                //when { changeset "requirements.txt" }
+                steps {
+                  echo 'Installing clinicadl sources in Linux...'
+                  echo 'My branch name is ${BRANCH_NAME}'
+                  sh 'echo "My branch name is ${BRANCH_NAME}"'
+                  sh 'printenv'
+                  sh 'echo "Agent name: ${NODE_NAME}"'
+                  sh '''#!/usr/bin/env bash
+                    set +x
+                    eval "$(conda shell.bash hook)"
+                    conda env create -f environment.yml -p "${WORKSPACE}/env"
+                    conda activate "${WORKSPACE}/env"
+                    echo "Install clinicadl using poetry..."
+                    cd $WORKSPACE
+                    poetry install
+                    # Show clinicadl help message
+                    echo "Display clinicadl help message"
+                    clinicadl --help
+                    conda deactivate
+                    '''
+                }
+              }
+              stage('CLI tests Linux') {
+                environment {
+                  PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
+                }
+                steps {
+                  echo 'Testing pipeline instantation...'
+                    sh 'echo "Agent name: ${NODE_NAME}"'
+                    sh '''#!/usr/bin/env bash
+                    set +x
+                    eval "$(conda shell.bash hook)"
+                    conda activate "${WORKSPACE}/env"
+                    cd $WORKSPACE/tests
+                    poetry pytest \
+                      --junitxml=./test-reports/test_cli_report.xml \
+                      --verbose \
+                      --disable-warnings \
+                      test_cli.py
+                    conda deactivate
+                    '''
+                }
+              }
               stage('TSVTOOL tests Linux') {
                 agent { label 'linux && cpu' }
                 environment {
@@ -210,6 +257,32 @@ pipeline {
           }
           stage('GPU') {
             stages {
+              stage('Build Env') {
+                environment {
+                PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
+                }
+                //when { changeset "requirements.txt" }
+                steps {
+                  echo 'Installing clinicadl sources in Linux...'
+                  echo 'My branch name is ${BRANCH_NAME}'
+                  sh 'echo "My branch name is ${BRANCH_NAME}"'
+                  sh 'printenv'
+                  sh 'echo "Agent name: ${NODE_NAME}"'
+                  sh '''#!/usr/bin/env bash
+                    set +x
+                    eval "$(conda shell.bash hook)"
+                    conda env create -f environment.yml -p "${WORKSPACE}/env"
+                    conda activate "${WORKSPACE}/env"
+                    echo "Install clinicadl using poetry..."
+                    cd $WORKSPACE
+                    poetry install
+                    # Show clinicadl help message
+                    echo "Display clinicadl help message"
+                    clinicadl --help
+                    conda deactivate
+                    '''
+                }
+              }
               stage('Train tests Linux') {
                 agent { label 'linux && gpu' }
                 environment {
@@ -221,8 +294,6 @@ pipeline {
                   sh '''#!/usr/bin/env bash
                      set +x
                      eval "$(conda shell.bash hook)"
-                     conda env create -y -f environment.yml -p "${WORKSPACE}/env
-                     poetry install
                      conda activate "${WORKSPACE}/env"
                      clinicadl --help
                      cd $WORKSPACE/tests
