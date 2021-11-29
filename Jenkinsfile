@@ -205,7 +205,7 @@ pipeline {
                   sh 'echo "My branch name is ${BRANCH_NAME}"'
                   sh 'printenv'
                   sh 'echo "Agent name: ${NODE_NAME}"'
-                  sh '''
+                  sh '''#!/usr/bin/env bash
                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
                     conda env create -f environment.yml -p "${WORKSPACE}/env"
                     conda activate "${WORKSPACE}/env"
