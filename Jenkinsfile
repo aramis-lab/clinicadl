@@ -8,7 +8,7 @@ pipeline {
     timeout(time: 1, unit: 'HOURS')
     disableConcurrentBuilds(abortPrevious: true)
   }
-  agent all
+  agent any
     stages {
       stage('Functional tests') {
         failFast false
