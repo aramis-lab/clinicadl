@@ -206,7 +206,7 @@ pipeline {
                   sh 'printenv'
                   sh 'echo "Agent name: ${NODE_NAME}"'
                   sh '''#!/usr/bin/env bash
-                    source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                    source "${CONDA_PREFIX}/etc/profile.d/conda.sh"
                     conda env create -f environment.yml -p "${WORKSPACE}/env"
                     conda activate "${WORKSPACE}/env"
                     echo "Install clinicadl using poetry..."
@@ -225,7 +225,7 @@ pipeline {
                   echo 'Testing train task...'
                   sh 'echo "Agent name: ${NODE_NAME}"'
                   sh '''#!/usr/bin/env bash
-                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                     source "${CONDA_PREfIX}/etc/profile.d/conda.sh"
                      conda activate "${WORKSPACE}/env"
                      clinicadl --help
                      cd $WORKSPACE/tests
