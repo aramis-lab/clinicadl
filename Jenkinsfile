@@ -4,6 +4,10 @@
 // Author: mauricio.diaz@inria.fr
 
 pipeline {
+  options {
+    timeout(time: 1, unit: 'HOURS')
+    disableConcurrentBuilds(abortPrevious: true)
+  }
   agent any
     stages {
       stage('Build Env') {
@@ -58,7 +62,7 @@ pipeline {
           stage('No GPU') {
             stages {
               stage('TSVTOOL tests Linux') {
-                agent { label 'linux' }
+                agent { label 'linux && cpu' }
                 environment {
                   PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
                 }
