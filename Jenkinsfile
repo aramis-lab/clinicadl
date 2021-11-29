@@ -192,6 +192,14 @@ pipeline {
             //                 }
             //              }
             }
+            post {
+            // Clean after build
+              cleanup {
+                cleanWs(deleteDirs: true,
+                  notFailBuild: true,
+                  patterns: [[pattern: 'env', type: 'INCLUDE']])
+              }
+            }
           }
           stage('GPU') {
             agent {
@@ -337,6 +345,14 @@ pipeline {
                 }
               }
             }
+            post {
+            // Clean after build
+              cleanup {
+                cleanWs(deleteDirs: true,
+                  notFailBuild: true,
+                  patterns: [[pattern: 'env', type: 'INCLUDE']])
+              }
+            }
           }
         }
       }
@@ -374,14 +390,6 @@ pipeline {
             )
           }
         }
-      }
-    }
-    post {
-      // Clean after build
-      cleanup {
-        cleanWs(deleteDirs: true,
-                notFailBuild: true,
-                patterns: [[pattern: 'env', type: 'INCLUDE']])
       }
     }
 // post {
