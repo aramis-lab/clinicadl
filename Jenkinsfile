@@ -8,9 +8,10 @@ pipeline {
     timeout(time: 1, unit: 'HOURS')
     disableConcurrentBuilds(abortPrevious: true)
   }
-  agent any
+  agent none
     stages {
       stage('Functional tests') {
+        failFast true
         parallel {
           stage('No GPU') {
             agent { label 'linux && cpu' }
