@@ -8,10 +8,10 @@ pipeline {
     timeout(time: 1, unit: 'HOURS')
     disableConcurrentBuilds(abortPrevious: true)
   }
-  agent none
+  agent all
     stages {
       stage('Functional tests') {
-        failFast true
+        failFast false
         parallel {
           stage('No GPU') {
             agent { label 'linux && cpu' }
@@ -52,7 +52,7 @@ pipeline {
                     conda activate "${WORKSPACE}/env"
                     conda list
                     cd $WORKSPACE/tests
-                    poetry pytest \
+                    poetry run pytest \
                       --junitxml=./test-reports/test_cli_report.xml \
                       --verbose \
                       --disable-warnings \
@@ -69,7 +69,7 @@ pipeline {
                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
                     conda activate "${WORKSPACE}/env"
                     cd $WORKSPACE/tests
-                    poetry pytest \
+                    poetry run pytest \
                       --junitxml=./test-reports/test_tsvtool_report.xml \
                       --verbose \
                       --disable-warnings \
@@ -93,7 +93,7 @@ pipeline {
                       cd $WORKSPACE/tests
                       mkdir -p ./data/dataset
                       tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
-                      poetry pytest \
+                      poetry run pytest \
                         --junitxml=./test-reports/test_generate_report.xml \
                         --verbose \
                         --disable-warnings \
@@ -118,7 +118,7 @@ pipeline {
                       cd $WORKSPACE/tests
                       mkdir -p ./data/dataset
                       tar xf /mnt/data/data_CI/dataset/DLPrepareData.tar.gz -C ./data/dataset
-                      poetry pytest \
+                      poetry run pytest \
                         --junitxml=./test-reports/test_extract_report.xml \
                         --verbose \
                         --disable-warnings \
@@ -145,7 +145,7 @@ pipeline {
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
                      ln -s /mnt/data/data_CI/models/models_new data/models
-                     poetry pytest \
+                     poetry run pytest \
                         --junitxml=./test-reports/test_predict_report.xml \
                         --verbose \
                         --disable-warnings \
@@ -232,7 +232,7 @@ pipeline {
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      cp -r /mnt/data/data_CI/labels_list ./data/
-                     poetry pytest \
+                     poetry run pytest \
                         --junitxml=./test-reports/test_train_report.xml \
                         --verbose \
                         --disable-warnings \
@@ -260,7 +260,7 @@ pipeline {
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      cp -r /mnt/data/data_CI/labels_list ./data/
-                     poetry pytest \
+                     poetry run pytest \
                         --junitxml=./test-reports/test_transfer_learning_report.xml \
                         --verbose \
                         --disable-warnings \
@@ -290,7 +290,7 @@ pipeline {
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      cp -r /mnt/data/data_CI/labels_list ./data/
-                     poetry pytest \
+                     poetry run pytest \
                         --junitxml=./test-reports/test_interpret_report.xml \
                         --verbose \
                         --disable-warnings \
@@ -320,7 +320,7 @@ pipeline {
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      cp -r /mnt/data/data_CI/labels_list ./data/
-                     poetry pytest \
+                     poetry run pytest \
                         --junitxml=./test-reports/test_random_search_report.xml \
                         --verbose \
                         --disable-warnings \
