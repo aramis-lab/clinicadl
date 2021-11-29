@@ -21,7 +21,7 @@ pipeline {
           sh 'echo "My branch name is ${BRANCH_NAME}"'
           sh 'printenv'
           sh 'echo "Agent name: ${NODE_NAME}"'
-          sh '''#!/usr/bin/env bash
+          sh '''
              set +x
              eval "$(conda shell.bash hook)"
              conda env create -f environment.yml -p "${WORKSPACE}/env"
@@ -43,10 +43,12 @@ pipeline {
         steps {
           echo 'Testing pipeline instantation...'
             sh 'echo "Agent name: ${NODE_NAME}"'
-            sh '''#!/usr/bin/env bash
+            sh '''
             set +x
+            echo $WORKSPACE
             eval "$(conda shell.bash hook)"
             conda activate "${WORKSPACE}/env"
+            conda list
             cd $WORKSPACE/tests
             poetry pytest \
               --junitxml=./test-reports/test_cli_report.xml \
