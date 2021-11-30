@@ -196,6 +196,7 @@ class MapsManager:
         if folds is None:
             folds = self._find_folds()
 
+        print(self.size_reduction)
         _, all_transforms = get_transforms(
             minmaxnormalization=self.minmaxnormalization,
             data_augmentation=self.data_augmentation,
