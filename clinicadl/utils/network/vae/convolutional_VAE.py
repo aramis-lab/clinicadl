@@ -9,8 +9,6 @@ from torch.autograd import Variable
 
 from clinicadl.utils.network.network import Network
 
-from .utilities.general_settings import Settings
-
 
 class CVAE_3D(Network):
     """
@@ -18,13 +16,10 @@ class CVAE_3D(Network):
     with the sole criterion of correctly reconstructing the data. Nothing longitudinal here.
     """
 
-    def __init__(self, use_cpu):
+    def __init__(self, latent_space_size, use_cpu):
         super(CVAE_3D, self).__init__(use_cpu=use_cpu)
         nn.Module.__init__(self)
         self.beta = 5
-        self.gamma = 10
-        self.lr = 1e-4  # For epochs between MCMC steps
-        self.epoch = 0
 
         # Encoder
         # Input size 1 x 169 x 208 x 179
@@ -36,11 +31,11 @@ class CVAE_3D(Network):
         self.bn2 = nn.BatchNorm3d(64)
         self.bn3 = nn.BatchNorm3d(128)
         # self.bn4 = nn.BatchNorm3d(128)
-        self.fc10 = nn.Linear(1683968, Settings().dimension)
-        self.fc11 = nn.Linear(1683968, Settings().dimension)
+        self.fc10 = nn.Linear(1683968, latent_space_size)
+        self.fc11 = nn.Linear(1683968, latent_space_size)
 
         # Decoder
-        self.fc2 = nn.Linear(Settings().dimension, 3367936)
+        self.fc2 = nn.Linear(latent_space_size, 3367936)
         self.upconv1 = nn.ConvTranspose3d(
             256, 128, 3, stride=2, padding=1, output_padding=[0, 1, 0]
         )  # 64 x 10 x 12 x 10
@@ -59,21 +54,25 @@ class CVAE_3D(Network):
 
     def encoder(self, image):
         h1 = F.relu(self.bn1(self.conv1(image)))
+        print(h1.shape)
         h2 = F.relu(self.bn2(self.conv2(h1)))
         h3 = F.relu(self.bn3(self.conv3(h2)))
         # h4 = F.relu(self.bn4(self.conv4(h3)))
         # h5 = F.relu(self.fc1(h4.flatten(start_dim=1)))
         h5 = h3.flatten(start_dim=1)
         mu = torch.tanh(self.fc10(h5))
+        print(mu.shape)
         logVar = self.fc11(h5)
         return mu, logVar
 
     def decoder(self, encoded):
         h5 = F.relu(self.fc2(encoded)).reshape([encoded.size()[0], 256, 22, 26, 23])
+        print(h5.shape)
         h6 = F.relu(self.bn5(self.upconv1(h5)))
         h7 = F.relu(self.bn6(self.upconv2(h6)))
         # h8 = F.relu(self.bn7(self.upconv3(h7)))
         reconstructed = F.relu(self.upconv4(h7))
+        print(reconstructed.shape)
         return reconstructed
 
     def reparametrize(self, mu, logVar):
@@ -134,7 +133,7 @@ class CVAE_3D_half(Network):
     with the sole criterion of correctly reconstructing the data. Nothing longitudinal here.
     """
 
-    def __init__(self, use_cpu):
+    def __init__(self, latent_space_size, use_cpu):
         super(CVAE_3D_half, self).__init__(use_cpu=use_cpu)
         nn.Module.__init__(self)
         self.beta = 5
@@ -151,11 +150,11 @@ class CVAE_3D_half(Network):
         self.bn2 = nn.BatchNorm3d(64)
         self.bn3 = nn.BatchNorm3d(128)
         # self.bn4 = nn.BatchNorm3d(128)
-        self.fc10 = nn.Linear(153600, Settings().dimension)
-        self.fc11 = nn.Linear(153600, Settings().dimension)
+        self.fc10 = nn.Linear(153600, latent_space_size)
+        self.fc11 = nn.Linear(153600, latent_space_size)
 
         # Decoder
-        self.fc2 = nn.Linear(Settings().dimension, 307200)
+        self.fc2 = nn.Linear(latent_space_size, 307200)
         self.upconv1 = nn.ConvTranspose3d(
             256, 128, 3, stride=2, padding=1, output_padding=1
         )  # 64 x 10 x 12 x 10
@@ -184,7 +183,7 @@ class CVAE_3D_half(Network):
         return mu, logVar
 
     def decoder(self, encoded):
-        h5 = F.relu(self.fc2(encoded)).reshape([encoded.size()[0], 256, 22, 26, 23])
+        h5 = F.relu(self.fc2(encoded)).reshape([encoded.size()[0], 256, 10, 12, 10])
         h6 = F.relu(self.bn5(self.upconv1(h5)))
         h7 = F.relu(self.bn6(self.upconv2(h6)))
         # h8 = F.relu(self.bn7(self.upconv3(h7)))
