@@ -925,6 +925,7 @@ def get_transforms(
     if minmaxnormalization:
         transformations_list.append(MinMaxNormalization())
 
+    print("SIZE REDUCTION", size_reduction)
     if size_reduction:
         transformations_list.append(SizeReduction)
 
