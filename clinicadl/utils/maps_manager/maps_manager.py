@@ -47,7 +47,6 @@ class MapsManager:
         if verbose not in level_list:
             raise ValueError(f"verbose value {verbose} must be in {level_list}.")
         setup_logging(level_list.index(verbose))
-        print(parameters["size_reduction"])
         # Existing MAPS
         if parameters is None:
             if not path.exists(path.join(maps_path, "maps.json")):
@@ -197,6 +196,8 @@ class MapsManager:
             folds = self._find_folds()
 
         print(self.size_reduction)
+        print(self.__dict__)
+        print(dir(self))
         _, all_transforms = get_transforms(
             minmaxnormalization=self.minmaxnormalization,
             data_augmentation=self.data_augmentation,
