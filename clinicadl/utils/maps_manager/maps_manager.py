@@ -65,7 +65,10 @@ class MapsManager:
         if verbose not in level_list:
             raise ValueError(f"verbose value {verbose} must be in {level_list}.")
         setup_logging(level_list.index(verbose))
+<<<<<<< HEAD
         print(parameters["size_reduction"])
+>>>>>>> Added print for debug
+=======
 >>>>>>> Added print for debug
         # Existing MAPS
         if parameters is None:
@@ -223,6 +226,8 @@ class MapsManager:
         logger.debug(f"List of splits {split_list}")
 
         print(self.size_reduction)
+        print(self.__dict__)
+        print(dir(self))
         _, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
