@@ -55,11 +55,18 @@ class MapsManager:
             verbose: Logging level ("debug", "info", "warning")
         """
         self.maps_path = path.abspath(maps_path)
+<<<<<<< HEAD
         if verbose is not None:
             if verbose not in level_list:
                 raise ValueError(f"verbose value {verbose} must be in {level_list}.")
             setup_logging(level_list.index(verbose))
 
+=======
+        if verbose not in level_list:
+            raise ValueError(f"verbose value {verbose} must be in {level_list}.")
+        setup_logging(level_list.index(verbose))
+        print(parameters["size_reduction"])
+>>>>>>> Added print for debug
         # Existing MAPS
         if parameters is None:
             if not path.exists(path.join(maps_path, "maps.json")):
