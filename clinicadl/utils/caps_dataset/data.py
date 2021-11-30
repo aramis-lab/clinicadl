@@ -881,8 +881,17 @@ class MinMaxNormalization(object):
         return (image - image.min()) / (image.max() - image.min())
 
 
+class SizeReduction(object):
+    """Reshape the input tensor to be of size [80, 96, 80]"""
+
+    def __call__(self, image):
+        return image[:, 4:164:2, 8:200:2, 8:168:2]
+
+
 def get_transforms(
-    minmaxnormalization: bool = True, data_augmentation: List[str] = None
+    minmaxnormalization: bool = True,
+    data_augmentation: List[str] = None,
+    size_reduction: bool = False,
 ) -> Tuple[transforms.Compose, transforms.Compose]:
     """
     Outputs the transformations that will be applied to the dataset
@@ -901,17 +910,20 @@ def get_transforms(
         "Smoothing": RandomSmoothing(),
         "None": None,
     }
+
+    augmentation_list = []
+    transformations_list = []
+
     if data_augmentation:
-        augmentation_list = [
-            augmentation_dict[augmentation] for augmentation in data_augmentation
-        ]
-    else:
-        augmentation_list = []
+        augmentation_list.extend(
+            [augmentation_dict[augmentation] for augmentation in data_augmentation]
+        )
 
     if minmaxnormalization:
-        transformations_list = [MinMaxNormalization()]
-    else:
-        transformations_list = []
+        transformations_list.append(MinMaxNormalization())
+
+    if size_reduction:
+        transformations_list.append(SizeReduction)
 
     all_transformations = transforms.Compose(transformations_list)
     train_transformations = transforms.Compose(augmentation_list)

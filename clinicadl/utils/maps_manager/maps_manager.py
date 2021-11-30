@@ -199,6 +199,7 @@ class MapsManager:
         _, all_transforms = get_transforms(
             minmaxnormalization=self.minmaxnormalization,
             data_augmentation=self.data_augmentation,
+            size_reduction=self.size_reduction,
         )
 
         group_df = None
