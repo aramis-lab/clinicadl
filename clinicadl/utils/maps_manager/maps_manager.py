@@ -225,9 +225,6 @@ class MapsManager:
             split_list = self._find_splits()
         logger.debug(f"List of splits {split_list}")
 
-        print(self.size_reduction)
-        print(self.__dict__)
-        print(dir(self))
         _, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
@@ -634,10 +631,15 @@ class MapsManager:
         """
         from torch.utils.data import DataLoader
 
+        print(self.size_reduction)
+        print(self.__dict__)
+        print(dir(self))
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
+            size_reduction=self.size_reduction,
         )
+        print(train_transforms, all_transforms)
 
         split_manager = self._init_split_manager(split_list)
         for split in split_manager.split_iterator():
