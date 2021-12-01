@@ -927,7 +927,7 @@ def get_transforms(
 
     print("SIZE REDUCTION", size_reduction)
     if size_reduction:
-        transformations_list.append(SizeReduction)
+        transformations_list.append(SizeReduction())
 
     all_transformations = transforms.Compose(transformations_list)
     train_transformations = transforms.Compose(augmentation_list)
