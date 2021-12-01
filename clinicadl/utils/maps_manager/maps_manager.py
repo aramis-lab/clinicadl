@@ -558,15 +558,11 @@ class MapsManager:
         """
         from torch.utils.data import DataLoader
 
-        print(self.size_reduction)
-        print(self.__dict__)
-        print(dir(self))
         train_transforms, all_transforms = get_transforms(
             minmaxnormalization=self.minmaxnormalization,
             data_augmentation=self.data_augmentation,
             size_reduction=self.size_reduction,
         )
-        print(train_transforms, all_transforms)
 
         split_manager = self._init_split_manager(folds)
         for fold in split_manager.fold_iterator():

@@ -370,8 +370,6 @@ def cli(
     else:
         train_dict["validation"] = "SingleSplit"
 
-    print(train_dict)
-
     train(output_maps_directory, train_dict, train_dict.pop("folds"))
 
 

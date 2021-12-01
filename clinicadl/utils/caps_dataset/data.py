@@ -319,11 +319,8 @@ class CapsDatasetImage(CapsDataset):
         image_path = self._get_image_path(participant, session, cohort)
         image = torch.load(image_path)
 
-        print(image.shape)
-        print(self.transformations)
         if self.transformations:
             image = self.transformations(image)
-            print(image.shape)
 
         if self.augmentation_transformations and not self.eval_mode:
             image = self.augmentation_transformations(image)
@@ -925,7 +922,6 @@ def get_transforms(
     if minmaxnormalization:
         transformations_list.append(MinMaxNormalization())
 
-    print("SIZE REDUCTION", size_reduction)
     if size_reduction:
         transformations_list.append(SizeReduction())
 
