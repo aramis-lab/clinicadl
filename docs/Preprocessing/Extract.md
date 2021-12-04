@@ -29,9 +29,11 @@ which have the same arguments:
   can be `t1-linear` or `pet-linear`. You can choose `custom` if you want to get a
   tensor from a custom filename.
 
-Each sub-command has its own set of options. There is one generic option:
+Each sub-command has its own set of options. There are two generic options:
 
 - `--subjects_sessions_tsv` (Path) is a path to a TSV file listing participant and session IDs. 
+- `--extract_json` (str) is the name of the JSON file that will be created to store all the information
+  of the extraction step. Default will name the JSON file `extract_{time_stamp}.json`.
 
 !!! note "Default values"
     When using patch or slice extraction, default values were set according to
@@ -50,13 +52,11 @@ Results are stored in following folder of the
 
 Files are saved with the `.pt` extension and contains tensors in PyTorch format.
 
-A JSON file with timestamp is also stored in the CAPS hierarchy under the `tensor_extraction` folder:
+A JSON file is also stored in the CAPS hierarchy under the `tensor_extraction` folder:
 ```console
 CAPS_DIRECTORY
 └── tensor_extraction
-        ├── extract_XXXXXXXXXX.json
-        ├── ...
-        └── extract_YYYYYYYYY.json
+        └── <extract_json>
  
 ```
 These files are compulsory to run the [train](../Train/Introduction.md#running-the-task) command. 
@@ -70,7 +70,7 @@ The suffix represents the initial modality (it can be for example `T1w`).
 
 !!! Warning!
     The default behavior of the pipeline is to only extract images even if another extraction method is specified.
-    However all the options will be saved in the preprocessing JSON file and then the extraction is done
+    However, all the options will be saved in the preprocessing JSON file and then the extraction is done
     when data is loaded during the training. If you want to save the extracted method tensors in the CAPS, you have to add the `--save-features` flag.
 
 ### `image`

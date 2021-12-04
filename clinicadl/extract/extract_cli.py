@@ -12,6 +12,7 @@ from .extract_utils import get_parameters_dict
 @cli_param.argument.caps_directory
 @cli_param.argument.modality
 @cli_param.option.subjects_sessions_tsv
+@cli_param.option.extract_json
 @cli_param.option.use_uncropped_image
 @cli_param.option.acq_label
 @cli_param.option.suvr_reference_region
@@ -20,6 +21,7 @@ def image_cli(
     caps_directory: str,
     modality: str,
     subjects_sessions_tsv: Optional[str] = None,
+    extract_json: str = None,
     use_uncropped_image: bool = False,
     acq_label: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,
@@ -35,6 +37,7 @@ def image_cli(
         modality,
         "image",
         False,
+        extract_json,
         use_uncropped_image,
         custom_suffix,
         acq_label,
@@ -52,6 +55,7 @@ def image_cli(
 @cli_param.argument.modality
 @cli_param.option.save_features
 @cli_param.option.subjects_sessions_tsv
+@cli_param.option.extract_json
 @cli_param.option.use_uncropped_image
 @click.option(
     "-ps",
@@ -75,6 +79,7 @@ def patch_cli(
     modality: str,
     save_features: bool = False,
     subjects_sessions_tsv: Optional[str] = None,
+    extract_json: str = None,
     use_uncropped_image: bool = False,
     patch_size: int = 50,
     stride_size: int = 50,
@@ -92,6 +97,7 @@ def patch_cli(
         modality,
         "patch",
         save_features,
+        extract_json,
         use_uncropped_image,
         custom_suffix,
         acq_label,
@@ -112,6 +118,7 @@ def patch_cli(
 @cli_param.argument.modality
 @cli_param.option.save_features
 @cli_param.option.subjects_sessions_tsv
+@cli_param.option.extract_json
 @cli_param.option.use_uncropped_image
 @click.option(
     "-sd",
@@ -150,6 +157,7 @@ def slice_cli(
     modality: str,
     save_features: bool = False,
     subjects_sessions_tsv: Optional[str] = None,
+    extract_json: str = None,
     use_uncropped_image: bool = False,
     slice_direction: int = 0,
     slice_mode: str = "rgb",
@@ -168,6 +176,7 @@ def slice_cli(
         modality,
         "slice",
         save_features,
+        extract_json,
         use_uncropped_image,
         custom_suffix,
         acq_label,
@@ -189,6 +198,7 @@ def slice_cli(
 @cli_param.argument.modality
 @cli_param.option.save_features
 @cli_param.option.subjects_sessions_tsv
+@cli_param.option.extract_json
 @cli_param.option.use_uncropped_image
 @click.option(
     "--roi_list",
@@ -230,6 +240,7 @@ def roi_cli(
     modality: str,
     save_features: bool = False,
     subjects_sessions_tsv: Optional[str] = None,
+    extract_json: str = None,
     use_uncropped_image: bool = False,
     roi_list: list = [],
     roi_uncrop_output: bool = False,
@@ -249,6 +260,7 @@ def roi_cli(
         modality,
         "roi",
         save_features,
+        extract_json,
         use_uncropped_image,
         custom_suffix,
         acq_label,

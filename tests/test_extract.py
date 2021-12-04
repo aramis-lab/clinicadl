@@ -1,7 +1,7 @@
 # coding: utf8
 
 import warnings
-from os import pardir
+from typing import Any, Dict, List
 
 warnings.filterwarnings("ignore")
 
@@ -140,7 +140,7 @@ def test_extract():
         "roi_custom_mask_pattern": "",
     }
 
-    data = [image_params, slice_params, patch_params, roi_params]
+    data: List[Dict[str, Any]] = [image_params, slice_params, patch_params, roi_params]
 
     for parameters in data:
 
@@ -154,6 +154,7 @@ def test_extract():
                 parameters["acq_label"] = "av45"
                 parameters["suvr_reference_region"] = "pons2"
                 parameters["use_uncropped_image"] = False
+                parameters["extract_json"] = f"{modality}_mode-{parameters['mode']}"
                 extract_generic(root, parameters)
 
             elif modality == "custom":
@@ -162,11 +163,15 @@ def test_extract():
                     "custom_suffix"
                 ] = "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
                 parameters["roi_custom_template"] = "Ixi549Space"
+                parameters["extract_json"] = f"{modality}_mode-{parameters['mode']}"
                 extract_generic(root, parameters)
 
             elif modality == "t1-linear":
                 for flag in uncropped_image:
                     parameters["use_uncropped_image"] = flag
+                    parameters[
+                        "extract_json"
+                    ] = f"{modality}_crop-{not flag}_mode-{parameters['mode']}"
                     extract_generic(root, parameters)
             else:
                 raise NotImplementedError(

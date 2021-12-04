@@ -1,5 +1,6 @@
 # coding: utf8
 from os import path
+from time import time
 from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
@@ -10,6 +11,7 @@ def get_parameters_dict(
     modality: str,
     extract_method: str,
     save_features: bool,
+    extract_json: str,
     use_uncropped_image: bool,
     custom_suffix: str,
     acq_label: str,
@@ -21,6 +23,7 @@ def get_parameters_dict(
         extract_method: mode of extraction (image, slice, patch, roi).
         save_features: If True modes are extracted, else images are extracted
             and the extraction of modes is done on-the-fly during training.
+        extract_json: Name of the JSON file created to sum up the arguments of tensor extraction.
         use_uncropped_image: If True the cropped version of the image is used
             (specific to t1-linear and pet-linear).
         custom_suffix: string used to identify images when modality is custom.
@@ -43,7 +46,18 @@ def get_parameters_dict(
         parameters["acq_label"] = acq_label
         parameters["suvr_reference_region"] = suvr_reference_region
 
+    parameters["extract_json"] = compute_extract_json(extract_json)
+
     return parameters
+
+
+def compute_extract_json(extract_json: str) -> str:
+    if extract_json is None:
+        return f"extract_{int(time())}.json"
+    elif not extract_json.endswith(".json"):
+        return f"{extract_json}.json"
+    else:
+        return extract_json
 
 
 def compute_folder_and_file_type(
