@@ -12,8 +12,8 @@ CURRENT_DIR=$(pwd)
 echo $CURRENT_DIR
 
 # ensure we are in the right dir
-SCRIPT_DIR=`dirname $0`
-cd $SCRIPT_DIR
+SCRIPT_DIR=`(dirname $0)`
+cd "$SCRIPT_DIR"
 echo "Entering ${SCRIPT_DIR}/../../"
 cd "${SCRIPT_DIR}/../../"
 ls 
@@ -26,6 +26,6 @@ find -name "*.pyc*" -exec rm {} \-rf \;
 set -o errexit
 set -e
 # generate wheel
-python setup.py sdist bdist_wheel
+poetry build
 # come back to directory of
 cd $CURRENT_DIR

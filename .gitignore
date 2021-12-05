@@ -5,7 +5,6 @@ examples/external-data
 clinicadl.egg-info
 *egg-info
 *.log
-*.lock
 *.pyc
 *.o
 *.lib
