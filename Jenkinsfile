@@ -364,23 +364,22 @@ pipeline {
         steps {
           echo 'Create ClinicaDL package and upload to Pypi...'
           sh 'echo "Agent name: ${NODE_NAME}"'
-          sh '''#!/usr/bin/env bash
-             set +x
-             eval "$(conda shell.bash hook)"
-             conda activate "${WORKSPACE}/env"
-             clinicadl --help
-             cd $WORKSPACE/.jenkins/scripts
-             ./generate_wheels.sh
-             conda deactivate
-             '''
-        withCredentials([usernamePassword(credentialsId: 'jenkins-pass-for-pypi-aramis', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-          sh '''#!/usr/bin/env bash
-                 cd $WORKSPACE/
-                 twine upload \
-                   -u ${USERNAME} \
-                   -p ${PASSWORD} ./dist/*
-                 '''
-        }
+          withCredentials(
+            [
+              usernamePassword(
+                credentialsId: 'jenkins-pass-for-pypi-aramis',
+                usernameVariable: 'USERNAME',
+                passwordVariable: 'PASSWORD'
+              )
+            ]
+          ) {
+            sh '''
+              eval "$(conda shell.bash hook)"
+              conda create -p "${WORKSPACE}/env" python=3.8 poetry
+              conda activate "${WORKSPACE}/env"
+              poetry publish --build -u "${USERNAME}" -p "${PASSWORD}"
+            '''
+          }
         }
         post {
           success {
