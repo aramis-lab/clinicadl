@@ -1,10 +1,6 @@
 <h1 align="center">
-  <a href="http://www.clinica.run">
-    <img src="http://www.clinica.run/assets/images/clinica-icon-257x257.png" alt="Clinica Logo" width="120" height="120">
-  </a>
-  +
-  <a href="https://pytorch.org/">
-    <img src="https://pytorch.org/assets/images/pytorch-logo.png" alt="PyTorch Logo" width="120" height="120">
+  <a href="http://www.clinicadl.readthedocs.io">
+    <img src="https://clinicadl.readthedocs.io/en/latest/images/logo.png" alt="ClinicaDL Logo" width="120" height="120">
   </a>
   <br/>
   ClinicaDL
