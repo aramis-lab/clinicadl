@@ -1,3 +1,7 @@
+<figure markdown>
+  ![ClinicaDL](./images/logo.png)
+</figure>
+
 # ClinicaDL Documentation
 
 ClinicaDL is the deep learning extension of [Clinica](https://aramislab.paris.inria.fr/clinica/docs/public/latest/),

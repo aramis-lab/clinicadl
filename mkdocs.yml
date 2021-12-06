@@ -43,7 +43,7 @@ theme:
 
 # Version panel
 extra_javascript:
-  - 'https://code.jquery.com/jquery-3.3.1.min.js'
+  - "https://code.jquery.com/jquery-3.3.1.min.js"
 
 # Customization
 extra:
@@ -69,6 +69,7 @@ markdown_extensions:
   - footnotes
   - pymdownx.details
   - pymdownx.superfences
+  - md_in_html
   - toc:
       permalink: True
 
@@ -79,15 +80,15 @@ nav:
   - First steps: Introduction.md
   - Prepare your metadata: TSVTools.md
   - Prepare your imaging data:
-    - Introduction: Preprocessing/Introduction.md
-    - Extract tensors: Preprocessing/Extract.md
-    - Quality check: Preprocessing/QualityCheck.md
-    - Generate synthetic data sets: Preprocessing/Generate.md
+      - Introduction: Preprocessing/Introduction.md
+      - Extract tensors: Preprocessing/Extract.md
+      - Quality check: Preprocessing/QualityCheck.md
+      - Generate synthetic data sets: Preprocessing/Generate.md
   - Hyperparameter exploration: RandomSearch.md
   - Train deep learning networks:
-    - Train: Train/Introduction.md
-    - Resume training: Train/Resume.md
-    - Implementation details: Train/Details.md
+      - Train: Train/Introduction.md
+      - Resume training: Train/Resume.md
+      - Implementation details: Train/Details.md
   - Inference using trained models: Predict.md
   - Network output serialization: Tensors.md
   - Interpretation with gradient maps: Interpret.md
