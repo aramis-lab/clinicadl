@@ -358,6 +358,9 @@ pipeline {
       }
       stage('Deploy') {
         when { buildingTag() }
+        agent { 
+          label 'cpu' 
+          }
         environment {
           PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
         }
