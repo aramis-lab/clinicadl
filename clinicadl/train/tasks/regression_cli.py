@@ -50,7 +50,7 @@ from .task_utils import task_launcher
 @train_option.selection_metrics
 def cli(**kwargs):
     """
-    Train a deep learning model to learn a classification task on neuroimaging data.
+    Train a deep learning model to learn a regression task on neuroimaging data.
 
     CAPS_DIRECTORY is the CAPS folder from where tensors will be loaded.
 
