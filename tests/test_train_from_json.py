@@ -22,8 +22,8 @@ def test_json_compatibility():
 
 
 def test_determinism():
-    input_dir = "input_MAPS"
-    output_dir = "reproduced_MAPS"
+    input_dir = "results/input_MAPS"
+    output_dir = "results/reproduced_MAPS"
     test_input = [
         "train",
         "classification",
@@ -58,7 +58,8 @@ def test_determinism():
 
 
 def test_batch_accumulation_equivalence():
-    batch_dir = "batch_version"
+    epsilon = 10 ** -4
+    batch_dir = "results/batch_version"
     batch_input = [
         "train",
         "classification",
@@ -72,7 +73,7 @@ def test_batch_accumulation_equivalence():
         "--accumulation_steps 1",
     ]
 
-    accumulation_dir = "accumulation_version"
+    accumulation_dir = "results/accumulation_version"
     accumulation_input = [
         "train",
         "classification",
@@ -98,6 +99,7 @@ def test_batch_accumulation_equivalence():
     assert models_equal(
         batch_maps.get_state_dict()["model"],
         accumulation_maps.get_state_dict()["model"],
+        epsilon,
     )
 
     shutil.rmtree(batch_dir)

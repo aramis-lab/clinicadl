@@ -27,9 +27,9 @@ def create_hashes_dict(
     import hashlib
     import os
 
-    def file_as_bytes(file):
-        with file:
-            return file.read()
+    def file_as_bytes(input_file):
+        with input_file:
+            return input_file.read()
 
     all_files = []
     for subdir, dirs, files in os.walk(path_folder):
@@ -60,8 +60,6 @@ def compare_folders_with_hashes(
             hashes_dict: a dictionary of the form {/path/to/file.extension: hash(file.extension)}
             ignore_pattern_list: list of patterns to be ignored to create hash dictionary.
     """
-    import pickle
-
     hashes_new = create_hashes_dict(path_folder, ignore_pattern_list)
 
     if hashes_dict != hashes_new:
@@ -77,11 +75,11 @@ def compare_folders_with_hashes(
         raise ValueError(error_message1 + error_message2)
 
 
-def models_equal(state_dict_1, state_dict_2):
+def models_equal(state_dict_1, state_dict_2, epsilon=0):
     import torch
 
     for key_item_1, key_item_2 in zip(state_dict_1.items(), state_dict_2.items()):
-        if not torch.equal(key_item_1[1], key_item_2[1]):
-            print(f"Not equal: {key_item_1[0]} != {key_item_2[0]}")
+        if torch.mean(torch.abs(key_item_1[1] - key_item_2[1])) > epsilon:
+            print(f"Not equivalent: {key_item_1[0]} != {key_item_2[0]}")
             return False
     return True
