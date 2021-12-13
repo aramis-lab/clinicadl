@@ -32,9 +32,7 @@ def test_determinism():
         "data/labels_list",
         input_dir,
         "-c",
-        "data/train_config.toml",
-        "--seed 42",
-        "--deterministic",
+        "data/reproducibility_config.toml",
     ]
     # Run first experiment
     flag_error = not os.system("clinicadl " + " ".join(test_input))
@@ -64,9 +62,7 @@ def test_batch_accumulation_equivalence():
         "data/labels_list",
         batch_dir,
         "-c",
-        "data/train_config.toml",
-        "--seed 42",
-        "--deterministic",
+        "data/reproducibility_config.toml",
         "--batch_size 8",
         "--accumulation_steps 1",
     ]
@@ -80,9 +76,7 @@ def test_batch_accumulation_equivalence():
         "data/labels_list",
         accumulation_dir,
         "-c",
-        "data/train_config.toml",
-        "--seed 42",
-        "--deterministic",
+        "data/reproducibility_config.toml",
         "--batch_size 1",
         "--accumulation_steps 8",
     ]
