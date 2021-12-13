@@ -45,7 +45,7 @@ pipeline {
               }
               stage('CLI tests Linux') {
                 steps {
-                  echo 'Testing pipeline instantation...'
+                  echo 'Testing pipeline instantiation...'
                     sh 'echo "Agent name: ${NODE_NAME}"'
                     sh '''
                     set +x
@@ -402,7 +402,7 @@ pipeline {
 //       body: "Something is wrong with ${env.BUILD_URL}"
 //     mattermostSend(
 //       color: "#FF0000",
-//       message: "CLinicaDL Build FAILED:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
+//       message: "ClinicaDL Build FAILED:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
 //     )
 //   }
 // }
