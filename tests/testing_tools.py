@@ -82,5 +82,6 @@ def models_equal(state_dict_1, state_dict_2):
 
     for key_item_1, key_item_2 in zip(state_dict_1.items(), state_dict_2.items()):
         if not torch.equal(key_item_1[1], key_item_2[1]):
+            print(f"Not equal: {key_item_1[0]} != {key_item_2[0]}")
             return False
     return True

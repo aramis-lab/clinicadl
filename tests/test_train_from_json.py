@@ -38,7 +38,8 @@ def test_determinism():
     flag_error = not os.system("clinicadl " + " ".join(test_input))
     assert flag_error
     input_hashes = create_hashes_dict(
-        input_dir, ignore_pattern_list=["tensorboard", ".log", "training.tsv"]
+        input_dir,
+        ignore_pattern_list=["tensorboard", ".log", "training.tsv", "maps.json"],
     )
 
     # Reproduce experiment
@@ -50,7 +51,7 @@ def test_determinism():
     compare_folders_with_hashes(
         output_dir,
         input_hashes,
-        ignore_pattern_list=["tensorboard", ".log", "training.tsv"],
+        ignore_pattern_list=["tensorboard", ".log", "training.tsv", "maps.json"],
     )
     shutil.rmtree(input_dir)
     shutil.rmtree(output_dir)
