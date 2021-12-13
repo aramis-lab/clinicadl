@@ -3,7 +3,7 @@ import shutil
 
 from clinicadl import MapsManager
 
-from .testing_tools import compare_folders_with_hashes, create_hashes_dict
+from .testing_tools import compare_folders_with_hashes, create_hashes_dict, models_equal
 
 
 def test_json_compatibility():
@@ -38,7 +38,6 @@ def test_determinism():
     flag_error = not os.system("clinicadl " + " ".join(test_input))
     assert flag_error
     input_hashes = create_hashes_dict(input_dir, ignore_pattern_list=["tensorboard"])
-    shutil.rmtree(input_dir)
 
     # Reproduce experiment
     config_json = os.path.join(input_dir, "maps.json")
@@ -49,6 +48,7 @@ def test_determinism():
     compare_folders_with_hashes(
         output_dir, input_hashes, ignore_pattern_list=["tensorboard"]
     )
+    shutil.rmtree(input_dir)
     shutil.rmtree(output_dir)
 
 
@@ -90,9 +90,9 @@ def test_batch_accumulation_equivalence():
     assert flag_error
     accumulation_maps = MapsManager(accumulation_dir)
 
-    assert (
-        batch_maps.get_state_dict()["model"]
-        == accumulation_maps.get_state_dict()["model"]
+    assert models_equal(
+        batch_maps.get_state_dict()["model"],
+        accumulation_maps.get_state_dict()["model"],
     )
 
     shutil.rmtree(batch_dir)

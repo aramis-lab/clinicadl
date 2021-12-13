@@ -75,3 +75,12 @@ def compare_folders_with_hashes(
                     key
                 )
         raise ValueError(error_message1 + error_message2)
+
+
+def models_equal(state_dict_1, state_dict_2):
+    import torch
+
+    for key_item_1, key_item_2 in zip(state_dict_1, state_dict_2):
+        if not torch.equal(key_item_1[1], key_item_2[1]):
+            return False
+    return True
