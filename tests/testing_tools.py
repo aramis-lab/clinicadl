@@ -11,7 +11,7 @@ def ignore_pattern(file_path: str, ignore_pattern_list: List[str]) -> bool:
     return False
 
 
-def create_list_hashes(
+def create_hashes_dict(
     path_folder: str, ignore_pattern_list: List[str] = None
 ) -> Dict[str, str]:
     """
@@ -50,28 +50,27 @@ def create_list_hashes(
 
 
 def compare_folders_with_hashes(
-    path_folder: str, hashes_path: str, ignore_pattern_list: List[str] = None
+    path_folder: str, hashes_dict: Dict[str, str], ignore_pattern_list: List[str] = None
 ):
     """
     Compares the files of a folder against a reference
 
         Args:
             path_folder: starting point for the tree listing.
-            hashes_path: a dictionary of the form {/path/to/file.extension: hash(file.extension)}
+            hashes_dict: a dictionary of the form {/path/to/file.extension: hash(file.extension)}
             ignore_pattern_list: list of patterns to be ignored to create hash dictionary.
     """
     import pickle
 
-    hashes_check = pickle.load(open(hashes_path, "rb"))
-    hashes_new = create_list_hashes(path_folder, ignore_pattern_list)
+    hashes_new = create_hashes_dict(path_folder, ignore_pattern_list)
 
-    if hashes_check != hashes_new:
+    if hashes_dict != hashes_new:
         error_message1 = ""
         error_message2 = ""
-        for key in hashes_check:
+        for key in hashes_dict:
             if key not in hashes_new:
                 error_message1 += "{0} not found !\n".format(key)
-            elif hashes_check[key] != hashes_new[key]:
+            elif hashes_dict[key] != hashes_new[key]:
                 error_message2 += "{0} does not match the reference file !\n".format(
                     key
                 )

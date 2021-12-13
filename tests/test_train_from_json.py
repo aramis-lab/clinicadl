@@ -1,31 +1,15 @@
 import os
 import shutil
 
-import pytest
+from clinicadl import MapsManager
 
-from .testing_tools import compare_folders_with_hashes
-
-output_dir = "results"
+from .testing_tools import compare_folders_with_hashes, create_hashes_dict
 
 
-@pytest.fixture(
-    params=[
-        "reproduce_image_classification",
-    ]
-)
-def cli_commands(request):
+def test_json_compatibility():
     split = "0"
-    if request.param == "reproduce_image_classification":
-        config_json = "data/reproducibility/maps.json"
-        hash_dict = "data/reproducibility/hashes_dict.obj"
-    else:
-        raise NotImplementedError(f"Test {request.param} is not implemented.")
-
-    return config_json, split, hash_dict
-
-
-def test_train(cli_commands):
-    config_json, split, hash_dict = cli_commands
+    config_json = "data/reproducibility/maps.json"
+    output_dir = "results"
     if os.path.exists(output_dir):
         shutil.rmtree(output_dir)
 
@@ -33,18 +17,89 @@ def test_train(cli_commands):
         f"clinicadl train from_json {config_json} {output_dir} -s {split}"
     )
     assert flag_error
-    compare_folders_with_hashes(
-        output_dir,
-        hash_dict,
-        ignore_pattern_list=[
-            "maps.json",
-            "training_logs",
-            "description.log",
-            "environment.txt",
-        ],
-    )
-    # maps.json content may change as variable names may be changed, or new variables may be added.
-    # training_logs may change as it measures the time taken for computation and it is not deterministic.
-    # description.log contains the date so it is not deterministic
 
     shutil.rmtree(output_dir)
+
+
+def test_determinism():
+    input_dir = "input_MAPS"
+    output_dir = "reproduced_MAPS"
+    test_input = [
+        "train",
+        "classification",
+        "data/dataset/random_example",
+        "extract_roi.json",
+        "data/labels_list",
+        input_dir,
+        "-c",
+        "data/train_config.toml",
+        "--seed 42",
+        "--deterministic",
+    ]
+    # Run first experiment
+    flag_error = not os.system("clinicadl " + " ".join(test_input))
+    assert flag_error
+    input_hashes = create_hashes_dict(input_dir, ignore_pattern_list=["tensorboard"])
+    shutil.rmtree(input_dir)
+
+    # Reproduce experiment
+    config_json = os.path.join(input_dir, "maps.json")
+    flag_error = not os.system(
+        f"clinicadl train from_json {config_json} {output_dir} -s 0"
+    )
+    assert flag_error
+    compare_folders_with_hashes(
+        output_dir, input_hashes, ignore_pattern_list=["tensorboard"]
+    )
+    shutil.rmtree(output_dir)
+
+
+def test_batch_accumulation_equivalence():
+    batch_dir = "batch_version"
+    batch_input = [
+        "train",
+        "classification",
+        "data/dataset/random_example",
+        "extract_roi.json",
+        "data/labels_list",
+        batch_dir,
+        "-c",
+        "data/train_config.toml",
+        "--seed 42",
+        "--deterministic",
+        "--batch_size 8",
+        "--accumulation_steps 1",
+    ]
+
+    accumulation_dir = "accumulation_version"
+    accumulation_input = [
+        "train",
+        "classification",
+        "data/dataset/random_example",
+        "extract_roi.json",
+        "data/labels_list",
+        accumulation_dir,
+        "-c",
+        "data/train_config.toml",
+        "--seed 42",
+        "--deterministic",
+        "--batch_size 1",
+        "--accumulation_steps 8",
+    ]
+    # Run batch experiment
+    flag_error = not os.system("clinicadl " + " ".join(batch_input))
+    assert flag_error
+    batch_maps = MapsManager(batch_dir)
+
+    # Run accumulation experiment
+    flag_error = not os.system("clinicadl " + " ".join(accumulation_input))
+    assert flag_error
+    accumulation_maps = MapsManager(accumulation_dir)
+
+    assert (
+        batch_maps.get_state_dict()["model"]
+        == accumulation_maps.get_state_dict()["model"]
+    )
+
+    shutil.rmtree(batch_dir)
+    shutil.rmtree(accumulation_dir)
