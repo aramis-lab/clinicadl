@@ -92,6 +92,7 @@ class MapsManager:
             self.split_name = "split"  # Used only for retro-compatibility
             self._write_training_data()
             self._write_train_val_groups()
+            self._write_information()
 
     def __getattr__(self, name):
         """Allow to directly get the values in parameters attribute"""
@@ -1513,6 +1514,38 @@ class MapsManager:
                     shutil.copyfile(
                         checkpoint_path, path.join(metric_path, best_filename)
                     )
+
+    def _write_information(self):
+        """
+        Writes model architecture of the MAPS in MAPS root.
+        """
+        from datetime import datetime
+
+        import clinicadl.utils.network as network_package
+
+        model_class = getattr(network_package, self.architecture)
+        args = list(
+            model_class.__init__.__code__.co_varnames[
+                : model_class.__init__.__code__.co_argcount
+            ]
+        )
+        args.remove("self")
+        kwargs = dict()
+        for arg in args:
+            kwargs[arg] = self.parameters[arg]
+        kwargs["use_cpu"] = True
+
+        model = model_class(**kwargs)
+
+        file_name = "information.log"
+
+        with open(path.join(self.maps_path, file_name), "w") as f:
+            f.write(f"- Date :\t{datetime.now().strftime('%d %b %Y, %H:%M:%S')}\n\n")
+            f.write(f"- Path :\t{self.maps_path}\n\n")
+            # f.write("- Job ID :\t{}\n".format(os.getenv('SLURM_JOBID')))
+            f.write(f"- Model :\t{model.layers}\n\n")
+
+        del model
 
     def _erase_tmp(self, split):
         """Erase checkpoints of the model and optimizer at the end of training."""
