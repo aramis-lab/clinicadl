@@ -85,7 +85,7 @@ class AutoEncoder(Network):
         train_output = self.predict(images)
         loss = criterion(train_output, images)
 
-        return train_output, loss
+        return train_output, {"loss": loss}
 
 
 class CNN(Network):
@@ -134,4 +134,4 @@ class CNN(Network):
         else:
             loss = torch.Tensor([0])
 
-        return train_output, loss
+        return train_output, {"loss": loss}
