@@ -1535,7 +1535,7 @@ class MapsManager:
         kwargs = dict()
         for arg in args:
             kwargs[arg] = self.parameters[arg]
-        kwargs["use_cpu"] = True
+        kwargs["gpu"] = False
 
         model = model_class(**kwargs)
 

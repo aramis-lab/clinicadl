@@ -20,7 +20,7 @@ class VanillaDenseVAE(BaseVAE):
         feature_size,
         recons_weight,
         KL_weight,
-        use_cpu=False,
+        gpu=True,
     ):
         n_conv = 4
         io_layer_channel = 32
@@ -50,7 +50,7 @@ class VanillaDenseVAE(BaseVAE):
             mu_layer,
             var_layer,
             latent_space_size,
-            use_cpu=use_cpu,
+            gpu=gpu,
             recons_weight=recons_weight,
             KL_weight=KL_weight,
             is_3D=False,
@@ -65,7 +65,7 @@ class VanillaSpatialVAE(BaseVAE):
         feature_size,
         recons_weight,
         KL_weight,
-        use_cpu=False,
+        gpu=True,
     ):
         feature_channels = 64
         latent_channels = 1
@@ -101,7 +101,7 @@ class VanillaSpatialVAE(BaseVAE):
             mu_layer,
             var_layer,
             latent_space_size,
-            use_cpu=use_cpu,
+            gpu=gpu,
             recons_weight=recons_weight,
             KL_weight=KL_weight,
             is_3D=False,
@@ -116,7 +116,7 @@ class Vanilla3DVAE(BaseVAE):
         feature_size,
         recons_weight,
         KL_weight,
-        use_cpu=False,
+        gpu=True,
     ):
         n_conv = 4
         first_layer_channels = 32
@@ -222,7 +222,7 @@ class Vanilla3DVAE(BaseVAE):
             mu_layer,
             var_layer,
             latent_space_size,
-            use_cpu=use_cpu,
+            gpu=gpu,
             recons_weight=recons_weight,
             KL_weight=KL_weight,
             is_3D=False,
@@ -239,7 +239,7 @@ class Vanilla3DdenseVAE(BaseVAE):
         io_layer_channels=8,
         recons_weight=1,
         KL_weight=1,
-        use_cpu=False,
+        gpu=True,
     ):
         first_layer_channels = io_layer_channels
         last_layer_channels = io_layer_channels
@@ -355,7 +355,7 @@ class Vanilla3DdenseVAE(BaseVAE):
             mu_layer,
             var_layer,
             latent_space_size,
-            use_cpu=use_cpu,
+            gpu=gpu,
             is_3D=False,
             recons_weight=recons_weight,
             KL_weight=KL_weight,
