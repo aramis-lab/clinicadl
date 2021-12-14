@@ -828,7 +828,9 @@ class MapsManager:
 
             for i, data in enumerate(train_loader):
 
-                _, loss = model.compute_outputs_and_loss(data, criterion)
+                _, loss_dict = model.compute_outputs_and_loss(data, criterion)
+                logger.debug(f"Train loss dictionnary {loss_dict}")
+                loss = loss_dict["loss"]
                 loss.backward()
 
                 if (i + 1) % self.accumulation_steps == 0:
@@ -1775,6 +1777,7 @@ class MapsManager:
             kwargs["gpu"] = gpu
 
         model = model_class(**kwargs)
+        logger.debug(f"Model:\n{model.layers}")
         device = model.device
         logger.info(f"Working on {device}")
         current_epoch = 0
