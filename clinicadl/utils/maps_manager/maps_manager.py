@@ -400,7 +400,7 @@ class MapsManager:
                         label_code=self.label_code,
                         cnn_index=network,
                     )
-                    if nifti == True:
+                    if nifti:
                         self._compute_output_nifti(
                             dataset,
                             data_group,
@@ -429,7 +429,7 @@ class MapsManager:
                     label=self.label,
                     label_code=self.label_code,
                 )
-                if nifti == True:
+                if nifti:
                     self._compute_output_nifti(
                         dataset,
                         data_group,
