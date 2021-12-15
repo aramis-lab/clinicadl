@@ -336,6 +336,7 @@ class MapsManager:
         selection_metrics=None,
         multi_cohort=False,
         diagnoses=(),
+        nifti=False,
         gpu=None,
         overwrite=False,
     ):
@@ -399,14 +400,24 @@ class MapsManager:
                         label_code=self.label_code,
                         cnn_index=network,
                     )
-                    self._compute_output_tensors(
-                        dataset,
-                        data_group,
-                        split,
-                        selection_metrics,
-                        gpu=gpu,
-                        network=network,
-                    )
+                    if nifti == True:
+                        self._compute_output_nifti(
+                            dataset,
+                            data_group,
+                            split,
+                            selection_metrics,
+                            gpu=gpu,
+                            network=network,
+                        )
+                    else:
+                        self._compute_output_tensors(
+                            dataset,
+                            data_group,
+                            split,
+                            selection_metrics,
+                            gpu=gpu,
+                            network=network,
+                        )
 
             else:
                 dataset = return_dataset(
@@ -418,13 +429,23 @@ class MapsManager:
                     label=self.label,
                     label_code=self.label_code,
                 )
-                self._compute_output_tensors(
-                    dataset,
-                    data_group,
-                    split,
-                    selection_metrics,
-                    gpu=gpu,
-                )
+                if nifti == True:
+                    self._compute_output_nifti(
+                        dataset,
+                        data_group,
+                        split,
+                        selection_metrics,
+                        gpu=gpu,
+                        network=network,
+                    )
+                else:
+                    self._compute_output_tensors(
+                        dataset,
+                        data_group,
+                        split,
+                        selection_metrics,
+                        gpu=gpu,
+                    )
 
     def interpret(
         self,
@@ -1034,6 +1055,70 @@ class MapsManager:
             self._mode_level_to_tsv(
                 prediction_df, metrics, split, selection_metric, data_group=data_group
             )
+
+    def _compute_output_nifti(
+        self,
+        dataset,
+        data_group,
+        split,
+        selection_metrics,
+        gpu=None,
+        network=None,
+    ):
+        """
+        Compute the output nifti image and saves them in the MAPS.
+
+        Args:
+            dataset (clinicadl.utils.caps_dataset.data.CapsDataset): wrapper of the data set.
+            data_group (str): name of the data group used for the task.
+            split (int): split number.
+            selection_metrics (list[str]): metrics used for model selection.
+            gpu (bool): If given, a new value for the device of the model will be computed.
+            network (int): Index of the network tested (only used in multi-network setting).
+        # Raise an error if mode is not image
+        """
+        import nibabel as nib
+        from numpy import eye
+
+        for selection_metric in selection_metrics:
+            # load the best trained model during the training
+            model, _ = self._init_model(
+                transfer_path=self.maps_path,
+                split=split,
+                transfer_selection=selection_metric,
+                gpu=gpu,
+                network=network,
+            )
+
+            nifti_path = path.join(
+                self.maps_path,
+                f"{self.split_name}-{split}",
+                f"best-{selection_metric}",
+                data_group,
+                "nifti_images",
+            )
+            makedirs(nifti_path, exist_ok=True)
+
+            nb_imgs = len(dataset)
+            for i in range(nb_imgs):
+                data = dataset[i]
+                image = data["image"]
+                output = (
+                    model.predict(image.unsqueeze(0).to(model.device))
+                    .squeeze(0)
+                    .detach()
+                    .cpu()
+                )
+                # Convert tensor to nifti image with appropriate affine
+                input_nii = nib.Nifti1Image(image, eye(4))
+                output_nii = nib.Nifti1Image(output, eye(4))
+                # Create file name according to participant and session id
+                participant_id = data["participant_id"]
+                session_id = data["session_id"]
+                input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
+                output_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
+                nib.save(input_nii, path.join(nifti_path, input_filename))
+                nib.save(output_nii, path.join(nifti_path, output_filename))
 
     def _compute_output_tensors(
         self,

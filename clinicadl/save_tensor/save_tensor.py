@@ -8,12 +8,10 @@ def save_tensor(
     caps_directory,
     tsv_path,
     gpu=True,
-    n_proc=0,
-    batch_size=1,
-    # prepare_dl=True,
     selection_metrics=None,
     diagnoses=None,
     multi_cohort=False,
+    nifti=False,
     overwrite=False,
 ):
     """TO CHANGE
@@ -28,10 +26,6 @@ def save_tensor(
         tsv_path (str): path to a TSV file containing the list of participants and sessions to interpret.
         labels: by default is True. If False no metrics tsv files will be written.
         gpu: if true, it uses gpu.
-        n_proc: num_workers used in DataLoader
-        batch_size: batch size of the DataLoader
-        prepare_dl: if true, uses extracted patches/slices otherwise extract them
-        on-the-fly.
         selection_metrics: list of metrics to find best models to be evaluated.
         diagnoses: list of diagnoses to be tested if tsv_path is a folder.
         verbose: level of verbosity.
@@ -48,9 +42,7 @@ def save_tensor(
         selection_metrics=selection_metrics,
         multi_cohort=multi_cohort,
         diagnoses=diagnoses,
-        # prepare_dl=prepare_dl,
-        # batch_size=batch_size,
-        # n_proc=n_proc,
         gpu=gpu,
+        nifti=nifti,
         overwrite=overwrite,
     )
