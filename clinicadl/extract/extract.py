@@ -3,12 +3,12 @@ from logging import getLogger
 
 def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
     import os
-    from multiprocessing import Pool
     from os import path
 
     from clinica.utils.inputs import check_caps_folder, clinica_file_reader
     from clinica.utils.nipype import container_from_filename
     from clinica.utils.participant import get_subject_session_list
+    from joblib import Parallel, delayed
     from torch import save as save_tensor
 
     from clinicadl.utils.exceptions import ClinicaDLArgumentError
@@ -79,8 +79,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
             logger.debug(f"    Image extracted.")
             write_output_imgs(output_mode, container, subfolder)
 
-        with Pool(n_proc) as p:
-            p.map(prepare_image, input_files)
+        Parallel(n_jobs=n_proc)(delayed(prepare_image)(file) for file in input_files)
 
     elif parameters["prepare_dl"] and parameters["mode"] == "slice":
 
@@ -99,8 +98,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
             logger.debug(f"    {len(output_mode)} slices extracted.")
             write_output_imgs(output_mode, container, subfolder)
 
-        with Pool(n_proc) as p:
-            p.map(prepare_slice, input_files)
+        Parallel(n_jobs=n_proc)(delayed(prepare_slice)(file) for file in input_files)
 
     elif parameters["prepare_dl"] and parameters["mode"] == "patch":
 
@@ -118,8 +116,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
             logger.debug(f"    {len(output_mode)} patches extracted.")
             write_output_imgs(output_mode, container, subfolder)
 
-        with Pool(n_proc) as p:
-            p.map(prepare_patch, input_files)
+        Parallel(n_jobs=n_proc)(delayed(prepare_patch)(file) for file in input_files)
 
     elif parameters["prepare_dl"] and parameters["mode"] == "roi":
 
@@ -173,8 +170,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
             logger.debug(f"    ROI extracted.")
             write_output_imgs(output_mode, container, subfolder)
 
-        with Pool(n_proc) as p:
-            p.map(prepare_roi, input_files)
+        Parallel(n_jobs=n_proc)(delayed(prepare_roi)(file) for file in input_files)
 
     else:
         raise NotImplementedError(
