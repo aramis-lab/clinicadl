@@ -9,15 +9,18 @@ Then clone your fork from GitHub:
 git clone https://github.com/<your_name>/clinicadl.git
 ```
 
+Change to ClinicaDL directory:
+```{.sourceCode .bash}
+cd clinicadl
+```
+
 We suggest creating a custom Conda environment for your fork, so you can
-test your modifications:
+test your modifications, and install all the dependencies inside your environment using poetry:
 
 ```{.sourceCode .bash}
-conda create -name clinicadl_fork python=3.7
-cd clinicadl/clinicadl
-pip install -e .
-cd ..
-pip install -r requirements-dev.txt
+conda env create -f environment.yml -name clinicadl_env
+conda activate clinicadl_env
+poetry install
 ```
 
 If everything goes well, type `clinicadl -h` and you should see the help message of ClinicaDL.
