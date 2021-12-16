@@ -1,7 +1,7 @@
 from logging import getLogger
 
 
-def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
+def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
     import os
     from multiprocessing import Pool
     from os import path
@@ -79,7 +79,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
             logger.debug(f"    Image extracted.")
             write_output_imgs(output_mode, container, subfolder)
 
-        with Pool(parameters["num_workers"]) as p:
+        with Pool(n_proc) as p:
             p.map(prepare_image, input_files)
 
     elif parameters["prepare_dl"] and parameters["mode"] == "slice":
@@ -99,7 +99,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
             logger.debug(f"    {len(output_mode)} slices extracted.")
             write_output_imgs(output_mode, container, subfolder)
 
-        with Pool(parameters["num_workers"]) as p:
+        with Pool(n_proc) as p:
             p.map(prepare_slice, input_files)
 
     elif parameters["prepare_dl"] and parameters["mode"] == "patch":
@@ -118,7 +118,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
             logger.debug(f"    {len(output_mode)} patches extracted.")
             write_output_imgs(output_mode, container, subfolder)
 
-        with Pool(parameters["num_workers"]) as p:
+        with Pool(n_proc) as p:
             p.map(prepare_patch, input_files)
 
     elif parameters["prepare_dl"] and parameters["mode"] == "roi":
@@ -173,7 +173,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
             logger.debug(f"    ROI extracted.")
             write_output_imgs(output_mode, container, subfolder)
 
-        with Pool(parameters["num_workers"]) as p:
+        with Pool(n_proc) as p:
             p.map(prepare_roi, input_files)
 
     else:
