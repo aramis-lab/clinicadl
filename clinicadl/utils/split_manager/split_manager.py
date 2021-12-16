@@ -1,9 +1,12 @@
 import abc
+from ctypes import ArgumentError
 from logging import getLogger
 from os import path
 
 import pandas as pd
 from clinica.utils.inputs import check_caps_folder
+
+from clinicadl.utils.exceptions import ClinicaDLTSVError, ConfigurationError
 
 logger = getLogger("clinicadl")
 
@@ -154,7 +157,7 @@ class SplitManager:
 
     def _check_item(self, item):
         if item not in self.allowed_splits_list:
-            raise ValueError(
+            raise IndexError(
                 f"Split index {item} out of allowed splits {self.allowed_splits_list}."
             )
 
@@ -162,8 +165,8 @@ class SplitManager:
     def _create_caps_dict(caps_directory, multi_cohort):
         if multi_cohort:
             if not caps_directory.endswith(".tsv"):
-                raise ValueError(
-                    "If multi_cohort is given, the caps_dir argument should be a path to a TSV file."
+                raise ArgumentError(
+                    "If multi_cohort is given, the CAPS_DIRECTORY argument should be a path to a TSV file."
                 )
             else:
                 caps_df = pd.read_csv(caps_directory, sep="\t")
@@ -184,17 +187,17 @@ class SplitManager:
     def _check_tsv_path(tsv_path, multi_cohort):
         if multi_cohort:
             if not tsv_path.endswith(".tsv"):
-                raise ValueError(
-                    "If multi_cohort is given, the tsv_path argument should be a path to a TSV file."
+                raise ArgumentError(
+                    "If multi_cohort is given, the TSV_DIRECTORY argument should be a path to a TSV file."
                 )
             else:
                 tsv_df = pd.read_csv(tsv_path, sep="\t")
                 SplitManager._check_multi_cohort_tsv(tsv_df, "labels")
         else:
             if tsv_path.endswith(".tsv"):
-                raise ValueError(
+                raise ConfigurationError(
                     f"You gave the path to a TSV file in tsv_path {tsv_path}. "
-                    f"To use multi-cohort framework, please add --multi_cohort flag."
+                    f"To use multi-cohort framework, please add 'multi_cohort=true' to the configuration file or the --multi_cohort flag."
                 )
 
     @staticmethod
@@ -204,6 +207,6 @@ class SplitManager:
         else:
             mandatory_col = {"cohort", "path", "diagnoses"}
         if not mandatory_col.issubset(tsv_df.columns.values):
-            raise ValueError(
+            raise ClinicaDLTSVError(
                 f"Columns of the TSV file used for {purpose} location must include {mandatory_col}."
             )

@@ -7,6 +7,8 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
     read_json,
     remove_unused_tasks,
 )
+from clinicadl.utils.exceptions import ConfigurationError
+
 
 
 def get_user_dict(config_file: str, task: str) -> Dict[str, Any]:
@@ -48,6 +50,23 @@ def get_user_dict(config_file: str, task: str) -> Dict[str, Any]:
                             f"{key} option in {section_name} is not valid in TOML configuration file. "
                             f"Please see the documentation to see the list of option in TOML configuration file."
                         )
+                config_dict[section_name][key] = user_dict[section_name][key]
+
+    train_dict = dict()
+
+    # task dependent
+    task_list = ["classification", "regression", "reconstruction"]
+
+    if task not in task_list:
+        raise ConfigurationError(
+            f"Invalid value for network_task {task}. "
+            f"Please choose a task in {task_list}."
+        )
+    task_list.remove(task)
+
+    # Delete all sections related to other tasks
+    for other_task in task_list:
+        del config_dict[other_task.capitalize()]
 
         train_dict = dict()
 

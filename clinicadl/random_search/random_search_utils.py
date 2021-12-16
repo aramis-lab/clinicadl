@@ -12,9 +12,10 @@ def get_space_dict(launch_directory: str) -> Dict[str, Any]:
     """Transforms the TOML dictionary in one dimension dictionary."""
     toml_path = path.join(launch_directory, "random_search.toml")
     toml_options = toml.load(toml_path)
+    from clinicadl.utils.exceptions import ConfigurationError
 
     if "Random_Search" not in toml_options:
-        raise ValueError(
+        raise ConfigurationError(
             "Category 'Random_Search' must be defined in the random_search.toml file. "
             "All random search arguments AND options must be defined in this category."
         )
@@ -36,7 +37,7 @@ def get_space_dict(launch_directory: str) -> Dict[str, Any]:
 
     for argument in mandatory_arguments:
         if argument not in space_dict:
-            raise ValueError(
+            raise ConfigurationError(
                 f"The argument {argument} must be specified in the random_search.toml file (Random_Search category)."
             )
 
@@ -85,7 +86,9 @@ def sampling_fn(value, sampling_type: str):
         elif sampling_type is "uniform":
             return random.uniform(*value)
         else:
-            raise ValueError("Sampling type %s is not implemented" % sampling_type)
+            raise NotImplementedError(
+                "Sampling type %s is not implemented" % sampling_type
+            )
     else:
         if sampling_type is "exponent":
             return 10 ** -value

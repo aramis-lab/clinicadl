@@ -1,6 +1,7 @@
 # coding: utf8
 
 import random
+from ctypes import ArgumentError
 from typing import Dict
 
 import numpy as np
@@ -23,7 +24,7 @@ def find_file_type(
             file_type = T1W_LINEAR_CROPPED
     elif preprocessing == "pet-linear":
         if acq_label is None or suvr_reference_region is None:
-            raise ValueError(
+            raise ArgumentError(
                 "acq_label and suvr_reference_region must be defined "
                 "when using `pet-linear` preprocessing."
             )
@@ -197,7 +198,7 @@ def generate_shepplogan_phantom(
     elif label == 2:
         roi1, roi2 = "small", "large"
     else:
-        raise ValueError("Subtype %i was not implemented." % label)
+        raise NotImplementedError("Subtype %i was not implemented." % label)
 
     # Skull
     rr, cc = ellipse(center, center, a, b, (img_size, img_size))

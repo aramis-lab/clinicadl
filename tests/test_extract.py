@@ -49,7 +49,7 @@ def compare_folders(out, ref, shared_folder_name):
             diff_text = diff_text + line + "\n"
         remove(out_txt)
         remove(ref_txt)
-        raise ValueError(
+        raise AssertionError(
             "Comparison of out and ref directories shows mismatch :\n "
             "OUT :\n"
             + out_message

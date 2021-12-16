@@ -25,6 +25,11 @@ from clinicadl.extract.extract_utils import (
     extract_slice_tensor,
     find_mask_path,
 )
+from clinicadl.utils.exceptions import (
+    ArgumentError,
+    ClinicaDLTSVError,
+    ConfigurationError,
+)
 
 logger = getLogger("clinicadl")
 
@@ -58,11 +63,11 @@ class CapsDataset(Dataset):
         self.preprocessing_dict = preprocessing_dict
 
         if not hasattr(self, "elem_index"):
-            raise ValueError(
+            raise AttributeError(
                 "Child class of CapsDataset must set elem_index attribute."
             )
         if not hasattr(self, "mode"):
-            raise ValueError("Child class of CapsDataset must set mode attribute.")
+            raise AttributeError("Child class of CapsDataset must set mode attribute.")
 
         self.df = data_df
 
@@ -113,8 +118,8 @@ class CapsDataset(Dataset):
 
         if multi_cohort:
             if not caps_directory.endswith(".tsv"):
-                raise ValueError(
-                    "If multi_cohort is given, the caps_dir argument should be a path to a TSV file."
+                raise ArgumentError(
+                    "If multi_cohort is True, the CAPS_DIRECTORY argument should be a path to a TSV file."
                 )
             else:
                 caps_df = pd.read_csv(caps_directory, sep="\t")
@@ -588,7 +593,7 @@ class CapsDatasetRoi(CapsDataset):
             logger.info(f"Find mask for roi {roi}.")
             mask_path, desc = find_mask_path(mask_location, roi, pattern, True)
             if mask_path is None:
-                raise ValueError(desc)
+                raise FileNotFoundError(desc)
             mask_nii = nib.load(mask_path)
             mask_paths.append(mask_path)
             mask_arrays.append(mask_nii.get_fdata())
@@ -735,7 +740,7 @@ def return_dataset(
     """
 
     if cnn_index is not None and preprocessing_dict["mode"] == "image":
-        raise ValueError(
+        raise NotImplementedError(
             f"Multi-CNN is not implemented for {preprocessing_dict['mode']} mode."
         )
 
@@ -791,7 +796,9 @@ def return_dataset(
             multi_cohort=multi_cohort,
         )
     else:
-        raise ValueError(f"Mode {preprocessing_dict['mode']} is not implemented.")
+        raise NotImplementedError(
+            f"Mode {preprocessing_dict['mode']} is not implemented."
+        )
 
 
 ##################################
@@ -846,7 +853,9 @@ class RandomCropPad(object):
                 image, (-crop[0], crop[0], -crop[1], crop[1], -crop[2], crop[2])
             )
         else:
-            raise ValueError("RandomCropPad is only available for 2D or 3D data.")
+            raise ValueError(
+                f"RandomCropPad is only available for 2D or 3D data. Image is {dimensions}D"
+            )
         return output
 
 
@@ -953,8 +962,8 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
 
     if multi_cohort:
         if not test_path.endswith(".tsv"):
-            raise ValueError(
-                "If multi_cohort is given, the tsv_path argument should be a path to a TSV file."
+            raise ArgumentError(
+                "If multi_cohort is given, the TSV_DIRECTORY argument should be a path to a TSV file."
             )
         else:
             tsv_df = pd.read_csv(test_path, sep="\t")
@@ -989,8 +998,8 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
             tsv_df = pd.read_csv(test_path, sep="\t")
             multi_col = {"cohort", "path"}
             if multi_col.issubset(tsv_df.columns.values):
-                raise ValueError(
-                    "To use multi-cohort framework, please add --multi_cohort flag."
+                raise ConfigurationError(
+                    "To use multi-cohort framework, please add 'multi_cohort=true' in your configuration file or '--multi_cohort' flag to the command line."
                 )
         test_df = load_data_test_single(test_path, diagnoses_list, baseline=baseline)
         test_df["cohort"] = "single"
@@ -1003,12 +1012,12 @@ def load_data_test_single(test_path, diagnoses_list, baseline=True):
     if test_path.endswith(".tsv"):
         test_df = pd.read_csv(test_path, sep="\t")
         if "diagnosis" not in test_df.columns.values:
-            raise ValueError(
+            raise ClinicaDLTSVError(
                 f"'diagnosis' column must be present in TSV file {test_path}."
             )
         test_df = test_df[test_df.diagnosis.isin(diagnoses_list)]
         if len(test_df) == 0:
-            raise ValueError(
+            raise ClinicaDLTSVError(
                 f"Diagnoses wanted {diagnoses_list} were not found in TSV file {test_path}."
             )
         return test_df
@@ -1045,6 +1054,6 @@ def check_multi_cohort_tsv(tsv_df, purpose):
     else:
         mandatory_col = {"cohort", "path", "diagnoses"}
     if not mandatory_col.issubset(tsv_df.columns.values):
-        raise ValueError(
+        raise ClinicaDLTSVError(
             f"Columns of the TSV file used for {purpose} location must include {mandatory_col}"
         )

@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 import subprocess
+from ctypes import ArgumentError
 from datetime import datetime
 from glob import glob
 from logging import getLogger
@@ -19,6 +20,11 @@ from clinicadl.utils.caps_dataset.data import (
 )
 from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.early_stopping import EarlyStopping
+from clinicadl.utils.exceptions import (
+    ClinicaDLDataLeakageError,
+    ConfigurationError,
+    MAPSError,
+)
 from clinicadl.utils.maps_manager.logwriter import LogWriter, setup_logging
 from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
@@ -56,7 +62,7 @@ class MapsManager:
         # Existing MAPS
         if parameters is None:
             if not path.exists(path.join(maps_path, "maps.json")):
-                raise ValueError(
+                raise MAPSError(
                     f"MAPS was not found at {maps_path}."
                     f"To initiate a new MAPS please give a train_dict."
                 )
@@ -73,7 +79,7 @@ class MapsManager:
             ) or (
                 path.isdir(maps_path) and listdir(maps_path)  # Non empty folder
             ):
-                raise ValueError(
+                raise MAPSError(
                     f"You are trying to create a new MAPS at {maps_path} but "
                     f"this already corresponds to a file or a non-empty folder. \n"
                     f"Please remove it or choose another location."
@@ -105,7 +111,7 @@ class MapsManager:
                 are erased.
 
         Raises:
-            ValueError: If splits specified in input already exist and overwrite is False.
+            MAPSError: If splits specified in input already exist and overwrite is False.
         """
         existing_splits = []
 
@@ -119,7 +125,7 @@ class MapsManager:
                     existing_splits.append(split)
 
         if len(existing_splits) > 0:
-            raise ValueError(
+            raise MAPSError(
                 f"Splits {existing_splits} already exist. Please "
                 f"specify a list of splits not intersecting the previous list, "
                 f"or use overwrite to erase previously trained splits."
@@ -138,7 +144,7 @@ class MapsManager:
                 Default trains all splits.
 
         Raises:
-            ValueError: If splits specified in input do not exist.
+            MAPSError: If splits specified in input do not exist.
         """
         missing_splits = []
         split_manager = self._init_split_manager(split_list)
@@ -150,7 +156,7 @@ class MapsManager:
                 missing_splits.append(split)
 
         if len(missing_splits) > 0:
-            raise ValueError(
+            raise MAPSError(
                 f"Splits {missing_splits} were not initialized. "
                 f"Please try train command on these splits and resume only others."
             )
@@ -200,12 +206,6 @@ class MapsManager:
             overwrite: If True erase the occurrences of data_group.
             label: Target label used for training (if network_task in [`regression`, `classification`]).
             label_code: dictionary linking the target values to a node number.
-
-        Raises:
-            ValueError:
-                when trying to overwrite train or validation data groups
-                when caps_directory or df are given but data group already exists
-                when caps_directory or df are not given and data group does not exist
         """
         if split_list is None:
             split_list = self._find_splits()
@@ -356,12 +356,6 @@ class MapsManager:
             diagnoses (list[str]): List of diagnoses to load if tsv_path is a split_directory.
             gpu (bool): If given, a new value for the device of the model will be computed.
             overwrite (bool): If True erase the occurrences of data_group.
-
-        Raises:
-            ValueError:
-                when trying to overwrite train or validation data groups
-                when caps_directory or df are given but data group already exists
-                when caps_directory or df are not given and data group does not exist
         """
         if split_list is None:
             split_list = self._find_splits()
@@ -474,12 +468,6 @@ class MapsManager:
             gpu (bool): If given, a new value for the device of the model will be computed.
             overwrite (bool): If True erase the occurrences of data_group.
             overwrite_name (bool): If True erase the occurrences of name.
-        Raises:
-            ValueError:
-                when trying to overwrite train or validation data groups
-                when caps_directory or df are given but data group already exists
-                when caps_directory or df are not given and data group does not exist
-                when name already exists and overwrite_name is False
         """
 
         from torch.utils.data import DataLoader
@@ -549,7 +537,7 @@ class MapsManager:
                     if overwrite_name:
                         shutil.rmtree(results_path)
                     else:
-                        raise ValueError(
+                        raise MAPSError(
                             f"Interpretation name {name} is already written. "
                             f"Please choose another name or set overwrite_name to True."
                         )
@@ -1155,7 +1143,7 @@ class MapsManager:
 
         for arg in mandatory_arguments:
             if arg not in parameters:
-                raise ValueError(
+                raise ArgumentError(
                     f"The values of mandatory arguments {mandatory_arguments} should be set. "
                     f"No value was given for {arg}."
                 )
@@ -1203,8 +1191,8 @@ class MapsManager:
         self.parameters["seed"] = get_seed(self.parameters["seed"])
 
         if self.parameters["num_networks"] < 2 and self.multi_network:
-            raise ValueError(
-                f"Invalid training arguments: cannot train a multi-network "
+            raise ConfigurationError(
+                f"Invalid training configuration: cannot train a multi-network "
                 f"framework with only {self.parameters['num_networks']} element "
                 f"per image."
             )
@@ -1214,7 +1202,7 @@ class MapsManager:
         if not set(self.parameters["selection_metrics"]).issubset(
             possible_selection_metrics_set
         ):
-            raise ValueError(
+            raise ConfigurationError(
                 f"Selection metrics {self.parameters['selection_metrics']} "
                 f"must be a subset of metrics used for evaluation "
                 f"{possible_selection_metrics_set}."
@@ -1241,7 +1229,7 @@ class MapsManager:
         """Find which selection metrics are available in MAPS for a given split."""
         split_path = path.join(self.maps_path, f"{self.split_name}-{split}")
         if not path.exists(split_path):
-            raise ValueError(
+            raise MAPSError(
                 f"Training of split {split} was not performed."
                 f"Please execute maps_manager.train(split_list=[{split}])"
             )
@@ -1257,7 +1245,7 @@ class MapsManager:
         available_metrics = self._find_selection_metrics(split)
         if selection_metric is None:
             if len(available_metrics) > 1:
-                raise ValueError(
+                raise ArgumentError(
                     f"Several metrics are available for split {split}. "
                     f"Please choose which one you want to read among {available_metrics}"
                 )
@@ -1265,7 +1253,7 @@ class MapsManager:
                 selection_metric = available_metrics[0]
         else:
             if selection_metric not in available_metrics:
-                raise ValueError(
+                raise ArgumentError(
                     f"The metric {selection_metric} is not available."
                     f"Please choose among is the available metrics {available_metrics}."
                 )
@@ -1279,7 +1267,7 @@ class MapsManager:
             data_group (str): name of the data group
             test_df (pd.DataFrame): Table of participant_id / session_id of the data group
         Raises:
-            ValueError: if data_group not in ["train", "validation"] and there is an intersection
+            ClinicaDLDataLeakageError: if data_group not in ["train", "validation"] and there is an intersection
                 between the participant IDs in test_df and the ones used for training.
         """
         if data_group not in ["train", "validation"]:
@@ -1290,7 +1278,7 @@ class MapsManager:
             intersection = participants_test & participants_train
 
             if len(intersection) > 0:
-                raise ValueError(
+                raise ClinicaDLDataLeakageError(
                     "Your evaluation set contains participants who were already seen during "
                     "the training step. The list of common participants is the following: "
                     f"{intersection}."
@@ -1318,8 +1306,8 @@ class MapsManager:
             label (str): label name if applicable
 
         Raises:
-            ValueError:
-                when trying to overwrite train or validation data groups
+            MAPSError when trying to overwrite train or validation data groups
+            ArgumentError:
                 when caps_directory or df are given but data group already exists
                 when caps_directory or df are not given and data group does not exist
         """
@@ -1328,7 +1316,7 @@ class MapsManager:
         if path.exists(group_path):  # Data group already exists
             if overwrite:
                 if data_group in ["train", "validation"]:
-                    raise ValueError("Cannot overwrite train or validation data group.")
+                    raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
                     shutil.rmtree(group_path)
                     split_list = self._find_splits()
@@ -1344,7 +1332,7 @@ class MapsManager:
                             if path.exists(results_path):
                                 shutil.rmtree(results_path)
             elif df is not None or caps_directory is not None:
-                raise ValueError(
+                raise ArgumentError(
                     f"Data group {data_group} is already defined. "
                     f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
                     f"To erase {data_group} please set overwrite to True."
@@ -1353,7 +1341,7 @@ class MapsManager:
         if not path.exists(group_path) and (
             caps_directory is None or df is None
         ):  # Data group does not exist yet / was overwritten + missing data
-            raise ValueError(
+            raise ArgumentError(
                 f"The data group {data_group} does not already exist. "
                 f"Please specify a caps_directory and a tsv_path to create this data group."
             )
@@ -1833,7 +1821,7 @@ class MapsManager:
         elif self.network_task == "reconstruction":
             return ReconstructionManager(self.mode)
         else:
-            raise ValueError(
+            raise NotImplementedError(
                 f"Task {self.network_task} is not implemented in ClinicaDL. "
                 f"Please choose between classification, regression and reconstruction."
             )
@@ -1876,18 +1864,18 @@ class MapsManager:
         """
         group_path = path.join(self.maps_path, "groups", data_group)
         if not path.exists(group_path):
-            raise ValueError(
+            raise MAPSError(
                 f"Data group {data_group} is not defined. "
                 f"Please run a prediction to create this data group."
             )
         if data_group in ["train", "validation"]:
             if split is None:
-                raise ValueError(
+                raise MAPSError(
                     f"Information on train or validation data can only be "
                     f"loaded if a split number is given"
                 )
             elif not path.exists(path.join(group_path, f"{self.split_name}-{split}")):
-                raise ValueError(
+                raise MAPSError(
                     f"Split {split} is not available for data group {data_group}."
                 )
             else:
@@ -1911,7 +1899,7 @@ class MapsManager:
         selection_metric = self._check_selection_metric(split, selection_metric)
         if self.multi_network:
             if network is None:
-                raise ValueError(
+                raise ArgumentError(
                     "Please precise the network number that must be loaded."
                 )
         return self._init_model(
@@ -1937,7 +1925,7 @@ class MapsManager:
         selection_metric = self._check_selection_metric(split, selection_metric)
         if self.multi_network:
             if network is None:
-                raise ValueError(
+                raise ArgumentError(
                     "Please precise the network number that must be loaded."
                 )
             else:
@@ -1989,7 +1977,7 @@ class MapsManager:
             data_group,
         )
         if not path.exists(prediction_dir):
-            raise ValueError(
+            raise MAPSError(
                 f"No prediction corresponding to data group {data_group} was found."
             )
         df = pd.read_csv(
@@ -2024,7 +2012,7 @@ class MapsManager:
             data_group,
         )
         if not path.exists(prediction_dir):
-            raise ValueError(
+            raise MAPSError(
                 f"No prediction corresponding to data group {data_group} was found."
             )
         df = pd.read_csv(
@@ -2072,7 +2060,7 @@ class MapsManager:
             f"interpret-{name}",
         )
         if not path.exists(map_dir):
-            raise ValueError(
+            raise MAPSError(
                 f"No prediction corresponding to data group {data_group} and "
                 f"interpretation {name} was found."
             )

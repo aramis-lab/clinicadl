@@ -1,6 +1,7 @@
 """
 This file contains all methods needed to perform the quality check procedure after t1-linear preprocessing.
 """
+from ctypes import ArgumentError
 from logging import getLogger
 from os import makedirs
 from os.path import abspath, dirname, exists, join, splitext
@@ -30,7 +31,7 @@ def quality_check(
     logger = getLogger("clinicadl")
 
     if splitext(output_path)[1] != ".tsv":
-        raise ValueError("Please provide an output path to a tsv file")
+        raise ArgumentError("Output path must be a path to a tsv file.")
 
     # Fetch QC model
     home = str(Path.home())

@@ -1,6 +1,8 @@
 # coding: utf8
 import logging
 
+from clinicadl.utils.exceptions import ArgumentError
+
 LOG_LEVELS = [logging.WARNING, logging.INFO, logging.DEBUG]
 
 
@@ -298,7 +300,7 @@ def check_and_complete(options, random_search=False):
 
     for argument in mandatory_arguments:
         if argument not in options:
-            raise ValueError(
+            raise ArgumentError(
                 f"The argument {argument} must be specified in the parameters."
             )
 
