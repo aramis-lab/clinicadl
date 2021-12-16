@@ -178,7 +178,7 @@ def generate_trivial_dataset(
     """
     from pathlib import Path
 
-    from utils.exceptions import DownloadError
+    from clinicadl.utils.exceptions import DownloadError
 
     commandline_to_json(
         {
