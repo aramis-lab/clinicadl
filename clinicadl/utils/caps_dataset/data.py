@@ -27,8 +27,8 @@ from clinicadl.extract.extract_utils import (
 )
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
+    ClinicaDLConfigurationError,
     ClinicaDLTSVError,
-    ConfigurationError,
 )
 
 logger = getLogger("clinicadl")
@@ -998,7 +998,7 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
             tsv_df = pd.read_csv(test_path, sep="\t")
             multi_col = {"cohort", "path"}
             if multi_col.issubset(tsv_df.columns.values):
-                raise ConfigurationError(
+                raise ClinicaDLConfigurationError(
                     "To use multi-cohort framework, please add 'multi_cohort=true' in your configuration file or '--multi_cohort' flag to the command line."
                 )
         test_df = load_data_test_single(test_path, diagnoses_list, baseline=baseline)

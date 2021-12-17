@@ -7,8 +7,8 @@ from clinica.utils.inputs import check_caps_folder
 
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
+    ClinicaDLConfigurationError,
     ClinicaDLTSVError,
-    ConfigurationError,
 )
 
 logger = getLogger("clinicadl")
@@ -198,7 +198,7 @@ class SplitManager:
                 SplitManager._check_multi_cohort_tsv(tsv_df, "labels")
         else:
             if tsv_path.endswith(".tsv"):
-                raise ConfigurationError(
+                raise ClinicaDLConfigurationError(
                     f"You gave the path to a TSV file in tsv_path {tsv_path}. "
                     f"To use multi-cohort framework, please add 'multi_cohort=true' to the configuration file or the --multi_cohort flag."
                 )

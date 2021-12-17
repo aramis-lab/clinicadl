@@ -8,7 +8,7 @@ class ClinicaDLArgumentError(ValueError):
     pass
 
 
-class ConfigurationError(ValueError):
+class ClinicaDLConfigurationError(ValueError):
     pass
 
 

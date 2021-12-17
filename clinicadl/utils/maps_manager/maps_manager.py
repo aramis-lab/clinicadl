@@ -21,8 +21,8 @@ from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
+    ClinicaDLConfigurationError,
     ClinicaDLDataLeakageError,
-    ConfigurationError,
     MAPSError,
 )
 from clinicadl.utils.maps_manager.logwriter import LogWriter, setup_logging
@@ -1191,7 +1191,7 @@ class MapsManager:
         self.parameters["seed"] = get_seed(self.parameters["seed"])
 
         if self.parameters["num_networks"] < 2 and self.multi_network:
-            raise ConfigurationError(
+            raise ClinicaDLConfigurationError(
                 f"Invalid training configuration: cannot train a multi-network "
                 f"framework with only {self.parameters['num_networks']} element "
                 f"per image."
@@ -1202,7 +1202,7 @@ class MapsManager:
         if not set(self.parameters["selection_metrics"]).issubset(
             possible_selection_metrics_set
         ):
-            raise ConfigurationError(
+            raise ClinicaDLConfigurationError(
                 f"Selection metrics {self.parameters['selection_metrics']} "
                 f"must be a subset of metrics used for evaluation "
                 f"{possible_selection_metrics_set}."

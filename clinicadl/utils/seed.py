@@ -69,11 +69,11 @@ def seed_everything(seed, deterministic=False, compensation="memory") -> None:
             Must be chosen between time and memory.
 
     Raises:
-        ConfigurationError: if compensation is not in {"time", "memory"}.
+        ClinicaDLConfigurationError: if compensation is not in {"time", "memory"}.
         RuntimeError: if a non-deterministic behaviour was encountered.
 
     """
-    from clinicadl.utils.exceptions import ConfigurationError
+    from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 
     max_seed_value = np.iinfo(np.uint32).max
     min_seed_value = np.iinfo(np.uint32).min
@@ -93,7 +93,7 @@ def seed_everything(seed, deterministic=False, compensation="memory") -> None:
         elif compensation == "time":
             os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":16:8"
         else:
-            raise ConfigurationError(
+            raise ClinicaDLConfigurationError(
                 f"The compensation for a deterministic CUDA setting "
                 f"must be chosen between 'time' and 'memory'."
             )

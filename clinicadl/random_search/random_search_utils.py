@@ -12,10 +12,10 @@ def get_space_dict(launch_directory: str) -> Dict[str, Any]:
     """Transforms the TOML dictionary in one dimension dictionary."""
     toml_path = path.join(launch_directory, "random_search.toml")
     toml_options = toml.load(toml_path)
-    from clinicadl.utils.exceptions import ConfigurationError
+    from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 
     if "Random_Search" not in toml_options:
-        raise ConfigurationError(
+        raise ClinicaDLConfigurationError(
             "Category 'Random_Search' must be defined in the random_search.toml file. "
             "All random search arguments AND options must be defined in this category."
         )
@@ -37,7 +37,7 @@ def get_space_dict(launch_directory: str) -> Dict[str, Any]:
 
     for argument in mandatory_arguments:
         if argument not in space_dict:
-            raise ConfigurationError(
+            raise ClinicaDLConfigurationError(
                 f"The argument {argument} must be specified in the random_search.toml file (Random_Search category)."
             )
 
