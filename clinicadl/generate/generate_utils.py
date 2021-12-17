@@ -1,7 +1,6 @@
 # coding: utf8
 
 import random
-from ctypes import ArgumentError
 from typing import Dict
 
 import numpy as np
@@ -9,6 +8,8 @@ import pandas as pd
 from clinica.utils.input_files import T1W_LINEAR, T1W_LINEAR_CROPPED, pet_linear_nii
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
+
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 
 def find_file_type(
@@ -24,7 +25,7 @@ def find_file_type(
             file_type = T1W_LINEAR_CROPPED
     elif preprocessing == "pet-linear":
         if acq_label is None or suvr_reference_region is None:
-            raise ArgumentError(
+            raise ClinicaDLArgumentError(
                 "acq_label and suvr_reference_region must be defined "
                 "when using `pet-linear` preprocessing."
             )

@@ -26,7 +26,7 @@ from clinicadl.extract.extract_utils import (
     find_mask_path,
 )
 from clinicadl.utils.exceptions import (
-    ArgumentError,
+    ClinicaDLArgumentError,
     ClinicaDLTSVError,
     ConfigurationError,
 )
@@ -118,7 +118,7 @@ class CapsDataset(Dataset):
 
         if multi_cohort:
             if not caps_directory.endswith(".tsv"):
-                raise ArgumentError(
+                raise ClinicaDLArgumentError(
                     "If multi_cohort is True, the CAPS_DIRECTORY argument should be a path to a TSV file."
                 )
             else:
@@ -962,7 +962,7 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
 
     if multi_cohort:
         if not test_path.endswith(".tsv"):
-            raise ArgumentError(
+            raise ClinicaDLArgumentError(
                 "If multi_cohort is given, the TSV_DIRECTORY argument should be a path to a TSV file."
             )
         else:

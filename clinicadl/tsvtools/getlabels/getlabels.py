@@ -19,7 +19,7 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from clinicadl.utils.exceptions import ArgumentError, ClinicaDLTSVError
+from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.tsvtools_utils import (
     after_end_screening,
@@ -451,7 +451,7 @@ def get_labels(
         variables_set = set(variables_of_interest) | set(variables_list)
         variables_list = list(variables_set)
         if not set(variables_list).issubset(set(bids_df.columns.values)):
-            raise ArgumentError(
+            raise ClinicaDLArgumentError(
                 f"The variables asked by the user {variables_of_interest} do not "
                 f"exist in the data set."
             )

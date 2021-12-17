@@ -4,7 +4,7 @@ class DownloadError(Exception):
     pass
 
 
-class ArgumentError(ValueError):
+class ClinicaDLArgumentError(ValueError):
     pass
 
 

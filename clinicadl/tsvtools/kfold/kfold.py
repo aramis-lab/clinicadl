@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 
-from clinicadl.utils.exceptions import ArgumentError
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.tsvtools_utils import (
     extract_baseline,
@@ -200,7 +200,7 @@ def split_diagnoses(
         )
 
         if len(supplementary_diagnoses) == 0:
-            raise ArgumentError(
+            raise ClinicaDLArgumentError(
                 "The MCI_sub_categories flag is not needed as there are no intersections with "
                 "MCI subcategories."
             )

@@ -10,7 +10,7 @@ import pandas as pd
 from scipy.stats import ttest_ind
 from sklearn.model_selection import StratifiedShuffleSplit
 
-from clinicadl.utils.exceptions import ArgumentError
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.tsvtools_utils import (
     category_conversion,
@@ -73,7 +73,7 @@ def create_split(
         n_test = int(n_test * len(baseline_df))
 
     if not {split_label}.issubset(set(baseline_df.columns.values)):
-        raise ArgumentError(
+        raise ClinicaDLArgumentError(
             f"The column {split_label} is missing."
             f"Please add it using the --variables_of_interest flag in getlabels."
         )
@@ -82,8 +82,8 @@ def create_split(
         try:
             sex_label = find_label(baseline_df.columns.values, "sex")
             age_label = find_label(baseline_df.columns.values, "age")
-        except ArgumentError:
-            raise ArgumentError(
+        except ClinicaDLArgumentError:
+            raise ClinicaDLArgumentError(
                 "This dataset do not have age or sex values. "
                 "Please add the flag --ignore_demographics to split "
                 "without trying to balance age or sex distributions."
@@ -294,7 +294,7 @@ def split_diagnoses(
             MCI_df, ["sMCI", "pMCI"], diagnosis_df_paths, results_path
         )
         if len(supplementary_diagnoses) == 0:
-            raise ArgumentError(
+            raise ClinicaDLArgumentError(
                 "The MCI_sub_categories flag is not needed as there are no intersections with"
                 "MCI subcategories."
             )

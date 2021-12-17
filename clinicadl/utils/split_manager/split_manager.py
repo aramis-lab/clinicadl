@@ -1,12 +1,15 @@
 import abc
-from ctypes import ArgumentError
 from logging import getLogger
 from os import path
 
 import pandas as pd
 from clinica.utils.inputs import check_caps_folder
 
-from clinicadl.utils.exceptions import ClinicaDLTSVError, ConfigurationError
+from clinicadl.utils.exceptions import (
+    ClinicaDLArgumentError,
+    ClinicaDLTSVError,
+    ConfigurationError,
+)
 
 logger = getLogger("clinicadl")
 
@@ -165,7 +168,7 @@ class SplitManager:
     def _create_caps_dict(caps_directory, multi_cohort):
         if multi_cohort:
             if not caps_directory.endswith(".tsv"):
-                raise ArgumentError(
+                raise ClinicaDLArgumentError(
                     "If multi_cohort is given, the CAPS_DIRECTORY argument should be a path to a TSV file."
                 )
             else:
@@ -187,7 +190,7 @@ class SplitManager:
     def _check_tsv_path(tsv_path, multi_cohort):
         if multi_cohort:
             if not tsv_path.endswith(".tsv"):
-                raise ArgumentError(
+                raise ClinicaDLArgumentError(
                     "If multi_cohort is given, the TSV_DIRECTORY argument should be a path to a TSV file."
                 )
             else:

@@ -2,7 +2,6 @@ import json
 import os
 import shutil
 import subprocess
-from ctypes import ArgumentError
 from datetime import datetime
 from glob import glob
 from logging import getLogger
@@ -21,6 +20,7 @@ from clinicadl.utils.caps_dataset.data import (
 from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.early_stopping import EarlyStopping
 from clinicadl.utils.exceptions import (
+    ClinicaDLArgumentError,
     ClinicaDLDataLeakageError,
     ConfigurationError,
     MAPSError,
@@ -1143,7 +1143,7 @@ class MapsManager:
 
         for arg in mandatory_arguments:
             if arg not in parameters:
-                raise ArgumentError(
+                raise ClinicaDLArgumentError(
                     f"The values of mandatory arguments {mandatory_arguments} should be set. "
                     f"No value was given for {arg}."
                 )
@@ -1245,7 +1245,7 @@ class MapsManager:
         available_metrics = self._find_selection_metrics(split)
         if selection_metric is None:
             if len(available_metrics) > 1:
-                raise ArgumentError(
+                raise ClinicaDLArgumentError(
                     f"Several metrics are available for split {split}. "
                     f"Please choose which one you want to read among {available_metrics}"
                 )
@@ -1253,7 +1253,7 @@ class MapsManager:
                 selection_metric = available_metrics[0]
         else:
             if selection_metric not in available_metrics:
-                raise ArgumentError(
+                raise ClinicaDLArgumentError(
                     f"The metric {selection_metric} is not available."
                     f"Please choose among is the available metrics {available_metrics}."
                 )
@@ -1307,7 +1307,7 @@ class MapsManager:
 
         Raises:
             MAPSError when trying to overwrite train or validation data groups
-            ArgumentError:
+            ClinicaDLArgumentError:
                 when caps_directory or df are given but data group already exists
                 when caps_directory or df are not given and data group does not exist
         """
@@ -1332,7 +1332,7 @@ class MapsManager:
                             if path.exists(results_path):
                                 shutil.rmtree(results_path)
             elif df is not None or caps_directory is not None:
-                raise ArgumentError(
+                raise ClinicaDLArgumentError(
                     f"Data group {data_group} is already defined. "
                     f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
                     f"To erase {data_group} please set overwrite to True."
@@ -1341,7 +1341,7 @@ class MapsManager:
         if not path.exists(group_path) and (
             caps_directory is None or df is None
         ):  # Data group does not exist yet / was overwritten + missing data
-            raise ArgumentError(
+            raise ClinicaDLArgumentError(
                 f"The data group {data_group} does not already exist. "
                 f"Please specify a caps_directory and a tsv_path to create this data group."
             )
@@ -1899,7 +1899,7 @@ class MapsManager:
         selection_metric = self._check_selection_metric(split, selection_metric)
         if self.multi_network:
             if network is None:
-                raise ArgumentError(
+                raise ClinicaDLArgumentError(
                     "Please precise the network number that must be loaded."
                 )
         return self._init_model(
@@ -1925,7 +1925,7 @@ class MapsManager:
         selection_metric = self._check_selection_metric(split, selection_metric)
         if self.multi_network:
             if network is None:
-                raise ArgumentError(
+                raise ClinicaDLArgumentError(
                     "Please precise the network number that must be loaded."
                 )
             else:
