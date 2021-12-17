@@ -19,7 +19,7 @@ test your modifications, and install all the dependencies inside your environmen
 
 ```{.sourceCode .bash}
 conda env create -f environment.yml --name clinicadl_dev
-conda activate clinicadl_env
+conda activate clinicadl_dev
 poetry install
 ```
 
