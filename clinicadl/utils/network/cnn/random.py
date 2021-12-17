@@ -203,7 +203,7 @@ class RandomArchitecture(CNN):
             (list) the shape of the flattened layer
         """
         n_conv = len(convolutions)
-        last_conv = convolutions["conv%i" % (len(convolutions) - 1)]
+        last_conv = convolutions[f"conv{(len(convolutions) - 1)}"]
         out_channels = last_conv["out_channels"]
         flattened_shape = np.ceil(np.array(initial_shape) / 2 ** n_conv)
         flattened_shape[0] = out_channels

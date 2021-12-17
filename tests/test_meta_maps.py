@@ -11,7 +11,7 @@ def cli_commands(request):
     if request.param == "get_loss":
         analysis_input = ["maps-analysis", "data/maps_analysis", "-metric BA"]
     else:
-        raise NotImplementedError("Test %s is not implemented." % request.param)
+        raise NotImplementedError(f"Test {request.param} is not implemented.")
 
     return analysis_input
 

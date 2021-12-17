@@ -120,7 +120,7 @@ def create_split(
                 else:
                     p_sex = 1
 
-                logger.debug("p_age=%.2f, p_sex=%.4f" % (p_age, p_sex))
+                logger.debug(f"p_age={p_age:.2f}, p_sex={p_sex:.4f}")
 
                 if p_sex >= p_sex_threshold and p_age >= p_age_threshold:
                     flag_selection = False

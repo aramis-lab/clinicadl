@@ -68,7 +68,7 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
 
     # save to json file
     json = json.dumps(commandline_arg_dict, skipkeys=True, indent=4)
-    logger.info("Path of json file: %s" % os.path.join(output_dir, "commandline.json"))
+    logger.info(f"Path of json file: {os.path.join(output_dir, 'commandline.json')}")
     f = open(os.path.join(output_dir, filename), "w")
     f.write(json)
     f.close()

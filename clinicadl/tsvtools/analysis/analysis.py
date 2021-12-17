@@ -75,8 +75,8 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path, diagnos
         diagnosis_path = path.join(formatted_data_path, diagnosis + ".tsv")
         if not path.exists(diagnosis_path):
             print(
-                "TSV file with all sessions was not found for diagnosis %s. "
-                "Loads baseline version instead." % diagnosis
+                f"TSV file with all sessions was not found for diagnosis {diagnosis}. "
+                f"Loads baseline version instead."
             )
             diagnosis_path = path.join(formatted_data_path, diagnosis + "_baseline.tsv")
         diagnosis_df = pd.read_csv(diagnosis_path, sep="\t")

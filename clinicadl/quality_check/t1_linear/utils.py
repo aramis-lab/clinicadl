@@ -203,7 +203,7 @@ class QCDataset(Dataset):
                 "deeplearning_prepare_data",
                 "image_based",
                 "t1_linear",
-                "%s_%s%s.pt" % (subject, session, FILENAME_TYPE["full"]),
+                f"{subject}_{session}{FILENAME_TYPE['full']}.pt",
             )
 
             image = torch.load(image_path)
@@ -215,7 +215,7 @@ class QCDataset(Dataset):
                 subject,
                 session,
                 "t1_linear",
-                "%s_%s%s.nii.gz" % (subject, session, FILENAME_TYPE["full"]),
+                f"{subject}_{session}{FILENAME_TYPE['full']}.nii.gz",
             )
 
             image = nib.load(image_path)

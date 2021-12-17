@@ -163,7 +163,7 @@ def generate_scales(size):
         return random.uniform(0.8, 0.9), random.uniform(0.8, 0.9)
     else:
         raise NotImplementedError(
-            "Size %s was not implemented for variable sizes." % size
+            f"Size {size} was not implemented for variable sizes."
         )
 
 
@@ -198,7 +198,7 @@ def generate_shepplogan_phantom(
     elif label == 2:
         roi1, roi2 = "small", "large"
     else:
-        raise NotImplementedError("Subtype %i was not implemented." % label)
+        raise NotImplementedError(f"Subtype {label} was not implemented.")
 
     # Skull
     rr, cc = ellipse(center, center, a, b, (img_size, img_size))

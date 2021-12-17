@@ -77,8 +77,8 @@ class CapsDataset(Dataset):
 
         if not mandatory_col.issubset(set(self.df.columns.values)):
             raise Exception(
-                "the data file is not in the correct format."
-                "Columns should include %s" % mandatory_col
+                f"the data file is not in the correct format."
+                f"Columns should include {mandatory_col}"
             )
 
         self.elem_per_image = self.num_elem_per_image()

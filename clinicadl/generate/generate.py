@@ -330,7 +330,7 @@ def generate_shepplogan_dataset(
 
     for i, label in enumerate(labels_distribution.keys()):
         for j in range(samples):
-            participant_id = "sub-CLNC%i%04d" % (i, j)
+            participant_id = f"sub-CLNC{i}{j:04d}"
             session_id = "ses-M00"
             subtype = np.random.choice(
                 np.arange(len(labels_distribution[label])), p=labels_distribution[label]

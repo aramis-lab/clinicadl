@@ -87,7 +87,7 @@ def sampling_fn(value, sampling_type: str):
             return random.uniform(*value)
         else:
             raise NotImplementedError(
-                "Sampling type %s is not implemented" % sampling_type
+                f"Sampling type {sampling_type} is not implemented"
             )
     else:
         if sampling_type is "exponent":

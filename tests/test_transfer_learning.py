@@ -109,7 +109,7 @@ def cli_commands(request):
             "--multi_network",
         ]
     else:
-        raise NotImplementedError("Test %s is not implemented." % request.param)
+        raise NotImplementedError(f"Test {request.param} is not implemented.")
 
     return source_task, target_task
 
