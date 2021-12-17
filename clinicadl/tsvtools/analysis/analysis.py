@@ -129,7 +129,9 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path, diagnos
             elif sexM:
                 results_df.loc[diagnosis, "sexM"] += 1
             else:
-                raise ValueError(f"Patient {subject} has no sex")
+                raise ValueError(
+                    f"The field 'sex' for patient {subject} can not be determided"
+                )
 
             cdr = merged_df.at[(subject, first_session_id), fields_dict["CDR"]]
             if cdr == 0:
