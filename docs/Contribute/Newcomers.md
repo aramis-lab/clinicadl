@@ -18,7 +18,7 @@ We suggest creating a custom Conda environment for your fork, so you can
 test your modifications, and install all the dependencies inside your environment using poetry:
 
 ```{.sourceCode .bash}
-conda env create -f environment.yml -name clinicadl_env
+conda env create -f environment.yml --name clinicadl_dev
 conda activate clinicadl_env
 poetry install
 ```
