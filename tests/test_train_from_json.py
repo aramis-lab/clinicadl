@@ -1,8 +1,6 @@
 import os
 import shutil
 
-from clinicadl import MapsManager
-
 from .testing_tools import compare_folders_with_hashes, create_hashes_dict, models_equal
 
 
@@ -55,52 +53,3 @@ def test_determinism():
     )
     shutil.rmtree(input_dir)
     shutil.rmtree(output_dir)
-
-
-# def test_batch_accumulation_equivalence():
-#     epsilon = 10 ** -4
-#     batch_dir = "results/batch_version"
-#     batch_input = [
-#         "train",
-#         "classification",
-#         "data/dataset/random_example",
-#         "extract_roi.json",
-#         "data/labels_list",
-#         batch_dir,
-#         "-c",
-#         "data/reproducibility_config.toml",
-#         "--batch_size 8",
-#         "--accumulation_steps 1",
-#     ]
-#
-#     accumulation_dir = "results/accumulation_version"
-#     accumulation_input = [
-#         "train",
-#         "classification",
-#         "data/dataset/random_example",
-#         "extract_roi.json",
-#         "data/labels_list",
-#         accumulation_dir,
-#         "-c",
-#         "data/reproducibility_config.toml",
-#         "--batch_size 1",
-#         "--accumulation_steps 8",
-#     ]
-#     # Run batch experiment
-#     flag_error = not os.system("clinicadl " + " ".join(batch_input))
-#     assert flag_error
-#     batch_maps = MapsManager(batch_dir)
-#
-#     # Run accumulation experiment
-#     flag_error = not os.system("clinicadl " + " ".join(accumulation_input))
-#     assert flag_error
-#     accumulation_maps = MapsManager(accumulation_dir)
-#
-#     assert models_equal(
-#         batch_maps.get_state_dict()["model"],
-#         accumulation_maps.get_state_dict()["model"],
-#         epsilon,
-#     )
-#
-#     shutil.rmtree(batch_dir)
-#     shutil.rmtree(accumulation_dir)
