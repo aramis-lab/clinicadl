@@ -15,8 +15,8 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         task_options_list: list of options specific to the task.
         kwargs: other arguments and options for network training.
     """
-    from ..train import train
-    from ..train_utils import get_user_dict
+    from clinicadl.train.train import train
+    from clinicadl.train.train_utils import get_user_dict
 
     logger = getLogger("clinicadl")
 
