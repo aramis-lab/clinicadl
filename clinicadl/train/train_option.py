@@ -158,6 +158,23 @@ split = cli_param.option_group.cross_validation.option(
     help="Train the list of given splits. By default, all the splits are trained.",
 )
 # Optimization
+optimizer = cli_param.option_group.optimization_group.option(
+    "--optimizer",
+    type=click.Choice(
+        [
+            "Adadelta",
+            "Adagrad",
+            "Adam",
+            "AdamW",
+            "Adamax",
+            "ASGD",
+            "NAdam",
+            "RAdam",
+            "RMSprop",
+            "SGD",
+        ]
+    ),
+)
 epochs = cli_param.option_group.optimization_group.option(
     "--epochs",
     type=int,

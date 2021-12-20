@@ -35,6 +35,7 @@ from .task_utils import task_launcher
 @train_option.n_splits
 @train_option.split
 # Optimization
+@train_option.optimizer
 @train_option.epochs
 @train_option.learning_rate
 @train_option.weight_decay
