@@ -60,8 +60,8 @@ def cli(**kwargs):
 
     OUTPUT_MAPS_DIRECTORY is the path to the MAPS folder where outputs and results will be saved.
 
-    This pipeline includes many options. To make its usage easier, you can write all the configuration
-    in a TOML file as explained in the documentation:
+    Options for this command can be input by declaring argument on the command line or by providing a
+    configuration file in TOML format. For more details, please visit the documentation:
     https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
     """
     task_specific_options = ["selection_metrics"]

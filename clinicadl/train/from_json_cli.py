@@ -25,7 +25,8 @@ def cli(
     split,
 ):
     """
-    Reproduce a deep learning training based on a JSON file.
+    Replicate a deep learning training based on a previously created JSON file.
+    This is particularly useful to retrain random architectures obtained with a random search.
 
     CONFIG_JSON is the path to the JSON file with the configuration of the training procedure.
 
