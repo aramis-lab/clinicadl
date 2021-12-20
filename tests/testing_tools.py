@@ -1,3 +1,4 @@
+import pathlib
 from typing import Dict, List
 
 
@@ -12,7 +13,7 @@ def ignore_pattern(file_path: str, ignore_pattern_list: List[str]) -> bool:
 
 
 def create_hashes_dict(
-    path_folder: str, ignore_pattern_list: List[str] = None
+    path_folder: pathlib.Path, ignore_pattern_list: List[str] = None
 ) -> Dict[str, str]:
     """
     Computes a dictionary of files with their corresponding hashes
@@ -50,7 +51,9 @@ def create_hashes_dict(
 
 
 def compare_folders_with_hashes(
-    path_folder: str, hashes_dict: Dict[str, str], ignore_pattern_list: List[str] = None
+    path_folder: pathlib.Path,
+    hashes_dict: Dict[str, str],
+    ignore_pattern_list: List[str] = None,
 ):
     """
     Compares the files of a folder against a reference
