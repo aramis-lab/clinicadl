@@ -466,7 +466,7 @@ def get_labels(
             missing_mods_df = pd.read_csv(path.join(missing_mods, file), sep="\t")
             if len(missing_mods_df) == 0:
                 raise ClinicaDLTSVError(
-                    f"Given TSV file at {path.join(missing_mods, file)} load an empty DataFrame."
+                    f"Given TSV file at {path.join(missing_mods, file)} loads an empty DataFrame."
                 )
 
             missing_mods_df.set_index("participant_id", drop=True, inplace=True)
