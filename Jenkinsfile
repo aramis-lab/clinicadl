@@ -93,6 +93,8 @@ pipeline {
                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
                     conda activate "${WORKSPACE}/env"
                     cd $WORKSPACE/tests
+                    mkdir -p ./data/dataset
+                    tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
                     poetry run pytest \
                       --junitxml=./test-reports/test_quality_check_report.xml \
                       --verbose \

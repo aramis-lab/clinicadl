@@ -188,10 +188,16 @@ class QCDataset(Dataset):
             )
 
         self.normalization = MinMaxNormalization()
+        preprocessing_dict = {
+            "preprocessing": "t1-linear",
+            "mode": "image",
+            "use_uncropped_image": False,
+            "file_type": T1W_LINEAR_CROPPED,
+        }
         self.tensor_dataset = CapsDatasetImage(
             img_dir,
             data_df,
-            T1W_LINEAR_CROPPED,
+            preprocessing_dict,
             label_presence=False,
             all_transformations=MinMaxNormalization(),
         )
