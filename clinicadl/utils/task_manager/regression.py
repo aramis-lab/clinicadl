@@ -3,6 +3,7 @@ import pandas as pd
 from torch import nn
 from torch.utils.data import sampler
 
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.task_manager.task_manager import TaskManager
 
 
@@ -150,17 +151,20 @@ class RegressionManager(TaskManager):
 
     @staticmethod
     def get_criterion(criterion=None):
-        if criterion is None:
-            return nn.MSELoss()
-        if criterion not in [
+        compatible_losses = [
             "L1Loss",
             "MSELoss",
             "KLDivLoss",
             "BCEWithLogitsLoss",
             "HuberLoss",
             "SmoothL1Loss",
-        ]:
-            raise ValueError()
+        ]
+        if criterion is None:
+            return nn.MSELoss()
+        if criterion not in compatible_losses:
+            raise ClinicaDLArgumentError(
+                f"Regression loss must be chosen in {compatible_losses}."
+            )
         return getattr(nn, criterion)()
 
     @staticmethod

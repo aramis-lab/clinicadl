@@ -7,6 +7,8 @@ from torch import nn
 from torch.nn.functional import softmax
 from torch.utils.data import sampler
 
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
+
 logger = getLogger("clinicadl")
 
 from clinicadl.utils.task_manager.task_manager import TaskManager
@@ -187,10 +189,13 @@ class ClassificationManager(TaskManager):
 
     @staticmethod
     def get_criterion(criterion=None):
+        compatible_losses = ["CrossEntropyLoss", "MultiMarginLoss"]
         if criterion is None:
             return nn.CrossEntropyLoss()
-        if criterion not in ["CrossEntropyLoss", "MultiMarginLoss"]:
-            raise ValueError()
+        if criterion not in compatible_losses:
+            raise ClinicaDLArgumentError(
+                f"Classification loss must be chosen in {compatible_losses}."
+            )
         return getattr(nn, criterion)()
 
     @staticmethod

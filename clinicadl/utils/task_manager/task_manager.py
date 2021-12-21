@@ -154,7 +154,9 @@ class TaskManager:
         Must check that it is compatible with the task.
 
         Args:
-            criterion: name of the loss as written in Pytorch
+            criterion: name of the loss as written in Pytorch.
+        Raises:
+            ClinicaDLArgumentError: if the criterion is not compatible with the task.
         """
         pass
 
