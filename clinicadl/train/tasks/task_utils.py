@@ -16,7 +16,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         kwargs: other arguments and options for network training.
     """
     from clinicadl.train.train import train
-    from clinicadl.train.train_utils import get_train_dict
+    from clinicadl.train.train_utils import get_user_dict
 
     logger = getLogger("clinicadl")
 
@@ -49,7 +49,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
             )
 
     if kwargs["config_file"]:
-        train_dict = get_train_dict(kwargs["config_file"].name, network_task)
+        train_dict = get_user_dict(kwargs["config_file"].name, network_task)
     else:
         train_dict = dict()
 

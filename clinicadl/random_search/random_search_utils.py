@@ -4,7 +4,8 @@ from typing import Any, Dict, Tuple
 
 import toml
 
-from clinicadl.train.train_utils import get_train_dict
+from clinicadl.train.train_utils import get_user_dict
+from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.preprocessing import read_preprocessing
 
 
@@ -12,7 +13,6 @@ def get_space_dict(launch_directory: str) -> Dict[str, Any]:
     """Transforms the TOML dictionary in one dimension dictionary."""
     toml_path = path.join(launch_directory, "random_search.toml")
     toml_options = toml.load(toml_path)
-    from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 
     if "Random_Search" not in toml_options:
         raise ClinicaDLConfigurationError(
@@ -54,7 +54,7 @@ def get_space_dict(launch_directory: str) -> Dict[str, Any]:
         if option not in space_dict:
             space_dict[option] = value
 
-    train_default = get_train_dict(toml_path, space_dict["network_task"])
+    train_default = get_user_dict(toml_path, space_dict["network_task"])
 
     # Mode and preprocessing
     preprocessing_json = path.join(
