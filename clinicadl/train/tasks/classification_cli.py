@@ -43,7 +43,6 @@ from .task_utils import task_launcher
 @train_option.patience
 @train_option.tolerance
 @train_option.accumulation_steps
-@train_option.classification_loss
 # transfer learning
 @train_option.transfer_path
 @train_option.transfer_selection_metric
