@@ -28,7 +28,7 @@ prior to running this task.
 ### Running the task
 The task can be run with the following command line:
 ```
-clinicadl quality-check t1-linear CAPS_DIRECTORY OUTPUT_TSV
+clinicadl quality-check t1-linear [OPTIONS] CAPS_DIRECTORY OUTPUT_TSV
 ```
 where:
 
@@ -83,7 +83,7 @@ You need to execute the `clinica run t1-volume` pipeline prior to running this t
 ### Running the task
 The task can be run with the following command line:
 ```
-clinicadl preprocessing quality-check t1-volume CAPS_DIRECTORY OUTPUT_TSV GROUP_LABEL
+clinicadl quality-check t1-volume [OPTIONS] CAPS_DIRECTORY OUTPUT_TSV GROUP_LABEL
 ```
 where:
 

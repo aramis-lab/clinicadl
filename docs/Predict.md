@@ -31,7 +31,7 @@ tar xf model_exp3_splits_1.tar.gz
 ## Running the task
 This task can be run with the following command line:
 ```Text
-clinicadl predict INPUT_MAPS_DIRECTORY DATA_GROUP
+clinicadl predict [OPTIONS] INPUT_MAPS_DIRECTORY DATA_GROUP
 ```
 where:
 

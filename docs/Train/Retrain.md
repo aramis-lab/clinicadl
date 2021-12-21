@@ -23,7 +23,7 @@ preprocessing extract-tensor` to obtain the tensor versions of the images.
 ## Running the task
 This task can be run with the following command line:
 ```Text
-clinicadl train from_json CONFIG_JSON OUTPUT_MAPS_DIRECTORY
+clinicadl train from_json [OPTIONS] CONFIG_JSON OUTPUT_MAPS_DIRECTORY
 
 ```
 where 

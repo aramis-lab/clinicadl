@@ -25,7 +25,7 @@ extract` to obtain the tensor versions of the images.
 ## Running the task
 This task can be run with the following command line:
 ```Text
-clinicadl resume INPUT_MAPS_DIRECTORY
+clinicadl train resume INPUT_MAPS_DIRECTORY
 
 ```
 where `INPUT_MAPS_DIRECTORY` (str) is a path to the [MAPS folder](../Introduction.md) of the model.

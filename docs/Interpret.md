@@ -24,7 +24,7 @@ tar xf model_exp3_splits_1.tar.gz
 ## Running the task
 This task can be run with the following command line:
 ```Text
-clinicadl interpret INPUT_MAPS_DIRECTORY DATA_GROUP NAME
+clinicadl interpret [OPTIONS] INPUT_MAPS_DIRECTORY DATA_GROUP NAME
 
 ```
 where:

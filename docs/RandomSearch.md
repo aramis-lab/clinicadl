@@ -31,7 +31,7 @@ Moreover, there should be a CAPS, obtained running the `t1-linear` pipeline of C
 
 This task can be run with the following command line:
 ```Text
-clinicadl random-search LAUNCH_DIRECTORY NAME
+clinicadl random-search [OPTIONS] LAUNCH_DIRECTORY NAME
 
 ```
 where:
