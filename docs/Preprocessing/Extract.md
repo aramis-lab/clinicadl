@@ -10,7 +10,7 @@ You will need to execute the [Clinica](https://aramislab.paris.inria.fr/clinica/
 ## Running the pipeline
 The pipeline can be run with the following command line:
 ```{.sourceCode .bash}
-clinicadl extract [image|patch|slice|roi] CAPS_DIRECTORY MODALITY
+clinicadl extract [image|patch|slice|roi] [OPTIONS] CAPS_DIRECTORY MODALITY
 ```
 
 The command has four sub-commands:

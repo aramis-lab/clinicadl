@@ -16,8 +16,7 @@ def launch_search(launch_directory, job_name):
         raise ValueError(
             f"TOML file 'random_search' must be written in directory {launch_directory}."
         )
-    toml_options = toml.load(path.join(launch_directory, "random_search.toml"))
-    space_options = get_space_dict(toml_options)
+    space_options = get_space_dict(launch_directory)
     options = random_sampling(space_options)
 
     maps_directory = path.join(launch_directory, job_name)

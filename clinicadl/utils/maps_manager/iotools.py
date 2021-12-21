@@ -1,6 +1,5 @@
 # coding: utf8
 import logging
-import sys
 
 LOG_LEVELS = [logging.WARNING, logging.INFO, logging.DEBUG]
 
@@ -39,7 +38,7 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
     This is a function to write the python argparse object into a json file.
     This helps for DL when searching for hyperparameters
     Args:
-        commandline: (dict) dictionnary with all the command line options values.
+        commandline: (dict) dictionary with all the command line options values.
         logger: (logging object) writer to stdout and stderr.
         filename: (str) name of the JSON file.
 
@@ -75,7 +74,7 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
 
 def read_json(options=None, json_path=None, test=False, read_computational=False):
     """
-    Read a json file to update options dictionnary.
+    Read a json file to update options dictionary.
     Ensures retro-compatibility with previous namings in clinicadl.
 
     Args:

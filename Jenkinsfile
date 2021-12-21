@@ -45,7 +45,7 @@ pipeline {
               }
               stage('CLI tests Linux') {
                 steps {
-                  echo 'Testing pipeline instantation...'
+                  echo 'Testing pipeline instantiation...'
                     sh 'echo "Agent name: ${NODE_NAME}"'
                     sh '''
                     set +x
@@ -242,6 +242,7 @@ pipeline {
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      cp -r /mnt/data/data_CI/labels_list ./data/
+                     cp -r /mnt/data/data_CI/reproducibility ./data/
                      poetry run pytest \
                         --junitxml=./test-reports/test_train_report.xml \
                         --verbose \
@@ -358,8 +359,8 @@ pipeline {
       }
       stage('Deploy') {
         when { buildingTag() }
-        agent { 
-          label 'cpu' 
+        agent {
+          label 'cpu'
           }
         environment {
           PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
@@ -401,7 +402,7 @@ pipeline {
 //       body: "Something is wrong with ${env.BUILD_URL}"
 //     mattermostSend(
 //       color: "#FF0000",
-//       message: "CLinicaDL Build FAILED:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
+//       message: "ClinicaDL Build FAILED:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
 //     )
 //   }
 // }

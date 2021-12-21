@@ -20,7 +20,7 @@ source code is the former version of ClinicaDL, the specific restrictions were a
 ### Running the task
 
 ```bash
-clinicadl tsvtool restrict DATASET MERGED_TSV RESULTS_TSV
+clinicadl tsvtool restrict [OPTIONS] DATASET MERGED_TSV RESULTS_TSV
 ```
 
 where:
@@ -64,7 +64,7 @@ their TSV files.
 ### Running the task
 
 ```bash
-clinicadl tsvtool getlabels MERGED_TSV MISSING_MODS_DIRECTORY RESULTS_DIRECTORY
+clinicadl tsvtool getlabels [OPTIONS] MERGED_TSV MISSING_MODS_DIRECTORY RESULTS_DIRECTORY
 ```
 where:
 
@@ -122,7 +122,7 @@ with similar demographics for these labels.
 ### Running the task
 
 ```bash
-clinicadl tsvtool split FORMATTED_DATA_DIRECTORY
+clinicadl tsvtool split [OPTIONS] FORMATTED_DATA_DIRECTORY
 ```
 where:
 
@@ -183,7 +183,7 @@ This tool independently splits each label to perform a k-fold cross-validation.
 ### Running the task
 
 ```bash
-clinicadl tsvtool kfold FORMATTED_DATA_DIRECTORY
+clinicadl tsvtool kfold [OPTIONS] FORMATTED_DATA_DIRECTORY
 ```
 where `FORMATTED_DATA_DIRECTORY` (str) is the folder containing a TSV file per label which is going to be split
 (output of `clinicadl tsvtool getlabels|split|kfold`).
@@ -244,7 +244,7 @@ The variables of interest are: age, sex, mini-mental state examination (MMSE) an
 ### Running the task
 
 ```bash
-clinicadl tsvtool analysis MERGED_TSV FORMATTED_DATA_DIRECTORY RESULTS_DIRECTORY
+clinicadl tsvtool analysis [OPTIONS] MERGED_TSV FORMATTED_DATA_DIRECTORY RESULTS_DIRECTORY
 ```
 where:
 

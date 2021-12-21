@@ -1,4 +1,4 @@
-# `train` - Train deep learning networks
+# `train NETWORK_TASK` - Define a network task from TOML or command line
 
 This functionality enables the training of a network using
 different formats of inputs (whole 3D images, 3D patches or 2D slices), as defined in
@@ -19,7 +19,7 @@ be soon).
 ## Running the task
 The training task can be run with the following command line:
 ```
-clinicadl train NETWORK_TASK CAPS_DIRECTORY TSV_DIRECTORY \
+clinicadl train [OPTIONS] NETWORK_TASK CAPS_DIRECTORY TSV_DIRECTORY \
                 PREPROCESSING_JSON OUTPUT_MAPS_DIRECTORY
 ```
 where mandatory arguments are:

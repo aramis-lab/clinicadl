@@ -2,11 +2,17 @@ import random
 from os import path
 from typing import Any, Dict, Tuple
 
-from clinicadl.train.train_utils import get_train_dict
+import toml
+
+from clinicadl.train.train_utils import get_user_dict
+from clinicadl.utils.preprocessing import read_preprocessing
 
 
-def get_space_dict(toml_options: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+def get_space_dict(launch_directory: str) -> Dict[str, Any]:
     """Transforms the TOML dictionary in one dimension dictionary."""
+    toml_path = path.join(launch_directory, "random_search.toml")
+    toml_options = toml.load(toml_path)
+
     if "Random_Search" not in toml_options:
         raise ValueError(
             "Category 'Random_Search' must be defined in the random_search.toml file. "
@@ -47,16 +53,19 @@ def get_space_dict(toml_options: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
         if option not in space_dict:
             space_dict[option] = value
 
-    del toml_options["Random_Search"]
+    train_default = get_user_dict(toml_path, space_dict["network_task"])
 
+    # Mode and preprocessing
     preprocessing_json = path.join(
         space_dict["caps_directory"],
         "tensor_extraction",
         space_dict.pop("preprocessing_json"),
     )
-    train_default = get_train_dict(
-        toml_options, preprocessing_json, space_dict["network_task"]
-    )
+
+    preprocessing_dict = read_preprocessing(preprocessing_json)
+    train_default["preprocessing_dict"] = preprocessing_dict
+    train_default["mode"] = preprocessing_dict["mode"]
+
     space_dict.update(train_default)
 
     return space_dict
@@ -135,41 +144,17 @@ def random_sampling(rs_options: Dict[str, Any]) -> Dict[str, Any]:
     }
 
     for name, sampling_type in sampling_dict.items():
-        sampled_value = sampling_fn(rs_options[name], sampling_type)
-        options[name] = sampled_value
+        if name in rs_options:
+            sampled_value = sampling_fn(rs_options[name], sampling_type)
+            options[name] = sampled_value
 
     # Exceptions to classical sampling functions
     if not options["wd_bool"]:
         options["weight_decay"] = 0
 
-    options["evaluation_steps"] = find_evaluation_steps(
-        options["accumulation_steps"], goal=options["evaluation_steps"]
-    )
     options["convolutions_dict"] = random_conv_sampling(rs_options)
 
-    # Hard-coded options
-    if options["n_splits"] and options["n_splits"] > 1:
-        options["validation"] = "KFoldSplit"
-    else:
-        options["validation"] = "SingleSplit"
-    options["optimizer"] = "Adam"
-
     return options
-
-
-def find_evaluation_steps(accumulation_steps: int, goal: int = 18) -> int:
-    """
-    Compute the evaluation steps to be a multiple of accumulation steps as close possible as the goal.
-    Args:
-        accumulation_steps: number of times the gradients are accumulated before parameters update.
-        goal: ideal value for evaluation_steps
-    Returns:
-        number of evaluation_steps
-    """
-    if goal == 0 or goal % accumulation_steps == 0:
-        return goal
-    else:
-        return (goal // accumulation_steps + 1) * accumulation_steps
 
 
 def random_conv_sampling(rs_options: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
