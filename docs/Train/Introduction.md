@@ -89,6 +89,8 @@ Options shared for all values of `NETWORK_TASK` are organized in groups:
     The computation time will be longer, or the computations will require more memory space. Default: `memory`.
     Must be chosen between `time` and `memory`.
 - **Optimization parameters**
+    - `--optimizer` (str) is the name of the optimizer used to train the network. Must correspond to a Pytorch class.
+    Default: `Adam`.
     - `--epochs` (int) is the [maximum number of epochs](Details.md#stopping-criterion). Default: `20`.
     - `--learning_rate` (float) is the learning rate used to perform weight update. Default: `1e-4`.
     - `--weight_decay` (float) is the weight decay used by the Adam optimizer. Default: `1e-4`.
@@ -116,6 +118,12 @@ A few options depend on the task performed:
     negative predictive value (NPV) and balanced accuracy (BA).
     - `--label` (str) is the name of the column containing the label for the classification task.
     It must be a categorical variable, but may be of any type. Default: `diagnosis`.
+    - `--selection_metrics` (str) are metrics used to select networks according to the best validation performance.
+    Default: `loss`.
+    - `--selection_threshold` (float) is a selection threshold used for soft-voting. It is only taken into account
+    if several images are extracted from the same original 3D image (i.e. `num_networks` > 1). Default: `0`.
+    - `--loss` (str) is the name of the loss used to optimize the classification task.
+    Must correspond to a Pytorch class. Default: `CrossEntropyLoss`.
 
 - **regression**
     The objective of the `regression` is to learn the value of a continuous variable given an image.
@@ -123,11 +131,19 @@ A few options depend on the task performed:
     The evaluation metrics are the mean squared error (MSE) and mean absolute error (MAE).
     - `--label` (str) is the name of the column containing the label for the regression task.
     It must be a continuous variable (float or int). Default: `age`.
+    - `--selection_metrics` (str) are metrics used to select networks according to the best validation performance.
+    Default: `loss`.
+    - `--loss` (str) is the name of the loss used to optimize the regression task.
+    Must correspond to a Pytorch class. Default: `MSELoss`.
 
 - **reconstruction**
     The objective of the `reconstruction` is to learn to reconstruct images given in input.
     The criterion loss is the mean squared error between the input and the network output.
     The evaluation metrics are the mean squared error (MSE) and mean absolute error (MAE).
+    - `--selection_metrics` (str) are metrics used to select networks according to the best validation performance.
+    Default: `loss`.
+    - `--loss` (str) is the name of the loss used to optimize the reconstruction task.
+    Must correspond to a Pytorch class. Default: `MSELoss`.
 
 
 ## Configuration file

@@ -103,6 +103,7 @@ classification_loss = cli_param.option_group.task_group.option(
     "--loss",
     "-l",
     type=click.Choice(["CrossEntropyLoss", "MultiMarginLoss"]),
+    help="Loss used by the network to optimize its training task.",
 )
 regression_loss = cli_param.option_group.task_group.option(
     "--loss",
@@ -117,6 +118,7 @@ regression_loss = cli_param.option_group.task_group.option(
             "SmoothL1Loss",
         ]
     ),
+    help="Loss used by the network to optimize its training task.",
 )
 reconstruction_loss = cli_param.option_group.task_group.option(
     "--loss",
@@ -131,6 +133,7 @@ reconstruction_loss = cli_param.option_group.task_group.option(
             "SmoothL1Loss",
         ]
     ),
+    help="Loss used by the network to optimize its training task.",
 )
 # Data
 multi_cohort = cli_param.option_group.data_group.option(
@@ -207,6 +210,7 @@ optimizer = cli_param.option_group.optimization_group.option(
             "SGD",
         ]
     ),
+    help="Optimizer used to train the network.",
 )
 epochs = cli_param.option_group.optimization_group.option(
     "--epochs",
