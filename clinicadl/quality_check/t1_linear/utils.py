@@ -7,9 +7,11 @@ from os import path
 import nibabel as nib
 import torch
 import torch.nn as nn
+from clinica.utils.input_files import T1W_LINEAR_CROPPED
+from clinica.utils.inputs import clinica_file_reader
 from torch.utils.data import Dataset
 
-from clinicadl.utils.inputs import FILENAME_TYPE
+from clinicadl.utils.caps_dataset.data import CapsDatasetImage
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -186,38 +188,27 @@ class QCDataset(Dataset):
             )
 
         self.normalization = MinMaxNormalization()
+        self.tensor_dataset = CapsDatasetImage(
+            img_dir,
+            data_df,
+            T1W_LINEAR_CROPPED,
+            label_presence=False,
+            all_transformations=MinMaxNormalization(),
+        )
 
     def __len__(self):
         return len(self.df)
 
     def __getitem__(self, idx):
-        subject = self.df.loc[idx, "participant_id"]
-        session = self.df.loc[idx, "session_id"]
-
         if self.use_extracted_tensors:
-            image_path = path.join(
-                self.img_dir,
-                "subjects",
-                subject,
-                session,
-                "deeplearning_prepare_data",
-                "image_based",
-                "t1_linear",
-                f"{subject}_{session}{FILENAME_TYPE['full']}.pt",
-            )
-
-            image = torch.load(image_path)
+            image = self.tensor_dataset[idx]
             image = self.pt_transform(image)
         else:
-            image_path = path.join(
-                self.img_dir,
-                "subjects",
-                subject,
-                session,
-                "t1_linear",
-                f"{subject}_{session}{FILENAME_TYPE['full']}.nii.gz",
-            )
-
+            subject = self.df.loc[idx, "participant_id"]
+            session = self.df.loc[idx, "session_id"]
+            image_path = clinica_file_reader(
+                [subject], [session], self.img_dir, T1W_LINEAR_CROPPED
+            )[0]
             image = nib.load(image_path)
             image = self.nii_transform(image)
 
