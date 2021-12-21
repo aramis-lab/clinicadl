@@ -2,12 +2,12 @@ import pathlib
 from typing import Dict, List
 
 
-def ignore_pattern(file_path: str, ignore_pattern_list: List[str]) -> bool:
+def ignore_pattern(file_path: pathlib.Path, ignore_pattern_list: List[str]) -> bool:
     if not ignore_pattern_list:
         return False
 
     for pattern in ignore_pattern_list:
-        if pattern in file_path:
+        if pattern in file_path.__str__():
             return True
     return False
 
@@ -26,25 +26,18 @@ def create_hashes_dict(
             all_files: a dictionary of the form {/path/to/file.extension: hash(file.extension)}
     """
     import hashlib
-    import os
 
     def file_as_bytes(input_file):
         with input_file:
             return input_file.read()
 
     all_files = []
-    for subdir, dirs, files in os.walk(path_folder):
-        files.sort()
-        for file in files:
-            if not ignore_pattern(file, ignore_pattern_list) and not ignore_pattern(
-                subdir, ignore_pattern_list
-            ):
-                all_files.append(os.path.join(subdir, file))
+    for file in path_folder.rglob("*"):
+        if not ignore_pattern(file, ignore_pattern_list):
+            all_files.append(file)
 
     dict_hashes = {
-        fname[len(path_folder) :]: str(
-            hashlib.md5(file_as_bytes(open(fname, "rb"))).digest()
-        )
+        fname.__str__(): str(hashlib.md5(file_as_bytes(open(fname, "rb"))).digest())
         for fname in all_files
     }
     return dict_hashes
