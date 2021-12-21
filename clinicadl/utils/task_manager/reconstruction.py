@@ -93,8 +93,19 @@ class ReconstructionManager(TaskManager):
         return None, None
 
     @staticmethod
-    def get_criterion():
-        return nn.MSELoss()
+    def get_criterion(criterion=None):
+        if criterion is None:
+            return nn.MSELoss()
+        if criterion not in [
+            "L1Loss",
+            "MSELoss",
+            "KLDivLoss",
+            "BCEWithLogitsLoss",
+            "HuberLoss",
+            "SmoothL1Loss",
+        ]:
+            raise ValueError()
+        return getattr(nn, criterion)()
 
     @staticmethod
     def get_default_network():

@@ -186,8 +186,12 @@ class ClassificationManager(TaskManager):
         return df_final, results
 
     @staticmethod
-    def get_criterion():
-        return nn.CrossEntropyLoss()
+    def get_criterion(criterion=None):
+        if criterion is None:
+            return nn.CrossEntropyLoss()
+        if criterion not in ["CrossEntropyLoss", "MultiMarginLoss"]:
+            raise ValueError()
+        return getattr(nn, criterion)()
 
     @staticmethod
     def get_default_network():

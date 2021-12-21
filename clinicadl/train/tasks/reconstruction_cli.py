@@ -43,6 +43,7 @@ from .task_utils import task_launcher
 @train_option.patience
 @train_option.tolerance
 @train_option.accumulation_steps
+@train_option.reconstruction_loss
 # transfer learning
 @train_option.transfer_path
 @train_option.transfer_selection_metric
@@ -65,5 +66,5 @@ def cli(**kwargs):
     configuration file in TOML format. For more details, please visit the documentation:
     https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
     """
-    task_specific_options = ["selection_metrics"]
+    task_specific_options = ["selection_metrics", "loss"]
     task_launcher("reconstruction", task_specific_options, **kwargs)
