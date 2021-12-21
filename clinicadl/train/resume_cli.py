@@ -3,7 +3,7 @@ import click
 from clinicadl.utils import cli_param
 
 
-@click.command(name="resume")
+@click.command(name="resume", no_args_is_help=True)
 @cli_param.argument.input_maps
 def cli(input_maps_directory):
     """Resume training job in specified maps.
