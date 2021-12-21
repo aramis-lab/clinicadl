@@ -19,19 +19,19 @@ from .utils import QCDataset, resnet_qc_18
 
 
 def quality_check(
-    caps_dir,
-    output_path,
-    tsv_path=None,
-    threshold=0.5,
-    batch_size=1,
-    n_proc=0,
-    gpu=True,
+    caps_dir: str,
+    output_path: str,
+    tsv_path: str = None,
+    threshold: float = 0.5,
+    batch_size: int = 1,
+    n_proc: int = 0,
+    gpu: bool = True,
 ):
 
     logger = getLogger("clinicadl")
 
-    if splitext(output_path)[1] != ".tsv":
-        raise ClinicaDLArgumentError("Output path must be a path to a tsv file.")
+    if not output_path.endswith(".tsv"):
+        output_path += ".tsv"
 
     # Fetch QC model
     home = str(Path.home())

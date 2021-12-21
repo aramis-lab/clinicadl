@@ -85,6 +85,28 @@ pipeline {
                   }
                 }
               }
+              stage('Quality check tests Linux') {
+                steps {
+                  echo 'Testing quality check tasks...'
+                    sh 'echo "Agent name: ${NODE_NAME}"'
+                    sh '''
+                    source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                    conda activate "${WORKSPACE}/env"
+                    cd $WORKSPACE/tests
+                    poetry run pytest \
+                      --junitxml=./test-reports/test_quality_check_report.xml \
+                      --verbose \
+                      --disable-warnings \
+                      test_qc.py
+                    conda deactivate
+                    '''
+                }
+                post {
+                  always {
+                    junit 'tests/test-reports/test_quality_check_report.xml'
+                  }
+                }
+              }
               stage('Generate tests Linux') {
                 steps {
                   echo 'Testing generate task...'
