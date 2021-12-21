@@ -37,7 +37,9 @@ def create_hashes_dict(
             all_files.append(file)
 
     dict_hashes = {
-        fname.__str__(): str(hashlib.md5(file_as_bytes(open(fname, "rb"))).digest())
+        fname.relative_to(path_folder).__str__(): str(
+            hashlib.md5(file_as_bytes(open(fname, "rb"))).digest()
+        )
         for fname in all_files
     }
     return dict_hashes
