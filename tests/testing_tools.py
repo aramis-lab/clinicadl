@@ -33,7 +33,7 @@ def create_hashes_dict(
 
     all_files = []
     for file in path_folder.rglob("*"):
-        if not ignore_pattern(file, ignore_pattern_list):
+        if not ignore_pattern(file, ignore_pattern_list) and file.is_file():
             all_files.append(file)
 
     dict_hashes = {
