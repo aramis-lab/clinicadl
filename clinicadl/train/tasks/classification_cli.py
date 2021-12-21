@@ -43,7 +43,6 @@ from .task_utils import task_launcher
 @train_option.patience
 @train_option.tolerance
 @train_option.accumulation_steps
-@train_option.classification_loss
 # transfer learning
 @train_option.transfer_path
 @train_option.transfer_selection_metric
@@ -51,6 +50,7 @@ from .task_utils import task_launcher
 @train_option.label
 @train_option.selection_metrics
 @train_option.selection_threshold
+@train_option.classification_loss
 def cli(**kwargs):
     """
     Train a deep learning model to learn a classification task on neuroimaging data.

@@ -100,7 +100,9 @@ selection_threshold = cli_param.option_group.task_group.option(
     help="""Selection threshold for soft-voting. Will only be used if num_networks > 1.""",
 )
 classification_loss = cli_param.option_group.task_group.option(
-    "--loss", "-l", type=click.Choice(["CrossEntropyLoss", "MultiMarginLoss"])
+    "--loss",
+    "-l",
+    type=click.Choice(["CrossEntropyLoss", "MultiMarginLoss"]),
 )
 regression_loss = cli_param.option_group.task_group.option(
     "--loss",
