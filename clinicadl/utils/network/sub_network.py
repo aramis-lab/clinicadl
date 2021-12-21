@@ -4,6 +4,7 @@ from logging import getLogger
 import torch
 from torch import nn
 
+from clinicadl.utils.exceptions import ClinicaDLNetworksError
 from clinicadl.utils.network.network import Network
 from clinicadl.utils.network.network_utils import (
     CropMaxUnpool2d,
@@ -38,8 +39,8 @@ class AutoEncoder(Network):
             )
             self.encoder.load_state_dict(encoder_dict)
         else:
-            raise ValueError(
-                f"Cannot transfer weights from {transfer_class} " f"to Autoencoder."
+            raise ClinicaDLNetworksError(
+                f"Cannot transfer weights from {transfer_class} to Autoencoder."
             )
 
     def predict(self, x):
@@ -111,8 +112,8 @@ class CNN(Network):
             )
             self.convolutions.load_state_dict(convolutions_dict)
         else:
-            raise ValueError(
-                f"Cannot transfer weights from {transfer_class} " f"to CNN."
+            raise ClinicaDLNetworksError(
+                f"Cannot transfer weights from {transfer_class} to CNN."
             )
 
     def forward(self, x):

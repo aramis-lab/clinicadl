@@ -16,8 +16,8 @@ def get_layers_fn(input_size):
         return nn.Conv2d, nn.BatchNorm2d, PadMaxPool2d
     else:
         raise ValueError(
-            f"The input is neither linked to a 2D or 3D image.\n "
-            f"Input size is {input_size}."
+            f"The input is neither a 2D or 3D image.\n "
+            f"Input shape is {input_size - 1}."
         )
 
 

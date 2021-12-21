@@ -45,7 +45,7 @@ def cli_commands(request):
             "0",
         ]
     else:
-        raise NotImplementedError("Test %s is not implemented." % request.param)
+        raise NotImplementedError(f"Test {request.param} is not implemented.")
 
     return cnn_input
 

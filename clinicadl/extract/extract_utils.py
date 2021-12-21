@@ -104,7 +104,7 @@ def compute_discarded_slices(discarded_slices: Union[int, tuple]) -> Tuple[int, 
     elif len(discarded_slices) == 2:
         begin_discard, end_discard = discarded_slices[0], discarded_slices[1]
     else:
-        raise ValueError(
+        raise IndexError(
             f"Maximum two number of discarded slices can be defined. "
             f"You gave discarded slices = {discarded_slices}."
         )
@@ -189,8 +189,8 @@ def extract_slice_path(
 
     direction_dict = {0: "sag", 1: "cor", 2: "axi"}
     if slice_direction not in direction_dict:
-        raise ValueError(
-            f"Slice direction {slice_direction} should be in the keys of {direction_dict}."
+        raise KeyError(
+            f"Slice direction {slice_direction} should be in {direction_dict.keys()} corresponding to {direction_dict}."
         )
 
     input_img_filename = path.basename(img_path)
@@ -325,7 +325,7 @@ def check_mask_list(masks_location, roi_list, mask_pattern, cropping):
     for roi in roi_list:
         roi_path, desc = find_mask_path(masks_location, roi, mask_pattern, cropping)
         if roi_path is None:
-            raise ValueError(
+            raise FileNotFoundError(
                 f"The ROI '{roi}' does not correspond to a mask in the CAPS directory. {desc}"
             )
         roi_mask = nib.load(roi_path).get_fdata()

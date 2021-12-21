@@ -45,7 +45,7 @@ def predict_commands(request):
         modes = ["roi"]
         use_labels = False
     else:
-        raise NotImplementedError("Test %s is not implemented." % request.param)
+        raise NotImplementedError(f"Test {request.param} is not implemented.")
 
     return model_folder, use_labels, modes
 

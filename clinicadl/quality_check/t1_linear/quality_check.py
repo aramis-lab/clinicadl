@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader
 
 from clinicadl.generate.generate_utils import load_and_check_tsv
 from clinicadl.utils.caps_dataset.data import CapsDataset
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 from .utils import QCDataset, resnet_qc_18
 
@@ -30,7 +31,7 @@ def quality_check(
     logger = getLogger("clinicadl")
 
     if splitext(output_path)[1] != ".tsv":
-        raise ValueError("Please provide an output path to a tsv file")
+        raise ClinicaDLArgumentError("Output path must be a path to a tsv file.")
 
     # Fetch QC model
     home = str(Path.home())

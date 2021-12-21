@@ -1,6 +1,8 @@
 # coding: utf8
 import logging
 
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
+
 LOG_LEVELS = [logging.WARNING, logging.INFO, logging.DEBUG]
 
 
@@ -66,7 +68,7 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
 
     # save to json file
     json = json.dumps(commandline_arg_dict, skipkeys=True, indent=4)
-    logger.info("Path of json file: %s" % os.path.join(output_dir, "commandline.json"))
+    logger.info(f"Path of json file: {os.path.join(output_dir, 'commandline.json')}")
     f = open(os.path.join(output_dir, filename), "w")
     f.write(json)
     f.close()
@@ -298,7 +300,7 @@ def check_and_complete(options, random_search=False):
 
     for argument in mandatory_arguments:
         if argument not in options:
-            raise ValueError(
+            raise ClinicaDLArgumentError(
                 f"The argument {argument} must be specified in the parameters."
             )
 

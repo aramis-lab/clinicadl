@@ -3,6 +3,7 @@ from typing import Any, Dict
 
 import toml
 
+from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.maps_manager.maps_manager_utils import (
     read_json,
     remove_unused_tasks,
@@ -13,7 +14,6 @@ def get_user_dict(config_file: str, task: str) -> Dict[str, Any]:
     """
     Read the configuration file given by the user.
     If it is a TOML file, ensures that the format corresponds to the one in resources.
-
     Args:
         config_file: path to a configuration file (JSON of TOML).
         task: task learnt by the network (example: classification, regression, reconstruction...).
@@ -38,13 +38,13 @@ def get_user_dict(config_file: str, task: str) -> Dict[str, Any]:
         if toml_dict is not None:
             for section_name in toml_dict:
                 if section_name not in config_dict:
-                    raise IOError(
+                    raise ClinicaDLConfigurationError(
                         f"{section_name} section is not valid in TOML configuration file. "
                         f"Please see the documentation to see the list of option in TOML configuration file."
                     )
                 for key in toml_dict[section_name]:
                     if key not in config_dict[section_name]:
-                        raise IOError(
+                        raise ClinicaDLConfigurationError(
                             f"{key} option in {section_name} is not valid in TOML configuration file. "
                             f"Please see the documentation to see the list of option in TOML configuration file."
                         )
@@ -62,6 +62,8 @@ def get_user_dict(config_file: str, task: str) -> Dict[str, Any]:
     elif config_file.endswith(".json"):
         train_dict = read_json(config_file)
     else:
-        raise ValueError(f"config_file {config_file} should be a TOML or a JSON file.")
+        raise ClinicaDLConfigurationError(
+            f"config_file {config_file} should be a TOML or a JSON file."
+        )
 
     return train_dict

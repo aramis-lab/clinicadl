@@ -34,7 +34,7 @@ class MetricModule:
             if f"{metric.lower()}_fn" in list_fn:
                 self.metrics[metric] = getattr(MetricModule, f"{metric.lower()}_fn")
             else:
-                raise ValueError(
+                raise NotImplementedError(
                     f"The metric {metric} is not implemented in the module"
                 )
 

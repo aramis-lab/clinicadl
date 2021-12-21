@@ -65,7 +65,7 @@ def cli_commands(request):
             "data/train_config.toml",
         ]
     else:
-        raise NotImplementedError("Test %s is not implemented." % request.param)
+        raise NotImplementedError(f"Test {request.param} is not implemented.")
 
     return test_input, mode
 

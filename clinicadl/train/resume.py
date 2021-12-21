@@ -8,6 +8,7 @@ from logging import getLogger
 from os import path
 
 from clinicadl import MapsManager
+from clinicadl.utils.exceptions import MAPSError
 
 logger = getLogger("clinicadl")
 
@@ -23,7 +24,7 @@ def automatic_resume(model_path, verbose=0):
     verbose_list = ["warning", "info", "debug"]
     maps_manager = MapsManager(model_path, verbose=verbose_list[verbose])
     if len(glob(os.path.join(model_path, "fold-*"))) > 0:
-        raise ValueError(
+        raise MAPSError(
             "This MAPS cannot be resumed with the current version of ClinicaDL. "
             "Please use the same version as for training or rename manually the folders "
             "'fold-*' in 'split-*' to respect the new MAPS convention."

@@ -21,7 +21,7 @@ def cli_commands(request):
         toml_path = "data/random_search.toml"
         generate_input = ["random-search", launch_dir, name_dir]
     else:
-        raise NotImplementedError("Test %s is not implemented." % request.param)
+        raise NotImplementedError(f"Test {request.param} is not implemented.")
 
     return toml_path, generate_input
 

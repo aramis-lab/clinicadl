@@ -10,6 +10,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
     from clinica.utils.participant import get_subject_session_list
     from torch import save as save_tensor
 
+    from clinicadl.utils.exceptions import ClinicaDLArgumentError
     from clinicadl.utils.preprocessing import write_preprocessing
 
     from .extract_utils import (
@@ -86,7 +87,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
             subfolder = "roi_based"
             if parameters["preprocessing"] == "custom":
                 if not parameters["roi_custom_template"]:
-                    raise ValueError(
+                    raise ClinicaDLArgumentError(
                         "A custom template must be defined when the modality is set to custom."
                     )
                 parameters["roi_template"] = parameters["roi_custom_template"]
@@ -103,7 +104,9 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
                 caps_directory, "masks", f"tpl-{parameters['roi_template']}"
             )
             if len(parameters["roi_list"]) == 0:
-                raise ValueError("A list of regions must be given.")
+                raise ClinicaDLArgumentError(
+                    "A list of regions of interest must be given."
+                )
             else:
                 check_mask_list(
                     parameters["masks_location"],

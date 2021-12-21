@@ -1,5 +1,6 @@
 import numpy as np
 
+from clinicadl.utils.exceptions import ClinicaDLNetworksError
 from clinicadl.utils.network.network_utils import *
 from clinicadl.utils.network.sub_network import CNN
 
@@ -104,10 +105,9 @@ class RandomArchitecture(CNN):
             conv_block = self.append_normalization_layer(conv_block, out_channels)
             conv_block.append(nn.LeakyReLU())
         else:
-            raise ValueError(
-                "Dimension reduction %s is not supported. Please only include"
+            raise ClinicaDLNetworksError(
+                f"Dimension reduction {conv_dict['d_reduction']} is not supported. Please only include"
                 "'MaxPooling' or 'stride' in your sampling options."
-                % conv_dict["d_reduction"]
             )
 
         return nn.Sequential(*conv_block)
@@ -128,9 +128,8 @@ class RandomArchitecture(CNN):
                 self.layers_dict[self.network_normalization](num_features)
             )
         elif self.network_normalization is not None:
-            raise ValueError(
-                "The network normalization %s value must be in ['BatchNorm', 'InstanceNorm', None]"
-                % self.network_normalization
+            raise ClinicaDLNetworksError(
+                f"The network normalization {self.network_normalization} value must be in ['BatchNorm', 'InstanceNorm', None]"
             )
         return conv_block
 
@@ -151,7 +150,7 @@ class RandomArchitecture(CNN):
             }
         else:
             raise ValueError(
-                "Cannot construct random network in dimension %i" % self.dimension
+                "Cannot construct random network in dimension {self.dimension}."
             )
         return layers
 
@@ -204,7 +203,7 @@ class RandomArchitecture(CNN):
             (list) the shape of the flattened layer
         """
         n_conv = len(convolutions)
-        last_conv = convolutions["conv%i" % (len(convolutions) - 1)]
+        last_conv = convolutions[f"conv{(len(convolutions) - 1)}"]
         out_channels = last_conv["out_channels"]
         flattened_shape = np.ceil(np.array(initial_shape) / 2 ** n_conv)
         flattened_shape[0] = out_channels
