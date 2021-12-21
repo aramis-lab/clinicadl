@@ -29,7 +29,7 @@ def test_determinism():
         "data/dataset/random_example",
         "extract_roi.json",
         "data/labels_list",
-        input_dir,
+        str(input_dir),
         "-c",
         "data/reproducibility_config.toml",
     ]
