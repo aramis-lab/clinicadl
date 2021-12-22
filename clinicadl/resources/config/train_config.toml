@@ -17,13 +17,16 @@ latent_space_size = 2
 selection_metrics = ["loss"]
 label = "diagnosis"
 selection_threshold = 0.0 # Will only be used if num_networks != 1
+loss = "CrossEntropyLoss"
 
 [Regression]
 selection_metrics = ["loss"]
 label = "age"
+loss = "MSELoss"
 
 [Reconstruction]
 selection_metrics = ["loss"]
+loss = "MSELoss"
 
 [Computational]
 gpu = true

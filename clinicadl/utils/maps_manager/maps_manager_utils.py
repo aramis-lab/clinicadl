@@ -73,7 +73,8 @@ def read_json(json_path: str) -> Dict[str, Any]:
         # "preprocessing": {"mni": "t1-extensive", "linear": "t1-linear"}
     }
     retro_add = {
-        "loss": "default",
+        "optimizer": "Adam",
+        "loss": None,
     }
 
     for old_name, new_name in retro_change_name.items():

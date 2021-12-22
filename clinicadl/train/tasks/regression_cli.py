@@ -35,6 +35,7 @@ from .task_utils import task_launcher
 @train_option.n_splits
 @train_option.split
 # Optimization
+@train_option.optimizer
 @train_option.epochs
 @train_option.learning_rate
 @train_option.weight_decay
@@ -48,6 +49,7 @@ from .task_utils import task_launcher
 # Task-related
 @train_option.label
 @train_option.selection_metrics
+@train_option.regression_loss
 def cli(**kwargs):
     """
     Train a deep learning model to learn a regression task on neuroimaging data.
@@ -65,5 +67,5 @@ def cli(**kwargs):
     configuration file in TOML format. For more details, please visit the documentation:
     https://clinicadl.readthedocs.io/en/stable/Train/Introduction/#configuration-file
     """
-    task_specific_options = ["label", "selection_metrics"]
+    task_specific_options = ["label", "selection_metrics", "loss"]
     task_launcher("regression", task_specific_options, **kwargs)

@@ -148,11 +148,15 @@ class TaskManager:
 
     @staticmethod
     @abstractmethod
-    def get_criterion() -> _Loss:
+    def get_criterion(criterion: str = None) -> _Loss:
         """
-        Gives the optimization criterion
+        Gives the optimization criterion.
+        Must check that it is compatible with the task.
 
-        # TODO: implement a choice
+        Args:
+            criterion: name of the loss as written in Pytorch.
+        Raises:
+            ClinicaDLArgumentError: if the criterion is not compatible with the task.
         """
         pass
 

@@ -224,7 +224,7 @@ class MapsManager:
                 multi_cohort=multi_cohort,
             )
 
-        criterion = self.task_manager.get_criterion()
+        criterion = self.task_manager.get_criterion(self.loss)
         self._check_data_group(
             data_group,
             caps_directory,
@@ -794,7 +794,7 @@ class MapsManager:
             transfer_path=self.transfer_path,
             transfer_selection=self.transfer_selection_metric,
         )
-        criterion = self.task_manager.get_criterion()
+        criterion = self.task_manager.get_criterion(self.loss)
         logger.debug(f"Criterion for {self.network_task} is {criterion}")
         optimizer = self._init_optimizer(model, split=split, resume=resume)
         logger.debug(f"Optimizer used for training is optimizer")

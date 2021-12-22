@@ -99,6 +99,42 @@ selection_threshold = cli_param.option_group.task_group.option(
     # default=0,
     help="""Selection threshold for soft-voting. Will only be used if num_networks > 1.""",
 )
+classification_loss = cli_param.option_group.task_group.option(
+    "--loss",
+    "-l",
+    type=click.Choice(["CrossEntropyLoss", "MultiMarginLoss"]),
+    help="Loss used by the network to optimize its training task.",
+)
+regression_loss = cli_param.option_group.task_group.option(
+    "--loss",
+    "-l",
+    type=click.Choice(
+        [
+            "L1Loss",
+            "MSELoss",
+            "KLDivLoss",
+            "BCEWithLogitsLoss",
+            "HuberLoss",
+            "SmoothL1Loss",
+        ]
+    ),
+    help="Loss used by the network to optimize its training task.",
+)
+reconstruction_loss = cli_param.option_group.task_group.option(
+    "--loss",
+    "-l",
+    type=click.Choice(
+        [
+            "L1Loss",
+            "MSELoss",
+            "KLDivLoss",
+            "BCEWithLogitsLoss",
+            "HuberLoss",
+            "SmoothL1Loss",
+        ]
+    ),
+    help="Loss used by the network to optimize its training task.",
+)
 # Data
 multi_cohort = cli_param.option_group.data_group.option(
     "--multi_cohort/--single_cohort",
@@ -158,6 +194,24 @@ split = cli_param.option_group.cross_validation.option(
     help="Train the list of given splits. By default, all the splits are trained.",
 )
 # Optimization
+optimizer = cli_param.option_group.optimization_group.option(
+    "--optimizer",
+    type=click.Choice(
+        [
+            "Adadelta",
+            "Adagrad",
+            "Adam",
+            "AdamW",
+            "Adamax",
+            "ASGD",
+            "NAdam",
+            "RAdam",
+            "RMSprop",
+            "SGD",
+        ]
+    ),
+    help="Optimizer used to train the network.",
+)
 epochs = cli_param.option_group.optimization_group.option(
     "--epochs",
     type=int,
