@@ -119,6 +119,7 @@ pipeline {
                       cd $WORKSPACE/tests
                       mkdir -p ./data/dataset
                       tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
+                      tar xf /mnt/data/data_CI/dataset/OasisCaps_t1-volume.tar.gz -C ./data/dataset
                       poetry run pytest \
                         --junitxml=./test-reports/test_generate_report.xml \
                         --verbose \
