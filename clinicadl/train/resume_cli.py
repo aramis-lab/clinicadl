@@ -14,7 +14,7 @@ def cli(input_maps_directory, split):
     """
     from .resume import automatic_resume
 
-    automatic_resume(input_maps_directory, split_list=split)
+    automatic_resume(input_maps_directory, user_split_list=split)
 
 
 if __name__ == "__main__":

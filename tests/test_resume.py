@@ -1,4 +1,5 @@
 # coding: utf8
+import os
 import pathlib
 import shutil
 from os import system
@@ -10,10 +11,10 @@ from clinicadl import MapsManager
 
 @pytest.fixture(
     params=[
-        "stopped_jobs/stopped_1",
-        "stopped_jobs/stopped_2",
-        "stopped_jobs/stopped_3",
-        "stopped_jobs/stopped_4",
+        "data/stopped_jobs/stopped_1",
+        "data/stopped_jobs/stopped_2",
+        "data/stopped_jobs/stopped_3",
+        "data/stopped_jobs/stopped_4",
     ]
 )
 def input_directory(request):
@@ -21,7 +22,7 @@ def input_directory(request):
 
 
 def test_resume(input_directory):
-    flag_error = not system(f"clinicadl train resume {input_directory}")
+    flag_error = not system(f"clinicadl -vv train resume {input_directory}")
     assert flag_error
 
     maps_manager = MapsManager(input_directory)
