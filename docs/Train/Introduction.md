@@ -19,8 +19,8 @@ be soon).
 ## Running the task
 The training task can be run with the following command line:
 ```
-clinicadl train [OPTIONS] NETWORK_TASK CAPS_DIRECTORY TSV_DIRECTORY \
-                PREPROCESSING_JSON OUTPUT_MAPS_DIRECTORY
+clinicadl train [OPTIONS] NETWORK_TASK CAPS_DIRECTORY PREPROCESSING_JSON \
+                TSV_DIRECTORY OUTPUT_MAPS_DIRECTORY
 ```
 where mandatory arguments are:
 
