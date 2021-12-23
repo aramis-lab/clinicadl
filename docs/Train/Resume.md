@@ -18,7 +18,7 @@ is still present and correspond to the ones used during training.
 ## Prerequisites
 
 Please check which preprocessing needs to
-be performed in the `commandline.json` file in the results folder. If it has
+be performed in the `maps.json` file in the results folder. If it has
 not been performed, execute the preprocessing pipeline as well as `clinicadl
 extract` to obtain the tensor versions of the images.
 
@@ -28,7 +28,10 @@ This task can be run with the following command line:
 clinicadl train resume INPUT_MAPS_DIRECTORY
 
 ```
-where `INPUT_MAPS_DIRECTORY` (str) is a path to the [MAPS folder](../Introduction.md) of the model.
+where `INPUT_MAPS_DIRECTORY` (Path) is a path to the [MAPS folder](../Introduction.md) of the model.
+
+The splits that must be resumed can be specified with the option `--split`. Default will resume and train
+all possible splits allowed by the validation setting.
 
 ## Outputs
 

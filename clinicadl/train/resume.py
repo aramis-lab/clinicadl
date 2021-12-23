@@ -18,7 +18,7 @@ def replace_arg(options, key_name, value):
         setattr(options, key_name, value)
 
 
-def automatic_resume(model_path, verbose=0):
+def automatic_resume(model_path, user_split_list=None, verbose=0):
     logger = getLogger("clinicadl")
 
     verbose_list = ["warning", "info", "debug"]
@@ -44,7 +44,7 @@ def automatic_resume(model_path, verbose=0):
     ]
     finished_splits = [split for split in split_list if split not in stopped_splits]
 
-    split_manager = maps_manager._init_split_manager()
+    split_manager = maps_manager._init_split_manager(split_list=user_split_list)
     split_iterator = split_manager.split_iterator()
 
     absent_splits = [
