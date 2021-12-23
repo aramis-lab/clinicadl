@@ -287,6 +287,32 @@ pipeline {
                   }
                 }
               }
+              stage('Resume tests Linux') {
+                steps {
+                  echo 'Testing resume...'
+                  sh 'echo "Agent name: ${NODE_NAME}"'
+                  sh '''
+                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                     conda activate "${WORKSPACE}/env"
+                     cd $WORKSPACE/tests
+                     mkdir -p ./data/dataset
+                     tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
+                     ln -s /mnt/data/data_CI/models/stopped_jobs data/stopped_jobs
+                     poetry run pytest \
+                        --junitxml=./test-reports/test_resume_report.xml \
+                        --verbose \
+                        --disable-warnings \
+                        test_resume.py
+                     conda deactivate
+                     '''
+                }
+                post {
+                  always {
+                    junit 'tests/test-reports/test_resume_report.xml'
+                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
+                  }
+                }
+              }
               stage('Interpretation tests Linux') {
                 steps {
                   echo 'Testing interpret task...'
