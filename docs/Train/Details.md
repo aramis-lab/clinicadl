@@ -117,7 +117,7 @@ are performed.
 
 The command 
 ```
-clinicadl train listmodels
+clinicadl train list_models
 ```
 will display the list of available models that can be used.
 There are a few options to get more details:
