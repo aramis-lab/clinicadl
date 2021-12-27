@@ -115,6 +115,16 @@ the current state of the model is saved in the corresponding best model folder.
 Such comparison and serialization is only performed at the end of an epoch, even though inner epoch evaluations 
 are performed.
 
+The command 
+```
+clinicadl train listmodels
+```
+will display the list of available models that can be used.
+There are a few options to get more details:
+
+- `--architecture`: you can specify there the name a model and it will display the detail architecture corresponding to the model.
+- `--input_size`: to specify the size of you input (if the model is 2D).
+
 ## Stopping criterion
 
 By default, early stopping is enabled to save computation time. This method automatically stops training
