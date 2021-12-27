@@ -70,7 +70,10 @@ def get_user_dict(config_file: str, task: str) -> Dict[str, Any]:
 
 
 def get_model_list(architecture=None, input_size=(128, 128)):
-    """"""
+    """
+    Print the list of models available in ClinicaDL.
+    If architecture is given, it prints the details of the specified model.
+    """
     from inspect import getmembers, isclass
 
     import clinicadl.utils.network as network_package
