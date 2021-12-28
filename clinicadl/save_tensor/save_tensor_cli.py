@@ -52,7 +52,7 @@ from clinicadl.utils import cli_param
     help="Save the output reconstruction as nifti file instead of pytorch tensor.",
 )
 @cli_param.option.use_gpu
-@cli_param.option.n_proc
+# @cli_param.option.n_proc
 @cli_param.option.batch_size
 def cli(
     input_maps_directory,
