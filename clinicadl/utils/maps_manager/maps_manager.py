@@ -436,7 +436,6 @@ class MapsManager:
                         split,
                         selection_metrics,
                         gpu=gpu,
-                        network=network,
                     )
                 else:
                     self._compute_output_tensors(
