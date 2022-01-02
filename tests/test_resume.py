@@ -29,7 +29,7 @@ def test_resume(input_directory):
     split_manager = maps_manager._init_split_manager()
     for split in split_manager.split_iterator():
         performances_flag = pathlib.Path(
-            "results", f"split-{split}", "best-loss", "train"
+            input_directory, f"split-{split}", "best-loss", "train"
         ).exists()
         assert performances_flag
     shutil.rmtree(input_directory)
