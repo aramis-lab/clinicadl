@@ -47,5 +47,7 @@ def automatic_resume(model_path, user_split_list=None, verbose=0):
         f"Stopped splits {stopped_splits}\n"
         f"Absent splits {absent_splits}"
     )
-    maps_manager.resume(stopped_splits)
-    maps_manager.train(absent_splits)
+    if len(stopped_splits) > 0:
+        maps_manager.resume(stopped_splits)
+    if len(absent_splits) > 0:
+        maps_manager.train(absent_splits)
