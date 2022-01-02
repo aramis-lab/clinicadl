@@ -28,9 +28,20 @@ def automatic_resume(model_path, user_split_list=None, verbose=0):
         for split in existing_split_list
         if "tmp" in os.listdir(path.join(model_path, f"split-{split}"))
     ]
-    finished_splits = [
-        split for split in existing_split_list if split not in stopped_splits
-    ]
+
+    # Find finished split
+    finished_splits = list()
+    for split in existing_split_list:
+        if split not in stopped_splits:
+            performance_dir_list = [
+                performance_dir
+                for performance_dir in os.listdir(
+                    path.join(model_path, f"split-{split}")
+                )
+                if "best-" in performance_dir
+            ]
+            if len(performance_dir_list) > 0:
+                finished_splits.append(split)
 
     split_manager = maps_manager._init_split_manager(split_list=user_split_list)
     split_iterator = split_manager.split_iterator()
@@ -50,4 +61,4 @@ def automatic_resume(model_path, user_split_list=None, verbose=0):
     if len(stopped_splits) > 0:
         maps_manager.resume(stopped_splits)
     if len(absent_splits) > 0:
-        maps_manager.train(absent_splits)
+        maps_manager.train(absent_splits, overwrite=True)
