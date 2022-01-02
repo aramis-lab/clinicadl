@@ -34,7 +34,7 @@ def automatic_resume(model_path, verbose=0):
         [
             int(split.split("-")[1])
             for split in os.listdir(model_path)
-            if split[:4:] == "split"
+            if split[:5:] == "split"
         ]
     )
     stopped_splits = [
