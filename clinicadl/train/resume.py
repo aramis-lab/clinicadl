@@ -26,7 +26,8 @@ def automatic_resume(model_path, user_split_list=None, verbose=0):
     stopped_splits = [
         split
         for split in existing_split_list
-        if "tmp" in os.listdir(path.join(model_path, f"split-{split}"))
+        if "tmp"
+        in os.listdir(path.join(model_path, f"{maps_manager.split_name}-{split}"))
     ]
 
     # Find finished split
@@ -36,7 +37,7 @@ def automatic_resume(model_path, user_split_list=None, verbose=0):
             performance_dir_list = [
                 performance_dir
                 for performance_dir in os.listdir(
-                    path.join(model_path, f"split-{split}")
+                    path.join(model_path, f"{maps_manager.split_name}-{split}")
                 )
                 if "best-" in performance_dir
             ]
