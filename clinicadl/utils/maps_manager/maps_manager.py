@@ -1109,8 +1109,8 @@ class MapsManager:
                     .cpu()
                 )
                 # Convert tensor to nifti image with appropriate affine
-                input_nii = nib.Nifti1Image(image.detach().cpu().numpy(), eye(4))
-                output_nii = nib.Nifti1Image(output.numpy(), eye(4))
+                input_nii = nib.Nifti1Image(image[0].detach().cpu().numpy(), eye(4))
+                output_nii = nib.Nifti1Image(output[0].numpy(), eye(4))
                 # Create file name according to participant and session id
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
