@@ -54,7 +54,7 @@ def automatic_resume(model_path, user_split_list=None, verbose=0):
     ]
 
     # To ensure retro-compatibility with random search
-    print(
+    logger.info(
         f"Finished splits {finished_splits}\n"
         f"Stopped splits {stopped_splits}\n"
         f"Absent splits {absent_splits}"

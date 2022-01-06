@@ -313,6 +313,8 @@ pipeline {
                   always {
                     junit 'tests/test-reports/test_resume_report.xml'
                     sh 'rm -rf $WORKSPACE/tests/data/dataset'
+                    sh 'rm -rf $WORKSPACE/tests/data/labels_list'
+                    sh 'rm $WORKSPACE/tests/data/stopped_jobs'
                   }
                 }
               }
