@@ -81,7 +81,7 @@ def get_model_list(architecture=None, input_size=(128, 128)):
     import clinicadl.utils.network as network_package
 
     if not architecture:
-        echo("The list of currently available model is:")
+        echo("The list of currently available models is:")
         model_list = getmembers(network_package, isclass)
         for model in model_list:
             echo(f" - {model[0]}")
