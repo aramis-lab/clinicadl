@@ -122,8 +122,8 @@ clinicadl train list_models
 will display the list of available models that can be used.
 There are a few options to get more details:
 
-- `--architecture`: you can specify there the name a model and it will display the detail architecture corresponding to the model.
-- `--input_size`: to specify the size of you input (if the model is 2D).
+- `--architecture`: is the name of the model whose architecture will be displayed.
+- `--input_size`: is the size of the input of the model. For example if the input size is 1@169x208x179, the option `--input_size 1 169 208 179` should be added. Default value: 1@128x128.
 
 ## Stopping criterion
 

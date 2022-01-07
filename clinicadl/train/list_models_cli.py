@@ -12,8 +12,8 @@ import click
     "-in",
     "--input_size",
     type=int,
-    multiple=2,
-    default=(128, 128),
+    nargs=True,
+    default=(1, 128, 128),
     show_default=True,
     help="Size of the input image.",
 )

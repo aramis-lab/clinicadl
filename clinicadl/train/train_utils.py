@@ -81,7 +81,7 @@ def get_model_list(architecture=None, input_size=(128, 128)):
     import clinicadl.utils.network as network_package
 
     if not architecture:
-        echo("The list of currently available model is:")
+        echo("The list of currently available models is:")
         model_list = getmembers(network_package, isclass)
         for model in model_list:
             echo(f" - {model[0]}")
@@ -97,10 +97,11 @@ def get_model_list(architecture=None, input_size=(128, 128)):
         )
         args.remove("self")
         kwargs = dict()
-        kwargs["input_size"] = (1, input_size[0], input_size[1])
+        kwargs["input_size"] = input_size
         kwargs["gpu"] = False
 
         model = model_class(**kwargs)
         secho(f"Information for {architecture} network", bold=True)
+        echo(f"Input size: {input_size}")
         echo("Model layers:")
         echo(model.layers)
