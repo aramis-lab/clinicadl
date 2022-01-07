@@ -84,7 +84,8 @@ def get_model_list(architecture=None, input_size=(128, 128)):
         echo("The list of currently available models is:")
         model_list = getmembers(network_package, isclass)
         for model in model_list:
-            echo(f" - {model[0]}")
+            if model[0] != "RandomArchitecture":
+                echo(f" - {model[0]}")
         echo(
             "To show details of a specific model architecture please use the --architecture option"
         )
