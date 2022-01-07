@@ -11,11 +11,10 @@ import click
 @click.option(
     "-in",
     "--input_size",
-    type=int,
-    nargs=True,
-    default=(1, 128, 128),
+    type=str,
+    default="128x128",
     show_default=True,
-    help="Size of the input image.",
+    help="Size of the input image in the shape WxH if the image is 3D or WxHxD if the image is 3D.",
 )
 def cli(
     architecture,

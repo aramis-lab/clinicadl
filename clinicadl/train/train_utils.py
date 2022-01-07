@@ -95,9 +95,13 @@ def get_model_list(architecture=None, input_size=(128, 128)):
                 : model_class.__init__.__code__.co_argcount
             ]
         )
+
+        # parse input_size
+        shape_list = input_size.split("x")
+
         args.remove("self")
         kwargs = dict()
-        kwargs["input_size"] = input_size
+        kwargs["input_size"] = [int(x) for x in input_size.split("x")]
         kwargs["gpu"] = False
 
         model = model_class(**kwargs)
