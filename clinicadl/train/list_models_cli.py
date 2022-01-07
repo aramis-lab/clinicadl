@@ -9,7 +9,7 @@ import click
     help="Architecture of the chosen model to display.",
 )
 @click.option(
-    "-in",
+    "-i",
     "--input_size",
     type=str,
     default="128x128",
