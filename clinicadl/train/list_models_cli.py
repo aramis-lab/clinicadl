@@ -9,10 +9,10 @@ import click
     help="Architecture of the chosen model to display.",
 )
 @click.option(
-    "-in",
+    "-i",
     "--input_size",
     type=int,
-    nargs=True,
+    multiple=True,
     default=(1, 128, 128),
     show_default=True,
     help="Size of the input image.",

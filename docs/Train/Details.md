@@ -123,7 +123,9 @@ will display the list of available models that can be used.
 There are a few options to get more details:
 
 - `--architecture`: is the name of the model whose architecture will be displayed.
-- `--input_size`: is the size of the input of the model. For example if the input size is 1@169x208x179, the option `--input_size 1 169 208 179` should be added. Default value: 1@128x128.
+- `--input_size`: is the size of the input of the model. 
+  For example if the input size is 1@169x208x179, the option `-i 1 -i 169 -i 208 -i 179` should be added. 
+  Default value: 1@128x128.
 
 ## Stopping criterion
 
