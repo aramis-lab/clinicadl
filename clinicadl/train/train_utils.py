@@ -97,7 +97,7 @@ def get_model_list(architecture=None, input_size=(128, 128)):
         )
         args.remove("self")
         kwargs = dict()
-        kwargs["input_size"] = (1, input_size[0], input_size[1])
+        kwargs["input_size"] = input_size
         kwargs["gpu"] = False
 
         model = model_class(**kwargs)
