@@ -12,9 +12,9 @@ import click
     "-i",
     "--input_size",
     type=str,
-    default="128x128",
+    default="1@128x128",
     show_default=True,
-    help="Size of the input image in the shape HxW if the image is 3D or DxHxW if the image is 3D.",
+    help="Size of the input image in the shape C@HxW if the image is 2D or C@DxHxW if the image is 3D.",
 )
 def cli(
     architecture,

@@ -97,11 +97,11 @@ def get_model_list(architecture=None, input_size=(128, 128)):
         )
 
         # parse input_size
-        shape_list = input_size.split("x")
+        chanel, shape_list = input_size.split("@")
 
         args.remove("self")
         kwargs = dict()
-        kwargs["input_size"] = [int(x) for x in input_size.split("x")]
+        kwargs["input_size"] = [int(chanel)] + [int(x) for x in shape_list.split("x")]
         kwargs["gpu"] = False
 
         model = model_class(**kwargs)
