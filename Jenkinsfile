@@ -85,6 +85,31 @@ pipeline {
                   }
                 }
               }
+              stage('Quality check tests Linux') {
+                steps {
+                  echo 'Testing quality check tasks...'
+                    sh 'echo "Agent name: ${NODE_NAME}"'
+                    sh '''
+                    source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                    conda activate "${WORKSPACE}/env"
+                    cd $WORKSPACE/tests
+                    mkdir -p ./data/dataset
+                    tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
+                    tar xf /mnt/data/data_CI/dataset/OasisCaps_t1-volume.tar.gz -C ./data/dataset
+                    poetry run pytest \
+                      --junitxml=./test-reports/test_quality_check_report.xml \
+                      --verbose \
+                      --disable-warnings \
+                      test_qc.py
+                    conda deactivate
+                    '''
+                }
+                post {
+                  always {
+                    junit 'tests/test-reports/test_quality_check_report.xml'
+                  }
+                }
+              }
               stage('Generate tests Linux') {
                 steps {
                   echo 'Testing generate task...'
@@ -284,6 +309,37 @@ pipeline {
                     junit 'tests/test-reports/test_transfer_learning_report.xml'
                     sh 'rm -rf $WORKSPACE/tests/data/dataset'
                     sh 'rm -rf $WORKSPACE/tests/data/labels_list'
+                  }
+                }
+              }
+              stage('Resume tests Linux') {
+                steps {
+                  echo 'Testing resume...'
+                  sh 'echo "Agent name: ${NODE_NAME}"'
+                  sh '''#!/usr/bin/env bash
+                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                     conda activate "${WORKSPACE}/env"
+                     clinicadl --help
+                     cd $WORKSPACE/tests
+                     mkdir -p ./data/dataset
+                     tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
+                     tar xf /mnt/data/data_CI/models/stopped_jobs.tar.gz -C ./data
+                     cp -r /mnt/data/data_CI/labels_list ./data/
+                     poetry run pytest \
+                        --junitxml=./test-reports/test_resume_report.xml \
+                        --verbose \
+                        --disable-warnings \
+                        test_resume.py
+                     rm -r data/stopped_jobs
+                     conda deactivate
+                     '''
+                }
+                post {
+                  always {
+                    junit 'tests/test-reports/test_resume_report.xml'
+                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
+                    sh 'rm -rf $WORKSPACE/tests/data/labels_list'
+                    sh 'rm -rf $WORKSPACE/tests/data/stopped_jobs'
                   }
                 }
               }

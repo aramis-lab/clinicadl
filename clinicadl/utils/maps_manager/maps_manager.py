@@ -1783,7 +1783,7 @@ class MapsManager:
             checkpoint_path = path.join(
                 self.maps_path, f"{self.split_name}-{split}", "tmp", "optimizer.pth.tar"
             )
-            checkpoint_state = torch.load(checkpoint_path)
+            checkpoint_state = torch.load(checkpoint_path, map_location=model.device)
             optimizer.load_state_dict(checkpoint_state["optimizer"])
 
         return optimizer
