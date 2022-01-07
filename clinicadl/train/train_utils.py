@@ -102,5 +102,6 @@ def get_model_list(architecture=None, input_size=(128, 128)):
 
         model = model_class(**kwargs)
         secho(f"Information for {architecture} network", bold=True)
+        echo(f"Input size: {input_size}")
         echo("Model layers:")
         echo(model.layers)
