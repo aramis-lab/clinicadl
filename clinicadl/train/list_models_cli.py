@@ -1,7 +1,7 @@
 import click
 
 
-@click.command(name="list_models", no_args_is_help=True)
+@click.command(name="list_models")
 @click.option(
     "-a",
     "--architecture",

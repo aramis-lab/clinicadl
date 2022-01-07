@@ -76,12 +76,18 @@ def get_model_list(architecture=None, input_size=(128, 128)):
     """
     from inspect import getmembers, isclass
 
+    from click import echo, secho
+
     import clinicadl.utils.network as network_package
 
     if not architecture:
+        echo("The list of currently available model is:")
         model_list = getmembers(network_package, isclass)
         for model in model_list:
-            print(model[0])
+            echo(f" - {model[0]}")
+        echo(
+            "To show details of a specific model architecture please use the --architecture option"
+        )
     else:
         model_class = getattr(network_package, architecture)
         args = list(
@@ -92,7 +98,9 @@ def get_model_list(architecture=None, input_size=(128, 128)):
         args.remove("self")
         kwargs = dict()
         kwargs["input_size"] = (1, input_size[0], input_size[1])
-        kwargs["use_cpu"] = True
+        kwargs["gpu"] = False
 
         model = model_class(**kwargs)
-        print(model.layers)
+        secho(f"Information for {architecture} network", bold=True)
+        echo("Model layers:")
+        echo(model.layers)
