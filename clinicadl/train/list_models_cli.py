@@ -14,7 +14,7 @@ import click
     type=str,
     default="128x128",
     show_default=True,
-    help="Size of the input image in the shape WxH if the image is 3D or WxHxD if the image is 3D.",
+    help="Size of the input image in the shape HxW if the image is 3D or DxHxW if the image is 3D.",
 )
 def cli(
     architecture,
