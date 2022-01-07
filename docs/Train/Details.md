@@ -124,8 +124,8 @@ There are a few options to get more details:
 
 - `--architecture`: is the name of the model whose architecture will be displayed.
 - `--input_size`: is the size of the input of the model. 
-  For example if the input size is 169x208x179, the option `169x208x179` should be added. 
-  Default value: 128x128.
+  For example if the input size is 169x208x179, the option `--input_size 169x208x179` should be added.
+  Default value: `128x128`.
 
 ## Stopping criterion
 
