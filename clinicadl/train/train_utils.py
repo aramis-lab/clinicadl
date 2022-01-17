@@ -67,3 +67,46 @@ def get_user_dict(config_file: str, task: str) -> Dict[str, Any]:
         )
 
     return train_dict
+
+
+def get_model_list(architecture=None, input_size=(128, 128)):
+    """
+    Print the list of models available in ClinicaDL.
+    If architecture is given, it prints the details of the specified model.
+    """
+    from inspect import getmembers, isclass
+
+    from click import echo, secho
+
+    import clinicadl.utils.network as network_package
+
+    if not architecture:
+        echo("The list of currently available models is:")
+        model_list = getmembers(network_package, isclass)
+        for model in model_list:
+            if model[0] != "RandomArchitecture":
+                echo(f" - {model[0]}")
+        echo(
+            "To show details of a specific model architecture please use the --architecture option"
+        )
+    else:
+        model_class = getattr(network_package, architecture)
+        args = list(
+            model_class.__init__.__code__.co_varnames[
+                : model_class.__init__.__code__.co_argcount
+            ]
+        )
+
+        # parse input_size
+        chanel, shape_list = input_size.split("@")
+
+        args.remove("self")
+        kwargs = dict()
+        kwargs["input_size"] = [int(chanel)] + [int(x) for x in shape_list.split("x")]
+        kwargs["gpu"] = False
+
+        model = model_class(**kwargs)
+        secho(f"Information for {architecture} network", bold=True)
+        echo(f"Input size: {input_size}")
+        echo("Model layers:")
+        echo(model.layers)

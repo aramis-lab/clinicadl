@@ -130,6 +130,7 @@ def test_second_lv_predict(predict_cli_arg1):
         "reconstruction",
         "from_json",
         "resume",
+        "list_models",
     ]
 )
 def train_cli_arg1(request):
