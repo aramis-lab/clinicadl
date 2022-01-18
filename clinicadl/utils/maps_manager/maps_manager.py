@@ -1065,7 +1065,7 @@ class MapsManager:
         network=None,
     ):
         """
-        Compute the output nifti image and saves them in the MAPS.
+        Computes the output nifti images and saves them in the MAPS.
 
         Args:
             dataset (clinicadl.utils.caps_dataset.data.CapsDataset): wrapper of the data set.
