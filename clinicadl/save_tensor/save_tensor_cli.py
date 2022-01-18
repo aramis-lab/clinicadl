@@ -44,20 +44,25 @@ from clinicadl.utils import cli_param
     multiple=True,
     help="List of diagnoses used for inference. Is used only if PARTICIPANTS_TSV leads to a folder.",
 )
+@click.option(
+    "--nifti",
+    type=bool,
+    default=False,
+    is_flag=True,
+    help="Save the output reconstruction as nifti file instead of pytorch tensor.",
+)
 @cli_param.option.use_gpu
-@cli_param.option.n_proc
-@cli_param.option.batch_size
+# @cli_param.option.n_proc
+# @cli_param.option.batch_size
 def cli(
     input_maps_directory,
     data_group,
     caps_directory,
     participants_tsv,
     gpu,
-    n_proc,
-    batch_size,
-    # use_extracted_features,
     selection_metrics,
     diagnoses,
+    nifti,
     multi_cohort,
 ):
     """Save the output tensors of a trained model on a test set.
@@ -79,10 +84,8 @@ def cli(
         caps_directory=caps_directory,
         tsv_path=participants_tsv,
         gpu=gpu,
-        n_proc=n_proc,
-        batch_size=batch_size,
-        # prepare_dl=use_extracted_features,
         selection_metrics=selection_metrics,
         diagnoses=diagnoses,
+        nifti=nifti,
         multi_cohort=multi_cohort,
     )

@@ -1,26 +1,20 @@
 from logging import getLogger
 
 
-def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
+def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
     import os
     from os import path
 
     from clinica.utils.inputs import check_caps_folder, clinica_file_reader
     from clinica.utils.nipype import container_from_filename
     from clinica.utils.participant import get_subject_session_list
+    from joblib import Parallel, delayed
     from torch import save as save_tensor
 
     from clinicadl.utils.exceptions import ClinicaDLArgumentError
     from clinicadl.utils.preprocessing import write_preprocessing
 
-    from .extract_utils import (
-        check_mask_list,
-        compute_folder_and_file_type,
-        extract_images,
-        extract_patches,
-        extract_roi,
-        extract_slices,
-    )
+    from .extract_utils import check_mask_list, compute_folder_and_file_type
 
     logger = getLogger("clinicadl")
 
@@ -57,16 +51,43 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
     # Input file:
     input_files = clinica_file_reader(subjects, sessions, caps_directory, file_type)
 
-    # Loop on the images
-    for file in input_files:
-        logger.debug(f"  Processing of {file}.")
-        container = container_from_filename(file)
-        # Extract the wanted tensor
-        if parameters["mode"] == "image" or not parameters["prepare_dl"]:
+    def write_output_imgs(output_mode, container, subfolder):
+        # Write the extracted tensor on a .pt file
+        for filename, tensor in output_mode:
+            output_file_dir = path.join(
+                caps_directory,
+                container,
+                "deeplearning_prepare_data",
+                subfolder,
+                mod_subfolder,
+            )
+            if not path.exists(output_file_dir):
+                os.makedirs(output_file_dir)
+            output_file = path.join(output_file_dir, filename)
+            save_tensor(tensor, output_file)
+            logger.debug(f"    Output tensor saved at {output_file}")
+
+    if parameters["mode"] == "image" or not parameters["prepare_dl"]:
+
+        def prepare_image(file):
+            from .extract_utils import extract_images
+
+            logger.debug(f"  Processing of {file}.")
+            container = container_from_filename(file)
             subfolder = "image_based"
             output_mode = extract_images(file)
             logger.debug(f"    Image extracted.")
-        elif parameters["prepare_dl"] and parameters["mode"] == "slice":
+            write_output_imgs(output_mode, container, subfolder)
+
+        Parallel(n_jobs=n_proc)(delayed(prepare_image)(file) for file in input_files)
+
+    elif parameters["prepare_dl"] and parameters["mode"] == "slice":
+
+        def prepare_slice(file):
+            from .extract_utils import extract_slices
+
+            logger.debug(f"  Processing of {file}.")
+            container = container_from_filename(file)
             subfolder = "slice_based"
             output_mode = extract_slices(
                 file,
@@ -75,7 +96,17 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
                 discarded_slices=parameters["discarded_slices"],
             )
             logger.debug(f"    {len(output_mode)} slices extracted.")
-        elif parameters["prepare_dl"] and parameters["mode"] == "patch":
+            write_output_imgs(output_mode, container, subfolder)
+
+        Parallel(n_jobs=n_proc)(delayed(prepare_slice)(file) for file in input_files)
+
+    elif parameters["prepare_dl"] and parameters["mode"] == "patch":
+
+        def prepare_patch(file):
+            from .extract_utils import extract_patches
+
+            logger.debug(f"  Processing of {file}.")
+            container = container_from_filename(file)
             subfolder = "patch_based"
             output_mode = extract_patches(
                 file,
@@ -83,7 +114,17 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
                 stride_size=parameters["stride_size"],
             )
             logger.debug(f"    {len(output_mode)} patches extracted.")
-        elif parameters["prepare_dl"] and parameters["mode"] == "roi":
+            write_output_imgs(output_mode, container, subfolder)
+
+        Parallel(n_jobs=n_proc)(delayed(prepare_patch)(file) for file in input_files)
+
+    elif parameters["prepare_dl"] and parameters["mode"] == "roi":
+
+        def prepare_roi(file):
+            from .extract_utils import extract_roi
+
+            logger.debug(f"  Processing of {file}.")
+            container = container_from_filename(file)
             subfolder = "roi_based"
             if parameters["preprocessing"] == "custom":
                 if not parameters["roi_custom_template"]:
@@ -127,24 +168,14 @@ def DeepLearningPrepareData(caps_directory, tsv_file, parameters):
                 uncrop_output=parameters["uncropped_roi"],
             )
             logger.debug(f"    ROI extracted.")
-        else:
-            raise NotImplementedError(
-                f"Extraction is not implemented for mode {parameters['mode']}."
-            )
-        # Write the extracted tensor on a .pt file
-        for filename, tensor in output_mode:
-            output_file_dir = path.join(
-                caps_directory,
-                container,
-                "deeplearning_prepare_data",
-                subfolder,
-                mod_subfolder,
-            )
-            if not path.exists(output_file_dir):
-                os.makedirs(output_file_dir)
-            output_file = path.join(output_file_dir, filename)
-            save_tensor(tensor, output_file)
-            logger.debug(f"    Output tensor saved at {output_file}")
+            write_output_imgs(output_mode, container, subfolder)
+
+        Parallel(n_jobs=n_proc)(delayed(prepare_roi)(file) for file in input_files)
+
+    else:
+        raise NotImplementedError(
+            f"Extraction is not implemented for mode {parameters['mode']}."
+        )
 
     # Save parameters dictionary
     preprocessing_json_path = write_preprocessing(parameters, caps_directory)
