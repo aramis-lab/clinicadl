@@ -1,4 +1,4 @@
-# `save-tensors` - Network output serialization
+# `save-tensors` - Save reconstruction outputs
 
 This tool allows to save the output tensors of a whole [data group](./Introduction.md), associated with the tensor
 corresponding to their input.
