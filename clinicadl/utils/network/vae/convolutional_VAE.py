@@ -165,20 +165,20 @@ class CVAE_3D_half(Network):
         self.to(self.device)
 
     def encoder(self, image):
+        print(image.shape)
         h1 = F.relu(self.bn1(self.conv1(image)))
+        print(h1.shape)
         h2 = F.relu(self.bn2(self.conv2(h1)))
+        print(h2.shape)
         h3 = F.relu(self.bn3(self.conv3(h2)))
+        print(h3.shape)
         # h4 = F.relu(self.bn4(self.conv4(h3)))
         # h5 = F.relu(self.fc1(h4.flatten(start_dim=1)))
         h5 = h3.flatten(start_dim=1)
-        mu = torch.tanh(self.fc10(h5))
-        logVar = self.fc11(h5)
-        print(image.shape)
-        print(h1.shape)
-        print(h2.shape)
-        print(h3.shape)
         print(h5.shape)
+        mu = torch.tanh(self.fc10(h5))
         print(mu.shape)
+        logVar = self.fc11(h5)
         return mu, logVar
 
     def decoder(self, encoded):
