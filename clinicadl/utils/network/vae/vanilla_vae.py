@@ -441,7 +441,7 @@ class Vanilla3DdenseVAE(BaseVAE):
     def __init__(
         self,
         input_size,
-        use_cpu=False,
+        gpu=True,
     ):
         recons_weight = 10
         kd_weight = 1
@@ -536,7 +536,7 @@ class Vanilla3DdenseVAE(BaseVAE):
             decoder,
             mu_layer,
             var_layer,
-            use_cpu=use_cpu,
+            gpu=gpu,
             recons_weight=recons_weight,
             KD_weight=kd_weight,
         )
