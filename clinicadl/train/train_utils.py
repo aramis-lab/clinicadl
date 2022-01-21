@@ -51,7 +51,7 @@ def build_train_dict(config_file: str, task: str) -> Dict[str, Any]:
             "config",
             "train_config.toml",
         )
-        default_config_dict = toml.load(config_path)
+        config_dict = toml.load(config_path)
         # Check that TOML file has the same format as the one in clinicadl/resources/config/train_config.toml
         if user_dict is not None:
             for section_name in user_dict:
