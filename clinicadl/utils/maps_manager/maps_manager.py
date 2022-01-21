@@ -55,21 +55,11 @@ class MapsManager:
             verbose: Logging level ("debug", "info", "warning")
         """
         self.maps_path = path.abspath(maps_path)
-<<<<<<< HEAD
         if verbose is not None:
             if verbose not in level_list:
                 raise ValueError(f"verbose value {verbose} must be in {level_list}.")
             setup_logging(level_list.index(verbose))
 
-=======
-        if verbose not in level_list:
-            raise ValueError(f"verbose value {verbose} must be in {level_list}.")
-        setup_logging(level_list.index(verbose))
-<<<<<<< HEAD
-        print(parameters["size_reduction"])
->>>>>>> Added print for debug
-=======
->>>>>>> Added print for debug
         # Existing MAPS
         if parameters is None:
             if not path.exists(path.join(maps_path, "maps.json")):
@@ -225,10 +215,10 @@ class MapsManager:
             split_list = self._find_splits()
         logger.debug(f"List of splits {split_list}")
 
+        print(self.size_reduction)
         _, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
-            size_reduction=self.size_reduction,
         )
 
         group_df = None
@@ -443,7 +433,6 @@ class MapsManager:
         _, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
-            size_reduction=self.size_reduction,
         )
 
         group_df = None
@@ -636,7 +625,6 @@ class MapsManager:
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
-            size_reduction=self.size_reduction,
         )
 
         split_manager = self._init_split_manager(split_list)
