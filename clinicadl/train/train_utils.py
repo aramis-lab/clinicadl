@@ -10,7 +10,7 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
 )
 
 
-def get_user_dict(config_file: str, task: str) -> Dict[str, Any]:
+def build_train_dict(config_file: str, task: str) -> Dict[str, Any]:
     """
     Read the configuration file given by the user.
     If it is a TOML file, ensures that the format corresponds to the one in resources.
