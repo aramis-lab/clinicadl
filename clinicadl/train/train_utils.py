@@ -34,7 +34,7 @@ def get_user_dict(config_file: str, task: str) -> Dict[str, Any]:
             "train_config.toml",
         )
         config_dict = toml.load(config_path)
-        # Check that TOML file has the same format as the one in resources
+        # Check that TOML file has the same format as the one in clinicadl/resources/config/train_config.toml
         if toml_dict is not None:
             for section_name in toml_dict:
                 if section_name not in config_dict:
@@ -48,6 +48,7 @@ def get_user_dict(config_file: str, task: str) -> Dict[str, Any]:
                             f"{key} option in {section_name} is not valid in TOML configuration file. "
                             f"Please see the documentation to see the list of option in TOML configuration file."
                         )
+                    config_dict[section_name][key] = toml_dict[section_name][key]
 
         train_dict = dict()
 
@@ -55,10 +56,9 @@ def get_user_dict(config_file: str, task: str) -> Dict[str, Any]:
         toml_dict = remove_unused_tasks(toml_dict, task)
 
         # Standard arguments
-        for config_section in toml_dict:
-            for key in toml_dict[config_section]:
-                train_dict[key] = toml_dict[config_section][key]
-
+        for config_section in config_dict:
+            for key in config_dict[config_section]:
+                train_dict[key] = config_dict[config_section][key]
     elif config_file.endswith(".json"):
         train_dict = read_json(config_file)
     else:
