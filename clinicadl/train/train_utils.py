@@ -21,9 +21,9 @@ def build_train_dict(config_file: str, task: str) -> Dict[str, Any]:
         dictionary of values ready to use for the MapsManager
     """
     if config_file.endswith(".toml"):
-        user_config_dict = toml.load(config_file)
-        if "Random_Search" in user_config_dict:
-            del user_config_dict["Random_Search"]
+        user_dict = toml.load(config_file)
+        if "Random_Search" in user_dict:
+            del user_dict["Random_Search"]
 
         # read default values
         clinicadl_root_dir = os.path.abspath(os.path.join(__file__, "../.."))
@@ -33,34 +33,32 @@ def build_train_dict(config_file: str, task: str) -> Dict[str, Any]:
             "config",
             "train_config.toml",
         )
-        default_config_dict = toml.load(config_path)
+        config_dict = toml.load(config_path)
         # Check that TOML file has the same format as the one in clinicadl/resources/config/train_config.toml
-        if user_config_dict is not None:
-            for section_name in user_config_dict:
-                if section_name not in default_config_dict:
+        if user_dict is not None:
+            for section_name in user_dict:
+                if section_name not in config_dict:
                     raise ClinicaDLConfigurationError(
                         f"{section_name} section is not valid in TOML configuration file. "
                         f"Please see the documentation to see the list of option in TOML configuration file."
                     )
-                for key in user_config_dict[section_name]:
-                    if key not in default_config_dict[section_name]:
+                for key in user_dict[section_name]:
+                    if key not in config_dict[section_name]:
                         raise ClinicaDLConfigurationError(
                             f"{key} option in {section_name} is not valid in TOML configuration file. "
                             f"Please see the documentation to see the list of option in TOML configuration file."
                         )
-                    default_config_dict[section_name][key] = user_config_dict[
-                        section_name
-                    ][key]
+                    config_dict[section_name][key] = user_dict[section_name][key]
 
         train_dict = dict()
 
         # task dependent
-        default_config_dict = remove_unused_tasks(default_config_dict, task)
+        config_dict = remove_unused_tasks(config_dict, task)
 
         # Fill train_dict from TOML files arguments
-        for config_section in default_config_dict:
-            for key in default_config_dict[config_section]:
-                train_dict[key] = default_config_dict[config_section][key]
+        for config_section in config_dict:
+            for key in config_dict[config_section]:
+                train_dict[key] = config_dict[config_section][key]
 
     elif config_file.endswith(".json"):
         train_dict = read_json(config_file)
