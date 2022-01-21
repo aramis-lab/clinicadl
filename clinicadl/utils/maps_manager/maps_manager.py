@@ -227,10 +227,10 @@ class MapsManager:
             split_list = self._find_splits()
         logger.debug(f"List of splits {split_list}")
 
+        print(self.size_reduction)
         _, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
-            size_reduction=self.size_reduction,
         )
 
         group_df = None
@@ -466,7 +466,6 @@ class MapsManager:
         _, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
-            size_reduction=self.size_reduction,
         )
 
         group_df = None
@@ -677,7 +676,6 @@ class MapsManager:
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
-            size_reduction=self.size_reduction,
         )
 
         split_manager = self._init_split_manager(split_list)
