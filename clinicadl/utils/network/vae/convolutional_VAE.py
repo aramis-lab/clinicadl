@@ -13,8 +13,8 @@ class CVAE_3D(Network):
     with the sole criterion of correctly reconstructing the data. Nothing longitudinal here.
     """
 
-    def __init__(self, latent_space_size, use_cpu):
-        super(CVAE_3D, self).__init__(use_cpu=use_cpu)
+    def __init__(self, latent_space_size, gpu):
+        super(CVAE_3D, self).__init__(gpu=gpu)
         nn.Module.__init__(self)
         self.beta = 5
 
@@ -126,8 +126,8 @@ class CVAE_3D_half(Network):
     with the sole criterion of correctly reconstructing the data. Nothing longitudinal here.
     """
 
-    def __init__(self, latent_space_size, use_cpu):
-        super(CVAE_3D_half, self).__init__(use_cpu=use_cpu)
+    def __init__(self, latent_space_size, gpu):
+        super(CVAE_3D_half, self).__init__(gpu=gpu)
         nn.Module.__init__(self)
         self.beta = 5
         self.gamma = 10
