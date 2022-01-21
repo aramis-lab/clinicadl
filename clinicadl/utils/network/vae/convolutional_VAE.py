@@ -229,7 +229,7 @@ class CVAE_3D_half(Network):
 
         self.training = True
 
-        input_ = input_dict["image"].to(self.device)[:, :, 4:164:2, 8:200:2, 8:168:2]
+        input_ = input_dict["image"].to(self.device)
         mu, logVar, reconstructed = self.forward(input_)
         reconstruction_loss, kl_loss = vae_criterion(mu, logVar, input_, reconstructed)
 
