@@ -58,6 +58,7 @@ baseline = false
 normalize = true
 data_augmentation = false
 sampler = "random"
+size_reduction=false
 
 [Cross_validation]
 n_splits = 0
