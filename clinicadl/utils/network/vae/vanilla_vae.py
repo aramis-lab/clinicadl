@@ -61,8 +61,6 @@ class VanillaDenseVAE(BaseVAE):
             recons_weight=recons_weight,
             KL_weight=KL_weight,
             is_3D=False,
-            recons_weight=10,
-            KD_weight=0.1,
         )
 
     @staticmethod
