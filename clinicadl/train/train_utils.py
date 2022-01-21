@@ -55,7 +55,7 @@ def get_user_dict(config_file: str, task: str) -> Dict[str, Any]:
         # task dependent
         toml_dict = remove_unused_tasks(toml_dict, task)
 
-        # Standard arguments
+        # Fill train_dict from TOML files arguments
         for config_section in config_dict:
             for key in config_dict[config_section]:
                 train_dict[key] = config_dict[config_section][key]
