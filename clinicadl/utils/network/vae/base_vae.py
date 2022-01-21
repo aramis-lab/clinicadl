@@ -14,12 +14,12 @@ class BaseVAE(Network):
         gpu=True,
         is_3D=False,
         recons_weight=1,
-        KL_weight=1,
+        kl_weight=1,
     ):
         super(BaseVAE, self).__init__(gpu=gpu)
 
         self.lambda1 = recons_weight
-        self.lambda2 = KL_weight
+        self.lambda2 = kl_weight
         self.latent_size = latent_size
         self.is_3D = is_3D
 
