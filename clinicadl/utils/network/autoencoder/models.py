@@ -63,4 +63,6 @@ class CAE_half(AutoEncoder):
             DecoderLayer3D(64, 1, kernel_size=3)
         )
         # fmt: on
-        super().__init__(encoder=self.encoder, decoder=self.decoder, gpu=gpu)
+        super(CAE_half, self).__init__(
+            encoder=self.encoder, decoder=self.decoder, gpu=gpu
+        )

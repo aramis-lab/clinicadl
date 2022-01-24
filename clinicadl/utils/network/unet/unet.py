@@ -1,6 +1,8 @@
 import torch
 from torch import nn
 
+from clinicadl.utils.network.network import Network
+
 
 class UNetDown(nn.Module):
     """Descending block of the U-Net.
@@ -71,11 +73,11 @@ class FinalLayer(nn.Module):
         return x
 
 
-class GeneratorUNet(nn.Module):
-    def __init__(self, in_channels=1, out_channels=1):
-        super(GeneratorUNet, self).__init__()
+class GeneratorUNet(Network):
+    def __init__(self, gpu):
+        super(GeneratorUNet, self).__init__(gpu=gpu)
 
-        self.down1 = UNetDown(in_channels, 64)
+        self.down1 = UNetDown(1, 64)
         self.down2 = UNetDown(64, 128)
         self.down3 = UNetDown(128, 256)
         self.down4 = UNetDown(256, 512)
@@ -86,7 +88,7 @@ class GeneratorUNet(nn.Module):
         self.up3 = UNetUp(512, 128)
         self.up4 = UNetUp(256, 64)
 
-        self.final = FinalLayer(128, out_channels)
+        self.final = FinalLayer(128, 1)
 
     def forward(self, x):
         d1 = self.down1(x)
@@ -101,3 +103,15 @@ class GeneratorUNet(nn.Module):
         u4 = self.up4(u3, d2)
 
         return self.final(u4, d1)
+
+    def predict(self, x):
+        return self.forward(x)
+
+    def compute_outputs_and_loss(self, input_dict, criterion, use_labels=True):
+
+        images = input_dict["image"].to(self.device)
+        recon_images = self.forward(images)
+
+        loss = criterion(recon_images, images)
+
+        return recon_images, {"loss": loss}
