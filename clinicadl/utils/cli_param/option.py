@@ -192,4 +192,4 @@ selection_metrics = click.option(
     "-sm",
     multiple=True,
     help="""Make inference on the list of given metrics used for selection. By default, inference is done on all the metrics.""",
-
+)
