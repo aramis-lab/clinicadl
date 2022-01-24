@@ -1168,7 +1168,10 @@ class MapsManager:
         if self.parameters["gpu"]:
             check_gpu()
 
-        _, transformations = get_transforms(self.normalize)
+        _, transformations = get_transforms(
+            normalize=self.normalize,
+            size_reduction=self.size_reduction,
+        )
 
         split_manager = self._init_split_manager(None)
         train_df = split_manager[0]["train"]
