@@ -59,9 +59,9 @@ Results are stored in the MAPS of path `maps_directory`, according to
 the following file system:
 ```
 <maps_directory>
-    ├── fold-0  
+    ├── split-0  
     ├── ...  
-    └── fold-<fold>
+    └── split-<fold>
         └── best-<metric>
                 └── <data_group>
                     └── tensors

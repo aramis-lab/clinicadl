@@ -7,7 +7,7 @@ tasks. It can also use any pretrained models if they are structured like a [MAPS
 !!! warning "unbiased image-level results"
     For `patch`, `roi` and `slice` models, the predictions of the models on the
     validation set are needed to perform unbiased ensemble predictions at the image level. 
-    If the tsv files in `fold-<fold>/best-<metric>/validation` were erased the task cannot
+    If the tsv files in `split-<i>/best-<metric>/validation` were erased the task cannot
     be run.
 
 ## Prerequisites
@@ -78,9 +78,9 @@ Results are stored in the MAPS of path `model_path`, according to
 the following file system:
 ```
 <model_path>
-    ├── fold-0  
+    ├── split-0  
     ├── ...  
-    └── fold-<i>
+    └── split-<i>
         └── best-<metric>
                 └── <data_group>
                     ├── description.log
