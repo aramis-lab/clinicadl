@@ -20,7 +20,25 @@ def build_train_dict(config_file: str, task: str) -> Dict[str, Any]:
     Returns:
         dictionary of values ready to use for the MapsManager
     """
-    if config_file.endswith(".toml"):
+    if config_file is None:
+        # read default values
+        clinicadl_root_dir = os.path.abspath(os.path.join(__file__, "../.."))
+        config_path = os.path.join(
+            clinicadl_root_dir,
+            "resources",
+            "config",
+            "train_config.toml",
+        )
+        config_dict = toml.load(config_path)
+        config_dict = remove_unused_tasks(config_dict, task)
+
+        train_dict = dict()
+        # Fill train_dict from TOML files arguments
+        for config_section in config_dict:
+            for key in config_dict[config_section]:
+                train_dict[key] = config_dict[config_section][key]
+
+    elif config_file.endswith(".toml"):
         user_dict = toml.load(config_file)
         if "Random_Search" in user_dict:
             del user_dict["Random_Search"]

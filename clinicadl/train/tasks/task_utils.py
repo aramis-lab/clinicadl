@@ -48,10 +48,10 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
                 f"in {caps_dict}."
             )
 
+    config_file_name = None
     if kwargs["config_file"]:
-        train_dict = build_train_dict(kwargs["config_file"].name, network_task)
-    else:
-        train_dict = dict()
+        config_file_name = kwargs["config_file"].name
+    train_dict = build_train_dict(config_file_name, network_task)
 
     # Mode and preprocessing
     preprocessing_dict = read_preprocessing(preprocessing_json)
@@ -93,9 +93,9 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "compensation",
         "transfer_path",
     ]
-    standard_options_list = standard_options_list + task_options_list
+    all_options_list = standard_options_list + task_options_list
 
-    for option in standard_options_list:
+    for option in all_options_list:
         if (kwargs[option] is not None and not isinstance(kwargs[option], tuple)) or (
             isinstance(kwargs[option], tuple) and len(kwargs[option]) != 0
         ):
