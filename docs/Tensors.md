@@ -61,12 +61,12 @@ the following file system:
 <maps_directory>
     ├── split-0  
     ├── ...  
-    └── split-<fold>
+    └── split-<i>
         └── best-<metric>
                 └── <data_group>
                     └── tensors
-                        ├── <participant_id>_<session_id>_{image|patch|roi|slice}-<i>_input.pt
-                        └── <participant_id>_<session_id>_{image|patch|roi|slice}-<i>_output.pt
+                        ├── <participant_id>_<session_id>_{image|patch|roi|slice}-<X>_input.pt
+                        └── <participant_id>_<session_id>_{image|patch|roi|slice}-<X>_output.pt
 ```
-For each `participant_id`, `session_id` and index of the part of the image (`i`),
+For each `participant_id`, `session_id` and index of the part of the image (`X`),
 the input and the output tensors are saved in.
