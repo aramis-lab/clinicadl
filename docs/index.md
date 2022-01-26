@@ -74,7 +74,7 @@ You will also find how to [run the test suite](Contribute/Test.md) to check that
 ClinicaDL is distributed under the terms of the MIT license given [here](https://github.com/aramis-lab/clinicadl/blob/dev/LICENSE.txt).
 
 ## Citing ClinicaDL
-For publications or communications using ClinicaDL, please cite [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)] 
+For publications or communications using ClinicaDL, please cite [[Thibeau-Sutre et al., 2021](https://hal.inria.fr/hal-03351976)] 
 as well as the references mentioned on the wiki page of the pipelines you used 
 (for example, citing PyTorch when using the `extract` pipeline).
 
