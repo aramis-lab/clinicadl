@@ -88,7 +88,6 @@ label = cli_param.option_group.task_group.option(
 selection_metrics = cli_param.option_group.task_group.option(
     "--selection_metrics",
     "-sm",
-    default=["loss"],
     multiple=True,
     help="""Allow to save a list of models based on their selection metric. Default will
     only save the best model selected on loss.""",
