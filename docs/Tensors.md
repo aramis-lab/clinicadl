@@ -1,4 +1,4 @@
-# `save-tensors` - Network output serialization
+# `save-tensors` - Save reconstruction outputs
 
 This tool allows to save the output tensors of a whole [data group](./Introduction.md), associated with the tensor
 corresponding to their input.
@@ -34,7 +34,7 @@ where:
 Optional arguments:
 
 - **Computational resources**
-    - `--gpu / --no-gpu` (bool) Uses GPU acceleration or not. Default behaviour is to try to use a
+    - `--gpu / --no-gpu` (bool) Uses GPU acceleration or not. Default behavior is to try to use a
       GPU. If not available an error is raised. Use the option `--no-gpu` if running in CPU.
     - `--n_proc` (int) is the number of workers used by the DataLoader. Default: `2`.
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default: `2`.
@@ -59,14 +59,14 @@ Results are stored in the MAPS of path `maps_directory`, according to
 the following file system:
 ```
 <maps_directory>
-    ├── fold-0  
+    ├── split-0  
     ├── ...  
-    └── fold-<fold>
+    └── split-<i>
         └── best-<metric>
                 └── <data_group>
                     └── tensors
-                        ├── <participant_id>_<session_id>_{image|patch|roi|slice}-<i>_input.pt
-                        └── <participant_id>_<session_id>_{image|patch|roi|slice}-<i>_output.pt
+                        ├── <participant_id>_<session_id>_{image|patch|roi|slice}-<X>_input.pt
+                        └── <participant_id>_<session_id>_{image|patch|roi|slice}-<X>_output.pt
 ```
-For each `participant_id`, `session_id` and index of the part of the image (`i`),
+For each `participant_id`, `session_id` and index of the part of the image (`X`),
 the input and the output tensors are saved in.

@@ -142,9 +142,9 @@ Options:
 
     Default value: `100`.
 
-  - `--MCI_sub_categories` (bool) is a flag that disables the special treatment of the MCI set and its subsets.
+  - `--no_mci_sub_categories` (bool) is a flag that disables the special treatment of the MCI set and its subsets.
   This will allow sets with more similar age and sex distributions, but it will cause 
-  data leakage for transfer learning tasks involving these sets. Default value: `False`.
+  data leakage for transfer learning tasks involving these sets. Default value: `True`.
   - `--p_age_threshold` (float) is the threshold on the p-value used for the T-test on age distributions.
   Default value: `0.80`.
   - `--p_sex_threshold` (float) is the threshold on the p-value used for the chi2 test on sex distributions.
