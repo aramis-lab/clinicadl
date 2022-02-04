@@ -7,6 +7,12 @@ These tools perform three main tasks:
 - Split data to define test, validation and train cohorts (`split` + `kfold`),
 - Analyze populations of interest (`analysis`).
 
+!!! tip
+    Classical ratios in the scientific literature are 80%-20% (or 70%-30%) for train/validation. 
+    These values can be modified according to the size of the dataset, and the number of hyperparameters
+    that are tuned.
+    More information on the subject can be found [online](https://towardsdatascience.com/train-validation-and-test-sets-72cb40cba9e7).
+
 ## `restrict` - Reproduce restrictions on specific datasets.
 
 ### Description
