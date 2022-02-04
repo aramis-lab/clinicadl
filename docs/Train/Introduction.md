@@ -1,8 +1,7 @@
 # `train NETWORK_TASK` - Define a network task from TOML or command line
 
 This functionality enables the training of a network using
-different formats of inputs (whole 3D images, 3D patches or 2D slices), as defined in
-[[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)].
+different formats of inputs (whole 3D images, 3D patches, regions of interest or 2D slices).
 It mainly relies on the PyTorch deep learning library
 [[Paszke et al., 2019](https://papers.nips.cc/paper/9015-pytorch-an-imperative-style-high-performance-deep-learning-library)].
 
