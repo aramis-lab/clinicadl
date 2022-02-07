@@ -18,13 +18,13 @@ not been performed, execute the preprocessing pipeline as well as `clinicadl
 extract` to obtain the tensor versions of the images.
 
 <!--Some pretrained models are available to [download
-here](https://aramislab.paris.inria.fr/files/data/models/dl/models_v002/). You
+here](https://aramislab.paris.inria.fr/clinicadl/files/models/). You
 can download them using your navigator or the command line. For example, to get
 the model "Image-based" with a single split type:
 
 ```
-curl -k https://aramislab.paris.inria.fr/files/data/models/dl/models_v002/model_exp3_splits_1.tar.gz  -o model_exp3_splits_1.tar.gz
-tar xf model_exp3_splits_1.tar.gz
+curl -k https://aramislab.paris.inria.fr/clinicadl/files/models/v1.0.5/maps_exp3.tar.gz  -o maps_exp3.tar.gz
+tar xf maps_exp3.tar.gz
 ```
 -->
 
