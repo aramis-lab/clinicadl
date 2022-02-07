@@ -17,16 +17,11 @@ be performed in the `maps.json` file in the results folder. If it has
 not been performed, execute the preprocessing pipeline as well as `clinicadl
 extract` to obtain the tensor versions of the images.
 
-<!--Some pretrained models are available to [download
-here](https://aramislab.paris.inria.fr/clinicadl/files/models/). You
-can download them using your navigator or the command line. For example, to get
-the model "Image-based" with a single split type:
-
-```
-curl -k https://aramislab.paris.inria.fr/clinicadl/files/models/v1.0.5/maps_exp3.tar.gz  -o maps_exp3.tar.gz
-tar xf maps_exp3.tar.gz
-```
--->
+!!! tip "Pretrained models"
+    Some pretrained model are available to download through your browser or the
+    command line (using `curl` or `wget`) ([see this
+    section](https://clinicadl.readthedocs.io/en/stable/#pretrained-models)).
+    These models are in MAPS format.
 
 ## Running the task
 This task can be run with the following command line:
