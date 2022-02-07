@@ -41,7 +41,8 @@ We assume that users installing and using ClinicaDL are comfortable using the co
 - `clinicadl random-search` - [Explore hyperparameter space by training random models](./RandomSearch.md)
 
 ### Train deep learning networks
-- `clinicadl train` - [Train with your data and create a model](./Train/Introduction.md)
+- `clinicadl train [classification|reconstruction|regression]` - [Train with your data and create a model](./Train/Introduction.md)
+- `clinicadl train from_json` - [Reproduce an experiment from a JSON file](./Train/Retrain.md)
 - `clinicadl train resume` [Resume a prematurely stopped job](./Train/Resume.md)
 
 ### Inference using pretrained models

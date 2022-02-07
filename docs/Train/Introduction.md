@@ -1,8 +1,7 @@
-# `train` - Train deep learning networks
+# `train NETWORK_TASK` - Define a network task from TOML or command line
 
 This functionality enables the training of a network using
-different formats of inputs (whole 3D images, 3D patches or 2D slices), as defined in
-[[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)].
+different formats of inputs (whole 3D images, 3D patches, regions of interest or 2D slices).
 It mainly relies on the PyTorch deep learning library
 [[Paszke et al., 2019](https://papers.nips.cc/paper/9015-pytorch-an-imperative-style-high-performance-deep-learning-library)].
 
@@ -19,8 +18,8 @@ be soon).
 ## Running the task
 The training task can be run with the following command line:
 ```
-clinicadl train NETWORK_TASK CAPS_DIRECTORY TSV_DIRECTORY \
-                PREPROCESSING_JSON OUTPUT_MAPS_DIRECTORY
+clinicadl train [OPTIONS] NETWORK_TASK CAPS_DIRECTORY PREPROCESSING_JSON \
+                TSV_DIRECTORY OUTPUT_MAPS_DIRECTORY
 ```
 where mandatory arguments are:
 
@@ -89,6 +88,8 @@ Options shared for all values of `NETWORK_TASK` are organized in groups:
     The computation time will be longer, or the computations will require more memory space. Default: `memory`.
     Must be chosen between `time` and `memory`.
 - **Optimization parameters**
+    - `--optimizer` (str) is the name of the optimizer used to train the network. Must correspond to a Pytorch class.
+    Default: `Adam`.
     - `--epochs` (int) is the [maximum number of epochs](Details.md#stopping-criterion). Default: `20`.
     - `--learning_rate` (float) is the learning rate used to perform weight update. Default: `1e-4`.
     - `--weight_decay` (float) is the weight decay used by the Adam optimizer. Default: `1e-4`.
@@ -116,6 +117,12 @@ A few options depend on the task performed:
     negative predictive value (NPV) and balanced accuracy (BA).
     - `--label` (str) is the name of the column containing the label for the classification task.
     It must be a categorical variable, but may be of any type. Default: `diagnosis`.
+    - `--selection_metrics` (str) are metrics used to select networks according to the best validation performance.
+    Default: `loss`.
+    - `--selection_threshold` (float) is a selection threshold used for soft-voting. It is only taken into account
+    if several images are extracted from the same original 3D image (i.e. `num_networks` > 1). Default: `0`.
+    - `--loss` (str) is the name of the loss used to optimize the classification task.
+    Must correspond to a Pytorch class. Default: `CrossEntropyLoss`.
 
 - **regression**
     The objective of the `regression` is to learn the value of a continuous variable given an image.
@@ -123,11 +130,19 @@ A few options depend on the task performed:
     The evaluation metrics are the mean squared error (MSE) and mean absolute error (MAE).
     - `--label` (str) is the name of the column containing the label for the regression task.
     It must be a continuous variable (float or int). Default: `age`.
+    - `--selection_metrics` (str) are metrics used to select networks according to the best validation performance.
+    Default: `loss`.
+    - `--loss` (str) is the name of the loss used to optimize the regression task.
+    Must correspond to a Pytorch class. Default: `MSELoss`.
 
 - **reconstruction**
     The objective of the `reconstruction` is to learn to reconstruct images given in input.
     The criterion loss is the mean squared error between the input and the network output.
     The evaluation metrics are the mean squared error (MSE) and mean absolute error (MAE).
+    - `--selection_metrics` (str) are metrics used to select networks according to the best validation performance.
+    Default: `loss`.
+    - `--loss` (str) is the name of the loss used to optimize the reconstruction task.
+    Must correspond to a Pytorch class. Default: `MSELoss`.
 
 
 ## Configuration file

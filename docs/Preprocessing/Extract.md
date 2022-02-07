@@ -10,7 +10,7 @@ You will need to execute the [Clinica](https://aramislab.paris.inria.fr/clinica/
 ## Running the pipeline
 The pipeline can be run with the following command line:
 ```{.sourceCode .bash}
-clinicadl extract [image|patch|slice|roi] CAPS_DIRECTORY MODALITY
+clinicadl extract [image|patch|slice|roi] [OPTIONS] CAPS_DIRECTORY MODALITY
 ```
 
 The command has four sub-commands:
@@ -29,11 +29,12 @@ which have the same arguments:
   can be `t1-linear` or `pet-linear`. You can choose `custom` if you want to get a
   tensor from a custom filename.
 
-Each sub-command has its own set of options. There are two generic options:
+Each sub-command has its own set of options. There are three generic options:
 
 - `--subjects_sessions_tsv` (Path) is a path to a TSV file listing participant and session IDs. 
 - `--extract_json` (str) is the name of the JSON file that will be created to store all the information
   of the extraction step. Default will name the JSON file `extract_{time_stamp}.json`.
+- `--n_proc` (int) is the number of workers used to parallelize tensor extraction. Default: `2`.
 
 !!! note "Default values"
     When using patch or slice extraction, default values were set according to
@@ -69,9 +70,11 @@ extraction method command. Each time we consider that the input is named `<input
 The suffix represents the initial modality (it can be for example `T1w`).
 
 !!! Warning!
-    The default behavior of the pipeline is to only extract images even if another extraction method is specified.
-    However, all the options will be saved in the preprocessing JSON file and then the extraction is done
-    when data is loaded during the training. If you want to save the extracted method tensors in the CAPS, you have to add the `--save-features` flag.
+    The default behavior of the pipeline is to only extract images even if
+    another extraction method is specified.  However, all the options will be
+    saved in the preprocessing JSON file and then the extraction is done when
+    data is loaded during the training. If you want to save the extracted
+    method tensors in the CAPS, you have to add the `--save-features` flag.
 
 ### `image`
 

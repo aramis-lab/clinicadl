@@ -12,14 +12,24 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 
-from clinicadl.extract.extract_utils import compute_folder_and_file_type
 from clinicadl.utils.caps_dataset.data import (
     get_transforms,
     load_data_test,
     return_dataset,
 )
+from clinicadl.utils.cmdline_utils import check_gpu
 from clinicadl.utils.early_stopping import EarlyStopping
+from clinicadl.utils.exceptions import (
+    ClinicaDLArgumentError,
+    ClinicaDLConfigurationError,
+    ClinicaDLDataLeakageError,
+    MAPSError,
+)
 from clinicadl.utils.maps_manager.logwriter import LogWriter, setup_logging
+from clinicadl.utils.maps_manager.maps_manager_utils import (
+    add_default_values,
+    read_json,
+)
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.network.network import Network
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
@@ -52,7 +62,7 @@ class MapsManager:
         # Existing MAPS
         if parameters is None:
             if not path.exists(path.join(maps_path, "maps.json")):
-                raise ValueError(
+                raise MAPSError(
                     f"MAPS was not found at {maps_path}."
                     f"To initiate a new MAPS please give a train_dict."
                 )
@@ -69,7 +79,7 @@ class MapsManager:
             ) or (
                 path.isdir(maps_path) and listdir(maps_path)  # Non empty folder
             ):
-                raise ValueError(
+                raise MAPSError(
                     f"You are trying to create a new MAPS at {maps_path} but "
                     f"this already corresponds to a file or a non-empty folder. \n"
                     f"Please remove it or choose another location."
@@ -82,6 +92,7 @@ class MapsManager:
             self.split_name = "split"  # Used only for retro-compatibility
             self._write_training_data()
             self._write_train_val_groups()
+            self._write_information()
 
     def __getattr__(self, name):
         """Allow to directly get the values in parameters attribute"""
@@ -101,7 +112,7 @@ class MapsManager:
                 are erased.
 
         Raises:
-            ValueError: If splits specified in input already exist and overwrite is False.
+            MAPSError: If splits specified in input already exist and overwrite is False.
         """
         existing_splits = []
 
@@ -115,7 +126,7 @@ class MapsManager:
                     existing_splits.append(split)
 
         if len(existing_splits) > 0:
-            raise ValueError(
+            raise MAPSError(
                 f"Splits {existing_splits} already exist. Please "
                 f"specify a list of splits not intersecting the previous list, "
                 f"or use overwrite to erase previously trained splits."
@@ -134,7 +145,7 @@ class MapsManager:
                 Default trains all splits.
 
         Raises:
-            ValueError: If splits specified in input do not exist.
+            MAPSError: If splits specified in input do not exist.
         """
         missing_splits = []
         split_manager = self._init_split_manager(split_list)
@@ -146,7 +157,7 @@ class MapsManager:
                 missing_splits.append(split)
 
         if len(missing_splits) > 0:
-            raise ValueError(
+            raise MAPSError(
                 f"Splits {missing_splits} were not initialized. "
                 f"Please try train command on these splits and resume only others."
             )
@@ -196,12 +207,6 @@ class MapsManager:
             overwrite: If True erase the occurrences of data_group.
             label: Target label used for training (if network_task in [`regression`, `classification`]).
             label_code: dictionary linking the target values to a node number.
-
-        Raises:
-            ValueError:
-                when trying to overwrite train or validation data groups
-                when caps_directory or df are given but data group already exists
-                when caps_directory or df are not given and data group does not exist
         """
         if split_list is None:
             split_list = self._find_splits()
@@ -220,7 +225,7 @@ class MapsManager:
                 multi_cohort=multi_cohort,
             )
 
-        criterion = self.task_manager.get_criterion()
+        criterion = self.task_manager.get_criterion(self.loss)
         self._check_data_group(
             data_group,
             caps_directory,
@@ -331,6 +336,7 @@ class MapsManager:
         selection_metrics=None,
         multi_cohort=False,
         diagnoses=(),
+        nifti=False,
         gpu=None,
         overwrite=False,
     ):
@@ -352,12 +358,6 @@ class MapsManager:
             diagnoses (list[str]): List of diagnoses to load if tsv_path is a split_directory.
             gpu (bool): If given, a new value for the device of the model will be computed.
             overwrite (bool): If True erase the occurrences of data_group.
-
-        Raises:
-            ValueError:
-                when trying to overwrite train or validation data groups
-                when caps_directory or df are given but data group already exists
-                when caps_directory or df are not given and data group does not exist
         """
         if split_list is None:
             split_list = self._find_splits()
@@ -400,14 +400,24 @@ class MapsManager:
                         label_code=self.label_code,
                         cnn_index=network,
                     )
-                    self._compute_output_tensors(
-                        dataset,
-                        data_group,
-                        split,
-                        selection_metrics,
-                        gpu=gpu,
-                        network=network,
-                    )
+                    if nifti:
+                        self._compute_output_nifti(
+                            dataset,
+                            data_group,
+                            split,
+                            selection_metrics,
+                            gpu=gpu,
+                            network=network,
+                        )
+                    else:
+                        self._compute_output_tensors(
+                            dataset,
+                            data_group,
+                            split,
+                            selection_metrics,
+                            gpu=gpu,
+                            network=network,
+                        )
 
             else:
                 dataset = return_dataset(
@@ -419,13 +429,22 @@ class MapsManager:
                     label=self.label,
                     label_code=self.label_code,
                 )
-                self._compute_output_tensors(
-                    dataset,
-                    data_group,
-                    split,
-                    selection_metrics,
-                    gpu=gpu,
-                )
+                if nifti:
+                    self._compute_output_nifti(
+                        dataset,
+                        data_group,
+                        split,
+                        selection_metrics,
+                        gpu=gpu,
+                    )
+                else:
+                    self._compute_output_tensors(
+                        dataset,
+                        data_group,
+                        split,
+                        selection_metrics,
+                        gpu=gpu,
+                    )
 
     def interpret(
         self,
@@ -470,12 +489,6 @@ class MapsManager:
             gpu (bool): If given, a new value for the device of the model will be computed.
             overwrite (bool): If True erase the occurrences of data_group.
             overwrite_name (bool): If True erase the occurrences of name.
-        Raises:
-            ValueError:
-                when trying to overwrite train or validation data groups
-                when caps_directory or df are given but data group already exists
-                when caps_directory or df are not given and data group does not exist
-                when name already exists and overwrite_name is False
         """
 
         from torch.utils.data import DataLoader
@@ -545,7 +558,7 @@ class MapsManager:
                     if overwrite_name:
                         shutil.rmtree(results_path)
                     else:
-                        raise ValueError(
+                        raise MAPSError(
                             f"Interpretation name {name} is already written. "
                             f"Please choose another name or set overwrite_name to True."
                         )
@@ -802,7 +815,7 @@ class MapsManager:
             transfer_path=self.transfer_path,
             transfer_selection=self.transfer_selection_metric,
         )
-        criterion = self.task_manager.get_criterion()
+        criterion = self.task_manager.get_criterion(self.loss)
         logger.debug(f"Criterion for {self.network_task} is {criterion}")
         optimizer = self._init_optimizer(model, split=split, resume=resume)
         logger.debug(f"Optimizer used for training is optimizer")
@@ -835,7 +848,9 @@ class MapsManager:
 
             for i, data in enumerate(train_loader):
 
-                _, loss = model.compute_outputs_and_loss(data, criterion)
+                _, loss_dict = model.compute_outputs_and_loss(data, criterion)
+                logger.debug(f"Train loss dictionnary {loss_dict}")
+                loss = loss_dict["loss"]
                 loss.backward()
 
                 if (i + 1) % self.accumulation_steps == 0:
@@ -1040,6 +1055,70 @@ class MapsManager:
                 prediction_df, metrics, split, selection_metric, data_group=data_group
             )
 
+    def _compute_output_nifti(
+        self,
+        dataset,
+        data_group,
+        split,
+        selection_metrics,
+        gpu=None,
+        network=None,
+    ):
+        """
+        Computes the output nifti images and saves them in the MAPS.
+
+        Args:
+            dataset (clinicadl.utils.caps_dataset.data.CapsDataset): wrapper of the data set.
+            data_group (str): name of the data group used for the task.
+            split (int): split number.
+            selection_metrics (list[str]): metrics used for model selection.
+            gpu (bool): If given, a new value for the device of the model will be computed.
+            network (int): Index of the network tested (only used in multi-network setting).
+        # Raise an error if mode is not image
+        """
+        import nibabel as nib
+        from numpy import eye
+
+        for selection_metric in selection_metrics:
+            # load the best trained model during the training
+            model, _ = self._init_model(
+                transfer_path=self.maps_path,
+                split=split,
+                transfer_selection=selection_metric,
+                gpu=gpu,
+                network=network,
+            )
+
+            nifti_path = path.join(
+                self.maps_path,
+                f"{self.split_name}-{split}",
+                f"best-{selection_metric}",
+                data_group,
+                "nifti_images",
+            )
+            makedirs(nifti_path, exist_ok=True)
+
+            nb_imgs = len(dataset)
+            for i in range(nb_imgs):
+                data = dataset[i]
+                image = data["image"]
+                output = (
+                    model.predict(image.unsqueeze(0).to(model.device))
+                    .squeeze(0)
+                    .detach()
+                    .cpu()
+                )
+                # Convert tensor to nifti image with appropriate affine
+                input_nii = nib.Nifti1Image(image[0].detach().cpu().numpy(), eye(4))
+                output_nii = nib.Nifti1Image(output[0].numpy(), eye(4))
+                # Create file name according to participant and session id
+                participant_id = data["participant_id"]
+                session_id = data["session_id"]
+                input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
+                output_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
+                nib.save(input_nii, path.join(nifti_path, input_filename))
+                nib.save(output_nii, path.join(nifti_path, output_filename))
+
     def _compute_output_tensors(
         self,
         dataset,
@@ -1139,7 +1218,6 @@ class MapsManager:
     def _check_args(self, parameters):
         """
         Check the training parameters integrity
-        TODO: create independent class for train_parameters check
         """
         logger.debug("Checking arguments...")
         mandatory_arguments = [
@@ -1152,12 +1230,15 @@ class MapsManager:
 
         for arg in mandatory_arguments:
             if arg not in parameters:
-                raise ValueError(
+                raise ClinicaDLArgumentError(
                     f"The values of mandatory arguments {mandatory_arguments} should be set. "
                     f"No value was given for {arg}."
                 )
 
+        parameters = add_default_values(parameters)
         self.parameters = parameters
+        if self.parameters["gpu"]:
+            check_gpu()
 
         _, transformations = get_transforms(self.normalize)
 
@@ -1197,8 +1278,8 @@ class MapsManager:
         self.parameters["seed"] = get_seed(self.parameters["seed"])
 
         if self.parameters["num_networks"] < 2 and self.multi_network:
-            raise ValueError(
-                f"Invalid training arguments: cannot train a multi-network "
+            raise ClinicaDLConfigurationError(
+                f"Invalid training configuration: cannot train a multi-network "
                 f"framework with only {self.parameters['num_networks']} element "
                 f"per image."
             )
@@ -1208,7 +1289,7 @@ class MapsManager:
         if not set(self.parameters["selection_metrics"]).issubset(
             possible_selection_metrics_set
         ):
-            raise ValueError(
+            raise ClinicaDLConfigurationError(
                 f"Selection metrics {self.parameters['selection_metrics']} "
                 f"must be a subset of metrics used for evaluation "
                 f"{possible_selection_metrics_set}."
@@ -1235,7 +1316,7 @@ class MapsManager:
         """Find which selection metrics are available in MAPS for a given split."""
         split_path = path.join(self.maps_path, f"{self.split_name}-{split}")
         if not path.exists(split_path):
-            raise ValueError(
+            raise MAPSError(
                 f"Training of split {split} was not performed."
                 f"Please execute maps_manager.train(split_list=[{split}])"
             )
@@ -1251,7 +1332,7 @@ class MapsManager:
         available_metrics = self._find_selection_metrics(split)
         if selection_metric is None:
             if len(available_metrics) > 1:
-                raise ValueError(
+                raise ClinicaDLArgumentError(
                     f"Several metrics are available for split {split}. "
                     f"Please choose which one you want to read among {available_metrics}"
                 )
@@ -1259,7 +1340,7 @@ class MapsManager:
                 selection_metric = available_metrics[0]
         else:
             if selection_metric not in available_metrics:
-                raise ValueError(
+                raise ClinicaDLArgumentError(
                     f"The metric {selection_metric} is not available."
                     f"Please choose among is the available metrics {available_metrics}."
                 )
@@ -1273,7 +1354,7 @@ class MapsManager:
             data_group (str): name of the data group
             test_df (pd.DataFrame): Table of participant_id / session_id of the data group
         Raises:
-            ValueError: if data_group not in ["train", "validation"] and there is an intersection
+            ClinicaDLDataLeakageError: if data_group not in ["train", "validation"] and there is an intersection
                 between the participant IDs in test_df and the ones used for training.
         """
         if data_group not in ["train", "validation"]:
@@ -1284,7 +1365,7 @@ class MapsManager:
             intersection = participants_test & participants_train
 
             if len(intersection) > 0:
-                raise ValueError(
+                raise ClinicaDLDataLeakageError(
                     "Your evaluation set contains participants who were already seen during "
                     "the training step. The list of common participants is the following: "
                     f"{intersection}."
@@ -1312,8 +1393,8 @@ class MapsManager:
             label (str): label name if applicable
 
         Raises:
-            ValueError:
-                when trying to overwrite train or validation data groups
+            MAPSError when trying to overwrite train or validation data groups
+            ClinicaDLArgumentError:
                 when caps_directory or df are given but data group already exists
                 when caps_directory or df are not given and data group does not exist
         """
@@ -1322,7 +1403,7 @@ class MapsManager:
         if path.exists(group_path):  # Data group already exists
             if overwrite:
                 if data_group in ["train", "validation"]:
-                    raise ValueError("Cannot overwrite train or validation data group.")
+                    raise MAPSError("Cannot overwrite train or validation data group.")
                 else:
                     shutil.rmtree(group_path)
                     split_list = self._find_splits()
@@ -1338,7 +1419,7 @@ class MapsManager:
                             if path.exists(results_path):
                                 shutil.rmtree(results_path)
             elif df is not None or caps_directory is not None:
-                raise ValueError(
+                raise ClinicaDLArgumentError(
                     f"Data group {data_group} is already defined. "
                     f"Please do not give any caps_directory, tsv_path or multi_cohort to use it. "
                     f"To erase {data_group} please set overwrite to True."
@@ -1347,7 +1428,7 @@ class MapsManager:
         if not path.exists(group_path) and (
             caps_directory is None or df is None
         ):  # Data group does not exist yet / was overwritten + missing data
-            raise ValueError(
+            raise ClinicaDLArgumentError(
                 f"The data group {data_group} does not already exist. "
                 f"Please specify a caps_directory and a tsv_path to create this data group."
             )
@@ -1365,7 +1446,7 @@ class MapsManager:
     @staticmethod
     def write_parameters(json_path, parameters, verbose=True):
         """Write JSON files of parameters."""
-        logger.debug("Writting parameters...")
+        logger.debug("Writing parameters...")
         makedirs(json_path, exist_ok=True)
 
         # save to json file
@@ -1378,7 +1459,7 @@ class MapsManager:
 
     def _write_requirements_version(self):
         """Writes the environment.txt file."""
-        logger.debug("Writting requirement version...")
+        logger.debug("Writing requirement version...")
         try:
             env_variables = subprocess.check_output("pip freeze", shell=True).decode(
                 "utf-8"
@@ -1392,7 +1473,7 @@ class MapsManager:
 
     def _write_training_data(self):
         """Writes the TSV file containing the participant and session IDs used for training."""
-        logger.debug("Writting training data...")
+        logger.debug("Writing training data...")
         from clinicadl.utils.caps_dataset.data import load_data_test
 
         train_df = load_data_test(
@@ -1456,7 +1537,7 @@ class MapsManager:
 
     def _write_train_val_groups(self):
         """Defines the training and validation groups at the initialization"""
-        logger.debug("Writting training and validation groups...")
+        logger.debug("Writing training and validation groups...")
         split_manager = self._init_split_manager()
         for split in split_manager.split_iterator():
             for data_group in ["train", "validation"]:
@@ -1519,6 +1600,38 @@ class MapsManager:
                     shutil.copyfile(
                         checkpoint_path, path.join(metric_path, best_filename)
                     )
+
+    def _write_information(self):
+        """
+        Writes model architecture of the MAPS in MAPS root.
+        """
+        from datetime import datetime
+
+        import clinicadl.utils.network as network_package
+
+        model_class = getattr(network_package, self.architecture)
+        args = list(
+            model_class.__init__.__code__.co_varnames[
+                : model_class.__init__.__code__.co_argcount
+            ]
+        )
+        args.remove("self")
+        kwargs = dict()
+        for arg in args:
+            kwargs[arg] = self.parameters[arg]
+        kwargs["gpu"] = False
+
+        model = model_class(**kwargs)
+
+        file_name = "information.log"
+
+        with open(path.join(self.maps_path, file_name), "w") as f:
+            f.write(f"- Date :\t{datetime.now().strftime('%d %b %Y, %H:%M:%S')}\n\n")
+            f.write(f"- Path :\t{self.maps_path}\n\n")
+            # f.write("- Job ID :\t{}\n".format(os.getenv('SLURM_JOBID')))
+            f.write(f"- Model :\t{model.layers}\n\n")
+
+        del model
 
     def _erase_tmp(self, split):
         """Erase checkpoints of the model and optimizer at the end of training."""
@@ -1748,6 +1861,7 @@ class MapsManager:
             kwargs["gpu"] = gpu
 
         model = model_class(**kwargs)
+        logger.debug(f"Model:\n{model.layers}")
         device = model.device
         logger.info(f"Working on {device}")
         current_epoch = 0
@@ -1789,7 +1903,7 @@ class MapsManager:
             checkpoint_path = path.join(
                 self.maps_path, f"{self.split_name}-{split}", "tmp", "optimizer.pth.tar"
             )
-            checkpoint_state = torch.load(checkpoint_path)
+            checkpoint_state = torch.load(checkpoint_path, map_location=model.device)
             optimizer.load_state_dict(checkpoint_state["optimizer"])
 
         return optimizer
@@ -1827,7 +1941,7 @@ class MapsManager:
         elif self.network_task == "reconstruction":
             return ReconstructionManager(self.mode)
         else:
-            raise ValueError(
+            raise NotImplementedError(
                 f"Task {self.network_task} is not implemented in ClinicaDL. "
                 f"Please choose between classification, regression and reconstruction."
             )
@@ -1870,18 +1984,18 @@ class MapsManager:
         """
         group_path = path.join(self.maps_path, "groups", data_group)
         if not path.exists(group_path):
-            raise ValueError(
+            raise MAPSError(
                 f"Data group {data_group} is not defined. "
                 f"Please run a prediction to create this data group."
             )
         if data_group in ["train", "validation"]:
             if split is None:
-                raise ValueError(
+                raise MAPSError(
                     f"Information on train or validation data can only be "
                     f"loaded if a split number is given"
                 )
             elif not path.exists(path.join(group_path, f"{self.split_name}-{split}")):
-                raise ValueError(
+                raise MAPSError(
                     f"Split {split} is not available for data group {data_group}."
                 )
             else:
@@ -1897,97 +2011,7 @@ class MapsManager:
     def get_parameters(self):
         """Returns the training parameters dictionary."""
         json_path = path.join(self.maps_path, "maps.json")
-        with open(json_path, "r") as f:
-            parameters = json.load(f)
-
-        # Types of retro-compatibility
-        # Change arg name: ex network --> model
-        # Change arg value: ex for preprocessing: mni --> t1-extensive
-        # New arg with default hard-coded value --> discarded_slice --> 20
-        retro_change_name = {
-            "model": "architecture",
-            "multi": "multi_network",
-            "minmaxnormalization": "normalize",
-            "num_workers": "n_proc",
-        }
-        retro_change_value = {
-            # "preprocessing": {"mni": "t1-extensive", "linear": "t1-linear"}
-        }
-        retro_add = {
-            "loss": "default",
-        }
-
-        for old_name, new_name in retro_change_name.items():
-            if old_name in parameters:
-                parameters[new_name] = parameters[old_name]
-                del parameters[old_name]
-
-        for name, change_values in retro_change_value.items():
-            if parameters[name] in change_values:
-                parameters[name] = change_values[parameters[name]]
-
-        for name, value in retro_add.items():
-            if name not in parameters:
-                parameters[name] = value
-
-        # Value changes
-        if "use_cpu" in parameters:
-            parameters["gpu"] = not parameters["use_cpu"]
-            del parameters["use_cpu"]
-        if "nondeterministic" in parameters:
-            parameters["deterministic"] = not parameters["nondeterministic"]
-            del parameters["nondeterministic"]
-
-        # Build preprocessing_dict
-        if "preprocessing_dict" not in parameters:
-            parameters["preprocessing_dict"] = {"mode": parameters["mode"]}
-            preprocessing_options = [
-                "preprocessing",
-                "use_uncropped_image",
-                "prepare_dl" "custom_suffix",
-                "acq_label",
-                "suvr_reference_region",
-                "patch_size",
-                "stride_size",
-                "slice_direction",
-                "slice_mode",
-                "discarded_slices",
-                "roi_list",
-                "uncropped_roi",
-                "roi_custom_suffix",
-                "roi_custom_template",
-                "roi_custom_mask_pattern",
-            ]
-            for preprocessing_var in preprocessing_options:
-                if preprocessing_var in parameters:
-                    parameters["preprocessing_dict"][preprocessing_var] = parameters[
-                        preprocessing_var
-                    ]
-                    del parameters[preprocessing_var]
-
-        # Add missing parameters in previous version of extract
-        if "use_uncropped_image" not in parameters["preprocessing_dict"]:
-            parameters["preprocessing_dict"]["use_uncropped_image"] = False
-
-        if (
-            "prepare_dl" not in parameters["preprocessing_dict"]
-            and parameters["mode"] != "image"
-        ):
-            parameters["preprocessing_dict"]["prepare_dl"] = False
-
-        if (
-            parameters["mode"] == "slice"
-            and "slice_mode" not in parameters["preprocessing_dict"]
-        ):
-            parameters["preprocessing_dict"]["slice_mode"] = "rgb"
-
-        if "file_type" not in parameters["preprocessing_dict"]:
-            _, file_type = compute_folder_and_file_type(
-                parameters["preprocessing_dict"]
-            )
-            parameters["preprocessing_dict"]["file_type"] = file_type
-
-        return parameters
+        return read_json(json_path)
 
     def get_model(
         self, split: int = 0, selection_metric: str = None, network: int = None
@@ -1995,7 +2019,7 @@ class MapsManager:
         selection_metric = self._check_selection_metric(split, selection_metric)
         if self.multi_network:
             if network is None:
-                raise ValueError(
+                raise ClinicaDLArgumentError(
                     "Please precise the network number that must be loaded."
                 )
         return self._init_model(
@@ -2021,7 +2045,7 @@ class MapsManager:
         selection_metric = self._check_selection_metric(split, selection_metric)
         if self.multi_network:
             if network is None:
-                raise ValueError(
+                raise ClinicaDLArgumentError(
                     "Please precise the network number that must be loaded."
                 )
             else:
@@ -2073,7 +2097,7 @@ class MapsManager:
             data_group,
         )
         if not path.exists(prediction_dir):
-            raise ValueError(
+            raise MAPSError(
                 f"No prediction corresponding to data group {data_group} was found."
             )
         df = pd.read_csv(
@@ -2108,7 +2132,7 @@ class MapsManager:
             data_group,
         )
         if not path.exists(prediction_dir):
-            raise ValueError(
+            raise MAPSError(
                 f"No prediction corresponding to data group {data_group} was found."
             )
         df = pd.read_csv(
@@ -2156,7 +2180,7 @@ class MapsManager:
             f"interpret-{name}",
         )
         if not path.exists(map_dir):
-            raise ValueError(
+            raise MAPSError(
                 f"No prediction corresponding to data group {data_group} and "
                 f"interpretation {name} was found."
             )

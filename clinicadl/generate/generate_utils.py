@@ -9,6 +9,8 @@ from clinica.utils.input_files import T1W_LINEAR, T1W_LINEAR_CROPPED, pet_linear
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
 
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
+
 
 def find_file_type(
     preprocessing: str,
@@ -23,7 +25,7 @@ def find_file_type(
             file_type = T1W_LINEAR_CROPPED
     elif preprocessing == "pet-linear":
         if acq_label is None or suvr_reference_region is None:
-            raise ValueError(
+            raise ClinicaDLArgumentError(
                 "acq_label and suvr_reference_region must be defined "
                 "when using `pet-linear` preprocessing."
             )
@@ -162,7 +164,7 @@ def generate_scales(size):
         return random.uniform(0.8, 0.9), random.uniform(0.8, 0.9)
     else:
         raise NotImplementedError(
-            "Size %s was not implemented for variable sizes." % size
+            f"Size {size} was not implemented for variable sizes."
         )
 
 
@@ -197,7 +199,7 @@ def generate_shepplogan_phantom(
     elif label == 2:
         roi1, roi2 = "small", "large"
     else:
-        raise ValueError("Subtype %i was not implemented." % label)
+        raise NotImplementedError(f"Subtype {label} was not implemented.")
 
     # Skull
     rr, cc = ellipse(center, center, a, b, (img_size, img_size))

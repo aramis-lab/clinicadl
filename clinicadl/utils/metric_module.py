@@ -12,6 +12,8 @@ metric_optimum = {
     "PPV": "max",
     "NPV": "max",
     "BA": "max",
+    "PSNR": "max",
+    "SSIM": "max",
     "loss": "min",
 }
 
@@ -34,7 +36,7 @@ class MetricModule:
             if f"{metric.lower()}_fn" in list_fn:
                 self.metrics[metric] = getattr(MetricModule, f"{metric.lower()}_fn")
             else:
-                raise ValueError(
+                raise NotImplementedError(
                     f"The metric {metric} is not implemented in the module"
                 )
 
@@ -216,6 +218,32 @@ class MetricModule:
             "fn": false_negative,
         }
 
+    @staticmethod
+    def ssim_fn(y, y_pred):
+        """
+        Args:
+            y (List): list of labels
+            y_pred (List): list of predictions
+        Returns:
+            (float) SSIM
+        """
+        from skimage.metrics import structural_similarity
+
+        return structural_similarity(y, y_pred)
+
+    @staticmethod
+    def psnr_fn(y, y_pred):
+        """
+        Args:
+            y (List): list of labels
+            y_pred (List): list of predictions
+        Returns:
+            (float) PSNR
+        """
+        from skimage.metrics import peak_signal_noise_ratio
+
+        return peak_signal_noise_ratio(y, y_pred)
+
 
 class RetainBest:
     """
@@ -262,7 +290,7 @@ class RetainBest:
                 f"Please choose between 'min' and 'max'."
             )
 
-    def step(self, metrics_valid: Dict[str, int]) -> Dict[str, bool]:
+    def step(self, metrics_valid: Dict[str, float]) -> Dict[str, bool]:
         """
         Computes for each metric if this is the best value ever seen.
 

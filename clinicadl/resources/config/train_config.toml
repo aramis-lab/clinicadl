@@ -10,20 +10,27 @@ multi_network = false
 dropout = 0.0 # between 0 and 1
 # architecture.n_layers = 4
 # VAE
-latent_space_dimension = 64
-latent_space_size = 2
+latent_space_size = 256
+feature_size = 1024
+n_conv = 4
+io_layer_channels = 8
+recons_weight = 1
+KL_weight = 1
 
 [Classification]
 selection_metrics = ["loss"]
 label = "diagnosis"
 selection_threshold = 0.0 # Will only be used if num_networks != 1
+loss = "CrossEntropyLoss"
 
 [Regression]
 selection_metrics = ["loss"]
 label = "age"
+loss = "MSELoss"
 
 [Reconstruction]
 selection_metrics = ["loss"]
+loss = "MSELoss"
 
 [Computational]
 gpu = true
@@ -57,6 +64,7 @@ n_splits = 0
 split = []
 
 [Optimization]
+optimizer = "Adam"
 epochs = 20
 learning_rate = 1e-4
 weight_decay = 1e-4

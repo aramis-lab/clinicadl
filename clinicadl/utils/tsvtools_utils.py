@@ -7,6 +7,8 @@ from os import path
 import numpy as np
 import pandas as pd
 
+from clinicadl.utils.exceptions import ClinicaDLTSVError
+
 logger = getLogger("clinicadl")
 
 
@@ -78,7 +80,7 @@ def next_session(subject_df, session_orig):
     if index < len(session_id_list) - 1:
         return session_id_list[index + 1]
     else:
-        raise ValueError("The argument session is the last session")
+        raise IndexError("The argument session is the last session")
 
 
 def extract_baseline(diagnosis_df, set_index=True):
@@ -167,7 +169,7 @@ def find_label(labels_list, target_label):
                 min_length = len(label)
                 found_label = label
         if found_label is None:
-            raise ValueError(
+            raise ClinicaDLTSVError(
                 f"No label was found in {labels_list} for target label {target_label}."
             )
 

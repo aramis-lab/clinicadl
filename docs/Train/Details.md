@@ -115,6 +115,18 @@ the current state of the model is saved in the corresponding best model folder.
 Such comparison and serialization is only performed at the end of an epoch, even though inner epoch evaluations 
 are performed.
 
+The command 
+```
+clinicadl train list_models
+```
+will display the list of available models that can be used.
+There are a few options to get more details:
+
+- `--architecture`: is the name of the model whose architecture will be displayed.
+- `--input_size`: is the size of the input of the model with shape C@HxW if the image is 2D or C@DxHxW if the image is 3D. 
+  For example if the input size is 1@169x208x179, the option `--input_size 1@169x208x179` should be added.
+  Default value: `1@128x128`.
+
 ## Stopping criterion
 
 By default, early stopping is enabled to save computation time. This method automatically stops training

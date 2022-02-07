@@ -6,7 +6,7 @@ from clinicadl.utils import cli_param
 @click.command(name="t1-volume", no_args_is_help=True)
 @cli_param.argument.caps_directory
 @click.argument(
-    "output_tsv",
+    "output_directory",
     type=str,
 )
 @click.argument(
@@ -15,19 +15,21 @@ from clinicadl.utils import cli_param
 )
 def cli(
     caps_directory,
-    output_tsv,
+    output_directory,
     group_label,
 ):
     """Performs quality check on t1-volume pipeline.
 
     CAPS_DIRECTORY is the CAPS folder where t1-volume outputs are stored.
 
-    OUTPUT_TSV is the path to the tsv file where results will be saved.
+    OUTPUT_DIRECTORY is the path to the directory in which TSV files will be written.
+
+    GROUP_LABEL is the group associated to the gray matter DARTEL template in CAPS_DIRECTORY.
     """
     from .quality_check import quality_check as volume_qc
 
     volume_qc(
         caps_directory,
-        output_tsv,
+        output_directory,
         group_label,
     )

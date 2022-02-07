@@ -174,9 +174,11 @@ def generate_trivial_dataset(
         Folder structure where images are stored in CAPS format.
 
     Raises:
-        ValueError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
+        IndexError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
     """
     from pathlib import Path
+
+    from clinicadl.utils.exceptions import DownloadError
 
     commandline_to_json(
         {
@@ -206,15 +208,15 @@ def generate_trivial_dataset(
     makedirs(cache_clinicadl, exist_ok=True)
 
     if n_subjects > len(data_df):
-        raise ValueError(
+        raise IndexError(
             f"The number of subjects {n_subjects} cannot be higher "
             f"than the number of subjects in the baseline dataset of size {len(data_df)}"
         )
 
     if mask_path is None:
         if not exists(join(cache_clinicadl, "AAL2")):
+            print("Downloading AAL2 masks...")
             try:
-                print("Try to download AAL2 masks")
                 mask_path_tar = fetch_file(FILE1, cache_clinicadl)
                 tar_file = tarfile.open(mask_path_tar)
                 print("File: " + mask_path_tar)
@@ -223,13 +225,13 @@ def generate_trivial_dataset(
                     tar_file.close()
                     mask_path = join(cache_clinicadl, "AAL2")
                 except RuntimeError:
-                    print("Unable to extract downloaded files")
+                    print("Unable to extract downloaded files.")
             except IOError as err:
                 print("Unable to download required templates:", err)
-                raise ValueError(
+                raise DownloadError(
                     """Unable to download masks, please download them
-                                  manually at https://aramislab.paris.inria.fr/files/data/masks/
-                                  and provide a valid path."""
+                    manually at https://aramislab.paris.inria.fr/files/data/masks/
+                    and provide a valid path."""
                 )
         else:
             mask_path = join(cache_clinicadl, "AAL2")
@@ -328,7 +330,7 @@ def generate_shepplogan_dataset(
 
     for i, label in enumerate(labels_distribution.keys()):
         for j in range(samples):
-            participant_id = "sub-CLNC%i%04d" % (i, j)
+            participant_id = f"sub-CLNC{i}{j:04d}"
             session_id = "ses-M00"
             subtype = np.random.choice(
                 np.arange(len(labels_distribution[label])), p=labels_distribution[label]

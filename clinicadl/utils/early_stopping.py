@@ -35,7 +35,7 @@ class EarlyStopping(object):
 
     def _init_is_better(self, mode, min_delta):
         if mode not in {"min", "max"}:
-            raise ValueError("mode " + mode + " is unknown!")
+            raise ValueError(f"mode {mode} is unknown. It must be 'min' or 'max'")
 
         if mode == "min":
             self.is_better = lambda a, best: a < best - best * min_delta

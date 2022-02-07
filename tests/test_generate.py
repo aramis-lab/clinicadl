@@ -90,13 +90,12 @@ def generate_commands(request):
         output_reference = (
             ["data.tsv", "missing_mods_ses-M00.tsv"]
             + [
-                f"sub-CLNC%i%04d_ses-M00_space-SheppLogan_axis-axi_channel-single_slice-0_phantom.pt"
-                % (i, j)
+                f"sub-CLNC{i}{j:04d}_ses-M00_space-SheppLogan_axis-axi_channel-single_slice-0_phantom.pt"
                 for i in range(2)
                 for j in range(n_subjects)
             ]
             + [
-                f"sub-CLNC%i%04d_ses-M00_space-SheppLogan_phantom.nii.gz" % (i, j)
+                f"sub-CLNC{i}{j:04d}_ses-M00_space-SheppLogan_phantom.nii.gz"
                 for i in range(2)
                 for j in range(n_subjects)
             ]

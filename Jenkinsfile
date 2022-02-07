@@ -45,7 +45,7 @@ pipeline {
               }
               stage('CLI tests Linux') {
                 steps {
-                  echo 'Testing pipeline instantation...'
+                  echo 'Testing pipeline instantiation...'
                     sh 'echo "Agent name: ${NODE_NAME}"'
                     sh '''
                     set +x
@@ -82,6 +82,31 @@ pipeline {
                 post {
                   always {
                     junit 'tests/test-reports/test_tsvtool_report.xml'
+                  }
+                }
+              }
+              stage('Quality check tests Linux') {
+                steps {
+                  echo 'Testing quality check tasks...'
+                    sh 'echo "Agent name: ${NODE_NAME}"'
+                    sh '''
+                    source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                    conda activate "${WORKSPACE}/env"
+                    cd $WORKSPACE/tests
+                    mkdir -p ./data/dataset
+                    tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
+                    tar xf /mnt/data/data_CI/dataset/OasisCaps_t1-volume.tar.gz -C ./data/dataset
+                    poetry run pytest \
+                      --junitxml=./test-reports/test_quality_check_report.xml \
+                      --verbose \
+                      --disable-warnings \
+                      test_qc.py
+                    conda deactivate
+                    '''
+                }
+                post {
+                  always {
+                    junit 'tests/test-reports/test_quality_check_report.xml'
                   }
                 }
               }
@@ -242,6 +267,7 @@ pipeline {
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
                      cp -r /mnt/data/data_CI/labels_list ./data/
+                     cp -r /mnt/data/data_CI/reproducibility ./data/
                      poetry run pytest \
                         --junitxml=./test-reports/test_train_report.xml \
                         --verbose \
@@ -283,6 +309,37 @@ pipeline {
                     junit 'tests/test-reports/test_transfer_learning_report.xml'
                     sh 'rm -rf $WORKSPACE/tests/data/dataset'
                     sh 'rm -rf $WORKSPACE/tests/data/labels_list'
+                  }
+                }
+              }
+              stage('Resume tests Linux') {
+                steps {
+                  echo 'Testing resume...'
+                  sh 'echo "Agent name: ${NODE_NAME}"'
+                  sh '''#!/usr/bin/env bash
+                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                     conda activate "${WORKSPACE}/env"
+                     clinicadl --help
+                     cd $WORKSPACE/tests
+                     mkdir -p ./data/dataset
+                     tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
+                     tar xf /mnt/data/data_CI/models/stopped_jobs.tar.gz -C ./data
+                     cp -r /mnt/data/data_CI/labels_list ./data/
+                     poetry run pytest \
+                        --junitxml=./test-reports/test_resume_report.xml \
+                        --verbose \
+                        --disable-warnings \
+                        test_resume.py
+                     rm -r data/stopped_jobs
+                     conda deactivate
+                     '''
+                }
+                post {
+                  always {
+                    junit 'tests/test-reports/test_resume_report.xml'
+                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
+                    sh 'rm -rf $WORKSPACE/tests/data/labels_list'
+                    sh 'rm -rf $WORKSPACE/tests/data/stopped_jobs'
                   }
                 }
               }
@@ -358,8 +415,8 @@ pipeline {
       }
       stage('Deploy') {
         when { buildingTag() }
-        agent { 
-          label 'cpu' 
+        agent {
+          label 'cpu'
           }
         environment {
           PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
@@ -401,7 +458,7 @@ pipeline {
 //       body: "Something is wrong with ${env.BUILD_URL}"
 //     mattermostSend(
 //       color: "#FF0000",
-//       message: "CLinicaDL Build FAILED:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
+//       message: "ClinicaDL Build FAILED:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
 //     )
 //   }
 // }

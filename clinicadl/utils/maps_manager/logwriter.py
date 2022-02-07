@@ -5,6 +5,8 @@ from os import makedirs, path
 import numpy as np
 import pandas as pd
 
+from clinicadl.utils.exceptions import MAPSError
+
 
 class StdLevelFilter(logging.Filter):
     def __init__(self, err=False):
@@ -91,7 +93,7 @@ class LogWriter:
             self.beginning_time = time()
         else:
             if not path.exists(tsv_path):
-                raise ValueError(
+                raise FileNotFoundError(
                     f"The training.tsv file of the split {split} in the MAPS "
                     f"{self.maps_path} does not exist."
                 )

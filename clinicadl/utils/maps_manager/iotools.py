@@ -1,6 +1,7 @@
 # coding: utf8
 import logging
-import sys
+
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 LOG_LEVELS = [logging.WARNING, logging.INFO, logging.DEBUG]
 
@@ -39,7 +40,7 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
     This is a function to write the python argparse object into a json file.
     This helps for DL when searching for hyperparameters
     Args:
-        commandline: (dict) dictionnary with all the command line options values.
+        commandline: (dict) dictionary with all the command line options values.
         logger: (logging object) writer to stdout and stderr.
         filename: (str) name of the JSON file.
 
@@ -67,7 +68,7 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
 
     # save to json file
     json = json.dumps(commandline_arg_dict, skipkeys=True, indent=4)
-    logger.info("Path of json file: %s" % os.path.join(output_dir, "commandline.json"))
+    logger.info(f"Path of json file: {os.path.join(output_dir, 'commandline.json')}")
     f = open(os.path.join(output_dir, filename), "w")
     f.write(json)
     f.close()
@@ -75,7 +76,7 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
 
 def read_json(options=None, json_path=None, test=False, read_computational=False):
     """
-    Read a json file to update options dictionnary.
+    Read a json file to update options dictionary.
     Ensures retro-compatibility with previous namings in clinicadl.
 
     Args:
@@ -299,7 +300,7 @@ def check_and_complete(options, random_search=False):
 
     for argument in mandatory_arguments:
         if argument not in options:
-            raise ValueError(
+            raise ClinicaDLArgumentError(
                 f"The argument {argument} must be specified in the parameters."
             )
 

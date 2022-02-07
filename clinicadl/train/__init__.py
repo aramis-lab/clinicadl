@@ -1,1 +1,1 @@
-from .launch import train
+from .train import train

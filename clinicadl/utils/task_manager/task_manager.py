@@ -148,11 +148,15 @@ class TaskManager:
 
     @staticmethod
     @abstractmethod
-    def get_criterion() -> _Loss:
+    def get_criterion(criterion: str = None) -> _Loss:
         """
-        Gives the optimization criterion
+        Gives the optimization criterion.
+        Must check that it is compatible with the task.
 
-        # TODO: implement a choice
+        Args:
+            criterion: name of the loss as written in Pytorch.
+        Raises:
+            ClinicaDLArgumentError: if the criterion is not compatible with the task.
         """
         pass
 
@@ -188,10 +192,10 @@ class TaskManager:
         total_loss = 0
         with torch.no_grad():
             for i, data in enumerate(dataloader):
-                outputs, loss = model.compute_outputs_and_loss(
+                outputs, loss_dict = model.compute_outputs_and_loss(
                     data, criterion, use_labels=use_labels
                 )
-                total_loss += loss.item()
+                total_loss += loss_dict["loss"].item()
 
                 # Generate detailed DataFrame
                 for idx in range(len(data["participant_id"])):
@@ -199,7 +203,7 @@ class TaskManager:
                     row_df = pd.DataFrame(row, columns=self.columns)
                     results_df = pd.concat([results_df, row_df])
 
-                del outputs, loss
+                del outputs, loss_dict
             results_df.reset_index(inplace=True, drop=True)
 
         if not use_labels:

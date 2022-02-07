@@ -27,6 +27,7 @@ crash*
 tests/data/models
 tests/data/dataset
 tests/data/tsvtool_test
+tests/data/labels_list
 tests/results
 
 # Notebook jupyter

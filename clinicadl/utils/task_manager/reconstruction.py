@@ -1,6 +1,7 @@
 from torch import nn
 from torch.utils.data import sampler
 
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.task_manager.task_manager import TaskManager
 
 
@@ -20,7 +21,7 @@ class ReconstructionManager(TaskManager):
 
     @property
     def evaluation_metrics(self):
-        return ["MSE", "MAE"]
+        return ["MSE", "MAE", "PSNR"]
 
     @property
     def save_outputs(self):
@@ -93,8 +94,22 @@ class ReconstructionManager(TaskManager):
         return None, None
 
     @staticmethod
-    def get_criterion():
-        return nn.MSELoss()
+    def get_criterion(criterion=None):
+        compatible_losses = [
+            "L1Loss",
+            "MSELoss",
+            "KLDivLoss",
+            "BCEWithLogitsLoss",
+            "HuberLoss",
+            "SmoothL1Loss",
+        ]
+        if criterion is None:
+            return nn.MSELoss()
+        if criterion not in compatible_losses:
+            raise ClinicaDLArgumentError(
+                f"Reconstruction loss must be chosen in {compatible_losses}."
+            )
+        return getattr(nn, criterion)()
 
     @staticmethod
     def get_default_network():

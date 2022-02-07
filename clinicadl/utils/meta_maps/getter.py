@@ -7,6 +7,7 @@ from os import path
 import pandas as pd
 
 from clinicadl import MapsManager
+from clinicadl.utils.exceptions import MAPSError
 
 
 def meta_maps_analysis(launch_dir, evaluation_metric="loss"):
@@ -44,7 +45,7 @@ def meta_maps_analysis(launch_dir, evaluation_metric="loss"):
                     "validation", split, metric
                 )
                 if evaluation_metric not in validation_metrics:
-                    raise ValueError(
+                    raise MAPSError(
                         f"Evaluation metric {evaluation_metric} not found in "
                         f"MAPS {job}, for split {split} and selection {metric}."
                     )

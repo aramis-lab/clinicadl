@@ -26,7 +26,7 @@ You need to execute the `clinica run` and `clinicadl extract` pipelines prior to
 
 The task can be run with the following command line:
 ```
-clinicadl generate trivial CAPS_DIRECTORY GENERATED_CAPS_DIRECTORY
+clinicadl generate trivial [OPTIONS] CAPS_DIRECTORY GENERATED_CAPS_DIRECTORY
 ```
 where:
 
@@ -68,7 +68,7 @@ You need to execute the `clinica run` and `clinicadl extract` pipelines prior to
 
 The task can be run with the following command line:
 ```
-clinicadl generate random CAPS_DIRECTORY GENERATED_CAPS_DIRECTORY
+clinicadl generate random [OPTIONS] CAPS_DIRECTORY GENERATED_CAPS_DIRECTORY
 ```
 where:
 
@@ -123,7 +123,7 @@ There are no necessary prerequisites to run this pipeline.
 
 The task can be run with the following command line:
 ```
-clinicadl generate shepplogan GENERATED_CAPS_DIRECTORY
+clinicadl generate shepplogan [OPTIONS] GENERATED_CAPS_DIRECTORY
 ```
 where `GENERATED_CAPS_DIRECTORY` (str) is the folder where the synthetic CAPS is stored.
 

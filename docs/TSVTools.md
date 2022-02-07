@@ -7,6 +7,12 @@ These tools perform three main tasks:
 - Split data to define test, validation and train cohorts (`split` + `kfold`),
 - Analyze populations of interest (`analysis`).
 
+!!! tip
+    Classical ratios in the scientific literature are 80%-20% (or 70%-30%) for train/validation. 
+    These values can be modified according to the size of the dataset, and the number of hyperparameters
+    that are tuned.
+    More information on the subject can be found [online](https://towardsdatascience.com/train-validation-and-test-sets-72cb40cba9e7).
+
 ## `restrict` - Reproduce restrictions on specific datasets.
 
 ### Description
@@ -20,7 +26,7 @@ source code is the former version of ClinicaDL, the specific restrictions were a
 ### Running the task
 
 ```bash
-clinicadl tsvtool restrict DATASET MERGED_TSV RESULTS_TSV
+clinicadl tsvtool restrict [OPTIONS] DATASET MERGED_TSV RESULTS_TSV
 ```
 
 where:
@@ -64,7 +70,7 @@ their TSV files.
 ### Running the task
 
 ```bash
-clinicadl tsvtool getlabels MERGED_TSV MISSING_MODS_DIRECTORY RESULTS_DIRECTORY
+clinicadl tsvtool getlabels [OPTIONS] MERGED_TSV MISSING_MODS_DIRECTORY RESULTS_DIRECTORY
 ```
 where:
 
@@ -122,7 +128,7 @@ with similar demographics for these labels.
 ### Running the task
 
 ```bash
-clinicadl tsvtool split FORMATTED_DATA_DIRECTORY
+clinicadl tsvtool split [OPTIONS] FORMATTED_DATA_DIRECTORY
 ```
 where:
 
@@ -142,9 +148,9 @@ Options:
 
     Default value: `100`.
 
-  - `--MCI_sub_categories` (bool) is a flag that disables the special treatment of the MCI set and its subsets.
+  - `--no_mci_sub_categories` (bool) is a flag that disables the special treatment of the MCI set and its subsets.
   This will allow sets with more similar age and sex distributions, but it will cause 
-  data leakage for transfer learning tasks involving these sets. Default value: `False`.
+  data leakage for transfer learning tasks involving these sets. Default value: `True`.
   - `--p_age_threshold` (float) is the threshold on the p-value used for the T-test on age distributions.
   Default value: `0.80`.
   - `--p_sex_threshold` (float) is the threshold on the p-value used for the chi2 test on sex distributions.
@@ -183,7 +189,7 @@ This tool independently splits each label to perform a k-fold cross-validation.
 ### Running the task
 
 ```bash
-clinicadl tsvtool kfold FORMATTED_DATA_DIRECTORY
+clinicadl tsvtool kfold [OPTIONS] FORMATTED_DATA_DIRECTORY
 ```
 where `FORMATTED_DATA_DIRECTORY` (str) is the folder containing a TSV file per label which is going to be split
 (output of `clinicadl tsvtool getlabels|split|kfold`).
@@ -244,7 +250,7 @@ The variables of interest are: age, sex, mini-mental state examination (MMSE) an
 ### Running the task
 
 ```bash
-clinicadl tsvtool analysis MERGED_TSV FORMATTED_DATA_DIRECTORY RESULTS_DIRECTORY
+clinicadl tsvtool analysis [OPTIONS] MERGED_TSV FORMATTED_DATA_DIRECTORY RESULTS_DIRECTORY
 ```
 where:
 

@@ -3,7 +3,7 @@ This file contains all methods needed to perform the quality check procedure aft
 """
 from logging import getLogger
 from os import makedirs
-from os.path import abspath, dirname, exists, join, splitext
+from os.path import abspath, dirname, exists, join
 from pathlib import Path
 
 import pandas as pd
@@ -13,24 +13,25 @@ from torch.utils.data import DataLoader
 
 from clinicadl.generate.generate_utils import load_and_check_tsv
 from clinicadl.utils.caps_dataset.data import CapsDataset
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 from .utils import QCDataset, resnet_qc_18
 
 
 def quality_check(
-    caps_dir,
-    output_path,
-    tsv_path=None,
-    threshold=0.5,
-    batch_size=1,
-    n_proc=0,
-    gpu=True,
+    caps_dir: str,
+    output_path: str,
+    tsv_path: str = None,
+    threshold: float = 0.5,
+    batch_size: int = 1,
+    n_proc: int = 0,
+    gpu: bool = True,
 ):
 
     logger = getLogger("clinicadl")
 
-    if splitext(output_path)[1] != ".tsv":
-        raise ValueError("Please provide an output path to a tsv file")
+    if not output_path.endswith(".tsv"):
+        raise ClinicaDLArgumentError(f"Output path {output_path} must be a TSV file.")
 
     # Fetch QC model
     home = str(Path.home())
