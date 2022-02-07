@@ -69,10 +69,12 @@ In this section we consider the options needed and outputs produced for differen
 extraction method command. Each time we consider that the input is named `<input_pattern>_<suffix>.nii.gz`.
 The suffix represents the initial modality (it can be for example `T1w`).
 
-!!! Warning!
-    The default behavior of the pipeline is to only extract images even if another extraction method is specified.
-    However, all the options will be saved in the preprocessing JSON file and then the extraction is done
-    when data is loaded during the training. If you want to save the extracted method tensors in the CAPS, you have to add the `--save-features` flag.
+!!! warning
+    The default behavior of the pipeline is to only extract images even if
+    another extraction method is specified.  However, all the options will be
+    saved in the preprocessing JSON file and then the extraction is done when
+    data is loaded during the training. If you want to save the extracted
+    method tensors in the CAPS, you have to add the `--save-features` flag.
 
 ### `image`
 
