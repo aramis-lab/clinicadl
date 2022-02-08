@@ -28,15 +28,15 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.7.1"
-clinica = "^0.5.3"
+clinica = "^0.5.5"
 torch = "^1.8.0"
 torchvision = "*"
 tensorboard = "*"
 toml = "*"
 pandas = "^1.2"
 numpy = "^1.17"
-scikit-learn = "^0.23"
-scikit-image = "^0.16.2"
+scikit-learn = "^1.0"
+scikit-image = "^0.19"
 click = "^8"
 click-option-group = "^0.5"
 pynvml = "*"
@@ -52,6 +52,7 @@ pre-commit = "*"
 pytest = "*"
 pytest-timeout = "*"
 pytest-xdist = "*"
+pytest-cov = "^3.0.0"
 
 [tool.poetry.extras]
 docs = [
