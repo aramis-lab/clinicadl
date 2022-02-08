@@ -59,14 +59,14 @@ We assume that users installing and using ClinicaDL are comfortable using the co
 Pretrained models for CNN networks performing classification of subjects for
 Alzheimer disease are proposed in
 [here](https://aramislab.paris.inria.fr/clinicadl/files/models/v1.0.5/) in MAPS
-format (ready to use with ClinicaDL >= 1.0.4). Models trained with previous
-versions of ClinicaDL are also available. For more details concerning the parameters
-used to create these models please refers to [[Wen et al.,
-2020](https://doi.org/10.1016/j.media.2020.101694)].  The original pretrained
-models, produced for the previuosly mentioned publication can also are also
-available in this [Zenodo record](https://zenodo.org/record/3491003) (note that
-models in this format are not useful anymore with current version of
-ClinicaDL). 
+format (ready to use with **ClinicaDL >= 1.0.4**). Models trained with previous
+versions of ClinicaDL are also available. For more details concerning the
+parameters used to create these models please refer to the supplementary
+material of [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)],
+particularly the etable 4.  All the original pretrained models, produced for
+the aforementioned publication are also available in this [Zenodo
+record](https://zenodo.org/record/3491003) (note that models in this format are
+not useful anymore with current version of ClinicaDL). 
 
 ## Support
 - [Report an issue on GitHub](https://github.com/aramis-lab/clinicadl/issues)
