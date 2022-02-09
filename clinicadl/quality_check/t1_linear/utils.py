@@ -215,7 +215,7 @@ class QCDataset(Dataset):
             image_path = clinica_file_reader(
                 [subject], [session], self.img_dir, T1W_LINEAR_CROPPED
             )[0]
-            image = nib.load(image_path)
+            image = nib.load(image_path[0])
             image = self.nii_transform(image)
 
         sample = {"image": image, "participant_id": subject, "session_id": session}

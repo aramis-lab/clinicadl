@@ -100,7 +100,7 @@ def generate_random_dataset(
 
     image_paths = clinica_file_reader(
         [participant_id], [session_id], caps_dict[cohort], file_type
-    )
+    )[0]
     image_nii = nib.load(image_paths[0])
     image = image_nii.get_data()
 
@@ -258,7 +258,7 @@ def generate_trivial_dataset(
         cohort = data_df.loc[data_idx, "cohort"]
         image_paths = clinica_file_reader(
             [participant_id], [session_id], caps_dict[cohort], file_type
-        )
+        )[0]
         image_nii = nib.load(image_paths[0])
         image = image_nii.get_data()
 
