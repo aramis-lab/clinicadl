@@ -200,7 +200,7 @@ class VAE_Encoder(nn.Module):
         for i in range(n_conv - 1):
             self.layers.append(
                 EncoderLayer2D(
-                    first_layer_channels * 2 ** i, first_layer_channels * 2 ** (i + 1)
+                    first_layer_channels * 2**i, first_layer_channels * 2 ** (i + 1)
                 )
             )
             padding_h, padding_w = 0, 0
@@ -218,8 +218,8 @@ class VAE_Encoder(nn.Module):
             n_pix = (
                 first_layer_channels
                 * 2 ** (n_conv - 1)
-                * (self.input_h // (2 ** n_conv))
-                * (self.input_w // (2 ** n_conv))
+                * (self.input_h // (2**n_conv))
+                * (self.input_w // (2**n_conv))
             )
             self.layers.append(
                 nn.Sequential(Flatten(), nn.Linear(n_pix, feature_size), nn.ReLU())
@@ -284,8 +284,8 @@ class VAE_Decoder(nn.Module):
             n_pix = (
                 last_layer_channels
                 * 2 ** (n_conv - 1)
-                * (self.input_h // (2 ** n_conv))
-                * (self.input_w // (2 ** n_conv))
+                * (self.input_h // (2**n_conv))
+                * (self.input_w // (2**n_conv))
             )
             self.layers.append(
                 nn.Sequential(
@@ -295,8 +295,8 @@ class VAE_Decoder(nn.Module):
                     nn.ReLU(),
                     Unflatten2D(
                         last_layer_channels * 2 ** (n_conv - 1),
-                        self.input_h // (2 ** n_conv),
-                        self.input_w // (2 ** n_conv),
+                        self.input_h // (2**n_conv),
+                        self.input_w // (2**n_conv),
                     ),
                     nn.ReLU(),
                 )

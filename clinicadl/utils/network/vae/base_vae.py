@@ -52,7 +52,7 @@ class BaseVAE(Network):
         recon_loss = criterion(recon_images, images)
         if self.is_3D:
             kl_loss = -0.5 * torch.mean(
-                torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim=1)
+                torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1)
             )
         else:
             kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())

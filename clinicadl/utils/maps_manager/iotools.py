@@ -354,5 +354,5 @@ def cpuStats():
     print(psutil.virtual_memory())  # physical memory usage
     pid = os.getpid()
     py = psutil.Process(pid)
-    memoryUse = py.memory_info()[0] / 2.0 ** 30  # memory use in GB...I think
+    memoryUse = py.memory_info()[0] / 2.0**30  # memory use in GB...I think
     print("memory GB:", memoryUse)
