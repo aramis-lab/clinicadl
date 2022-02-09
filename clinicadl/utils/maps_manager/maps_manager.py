@@ -46,7 +46,7 @@ class MapsManager:
         self,
         maps_path: str,
         parameters: Dict[str, Any] = None,
-        verbose: str = "warning",
+        verbose: str = "info",
     ):
         """
         Args:
@@ -55,9 +55,10 @@ class MapsManager:
             verbose: Logging level ("debug", "info", "warning")
         """
         self.maps_path = path.abspath(maps_path)
-        if verbose not in level_list:
-            raise ValueError(f"verbose value {verbose} must be in {level_list}.")
-        setup_logging(level_list.index(verbose))
+        if verbose is not None:
+            if verbose not in level_list:
+                raise ValueError(f"verbose value {verbose} must be in {level_list}.")
+            setup_logging(level_list.index(verbose))
 
         # Existing MAPS
         if parameters is None:
