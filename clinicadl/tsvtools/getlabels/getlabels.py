@@ -542,7 +542,7 @@ def get_labels(
     if "MCI" in diagnoses:
         logger.info("Beginning of the selection of MCI label")
         MCI_df = mci_stability(
-            bids_df, 10 ** 4
+            bids_df, 10**4
         )  # Remove rMCI independently from time horizon
         output_df = diagnosis_removal(MCI_df, diagnosis_list=["rMCI"])
         output_df = mod_selection(output_df, missing_mods_dict, modality)

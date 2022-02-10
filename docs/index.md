@@ -54,14 +54,19 @@ We assume that users installing and using ClinicaDL are comfortable using the co
 ### Interpretation with gradient maps
 - `clinicadl interpret`- [Interpret trained CNNs on data groups](./Interpret.md)
 
-<!--## Pretrained models
+## Pretrained models
 
-Pretrained models for the CNN networks implemented in ClinicaDL can be obtained here:
-<https://zenodo.org/record/3491003>  
-
-These models were obtained during the experiments for publication.
-They correspond to a previous version of ClinicaDL, hence their file system is not compatible with the current version.
-Updated versions of most representative models are available [here](https://aramislab.paris.inria.fr/files/data/models/dl/models_v002/).-->
+Pretrained models for CNN networks performing classification of subjects for
+Alzheimer disease are proposed in
+[here](https://aramislab.paris.inria.fr/clinicadl/files/models/v1.1.0/) in MAPS
+format (ready to use with **ClinicaDL >= 1.0.4**). Models trained with previous
+versions of ClinicaDL are also available. For more details concerning the
+parameters used to create these models please refer to the supplementary
+material of [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)],
+particularly the etable 4.  All the original pretrained models, produced for
+the aforementioned publication are also available in this [Zenodo
+record](https://zenodo.org/record/3491003) (note that models in this format are
+not useful anymore with current version of ClinicaDL). 
 
 ## Support
 - [Report an issue on GitHub](https://github.com/aramis-lab/clinicadl/issues)

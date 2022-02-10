@@ -19,6 +19,7 @@ pipeline {
             }
             environment {
               CONDA_HOME = "$HOME/miniconda"
+              CONDA_ENV = "$WORKSPACE/env"
             }
             stages {
               stage('Build Env') {
@@ -31,11 +32,12 @@ pipeline {
                   sh '''
                     set +x
                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                    conda env create -f environment.yml -p "${WORKSPACE}/env"
-                    conda activate "${WORKSPACE}/env"
+                    make env.conda
+                    conda activate "${CONDA_ENV}"
+                    conda info
                     echo "Install clinicadl using poetry..."
                     cd $WORKSPACE
-                    poetry install
+                    make env
                     # Show clinicadl help message
                     echo "Display clinicadl help message"
                     clinicadl --help
@@ -51,7 +53,7 @@ pipeline {
                     set +x
                     echo $WORKSPACE
                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                    conda activate "${WORKSPACE}/env"
+                    conda activate "${CONDA_ENV}"
                     conda list
                     cd $WORKSPACE/tests
                     poetry run pytest \
@@ -69,7 +71,7 @@ pipeline {
                     sh 'echo "Agent name: ${NODE_NAME}"'
                     sh '''
                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                    conda activate "${WORKSPACE}/env"
+                    conda activate "${CONDA_ENV}"
                     cd $WORKSPACE/tests
                     poetry run pytest \
                       --junitxml=./test-reports/test_tsvtool_report.xml \
@@ -91,7 +93,7 @@ pipeline {
                     sh 'echo "Agent name: ${NODE_NAME}"'
                     sh '''
                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                    conda activate "${WORKSPACE}/env"
+                    conda activate "${CONDA_ENV}"
                     cd $WORKSPACE/tests
                     mkdir -p ./data/dataset
                     tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
@@ -116,7 +118,7 @@ pipeline {
                     sh 'echo "Agent name: ${NODE_NAME}"'
                     sh '''
                       source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                      conda activate "${WORKSPACE}/env"
+                      conda activate "${CONDA_ENV}"
                       cd $WORKSPACE/tests
                       mkdir -p ./data/dataset
                       tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
@@ -141,7 +143,7 @@ pipeline {
                     sh 'echo "Agent name: ${NODE_NAME}"'
                     sh '''
                       source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                      conda activate "${WORKSPACE}/env"
+                      conda activate "${CONDA_ENV}"
                       cd $WORKSPACE/tests
                       mkdir -p ./data/dataset
                       tar xf /mnt/data/data_CI/dataset/DLPrepareData.tar.gz -C ./data/dataset
@@ -166,7 +168,7 @@ pipeline {
                   sh 'echo "Agent name: ${NODE_NAME}"'
                   sh '''
                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                     conda activate "${WORKSPACE}/env"
+                     conda activate "${CONDA_ENV}"
                      cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
                      tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
@@ -232,6 +234,7 @@ pipeline {
             }
             environment {
               CONDA_HOME = "$HOME/miniconda3"
+              CONDA_ENV = "$WORKSPACE/env"
             }
             stages {
               stage('Build Env') {
@@ -243,11 +246,12 @@ pipeline {
                   sh 'echo "Agent name: ${NODE_NAME}"'
                   sh '''#!/usr/bin/env bash
                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                    conda env create -f environment.yml -p "${WORKSPACE}/env"
-                    conda activate "${WORKSPACE}/env"
+                    make env.conda
+                    conda activate "${CONDA_ENV}"
+                    conda info
                     echo "Install clinicadl using poetry..."
                     cd $WORKSPACE
-                    poetry install
+                    make env
                     # Show clinicadl help message
                     echo "Display clinicadl help message"
                     clinicadl --help
@@ -261,7 +265,7 @@ pipeline {
                   sh 'echo "Agent name: ${NODE_NAME}"'
                   sh '''#!/usr/bin/env bash
                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                     conda activate "${WORKSPACE}/env"
+                     conda activate "${CONDA_ENV}"
                      clinicadl --help
                      cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
@@ -290,7 +294,7 @@ pipeline {
                   sh 'echo "Agent name: ${NODE_NAME}"'
                   sh '''#!/usr/bin/env bash
                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                     conda activate "${WORKSPACE}/env"
+                     conda activate "${CONDA_ENV}"
                      clinicadl --help
                      cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
@@ -318,7 +322,7 @@ pipeline {
                   sh 'echo "Agent name: ${NODE_NAME}"'
                   sh '''#!/usr/bin/env bash
                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                     conda activate "${WORKSPACE}/env"
+                     conda activate "${CONDA_ENV}"
                      clinicadl --help
                      cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
@@ -350,7 +354,7 @@ pipeline {
                   sh '''#!/usr/bin/env bash
                      set +x
                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                     conda activate "${WORKSPACE}/env"
+                     conda activate "${CONDA_ENV}"
                      clinicadl --help
                      cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
@@ -379,7 +383,7 @@ pipeline {
                   sh '''#!/usr/bin/env bash
                      set +x
                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                     conda activate "${WORKSPACE}/env"
+                     conda activate "${CONDA_ENV}"
                      clinicadl --help
                      cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
