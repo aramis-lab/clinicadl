@@ -16,7 +16,7 @@ can download them using your navigator or the command line. For example, to get
 the model "Image-based" with a single split type:
 
 ```
-curl -k https://aramislab.paris.inria.fr/clinicadl/files/models/v1.0.5/maps_exp3.tar.gz -o maps_exp3.tar.gz
+curl -k https://aramislab.paris.inria.fr/clinicadl/files/models/v1.1.0/maps_exp3.tar.gz -o maps_exp3.tar.gz
 tar xf model_exp3_splits_1.tar.gz
 ```
 -->
