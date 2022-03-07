@@ -19,7 +19,7 @@ class VanillaDenseVAE(BaseVAE):
         latent_space_size,
         feature_size,
         recons_weight,
-        KL_weight,
+        kl_weightt,
         gpu=True,
     ):
         n_conv = 4
@@ -52,7 +52,7 @@ class VanillaDenseVAE(BaseVAE):
             latent_space_size,
             gpu=gpu,
             recons_weight=recons_weight,
-            KL_weight=KL_weight,
+            kl_weightt=kl_weightt,
             is_3D=False,
         )
 
@@ -64,7 +64,7 @@ class VanillaSpatialVAE(BaseVAE):
         latent_space_size,
         feature_size,
         recons_weight,
-        KL_weight,
+        kl_weightt,
         gpu=True,
     ):
         feature_channels = 64
@@ -103,7 +103,7 @@ class VanillaSpatialVAE(BaseVAE):
             latent_space_size,
             gpu=gpu,
             recons_weight=recons_weight,
-            KL_weight=KL_weight,
+            kl_weightt=kl_weightt,
             is_3D=False,
         )
 
@@ -115,7 +115,7 @@ class Vanilla3DVAE(BaseVAE):
         latent_space_size,
         feature_size,
         recons_weight,
-        KL_weight,
+        kl_weightt,
         gpu=True,
     ):
         n_conv = 4
@@ -224,7 +224,7 @@ class Vanilla3DVAE(BaseVAE):
             latent_space_size,
             gpu=gpu,
             recons_weight=recons_weight,
-            KL_weight=KL_weight,
+            kl_weightt=kl_weightt,
             is_3D=False,
         )
 
@@ -238,7 +238,7 @@ class Vanilla3DdenseVAE(BaseVAE):
         n_conv=4,
         io_layer_channels=8,
         recons_weight=1,
-        KL_weight=1,
+        kl_weightt=1,
         gpu=True,
     ):
         first_layer_channels = io_layer_channels
@@ -358,5 +358,5 @@ class Vanilla3DdenseVAE(BaseVAE):
             gpu=gpu,
             is_3D=False,
             recons_weight=recons_weight,
-            KL_weight=KL_weight,
+            kl_weightt=kl_weightt,
         )
