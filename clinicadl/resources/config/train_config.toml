@@ -35,7 +35,7 @@ loss = "MSELoss"
 [Computational]
 gpu = true
 n_proc = 2
-batch_size = 2
+batch_size = 8
 evaluation_steps = 0
 
 [Reproducibility]
