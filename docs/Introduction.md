@@ -24,7 +24,7 @@ applied to a particular deep learning framework. The hierarchy is organized acco
 **selection metric** and **data group** used.
 
 1. **fold**: In ClinicaDL, a training procedure consists in training one model per train / validation split defined by the validation
-procedure. Then the MAPS contains `N` folders named `fold-<i>` with i between 0 and N-1 containing the best networks obtained
+procedure. Then the MAPS contains `N` folders named `split-<i>` with i between 0 and N-1 containing the best networks obtained
 for the `i`-th train / validation split.
 2. **selection metric**: for each fold, one network is selected per `selection_metrics` asked by the user (see [Implementation Details](Train/Details.md#model-selection)
 for more information). The output folder containing all information linked to a network selected according to a metric `metric` is named
@@ -51,7 +51,7 @@ An example of a MAPS structure is given below:
 ```Text
 <maps_directory>
 ├── environment.txt
-├── fold-0
+├── split-0
 │       ├── best-loss
 │       │       ├── model.pth.tar
 │       │       ├── train
@@ -69,18 +69,18 @@ An example of a MAPS structure is given below:
 │               └── training.tsv
 ├── groups
 │       ├── train
-│       │       ├── fold-0
+│       │       ├── split-0
 │       │       │       ├── data.tsv
 │       │       │       └── maps.json
-│       │       └── fold-1
+│       │       └── split-1
 │       │               ├── data.tsv
 │       │               └── maps.json
 │       ├── train+validation.tsv
 │       └── validation
-│               ├── fold-0
+│               ├── split-0
 │               │       ├── data.tsv
 │               │       └── maps.json
-│               └── fold-1
+│               └── split-1
 │                       ├── data.tsv
 │                       └── maps.json
 └── maps.json
@@ -95,35 +95,35 @@ The first level of the MAPS hierarchy contains the following files:
 ```Text
 <maps_directory>
 ├── environment.txt
-├── fold-0
+├── split-0
 ├── ...
-├── fold-<N-1>
+├── split-<N-1>
 ├── groups
 └── maps.json
 ```
 
 - `environment.txt` contains the description of the environment used for the experiment (output of `pip freeze`).
 - `maps.json` is the global configuration file of the MAPS which contains all the information to reproduce the training procedure.
-- `fold-<i>` is a folder containing the result of the training on the `i`-th split of validation procedure. All possible folds
+- `split-<i>` is a folder containing the result of the training on the `i`-th split of validation procedure. All possible folds
 may not be present if the user chose to train only a subset of folds.
 - `groups` is a folder in which all the data groups used by the MAPS are defined. This folder has the following file system:
     ```Text
     groups
     ├── train+validation.tsv
     ├── train
-    │       ├── fold-0
+    │       ├── split-0
     │       │       ├── data.tsv
     │       │       └── maps.json
     │       ├── ...
-    │       └── fold-<N-1>
+    │       └── split-<N-1>
     │               ├── data.tsv
     │               └── maps.json
     ├── validation
-    │       ├── fold-0
+    │       ├── split-0
     │       │       ├── data.tsv
     │       │       └── maps.json
     │       ├── ...
-    │       └── fold-<N-1>
+    │       └── split-<N-1>
     │               ├── data.tsv
     │               └── maps.json
     └── <data_group>
@@ -139,14 +139,14 @@ may not be present if the user chose to train only a subset of folds.
 
 ### Level 2 - metrics of selection & training logs
 
-The second level corresponds to the content of folder `fold-<i>`. It contains the best models selected during training according to the validation
+The second level corresponds to the content of folder `split-<i>`. It contains the best models selected during training according to the validation
 performance according to a metric `metric`. It also contains the evolution of all evaluation metrics computed on the training
  and validation sets in two different formats:
-- `tensorboard` is a folder containing logs that can be visualized with the command `tensorboard --logdir <maps_directory>/fold-<i>/training_logs/tensorboard`,
+- `tensorboard` is a folder containing logs that can be visualized with the command `tensorboard --logdir <maps_directory>/split-<i>/training_logs/tensorboard`,
 - `training.tsv` is a TSV file.
 
 ```Text
-fold-<i>
+split-<i>
     ├── best-<metric>
     └── training_logs
            ├── tensorboard

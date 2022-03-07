@@ -141,7 +141,7 @@ class Vanilla3DVAE(BaseVAE):
         for i in range(n_conv - 1):
             encoder_layers.append(
                 EncoderLayer3D(
-                    first_layer_channels * 2 ** i, first_layer_channels * 2 ** (i + 1)
+                    first_layer_channels * 2**i, first_layer_channels * 2 ** (i + 1)
                 )
             )
         encoder_layers.append(
@@ -262,7 +262,7 @@ class Vanilla3DdenseVAE(BaseVAE):
         for i in range(n_conv - 1):
             encoder_layers.append(
                 EncoderLayer3D(
-                    first_layer_channels * 2 ** i, first_layer_channels * 2 ** (i + 1)
+                    first_layer_channels * 2**i, first_layer_channels * 2 ** (i + 1)
                 )
             )
             # Construct output paddings
@@ -271,9 +271,9 @@ class Vanilla3DdenseVAE(BaseVAE):
         n_pix = (
             first_layer_channels
             * 2 ** (n_conv - 1)
-            * (input_d // (2 ** n_conv))
-            * (input_h // (2 ** n_conv))
-            * (input_w // (2 ** n_conv))
+            * (input_d // (2**n_conv))
+            * (input_h // (2**n_conv))
+            * (input_w // (2**n_conv))
         )
         # Flatten
         encoder_layers.append(Flatten())
@@ -314,9 +314,9 @@ class Vanilla3DdenseVAE(BaseVAE):
         decoder_layers.append(
             Unflatten3D(
                 last_layer_channels * 2 ** (n_conv - 1),
-                input_d // (2 ** n_conv),
-                input_h // (2 ** n_conv),
-                input_w // (2 ** n_conv),
+                input_d // (2**n_conv),
+                input_h // (2**n_conv),
+                input_w // (2**n_conv),
             )
         )
         # Decoder layers

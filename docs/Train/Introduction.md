@@ -1,8 +1,7 @@
 # `train NETWORK_TASK` - Define a network task from TOML or command line
 
 This functionality enables the training of a network using
-different formats of inputs (whole 3D images, 3D patches or 2D slices), as defined in
-[[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)].
+different formats of inputs (whole 3D images, 3D patches, regions of interest or 2D slices).
 It mainly relies on the PyTorch deep learning library
 [[Paszke et al., 2019](https://papers.nips.cc/paper/9015-pytorch-an-imperative-style-high-performance-deep-learning-library)].
 
@@ -222,6 +221,6 @@ This file is available at `clinicadl/resources/config/train_config.toml` in the 
 
 ## Outputs
 
-The `clinicadl train` command outputs a [MAPS file system](../Introduction.md#maps-definition) in which there are only two data groups: `train` and `validation`.
+The `clinicadl train` command outputs a [MAPS structure](../Introduction.md#maps-definition) in which there are only two data groups: `train` and `validation`.
 To limit the size of the MAPS produced, tensor inputs and outputs of each group are only produced thanks to one image of the data set
 (for more information on input and output tensor serialization report to [the dedicated section](../Tensors.md)).

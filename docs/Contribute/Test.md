@@ -26,7 +26,7 @@ launched, in the following order:
   here](https://aramislab.paris.inria.fr/files/data/databases/tuto/RandomCaps.tar.gz).
   This test verifies that the output files exist. <!--([the previoulsy trained
   models are available
-  here](https://aramislab.paris.inria.fr/files/data/models/dl/models_v002/)).-->
+  here](https://aramislab.paris.inria.fr/clinicadl/files/models/)).-->
 - **train** test (`test_train.py`): it runs training over the synthetic dataset
   and verifies that output folder structure was created. It needs to [download
   and uncompress this

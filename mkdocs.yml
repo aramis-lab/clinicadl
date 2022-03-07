@@ -91,7 +91,7 @@ nav:
     - Resume training: Train/Resume.md
     - Implementation details: Train/Details.md
   - Inference using trained models: Predict.md
-  - Network output serialization: Tensors.md
+  - Save reconstruction outputs: Tensors.md
   - Interpretation with gradient maps: Interpret.md
   - Advanced user guide:
       - Customize your training: Contribute/Custom.md

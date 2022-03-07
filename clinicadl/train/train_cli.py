@@ -10,6 +10,7 @@ from .tasks.regression_cli import cli as regression_cli
 
 @click.group(name="train", no_args_is_help=True)
 def cli():
+    """Train a deep learning model for a specific task."""
     pass
 
 
