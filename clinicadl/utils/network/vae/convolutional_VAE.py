@@ -129,10 +129,8 @@ class CVAE_3D_half(Network):
     def __init__(self, latent_space_size, gpu):
         super(CVAE_3D_half, self).__init__(gpu=gpu)
         nn.Module.__init__(self)
-        self.beta = 5
-        self.gamma = 10
-        self.lr = 1e-4  # For epochs between MCMC steps
-        self.epoch = 0
+        self.beta = 1
+        self.latent_space_size = latent_space_size
 
         # Encoder
         self.conv1 = nn.Conv3d(1, 32, 3, stride=2, padding=1)  # 32 x 40 x 48 x 40
@@ -143,11 +141,11 @@ class CVAE_3D_half(Network):
         self.bn2 = nn.BatchNorm3d(64)
         self.bn3 = nn.BatchNorm3d(128)
         # self.bn4 = nn.BatchNorm3d(128)
-        self.fc10 = nn.Linear(153600, latent_space_size)
-        self.fc11 = nn.Linear(153600, latent_space_size)
+        self.fc10 = nn.Linear(153600, self.latent_space_size)
+        self.fc11 = nn.Linear(153600, self.latent_space_size)
 
         # Decoder
-        self.fc2 = nn.Linear(latent_space_size, 307200)
+        self.fc2 = nn.Linear(self.latent_space_size, 307200)
         self.upconv1 = nn.ConvTranspose3d(
             256, 128, 3, stride=2, padding=1, output_padding=1
         )  # 64 x 10 x 12 x 10
@@ -165,9 +163,9 @@ class CVAE_3D_half(Network):
         self.to(self.device)
 
     def encoder(self, image):
-        h1 = F.relu(self.bn1(self.conv1(image)))
-        h2 = F.relu(self.bn2(self.conv2(h1)))
-        h3 = F.relu(self.bn3(self.conv3(h2)))
+        h1 = F.leaky_relu(self.bn1(self.conv1(image)), negative_slope=0.2, inplace=True)
+        h2 = F.leaky_relu(self.bn2(self.conv2(h1)), negative_slope=0.2, inplace=True)
+        h3 = F.leaky_relu(self.bn3(self.conv3(h2)), negative_slope=0.2, inplace=True)
         # h4 = F.relu(self.bn4(self.conv4(h3)))
         # h5 = F.relu(self.fc1(h4.flatten(start_dim=1)))
         h5 = h3.flatten(start_dim=1)
@@ -180,7 +178,7 @@ class CVAE_3D_half(Network):
         h6 = F.relu(self.bn5(self.upconv1(h5)))
         h7 = F.relu(self.bn6(self.upconv2(h6)))
         # h8 = F.relu(self.bn7(self.upconv3(h7)))
-        reconstructed = F.relu(self.upconv4(h7))
+        reconstructed = F.sigmoid(self.upconv4(h7))
         return reconstructed
 
     def reparametrize(self, mu, logVar):
@@ -205,10 +203,12 @@ class CVAE_3D_half(Network):
 
     def loss(self, mu, logVar, reconstructed, input_):
         kl_divergence = (
-            0.5 * torch.sum(-1 - logVar + mu.pow(2) + logVar.exp()) / mu.shape[0]
+            0.5
+            * torch.sum(-1 - logVar + mu.pow(2) + logVar.exp())
+            / self.latent_space_size
         )
-        # recon_error = torch.nn.MSELoss(reduction='mean')(reconstructed, input_)
-        recon_error = torch.sum((reconstructed - input_) ** 2) / input_.shape[0]
+        recon_error = torch.nn.MSELoss(reduction="mean")(reconstructed, input_)
+        # recon_error = torch.sum((reconstructed - input_) ** 2) / input_.shape[0]
         return recon_error, kl_divergence
 
     def predict(self, x):
