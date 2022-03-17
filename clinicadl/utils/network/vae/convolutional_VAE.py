@@ -178,7 +178,7 @@ class CVAE_3D_half(Network):
         h6 = F.relu(self.bn5(self.upconv1(h5)))
         h7 = F.relu(self.bn6(self.upconv2(h6)))
         # h8 = F.relu(self.bn7(self.upconv3(h7)))
-        reconstructed = F.sigmoid(self.upconv4(h7))
+        reconstructed = F.relu(self.upconv4(h7))
         return reconstructed
 
     def reparametrize(self, mu, logVar):
