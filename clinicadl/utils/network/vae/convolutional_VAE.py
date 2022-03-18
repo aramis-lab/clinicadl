@@ -203,7 +203,9 @@ class CVAE_3D_half(Network):
 
     def loss(self, mu, logVar, reconstructed, input_):
         kl_divergence = (
-            0.5 * torch.sum(-1 - logVar + mu.pow(2) + logVar.exp()) / mu.shape[0]
+            0.5
+            * torch.sum(-1 - logVar + mu.pow(2) + logVar.exp())
+            / self.latent_space_size
         )
         recon_error = torch.nn.MSELoss(reduction="mean")(reconstructed, input_)
         # recon_error = torch.sum((reconstructed - input_) ** 2) / input_.shape[0]
