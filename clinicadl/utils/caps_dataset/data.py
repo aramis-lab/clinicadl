@@ -911,10 +911,13 @@ class NanRemoval(object):
 class SizeReduction(object):
     """Reshape the input tensor to be of size [80, 96, 80]"""
 
-    def __call__(self, image, size_reduction_factor=2):
-        if size_reduction_factor == 2:
+    def __init__(self, size_reduction_factor=2) -> None:
+        self.size_reduction_factor = size_reduction_factor
+
+    def __call__(self, image):
+        if self.size_reduction_factor == 2:
             return image[:, 4:164:2, 8:200:2, 8:168:2]
-        elif size_reduction_factor == 3:
+        elif self.size_reduction_factor == 3:
             return image[:, 0:168:3, 8:200:3, 4:172:3]
         else:
             raise ClinicaDLConfigurationError("size_reduction_factor must be 2 or 3.")
