@@ -201,20 +201,10 @@ class CVAE_3D_half(Network):
         reconstructed = self.decoder(encoded)
         return mu, logVar, reconstructed
 
-    def loss(self, mu, logVar, reconstructed, input_):
-        kl_divergence = (
-            0.5
-            * torch.sum(-1 - logVar + mu.pow(2) + logVar.exp())
-            / self.latent_space_size
-        )
-        recon_error = torch.nn.MSELoss(reduction="mean")(reconstructed, input_)
-        # recon_error = torch.sum((reconstructed - input_) ** 2) / input_.shape[0]
-        return recon_error, kl_divergence
-
     def predict(self, x):
-        self.training = False
-        _, _, output = self.forward(x)
-        return output
+        mu, _ = self.encoder(x)
+        reconstructed = self.decoder(mu)
+        return reconstructed
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=False):
 
