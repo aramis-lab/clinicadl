@@ -155,11 +155,7 @@ class CapsDataset(Dataset):
             image_path_list, _ = clinica_file_reader(
                 [participant], [session], self.caps_dict[cohort], file_type
             )
-<<<<<<< HEAD
             image_filename = path.basename(image_path_list[0]).replace(".nii.gz", ".pt")
-=======
-            image_filename = path.basename(results[0]).replace(".nii.gz", ".pt")
->>>>>>> temporary patch
             folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
             image_dir = path.join(
                 self.caps_dict[cohort],

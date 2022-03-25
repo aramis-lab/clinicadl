@@ -178,7 +178,7 @@ class CVAE_3D_half(Network):
         h6 = F.relu(self.bn5(self.upconv1(h5)))
         h7 = F.relu(self.bn6(self.upconv2(h6)))
         # h8 = F.relu(self.bn7(self.upconv3(h7)))
-        reconstructed = F.sigmoid(self.upconv4(h7))
+        reconstructed = torch.sigmoid(self.upconv4(h7))
         return reconstructed
 
     def reparametrize(self, mu, logVar):
@@ -218,18 +218,13 @@ class CVAE_3D_half(Network):
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=False):
 
-        vae_criterion = self.loss
-
-        self.training = True
-
         input_ = input_dict["image"].to(self.device)
         mu, logVar, reconstructed = self.forward(input_)
-        reconstruction_loss, kl_loss = vae_criterion(mu, logVar, input_, reconstructed)
+        reconstruction_loss, kl_loss = criterion(input_, reconstructed, mu, logVar)
 
         loss_dict = {
             "loss": reconstruction_loss + self.beta * kl_loss,
             "recon_loss": reconstruction_loss,
             "kl_loss": kl_loss,
         }
-
         return reconstructed, loss_dict

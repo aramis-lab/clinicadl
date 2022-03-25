@@ -744,7 +744,7 @@ class MapsManager:
             transfer_selection=self.transfer_selection_metric,
         )
         criterion = self.task_manager.get_criterion(self.loss)
-        logger.debug(f"Criterion for {self.network_task} is {criterion}")
+        logger.info(f"Criterion for {self.network_task} is {criterion}")
         optimizer = self._init_optimizer(model, split=split, resume=resume)
         logger.debug(f"Optimizer used for training is optimizer")
 
