@@ -180,6 +180,7 @@ save_nifti = click.option(
     default=False,
     is_flag=True,
     help="Save the output map(s) in the MAPS in NIfTI format.",
+)
 split = click.option(
     "--split",
     "-s",
