@@ -922,14 +922,20 @@ class NanRemoval(object):
 class SizeReduction(object):
     """Reshape the input tensor to be of size [80, 96, 80]"""
 
-    def __call__(self, image):
-        return image[:, 4:164:2, 8:200:2, 8:168:2]
+    def __call__(self, image, size_reduction_factor=2):
+        if size_reduction_factor == 2:
+            return image[:, 4:164:2, 8:200:2, 8:168:2]
+        elif size_reduction_factor == 3:
+            return image[:, 0:168:3, 8:200:3, 4:172:3]
+        else:
+            raise ClinicaDLConfigurationError("size_reduction_factor must be 2 or 3.")
 
 
 def get_transforms(
     normalize: bool = True,
     data_augmentation: List[str] = None,
     size_reduction: bool = False,
+    size_reduction_factor: int = 2,
 ) -> Tuple[transforms.Compose, transforms.Compose]:
     """
     Outputs the transformations that will be applied to the dataset
@@ -961,7 +967,7 @@ def get_transforms(
     if normalize:
         transformations_list.append(MinMaxNormalization())
     if size_reduction:
-        transformations_list.append(SizeReduction())
+        transformations_list.append(SizeReduction(size_reduction_factor))
 
     all_transformations = transforms.Compose(transformations_list)
     train_transformations = transforms.Compose(augmentation_list)
