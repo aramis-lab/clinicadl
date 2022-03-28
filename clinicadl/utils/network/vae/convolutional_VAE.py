@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from clinicadl.utils.network.network import Network
+from clinicadl.utils.network.vae.vae_utils import multiply_list
 
 
 class CVAE_3D(Network):
@@ -126,11 +127,22 @@ class CVAE_3D_half(Network):
     with the sole criterion of correctly reconstructing the data. Nothing longitudinal here.
     """
 
-    def __init__(self, latent_space_size, gpu):
+    def __init__(self, size_reduction_factor, latent_space_size, gpu):
         super(CVAE_3D_half, self).__init__(gpu=gpu)
         nn.Module.__init__(self)
         self.beta = 1
+        self.n_conv = 3
         self.latent_space_size = latent_space_size
+        if size_reduction_factor == 2:
+            self.input_size = [1, 80, 92, 80]
+            self.feature_size = (
+                multiply_list(self.input_size) / 2**self.n_conv
+            )  # input of size 80 x 96 x 80
+        elif size_reduction_factor == 3:
+            self.input_size = [1, 56, 64, 56]
+            self.feature_size = (
+                multiply_list(self.input_size) / 2**self.n_conv
+            )  # input of size 56 x 64 x 56
 
         # Encoder
         self.conv1 = nn.Conv3d(1, 32, 3, stride=2, padding=1)  # 32 x 40 x 48 x 40
@@ -141,11 +153,11 @@ class CVAE_3D_half(Network):
         self.bn2 = nn.BatchNorm3d(64)
         self.bn3 = nn.BatchNorm3d(128)
         # self.bn4 = nn.BatchNorm3d(128)
-        self.fc10 = nn.Linear(153600, self.latent_space_size)
-        self.fc11 = nn.Linear(153600, self.latent_space_size)
+        self.fc10 = nn.Linear(self.feature_size, self.latent_space_size)
+        self.fc11 = nn.Linear(self.feature_size, self.latent_space_size)
 
         # Decoder
-        self.fc2 = nn.Linear(self.latent_space_size, 307200)
+        self.fc2 = nn.Linear(self.latent_space_size, 2 * self.feature_size)
         self.upconv1 = nn.ConvTranspose3d(
             256, 128, 3, stride=2, padding=1, output_padding=1
         )  # 64 x 10 x 12 x 10
@@ -174,7 +186,15 @@ class CVAE_3D_half(Network):
         return mu, logVar
 
     def decoder(self, encoded):
-        h5 = F.relu(self.fc2(encoded)).reshape([encoded.size()[0], 256, 10, 12, 10])
+        h5 = F.relu(self.fc2(encoded)).reshape(
+            [
+                encoded.size()[0],
+                256,
+                self.input_size[1] / 2**self.n_conv,
+                self.input_size[2] / 2**self.n_conv,
+                self.input_size[3] / 2**self.n_conv,
+            ]
+        )
         h6 = F.relu(self.bn5(self.upconv1(h5)))
         h7 = F.relu(self.bn6(self.upconv2(h6)))
         # h8 = F.relu(self.bn7(self.upconv3(h7)))

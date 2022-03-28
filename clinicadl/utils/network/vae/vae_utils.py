@@ -9,3 +9,10 @@ def VAELoss(input, reconstruction, mu, logVar):
     recon_error = MSELoss(reduction="mean")(reconstruction, input)
     # recon_error = torch.sum((reconstructed - input_) ** 2) / input_.shape[0]
     return recon_error, kl_divergence
+
+
+def multiply_list(L):
+    product = 1
+    for x in L:
+        product = product * x
+    return product
