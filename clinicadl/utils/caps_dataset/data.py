@@ -930,8 +930,12 @@ class SizeReduction(object):
             return image[:, 4:164:2, 8:200:2, 8:168:2]
         elif self.size_reduction_factor == 3:
             return image[:, 0:168:3, 8:200:3, 4:172:3]
+        elif self.size_reduction_factor == 4:
+            return image[:, 4:164:4, 8:200:4, 8:168:4]
         else:
-            raise ClinicaDLConfigurationError("size_reduction_factor must be 2 or 3.")
+            raise ClinicaDLConfigurationError(
+                "size_reduction_factor must be 2, 3 or 4."
+            )
 
 
 def get_transforms(
