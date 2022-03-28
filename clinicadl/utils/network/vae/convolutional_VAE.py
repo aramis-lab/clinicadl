@@ -134,7 +134,7 @@ class CVAE_3D_half(Network):
         self.n_conv = 3
         self.latent_space_size = latent_space_size
         if size_reduction_factor == 2:
-            self.input_size = [1, 80, 92, 80]
+            self.input_size = [1, 80, 96, 80]
         elif size_reduction_factor == 3:
             self.input_size = [1, 56, 64, 56]
         elif size_reduction_factor == 4:
