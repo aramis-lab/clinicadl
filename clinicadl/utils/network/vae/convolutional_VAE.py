@@ -187,9 +187,9 @@ class CVAE_3D_half(Network):
             [
                 encoded.size()[0],
                 256,
-                self.input_size[1] / 2**self.n_conv,
-                self.input_size[2] / 2**self.n_conv,
-                self.input_size[3] / 2**self.n_conv,
+                self.input_size[1] // 2**self.n_conv,
+                self.input_size[2] // 2**self.n_conv,
+                self.input_size[3] // 2**self.n_conv,
             ]
         )
         h6 = F.relu(self.bn5(self.upconv1(h5)))
