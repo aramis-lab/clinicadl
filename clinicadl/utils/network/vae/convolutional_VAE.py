@@ -137,6 +137,7 @@ class CVAE_3D_half(Network):
             self.input_size = [1, 80, 92, 80]
         elif size_reduction_factor == 3:
             self.input_size = [1, 56, 64, 56]
+        print(2**self.n_conv)
         self.feature_size = int(multiply_list(self.input_size, 2**self.n_conv) * 128)
         print(self.feature_size)
 
@@ -174,9 +175,11 @@ class CVAE_3D_half(Network):
         h1 = F.leaky_relu(self.bn1(self.conv1(image)), negative_slope=0.2, inplace=True)
         h2 = F.leaky_relu(self.bn2(self.conv2(h1)), negative_slope=0.2, inplace=True)
         h3 = F.leaky_relu(self.bn3(self.conv3(h2)), negative_slope=0.2, inplace=True)
+        print(h3.shape)
         # h4 = F.relu(self.bn4(self.conv4(h3)))
         # h5 = F.relu(self.fc1(h4.flatten(start_dim=1)))
         h5 = h3.flatten(start_dim=1)
+        print(h5.shape)
         mu = torch.tanh(self.fc10(h5))
         logVar = self.fc11(h5)
         return mu, logVar
