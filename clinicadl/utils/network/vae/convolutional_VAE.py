@@ -137,6 +137,8 @@ class CVAE_3D_half(Network):
             self.input_size = [1, 80, 92, 80]
         elif size_reduction_factor == 3:
             self.input_size = [1, 56, 64, 56]
+        elif size_reduction_factor == 4:
+            self.input_size = [1, 40, 48, 40]
         self.feature_size = int(
             multiply_list(self.input_size[1:], 2**self.n_conv) * 128
         )
