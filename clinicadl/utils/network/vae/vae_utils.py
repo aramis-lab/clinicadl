@@ -11,8 +11,8 @@ def VAELoss(input, reconstruction, mu, logVar):
     return recon_error, kl_divergence
 
 
-def multiply_list(L):
+def multiply_list(L, factor):
     product = 1
     for x in L:
-        product = product * x
+        product = product * x / factor
     return product
