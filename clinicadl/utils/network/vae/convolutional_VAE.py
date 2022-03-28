@@ -127,10 +127,10 @@ class CVAE_3D_half(Network):
     with the sole criterion of correctly reconstructing the data. Nothing longitudinal here.
     """
 
-    def __init__(self, size_reduction_factor, latent_space_size, gpu):
+    def __init__(self, size_reduction_factor, latent_space_size, gpu, kl_weight):
         super(CVAE_3D_half, self).__init__(gpu=gpu)
         nn.Module.__init__(self)
-        self.beta = 1
+        self.beta = kl_weight
         self.n_conv = 3
         self.latent_space_size = latent_space_size
         if size_reduction_factor == 2:
@@ -139,6 +139,8 @@ class CVAE_3D_half(Network):
             self.input_size = [1, 56, 64, 56]
         elif size_reduction_factor == 4:
             self.input_size = [1, 40, 48, 40]
+        elif size_reduction_factor == 5:
+            self.input_size = [1, 32, 40, 32]
         self.feature_size = int(
             multiply_list(self.input_size[1:], 2**self.n_conv) * 128
         )
