@@ -135,14 +135,10 @@ class CVAE_3D_half(Network):
         self.latent_space_size = latent_space_size
         if size_reduction_factor == 2:
             self.input_size = [1, 80, 92, 80]
-            self.feature_size = (
-                multiply_list(self.input_size) / 2**self.n_conv
-            )  # input of size 80 x 96 x 80
         elif size_reduction_factor == 3:
             self.input_size = [1, 56, 64, 56]
-            self.feature_size = (
-                multiply_list(self.input_size) / 2**self.n_conv
-            )  # input of size 56 x 64 x 56
+        self.feature_size = multiply_list(self.input_size) / 2**self.n_conv
+        print(self.feature_size)
 
         # Encoder
         self.conv1 = nn.Conv3d(1, 32, 3, stride=2, padding=1)  # 32 x 40 x 48 x 40
