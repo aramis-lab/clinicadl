@@ -932,9 +932,11 @@ class SizeReduction(object):
             return image[:, 0:168:3, 8:200:3, 4:172:3]
         elif self.size_reduction_factor == 4:
             return image[:, 4:164:4, 8:200:4, 8:168:4]
+        elif self.size_reduction_factor == 5:
+            return image[:, 4:164:5, 0:200:5, 8:168:5]
         else:
             raise ClinicaDLConfigurationError(
-                "size_reduction_factor must be 2, 3 or 4."
+                "size_reduction_factor must be 2, 3, 4 or 5."
             )
 
 
