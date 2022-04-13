@@ -45,7 +45,7 @@ def predict(
     verbose_list = ["warning", "info", "debug"]
 
     maps_manager = MapsManager(maps_dir, verbose=verbose_list[0])
-    # CHECK IF THE TASK IS A RECONSTRUCTION
+    # Check if task is reconstruction for "save_tensor" and "save_nifti"
     if save_tensor and maps_manager.network_task != "reconstruction":
         raise ClinicaDLArgumentError(
             "Cannot save tensors if the network task is not reconstruction. Please remove --save_tensor option."
