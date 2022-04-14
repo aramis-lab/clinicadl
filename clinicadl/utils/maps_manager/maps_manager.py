@@ -1544,6 +1544,7 @@ class MapsManager:
         logger.debug("Writing training data...")
         from clinicadl.utils.caps_dataset.data import load_data_test
 
+        print(self.tsv_path)
         train_df = load_data_test(
             self.tsv_path,
             self.diagnoses,
