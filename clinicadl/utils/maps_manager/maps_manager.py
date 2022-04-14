@@ -347,6 +347,23 @@ class MapsManager:
                     use_labels=use_labels,
                     gpu=gpu,
                 )
+                if save_tensor:
+                    self._compute_output_tensors(
+                        data_test,
+                        data_group,
+                        split,
+                        selection_metrics,
+                        gpu=gpu,
+                    )
+                if save_nifti:
+                    self._compute_output_nifti(
+                        data_test,
+                        data_group,
+                        split,
+                        selection_metrics,
+                        gpu=gpu,
+                    )
+
             self._ensemble_prediction(data_group, split, selection_metrics, use_labels)
 
     def save_tensors(
