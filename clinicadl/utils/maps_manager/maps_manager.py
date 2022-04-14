@@ -184,6 +184,8 @@ class MapsManager:
         overwrite: bool = False,
         label: str = None,
         label_code: Optional[Dict[str, int]] = "default",
+        save_tensor: bool = False,
+        save_nifti: bool = False,
     ):
         """
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -296,6 +298,24 @@ class MapsManager:
                         gpu=gpu,
                         network=network,
                     )
+                    if save_tensor:
+                        self._compute_output_tensors(
+                            data_test,
+                            data_group,
+                            split,
+                            selection_metrics,
+                            gpu=gpu,
+                            network=network,
+                        )
+                    if save_nifti:
+                        self._compute_output_nifti(
+                            data_test,
+                            data_group,
+                            split,
+                            selection_metrics,
+                            gpu=gpu,
+                            network=network,
+                        )
             else:
                 data_test = return_dataset(
                     group_parameters["caps_directory"],
@@ -328,6 +348,23 @@ class MapsManager:
                     use_labels=use_labels,
                     gpu=gpu,
                 )
+                if save_tensor:
+                    self._compute_output_tensors(
+                        data_test,
+                        data_group,
+                        split,
+                        selection_metrics,
+                        gpu=gpu,
+                    )
+                if save_nifti:
+                    self._compute_output_nifti(
+                        data_test,
+                        data_group,
+                        split,
+                        selection_metrics,
+                        gpu=gpu,
+                    )
+
             self._ensemble_prediction(data_group, split, selection_metrics, use_labels)
 
     def save_tensors(

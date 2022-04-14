@@ -2,6 +2,7 @@
 from typing import List
 
 from clinicadl import MapsManager
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 
 def predict(
@@ -18,6 +19,8 @@ def predict(
     diagnoses: List[str] = None,
     multi_cohort: bool = False,
     overwrite: bool = False,
+    save_tensor: bool = False,
+    save_nifti: bool = False,
 ):
     """
     This function loads a MAPS and predicts the global metrics and individual values
@@ -42,6 +45,15 @@ def predict(
     verbose_list = ["warning", "info", "debug"]
 
     maps_manager = MapsManager(maps_dir, verbose=verbose_list[0])
+    # Check if task is reconstruction for "save_tensor" and "save_nifti"
+    if save_tensor and maps_manager.network_task != "reconstruction":
+        raise ClinicaDLArgumentError(
+            "Cannot save tensors if the network task is not reconstruction. Please remove --save_tensor option."
+        )
+    if save_nifti and maps_manager.network_task != "reconstruction":
+        raise ClinicaDLArgumentError(
+            "Cannot save nifti if the network task is not reconstruction. Please remove --save_nifti option."
+        )
     maps_manager.predict(
         data_group,
         caps_directory=caps_directory,
@@ -55,4 +67,6 @@ def predict(
         n_proc=n_proc,
         gpu=gpu,
         overwrite=overwrite,
+        save_tensor=save_tensor,
+        save_nifti=save_nifti,
     )
