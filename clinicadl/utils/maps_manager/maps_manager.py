@@ -878,7 +878,8 @@ class MapsManager:
 
         log_writer = LogWriter(
             self.maps_path,
-            self.task_manager.evaluation_metrics + ["loss"],
+            self.task_manager.evaluation_metrics
+            + ["loss", "recon_loss", "kl_loss"],  # to change
             split,
             resume=resume,
             beginning_epoch=beginning_epoch,
