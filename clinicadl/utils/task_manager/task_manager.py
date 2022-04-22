@@ -200,13 +200,13 @@ class TaskManager:
                     for loss_component in loss_dict.keys():
                         total_loss[loss_component] = 0
                     for loss_component in total_loss.keys():
-                        total_loss[loss_component] += loss_dict["loss"].item()
+                        total_loss[loss_component] += loss_dict[loss_component].item()
                 else:
                     outputs, loss_dict = model.compute_outputs_and_loss(
                         data, criterion, use_labels=use_labels
                     )
                     for loss_component in total_loss.keys():
-                        total_loss[loss_component] += loss_dict["loss"].item()
+                        total_loss[loss_component] += loss_dict[loss_component].item()
 
                 # Generate detailed DataFrame
                 for idx in range(len(data["participant_id"])):
