@@ -162,7 +162,7 @@ class SSIM3D(torch.nn.Module):
 
 
 def ssim(img1, img2, window_size=11, size_average=True):
-    (_, channel, _, _) = img1.shape
+    (channel, _, _) = img1.shape
     window = create_window(window_size, channel)
 
     if img1.is_cuda:
@@ -173,8 +173,7 @@ def ssim(img1, img2, window_size=11, size_average=True):
 
 
 def ssim3D(img1, img2, window_size=11, size_average=True):
-    print(img1.shape)
-    (_, channel, _, _, _) = img1.shape
+    (channel, _, _, _) = img1.shape
     window = create_window_3D(window_size, channel)
 
     if img1.is_cuda:
