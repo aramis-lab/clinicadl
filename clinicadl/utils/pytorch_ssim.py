@@ -161,7 +161,9 @@ class SSIM3D(torch.nn.Module):
         return _ssim3D(img1, img2, window, self.window_size, channel, self.size_average)
 
 
-def ssim(img1, img2, window_size=11, size_average=True):
+def ssim(y, y_pred, window_size=11, size_average=True):
+    img1 = torch.from_numpy(y)
+    img2 = torch.from_numpy(y_pred)
     (channel, _, _) = img1.shape
     window = create_window(window_size, channel)
 
