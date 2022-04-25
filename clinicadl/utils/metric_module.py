@@ -228,7 +228,7 @@ class MetricModule:
         Returns:
             (float) SSIM
         """
-        from pytorch_ssim import ssim3D
+        from clinicadl.utils.pytorch_ssim import ssim3D
 
         return ssim3D(y, y_pred)
 
