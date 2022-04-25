@@ -228,9 +228,9 @@ class MetricModule:
         Returns:
             (float) SSIM
         """
-        from skimage.metrics import structural_similarity
+        from pytorch_ssim import ssim3D
 
-        return structural_similarity(y, y_pred)
+        return ssim3D(y, y_pred)
 
     @staticmethod
     def psnr_fn(y, y_pred):
