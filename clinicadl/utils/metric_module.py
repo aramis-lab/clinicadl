@@ -230,6 +230,9 @@ class MetricModule:
         """
         from clinicadl.utils.pytorch_ssim import ssim3D
 
+        print("SSIM LOG:", y)
+        print("SSIM LOG:", type(y))
+        print("SSIM LOG:", y.size())
         return ssim3D(y, y_pred)
 
     @staticmethod
