@@ -173,6 +173,7 @@ def ssim(img1, img2, window_size=11, size_average=True):
 
 
 def ssim3D(img1, img2, window_size=11, size_average=True):
+    print(img1.size())
     (_, channel, _, _, _) = img1.size()
     window = create_window_3D(window_size, channel)
 
