@@ -177,7 +177,7 @@ def ssim(y, y_pred, window_size=11, size_average=True):
 def ssim3D(y, y_pred, window_size=11, size_average=True):
     img1 = torch.from_numpy(y)[None, :, :, :, :]  # add a dimension
     img2 = torch.from_numpy(y_pred)[None, :, :, :, :]
-    (channel, _, _, _) = img1.shape
+    (_, channel, _, _, _) = img1.shape
     window = create_window_3D(window_size, channel)
 
     if img1.is_cuda:
