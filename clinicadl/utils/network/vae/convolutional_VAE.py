@@ -231,10 +231,16 @@ class CVAE_3D_half(Network):
 
         input_ = input_dict["image"].to(self.device)
         mu, logVar, reconstructed = self.forward(input_)
-        reconstruction_loss, kl_loss = criterion(input_, reconstructed, mu, logVar)
+        losses = criterion(input_, reconstructed, mu, logVar)
+        reconstruction_loss, kl_loss = losses[0], losses[1]
+        total_loss = reconstruction_loss + self.beta * kl_loss
+
+        if len(losses) > 2:
+            regularization = losses[2]
+            total_loss = reconstruction_loss + self.beta * kl_loss + regularization
 
         loss_dict = {
-            "loss": reconstruction_loss + self.beta * kl_loss,
+            "loss": total_loss,
             "recon_loss": reconstruction_loss,
             "kl_loss": kl_loss,
         }
