@@ -102,7 +102,9 @@ class ReconstructionManager(TaskManager):
             "BCEWithLogitsLoss",
             "HuberLoss",
             "SmoothL1Loss",
-            "VAELoss",
+            "VAEGaussianLoss",
+            "VAEBernoulliLoss",
+            "VAEContinuousBernoulliLoss",
         ]
         if criterion is None:
             return nn.MSELoss()
@@ -110,10 +112,18 @@ class ReconstructionManager(TaskManager):
             raise ClinicaDLArgumentError(
                 f"Reconstruction loss must be chosen in {compatible_losses}."
             )
-        if criterion == "VAELoss":
-            from clinicadl.utils.network.vae.vae_utils import VAELoss
+        if criterion == "VAEGaussianLoss":
+            from clinicadl.utils.network.vae.vae_utils import VAEGaussianLoss
 
-            return VAELoss
+            return VAEGaussianLoss
+        elif criterion == "VAEBernoulliLoss":
+            from clinicadl.utils.network.vae.vae_utils import VAEBernoulliLoss
+
+            return VAEBernoulliLoss
+        elif criterion == "VAEContinuousBernoulliLoss":
+            from clinicadl.utils.network.vae.vae_utils import VAEContinuousBernoulliLoss
+
+            return VAEContinuousBernoulliLoss
         return getattr(nn, criterion)()
 
     @staticmethod
