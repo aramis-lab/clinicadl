@@ -127,9 +127,12 @@ class CVAE_3D_half(Network):
     with the sole criterion of correctly reconstructing the data. Nothing longitudinal here.
     """
 
-    def __init__(self, size_reduction_factor, latent_space_size, gpu, kl_weight):
+    def __init__(
+        self, size_reduction_factor, latent_space_size, gpu, recons_weight, kl_weight
+    ):
         super(CVAE_3D_half, self).__init__(gpu=gpu)
         nn.Module.__init__(self)
+        self.alpha = recons_weight
         self.beta = kl_weight
         self.n_conv = 3
         self.latent_space_size = latent_space_size
@@ -237,7 +240,9 @@ class CVAE_3D_half(Network):
 
         if len(losses) > 2:
             regularization = losses[2]
-            total_loss = reconstruction_loss + self.beta * kl_loss + regularization
+            total_loss = (
+                self.alpha * reconstruction_loss + self.beta * kl_loss + regularization
+            )
 
         loss_dict = {
             "loss": total_loss,
