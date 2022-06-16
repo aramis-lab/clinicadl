@@ -58,7 +58,7 @@ class CVAE_3D_final_conv(Network):
         self.upconv4 = nn.ConvTranspose3d(
             64, 1, 3, stride=2, padding=1, output_padding=1
         )  # 1 x 80 x 96 x 80
-        self.final = nn.Conv3d(1, 1, 3, stride=1, padding=0)
+        self.final = nn.Conv3d(1, 1, 3, stride=1, padding=1)
         self.in5 = nn.InstanceNorm3d(128)
         self.in6 = nn.InstanceNorm3d(64)
         self.in7 = nn.InstanceNorm3d(1)
