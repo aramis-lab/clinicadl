@@ -62,7 +62,7 @@ Options shared for all values of `NETWORK_TASK` are organized in groups:
 - **Computational resources**
     - `--gpu/--no-gpu` (bool) Use GPU acceleration. Default behavior is to try to use a GPU and to raise an error if it is not found. Please specify `--no-gpu` to use CPU instead.
     - `--n_proc` (int) is the number of workers used by the DataLoader. Default: `2`.
-    - `--batch_size` (int) is the size of the batch used in the DataLoader. Default: `2`.
+    - `--batch_size` (int) is the size of the batch used in the DataLoader. Default: `8`.
     - `--evaluation_steps` (int) gives the number of iterations to perform an [evaluation internal to an epoch](Details.md#evaluation). 
     Default will only perform an evaluation at the end of each epoch.
 - **Data management**
