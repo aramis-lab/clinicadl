@@ -99,7 +99,7 @@ to the processing of one batch of images.
 In ClinicaDL, it is possible to accumulate the gradients with `accumulation_steps` during `N` iterations to update
 the weights of the network every `N` iterations. This allows simulating a larger batch size
 even though the computational resources are not powerful enough to allow it.
-            
+
 <p style="text-align: center;">
 <code>virtual_batch_size</code> = <code>batch_size</code> * <code>accumulation_steps</code>
 </p>
