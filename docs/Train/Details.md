@@ -12,7 +12,7 @@ in data loading introduced by Pytorch](https://pytorch.org/docs/stable/data.html
 However, this is not sufficient to guarantee the exact reproducibility when using GPU (though the results will
 be more close than with two different seeds). To obtain exactly the same results with the same GPU environment,
 the user must specify the flag `--deterministic`. This will force CUDA to use a
-deterministic behaviour, but at the cost of the computation time, or the memory use.
+deterministic behavior, but at the cost of the computation time, or the memory use.
 
 !!! warning "Non-deterministic functions in Pytorch"
     Pytorch library is currently improving the reproducibility of their methods, 
@@ -80,7 +80,19 @@ In the following list the weights are transferred from `source task` to `target 
 
 ## Optimization
 
-The optimizer used in `clinicadl train` is [Adam](https://arxiv.org/abs/1412.6980). 
+Since `v 1.0.4` of ClinicaDL, it is possible to chose the optimizer in `clinicadl train`. We added all the main optimizer available in [Pytorch](https://pytorch.org/docs/stable/optim.html#algorithms): 
+* Adadelta,
+* Adagrad,
+* Adam,
+* AdamW,
+* Adamax,
+* ASGD,
+* NAdam,
+* RAdam,
+* RMSprop,
+* SGD.
+
+The default optimizer is [Adam](https://arxiv.org/abs/1412.6980). 
 
 Usually, the optimizer updates the weights after one iteration, an iteration corresponding 
 to the processing of one batch of images.

@@ -62,7 +62,7 @@ Options shared for all values of `NETWORK_TASK` are organized in groups:
 - **Computational resources**
     - `--gpu/--no-gpu` (bool) Use GPU acceleration. Default behavior is to try to use a GPU and to raise an error if it is not found. Please specify `--no-gpu` to use CPU instead.
     - `--n_proc` (int) is the number of workers used by the DataLoader. Default: `2`.
-    - `--batch_size` (int) is the size of the batch used in the DataLoader. Default: `2`.
+    - `--batch_size` (int) is the size of the batch used in the DataLoader. Default: `8`.
     - `--evaluation_steps` (int) gives the number of iterations to perform an [evaluation internal to an epoch](Details.md#evaluation). 
     Default will only perform an evaluation at the end of each epoch.
 - **Data management**
@@ -163,25 +163,32 @@ multi_network = false
 # CNN
 dropout = 0.0 # between 0 and 1
 # VAE
-latent_space_dimension = 64
-latent_space_size = 2
+latent_space_size = 128
+feature_size = 1024
+n_conv = 4
+io_layer_channels = 8
+recons_weight = 1
+KL_weight = 1
 
 [Classification]
 selection_metrics = ["loss"]
 label = "diagnosis"
 selection_threshold = 0.0 # Will only be used if num_networks != 1
+loss = "CrossEntropyLoss"
 
 [Regression]
 selection_metrics = ["loss"]
 label = "age"
+loss = "MSELoss"
 
 [Reconstruction]
 selection_metrics = ["loss"]
+loss = "MSELoss"
 
 [Computational]
 gpu = true
 n_proc = 2
-batch_size = 2
+batch_size = 8
 evaluation_steps = 0
 
 [Reproducibility]
@@ -192,6 +199,10 @@ compensation = "memory" # Only used if deterministic = true
 [Transfer_learning]
 transfer_path = ""
 transfer_selection_metric = "loss"
+
+[Mode]
+# require to manually generate preprocessing json
+use_extracted_features = false
 
 [Data]
 multi_cohort = false
@@ -206,6 +217,7 @@ n_splits = 0
 split = []
 
 [Optimization]
+optimizer = "Adam"
 epochs = 20
 learning_rate = 1e-4
 weight_decay = 1e-4
