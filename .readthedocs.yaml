@@ -16,5 +16,4 @@ mkdocs:
 
 python:
   install:
-    - method: pip
-      path: ./docs/requirements.txt    
+    - requirements: docs/requirements.txt
