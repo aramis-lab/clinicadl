@@ -50,7 +50,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
 
     # Input file:
     input_files = clinica_file_reader(subjects, sessions, caps_directory, file_type)[0]
-    logger.debug("Selected image file name list: {input_files}.")
+    logger.debug(f"Selected image file name list: {input_files}.")
 
     def write_output_imgs(output_mode, container, subfolder):
         # Write the extracted tensor on a .pt file
