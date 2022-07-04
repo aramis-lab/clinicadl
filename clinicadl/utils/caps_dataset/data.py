@@ -153,6 +153,7 @@ class CapsDataset(Dataset):
             results = clinica_file_reader(
                 [participant], [session], self.caps_dict[cohort], file_type
             )
+            logger.debug(f"clinica_file_reader output: {results}")
             filepath = Path(results[0][0])
             image_filename = filepath.name.replace(".nii.gz", ".pt")
 
