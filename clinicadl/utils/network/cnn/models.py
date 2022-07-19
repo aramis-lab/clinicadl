@@ -170,6 +170,7 @@ class resnet18(CNN):
             gpu=gpu,
         )
 
+
 class Inception(CNN):
 
     """
@@ -183,12 +184,17 @@ class Inception(CNN):
     https://arxiv.org/pdf/1512.00567v3.pdf
 
     """
-    def __init___(self,
-    input_size = (299,299,3),
-    gpu : bool= False):
 
-        model = InceptionDesigner(self, input_size,num_classes =1000, aux_logits = True, dropout =0.5)
-        model.load_state_dict(model_zoo.load_url("https://download.pytorch.org/models/inception_v3_google-0cc3c7bd.pth"))
+    def __init___(self, input_size=(299, 299, 3), gpu: bool = False):
+
+        model = InceptionDesigner(
+            self, input_size, num_classes=1000, aux_logits=True, dropout=0.5
+        )
+        model.load_state_dict(
+            model_zoo.load_url(
+                "https://download.pytorch.org/models/inception_v3_google-0cc3c7bd.pth"
+            )
+        )
 
         convolutions = nn.Sequential(
             model.Conv2d_1a_3x3,
@@ -210,23 +216,14 @@ class Inception(CNN):
             model.Mixed_7a,
             model.Mixed_7b,
             model.Mixed_7c,
-            model.avgpool
+            model.avgpool,
         )
 
-        fc = nn.Sequential(
-            model.dropout,
-            model.fc
-        )
+        fc = nn.Sequential(model.dropout, model.fc)
 
-        super().__init__(
-            convolutions = convolutions,
-            fc = fc,
-            gpu = gpu
-
-        )
+        super().__init__(convolutions=convolutions, fc=fc, gpu=gpu)
 
 
-        
 class Stride_Conv5_FC3(CNN):
     """
     Reduce the 2D or 3D input image to an array of size output_size.

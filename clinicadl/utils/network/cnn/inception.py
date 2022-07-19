@@ -1,4 +1,3 @@
-
 import math
 from typing import Any, Callable, List, Optional, Tuple
 
@@ -14,22 +13,32 @@ from torchvision.models.inception import (
     InceptionE,
 )
 
-model_urls = {"Inception_v3":"https://download.pytorch.org/models/inception_v3_google-0cc3c7bd.pth"}
+model_urls = {
+    "Inception_v3": "https://download.pytorch.org/models/inception_v3_google-0cc3c7bd.pth"
+}
 
 
 class InceptionDesigner(nn.Module):
     def __init__(
-    self,
-    input_size,
-    InceptionBlocks: Optional[List[Callable[..., nn.Module]]] = None,
-    num_classes=1000,
-    aux_logits: bool = True,
-    dropout: float = 0.5)-> None:
+        self,
+        input_size,
+        InceptionBlocks: Optional[List[Callable[..., nn.Module]]] = None,
+        num_classes=1000,
+        aux_logits: bool = True,
+        dropout: float = 0.5,
+    ) -> None:
         super(InceptionDesigner, self).__init__()
 
         if InceptionBlocks is None:
-                InceptionBlocks = [BasicConv2d, InceptionA, InceptionB, InceptionC, InceptionD, InceptionE, InceptionAux]
-
+            InceptionBlocks = [
+                BasicConv2d,
+                InceptionA,
+                InceptionB,
+                InceptionC,
+                InceptionD,
+                InceptionE,
+                InceptionAux,
+            ]
 
         self.aux_logits = aux_logits
         self.Conv2d_1a_3x3 = BasicConv2d(3, 32, kernel_size=3, stride=2)
@@ -53,9 +62,6 @@ class InceptionDesigner(nn.Module):
         self.Mixed_7a = InceptionD(768)
         self.Mixed_7b = InceptionE(1280)
         self.Mixed_7c = InceptionE(2048)
-
-
-
 
         input_tensor = self._transform_input(input_size)
         out = self.Conv2d_1a_3x3(input_tensor)
@@ -88,7 +94,6 @@ class InceptionDesigner(nn.Module):
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
-
 
     def _transform_input(self, x):
         if self.transform_input:
