@@ -170,7 +170,63 @@ class resnet18(CNN):
             gpu=gpu,
         )
 
+class Inception(CNN):
 
+    """
+    Deep 2D convolutional neural network architecture codenamed Inception,
+    which was responsible for setting the new state of the art for classification
+    and detection in the ImageNet Large-Scale Visual Recognition Challenge 2014 (ILSVRC14).
+    Improved utilization of the computing resources inside the network.
+    Increasing the depth and width of the network while keeping the computational budget constant.
+    To optimize quality, the architectural decisions were based on the Hebbian principle and the intuition of multi-scale processing.
+
+    https://arxiv.org/pdf/1512.00567v3.pdf
+
+    """
+    def __init___(self,
+    input_size = (299,299,3),
+    gpu : bool= False):
+
+        model = InceptionDesigner(self, input_size,num_classes =1000, aux_logits = True, dropout =0.5)
+        model.load_state_dict(model_zoo.load_url("https://download.pytorch.org/models/inception_v3_google-0cc3c7bd.pth"))
+
+        convolutions = nn.Sequential(
+            model.Conv2d_1a_3x3,
+            model.Conv2d_2a_3x3,
+            model.Conv2d_2b_3x3,
+            model.maxpool1,
+            model.Conv2d_3b_1x1,
+            model.Conv2d_4a_3x3,
+            model.maxpool2,
+            model.Mixed_5b,
+            model.Mixed_5c,
+            model.Mixed_5d,
+            model.Mixed_6a,
+            model.Mixed_6b,
+            model.Mixed_6c,
+            model.Mixed_6d,
+            model.Mixed_6e,
+            model.AuxLogits,
+            model.Mixed_7a,
+            model.Mixed_7b,
+            model.Mixed_7c,
+            model.avgpool
+        )
+
+        fc = nn.Sequential(
+            model.dropout,
+            model.fc
+        )
+
+        super().__init__(
+            convolutions = convolutions,
+            fc = fc,
+            gpu = gpu
+
+        )
+
+
+        
 class Stride_Conv5_FC3(CNN):
     """
     Reduce the 2D or 3D input image to an array of size output_size.
