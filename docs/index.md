@@ -47,9 +47,6 @@ We assume that users installing and using ClinicaDL are comfortable using the co
 
 ### Inference using pretrained models
 - `clinicadl predict` - [Predict one image or a list of images with your previously trained network](Predict.md)
-  
-### Network output serialization
-- `clinicadl save-tensors` - [Write series of input / output tensors for custom analyses](./Tensors.md)
 
 ### Interpretation with gradient maps
 - `clinicadl interpret`- [Interpret trained CNNs on data groups](./Interpret.md)

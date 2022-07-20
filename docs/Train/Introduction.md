@@ -223,4 +223,4 @@ This file is available at `clinicadl/resources/config/train_config.toml` in the 
 
 The `clinicadl train` command outputs a [MAPS structure](../Introduction.md#maps-definition) in which there are only two data groups: `train` and `validation`.
 To limit the size of the MAPS produced, tensor inputs and outputs of each group are only produced thanks to one image of the data set
-(for more information on input and output tensor serialization report to [the dedicated section](../Tensors.md)).
+(for more information on input and output tensor serialization report to [the dedicated section](../Predict.md)).
