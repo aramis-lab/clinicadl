@@ -41,6 +41,8 @@ def predict(
         diagnoses: list of diagnoses to be tested if tsv_path is a folder.
         multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
         overwrite: If True former definition of data group is erased
+        save_tensor: For reconstruction task only, if True it will save the reconstruction as .pt file in the MAPS.
+        save_nifti: For reconstruction task only, if True it will save the reconstruction as NIfTI file in the MAPS.
     """
     verbose_list = ["warning", "info", "debug"]
 
