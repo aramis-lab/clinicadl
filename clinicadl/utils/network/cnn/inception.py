@@ -13,7 +13,7 @@ from torchvision.models.inception import (
     InceptionE,
 )
 
-model_urls = {
+inception_urls = {
     "Inception_v3": "https://download.pytorch.org/models/inception_v3_google-0cc3c7bd.pth"
 }
 

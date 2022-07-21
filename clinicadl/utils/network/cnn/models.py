@@ -4,6 +4,7 @@ import torch.utils.model_zoo as model_zoo
 from torch import nn
 from torchvision.models.resnet import BasicBlock
 
+from clinicadl.utils.network.cnn.inception import InceptionDesigner, inception_urls
 from clinicadl.utils.network.cnn.resnet import ResNetDesigner, model_urls
 from clinicadl.utils.network.network_utils import PadMaxPool2d, PadMaxPool3d
 from clinicadl.utils.network.sub_network import CNN
@@ -190,11 +191,7 @@ class Inception(CNN):
         model = InceptionDesigner(
             self, input_size, num_classes=1000, aux_logits=True, dropout=0.5
         )
-        model.load_state_dict(
-            model_zoo.load_url(
-                "https://download.pytorch.org/models/inception_v3_google-0cc3c7bd.pth"
-            )
-        )
+        model.load_state_dict(model_zoo.load_url(inception_urls["Inception_v3"]))
 
         convolutions = nn.Sequential(
             model.Conv2d_1a_3x3,
