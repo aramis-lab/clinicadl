@@ -202,7 +202,7 @@ Options:
   Default value: `5`.
   - `--no-mci_sub_categories` (bool) is a flag that disables the special treatment of the MCI set and its subsets.
   This will cause data leakage for transfer learning tasks involving these sets. Default value: `False`.
-  - `stratification` (str) is the name of the variable used to stratify the k-fold split.
+  - `--stratification` (str) is the name of the variable used to stratify the k-fold split.
   By default, the value is `None` which means there is no stratification.
 
 ### Output tree
