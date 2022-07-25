@@ -56,6 +56,10 @@ class VanillaDenseVAE(BaseVAE):
             is_3D=False,
         )
 
+    @staticmethod
+    def get_input_size():
+        return "1@128x128"
+
 
 class VanillaSpatialVAE(BaseVAE):
     def __init__(
@@ -106,6 +110,10 @@ class VanillaSpatialVAE(BaseVAE):
             KL_weight=KL_weight,
             is_3D=False,
         )
+
+    @staticmethod
+    def get_input_size():
+        return "1@128x128"
 
 
 class Vanilla3DVAE(BaseVAE):
@@ -228,6 +236,10 @@ class Vanilla3DVAE(BaseVAE):
             is_3D=False,
         )
 
+    @staticmethod
+    def get_input_size():
+        return "1@128x128x128"
+
 
 class Vanilla3DdenseVAE(BaseVAE):
     def __init__(
@@ -249,7 +261,7 @@ class Vanilla3DdenseVAE(BaseVAE):
             # [0, 0, 0],
             # [0, 0, 1],
         ]
-
+        print(input_size)
         input_c = input_size[0]
         input_d = input_size[1]
         input_h = input_size[2]
@@ -360,3 +372,7 @@ class Vanilla3DdenseVAE(BaseVAE):
             recons_weight=recons_weight,
             KL_weight=KL_weight,
         )
+
+    @staticmethod
+    def get_input_size():
+        return "1@128x128x128"

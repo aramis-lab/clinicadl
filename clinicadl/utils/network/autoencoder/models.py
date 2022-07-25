@@ -17,6 +17,10 @@ class AE_Conv5_FC3(AutoEncoder):
             encoder=autoencoder.encoder, decoder=autoencoder.decoder, gpu=gpu
         )
 
+    @staticmethod
+    def get_input_size():
+        return "1@128x128"
+
 
 class AE_Conv4_FC3(AutoEncoder):
     """
@@ -31,3 +35,7 @@ class AE_Conv4_FC3(AutoEncoder):
         super().__init__(
             encoder=autoencoder.encoder, decoder=autoencoder.decoder, gpu=gpu
         )
+
+    @staticmethod
+    def get_input_size():
+        return "1@128x128"

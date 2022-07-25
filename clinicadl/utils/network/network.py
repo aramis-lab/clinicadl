@@ -45,6 +45,11 @@ class Network(nn.Module):
                 free_gpu = argmax(memory_list)
                 return f"cuda:{free_gpu}"
 
+    @staticmethod
+    @abc.abstractmethod
+    def get_input_size():
+        pass
+
     @abc.abstractproperty
     def layers(self):
         pass
