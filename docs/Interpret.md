@@ -2,6 +2,8 @@
 
 This functionality allows interpreting pretrained models by computing a mean saliency map
 across a group of images. It takes as input MAPS-like model folders.
+It is an adaptation of [[Simonyan et al., 2014](https://arxiv.org/abs/1312.6034)].
+
 
 ## Prerequisites
 
