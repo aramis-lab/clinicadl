@@ -47,7 +47,11 @@ class Network(nn.Module):
 
     @staticmethod
     @abc.abstractmethod
-    def get_input_size():
+    def get_input_size() -> str:
+        """
+        This static method is used for list_models command.
+        Must return the shape of the input size expected (C@HxW or C@HxWxD) for each architecture.
+        """
         pass
 
     @abc.abstractproperty

@@ -261,7 +261,7 @@ class Vanilla3DdenseVAE(BaseVAE):
             # [0, 0, 0],
             # [0, 0, 1],
         ]
-        print(input_size)
+
         input_c = input_size[0]
         input_d = input_size[1]
         input_h = input_size[2]
