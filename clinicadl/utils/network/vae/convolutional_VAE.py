@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.network.network import Network
 from clinicadl.utils.network.vae.vae_utils import multiply_list
 
@@ -128,7 +129,13 @@ class CVAE_3D_half(Network):
     """
 
     def __init__(
-        self, size_reduction_factor, latent_space_size, gpu, recons_weight, kl_weight
+        self,
+        size_reduction_factor,
+        latent_space_size,
+        gpu,
+        recons_weight,
+        kl_weight,
+        normalization,
     ):
         super(CVAE_3D_half, self).__init__(gpu=gpu)
         nn.Module.__init__(self)
@@ -153,10 +160,7 @@ class CVAE_3D_half(Network):
         self.conv2 = nn.Conv3d(32, 64, 3, stride=2, padding=1)  # 64 x 20 x 24 x 20
         self.conv3 = nn.Conv3d(64, 128, 3, stride=2, padding=1)  # 128 x 10 x 12 x 10
         # self.conv4 = nn.Conv3d(128, 128, 3, stride=1, padding=1)            # 256 x 10 x 12 x 10
-        self.bn1 = nn.BatchNorm3d(32)
-        self.bn2 = nn.BatchNorm3d(64)
-        self.bn3 = nn.BatchNorm3d(128)
-        # self.bn4 = nn.BatchNorm3d(128)
+
         self.fc10 = nn.Linear(self.feature_size, self.latent_space_size)
         self.fc11 = nn.Linear(self.feature_size, self.latent_space_size)
 
@@ -172,17 +176,45 @@ class CVAE_3D_half(Network):
         self.upconv4 = nn.ConvTranspose3d(
             64, 1, 3, stride=2, padding=1, output_padding=1
         )  # 1 x 80 x 96 x 80
-        self.bn5 = nn.BatchNorm3d(128)
-        self.bn6 = nn.BatchNorm3d(64)
-        self.bn7 = nn.BatchNorm3d(32)
+
+        if normalization == "batch":
+            self.norm1 = nn.BatchNorm3d(32)
+            self.norm2 = nn.BatchNorm3d(64)
+            self.norm3 = nn.BatchNorm3d(128)
+            # self.norm4 = nn.BatchNorm3d(128)
+            self.norm5 = nn.BatchNorm3d(128)
+            self.norm6 = nn.BatchNorm3d(64)
+            self.norm7 = nn.BatchNorm3d(32)
+        elif normalization == "group":
+            self.norm1 = nn.GroupNorm(6, 32)
+            self.norm2 = nn.GroupNorm(6, 64)
+            self.norm3 = nn.GroupNorm(6, 128)
+            # self.norm4 = nn.GroupNorm(128)
+            self.norm5 = nn.GroupNorm(6, 128)
+            self.norm6 = nn.GroupNorm(6, 64)
+            self.norm7 = nn.GroupNorm(6, 32)
+        elif normalization == "instance":
+            self.norm1 = nn.InstanceNorm3d(32)
+            self.norm2 = nn.InstanceNorm3d(64)
+            self.norm3 = nn.InstanceNorm3d(128)
+            # self.norm4 = nn.InstanceNorm3d(128)
+            self.norm5 = nn.InstanceNorm3d(128)
+            self.norm6 = nn.InstanceNorm3d(64)
+            self.norm7 = nn.InstanceNorm3d(32)
+        else:
+            raise ClinicaDLArgumentError(
+                f"{normalization} is an unknown normalization method. Please choose between 'batch', 'group' or 'instance'."
+            )
 
         self.to(self.device)
 
     def encoder(self, image):
-        h1 = F.leaky_relu(self.bn1(self.conv1(image)), negative_slope=0.2, inplace=True)
-        h2 = F.leaky_relu(self.bn2(self.conv2(h1)), negative_slope=0.2, inplace=True)
-        h3 = F.leaky_relu(self.bn3(self.conv3(h2)), negative_slope=0.2, inplace=True)
-        # h4 = F.relu(self.bn4(self.conv4(h3)))
+        h1 = F.leaky_relu(
+            self.norm1(self.conv1(image)), negative_slope=0.2, inplace=True
+        )
+        h2 = F.leaky_relu(self.norm2(self.conv2(h1)), negative_slope=0.2, inplace=True)
+        h3 = F.leaky_relu(self.norm3(self.conv3(h2)), negative_slope=0.2, inplace=True)
+        # h4 = F.relu(self.norm4(self.conv4(h3)))
         # h5 = F.relu(self.fc1(h4.flatten(start_dim=1)))
         h5 = h3.flatten(start_dim=1)
         mu = torch.tanh(self.fc10(h5))
@@ -199,9 +231,9 @@ class CVAE_3D_half(Network):
                 self.input_size[3] // 2**self.n_conv,
             ]
         )
-        h6 = F.relu(self.bn5(self.upconv1(h5)))
-        h7 = F.relu(self.bn6(self.upconv2(h6)))
-        # h8 = F.relu(self.bn7(self.upconv3(h7)))
+        h6 = F.relu(self.norm5(self.upconv1(h5)))
+        h7 = F.relu(self.norm6(self.upconv2(h6)))
+        # h8 = F.relu(self.norm7(self.upconv3(h7)))
         reconstructed = torch.sigmoid(self.upconv4(h7))
         return reconstructed
 

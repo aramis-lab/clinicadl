@@ -16,6 +16,7 @@ n_conv = 4
 io_layer_channels = 8
 recons_weight = 1
 kl_weight = 1
+normalization = "batch"
 
 [Classification]
 selection_metrics = ["loss"]
