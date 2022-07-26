@@ -18,7 +18,6 @@ class EncoderLayer2D(nn.Module):
         kernel_size=4,
         stride=2,
         padding=1,
-        output_padding=0,
     ):
         super(EncoderLayer2D, self).__init__()
         self.layer = nn.Sequential(
