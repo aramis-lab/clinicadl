@@ -25,10 +25,10 @@ pipeline {
               stage('Build Env') {
                 steps {
                   echo 'Installing clinicadl sources in Linux...'
-                  echo 'My branch name is ${BRANCH_NAME}'
-                  sh 'echo "My branch name is ${BRANCH_NAME}"'
+                  echo "My branch name is ${BRANCH_NAME}"
+                  sh "echo 'My branch name is ${BRANCH_NAME}'"
                   sh 'printenv'
-                  sh 'echo "Agent name: ${NODE_NAME}"'
+                  sh "echo 'Agent name: ${NODE_NAME}'"
                   sh '''
                     set +x
                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
@@ -68,7 +68,7 @@ pipeline {
               stage('TSVTOOL tests Linux') {
                 steps {
                   echo 'Testing tsvtool tasks...'
-                    sh 'echo "Agent name: ${NODE_NAME}"'
+                    sh "echo 'Agent name: ${NODE_NAME}'"
                     sh '''
                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
                     conda activate "${CONDA_ENV}"
@@ -90,7 +90,7 @@ pipeline {
               stage('Quality check tests Linux') {
                 steps {
                   echo 'Testing quality check tasks...'
-                    sh 'echo "Agent name: ${NODE_NAME}"'
+                    sh "echo 'Agent name: ${NODE_NAME}'"
                     sh '''
                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
                     conda activate "${CONDA_ENV}"
@@ -115,7 +115,7 @@ pipeline {
               stage('Generate tests Linux') {
                 steps {
                   echo 'Testing generate task...'
-                    sh 'echo "Agent name: ${NODE_NAME}"'
+                    sh "echo 'Agent name: ${NODE_NAME}'"
                     sh '''
                       source "${CONDA_HOME}/etc/profile.d/conda.sh"
                       conda activate "${CONDA_ENV}"
@@ -140,7 +140,7 @@ pipeline {
               stage('Extract tests Linux') {
                 steps {
                   echo 'Testing extract task...'
-                    sh 'echo "Agent name: ${NODE_NAME}"'
+                    sh "echo 'Agent name: ${NODE_NAME}'"
                     sh '''
                       source "${CONDA_HOME}/etc/profile.d/conda.sh"
                       conda activate "${CONDA_ENV}"
@@ -165,7 +165,7 @@ pipeline {
               stage('Predict tests Linux') {
                 steps {
                   echo 'Testing predict...'
-                  sh 'echo "Agent name: ${NODE_NAME}"'
+                  sh "echo 'Agent name: ${NODE_NAME}'"
                   sh '''
                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
                      conda activate "${CONDA_ENV}"
@@ -220,7 +220,7 @@ pipeline {
             //              }
             }
             post {
-            // Clean after build
+              // Clean after build
               cleanup {
                 cleanWs(deleteDirs: true,
                   notFailBuild: true,
@@ -240,10 +240,10 @@ pipeline {
               stage('Build Env') {
                 steps {
                   echo 'Installing clinicadl sources in Linux...'
-                  echo 'My branch name is ${BRANCH_NAME}'
-                  sh 'echo "My branch name is ${BRANCH_NAME}"'
+                  echo "My branch name is ${BRANCH_NAME}"
+                  sh "echo 'My branch name is ${BRANCH_NAME}'"
                   sh 'printenv'
-                  sh 'echo "Agent name: ${NODE_NAME}"'
+                  sh "echo 'Agent name: ${NODE_NAME}'"
                   sh '''#!/usr/bin/env bash
                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
                     make env.conda
@@ -262,7 +262,7 @@ pipeline {
               stage('Train tests Linux') {
                 steps {
                   echo 'Testing train task...'
-                  sh 'echo "Agent name: ${NODE_NAME}"'
+                  sh "echo 'Agent name: ${NODE_NAME}'"
                   sh '''#!/usr/bin/env bash
                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
                      conda activate "${CONDA_ENV}"
@@ -291,7 +291,7 @@ pipeline {
               stage('Transfer learning tests Linux') {
                 steps {
                   echo 'Testing transfer learning...'
-                  sh 'echo "Agent name: ${NODE_NAME}"'
+                  sh "echo 'Agent name: ${NODE_NAME}'"
                   sh '''#!/usr/bin/env bash
                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
                      conda activate "${CONDA_ENV}"
@@ -319,7 +319,7 @@ pipeline {
               stage('Resume tests Linux') {
                 steps {
                   echo 'Testing resume...'
-                  sh 'echo "Agent name: ${NODE_NAME}"'
+                  sh "echo 'Agent name: ${NODE_NAME}'"
                   sh '''#!/usr/bin/env bash
                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
                      conda activate "${CONDA_ENV}"
@@ -350,7 +350,7 @@ pipeline {
               stage('Interpretation tests Linux') {
                 steps {
                   echo 'Testing interpret task...'
-                  sh 'echo "Agent name: ${NODE_NAME}"'
+                  sh "echo 'Agent name: ${NODE_NAME}'"
                   sh '''#!/usr/bin/env bash
                      set +x
                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
@@ -379,7 +379,7 @@ pipeline {
               stage('Random search tests Linux') {
                 steps {
                   echo 'Testing random search...'
-                  sh 'echo "Agent name: ${NODE_NAME}"'
+                  sh "echo 'Agent name: ${NODE_NAME}'"
                   sh '''#!/usr/bin/env bash
                      set +x
                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
@@ -407,7 +407,7 @@ pipeline {
               }
             }
             post {
-            // Clean after build
+              // Clean after build
               cleanup {
                 cleanWs(deleteDirs: true,
                   notFailBuild: true,
@@ -421,13 +421,13 @@ pipeline {
         when { buildingTag() }
         agent {
           label 'cpu'
-          }
+        }
         environment {
           PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
         }
         steps {
           echo 'Create ClinicaDL package and upload to Pypi...'
-          sh 'echo "Agent name: ${NODE_NAME}"'
+          sh "echo 'Agent name: ${NODE_NAME}'"
           withCredentials(
             [
               usernamePassword(

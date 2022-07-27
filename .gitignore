@@ -1,6 +1,8 @@
 # Python and system files
 build/
 dist/
+env/
+tests/data
 examples/external-data
 clinicadl.egg-info
 *egg-info

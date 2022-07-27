@@ -4,29 +4,37 @@
 
 # ClinicaDL Documentation
 
-ClinicaDL is the deep learning extension of [Clinica](https://aramislab.paris.inria.fr/clinica/docs/public/latest/),
-an open-source Python library for neuroimaging preprocessing and analysis.
-This library was developed from the [AD-DL project](https://github.com/aramis-lab/AD-DL), a GitHub repository hosting
-the source code of a scientific publication on the deep learning classification of brain images in the context of Alzheimer's
-disease. This is why some functions ([label definition](TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease) 
-and [data set restriction](TSVTools.md#restrict---reproduce-restrictions-on-specific-datasets)) of ClinicaDL 
-are still specific to Alzheimer's disease context. For more information on this clinical context, please
-refer to [our tutorial](https://aramislab.paris.inria.fr/clinicadl/tuto/Notebooks-AD-DL/clinical.html).
+ClinicaDL is the deep learning extension of
+[Clinica](https://aramislab.paris.inria.fr/clinica/docs/public/latest/), an
+open-source Python library for neuroimaging preprocessing and analysis.  This
+library was developed from the [AD-DL
+project](https://github.com/aramis-lab/AD-DL), a GitHub repository hosting the
+source code of a scientific publication on the deep learning classification of
+brain images in the context of Alzheimer's disease. This is why some functions
+([label
+definition](TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease)
+and [data set
+restriction](TSVTools.md#restrict---reproduce-restrictions-on-specific-datasets))
+of ClinicaDL are still specific to Alzheimer's disease context. For more
+information on this clinical context, please refer to [our
+tutorial](https://aramislab.paris.inria.fr/clinicadl/tuto/).
 
-If you are new to ClinicaDL, please consider reading the [First steps section](./Introduction.md)
-before starting your project!
+If you are new to ClinicaDL, please consider reading the [First steps
+section](./Introduction.md) before starting your project!
 
 !!! tip "ClinicaDL tutorial"
-    Visit our [hands-on tutorial web site](https://aramislab.paris.inria.fr/clinicadl/tuto/intro.html) 
+    Visit our [hands-on tutorial web site](https://aramislab.paris.inria.fr/clinicadl/tuto/) 
     to try **ClinicaDL** directly in a Google Colab instance!
 
 ## Installation
 
 See [Installation](./Installation.md) section for detailed instructions.
 
-ClinicaDL can be installed on Mac OS X and Linux machines, and possibly on Windows computers with a Linux Virtual Machine.
+ClinicaDL can be installed on Mac OS X and Linux machines, and possibly on
+Windows computers with a Linux Virtual Machine.
 
-We assume that users installing and using ClinicaDL are comfortable using the command line.
+We assume that users installing and using ClinicaDL are comfortable using the
+command line.
 
 ## User documentation (ClinicaDL)
 
@@ -77,7 +85,7 @@ You will also find how to [run the test suite](Contribute/Test.md) to check that
 ClinicaDL is distributed under the terms of the MIT license given [here](https://github.com/aramis-lab/clinicadl/blob/dev/LICENSE.txt).
 
 ## Citing ClinicaDL
-For publications or communications using ClinicaDL, please cite [[Thibeau-Sutre et al., 2021](https://hal.inria.fr/hal-03351976)] 
+For publications or communications using ClinicaDL, please cite [[Thibeau-Sutre et al., 2021](https://www.sciencedirect.com/science/article/abs/pii/S0169260722002000)] 
 as well as the references mentioned on the wiki page of the pipelines you used 
 (for example, citing PyTorch when using the `extract` pipeline).
 
