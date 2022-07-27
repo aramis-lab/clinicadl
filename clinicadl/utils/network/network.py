@@ -48,9 +48,26 @@ class Network(nn.Module):
     @staticmethod
     @abc.abstractmethod
     def get_input_size() -> str:
-        """
-        This static method is used for list_models command.
+        """This static method is used for list_models command.
         Must return the shape of the input size expected (C@HxW or C@HxWxD) for each architecture.
+        """
+        pass
+
+    @staticmethod
+    @abc.abstractmethod
+    def get_dimension() -> int:
+        """This static method is used for list_models command.
+        Return 0 if the model is only 2D.
+        Return 1 if the model is only 3D.
+        Return 2 if the model can be both 2D and 3D.
+        """
+        pass
+
+    @staticmethod
+    @abc.abstractmethod
+    def get_task():
+        """This static method is used for list_models command.
+        Return the list of tasks for which the model is made.
         """
         pass
 

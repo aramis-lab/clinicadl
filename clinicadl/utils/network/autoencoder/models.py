@@ -21,6 +21,14 @@ class AE_Conv5_FC3(AutoEncoder):
     def get_input_size():
         return "1@128x128"
 
+    @staticmethod
+    def get_dimension():
+        return 0
+
+    @staticmethod
+    def get_task():
+        return ["reconstruction"]
+
 
 class AE_Conv4_FC3(AutoEncoder):
     """
@@ -39,3 +47,11 @@ class AE_Conv4_FC3(AutoEncoder):
     @staticmethod
     def get_input_size():
         return "1@128x128"
+
+    @staticmethod
+    def get_dimension():
+        return 0
+
+    @staticmethod
+    def get_task():
+        return ["reconstruction"]

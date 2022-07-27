@@ -89,7 +89,7 @@ def build_train_dict(config_file: str, task: str) -> Dict[str, Any]:
     return train_dict
 
 
-def get_model_list(architecture=None, input_size=None):
+def get_model_list(architecture=None, input_size=None, model_layers=None):
     """
     Print the list of models available in ClinicaDL.
     If architecture is given, it prints the details of the specified model.
@@ -118,14 +118,43 @@ def get_model_list(architecture=None, input_size=None):
         )
         if not input_size:
             input_size = model_class.get_input_size()
-        chanel, shape_list = input_size.split("@")
-        args.remove("self")
-        kwargs = dict()
-        kwargs["input_size"] = [int(chanel)] + [int(x) for x in shape_list.split("x")]
-        kwargs["gpu"] = False
 
-        model = model_class(**kwargs)
-        secho(f"Information for {architecture} network", bold=True)
-        echo(f"Input size: {input_size}")
-        echo("Model layers:")
-        echo(model.layers)
+        if not model_layers:
+            secho(f"\nInformation for {architecture} network :\n", bold=True)
+            echo(model_class.__doc__)
+            dimension = model_class.get_dimension()
+            if dimension == 0:
+                echo(
+                    "This model can only deal with 2D input and it must be in the shape C@HxW."
+                    ""
+                )
+            elif dimension == 1:
+                echo(
+                    "This model can only deal with 3D input and it must be in the shape C@DxHxW."
+                )
+            elif dimension == 2:
+                echo(
+                    "This model can deal with both 2D and 3D input and it must be in the shape C@HxW if the image is 2D or C@DxHxW if the image is 3D."
+                )
+            echo(f"Usual input size for this model is {input_size}")
+            task_list = model_class.get_task()
+            echo(f"This model is usually used for {task_list[0]}.\n")
+            # if len(task_list)>0:
+            #    for i in range(1,len(task_list)):
+            #        echo(f"or {task_list[i]}\c")
+            # echo(".\n")
+        else:
+            chanel, shape_list = input_size.split("@")
+            args.remove("self")
+            kwargs = dict()
+            kwargs["input_size"] = [int(chanel)] + [
+                int(x) for x in shape_list.split("x")
+            ]
+            kwargs["gpu"] = False
+
+            model = model_class(**kwargs)
+
+            secho(f"Information for {architecture} network", bold=True)
+            echo(f"Input size: {input_size}")
+            echo("Model layers:")
+            echo(model.layers)

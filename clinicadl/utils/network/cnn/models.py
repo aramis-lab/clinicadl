@@ -23,7 +23,10 @@ def get_layers_fn(input_size):
 
 class Conv5_FC3(CNN):
     """
-    Reduce the 2D or 3D input image to an array of size output_size.
+    Convolutional neural network with 5 convolution and 3 fully-connected layer.
+    It reduces the 2D or 3D input image to an array of size output_size.
+
+
     """
 
     def __init__(self, input_size, gpu=True, output_size=2, dropout=0.5):
@@ -84,9 +87,18 @@ class Conv5_FC3(CNN):
     def get_input_size():
         return "1@128x128"
 
+    @staticmethod
+    def get_dimension():
+        return 2
+
+    @staticmethod
+    def get_task():
+        return ["classification"]
+
 
 class Conv4_FC3(CNN):
     """
+    Convolutional neural network with 4 convolution and 3 fully-connected layer.
     Reduce the 2D or 3D input image to an array of size output_size.
     """
 
@@ -148,8 +160,25 @@ class Conv4_FC3(CNN):
     def get_input_size():
         return "1@128x128"
 
+    @staticmethod
+    def get_dimension():
+        return 2
+
+    @staticmethod
+    def get_task():
+        return ["classification"]
+
 
 class resnet18(CNN):
+    """
+    ResNet-18 is a neural network that is 18 layers deep based on residual block.
+    It uses skip connections or shortcuts to jump over some layers.
+    It is an inmage classification pre-trained model.
+    The model input has 3 channels in RGB order.
+
+    reference : https://arxiv.org/abs/1512.03385?context=cs
+    """
+
     def __init__(self, input_size, gpu=False, output_size=2, dropout=0.5):
         model = ResNetDesigner(input_size, BasicBlock, [2, 2, 2, 2])
         model.load_state_dict(model_zoo.load_url(model_urls["resnet18"]))
@@ -182,9 +211,18 @@ class resnet18(CNN):
     def get_input_size():
         return "3@128x128"
 
+    @staticmethod
+    def get_dimension():
+        return 0
+
+    @staticmethod
+    def get_task():
+        return ["classification"]
+
 
 class Stride_Conv5_FC3(CNN):
     """
+    Convolutional neural network with 5 convolution and 3 fully-connected layer and a stride of 2 for each convolutional layer.
     Reduce the 2D or 3D input image to an array of size output_size.
     """
 
@@ -240,3 +278,11 @@ class Stride_Conv5_FC3(CNN):
     @staticmethod
     def get_input_size():
         return "1@128x128"
+
+    @staticmethod
+    def get_dimension():
+        return 2
+
+    @staticmethod
+    def get_task():
+        return ["classification"]

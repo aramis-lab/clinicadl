@@ -13,6 +13,12 @@ from clinicadl.utils.network.vae.vae_utils import (
 
 
 class VanillaDenseVAE(BaseVAE):
+    """
+    This network is an autoencoder with an intermediate latent space which interface encoder and decoder
+
+    reference : https://arxiv.org/abs/1312.6114
+    """
+
     def __init__(
         self,
         input_size,
@@ -60,8 +66,22 @@ class VanillaDenseVAE(BaseVAE):
     def get_input_size():
         return "1@128x128"
 
+    @staticmethod
+    def get_dimension():
+        return 0
+
+    @staticmethod
+    def get_task():
+        return ["reconstruction"]
+
 
 class VanillaSpatialVAE(BaseVAE):
+    """
+    This network is an autoencoder with an intermediate latent space which interface encoder and decoder
+
+    reference : https://arxiv.org/abs/1312.6114
+    """
+
     def __init__(
         self,
         input_size,
@@ -115,8 +135,22 @@ class VanillaSpatialVAE(BaseVAE):
     def get_input_size():
         return "1@128x128"
 
+    @staticmethod
+    def get_dimension():
+        return 0
+
+    @staticmethod
+    def get_task():
+        return ["reconstruction"]
+
 
 class Vanilla3DVAE(BaseVAE):
+    """
+    This network is an autoencoder with an intermediate latent space which interface encoder and decoder
+
+    reference : https://arxiv.org/abs/1312.6114
+    """
+
     def __init__(
         self,
         input_size,
@@ -240,8 +274,22 @@ class Vanilla3DVAE(BaseVAE):
     def get_input_size():
         return "1@128x128x128"
 
+    @staticmethod
+    def get_dimension():
+        return 1
+
+    @staticmethod
+    def get_task():
+        return ["reconstruction"]
+
 
 class Vanilla3DdenseVAE(BaseVAE):
+    """
+    This network is an autoencoder with an intermediate latent space which interface encoder and decoder
+
+    reference : https://arxiv.org/abs/1312.6114
+    """
+
     def __init__(
         self,
         input_size,
@@ -376,3 +424,11 @@ class Vanilla3DdenseVAE(BaseVAE):
     @staticmethod
     def get_input_size():
         return "1@128x128x128"
+
+    @staticmethod
+    def get_dimension():
+        return 1
+
+    @staticmethod
+    def get_task():
+        return ["reconstruction"]
