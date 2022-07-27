@@ -2,6 +2,7 @@
 from typing import List
 
 from clinicadl import MapsManager
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 
 def predict(
@@ -18,6 +19,8 @@ def predict(
     diagnoses: List[str] = None,
     multi_cohort: bool = False,
     overwrite: bool = False,
+    save_tensor: bool = False,
+    save_nifti: bool = False,
 ):
     """
     This function loads a MAPS and predicts the global metrics and individual values
@@ -38,10 +41,21 @@ def predict(
         diagnoses: list of diagnoses to be tested if tsv_path is a folder.
         multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
         overwrite: If True former definition of data group is erased
+        save_tensor: For reconstruction task only, if True it will save the reconstruction as .pt file in the MAPS.
+        save_nifti: For reconstruction task only, if True it will save the reconstruction as NIfTI file in the MAPS.
     """
     verbose_list = ["warning", "info", "debug"]
 
     maps_manager = MapsManager(maps_dir, verbose=verbose_list[0])
+    # Check if task is reconstruction for "save_tensor" and "save_nifti"
+    if save_tensor and maps_manager.network_task != "reconstruction":
+        raise ClinicaDLArgumentError(
+            "Cannot save tensors if the network task is not reconstruction. Please remove --save_tensor option."
+        )
+    if save_nifti and maps_manager.network_task != "reconstruction":
+        raise ClinicaDLArgumentError(
+            "Cannot save nifti if the network task is not reconstruction. Please remove --save_nifti option."
+        )
     maps_manager.predict(
         data_group,
         caps_directory=caps_directory,
@@ -55,4 +69,6 @@ def predict(
         n_proc=n_proc,
         gpu=gpu,
         overwrite=overwrite,
+        save_tensor=save_tensor,
+        save_nifti=save_nifti,
     )
