@@ -273,7 +273,7 @@ class MapsManager:
                         label_presence=use_labels,
                         label=self.label if label is None else label,
                         label_code=self.label_code
-                        if label_code is "default"
+                        if label_code == "default"
                         else label_code,
                         cnn_index=network,
                     )
@@ -323,7 +323,7 @@ class MapsManager:
                     label_presence=use_labels,
                     label=self.label if label is None else label,
                     label_code=self.label_code
-                    if label_code is "default"
+                    if label_code == "default"
                     else label_code,
                 )
 
