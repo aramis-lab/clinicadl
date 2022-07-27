@@ -135,7 +135,7 @@ will display the list of available models that can be used.
 There are a few options to get more details:
 
 - `--architecture`: is the name of the model whose architecture will be displayed.
-- `--input_size`: is an otpion to chose a different size of the input of the model with shape C@HxW if the image is 2D or C@DxHxW if the image is 3D. 
+- `--input_size`: is an option to chose a different size of the input of the model with shape C@HxW if the image is 2D or C@DxHxW if the image is 3D. 
   For example if the input size is 1@169x208x179, the option `--input_size 1@169x208x179` should be added.
 
 ## Stopping criterion
