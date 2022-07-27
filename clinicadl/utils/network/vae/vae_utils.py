@@ -18,7 +18,6 @@ class EncoderLayer2D(nn.Module):
         kernel_size=4,
         stride=2,
         padding=1,
-        output_padding=0,
     ):
         super(EncoderLayer2D, self).__init__()
         self.layer = nn.Sequential(
@@ -28,7 +27,6 @@ class EncoderLayer2D(nn.Module):
                 kernel_size,
                 stride=stride,
                 padding=padding,
-                output_padding=output_padding,
                 bias=False,
             ),
             nn.BatchNorm2d(output_channels),
@@ -329,7 +327,6 @@ class VAE_Decoder(nn.Module):
                 DecoderLayer2D(
                     last_layer_channels * 2 ** (i),
                     last_layer_channels * 2 ** (i - 1),
-                    output_padding=output_padding[i],
                 )
             )
 

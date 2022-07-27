@@ -80,6 +80,10 @@ class Conv5_FC3(CNN):
             gpu=gpu,
         )
 
+    @staticmethod
+    def get_input_size():
+        return "1@128x128"
+
 
 class Conv4_FC3(CNN):
     """
@@ -140,6 +144,10 @@ class Conv4_FC3(CNN):
             gpu=gpu,
         )
 
+    @staticmethod
+    def get_input_size():
+        return "1@128x128"
+
 
 class resnet18(CNN):
     def __init__(self, input_size, gpu=False, output_size=2, dropout=0.5):
@@ -169,6 +177,10 @@ class resnet18(CNN):
             n_classes=output_size,
             gpu=gpu,
         )
+
+    @staticmethod
+    def get_input_size():
+        return "3@128x128"
 
 
 class Stride_Conv5_FC3(CNN):
@@ -224,3 +236,7 @@ class Stride_Conv5_FC3(CNN):
             n_classes=output_size,
             gpu=gpu,
         )
+
+    @staticmethod
+    def get_input_size():
+        return "1@128x128"

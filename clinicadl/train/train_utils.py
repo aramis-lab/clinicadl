@@ -89,7 +89,7 @@ def build_train_dict(config_file: str, task: str) -> Dict[str, Any]:
     return train_dict
 
 
-def get_model_list(architecture=None, input_size=(128, 128)):
+def get_model_list(architecture=None, input_size=None):
     """
     Print the list of models available in ClinicaDL.
     If architecture is given, it prints the details of the specified model.
@@ -116,10 +116,9 @@ def get_model_list(architecture=None, input_size=(128, 128)):
                 : model_class.__init__.__code__.co_argcount
             ]
         )
-
-        # parse input_size
+        if not input_size:
+            input_size = model_class.get_input_size()
         chanel, shape_list = input_size.split("@")
-
         args.remove("self")
         kwargs = dict()
         kwargs["input_size"] = [int(chanel)] + [int(x) for x in shape_list.split("x")]

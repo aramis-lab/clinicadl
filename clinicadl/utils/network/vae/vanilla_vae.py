@@ -16,10 +16,10 @@ class VanillaDenseVAE(BaseVAE):
     def __init__(
         self,
         input_size,
-        latent_space_size,
-        feature_size,
-        recons_weight,
-        KL_weight,
+        latent_space_size=128,
+        feature_size=1024,
+        recons_weight=1,
+        KL_weight=1,
         gpu=True,
     ):
         n_conv = 4
@@ -56,15 +56,19 @@ class VanillaDenseVAE(BaseVAE):
             is_3D=False,
         )
 
+    @staticmethod
+    def get_input_size():
+        return "1@128x128"
+
 
 class VanillaSpatialVAE(BaseVAE):
     def __init__(
         self,
         input_size,
-        latent_space_size,
-        feature_size,
-        recons_weight,
-        KL_weight,
+        latent_space_size=128,
+        feature_size=1024,
+        recons_weight=1,
+        KL_weight=1,
         gpu=True,
     ):
         feature_channels = 64
@@ -107,15 +111,19 @@ class VanillaSpatialVAE(BaseVAE):
             is_3D=False,
         )
 
+    @staticmethod
+    def get_input_size():
+        return "1@128x128"
+
 
 class Vanilla3DVAE(BaseVAE):
     def __init__(
         self,
         input_size,
-        latent_space_size,
-        feature_size,
-        recons_weight,
-        KL_weight,
+        latent_space_size=256,
+        feature_size=1024,
+        recons_weight=1,
+        KL_weight=1,
         gpu=True,
     ):
         n_conv = 4
@@ -227,6 +235,10 @@ class Vanilla3DVAE(BaseVAE):
             KL_weight=KL_weight,
             is_3D=False,
         )
+
+    @staticmethod
+    def get_input_size():
+        return "1@128x128x128"
 
 
 class Vanilla3DdenseVAE(BaseVAE):
@@ -360,3 +372,7 @@ class Vanilla3DdenseVAE(BaseVAE):
             recons_weight=recons_weight,
             KL_weight=KL_weight,
         )
+
+    @staticmethod
+    def get_input_size():
+        return "1@128x128x128"
