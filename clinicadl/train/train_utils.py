@@ -92,7 +92,8 @@ def build_train_dict(config_file: str, task: str) -> Dict[str, Any]:
 def get_model_list(architecture=None, input_size=None, model_layers=None):
     """
     Print the list of models available in ClinicaDL.
-    If architecture is given, it prints the details of the specified model.
+    If architecture is given, it prints some informations of the specified model.
+    If you add the flag -model_layers, this pipeline will show the whole model layers.
     """
     from inspect import getmembers, isclass
 
@@ -119,7 +120,7 @@ def get_model_list(architecture=None, input_size=None, model_layers=None):
         if not input_size:
             input_size = model_class.get_input_size()
 
-        secho(f"\nInformation for {architecture} network :\n", bold=True)
+        secho(f"\nInformation for '{architecture}' network:", bold=True)
 
         if not model_layers:
 
@@ -127,29 +128,40 @@ def get_model_list(architecture=None, input_size=None, model_layers=None):
             dimension = model_class.get_dimension()
             if dimension == 0:
                 print(
-                    "\tThis model can only deal with 2D input and it must be in the shape C@HxW.".expandtabs(
-                        4
-                    )
+                    "\tThis model can only deal with".expandtabs(4),
+                    "\033[1m" + "2D input" + "\033[0m",
+                    "and it must be in the shape C@HxW.",
                 )
             elif dimension == 1:
                 print(
-                    "\tThis model can only deal with 3D input and it must be in the shape C@DxHxW.".expandtabs(
-                        4
-                    )
+                    "\tThis model can only deal with".expandtabs(4),
+                    "\033[1m" + "3D input" + "\033[0m",
+                    " and it must be in the shape C@DxHxW.",
                 )
             elif dimension == 2:
                 print(
-                    "\tThis model can deal with both 2D and 3D input and it must be in the shape C@HxW if the image is 2D or C@DxHxW if the image is 3D.".expandtabs(
-                        4
-                    )
+                    "\tThis model can deal with both".expandtabs(4),
+                    "\033[1m" + "2D and 3D input" + "\033[0m",
+                    " and it must be in the shape C@HxW if the image is 2D or C@DxHxW if the image is 3D.",
                 )
-            print(f"\tUsual input size for this model is {input_size}".expandtabs(4))
+
+            print(f"\tFor example, input_size can be {input_size}.".expandtabs(4))
+
             task_list = model_class.get_task()
-            print(f"\tThis model is usually used for {task_list[0]}.\n".expandtabs(4))
-            # if len(task_list)>0:
-            #    for i in range(1,len(task_list)):
-            #        echo(f"or {task_list[i]}\c")
-            # echo(".\n")
+            task_str = (
+                "\tThis model can be used for ".expandtabs(4)
+                + "\033[1m"
+                + f"{task_list[0]}"
+                + "\033[0m"
+            )
+            list_size = len(task_list)
+            if list_size > 0:
+                for i in range(1, list_size):
+                    task_str = (
+                        task_str + " or " + "\033[1m" + f"{task_list[i]}" + "\033[0m"
+                    )
+            task_str = task_str + ".\n"
+            print(task_str)
         else:
             chanel, shape_list = input_size.split("@")
             args.remove("self")
@@ -161,7 +173,6 @@ def get_model_list(architecture=None, input_size=None, model_layers=None):
 
             model = model_class(**kwargs)
 
-            secho(f"Information for {architecture} network", bold=True)
             echo(f"Input size: {input_size}")
             echo("Model layers:")
             echo(model.layers)

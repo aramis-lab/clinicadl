@@ -5,7 +5,7 @@ from clinicadl.utils.network.sub_network import AutoEncoder
 
 class AE_Conv5_FC3(AutoEncoder):
     """
-    Autoencoder derived from the convolutional part of CNN Conv5_FC3
+    Autoencoder derived from the convolutional part of CNN Conv5_FC3.
     """
 
     def __init__(self, input_size, gpu=True):
@@ -32,7 +32,7 @@ class AE_Conv5_FC3(AutoEncoder):
 
 class AE_Conv4_FC3(AutoEncoder):
     """
-    Autoencoder derived from the convolutional part of CNN Conv4_FC3
+    Autoencoder derived from the convolutional part of CNN Conv4_FC3.
     """
 
     def __init__(self, input_size, gpu=True):
