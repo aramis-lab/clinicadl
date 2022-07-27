@@ -14,7 +14,7 @@ from clinicadl.utils.network.vae.vae_utils import (
 
 class VanillaDenseVAE(BaseVAE):
     """
-    This network is an autoencoder with an intermediate latent space which interface encoder and decoder.
+    This network is a 2D convolutional variational autoencoder with a dense latent space.
 
     reference: Diederik P Kingma et al., Auto-Encoding Variational Bayes.
     https://arxiv.org/abs/1312.6114
@@ -78,7 +78,7 @@ class VanillaDenseVAE(BaseVAE):
 
 class VanillaSpatialVAE(BaseVAE):
     """
-    This network is an autoencoder with an intermediate latent space which interface encoder and decoder.
+    This network is a 3D convolutional variational autoencoder with a spacial latent space.
 
     reference: Diederik P Kingma et al., Auto-Encoding Variational Bayes.
     https://arxiv.org/abs/1312.6114
@@ -148,7 +148,7 @@ class VanillaSpatialVAE(BaseVAE):
 
 class Vanilla3DVAE(BaseVAE):
     """
-    This network is an autoencoder with an intermediate latent space which interface encoder and decoder.
+    This network is a 3D convolutional variational autoencoder with a spacial latent space.
 
     rreference: Diederik P Kingma et al., Auto-Encoding Variational Bayes.
     https://arxiv.org/abs/1312.6114
@@ -288,7 +288,7 @@ class Vanilla3DVAE(BaseVAE):
 
 class Vanilla3DdenseVAE(BaseVAE):
     """
-    This network is an autoencoder with an intermediate latent space which interface encoder and decoder.
+    This network is a 3D convolutional variational autoencoder with a dense latent space.
 
     reference: Diederik P Kingma et al., Auto-Encoding Variational Bayes.
     https://arxiv.org/abs/1312.6114
