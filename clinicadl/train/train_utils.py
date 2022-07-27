@@ -119,26 +119,33 @@ def get_model_list(architecture=None, input_size=None, model_layers=None):
         if not input_size:
             input_size = model_class.get_input_size()
 
+        secho(f"\nInformation for {architecture} network :\n", bold=True)
+
         if not model_layers:
-            secho(f"\nInformation for {architecture} network :\n", bold=True)
-            echo(model_class.__doc__)
+
+            print(model_class.__doc__)
             dimension = model_class.get_dimension()
             if dimension == 0:
-                echo(
-                    "This model can only deal with 2D input and it must be in the shape C@HxW."
-                    ""
+                print(
+                    "\tThis model can only deal with 2D input and it must be in the shape C@HxW.".expandtabs(
+                        4
+                    )
                 )
             elif dimension == 1:
-                echo(
-                    "This model can only deal with 3D input and it must be in the shape C@DxHxW."
+                print(
+                    "\tThis model can only deal with 3D input and it must be in the shape C@DxHxW.".expandtabs(
+                        4
+                    )
                 )
             elif dimension == 2:
-                echo(
-                    "This model can deal with both 2D and 3D input and it must be in the shape C@HxW if the image is 2D or C@DxHxW if the image is 3D."
+                print(
+                    "\tThis model can deal with both 2D and 3D input and it must be in the shape C@HxW if the image is 2D or C@DxHxW if the image is 3D.".expandtabs(
+                        4
+                    )
                 )
-            echo(f"Usual input size for this model is {input_size}")
+            print(f"\tUsual input size for this model is {input_size}".expandtabs(4))
             task_list = model_class.get_task()
-            echo(f"This model is usually used for {task_list[0]}.\n")
+            print(f"\tThis model is usually used for {task_list[0]}.\n".expandtabs(4))
             # if len(task_list)>0:
             #    for i in range(1,len(task_list)):
             #        echo(f"or {task_list[i]}\c")
