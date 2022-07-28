@@ -75,6 +75,7 @@ class VanillaDenseVAE(BaseVAE):
     def get_task():
         return ["reconstruction"]
 
+
 class VanillaSpatialVAE(BaseVAE):
     """
     This network is a 3D convolutional variational autoencoder with a spacial latent space.
