@@ -13,6 +13,13 @@ from clinicadl.utils.network.vae.vae_utils import (
 
 
 class VanillaDenseVAE(BaseVAE):
+    """
+    This network is a 2D convolutional variational autoencoder with a dense latent space.
+
+    reference: Diederik P Kingma et al., Auto-Encoding Variational Bayes.
+    https://arxiv.org/abs/1312.6114
+    """
+
     def __init__(
         self,
         input_size,
@@ -26,7 +33,7 @@ class VanillaDenseVAE(BaseVAE):
         io_layer_channel = 32
 
         encoder = VAE_Encoder(
-            input_shape=input_size,
+            input_size=input_size,
             feature_size=feature_size,
             latent_dim=1,
             n_conv=n_conv,
@@ -35,7 +42,7 @@ class VanillaDenseVAE(BaseVAE):
         mu_layer = nn.Linear(feature_size, latent_space_size)
         var_layer = nn.Linear(feature_size, latent_space_size)
         decoder = VAE_Decoder(
-            input_shape=input_size,
+            input_size=input_size,
             latent_size=latent_space_size,
             feature_size=feature_size,
             latent_dim=1,
@@ -60,8 +67,23 @@ class VanillaDenseVAE(BaseVAE):
     def get_input_size():
         return "1@128x128"
 
+    @staticmethod
+    def get_dimension():
+        return "2D"
+
+    @staticmethod
+    def get_task():
+        return ["reconstruction"]
+
 
 class VanillaSpatialVAE(BaseVAE):
+    """
+    This network is a 3D convolutional variational autoencoder with a spacial latent space.
+
+    reference: Diederik P Kingma et al., Auto-Encoding Variational Bayes.
+    https://arxiv.org/abs/1312.6114
+    """
+
     def __init__(
         self,
         input_size,
@@ -77,7 +99,7 @@ class VanillaSpatialVAE(BaseVAE):
         io_layer_channel = 32
 
         encoder = VAE_Encoder(
-            input_shape=input_size,
+            input_size=input_size,
             feature_size=feature_channels,
             latent_dim=2,
             n_conv=n_conv,
@@ -90,7 +112,7 @@ class VanillaSpatialVAE(BaseVAE):
             feature_channels, latent_channels, 3, stride=1, padding=1, bias=False
         )
         decoder = VAE_Decoder(
-            input_shape=input_size,
+            input_size=input_size,
             latent_size=latent_channels,
             feature_size=feature_channels,
             latent_dim=2,
@@ -115,8 +137,23 @@ class VanillaSpatialVAE(BaseVAE):
     def get_input_size():
         return "1@128x128"
 
+    @staticmethod
+    def get_dimension():
+        return "2D"
+
+    @staticmethod
+    def get_task():
+        return ["reconstruction"]
+
 
 class Vanilla3DVAE(BaseVAE):
+    """
+    This network is a 3D convolutional variational autoencoder with a spacial latent space.
+
+    rreference: Diederik P Kingma et al., Auto-Encoding Variational Bayes.
+    https://arxiv.org/abs/1312.6114
+    """
+
     def __init__(
         self,
         input_size,
@@ -240,8 +277,23 @@ class Vanilla3DVAE(BaseVAE):
     def get_input_size():
         return "1@128x128x128"
 
+    @staticmethod
+    def get_dimension():
+        return "3D"
+
+    @staticmethod
+    def get_task():
+        return ["reconstruction"]
+
 
 class Vanilla3DdenseVAE(BaseVAE):
+    """
+    This network is a 3D convolutional variational autoencoder with a dense latent space.
+
+    reference: Diederik P Kingma et al., Auto-Encoding Variational Bayes.
+    https://arxiv.org/abs/1312.6114
+    """
+
     def __init__(
         self,
         input_size,
@@ -376,3 +428,11 @@ class Vanilla3DdenseVAE(BaseVAE):
     @staticmethod
     def get_input_size():
         return "1@128x128x128"
+
+    @staticmethod
+    def get_dimension():
+        return "3D"
+
+    @staticmethod
+    def get_task():
+        return ["reconstruction"]

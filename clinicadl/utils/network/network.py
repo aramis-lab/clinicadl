@@ -1,5 +1,6 @@
 import abc
 from logging import getLogger
+from typing import List
 
 import torch.cuda
 from torch import nn
@@ -48,9 +49,25 @@ class Network(nn.Module):
     @staticmethod
     @abc.abstractmethod
     def get_input_size() -> str:
-        """
-        This static method is used for list_models command.
+
+        """This static method is used for list_models command.
         Must return the shape of the input size expected (C@HxW or C@HxWxD) for each architecture.
+        """
+        pass
+
+    @staticmethod
+    @abc.abstractmethod
+    def get_dimension() -> str:
+        """This static method is used for list_models command.
+        Return '2D', '3D' or '2D and 3D'
+        """
+        pass
+
+    @staticmethod
+    @abc.abstractmethod
+    def get_task() -> list:
+        """This static method is used for list_models command.
+        Return the list of tasks for which the model is made.
         """
         pass
 
