@@ -1,5 +1,6 @@
 import abc
 from logging import getLogger
+from typing import List
 
 import torch.cuda
 from torch import nn
@@ -55,17 +56,15 @@ class Network(nn.Module):
 
     @staticmethod
     @abc.abstractmethod
-    def get_dimension() -> int:
+    def get_dimension() -> str:
         """This static method is used for list_models command.
-        Return 0 if the model is only 2D.
-        Return 1 if the model is only 3D.
-        Return 2 if the model can be both 2D and 3D.
+        Return '2D', '3D' or '2D and 3D'
         """
         pass
 
     @staticmethod
     @abc.abstractmethod
-    def get_task():
+    def get_task() -> list:
         """This static method is used for list_models command.
         Return the list of tasks for which the model is made.
         """

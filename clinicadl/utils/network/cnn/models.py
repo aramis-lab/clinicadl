@@ -89,7 +89,7 @@ class Conv5_FC3(CNN):
 
     @staticmethod
     def get_dimension():
-        return 2
+        return "2D or 3D"
 
     @staticmethod
     def get_task():
@@ -162,7 +162,7 @@ class Conv4_FC3(CNN):
 
     @staticmethod
     def get_dimension():
-        return 2
+        return "2D or 3D"
 
     @staticmethod
     def get_task():
@@ -214,7 +214,7 @@ class resnet18(CNN):
 
     @staticmethod
     def get_dimension():
-        return 0
+        return "2D"
 
     @staticmethod
     def get_task():
@@ -282,7 +282,7 @@ class Stride_Conv5_FC3(CNN):
 
     @staticmethod
     def get_dimension():
-        return 2
+        return "2D or 3D"
 
     @staticmethod
     def get_task():

@@ -23,7 +23,7 @@ class AE_Conv5_FC3(AutoEncoder):
 
     @staticmethod
     def get_dimension():
-        return 0
+        return "2D"
 
     @staticmethod
     def get_task():
@@ -50,7 +50,7 @@ class AE_Conv4_FC3(AutoEncoder):
 
     @staticmethod
     def get_dimension():
-        return 0
+        return "2D"
 
     @staticmethod
     def get_task():

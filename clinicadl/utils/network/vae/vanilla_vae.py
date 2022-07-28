@@ -33,7 +33,7 @@ class VanillaDenseVAE(BaseVAE):
         io_layer_channel = 32
 
         encoder = VAE_Encoder(
-            input_shape=input_size,
+            input_size=input_size,
             feature_size=feature_size,
             latent_dim=1,
             n_conv=n_conv,
@@ -42,7 +42,7 @@ class VanillaDenseVAE(BaseVAE):
         mu_layer = nn.Linear(feature_size, latent_space_size)
         var_layer = nn.Linear(feature_size, latent_space_size)
         decoder = VAE_Decoder(
-            input_shape=input_size,
+            input_size=input_size,
             latent_size=latent_space_size,
             feature_size=feature_size,
             latent_dim=1,
@@ -69,7 +69,7 @@ class VanillaDenseVAE(BaseVAE):
 
     @staticmethod
     def get_dimension():
-        return 0
+        return "2D"
 
     @staticmethod
     def get_task():
@@ -99,7 +99,7 @@ class VanillaSpatialVAE(BaseVAE):
         io_layer_channel = 32
 
         encoder = VAE_Encoder(
-            input_shape=input_size,
+            input_size=input_size,
             feature_size=feature_channels,
             latent_dim=2,
             n_conv=n_conv,
@@ -112,7 +112,7 @@ class VanillaSpatialVAE(BaseVAE):
             feature_channels, latent_channels, 3, stride=1, padding=1, bias=False
         )
         decoder = VAE_Decoder(
-            input_shape=input_size,
+            input_size=input_size,
             latent_size=latent_channels,
             feature_size=feature_channels,
             latent_dim=2,
@@ -139,7 +139,7 @@ class VanillaSpatialVAE(BaseVAE):
 
     @staticmethod
     def get_dimension():
-        return 0
+        return "2D"
 
     @staticmethod
     def get_task():
@@ -279,7 +279,7 @@ class Vanilla3DVAE(BaseVAE):
 
     @staticmethod
     def get_dimension():
-        return 1
+        return "3D"
 
     @staticmethod
     def get_task():
@@ -431,7 +431,7 @@ class Vanilla3DdenseVAE(BaseVAE):
 
     @staticmethod
     def get_dimension():
-        return 1
+        return "3D"
 
     @staticmethod
     def get_task():
