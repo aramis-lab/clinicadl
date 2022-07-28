@@ -6,7 +6,7 @@ import click
     "-a",
     "--architecture",
     type=str,
-    help="Information about the chosen architecture to display.",
+    help="Name of the network for which information will be displayed.",
 )
 @click.option(
     "-i",

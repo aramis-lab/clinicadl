@@ -139,7 +139,7 @@ def get_model_list(architecture=None, input_size=None, model_layers=False):
         list_size = len(task_list)
         if list_size > 0:
             for i in range(1, list_size):
-                task_str = task_str + f" or {task_list[i]}"
+                task_str = task_str + " or".join(task_list[i])
         task_str = task_str + ".\n"
 
         print(
