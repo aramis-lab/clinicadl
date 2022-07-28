@@ -50,7 +50,7 @@ as it guarantees the correct management of libraries depending on common
 packages:
 
 ```{.sourceCode .bash}
-conda create --name ClinicaDL python=3.7
+conda create --name ClinicaDL python=3.8
 conda activate ClinicaDL
 pip install clinicadl
 ```
