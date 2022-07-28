@@ -182,7 +182,7 @@ class CVAE_3D_half(Network):
         )  # 1 x 80 x 96 x 80
         self.bn5 = nn.BatchNorm3d(128)
         self.bn6 = nn.BatchNorm3d(64)
-        # self.bn7 = nn.BatchNorm3d(32)
+        self.bn7 = nn.BatchNorm3d(32)
 
         # if normalization == "batch":
         #     self.norm1 = nn.BatchNorm3d(32)
