@@ -55,6 +55,20 @@ from clinicadl.utils import cli_param
     help="Target label used for training (if NETWORK_TASK in [`regression`, `classification`]). "
     "Default will reuse the same label as during the training task.",
 )
+@click.option(
+    "--save_tensor",
+    type=bool,
+    default=False,
+    is_flag=True,
+    help="Save the reconstruction output in the MAPS in Pytorch tensor format.",
+)
+@click.option(
+    "--save_nifti",
+    type=bool,
+    default=False,
+    is_flag=True,
+    help="Save the reconstruction output in the MAPS in NIfTI format.",
+)
 @cli_param.option.use_gpu
 @cli_param.option.n_proc
 @cli_param.option.batch_size
@@ -73,6 +87,8 @@ def cli(
     diagnoses,
     multi_cohort,
     overwrite,
+    save_tensor,
+    save_nifti,
 ):
     """Infer the outputs of a trained model on a test set.
 
@@ -101,4 +117,6 @@ def cli(
         diagnoses=diagnoses,
         multi_cohort=multi_cohort,
         overwrite=overwrite,
+        save_tensor=save_tensor,
+        save_nifti=save_nifti,
     )

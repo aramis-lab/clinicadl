@@ -46,6 +46,11 @@ Optional arguments:
       GPU. If not available an error is raised. Use the option `--no-gpu` if running in CPU.
     - `--n_proc` (int) is the number of workers used by the DataLoader. Default: `2`.
     - `--batch_size` (int) is the size of the batch used in the DataLoader. Default: `2`.
+- **Reconstruction**
+This tool allows to save the output tensors of a whole [data group](./Introduction.md), associated with the tensor corresponding to their input.
+This can be useful for the `reconstruction` task, for which the user may want to perform extra analyses directly on the images reconstructed by a trained network, or simply visualize them for a qualitative check.
+    - `--save_tensor` (flag) to the reconstruction output in the MAPS in Pytorch tensor format.
+    - `--save_nifti` (flag) to the reconstruction output in the MAPS in NIfTI format.
 - **Other options**
     - `--caps_directory` (Path) is the input folder containing the neuroimaging data
       (tensor version of images, output of [`clinicadl extract`
@@ -88,3 +93,21 @@ the following file system:
 The last two TSV files will be absent if the model takes as input the whole
 image. Moreover, `*_metrics.tsv` files are not computed if `--no_labels` is given.
 The content of `*_prediction.tsv` files depend on the task performed during the training task.
+
+Results for reconstruction `--save_tensor` and `--save_nifti` are stored in the MAPS of path `maps_directory`, according to the following file system:
+```
+<maps_directory>
+    ├── split-0  
+    ├── ...  
+    └── split-<i>
+        └── best-<metric>
+                └── <data_group>
+                    └── tensors
+                        ├── <participant_id>_<session_id>_{image|patch|roi|slice}-<X>_input.pt
+                        └── <participant_id>_<session_id>_{image|patch|roi|slice}-<X>_output.pt
+                    └── nifti_images
+                        ├── <participant_id>_<session_id>_image_input.nii.gz
+                        └── <participant_id>_<session_id>_image_output.nii.gz
+```
+For each `participant_id`, `session_id` and index of the part of the image (`X`),
+the input and the output tensors are saved in.

@@ -29,8 +29,7 @@ for the `i`-th train / validation split.
 2. **selection metric**: for each fold, one network is selected per `selection_metrics` asked by the user (see [Implementation Details](Train/Details.md#model-selection)
 for more information). The output folder containing all information linked to a network selected according to a metric `metric` is named
 `best-<metric>`.
-3. **data group**: Finally, network depending on a fold and a selection metric can be applied to any data group to [compute individual results
-and metrics](./Predict.md), [interpretability maps](./Interpret.md) or [output tensors](./Tensors.md).
+3. **data group**: Finally, network depending on a fold and a selection metric can be applied to any data group to [compute individual results and metrics](./Predict.md) and [interpretability maps](./Interpret.md).
 These data groups are defined at the root of the MAPS to ensure that their characteristics are shared across all the models.
 
 !!! note "train and validation groups"
@@ -169,5 +168,5 @@ best-<metric>
 ```
 
 `train` and `validation` data groups are automatically created as their predictions are computed during the training procedure.
-Other groups may exist if [predictions](./Predict.md), [interpretations](./Interpret.md) or [tensor serialization](./Tensors.md) were computed.
+Other groups may exist if [predictions](./Predict.md) and [interpretations](./Interpret.md) were computed.
 The content of the data group folders depend on the operations performed, then for more information please refer to the corresponding sections.

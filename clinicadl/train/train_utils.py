@@ -89,6 +89,7 @@ def build_train_dict(config_file: str, task: str) -> Dict[str, Any]:
     return train_dict
 
 
+
 def get_model_list(architecture=None, input_size=None, model_layers=False):
     """
     Print the list of models available in ClinicaDL.

@@ -55,3 +55,4 @@ class AE_Conv4_FC3(AutoEncoder):
     @staticmethod
     def get_task():
         return ["reconstruction"]
+

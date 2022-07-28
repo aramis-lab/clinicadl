@@ -95,7 +95,6 @@ class Conv5_FC3(CNN):
     def get_task():
         return ["classification", "regression"]
 
-
 class Conv4_FC3(CNN):
     """
     Convolutional neural network with 4 convolution and 3 fully-connected layer.
@@ -160,6 +159,7 @@ class Conv4_FC3(CNN):
     def get_input_size():
         return "1@128x128"
 
+
     @staticmethod
     def get_dimension():
         return "2D or 3D"
@@ -219,7 +219,6 @@ class resnet18(CNN):
     @staticmethod
     def get_task():
         return ["classification"]
-
 
 class Stride_Conv5_FC3(CNN):
     """
@@ -287,3 +286,4 @@ class Stride_Conv5_FC3(CNN):
     @staticmethod
     def get_task():
         return ["classification", "regression"]
+
