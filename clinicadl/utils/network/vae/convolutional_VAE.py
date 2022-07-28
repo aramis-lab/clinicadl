@@ -135,7 +135,7 @@ class CVAE_3D_half(Network):
         gpu,
         recons_weight,
         kl_weight,
-        normalization,
+        # normalization,
     ):
         super(CVAE_3D_half, self).__init__(gpu=gpu)
         nn.Module.__init__(self)
