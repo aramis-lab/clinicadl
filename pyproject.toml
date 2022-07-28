@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "clinicadl"
-version = "1.1.0"
+version = "1.1.1"
 description = "Framework for the reproducible processing of neuroimaging data with deep learning methods"
 license = "MIT"
 authors = ["ARAMIS Lab"]

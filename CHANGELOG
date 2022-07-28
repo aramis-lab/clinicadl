@@ -5,6 +5,26 @@ Main changes to this code/ project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## ClinicaDL 1.1.1
+
+### Changed
+
+** Core: **
+
+- Dependencies versions were updated in order to support Python equal or
+greater than 3.8.
+- Security updates for some dependencies.
+- Include the `--save_tensor` and `--save_nifty` options into the `predict`
+sub-command (before `save_tensor` was also subcommand`).
+- Update some paper references in the documentation.
+- Add a description for the available models.
+- Add the flag `--model_layers` to the `clinicadl train list_models` subcommad
+to visualize the model layers.
+
+### Fixed
+
+- Fix bug when using the `clinicadl train list_models` command.
+
 ## ClinicaDL 1.1.0
 
 ### Changed

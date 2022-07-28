@@ -30,7 +30,7 @@ bash /tmp/miniconda-installer.sh
 The latest release of ClinicaDL can be installed using `pip` as follows:
 
 ```{.sourceCode .bash}
-conda create --name clinicadlEnv python=3.7
+conda create --name clinicadlEnv python=3.8
 conda activate clinicadlEnv
 pip install clinicadl
 ```
