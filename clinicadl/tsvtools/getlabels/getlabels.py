@@ -11,6 +11,7 @@ in the OASIS dataset is not done in this script. Moreover a quality check may be
 pipelines, leading to the removal of some subjects.
 """
 import os
+from cmath import nan
 from copy import copy
 from logging import getLogger
 from os import path
@@ -18,6 +19,7 @@ from typing import Dict, List
 
 import numpy as np
 import pandas as pd
+from requests import get
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
@@ -103,7 +105,15 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
     found_diag_interpol = 0
 
     for subject, subject_df in bids_df.groupby(level=0):
-        session_list = [int(session[5::]) for _, session in subject_df.index.values]
+        session_list = []
+        for _, session in subject_df.index.values:
+            x = session[5::]
+            if x.isdigit():
+                session_list.append(int(x))
+
+            else:
+                subject_df.drop((subject, session), axis=0, inplace=True)
+                bids_copy_df.drop((subject, session), axis=0, inplace=True)
 
         for _, session in subject_df.index.values:
             diagnosis = subject_df.loc[(subject, session), "diagnosis"]
@@ -111,7 +121,7 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
 
             if isinstance(diagnosis, float):
                 if session == last_session(session_list):
-                    bids_copy_df.drop((subject, session), inplace=True)
+                    bids_copy_df.drop(index=(_, session), axis=0, inplace=True)
                 else:
                     prev_session = neighbour_session(session_nb, session_list, -1)
                     prev_diagnosis = bids_df.loc[(subject, prev_session), "diagnosis"]
@@ -143,7 +153,7 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
                     else:
                         bids_copy_df.drop((subject, session), inplace=True)
 
-    logger.debug(f"Inferred diagnosis: {found_diag_interpol}")
+    logger.info(f"Inferred diagnosis: {found_diag_interpol}")
 
     return bids_copy_df
 
@@ -175,50 +185,9 @@ def mod_selection(
     return bids_copy_df
 
 
-def stable_selection(bids_df: pd.DataFrame, diagnosis: str = "AD") -> pd.DataFrame:
-    """
-    Select only subjects whom diagnosis is identical during the whole follow-up.
-
-    Args:
-        bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-        diagnosis: diagnosis selected
-
-    Returns:
-        DataFrame containing only the patients a the stable diagnosis
-    """
-
-    # Keep diagnosis at baseline
-    bids_df = bids_df[bids_df.baseline_diagnosis == diagnosis]
-    bids_df = cleaning_nan_diagnoses(bids_df)
-
-    # Drop if not stable
-    bids_copy_df = copy(bids_df)
-    n_subjects = 0
-    for subject, subject_df in bids_df.groupby(level=0):
-        subject_drop = False
-        try:
-            diagnosis_bl = subject_df.loc[(subject, "ses-M00"), "baseline_diagnosis"]
-        except KeyError:
-            raise KeyError(
-                f"The baseline session is necessary for labels selection. It is missing for subject {subject}."
-            )
-        diagnosis_values = subject_df.diagnosis.values
-        for diagnosis in diagnosis_values:
-            if not isinstance(diagnosis, float):
-                if diagnosis != diagnosis_bl:
-                    subject_drop = True
-                    n_subjects += 1
-
-        if subject_drop:
-            bids_copy_df.drop(subject, inplace=True)
-    bids_df = copy(bids_copy_df)
-    logger.debug(f"Number of unstable subjects dropped: {n_subjects}")
-
-    bids_df = infer_or_drop_diagnosis(bids_df)
-    return bids_df
-
-
-def mci_stability(bids_df: pd.DataFrame, horizon_time: int = 36) -> pd.DataFrame:
+def get_subgroup(
+    bids_df: pd.DataFrame, horizon_time: int = 36, stability_dict_test: dict = None
+) -> pd.DataFrame:
     """
     A method to label all MCI sessions depending on their stability on the time horizon
 
@@ -230,121 +199,157 @@ def mci_stability(bids_df: pd.DataFrame, horizon_time: int = 36) -> pd.DataFrame
         DataFrame with new labels
     """
 
-    diagnosis_list = ["MCI", "EMCI", "LMCI"]
-    bids_df = bids_df[(bids_df.baseline_diagnosis.isin(diagnosis_list))]
     bids_df = cleaning_nan_diagnoses(bids_df)
     bids_df = infer_or_drop_diagnosis(bids_df)
 
-    # Check possible double change in diagnosis in time
+    # Check possible double change in diagnosis in time or if ther is only one session for a subject
+    # This subjects were removed in the old getlabels.
+    # We can add an option to remove them, or remove them all the time or never remove them
+    # We can also give two file.stv, one with unknown and unstable subjects and one without
+
     bids_copy_df = copy(bids_df)
     nb_subjects = 0
     for subject, subject_df in bids_df.groupby(level=0):
         session_list = [int(session[5::]) for _, session in subject_df.index.values]
-        session_list.sort()
-        diagnosis_list = []
-        for session in session_list:
-            if session < 10:
-                diagnosis_list.append(
-                    bids_df.loc[(subject, "ses-M0" + str(session)), "diagnosis"]
-                )
-            else:
-                diagnosis_list.append(
-                    bids_df.loc[(subject, "ses-M" + str(session)), "diagnosis"]
-                )
-
-        new_diagnosis = diagnosis_list[0]
-        nb_change = 0
-        for diagnosis in diagnosis_list:
-            if new_diagnosis != diagnosis:
-                new_diagnosis = diagnosis
-                nb_change += 1
-
-        if nb_change > 1:
+        if len(session_list) == 1:
+            diagnosis = bids_copy_df.loc[(subject, "ses-M00"), "diagnosis"]
+            bids_copy_df.loc[(subject, "ses-M00"), "subgroup"] = "uk" + diagnosis
+            bids_copy_df.loc[(subject, "ses-M00"), "group"] = diagnosis
+            # bids_copy_df.drop(subject, inplace=True)
             nb_subjects += 1
-            bids_copy_df.drop(subject, inplace=True)
+        else:
+            session_list.sort()
+            diagnosis_list = []
 
-    logger.debug(f"Dropped subjects: {nb_subjects}")
+            for session in session_list:
+                if session < 10:
+                    ses_str = "ses-M0"
+                else:
+                    ses_str = "ses-M"
+                diagnosis_list.append(
+                    bids_df.loc[(subject, ses_str + str(session)), "diagnosis"]
+                )
+            bl_diagnosis = diagnosis_list[0]
+            bl_diagnosis_dict = stability_dict_test[bl_diagnosis]
+            status = 0
+            for diagnosis in diagnosis_list:
+                diagnosis_dict = stability_dict_test[diagnosis]
+                if diagnosis_dict > bl_diagnosis_dict:
+                    if status < 0:
+                        bids_copy_df.loc[subject, "subgroup"] = "us" + diagnosis
+                        for _, session in subject_df.index.values:
+                            bids_copy_df.loc[
+                                (subject, session), "group"
+                            ] = bids_copy_df.loc[(subject, session), "diagnosis"]
+                        # bids_copy_df.drop(subject, inplace=True)
+                        nb_subjects += 1
+                    bl_diagnosis_dict = diagnosis_dict
+                    status = 1
+
+                elif diagnosis_dict < bl_diagnosis_dict:
+                    if status > 0:
+                        bids_copy_df.loc[subject, "subgroup"] = "us" + diagnosis
+                        for _, session in subject_df.index.values:
+                            bids_copy_df.loc[
+                                (subject, session), "group"
+                            ] = bids_copy_df.loc[(subject, session), "diagnosis"]
+                        # bids_copy_df.drop(subject, inplace=True)
+                        nb_subjects += 1
+                    bl_diagnosis_dict = diagnosis_dict
+                    status = -1
+
+    logger.info(f"Dropped subjects: {nb_subjects}")
     bids_df = copy(bids_copy_df)
-
-    # Stability of sessions
-    stability_dict = {
-        "CN": "r",
-        "MCI": "s",
-        "AD": "p",
-    }  # Do not take into account the case of missing diag = nan
+    bids_df.to_csv(path.join("getlabels6/", "mid.tsv"), sep="\t")
+    # Do not take into account the case of missing diag = nan
 
     bids_copy_df = copy(bids_df)
     for subject, subject_df in bids_df.groupby(level=0):
-        session_list = [int(session[5::]) for _, session in subject_df.index.values]
+
+        session_list = [int(session[5:]) for _, session in subject_df.index.values]
 
         for _, session in subject_df.index.values:
             diagnosis = subject_df.loc[(subject, session), "diagnosis"]
-
-            # If the diagnosis is not MCI we remove the time point
-            if diagnosis != "MCI":
-                bids_copy_df.drop((subject, session), inplace=True)
-
-            else:
+            subgroup = subject_df.loc[(subject, session), "subgroup"]
+            ### Check if the diagnosis is unstable or unknown
+            if subgroup[:2] != "us" and subgroup[:2] != "uk":
+                diagnosis_dict = stability_dict_test[diagnosis]
                 session_nb = int(session[5::])
                 horizon_session_nb = session_nb + horizon_time
                 horizon_session = "ses-M" + str(horizon_session_nb)
                 # print(session, '-->', horizon_session)
 
+                ###CASE 1 : if the  session after 'horizon_time' months is a session the subject has done
                 if horizon_session_nb in session_list:
                     horizon_diagnosis = subject_df.loc[
                         (subject, horizon_session), "diagnosis"
                     ]
-                    update_diagnosis = stability_dict[horizon_diagnosis] + "MCI"
-                    # print(horizon_diagnosis, update_diagnosis)
-                    bids_copy_df.loc[(subject, session), "diagnosis"] = update_diagnosis
-                else:
-                    if after_end_screening(horizon_session_nb, session_list):
-                        # Two situations, change in last session AD or CN --> pMCI or rMCI
-                        # Last session MCI --> uMCI
-                        last_diagnosis = subject_df.loc[
-                            (subject, last_session(session_list)), "diagnosis"
-                        ]
-                        # This section must be discussed --> removed in Jorge's paper
-                        if last_diagnosis != "MCI":
-                            update_diagnosis = stability_dict[last_diagnosis] + "MCI"
-                        else:
-                            update_diagnosis = "uMCI"
-                        # print(update_diagnosis)
-                        bids_copy_df.loc[
-                            (subject, session), "diagnosis"
-                        ] = update_diagnosis
+                    horizon_diagnosis_dict = stability_dict_test[horizon_diagnosis]
 
-                    else:
-                        prev_session = neighbour_session(
-                            horizon_session_nb, session_list, -1
-                        )
-                        post_session = neighbour_session(
-                            horizon_session_nb, session_list, +1
-                        )
-                        # print('prev_session', prev_session)
-                        # print('post_session', post_session)
-                        prev_diagnosis = subject_df.loc[
-                            (subject, prev_session), "diagnosis"
+                    if horizon_diagnosis_dict > diagnosis_dict:
+                        update_diagnosis = "p"
+                    elif horizon_diagnosis_dict < diagnosis_dict:
+                        update_diagnosis = "r"
+                    elif horizon_diagnosis_dict == diagnosis_dict:
+                        update_diagnosis = "s"
+
+                ###CASE 2 : if the session after 'horizon_time' months doesn't exist because it is after the last session of the subject
+                elif after_end_screening(horizon_session_nb, session_list):
+                    # Two situations, change in last session AD or CN --> pMCI or rMCI
+                    # Last session MCI --> uMCI
+                    last_diagnosis = subject_df.loc[
+                        (subject, last_session(session_list)), "diagnosis"
+                    ]
+                    # This section must be discussed --> removed in Jorge's paper
+                    last_diagnosis_dict = stability_dict_test[last_diagnosis]
+                    if last_diagnosis_dict > diagnosis_dict:
+                        update_diagnosis = "p"
+                    elif last_diagnosis_dict < diagnosis_dict:
+                        update_diagnosis = "r"
+                    elif last_diagnosis_dict == diagnosis_dict:
+                        update_diagnosis = "s"
+
+                ###CASE 3 : if the session after 'horizon_time' months doesn't exist but ther are sessions before and after this time.
+                else:
+                    prev_session = neighbour_session(
+                        horizon_session_nb, session_list, -1
+                    )
+                    post_session = neighbour_session(
+                        horizon_session_nb, session_list, +1
+                    )
+
+                    prev_diagnosis = subject_df.loc[
+                        (subject, prev_session), "diagnosis"
+                    ]
+                    prev_diagnosis_dict = stability_dict_test[prev_diagnosis]
+
+                    if prev_diagnosis_dict > diagnosis_dict:
+                        update_diagnosis = "p"
+                    elif prev_diagnosis_dict < diagnosis_dict:
+                        update_diagnosis = "r"
+                    elif prev_diagnosis_dict == diagnosis_dict:
+                        post_diagnosis = subject_df.loc[
+                            (subject, post_session), "diagnosis"
                         ]
-                        if prev_diagnosis != "MCI":
-                            update_diagnosis = stability_dict[prev_diagnosis] + "MCI"
-                        else:
-                            post_diagnosis = subject_df.loc[
-                                (subject, post_session), "diagnosis"
-                            ]
-                            if post_diagnosis != "MCI":
-                                update_diagnosis = "uMCI"
-                            else:
-                                update_diagnosis = "sMCI"
-                        # print(update_diagnosis)
-                        bids_copy_df.loc[
-                            (subject, session), "diagnosis"
-                        ] = update_diagnosis
+                        post_diagnosis_dict = stability_dict_test[post_diagnosis]
+                        if post_diagnosis_dict > diagnosis_dict:
+                            update_diagnosis = "p"
+                        elif post_diagnosis_dict < diagnosis_dict:
+                            update_diagnosis = "r"
+                        elif post_diagnosis_dict == diagnosis_dict:
+                            update_diagnosis = "s"
+
+                subgroup = bids_copy_df.loc[(subject, session), "subgroup"] == "UK"
+                if update_diagnosis == "r" or update_diagnosis == "p" or subgroup:
+                    bids_copy_df.loc[(subject), "subgroup"] = (
+                        update_diagnosis + diagnosis
+                    )
+                bids_copy_df.loc[(subject, session), "group"] = diagnosis
 
     return bids_copy_df
 
 
-def diagnosis_removal(MCI_df: pd.DataFrame, diagnosis_list: List[str]) -> pd.DataFrame:
+def diagnosis_removal(bids_df: pd.DataFrame, diagnosis_list: List[str]) -> pd.DataFrame:
     """
     Removes subjects whom last diagnosis is in the list provided (avoid to keep rMCI and pMCI in sMCI lists).
 
@@ -356,15 +361,17 @@ def diagnosis_removal(MCI_df: pd.DataFrame, diagnosis_list: List[str]) -> pd.Dat
         cleaned DataFrame
     """
 
-    output_df = copy(MCI_df)
+    output_df = copy(bids_df)
 
     # Remove subjects who regress to CN label, even late in the follow-up
-    for subject, subject_df in MCI_df.groupby(level=0):
-        session_list = [int(session[5::]) for _, session in subject_df.index.values]
-        last_session_id = last_session(session_list)
-        last_diagnosis = subject_df.loc[(subject, last_session_id), "diagnosis"]
-        if last_diagnosis in diagnosis_list:
-            output_df.drop(subject, inplace=True)
+    for subject, subject_df in bids_df.groupby(level=0):
+        drop = True
+        if subject_df.loc[(subject, "ses-M00"), "subgroup"] not in diagnosis_list:
+            for (_, session) in subject_df.index.values:
+                if subject_df.loc[(subject, session), "group"] in diagnosis_list:
+                    drop = False
+            if drop:
+                output_df.drop(subject, inplace=True)
 
     return output_df
 
@@ -438,6 +445,8 @@ def get_labels(
         filename="getlabels.json",
     )
 
+    stability_dict_test = {"CN": 0, "MCI": 1, "Dementia": 2}
+
     # Reading files
     bids_df = pd.read_csv(merged_tsv, sep="\t")
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
@@ -456,6 +465,7 @@ def get_labels(
                 f"exist in the data set."
             )
 
+    # Loading missing modalities files
     list_files = os.listdir(missing_mods)
     missing_mods_dict = {}
 
@@ -493,103 +503,22 @@ def get_labels(
 
     bids_df = copy(bids_copy_df)
 
-    time_MCI_df = None
-    if "AD" in diagnoses:
-        logger.info("Beginning the selection of AD label")
-        output_df = stable_selection(bids_df, diagnosis="AD")
-        output_df = mod_selection(output_df, missing_mods_dict, modality)
-        output_df = apply_restriction(output_df, restriction_path)
+    bids_df["group"] = "UK"
+    bids_df["subgroup"] = "UK"
+    variables_list.append("group")
+    variables_list.append("subgroup")
+    variables_list.append("baseline_diagnosis")
+    bids_df = bids_df[variables_list]
 
-        diagnosis_df = output_df[variables_list]
-        diagnosis_df.to_csv(path.join(results_path, "AD.tsv"), sep="\t")
-        sub_df = (
-            diagnosis_df.reset_index().groupby("participant_id")["session_id"].nunique()
-        )
-        logger.info(
-            f"Found {len(sub_df)} AD subjects for a total of {len(diagnosis_df)} sessions\n"
-        )
+    logger.info("Beginning of the selection")
+    output_df = get_subgroup(
+        bids_df, time_horizon, stability_dict_test=stability_dict_test
+    )
+    variables_list.remove("baseline_diagnosis")
+    variables_list.remove("diagnosis")
+    output_df = output_df[variables_list]
+    output_df = diagnosis_removal(output_df, diagnoses)
+    output_df = mod_selection(output_df, missing_mods_dict, modality)
+    output_df = apply_restriction(output_df, restriction_path)
 
-    if "BV" in diagnoses:
-        logger.info("Beginning the selection of BV label")
-        output_df = stable_selection(bids_df, diagnosis="BV")
-        output_df = mod_selection(output_df, missing_mods_dict, modality)
-        output_df = apply_restriction(output_df, restriction_path)
-
-        diagnosis_df = output_df[variables_list]
-        diagnosis_df.to_csv(path.join(results_path, "BV.tsv"), sep="\t")
-        sub_df = (
-            diagnosis_df.reset_index().groupby("participant_id")["session_id"].nunique()
-        )
-        logger.info(
-            f"Found {len(sub_df)} BV subjects for a total of {len(diagnosis_df)} sessions\n"
-        )
-
-    if "CN" in diagnoses:
-        logger.info("Beginning the selection of CN label")
-        output_df = stable_selection(bids_df, diagnosis="CN")
-        output_df = mod_selection(output_df, missing_mods_dict, modality)
-        output_df = apply_restriction(output_df, restriction_path)
-
-        diagnosis_df = output_df[variables_list]
-        diagnosis_df.to_csv(path.join(results_path, "CN.tsv"), sep="\t")
-        sub_df = (
-            diagnosis_df.reset_index().groupby("participant_id")["session_id"].nunique()
-        )
-        logger.info(
-            f"Found {len(sub_df)} CN subjects for a total of {len(diagnosis_df)} sessions\n"
-        )
-
-    if "MCI" in diagnoses:
-        logger.info("Beginning of the selection of MCI label")
-        MCI_df = mci_stability(
-            bids_df, 10**4
-        )  # Remove rMCI independently from time horizon
-        output_df = diagnosis_removal(MCI_df, diagnosis_list=["rMCI"])
-        output_df = mod_selection(output_df, missing_mods_dict, modality)
-        output_df = apply_restriction(output_df, restriction_path)
-
-        # Relabelling everything as MCI
-        output_df.diagnosis = ["MCI"] * len(output_df)
-
-        diagnosis_df = output_df[variables_list]
-        diagnosis_df.to_csv(path.join(results_path, "MCI.tsv"), sep="\t")
-        sub_df = (
-            diagnosis_df.reset_index().groupby("participant_id")["session_id"].nunique()
-        )
-        logger.info(
-            f"Found {len(sub_df)} MCI subjects for a total of {len(diagnosis_df)} sessions\n"
-        )
-
-    if "sMCI" in diagnoses:
-        logger.info("Beginning of the selection of sMCI label")
-        time_MCI_df = mci_stability(bids_df, time_horizon)
-        output_df = diagnosis_removal(time_MCI_df, diagnosis_list=["rMCI", "pMCI"])
-        output_df = output_df[output_df.diagnosis == "sMCI"]
-        output_df = mod_selection(output_df, missing_mods_dict, modality)
-        output_df = apply_restriction(output_df, restriction_path)
-
-        diagnosis_df = output_df[variables_list]
-        diagnosis_df.to_csv(path.join(results_path, "sMCI.tsv"), sep="\t")
-        sub_df = (
-            diagnosis_df.reset_index().groupby("participant_id")["session_id"].nunique()
-        )
-        logger.info(
-            f"Found {len(sub_df)} sMCI subjects for a total of {len(diagnosis_df)} sessions\n"
-        )
-
-    if "pMCI" in diagnoses:
-        logger.info("Beginning of the selection of pMCI label")
-        if time_MCI_df is None:
-            time_MCI_df = mci_stability(bids_df, time_horizon)
-        output_df = time_MCI_df[time_MCI_df.diagnosis == "pMCI"]
-        output_df = mod_selection(output_df, missing_mods_dict, modality)
-        output_df = apply_restriction(output_df, restriction_path)
-
-        diagnosis_df = output_df[variables_list]
-        diagnosis_df.to_csv(path.join(results_path, "pMCI.tsv"), sep="\t")
-        sub_df = (
-            diagnosis_df.reset_index().groupby("participant_id")["session_id"].nunique()
-        )
-        logger.info(
-            f"Found {len(sub_df)} pMCI subjects for a total of {len(diagnosis_df)} sessions\n"
-        )
+    output_df.to_csv(path.join(results_path, "getlabels.tsv"), sep="\t")
