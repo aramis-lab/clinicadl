@@ -259,11 +259,9 @@ def get_subgroup(
                     status = -1
 
     logger.info(f"Dropped subjects: {nb_subjects}")
-    bids_df = copy(bids_copy_df)
-    bids_df.to_csv(path.join("getlabels6/", "mid.tsv"), sep="\t")
+
     # Do not take into account the case of missing diag = nan
 
-    bids_copy_df = copy(bids_df)
     for subject, subject_df in bids_df.groupby(level=0):
 
         session_list = [int(session[5:]) for _, session in subject_df.index.values]
