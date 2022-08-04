@@ -279,7 +279,7 @@ def get_subgroup(
                 horizon_session = "ses-M" + str(horizon_session_nb)
                 # print(session, '-->', horizon_session)
 
-                ###CASE 1 : if the  session after 'horizon_time' months is a session the subject has done
+                # CASE 1 : if the  session after 'horizon_time' months is a session the subject has done
                 if horizon_session_nb in session_list:
                     horizon_diagnosis = subject_df.loc[
                         (subject, horizon_session), "diagnosis"
@@ -293,7 +293,7 @@ def get_subgroup(
                     elif horizon_diagnosis_dict == diagnosis_dict:
                         update_diagnosis = "s"
 
-                ###CASE 2 : if the session after 'horizon_time' months doesn't exist because it is after the last session of the subject
+                # CASE 2 : if the session after 'horizon_time' months doesn't exist because it is after the last session of the subject
                 elif after_end_screening(horizon_session_nb, session_list):
                     # Two situations, change in last session AD or CN --> pMCI or rMCI
                     # Last session MCI --> uMCI
@@ -309,7 +309,7 @@ def get_subgroup(
                     elif last_diagnosis_dict == diagnosis_dict:
                         update_diagnosis = "s"
 
-                ###CASE 3 : if the session after 'horizon_time' months doesn't exist but ther are sessions before and after this time.
+                # CASE 3 : if the session after 'horizon_time' months doesn't exist but ther are sessions before and after this time.
                 else:
                     prev_session = neighbour_session(
                         horizon_session_nb, session_list, -1
