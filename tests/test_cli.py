@@ -17,7 +17,7 @@ from clinicadl.cmdline import cli
         "quality-check",
         "random-search",
         "train",
-        "tsvtool",
+        "tsvtools",
     ]
 )
 def cli_args_first_lv(request):
@@ -181,7 +181,6 @@ def test_second_lv_quality_check(qc_cli_arg1):
         "analysis",
         "getlabels",
         "kfold",
-        "restrict",
         "split",
     ]
 )
@@ -192,6 +191,6 @@ def tsvtool_cli_arg1(request):
 def test_second_lv_tsvtool(tsvtool_cli_arg1):
     runner = CliRunner()
     arg1 = tsvtool_cli_arg1
-    print(f"Testing input tsvtool cli {arg1}")
-    result = runner.invoke(cli, f"tsvtool {arg1} -h")
+    print(f"Testing input tsvtools cli {arg1}")
+    result = runner.invoke(cli, f"tsvtools {arg1} -h")
     assert result.exit_code == 0
