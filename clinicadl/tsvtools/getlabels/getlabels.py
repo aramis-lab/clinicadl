@@ -271,7 +271,7 @@ def get_subgroup(
         for _, session in subject_df.index.values:
             diagnosis = subject_df.loc[(subject, session), "diagnosis"]
             subgroup = subject_df.loc[(subject, session), "subgroup"]
-            ### Check if the diagnosis is unstable or unknown
+            # Check if the diagnosis is unstable or unknown
             if subgroup[:2] != "us" and subgroup[:2] != "uk":
                 diagnosis_dict = stability_dict_test[diagnosis]
                 session_nb = int(session[5::])
