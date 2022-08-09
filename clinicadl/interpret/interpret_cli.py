@@ -10,6 +10,16 @@ from clinicadl.utils import cli_param
     "name",
     type=str,
 )
+@click.argument(
+    "method",
+    type=click.Choice(["gradients", "grad-cam"]),
+)
+@click.option(
+    "--level_grad_cam",
+    type=int,
+    default=None,
+    help="level of the feature map (after the layer corresponding to the number) chosen for grad-cam."
+)
 # Model
 @click.option(
     "--selection_metrics",
@@ -52,17 +62,11 @@ from clinicadl.utils import cli_param
     type=int,
     help="Which target node the gradients explain. Default takes the first output node.",
 )
-# @click.option(
-#     "--baseline",
-#     type=bool,
-#     default=False,
-#     is_flag=True,
-#     help="If provided, only the baseline sessions are used for interpretation.",
-# )
 @click.option(
     "--save_individual",
-    type=str,
-    default=None,
+    type=bool,
+    default=False,
+    is_flag=True,
     help="Save individual saliency maps in addition to the mean saliency map.",
 )
 @cli_param.option.n_proc
@@ -80,8 +84,10 @@ def cli(
     input_maps_directory,
     data_group,
     name,
+    method,
     caps_directory,
     participants_tsv,
+    level_grad_cam,
     selection_metrics,
     multi_cohort,
     diagnoses,
@@ -94,12 +100,10 @@ def cli(
     overwrite_name,
 ):
     """Interpretation of trained models using saliency map method.
-
     INPUT_MAPS_DIRECTORY is the MAPS folder from where the model to interpret will be loaded.
-
     DATA_GROUP is the name of the subjects and sessions list used for the interpretation.
-
     NAME is the name of the saliency map task.
+    METHOD is the method used to extract an attribution map.
     """
     from clinicadl.utils.cmdline_utils import check_gpu
 
@@ -112,6 +116,7 @@ def cli(
         maps_dir=input_maps_directory,
         data_group=data_group,
         name=name,
+        method=method,
         caps_directory=caps_directory,
         tsv_path=participants_tsv,
         selection_metrics=selection_metrics,
@@ -124,5 +129,6 @@ def cli(
         gpu=gpu,
         overwrite=overwrite,
         overwrite_name=overwrite_name,
+        level=level_grad_cam,
         # verbose=verbose,
     )

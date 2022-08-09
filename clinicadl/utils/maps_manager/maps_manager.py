@@ -366,6 +366,7 @@ class MapsManager:
         self,
         data_group,
         name,
+        method,
         caps_directory=None,
         tsv_path=None,
         split_list=None,
@@ -379,14 +380,15 @@ class MapsManager:
         gpu=None,
         overwrite=False,
         overwrite_name=False,
+        level=None,
     ):
         """
         Performs the interpretation task on a subset of caps_directory defined in a TSV file.
         The mean interpretation is always saved, to save the individual interpretations set save_individual to True.
-
         Args:
             data_group (str): name of the data group interpreted.
             name (str): name of the interpretation procedure.
+            method (str): method used for extraction (ex: gradients, grad-cam...).
             caps_directory (str): path to the CAPS folder. For more information please refer to
                 [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
                 Default will load the value of an existing data group.
@@ -405,11 +407,16 @@ class MapsManager:
             gpu (bool): If given, a new value for the device of the model will be computed.
             overwrite (bool): If True erase the occurrences of data_group.
             overwrite_name (bool): If True erase the occurrences of name.
+            level (int): layer number in the convolutional part after which the feature map is chosen.
         """
 
         from torch.utils.data import DataLoader
 
-        from clinicadl.interpret.gradients import VanillaBackProp
+        from clinicadl.interpret.gradients import method_dict
+
+        if method not in method_dict.keys():
+            raise NotImplementedError(f"Interpretation method {method} is not implemented. "
+                                      f"Please choose in {method_dict.keys()}")
 
         if split_list is None:
             split_list = self._find_splits()
@@ -487,23 +494,23 @@ class MapsManager:
                     gpu=gpu,
                 )
 
-                interpreter = VanillaBackProp(model)
+                interpreter = method_dict[method](model)
 
                 cum_maps = [0] * data_test.elem_per_image
                 for data in test_loader:
                     images = data["image"].to(model.device)
 
-                    map_pt = interpreter.generate_gradients(images, target_node)
+                    map_pt = interpreter.generate_gradients(images, target_node, level=level)
                     for i in range(len(data["participant_id"])):
                         mode_id = data[f"{self.mode}_id"][i]
                         cum_maps[mode_id] += map_pt[i]
                         if save_individual:
                             single_path = path.join(
                                 results_path,
-                                f"participant-{data['participant_id'][i]}_session-{data['session_id'][i]}_"
+                                f"{data['participant_id'][i]}_{data['session_id'][i]}_"
                                 f"{self.mode}-{data[f'{self.mode}_id'][i]}_map.pt",
                             )
-                            torch.save(map_pt, single_path)
+                            torch.save(map_pt[i], single_path)
                 for i, mode_map in enumerate(cum_maps):
                     mode_map /= len(data_test)
                     torch.save(
