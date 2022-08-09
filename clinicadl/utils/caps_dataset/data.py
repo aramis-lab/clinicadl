@@ -155,8 +155,9 @@ class CapsDataset(Dataset):
             results = clinica_file_reader(
                 [participant], [session], self.caps_dict[cohort], file_type
             )
-            filepath = results[0]
-            image_filename = path.basename(filepath[0]).replace(".nii.gz", ".pt")
+            if isinstance(results, tuple):
+                results = results[0]
+            image_filename = path.basename(results[0]).replace(".nii.gz", ".pt")
             folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
             image_dir = path.join(
                 self.caps_dict[cohort],
@@ -175,8 +176,7 @@ class CapsDataset(Dataset):
             results = clinica_file_reader(
                 [participant], [session], self.caps_dict[cohort], file_type
             )
-            filepath = results[0]
-            image_path = filepath[0]
+            image_path = results[0]
 
         return image_path
 
@@ -487,7 +487,7 @@ class CapsDatasetRoi(CapsDataset):
         self.uncropped_roi = preprocessing_dict["uncropped_roi"]
         self.prepare_dl = preprocessing_dict["prepare_dl"]
         self.mask_paths, self.mask_arrays = self._get_mask_paths_and_tensors(
-            caps_directory, preprocessing_dict
+            caps_directory, multi_cohort, preprocessing_dict
         )
         super().__init__(
             caps_directory,
@@ -553,10 +553,22 @@ class CapsDatasetRoi(CapsDataset):
             return len(self.roi_list)
 
     def _get_mask_paths_and_tensors(
-        self, caps_directory: str, preprocessing_dict: Dict[str, Any]
+        self,
+        caps_directory: str,
+        multi_cohort: bool,
+        preprocessing_dict: Dict[str, Any],
     ) -> Tuple[List[str], List]:
         """Loads the masks necessary to regions extraction"""
         import nibabel as nib
+
+        caps_dict = self.create_caps_dict(caps_directory, multi_cohort)
+
+        if len(caps_dict) > 1:
+            caps_directory = caps_dict[next(iter(caps_dict))]
+            logger.warning(
+                f"The equality of masks is not assessed for multi-cohort training. "
+                f"The masks stored in {caps_directory} will be used."
+            )
 
         # Find template name
         if preprocessing_dict["preprocessing"] == "custom":
