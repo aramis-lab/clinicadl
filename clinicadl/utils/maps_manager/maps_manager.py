@@ -1176,21 +1176,25 @@ class MapsManager:
             self.parameters["architecture"] = self.task_manager.get_default_network()
         if "selection_threshold" not in self.parameters:
             self.parameters["selection_threshold"] = None
-        label_code = self.task_manager.generate_label_code(train_df, self.label)
+        if (
+                not "label_code" in self.parameters or len(self.parameters["label_code"]) == 0
+        ):  # Allows to set custom label code in TOML
+            self.parameters["label_code"] = self.task_manager.generate_label_code(
+                train_df, self.label
+            )
         full_dataset = return_dataset(
             self.caps_directory,
             train_df,
             self.preprocessing_dict,
             multi_cohort=self.multi_cohort,
             label=self.label,
-            label_code=label_code,
+            label_code=self.parameters["label_code"],
             train_transformations=None,
             all_transformations=transformations,
         )
         self.parameters.update(
             {
                 "num_networks": full_dataset.elem_per_image,
-                "label_code": label_code,
                 "output_size": self.task_manager.output_size(
                     full_dataset.size, full_dataset.df, self.label
                 ),
