@@ -1953,6 +1953,19 @@ class MapsManager:
             self.maps_path, selection_metric, split, network=network
         )[0]
 
+    def get_best_epoch(
+        self, split: int = 0, selection_metric: str = None, network: int = None
+    ) -> int:
+        selection_metric = self._check_selection_metric(split, selection_metric)
+        if self.multi_network:
+            if network is None:
+                raise ClinicaDLArgumentError(
+                    "Please precise the network number that must be loaded."
+                )
+        return self.get_state_dict(split=split, selection_metric=selection_metric)[
+            "epoch"
+        ]
+
     def get_state_dict(
         self, split=0, selection_metric=None, network=None, map_location=None
     ):
