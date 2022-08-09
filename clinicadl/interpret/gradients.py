@@ -1,4 +1,5 @@
 import torch
+
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 
@@ -62,7 +63,9 @@ class GradCam:
         elif len(input_batch.shape) == 5:
             mode = "trilinear"
         else:
-            raise ClinicaDLArgumentError("Input batch should be 4D or 5D to correspond to 2D or 3D images.")
+            raise ClinicaDLArgumentError(
+                "Input batch should be 4D or 5D to correspond to 2D or 3D images."
+            )
 
         input_batch = input_batch.to(self.device)
 
@@ -100,12 +103,11 @@ class GradCam:
         feature_maps *= pooled_gradients
         # Take the mean of all weighted feature maps
         grad_cam = torch.mean(feature_maps, dim=1).cpu().unsqueeze(1)
-        resize_transform = torch.nn.Upsample(input_batch.shape[2::], mode=mode, align_corners=True)
+        resize_transform = torch.nn.Upsample(
+            input_batch.shape[2::], mode=mode, align_corners=True
+        )
 
         return resize_transform(grad_cam)
 
 
-method_dict = {
-    "gradients": VanillaBackProp,
-    "grad-cam": GradCam
-}
+method_dict = {"gradients": VanillaBackProp, "grad-cam": GradCam}

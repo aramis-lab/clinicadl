@@ -415,8 +415,10 @@ class MapsManager:
         from clinicadl.interpret.gradients import method_dict
 
         if method not in method_dict.keys():
-            raise NotImplementedError(f"Interpretation method {method} is not implemented. "
-                                      f"Please choose in {method_dict.keys()}")
+            raise NotImplementedError(
+                f"Interpretation method {method} is not implemented. "
+                f"Please choose in {method_dict.keys()}"
+            )
 
         if split_list is None:
             split_list = self._find_splits()
@@ -500,7 +502,9 @@ class MapsManager:
                 for data in test_loader:
                     images = data["image"].to(model.device)
 
-                    map_pt = interpreter.generate_gradients(images, target_node, level=level)
+                    map_pt = interpreter.generate_gradients(
+                        images, target_node, level=level
+                    )
                     for i in range(len(data["participant_id"])):
                         mode_id = data[f"{self.mode}_id"][i]
                         cum_maps[mode_id] += map_pt[i]
@@ -1177,7 +1181,8 @@ class MapsManager:
         if "selection_threshold" not in self.parameters:
             self.parameters["selection_threshold"] = None
         if (
-                not "label_code" in self.parameters or len(self.parameters["label_code"]) == 0
+            "label_code" not in self.parameters
+            or len(self.parameters["label_code"]) == 0
         ):  # Allows to set custom label code in TOML
             self.parameters["label_code"] = self.task_manager.generate_label_code(
                 train_df, self.label
