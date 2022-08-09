@@ -33,10 +33,10 @@ class Network(nn.Module):
             except KeyError:
                 # Else we choose ourselves the GPU with the greatest amount of memory
                 from pynvml import (
+                    NVMLError,
                     nvmlDeviceGetHandleByIndex,
                     nvmlDeviceGetMemoryInfo,
                     nvmlInit,
-                    NVMLError
                 )
 
                 try:

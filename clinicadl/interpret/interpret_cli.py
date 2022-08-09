@@ -18,7 +18,7 @@ from clinicadl.utils import cli_param
     "--level_grad_cam",
     type=int,
     default=None,
-    help="level of the feature map (after the layer corresponding to the number) chosen for grad-cam."
+    help="level of the feature map (after the layer corresponding to the number) chosen for grad-cam.",
 )
 # Model
 @click.option(
