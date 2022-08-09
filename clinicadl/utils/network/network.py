@@ -36,15 +36,22 @@ class Network(nn.Module):
                     nvmlDeviceGetHandleByIndex,
                     nvmlDeviceGetMemoryInfo,
                     nvmlInit,
+                    NVMLError
                 )
 
-                nvmlInit()
-                memory_list = [
-                    nvmlDeviceGetMemoryInfo(nvmlDeviceGetHandleByIndex(i)).free
-                    for i in range(torch.cuda.device_count())
-                ]
-                free_gpu = argmax(memory_list)
-                return f"cuda:{free_gpu}"
+                try:
+                    nvmlInit()
+                    memory_list = [
+                        nvmlDeviceGetMemoryInfo(nvmlDeviceGetHandleByIndex(i)).free
+                        for i in range(torch.cuda.device_count())
+                    ]
+                    free_gpu = argmax(memory_list)
+                    return f"cuda:{free_gpu}"
+                except NVMLError:
+                    logger.warning(
+                        "NVML library is not installed. GPU will be chosen arbitrarily"
+                    )
+                    return "cuda"
 
     @staticmethod
     @abc.abstractmethod
