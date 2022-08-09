@@ -152,12 +152,10 @@ class CapsDataset(Dataset):
         # Try to find .nii.gz file
         try:
             file_type = self.preprocessing_dict["file_type"]
-            results = clinica_file_reader(
+            image_path_list, _ = clinica_file_reader(
                 [participant], [session], self.caps_dict[cohort], file_type
             )
-            if isinstance(results, tuple):
-                results = results[0]
-            image_filename = path.basename(results[0]).replace(".nii.gz", ".pt")
+            image_filename = path.basename(image_path_list[0]).replace(".nii.gz", ".pt")
             folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
             image_dir = path.join(
                 self.caps_dict[cohort],
@@ -173,10 +171,10 @@ class CapsDataset(Dataset):
         except ClinicaCAPSError:
             file_type = self.preprocessing_dict["file_type"]
             file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
-            results = clinica_file_reader(
+            image_path_list, _ = clinica_file_reader(
                 [participant], [session], self.caps_dict[cohort], file_type
             )
-            image_path = results[0]
+            image_path = image_path_list[0]
 
         return image_path
 
@@ -231,10 +229,10 @@ class CapsDataset(Dataset):
             image = torch.load(image_path)
         except IndexError:
             file_type = self.preprocessing_dict["file_type"]
-            results = clinica_file_reader(
+            image_path_list, _ = clinica_file_reader(
                 [participant_id], [session_id], self.caps_dict[cohort], file_type
             )
-            image_nii = nib.load(results[0])
+            image_nii = nib.load(image_path_list[0])
             image_np = image_nii.get_fdata()
             image = ToTensor()(image_np)
 
