@@ -36,7 +36,7 @@ def cli(
 ):
     """Performs a k-fold split to prepare training.
 
-    FORMATTED_DATA_DIRECTORY is the path to the folder where the outputs of tsvtool getlabels command are stored.
+    FORMATTED_DATA_TSV is the path to the output of tsvtool getlabels command.
 
     N_SPLITS is k, the number of folds of the k-fold.
     """

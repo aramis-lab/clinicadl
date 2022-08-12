@@ -192,7 +192,7 @@ def get_subgroup(
     bids_df: pd.DataFrame, horizon_time: int = 36, stability_dict: dict = None
 ) -> pd.DataFrame:
     """
-    A method to label all MCI sessions depending on their stability on the time horizon
+    A method to get the subgroup for each sessions depending on their stability on the time horizon
 
     Args:
         bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
@@ -243,8 +243,6 @@ def get_subgroup(
 
             # CASE 2 : if the session after 'horizon_time' months doesn't exist because it is after the last session of the subject
             elif after_end_screening(horizon_session_nb, session_list):
-                # Two situations, change in last session AD or CN --> pMCI or rMCI
-                # Last session MCI --> uMCI
                 last_diagnosis = subject_df.loc[
                     (subject, last_session(session_list)), "diagnosis"
                 ]
@@ -291,9 +289,9 @@ def get_subgroup(
         diagnosis = bids_copy_df.loc[(subject, last_session_str), "diagnosis"]
         bids_copy_df.loc[(subject, last_session_str), "subgroup"] = "uk" + diagnosis
 
-        # Add unstable session
+        # Add unstable session for subjects with multiple regression or conversion
+        # The subjects will be unstable only from the time of the conversion (if regression before) or regression (if conversion before)
         session_list.sort()
-        subgroup_list = []
         status = 0
         unstable = False
         for session in session_list:
@@ -414,18 +412,21 @@ def get_labels(
     caps_directory: str = None,
 ):
     """
-    Writes one TSV file per label in diagnoses argument based on merged_tsv and missing_mods.
+    Writes one TSV file based on merged_tsv and missing_mods.
+    Calculates the subgroup of each session.
+
 
     Args:
-        merged_tsv: Path to the file obtained by the command clinica iotools merge-tsv.
-        missing_mods: Path to the folder where the outputs of clinica iotools check-missing-modalities are.
-        results_path: Path to the folder where tsv files are extracted.
+        bids_directory: Path to the folder where the BIDS is.
+        results_directory: Path to the folder where merge-tsv, missing-mod and getlabels files will be saved.
         diagnoses: Labels that must be extracted from merged_tsv.
+        stability_dict: List of all the diagnoses that can be encountered in order of the disease progression.
         modality: Modality to select sessions. Sessions which do not include the modality will be excluded.
         restriction_path: Path to a tsv containing the sessions that can be included.
         time_horizon: Time horizon to analyse stability of MCI subjects.
         variables_of_interest: columns that should be kept in the output tsv files.
         remove_smc: if True SMC participants are removed from the lists.
+        caps_directory: Path to a folder of a older of a CAPS compliant dataset
     """
 
     commandline_to_json(
@@ -444,6 +445,7 @@ def get_labels(
         filename="getlabels.json",
     )
 
+    # if no stability_dict is given, labels will be Alzheimer oriented
     if stability_dict == None:
         stability_dict = {"CN": 0, "MCI": 1, "Dementia": 2}
     else:
@@ -458,6 +460,7 @@ def get_labels(
 
     os.makedirs(results_directory, exist_ok=True)
 
+    # Generating the output of `clinica iotools check-missing-modalities``
     from clinica.iotools.utils.data_handling import compute_missing_mods
     from clinica.utils.inputs import check_bids_folder
 
@@ -466,6 +469,7 @@ def get_labels(
         bids_directory, results_directory + "/missing_mods", "missing_mods"
     )
 
+    # Generating the output of `clinica iotools merge-tsv `
     from clinica.iotools.utils.data_handling import create_merge_file
     from clinica.utils.inputs import check_bids_folder
 
@@ -485,6 +489,7 @@ def get_labels(
         group_selection=False,
         tracers_selection=False,
     )
+
     # Reading files
     bids_df = pd.read_csv(results_directory + "/merge.tsv", sep="\t")
     bids_df.set_index(["participant_id", "session_id"], inplace=True)

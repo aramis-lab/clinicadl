@@ -98,7 +98,7 @@ def write_splits(
 
 
 def split_diagnoses(
-    formatted_data_path: str,
+    formatted_data_tsv: str,
     n_splits: int = 5,
     subset_name: str = "validation",
     stratification: str = None,
@@ -106,23 +106,21 @@ def split_diagnoses(
 ):
     """
     Performs a k-fold split for each label independently on the subject level.
-    The train folder will contain two lists per fold per diagnosis (baseline and longitudinal),
-    whereas the test folder will only include the list of baseline sessions for each spli.
+    The output (the tsv file) will have two new columns :
+        - split, with the number of the split the subject is in.
+        - datagroup, with the name of the group (train or subset_name) the subject is in.
 
-    Writes three files per split per <label>.tsv file present in formatted_data_path:
-            - formatted_data_path/train_splits-<n_splits>/split-<split>/<label>.tsv
-            - formatted_data_path/train_splits-<n_splits>/split-<split>/<label>_baseline.tsv
-            - formatted_data_path/<subset_name>_splits-<n_splits>/split-<split>/<label>_baseline.tsv
+    The train group will contain baseline and longitudinal sessions,
+    whereas the test group will only include the baseline sessions for each split.
 
     Args:
-        formatted_data_path: Path to the folder containing data extracted by clinicadl tsvtool getlabels.
+        formatted_data_tsv: Path to the tsv file extracted by clinicadl tsvtool getlabels.
         n_splits: Number of splits in the k-fold cross-validation.
         subset_name: Name of the subset that is complementary to train.
-        MCI_sub_categories: If True, manages MCI sub-categories to avoid data leakage.
         stratification: Name of variable used to stratify k-fold.
     """
 
-    results_path = Path(formatted_data_path).parents[0]
+    results_path = Path(formatted_data_tsv).parents[0]
 
     commandline_to_json(
         {
@@ -136,8 +134,8 @@ def split_diagnoses(
 
     # Read files
 
-    # diagnosis_df_path=Path(formatted_data_path).name
-    diagnosis_df = pd.read_csv(formatted_data_path, sep="\t")
+    # diagnosis_df_path=Path(formatted_data_tsv).name
+    diagnosis_df = pd.read_csv(formatted_data_tsv, sep="\t")
 
     if test_tsv is not None:
         test_df = pd.read_csv(test_tsv, sep="\t")

@@ -12,7 +12,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.modality
 @click.option(
     "--time_horizon",
-    help="Time horizon to analyse stability of MCI subjects.",
+    help="Time horizon to analyse stability of subjects.",
     default=36,
     type=int,
 )
@@ -25,7 +25,7 @@ from clinicadl.utils import cli_param
 @click.option(
     "--variables_of_interest",
     help="Variables of interest that will be kept in the final lists. "
-    "Will always keep the diagnosis, age and sex needed for the split procedure.",
+    "Will always keep the group, subgroup, age and sex needed for the split procedure.",
     type=str,
     multiple=True,
     default=None,
@@ -57,11 +57,13 @@ def cli(
     caps_directory,
     stability_dict,
 ):
-    """Get labels in separate tsv files.
+    """Get labels in one tsv files.
 
-    MERGED_TSV is the output of `clinica iotools merge-tsv`.
+    This command will perform two others command inside :
+        - `clinica iotools merge-tsv`
+        - `clinica iotools check-missing-modalities`
 
-    MISSING_MODS_DIRECTORY is  the outputs of `clinica iotools check-missing-modalities`.
+    BIDS_DIRECTORY is the path of the BIDS.
 
     Outputs are stored in RESULTS_TSV.
     """
