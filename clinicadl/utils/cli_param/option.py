@@ -7,7 +7,7 @@ from clinica.utils.pet import LIST_SUVR_REFERENCE_REGIONS
 diagnoses = click.option(
     "--diagnoses",
     "-d",
-    type=str,  # click.Choice(["AD", "CN", "MCI", "sMCI", "pMCI", "BV","pCN", "rAD", "rMCI"]),
+    type=str,
     multiple=True,
     default=("AD", "CN"),
     help="Labels selected for the demographic analysis used in the context of Alzheimer's Disease classification.",
@@ -33,7 +33,14 @@ subset_name = click.option(
     default="validation",
     help="Name of the subset that is complementary to train.",
 )
-
+stability_dict = click.option(
+    "--stability-dict",
+    "-sd",
+    type=str,
+    multiple=True,
+    default=("CN", "MCI", "Dementia"),
+    help="List of label in progressive order",
+)
 # GENERATE
 participant_list = click.option(
     "--participants_tsv",

@@ -4,9 +4,15 @@ from clinicadl.utils import cli_param
 
 
 @click.command(name="kfold", no_args_is_help=True)
-@cli_param.argument.formatted_data_directory
-@cli_param.option.no_mci_sub_categories
+@cli_param.argument.formatted_data_tsv
 @cli_param.option.subset_name
+@click.option(
+    "--test_tsv",
+    "-tt",
+    help="Name of the test file in tsv format",
+    type=str,
+    default=None,
+)
 @click.option(
     "--n_splits",
     help="Number of folds in the k-fold split. "
@@ -22,11 +28,11 @@ from clinicadl.utils import cli_param
     default=None,
 )
 def cli(
-    formatted_data_directory,
+    formatted_data_tsv,
     n_splits,
-    no_mci_sub_categories,
     subset_name,
     stratification,
+    test_tsv,
 ):
     """Performs a k-fold split to prepare training.
 
@@ -37,11 +43,11 @@ def cli(
     from .kfold import split_diagnoses
 
     split_diagnoses(
-        formatted_data_directory,
+        formatted_data_tsv,
         n_splits=n_splits,
         subset_name=subset_name,
-        MCI_sub_categories=no_mci_sub_categories,
         stratification=stratification,
+        test_tsv=test_tsv,
     )
 
 

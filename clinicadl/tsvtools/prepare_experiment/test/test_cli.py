@@ -3,16 +3,10 @@ import click
 from clinicadl.utils import cli_param
 
 
-@click.command(name="split", no_args_is_help=True)
+@click.command(name="test", no_args_is_help=True)
 @cli_param.argument.formatted_data_tsv
 @cli_param.option.subset_name
-@click.option(
-    "--test_tsv",
-    "-tt",
-    help="Name of the test file in tsv format",
-    type=str,
-    default=None,
-)
+@cli_param.option.no_mci_sub_categories
 @click.option(
     "--n_test",
     help="- If >= 1, number of subjects to put in set with name 'subset_name'.\n\n "
@@ -51,10 +45,10 @@ from clinicadl.utils import cli_param
     type=str,
 )
 def cli(
-    formatted_data_tsv,
+    formatted_data_directory,
     subset_name,
-    test_tsv,
     n_test,
+    no_mci_sub_categories,
     p_sex_threshold,
     p_age_threshold,
     ignore_demographics,
@@ -62,17 +56,17 @@ def cli(
 ):
     """Performs a single split to prepare training.
 
-    FORMATTED_DATA_TSV is the path to the tsv file where the outputs of tsvtool getlabels command are stored.
+    FORMATTED_DATA_DIRECTORY is the path to the folder where the outputs of tsvtool getlabels command are stored.
 
     The split is done with respect to age and sex distribution.
     """
     from .split import split_diagnoses
 
     split_diagnoses(
-        formatted_data_tsv,
+        formatted_data_directory,
         n_test=n_test,
-        test_tsv=test_tsv,
         subset_name=subset_name,
+        MCI_sub_categories=no_mci_sub_categories,
         p_age_threshold=p_age_threshold,
         p_sex_threshold=p_sex_threshold,
         ignore_demographics=ignore_demographics,

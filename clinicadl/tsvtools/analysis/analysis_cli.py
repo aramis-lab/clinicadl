@@ -5,10 +5,11 @@ from clinicadl.utils import cli_param
 
 @click.command(name="analysis", no_args_is_help=True)
 @cli_param.argument.merged_tsv
+@cli_param.argument.formatted_data_tsv
 @cli_param.argument.formatted_data_directory
 @cli_param.argument.results_directory
 @cli_param.option.diagnoses
-def cli(merged_tsv, formatted_data_directory, results_directory, diagnoses):
+def cli(merged_tsv, formatted_data_tsv, results_directory, diagnoses):
     """Demographic analysis of the extracted labels.
 
     MERGED_TSV is the output of `clinica iotools merge-tsv`.
@@ -19,9 +20,7 @@ def cli(merged_tsv, formatted_data_directory, results_directory, diagnoses):
     """
     from .analysis import demographics_analysis
 
-    demographics_analysis(
-        merged_tsv, formatted_data_directory, results_directory, diagnoses
-    )
+    demographics_analysis(merged_tsv, formatted_data_tsv, results_directory, diagnoses)
 
 
 if __name__ == "__main__":

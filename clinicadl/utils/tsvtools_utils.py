@@ -116,7 +116,6 @@ def chi2(x_test, x_train):
     f_exp = [
         (x_train == category).sum() / len(x_train) for category in unique_categories
     ]
-
     T, p = chisquare(f_obs, f_exp)
 
     return T, p

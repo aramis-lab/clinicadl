@@ -1,11 +1,12 @@
+from typing import List
+
 import click
 
 from clinicadl.utils import cli_param
 
 
 @click.command(name="getlabels", no_args_is_help=True)
-@cli_param.argument.merged_tsv
-@cli_param.argument.missing_mods_directory
+@cli_param.argument.bids_directory
 @cli_param.argument.results_directory
 @cli_param.option.diagnoses
 @cli_param.option.modality
@@ -36,9 +37,16 @@ from clinicadl.utils import cli_param
     default=False,
     is_flag=True,
 )
+@click.option(
+    "--caps_directory",
+    "-c",
+    help="input folder of a CAPS compliant dataset",
+    type=str,
+    default=None,
+)
+@cli_param.option.stability_dict
 def cli(
-    merged_tsv,
-    missing_mods_directory,
+    bids_directory,
     results_directory,
     diagnoses,
     modality,
@@ -46,6 +54,8 @@ def cli(
     time_horizon,
     variables_of_interest,
     keep_smc,
+    caps_directory,
+    stability_dict,
 ):
     """Get labels in separate tsv files.
 
@@ -61,15 +71,16 @@ def cli(
         variables_of_interest = None
 
     get_labels(
-        merged_tsv,
-        missing_mods_directory,
+        bids_directory,
         results_directory,
         diagnoses,
+        stability_dict=stability_dict,
         modality=modality,
         restriction_path=restriction_tsv,
         time_horizon=time_horizon,
         variables_of_interest=variables_of_interest,
         remove_smc=not keep_smc,
+        caps_directory=caps_directory,
     )
 
 

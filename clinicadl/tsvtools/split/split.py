@@ -2,8 +2,11 @@
 
 import os
 import shutil
+from copy import copy
 from logging import getLogger
+from math import nan
 from os import path
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -37,6 +40,7 @@ def create_split(
     supplementary_train_df=None,
     ignore_demographics=False,
 ):
+
     """
     Split data at the subject-level in training and test set with equivalent age, sex and split_label distributions
 
@@ -57,7 +61,6 @@ def create_split(
         train_df (DataFrame) subjects in the train set
         test_df (DataFrame) subjects in the test set
     """
-
     if supplementary_train_df is not None:
         sup_train_sex = [sex_dict[x] for x in supplementary_train_df.sex.values]
         sup_train_age = [float(x) for x in supplementary_train_df.age.values]
@@ -120,7 +123,7 @@ def create_split(
                 else:
                     p_sex = 1
 
-                logger.debug(f"p_age={p_age:.2f}, p_sex={p_sex:.4f}")
+                logger.info(f"p_age={p_age:.2f}, p_sex={p_sex:.4f}")
 
                 if p_sex >= p_sex_threshold and p_age >= p_age_threshold:
                     flag_selection = False
@@ -147,8 +150,8 @@ def create_split(
 def split_diagnoses(
     formatted_data_path,
     n_test=100,
+    test_tsv=None,
     subset_name="test",
-    MCI_sub_categories=True,
     p_age_threshold=0.80,
     p_sex_threshold=0.80,
     categorical_split_variable=None,
@@ -183,12 +186,14 @@ def split_diagnoses(
             - formatted_data_path/train/<label>_baseline.tsv
             - formatted_data_path/<subset_name>/<label>_baseline.tsv
     """
+
+    results_path = Path(formatted_data_path).parents[0]
+
     commandline_to_json(
         {
-            "output_dir": formatted_data_path,
+            "output_dir": results_path,
             "n_test": n_test,
             "subset_name": subset_name,
-            "MCI_sub_categories": MCI_sub_categories,
             "p_age_threshold": p_age_threshold,
             "p_sex_threshold": p_sex_threshold,
             "categorical_split_variable": categorical_split_variable,
@@ -198,149 +203,78 @@ def split_diagnoses(
     )
 
     # Read files
-    results_path = formatted_data_path
-
-    train_path = path.join(results_path, "train")
-    if path.exists(train_path):
-        shutil.rmtree(train_path)
-    if n_test > 0:
-        os.makedirs(train_path)
 
     if categorical_split_variable is None:
-        categorical_split_variable = "diagnosis"
+        categorical_split_variable = "group"
 
-    test_path = path.join(results_path, subset_name)
-    if path.exists(test_path):
-        shutil.rmtree(test_path)
-    os.makedirs(test_path)
-
-    diagnosis_df_paths = os.listdir(results_path)
-    diagnosis_df_paths = [x for x in diagnosis_df_paths if x.endswith(".tsv")]
-    diagnosis_df_paths = [
-        x for x in diagnosis_df_paths if not x.endswith("_baseline.tsv")
-    ]
-
-    MCI_special_treatment = False
-
-    if "MCI.tsv" in diagnosis_df_paths and n_test > 0:
-        if MCI_sub_categories:
-            diagnosis_df_paths.remove("MCI.tsv")
-            MCI_special_treatment = True
-        elif "sMCI.tsv" in diagnosis_df_paths or "pMCI.tsv" in diagnosis_df_paths:
-            logger.warning(
-                "MCI special treatment was deactivated though MCI subgroups were found."
-                "Be aware that it may cause data leakage in transfer learning tasks."
-            )
+    diagnosis_df_path = Path(formatted_data_path).name
 
     # The baseline session must be kept before or we are taking all the sessions to mix them
-    for diagnosis_df_path in diagnosis_df_paths:
-        diagnosis_df = pd.read_csv(path.join(results_path, diagnosis_df_path), sep="\t")
-        interest_columns = diagnosis_df.columns.values
-        diagnosis = diagnosis_df_path.split(".")[0]
+
+    diagnosis_df = pd.read_csv(path.join(results_path, diagnosis_df_path), sep="\t")
+    output_train_df = pd.DataFrame()
+    output_long_train_df = pd.DataFrame()
+    output_test_df = pd.DataFrame()
+    output_long_test_df = pd.DataFrame()
+
+    if test_tsv is not None:
+        test_df = pd.read_csv(test_tsv, sep="\t")
+        subjects_list = pd.unique(test_df["participant_id"])
+        for subject in diagnosis_df.index.values:
+            if subject in subjects_list:
+                diagnosis_df.drop(subject)
+
+    for diagnosis in pd.unique(diagnosis_df["group"]):
+
+        interest_columns = diagnosis_df.index.values
+        diagnosis_copy_df = copy(diagnosis_df)
+        for i in interest_columns:
+            if diagnosis_copy_df.loc[i, "group"] != diagnosis:
+                diagnosis_copy_df.drop((i), inplace=True)
+
         logger.info(f"Running split for diagnosis {diagnosis}")
+
         if n_test > 0:
             train_df, test_df = create_split(
                 diagnosis,
-                diagnosis_df,
+                diagnosis_copy_df,
                 categorical_split_variable,
                 n_test=n_test,
                 p_age_threshold=p_age_threshold,
                 p_sex_threshold=p_sex_threshold,
                 ignore_demographics=ignore_demographics,
             )
+
             # Save baseline splits
-            train_df.to_csv(
-                path.join(train_path, f"{diagnosis}_baseline.tsv"),
-                sep="\t",
-                index=False,
-            )
-            test_df.to_csv(
-                path.join(test_path, f"{diagnosis}_baseline.tsv"), sep="\t", index=False
-            )
+            output_test_df = pd.concat([output_test_df, test_df])
+            output_train_df = pd.concat([output_train_df, train_df])
 
             long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
-            long_train_df.to_csv(
-                path.join(train_path, f"{diagnosis}.tsv"), sep="\t", index=False
-            )
+            output_long_train_df = pd.concat([output_long_train_df, long_train_df])
+
             long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
-            long_test_df.to_csv(
-                path.join(test_path, f"{diagnosis}.tsv"), sep="\t", index=False
-            )
+            output_long_test_df = pd.concat([output_long_test_df, long_test_df])
 
         else:
             baseline_df = extract_baseline(diagnosis_df)
             test_df = baseline_df[interest_columns]
             test_df.to_csv(
-                path.join(test_path, f"{diagnosis}_baseline.tsv"), sep="\t", index=False
+                path.join(results_path, "test_baseline.tsv"), sep="\t", index=False
             )
             long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
             long_test_df.to_csv(
-                path.join(test_path, f"{diagnosis}.tsv"), sep="\t", index=False
+                path.join(results_path, "test.tsv"), sep="\t", index=False
             )
 
-    if MCI_special_treatment:
-
-        # Extraction of MCI subjects without intersection with the sMCI / pMCI train
-        diagnosis_df = pd.read_csv(path.join(results_path, "MCI.tsv"), sep="\t")
-        MCI_df = diagnosis_df.set_index(["participant_id", "session_id"])
-        baseline_df = extract_baseline(MCI_df, set_index=False)
-
-        if n_test > 1:
-            n_test = int(n_test)
-        else:
-            n_test = int(n_test * len(baseline_df))
-
-        MCI_df, supplementary_diagnoses = remove_sub_labels(
-            MCI_df, ["sMCI", "pMCI"], diagnosis_df_paths, results_path
-        )
-        if len(supplementary_diagnoses) == 0:
-            raise ClinicaDLArgumentError(
-                "The MCI_sub_categories flag is not needed as there are no intersections with"
-                "MCI subcategories."
-            )
-
-        # Construction of supplementary train
-        supplementary_train_df = pd.DataFrame()
-        for diagnosis in supplementary_diagnoses:
-            sup_baseline_train_df = pd.read_csv(
-                path.join(train_path, f"{diagnosis}_baseline.tsv"), sep="\t"
-            )
-            supplementary_train_df = pd.concat(
-                [supplementary_train_df, sup_baseline_train_df]
-            )
-            sub_df = (
-                supplementary_train_df.reset_index()
-                .groupby("participant_id")["session_id"]
-                .nunique()
-            )
-            logger.debug(
-                f"supplementary_train_df {len(sub_df)} subjects, {len(supplementary_diagnoses)} scans"
-            )
-
-        supplementary_train_df.reset_index(drop=True, inplace=True)
-
-        # MCI selection
-        MCI_df.reset_index(inplace=True)
-        baseline_df = extract_baseline(MCI_df)
-
-        train_df, test_df = create_split(
-            "MCI",
-            baseline_df,
-            categorical_split_variable,
-            n_test=n_test,
-            p_age_threshold=p_age_threshold,
-            p_sex_threshold=p_sex_threshold,
-            ignore_demographics=ignore_demographics,
-            supplementary_train_df=supplementary_train_df,
-        )
-
-        # Write selection of MCI
-        train_df.to_csv(
-            path.join(train_path, "MCI_baseline.tsv"), sep="\t", index=False
-        )
-        test_df.to_csv(path.join(test_path, "MCI_baseline.tsv"), sep="\t", index=False)
-
-        long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
-        long_train_df.to_csv(path.join(train_path, "MCI.tsv"), sep="\t", index=False)
-        long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
-        long_test_df.to_csv(path.join(test_path, "MCI.tsv"), sep="\t", index=False)
+    output_train_df.to_csv(
+        path.join(results_path, "train_baseline.tsv"), sep="\t", index=False
+    )
+    output_test_df.to_csv(
+        path.join(results_path, "test_baseline.tsv"), sep="\t", index=False
+    )
+    output_long_train_df.to_csv(
+        path.join(results_path, "train.tsv"), sep="\t", index=False
+    )
+    output_long_test_df.to_csv(
+        path.join(results_path, "test.tsv"), sep="\t", index=False
+    )
