@@ -257,24 +257,21 @@ def split_diagnoses(
 
         else:
             baseline_df = extract_baseline(diagnosis_df)
-            test_df = baseline_df[interest_columns]
+            test_df = baseline_df
             test_df.to_csv(
-                path.join(results_path, "test_baseline.tsv"), sep="\t", index=False
+                path.join(results_path, f"{subset_name}_baseline.tsv"),
+                sep="\t",
+                index=False,
             )
             long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
             long_test_df.to_csv(
-                path.join(results_path, "test.tsv"), sep="\t", index=False
+                path.join(results_path, f"{subset_name}.tsv"), sep="\t", index=False
             )
-
-    output_train_df.to_csv(
-        path.join(results_path, "train_baseline.tsv"), sep="\t", index=False
-    )
+    output_test_df = output_test_df[["participant_id", "session_id"]]
     output_test_df.to_csv(
-        path.join(results_path, "test_baseline.tsv"), sep="\t", index=False
+        path.join(results_path, f"{subset_name}_baseline.tsv"), sep="\t", index=False
     )
-    output_long_train_df.to_csv(
-        path.join(results_path, "train.tsv"), sep="\t", index=False
-    )
+    output_long_test_df = output_long_test_df[["participant_id", "session_id"]]
     output_long_test_df.to_csv(
-        path.join(results_path, "test.tsv"), sep="\t", index=False
+        path.join(results_path, f"{subset_name}.tsv"), sep="\t", index=False
     )

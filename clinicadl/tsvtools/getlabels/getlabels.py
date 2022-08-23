@@ -417,7 +417,7 @@ def get_labels(
 
 
     Args:
-        bids_directory: Path to the folder where the BIDS is.
+        bids_directory: Path to the folder containing the dataset in a BIDS hierarchy.
         results_directory: Path to the folder where merge-tsv, missing-mod and getlabels files will be saved.
         diagnoses: Labels that must be extracted from merged_tsv.
         stability_dict: List of all the diagnoses that can be encountered in order of the disease progression.
@@ -446,7 +446,7 @@ def get_labels(
     )
 
     # if no stability_dict is given, labels will be Alzheimer oriented
-    if stability_dict == None:
+    if stability_dict is None:
         stability_dict = {"CN": 0, "MCI": 1, "Dementia": 2}
     else:
         diagnoses = stability_dict
@@ -493,12 +493,15 @@ def get_labels(
     # Reading files
     bids_df = pd.read_csv(results_directory + "/merge.tsv", sep="\t")
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
-    variables_list = ["diagnosis"]
+    variables_list = []
     try:
         variables_list.append(find_label(bids_df.columns.values, "age"))
         variables_list.append(find_label(bids_df.columns.values, "sex"))
+        variables_list.append(find_label(bids_df.columns.values, "diagnosis"))
     except ValueError:
-        logger.warning("The age or sex values were not found in the dataset.")
+        logger.warning(
+            "The age, sex or diagnosis values were not found in the dataset."
+        )
     if variables_of_interest is not None:
         variables_set = set(variables_of_interest) | set(variables_list)
         variables_list = list(variables_set)

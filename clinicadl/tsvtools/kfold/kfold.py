@@ -156,6 +156,7 @@ def split_diagnoses(
         output_df = pd.concat([output_df, temp_df])
 
     output_df = output_df.sort_values(["participant_id", "session_id", "split"])
+    output_df = output_df[["participant_id", "session_id", "split", "datagroup"]]
     output_df.to_csv(
         path.join(results_path, f"{subset_name}.tsv"),
         sep="\t",

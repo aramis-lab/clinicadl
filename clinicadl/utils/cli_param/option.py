@@ -41,6 +41,13 @@ stability_dict = click.option(
     default=("CN", "MCI", "Dementia"),
     help="List of label in progressive order",
 )
+test_tsv = click.option(
+    "--test_tsv",
+    "-tt",
+    help="Name of the test file in tsv format",
+    type=str,
+    default=None,
+)
 # GENERATE
 participant_list = click.option(
     "--participants_tsv",

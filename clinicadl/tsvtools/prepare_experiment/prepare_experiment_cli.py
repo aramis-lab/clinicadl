@@ -5,7 +5,6 @@ from clinicadl.utils import cli_param
 
 @click.command(name="prepare-experiment", no_args_is_help=True)
 @cli_param.argument.formatted_data_directory
-@cli_param.option.no_mci_sub_categories
 @click.option(
     "--n_test",
     help="- If >= 1, number of subjects to put in set with name 'subset_name'.\n\n "
@@ -32,7 +31,6 @@ from clinicadl.utils import cli_param
 )
 def cli(
     formatted_data_directory,
-    no_mci_sub_categories,
     n_test,
     validation_type,
     n_validation,
@@ -57,7 +55,6 @@ def cli(
         formatted_data_directory,
         n_test=n_test,
         subset_name="test",
-        MCI_sub_categories=no_mci_sub_categories,
         p_age_threshold=p_age_threshold,
         p_sex_threshold=p_sex_threshold,
         ignore_demographics=ignore_demographics,
@@ -68,7 +65,6 @@ def cli(
             formatted_data_directory,
             n_test=n_validation,
             subset_name="validation",
-            MCI_sub_categories=no_mci_sub_categories,
             p_age_threshold=p_age_threshold,
             p_sex_threshold=p_sex_threshold,
             ignore_demographics=ignore_demographics,
@@ -81,7 +77,6 @@ def cli(
             formatted_data_directory,
             n_splits=n_validation,
             subset_name="validation",
-            MCI_sub_categories=no_mci_sub_categories,
             stratification=None,
         )
 

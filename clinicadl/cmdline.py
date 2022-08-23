@@ -2,10 +2,10 @@
 
 import click
 
-from clinicadl.extract.extract_cli import cli as extract_cli
 from clinicadl.generate.generate_cli import cli as generate_cli
 from clinicadl.interpret.interpret_cli import cli as interpret_cli
 from clinicadl.predict.predict_cli import cli as predict_cli
+from clinicadl.prepare_data.prepare_data_cli import cli as prepare_data_cli
 from clinicadl.quality_check.qc_cli import cli as qc_cli
 from clinicadl.random_search.random_search_cli import cli as random_search_cli
 from clinicadl.train.train_cli import cli as train_cli
@@ -39,7 +39,7 @@ def cli(verbosity):
 cli.add_command(tsvtools_cli)
 cli.add_command(train_cli)
 cli.add_command(generate_cli)
-cli.add_command(extract_cli)
+cli.add_command(prepare_data_cli)
 cli.add_command(predict_cli)
 cli.add_command(interpret_cli)
 cli.add_command(qc_cli)

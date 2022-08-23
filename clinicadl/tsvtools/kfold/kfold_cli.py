@@ -6,13 +6,7 @@ from clinicadl.utils import cli_param
 @click.command(name="kfold", no_args_is_help=True)
 @cli_param.argument.formatted_data_tsv
 @cli_param.option.subset_name
-@click.option(
-    "--test_tsv",
-    "-tt",
-    help="Name of the test file in tsv format",
-    type=str,
-    default=None,
-)
+@cli_param.option.test_tsv
 @click.option(
     "--n_splits",
     help="Number of folds in the k-fold split. "
