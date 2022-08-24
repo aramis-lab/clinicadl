@@ -62,7 +62,7 @@ def test_second_lv_prepare_data(prepare_data_cli_arg1, prepare_data_cli_arg2):
     arg1 = prepare_data_cli_arg1
     arg2 = prepare_data_cli_arg2
     print(f"Testing input prepare_data cli {arg1} {arg2}")
-    result = runner.invoke(cli, f"prepare_data {arg1} {arg2} -h")
+    result = runner.invoke(cli, f"prepare-data {arg1} {arg2} -h")
     assert result.exit_code == 0
 
 

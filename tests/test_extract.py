@@ -154,9 +154,7 @@ def test_prepare_data():
                 parameters["acq_label"] = "av45"
                 parameters["suvr_reference_region"] = "pons2"
                 parameters["use_uncropped_image"] = False
-                parameters[
-                    "prepare_data_json"
-                ] = f"{modality}_mode-{parameters['mode']}"
+                parameters["extract_json"] = f"{modality}_mode-{parameters['mode']}"
                 prepare_data_generic(root, parameters)
 
             elif modality == "custom":
@@ -165,16 +163,14 @@ def test_prepare_data():
                     "custom_suffix"
                 ] = "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
                 parameters["roi_custom_template"] = "Ixi549Space"
-                parameters[
-                    "prepare_data_json"
-                ] = f"{modality}_mode-{parameters['mode']}"
+                parameters["extract_json"] = f"{modality}_mode-{parameters['mode']}"
                 prepare_data_generic(root, parameters)
 
             elif modality == "t1-linear":
                 for flag in uncropped_image:
                     parameters["use_uncropped_image"] = flag
                     parameters[
-                        "prepare_data_json"
+                        "extract_json"
                     ] = f"{modality}_crop-{not flag}_mode-{parameters['mode']}"
                     prepare_data_generic(root, parameters)
             else:
