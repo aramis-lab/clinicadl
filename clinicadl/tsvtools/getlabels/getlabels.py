@@ -335,6 +335,10 @@ def get_subgroup(
                     bids_copy_df.loc[(subject, session_str), "subgroup"] = (
                         "us" + diagnosis
                     )
+    last_session_str = last_session(session_list)
+    if last_session_str == "ses-M00":
+        bids_copy_df.drop((subject, last_session_str), inplace=True)
+        subject_df.drop((subject, last_session_str), inplace=True)
 
     logger.info(f"Unstable subjects: {nb_subjects}")
 
@@ -461,35 +465,32 @@ def get_labels(
     os.makedirs(results_directory, exist_ok=True)
 
     # Generating the output of `clinica iotools check-missing-modalities``
-    from clinica.iotools.utils.data_handling import compute_missing_mods
-    from clinica.utils.inputs import check_bids_folder
-
-    check_bids_folder(bids_directory)
-    compute_missing_mods(
-        bids_directory, results_directory + "/missing_mods", "missing_mods"
-    )
-
+    # check_bids_folder(bids_directory)
+    # compute_missing_mods(
+    #    bids_directory, results_directory + "/missing_mods", "missing_mods"
+    # )
     # Generating the output of `clinica iotools merge-tsv `
-    from clinica.iotools.utils.data_handling import create_merge_file
+    from clinica.iotools.utils.data_handling import (
+        compute_missing_mods,
+        create_merge_file,
+    )
     from clinica.utils.inputs import check_bids_folder
 
-    check_bids_folder(bids_directory)
-
-    create_merge_file(
-        bids_directory,
-        results_directory + "/merge.tsv",
-        caps_dir=caps_directory,
-        pipelines=None,
-        ignore_scan_files=None,
-        ignore_sessions_files=None,
-        volume_atlas_selection=None,
-        freesurfer_atlas_selection=None,
-        pvc_restriction=None,
-        tsv_file=None,
-        group_selection=False,
-        tracers_selection=False,
-    )
-
+    # check_bids_folder(bids_directory)
+    # create_merge_file(
+    #    bids_directory,
+    #    results_directory + "/merge.tsv",
+    #    caps_dir=caps_directory,
+    #    pipelines=None,
+    #    ignore_scan_files=None,
+    #    ignore_sessions_files=None,
+    #    volume_atlas_selection=None,
+    #    freesurfer_atlas_selection=None,
+    #    pvc_restriction=None,
+    #    tsv_file=None,
+    #    group_selection=False,
+    #    tracers_selection=False,
+    # )
     # Reading files
     bids_df = pd.read_csv(results_directory + "/merge.tsv", sep="\t")
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
