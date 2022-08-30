@@ -120,12 +120,12 @@ and chi-square test, respectively.
 ### Running the task
 
 ```bash
-clinicadl tsvtools split [OPTIONS] FORMATTED_DATA_DIRECTORY
+clinicadl tsvtools split [OPTIONS] FORMATTED_DATA_TSV
 ```
 where:
 
-  - `FORMATTED_DATA_DIRECTORY` (Path) is the folder containing the TSV file which is going to be split 
-  (output of `clinicadl tsvtool getlabels|split|kfold`).
+  - `FORMATTED_DATA_TSV` (Path) is the TSV file with the data that are going to be split 
+  (output of `clinicadl tsvtools getlabels|split|kfold`).
 
 Options:
 
@@ -139,10 +139,6 @@ Options:
         with name `subset_name`.
 
     Default value: `100`.
-
-  - `--no_mci_sub_categories` (bool) is a flag that disables the special treatment of the MCI set and its subsets.
-  This will allow sets with more similar age and sex distributions, but it will cause 
-  data leakage for transfer learning tasks involving these sets. Default value: `True`.
   - `--p_age_threshold` (float) is the threshold on the p-value used for the T-test on age distributions.
   Default value: `0.80`.
   - `--p_sex_threshold` (float) is the threshold on the p-value used for the chi2 test on sex distributions.
@@ -156,7 +152,7 @@ Options:
 
 ### Output tree
 
-The command will generate a new tsv file `subset_name.tsv` containing the keys (`participants_id`, `session_id`) included in the subset_name set. This file will be stored in the `FORMATTED_DATA_DIRECTORY`.
+The command will generate a new tsv file `subset_name.tsv` containing the keys (`participants_id`, `session_id`) included in the subset_name set. This file will be stored in the same directory as th `FORMATED_DATA_TSV`.
    
 </pre>
 
@@ -173,9 +169,9 @@ This tool splits data to perform a k-fold cross-validation.
 ### Running the task
 
 ```bash
-clinicadl tsvtools kfold [OPTIONS] FORMATTED_DATA_DIRECTORY
+clinicadl tsvtools kfold [OPTIONS] FORMATTED_DATA_TSV
 ```
-where `FORMATTED_DATA_DIRECTORY` (str) is the folder containing the TSV file which is going to be split
+where `FORMATTED_DATA_TSV` (str) is the TSV file containing the data that are going to be split
 (output of `clinicadl tsvtool getlabels|split|kfold`).
 
 Options:
@@ -192,7 +188,7 @@ Options:
 
 ### Output tree
 
-The command will generate a new tsv file `subset_name.tsv` stored in the `FORMATTED_DATA_DIRECTORY` and containing the keys (`participants_id`, `session_id`).
+The command will generate a new tsv file `subset_name.tsv` stored in the same directory as the `FORMATTED_DATA_TSV` file and containing the keys (`participants_id`, `session_id`).
 For each key, it explicits which set it belongs to for each split according to the following structure (example for a 2-fold validation):
 
 | participant_id | session_id | split_index | split_type |
@@ -216,11 +212,11 @@ This tool performs a single split to prepare testing data and then can perform e
 ### Running the task
 
 ```bash
-clinicadl tsvtools prepare-experiment [OPTIONS] FORMATTED_DATA_DIRECTORY
+clinicadl tsvtools prepare-experiment [OPTIONS] FORMATTED_DATA_TSV
 ```
 where:
 
-  - `FORMATTED_DATA_DIRECTORY` (Path) is a folder containing the TSV file(output of `clinicadl tsvtool getlabels|split|kfold`).
+  - `FORMATTED_DATA_TSV` (Path) is a TSV file output of `clinicadl tsvtool getlabels|split|kfold`.
 
 Options:
 
