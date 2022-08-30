@@ -9,7 +9,7 @@ from clinicadl.utils import cli_param
 @click.option(
     "--test_tsv",
     "-tt",
-    help="Name of the test file in tsv format",
+    help="Path to the test file in tsv format not to keep these subjects in other set.",
     type=str,
     default=None,
 )
@@ -46,7 +46,7 @@ from clinicadl.utils import cli_param
 @click.option(
     "--categorical_split_variable",
     help="Name of a categorical variable used for a stratified shuffle split "
-    "(in addition to age and sex selection).",
+    "(in addition to age, sex and group selection).",
     default=None,
     type=str,
 )
@@ -64,7 +64,7 @@ def cli(
 
     FORMATTED_DATA_TSV is the path to the tsv file where the outputs of tsvtool getlabels command are stored.
 
-    The split is done with respect to age and sex distribution.
+    The split is done with respect to age, sex and group distribution.
     """
     from .split import split_diagnoses
 

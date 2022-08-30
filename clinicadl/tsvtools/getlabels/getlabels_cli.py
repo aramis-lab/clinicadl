@@ -44,7 +44,25 @@ from clinicadl.utils import cli_param
     type=str,
     default=None,
 )
-@cli_param.option.stability_dict
+@click.option(
+    "--merge_tsv",
+    help="Path to a TSV file containing the results of clinica iotools merge-tsv command",
+    type=str,
+    default=None,
+)
+@click.option(
+    "--missing_mods",
+    help="Path to a directory containing the results of clinica iotools missing-modalities command",
+    type=str,
+    default=None,
+)
+@click.option(
+    "--remove_unique_session",
+    help="This flag allows to remove subjects with a unique session, else they are kept.",
+    type=bool,
+    default=False,
+    is_flag=True,
+)
 def cli(
     bids_directory,
     results_directory,
@@ -55,7 +73,9 @@ def cli(
     variables_of_interest,
     keep_smc,
     caps_directory,
-    stability_dict,
+    missing_mods,
+    merge_tsv,
+    remove_unique_session,
 ):
     """Get labels in one tsv files.
 
@@ -76,13 +96,15 @@ def cli(
         bids_directory,
         results_directory,
         diagnoses,
-        stability_dict=stability_dict,
         modality=modality,
         restriction_path=restriction_tsv,
         time_horizon=time_horizon,
         variables_of_interest=variables_of_interest,
         remove_smc=not keep_smc,
+        missing_mods=missing_mods,
+        merge_tsv=merge_tsv,
         caps_directory=caps_directory,
+        remove_unique_session=remove_unique_session,
     )
 
 

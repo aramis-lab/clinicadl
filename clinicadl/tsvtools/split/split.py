@@ -46,7 +46,7 @@ def create_split(
 
     Args:
         diagnosis: (str) diagnosis on which the split is done
-        diagnosis_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+        diagnosis_df: DataFrame with columns including ['participant_id', 'session_id', 'group']
         split_label: (str) label on which the split is done (categorical variables)
         n_test: (float)
             If > 1 number of subjects to put in the test set.
@@ -160,19 +160,18 @@ def split_diagnoses(
 ):
     """
     Performs a single split for each label independently on the subject level.
-    The train folder will contain two lists per diagnosis (baseline and longitudinal),
-    whereas the test folder will only include the list of baseline sessions.
+    There will be two TSV file for the train set (baseline and longitudinal),
+    whereas there will only be one TSV file for the test set (baseline sessions).
 
     The age and sex distributions between the two sets must be non-significant (according to T-test and chi-square).
 
     Args:
-        formatted_data_path (str): Path to the folder containing data extracted by clinicadl tsvtool getlabels.
+        formatted_data_path (str): Path to the tsv containing data extracted by clinicadl tsvtools getlabels.
         n_test (float):
             If >= 1, number of subjects to put in set with name 'subset_name'.
             If < 1, proportion of subjects to put in set with name 'subset_name'.
             If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name'.
         subset_name (str): Name of the subset that is complementary to train.
-        MCI_sub_categories (bool): If True, manages MCI sub-categories to avoid data leakage.
         p_age_threshold (float): The threshold used for the T-test on age distributions.
         p_sex_threshold (float): The threshold used for the T-test on sex distributions.
         categorical_split_variable (str): name of a categorical variable to perform a stratified split.

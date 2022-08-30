@@ -65,7 +65,7 @@ def write_splits(
 
     # print(f"Label {diagnosis}")
     for i, indices in enumerate(splits.split(np.zeros(len(y)), y)):
-        print(f"Split {i}")
+        # print(f"Split {i}")
         train_index, test_index = indices
 
         test_df = baseline_df.iloc[test_index]
@@ -158,7 +158,7 @@ def split_diagnoses(
     output_df = output_df.sort_values(["participant_id", "session_id", "split"])
     output_df = output_df[["participant_id", "session_id", "split", "datagroup"]]
     output_df.to_csv(
-        path.join(results_path, f"{subset_name}.tsv"),
+        path.join(results_path, "train.tsv"),
         sep="\t",
         index=False,
     )

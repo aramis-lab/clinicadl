@@ -3,7 +3,7 @@
 This collection of tools aims at handling metadata of BIDS-formatted datasets.
 These tools perform three main tasks:
 
-- Get the labels used in the classification task (`restrict` + `getlabels`),
+- Get the labels used in the classification task (`getlabels`),
 - Split data to define test, validation and train cohorts (`split` + `kfold` or `prepare-experiment`),
 - Analyze populations of interest (`analysis`).
 
@@ -18,42 +18,37 @@ These tools perform three main tasks:
 
 ### Description
 
-This tool writes a unique TSV file with columns containing the value of the label asked by the user.
-The file contains a column `group` which is the diagnosis of the subject for the session, and a column `subgroup` which shows the stability.
+This tool writes a unique TSV file containing the labels asked by the user.
+The file contains a column `group` which is the diagnosis of the subject for the session, and a column `subgroup` which shows if the diagnosis is stable or not.
 
-For example, for the Alzheimer's disease, the group correspond to the following description:
+The group correspond to the following description :
 
-- CN (cognitively normal): sessions of subjects who were diagnosed as cognitively normal during all their follow-up;
-- AD (Alzheimer's disease): sessions of subjects who were diagnosed as demented during all their follow-up;
-- MCI (mild cognitive impairment): sessions of subjects who were diagnosed as prodromal (i.e. MCI) at baseline, 
+- **CN** (cognitively normal): sessions of subjects who were diagnosed as cognitively normal during all their follow-up;
+- **AD** (Alzheimer's disease): sessions of subjects who were diagnosed as demented during all their follow-up;
+- **MCI** (mild cognitive impairment): sessions of subjects who were diagnosed as prodromal (i.e. MCI) at baseline, 
 
-These labels are specific to the Alzheimer's disease context and can only be extracted from
-cohorts used in [(Wen et al., 2020)](https://www.sciencedirect.com/science/article/abs/pii/S1361841520300591).
-
-
-The subgroup corresponds to the following description and works for all kind of progressive disease :
-- s (stable): diagnosis remains identical during the `time_horizon` period following the current visit,
-- p (progressive): diagnosis progresses to the following state during the `time_horizon` period following the current visit (eg. MCI --> AD),
-- r (regressive): diagnosis regresses to the previous state during the `time_horizon` period following the current visit (eg. MCI --> CN),
-- uk (unknown): there are not enough sessions to assess the reliability of the label but no changes were spotted,
-- us (unstable): otherwise (multiple conversions / regressions).
+These labels are specific to the Alzheimer's disease context and can only be extracted from cohorts used in [(Wen et al., 2020)](https://www.sciencedirect.com/science/article/abs/pii/S1361841520300591).
 
 
-However, users can define other label lists manually and give them in inputs of other functions of
-`tsvtool`. These TSV files will have to include the following columns: `participant_id`,
-`session_id`, and the name of the value used for the label (for example `diagnosis`).
-Other functions of `tsvtool` may also try to have similar distributions according to the age and the sex
-of the participants. To benefit from this feature, the user must also include these two columns in
-their TSV files.
+The subgroup corresponds to the following description:
+- **s** (stable): diagnosis remains identical during the `time_horizon` period following the current visit,
+- **p** (progressive): diagnosis progresses to the following state during the `time_horizon` period following the current visit (eg. MCI --> AD),
+- **r** (regressive): diagnosis regresses to the previous state during the `time_horizon` period following the current visit (eg. MCI --> CN),
+- **uk** (unknown): there are not enough sessions to assess the reliability of the label but no changes were spotted,
+- **us** (unstable): otherwise (multiple conversions / regressions).
 
-Example of TSV produced by `getlabels`:
+
+However, users can define other label lists manually and give them in inputs of other functions of `tsvtools`. These TSV files will have to include the following columns: `participant_id`, `session_id`, and the name of the value used for the label (for example `diagnosis`).
+Other functions of `tsvtool` may also try to have similar distributions according to the age and the sex of the participants. To benefit from this feature, the user must also include these two columns in their TSV files.
+
+#### Example of TSV produced by `getlabels`:
 
 | participant_id | session_id | group | subgroup | age | sex | ... |
 | -- | -- | -- | -- | -- | -- | -- |
-| sub-CLNC0001  | ses-M00 | MCI | sMCI | 72 | M | ... |
-| sub-CLNC0002  | ses-M00 | MCI | pMCI | 65 | F | ... |
-| sub-CLNC0002  | ses-M06 | MCI | pMCI | 66 | F | ... |
-| sub-CLNC0003  | ses-M00 | AD | AD | 89 | F | ... |
+| sub-CLNC0001  | ses-M00 | MCI | pMCI | 72 | M | ... |
+| sub-CLNC0001  | ses-M12 | MCI | pMCI | 65 | F | ... |
+| sub-CLNC0001  | ses-M36 | AD | sAD | 66 | F | ... |
+| sub-CLNC0002  | ses-M00 | AD | ukAD | 89 | F | ... |
 
 
 
@@ -73,8 +68,7 @@ Options:
   Sessions which do not include the modality will be excluded from the outputs.
   The name of the modality must correspond to a column of the TSV files in `missing_mods`.
   Default value: `t1w`.
-  - `--stability_dict` (List[str]) is the list of all the diagnoses that can be encountered in order of the disease progression.
-  - `--diagnoses` (List[str]) is the list of the labels that will be extracted. Labels can be either a group or a subgroup. 
+  - `--diagnoses` (List[str]) is the list of the labels that will be extracted. Labels can be either a group or a subgroup. These labels must be chosen from the combination of group and subgroup seen above. All the sessions for which the diagnosis is not in the given list will be remove in the output TSV file.
   Default will be focus on the Alzheimer's disease and only process AD and CN labels.
   - `--time_horizon` (int) is the time horizon in months that is used to assess the stability of the MCI subjects.
   Default value: `36`.
@@ -85,10 +79,25 @@ Options:
   - `--keep_smc` (bool) if given the SMC participants are kept in the `CN.tsv` file.
   Default setting remove these participants.
   - `--caps_directory` (Path) is a folder containing a CAPS compliant dataset
+  - `--merge_tsv` (Path) is a path to a TSV file containing the results of `clinica iotools merge-tsv` command. 
+    - If not run before, this command will be run in the task and the output will be save in the `RESULTS_DIRECTORY` given with the name `merge.tsv`. 
+    - If run before, the output has to be store with the name `merge.tsv`in the `RESULTS_DIRECTORY` or the path has to be given with this option. It avoids to re-run the `merge-tsv`command which can be very long (more than 30min).
+    
+    
+ - `--missing_mods` (Path) is a path to a TSV file containing the results of `clinica iotools missing-modalities` command. 
+    - If not run before, this command will be run in the task and the output directory will be save in the `RESULTS_DIRECTORY` given with the name `missing_mods`. 
+    - If run before, the output directory has to be store with the name `missing_mods`in the `RESULTS_DIRECTORY` or the path has to be given with this option. It avoids to re-run the `missing-modalities`command which can be very long (more than 30min).
+  
+
+#### Example of how to run the task :
+
+```bash
+clinicadl tsvtools getlabels Data/BIDS Results/getlabels.tsv --diagnosis AD--diagnosis pMCI --time_horizon 12 
+```
 
 ### Output tree
 
-The command will output a TSV file and a JSON file and will store intermediate results from clinica `merge-tsv` and `missing-modalities` pipeline :
+The command will output a TSV file and a JSON file and will store intermediate results from `clinica iotools merge-tsv` or `clinicadl tsvtool missing_mods` commands:
 <pre>
 └── &lt;getlabels&gt;
     ├── getlabels.tsv
@@ -248,7 +257,7 @@ clinicadl tsvtools analysis [OPTIONS] MERGED_TSV FORMATTED_DATA_DIRECTORY RESULT
 ```
 where:
 
-  - `MERGED_TSV` (Path) is the output file of the `clinica iotools merge-tsv` or `clinicadl tsvtool restrict` commands.
+  - `MERGED_TSV` (Path) is the output file of the `clinica iotools merge-tsv` commands. If th `clinicadl tsvtools getlabels` command was run before, this file already exists and is stored in the output folder of this command.
   - `FORMATTED_DATA_DIRECTORY` (Path) is a folder containing one TSV file per label (output of `clinicadl tsvtool getlabels|split|kfold`).
   - `RESULTS_DIRECTORY` (Path) is the path to the TSV file that will be written (filename included).
 

@@ -84,8 +84,8 @@ def cleaning_nan_diagnoses(bids_df: pd.DataFrame) -> pd.DataFrame:
             if isinstance(diagnosis, float):
                 missing_diag += 1
 
-    logger.debug(f"Missing diagnoses: {missing_diag}")
-    logger.debug(f"Missing diagnoses not found: {missing_diag - found_diag}")
+    logger.info(f"Missing diagnoses: {missing_diag}")
+    logger.info(f"Missing diagnoses not found: {missing_diag - found_diag}")
 
     return bids_copy_df
 
@@ -103,6 +103,7 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
     """
     bids_copy_df = copy(bids_df)
     found_diag_interpol = 0
+    nb_drop = 0
 
     for subject, subject_df in bids_df.groupby(level=0):
         session_list = []
@@ -114,6 +115,7 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
             else:
                 subject_df.drop((subject, session), axis=0, inplace=True)
                 bids_copy_df.drop((subject, session), axis=0, inplace=True)
+                nb_drop += 1
 
         for _, session in subject_df.index.values:
             diagnosis = subject_df.loc[(subject, session), "diagnosis"]
@@ -122,6 +124,7 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
             if isinstance(diagnosis, float):
                 if session == last_session(session_list):
                     bids_copy_df.drop(index=(_, session), axis=0, inplace=True)
+                    nb_drop += 1
                 else:
                     prev_session = neighbour_session(session_nb, session_list, -1)
                     prev_diagnosis = bids_df.loc[(subject, prev_session), "diagnosis"]
@@ -152,8 +155,10 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
                         ] = prev_diagnosis
                     else:
                         bids_copy_df.drop((subject, session), inplace=True)
+                        nb_drop += 1
 
     logger.info(f"Inferred diagnosis: {found_diag_interpol}")
+    logger.info(f"Dropped subjects (inferred diagnosis): {nb_drop}")
 
     return bids_copy_df
 
@@ -189,7 +194,10 @@ def mod_selection(
 
 
 def get_subgroup(
-    bids_df: pd.DataFrame, horizon_time: int = 36, stability_dict: dict = None
+    bids_df: pd.DataFrame,
+    horizon_time: int = 36,
+    stability_dict: dict = None,
+    remove_unique_session=False,
 ) -> pd.DataFrame:
     """
     A method to get the subgroup for each sessions depending on their stability on the time horizon
@@ -202,7 +210,6 @@ def get_subgroup(
         DataFrame with new labels
     """
 
-    bids_df = cleaning_nan_diagnoses(bids_df)
     bids_df = infer_or_drop_diagnosis(bids_df)
 
     # Check possible double change in diagnosis in time or if ther is only one session for a subject
@@ -212,6 +219,7 @@ def get_subgroup(
 
     bids_copy_df = copy(bids_df)
     nb_subjects = 0
+    nb_unique = 0
 
     # Do not take into account the case of missing diag = nan
 
@@ -221,6 +229,8 @@ def get_subgroup(
 
         for _, session in subject_df.index.values:
             diagnosis = subject_df.loc[(subject, session), "diagnosis"]
+            # print(diagnosis)
+            # print(stability_dict)
             diagnosis_dict = stability_dict[diagnosis]
             session_nb = int(session[5::])
             horizon_session_nb = session_nb + horizon_time
@@ -282,6 +292,14 @@ def get_subgroup(
             bids_copy_df.loc[(subject, session), "subgroup"] = (
                 update_diagnosis + diagnosis
             )
+        # Remove subject with a unique session if wanted
+        if remove_unique_session is True:
+
+            nb_session = len(session_list)
+            if nb_session == 1:
+                bids_copy_df.drop((subject, session_list[0]), inplace=True)
+                subject_df.drop((subject, session_list[0]), inplace=True)
+                nb_unique += 1
 
         # Add unknown subgroup for each last_session
         session_list = [int(session[5::]) for _, session in subject_df.index.values]
@@ -335,11 +353,8 @@ def get_subgroup(
                     bids_copy_df.loc[(subject, session_str), "subgroup"] = (
                         "us" + diagnosis
                     )
-    last_session_str = last_session(session_list)
-    if last_session_str == "ses-M00":
-        bids_copy_df.drop((subject, last_session_str), inplace=True)
-        subject_df.drop((subject, last_session_str), inplace=True)
 
+    logger.info(f"Dropped subjects (unique session): {nb_unique}")
     logger.info(f"Unstable subjects: {nb_subjects}")
 
     return bids_copy_df
@@ -347,10 +362,10 @@ def get_subgroup(
 
 def diagnosis_removal(bids_df: pd.DataFrame, diagnosis_list: List[str]) -> pd.DataFrame:
     """
-    Removes subjects whom last diagnosis is in the list provided (avoid to keep rMCI and pMCI in sMCI lists).
+    Removes sessions for which the diagnosis is not in the list provided (avoid to keep rMCI and pMCI in sMCI lists).
 
     Args:
-        MCI_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+        bids_df: DataFrame with columns including ['participant_id', 'session_id', 'group', 'subgroup']
         diagnosis_list: list of diagnoses that will be removed
 
     Returns:
@@ -359,16 +374,12 @@ def diagnosis_removal(bids_df: pd.DataFrame, diagnosis_list: List[str]) -> pd.Da
 
     output_df = copy(bids_df)
     nb_subjects = 0
-    # Remove subjects who regress to CN label, even late in the follow-up
     for subject, subject_df in bids_df.groupby(level=0):
-        drop = True
-        if subject_df.loc[(subject, "ses-M00"), "subgroup"] not in diagnosis_list:
-            for (_, session) in subject_df.index.values:
-                if subject_df.loc[(subject, session), "group"] in diagnosis_list:
-                    drop = False
-            if drop:
-                output_df.drop(subject, inplace=True)
-            nb_subjects += 1
+        for (_, session) in subject_df.index.values:
+            if subject_df.loc[(subject, session), "group"] not in diagnosis_list:
+                if subject_df.loc[(subject, session), "subgroup"] not in diagnosis_list:
+                    output_df.drop((subject, session), inplace=True)
+                    nb_subjects += 1
 
     logger.info(f"Dropped subjects (diagnoses): {nb_subjects}")
     return output_df
@@ -407,13 +418,15 @@ def get_labels(
     bids_directory: str,
     results_directory: str,
     diagnoses: List[str],
-    stability_dict: List[str],
     modality: str = "t1w",
     restriction_path: str = None,
     time_horizon: int = 36,
     variables_of_interest: List[str] = None,
     remove_smc: bool = True,
     caps_directory: str = None,
+    merge_tsv: str = None,
+    missing_mods: str = None,
+    remove_unique_session: bool = False,
 ):
     """
     Writes one TSV file based on merged_tsv and missing_mods.
@@ -444,55 +457,60 @@ def get_labels(
             "variables_of_interest": variables_of_interest,
             "remove_smc": remove_smc,
             "caps": caps_directory,
-            "stabiliyt_dict": stability_dict,
+            "missing_mods": missing_mods,
+            "merge_tsv": merge_tsv,
+            "remove_unique_session": remove_unique_session,
         },
         filename="getlabels.json",
     )
 
-    # if no stability_dict is given, labels will be Alzheimer oriented
-    if stability_dict is None:
-        stability_dict = {"CN": 0, "MCI": 1, "Dementia": 2}
-    else:
-        diagnoses = stability_dict
-        stability_dict = dict()
-        x = 0
-        for i in range(len(diagnoses)):
-            stability_dict[diagnoses[i]] = i
-            x += 1
-
     import os
 
-    os.makedirs(results_directory, exist_ok=True)
-
-    # Generating the output of `clinica iotools check-missing-modalities``
-    # check_bids_folder(bids_directory)
-    # compute_missing_mods(
-    #    bids_directory, results_directory + "/missing_mods", "missing_mods"
-    # )
-    # Generating the output of `clinica iotools merge-tsv `
     from clinica.iotools.utils.data_handling import (
         compute_missing_mods,
         create_merge_file,
     )
     from clinica.utils.inputs import check_bids_folder
 
-    # check_bids_folder(bids_directory)
-    # create_merge_file(
-    #    bids_directory,
-    #    results_directory + "/merge.tsv",
-    #    caps_dir=caps_directory,
-    #    pipelines=None,
-    #    ignore_scan_files=None,
-    #    ignore_sessions_files=None,
-    #    volume_atlas_selection=None,
-    #    freesurfer_atlas_selection=None,
-    #    pvc_restriction=None,
-    #    tsv_file=None,
-    #    group_selection=False,
-    #    tracers_selection=False,
-    # )
+    # Create the results directory
+    os.makedirs(results_directory, exist_ok=True)
+
+    # Generating the output of `clinica iotools check-missing-modalities``
+    missing_mods_path = os.path.join(results_directory, "missing_mods")
+    if missing_mods is not None:
+        missing_mods_path = missing_mods
+    # print(bids_directory)
+    if not os.path.exists(missing_mods_path):
+        # print(os.path.join(results_directory, "missing_mods"))
+        logger.info("create missing modalities directories")
+        check_bids_folder(bids_directory)
+        compute_missing_mods(bids_directory, missing_mods_path, "missing_mods")
+    # print(results_directory)
+
+    # Generating the output of `clinica iotools merge-tsv `
+    merge_tsv_path = os.path.join(results_directory, "merge.tsv")
+    if merge_tsv is not None:
+        merge_tsv_path = merge_tsv
+    elif not os.path.exists(merge_tsv_path):
+        logger.info("create merge tsv")
+        check_bids_folder(bids_directory)
+        create_merge_file(
+            bids_directory,
+            results_directory + "/merge.tsv",
+            caps_dir=caps_directory,
+            pipelines=None,
+            ignore_scan_files=None,
+            ignore_sessions_files=None,
+            volume_atlas_selection=None,
+            freesurfer_atlas_selection=None,
+            pvc_restriction=None,
+            tsv_file=None,
+            group_selection=False,
+            tracers_selection=False,
+        )
+
     # Reading files
-    bids_df = pd.read_csv(results_directory + "/merge.tsv", sep="\t")
+    bids_df = pd.read_csv(merge_tsv_path, sep="\t")
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
     variables_list = []
     try:
@@ -503,6 +521,10 @@ def get_labels(
         logger.warning(
             "The age, sex or diagnosis values were not found in the dataset."
         )
+    # Cleaning NaN diagnosis
+    bids_df = cleaning_nan_diagnoses(bids_df)
+
+    # Checking the variables of interest
     if variables_of_interest is not None:
         variables_set = set(variables_of_interest) | set(variables_list)
         variables_list = list(variables_set)
@@ -513,7 +535,7 @@ def get_labels(
             )
 
     # Loading missing modalities files
-    missing_mods_directory = "missing_mods"
+    missing_mods_directory = missing_mods_path
     list_files = os.listdir(missing_mods_directory)
     missing_mods_dict = {}
 
@@ -532,9 +554,6 @@ def get_labels(
             missing_mods_df.set_index("participant_id", drop=True, inplace=True)
             missing_mods_dict[session] = missing_mods_df
 
-    # Creating results path
-    os.makedirs(results_directory, exist_ok=True)
-
     # Remove SMC patients
     if remove_smc:
         if "diagnosis_bl" in bids_df.columns.values:  # Retro-compatibility
@@ -552,17 +571,21 @@ def get_labels(
         bids_copy_df.loc[subject, "baseline_diagnosis"] = baseline_diagnosis
 
     bids_df = copy(bids_copy_df)
-
     bids_df["group"] = "UK"
     bids_df["subgroup"] = "UK"
+
     variables_list.append("group")
     variables_list.append("subgroup")
     variables_list.append("baseline_diagnosis")
+
     bids_df = bids_df[variables_list]
 
+    stability_dict = {"CN": 0, "MCI": 1, "Dementia": 2}
     output_df = get_subgroup(bids_df, time_horizon, stability_dict=stability_dict)
+
     variables_list.remove("baseline_diagnosis")
     variables_list.remove("diagnosis")
+
     output_df = output_df[variables_list]
     output_df = diagnosis_removal(output_df, diagnoses)
     output_df = mod_selection(output_df, missing_mods_dict, modality)
