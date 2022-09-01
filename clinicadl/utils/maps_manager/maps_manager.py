@@ -186,6 +186,7 @@ class MapsManager:
         label_code: Optional[Dict[str, int]] = "default",
         save_tensor: bool = False,
         save_nifti: bool = False,
+        save_latent_tensor: bool = False,
     ):
         """
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -316,6 +317,15 @@ class MapsManager:
                             gpu=gpu,
                             network=network,
                         )
+                    if save_latent_tensor:
+                        self._compute_latent_tensors(
+                            data_test,
+                            data_group,
+                            split,
+                            selection_metrics,
+                            gpu=gpu,
+                            network=network,
+                        )
             else:
                 data_test = return_dataset(
                     group_parameters["caps_directory"],
@@ -357,6 +367,14 @@ class MapsManager:
                     )
                 if save_nifti:
                     self._compute_output_nifti(
+                        data_test,
+                        data_group,
+                        split,
+                        selection_metrics,
+                        gpu=gpu,
+                    )
+                if save_latent_tensor:
+                    self._compute_latent_tensors(
                         data_test,
                         data_group,
                         split,
@@ -1242,6 +1260,66 @@ class MapsManager:
                 )
                 torch.save(image, path.join(tensor_path, input_filename))
                 torch.save(output, path.join(tensor_path, output_filename))
+
+    def _compute_latent_tensors(
+        self,
+        dataset,
+        data_group,
+        split,
+        selection_metrics,
+        nb_images=None,
+        gpu=None,
+        network=None,
+    ):
+        """
+        Compute the output tensors and saves them in the MAPS.
+
+        Args:
+            dataset (clinicadl.utils.caps_dataset.data.CapsDataset): wrapper of the data set.
+            data_group (str): name of the data group used for the task.
+            split (int): split number.
+            selection_metrics (list[str]): metrics used for model selection.
+            nb_images (int): number of full images to write. Default computes the outputs of the whole data set.
+            gpu (bool): If given, a new value for the device of the model will be computed.
+            network (int): Index of the network tested (only used in multi-network setting).
+        """
+        for selection_metric in selection_metrics:
+            # load the best trained model during the training
+            model, _ = self._init_model(
+                transfer_path=self.maps_path,
+                split=split,
+                transfer_selection=selection_metric,
+                gpu=gpu,
+                network=network,
+            )
+
+            tensor_path = path.join(
+                self.maps_path,
+                f"{self.split_name}-{split}",
+                f"best-{selection_metric}",
+                data_group,
+                "latent_tensors",
+            )
+            makedirs(tensor_path, exist_ok=True)
+
+            if nb_images is None:  # Compute outputs for the whole data set
+                nb_modes = len(dataset)
+            else:
+                nb_modes = nb_images * dataset.elem_per_image
+
+            for i in range(nb_modes):
+                data = dataset[i]
+                image = data["image"]
+                latent, _, _ = (
+                    model.forward(image.unsqueeze(0).to(model.device)).squeeze(0).cpu()
+                )
+                participant_id = data["participant_id"]
+                session_id = data["session_id"]
+                mode_id = data[f"{self.mode}_id"]
+                output_filename = (
+                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
+                )
+                torch.save(latent, path.join(tensor_path, output_filename))
 
     def _ensemble_prediction(
         self,

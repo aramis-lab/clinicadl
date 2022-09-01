@@ -22,6 +22,7 @@ def predict(
     overwrite: bool = False,
     save_tensor: bool = False,
     save_nifti: bool = False,
+    save_latent_tensor: bool = False,
 ):
     """
     This function loads a MAPS and predicts the global metrics and individual values
@@ -73,4 +74,5 @@ def predict(
         overwrite=overwrite,
         save_tensor=save_tensor,
         save_nifti=save_nifti,
+        save_latent_tensor=save_latent_tensor,
     )
