@@ -67,19 +67,22 @@ pipeline {
               }
               stage('TSVTOOL tests Linux') {
                 steps {
-                  echo 'Testing tsvtool tasks...'
-                    sh "echo 'Agent name: ${NODE_NAME}'"
-                    sh '''
-                    source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                    conda activate "${CONDA_ENV}"
-                    cd $WORKSPACE/tests
-                    poetry run pytest \
-                      --junitxml=./test-reports/test_tsvtool_report.xml \
-                      --verbose \
-                      --disable-warnings \
-                      test_tsvtool.py
-                    conda deactivate
-                    '''
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE'){
+                    echo 'Testing tsvtool tasks...'
+                      sh "echo 'Agent name: ${NODE_NAME}'"
+                      sh '''
+                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                      conda activate "${CONDA_ENV}"
+                      cd $WORKSPACE/tests
+                      poetry run pytest \
+                        --junitxml=./test-reports/test_tsvtool_report.xml \
+                        --verbose \
+                        --disable-warnings \
+                        test_tsvtool.py
+                      conda deactivate
+                      '''
+                  }
+                  
                 }
                 post {
                   always {
