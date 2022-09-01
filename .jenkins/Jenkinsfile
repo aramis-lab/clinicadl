@@ -65,7 +65,7 @@ pipeline {
                     '''
                 }
               }
-              stage('TSVTOOL tests Linux') {
+              stage('tsvtools tests Linux') {
                 steps {
                   catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE'){
                     echo 'Testing tsvtool tasks...'
@@ -140,7 +140,7 @@ pipeline {
                   }
                 }
               }
-              stage('Extract tests Linux') {
+              stage('Prepare data tests Linux') {
                 steps {
                   echo 'Testing extract task...'
                     sh "echo 'Agent name: ${NODE_NAME}'"

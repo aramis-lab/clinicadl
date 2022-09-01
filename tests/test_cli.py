@@ -182,6 +182,7 @@ def test_second_lv_quality_check(qc_cli_arg1):
         "getlabels",
         "kfold",
         "split",
+        "prepare-experiment",
     ]
 )
 def tsvtool_cli_arg1(request):
