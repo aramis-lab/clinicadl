@@ -16,7 +16,7 @@ from clinicadl.utils import cli_param
 )
 @click.option(
     "--level_grad_cam",
-    type=int,
+    type=click.IntRange(min=1),
     default=None,
     help="level of the feature map (after the layer corresponding to the number) chosen for grad-cam.",
 )
@@ -100,9 +100,13 @@ def cli(
     overwrite_name,
 ):
     """Interpretation of trained models using saliency map method.
+
     INPUT_MAPS_DIRECTORY is the MAPS folder from where the model to interpret will be loaded.
+
     DATA_GROUP is the name of the subjects and sessions list used for the interpretation.
+
     NAME is the name of the saliency map task.
+
     METHOD is the method used to extract an attribution map.
     """
     from clinicadl.utils.cmdline_utils import check_gpu
