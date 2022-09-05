@@ -1,11 +1,11 @@
-# `interpret` - Interpretation with gradient maps
+# `interpret` - Interpret with attribution maps
 
 This functionality allows interpreting pretrained models by computing a mean attribution map
 across a group of images and optionally individual attribution maps. It takes as input MAPS-like model folders.
 
 Two methods are currently implemented:
 - `gradients` is an adaptation of [[Simonyan et al., 2014](https://arxiv.org/abs/1312.6034)],
-- `grad-CAM` is the implementation of [[Selvaraju et al., 2017](https://arxiv.org/abs/1610.02391v4)].
+- `grad-cam` is the implementation of [[Selvaraju et al., 2017](https://arxiv.org/abs/1610.02391v4)].
 
 
 ## Prerequisites
