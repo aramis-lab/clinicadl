@@ -1,0 +1,5 @@
+participant_id	alternative_id_1	sex	education_level	age_bl	cdr	diagnosis_bl	laterality
+sub-OASIS10016	OAS1_0016_MR1	M	2.0	82	0.5	AD	R
+sub-OASIS10109	OAS1_0109_MR1	F	4.0	61	0.0	CN	R
+sub-OASIS10304	OAS1_0304_MR1	M	3.0	84	0.5	AD	R
+sub-OASIS10363	OAS1_0363_MR1	M	4.0	87	0.0	CN	R
