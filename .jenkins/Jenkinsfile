@@ -154,7 +154,7 @@ pipeline {
                         --junitxml=./test-reports/test_extract_report.xml \
                         --verbose \
                         --disable-warnings \
-                        test_extract.py
+                        test_prepare_data.py
                       conda deactivate
                       '''
                 }
