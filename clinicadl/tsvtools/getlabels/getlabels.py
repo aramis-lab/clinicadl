@@ -11,7 +11,6 @@ in the OASIS dataset is not done in this script. Moreover a quality check may be
 pipelines, leading to the removal of some subjects.
 """
 import os
-from cmath import nan
 from copy import copy
 from logging import getLogger
 from os import path
@@ -19,12 +18,12 @@ from typing import Dict, List
 
 import numpy as np
 import pandas as pd
-from requests import get
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.tsvtools_utils import (
     after_end_screening,
+    cleaning_nan_diagnoses,
     find_label,
     first_session,
     last_session,
@@ -32,62 +31,6 @@ from clinicadl.utils.tsvtools_utils import (
 )
 
 logger = getLogger("clinicadl")
-
-
-def cleaning_nan_diagnoses(bids_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Printing the number of missing diagnoses and filling it partially for ADNI datasets
-
-    Args:
-        bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-
-    Returns:
-        cleaned DataFrame
-    """
-    bids_copy_df = copy(bids_df)
-
-    # Look for the diagnosis in another column in ADNI
-    if "adni_diagnosis_change" in bids_df.columns:
-        change_dict = {
-            1: "CN",
-            2: "MCI",
-            3: "AD",
-            4: "MCI",
-            5: "AD",
-            6: "AD",
-            7: "CN",
-            8: "MCI",
-            9: "CN",
-            -1: np.nan,
-        }
-
-        missing_diag = 0
-        found_diag = 0
-
-        for subject, session in bids_df.index.values:
-            diagnosis = bids_df.loc[(subject, session), "diagnosis"]
-            if isinstance(diagnosis, float):
-                missing_diag += 1
-                change = bids_df.loc[(subject, session), "adni_diagnosis_change"]
-                if not np.isnan(change) and change != -1:
-                    found_diag += 1
-                    bids_copy_df.loc[(subject, session), "diagnosis"] = change_dict[
-                        change
-                    ]
-
-    else:
-        missing_diag = 0
-        found_diag = 0
-
-        for subject, session in bids_df.index.values:
-            diagnosis = bids_df.loc[(subject, session), "diagnosis"]
-            if isinstance(diagnosis, float):
-                missing_diag += 1
-
-    logger.info(f"Missing diagnoses: {missing_diag}")
-    logger.info(f"Missing diagnoses not found: {missing_diag - found_diag}")
-
-    return bids_copy_df
 
 
 def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
@@ -580,7 +523,7 @@ def get_labels(
 
     bids_df = bids_df[variables_list]
 
-    stability_dict = {"CN": 0, "MCI": 1, "Dementia": 2}
+    stability_dict = {"CN": 0, "MCI": 1, "AD": 2}
     output_df = get_subgroup(bids_df, time_horizon, stability_dict=stability_dict)
 
     variables_list.remove("baseline_diagnosis")

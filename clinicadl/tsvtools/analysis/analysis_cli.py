@@ -6,7 +6,6 @@ from clinicadl.utils import cli_param
 @click.command(name="analysis", no_args_is_help=True)
 @cli_param.argument.merged_tsv
 @cli_param.argument.formatted_data_tsv
-@cli_param.argument.formatted_data_directory
 @cli_param.argument.results_directory
 @cli_param.option.diagnoses
 def cli(merged_tsv, formatted_data_tsv, results_directory, diagnoses):

@@ -10,9 +10,10 @@ from clinicadl.utils import cli_param
 @cli_param.argument.results_directory
 @cli_param.option.diagnoses
 @cli_param.option.modality
+@cli_param.option.caps_directory
 @click.option(
     "--time_horizon",
-    help="Time horizon to analyse stability of subjects.",
+    help="Time horizon to analyse stability of the label in the case of a progressive disease.",
     default=36,
     type=int,
 )
@@ -25,7 +26,7 @@ from clinicadl.utils import cli_param
 @click.option(
     "--variables_of_interest",
     help="Variables of interest that will be kept in the final lists. "
-    "Will always keep the group, subgroup, age and sex needed for the split procedure.",
+    "Will always keep the group (that correspond to the diagnosis in most case), subgroup (that correspond to the progression of the disease in the case of a progressive disease), age and sex needed for the split procedure.",
     type=str,
     multiple=True,
     default=None,
@@ -36,13 +37,6 @@ from clinicadl.utils import cli_param
     type=bool,
     default=False,
     is_flag=True,
-)
-@click.option(
-    "--caps_directory",
-    "-c",
-    help="input folder of a CAPS compliant dataset",
-    type=str,
-    default=None,
 )
 @click.option(
     "--merge_tsv",

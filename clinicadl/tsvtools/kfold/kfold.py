@@ -44,8 +44,7 @@ def write_splits(
         supplementary_diagnoses: List of supplementary diagnoses to add to the data.
     """
 
-    baseline_df = extract_baseline(diagnosis_df)
-    # print(baseline_df)
+    baseline_df = extract_baseline(diagnosis_df, set_index=False)
 
     if split_label is None:
         diagnoses_list = list(baseline_df.group)
@@ -63,9 +62,8 @@ def write_splits(
     output_all_df = pd.DataFrame()
     output_long_test_df = pd.DataFrame()
 
-    # print(f"Label {diagnosis}")
+    diagnosis_df.reset_index(inplace=True)
     for i, indices in enumerate(splits.split(np.zeros(len(y)), y)):
-        # print(f"Split {i}")
         train_index, test_index = indices
 
         test_df = baseline_df.iloc[test_index]
@@ -84,7 +82,6 @@ def write_splits(
 
         output_df = pd.concat([train_df, test_df])
         output_all_df = pd.concat([output_all_df, output_df])
-
         long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
         long_train_df = long_train_df.reindex(
             columns=long_train_df.columns.tolist() + ["split", "datagroup"]
@@ -136,13 +133,17 @@ def split_diagnoses(
 
     # diagnosis_df_path=Path(formatted_data_tsv).name
     diagnosis_df = pd.read_csv(formatted_data_tsv, sep="\t")
-
+    diagnosis_df.set_index(["participant_id", "session_id"], inplace=True)
+    diagnosis_copy_df = copy(diagnosis_df)
     if test_tsv is not None:
         test_df = pd.read_csv(test_tsv, sep="\t")
-        subjects_list = pd.unique(test_df["participant_id"])
-        for subject in diagnosis_df.index.values:
-            if subject in subjects_list:
-                diagnosis_df.drop(subject)
+        test_df.set_index(["participant_id"], inplace=True)
+        subjects_list = test_df.index.values
+        for subject, subject_df in diagnosis_df.groupby(level=0):
+            if subject in test_df.index.values:
+                for _, session in subject_df.index.values:
+                    diagnosis_copy_df.drop((subject, session), axis=0, inplace=True)
+    diagnosis_df = diagnosis_copy_df
     output_df = pd.DataFrame()
 
     # The baseline session must be kept before or we are taking all the sessions to mix them
@@ -158,7 +159,7 @@ def split_diagnoses(
     output_df = output_df.sort_values(["participant_id", "session_id", "split"])
     output_df = output_df[["participant_id", "session_id", "split", "datagroup"]]
     output_df.to_csv(
-        path.join(results_path, "train.tsv"),
+        path.join(results_path, subset_name + ".tsv"),
         sep="\t",
         index=False,
     )

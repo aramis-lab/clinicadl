@@ -17,8 +17,8 @@ from clinicadl.utils import cli_param
 @click.option(
     "--validation_type",
     "-vt",
-    help="Type of split wanted for the validation: SingleSplit or k-fold",
-    default="split",
+    help="Type of split wanted for the validation: split or kfold",
+    default="kfold",
     type=click.Choice(["split", "kfold"]),
 )
 @click.option(

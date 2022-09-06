@@ -29,7 +29,7 @@ diagnoses = click.option(
         ]
     ),
     multiple=True,
-    default=("AD", "CN"),
+    default=("sAD", "sCN"),
     help="Labels selected for the demographic analysis used in the context of Alzheimer's Disease classification.",
 )
 modality = click.option(
@@ -57,6 +57,13 @@ test_tsv = click.option(
     "--test_tsv",
     "-tt",
     help="Name of the test file in tsv format",
+    type=str,
+    default=None,
+)
+caps_directory = click.option(
+    "--caps_directory",
+    "-c",
+    help="input folder of a CAPS compliant dataset",
     type=str,
     default=None,
 )

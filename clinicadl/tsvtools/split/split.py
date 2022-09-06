@@ -4,7 +4,6 @@ import os
 import shutil
 from copy import copy
 from logging import getLogger
-from math import nan
 from os import path
 from pathlib import Path
 
@@ -69,7 +68,7 @@ def create_split(
         sup_train_age = []
 
     baseline_df = extract_baseline(diagnosis_df)
-
+    # baseline_df.to_csv("data/baseline_df.tsv")
     if n_test >= 1:
         n_test = int(n_test)
     else:
@@ -224,12 +223,16 @@ def split_diagnoses(
                 diagnosis_df.drop(subject)
 
     for diagnosis in pd.unique(diagnosis_df["group"]):
-
-        interest_columns = diagnosis_df.index.values
         diagnosis_copy_df = copy(diagnosis_df)
-        for i in interest_columns:
-            if diagnosis_copy_df.loc[i, "group"] != diagnosis:
-                diagnosis_copy_df.drop((i), inplace=True)
+        diagnosis_copy_df = diagnosis_copy_df.loc[
+            diagnosis_copy_df["group"] == diagnosis
+        ]
+        # diagnosis_copy_df.to_csv("data/diaggggg.tsv")
+        # interest_columns = diagnosis_df.index.values
+
+        # for i in interest_columns:
+        #     if diagnosis_copy_df.loc[i, "group"] != diagnosis:
+        #         diagnosis_copy_df.drop((i), inplace=True)
 
         logger.info(f"Running split for diagnosis {diagnosis}")
 
@@ -247,7 +250,6 @@ def split_diagnoses(
             # Save baseline splits
             output_test_df = pd.concat([output_test_df, test_df])
             output_train_df = pd.concat([output_train_df, train_df])
-
             long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
             output_long_train_df = pd.concat([output_long_train_df, long_train_df])
 
@@ -255,7 +257,7 @@ def split_diagnoses(
             output_long_test_df = pd.concat([output_long_test_df, long_test_df])
 
         else:
-            baseline_df = extract_baseline(diagnosis_df)
+            baseline_df = extract_baseline(diagnosis_copy_df)
             test_df = baseline_df
             test_df.to_csv(
                 path.join(results_path, f"{subset_name}_baseline.tsv"),
@@ -267,6 +269,8 @@ def split_diagnoses(
                 path.join(results_path, f"{subset_name}.tsv"), sep="\t", index=False
             )
     output_test_df = output_test_df[["participant_id", "session_id"]]
+    output_test_df.sort_values(by=["participant_id"])
+    output_test_df.drop_duplicates(subset="participant_id", keep="first", inplace=True)
     output_test_df.to_csv(
         path.join(results_path, f"{subset_name}_baseline.tsv"), sep="\t", index=False
     )

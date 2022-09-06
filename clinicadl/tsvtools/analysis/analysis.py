@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import os
+from copy import copy
 from os import path
 from warnings import warn
 
@@ -9,6 +10,7 @@ import pandas as pd
 
 from clinicadl.utils.tsvtools_utils import (
     add_demographics,
+    cleaning_nan_diagnoses,
     find_label,
     first_session,
     next_session,
@@ -33,6 +35,7 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path, diagnos
 
     merged_df = pd.read_csv(merged_tsv, sep="\t")
     merged_df.set_index(["participant_id", "session_id"], inplace=True)
+    merged_df = cleaning_nan_diagnoses(merged_df)
     parent_directory = path.abspath(path.join(results_path, os.pardir))
     os.makedirs(parent_directory, exist_ok=True)
 
@@ -70,29 +73,38 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path, diagnos
 
     # Need all values for mean and variance (age, MMSE and scans)
     diagnosis_dict = dict.fromkeys(diagnoses)
+    if not path.exists(formatted_data_path):
+        print(
+            f"getlabels.tsv file with all sessions was not found. "
+            # f"Loads baseline version instead."
+        )
+
     for diagnosis in diagnoses:
         diagnosis_dict[diagnosis] = {"age": [], "MMSE": [], "scans": []}
-        diagnosis_path = path.join(formatted_data_path, diagnosis + ".tsv")
-        if not path.exists(diagnosis_path):
-            print(
-                f"TSV file with all sessions was not found for diagnosis {diagnosis}. "
-                f"Loads baseline version instead."
-            )
-            diagnosis_path = path.join(formatted_data_path, diagnosis + "_baseline.tsv")
-        diagnosis_df = pd.read_csv(diagnosis_path, sep="\t")
-        diagnosis_demographics_df = add_demographics(diagnosis_df, merged_df, diagnosis)
+        getlabels_df = pd.read_csv(formatted_data_path, sep="\t")
+
+        interest_columns = getlabels_df.index.values
+        diagnosis_copy_df = copy(getlabels_df)
+        for i in interest_columns:
+            if diagnosis_copy_df.loc[i, "group"] != diagnosis:
+                diagnosis_copy_df.drop((i), inplace=True)
+
+        # diagnosis_df = pd.read_csv(diagnosis_path, sep="\t")
+        diagnosis_demographics_df = add_demographics(
+            diagnosis_copy_df, merged_df, diagnosis
+        )
         diagnosis_demographics_df.set_index(
             ["participant_id", "session_id"], inplace=True
         )
-        diagnosis_df.set_index(["participant_id", "session_id"], inplace=True)
-
-        for subject, subject_df in diagnosis_df.groupby(level=0):
+        diagnosis_copy_df.set_index(["participant_id", "session_id"], inplace=True)
+        for subject, subject_df in diagnosis_copy_df.groupby(level=0):
             first_session_id = first_session(subject_df)
             feature_absence = isinstance(
                 merged_df.loc[(subject, first_session_id), "diagnosis"], float
             )
             while feature_absence:
                 first_session_id = next_session(subject_df, first_session_id)
+
                 feature_absence = isinstance(
                     merged_df.loc[(subject, first_session_id), "diagnosis"], float
                 )
@@ -185,6 +197,6 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path, diagnos
                     f"NaN values were found for {key} values associated to diagnosis {diagnosis}"
                 )
 
-    results_df.index.name = "diagnosis"
+    results_df.index.name = "group"
 
     results_df.to_csv(results_path, sep="\t")
