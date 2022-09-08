@@ -19,37 +19,57 @@ class StdLevelFilter(logging.Filter):
         return self.err
 
 
-def setup_logging(verbosity: int = 0) -> None:
+def setup_logging(verbose: bool = False) -> None:
     """
     Setup ClinicaDL's logging facilities.
     Args:
-        verbosity: The desired level of verbosity for logging.
-            (0 (default): WARNING, 1: INFO, 2: DEBUG)
+        verbose: The desired level of verbosity for logging.
+            (False (default): INFO, True: DEBUG)
     """
-    from logging import DEBUG, INFO, WARNING, Formatter, StreamHandler, getLogger
+    from logging import (
+        DEBUG,
+        INFO,
+        WARNING,
+        FileHandler,
+        Formatter,
+        StreamHandler,
+        getLogger,
+    )
     from sys import stderr, stdout
 
-    # Cap max verbosity level to 2.
-    verbosity = min(verbosity, 2)
+    logging_level = "DEBUG" if verbose else "INFO"
 
     # Define the module level logger.
     logger = getLogger("clinicadl")
-    logger.setLevel([WARNING, INFO, DEBUG][verbosity])
+    logger.setLevel(logging_level)
 
-    if logger.hasHandlers():
-        logger.handlers.clear()
+    warning_formatter = Formatter(
+        "%(asctime)s - %(levelname)s: %(message)s", "%H:%M:%S"
+    )
+    info_formatter = Formatter("%(asctime)s - %(message)s", "%H:%M:%S")
+    debug_formatter = Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s: %(message)s", "%Y-%m-%d %H:%M:%S"
+    )
 
-    stdout = StreamHandler(stdout)
-    stdout.addFilter(StdLevelFilter())
+    fh = FileHandler("clinicadl_debug.log")
+    fh.setLevel(DEBUG)
+    fh.setFormatter(debug_formatter)
+
+    ch_info = StreamHandler(stdout)
+    ch_info.setLevel(INFO)
+    ch_info.setFormatter(info_formatter)
+
+    ch_warning = StreamHandler(stdout)
+    ch_warning.setLevel(WARNING)
+    ch_warning.setFormatter(warning_formatter)
+
     stderr = StreamHandler(stderr)
     stderr.addFilter(StdLevelFilter(err=True))
-    # create formatter
-    formatter = Formatter("%(asctime)s - %(levelname)s: %(message)s", "%H:%M:%S")
-    # add formatter to ch
-    stdout.setFormatter(formatter)
-    stderr.setFormatter(formatter)
-    # add ch to logger
-    logger.addHandler(stdout)
+    stderr.setFormatter(warning_formatter)
+
+    logger.addHandler(ch_warning)
+    logger.addHandler(ch_info)
+    logger.addHandler(fh)
     logger.addHandler(stderr)
 
 

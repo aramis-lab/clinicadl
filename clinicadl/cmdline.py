@@ -22,10 +22,8 @@ CONTEXT_SETTINGS = dict(
 
 @click.group(context_settings=CONTEXT_SETTINGS, no_args_is_help=True)
 @click.version_option()
-@click.option(
-    "-v", "--verbose", "verbosity", count=True, help="Increase logging verbosity."
-)
-def cli(verbosity):
+@click.option("-v", "--verbose", is_flag=True, help="Verbosity mode.")
+def cli(verbose):
     """ClinicaDL command line.
 
     For more information please read the doc: https://clinicadl.readthedocs.io/en/latest/ .
@@ -33,7 +31,7 @@ def cli(verbosity):
 
     Do not hesitate to create an issue to report a bug or suggest an improvement.
     """
-    setup_logging(verbosity=verbosity)
+    setup_logging(verbose=verbose)
 
 
 cli.add_command(tsvtools_cli)
