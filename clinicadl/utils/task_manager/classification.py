@@ -9,7 +9,7 @@ from torch.utils.data import sampler
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.task_manager")
 
 from clinicadl.utils.task_manager.task_manager import TaskManager
 

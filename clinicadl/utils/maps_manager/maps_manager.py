@@ -34,7 +34,7 @@ from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.network.network import Network
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.maps_manager")
 
 
 level_list: List[str] = ["warning", "info", "debug"]
