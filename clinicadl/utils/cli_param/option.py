@@ -109,7 +109,7 @@ use_uncropped_image = click.option(
 
 acq_label = click.option(
     "--acq_label",
-    type=click.Choice(["av45", "fdg"]),
+    type=str,
     help=(
         "Acquisition label if MODALITY is `pet-linear`. "
         "Name of the tracer used for the PET acquisition (trc-<acq_label>). "
