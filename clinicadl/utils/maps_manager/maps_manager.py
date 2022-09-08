@@ -25,7 +25,7 @@ from clinicadl.utils.exceptions import (
     ClinicaDLDataLeakageError,
     MAPSError,
 )
-from clinicadl.utils.maps_manager.logwriter import LogWriter, setup_logging
+from clinicadl.utils.logwriter import LogWriter, setup_logging
 from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
     read_json,

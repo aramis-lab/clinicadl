@@ -10,7 +10,7 @@ from clinicadl.quality_check.qc_cli import cli as qc_cli
 from clinicadl.random_search.random_search_cli import cli as random_search_cli
 from clinicadl.train.train_cli import cli as train_cli
 from clinicadl.tsvtools.cli import cli as tsvtools_cli
-from clinicadl.utils.maps_manager.logwriter import setup_logging
+from clinicadl.utils.logwriter import setup_logging
 
 CONTEXT_SETTINGS = dict(
     # Extend content width to avoid shortening of pipeline help.
