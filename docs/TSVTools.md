@@ -55,12 +55,12 @@ Other functions of `tsvtool` may also try to have similar distributions accordin
 ### Running the task
 
 ```bash
-clinicadl tsvtools getlabels [OPTIONS] BIDS_DIRECTORY RESULTS_DIRECTORY
+clinicadl tsvtools getlabels [OPTIONS] BIDS_DIRECTORY RESULTS_TSV
 ```
 where:
 
   - `BIDS_DIRECTORY` (Path) is the input folder containing the dataset in a BIDS hierarchy.
-  - `RESULTS_DIRECTORY` (Path) is the path to the folder where output TSV files will be written.
+  - `OUTPUT_TSV` (Path) is the path to the output TSV file (filename included).
 
 Options:
 
@@ -82,9 +82,7 @@ Options:
   - `--merge_tsv` (Path) is a path to a TSV file containing the results of `clinica iotools merge-tsv` command. 
     - If not run before, this command will be run in the task and the output will be save in the `RESULTS_DIRECTORY` given with the name `merge.tsv`. 
     - If run before, the output has to be store with the name `merge.tsv`in the `RESULTS_DIRECTORY` or the path has to be given with this option. It avoids to re-run the `merge-tsv`command which can be very long (more than 30min).
-    
-    
- - `--missing_mods` (Path) is a path to a TSV file containing the results of `clinica iotools missing-modalities` command. 
+  - `--missing_mods` (Path) is a path to a TSV file containing the results of `clinica iotools missing-modalities` command. 
     - If not run before, this command will be run in the task and the output directory will be save in the `RESULTS_DIRECTORY` given with the name `missing_mods`. 
     - If run before, the output directory has to be store with the name `missing_mods`in the `RESULTS_DIRECTORY` or the path has to be given with this option. It avoids to re-run the `missing-modalities`command which can be very long (more than 30min).
   
@@ -92,16 +90,16 @@ Options:
 #### Example of how to run the task :
 
 ```bash
-clinicadl tsvtools getlabels Data/BIDS Results/getlabels.tsv --diagnosis AD--diagnosis pMCI --time_horizon 12 
+clinicadl tsvtools getlabels Data/BIDS Results/labels.tsv --diagnosis AD--diagnosis pMCI --time_horizon 12 
 ```
 
 ### Output tree
 
 The command will output a TSV file and a JSON file and will store intermediate results from `clinica iotools merge-tsv` or `clinicadl tsvtool missing_mods` commands:
 <pre>
-└── &lt;getlabels&gt;
-    ├── getlabels.tsv
-    ├── getlabels.json
+└── &lt;Results&gt;
+    ├── labels.tsv
+    ├── labels.json
     ├── merge.tsv
     └── missing_mods
         └── ...
@@ -152,11 +150,11 @@ Options:
 
 ### Output tree
 
-The command will generate a new tsv file `subset_name.tsv` containing the keys (`participants_id`, `session_id`) included in the subset_name set. This file will be stored in the same directory as th `FORMATED_DATA_TSV`.
+The command will generate new tsv files, one containing the keys included in the `subset_name` set and one containing the ones included in the `train` set. These files will be stored in the same directory as the `FORMATED_DATA_TSV`.
    
 </pre>
 
-The columns of the produced TSV files are `participant_id`, `session_id`.
+The columns of the produced TSV files are `participants_id`, `session_id`,`group`, `subgroup`, `age`, `sex`.
 TSV files ending with `_baseline.tsv` only include the baseline session of each subject (or
 the session closest to baseline if the latter does not exist).
 
@@ -188,26 +186,26 @@ Options:
 
 ### Output tree
 
-The command will generate a new tsv file `subset_name.tsv` stored in the same directory as the `FORMATTED_DATA_TSV` file and containing the keys (`participants_id`, `session_id`).
+The command will generate a new tsv file `train_subset_name.tsv` stored in the same directory as the `FORMATTED_DATA_TSV` file and containing the keys (`participants_id`, `session_id`,`group`, `subgroup`, `age`, `sex`).
 For each key, it explicits which set it belongs to for each split according to the following structure (example for a 2-fold validation):
 
-| participant_id | session_id | split_index | split_type |
-| -- | -- | -- | -- |
-| sub-CLNC0001  | ses-M00 | 0 | train |
-| sub-CLNC0001  | ses-M00 | 1  | validation |
-| sub-CLNC0002  | ses-M00 | 0 | train |
-| sub-CLNC0002  | ses-M00 | 1  | validation |
-| sub-CLNC0002  | ses-M06 | 0 | train |
-| sub-CLNC0002  | ses-M06 | 1  | N/A |
-| sub-CLNC0003  | ses-M00 | 0 | validation |
-| sub-CLNC0003  | ses-M00 | 1 | train |
+| participant_id | session_id | split_index | split_type | group | subgroup | age | sex |
+| -- | -- | -- | -- | -- | -- | -- | -- | 
+| sub-CLNC0001  | ses-M00 | 0 | train | CN | s | 78.5 | F |
+| sub-CLNC0001  | ses-M00 | 1  | validation | CN | s | 78.5 | F |
+| sub-CLNC0002  | ses-M00 | 0 | train | MCI | p | 85 | F |
+| sub-CLNC0002  | ses-M00 | 1  | validation | MCI | p | 85 | F |
+| sub-CLNC0002  | ses-M06 | 0 | train | AD | s | 85.5 | F |
+| sub-CLNC0002  | ses-M06 | 1  | N/A | AD | s | 85.5 | F |
+| sub-CLNC0003  | ses-M00 | 0 | validation | CN | s | 79.5 | M |
+| sub-CLNC0003  | ses-M00 | 1 | train | CN | s | 79.5 | M |
 
 
 ## `prepare-experiment`
 
 ### Description
 
-This tool performs a single split to prepare testing data and then can perform either k-fold or single split to prepare validation data. It is an easy way to quicly prepare you data with basic options.
+This tool performs a single split to prepare testing data and then can perform either k-fold or single split to prepare validation data. It is an easy way to quicly prepare data with basic options.
 
 ### Running the task
 
@@ -249,12 +247,12 @@ The variables of interest are: age, sex, mini-mental state examination (MMSE) an
 ### Running the task
 
 ```bash
-clinicadl tsvtools analysis [OPTIONS] MERGED_TSV FORMATTED_DATA_DIRECTORY RESULTS_DIRECTORY
+clinicadl tsvtools analysis [OPTIONS] MERGED_TSV FORMATTED_DATA_TSV RESULTS_DIRECTORY
 ```
 where:
 
   - `MERGED_TSV` (Path) is the output file of the `clinica iotools merge-tsv` commands. If th `clinicadl tsvtools getlabels` command was run before, this file already exists and is stored in the output folder of this command.
-  - `FORMATTED_DATA_DIRECTORY` (Path) is a folder containing one TSV file per label (output of `clinicadl tsvtool getlabels|split|kfold`).
+  - `FORMATTED_DATA_TSV` (Path) is a folder containing one TSV file per label (output of `clinicadl tsvtool getlabels|split|kfold`).
   - `RESULTS_DIRECTORY` (Path) is the path to the TSV file that will be written (filename included).
 
 Options:
