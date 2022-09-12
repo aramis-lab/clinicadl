@@ -232,9 +232,7 @@ def get_subgroup(
                     elif post_diagnosis_dict == diagnosis_dict:
                         update_diagnosis = "s"
             bids_copy_df.loc[(subject, session), "group"] = diagnosis
-            bids_copy_df.loc[(subject, session), "subgroup"] = (
-                update_diagnosis + diagnosis
-            )
+            bids_copy_df.loc[(subject, session), "subgroup"] = update_diagnosis
         # Remove subject with a unique session if wanted
         if remove_unique_session is True:
 
@@ -248,7 +246,7 @@ def get_subgroup(
         session_list = [int(session[5::]) for _, session in subject_df.index.values]
         last_session_str = last_session(session_list)
         diagnosis = bids_copy_df.loc[(subject, last_session_str), "diagnosis"]
-        bids_copy_df.loc[(subject, last_session_str), "subgroup"] = "uk" + diagnosis
+        bids_copy_df.loc[(subject, last_session_str), "subgroup"] = "uk"
 
         # Add unstable session for subjects with multiple regression or conversion
         # The subjects will be unstable only from the time of the conversion (if regression before) or regression (if conversion before)
@@ -266,18 +264,14 @@ def get_subgroup(
             if subgroup_str == "p":
                 if status < 0:
                     diagnosis = bids_copy_df.loc[(subject, session_str), "group"]
-                    bids_copy_df.loc[(subject, session_str), "subgroup"] = (
-                        "us" + diagnosis
-                    )
+                    bids_copy_df.loc[(subject, session_str), "subgroup"] = "us"
                     unstable = True
                 else:
                     status = 1
             if subgroup_str == "r":
                 if status > 0:
                     diagnosis = bids_copy_df.loc[(subject, session_str), "group"]
-                    bids_copy_df.loc[(subject, session_str), "subgroup"] = (
-                        "us" + diagnosis
-                    )
+                    bids_copy_df.loc[(subject, session_str), "subgroup"] = "us"
                     unstable = True
                 else:
                     status = -1
@@ -293,9 +287,7 @@ def get_subgroup(
                 subgroup_str = subgroup_str[:1]
                 if subgroup_str == "s":
                     diagnosis = bids_copy_df.loc[(subject, session_str), "group"]
-                    bids_copy_df.loc[(subject, session_str), "subgroup"] = (
-                        "us" + diagnosis
-                    )
+                    bids_copy_df.loc[(subject, session_str), "subgroup"] = "us"
 
     logger.info(f"Dropped subjects (unique session): {nb_unique}")
     logger.info(f"Unstable subjects: {nb_subjects}")
@@ -404,7 +396,7 @@ def get_labels(
             "merge_tsv": merge_tsv,
             "remove_unique_session": remove_unique_session,
         },
-        filename="getlabels.json",
+        filename="labels.json",
     )
 
     import os
@@ -426,6 +418,7 @@ def get_labels(
     if not os.path.exists(missing_mods_path):
         # print(os.path.join(results_directory, "missing_mods"))
         logger.info("create missing modalities directories")
+
         check_bids_folder(bids_directory)
         compute_missing_mods(bids_directory, missing_mods_path, "missing_mods")
     # print(results_directory)
@@ -523,7 +516,7 @@ def get_labels(
 
     bids_df = bids_df[variables_list]
 
-    stability_dict = {"CN": 0, "MCI": 1, "AD": 2}
+    stability_dict = {"CN": 0, "MCI": 1, "AD": 2, "Dementia": 2}
     output_df = get_subgroup(bids_df, time_horizon, stability_dict=stability_dict)
 
     variables_list.remove("baseline_diagnosis")
@@ -534,4 +527,4 @@ def get_labels(
     output_df = mod_selection(output_df, missing_mods_dict, modality)
     output_df = apply_restriction(output_df, restriction_path)
 
-    output_df.to_csv(path.join(results_directory, "getlabels.tsv"), sep="\t")
+    output_df.to_csv(path.join(results_directory, "labels.tsv"), sep="\t")

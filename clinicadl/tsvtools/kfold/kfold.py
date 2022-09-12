@@ -55,7 +55,7 @@ def write_splits(
         unique = list(set(stratification_list))
         y = np.array([unique.index(x) for x in stratification_list])
 
-    splits = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=2)
+    splits = StratifiedKFold(n_splits=int(n_splits), shuffle=True, random_state=2)
 
     output_train_df = pd.DataFrame()
     output_long_train_df = pd.DataFrame()

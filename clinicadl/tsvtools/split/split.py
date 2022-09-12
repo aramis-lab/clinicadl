@@ -156,6 +156,7 @@ def split_diagnoses(
     categorical_split_variable=None,
     ignore_demographics=False,
     verbose=0,
+    not_only_baseline=True,
 ):
     """
     Performs a single split for each label independently on the subject level.
@@ -213,7 +214,8 @@ def split_diagnoses(
     output_train_df = pd.DataFrame()
     output_long_train_df = pd.DataFrame()
     output_test_df = pd.DataFrame()
-    output_long_test_df = pd.DataFrame()
+    if not_only_baseline:
+        output_long_test_df = pd.DataFrame()
 
     if test_tsv is not None:
         test_df = pd.read_csv(test_tsv, sep="\t")
@@ -236,7 +238,12 @@ def split_diagnoses(
 
         logger.info(f"Running split for diagnosis {diagnosis}")
 
-        if n_test > 0:
+    if n_test > 0:
+        for diagnosis in pd.unique(diagnosis_df["group"]):
+            diagnosis_copy_df = copy(diagnosis_df)
+            diagnosis_copy_df = diagnosis_copy_df.loc[
+                diagnosis_copy_df["group"] == diagnosis
+            ]
             train_df, test_df = create_split(
                 diagnosis,
                 diagnosis_copy_df,
@@ -253,28 +260,40 @@ def split_diagnoses(
             long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
             output_long_train_df = pd.concat([output_long_train_df, long_train_df])
 
-            long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
-            output_long_test_df = pd.concat([output_long_test_df, long_test_df])
+            if not_only_baseline:
+                long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
+                output_long_test_df = pd.concat([output_long_test_df, long_test_df])
 
-        else:
-            baseline_df = extract_baseline(diagnosis_copy_df)
-            test_df = baseline_df
-            test_df.to_csv(
-                path.join(results_path, f"{subset_name}_baseline.tsv"),
-                sep="\t",
-                index=False,
-            )
-            long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
-            long_test_df.to_csv(
+        output_test_df = output_test_df[["participant_id", "session_id"]]
+        output_test_df.sort_values(by=["participant_id", "session_id"])
+        output_test_df.drop_duplicates(
+            subset="participant_id", keep="first", inplace=True
+        )
+
+        output_test_df.to_csv(
+            path.join(results_path, f"{subset_name}_baseline.tsv"),
+            sep="\t",
+            index=False,
+        )
+        if not_only_baseline:
+            output_long_test_df = output_long_test_df[["participant_id", "session_id"]]
+            output_long_test_df.to_csv(
                 path.join(results_path, f"{subset_name}.tsv"), sep="\t", index=False
             )
-    output_test_df = output_test_df[["participant_id", "session_id"]]
-    output_test_df.sort_values(by=["participant_id"])
-    output_test_df.drop_duplicates(subset="participant_id", keep="first", inplace=True)
-    output_test_df.to_csv(
-        path.join(results_path, f"{subset_name}_baseline.tsv"), sep="\t", index=False
+
+    else:
+        output_train_df = extract_baseline(diagnosis_copy_df)
+        output_long_train_df = diagnosis_copy_df
+
+    output_train_df = output_train_df[["participant_id", "session_id"]]
+    output_train_df.sort_values(by=["participant_id"])
+    output_train_df.drop_duplicates(subset="participant_id", keep="first", inplace=True)
+
+    output_train_df.to_csv(
+        path.join(results_path, f"train_baseline.tsv"), sep="\t", index=False
     )
-    output_long_test_df = output_long_test_df[["participant_id", "session_id"]]
-    output_long_test_df.to_csv(
-        path.join(results_path, f"{subset_name}.tsv"), sep="\t", index=False
+    output_long_train_df = output_long_train_df[["participant_id", "session_id"]]
+    output_long_train_df.sort_values(by=["participant_id", "session_id"])
+    output_long_train_df.to_csv(
+        path.join(results_path, f"train.tsv"), sep="\t", index=False
     )

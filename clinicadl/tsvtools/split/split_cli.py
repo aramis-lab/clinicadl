@@ -50,6 +50,13 @@ from clinicadl.utils import cli_param
     default=None,
     type=str,
 )
+@click.option(
+    "--not_only_keep_baseline",
+    help="If given will store the file with all subjects",
+    default=False,
+    is_flag=True,
+    type=bool,
+)
 def cli(
     formatted_data_tsv,
     subset_name,
@@ -59,6 +66,7 @@ def cli(
     p_age_threshold,
     ignore_demographics,
     categorical_split_variable,
+    not_only_keep_baseline,
 ):
     """Performs a single split to prepare training.
 
@@ -77,6 +85,7 @@ def cli(
         p_sex_threshold=p_sex_threshold,
         ignore_demographics=ignore_demographics,
         categorical_split_variable=categorical_split_variable,
+        not_only_baseline=not_only_keep_baseline,
     )
 
 

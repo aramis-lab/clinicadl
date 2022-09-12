@@ -181,7 +181,7 @@ def test_split():
     -  no data leakage is introduced in split and kfold.
     """
     n_splits = 5
-    getlabels_path = path.join(reference_path, "getlabels.tsv")
+    getlabels_path = path.join(reference_path, "labels.tsv")
     test_path = path.join(reference_path, "test_baseline.tsv")
     flag_split = not os.system(
         f"clinicadl -vvv tsvtools split {getlabels_path} --subset_name test"
