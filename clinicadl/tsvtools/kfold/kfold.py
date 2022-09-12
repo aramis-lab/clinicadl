@@ -146,7 +146,18 @@ def split_diagnoses(
         temp_df.drop_duplicates(keep="first", inplace=True)
         output_df = pd.concat([output_df, temp_df])
 
-    output_df = output_df[["participant_id", "session_id", "split", "datagroup"]]
+    output_df = output_df[
+        [
+            "participant_id",
+            "session_id",
+            "split",
+            "datagroup",
+            "group",
+            "subgroup",
+            "age",
+            "sex",
+        ]
+    ]
     output_df.sort_values(["participant_id", "session_id", "split"], inplace=True)
     output_df.to_csv(
         path.join(results_path, "train_" + subset_name + ".tsv"),
