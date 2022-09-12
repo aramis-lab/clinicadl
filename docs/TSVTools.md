@@ -247,13 +247,13 @@ The variables of interest are: age, sex, mini-mental state examination (MMSE) an
 ### Running the task
 
 ```bash
-clinicadl tsvtools analysis [OPTIONS] MERGED_TSV FORMATTED_DATA_TSV RESULTS_DIRECTORY
+clinicadl tsvtools analysis [OPTIONS] MERGED_TSV FORMATTED_DATA_TSV OUTPUT_TSV
 ```
 where:
 
   - `MERGED_TSV` (Path) is the output file of the `clinica iotools merge-tsv` commands. If th `clinicadl tsvtools getlabels` command was run before, this file already exists and is stored in the output folder of this command.
   - `FORMATTED_DATA_TSV` (Path) is a folder containing one TSV file per label (output of `clinicadl tsvtool getlabels|split|kfold`).
-  - `RESULTS_DIRECTORY` (Path) is the path to the TSV file that will be written (filename included).
+  - `OUTPUT_TSV` (Path) is the path to the TSV file that will be written (filename included).
 
 Options:
 
