@@ -97,7 +97,7 @@ def write_splits(
 def split_diagnoses(
     formatted_data_tsv: str,
     n_splits: int = 5,
-    subset_name: str = "validation",
+    subset_name: str = None,
     stratification: str = None,
     test_tsv: str = None,
 ):
@@ -134,32 +134,22 @@ def split_diagnoses(
     # diagnosis_df_path=Path(formatted_data_tsv).name
     diagnosis_df = pd.read_csv(formatted_data_tsv, sep="\t")
     diagnosis_df.set_index(["participant_id", "session_id"], inplace=True)
-    diagnosis_copy_df = copy(diagnosis_df)
-    if test_tsv is not None:
-        test_df = pd.read_csv(test_tsv, sep="\t")
-        test_df.set_index(["participant_id"], inplace=True)
-        subjects_list = test_df.index.values
-        for subject, subject_df in diagnosis_df.groupby(level=0):
-            if subject in test_df.index.values:
-                for _, session in subject_df.index.values:
-                    diagnosis_copy_df.drop((subject, session), axis=0, inplace=True)
-    diagnosis_df = diagnosis_copy_df
+
     output_df = pd.DataFrame()
 
     # The baseline session must be kept before or we are taking all the sessions to mix them
     for diagnosis in pd.unique(diagnosis_df["group"]):
         diagnosis_copy_df = copy(diagnosis_df)
-
         indexName = diagnosis_copy_df[(diagnosis_copy_df["group"] != diagnosis)].index
         diagnosis_copy_df.drop(indexName, inplace=True)
         temp_df = write_splits(diagnosis_copy_df, stratification, n_splits, subset_name)
         temp_df.drop_duplicates(keep="first", inplace=True)
         output_df = pd.concat([output_df, temp_df])
 
-    output_df = output_df.sort_values(["participant_id", "session_id", "split"])
     output_df = output_df[["participant_id", "session_id", "split", "datagroup"]]
+    output_df.sort_values(["participant_id", "session_id", "split"], inplace=True)
     output_df.to_csv(
-        path.join(results_path, subset_name + ".tsv"),
+        path.join(results_path, "train_" + subset_name + ".tsv"),
         sep="\t",
         index=False,
     )

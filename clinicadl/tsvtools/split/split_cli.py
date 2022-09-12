@@ -7,13 +7,6 @@ from clinicadl.utils import cli_param
 @cli_param.argument.formatted_data_tsv
 @cli_param.option.subset_name
 @click.option(
-    "--test_tsv",
-    "-tt",
-    help="Path to the test file in tsv format not to keep these subjects in other set.",
-    type=str,
-    default=None,
-)
-@click.option(
     "--n_test",
     help="- If >= 1, number of subjects to put in set with name 'subset_name'.\n\n "
     "- If < 1, proportion of subjects to put set with name 'subset_name'.\n\n "
@@ -60,7 +53,6 @@ from clinicadl.utils import cli_param
 def cli(
     formatted_data_tsv,
     subset_name,
-    test_tsv,
     n_test,
     p_sex_threshold,
     p_age_threshold,
@@ -79,7 +71,6 @@ def cli(
     split_diagnoses(
         formatted_data_tsv,
         n_test=n_test,
-        test_tsv=test_tsv,
         subset_name=subset_name,
         p_age_threshold=p_age_threshold,
         p_sex_threshold=p_sex_threshold,

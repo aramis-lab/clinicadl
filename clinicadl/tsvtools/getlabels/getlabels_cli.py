@@ -7,7 +7,7 @@ from clinicadl.utils import cli_param
 
 @click.command(name="getlabels", no_args_is_help=True)
 @cli_param.argument.bids_directory
-@cli_param.argument.results_directory
+@cli_param.argument.output_tsv
 @cli_param.option.diagnoses
 @cli_param.option.modality
 @cli_param.option.caps_directory
@@ -40,13 +40,13 @@ from clinicadl.utils import cli_param
 )
 @click.option(
     "--merge_tsv",
-    help="Path to a TSV file containing the results of clinica iotools merge-tsv command",
+    help="Path to a TSV file containing the results of clinica iotools merge-tsv command if different of results_directory/merge.tsv",
     type=str,
     default=None,
 )
 @click.option(
     "--missing_mods",
-    help="Path to a directory containing the results of clinica iotools missing-modalities command",
+    help="Path to a directory containing the results of clinica iotools missing-modalities command if different of results_directory/missing_modalities/",
     type=str,
     default=None,
 )
@@ -59,7 +59,7 @@ from clinicadl.utils import cli_param
 )
 def cli(
     bids_directory,
-    results_directory,
+    output_tsv,
     diagnoses,
     modality,
     restriction_tsv,
@@ -77,9 +77,9 @@ def cli(
         - `clinica iotools merge-tsv`
         - `clinica iotools check-missing-modalities`
 
-    BIDS_DIRECTORY is the path of the BIDS.
+    BIDS_DIRECTORY is the path to the BIDS directory.
 
-    Outputs are stored in RESULTS_TSV.
+    Outputs are stored in OUTPUT_TSV.
     """
     from .getlabels import get_labels
 
@@ -88,7 +88,7 @@ def cli(
 
     get_labels(
         bids_directory,
-        results_directory,
+        output_tsv,
         diagnoses,
         modality=modality,
         restriction_path=restriction_tsv,

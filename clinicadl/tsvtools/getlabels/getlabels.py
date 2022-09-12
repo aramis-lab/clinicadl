@@ -27,6 +27,7 @@ from clinicadl.utils.tsvtools_utils import (
     find_label,
     first_session,
     last_session,
+    merge_tsv_reader,
     neighbour_session,
 )
 
@@ -52,17 +53,16 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
         session_list = []
         for _, session in subject_df.index.values:
             x = session[5::]
-            if x.isdigit():
-                session_list.append(int(x))
-
-            else:
+            if not x.isdigit():
                 subject_df.drop((subject, session), axis=0, inplace=True)
                 bids_copy_df.drop((subject, session), axis=0, inplace=True)
                 nb_drop += 1
 
+        session_list = [session for _, session in subject_df.index.values]
+
         for _, session in subject_df.index.values:
             diagnosis = subject_df.loc[(subject, session), "diagnosis"]
-            session_nb = int(session[5::])
+            session_nb = session
 
             if isinstance(diagnosis, float):
                 if session == last_session(session_list):
@@ -74,9 +74,7 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
                     while isinstance(
                         prev_diagnosis, float
                     ) and prev_session != first_session(subject_df):
-                        prev_session = neighbour_session(
-                            int(prev_session[5::]), session_list, -1
-                        )
+                        prev_session = neighbour_session(prev_session, session_list, -1)
                         prev_diagnosis = bids_df.loc[
                             (subject, prev_session), "diagnosis"
                         ]
@@ -85,9 +83,7 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
                     while isinstance(
                         post_diagnosis, float
                     ) and post_session != last_session(session_list):
-                        post_session = neighbour_session(
-                            int(post_session[5::]), session_list, +1
-                        )
+                        post_session = neighbour_session(post_session, session_list, +1)
                         post_diagnosis = bids_df.loc[
                             (subject, post_session), "diagnosis"
                         ]
@@ -124,8 +120,11 @@ def mod_selection(
     nb_subjects = 0
     if mod is not None:
         for subject, session in bids_df.index.values:
+            session_mod = session[:5] + session[6:8]
+            # print(missing_mods_dict[session])
+            # print(missing_mods_dict[session].loc[subject, mod])
             try:
-                mod_present = missing_mods_dict[session].loc[subject, mod]
+                mod_present = missing_mods_dict[session_mod].loc[subject, mod]
                 if not mod_present:
                     bids_copy_df.drop((subject, session), inplace=True)
                     nb_subjects += 1
@@ -168,20 +167,22 @@ def get_subgroup(
 
     for subject, subject_df in bids_df.groupby(level=0):
 
-        session_list = [int(session[5:]) for _, session in subject_df.index.values]
-
+        session_list = [session for _, session in subject_df.index.values]
         for _, session in subject_df.index.values:
             diagnosis = subject_df.loc[(subject, session), "diagnosis"]
-            # print(diagnosis)
-            # print(stability_dict)
             diagnosis_dict = stability_dict[diagnosis]
             session_nb = int(session[5::])
             horizon_session_nb = session_nb + horizon_time
-            horizon_session = "ses-M" + str(horizon_session_nb)
-            # print(session, '-->', horizon_session)
+            if horizon_session_nb < 10:
+                horizon_session = "ses-M00" + str(horizon_session_nb)
+            elif 10 <= horizon_session_nb < 100:
+                horizon_session = "ses-M0" + str(horizon_session_nb)
+            else:
+                horizon_session = "ses-M" + str(horizon_session_nb)
+            # print(session, '-->', horizon_session)exit
 
             # CASE 1 : if the  session after 'horizon_time' months is a session the subject has done
-            if horizon_session_nb in session_list:
+            if horizon_session in session_list:
                 horizon_diagnosis = subject_df.loc[
                     (subject, horizon_session), "diagnosis"
                 ]
@@ -195,7 +196,7 @@ def get_subgroup(
                     update_diagnosis = "s"
 
             # CASE 2 : if the session after 'horizon_time' months doesn't exist because it is after the last session of the subject
-            elif after_end_screening(horizon_session_nb, session_list):
+            elif after_end_screening(horizon_session, session_list):
                 last_diagnosis = subject_df.loc[
                     (subject, last_session(session_list)), "diagnosis"
                 ]
@@ -210,8 +211,8 @@ def get_subgroup(
 
             # CASE 3 : if the session after 'horizon_time' months doesn't exist but ther are sessions before and after this time.
             else:
-                prev_session = neighbour_session(horizon_session_nb, session_list, -1)
-                post_session = neighbour_session(horizon_session_nb, session_list, +1)
+                prev_session = neighbour_session(horizon_session, session_list, -1)
+                post_session = neighbour_session(horizon_session, session_list, +1)
 
                 prev_diagnosis = subject_df.loc[(subject, prev_session), "diagnosis"]
                 prev_diagnosis_dict = stability_dict[prev_diagnosis]
@@ -243,7 +244,7 @@ def get_subgroup(
                 nb_unique += 1
 
         # Add unknown subgroup for each last_session
-        session_list = [int(session[5::]) for _, session in subject_df.index.values]
+        session_list = [session for _, session in subject_df.index.values]
         last_session_str = last_session(session_list)
         diagnosis = bids_copy_df.loc[(subject, last_session_str), "diagnosis"]
         bids_copy_df.loc[(subject, last_session_str), "subgroup"] = "uk"
@@ -254,11 +255,7 @@ def get_subgroup(
         status = 0
         unstable = False
         for session in session_list:
-            if session < 10:
-                ses_str = "ses-M0"
-            else:
-                ses_str = "ses-M"
-            session_str = ses_str + str(session)
+            session_str = session
             subgroup_str = bids_copy_df.loc[(subject, session_str), "subgroup"]
             subgroup_str = subgroup_str[:1]
             if subgroup_str == "p":
@@ -278,11 +275,7 @@ def get_subgroup(
         if unstable:
             nb_subjects += 1
             for session in session_list:
-                if session < 10:
-                    ses_str = "ses-M0"
-                else:
-                    ses_str = "ses-M"
-                session_str = ses_str + str(session)
+                session_str = session
                 subgroup_str = bids_copy_df.loc[(subject, session_str), "subgroup"]
                 subgroup_str = subgroup_str[:1]
                 if subgroup_str == "s":
@@ -311,8 +304,12 @@ def diagnosis_removal(bids_df: pd.DataFrame, diagnosis_list: List[str]) -> pd.Da
     nb_subjects = 0
     for subject, subject_df in bids_df.groupby(level=0):
         for (_, session) in subject_df.index.values:
-            if subject_df.loc[(subject, session), "group"] not in diagnosis_list:
-                if subject_df.loc[(subject, session), "subgroup"] not in diagnosis_list:
+            group = subject_df.loc[(subject, session), "group"]
+            if group not in diagnosis_list:
+                if (
+                    subject_df.loc[(subject, session), "subgroup" + group]
+                    not in diagnosis_list
+                ):
                     output_df.drop((subject, session), inplace=True)
                     nb_subjects += 1
 
@@ -351,7 +348,7 @@ def apply_restriction(bids_df: pd.DataFrame, restriction_path: str) -> pd.DataFr
 
 def get_labels(
     bids_directory: str,
-    results_directory: str,
+    output_tsv: str,
     diagnoses: List[str],
     modality: str = "t1w",
     restriction_path: str = None,
@@ -380,6 +377,10 @@ def get_labels(
         remove_smc: if True SMC participants are removed from the lists.
         caps_directory: Path to a folder of a older of a CAPS compliant dataset
     """
+
+    from pathlib import Path
+
+    results_directory = Path(output_tsv).parents[0]
 
     commandline_to_json(
         {
@@ -411,17 +412,17 @@ def get_labels(
     os.makedirs(results_directory, exist_ok=True)
 
     # Generating the output of `clinica iotools check-missing-modalities``
-    missing_mods_path = os.path.join(results_directory, "missing_mods")
+    missing_mods_directory = os.path.join(results_directory, "missing_mods")
     if missing_mods is not None:
-        missing_mods_path = missing_mods
-    # print(bids_directory)
-    if not os.path.exists(missing_mods_path):
-        # print(os.path.join(results_directory, "missing_mods"))
-        logger.info("create missing modalities directories")
+        missing_mods_directory = missing_mods
 
+    if not os.path.exists(missing_mods_directory):
         check_bids_folder(bids_directory)
-        compute_missing_mods(bids_directory, missing_mods_path, "missing_mods")
-    # print(results_directory)
+        compute_missing_mods(bids_directory, missing_mods_directory, "missing_mods")
+
+    logger.info(
+        f"output of clinica iotools check-missing-modalities : {missing_mods_directory}"
+    )
 
     # Generating the output of `clinica iotools merge-tsv `
     merge_tsv_path = os.path.join(results_directory, "merge.tsv")
@@ -445,8 +446,10 @@ def get_labels(
             tracers_selection=False,
         )
 
+    logger.info(f"output of clinica iotools merge-tsv : {merge_tsv_path}")
+
     # Reading files
-    bids_df = pd.read_csv(merge_tsv_path, sep="\t")
+    bids_df = merge_tsv_reader(merge_tsv_path)
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
     variables_list = []
     try:
@@ -457,6 +460,7 @@ def get_labels(
         logger.warning(
             "The age, sex or diagnosis values were not found in the dataset."
         )
+
     # Cleaning NaN diagnosis
     bids_df = cleaning_nan_diagnoses(bids_df)
 
@@ -471,7 +475,6 @@ def get_labels(
             )
 
     # Loading missing modalities files
-    missing_mods_directory = missing_mods_path
     list_files = os.listdir(missing_mods_directory)
     missing_mods_dict = {}
 
@@ -503,7 +506,9 @@ def get_labels(
         np.zeros(len(bids_df)), index=bids_df.index
     )
     for subject, subject_df in bids_df.groupby(level=0):
-        baseline_diagnosis = subject_df.loc[(subject, "ses-M00"), "diagnosis"]
+        baseline_diagnosis = subject_df.loc[
+            (subject, first_session(subject_df)), "diagnosis"
+        ]
         bids_copy_df.loc[subject, "baseline_diagnosis"] = baseline_diagnosis
 
     bids_df = copy(bids_copy_df)
@@ -518,13 +523,11 @@ def get_labels(
 
     stability_dict = {"CN": 0, "MCI": 1, "AD": 2, "Dementia": 2}
     output_df = get_subgroup(bids_df, time_horizon, stability_dict=stability_dict)
-
     variables_list.remove("baseline_diagnosis")
     variables_list.remove("diagnosis")
-
     output_df = output_df[variables_list]
     output_df = diagnosis_removal(output_df, diagnoses)
     output_df = mod_selection(output_df, missing_mods_dict, modality)
     output_df = apply_restriction(output_df, restriction_path)
 
-    output_df.to_csv(path.join(results_directory, "labels.tsv"), sep="\t")
+    output_df.to_csv(output_tsv, sep="\t")

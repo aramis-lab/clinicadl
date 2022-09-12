@@ -29,6 +29,16 @@ sex_dict = {"M": 0, "F": 1}
 logger = getLogger("clinicadl")
 
 
+def df_to_tsv(name: str, results_path: str, df):
+
+    df = df[["participant_id", "session_id", "group", "subgroup", "age", "sex"]]
+    df.sort_values(by=["participant_id", "session_id"], inplace=True)
+    df.drop_duplicates(
+        subset=["participant_id", "session_id"], keep="first", inplace=True
+    )
+    df.to_csv(path.join(results_path, name), sep="\t", index=False)
+
+
 def create_split(
     diagnosis,
     diagnosis_df,
@@ -149,7 +159,6 @@ def create_split(
 def split_diagnoses(
     formatted_data_path,
     n_test=100,
-    test_tsv=None,
     subset_name="test",
     p_age_threshold=0.80,
     p_sex_threshold=0.80,
@@ -210,33 +219,26 @@ def split_diagnoses(
 
     # The baseline session must be kept before or we are taking all the sessions to mix them
 
-    diagnosis_df = pd.read_csv(path.join(results_path, diagnosis_df_path), sep="\t")
+    diagnosis_df = pd.read_csv(formatted_data_path, sep="\t")
     output_train_df = pd.DataFrame()
     output_long_train_df = pd.DataFrame()
     output_test_df = pd.DataFrame()
     if not_only_baseline:
         output_long_test_df = pd.DataFrame()
 
-    if test_tsv is not None:
-        test_df = pd.read_csv(test_tsv, sep="\t")
-        subjects_list = pd.unique(test_df["participant_id"])
-        for subject in diagnosis_df.index.values:
-            if subject in subjects_list:
-                diagnosis_df.drop(subject)
+    # for diagnosis in pd.unique(diagnosis_df["group"]):
+    #     diagnosis_copy_df = copy(diagnosis_df)
+    #     diagnosis_copy_df = diagnosis_copy_df.loc[
+    #         diagnosis_copy_df["group"] == diagnosis
+    #     ]
+    #     # diagnosis_copy_df.to_csv("data/diaggggg.tsv")
+    #     # interest_columns = diagnosis_df.index.values
 
-    for diagnosis in pd.unique(diagnosis_df["group"]):
-        diagnosis_copy_df = copy(diagnosis_df)
-        diagnosis_copy_df = diagnosis_copy_df.loc[
-            diagnosis_copy_df["group"] == diagnosis
-        ]
-        # diagnosis_copy_df.to_csv("data/diaggggg.tsv")
-        # interest_columns = diagnosis_df.index.values
+    #     # for i in interest_columns:
+    #     #     if diagnosis_copy_df.loc[i, "group"] != diagnosis:
+    #     #         diagnosis_copy_df.drop((i), inplace=True)
 
-        # for i in interest_columns:
-        #     if diagnosis_copy_df.loc[i, "group"] != diagnosis:
-        #         diagnosis_copy_df.drop((i), inplace=True)
-
-        logger.info(f"Running split for diagnosis {diagnosis}")
+    #     logger.info(f"Running split for diagnosis {diagnosis}")
 
     if n_test > 0:
         for diagnosis in pd.unique(diagnosis_df["group"]):
@@ -257,6 +259,10 @@ def split_diagnoses(
             # Save baseline splits
             output_test_df = pd.concat([output_test_df, test_df])
             output_train_df = pd.concat([output_train_df, train_df])
+
+            output_train_df.sort_values(by=["participant_id"])
+            output_test_df.sort_values(by=["participant_id"])
+
             long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
             output_long_train_df = pd.concat([output_long_train_df, long_train_df])
 
@@ -264,36 +270,19 @@ def split_diagnoses(
                 long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
                 output_long_test_df = pd.concat([output_long_test_df, long_test_df])
 
-        output_test_df = output_test_df[["participant_id", "session_id"]]
-        output_test_df.sort_values(by=["participant_id", "session_id"])
-        output_test_df.drop_duplicates(
-            subset="participant_id", keep="first", inplace=True
-        )
+        name = f"{subset_name}_baseline.tsv"
+        df_to_tsv(name, results_path, output_test_df)
 
-        output_test_df.to_csv(
-            path.join(results_path, f"{subset_name}_baseline.tsv"),
-            sep="\t",
-            index=False,
-        )
         if not_only_baseline:
-            output_long_test_df = output_long_test_df[["participant_id", "session_id"]]
-            output_long_test_df.to_csv(
-                path.join(results_path, f"{subset_name}.tsv"), sep="\t", index=False
-            )
+            name = f"{subset_name}.tsv"
+            df_to_tsv(name, results_path, output_long_test_df)
 
     else:
         output_train_df = extract_baseline(diagnosis_copy_df)
         output_long_train_df = diagnosis_copy_df
 
-    output_train_df = output_train_df[["participant_id", "session_id"]]
-    output_train_df.sort_values(by=["participant_id"])
-    output_train_df.drop_duplicates(subset="participant_id", keep="first", inplace=True)
+    name = "train_baseline.tsv"
+    df_to_tsv(name, results_path, output_train_df)
 
-    output_train_df.to_csv(
-        path.join(results_path, f"train_baseline.tsv"), sep="\t", index=False
-    )
-    output_long_train_df = output_long_train_df[["participant_id", "session_id"]]
-    output_long_train_df.sort_values(by=["participant_id", "session_id"])
-    output_long_train_df.to_csv(
-        path.join(results_path, f"train.tsv"), sep="\t", index=False
-    )
+    name = "train.tsv"
+    df_to_tsv(name, results_path, output_long_train_df)
