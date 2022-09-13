@@ -11,6 +11,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.diagnoses
 @cli_param.option.modality
 @cli_param.option.caps_directory
+@cli_param.option.variables_of_interest
 @click.option(
     "--time_horizon",
     help="Time horizon to analyse stability of the label in the case of a progressive disease.",
@@ -21,14 +22,6 @@ from clinicadl.utils import cli_param
     "--restriction_tsv",
     help="Path to a TSV file containing the sessions that can be included.",
     type=str,
-    default=None,
-)
-@click.option(
-    "--variables_of_interest",
-    help="Variables of interest that will be kept in the final lists. "
-    "Will always keep the group (that correspond to the diagnosis in most case), subgroup (that correspond to the progression of the disease in the case of a progressive disease), age and sex needed for the split procedure.",
-    type=str,
-    multiple=True,
     default=None,
 )
 @click.option(

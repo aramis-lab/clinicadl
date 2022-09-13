@@ -67,6 +67,15 @@ caps_directory = click.option(
     type=str,
     default=None,
 )
+variables_of_interest = click.option(
+    "--variables_of_interest",
+    "-voi",
+    help="Variables of interest that will be kept in the final lists. "
+    "Will always keep the group (that correspond to the diagnosis in most case), subgroup (that correspond to the progression of the disease in the case of a progressive disease), age and sex needed for the split procedure.",
+    type=str,
+    multiple=True,
+    default=None,
+)
 # GENERATE
 participant_list = click.option(
     "--participants_tsv",

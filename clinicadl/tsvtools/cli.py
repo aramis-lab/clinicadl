@@ -1,6 +1,7 @@
 import click
 
 from .analysis.analysis_cli import cli as analysis_cli
+from .get_metadata.get_metadata_cli import cli as get_metadata_cli
 from .getlabels.getlabels_cli import cli as getlabels_cli
 from .kfold.kfold_cli import cli as kfold_cli
 from .prepare_experiment.prepare_experiment_cli import cli as prepare_experiment_cli
@@ -27,6 +28,7 @@ cli.add_command(analysis_cli)
 cli.add_command(split_cli)
 cli.add_command(kfold_cli)
 cli.add_command(prepare_experiment_cli)
+cli.add_command(get_metadata_cli)
 
 if __name__ == "__main__":
     cli()
