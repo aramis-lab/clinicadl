@@ -8,11 +8,13 @@ from warnings import warn
 import numpy as np
 import pandas as pd
 
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.tsvtools_utils import (
     add_demographics,
     cleaning_nan_diagnoses,
     find_label,
     first_session,
+    merge_tsv_reader,
     next_session,
 )
 
@@ -33,7 +35,7 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path, diagnos
         demographic analysis of the tsv files in formatted_data_path.
     """
 
-    merged_df = pd.read_csv(merged_tsv, sep="\t")
+    merged_df = merge_tsv_reader(merged_tsv)
     merged_df.set_index(["participant_id", "session_id"], inplace=True)
     merged_df = cleaning_nan_diagnoses(merged_df)
     parent_directory = path.abspath(path.join(results_path, os.pardir))
@@ -78,87 +80,85 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path, diagnos
             f"getlabels.tsv file with all sessions was not found. "
             # f"Loads baseline version instead."
         )
-
     for diagnosis in diagnoses:
         diagnosis_dict[diagnosis] = {"age": [], "MMSE": [], "scans": []}
         getlabels_df = pd.read_csv(formatted_data_path, sep="\t")
-
-        interest_columns = getlabels_df.index.values
         diagnosis_copy_df = copy(getlabels_df)
-        for i in interest_columns:
-            if diagnosis_copy_df.loc[i, "group"] != diagnosis:
-                diagnosis_copy_df.drop((i), inplace=True)
-
-        # diagnosis_df = pd.read_csv(diagnosis_path, sep="\t")
-        diagnosis_demographics_df = add_demographics(
-            diagnosis_copy_df, merged_df, diagnosis
-        )
-        diagnosis_demographics_df.set_index(
-            ["participant_id", "session_id"], inplace=True
-        )
-        diagnosis_copy_df.set_index(["participant_id", "session_id"], inplace=True)
-        for subject, subject_df in diagnosis_copy_df.groupby(level=0):
-            first_session_id = first_session(subject_df)
-            feature_absence = isinstance(
-                merged_df.loc[(subject, first_session_id), "diagnosis"], float
+        diagnosis_copy_df = diagnosis_copy_df[diagnosis_copy_df["group"] == diagnosis]
+        if not diagnosis_copy_df.empty:
+            diagnosis_demographics_df = add_demographics(
+                diagnosis_copy_df, merged_df, diagnosis
             )
-            while feature_absence:
-                first_session_id = next_session(subject_df, first_session_id)
-
+            diagnosis_demographics_df.reset_index()
+            diagnosis_demographics_df.set_index(
+                ["participant_id", "session_id"], inplace=True
+            )
+            diagnosis_copy_df.set_index(["participant_id", "session_id"], inplace=True)
+            for subject, subject_df in diagnosis_copy_df.groupby(level=0):
+                first_session_id = first_session(subject_df)
                 feature_absence = isinstance(
                     merged_df.loc[(subject, first_session_id), "diagnosis"], float
                 )
-            demographics_subject_df = merged_df.loc[subject]
+                while feature_absence:
+                    first_session_id = next_session(subject_df, first_session_id)
 
-            # Extract features
-            results_df.loc[diagnosis, "n_subjects"] += 1
-            results_df.loc[diagnosis, "n_scans"] += len(subject_df)
-            diagnosis_dict[diagnosis]["age"].append(
-                merged_df.loc[(subject, first_session_id), fields_dict["age"]]
-            )
-            diagnosis_dict[diagnosis]["MMSE"].append(
-                merged_df.loc[(subject, first_session_id), fields_dict["MMSE"]]
-            )
-            diagnosis_dict[diagnosis]["scans"].append(len(subject_df))
-            sexF = (
-                len(
-                    demographics_subject_df[
-                        (demographics_subject_df[fields_dict["sex"]].isin(["F"]))
-                    ]
-                )
-                > 0
-            )
-            sexM = (
-                len(
-                    demographics_subject_df[
-                        (demographics_subject_df[fields_dict["sex"]].isin(["M"]))
-                    ]
-                )
-                > 0
-            )
-            if sexF:
-                results_df.loc[diagnosis, "sexF"] += 1
-            elif sexM:
-                results_df.loc[diagnosis, "sexM"] += 1
-            else:
-                raise ValueError(
-                    f"The field 'sex' for patient {subject} can not be determined"
-                )
+                    feature_absence = isinstance(
+                        merged_df.loc[(subject, first_session_id), "diagnosis"], float
+                    )
+                demographics_subject_df = merged_df.loc[subject]
 
-            cdr = merged_df.at[(subject, first_session_id), fields_dict["CDR"]]
-            if cdr == 0:
-                results_df.loc[diagnosis, "CDR_0"] += 1
-            elif cdr == 0.5:
-                results_df.loc[diagnosis, "CDR_0.5"] += 1
-            elif cdr == 1:
-                results_df.loc[diagnosis, "CDR_1"] += 1
-            elif cdr == 2:
-                results_df.loc[diagnosis, "CDR_2"] += 1
-            elif cdr == 3:
-                results_df.loc[diagnosis, "CDR_3"] += 1
-            else:
-                warn(f"Patient {subject} has CDR {cdr}")
+                # Extract features
+                results_df.loc[diagnosis, "n_subjects"] += 1
+                results_df.loc[diagnosis, "n_scans"] += len(subject_df)
+                diagnosis_dict[diagnosis]["age"].append(
+                    merged_df.loc[(subject, first_session_id), fields_dict["age"]]
+                )
+                diagnosis_dict[diagnosis]["MMSE"].append(
+                    merged_df.loc[(subject, first_session_id), fields_dict["MMSE"]]
+                )
+                diagnosis_dict[diagnosis]["scans"].append(len(subject_df))
+                sexF = (
+                    len(
+                        demographics_subject_df[
+                            (demographics_subject_df[fields_dict["sex"]].isin(["F"]))
+                        ]
+                    )
+                    > 0
+                )
+                sexM = (
+                    len(
+                        demographics_subject_df[
+                            (demographics_subject_df[fields_dict["sex"]].isin(["M"]))
+                        ]
+                    )
+                    > 0
+                )
+                if sexF:
+                    results_df.loc[diagnosis, "sexF"] += 1
+                elif sexM:
+                    results_df.loc[diagnosis, "sexM"] += 1
+                else:
+                    raise ValueError(
+                        f"The field 'sex' for patient {subject} can not be determined"
+                    )
 
+                cdr = merged_df.at[(subject, first_session_id), fields_dict["CDR"]]
+                if cdr == 0:
+                    results_df.loc[diagnosis, "CDR_0"] += 1
+                elif cdr == 0.5:
+                    results_df.loc[diagnosis, "CDR_0.5"] += 1
+                elif cdr == 1:
+                    results_df.loc[diagnosis, "CDR_1"] += 1
+                elif cdr == 2:
+                    results_df.loc[diagnosis, "CDR_2"] += 1
+                elif cdr == 3:
+                    results_df.loc[diagnosis, "CDR_3"] += 1
+                else:
+                    tt = 3  # warn(f"Patient {subject} has CDR {cdr}")
+        else:
+            raise ClinicaDLArgumentError(
+                f"There is no subject with diagnosis {diagnosis}"
+            )
     for diagnosis in diagnoses:
         results_df.loc[diagnosis, "mean_age"] = np.nanmean(
             diagnosis_dict[diagnosis]["age"]

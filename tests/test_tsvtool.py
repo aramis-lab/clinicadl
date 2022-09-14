@@ -8,10 +8,15 @@ from clinicadl.utils.caps_dataset.data import load_data_test
 from clinicadl.utils.split_manager import KFoldSplit
 from clinicadl.utils.tsvtools_utils import extract_baseline
 
-# bids_tar = "data/tsvtool/OasisBids.tar.gz"
-merged_tsv = "data/tsvtool/anonymous_BIDS.tsv"
-missing_mods = "data/tsvtool/anonymous_missing_mods"
-reference_path = "data/tsvtool/anonymous_reference"
+data_ci_directory = "/network/lustre/iss02/aramis/projects/clinicadl/DATA_CI"
+bids_directory = path.join(data_ci_directory, "dataset/bids")
+in_directory = path.join(data_ci_directory, "tsvtools/in")
+reference_directory = path.join(data_ci_directory, "tsvtools/ref")
+output_directory = path.join(data_ci_directory, "tsvtools/out")
+
+labels_tsv = os.path.join(output_directory, "labels.tsv")
+merged_tsv = path.join(in_directory, "merge.tsv")
+
 diagnoses = "CN pCN sCN usCN ukCN MCI sMCI pMCI usMCI ukMCI rMCI AD rAD sAD usAD ukAD"
 
 """
@@ -32,6 +37,7 @@ def check_subject_unicity(labels_path_baseline):
         check_df = extract_baseline(check_df, set_index=False)
     for subject, subject_df in check_df.groupby(level=0):
         if len(subject_df) > 1:
+            print(subject_df)
             flag_unique = False
     assert flag_unique
 
@@ -46,12 +52,8 @@ def check_independance(train_path_baseline, test_path_baseline, subject_flag=Tru
     test_df.set_index(["participant_id", "session_id"], inplace=True)
 
     for subject, session in train_df.index:
-        if subject_flag:
-            if subject in test_df.index:
-                flag_independant = False
-        else:
-            if (subject, session) in test_df.index:
-                flag_independant = False
+        if (subject, session) in test_df.index:
+            flag_independant = False
 
     assert flag_independant
 
@@ -95,7 +97,7 @@ def run_test_suite(formatted_data_path, n_splits, subset_name):
     check_train = True
 
     if n_splits == 0:
-        train_path = path.join(formatted_data_path, "validation.tsv")
+        train_path = path.join(formatted_data_path, "train_validation.tsv")
         test_path_baseline = path.join(formatted_data_path, "test_baseline.tsv")
         if not path.exists(train_path):
             check_train = False
@@ -107,7 +109,7 @@ def run_test_suite(formatted_data_path, n_splits, subset_name):
 
     else:
         for split_number in range(n_splits):
-            train_path = path.join(formatted_data_path, "validation.tsv")
+            train_path = path.join(formatted_data_path, "train_validation.tsv")
             test_path_baseline = path.join(formatted_data_path, "test_baseline.tsv")
 
             if not path.exists(train_path):
@@ -127,10 +129,11 @@ def run_test_suite(formatted_data_path, n_splits, subset_name):
             if check_train:
                 check_subject_unicity(train_split_path)
                 check_subject_unicity(subset_path)
+
+                check_independance(train_split_path, subset_path, subject_flag=False)
                 check_independance(
                     train_split_path, test_path_baseline, subject_flag=True
                 )
-                check_independance(train_split_path, subset_path, subject_flag=False)
 
         os.remove(subset_path)
         os.remove(train_split_path)
@@ -138,40 +141,21 @@ def run_test_suite(formatted_data_path, n_splits, subset_name):
 
 def test_getlabels():
     """Checks that getlabels is working and that it is coherent with previous version in reference_path"""
-    output_path = "data/tsvtools_test"
-    bids_directory = "anonymous_bids/OasisBids_example"
+
+    missing_mods_directory = path.join(in_directory, "missing_mods")
 
     flag_getlabels = not os.system(
-        f"clinicadl -vvv tsvtools getlabels {bids_directory} {output_path} "
-        f"-d AD -d MCI -d CN "
-        f"--merge_tsv {merged_tsv} --missing_mods {missing_mods}"
+        f"clinicadl -vvv tsvtools getlabels {bids_directory} {labels_tsv} "
+        f"-d AD -d MCI -d CN -d Dementia "
+        f"--merge_tsv {merged_tsv} --missing_mods {missing_mods_directory}"
     )
     assert flag_getlabels
 
-    file = "getlabels.tsv"
-    out_df = pd.read_csv(path.join(output_path, file), sep="\t")
-    out_df = out_df.sort_values(by=["participant_id", "session_id"])
-    out_df.drop(columns=["subgroup"])
-    out_df = out_df[["participant_id", "session_id", "age", "sex", "group"]]
-    ref_df = pd.read_csv(path.join(reference_path, file), sep="\t")
+    out_df = pd.read_csv(labels_tsv, sep="\t")
+    ref_df = pd.read_csv(path.join(reference_directory, "labels.tsv"), sep="\t")
     assert out_df.equals(ref_df)
 
-    flag_getlabels2 = not os.system(
-        f"clinicadl -vvv tsvtools getlabels {bids_directory} {output_path} "
-        f"--diagnoses rAD --diagnoses usCN --diagnoses pMCI "
-        f"--merge_tsv {merged_tsv} --missing_mods {missing_mods}"
-    )
-    assert flag_getlabels2
-
-    file2 = "getlabels2.tsv"
-    out_df = pd.read_csv(path.join(output_path, file), sep="\t")
-    out_df = out_df.sort_values(by=["participant_id", "session_id"])
-    out_df.drop(columns=["subgroup"])
-    out_df = out_df[["participant_id", "session_id", "age", "sex", "group"]]
-    ref_df = pd.read_csv(path.join(reference_path, file2), sep="\t")
-    assert out_df.equals(ref_df)
-
-    shutil.rmtree(output_path)
+    # shutil.rmtree(output_directory)
 
 
 def test_split():
@@ -181,13 +165,13 @@ def test_split():
     -  no data leakage is introduced in split and kfold.
     """
     n_splits = 5
-    getlabels_path = path.join(reference_path, "labels.tsv")
-    test_path = path.join(reference_path, "test_baseline.tsv")
+    train_tsv = path.join(output_directory, "train.tsv")
+
     flag_split = not os.system(
-        f"clinicadl -vvv tsvtools split {getlabels_path} --subset_name test"
+        f"clinicadl -vvv tsvtools split {labels_tsv} --subset_name test"
     )
     flag_kfold = not os.system(
-        f"clinicadl -vvv tsvtools kfold {getlabels_path} --n_splits {n_splits} --test_tsv {test_path}"
+        f"clinicadl -vvv tsvtools kfold {train_tsv} --n_splits {n_splits} --subset_name validation"
     )
     assert flag_split
     assert flag_kfold
@@ -203,8 +187,8 @@ def test_split():
     #     flag_load = False
     # assert flag_load
 
-    run_test_suite(reference_path, n_splits, "validation")
-    # run_test_suite(reference_path, 0, "validation")
+    run_test_suite(output_directory, n_splits, "validation")
+    print("*******ok******")
 
     # os.remove(test_path)
 
@@ -216,19 +200,17 @@ def test_split():
 
 def test_analysis():
     """Checks that analysis can be performed"""
-    results_path = path.join("data", "tsvtool", "analysis.tsv")
-    ref_analysis_path = path.join("data", "tsvtool", "anonymous_analysis.tsv")
-    getlabels_path = path.join(reference_path, "getlabels.tsv")
+
+    output_tsv = path.join(output_directory, "analysis.tsv")
+    ref_analysis_path = path.join(reference_directory, "analysis.tsv")
 
     flag_analysis = not os.system(
-        f"clinicadl tsvtools analysis {merged_tsv} {getlabels_path} {results_path} "
-        f"--diagnoses AD --diagnoses CN --diagnoses MCI"
+        f"clinicadl tsvtools analysis {merged_tsv} {labels_tsv} {output_tsv} "
+        f"--diagnoses Dementia --diagnoses CN --diagnoses MCI"
     )
 
     assert flag_analysis
     ref_df = pd.read_csv(ref_analysis_path, sep="\t")
-    out_df = pd.read_csv(results_path, sep="\t")
-    out_df_sorted = out_df.reindex(sorted(out_df.columns), axis=1)
-    ref_df_sorted = ref_df.reindex(sorted(ref_df.columns), axis=1)
-    assert out_df_sorted.equals(ref_df_sorted)
-    os.remove(results_path)
+    out_df = pd.read_csv(output_tsv, sep="\t")
+    assert out_df.equals(ref_df)
+    # os.remove(results_path)

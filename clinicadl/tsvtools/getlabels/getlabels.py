@@ -121,8 +121,6 @@ def mod_selection(
     if mod is not None:
         for subject, session in bids_df.index.values:
             session_mod = session[:5] + session[6:8]
-            # print(missing_mods_dict[session])
-            # print(missing_mods_dict[session].loc[subject, mod])
             try:
                 mod_present = missing_mods_dict[session_mod].loc[subject, mod]
                 if not mod_present:
@@ -168,6 +166,7 @@ def get_subgroup(
     for subject, subject_df in bids_df.groupby(level=0):
 
         session_list = [session for _, session in subject_df.index.values]
+        session_list.sort()
         for _, session in subject_df.index.values:
             diagnosis = subject_df.loc[(subject, session), "diagnosis"]
             diagnosis_dict = stability_dict[diagnosis]
@@ -232,55 +231,42 @@ def get_subgroup(
                         update_diagnosis = "r"
                     elif post_diagnosis_dict == diagnosis_dict:
                         update_diagnosis = "s"
-            bids_copy_df.loc[(subject, session), "group"] = diagnosis
             bids_copy_df.loc[(subject, session), "subgroup"] = update_diagnosis
+            bids_copy_df.loc[(subject, session), "group"] = diagnosis
         # Remove subject with a unique session if wanted
-        if remove_unique_session is True:
-
+        if remove_unique_session:
             nb_session = len(session_list)
             if nb_session == 1:
                 bids_copy_df.drop((subject, session_list[0]), inplace=True)
                 subject_df.drop((subject, session_list[0]), inplace=True)
                 nb_unique += 1
 
-        # Add unknown subgroup for each last_session
-        session_list = [session for _, session in subject_df.index.values]
-        last_session_str = last_session(session_list)
-        diagnosis = bids_copy_df.loc[(subject, last_session_str), "diagnosis"]
-        bids_copy_df.loc[(subject, last_session_str), "subgroup"] = "uk"
-
         # Add unstable session for subjects with multiple regression or conversion
         # The subjects will be unstable only from the time of the conversion (if regression before) or regression (if conversion before)
-        session_list.sort()
+
         status = 0
         unstable = False
-        for session in session_list:
-            session_str = session
+        for session_str in session_list:
             subgroup_str = bids_copy_df.loc[(subject, session_str), "subgroup"]
-            subgroup_str = subgroup_str[:1]
             if subgroup_str == "p":
                 if status < 0:
-                    diagnosis = bids_copy_df.loc[(subject, session_str), "group"]
-                    bids_copy_df.loc[(subject, session_str), "subgroup"] = "us"
                     unstable = True
-                else:
-                    status = 1
+                status = 1
             if subgroup_str == "r":
                 if status > 0:
-                    diagnosis = bids_copy_df.loc[(subject, session_str), "group"]
-                    bids_copy_df.loc[(subject, session_str), "subgroup"] = "us"
                     unstable = True
-                else:
-                    status = -1
+                status = -1
         if unstable:
             nb_subjects += 1
-            for session in session_list:
-                session_str = session
-                subgroup_str = bids_copy_df.loc[(subject, session_str), "subgroup"]
-                subgroup_str = subgroup_str[:1]
-                if subgroup_str == "s":
-                    diagnosis = bids_copy_df.loc[(subject, session_str), "group"]
-                    bids_copy_df.loc[(subject, session_str), "subgroup"] = "us"
+            for session_str in session_list:
+                bids_copy_df.loc[(subject, session_str), "subgroup"] = "us"
+
+        # Add unknown subgroup for each last_session
+        session_list = [session for _, session in subject_df.index.values]
+
+        last_session_str = last_session(session_list)
+        if bids_copy_df.loc[(subject, last_session_str), "subgroup"] != "us":
+            bids_copy_df.loc[(subject, last_session_str), "subgroup"] = "uk"
 
     logger.info(f"Dropped subjects (unique session): {nb_unique}")
     logger.info(f"Unstable subjects: {nb_subjects}")
@@ -306,10 +292,7 @@ def diagnosis_removal(bids_df: pd.DataFrame, diagnosis_list: List[str]) -> pd.Da
         for (_, session) in subject_df.index.values:
             group = subject_df.loc[(subject, session), "group"]
             if group not in diagnosis_list:
-                if (
-                    subject_df.loc[(subject, session), "subgroup" + group]
-                    not in diagnosis_list
-                ):
+                if subject_df.loc[(subject, session), "subgroup"] not in diagnosis_list:
                     output_df.drop((subject, session), inplace=True)
                     nb_subjects += 1
 
@@ -433,7 +416,7 @@ def get_labels(
         check_bids_folder(bids_directory)
         create_merge_file(
             bids_directory,
-            results_directory + "/merge.tsv",
+            os.path.join(results_directory, "merge.tsv"),
             caps_dir=caps_directory,
             pipelines=None,
             ignore_scan_files=None,
@@ -529,5 +512,6 @@ def get_labels(
     output_df = diagnosis_removal(output_df, diagnoses)
     output_df = mod_selection(output_df, missing_mods_dict, modality)
     output_df = apply_restriction(output_df, restriction_path)
-
+    output_df.reset_index()
+    output_df.sort_values(by=["participant_id", "session_id"], inplace=True)
     output_df.to_csv(output_tsv, sep="\t")

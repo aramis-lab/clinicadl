@@ -131,7 +131,6 @@ def split_diagnoses(
 
     # Read files
 
-    # diagnosis_df_path=Path(formatted_data_tsv).name
     diagnosis_df = pd.read_csv(formatted_data_tsv, sep="\t")
     diagnosis_df.set_index(["participant_id", "session_id"], inplace=True)
 
