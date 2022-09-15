@@ -39,7 +39,6 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
         )
     logger.debug(f"List of subjects: \n{subjects}.")
     logger.debug(f"List of sessions: \n{sessions}.")
-    logger.warning("Be careful !")
 
     # Select the correct filetype corresponding to modality
     # and select the right folder output name corresponding to modality
