@@ -12,6 +12,7 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 
+from clinicadl.cmdline import setup_logging
 from clinicadl.utils.caps_dataset.data import (
     get_transforms,
     load_data_test,
@@ -25,7 +26,7 @@ from clinicadl.utils.exceptions import (
     ClinicaDLDataLeakageError,
     MAPSError,
 )
-from clinicadl.utils.logwriter import LogWriter, setup_logging
+from clinicadl.utils.maps_manager.logwriter import LogWriter
 from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
     read_json,

@@ -1,79 +1,14 @@
-# TODO: Integrate printed logs ?
-import logging
 from os import makedirs, path
 
 import numpy as np
 import pandas as pd
 
-from clinicadl.utils.exceptions import MAPSError
-
-
-class StdLevelFilter(logging.Filter):
-    def __init__(self, err=False):
-        super().__init__()
-        self.err = err
-
-    def filter(self, record):
-        if record.levelno <= logging.INFO:
-            return not self.err
-        return self.err
-
-
-def setup_logging(verbose: bool = False) -> None:
-    """
-    Setup ClinicaDL's logging facilities.
-    Args:
-        verbose: The desired level of verbosity for logging.
-            (False (default): INFO, True: DEBUG)
-    """
-    from logging import (
-        DEBUG,
-        INFO,
-        WARNING,
-        FileHandler,
-        Formatter,
-        StreamHandler,
-        getLogger,
-    )
-    from sys import stderr, stdout
-
-    logging_level = "DEBUG" if verbose else "INFO"
-
-    # Define the module level logger.
-    logger = getLogger("clinicadl")
-    logger.setLevel(logging_level)
-
-    warning_formatter = Formatter(
-        "%(asctime)s - %(levelname)s: %(message)s", "%H:%M:%S"
-    )
-    info_formatter = Formatter("%(asctime)s - %(message)s", "%H:%M:%S")
-    debug_formatter = Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s: %(message)s", "%Y-%m-%d %H:%M:%S"
-    )
-
-    fh = FileHandler("clinicadl_debug.log")
-    fh.setLevel(DEBUG)
-    fh.setFormatter(debug_formatter)
-
-    ch_info = StreamHandler(stdout)
-    ch_info.setLevel(INFO)
-    ch_info.setFormatter(info_formatter)
-
-    ch_warning = StreamHandler(stdout)
-    ch_warning.setLevel(WARNING)
-    ch_warning.setFormatter(warning_formatter)
-
-    stderr = StreamHandler(stderr)
-    stderr.addFilter(StdLevelFilter(err=True))
-    stderr.setFormatter(warning_formatter)
-
-    logger.addHandler(ch_warning)
-    logger.addHandler(ch_info)
-    logger.addHandler(fh)
-    logger.addHandler(stderr)
-
 
 class LogWriter:
+    """
+    Write training logs in the MAPS
+    """
+
     def __init__(
         self,
         maps_path,
