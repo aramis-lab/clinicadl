@@ -155,8 +155,8 @@ class CapsDataset(Dataset):
             image_path_list, _ = clinica_file_reader(
                 [participant], [session], self.caps_dict[cohort], file_type
             )
-            logger.debug(f"clinica_file_reader output: {results}")
-            image_filename = path.basename(results[0][0]).replace(".nii.gz", ".pt")
+            logger.debug(f"clinica_file_reader output: {image_path_list}")
+            image_filename = path.basename(image_path_list[0]).replace(".nii.gz", ".pt")
             folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
             image_dir = path.join(
                 self.caps_dict[cohort],
