@@ -73,11 +73,13 @@ pipeline {
                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
                     conda activate "${CONDA_ENV}"
                     cd $WORKSPACE/tests
+                    mkdir -p data/tsvtools
+                    ln -s mnt/data/data_CI/tsvtools data/tsvtools
                     poetry run pytest \
                       --junitxml=./test-reports/test_tsvtool_report.xml \
                       --verbose \
                       --disable-warnings \
-                      test_tsvtool.py
+                      test_tsvtools.py
                     conda deactivate
                     '''
                 }
@@ -96,8 +98,8 @@ pipeline {
                     conda activate "${CONDA_ENV}"
                     cd $WORKSPACE/tests
                     mkdir -p ./data/dataset
-                    tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
-                    tar xf /mnt/data/data_CI/dataset/OasisCaps_t1-volume.tar.gz -C ./data/dataset
+                    tar xf /mnt/data/data_CI/dataset/caps.tar.gz -C ./data/dataset
+                    tar xf /mnt/data/data_CI/dataset/caps_T1V.tar.gz -C ./data/dataset
                     poetry run pytest \
                       --junitxml=./test-reports/test_quality_check_report.xml \
                       --verbose \
@@ -121,7 +123,7 @@ pipeline {
                       conda activate "${CONDA_ENV}"
                       cd $WORKSPACE/tests
                       mkdir -p ./data/dataset
-                      tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
+                      tar xf /mnt/data/data_CI/dataset/caps.tar.gz -C ./data/dataset
                       poetry run pytest \
                         --junitxml=./test-reports/test_generate_report.xml \
                         --verbose \
@@ -358,7 +360,7 @@ pipeline {
                      clinicadl --help
                      cd $WORKSPACE/tests
                      mkdir -p ./data/dataset
-                     tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
+                     tar xf /mnt/data/data_CI/dataset/caps.tar.gz -C ./data/dataset
                      cp -r /mnt/data/data_CI/labels_list ./data/
                      poetry run pytest \
                         --junitxml=./test-reports/test_interpret_report.xml \

@@ -9,15 +9,15 @@ def cli_commands(request):
     if request.param == "t1-linear":
         test_input = [
             "t1-linear",
-            "data/dataset/OasisCaps_example",
-            "results/quality_check.tsv",
+            "data/dataset/caps",
+            "QC/quality_check.tsv",
             "--no-gpu",
         ]
     elif request.param == "t1-volume":
         test_input = [
             "t1-volume",
-            "data/dataset/OasisCaps_t1-volume",
-            "results",
+            "data/dataset/caps_T1V",
+            "QC/out/quality_check_T1V.tsv",
             "adni2021",
         ]
     else:
@@ -31,4 +31,4 @@ def cli_commands(request):
 def test_qc(cli_commands):
     flag_error = not system(f"clinicadl quality-check " + " ".join(cli_commands))
     assert flag_error
-    shutil.rmtree("results")
+    shutil.rmtree("QC/out")

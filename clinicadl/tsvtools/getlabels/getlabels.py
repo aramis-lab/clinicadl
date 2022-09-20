@@ -442,6 +442,11 @@ def get_labels(
     bids_df = pd.read_csv(merged_tsv, sep="\t")
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
     variables_list = ["diagnosis"]
+
+    # Dealing with OASIS3 dataset
+    if "dx1" in bids_df.columns:
+        bids_df.rename(columns={"dx1": "diagnosis"}, inplace=True)
+
     try:
         variables_list.append(find_label(bids_df.columns.values, "age"))
         variables_list.append(find_label(bids_df.columns.values, "sex"))
@@ -488,7 +493,9 @@ def get_labels(
         np.zeros(len(bids_df)), index=bids_df.index
     )
     for subject, subject_df in bids_df.groupby(level=0):
-        baseline_diagnosis = subject_df.loc[(subject, "ses-M00"), "diagnosis"]
+        baseline_diagnosis = subject_df.loc[
+            (subject, first_session(subject_df)), "diagnosis"
+        ]
         bids_copy_df.loc[subject, "baseline_diagnosis"] = baseline_diagnosis
 
     bids_df = copy(bids_copy_df)

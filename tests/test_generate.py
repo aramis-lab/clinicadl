@@ -10,8 +10,8 @@ import pytest
 @pytest.fixture(params=["generate_trivial", "generate_random", "generate_shepplogan"])
 def generate_commands(request):
     if request.param == "generate_trivial":
-        data_caps_folder = "data/dataset/OasisCaps_example/"
-        output_folder = "data/dataset/trivial_example"
+        data_caps_folder = "data/dataset/caps/"
+        output_folder = "data/generate/trivial_example"
         test_input = [
             "generate",
             "trivial",
@@ -36,8 +36,8 @@ def generate_commands(request):
         ]
 
     elif request.param == "generate_random":
-        data_caps_folder = "data/dataset/OasisCaps_example/"
-        output_folder = "data/dataset/random_example"
+        data_caps_folder = "data/dataset/caps/"
+        output_folder = "data/generate/random_example"
         test_input = [
             "generate",
             "random",
@@ -79,7 +79,7 @@ def generate_commands(request):
 
     elif request.param == "generate_shepplogan":
         n_subjects = 10
-        output_folder = "data/dataset/shepplogan_example"
+        output_folder = "data/generate/shepplogan_example"
         test_input = [
             "generate",
             "shepplogan",

@@ -1482,7 +1482,8 @@ class MapsManager:
                 columns = ["participant_id", "session_id", "cohort"]
                 if self.label is not None:
                     columns.append(self.label)
-
+                print(df)
+                print(group_path)
                 df.to_csv(path.join(group_path, "data.tsv"), sep="\t", columns=columns)
                 self.write_parameters(
                     group_path,

@@ -21,13 +21,13 @@ def neighbour_session(session, session_list, neighbour):
         temp_list.sort()
     index_session = temp_list.index(session)
 
-    if index_session + neighbour < 0 or index_session + neighbour >= len(temp_list):
+    if (
+        index_session + neighbour < temp_list[0]
+        or index_session + neighbour >= temp_list[len(temp_list)]
+    ):
         return None
     else:
-        if temp_list[index_session + neighbour] < 10:
-            return "ses-M0" + str(temp_list[index_session + neighbour])
-        else:
-            return "ses-M" + str(temp_list[index_session + neighbour])
+        return temp_list[index_session + neighbour]
 
 
 def after_end_screening(session, session_list):
@@ -43,10 +43,7 @@ def after_end_screening(session, session_list):
 def last_session(session_list):
     temp_list = copy(session_list)
     temp_list.sort()
-    if temp_list[-1] < 10:
-        return "ses-M0" + str(temp_list[-1])
-    else:
-        return "ses-M" + str(temp_list[-1])
+    return temp_list[-1]
 
 
 def complementary_list(total_list, sub_list):
@@ -58,27 +55,22 @@ def complementary_list(total_list, sub_list):
 
 
 def first_session(subject_df):
-    session_list = [int(session[5:]) for _, session in subject_df.index.values]
+    session_list = [session for _, session in subject_df.index.values]
     session_list.sort()
-    first_session = session_list[0]
-    if first_session < 10:
-        return "ses-M0" + str(first_session)
-    else:
-        return "ses-M" + str(first_session)
+    return session_list[0]
+    # if first_session < 10:
+    #    return "ses-M0" + str(first_session)
+    # else:
+    #    return "ses-M" + str(first_session)
 
 
 def next_session(subject_df, session_orig):
-    session_list = [int(session[5:]) for _, session in subject_df.index.values]
+    session_list = [session for _, session in subject_df.index.values]
     session_list.sort()
-    session_id_list = []
-    for session in session_list:
-        if session < 10:
-            session_id_list.append("ses-M0" + str(session))
-        else:
-            session_id_list.append("ses-M" + str(session))
-    index = session_id_list.index(session_orig)
-    if index < len(session_id_list) - 1:
-        return session_id_list[index + 1]
+
+    index = session_list.index(session_orig)
+    if index < len(session_list) - 1:
+        return session_list[index + 1]
     else:
         raise IndexError("The argument session is the last session")
 
