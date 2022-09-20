@@ -366,6 +366,7 @@ class MapsManager:
         self,
         data_group,
         name,
+        method,
         caps_directory=None,
         tsv_path=None,
         split_list=None,
@@ -379,14 +380,15 @@ class MapsManager:
         gpu=None,
         overwrite=False,
         overwrite_name=False,
+        level=None,
     ):
         """
         Performs the interpretation task on a subset of caps_directory defined in a TSV file.
         The mean interpretation is always saved, to save the individual interpretations set save_individual to True.
-
         Args:
             data_group (str): name of the data group interpreted.
             name (str): name of the interpretation procedure.
+            method (str): method used for extraction (ex: gradients, grad-cam...).
             caps_directory (str): path to the CAPS folder. For more information please refer to
                 [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
                 Default will load the value of an existing data group.
@@ -405,11 +407,18 @@ class MapsManager:
             gpu (bool): If given, a new value for the device of the model will be computed.
             overwrite (bool): If True erase the occurrences of data_group.
             overwrite_name (bool): If True erase the occurrences of name.
+            level (int): layer number in the convolutional part after which the feature map is chosen.
         """
 
         from torch.utils.data import DataLoader
 
-        from clinicadl.interpret.gradients import VanillaBackProp
+        from clinicadl.interpret.gradients import method_dict
+
+        if method not in method_dict.keys():
+            raise NotImplementedError(
+                f"Interpretation method {method} is not implemented. "
+                f"Please choose in {method_dict.keys()}"
+            )
 
         if split_list is None:
             split_list = self._find_splits()
@@ -487,23 +496,25 @@ class MapsManager:
                     gpu=gpu,
                 )
 
-                interpreter = VanillaBackProp(model)
+                interpreter = method_dict[method](model)
 
                 cum_maps = [0] * data_test.elem_per_image
                 for data in test_loader:
                     images = data["image"].to(model.device)
 
-                    map_pt = interpreter.generate_gradients(images, target_node)
+                    map_pt = interpreter.generate_gradients(
+                        images, target_node, level=level
+                    )
                     for i in range(len(data["participant_id"])):
                         mode_id = data[f"{self.mode}_id"][i]
                         cum_maps[mode_id] += map_pt[i]
                         if save_individual:
                             single_path = path.join(
                                 results_path,
-                                f"participant-{data['participant_id'][i]}_session-{data['session_id'][i]}_"
+                                f"{data['participant_id'][i]}_{data['session_id'][i]}_"
                                 f"{self.mode}-{data[f'{self.mode}_id'][i]}_map.pt",
                             )
-                            torch.save(map_pt, single_path)
+                            torch.save(map_pt[i], single_path)
                 for i, mode_map in enumerate(cum_maps):
                     mode_map /= len(data_test)
                     torch.save(
@@ -1169,21 +1180,26 @@ class MapsManager:
             self.parameters["architecture"] = self.task_manager.get_default_network()
         if "selection_threshold" not in self.parameters:
             self.parameters["selection_threshold"] = None
-        label_code = self.task_manager.generate_label_code(train_df, self.label)
+        if (
+            "label_code" not in self.parameters
+            or len(self.parameters["label_code"]) == 0
+        ):  # Allows to set custom label code in TOML
+            self.parameters["label_code"] = self.task_manager.generate_label_code(
+                train_df, self.label
+            )
         full_dataset = return_dataset(
             self.caps_directory,
             train_df,
             self.preprocessing_dict,
             multi_cohort=self.multi_cohort,
             label=self.label,
-            label_code=label_code,
+            label_code=self.parameters["label_code"],
             train_transformations=None,
             all_transformations=transformations,
         )
         self.parameters.update(
             {
                 "num_networks": full_dataset.elem_per_image,
-                "label_code": label_code,
                 "output_size": self.task_manager.output_size(
                     full_dataset.size, full_dataset.df, self.label
                 ),
@@ -1941,6 +1957,19 @@ class MapsManager:
         return self._init_model(
             self.maps_path, selection_metric, split, network=network
         )[0]
+
+    def get_best_epoch(
+        self, split: int = 0, selection_metric: str = None, network: int = None
+    ) -> int:
+        selection_metric = self._check_selection_metric(split, selection_metric)
+        if self.multi_network:
+            if network is None:
+                raise ClinicaDLArgumentError(
+                    "Please precise the network number that must be loaded."
+                )
+        return self.get_state_dict(split=split, selection_metric=selection_metric)[
+            "epoch"
+        ]
 
     def get_state_dict(
         self, split=0, selection_metric=None, network=None, map_location=None
