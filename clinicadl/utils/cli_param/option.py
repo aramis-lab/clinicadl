@@ -93,7 +93,7 @@ n_proc = click.option(
 batch_size = click.option(
     "--batch_size",
     type=int,
-    default=2,
+    default=8,
     show_default=True,
     help="Batch size for data loading.",
 )
