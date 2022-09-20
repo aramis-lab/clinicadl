@@ -14,7 +14,7 @@ def predict(
     label: str = None,
     gpu: bool = True,
     n_proc: int = 0,
-    batch_size: int = 1,
+    batch_size: int = 8,
     selection_metrics: List[str] = None,
     diagnoses: List[str] = None,
     multi_cohort: bool = False,
