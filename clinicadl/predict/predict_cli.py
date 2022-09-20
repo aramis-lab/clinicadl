@@ -69,6 +69,8 @@ from clinicadl.utils import cli_param
     is_flag=True,
     help="Save the reconstruction output in the MAPS in NIfTI format.",
 )
+@cli_param.option.split
+@cli_param.option.selection_metrics
 @cli_param.option.use_gpu
 @cli_param.option.n_proc
 @cli_param.option.batch_size
