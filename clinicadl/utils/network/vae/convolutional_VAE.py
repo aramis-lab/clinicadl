@@ -29,7 +29,7 @@ class CVAE_3D(Network):
         self.bn1 = nn.BatchNorm3d(32)
         self.bn2 = nn.BatchNorm3d(64)
         self.bn3 = nn.BatchNorm3d(128)
-        # self.bn4 = nn.BatchNorm3d(128)
+        self.bn4 = nn.BatchNorm3d(128)
         self.fc10 = nn.Linear(1683968, latent_space_size)
         self.fc11 = nn.Linear(1683968, latent_space_size)
 
