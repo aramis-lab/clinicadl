@@ -51,7 +51,7 @@ class BaseVAE(Network):
 
         losses = criterion(images, recon_images, mu, logVar)
         reconstruction_loss, kl_loss = losses[0], losses[1]
-        total_loss = reconstruction_loss + self.beta * kl_loss
+        total_loss = self.lambda1 * reconstruction_loss + self.lambda2 * kl_loss
         # In the case there is a regularization term
         if len(losses) > 2:
             regularization = losses[2]
