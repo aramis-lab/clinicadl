@@ -146,7 +146,7 @@ class VanillaSpatialVAE(BaseVAE):
         return ["reconstruction"]
 
 
-class Vanilla3DVAE(BaseVAE):
+class Vanilla3DspacialVAE(BaseVAE):
     """
     This network is a 3D convolutional variational autoencoder with a spacial latent space.
 
@@ -261,7 +261,7 @@ class Vanilla3DVAE(BaseVAE):
         )
         decoder = nn.Sequential(*decoder_layers)
 
-        super(Vanilla3DVAE, self).__init__(
+        super(Vanilla3DspacialVAE, self).__init__(
             encoder,
             decoder,
             mu_layer,
@@ -296,7 +296,7 @@ class Vanilla3DdenseVAE(BaseVAE):
 
     def __init__(
         self,
-        input_size,
+        size_reduction_factor,
         latent_space_size=256,
         feature_size=1024,
         n_conv=4,
@@ -310,10 +310,19 @@ class Vanilla3DdenseVAE(BaseVAE):
         # automatically compute padding
         decoder_output_padding = []
 
-        input_c = input_size[0]
-        input_d = input_size[1]
-        input_h = input_size[2]
-        input_w = input_size[3]
+        if size_reduction_factor == 2:
+            self.input_size = [1, 80, 96, 80]
+        elif size_reduction_factor == 3:
+            self.input_size = [1, 56, 64, 56]
+        elif size_reduction_factor == 4:
+            self.input_size = [1, 40, 48, 40]
+        elif size_reduction_factor == 5:
+            self.input_size = [1, 32, 40, 32]
+
+        input_c = self.input_size[0]
+        input_d = self.input_size[1]
+        input_h = self.input_size[2]
+        input_w = self.input_size[3]
         d, h, w = input_d, input_h, input_w
 
         # ENCODER
@@ -332,6 +341,7 @@ class Vanilla3DdenseVAE(BaseVAE):
             # Construct output paddings
             decoder_output_padding.append([d % 2, h % 2, w % 2])
             d, h, w = d // 2, h // 2, w // 2
+        # Compute size of the feature space
         n_pix = (
             first_layer_channels
             * 2 ** (n_conv - 1)

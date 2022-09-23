@@ -6,7 +6,7 @@ from .vae.advanced_CVAE import CVAE_3D_final_conv
 from .vae.convolutional_VAE import CVAE_3D, CVAE_3D_half
 from .vae.vanilla_vae import (
     Vanilla3DdenseVAE,
-    Vanilla3DVAE,
+    Vanilla3DspacialVAE,
     VanillaDenseVAE,
     VanillaSpatialVAE,
 )
