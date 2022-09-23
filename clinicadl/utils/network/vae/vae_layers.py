@@ -1,6 +1,7 @@
-import torch
 import torch.nn.functional as F
 from torch import nn
+
+from clinicadl.utils.network.vae.vae_utils import get_norm2d, get_norm3d
 
 
 class EncoderLayer2D(nn.Module):
@@ -19,6 +20,7 @@ class EncoderLayer2D(nn.Module):
         stride=2,
         padding=1,
         output_padding=0,
+        normalization="batch",
     ):
         super(EncoderLayer2D, self).__init__()
         self.layer = nn.Sequential(
@@ -31,7 +33,7 @@ class EncoderLayer2D(nn.Module):
                 output_padding=output_padding,
                 bias=False,
             ),
-            nn.BatchNorm2d(output_channels),
+            get_norm2d(normalization, output_channels),
         )
 
     def forward(self, x):
@@ -54,6 +56,7 @@ class DecoderLayer2D(nn.Module):
         stride=2,
         padding=1,
         output_padding=0,
+        normalization="batch",
     ):
         super(DecoderLayer2D, self).__init__()
         self.layer = nn.Sequential(
@@ -66,7 +69,7 @@ class DecoderLayer2D(nn.Module):
                 output_padding=output_padding,
                 bias=False,
             ),
-            nn.BatchNorm2d(output_channels),
+            get_norm2d(normalization, output_channels),
         )
 
     def forward(self, x):
@@ -83,7 +86,13 @@ class EncoderLayer3D(nn.Module):
     """
 
     def __init__(
-        self, input_channels, output_channels, kernel_size=4, stride=2, padding=1
+        self,
+        input_channels,
+        output_channels,
+        kernel_size=4,
+        stride=2,
+        padding=1,
+        normalization="batch",
     ):
         super(EncoderLayer3D, self).__init__()
         self.layer = nn.Sequential(
@@ -95,7 +104,7 @@ class EncoderLayer3D(nn.Module):
                 padding=padding,
                 bias=False,
             ),
-            nn.BatchNorm3d(output_channels),
+            get_norm3d(normalization, output_channels),
         )
 
     def forward(self, x):
@@ -118,6 +127,7 @@ class DecoderLayer3D(nn.Module):
         stride=2,
         padding=1,
         output_padding=0,
+        normalization="batch",
     ):
         super(DecoderLayer3D, self).__init__()
         self.layer = nn.Sequential(
@@ -130,7 +140,7 @@ class DecoderLayer3D(nn.Module):
                 output_padding=output_padding,
                 bias=False,
             ),
-            nn.BatchNorm3d(output_channels),
+            get_norm3d(normalization, output_channels),
         )
 
     def forward(self, x):
