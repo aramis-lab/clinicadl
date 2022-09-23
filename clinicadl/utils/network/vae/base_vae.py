@@ -56,7 +56,9 @@ class BaseVAE(Network):
         if len(losses) > 2:
             regularization = losses[2]
             total_loss = (
-                self.alpha * reconstruction_loss + self.beta * kl_loss + regularization
+                self.lambda1 * reconstruction_loss
+                + self.lambda2 * kl_loss
+                + regularization
             )
 
         loss_dict = {
