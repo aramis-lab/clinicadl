@@ -49,6 +49,7 @@ def quality_check(
     model_file = join(cache_clinicadl, FILE1.filename)
 
     if not (exists(model_file)):
+        print("not exist")
         try:
             model_file = fetch_file(FILE1, cache_clinicadl)
         except IOError as err:

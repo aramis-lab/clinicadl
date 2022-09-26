@@ -63,17 +63,12 @@ class RegressionManager(TaskManager):
 
         count = np.zeros(n_bins)
         values = df[dataset.label].values.astype(float)
-        print(values)
-
         thresholds = [
             min(values) + i * (max(values) - min(values)) / n_bins
             for i in range(n_bins)
         ]
-        print(thresholds)
-        print(df.index)
         for idx in df.index:
             label = df.loc[idx, dataset.label]
-            print(label)
             key = max(np.where((label >= np.array(thresholds))[0]))
             count[key] += 1
 

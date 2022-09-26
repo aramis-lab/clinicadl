@@ -3,11 +3,15 @@
 import json
 import os
 import shutil
+from os.path import join
 
 import pytest
 
-launch_dir = "results"
 name_dir = "job-1"
+
+# root = "/network/lustre/iss02/aramis/projects/clinicadl/data"
+root = "/mnt/data/data_CI"
+launch_dir = join(root, "randomSearch/out")
 
 
 @pytest.fixture(
@@ -18,7 +22,7 @@ name_dir = "job-1"
 def cli_commands(request):
 
     if request.param == "rs_image_cnn":
-        toml_path = "data/random_search.toml"
+        toml_path = join(root, "randomSearch/in/random_search.toml")
         generate_input = ["random-search", launch_dir, name_dir]
     else:
         raise NotImplementedError(f"Test {request.param} is not implemented.")

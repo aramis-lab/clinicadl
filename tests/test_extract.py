@@ -27,8 +27,13 @@ def compare_folders(out, ref, shared_folder_name):
     out_txt = join(out, "out_folder.txt")
     ref_txt = join(ref, "ref_folder.txt")
 
-    list_files(join(out, shared_folder_name), filename=out_txt)
-    list_files(join(ref, shared_folder_name), filename=ref_txt)
+    # list_files(join(out, shared_folder_name), filename=out_txt)
+
+    list_files(out, filename=out_txt)
+    list_files(ref, filename=ref_txt)
+
+    print(ref_txt)
+    # list_files(join(ref, shared_folder_name), filename=ref_txt)
 
     # Compare them
     if not cmp(out_txt, ref_txt):
@@ -47,8 +52,8 @@ def compare_folders(out, ref, shared_folder_name):
         diff_text = ""
         for line in diff:
             diff_text = diff_text + line + "\n"
-        remove(out_txt)
-        remove(ref_txt)
+        # remove(out_txt)
+        # remove(ref_txt)
         raise AssertionError(
             "Comparison of out and ref directories shows mismatch :\n "
             "OUT :\n"
@@ -60,8 +65,8 @@ def compare_folders(out, ref, shared_folder_name):
         )
 
     # Clean folders
-    remove(out_txt)
-    remove(ref_txt)
+    # remove(out_txt)
+    # remove(ref_txt)
 
 
 def list_files(startpath, filename=None):
@@ -109,20 +114,25 @@ def test_extract():
     import shutil
     from os.path import abspath, dirname, join
 
-    root = dirname(abspath(join(abspath(__file__))))
-    root = join(root, "data", "dataset", "DeepLearningPrepareData")
+    # root = "/network/lustre/iss02/aramis/projects/clinicadl/data"
+    root = "/mnt/data/data_CI"
+    root = join(root, "extract")
 
     # Remove potential residual of previous UT
-    clean_folder(join(root, "out", "caps"), recreate=False)
+    clean_folder(join(root, "out"), recreate=False)
 
     # Copy necessary data from in to out
-    shutil.copytree(join(root, "in", "caps"), join(root, "out", "caps"))
+    shutil.copytree(join(root, "in", "caps"), join(root, "out", "caps_image"))
+    shutil.copytree(join(root, "in", "caps"), join(root, "out", "caps_slice"))
+    shutil.copytree(join(root, "in", "caps"), join(root, "out", "caps_roi"))
+    shutil.copytree(join(root, "in", "caps"), join(root, "out", "caps_patch"))
 
     # Prepare test for different parameters
 
-    modalities = ["t1-linear", "pet-linear", "custom"]
+    modalities = ["t1-linear", "pet-linear"]  # , "custom"]
 
     uncropped_image = [True, False]
+    acquisition_label = ["18FAV45", "11CPIB"]
 
     image_params = {"mode": "image"}
     patch_params = {"mode": "patch", "patch_size": 50, "stride_size": 50}
@@ -145,17 +155,23 @@ def test_extract():
     for parameters in data:
 
         parameters["prepare_dl"] = True
+        parameters["save_features"] = True
 
         for modality in modalities:
 
             parameters["preprocessing"] = modality
 
             if modality == "pet-linear":
-                parameters["acq_label"] = "av45"
-                parameters["suvr_reference_region"] = "pons2"
-                parameters["use_uncropped_image"] = False
-                parameters["extract_json"] = f"{modality}_mode-{parameters['mode']}"
-                extract_generic(root, parameters)
+                for acq in acquisition_label:
+                    parameters["acq_label"] = acq
+                    parameters["suvr_reference_region"] = "pons2"
+                    parameters["use_uncropped_image"] = False
+                    parameters[
+                        "extract_json"
+                    ] = f"{modality}-{acq}_mode-{parameters['mode']}.json"
+                    tsv_file = join(root, "in", f"pet_{acq}.tsv")
+                    mode = parameters["mode"]
+                    extract_generic(root, mode, tsv_file, parameters)
 
             elif modality == "custom":
                 parameters["use_uncropped_image"] = True
@@ -163,39 +179,89 @@ def test_extract():
                     "custom_suffix"
                 ] = "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
                 parameters["roi_custom_template"] = "Ixi549Space"
-                parameters["extract_json"] = f"{modality}_mode-{parameters['mode']}"
-                extract_generic(root, parameters)
+                parameters[
+                    "extract_json"
+                ] = f"{modality}_mode-{parameters['mode']}.json"
+                tsv_file = join(root, "in", "subjects.tsv")
+                mode = parameters["mode"]
+                extract_generic(root, mode, tsv_file, parameters)
 
             elif modality == "t1-linear":
                 for flag in uncropped_image:
                     parameters["use_uncropped_image"] = flag
                     parameters[
                         "extract_json"
-                    ] = f"{modality}_crop-{not flag}_mode-{parameters['mode']}"
-                    extract_generic(root, parameters)
+                    ] = f"{modality}_crop-{not flag}_mode-{parameters['mode']}.json"
+
+                    tsv_file = join(root, "in", "subjects.tsv")
+                    mode = parameters["mode"]
+                    extract_generic(root, mode, tsv_file, parameters)
             else:
                 raise NotImplementedError(
                     f"Test for modality {modality} was not implemented."
                 )
 
-    # Check output vs ref
-    out_folder = join(root, "out")
-    ref_folder = join(root, "ref")
+            # Check output vs ref
+    import os
 
-    compare_folders(out_folder, ref_folder, shared_folder_name="caps/subjects")
+    # image
+    out_folder = join(root, "out/caps_image")
+    ref_folder = join(root, "ref/caps_image")
 
-    clean_folder(join(root, "out", "caps"), recreate=False)
+    diff_path = join(root, "diff.txt")
+    if os.path.exists(diff_path):
+        os.remove(diff_path)
+    os.system(f"diff -Naur {out_folder} {ref_folder} > {diff_path}")
+    filesize = os.path.getsize(diff_path)
+    assert filesize == 0
+
+    # slice
+    out_folder = join(root, "out/caps_slice")
+    ref_folder = join(root, "ref/caps_slice")
+
+    diff_path = join(root, "diff.txt")
+    if os.path.exists(diff_path):
+        os.remove(diff_path)
+    os.system(f"diff -Naur {out_folder} {ref_folder} > {diff_path}")
+    filesize = os.path.getsize(diff_path)
+    assert filesize == 0
+
+    # roi
+    out_folder = join(root, "out/caps_roi")
+    ref_folder = join(root, "ref/caps_roi")
+
+    diff_path = join(root, "diff.txt")
+    if os.path.exists(diff_path):
+        os.remove(diff_path)
+    os.system(f"diff -Naur {out_folder} {ref_folder} > {diff_path}")
+    filesize = os.path.getsize(diff_path)
+    assert filesize == 0
+
+    # patch
+    out_folder = join(root, "out/caps_patch")
+    ref_folder = join(root, "ref/caps_patch")
+
+    diff_path = join(root, "diff.txt")
+    if os.path.exists(diff_path):
+        os.remove(diff_path)
+    os.system(f"diff -Naur {out_folder} {ref_folder} > {diff_path}")
+    filesize = os.path.getsize(diff_path)
+    assert filesize == 0
+
+    # compare_folders(out_folder, ref_folder, shared_folder_name="caps/subjects")
+    os.remove(diff_path)
+    clean_folder(join(root, "out"), recreate=False)
 
 
-def extract_generic(root, parameters):
+def extract_generic(root, mode, tsv_file, parameters):
 
     from os.path import join
 
     from clinicadl.extract.extract import DeepLearningPrepareData
 
     DeepLearningPrepareData(
-        caps_directory=join(root, "out", "caps"),
-        tsv_file=join(root, "in", "subjects.tsv"),
+        caps_directory=join(root, "out", f"caps_{mode}"),
+        tsv_file=tsv_file,
         n_proc=2,
         parameters=parameters,
     )

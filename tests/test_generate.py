@@ -1,17 +1,20 @@
 # coding: utf8
 
 import os
-from os.path import abspath
+from os.path import abspath, join
 from typing import List
 
 import pytest
 
+# root="/network/lustre/iss02/aramis/projects/clinicadl/data"
+root = "/mnt/data/data_CI"
+
 
 @pytest.fixture(params=["generate_trivial", "generate_random", "generate_shepplogan"])
 def generate_commands(request):
+    data_caps_folder = join(root, "generate/in/caps")
     if request.param == "generate_trivial":
-        data_caps_folder = "data/dataset/caps/"
-        output_folder = "data/generate/trivial_example"
+        output_folder = join(root, "generate/out/trivial_example")
         test_input = [
             "generate",
             "trivial",
@@ -34,10 +37,10 @@ def generate_commands(request):
             "sub-TRIV6_ses-M00_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
             "sub-TRIV7_ses-M00_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
         ]
+        # output_reference = join(root,"generate/ref/trivial_example")
 
     elif request.param == "generate_random":
-        data_caps_folder = "data/dataset/caps/"
-        output_folder = "data/generate/random_example"
+        output_folder = join(root, "generate/out/random_example")
         test_input = [
             "generate",
             "random",
@@ -76,10 +79,11 @@ def generate_commands(request):
             "sub-RAND8_ses-M00_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
             "sub-RAND9_ses-M00_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.nii.gz",
         ]
+        # output_reference = join(root,"generate/ref/random_example")
 
     elif request.param == "generate_shepplogan":
         n_subjects = 10
-        output_folder = "data/generate/shepplogan_example"
+        output_folder = join(root, "generate/out/shepplogan_example")
         test_input = [
             "generate",
             "shepplogan",
@@ -100,6 +104,7 @@ def generate_commands(request):
                 for j in range(n_subjects)
             ]
         )
+        # output_reference = join(root,"generate/ref/shepplogan_example")
     else:
         raise NotImplementedError(f"Test {request.param} is not implemented.")
 
@@ -115,14 +120,21 @@ def test_generate(generate_commands):
     assert flag_error
     assert compare_folder_with_files(abspath(output_folder), output_ref)
 
+    # diff_path = join(root, "generate/diff.txt")
+    # if os.path.exists(diff_path):
+    #     os.remove(diff_path)
+    # os.system(f"diff -r {output_folder} {output_ref} > {diff_path}")
+    # filesize = os.path.getsize(diff_path)
+    # assert filesize == 0
+
+    # os.remove(diff_path)
+
 
 def compare_folder_with_files(folder: str, file_list: List[str]) -> bool:
     """Compare file existing in two folders
-
     Args:
         folder: path to a folder
         file_list: list of files which must be found in folder
-
     Returns:
         True if files in file_list were all found in folder.
     """

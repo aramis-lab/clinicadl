@@ -3,18 +3,21 @@ import os
 import pathlib
 import shutil
 from os import system
+from os.path import join
 
 import pytest
 
 from clinicadl import MapsManager
 
+root = "/network/lustre/iss02/aramis/projects/clinicadl/data/"
+
 
 @pytest.fixture(
     params=[
-        "data/stopped_jobs/stopped_1",
-        "data/stopped_jobs/stopped_2",
-        "data/stopped_jobs/stopped_3",
-        "data/stopped_jobs/stopped_4",
+        join(root, "resume/in/stopped_1"),
+        join(root, "resume/in/stopped_2"),
+        join(root, "resume/in/stopped_3"),
+        join(root, "resume/in/stopped_4"),
     ]
 )
 def input_directory(request):

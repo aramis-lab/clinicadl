@@ -15,43 +15,61 @@ from clinicadl import MapsManager
         "predict_roi_regression",
         "predict_slice_classification",
         "predict_patch_regression",
-        "predict_roi_multi_classification",
+        "predict_patch_multi_classification",
         "predict_roi_reconstruction",
     ]
 )
 def predict_commands(request):
+
+    root = "/network/lustre/iss02/aramis/projects/clinicadl/data/"
     if request.param == "predict_image_classification":
-        model_folder = "data/models/maps_image/"
+        model_folder = join(
+            root, "predict/in/maps_image_cnn"
+        )  # data/models/maps_image/"
         modes = ["image"]
         use_labels = True
+        caps_folder = join(root, "predict/in/caps_image")
     elif request.param == "predict_slice_classification":
-        model_folder = "data/models/maps_slice/"
+        model_folder = join(
+            root, "predict/in/maps_slice_cnn"
+        )  # "data/models/maps_slice/"
         modes = ["image", "slice"]
         use_labels = True
+        caps_folder = join(root, "predict/in/caps_slice")
     elif request.param == "predict_patch_regression":
-        model_folder = "data/models/maps_patch/"
+        model_folder = join(
+            root, "predict/in/maps_patch_cnn"
+        )  # "data/models/maps_patch/"
         modes = ["image", "patch"]
         use_labels = False
+        caps_folder = join(root, "predict/in/caps_patch")
     elif request.param == "predict_roi_regression":
-        model_folder = "data/models/maps_roi/"
+        model_folder = join(root, "predict/in/maps_roi_cnn")  # "data/models/maps_roi/"
         modes = ["image", "roi"]
         use_labels = False
-    elif request.param == "predict_roi_multi_classification":
-        model_folder = "data/models/maps_roi_multi/"
-        modes = ["image", "roi"]
+        caps_folder = join(root, "predict/in/caps_roi")
+    elif request.param == "predict_patch_multi_classification":
+        model_folder = join(
+            root, "predict/in/maps_patch_multi_cnn"
+        )  # "data/models/maps_roi_multi/"
+        modes = ["image", "patch"]
         use_labels = False
+        caps_folder = join(root, "predict/in/caps_patch")
     elif request.param == "predict_roi_reconstruction":
-        model_folder = "data/models/maps_roi_ae/"
+        model_folder = join(
+            root, "predict/in/maps_roi_ae"
+        )  # "data/models/maps_roi_ae/"
         modes = ["roi"]
         use_labels = False
+        caps_folder = join(root, "predict/in/caps_roi")
     else:
         raise NotImplementedError(f"Test {request.param} is not implemented.")
 
-    return model_folder, use_labels, modes
+    return model_folder, use_labels, modes, caps_folder
 
 
 def test_predict(predict_commands):
-    model_folder, use_labels, modes = predict_commands
+    model_folder, use_labels, modes, caps_folder = predict_commands
     out_dir = join(model_folder, "split-0/best-loss/test-RANDOM")
 
     if exists(out_dir):
@@ -70,8 +88,8 @@ def test_predict(predict_commands):
     maps_manager = MapsManager(model_folder, verbose="debug")
     maps_manager.predict(
         data_group="test-RANDOM",
-        caps_directory="data/dataset/OasisCaps_example",
-        tsv_path="data/dataset/OasisCaps_example/data.tsv",
+        caps_directory="/network/lustre/iss02/aramis/projects/clinicadl/data/predict/in/caps_random",
+        tsv_path="/network/lustre/iss02/aramis/projects/clinicadl/data/predict/in/caps_random/data.tsv",
         gpu=False,
         use_labels=use_labels,
         overwrite=True,
