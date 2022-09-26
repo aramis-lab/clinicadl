@@ -1192,9 +1192,8 @@ class MapsManager:
                 data = dataset[i]
                 image = data["image"]
                 logger.debug(f"Image for latent representation {image}")
-                latent, _, _ = (
-                    model.forward(image.unsqueeze(0).to(model.device)).squeeze(0).cpu()
-                )
+                latent, _, _ = model.forward(image.unsqueeze(0).to(model.device))
+                latent = latent.squeeze(0).cpu()
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
                 mode_id = data[f"{self.mode}_id"]
