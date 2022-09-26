@@ -1190,6 +1190,7 @@ class MapsManager:
                 )
                 torch.save(image, tensor_path / input_filename)
                 torch.save(output, tensor_path / output_filename)
+                logger.debug(f"File saved at {[input_filename, output_filename]}")
 
     def _compute_latent_tensors(
         self,
@@ -1240,6 +1241,7 @@ class MapsManager:
             for i in range(nb_modes):
                 data = dataset[i]
                 image = data["image"]
+                logger.debug(f"Image for latent representation {image}")
                 latent, _, _ = (
                     model.forward(image.unsqueeze(0).to(model.device)).squeeze(0).cpu()
                 )
