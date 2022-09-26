@@ -311,6 +311,7 @@ class MapsManager:
                         network=network,
                     )
                     if save_tensor:
+                        logger.debug("Saving tensors")
                         self._compute_output_tensors(
                             data_test,
                             data_group,
@@ -369,6 +370,7 @@ class MapsManager:
                     gpu=gpu,
                 )
                 if save_tensor:
+                    logger.debug("Saving tensors")
                     self._compute_output_tensors(
                         data_test,
                         data_group,
