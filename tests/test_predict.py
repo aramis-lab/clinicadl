@@ -21,7 +21,8 @@ from clinicadl import MapsManager
 )
 def predict_commands(request):
 
-    root = "/network/lustre/iss02/aramis/projects/clinicadl/data/"
+    # root = "/network/lustre/iss02/aramis/projects/clinicadl/data/"
+    root = "/mnt/data/data_CI"
     if request.param == "predict_image_classification":
         model_folder = join(
             root, "predict/in/maps_image_cnn"
@@ -93,6 +94,7 @@ def test_predict(predict_commands):
         gpu=False,
         use_labels=use_labels,
         overwrite=True,
+        diagnoses=["CN"],
     )
 
     for mode in modes:

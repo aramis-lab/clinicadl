@@ -9,22 +9,42 @@ import pytest
 
 from clinicadl import MapsManager
 
-root = "/network/lustre/iss02/aramis/projects/clinicadl/data/"
+# root = "/network/lustre/iss02/aramis/projects/clinicadl/data/resume"
+root = "/mnt/data/data_CI"
 
 
 @pytest.fixture(
     params=[
-        join(root, "resume/in/stopped_1"),
-        join(root, "resume/in/stopped_2"),
-        join(root, "resume/in/stopped_3"),
-        join(root, "resume/in/stopped_4"),
+        join(root, "out/stopped_1"),
+        join(root, "out/stopped_2"),
+        join(root, "out/stopped_3"),
     ]
 )
 def input_directory(request):
     return request.param
 
 
+def clean_folder(path, recreate=True):
+    from os import makedirs
+    from os.path import abspath, exists
+    from shutil import rmtree
+
+    abs_path = abspath(path)
+    if exists(abs_path):
+        rmtree(abs_path)
+    if recreate:
+        makedirs(abs_path)
+
+
 def test_resume(input_directory):
+
+    clean_folder(join(root, "out"))
+
+    shutil.copytree(join(root, "in", "stopped_1"), join(root, "out", "stopped_1"))
+    shutil.copytree(join(root, "in", "stopped_2"), join(root, "out", "stopped_2"))
+    shutil.copytree(join(root, "in", "stopped_3"), join(root, "out", "stopped_3"))
+
+    print(input_directory)
     flag_error = not system(f"clinicadl -vv train resume {input_directory}")
     assert flag_error
 

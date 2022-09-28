@@ -1,15 +1,17 @@
 import os
 import shutil
 from os import path
+from os.path import join
 
 import pandas as pd
 
 from clinicadl.utils.caps_dataset.data import load_data_test
 from clinicadl.utils.split_manager import KFoldSplit
 
-merged_tsv = "data/tsvtool/anonymous_BIDS.tsv"
-missing_mods = "data/tsvtool/anonymous_missing_mods"
-reference_path = "data/tsvtool/anonymous_reference"
+root = "/mnt/data/data_CI"
+merged_tsv = join(root, "tsvtools/in/merge.tsv")
+missing_mods = join(root, "tsvtools/in/missing_mods")
+reference_path = join(root, "tsvtools/in/anonymous_reference")
 diagnoses = "AD CN MCI pMCI sMCI"
 
 """
