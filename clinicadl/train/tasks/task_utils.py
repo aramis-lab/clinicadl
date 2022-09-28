@@ -18,7 +18,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
     from clinicadl.train.train import train
     from clinicadl.train.train_utils import build_train_dict
 
-    logger = getLogger("clinicadl")
+    logger = getLogger("clinicadl.task_manager")
 
     config_file_name = None
     if kwargs["config_file"]:

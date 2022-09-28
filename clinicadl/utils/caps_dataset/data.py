@@ -31,7 +31,7 @@ from clinicadl.utils.exceptions import (
     ClinicaDLTSVError,
 )
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.datasets")
 
 
 #################################

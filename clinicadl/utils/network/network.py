@@ -19,7 +19,7 @@ class Network(nn.Module):
 
         from numpy import argmax
 
-        logger = getLogger("clinicadl")
+        logger = getLogger("clinicadl.networks")
 
         if not gpu:
             return "cpu"

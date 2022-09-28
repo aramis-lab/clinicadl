@@ -25,7 +25,8 @@ from clinicadl.utils.exceptions import (
     ClinicaDLDataLeakageError,
     MAPSError,
 )
-from clinicadl.utils.maps_manager.logwriter import LogWriter, setup_logging
+from clinicadl.utils.logger import setup_logging
+from clinicadl.utils.maps_manager.logwriter import LogWriter
 from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
     read_json,
@@ -34,7 +35,7 @@ from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.network.network import Network
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.maps_manager")
 
 
 level_list: List[str] = ["warning", "info", "debug"]
