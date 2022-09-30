@@ -13,12 +13,6 @@ from clinicadl.utils import cli_param
 @cli_param.option.caps_directory
 @cli_param.option.variables_of_interest
 @click.option(
-    "--time_horizon",
-    help="Time horizon to analyse stability of the label in the case of a progressive disease.",
-    default=36,
-    type=int,
-)
-@click.option(
     "--restriction_tsv",
     help="Path to a TSV file containing the sessions that can be included.",
     type=str,
@@ -56,7 +50,6 @@ def cli(
     diagnoses,
     modality,
     restriction_tsv,
-    time_horizon,
     variables_of_interest,
     keep_smc,
     caps_directory,
@@ -74,7 +67,7 @@ def cli(
 
     Outputs are stored in OUTPUT_TSV.
     """
-    from .getlabels import get_labels
+    from .get_labels import get_labels
 
     if len(variables_of_interest) == 0:
         variables_of_interest = None
@@ -85,7 +78,6 @@ def cli(
         diagnoses,
         modality=modality,
         restriction_path=restriction_tsv,
-        time_horizon=time_horizon,
         variables_of_interest=variables_of_interest,
         remove_smc=not keep_smc,
         missing_mods=missing_mods,

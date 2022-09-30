@@ -31,7 +31,7 @@ logger = getLogger("clinicadl")
 
 def df_to_tsv(name: str, results_path: str, df, baseline: bool = False):
 
-    df = df[["participant_id", "session_id", "group", "subgroup", "age", "sex"]]
+    df = df[["participant_id", "session_id"]]
     df.sort_values(by=["participant_id", "session_id"], inplace=True)
     if baseline:
         df.drop_duplicates(subset=["participant_id"], keep="first", inplace=True)
@@ -225,7 +225,7 @@ def split_diagnoses(
 
         train_df, test_df = create_split(
             diagnosis_df,
-            split_label="group",
+            split_label="diagnosis",
             n_test=n_test,
             p_age_threshold=p_age_threshold,
             p_sex_threshold=p_sex_threshold,

@@ -8,9 +8,12 @@ from clinicadl.utils.caps_dataset.data import load_data_test
 from clinicadl.utils.split_manager import KFoldSplit
 from clinicadl.utils.tsvtools_utils import extract_baseline
 
-data_ci_directory = "/network/lustre/iss02/aramis/projects/clinicadl/DATA_CI"
-bids_directory = path.join(data_ci_directory, "dataset/bids")
-in_directory = path.join(data_ci_directory, "tsvtools/in")
+data_ci_directory = "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc"
+data_ci_directory2 = (
+    "/network/lustre/iss02/aramis/users/camille.brianceau/TEST_tsvtools/new_test"
+)
+bids_directory = path.join(data_ci_directory, "tsvtools2/in/bids")
+in_directory = path.join(data_ci_directory, "tsvtools2/in")
 reference_directory = path.join(data_ci_directory, "tsvtools/ref")
 output_directory = path.join(data_ci_directory, "tsvtools/out")
 

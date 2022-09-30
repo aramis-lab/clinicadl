@@ -47,7 +47,7 @@ def write_splits(
     baseline_df = extract_baseline(diagnosis_df, set_index=False)
 
     if split_label is None:
-        diagnoses_list = list(baseline_df.group)
+        diagnoses_list = list(baseline_df.diagnosis)
         unique = list(set(diagnoses_list))
         y = np.array([unique.index(x) for x in diagnoses_list])
     else:
@@ -56,6 +56,7 @@ def write_splits(
         y = np.array([unique.index(x) for x in stratification_list])
 
     splits = StratifiedKFold(n_splits=int(n_splits), shuffle=True, random_state=2)
+    print(splits)
 
     output_train_df = pd.DataFrame()
     output_long_train_df = pd.DataFrame()
@@ -63,7 +64,11 @@ def write_splits(
     output_long_test_df = pd.DataFrame()
 
     diagnosis_df.reset_index(inplace=True)
+    # os.mkdir(f"{n_splits}_fold")
     for i, indices in enumerate(splits.split(np.zeros(len(y)), y)):
+        print(i)
+        # print(indices)
+        # os.mkdir(f"{n_splits}_fold/fold_{i}")
         train_index, test_index = indices
 
         test_df = baseline_df.iloc[test_index]
@@ -81,6 +86,11 @@ def write_splits(
         test_df.__setitem__("datagroup", subset_name)
 
         output_df = pd.concat([train_df, test_df])
+
+        print(train_df)
+        # train_df.to_csv(f"{n_splits}_fold/fold_{i}/train_baseline.tsv")
+        # test_df.to_csv(f"{n_splits}_fold/fold_{i}/validation_baseline.tsv")
+        # print(test_df)
         output_all_df = pd.concat([output_all_df, output_df])
         long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
         long_train_df = long_train_df.reindex(
@@ -130,16 +140,33 @@ def split_diagnoses(
     )
 
     # Read files
+    from os.path import join
 
     diagnosis_df = pd.read_csv(formatted_data_tsv, sep="\t")
     diagnosis_df.set_index(["participant_id", "session_id"], inplace=True)
+    list_columns = diagnosis_df.columns.values
+    if (
+        "diagnosis" not in list_columns
+        or "age" not in list_columns
+        or "sex" not in list_columns
+    ):
+        labels_df = pd.read_csv(join(results_path, "labels.tsv"), sep="\t")
+        new_df = pd.merge(
+            diagnosis_df, labels_df, how="inner", on=["participant_id", "session_id"]
+        )
+        print(diagnosis_df)
+        print(labels_df)
+        print(new_df)
 
+    new_df.set_index(["participant_id", "session_id"], inplace=True)
     output_df = pd.DataFrame()
 
     # The baseline session must be kept before or we are taking all the sessions to mix them
-    for diagnosis in pd.unique(diagnosis_df["group"]):
-        diagnosis_copy_df = copy(diagnosis_df)
-        indexName = diagnosis_copy_df[(diagnosis_copy_df["group"] != diagnosis)].index
+    for diagnosis in pd.unique(new_df["diagnosis"]):
+        diagnosis_copy_df = copy(new_df)
+        indexName = diagnosis_copy_df[
+            (diagnosis_copy_df["diagnosis"] != diagnosis)
+        ].index
         diagnosis_copy_df.drop(indexName, inplace=True)
         temp_df = write_splits(diagnosis_copy_df, stratification, n_splits, subset_name)
         temp_df.drop_duplicates(keep="first", inplace=True)
@@ -151,13 +178,12 @@ def split_diagnoses(
             "session_id",
             "split",
             "datagroup",
-            "group",
-            "subgroup",
+            "diagnosis",
             "age",
             "sex",
         ]
     ]
-    output_df.sort_values(["participant_id", "session_id", "split"], inplace=True)
+    output_df.sort_values(["participant_id", "session_id"], inplace=True)
     output_df.to_csv(
         path.join(results_path, "train_" + subset_name + ".tsv"),
         sep="\t",
