@@ -17,10 +17,10 @@ def cli_commands(request):
         cnn_input = [
             "train",
             "classification",
-            join(root, "interpret/in/caps_image"),
+            "interpret/in/caps_image",
             "t1-linear_mode-image.json",
-            join(root, "interpret/in/labels_list"),
-            join(root, "interpret/out/maps"),
+            "interpret/in/labels_list",
+            "interpret/out/maps",
             "--architecture Conv5_FC3",
             "--epochs",
             "1",
@@ -34,10 +34,10 @@ def cli_commands(request):
         cnn_input = [
             "train",
             "regression",
-            join(root, "interpret/in/caps_patch"),
+            "interpret/in/caps_patch",
             "t1-linear_mode-patch.json",
-            join(root, "interpret/in/labels_list"),
-            join(root, "interpret/out/maps"),
+            "interpret/in/labels_list",
+            "interpret/out/maps",
             "--architecture Conv5_FC3",
             "--epochs",
             "1",
@@ -55,7 +55,7 @@ def cli_commands(request):
 def test_interpret(cli_commands):
     from clinicadl.interpret.gradients import method_dict
 
-    maps_path = join(root, "interpret/out/maps")
+    maps_path = "interpret/out/maps"
     cnn_input = cli_commands
     if os.path.exists(maps_path):
         shutil.rmtree(maps_path)
