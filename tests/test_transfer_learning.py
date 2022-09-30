@@ -5,9 +5,8 @@ from os.path import join
 import pytest
 
 # root="/network/lustre/iss02/aramis/projects/clinicadl/data"
-root = "/mnt/data/data_CI"
-output_dir = join(root, "transferLearning/out")
-target_dir = join(root, "transferLeanrinng/target")
+output_dir = "transferLearning/out"
+target_dir = "transferLeanrinng/target"
 
 # Everything is tested on roi except for cnn --> multicnn (patch) as multicnn is not implemented for roi.
 @pytest.fixture(
@@ -19,12 +18,12 @@ target_dir = join(root, "transferLeanrinng/target")
     ]
 )
 def cli_commands(request):
-    caps_roi_path = join(root, "transferLearning/in/caps_roi")
-    caps_patch_path = join(root, "transferLearning/in/caps_patch")
+    caps_roi_path = "transferLearning/in/caps_roi"
+    caps_patch_path = "transferLearning/in/caps_patch"
     extract_roi_str = "t1-linear_mode-roi.json"
     extract_patch_str = "t1-linear_mode-patch.json"
-    labels_path = join(root, "transferLearning/in/labels_list")
-    config_path = join(root, "transferLearning/in/train_config.toml")
+    labels_path = "transferLearning/in/labels_list"
+    config_path = "transferLearning/in/train_config.toml"
     if request.param == "transfer_ae_ae":
         source_task = [
             "train",

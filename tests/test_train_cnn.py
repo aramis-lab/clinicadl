@@ -8,8 +8,8 @@ from os.path import join
 import pytest
 
 # root = "/network/lustre/iss02/aramis/projects/clinicadl/data"
-root = "/mnt/data/data_CI"
-output_dir = join(root, "train/out")
+
+output_dir = "train/out"
 
 
 @pytest.fixture(
@@ -23,15 +23,15 @@ output_dir = join(root, "train/out")
     ]
 )
 def cli_commands(request):
-    labels_path = join(root, "train/in/labels_list")
-    config_path = join(root, "train/in/train_config.toml")
+    labels_path = "train/in/labels_list"
+    config_path = "train/in/train_config.toml"
     split = "0"
     if request.param == "train_slice_cnn":
         mode = "slice"
         test_input = [
             "train",
             "classification",
-            join(root, "train/in/caps_slice"),
+            "train/in/caps_slice",
             "t1-linear_mode-slice.json",
             labels_path,
             output_dir,
@@ -44,7 +44,7 @@ def cli_commands(request):
         test_input = [
             "train",
             "regression",
-            join(root, "train/in/caps_image"),
+            "train/in/caps_image",
             "t1-linear_mode-image.json",
             labels_path,
             output_dir,
@@ -59,7 +59,7 @@ def cli_commands(request):
         test_input = [
             "train",
             "classification",
-            join(root, "train/in/caps_patch"),
+            "train/in/caps_patch",
             "t1-linear_mode-patch.json",
             labels_path,
             output_dir,
@@ -73,7 +73,7 @@ def cli_commands(request):
         test_input = [
             "train",
             "classification",
-            join(root, "train/in/caps_patch"),
+            "train/in/caps_patch",
             "t1-linear_mode-patch.json",
             labels_path,
             output_dir,
@@ -86,7 +86,7 @@ def cli_commands(request):
         test_input = [
             "train",
             "classification",
-            join(root, "train/in/caps_roi"),
+            "train/in/caps_roi",
             "t1-linear_mode-roi.json",
             labels_path,
             output_dir,
@@ -98,7 +98,7 @@ def cli_commands(request):
         test_input = [
             "train",
             "classification",
-            join(root, "train/in/caps_roi"),
+            "train/in/caps_roi",
             "t1-linear_mode-roi.json",
             labels_path,
             output_dir,

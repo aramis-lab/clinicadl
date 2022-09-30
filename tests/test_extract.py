@@ -24,8 +24,7 @@ def test_extract():
     from os.path import abspath, dirname, join
 
     # root = "/network/lustre/iss02/aramis/projects/clinicadl/data"
-    root = "/mnt/data/data_CI"
-    root = join(root, "extract")
+    root = "extract"
 
     # Remove potential residual of previous UT
     clean_folder(join(root, "out"), recreate=False)

@@ -7,7 +7,6 @@ from typing import List
 import pytest
 
 # root="/network/lustre/iss02/aramis/projects/clinicadl/data"
-root = "/mnt/data/data_CI"
 
 
 @pytest.fixture(params=["generate_trivial", "generate_random", "generate_shepplogan"])

@@ -8,7 +8,6 @@ from os.path import join
 import pytest
 
 # root = "/network/lustre/iss02/aramis/projects/clinicadl/data"
-root = "/mnt/data/data_CI"
 
 
 @pytest.fixture(
@@ -20,15 +19,15 @@ root = "/mnt/data/data_CI"
     ]
 )
 def cli_commands(request):
-    out_path = join(root, "train/out")
-    labels_path = join(root, "train/in/labels_list")
-    config_path = join(root, "train/in/train_config.toml")
+    out_path = "train/out"
+    labels_path = "train/in/labels_list"
+    config_path = "train/in/train_config.toml"
     if request.param == "train_image_ae":
         mode = "image"
         test_input = [
             "train",
             "reconstruction",
-            join(root, "train/in/caps_image"),
+            "train/in/caps_image",
             "t1-linear_crop-True_mode-image.json",
             labels_path,
             out_path,
@@ -40,7 +39,7 @@ def cli_commands(request):
         test_input = [
             "train",
             "reconstruction",
-            join(root, "train/in/caps_patch"),
+            "train/in/caps_patch",
             "t1-linear_crop-True_mode-patch.json",
             labels_path,
             out_path,
@@ -52,7 +51,7 @@ def cli_commands(request):
         test_input = [
             "train",
             "reconstruction",
-            join(root, "train/in/caps_roi"),
+            "train/in/caps_roi",
             "t1-linear_crop-True_mode-roi.json",
             labels_path,
             out_path,
@@ -64,7 +63,7 @@ def cli_commands(request):
         test_input = [
             "train",
             "reconstruction",
-            join(root, "train/in/caps_slice"),
+            "train/in/caps_slice",
             "t1-linear_crop-True_mode-slice.json",
             labels_path,
             out_path,
@@ -79,7 +78,7 @@ def cli_commands(request):
 
 def test_train(cli_commands):
 
-    out_path = join(root, "train/out")
+    out_path = "train/out"
     if os.path.exists(out_path):
         shutil.rmtree(out_path)
 

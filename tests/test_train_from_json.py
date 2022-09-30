@@ -6,13 +6,12 @@ from os.path import join
 from .testing_tools import compare_folders_with_hashes, create_hashes_dict, models_equal
 
 # root = "/network/lustre/iss02/aramis/projects/clinicadl/data"
-root = "/mnt/data/data_CI"
 
 
 def test_json_compatibility():
     split = "0"
-    config_json = pathlib.Path(join(root, "train_from_json/in/maps_roi_cnn/maps.json"))
-    output_dir = pathlib.Path(join(root, "train_from_json/out/maps_reproduced"))
+    config_json = pathlib.Path("train_from_json/in/maps_roi_cnn/maps.json")
+    output_dir = pathlib.Path("train_from_json/out/maps_reproduced")
 
     if output_dir.exists():
         shutil.rmtree(output_dir)
@@ -26,8 +25,8 @@ def test_json_compatibility():
 
 
 def test_determinism():
-    input_dir = pathlib.Path(join(root, "train_from_json/out/maps_roi_cnn"))
-    output_dir = pathlib.Path(join(root, "train_from_json/out/reproduced_MAPS"))
+    input_dir = pathlib.Path("train_from_json/out/maps_roi_cnn")
+    output_dir = pathlib.Path("train_from_json/out/reproduced_MAPS")
     if input_dir.exists():
         shutil.rmtree(input_dir)
     if output_dir.exists():
@@ -35,12 +34,12 @@ def test_determinism():
     test_input = [
         "train",
         "classification",
-        join(root, "train_from_json/in/caps_roi"),
+        "train_from_json/in/caps_roi",
         "t1-linear_mode-roi.json",
-        join(root, "train_from_json/in/labels_list"),
+        "train_from_json/in/labels_list",
         str(input_dir),
         "-c",
-        join(root, "train_from_json/in/reproducibility_config.toml"),
+        "train_from_json/in/reproducibility_config.toml",
     ]
     # Run first experiment
     flag_error = not system("clinicadl " + " ".join(test_input))

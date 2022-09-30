@@ -9,7 +9,6 @@ import pytest
 from clinicadl import MapsManager
 
 # root = "/network/lustre/iss02/aramis/projects/clinicadl/data"
-root = "/mnt/data/data_CI"
 
 
 @pytest.fixture(params=["classification", "regression"])
