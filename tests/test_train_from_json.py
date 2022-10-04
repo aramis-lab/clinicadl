@@ -8,7 +8,13 @@ from .testing_tools import compare_folders_with_hashes, create_hashes_dict, mode
 # root = "/network/lustre/iss02/aramis/projects/clinicadl/data"
 
 
-def test_json_compatibility():
+def test_json_compatibility(cmdopt, tmp_path):
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "train" / "in"
+    ref_dir = base_dir / "train" / "ref"
+    tmp_out_dir = tmp_path / "train" / "out"
+    tmp_out_dir.mkdir(parents=True)
+
     split = "0"
     config_json = pathlib.Path("train_from_json/in/maps_roi_cnn/maps.json")
     output_dir = pathlib.Path("train_from_json/out/maps_reproduced")
@@ -24,7 +30,7 @@ def test_json_compatibility():
     shutil.rmtree(output_dir)
 
 
-def test_determinism():
+def test_determinism(cmdopt, tmp_path):
     input_dir = pathlib.Path("train_from_json/out/maps_roi_cnn")
     output_dir = pathlib.Path("train_from_json/out/reproduced_MAPS")
     if input_dir.exists():

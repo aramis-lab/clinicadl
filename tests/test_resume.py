@@ -1,13 +1,14 @@
 # coding: utf8
 import os
-import pathlib
 import shutil
 from os import system
 from os.path import join
+from pathlib import Path
 
 import pytest
 
 from clinicadl import MapsManager
+from tests.testing_tools import clean_folder
 
 # root = "/network/lustre/iss02/aramis/projects/clinicadl/data/resume"
 root = "resume"
@@ -15,44 +16,43 @@ root = "resume"
 
 @pytest.fixture(
     params=[
-        join(root, "out/stopped_1"),
-        join(root, "out/stopped_2"),
-        join(root, "out/stopped_3"),
+        "stopped_1",
+        "stopped_2",
+        "stopped_3",
     ]
 )
-def input_directory(request):
+def test_name(request):
     return request.param
 
 
-def clean_folder(path, recreate=True):
-    from os import makedirs
-    from os.path import abspath, exists
-    from shutil import rmtree
+def test_resume(cmdopt, tmp_path, test_name):
+    # base_dir = Path(cmdopt["input"])
+    # input_dir = base_dir / "resume" / "in"
+    # ref_dir = base_dir / "resume" / "ref"
+    # tmp_out_dir = tmp_path / "resume" / "out"
+    # tmp_out_dir.mkdir(parents=True)
 
-    abs_path = abspath(path)
-    if exists(abs_path):
-        rmtree(abs_path)
-    if recreate:
-        makedirs(abs_path)
+    input_dir = Path(
+        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/resume/in"
+    )
+    ref_dir = Path(
+        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/resume/ref"
+    )
+    tmp_out_dir = Path(
+        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/resume/out"
+    )
+    clean_folder(tmp_out_dir, recreate=True)
 
+    shutil.copytree(input_dir / test_name, tmp_out_dir / test_name)
+    maps_stopped = str(tmp_out_dir / test_name)
 
-def test_resume(input_directory):
-
-    clean_folder(join(root, "out"))
-
-    shutil.copytree(join(root, "in", "stopped_1"), join(root, "out", "stopped_1"))
-    shutil.copytree(join(root, "in", "stopped_2"), join(root, "out", "stopped_2"))
-    shutil.copytree(join(root, "in", "stopped_3"), join(root, "out", "stopped_3"))
-
-    print(input_directory)
-    flag_error = not system(f"clinicadl -vv train resume {input_directory}")
+    flag_error = not system(f"clinicadl -vv train resume {maps_stopped}")
     assert flag_error
 
-    maps_manager = MapsManager(input_directory)
+    maps_manager = MapsManager(maps_stopped)
     split_manager = maps_manager._init_split_manager()
     for split in split_manager.split_iterator():
-        performances_flag = pathlib.Path(
-            input_directory, f"split-{split}", "best-loss", "train"
+        performances_flag = Path(
+            maps_stopped / f"split-{split}" / "best-loss" / "train"
         ).exists()
         assert performances_flag
-    shutil.rmtree(input_directory)

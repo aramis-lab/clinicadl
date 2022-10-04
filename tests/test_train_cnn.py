@@ -22,11 +22,22 @@ output_dir = "train/out"
         "train_roi_multicnn",
     ]
 )
-def cli_commands(request):
-    labels_path = "train/in/labels_list"
-    config_path = "train/in/train_config.toml"
+def test_name(request):
+    return request.param
+
+
+def cli_commands(cmdopt, tmp_path, test_name):
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "train" / "in"
+    ref_dir = base_dir / "train" / "ref"
+    tmp_out_dir = tmp_path / "train" / "out"
+    tmp_out_dir.mkdir(parents=True)
+
+    labels_path = join(input_dir, "labels_list")
+    config_path = join(input_dir, "train_config.toml")
     split = "0"
-    if request.param == "train_slice_cnn":
+
+    if test_name == "train_slice_cnn":
         mode = "slice"
         test_input = [
             "train",
@@ -38,13 +49,13 @@ def cli_commands(request):
             "-c",
             config_path,
         ]
-    elif request.param == "train_image_cnn":
+    elif test_name == "train_image_cnn":
         mode = "image"
         split = "1"
         test_input = [
             "train",
             "regression",
-            "train/in/caps_image",
+            join(input_dir, "caps_image"),
             "t1-linear_mode-image.json",
             labels_path,
             output_dir,
@@ -53,7 +64,7 @@ def cli_commands(request):
             "-s",
             split,
         ]
-    elif request.param == "train_patch_cnn":
+    elif test_name == "train_patch_cnn":
         mode = "patch"
         split = "0"
         test_input = [
@@ -68,7 +79,7 @@ def cli_commands(request):
             "--split",
             split,
         ]
-    elif request.param == "train_patch_multicnn":
+    elif test_name == "train_patch_multicnn":
         mode = "patch"
         test_input = [
             "train",
@@ -81,7 +92,7 @@ def cli_commands(request):
             config_path,
             "--multi_network",
         ]
-    elif request.param == "train_roi_cnn":
+    elif test_name == "train_roi_cnn":
         mode = "roi"
         test_input = [
             "train",
@@ -93,7 +104,7 @@ def cli_commands(request):
             "-c",
             config_path,
         ]
-    elif request.param == "train_roi_multicnn":
+    elif test_name == "train_roi_multicnn":
         mode = "roi"
         test_input = [
             "train",
@@ -106,7 +117,7 @@ def cli_commands(request):
             config_path,
         ]
     else:
-        raise NotImplementedError(f"Test {request.param} is not implemented.")
+        raise NotImplementedError(f"Test {test_name} is not implemented.")
 
     return test_input, split, mode
 

@@ -2,25 +2,38 @@
 
 import os
 import shutil
-from os.path import join
+from pathlib import Path
 
 import pytest
 
 from clinicadl import MapsManager
-
-# root = "/network/lustre/iss02/aramis/projects/clinicadl/data"
+from tests.testing_tools import clean_folder
 
 
 @pytest.fixture(params=["classification", "regression"])
-def cli_commands(request):
-    if request.param == "classification":
+def test_name(request):
+    return request.param
+
+
+def test_interpret(cmdopt, tmp_path, test_name):
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "interpret" / "in"
+    ref_dir = base_dir / "interpret" / "ref"
+    tmp_out_dir = tmp_path / "interpret" / "out"
+    tmp_out_dir.mkdir(parents=True)
+
+    clean_folder(tmp_out_dir, recreate=True)
+
+    labels_dir_str = str(input_dir / "labels_list")
+    maps_tmp_out_dir = str(tmp_out_dir / "maps")
+    if test_name == "classification":
         cnn_input = [
             "train",
             "classification",
-            "interpret/in/caps_image",
+            str(input_dir / "caps_image"),
             "t1-linear_mode-image.json",
-            "interpret/in/labels_list",
-            "interpret/out/maps",
+            labels_dir_str,
+            maps_tmp_out_dir,
             "--architecture Conv5_FC3",
             "--epochs",
             "1",
@@ -30,14 +43,14 @@ def cli_commands(request):
             "0",
         ]
 
-    elif request.param == "regression":
+    elif test_name == "regression":
         cnn_input = [
             "train",
             "regression",
-            "interpret/in/caps_patch",
+            str(input_dir / "caps_patch"),
             "t1-linear_mode-patch.json",
-            "interpret/in/labels_list",
-            "interpret/out/maps",
+            labels_dir_str,
+            maps_tmp_out_dir,
             "--architecture Conv5_FC3",
             "--epochs",
             "1",
@@ -47,16 +60,15 @@ def cli_commands(request):
             "0",
         ]
     else:
-        raise NotImplementedError(f"Test {request.param} is not implemented.")
+        raise NotImplementedError(f"Test {test_name} is not implemented.")
 
-    return cnn_input
+    run_interpret(cnn_input, tmp_out_dir)
 
 
-def test_interpret(cli_commands):
+def run_interpret(cnn_input, tmp_out_dir):
     from clinicadl.interpret.gradients import method_dict
 
-    maps_path = "interpret/out/maps"
-    cnn_input = cli_commands
+    maps_path = tmp_out_dir / "maps"
     if os.path.exists(maps_path):
         shutil.rmtree(maps_path)
 
@@ -66,4 +78,3 @@ def test_interpret(cli_commands):
     for method in method_dict.keys():
         maps_manager.interpret("train", f"test-{method}", method)
         interpret_map = maps_manager.get_interpretation("train", f"test-{method}")
-    shutil.rmtree(maps_path)

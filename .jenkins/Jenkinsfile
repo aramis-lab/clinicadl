@@ -20,7 +20,8 @@ pipeline {
             environment {
               CONDA_HOME = "$HOME/miniconda"
               CONDA_ENV = "$WORKSPACE/env"
-              WORK_DIR = "/mnt/data/data_CI"
+              TMP_DIR = "/mnt/data/ci/tmp"
+              INPUT_DATA_DIR = "mnt/data_ci"
             }
             stages {
               stage('Build Env') {
@@ -62,7 +63,8 @@ pipeline {
                         --junitxml=./test-reports/test_cli_report.xml \
                         --verbose \
                         --disable-warnings \
-                        --working_directory=$WORK_DIR \
+                        --basetemp=$TMP_DIR \
+                        --input_data_directory=$INPUT_DATA_DIR \
                         test_cli.py
                       conda deactivate
                       '''
@@ -82,7 +84,8 @@ pipeline {
                         --junitxml=./test-reports/test_tsvtool_report.xml \
                         --verbose \
                         --disable-warnings \
-                        --working_directory=$WORK_DIR \
+                        --basetemp=$TMP_DIR \
+                        --input_data_directory=$INPUT_DATA_DIR \
                         test_tsvtools.py
                       conda deactivate
                       '''
@@ -107,7 +110,8 @@ pipeline {
                         --junitxml=./test-reports/test_quality_check_report.xml \
                         --verbose \
                         --disable-warnings \
-                        --working_directory=$WORK_DIR \
+                        --basetemp=$TMP_DIR \
+                        --input_data_directory=$INPUT_DATA_DIR \
                         test_qc.py
                       conda deactivate
                       '''
@@ -132,7 +136,8 @@ pipeline {
                           --junitxml=./test-reports/test_generate_report.xml \
                           --verbose \
                           --disable-warnings \
-                          --working_directory=$WORK_DIR \
+                          --basetemp=$TMP_DIR \
+                          --input_data_directory=$INPUT_DATA_DIR \
                           test_generate.py
                         conda deactivate
                         '''
@@ -157,7 +162,8 @@ pipeline {
                           --junitxml=./test-reports/test_extract_report.xml \
                           --verbose \
                           --disable-warnings \
-                          --working_directory=$WORK_DIR \
+                          --basetemp=$TMP_DIR \
+                          --input_data_directory=$INPUT_DATA_DIR \
                           test_extract.py
                         conda deactivate
                         '''
@@ -182,7 +188,8 @@ pipeline {
                           --junitxml=./test-reports/test_predict_report.xml \
                           --verbose \
                           --disable-warnings \
-                          --working_directory=$WORK_DIR \
+                          --basetemp=$TMP_DIR \
+                          --input_data_directory=$INPUT_DATA_DIR \
                           test_predict.py
                       conda deactivate
                       '''
@@ -240,7 +247,8 @@ pipeline {
             environment {
               CONDA_HOME = "$HOME/miniconda3"
               CONDA_ENV = "$WORKSPACE/env"
-              WORK_DIR = "/mnt/data/data_CI"
+              TMP_DIR = "/mnt/data/ci/tmp"
+              INPUT_DATA_DIR = "mnt/data_ci"
             }
             stages {
               stage('Build Env') {
@@ -281,7 +289,8 @@ pipeline {
                           --junitxml=./test-reports/test_train_report.xml \
                           --verbose \
                           --disable-warnings \
-                          --working_directory=$WORK_DIR \
+                          --basetemp=$TMP_DIR \
+                          --input_data_directory=$INPUT_DATA_DIR \
                           -k "test_train"
                       conda deactivate
                       '''
@@ -307,7 +316,8 @@ pipeline {
                           --junitxml=./test-reports/test_transfer_learning_report.xml \
                           --verbose \
                           --disable-warnings \
-                          --working_directory=$WORK_DIR \
+                          --basetemp=$TMP_DIR \
+                          --input_data_directory=$INPUT_DATA_DIR \
                           test_transfer_learning.py
                       conda deactivate
                       '''
@@ -333,7 +343,8 @@ pipeline {
                           --junitxml=./test-reports/test_resume_report.xml \
                           --verbose \
                           --disable-warnings \
-                          --working_directory=$WORK_DIR \
+                          --basetemp=$TMP_DIR \
+                          --input_data_directory=$INPUT_DATA_DIR \
                           test_resume.py
                       rm -r data/stopped_jobs
                       conda deactivate
@@ -361,7 +372,8 @@ pipeline {
                           --junitxml=./test-reports/test_interpret_report.xml \
                           --verbose \
                           --disable-warnings \
-                          --working_directory=$WORK_DIR \
+                          --basetemp=$TMP_DIR \
+                          --input_data_directory=$INPUT_DATA_DIR \
                           test_interpret.py
                       conda deactivate
                       '''
@@ -388,7 +400,8 @@ pipeline {
                           --junitxml=./test-reports/test_random_search_report.xml \
                           --verbose \
                           --disable-warnings \
-                          --working_directory=$WORK_DIR \
+                          --basetemp=$TMP_DIR \
+                          --input_data_directory=$INPUT_DATA_DIR \
                           test_random_search.py
                       conda deactivate
                       '''

@@ -10,12 +10,14 @@ import pytest
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--working_directory", action="store", help="Working directory for tests"
+        "--input_data_directory",
+        action="store",
+        help="Directory for (only-read) inputs for tests",
     )
 
 
 @pytest.fixture
 def cmdopt(request):
     config_param = {}
-    config_param["wd"] = request.config.getoption("--working_directory")
+    config_param["input"] = request.config.getoption("--input_data_directory")
     return config_param

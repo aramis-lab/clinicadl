@@ -3,10 +3,12 @@ import json
 import os
 import shutil
 from os.path import exists, join
+from pathlib import Path
 
 import pytest
 
 from clinicadl import MapsManager
+from tests.testing_tools import clean_folder
 
 
 @pytest.fixture(
@@ -19,54 +21,58 @@ from clinicadl import MapsManager
         "predict_roi_reconstruction",
     ]
 )
-def predict_commands(request):
+def test_name(request):
+    return request.param
 
-    if request.param == "predict_image_classification":
-        model_folder = "predict/in/maps_image_cnn"
+
+def test_predict(test_name):
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "predict" / "in"
+    ref_dir = base_dir / "predict" / "ref"
+    tmp_out_dir = tmp_path / "predict" / "out"
+    tmp_out_dir.mkdir(parents=True)
+
+    clean_folder(tmp_out_dir, recreate=True)
+
+    if test_name == "predict_image_classification":
+        model_folder = input_dir / "maps_image_cnn"
         modes = ["image"]
         use_labels = True
-        caps_folder = "predict/in/caps_image"
-    elif request.param == "predict_slice_classification":
-        model_folder = "predict/in/maps_slice_cnn"
+    elif test_name == "predict_slice_classification":
+        model_folder = input_dir / "maps_slice_cnn"
         modes = ["image", "slice"]
         use_labels = True
-        caps_folder = "predict/in/caps_slice"
-    elif request.param == "predict_patch_regression":
-        model_folder = "predict/in/maps_patch_cnn"
+    elif test_name == "predict_patch_regression":
+        model_folder = input_dir / "maps_patch_cnn"
         modes = ["image", "patch"]
         use_labels = False
-        caps_folder = "predict/in/caps_patch"
-    elif request.param == "predict_roi_regression":
-        model_folder = "predict/in/maps_roi_cnn"
+    elif test_name == "predict_roi_regression":
+        model_folder = input_dir / "maps_roi_cnn"
         modes = ["image", "roi"]
         use_labels = False
-        caps_folder = "predict/in/caps_roi"
-    elif request.param == "predict_patch_multi_classification":
-        model_folder = "predict/in/maps_patch_multi_cnn"
+    elif test_name == "predict_patch_multi_classification":
+        model_folder = input_dir / "maps_patch_multi_cnn"
         modes = ["image", "patch"]
         use_labels = False
-        caps_folder = "predict/in/caps_patch"
-    elif request.param == "predict_roi_reconstruction":
-        model_folder = "predict/in/maps_roi_ae"
+    elif test_name == "predict_roi_reconstruction":
+        model_folder = input_dir / "maps_roi_ae"
         modes = ["roi"]
         use_labels = False
-        caps_folder = "predict/in/caps_roi"
     else:
-        raise NotImplementedError(f"Test {request.param} is not implemented.")
+        raise NotImplementedError(f"Test {test_name} is not implemented.")
 
-    return model_folder, use_labels, modes, caps_folder
+    run_test_predict(model_folder, use_labels, modes, input_dir)
 
 
-def test_predict(predict_commands):
-    model_folder, use_labels, modes, caps_folder = predict_commands
-    out_dir = join(model_folder, "split-0/best-loss/test-RANDOM")
+def run_test_predict(model_folder, use_labels, modes, input_dir):
+    out_dir = str(model_folder / "split-0/best-loss/test-RANDOM")
 
     if exists(out_dir):
         shutil.rmtree(out_dir)
 
     # Correction of JSON file for ROI
     if "roi" in modes:
-        json_path = join(model_folder, "maps.json")
+        json_path = str(model_folder / "maps.json")
         with open(json_path, "r") as f:
             parameters = json.load(f)
         parameters["roi_list"] = ["leftHippocampusBox", "rightHippocampusBox"]
@@ -74,11 +80,11 @@ def test_predict(predict_commands):
         with open(json_path, "w") as f:
             f.write(json_data)
 
-    maps_manager = MapsManager(model_folder, verbose="debug")
+    maps_manager = MapsManager(str(model_folder), verbose="debug")
     maps_manager.predict(
         data_group="test-RANDOM",
-        caps_directory="predict/in/caps_random",
-        tsv_path="predict/in/caps_random/data.tsv",
+        caps_directory=str(input_dir / "caps_random"),
+        tsv_path=str(input_dir / "caps_random/data.tsv"),
         gpu=False,
         use_labels=use_labels,
         overwrite=True,
