@@ -8,10 +8,20 @@ from clinicadl.utils.tsvtools_utils import merge_tsv_reader
 logger = getLogger("clinicadl")
 
 
-def get_metadata(formatted_data_tsv, output_tsv, variables_of_interest=None):
+def get_metadata(
+    metadata_df: DataFrame, output_df: DataFrame, variables_of_interest=None
+):
+    """
+    Get the meta data in metadata_df to write them in output_df.
+    If variables_of_interest is None, the function writes all the data that are in metadata_df for the list of subjects in output_df.
 
-    metadata_df = merge_tsv_reader(formatted_data_tsv)
-    output_df = merge_tsv_reader(output_tsv)
+    Args:
+        data_df: DataFrame with columns including ['participant_id', 'session_id']
+        variables_of_interest : (str) list of columns that should be kept in the output DataFrame.
+
+    Returns:
+        output_df : data_df DataFrame with variables of interest columns added.
+    """
 
     variables_in = output_df.columns.tolist()
     variables_metadata = metadata_df.columns.tolist()
@@ -40,7 +50,7 @@ def get_metadata(formatted_data_tsv, output_tsv, variables_of_interest=None):
             result_df = pd.merge(metadata_df, output_df, on=variables_intersection)
             result_df = result_df[variables_list]
             result_df.set_index(["participant_id", "session_id"], inplace=True)
-            result_df.to_csv(output_tsv, sep="\t")
+    return result_df
 
 
 # input : tsv file wanted

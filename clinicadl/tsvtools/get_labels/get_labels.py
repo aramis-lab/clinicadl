@@ -221,7 +221,6 @@ def apply_restriction(bids_df: pd.DataFrame, restriction_path: str) -> pd.DataFr
 
 def get_labels(
     bids_directory: str,
-    output_tsv: str,
     diagnoses: List[str],
     modality: str = "t1w",
     restriction_path: str = None,
@@ -241,7 +240,6 @@ def get_labels(
         bids_directory: Path to the folder containing the dataset in a BIDS hierarchy.
         results_directory: Path to the folder where merge-tsv, missing-mod and getlabels files will be saved.
         diagnoses: Labels that must be extracted from merged_tsv.
-        stability_dict: List of all the diagnoses that can be encountered in order of the disease progression.
         modality: Modality to select sessions. Sessions which do not include the modality will be excluded.
         restriction_path: Path to a tsv containing the sessions that can be included.
         time_horizon: Time horizon to analyse stability of MCI subjects.
@@ -252,7 +250,8 @@ def get_labels(
 
     from pathlib import Path
 
-    results_directory = Path(output_tsv).parents[0]
+    results_directory = Path(bids_directory).parents[0]
+    output_tsv = results_directory / "labels.tsv"
 
     commandline_to_json(
         {

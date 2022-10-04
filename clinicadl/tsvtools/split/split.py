@@ -4,7 +4,7 @@ import os
 import shutil
 from copy import copy
 from logging import getLogger
-from os import path
+from os import makedirs, path
 from pathlib import Path
 
 import numpy as np
@@ -195,7 +195,15 @@ def split_diagnoses(
             - formatted_data_path/<subset_name>/<label>_baseline.tsv
     """
 
-    results_path = Path(formatted_data_path).parents[0]
+    parents_path = Path(formatted_data_path).parents[0]
+    split_numero = 1
+    folder_name = f"split_{split_numero}"
+
+    while os.path.exists(parents_path / folder_name):
+        split_numero += 1
+        folder_name = f"split_{split_numero}"
+    results_path = parents_path / folder_name
+    makedirs(results_path)
 
     commandline_to_json(
         {
@@ -213,24 +221,44 @@ def split_diagnoses(
     # The baseline session must be kept before or we are taking all the sessions to mix them
 
     if categorical_split_variable is None:
-        categorical_split_variable = "group"
+        categorical_split_variable = "diagnosis"
     else:
-        categorical_split_variable.append("group")
+        categorical_split_variable.append("diagnosis")
 
     # Read files
     diagnosis_df_path = Path(formatted_data_path).name
     diagnosis_df = pd.read_csv(formatted_data_path, sep="\t")
+    list_columns = diagnosis_df.columns.values
 
     if n_test > 0:
+        if (
+            "diagnosis" not in list_columns
+            or "age" not in list_columns
+            or "sex" not in list_columns
+        ):
+            parents_path = path.abspath(parents_path)
+            while not os.path.exists(path.join(parents_path, "labels.tsv")):
+                parents_path = Path(parents_path).parents[0]
+
+            labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+            diagnosis_df = pd.merge(
+                diagnosis_df,
+                labels_df,
+                how="inner",
+                on=["participant_id", "session_id"],
+            )
 
         train_df, test_df = create_split(
             diagnosis_df,
-            split_label="diagnosis",
+            split_label=categorical_split_variable,
             n_test=n_test,
             p_age_threshold=p_age_threshold,
             p_sex_threshold=p_sex_threshold,
             ignore_demographics=ignore_demographics,
         )
+
+        # train_df= train_df[["participant_id", "session_id"]]
+        # test_df= test_df[["participant_id", "session_id"]]
 
         name = f"{subset_name}_baseline.tsv"
         df_to_tsv(name, results_path, test_df, baseline=True)
@@ -238,15 +266,19 @@ def split_diagnoses(
         if not_only_baseline:
             name = f"{subset_name}.tsv"
             long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
+            # long_test_df = long_test_df[["participant_id", "session_id"]]
             df_to_tsv(name, results_path, long_test_df)
 
     else:
-        output_train_df = extract_baseline(diagnosis_copy_df)
-        output_long_train_df = diagnosis_copy_df
+        train_df = extract_baseline(diagnosis_df)
+        # train_df = train_df[["participant_id", "session_id"]]
+        if not_only_baseline:
+            long_train_df = diagnosis_df
 
     name = "train_baseline.tsv"
     df_to_tsv(name, results_path, train_df, baseline=True)
 
     long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
+    # long_train_df = long_train_df[["participant_id", "session_id"]]
     name = "train.tsv"
     df_to_tsv(name, results_path, long_train_df)

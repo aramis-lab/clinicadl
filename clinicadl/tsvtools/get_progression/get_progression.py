@@ -33,7 +33,7 @@ def get_progression(
     A method to get the subgroup for each sessions depending on their stability on the time horizon
 
     Args:
-        bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+        bids_df: DataFrame with columns including ['participant_id', 'session_id']
         horizon_time: time horizon in months
 
     Returns:
@@ -42,6 +42,13 @@ def get_progression(
 
     # Reading files
     bids_df = merge_tsv_reader(formatted_data_tsv)
+
+    if "diagnosis" not in bids_df.columns:
+        data_directory = Path(output_tsv).parents[0]
+        formatted_data_tsv = results_directory / "labels.tsv"
+
+        metadata_df = merge_tsv_reader(formatted_data_tsv)
+        bids_df.rename(columns={"dx1": "diagnosis"}, inplace=True)
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
 
     bids_df = infer_or_drop_diagnosis(bids_df)

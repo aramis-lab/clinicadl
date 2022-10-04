@@ -5,9 +5,8 @@ import click
 from clinicadl.utils import cli_param
 
 
-@click.command(name="getlabels", no_args_is_help=True)
+@click.command(name="get-labels", no_args_is_help=True)
 @cli_param.argument.bids_directory
-@cli_param.argument.output_tsv
 @cli_param.option.diagnoses
 @cli_param.option.modality
 @cli_param.option.caps_directory
@@ -46,7 +45,6 @@ from clinicadl.utils import cli_param
 )
 def cli(
     bids_directory,
-    output_tsv,
     diagnoses,
     modality,
     restriction_tsv,
@@ -74,7 +72,6 @@ def cli(
 
     get_labels(
         bids_directory,
-        output_tsv,
         diagnoses,
         modality=modality,
         restriction_path=restriction_tsv,

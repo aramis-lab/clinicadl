@@ -157,6 +157,8 @@ def split_diagnoses(
         print(diagnosis_df)
         print(labels_df)
         print(new_df)
+    else:
+        new_df = diagnosis_df
 
     new_df.set_index(["participant_id", "session_id"], inplace=True)
     output_df = pd.DataFrame()
