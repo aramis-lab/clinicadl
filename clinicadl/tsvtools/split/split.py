@@ -197,7 +197,7 @@ def split_diagnoses(
 
     parents_path = Path(formatted_data_path).parents[0]
     split_numero = 1
-    folder_name = f"split_{split_numero}"
+    folder_name = f"split"
 
     while os.path.exists(parents_path / folder_name):
         split_numero += 1
