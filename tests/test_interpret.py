@@ -51,13 +51,16 @@ def cli_commands(request):
 
 
 def test_interpret(cli_commands):
+    from clinicadl.interpret.gradients import method_dict
+
     cnn_input = cli_commands
     if os.path.exists("results"):
         shutil.rmtree("results")
 
     train_error = not os.system("clinicadl " + " ".join(cnn_input))
-    maps_manager = MapsManager("results", verbose="debug")
-    maps_manager.interpret("train", "test")
-    interpret_map = maps_manager.get_interpretation("train", "test")
     assert train_error
+    maps_manager = MapsManager("results", verbose="debug")
+    for method in method_dict.keys():
+        maps_manager.interpret("train", f"test-{method}", method)
+        interpret_map = maps_manager.get_interpretation("train", f"test-{method}")
     shutil.rmtree("results")
