@@ -13,7 +13,7 @@ def cli(merged_tsv, formatted_data_tsv, results_tsv, diagnoses):
 
     MERGED_TSV is the output of `clinica iotools merge-tsv`.
 
-    FORMATTED_DATA_TSV is the outputs of `clinicadl tsvtool getlabels`.
+    FORMATTED_DATA_TSV is the output of `clinicadl tsvtools getlabels`.
 
     Results are stored in RESULTS_DIRECTORY.
     """

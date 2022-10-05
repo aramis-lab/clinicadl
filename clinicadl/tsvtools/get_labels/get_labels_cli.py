@@ -55,9 +55,9 @@ def cli(
     merge_tsv,
     remove_unique_session,
 ):
-    """Get labels in one tsv files.
+    """Get labels in one tsv file.
 
-    This command will perform two others command inside :
+    This command executes the two othefollowingrs commands:
         - `clinica iotools merge-tsv`
         - `clinica iotools check-missing-modalities`
 

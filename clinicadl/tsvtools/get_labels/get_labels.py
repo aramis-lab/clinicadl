@@ -169,12 +169,16 @@ def diagnosis_removal(bids_df: pd.DataFrame, diagnosis_list: List[str]) -> pd.Da
     """
     Removes sessions for which the diagnosis is not in the list provided
 
-    Args:
-        bids_df: DataFrame with columns including ['participant_id', 'session_id', 'group', 'subgroup']
-        diagnosis_list: list of diagnoses that will be removed
+    Parameters
+    ----------
+        bids_df: DataFrame
+            Columns must includes ['participant_id', 'session_id', 'diagnosis']
+        diagnosis_list: list of str
+            List of diagnoses that will be removed
 
-    Returns:
-        cleaned DataFrame
+    Returns
+    -------
+        output_df: DataFrame
     """
 
     output_df = copy(bids_df)
@@ -233,19 +237,19 @@ def get_labels(
 ):
     """
     Writes one TSV file based on merged_tsv and missing_mods.
-    Calculates the subgroup of each session.
 
 
     Args:
         bids_directory: Path to the folder containing the dataset in a BIDS hierarchy.
-        results_directory: Path to the folder where merge-tsv, missing-mod and getlabels files will be saved.
         diagnoses: Labels that must be extracted from merged_tsv.
         modality: Modality to select sessions. Sessions which do not include the modality will be excluded.
         restriction_path: Path to a tsv containing the sessions that can be included.
-        time_horizon: Time horizon to analyse stability of MCI subjects.
         variables_of_interest: columns that should be kept in the output tsv files.
         remove_smc: if True SMC participants are removed from the lists.
         caps_directory: Path to a folder of a older of a CAPS compliant dataset
+        merge_tsv: Path to the output of clinica iotools merge-tsv if already exists
+        missing_mods: Path to the output directory of clinica iotools check-missing-modalities if already exists
+        remove_unique_session: if True, subjects with only one session are removed.
     """
 
     from pathlib import Path
@@ -291,7 +295,7 @@ def get_labels(
         compute_missing_mods(bids_directory, missing_mods_directory, "missing_mods")
 
     logger.info(
-        f"output of clinica iotools check-missing-modalities : {missing_mods_directory}"
+        f"output of clinica iotools check-missing-modalities: {missing_mods_directory}"
     )
 
     # Generating the output of `clinica iotools merge-tsv `
@@ -316,7 +320,7 @@ def get_labels(
             tracers_selection=False,
         )
 
-    logger.info(f"output of clinica iotools merge-tsv : {merge_tsv_path}")
+    logger.info(f"output of clinica iotools merge-tsv: {merge_tsv_path}")
 
     # Reading files
     bids_df = merge_tsv_reader(merge_tsv_path)
