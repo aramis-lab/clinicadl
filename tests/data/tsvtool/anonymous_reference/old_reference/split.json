@@ -1,9 +1,0 @@
-{
-    "n_test": 100.0,
-    "subset_name": "test",
-    "MCI_sub_categories": true,
-    "p_age_threshold": 0.8,
-    "p_sex_threshold": 0.8,
-    "categorical_split_variable": null,
-    "ignore_demographics": false
-}

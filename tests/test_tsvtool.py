@@ -8,17 +8,14 @@ from clinicadl.utils.caps_dataset.data import load_data_test
 from clinicadl.utils.split_manager import KFoldSplit
 from clinicadl.utils.tsvtools_utils import extract_baseline
 
-data_ci_directory = "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc"
-data_ci_directory2 = (
-    "/network/lustre/iss02/aramis/users/camille.brianceau/TEST_tsvtools/new_test"
-)
-bids_directory = path.join(data_ci_directory, "tsvtools2/in/bids")
-in_directory = path.join(data_ci_directory, "tsvtools2/in")
-reference_directory = path.join(data_ci_directory, "tsvtools/ref")
-output_directory = path.join(data_ci_directory, "tsvtools/out")
+data_ci_directory = "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/tsvtools/"
+bids_directory = path.join(data_ci_directory, "ref/bids")
+in_directory = path.join(data_ci_directory, "in")
+reference_directory = path.join(data_ci_directory, "ref")
+output_directory = path.join(data_ci_directory, "out")
 
 labels_tsv = os.path.join(output_directory, "labels.tsv")
-merged_tsv = path.join(in_directory, "merge.tsv")
+merged_tsv = path.join(reference_directory, "merge-tsv.tsv")
 
 diagnoses = "CN pCN sCN usCN ukCN MCI sMCI pMCI usMCI ukMCI rMCI AD rAD sAD usAD ukAD"
 
@@ -96,12 +93,12 @@ def check_subgroup_independence(train_path, test_path):
         assert flag_independant
 
 
-def run_test_suite(formatted_data_path, n_splits, subset_name):
+def run_test_suite(data_tsv, n_splits, subset_name):
     check_train = True
 
     if n_splits == 0:
-        train_path = path.join(formatted_data_path, "train_validation.tsv")
-        test_path_baseline = path.join(formatted_data_path, "test_baseline.tsv")
+        train_path = path.join(data_tsv, "train_validation.tsv")
+        test_path_baseline = path.join(data_tsv, "test_baseline.tsv")
         if not path.exists(train_path):
             check_train = False
 
@@ -112,45 +109,33 @@ def run_test_suite(formatted_data_path, n_splits, subset_name):
 
     else:
         for split_number in range(n_splits):
-            train_path = path.join(formatted_data_path, "train_validation.tsv")
-            test_path_baseline = path.join(formatted_data_path, "test_baseline.tsv")
 
-            if not path.exists(train_path):
-                check_train = False
-
-            check_subject_unicity(test_path_baseline)
-
-            train_df = pd.read_csv(train_path, sep="\t")
-            split_df = train_df.loc[train_df["split"] == split_number]
-            train_split_df = split_df.loc[split_df["datagroup"] == "train"]
-            train_split_path = path.join(formatted_data_path, "train_split.tsv")
-            train_split_df.to_csv(train_split_path, sep="\t", index=False)
-
-            subset_df = split_df.loc[split_df["datagroup"] == subset_name]
-            subset_path = path.join(formatted_data_path, "subset.tsv")
-            subset_df.to_csv(subset_path, sep="\t", index=False)
-            if check_train:
-                check_subject_unicity(train_split_path)
-                check_subject_unicity(subset_path)
-
-                check_independance(train_split_path, subset_path, subject_flag=False)
-                check_independance(
-                    train_split_path, test_path_baseline, subject_flag=True
-                )
-
-        os.remove(subset_path)
-        os.remove(train_split_path)
+            for folder, sub_folder, files in os.walk(path.join(data_tsv, "split")):
+                for file in files:
+                    if file[-3:] == "tsv":
+                        check_subject_unicity(path.join(folder, file))
+                train_path_baseline = path.join(folder, "train_baseline.tsv")
+                test_path_baseline = path.join(folder, "test_baseline.tsv")
+                if path.exists(train_path_baseline):
+                    if path.exists(test_path_baseline):
+                        check_independance(train_path_baseline, test_path_baseline)
 
 
 def test_getlabels():
     """Checks that getlabels is working and that it is coherent with previous version in reference_path"""
+    import shutil
 
-    missing_mods_directory = path.join(in_directory, "missing_mods")
+    bids_output = path.join(output_directory, "bids")
+    if path.exists(output_directory):
+        shutil.rmtree(output_directory)
+        os.makedirs(output_directory)
+    shutil.copytree(bids_directory, bids_output)
+    missing_mods_directory = path.join(reference_directory, "missing_mods")
 
     flag_getlabels = not os.system(
-        f"clinicadl -vvv tsvtools getlabels {bids_directory} {labels_tsv} "
+        f"clinicadl -vvv tsvtools get-labels {bids_output} "
         f"-d AD -d MCI -d CN -d Dementia "
-        f"--merge_tsv {merged_tsv} --missing_mods {missing_mods_directory}"
+        f"--merged_tsv {merged_tsv} --missing_mods {missing_mods_directory}"
     )
     assert flag_getlabels
 
@@ -167,8 +152,8 @@ def test_split():
     -  the loading functions can find the output
     -  no data leakage is introduced in split and kfold.
     """
-    n_splits = 5
-    train_tsv = path.join(output_directory, "train.tsv")
+    n_splits = 3
+    train_tsv = path.join(output_directory, "split/train.tsv")
 
     flag_split = not os.system(
         f"clinicadl -vvv tsvtools split {labels_tsv} --subset_name test"
@@ -178,27 +163,8 @@ def test_split():
     )
     assert flag_split
     assert flag_kfold
-    # flag_load = True
-    # try:
-    #     _ = load_data_test(
-    #         path.join(reference_path, "validation"), diagnoses.split(" ")
-    #     )
-    #     split_manager = KFoldSplit(".", reference_path, diagnoses.split(" "), n_splits)
-    #     for split in split_manager.split_iterator():
-    #         _ = split_manager[split]
-    # except FileNotFoundError:
-    #     flag_load = False
-    # assert flag_load
 
     run_test_suite(output_directory, n_splits, "validation")
-    print("*******ok******")
-
-    # os.remove(test_path)
-
-    # shutil.rmtree(path.join(reference_path, "train"))
-    # shutil.rmtree(path.join(reference_path, "validation"))
-    # shutil.rmtree(path.join(reference_path, "train_splits-5"))
-    # shutil.rmtree(path.join(reference_path, "validation_splits-5"))
 
 
 def test_analysis():
@@ -209,11 +175,10 @@ def test_analysis():
 
     flag_analysis = not os.system(
         f"clinicadl tsvtools analysis {merged_tsv} {labels_tsv} {output_tsv} "
-        f"--diagnoses Dementia --diagnoses CN --diagnoses MCI"
+        f"--diagnoses CN --diagnoses MCI --diagnoses Dementia"
     )
 
     assert flag_analysis
     ref_df = pd.read_csv(ref_analysis_path, sep="\t")
     out_df = pd.read_csv(output_tsv, sep="\t")
     assert out_df.equals(ref_df)
-    # os.remove(results_path)

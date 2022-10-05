@@ -88,7 +88,9 @@ def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
         diagnosis_dict[diagnosis] = {"age": [], "MMSE": [], "scans": []}
         getlabels_df = pd.read_csv(data_tsv, sep="\t")
         diagnosis_copy_df = copy(getlabels_df)
-        diagnosis_copy_df = diagnosis_copy_df[diagnosis_copy_df["group"] == diagnosis]
+        diagnosis_copy_df = diagnosis_copy_df[
+            diagnosis_copy_df["diagnosis"] == diagnosis
+        ]
         if not diagnosis_copy_df.empty:
             diagnosis_demographics_df = add_demographics(
                 diagnosis_copy_df, merged_df, diagnosis

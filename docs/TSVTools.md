@@ -118,11 +118,11 @@ and chi-square test, respectively.
 ### Running the task
 
 ```bash
-clinicadl tsvtools split [OPTIONS] FORMATTED_DATA_TSV
+clinicadl tsvtools split [OPTIONS] DATA_TSV
 ```
 where:
 
-  - `FORMATTED_DATA_TSV` (Path) is the TSV file with the data that are going to be split 
+  - `DATA_TSV` (Path) is the TSV file with the data that are going to be split 
   (output of `clinicadl tsvtools getlabels|split|kfold`).
 
 Options:
@@ -167,9 +167,9 @@ This tool splits data to perform a k-fold cross-validation.
 ### Running the task
 
 ```bash
-clinicadl tsvtools kfold [OPTIONS] FORMATTED_DATA_TSV
+clinicadl tsvtools kfold [OPTIONS] DATA_TSV
 ```
-where `FORMATTED_DATA_TSV` (str) is the TSV file containing the data that are going to be split
+where `DATA_TSV` (str) is the TSV file containing the data that are going to be split
 (output of `clinicadl tsvtool getlabels|split|kfold`).
 
 Options:
@@ -186,7 +186,7 @@ Options:
 
 ### Output tree
 
-The command will generate a new tsv file `train_subset_name.tsv` stored in the same directory as the `FORMATTED_DATA_TSV` file and containing the keys (`participants_id`, `session_id`,`group`, `subgroup`, `age`, `sex`).
+The command will generate a new tsv file `train_subset_name.tsv` stored in the same directory as the `DATA_TSV` file and containing the keys (`participants_id`, `session_id`,`group`, `subgroup`, `age`, `sex`).
 For each key, it explicits which set it belongs to for each split according to the following structure (example for a 2-fold validation):
 
 | participant_id | session_id | split_index | split_type | group | subgroup | age | sex |
@@ -210,11 +210,11 @@ This tool performs a single split to prepare testing data and then can perform e
 ### Running the task
 
 ```bash
-clinicadl tsvtools prepare-experiment [OPTIONS] FORMATTED_DATA_TSV
+clinicadl tsvtools prepare-experiment [OPTIONS] DATA_TSV
 ```
 where:
 
-  - `FORMATTED_DATA_TSV` (Path) is a TSV file output of `clinicadl tsvtool getlabels|split|kfold`.
+  - `DATA_TSV` (Path) is a TSV file output of `clinicadl tsvtool getlabels|split|kfold`.
 
 Options:
 
@@ -247,12 +247,12 @@ The variables of interest are: age, sex, mini-mental state examination (MMSE) an
 ### Running the task
 
 ```bash
-clinicadl tsvtools analysis [OPTIONS] MERGED_TSV FORMATTED_DATA_TSV OUTPUT_TSV
+clinicadl tsvtools analysis [OPTIONS] MERGED_TSV DATA_TSV OUTPUT_TSV
 ```
 where:
 
   - `MERGED_TSV` (Path) is the output file of the `clinica iotools merge-tsv` commands. If th `clinicadl tsvtools getlabels` command was run before, this file already exists and is stored in the output folder of this command.
-  - `FORMATTED_DATA_TSV` (Path) is a folder containing one TSV file per label (output of `clinicadl tsvtool getlabels|split|kfold`).
+  - `DATA_TSV` (Path) is a folder containing one TSV file per label (output of `clinicadl tsvtool getlabels|split|kfold`).
   - `OUTPUT_TSV` (Path) is the path to the TSV file that will be written (filename included).
 
 Options:

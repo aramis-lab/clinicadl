@@ -179,10 +179,11 @@ def test_second_lv_quality_check(qc_cli_arg1):
 @pytest.fixture(
     params=[
         "analysis",
-        "getlabels",
+        "get-labels",
         "kfold",
         "split",
         "prepare-experiment",
+        "get-progression" "get-metadata",
     ]
 )
 def tsvtool_cli_arg1(request):

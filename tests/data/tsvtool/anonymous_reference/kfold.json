@@ -1,5 +1,0 @@
-{
-    "n_splits": 5,
-    "subset_name": "validation",
-    "stratification": null
-}
