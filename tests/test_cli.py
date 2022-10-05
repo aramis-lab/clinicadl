@@ -183,7 +183,8 @@ def test_second_lv_quality_check(qc_cli_arg1):
         "kfold",
         "split",
         "prepare-experiment",
-        "get-progression" "get-metadata",
+        "get-progression",
+        "get-metadata",
     ]
 )
 def tsvtool_cli_arg1(request):
