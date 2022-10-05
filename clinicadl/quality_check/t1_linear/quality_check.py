@@ -28,7 +28,7 @@ def quality_check(
     gpu: bool = True,
 ):
 
-    logger = getLogger("clinicadl")
+    logger = getLogger("clinicadl.quality_check")
 
     if not output_path.endswith(".tsv"):
         raise ClinicaDLArgumentError(f"Output path {output_path} must be a TSV file.")

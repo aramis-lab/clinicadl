@@ -53,10 +53,11 @@ Options shared for all values of `NETWORK_TASK` are organized in groups:
 
 !!! warning "Architecture limitations"
     Depending on the task, the output size needed to learn the task may vary:
-
-        - for `classification` the network must output a vector of length equals to the number of classes,
-        - for `regression` the network has only one output node,
-        - for `reconstruction` the network outputs an image of the same size as the input.
+    <ul>
+        <li> for <code>classification</code> the network must output a vector of length equals to the number of classes,</li>
+        <li> for <code>regression</code> the network has only one output node,</li>
+        <li> for <code>reconstruction</code> the network outputs an image of the same size as the input.</li>
+    </ul>
     If you want to use custom architecture, be sure to respect the output size needed for the learnt task.
 
 - **Computational resources**
@@ -123,6 +124,13 @@ A few options depend on the task performed:
     if several images are extracted from the same original 3D image (i.e. `num_networks` > 1). Default: `0`.
     - `--loss` (str) is the name of the loss used to optimize the classification task.
     Must correspond to a Pytorch class. Default: `CrossEntropyLoss`.
+    
+!!! note
+    Users can also set themselves the `label_code` parameter, but only from the configuration file.
+    This parameter allows to choose which name as written in the `label` column is associated with
+    which node value (designated by the corresponding integer). This way several names may be associated
+    with the same node.
+
 
 - **regression**
     The objective of the `regression` is to learn the value of a continuous variable given an image.
@@ -173,6 +181,7 @@ KL_weight = 1
 [Classification]
 selection_metrics = ["loss"]
 label = "diagnosis"
+label_code = {}
 selection_threshold = 0.0 # Will only be used if num_networks != 1
 loss = "CrossEntropyLoss"
 

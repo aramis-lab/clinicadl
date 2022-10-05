@@ -107,7 +107,7 @@ def get_model_list(architecture=None, input_size=None, model_layers=False):
             if model[0] != "RandomArchitecture":
                 print(f" - {model[0]}")
         print(
-            "To show details of a specific model architecture please use the --architecture option"
+            "To show details of a specific model architecture please use the `--architecture` option"
         )
     else:
         model_class = getattr(network_package, architecture)
@@ -119,10 +119,12 @@ def get_model_list(architecture=None, input_size=None, model_layers=False):
         if not input_size:
             input_size = model_class.get_input_size()
 
-        title_str = f"\nInformation for '{architecture}' network:\n"
+        title_str = f"\nInformation about '{architecture}' network:\n"
 
         dimension = model_class.get_dimension()
-        dimension_str = f"\n\tThis model can deal with {dimension} input.".expandtabs(4)
+        dimension_str = f"\n\tThis model can deal with {dimension} inputs.".expandtabs(
+            4
+        )
 
         if dimension == "2D":
             shape_str = "C@HxW,"
@@ -134,13 +136,9 @@ def get_model_list(architecture=None, input_size=None, model_layers=False):
         shape_str = "\n\tThe input must be in the shape ".expandtabs(4) + shape_str
         input_size_str = f" for example input_size can be {input_size}."
 
-        task_list = model_class.get_task()
-        task_str = f"\n\tThis model can be used for {task_list[0]}".expandtabs(4)
-        list_size = len(task_list)
-        if list_size > 0:
-            for i in range(1, list_size):
-                task_str = task_str + " or".join(task_list[i])
-        task_str = task_str + ".\n"
+        task_str = f"\n\tThis model can be used for {' or '.join(model_class.get_task())}.\n".expandtabs(
+            4
+        )
 
         print(
             title_str

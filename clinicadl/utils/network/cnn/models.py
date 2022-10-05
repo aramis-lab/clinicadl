@@ -23,10 +23,8 @@ def get_layers_fn(input_size):
 
 class Conv5_FC3(CNN):
     """
-    Convolutional neural network with 5 convolution and 3 fully-connected layer.
+    It is a convolutional neural network with 5 convolution and 3 fully-connected layer.
     It reduces the 2D or 3D input image to an array of size output_size.
-
-
     """
 
     def __init__(self, input_size, gpu=True, output_size=2, dropout=0.5):

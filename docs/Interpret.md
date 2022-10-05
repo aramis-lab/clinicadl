@@ -1,8 +1,11 @@
-# `interpret` - Interpretation with gradient maps
+# `interpret` - Interpret with attribution maps
 
-This functionality allows interpreting pretrained models by computing a mean saliency map
-across a group of images. It takes as input MAPS-like model folders.
-It is an adaptation of [[Simonyan et al., 2014](https://arxiv.org/abs/1312.6034)].
+This functionality allows interpreting pretrained models by computing a mean attribution map
+across a group of images and optionally individual attribution maps. It takes as input MAPS-like model folders.
+
+Two methods are currently implemented:
+- `gradients` is an adaptation of [[Simonyan et al., 2014](https://arxiv.org/abs/1312.6034)],
+- `grad-cam` is the implementation of [[Selvaraju et al., 2017](https://arxiv.org/abs/1610.02391v4)].
 
 
 ## Prerequisites
@@ -26,7 +29,7 @@ tar xf model_exp3_splits_1.tar.gz
 ## Running the task
 This task can be run with the following command line:
 ```Text
-clinicadl interpret [OPTIONS] INPUT_MAPS_DIRECTORY DATA_GROUP NAME
+clinicadl interpret [OPTIONS] INPUT_MAPS_DIRECTORY DATA_GROUP NAME METHOD
 
 ```
 where:
@@ -34,6 +37,7 @@ where:
 - `INPUT_MAPS_DIRECTORY` (Path) is a path to the MAPS folder containing the model which will be interpreted.
 - `DATA_GROUP` (str) is a prefix to name the files resulting from the interpretation task.
 - `NAME` (str) is the name of the saliency map task.
+- `METHOD` (str) is the name of the saliency method (`gradients` or `grad-cam`).
 
 !!! warning "data group consistency"
     For ClinicaDL, a data group is linked to a list of participants / sessions and a CAPS directory.
@@ -66,6 +70,9 @@ Optional arguments:
 - **Other options**
     - `--target_node` (int) is the node the gradients explain. By default, it will target the first output node.
     - `--save_individual` (bool) is an option to save individual saliency maps in addition to the mean saliency map.
+    - `--level_grad_cam` (int) is the layer considered to compute the Grad-CAM map. Default will use the last
+    layer of the `convolutions` parameter of the targeted `CNN`. The minimum value `1` will backpropagate the results
+    until the feature map located after the first layer.
    
 
 ## Outputs

@@ -14,7 +14,7 @@ from .utils import extract_metrics
 
 def quality_check(caps_dir, output_directory, group_label):
 
-    logger = getLogger("clinicadl")
+    logger = getLogger("clinicadl.quality_check")
 
     extract_metrics(
         caps_dir=caps_dir, output_dir=output_directory, group_label=group_label

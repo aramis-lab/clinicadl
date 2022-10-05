@@ -9,7 +9,7 @@ from torch.utils.data import sampler
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.task_manager")
 
 from clinicadl.utils.task_manager.task_manager import TaskManager
 
@@ -80,8 +80,11 @@ class ClassificationManager(TaskManager):
     @staticmethod
     def generate_sampler(dataset, sampler_option="random", n_bins=5):
         df = dataset.df
-        n_labels = df[dataset.label].nunique()
-        count = np.zeros(n_labels)
+        labels = df[dataset.label].unique()
+        codes = set()
+        for label in labels:
+            codes.add(dataset.label_code[label])
+        count = np.zeros(len(codes))
 
         for idx in df.index:
             label = df.loc[idx, dataset.label]
