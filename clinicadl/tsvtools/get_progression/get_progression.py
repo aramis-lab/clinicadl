@@ -16,7 +16,7 @@ from clinicadl.utils.tsvtools_utils import (
     find_label,
     first_session,
     last_session,
-    merge_tsv_reader,
+    merged_tsv_reader,
     neighbour_session,
 )
 
@@ -24,30 +24,34 @@ logger = getLogger("clinicadl")
 
 
 def get_progression(
-    formatted_data_tsv: str,
+    data_tsv: str,
     horizon_time: int = 36,
     stability_dict: dict = None,
 ):
 
     """
-    A method to get the subgroup for each sessions depending on their stability on the time horizon
+    A method to get the progression for each sessions depending on their stability on the time horizon
+    Outputs are written in data_tsv
 
-    Args:
-        bids_df: DataFrame with columns including ['participant_id', 'session_id']
-        horizon_time: time horizon in months
+    Parameters
+    ----------
+    data_tsv: str (path)
+        Path to a tsv file with columns including ["participants_id", "session_id", "dignosis"]
+    horizon_time: int
+        Time horizon in months
+    stability_dict: dict
+        Dictionnary explaining the progression of the disease. If None, it uses the Alzheimer's one : {CN: 0, MCI: 1, AD: 2}
 
-    Returns:
-        DataFrame with new labels
     """
 
     # Reading files
-    bids_df = merge_tsv_reader(formatted_data_tsv)
+    bids_df = merged_tsv_reader(data_tsv)
 
     if "diagnosis" not in bids_df.columns:
         data_directory = Path(output_tsv).parents[0]
-        formatted_data_tsv = results_directory / "labels.tsv"
+        data_tsv = results_directory / "labels.tsv"
 
-        metadata_df = merge_tsv_reader(formatted_data_tsv)
+        metadata_df = merged_tsv_reader(data_tsv)
         bids_df.rename(columns={"dx1": "diagnosis"}, inplace=True)
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
 
@@ -170,4 +174,4 @@ def get_progression(
 
     logger.info(f"Unstable subjects: {nb_subjects}")
 
-    bids_copy_df.to_csv(formatted_data_tsv, sep="\t")
+    bids_copy_df.to_csv(data_tsv, sep="\t")

@@ -4,7 +4,7 @@ from clinicadl.utils import cli_param
 
 
 @click.command(name="split", no_args_is_help=True)
-@cli_param.argument.formatted_data_tsv
+@cli_param.argument.data_tsv
 @cli_param.option.subset_name
 @click.option(
     "--n_test",
@@ -51,7 +51,7 @@ from clinicadl.utils import cli_param
     type=bool,
 )
 def cli(
-    formatted_data_tsv,
+    data_tsv,
     subset_name,
     n_test,
     p_sex_threshold,
@@ -62,14 +62,14 @@ def cli(
 ):
     """Performs a single split to prepare training.
 
-    FORMATTED_DATA_TSV is the path to the tsv file where the outputs of tsvtool getlabels command are stored.
+    DATA_TSV is the path to the tsv file where the outputs of tsvtool getlabels command are stored.
 
     The split is done with respect to age, sex and group distribution.
     """
     from .split import split_diagnoses
 
     split_diagnoses(
-        formatted_data_tsv,
+        data_tsv,
         n_test=n_test,
         subset_name=subset_name,
         p_age_threshold=p_age_threshold,

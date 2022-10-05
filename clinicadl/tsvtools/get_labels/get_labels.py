@@ -27,7 +27,7 @@ from clinicadl.utils.tsvtools_utils import (
     find_label,
     first_session,
     last_session,
-    merge_tsv_reader,
+    merged_tsv_reader,
     neighbour_session,
 )
 
@@ -39,11 +39,15 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
     Deduce the diagnosis when missing from previous and following sessions of the subject. If not identical, the session
     is dropped. Sessions with no diagnosis are also dropped when there are the last sessions of the follow-up.
 
-    Args:
-        bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+    Parameters
+    ----------
+    bids_df: DataFrame
+        Columns including ['participant_id', 'session_id', 'diagnosis']
 
-    Returns:
-        cleaned DataFrame
+    Returns
+    -------
+    bids_copy_df: DataFrame
+        Cleaned copy of the input bids_df
     """
     bids_copy_df = copy(bids_df)
     found_diag_interpol = 0
@@ -108,13 +112,19 @@ def mod_selection(
     """
     Select only sessions for which the modality is present
 
-    Args:
-        bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-        missing_mods_dict: dictionary of the DataFrames of missing modalities
-        mod: the modality used for selection
+    Parameters
+    ----------
+    bids_df: DataFrame
+        Columns include ['participant_id', 'session_id', 'diagnosis']
+    missing_mods_dict: dictionary of str and DataFrame
+        DataFrames of missing modalities
+    mod: str
+        the modality used for selection
 
-    Returns:
-        DataFrame
+    Returns
+    -------
+    copy_bids_df: DataFrame
+        Cleaned copy of the input bids_df
     """
     bids_copy_df = copy(bids_df)
     nb_subjects = 0
@@ -133,20 +143,19 @@ def mod_selection(
     return bids_copy_df
 
 
-def remove_unique_session(
-    bids_df: pd.DataFrame,
-    stability_dict: dict = None,
-    remove_unique_session=False,
-) -> pd.DataFrame:
+def remove_unique_session(bids_df: pd.DataFrame) -> pd.DataFrame:
     """
     A method to get the subgroup for each sessions depending on their stability on the time horizon
 
-    Args:
-        bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-        horizon_time: time horizon in months
+    Parameters
+    ----------
+    bids_df: DataFrame
+        Columns include ['participant_id', 'session_id', 'diagnosis']
 
-    Returns:
-        DataFrame with new labels
+    Returns
+    -------
+    bids_copy_df: DataFrame
+        Cleaned copy of the input bids_df
     """
     bids_copy_df = copy(bids_df)
     nb_unique = 0
@@ -171,14 +180,16 @@ def diagnosis_removal(bids_df: pd.DataFrame, diagnosis_list: List[str]) -> pd.Da
 
     Parameters
     ----------
-        bids_df: DataFrame
-            Columns must includes ['participant_id', 'session_id', 'diagnosis']
-        diagnosis_list: list of str
-            List of diagnoses that will be removed
+    bids_df: DataFrame
+        Columns must includes ['participant_id', 'session_id', 'diagnosis']
+    diagnosis_list: list of str
+        List of diagnoses that will be removed
 
     Returns
     -------
-        output_df: DataFrame
+    output_df: DataFrame
+        Cleaned copy of the input bids_df
+
     """
 
     output_df = copy(bids_df)
@@ -198,13 +209,18 @@ def apply_restriction(bids_df: pd.DataFrame, restriction_path: str) -> pd.DataFr
     """
     Application of a restriction (for example after the removal of some subjects after a preprocessing pipeline)
 
-    Args:
-        bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-        restriction_path: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis'] including
-            all the sessions that can be included
+    Parameters
+    ----------
+    bids_df: DataFrame
+        Columns must include ['participant_id', 'session_id', 'diagnosis']
+    restriction_path: str (path)
+        Path to a tsv file with columns including ['participant_id', 'session_id', 'diagnosis'] including
+        all the sessions that can be included
 
-    Returns:
-        The restricted DataFrame
+    Returns
+    -------
+    bids_copy_df: DataFrame
+        Cleaned copy of the input bids_df
     """
     bids_copy_df = copy(bids_df)
     nb_subjects = 0
@@ -231,7 +247,7 @@ def get_labels(
     variables_of_interest: List[str] = None,
     remove_smc: bool = True,
     caps_directory: str = None,
-    merge_tsv: str = None,
+    merged_tsv: str = None,
     missing_mods: str = None,
     remove_unique_session: bool = False,
 ):
@@ -239,17 +255,28 @@ def get_labels(
     Writes one TSV file based on merged_tsv and missing_mods.
 
 
-    Args:
-        bids_directory: Path to the folder containing the dataset in a BIDS hierarchy.
-        diagnoses: Labels that must be extracted from merged_tsv.
-        modality: Modality to select sessions. Sessions which do not include the modality will be excluded.
-        restriction_path: Path to a tsv containing the sessions that can be included.
-        variables_of_interest: columns that should be kept in the output tsv files.
-        remove_smc: if True SMC participants are removed from the lists.
-        caps_directory: Path to a folder of a older of a CAPS compliant dataset
-        merge_tsv: Path to the output of clinica iotools merge-tsv if already exists
-        missing_mods: Path to the output directory of clinica iotools check-missing-modalities if already exists
-        remove_unique_session: if True, subjects with only one session are removed.
+    Parameters
+    ----------
+    bids_directory: str (path)
+        Path to the folder containing the dataset in a BIDS hierarchy.
+    diagnoses: List of str
+        Labels that must be extracted from merged_tsv.
+    modality: str
+        Modality to select sessions. Sessions which do not include the modality will be excluded.
+    restriction_path: str (path)
+        Path to a tsv containing the sessions that can be included.
+    variables_of_interest: List of str
+        Columns that should be kept in the output tsv files.
+    remove_smc: bool
+        If True SMC participants are removed from the lists.
+    caps_directory: str (path)
+        Path to a folder of a older of a CAPS compliant dataset
+    merged_tsv: str (path)
+        Path to the output of clinica iotools merge-tsv if already exists
+    missing_mods: str (path)
+        Path to the output directory of clinica iotools check-missing-modalities if already exists
+    remove_unique_session: bool
+        If True, subjects with only one session are removed.
     """
 
     from pathlib import Path
@@ -268,7 +295,7 @@ def get_labels(
             "remove_smc": remove_smc,
             "caps": caps_directory,
             "missing_mods": missing_mods,
-            "merge_tsv": merge_tsv,
+            "merged_tsv": merged_tsv,
             "remove_unique_session": remove_unique_session,
         },
         filename="labels.json",
@@ -299,10 +326,10 @@ def get_labels(
     )
 
     # Generating the output of `clinica iotools merge-tsv `
-    merge_tsv_path = os.path.join(results_directory, "merge.tsv")
-    if merge_tsv is not None:
-        merge_tsv_path = merge_tsv
-    elif not os.path.exists(merge_tsv_path):
+    merged_tsv_path = os.path.join(results_directory, "merge.tsv")
+    if merged_tsv is not None:
+        merged_tsv_path = merged_tsv
+    elif not os.path.exists(merged_tsv_path):
         logger.info("create merge tsv")
         check_bids_folder(bids_directory)
         create_merge_file(
@@ -320,10 +347,10 @@ def get_labels(
             tracers_selection=False,
         )
 
-    logger.info(f"output of clinica iotools merge-tsv: {merge_tsv_path}")
+    logger.info(f"output of clinica iotools merge-tsv: {merged_tsv_path}")
 
     # Reading files
-    bids_df = merge_tsv_reader(merge_tsv_path)
+    bids_df = merged_tsv_reader(merged_tsv_path)
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
     variables_list = []
 
@@ -393,9 +420,9 @@ def get_labels(
     variables_list.append("baseline_diagnosis")
 
     bids_df = bids_df[variables_list]
+    if remove_unique_session:
+        bids_df = remove_unique_session(bids_df)
 
-    # stability_dict = {"CN": 0, "MCI": 1, "AD": 2, "Dementia": 2}
-    # output_df = get_subgroup(bids_df, time_horizon, stability_dict=stability_dict)
     variables_list.remove("baseline_diagnosis")
     output_df = bids_df[variables_list]
     output_df = infer_or_drop_diagnosis(output_df)

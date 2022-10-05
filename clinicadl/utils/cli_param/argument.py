@@ -11,7 +11,7 @@ output_tsv = click.argument("output_tsv", type=str)
 merged_tsv = click.argument("merged_tsv", type=click.Path(exists=True))
 
 # TSV TOOLS
-formatted_data_tsv = click.argument("formatted_data_tsv", type=click.Path(exists=True))
+data_tsv = click.argument("data_tsv", type=click.Path(exists=True))
 
 dataset = click.argument("dataset", type=click.Choice(["AIBL", "OASIS"]))
 results_tsv = click.argument("results_tsv", type=click.Path())

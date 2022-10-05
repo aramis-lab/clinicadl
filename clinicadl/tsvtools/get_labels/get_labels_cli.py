@@ -25,14 +25,14 @@ from clinicadl.utils import cli_param
     is_flag=True,
 )
 @click.option(
-    "--merge_tsv",
-    help="Path to a TSV file containing the results of clinica iotools merge-tsv command if different of results_directory/merge.tsv",
+    "--merged_tsv",
+    help="Path to a TSV file containing the results of clinica iotools merge-tsv command if different of results_directory/merged.tsv",
     type=str,
     default=None,
 )
 @click.option(
     "--missing_mods",
-    help="Path to a directory containing the results of clinica iotools missing-modalities command if different of results_directory/missing_modalities/",
+    help="Path to a directory containing the results of clinica iotools missing-modalities command if different of results_directory/missing_mods/",
     type=str,
     default=None,
 )
@@ -52,16 +52,18 @@ def cli(
     keep_smc,
     caps_directory,
     missing_mods,
-    merge_tsv,
+    merged_tsv,
     remove_unique_session,
 ):
-    """Get labels in one tsv file.
+    """Get labels in a tsv file.
 
-    This command executes the two othefollowingrs commands:
+    This command executes the two following commands:
         - `clinica iotools merge-tsv`
         - `clinica iotools check-missing-modalities`
 
     BIDS_DIRECTORY is the path to the BIDS directory.
+
+    Defaults diagnoses are CN and AD.
 
     Outputs are stored in OUTPUT_TSV.
     """
@@ -78,7 +80,7 @@ def cli(
         variables_of_interest=variables_of_interest,
         remove_smc=not keep_smc,
         missing_mods=missing_mods,
-        merge_tsv=merge_tsv,
+        merged_tsv=merged_tsv,
         caps_directory=caps_directory,
         remove_unique_session=remove_unique_session,
     )

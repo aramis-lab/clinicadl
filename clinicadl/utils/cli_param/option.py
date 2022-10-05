@@ -7,27 +7,6 @@ from clinica.utils.pet import LIST_SUVR_REFERENCE_REGIONS
 diagnoses = click.option(
     "--diagnoses",
     "-d",
-    # type=click.Choice(
-    #     [
-    #         "CN",
-    #         "sCN",
-    #         "usCN",
-    #         "pCN",
-    #         "ukCN",
-    #         "MCI",
-    #         "sMCI",
-    #         "usMCI",
-    #         "ukMCI",
-    #         "pMCI",
-    #         "rMCI",
-    #         "AD",
-    #         "sAD",
-    #         "usAD",
-    #         "ukAD",
-    #         "rAD",
-    #         "Dementia",
-    #     ]
-    # ),
     multiple=True,
     default=("AD", "CN"),
     help="Labels selected for the demographic analysis used in the context of Alzheimer's Disease classification.",

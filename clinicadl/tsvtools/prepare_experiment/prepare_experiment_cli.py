@@ -4,7 +4,7 @@ from clinicadl.utils import cli_param
 
 
 @click.command(name="prepare-experiment", no_args_is_help=True)
-@cli_param.argument.formatted_data_tsv
+@cli_param.argument.data_tsv
 @click.option(
     "--n_test",
     help="- If >= 1, number of subjects to put in set with name 'subset_name'.\n\n "
@@ -30,14 +30,21 @@ from clinicadl.utils import cli_param
     type=float,
 )
 def cli(
-    formatted_data_tsv,
+    data_tsv,
     n_test,
     validation_type,
     n_validation,
 ):
     """Performs a single split to prepare testing data and then can perform either k-fold or single split to prepare validation data.
 
-    FORMATTED_DATA_TSV is the path to the folder where the outputs of tsvtool getlabels command are stored.
+    DATA_TSV is the path to the folder where the outputs of tsvtool getlabels command are stored.
+
+    N_TEST is the numbers/proportion of subjects to put in the test split.
+
+    VALIDATION_TYPE is the type of split wanted for the validation split.
+
+    N_VALIDATION is the numbers/proportion of subjects to put in the validation split.
+
 
     The split is done with respect to age and sex distribution.
     Threshold on the p-value used for the T-test on age distributions is 0.80.
@@ -52,7 +59,7 @@ def cli(
     ignore_demographics = False
 
     split_diagnoses(
-        formatted_data_tsv,
+        data_tsv,
         n_test=n_test,
         subset_name="test",
         p_age_threshold=p_age_threshold,
@@ -62,7 +69,7 @@ def cli(
     )
     if validation_type == "split":
         split_diagnoses(
-            formatted_data_tsv,
+            data_tsv,
             n_test=n_validation,
             subset_name="validation",
             p_age_threshold=p_age_threshold,
@@ -75,7 +82,7 @@ def cli(
         from clinicadl.tsvtools.kfold import split_diagnoses as kfold_diagnoses
 
         kfold_diagnoses(
-            formatted_data_tsv,
+            data_tsv,
             n_splits=n_validation,
             subset_name="validation",
             stratification=None,

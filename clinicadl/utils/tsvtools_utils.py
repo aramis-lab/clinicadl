@@ -12,8 +12,8 @@ from clinicadl.utils.exceptions import ClinicaDLTSVError
 logger = getLogger("clinicadl")
 
 
-def merge_tsv_reader(merge_tsv_path):
-    bids_df = pd.read_csv(merge_tsv_path, sep="\t")
+def merged_tsv_reader(merged_tsv_path):
+    bids_df = pd.read_csv(merged_tsv_path, sep="\t")
 
     for i in bids_df.index:
         session = bids_df["session_id"][i]
@@ -265,3 +265,31 @@ def cleaning_nan_diagnoses(bids_df: pd.DataFrame) -> pd.DataFrame:
     logger.info(f"Missing diagnoses not found: {missing_diag - found_diag}")
 
     return bids_copy_df
+
+
+def df_to_tsv(name: str, results_path: str, df, baseline: bool = False) -> None:
+    """
+    Write Dataframe into a TSV file and drop duplicates
+
+    Parameters
+    ----------
+    name: str
+        Name of the tsv file
+    results_path: str (path)
+        Path to the folder
+    df: DataFrame
+        DataFrame you want to write in a TSV file.
+        Columns must include ["participant_id", "session_id"].
+    baseline: bool
+        If True, ther is only baseline session for each subject.
+    """
+
+    df.sort_values(by=["participant_id", "session_id"], inplace=True)
+    if baseline:
+        df.drop_duplicates(subset=["participant_id"], keep="first", inplace=True)
+    else:
+        df.drop_duplicates(
+            subset=["participant_id", "session_id"], keep="first", inplace=True
+        )
+    df = df[["participant_id", "session_id"]]
+    df.to_csv(path.join(results_path, name), sep="\t", index=False)

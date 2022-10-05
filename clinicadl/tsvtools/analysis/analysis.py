@@ -14,31 +14,35 @@ from clinicadl.utils.tsvtools_utils import (
     cleaning_nan_diagnoses,
     find_label,
     first_session,
-    merge_tsv_reader,
+    merged_tsv_reader,
     next_session,
 )
 
 
-def demographics_analysis(merged_tsv, formatted_data_path, results_path, diagnoses):
+def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
     """
     Produces a tsv file with rows corresponding to the labels defined by the diagnoses list,
     and the columns being demographic statistics.
 
-    Args:
-        merged_tsv (str): Path to the file obtained by the command clinica iotools merge-tsv.
-        formatted_data_path (str): Path to the folder containing data extracted by clinicadl tsvtool getlabels.
-        results_path (str): Path to the output tsv file (filename included).
-        diagnoses (list): Labels selected for the demographic analysis.
+    Writes one tsv file at results_tsv containing the demographic analysis of the tsv files in data_tsv.
 
-    Returns:
-        writes one tsv file at results_path containing the
-        demographic analysis of the tsv files in formatted_data_path.
+    Parameters
+    ----------
+    merged_tsv: str (path)
+        Path to the file obtained by the command clinica iotools merge-tsv.
+    data_tsv: str (path)
+        Path to the folder containing data extracted by clinicadl tsvtool getlabels.
+    results_tsv: str (path)
+        Path to the output tsv file (filename included).
+    diagnoses: list of str
+        Labels selected for the demographic analysis.
+
     """
 
-    merged_df = merge_tsv_reader(merged_tsv)
+    merged_df = merged_tsv_reader(merged_tsv)
     merged_df.set_index(["participant_id", "session_id"], inplace=True)
     merged_df = cleaning_nan_diagnoses(merged_df)
-    parent_directory = path.abspath(path.join(results_path, os.pardir))
+    parent_directory = path.abspath(path.join(results_tsv, os.pardir))
     os.makedirs(parent_directory, exist_ok=True)
 
     fields_dict = {
@@ -75,14 +79,14 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path, diagnos
 
     # Need all values for mean and variance (age, MMSE and scans)
     diagnosis_dict = dict.fromkeys(diagnoses)
-    if not path.exists(formatted_data_path):
+    if not path.exists(data_tsv):
         print(
             f"getlabels.tsv file with all sessions was not found. "
             # f"Loads baseline version instead."
         )
     for diagnosis in diagnoses:
         diagnosis_dict[diagnosis] = {"age": [], "MMSE": [], "scans": []}
-        getlabels_df = pd.read_csv(formatted_data_path, sep="\t")
+        getlabels_df = pd.read_csv(data_tsv, sep="\t")
         diagnosis_copy_df = copy(getlabels_df)
         diagnosis_copy_df = diagnosis_copy_df[diagnosis_copy_df["group"] == diagnosis]
         if not diagnosis_copy_df.empty:
@@ -199,4 +203,4 @@ def demographics_analysis(merged_tsv, formatted_data_path, results_path, diagnos
 
     results_df.index.name = "group"
 
-    results_df.to_csv(results_path, sep="\t")
+    results_df.to_csv(results_tsv, sep="\t")

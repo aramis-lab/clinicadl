@@ -4,7 +4,7 @@ import os
 import shutil
 from copy import copy
 from logging import getLogger
-from os import path
+from os import makedirs, path
 from pathlib import Path
 from typing import List
 
@@ -15,6 +15,7 @@ from sklearn.model_selection import StratifiedKFold
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.tsvtools_utils import (
+    df_to_tsv,
     extract_baseline,
     remove_sub_labels,
     retrieve_longitudinal,
@@ -29,22 +30,28 @@ def write_splits(
     split_label: str,
     n_splits: int,
     subset_name: str,
+    results_directory: str,
 ):
     """
     Split data at the subject-level in training and test to have equivalent distributions in split_label.
     Writes test and train Dataframes.
 
-    Args:
-        diagnosis: diagnosis on which the split is done
-        diagnosis_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-        split_label: label on which the split is done (categorical variables)
-        n_splits: Number of splits in the k-fold cross-validation.
-        train_path: Path to the training data.
-        test_path: Path to the test data.
-        supplementary_diagnoses: List of supplementary diagnoses to add to the data.
+    Parameters
+    ----------
+    diagnosis_df: Dataframe
+        Columns must include ['participant_id', 'session_id', 'diagnosis']
+    split_label: str
+        Label on which the split is done (categorical variables)
+    n_splits: int
+        Number of splits in the k-fold cross-validation.
+    subset_name: str
+        Name of the subset split.
+    results_directory: str (path)
+        Path to the results directory.
+
     """
 
-    baseline_df = extract_baseline(diagnosis_df, set_index=False)
+    baseline_df = extract_baseline(diagnosis_df)
 
     if split_label is None:
         diagnoses_list = list(baseline_df.diagnosis)
@@ -56,60 +63,46 @@ def write_splits(
         y = np.array([unique.index(x) for x in stratification_list])
 
     splits = StratifiedKFold(n_splits=int(n_splits), shuffle=True, random_state=2)
-    print(splits)
 
-    output_train_df = pd.DataFrame()
-    output_long_train_df = pd.DataFrame()
-    output_all_df = pd.DataFrame()
-    output_long_test_df = pd.DataFrame()
-
-    diagnosis_df.reset_index(inplace=True)
-    # os.mkdir(f"{n_splits}_fold")
     for i, indices in enumerate(splits.split(np.zeros(len(y)), y)):
-        print(i)
-        # print(indices)
-        # os.mkdir(f"{n_splits}_fold/fold_{i}")
         train_index, test_index = indices
 
         test_df = baseline_df.iloc[test_index]
         train_df = baseline_df.iloc[train_index]
-
-        train_df = train_df.reindex(
-            columns=train_df.columns.tolist() + ["split", "datagroup"]
-        )
-        train_df.__setitem__("split", int(i))
-        train_df.__setitem__("datagroup", "train")
-        test_df = test_df.reindex(
-            columns=test_df.columns.tolist() + ["split", "datagroup"]
-        )
-        test_df.__setitem__("split", int(i))
-        test_df.__setitem__("datagroup", subset_name)
-
-        output_df = pd.concat([train_df, test_df])
-
-        print(train_df)
-        # train_df.to_csv(f"{n_splits}_fold/fold_{i}/train_baseline.tsv")
-        # test_df.to_csv(f"{n_splits}_fold/fold_{i}/validation_baseline.tsv")
-        # print(test_df)
-        output_all_df = pd.concat([output_all_df, output_df])
         long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
-        long_train_df = long_train_df.reindex(
-            columns=long_train_df.columns.tolist() + ["split", "datagroup"]
+
+        train_df.reset_index(inplace=True, drop=True)
+        test_df.reset_index(inplace=True, drop=True)
+
+        train_df = train_df[["participant_id", "session_id"]]
+        test_df = test_df[["participant_id", "session_id"]]
+        long_train_df = long_train_df[["participant_id", "session_id"]]
+
+        os.makedirs(path.join(results_directory, f"split-{i}"))
+
+        train_df.to_csv(
+            path.join(results_directory, f"split-{i}", "train_baseline.tsv"),
+            sep="\t",
+            index=False,
         )
-        long_train_df.__setitem__("split", int(i))
-        long_train_df.__setitem__("datagroup", "train")
+        test_df.to_csv(
+            path.join(results_directory, f"split-{i}", f"{subset_name}_baseline.tsv"),
+            sep="\t",
+            index=False,
+        )
 
-        output_all_df = pd.concat([output_all_df, long_train_df])
-
-    return output_all_df
+        long_train_df.to_csv(
+            path.join(results_directory, f"split-{i}", "train.tsv"),
+            sep="\t",
+            index=False,
+        )
 
 
 def split_diagnoses(
-    formatted_data_tsv: str,
+    data_tsv: str,
     n_splits: int = 5,
     subset_name: str = None,
     stratification: str = None,
-    test_tsv: str = None,
 ):
     """
     Performs a k-fold split for each label independently on the subject level.
@@ -120,18 +113,31 @@ def split_diagnoses(
     The train group will contain baseline and longitudinal sessions,
     whereas the test group will only include the baseline sessions for each split.
 
-    Args:
-        formatted_data_tsv: Path to the tsv file extracted by clinicadl tsvtool getlabels.
-        n_splits: Number of splits in the k-fold cross-validation.
-        subset_name: Name of the subset that is complementary to train.
-        stratification: Name of variable used to stratify k-fold.
+    Parameters
+    ----------
+    data_tsv: str (path)
+        Path to the tsv file extracted by clinicadl tsvtool getlabels.
+    n_splits: int
+        Number of splits in the k-fold cross-validation.
+    subset_name: str
+        Name of the subset that is complementary to train.
+    stratification: str
+        Name of variable used to stratify k-fold.
     """
 
-    results_path = Path(formatted_data_tsv).parents[0]
+    parents_path = Path(data_tsv).parents[0]
+    split_numero = 1
+    folder_name = f"{n_splits}_fold"
+
+    while os.path.exists(parents_path / folder_name):
+        split_numero += 1
+        folder_name = f"{n_splits}_fold_{split_numero}"
+    results_directory = parents_path / folder_name
+    makedirs(results_directory)
 
     commandline_to_json(
         {
-            "output_dir": results_path,
+            "output_dir": results_directory,
             "n_splits": n_splits,
             "subset_name": subset_name,
             "stratification": stratification,
@@ -142,54 +148,27 @@ def split_diagnoses(
     # Read files
     from os.path import join
 
-    diagnosis_df = pd.read_csv(formatted_data_tsv, sep="\t")
-    diagnosis_df.set_index(["participant_id", "session_id"], inplace=True)
+    diagnosis_df_path = Path(data_tsv).name
+    diagnosis_df = pd.read_csv(data_tsv, sep="\t")
     list_columns = diagnosis_df.columns.values
+
     if (
         "diagnosis" not in list_columns
         or "age" not in list_columns
         or "sex" not in list_columns
     ):
-        labels_df = pd.read_csv(join(results_path, "labels.tsv"), sep="\t")
-        new_df = pd.merge(
-            diagnosis_df, labels_df, how="inner", on=["participant_id", "session_id"]
+        parents_path = path.abspath(parents_path)
+        while not os.path.exists(path.join(parents_path, "labels.tsv")):
+            parents_path = Path(parents_path).parents[0]
+
+        labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+        diagnosis_df = pd.merge(
+            diagnosis_df,
+            labels_df,
+            how="inner",
+            on=["participant_id", "session_id"],
         )
-        print(diagnosis_df)
-        print(labels_df)
-        print(new_df)
-    else:
-        new_df = diagnosis_df
 
-    new_df.set_index(["participant_id", "session_id"], inplace=True)
-    output_df = pd.DataFrame()
-
-    # The baseline session must be kept before or we are taking all the sessions to mix them
-    for diagnosis in pd.unique(new_df["diagnosis"]):
-        diagnosis_copy_df = copy(new_df)
-        indexName = diagnosis_copy_df[
-            (diagnosis_copy_df["diagnosis"] != diagnosis)
-        ].index
-        diagnosis_copy_df.drop(indexName, inplace=True)
-        temp_df = write_splits(diagnosis_copy_df, stratification, n_splits, subset_name)
-        temp_df.drop_duplicates(keep="first", inplace=True)
-        output_df = pd.concat([output_df, temp_df])
-
-    output_df = output_df[
-        [
-            "participant_id",
-            "session_id",
-            "split",
-            "datagroup",
-            "diagnosis",
-            "age",
-            "sex",
-        ]
-    ]
-    output_df.sort_values(["participant_id", "session_id"], inplace=True)
-    output_df.to_csv(
-        path.join(results_path, "train_" + subset_name + ".tsv"),
-        sep="\t",
-        index=False,
-    )
+    write_splits(diagnosis_df, stratification, n_splits, subset_name, results_directory)
 
     logger.info(f"K-fold split is done.")

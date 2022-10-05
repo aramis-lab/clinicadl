@@ -18,6 +18,7 @@ from clinicadl.utils.tsvtools_utils import (
     category_conversion,
     chi2,
     complementary_list,
+    df_to_tsv,
     extract_baseline,
     find_label,
     remove_sub_labels,
@@ -27,19 +28,6 @@ from clinicadl.utils.tsvtools_utils import (
 
 sex_dict = {"M": 0, "F": 1}
 logger = getLogger("clinicadl")
-
-
-def df_to_tsv(name: str, results_path: str, df, baseline: bool = False):
-
-    df = df[["participant_id", "session_id"]]
-    df.sort_values(by=["participant_id", "session_id"], inplace=True)
-    if baseline:
-        df.drop_duplicates(subset=["participant_id"], keep="first", inplace=True)
-    else:
-        df.drop_duplicates(
-            subset=["participant_id", "session_id"], keep="first", inplace=True
-        )
-    df.to_csv(path.join(results_path, name), sep="\t", index=False)
 
 
 def create_split(
@@ -55,21 +43,31 @@ def create_split(
     """
     Split data at the subject-level in training and test set with equivalent age, sex and split_label distributions
 
-    Args:
-        diagnosis_df: DataFrame with columns including ['participant_id', 'session_id', 'group']
-        split_label: (str) label on which the split is done (categorical variables)
-        n_test: (float)
-            If > 1 number of subjects to put in the test set.
-            If < 1 proportion of subjects to put in the test set.
-        p_age_threshold: (float) threshold for the t-test on age.
-        p_sex_threshold: (float) threshold for the chi2 test on sex.
-        supplementary_train_df: (DataFrame) Add data that must be included in the train set.
-        ignore_demographics: (bool): If True the diagnoses are split without taking into account the demographics
-            distributions (age, sex).
+    Parameters
+    ----------
+    diagnosis_df: DataFrame
+        Columns including ['participant_id', 'session_id', 'group']
+    split_label: str
+        Label on which the split is done (categorical variables)
+    n_test: float
+        If > 1 number of subjects to put in the test set.
+        If < 1 proportion of subjects to put in the test set.
+    p_age_threshold: float
+        Threshold for the t-test on age.
+    p_sex_threshold: float
+        Threshold for the chi2 test on sex.
+    supplementary_train_df: DataFrame
+        Add data that must be included in the train set.
+    ignore_demographics: bool
+        If True the diagnoses are split without taking into account the demographics
+        distributions (age, sex).
 
-    Returns:
-        train_df (DataFrame) subjects in the train set
-        test_df (DataFrame) subjects in the test set
+    Returns
+    -------
+    train_df: DataFrame
+        Subjects in the train set
+    test_df: DataFrame
+        Subjects in the test set
     """
     if supplementary_train_df is not None:
         sup_train_sex = [sex_dict[x] for x in supplementary_train_df.sex.values]
@@ -157,7 +155,7 @@ def create_split(
 
 
 def split_diagnoses(
-    formatted_data_path,
+    data_tsv,
     n_test=100,
     subset_name="test",
     p_age_threshold=0.80,
@@ -174,28 +172,37 @@ def split_diagnoses(
 
     The age and sex distributions between the two sets must be non-significant (according to T-test and chi-square).
 
-    Args:
-        formatted_data_path (str): Path to the tsv containing data extracted by clinicadl tsvtools getlabels.
-        n_test (float):
-            If >= 1, number of subjects to put in set with name 'subset_name'.
-            If < 1, proportion of subjects to put in set with name 'subset_name'.
-            If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name'.
-        subset_name (str): Name of the subset that is complementary to train.
-        p_age_threshold (float): The threshold used for the T-test on age distributions.
-        p_sex_threshold (float): The threshold used for the T-test on sex distributions.
-        categorical_split_variable (str): name of a categorical variable to perform a stratified split.
-        ignore_demographics (bool): If True the diagnoses are split without taking into account the demographics
-            distributions (age, sex).
-        verbose (int): level of verbosity.
+    Parameters
+    ----------
+    data_tsv: str (path)
+        Path to the tsv containing data extracted by clinicadl tsvtools getlabels.
+    n_test: float
+        If >= 1, number of subjects to put in set with name 'subset_name'.
+        If < 1, proportion of subjects to put in set with name 'subset_name'.
+        If 0, no training set is created and the whole dataset is considered as one set with name 'subset_name'.
+    subset_name: str
+        Name of the subset that is complementary to train.
+    p_age_threshold: float
+        The threshold used for the T-test on age distributions.
+    p_sex_threshold: float
+        The threshold used for the T-test on sex distributions.
+    categorical_split_variable: str
+        Name of a categorical variable to perform a stratified split.
+    ignore_demographics: bool
+        If True the diagnoses are split without taking into account the demographics
+        distributions (age, sex).
+    verbose: int
+        Level of verbosity.
 
-    Returns:
-        writes three files per <label>.tsv file present in formatted_data_path:
-            - formatted_data_path/train/<label>.tsv
-            - formatted_data_path/train/<label>_baseline.tsv
-            - formatted_data_path/<subset_name>/<label>_baseline.tsv
+    Informations
+    ------------
+    writes three files per <label>.tsv file present in data_tsv:
+        - data_tsv/train/<label>.tsv
+        - data_tsv/train/<label>_baseline.tsv
+        - data_tsv/<subset_name>/<label>_baseline.tsv
     """
 
-    parents_path = Path(formatted_data_path).parents[0]
+    parents_path = Path(data_tsv).parents[0]
     split_numero = 1
     folder_name = f"split"
 
@@ -226,8 +233,8 @@ def split_diagnoses(
         categorical_split_variable.append("diagnosis")
 
     # Read files
-    diagnosis_df_path = Path(formatted_data_path).name
-    diagnosis_df = pd.read_csv(formatted_data_path, sep="\t")
+    diagnosis_df_path = Path(data_tsv).name
+    diagnosis_df = pd.read_csv(data_tsv, sep="\t")
     list_columns = diagnosis_df.columns.values
 
     if n_test > 0:

@@ -3,7 +3,7 @@ from logging import getLogger
 import numpy as np
 import pandas as pd
 
-from clinicadl.utils.tsvtools_utils import merge_tsv_reader
+from clinicadl.utils.tsvtools_utils import merged_tsv_reader
 
 logger = getLogger("clinicadl")
 
@@ -15,12 +15,17 @@ def get_metadata(
     Get the meta data in metadata_df to write them in output_df.
     If variables_of_interest is None, the function writes all the data that are in metadata_df for the list of subjects in output_df.
 
-    Args:
-        data_df: DataFrame with columns including ['participant_id', 'session_id']
-        variables_of_interest : (str) list of columns that should be kept in the output DataFrame.
+    Parameters
+    ----------
+    data_df: DataFrame
+        Columns must include ['participant_id', 'session_id']
+    variables_of_interest: list of str
+        List of columns that will be added in the output DataFrame.
 
-    Returns:
-        output_df : data_df DataFrame with variables of interest columns added.
+    Returns
+    -------
+    results_df: DataFrame
+        Input data_df with variables of interest columns added.
     """
 
     variables_in = output_df.columns.tolist()
