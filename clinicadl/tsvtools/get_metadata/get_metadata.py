@@ -9,7 +9,7 @@ logger = getLogger("clinicadl")
 
 
 def get_metadata(
-    metadata_df: DataFrame, output_df: DataFrame, variables_of_interest=None
+    metadata_df: pd.DataFrame, output_df: pd.DataFrame, variables_of_interest=None
 ) -> DataFrame:
     """
     Get the meta data in metadata_df to write them in output_df.
