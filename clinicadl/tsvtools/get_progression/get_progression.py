@@ -2,6 +2,7 @@ import os
 from copy import copy
 from logging import getLogger
 from os import path
+from pathlib import Path
 from typing import Dict, List
 
 import numpy as np
@@ -48,13 +49,21 @@ def get_progression(
     bids_df = merged_tsv_reader(data_tsv)
 
     if "diagnosis" not in bids_df.columns:
-        data_directory = Path(output_tsv).parents[0]
-        data_tsv = results_directory / "labels.tsv"
 
-        metadata_df = merged_tsv_reader(data_tsv)
-        bids_df.rename(columns={"dx1": "diagnosis"}, inplace=True)
+        parents_path = path.abspath(data_tsv)
+        while not os.path.exists(path.join(parents_path, "labels.tsv")):
+            parents_path = Path(parents_path).parents[0]
+            labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+            bids_df = pd.merge(
+                bids_df,
+                labels_df,
+                how="inner",
+                on=["participant_id", "session_id"],
+            )
+        if "dx1" in bids_df.columns:
+            bids_df.rename(columns={"dx1": "diagnosis"}, inplace=True)
+
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
-
     bids_df = infer_or_drop_diagnosis(bids_df)
 
     # Check possible double change in diagnosis in time or if ther is only one session for a subject

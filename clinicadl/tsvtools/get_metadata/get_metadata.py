@@ -40,7 +40,6 @@ def get_metadata(
         variables_list = np.unique(variables_in)
         result_df = pd.merge(metadata_df, output_df, on=variables_intersection)
         result_df.set_index(["participant_id", "session_id"], inplace=True)
-        result_df.to_csv(output_tsv, sep="\t")
 
     else:
 
