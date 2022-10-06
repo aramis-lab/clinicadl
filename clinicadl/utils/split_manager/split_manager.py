@@ -11,7 +11,7 @@ from clinicadl.utils.exceptions import (
     ClinicaDLTSVError,
 )
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.split_manager")
 
 
 class SplitManager:

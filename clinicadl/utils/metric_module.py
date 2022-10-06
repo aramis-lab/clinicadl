@@ -17,7 +17,7 @@ metric_optimum = {
     "loss": "min",
 }
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.metric")
 
 
 class MetricModule:

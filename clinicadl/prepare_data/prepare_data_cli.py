@@ -4,8 +4,8 @@ import click
 
 from clinicadl.utils import cli_param
 
-from .extract import DeepLearningPrepareData
-from .extract_utils import get_parameters_dict
+from .prepare_data import DeepLearningPrepareData
+from .prepare_data_utils import get_parameters_dict
 
 
 @click.command(name="image", no_args_is_help=True)
@@ -297,7 +297,7 @@ class RegistrationOrderGroup(click.Group):
         return self.commands.keys()
 
 
-@click.group(cls=RegistrationOrderGroup, name="extract", no_args_is_help=True)
+@click.group(cls=RegistrationOrderGroup, name="prepare-data", no_args_is_help=True)
 def cli() -> None:
     """Extract Pytorch tensors from nifti images."""
     pass

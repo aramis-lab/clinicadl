@@ -7,7 +7,6 @@ from clinica.utils.pet import LIST_SUVR_REFERENCE_REGIONS
 diagnoses = click.option(
     "--diagnoses",
     "-d",
-    type=click.Choice(["AD", "CN", "MCI", "sMCI", "pMCI", "BV"]),
     multiple=True,
     default=("AD", "CN"),
     help="Labels selected for the demographic analysis used in the context of Alzheimer's Disease classification.",
@@ -33,7 +32,29 @@ subset_name = click.option(
     default="validation",
     help="Name of the subset that is complementary to train.",
 )
-
+test_tsv = click.option(
+    "--test_tsv",
+    "-tt",
+    help="Name of the test file in tsv format",
+    type=str,
+    default=None,
+)
+caps_directory = click.option(
+    "--caps_directory",
+    "-c",
+    help="input folder of a CAPS compliant dataset",
+    type=str,
+    default=None,
+)
+variables_of_interest = click.option(
+    "--variables_of_interest",
+    "-voi",
+    help="Variables of interest that will be kept in the final lists. "
+    "Will always keep the group (that correspond to the diagnosis in most case), subgroup (that correspond to the progression of the disease in the case of a progressive disease), age and sex needed for the split procedure.",
+    type=str,
+    multiple=True,
+    default=None,
+)
 # GENERATE
 participant_list = click.option(
     "--participants_tsv",
