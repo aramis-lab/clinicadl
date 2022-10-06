@@ -283,7 +283,7 @@ def split_diagnoses(
             long_train_df = diagnosis_df
 
     name = "train_baseline.tsv"
-    df_to_tsv(name, results_path, train_df, baseline=True)
+    df_to_tsv(name, str(results_path), train_df, baseline=True)
 
     long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
     # long_train_df = long_train_df[["participant_id", "session_id"]]
