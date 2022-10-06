@@ -12,7 +12,7 @@ import torchvision.transforms as transforms
 from clinica.utils.exceptions import ClinicaCAPSError
 from torch.utils.data import Dataset
 
-from clinicadl.extract.extract_utils import (
+from clinicadl.prepare_data.prepare_data_utils import (
     PATTERN_DICT,
     TEMPLATE_DICT,
     compute_discarded_slices,
@@ -31,7 +31,7 @@ from clinicadl.utils.exceptions import (
     ClinicaDLTSVError,
 )
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.datasets")
 
 
 #################################

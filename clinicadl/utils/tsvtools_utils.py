@@ -12,6 +12,17 @@ from clinicadl.utils.exceptions import ClinicaDLTSVError
 logger = getLogger("clinicadl")
 
 
+def merged_tsv_reader(merged_tsv_path):
+    bids_df = pd.read_csv(merged_tsv_path, sep="\t")
+
+    for i in bids_df.index:
+        session = bids_df["session_id"][i]
+        if len(session) == 7:
+            bids_df.loc[(i), "session_id"] = session[:5] + "0" + session[5:7]
+
+    return bids_df
+
+
 def neighbour_session(session, session_list, neighbour):
     if session not in session_list:
         temp_list = session_list + [session]
@@ -58,10 +69,6 @@ def first_session(subject_df):
     session_list = [session for _, session in subject_df.index.values]
     session_list.sort()
     return session_list[0]
-    # if first_session < 10:
-    #    return "ses-M0" + str(first_session)
-    # else:
-    #    return "ses-M" + str(first_session)
 
 
 def next_session(subject_df, session_orig):
@@ -94,7 +101,6 @@ def extract_baseline(diagnosis_df, set_index=True):
         result_df = pd.concat([result_df, subject_baseline_df])
 
     result_df.reset_index(inplace=True, drop=True)
-
     return result_df
 
 
@@ -108,7 +114,6 @@ def chi2(x_test, x_train):
     f_exp = [
         (x_train == category).sum() / len(x_train) for category in unique_categories
     ]
-
     T, p = chisquare(f_obs, f_exp)
 
     return T, p
@@ -207,3 +212,87 @@ def remove_sub_labels(diagnosis_df, sub_labels, diagnosis_df_paths, results_path
             logger.debug(f"{len(sub_df)} subjects, {len(diagnosis_df)} scans")
 
     return diagnosis_df, supplementary_diagnoses
+
+
+def cleaning_nan_diagnoses(bids_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Printing the number of missing diagnoses and filling it partially for ADNI datasets
+
+    Args:
+        bids_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
+
+    Returns:
+        cleaned DataFrame
+    """
+    bids_copy_df = copy(bids_df)
+
+    # Look for the diagnosis in another column in ADNI
+    if "adni_diagnosis_change" in bids_df.columns:
+        change_dict = {
+            1: "CN",
+            2: "MCI",
+            3: "AD",
+            4: "MCI",
+            5: "AD",
+            6: "AD",
+            7: "CN",
+            8: "MCI",
+            9: "CN",
+            -1: np.nan,
+        }
+
+        missing_diag = 0
+        found_diag = 0
+
+        for subject, session in bids_df.index.values:
+            diagnosis = bids_df.loc[(subject, session), "diagnosis"]
+            if isinstance(diagnosis, float):
+                missing_diag += 1
+                change = bids_df.loc[(subject, session), "adni_diagnosis_change"]
+                if not np.isnan(change) and change != -1:
+                    found_diag += 1
+                    bids_copy_df.loc[(subject, session), "diagnosis"] = change_dict[
+                        change
+                    ]
+
+    else:
+        missing_diag = 0
+        found_diag = 0
+
+        for subject, session in bids_df.index.values:
+            diagnosis = bids_df.loc[(subject, session), "diagnosis"]
+            if isinstance(diagnosis, float):
+                missing_diag += 1
+
+    logger.info(f"Missing diagnoses: {missing_diag}")
+    logger.info(f"Missing diagnoses not found: {missing_diag - found_diag}")
+
+    return bids_copy_df
+
+
+def df_to_tsv(name: str, results_path: str, df, baseline: bool = False) -> None:
+    """
+    Write Dataframe into a TSV file and drop duplicates
+
+    Parameters
+    ----------
+    name: str
+        Name of the tsv file
+    results_path: str (path)
+        Path to the folder
+    df: DataFrame
+        DataFrame you want to write in a TSV file.
+        Columns must include ["participant_id", "session_id"].
+    baseline: bool
+        If True, ther is only baseline session for each subject.
+    """
+
+    df.sort_values(by=["participant_id", "session_id"], inplace=True)
+    if baseline:
+        df.drop_duplicates(subset=["participant_id"], keep="first", inplace=True)
+    else:
+        df.drop_duplicates(
+            subset=["participant_id", "session_id"], keep="first", inplace=True
+        )
+    df = df[["participant_id", "session_id"]]
+    df.to_csv(path.join(results_path, name), sep="\t", index=False)

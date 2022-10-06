@@ -1,22 +1,20 @@
 """Common CLI arguments used by ClinicaDL pipelines."""
 import click
 
+bids_directory = click.argument("bids_directory", type=click.Path(exists=True))
 caps_directory = click.argument("caps_directory", type=click.Path(exists=True))
 input_maps = click.argument("input_maps_directory", type=click.Path(exists=True))
 output_maps = click.argument("output_maps_directory", type=click.Path())
+output_tsv = click.argument("output_tsv", type=str)
 
-# TSV TOOLS
+# ANALYSIS
 merged_tsv = click.argument("merged_tsv", type=click.Path(exists=True))
 
-formatted_data_directory = click.argument(
-    "formatted_data_directory", type=click.Path(exists=True)
-)
-missing_mods_directory = click.argument(
-    "missing_mods_directory", type=click.Path(exists=True)
-)
+# TSV TOOLS
+data_tsv = click.argument("data_tsv", type=click.Path(exists=True))
 
 dataset = click.argument("dataset", type=click.Choice(["AIBL", "OASIS"]))
-results_directory = click.argument("results_directory", type=click.Path())
+results_tsv = click.argument("results_tsv", type=click.Path())
 
 # GENERATE
 generated_caps = click.argument("generated_caps_directory", type=click.Path())

@@ -4,7 +4,7 @@ from typing import Any, Dict
 
 import toml
 
-from clinicadl.extract.extract_utils import compute_folder_and_file_type
+from clinicadl.prepare_data.prepare_data_utils import compute_folder_and_file_type
 
 
 def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
