@@ -10,7 +10,7 @@ logger = getLogger("clinicadl")
 
 def get_metadata(
     metadata_df: pd.DataFrame, output_df: pd.DataFrame, variables_of_interest=None
-) -> DataFrame:
+) -> pd.DataFrame:
     """
     Get the meta data in metadata_df to write them in output_df.
     If variables_of_interest is None, the function writes all the data that are in metadata_df for the list of subjects in output_df.
