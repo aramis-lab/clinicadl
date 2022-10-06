@@ -14,7 +14,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
     from clinicadl.utils.exceptions import ClinicaDLArgumentError
     from clinicadl.utils.preprocessing import write_preprocessing
 
-    from .extract_utils import check_mask_list, compute_folder_and_file_type
+    from .prepare_data_utils import check_mask_list, compute_folder_and_file_type
 
     logger = getLogger("clinicadl.extract")
 
@@ -70,7 +70,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
     if parameters["mode"] == "image" or not parameters["prepare_dl"]:
 
         def prepare_image(file):
-            from .extract_utils import extract_images
+            from .prepare_data_utils import extract_images
 
             logger.debug(f"  Processing of {file}.")
             container = container_from_filename(file)
@@ -84,7 +84,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
     elif parameters["prepare_dl"] and parameters["mode"] == "slice":
 
         def prepare_slice(file):
-            from .extract_utils import extract_slices
+            from .prepare_data_utils import extract_slices
 
             logger.debug(f"  Processing of {file}.")
             container = container_from_filename(file)
@@ -103,7 +103,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
     elif parameters["prepare_dl"] and parameters["mode"] == "patch":
 
         def prepare_patch(file):
-            from .extract_utils import extract_patches
+            from .prepare_data_utils import extract_patches
 
             logger.debug(f"  Processing of {file}.")
             container = container_from_filename(file)
@@ -121,7 +121,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
     elif parameters["prepare_dl"] and parameters["mode"] == "roi":
 
         def prepare_roi(file):
-            from .extract_utils import extract_roi
+            from .prepare_data_utils import extract_roi
 
             logger.debug(f"  Processing of {file}.")
             container = container_from_filename(file)
@@ -134,7 +134,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
                 parameters["roi_template"] = parameters["roi_custom_template"]
                 parameters["roi_mask_pattern"] = parameters["roi_custom_mask_pattern"]
             else:
-                from .extract_utils import PATTERN_DICT, TEMPLATE_DICT
+                from .prepare_data_utils import PATTERN_DICT, TEMPLATE_DICT
 
                 parameters["roi_template"] = TEMPLATE_DICT[parameters["preprocessing"]]
                 parameters["roi_mask_pattern"] = PATTERN_DICT[

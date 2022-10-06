@@ -65,21 +65,24 @@ pipeline {
                     '''
                 }
               }
-              stage('TSVTOOL tests Linux') {
+              stage('tsvtools tests Linux') {
                 steps {
-                  echo 'Testing tsvtool tasks...'
-                    sh "echo 'Agent name: ${NODE_NAME}'"
-                    sh '''
-                    source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                    conda activate "${CONDA_ENV}"
-                    cd $WORKSPACE/tests
-                    poetry run pytest \
-                      --junitxml=./test-reports/test_tsvtool_report.xml \
-                      --verbose \
-                      --disable-warnings \
-                      test_tsvtool.py
-                    conda deactivate
-                    '''
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE'){
+                    echo 'Testing tsvtool tasks...'
+                      sh "echo 'Agent name: ${NODE_NAME}'"
+                      sh '''
+                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                      conda activate "${CONDA_ENV}"
+                      cd $WORKSPACE/tests
+                      poetry run pytest \
+                        --junitxml=./test-reports/test_tsvtool_report.xml \
+                        --verbose \
+                        --disable-warnings \
+                        test_tsvtool.py
+                      conda deactivate
+                      '''
+                  }
+                  
                 }
                 post {
                   always {
@@ -137,7 +140,7 @@ pipeline {
                   }
                 }
               }
-              stage('Extract tests Linux') {
+              stage('Prepare data tests Linux') {
                 steps {
                   echo 'Testing extract task...'
                     sh "echo 'Agent name: ${NODE_NAME}'"
@@ -151,7 +154,7 @@ pipeline {
                         --junitxml=./test-reports/test_extract_report.xml \
                         --verbose \
                         --disable-warnings \
-                        test_extract.py
+                        test_prepare_data.py
                       conda deactivate
                       '''
                 }

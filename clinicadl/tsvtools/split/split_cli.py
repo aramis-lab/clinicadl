@@ -4,9 +4,8 @@ from clinicadl.utils import cli_param
 
 
 @click.command(name="split", no_args_is_help=True)
-@cli_param.argument.formatted_data_directory
+@cli_param.argument.data_tsv
 @cli_param.option.subset_name
-@cli_param.option.no_mci_sub_categories
 @click.option(
     "--n_test",
     help="- If >= 1, number of subjects to put in set with name 'subset_name'.\n\n "
@@ -40,37 +39,44 @@ from clinicadl.utils import cli_param
 @click.option(
     "--categorical_split_variable",
     help="Name of a categorical variable used for a stratified shuffle split "
-    "(in addition to age and sex selection).",
+    "(in addition to age, sex and group selection).",
     default=None,
     type=str,
 )
+@click.option(
+    "--not_only_keep_baseline",
+    help="If given will store the file with all subjects",
+    default=False,
+    is_flag=True,
+    type=bool,
+)
 def cli(
-    formatted_data_directory,
+    data_tsv,
     subset_name,
     n_test,
-    no_mci_sub_categories,
     p_sex_threshold,
     p_age_threshold,
     ignore_demographics,
     categorical_split_variable,
+    not_only_keep_baseline,
 ):
     """Performs a single split to prepare training.
 
-    FORMATTED_DATA_DIRECTORY is the path to the folder where the outputs of tsvtool getlabels command are stored.
+    DATA_TSV is the path to the tsv file where the outputs of tsvtool getlabels command are stored.
 
-    The split is done with respect to age and sex distribution.
+    The split is done with respect to age, sex and group distribution.
     """
     from .split import split_diagnoses
 
     split_diagnoses(
-        formatted_data_directory,
+        data_tsv,
         n_test=n_test,
         subset_name=subset_name,
-        MCI_sub_categories=no_mci_sub_categories,
         p_age_threshold=p_age_threshold,
         p_sex_threshold=p_sex_threshold,
         ignore_demographics=ignore_demographics,
         categorical_split_variable=categorical_split_variable,
+        not_only_baseline=not_only_keep_baseline,
     )
 
 

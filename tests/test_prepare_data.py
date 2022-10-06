@@ -105,7 +105,7 @@ def list_files(startpath, filename=None):
                         print(filestring)
 
 
-def test_extract():
+def test_prepare_data():
     import shutil
     from os.path import abspath, dirname, join
 
@@ -155,7 +155,7 @@ def test_extract():
                 parameters["suvr_reference_region"] = "pons2"
                 parameters["use_uncropped_image"] = False
                 parameters["extract_json"] = f"{modality}_mode-{parameters['mode']}"
-                extract_generic(root, parameters)
+                prepare_data_generic(root, parameters)
 
             elif modality == "custom":
                 parameters["use_uncropped_image"] = True
@@ -164,7 +164,7 @@ def test_extract():
                 ] = "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
                 parameters["roi_custom_template"] = "Ixi549Space"
                 parameters["extract_json"] = f"{modality}_mode-{parameters['mode']}"
-                extract_generic(root, parameters)
+                prepare_data_generic(root, parameters)
 
             elif modality == "t1-linear":
                 for flag in uncropped_image:
@@ -172,7 +172,7 @@ def test_extract():
                     parameters[
                         "extract_json"
                     ] = f"{modality}_crop-{not flag}_mode-{parameters['mode']}"
-                    extract_generic(root, parameters)
+                    prepare_data_generic(root, parameters)
             else:
                 raise NotImplementedError(
                     f"Test for modality {modality} was not implemented."
@@ -187,11 +187,11 @@ def test_extract():
     clean_folder(join(root, "out", "caps"), recreate=False)
 
 
-def extract_generic(root, parameters):
+def prepare_data_generic(root, parameters):
 
     from os.path import join
 
-    from clinicadl.extract.extract import DeepLearningPrepareData
+    from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
 
     DeepLearningPrepareData(
         caps_directory=join(root, "out", "caps"),
