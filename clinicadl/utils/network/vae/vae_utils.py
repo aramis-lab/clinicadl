@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from torch import nn
 
@@ -7,24 +8,24 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError
 def VAEGaussianLoss(input, reconstruction, mu, logVar):
     kl_divergence = (
         0.5 * torch.sum(-1 - logVar + mu.pow(2) + logVar.exp()) / mu.shape[0]
-    )
-    recon_error = nn.MSELoss(reduction="sum")(reconstruction, input)
+    ) / np.prod(input.shape)
+    recon_error = nn.MSELoss(reduction="mean")(reconstruction, input) / img_dim
     return recon_error, kl_divergence
 
 
 def VAEBernoulliLoss(input, reconstruction, mu, logVar):
     kl_divergence = (
         0.5 * torch.sum(-1 - logVar + mu.pow(2) + logVar.exp()) / mu.shape[0]
-    )
-    recon_error = nn.BCELoss(reduction="sum")(reconstruction, input)
+    ) / np.prod(input.shape)
+    recon_error = nn.BCELoss(reduction="mean")(reconstruction, input)
     return recon_error, kl_divergence
 
 
 def VAEContinuousBernoulliLoss(input, reconstruction, mu, logVar):
     kl_divergence = (
         0.5 * torch.sum(-1 - logVar + mu.pow(2) + logVar.exp()) / mu.shape[0]
-    )
-    recon_error = nn.BCELoss(reduction="sum")(reconstruction, input)
+    ) / np.prod(input.shape)
+    recon_error = nn.BCELoss(reduction="mean")(reconstruction, input)
     log_constant = sumlogC(reconstruction)
     return kl_divergence, recon_error, log_constant
 
