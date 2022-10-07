@@ -9,7 +9,7 @@ def VAEGaussianLoss(input, reconstruction, mu, logVar):
     kl_divergence = (
         0.5 * torch.sum(-1 - logVar + mu.pow(2) + logVar.exp()) / mu.shape[0]
     ) / np.prod(input.shape)
-    recon_error = nn.MSELoss(reduction="mean")(reconstruction, input) / img_dim
+    recon_error = nn.MSELoss(reduction="mean")(reconstruction, input)
     return recon_error, kl_divergence
 
 
