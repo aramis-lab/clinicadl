@@ -91,7 +91,7 @@ n_proc = click.option(
 batch_size = click.option(
     "--batch_size",
     type=int,
-    default=2,
+    default=8,
     show_default=True,
     help="Batch size for data loading.",
 )
@@ -159,12 +159,27 @@ custom_suffix = click.option(
         "`segm-whitematter_probability.nii.gz`"
     ),
 )
+
+# PREDICT & INTERPRET
 # Data group
 overwrite = click.option(
     "--overwrite",
     "-o",
     default=False,
     is_flag=True,
-    help="Will overwrite data group if existing. Please give caps_directory and partcipants_tsv to"
+    help="Will overwrite data group if existing. Please give caps_directory and participants_tsv to"
     " define new data group.",
+)
+split = click.option(
+    "--split",
+    "-s",
+    type=int,
+    multiple=True,
+    help="Make inference on the list of given splits. By default, inference is done on all the splits.",
+)
+selection_metrics = click.option(
+    "--selection_metrics",
+    "-sm",
+    multiple=True,
+    help="""Make inference on the list of given metrics used for selection. By default, inference is done on all the metrics.""",
 )

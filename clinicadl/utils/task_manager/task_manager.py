@@ -189,13 +189,24 @@ class TaskManager:
         dataloader.dataset.eval()
 
         results_df = pd.DataFrame(columns=self.columns)
-        total_loss = 0
+        total_loss = {}
         with torch.no_grad():
             for i, data in enumerate(dataloader):
-                outputs, loss_dict = model.compute_outputs_and_loss(
-                    data, criterion, use_labels=use_labels
-                )
-                total_loss += loss_dict["loss"].item()
+                # initialize the loss list to save the loss components
+                if i == 0:
+                    outputs, loss_dict = model.compute_outputs_and_loss(
+                        data, criterion, use_labels=use_labels
+                    )
+                    for loss_component in loss_dict.keys():
+                        total_loss[loss_component] = 0
+                    for loss_component in total_loss.keys():
+                        total_loss[loss_component] += loss_dict[loss_component].item()
+                else:
+                    outputs, loss_dict = model.compute_outputs_and_loss(
+                        data, criterion, use_labels=use_labels
+                    )
+                    for loss_component in total_loss.keys():
+                        total_loss[loss_component] += loss_dict[loss_component].item()
 
                 # Generate detailed DataFrame
                 for idx in range(len(data["participant_id"])):
@@ -210,7 +221,8 @@ class TaskManager:
             metrics_dict = None
         else:
             metrics_dict = self.compute_metrics(results_df)
-            metrics_dict["loss"] = total_loss
+            for loss_component in total_loss.keys():
+                metrics_dict[loss_component] = total_loss[loss_component]
         torch.cuda.empty_cache()
 
         return results_df, metrics_dict
