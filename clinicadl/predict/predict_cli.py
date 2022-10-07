@@ -69,6 +69,15 @@ from clinicadl.utils import cli_param
     is_flag=True,
     help="Save the reconstruction output in the MAPS in NIfTI format.",
 )
+@click.option(
+    "--save_latent_tensor",
+    type=bool,
+    default=False,
+    is_flag=True,
+    help="""Save the latent representation of the image.""",
+)
+@cli_param.option.split
+@cli_param.option.selection_metrics
 @cli_param.option.use_gpu
 @cli_param.option.n_proc
 @cli_param.option.batch_size
@@ -78,6 +87,7 @@ def cli(
     data_group,
     caps_directory,
     participants_tsv,
+    split,
     gpu,
     n_proc,
     batch_size,
@@ -89,6 +99,7 @@ def cli(
     overwrite,
     save_tensor,
     save_nifti,
+    save_latent_tensor,
 ):
     """Infer the outputs of a trained model on a test set.
 
@@ -113,10 +124,12 @@ def cli(
         gpu=gpu,
         n_proc=n_proc,
         batch_size=batch_size,
+        split_list=split,
         selection_metrics=selection_metrics,
         diagnoses=diagnoses,
         multi_cohort=multi_cohort,
         overwrite=overwrite,
         save_tensor=save_tensor,
         save_nifti=save_nifti,
+        save_latent_tensor=save_latent_tensor,
     )
