@@ -152,26 +152,26 @@ pipeline {
               stage('Prepare data tests Linux') {
                 steps {
                   catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE'){
-                    echo 'Testing extract task...'
+                    echo 'Testing prepare_data task...'
                       sh "echo 'Agent name: ${NODE_NAME}'"
                       sh '''
                         source "${CONDA_HOME}/etc/profile.d/conda.sh"
                         conda activate "${CONDA_ENV}"
                         cd $WORKSPACE/tests
                         poetry run pytest \
-                          --junitxml=./test-reports/test_extract_report.xml \
+                          --junitxml=./test-reports/test_prepare_data_report.xml \
                           --verbose \
                           --disable-warnings \
                           --basetemp=$TMP_DIR \
                           --input_data_directory=$INPUT_DATA_DIR \
-                          test_extract.py
+                          test_prepare_data.py
                         conda deactivate
                         '''
                   }
                 }
                 post {
                   always {
-                    junit 'tests/test-reports/test_extract_report.xml'
+                    junit 'tests/test-reports/test_prepare_data_report.xml'
                   }
                 }
               }

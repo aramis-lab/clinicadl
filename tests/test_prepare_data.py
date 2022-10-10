@@ -27,23 +27,13 @@ def test_name(request):
     return request.param
 
 
-def extract_commands(cmdopt, tmp_path, test_name):
+def test_prepare_data(cmdopt, tmp_path, test_name):
 
-    # base_dir = Path(cmdopt["input"])
-    # input_dir = base_dir / "extract" / "in"
-    # ref_dir = base_dir / "extract" / "ref"
-    # tmp_out_dir = tmp_path / "extract" / "out"
-    # tmp_out_dir.mkdir(parents=True)
-
-    input_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/extract/in"
-    )
-    ref_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/extract/ref"
-    )
-    tmp_out_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/extract/out"
-    )
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "prepare_data" / "in"
+    ref_dir = base_dir / "prepare_data" / "ref"
+    tmp_out_dir = tmp_path / "prepare_data" / "out"
+    tmp_out_dir.mkdir(parents=True)
     clean_folder(tmp_out_dir, recreate=True)
 
     input_caps_directory = input_dir / "caps"
@@ -77,10 +67,10 @@ def extract_commands(cmdopt, tmp_path, test_name):
         print(f"Test {test_name} not available.")
         assert 0
 
-    test_extract(input_dir, ref_dir, tmp_out_dir, parameters)
+    run_test_prepare_data(input_dir, ref_dir, tmp_out_dir, parameters)
 
 
-def test_extract(input_dir, ref_dir, out_dir, parameters):
+def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
 
     modalities = ["t1-linear", "pet-linear"]  # , "custom"]
     uncropped_image = [True, False]

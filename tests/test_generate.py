@@ -10,7 +10,7 @@ import pytest
 from tests.testing_tools import clean_folder, compare_folder_with_files, compare_folders
 
 
-@pytest.fixture(params=["random_example", "shepplogan_example", "trivial_example"])
+@pytest.fixture(params=["random_example", "trivial_example", "shepplogan_example"])
 def test_name(request):
     return request.param
 

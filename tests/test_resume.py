@@ -26,21 +26,12 @@ def test_name(request):
 
 
 def test_resume(cmdopt, tmp_path, test_name):
-    # base_dir = Path(cmdopt["input"])
-    # input_dir = base_dir / "resume" / "in"
-    # ref_dir = base_dir / "resume" / "ref"
-    # tmp_out_dir = tmp_path / "resume" / "out"
-    # tmp_out_dir.mkdir(parents=True)
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "resume" / "in"
+    ref_dir = base_dir / "resume" / "ref"
+    tmp_out_dir = tmp_path / "resume" / "out"
+    tmp_out_dir.mkdir(parents=True)
 
-    input_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/resume/in"
-    )
-    ref_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/resume/ref"
-    )
-    tmp_out_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/resume/out"
-    )
     clean_folder(tmp_out_dir, recreate=True)
 
     shutil.copytree(input_dir / test_name, tmp_out_dir / test_name)
@@ -53,6 +44,6 @@ def test_resume(cmdopt, tmp_path, test_name):
     split_manager = maps_manager._init_split_manager()
     for split in split_manager.split_iterator():
         performances_flag = Path(
-            maps_stopped / f"split-{split}" / "best-loss" / "train"
+            join(maps_stopped, f"split-{split}", "best-loss", "train")
         ).exists()
         assert performances_flag

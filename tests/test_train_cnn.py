@@ -4,12 +4,9 @@ import json
 import os
 import shutil
 from os.path import join
+from pathlib import Path
 
 import pytest
-
-# root = "/network/lustre/iss02/aramis/projects/clinicadl/data"
-
-output_dir = "train/out"
 
 
 @pytest.fixture(
@@ -26,12 +23,20 @@ def test_name(request):
     return request.param
 
 
-def cli_commands(cmdopt, tmp_path, test_name):
-    base_dir = Path(cmdopt["input"])
-    input_dir = base_dir / "train" / "in"
-    ref_dir = base_dir / "train" / "ref"
-    tmp_out_dir = tmp_path / "train" / "out"
-    tmp_out_dir.mkdir(parents=True)
+def test_train_cnn(cmdopt, tmp_path, test_name):
+    # base_dir = Path(cmdopt["input"])
+    # input_dir = base_dir / "train" / "in"
+    # ref_dir = base_dir / "train" / "ref"
+    # tmp_out_dir = tmp_path / "train" / "out"
+    # tmp_out_dir.mkdir(parents=True)
+
+    input_dir = Path(
+        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/train/in"
+    )
+    ref_dir = Path("/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/train/ref")
+    tmp_out_dir = Path(
+        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/train/out"
+    )
 
     labels_path = join(input_dir, "labels_list")
     config_path = join(input_dir, "train_config.toml")
@@ -42,8 +47,8 @@ def cli_commands(cmdopt, tmp_path, test_name):
         test_input = [
             "train",
             "classification",
-            "train/in/caps_slice",
-            "t1-linear_mode-slice.json",
+            join(str(input_dir), "caps_slice"),
+            "t1-linear_crop-True_mode-slice.json",
             labels_path,
             output_dir,
             "-c",
@@ -55,8 +60,8 @@ def cli_commands(cmdopt, tmp_path, test_name):
         test_input = [
             "train",
             "regression",
-            join(input_dir, "caps_image"),
-            "t1-linear_mode-image.json",
+            join(str(input_dir), "caps_image"),
+            "t1-linear_crop-True_mode-image.json",
             labels_path,
             output_dir,
             "-c",
@@ -70,8 +75,8 @@ def cli_commands(cmdopt, tmp_path, test_name):
         test_input = [
             "train",
             "classification",
-            "train/in/caps_patch",
-            "t1-linear_mode-patch.json",
+            join(str(input_dir), "caps_patch"),
+            "t1-linear_crop-True_mode-patch.json",
             labels_path,
             output_dir,
             "-c",
@@ -84,8 +89,8 @@ def cli_commands(cmdopt, tmp_path, test_name):
         test_input = [
             "train",
             "classification",
-            "train/in/caps_patch",
-            "t1-linear_mode-patch.json",
+            join(str(input_dir), "caps_patch"),
+            "t1-linear_crop-True_mode-patch.json",
             labels_path,
             output_dir,
             "-c",
@@ -97,8 +102,8 @@ def cli_commands(cmdopt, tmp_path, test_name):
         test_input = [
             "train",
             "classification",
-            "train/in/caps_roi",
-            "t1-linear_mode-roi.json",
+            join(str(input_dir), "caps_roi"),
+            "t1-linear_crop-True_mode-roi.json",
             labels_path,
             output_dir,
             "-c",
@@ -109,8 +114,8 @@ def cli_commands(cmdopt, tmp_path, test_name):
         test_input = [
             "train",
             "classification",
-            "train/in/caps_roi",
-            "t1-linear_mode-roi.json",
+            join(str(input_dir), "caps_roi"),
+            "t1-linear_crop-True_mode-roi.json",
             labels_path,
             output_dir,
             "-c",
@@ -119,12 +124,11 @@ def cli_commands(cmdopt, tmp_path, test_name):
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
 
-    return test_input, split, mode
+    run_test_train_cnn(test_input, split, mode)
 
 
-def test_train(cli_commands):
+def run_test_train_cnn(test_input, split, mode):
 
-    test_input, split, mode = cli_commands
     if os.path.exists(output_dir):
         shutil.rmtree(output_dir)
     flag_error = not os.system("clinicadl " + " ".join(test_input))

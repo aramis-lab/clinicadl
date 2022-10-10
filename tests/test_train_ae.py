@@ -24,21 +24,12 @@ def test_name(request):
 
 
 def test_train_ae(cmdopt, tmp_path, test_name):
-    # base_dir = Path(cmdopt["input"])
-    # input_dir = base_dir / "train" / "in"
-    # ref_dir = base_dir / "train" / "ref"
-    # tmp_out_dir = tmp_path / "train" / "out"
-    # tmp_out_dir.mkdir(parents=True)
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "train" / "in"
+    ref_dir = base_dir / "train" / "ref"
+    tmp_out_dir = tmp_path / "train" / "out"
+    tmp_out_dir.mkdir(parents=True)
 
-    input_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/resume/in"
-    )
-    ref_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/resume/ref"
-    )
-    tmp_out_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/resume/out"
-    )
     clean_folder(tmp_out_dir, recreate=True)
 
     labels_path = str(input_dir / "labels_list")
@@ -51,7 +42,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             str(input_dir / "caps_image"),
             "t1-linear_crop-True_mode-image.json",
             labels_path,
-            tmp_out_dir,
+            str(tmp_out_dir),
             "-c",
             config_path,
         ]
@@ -63,7 +54,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             str(input_dir / "caps_patch"),
             "t1-linear_crop-True_mode-patch.json",
             labels_path,
-            tmp_out_dir,
+            str(tmp_out_dir),
             "-c",
             config_path,
         ]
@@ -75,7 +66,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             str(input_dir / "caps_roi"),
             "t1-linear_crop-True_mode-roi.json",
             labels_path,
-            tmp_out_dir,
+            str(tmp_out_dir),
             "-c",
             config_path,
         ]
@@ -87,7 +78,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             str(input_dir / "caps_slice"),
             "t1-linear_crop-True_mode-slice.json",
             labels_path,
-            tmp_out_dir,
+            str(tmp_out_dir),
             "-c",
             config_path,
         ]

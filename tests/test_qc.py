@@ -8,8 +8,6 @@ import pytest
 
 from tests.testing_tools import clean_folder
 
-# root = "/network/lustre/iss02/aramis/projects/clinicadl/data/"
-
 
 @pytest.fixture(params=["t1-linear", "t1-volume"])
 def test_name(request):

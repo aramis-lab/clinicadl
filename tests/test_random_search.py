@@ -21,21 +21,12 @@ def test_name(request):
 
 
 def test_random_search(cmdopt, tmp_path, test_name):
-    # base_dir = Path(cmdopt["input"])
-    # input_dir = base_dir / "randomSearch" / "in"
-    # ref_dir = base_dir / "randomSearch" / "ref"
-    # tmp_out_dir = tmp_path / "randomSearch" / "out"
-    # tmp_out_dir.mkdir(parents=True)
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "randomSearch" / "in"
+    ref_dir = base_dir / "randomSearch" / "ref"
+    tmp_out_dir = tmp_path / "randomSearch" / "out"
+    tmp_out_dir.mkdir(parents=True)
 
-    input_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/randomSearch/in"
-    )
-    ref_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/randomSearch/ref"
-    )
-    tmp_out_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/randomSearch/out"
-    )
     clean_folder(tmp_out_dir, recreate=True)
 
     if test_name == "rs_roi_cnn":

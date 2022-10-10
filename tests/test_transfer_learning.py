@@ -1,12 +1,10 @@
 import os
 import shutil
 from os.path import join
+from pathlib import Path
 
 import pytest
 
-# root="/network/lustre/iss02/aramis/projects/clinicadl/data"
-output_dir = "transferLearning/out"
-target_dir = "transferLeanrinng/target"
 
 # Everything is tested on roi except for cnn --> multicnn (patch) as multicnn is not implemented for roi.
 @pytest.fixture(
@@ -17,21 +15,32 @@ target_dir = "transferLeanrinng/target"
         "transfer_cnn_multicnn",
     ]
 )
-def cli_commands(request):
-    caps_roi_path = "transferLearning/in/caps_roi"
-    caps_patch_path = "transferLearning/in/caps_patch"
+def test_name(request):
+    return request.param
+
+
+def test_transfer_learning(cmdopt, tmp_path, test_name):
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "transferLearning" / "in"
+    ref_dir = base_dir / "transferLearning" / "ref"
+    tmp_out_dir = tmp_path / "transferLearning" / "out"
+    tmp_target_dir = tmp_path / "transferLearning"
+    tmp_out_dir.mkdir(parents=True)
+
+    caps_roi_path = join(input_dir, "caps_roi")
+    caps_patch_path = join(input_dir, "caps_patch")
     extract_roi_str = "t1-linear_mode-roi.json"
     extract_patch_str = "t1-linear_mode-patch.json"
-    labels_path = "transferLearning/in/labels_list"
-    config_path = "transferLearning/in/train_config.toml"
-    if request.param == "transfer_ae_ae":
+    labels_path = join(input_dir, "labels_list")
+    config_path = join(input_dir, "train_config.toml")
+    if test_name == "transfer_ae_ae":
         source_task = [
             "train",
             "reconstruction",
             caps_roi_path,
             extract_roi_str,
             labels_path,
-            output_dir,
+            str(tmp_out_dir),
             "-c",
             config_path,
         ]
@@ -41,20 +50,20 @@ def cli_commands(request):
             caps_roi_path,
             extract_roi_str,
             labels_path,
-            target_dir,
+            str(tmp_target_dir),
             "-c",
             config_path,
             "--transfer_path",
-            output_dir,
+            str(tmp_out_dir),
         ]
-    elif request.param == "transfer_ae_cnn":
+    elif test_name == "transfer_ae_cnn":
         source_task = [
             "train",
             "reconstruction",
             caps_roi_path,
             extract_roi_str,
             labels_path,
-            output_dir,
+            str(tmp_out_dir),
             "-c",
             config_path,
         ]
@@ -64,20 +73,20 @@ def cli_commands(request):
             caps_roi_path,
             extract_roi_str,
             labels_path,
-            target_dir,
+            str(tmp_target_dir),
             "-c",
             config_path,
             "--transfer_path",
-            output_dir,
+            str(tmp_out_dir),
         ]
-    elif request.param == "transfer_cnn_cnn":
+    elif test_name == "transfer_cnn_cnn":
         source_task = [
             "train",
             "classification",
             caps_roi_path,
             extract_roi_str,
             labels_path,
-            output_dir,
+            str(tmp_out_dir),
             "-c",
             config_path,
         ]
@@ -87,20 +96,20 @@ def cli_commands(request):
             caps_roi_path,
             extract_roi_str,
             labels_path,
-            target_dir,
+            str(tmp_target_dir),
             "-c",
             config_path,
             "--transfer_path",
-            output_dir,
+            str(tmp_out_dir),
         ]
-    elif request.param == "transfer_cnn_multicnn":
+    elif test_name == "transfer_cnn_multicnn":
         source_task = [
             "train",
             "classification",
             caps_roi_path,
             extract_roi_str,
             labels_path,
-            output_dir,
+            str(tmp_out_dir),
             "-c",
             config_path,
         ]
@@ -110,29 +119,27 @@ def cli_commands(request):
             caps_roi_path,
             extract_roi_str,
             labels_path,
-            target_dir,
+            str(tmp_target_dir),
             "-c",
             config_path,
             "--transfer_path",
-            output_dir,
+            str(tmp_out_dir),
             "--multi_network",
         ]
     else:
-        raise NotImplementedError(f"Test {request.param} is not implemented.")
+        raise NotImplementedError(f"Test {test_name} is not implemented.")
 
-    return source_task, target_task
+    if os.path.exists(tmp_out_dir):
+        shutil.rmtree(tmp_out_dir)
+    if os.path.exists(tmp_target_dir):
+        shutil.rmtree(tmp_target_dir)
+
+    run_test_transfer_learning(source_task, target_task)
 
 
-def test_transfer(cli_commands):
-    if os.path.exists(output_dir):
-        shutil.rmtree(output_dir)
-    if os.path.exists(target_dir):
-        shutil.rmtree(target_dir)
+def run_test_transfer_learning(source_task, target_task):
 
-    source_task, target_task = cli_commands
     flag_source = not os.system("clinicadl " + " ".join(source_task))
     flag_target = not os.system("clinicadl " + " ".join(target_task))
     assert flag_source
     assert flag_target
-    shutil.rmtree(output_dir)
-    shutil.rmtree(target_dir)

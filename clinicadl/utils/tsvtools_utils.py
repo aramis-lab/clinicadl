@@ -32,10 +32,7 @@ def neighbour_session(session, session_list, neighbour):
         temp_list.sort()
     index_session = temp_list.index(session)
 
-    if (
-        index_session + neighbour < temp_list[0]
-        or index_session + neighbour >= temp_list[len(temp_list)]
-    ):
+    if index_session + neighbour < 0 or index_session + neighbour >= len(temp_list):
         return None
     else:
         return temp_list[index_session + neighbour]
