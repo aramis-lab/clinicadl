@@ -26,7 +26,7 @@ def VAEContinuousBernoulliLoss(input, reconstruction, mu, logVar):
         0.5 * torch.sum(-1 - logVar + mu.pow(2) + logVar.exp()) / mu.shape[0]
     ) / np.prod(input.shape)
     recon_error = nn.BCELoss(reduction="mean")(reconstruction, input)
-    log_constant = sumlogC(reconstruction)
+    log_constant = sumlogC(reconstruction) / np.prod(input.shape)
     return kl_divergence, recon_error, log_constant
 
 

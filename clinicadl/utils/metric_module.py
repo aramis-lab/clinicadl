@@ -230,7 +230,7 @@ class MetricModule:
         """
         from clinicadl.utils.pytorch_ssim import ssim3D
 
-        return ssim3D(y, y_pred)
+        return ssim3D(y, y_pred).item()
 
     @staticmethod
     def psnr_fn(y, y_pred):
