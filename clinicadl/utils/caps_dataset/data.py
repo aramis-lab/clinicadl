@@ -69,6 +69,8 @@ class CapsDataset(Dataset):
         if not hasattr(self, "mode"):
             raise AttributeError("Child class of CapsDataset must set mode attribute.")
 
+        print(self.label)
+        print(data_df)
         self.df = data_df
 
         mandatory_col = {"participant_id", "session_id", "cohort"}
@@ -76,11 +78,12 @@ class CapsDataset(Dataset):
             mandatory_col.add(self.label)
 
         if not mandatory_col.issubset(set(self.df.columns.values)):
+
             raise Exception(
                 f"the data file is not in the correct format."
                 f"Columns should include {mandatory_col}"
             )
-
+        print(data_df)
         self.elem_per_image = self.num_elem_per_image()
         self.size = self[0]["image"].size()
 
@@ -757,6 +760,7 @@ def return_dataset(
         )
 
     if preprocessing_dict["mode"] == "image":
+        print(data_df)
         return CapsDatasetImage(
             input_dir,
             data_df,
@@ -1013,6 +1017,7 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
                 raise ClinicaDLConfigurationError(
                     "To use multi-cohort framework, please add 'multi_cohort=true' in your configuration file or '--multi_cohort' flag to the command line."
                 )
+        print(test_path)
         test_df = load_data_test_single(test_path, diagnoses_list, baseline=baseline)
         test_df["cohort"] = "single"
 
@@ -1036,15 +1041,12 @@ def load_data_test_single(test_path, diagnoses_list, baseline=True):
 
     test_df = pd.DataFrame()
 
-    for diagnosis in diagnoses_list:
+    if baseline:
+        test_path = path.join(test_path, "test_baseline.tsv")
+    else:
+        test_path = path.join(test_path, "test.tsv")
 
-        if baseline:
-            test_diagnosis_path = path.join(test_path, diagnosis + "_baseline.tsv")
-        else:
-            test_diagnosis_path = path.join(test_path, diagnosis + ".tsv")
-
-        test_diagnosis_df = pd.read_csv(test_diagnosis_path, sep="\t")
-        test_df = pd.concat([test_df, test_diagnosis_df])
+    test_df = pd.read_csv(test_path, sep="\t")
 
     test_df.reset_index(inplace=True, drop=True)
 

@@ -1409,12 +1409,14 @@ class MapsManager:
         logger.debug("Writing training data...")
         from clinicadl.utils.caps_dataset.data import load_data_test
 
+        print(self.tsv_path)
         train_df = load_data_test(
             self.tsv_path,
             self.diagnoses,
             baseline=False,
             multi_cohort=self.multi_cohort,
         )
+        print(train_df)
         train_df = train_df[["participant_id", "session_id"]]
         if self.transfer_path:
             transfer_train_path = path.join(

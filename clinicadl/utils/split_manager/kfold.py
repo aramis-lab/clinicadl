@@ -39,10 +39,6 @@ class KFoldSplit(SplitManager):
             return self.split_list
 
     def _get_tsv_paths(self, cohort_path, split):
-        train_path = path.join(
-            cohort_path, f"train_splits-{self.n_splits}", f"split-{split}"
-        )
-        valid_path = path.join(
-            cohort_path, f"validation_splits-{self.n_splits}", f"split-{split}"
-        )
+        train_path = path.join(cohort_path, f"{self.n_splits}_fold", f"split-{split}")
+        valid_path = path.join(cohort_path, f"{self.n_splits}_fold", f"split-{split}")
         return train_path, valid_path

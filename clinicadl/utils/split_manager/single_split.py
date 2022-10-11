@@ -31,6 +31,6 @@ class SingleSplit(SplitManager):
         return range(1)
 
     def _get_tsv_paths(self, cohort_path, split):
-        train_path = path.join(cohort_path, "train")
-        valid_path = path.join(cohort_path, "validation")
+        train_path = path.join(cohort_path, "split")
+        valid_path = path.join(cohort_path, "split")
         return train_path, valid_path
