@@ -124,6 +124,8 @@ class SplitManager:
 
         valid_path = path.join(valid_path, "validation_baseline.tsv")
 
+        print(train_path)
+        print(valid_path)
         train_df = pd.read_csv(train_path, sep="\t")
         valid_df = pd.read_csv(valid_path, sep="\t")
 
