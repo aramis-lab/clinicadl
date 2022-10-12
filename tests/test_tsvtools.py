@@ -124,33 +124,23 @@ def run_test_suite(data_tsv, n_splits, subset_name):
 
 
 def test_getlabels(cmdopt, tmp_path):
-    # base_dir = Path(cmdopt["input"])
-    # input_dir = base_dir / "train" / "in"
-    # ref_dir = base_dir / "train" / "ref"
-    # tmp_out_dir = tmp_path / "train" / "out"
-    # tmp_out_dir.mkdir(parents=True)
-
-    input_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/tsvtools/in"
-    )
-    ref_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/tsvtools/ref"
-    )
-    tmp_out_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/tsvtools/out"
-    )
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "train" / "in"
+    ref_dir = base_dir / "train" / "ref"
+    tmp_out_dir = tmp_path / "train" / "out"
+    tmp_out_dir.mkdir(parents=True)
 
     """Checks that getlabels is working and that it is coherent with previous version in reference_path"""
     import shutil
 
     bids_output = path.join(tmp_out_dir, "bids")
-    bids_directory = path.join(ref_dir, "bids")
+    bids_directory = path.join(input_dir, "bids")
     if path.exists(tmp_out_dir):
         shutil.rmtree(tmp_out_dir)
         os.makedirs(tmp_out_dir)
     shutil.copytree(bids_directory, bids_output)
-    merged_tsv = path.join(ref_dir, "merge-tsv.tsv")
-    missing_mods_directory = path.join(ref_dir, "missing_mods")
+    merged_tsv = path.join(input_dir, "merge-tsv.tsv")
+    missing_mods_directory = path.join(input_dir, "missing_mods")
 
     flag_getlabels = not os.system(
         f"clinicadl -vvv tsvtools get-labels {bids_output} "
@@ -167,21 +157,11 @@ def test_getlabels(cmdopt, tmp_path):
 
 
 def test_split(cmdopt, tmp_path):
-    # base_dir = Path(cmdopt["input"])
-    # input_dir = base_dir / "train" / "in"
-    # ref_dir = base_dir / "train" / "ref"
-    # tmp_out_dir = tmp_path / "train" / "out"
-    # tmp_out_dir.mkdir(parents=True)
-
-    input_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/tsvtools/in"
-    )
-    ref_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/tsvtools/ref"
-    )
-    tmp_out_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/tsvtools/out"
-    )
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "train" / "in"
+    ref_dir = base_dir / "train" / "ref"
+    tmp_out_dir = tmp_path / "train" / "out"
+    tmp_out_dir.mkdir(parents=True)
 
     """Checks that:
     -  split and kfold are working
@@ -190,6 +170,7 @@ def test_split(cmdopt, tmp_path):
     """
     n_splits = 3
     train_tsv = path.join(tmp_out_dir, "split/train.tsv")
+    shutil.copytree(path.join(ref_dir, "labels.tsv"), labels_tsv)
     labels_tsv = path.join(tmp_out_dir, "labels.tsv")
 
     flag_split = not os.system(
@@ -213,7 +194,7 @@ def test_analysis(cmdopt, tmp_path):
 
     """Checks that analysis can be performed"""
 
-    merged_tsv = path.join(ref_dir, "merge-tsv.tsv")
+    merged_tsv = path.join(input_dir, "merge-tsv.tsv")
     labels_tsv = path.join(ref_dir, "labels.tsv")
     output_tsv = path.join(tmp_out_dir, "analysis.tsv")
     ref_analysis_tsv = path.join(ref_dir, "analysis.tsv")
