@@ -346,7 +346,6 @@ pipeline {
                           --basetemp=$TMP_DIR \
                           --input_data_directory=$INPUT_DATA_DIR \
                           test_resume.py
-                      rm -r data/stopped_jobs
                       conda deactivate
                       '''
                   }
