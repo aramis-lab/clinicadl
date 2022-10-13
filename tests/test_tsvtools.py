@@ -6,20 +6,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from clinicadl.utils.caps_dataset.data import load_data_test
 from clinicadl.utils.split_manager import KFoldSplit
 from clinicadl.utils.tsvtools_utils import extract_baseline
-
-# data_ci_directory = "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/tsvtools/"
-# bids_directory = path.join(data_ci_directory, "ref/bids")
-# in_directory = path.join(data_ci_directory, "in")
-# reference_directory = path.join(data_ci_directory, "ref")
-# output_directory = path.join(data_ci_directory, "out")
-
-# labels_tsv = os.path.join(output_directory, "labels.tsv")
-# merged_tsv = path.join(reference_directory, "merge-tsv.tsv")
-
-# diagnoses = "CN pCN sCN usCN ukCN MCI sMCI pMCI usMCI ukMCI rMCI AD rAD sAD usAD ukAD"
+from tests.testing_tools import clean_folder
 
 """
 Check the absence of data leakage
@@ -60,41 +49,6 @@ def check_independance(train_path_baseline, test_path_baseline, subject_flag=Tru
     assert flag_independant
 
 
-def check_subgroup_independence(train_path, test_path):
-    print("Check subgroup independence")
-    diagnosis_df_paths = os.listdir(test_path)
-    diagnosis_df_paths = [x for x in diagnosis_df_paths if x.endswith("_baseline.tsv")]
-    sub_diagnosis_list = [
-        x for x in diagnosis_df_paths if "MCI" in x and x != "MCI_baseline.tsv"
-    ]
-
-    MCI_train_df = pd.read_csv(path.join(train_path, "MCI_baseline.tsv"), sep="\t")
-    MCI_train_df.set_index(["participant_id", "session_id"], inplace=True)
-    for sub_diagnosis in sub_diagnosis_list:
-        flag_independant = True
-        sub_test_df = pd.read_csv(path.join(test_path, sub_diagnosis), sep="\t")
-        sub_test_df.set_index(["participant_id", "session_id"], inplace=True)
-
-        for subject, session in MCI_train_df.index:
-            if subject in sub_test_df.index:
-                flag_independant = False
-
-        assert flag_independant
-
-    MCI_test_df = pd.read_csv(path.join(test_path, "MCI_baseline.tsv"), sep="\t")
-    MCI_test_df.set_index(["participant_id", "session_id"], inplace=True)
-    for sub_diagnosis in sub_diagnosis_list:
-        flag_independant = True
-        sub_test_df = pd.read_csv(path.join(train_path, sub_diagnosis), sep="\t")
-        sub_test_df.set_index(["participant_id", "session_id"], inplace=True)
-
-        for subject, session in MCI_test_df.index:
-            if subject in sub_test_df.index:
-                flag_independant = False
-
-        assert flag_independant
-
-
 def run_test_suite(data_tsv, n_splits, subset_name):
     check_train = True
 
@@ -125,9 +79,9 @@ def run_test_suite(data_tsv, n_splits, subset_name):
 
 def test_getlabels(cmdopt, tmp_path):
     base_dir = Path(cmdopt["input"])
-    input_dir = base_dir / "train" / "in"
-    ref_dir = base_dir / "train" / "ref"
-    tmp_out_dir = tmp_path / "train" / "out"
+    input_dir = base_dir / "tsvtools" / "in"
+    ref_dir = base_dir / "tsvtools" / "ref"
+    tmp_out_dir = tmp_path / "tsvtools" / "out"
     tmp_out_dir.mkdir(parents=True)
 
     """Checks that getlabels is working and that it is coherent with previous version in reference_path"""
@@ -158,9 +112,8 @@ def test_getlabels(cmdopt, tmp_path):
 
 def test_split(cmdopt, tmp_path):
     base_dir = Path(cmdopt["input"])
-    input_dir = base_dir / "train" / "in"
-    ref_dir = base_dir / "train" / "ref"
-    tmp_out_dir = tmp_path / "train" / "out"
+    input_dir = base_dir / "tsvtools" / "in"
+    tmp_out_dir = tmp_path / "tsvtools" / "out"
     tmp_out_dir.mkdir(parents=True)
 
     """Checks that:
@@ -170,7 +123,7 @@ def test_split(cmdopt, tmp_path):
     """
     n_splits = 3
     train_tsv = path.join(tmp_out_dir, "split/train.tsv")
-    shutil.copytree(path.join(ref_dir, "labels.tsv"), labels_tsv)
+    shutil.copytree(path.join(input_dir, "labels.tsv"), labels_tsv)
     labels_tsv = path.join(tmp_out_dir, "labels.tsv")
 
     flag_split = not os.system(
@@ -187,15 +140,15 @@ def test_split(cmdopt, tmp_path):
 
 def test_analysis(cmdopt, tmp_path):
     base_dir = Path(cmdopt["input"])
-    input_dir = base_dir / "train" / "in"
-    ref_dir = base_dir / "train" / "ref"
-    tmp_out_dir = tmp_path / "train" / "out"
+    input_dir = base_dir / "tsvtools" / "in"
+    ref_dir = base_dir / "tsvtools" / "ref"
+    tmp_out_dir = tmp_path / "tsvtools" / "out"
     tmp_out_dir.mkdir(parents=True)
 
     """Checks that analysis can be performed"""
 
     merged_tsv = path.join(input_dir, "merge-tsv.tsv")
-    labels_tsv = path.join(ref_dir, "labels.tsv")
+    labels_tsv = path.join(input_dir, "labels.tsv")
     output_tsv = path.join(tmp_out_dir, "analysis.tsv")
     ref_analysis_tsv = path.join(ref_dir, "analysis.tsv")
 
@@ -207,4 +160,81 @@ def test_analysis(cmdopt, tmp_path):
     assert flag_analysis
     ref_df = pd.read_csv(ref_analysis_tsv, sep="\t")
     out_df = pd.read_csv(output_tsv, sep="\t")
+    assert out_df.equals(ref_df)
+
+
+def test_get_progression(cmdopt, tmp_path):
+
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "tsvtools" / "in"
+    ref_dir = base_dir / "tsvtools" / "ref"
+    tmp_out_dir = tmp_path / "tsvtools" / "out"
+    tmp_out_dir.mkdir(parents=True)
+
+    """Checks that get-progression can be performed"""
+    input_progression_tsv = path.join(input_dir, "labels.tsv")
+    progression_tsv = path.join(tmp_out_dir, "progression.tsv")
+    ref_progression_tsv = path.join(ref_dir, "progression.tsv")
+    shutil.copyfile(input_progression_tsv, progression_tsv)
+
+    flag_get_progression = not os.system(
+        f"clinicadl tsvtools get-progression {progression_tsv}  "
+    )
+    assert flag_get_progression
+
+    ref_df = pd.read_csv(ref_progression_tsv, sep="\t")
+    out_df = pd.read_csv(progression_tsv, sep="\t")
+    assert out_df.equals(ref_df)
+
+
+def test_prepare_experiment(cmdopt, tmp_path):
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "tsvtools" / "in"
+    tmp_out_dir = tmp_path / "tsvtools" / "out"
+    tmp_out_dir.mkdir(parents=True)
+
+    """Checks that:
+    -  split and kfold are working
+    -  the loading functions can find the output
+    -  no data leakage is introduced in split and kfold.
+    """
+
+    labels_tsv = path.join(tmp_out_dir, "labels.tsv")
+    shutil.copyfile(path.join(input_dir, "labels.tsv"), labels_tsv)
+
+    validation_type = "kfold"
+    n_valid = 3
+    flag_prepare_experiment = not os.system(
+        f"clinicadl -vvv tsvtools prepare-experiment {labels_tsv} --validation_type {validation_type} --n_validation {n_valid}"
+    )
+
+    assert flag_prepare_experiment
+
+    run_test_suite(tmp_out_dir, n_valid, "validation")
+
+
+def test_get_metadata(cmdopt, tmp_path):
+
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "tsvtools" / "in"
+    ref_dir = base_dir / "tsvtools" / "ref"
+    tmp_out_dir = tmp_path / "tsvtools" / "out"
+    tmp_out_dir.mkdir(parents=True)
+
+    """Checks that get-metadata can be performed"""
+    input_metadata_tsv = path.join(input_dir, "metadata.tsv")
+    metadata_tsv = path.join(tmp_out_dir, "metadata.tsv")
+    ref_metadata_tsv = path.join(ref_dir, "metadata.tsv")
+    shutil.copyfile(input_metadata_tsv, metadata_tsv)
+    shutil.copyfile(
+        path.join(input_dir, "labels.tsv"), path.join(tmp_out_dir, "labels.tsv")
+    )
+
+    flag_get_metadata = not os.system(
+        f"clinicadl tsvtools get-metadata {metadata_tsv}  "
+    )
+    assert flag_get_metadata
+
+    ref_df = pd.read_csv(ref_metadata_tsv, sep="\t")
+    out_df = pd.read_csv(metadata_tsv, sep="\t")
     assert out_df.equals(ref_df)
