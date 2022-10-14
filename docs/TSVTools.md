@@ -259,3 +259,9 @@ Options:
 
   - `--diagnoses` (List[str]) is the list of the labels that will be extracted.
    These labels must be chosen from {AD,CN,MCI,sMCI,pMCI}. Default will only process AD and CN labels.
+   
+   
+   
+   
+![clinicadl](https://user-images.githubusercontent.com/57992134/195829346-e7bdaff5-3251-43b2-bf49-752f710d6f0c.jpg)
+   
