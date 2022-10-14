@@ -3,8 +3,10 @@
 This collection of tools aims at handling metadata of BIDS-formatted datasets.
 These tools perform three main tasks:
 
-- Get the labels used in the classification task (`getlabels`),
+- Get the labels used in the classification task (`get-labels`),
+- Get the progression of Alzheimer's disease (`get-progression`),
 - Split data to define test, validation and train cohorts (`split` + `kfold` or `prepare-experiment`),
+- Get additional data (`get-metadata`),
 - Analyze populations of interest (`analysis`).
 
 !!! tip
