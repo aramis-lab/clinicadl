@@ -124,7 +124,7 @@ def test_split(cmdopt, tmp_path):
     n_splits = 3
     train_tsv = path.join(tmp_out_dir, "split/train.tsv")
     labels_tsv = path.join(tmp_out_dir, "labels.tsv")
-    shutil.copytree(path.join(input_dir, "labels.tsv"), labels_tsv)
+    shutil.copyfile(path.join(input_dir, "labels.tsv"), labels_tsv)
 
     flag_split = not os.system(
         f"clinicadl -vvv tsvtools split {labels_tsv} --subset_name test"

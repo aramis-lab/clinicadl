@@ -50,7 +50,7 @@ def test_determinism(cmdopt, tmp_path):
         "train",
         "classification",
         path.join(str(input_dir), "caps_roi"),
-        "t1-linear_crop-True_mode-roi.json",
+        "t1-linear_mode-roi.json",
         path.join(str(input_dir), "labels_list"),
         str(maps_dir),
         "-c",
