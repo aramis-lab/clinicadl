@@ -12,9 +12,9 @@ from .testing_tools import compare_folders_with_hashes, create_hashes_dict, mode
 
 def test_json_compatibility(cmdopt, tmp_path):
     base_dir = Path(cmdopt["input"])
-    input_dir = base_dir / "train" / "in"
-    ref_dir = base_dir / "train" / "ref"
-    tmp_out_dir = tmp_path / "train" / "out"
+    input_dir = base_dir / "train_from_json" / "in"
+    ref_dir = base_dir / "train_from_json" / "ref"
+    tmp_out_dir = tmp_path / "train_from_json" / "out"
     tmp_out_dir.mkdir(parents=True)
 
     split = "0"
@@ -34,15 +34,11 @@ def test_json_compatibility(cmdopt, tmp_path):
 
 def test_determinism(cmdopt, tmp_path):
 
-    input_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/train_from_json/in"
-    )
-    ref_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/train_from_json/ref"
-    )
-    tmp_out_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/train_from_json/out"
-    )
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "train_from_json" / "in"
+    ref_dir = base_dir / "train_from_json" / "ref"
+    tmp_out_dir = tmp_path / "train_from_json" / "out"
+    tmp_out_dir.mkdir(parents=True)
 
     maps_dir = path.join(tmp_out_dir, "maps_roi_cnn")
     reproduced_maps_dir = path.join(tmp_out_dir, "reproduced_MAPS")

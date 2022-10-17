@@ -24,7 +24,7 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
     input_dir = base_dir / "transferLearning" / "in"
     ref_dir = base_dir / "transferLearning" / "ref"
     tmp_out_dir = tmp_path / "transferLearning" / "out"
-    tmp_target_dir = tmp_path / "transferLearning"
+    tmp_target_dir = tmp_path / "transferLearning" / "target"
     tmp_out_dir.mkdir(parents=True)
 
     caps_roi_path = join(input_dir, "caps_roi")

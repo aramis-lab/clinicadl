@@ -10,9 +10,6 @@ import pytest
 from clinicadl import MapsManager
 from tests.testing_tools import clean_folder
 
-# root = "/network/lustre/iss02/aramis/projects/clinicadl/data/resume"
-root = "resume"
-
 
 @pytest.fixture(
     params=[
