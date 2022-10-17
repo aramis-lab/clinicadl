@@ -255,7 +255,7 @@ pipeline {
           }
           stage('GPU') {
             agent {
-              label 'gpu'
+              label 'cpu'
             }
             environment {
               CONDA_HOME = "$HOME/miniconda3"
