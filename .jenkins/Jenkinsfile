@@ -21,7 +21,7 @@ pipeline {
               CONDA_HOME = "$HOME/miniconda"
               CONDA_ENV = "$WORKSPACE/env"
               TMP_DIR = "/mnt/data/ci/tmp"
-              INPUT_DATA_DIR = "mnt/data/clinicadl_data_ci/data_ci"
+              INPUT_DATA_DIR = "/mnt/data/clinicadl_data_ci/data_ci"
             }
             stages {
               stage('Build Env') {
@@ -261,7 +261,7 @@ pipeline {
               CONDA_HOME = "$HOME/miniconda3"
               CONDA_ENV = "$WORKSPACE/env"
               TMP_DIR = "/mnt/data/ci/tmp"
-              INPUT_DATA_DIR = "mnt/data_ci"
+              INPUT_DATA_DIR = "/mnt/data/clinicadl_data_ci/data_ci"
             }
             stages {
               stage('Build Env') {
