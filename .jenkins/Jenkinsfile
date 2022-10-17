@@ -21,7 +21,7 @@ pipeline {
               CONDA_HOME = "$HOME/miniconda"
               CONDA_ENV = "$WORKSPACE/env"
               TMP_DIR = "/mnt/data/ci/tmp"
-              INPUT_DATA_DIR = "mnt/data_ci"
+              INPUT_DATA_DIR = "/mnt/data/clinicadl_data_ci/data_ci"
             }
             stages {
               stage('Build Env') {
@@ -95,6 +95,9 @@ pipeline {
                   always {
                     junit 'tests/test-reports/test_tsvtool_report.xml'
                   }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
+                  }
                 }
               }
               stage('Quality check tests Linux') {
@@ -120,6 +123,9 @@ pipeline {
                 post {
                   always {
                     junit 'tests/test-reports/test_quality_check_report.xml'
+                  }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
@@ -147,6 +153,9 @@ pipeline {
                   always {
                     junit 'tests/test-reports/test_generate_report.xml'
                   }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
+                  }
                 }
               }
               stage('Prepare data tests Linux') {
@@ -172,6 +181,9 @@ pipeline {
                 post {
                   always {
                     junit 'tests/test-reports/test_prepare_data_report.xml'
+                  }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
@@ -199,6 +211,9 @@ pipeline {
                   always {
                     junit 'tests/test-reports/test_predict_report.xml'
                   }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
+                  }
                 }
               }
             //               stage('Meta-maps analysis') {
@@ -213,8 +228,6 @@ pipeline {
             //                       eval "$(conda shell.bash hook)"
             //                       conda activate "${WORKSPACE}/env"
             //                       cd $WORKSPACE/tests
-            //                       mkdir -p ./data/dataset
-            //                       tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
             //                       pytest \
             //                         --junitxml=./test-reports/test_meta-analysis_report.xml \
             //                         --verbose \
@@ -248,7 +261,7 @@ pipeline {
               CONDA_HOME = "$HOME/miniconda3"
               CONDA_ENV = "$WORKSPACE/env"
               TMP_DIR = "/mnt/data/ci/tmp"
-              INPUT_DATA_DIR = "mnt/data_ci"
+              INPUT_DATA_DIR = "/mnt/data/clinicadl_data_ci/data_ci"
             }
             stages {
               stage('Build Env') {
@@ -300,6 +313,9 @@ pipeline {
                   always {
                     junit 'tests/test-reports/test_train_report.xml'
                   }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
+                  }
                 }
               }
               stage('Transfer learning tests Linux') {
@@ -327,6 +343,9 @@ pipeline {
                   always {
                     junit 'tests/test-reports/test_transfer_learning_report.xml'
                   }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
+                  }
                 }
               }
               stage('Resume tests Linux') {
@@ -353,6 +372,9 @@ pipeline {
                 post {
                   always {
                     junit 'tests/test-reports/test_resume_report.xml'
+                  }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
@@ -382,6 +404,9 @@ pipeline {
                   always {
                     junit 'tests/test-reports/test_interpret_report.xml'
                   }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
+                  }
                 }
               }
               stage('Random search tests Linux') {
@@ -409,6 +434,9 @@ pipeline {
                 post {
                   always {
                     junit 'tests/test-reports/test_random_search_report.xml'
+                  }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
