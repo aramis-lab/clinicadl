@@ -95,6 +95,9 @@ pipeline {
                   always {
                     junit 'tests/test-reports/test_tsvtool_report.xml'
                   }
+                  success {
+                    sh 'rm -rf ${WORK_DIR}/*'
+                  }
                 }
               }
               stage('Quality check tests Linux') {
@@ -120,6 +123,9 @@ pipeline {
                 post {
                   always {
                     junit 'tests/test-reports/test_quality_check_report.xml'
+                  }
+                  success {
+                    sh 'rm -rf ${WORK_DIR}/*'
                   }
                 }
               }
@@ -147,6 +153,9 @@ pipeline {
                   always {
                     junit 'tests/test-reports/test_generate_report.xml'
                   }
+                  success {
+                    sh 'rm -rf ${WORK_DIR}/*'
+                  }
                 }
               }
               stage('Prepare data tests Linux') {
@@ -173,6 +182,9 @@ pipeline {
                   always {
                     junit 'tests/test-reports/test_prepare_data_report.xml'
                   }
+                  success {
+                    sh 'rm -rf ${WORK_DIR}/*'
+                  }
                 }
               }
               stage('Predict tests Linux') {
@@ -198,6 +210,9 @@ pipeline {
                 post {
                   always {
                     junit 'tests/test-reports/test_predict_report.xml'
+                  }
+                  success {
+                    sh 'rm -rf ${WORK_DIR}/*'
                   }
                 }
               }
@@ -298,6 +313,9 @@ pipeline {
                   always {
                     junit 'tests/test-reports/test_train_report.xml'
                   }
+                  success {
+                    sh 'rm -rf ${WORK_DIR}/*'
+                  }
                 }
               }
               stage('Transfer learning tests Linux') {
@@ -325,6 +343,9 @@ pipeline {
                   always {
                     junit 'tests/test-reports/test_transfer_learning_report.xml'
                   }
+                  success {
+                    sh 'rm -rf ${WORK_DIR}/*'
+                  }
                 }
               }
               stage('Resume tests Linux') {
@@ -351,6 +372,9 @@ pipeline {
                 post {
                   always {
                     junit 'tests/test-reports/test_resume_report.xml'
+                  }
+                  success {
+                    sh 'rm -rf ${WORK_DIR}/*'
                   }
                 }
               }
@@ -380,6 +404,9 @@ pipeline {
                   always {
                     junit 'tests/test-reports/test_interpret_report.xml'
                   }
+                  success {
+                    sh 'rm -rf ${WORK_DIR}/*'
+                  }
                 }
               }
               stage('Random search tests Linux') {
@@ -407,6 +434,9 @@ pipeline {
                 post {
                   always {
                     junit 'tests/test-reports/test_random_search_report.xml'
+                  }
+                  success {
+                    sh 'rm -rf ${WORK_DIR}/*'
                   }
                 }
               }
