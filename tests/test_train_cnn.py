@@ -24,19 +24,11 @@ def test_name(request):
 
 
 def test_train_cnn(cmdopt, tmp_path, test_name):
-    # base_dir = Path(cmdopt["input"])
-    # input_dir = base_dir / "train" / "in"
-    # ref_dir = base_dir / "train" / "ref"
-    # tmp_out_dir = tmp_path / "train" / "out"
-    # tmp_out_dir.mkdir(parents=True)
-
-    input_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/train/in"
-    )
-    ref_dir = Path("/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/train/ref")
-    tmp_out_dir = Path(
-        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/train/out"
-    )
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "train" / "in"
+    ref_dir = base_dir / "train" / "ref"
+    tmp_out_dir = tmp_path / "train" / "out"
+    tmp_out_dir.mkdir(parents=True)
 
     labels_path = join(input_dir, "labels_list")
     config_path = join(input_dir, "train_config.toml")

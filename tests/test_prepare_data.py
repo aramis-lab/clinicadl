@@ -119,6 +119,7 @@ def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
             )
     print("tests")
     compare_folders(out_dir / f"caps_{mode}", ref_dir / f"caps_{mode}", out_dir)
+    clean_folder(out_dir, recreate=True)
 
 
 def extract_generic(out_dir, mode, tsv_file, parameters):
