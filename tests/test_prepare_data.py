@@ -117,7 +117,7 @@ def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
             raise NotImplementedError(
                 f"Test for modality {modality} was not implemented."
             )
-
+    print("tests")
     compare_folders(out_dir / f"caps_{mode}", ref_dir / f"caps_{mode}", out_dir)
 
 
