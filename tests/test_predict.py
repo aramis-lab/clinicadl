@@ -25,7 +25,7 @@ def test_name(request):
     return request.param
 
 
-def test_predict(test_name):
+def test_predict(cmdopt, tmp_path, test_name):
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "predict" / "in"
     ref_dir = base_dir / "predict" / "ref"
