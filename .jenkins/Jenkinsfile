@@ -96,7 +96,7 @@ pipeline {
                     junit 'tests/test-reports/test_tsvtool_report.xml'
                   }
                   success {
-                    sh 'rm -rf ${WORK_DIR}/*'
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
@@ -125,7 +125,7 @@ pipeline {
                     junit 'tests/test-reports/test_quality_check_report.xml'
                   }
                   success {
-                    sh 'rm -rf ${WORK_DIR}/*'
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
@@ -154,7 +154,7 @@ pipeline {
                     junit 'tests/test-reports/test_generate_report.xml'
                   }
                   success {
-                    sh 'rm -rf ${WORK_DIR}/*'
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
@@ -183,7 +183,7 @@ pipeline {
                     junit 'tests/test-reports/test_prepare_data_report.xml'
                   }
                   success {
-                    sh 'rm -rf ${WORK_DIR}/*'
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
@@ -212,7 +212,7 @@ pipeline {
                     junit 'tests/test-reports/test_predict_report.xml'
                   }
                   success {
-                    sh 'rm -rf ${WORK_DIR}/*'
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
@@ -314,7 +314,7 @@ pipeline {
                     junit 'tests/test-reports/test_train_report.xml'
                   }
                   success {
-                    sh 'rm -rf ${WORK_DIR}/*'
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
@@ -344,7 +344,7 @@ pipeline {
                     junit 'tests/test-reports/test_transfer_learning_report.xml'
                   }
                   success {
-                    sh 'rm -rf ${WORK_DIR}/*'
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
@@ -374,7 +374,7 @@ pipeline {
                     junit 'tests/test-reports/test_resume_report.xml'
                   }
                   success {
-                    sh 'rm -rf ${WORK_DIR}/*'
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
@@ -405,7 +405,7 @@ pipeline {
                     junit 'tests/test-reports/test_interpret_report.xml'
                   }
                   success {
-                    sh 'rm -rf ${WORK_DIR}/*'
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
@@ -436,7 +436,7 @@ pipeline {
                     junit 'tests/test-reports/test_random_search_report.xml'
                   }
                   success {
-                    sh 'rm -rf ${WORK_DIR}/*'
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
