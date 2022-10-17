@@ -21,9 +21,7 @@ These tools perform three main tasks:
 ### Description
 
 This tool writes a unique TSV file containing the labels asked by the user.
-The file contains a column `group` which is the diagnosis of the subject for the session, and a column `subgroup` which shows if the diagnosis is stable or not.
-
-The group correspond to the following description :
+The labels correspond to the following description and are stored in the column named diagnosis:
 
 - **CN** (cognitively normal): sessions of subjects who were diagnosed as cognitively normal during all their follow-up;
 - **AD** (Alzheimer's disease): sessions of subjects who were diagnosed as demented during all their follow-up;
@@ -32,32 +30,25 @@ The group correspond to the following description :
 These labels are specific to the Alzheimer's disease context and can only be extracted from cohorts used in [(Wen et al., 2020)](https://www.sciencedirect.com/science/article/abs/pii/S1361841520300591).
 
 
-The subgroup corresponds to the following description:
-- **s** (stable): diagnosis remains identical during the `time_horizon` period following the current visit,
-- **p** (progressive): diagnosis progresses to the following state during the `time_horizon` period following the current visit (eg. MCI --> AD),
-- **r** (regressive): diagnosis regresses to the previous state during the `time_horizon` period following the current visit (eg. MCI --> CN),
-- **uk** (unknown): there are not enough sessions to assess the reliability of the label but no changes were spotted,
-- **us** (unstable): otherwise (multiple conversions / regressions).
-
 
 However, users can define other label lists manually and give them in inputs of other functions of `tsvtools`. These TSV files will have to include the following columns: `participant_id`, `session_id`, and the name of the value used for the label (for example `diagnosis`).
-Other functions of `tsvtool` may also try to have similar distributions according to the age and the sex of the participants. To benefit from this feature, the user must also include these two columns in their TSV files.
+Other functions of `tsvtools` may also try to have similar distributions according to the age and the sex of the participants. To benefit from this feature, the user must also include these two columns in their TSV files.
 
 #### Example of TSV produced by `getlabels`:
 
-| participant_id | session_id | group | subgroup | age | sex | ... |
+| participant_id | session_id | diagnosis | age | sex | ... |
 | -- | -- | -- | -- | -- | -- | -- |
-| sub-CLNC0001  | ses-M00 | MCI | pMCI | 72 | M | ... |
-| sub-CLNC0001  | ses-M12 | MCI | pMCI | 65 | F | ... |
-| sub-CLNC0001  | ses-M36 | AD | sAD | 66 | F | ... |
-| sub-CLNC0002  | ses-M00 | AD | ukAD | 89 | F | ... |
+| sub-CLNC0001  | ses-M00 | MCI | 72 | M | ... |
+| sub-CLNC0001  | ses-M12 | MCI | 65 | F | ... |
+| sub-CLNC0001  | ses-M36 | AD | 66 | F | ... |
+| sub-CLNC0002  | ses-M00 | AD | 89 | F | ... |
 
 
 
 ### Running the task
 
 ```bash
-clinicadl tsvtools getlabels [OPTIONS] BIDS_DIRECTORY RESULTS_TSV
+clinicadl tsvtools getlabels [OPTIONS] BIDS_DIRECTORY OUTPUT_TSV
 ```
 where:
 
@@ -72,8 +63,6 @@ Options:
   Default value: `t1w`.
   - `--diagnoses` (List[str]) is the list of the labels that will be extracted. Labels can be either a group or a subgroup. These labels must be chosen from the combination of group and subgroup seen above. All the sessions for which the diagnosis is not in the given list will be remove in the output TSV file.
   Default will be focus on the Alzheimer's disease and only process AD and CN labels.
-  - `--time_horizon` (int) is the time horizon in months that is used to assess the stability of the MCI subjects.
-  Default value: `36`.
   - `--restriction_tsv` (Path) is a path to a TSV file containing the list of sessions that should be used.
   This argument is useful to integrate the result of a quality check procedure. Default will not perform any restriction.
   - `--variables_of_interest` (List[str]) is a list of columns present in `MERGED_TSV` that will be included
@@ -81,18 +70,19 @@ Options:
   - `--keep_smc` (bool) if given the SMC participants are kept in the `CN.tsv` file.
   Default setting remove these participants.
   - `--caps_directory` (Path) is a folder containing a CAPS compliant dataset
-  - `--merge_tsv` (Path) is a path to a TSV file containing the results of `clinica iotools merge-tsv` command. 
-    - If not run before, this command will be run in the task and the output will be save in the `RESULTS_DIRECTORY` given with the name `merge.tsv`. 
-    - If run before, the output has to be store with the name `merge.tsv`in the `RESULTS_DIRECTORY` or the path has to be given with this option. It avoids to re-run the `merge-tsv`command which can be very long (more than 30min).
+  - `--merged_tsv` (Path) is a path to a TSV file containing the results of `clinica iotools merge-tsv` command. 
+    - If not run before, this command will be run in the task and the output will be save in the `RESULTS_DIRECTORY` given with the name `merged.tsv`. 
+    - If run before, the output has to be store with the name `merged.tsv`in the `RESULTS_DIRECTORY` or the path has to be given with this option. It avoids to re-run the `merge-tsv`command which can be very long (more than 30min).
   - `--missing_mods` (Path) is a path to a TSV file containing the results of `clinica iotools missing-modalities` command. 
     - If not run before, this command will be run in the task and the output directory will be save in the `RESULTS_DIRECTORY` given with the name `missing_mods`. 
     - If run before, the output directory has to be store with the name `missing_mods`in the `RESULTS_DIRECTORY` or the path has to be given with this option. It avoids to re-run the `missing-modalities`command which can be very long (more than 30min).
+- `--remove-unique-session` (bool) 
   
 
 #### Example of how to run the task :
 
 ```bash
-clinicadl tsvtools getlabels Data/BIDS Results/labels.tsv --diagnosis AD--diagnosis pMCI --time_horizon 12 
+clinicadl tsvtools get-labels Data/BIDS --merged-tsv merged.tsv --diagnosis AD --diagnosis MCI --time_horizon 12 
 ```
 
 ### Output tree
@@ -112,7 +102,7 @@ The command will output a TSV file and a JSON file and will store intermediate r
 
 ### Description
 
-This tool splits all the data in order to have the same sex, age and group distributions in both sets produced.
+This tool splits all the data in order to have the same sex, age and diagnosis distributions in both sets produced.
 The similarity of the age and sex distributions is assessed by a T-test
 and chi-square test, respectively.
 
@@ -147,16 +137,24 @@ Options:
   Default value: `False`
   - `--categorical_split_variable` (str) is the name of a categorical variable used for a stratified shuffle split (in addition to age and sex selection).
   Default value: `None`
-  - `--test_tsv`(str) is the path to the test file in tsv format to avoid keeping the test data in the train/validation set.
-  Default value: `None`.
 
+!!!tip
+    Even if the split is performed on age and sex, these columns do not need to be part of the columns. If they are not present, the pipeline will go back to the labels.tsv to find them.
+    
 ### Output tree
 
 The command will generate new tsv files, one containing the keys included in the `subset_name` set and one containing the ones included in the `train` set. These files will be stored in the same directory as the `FORMATED_DATA_TSV`.
-   
+
+<pre>
+└── &lt;split&gt;
+    ├── train.tsv
+    ├── train_baseline.tsv
+    └── subset_name_baseline.tsv
+
 </pre>
 
-The columns of the produced TSV files are `participants_id`, `session_id`,`group`, `subgroup`, `age`, `sex`.
+
+The columns of the produced TSV files are only the keys :`participants_id`, `session_id`.
 TSV files ending with `_baseline.tsv` only include the baseline session of each subject (or
 the session closest to baseline if the latter does not exist).
 
@@ -182,25 +180,25 @@ Options:
   Default value: `5`.
   - `--stratification` (str) is the name of the variable used to stratify the k-fold split.
   By default, the value is `None` which means there is no stratification.
-  - `--test_tsv`(str) is the path to the test file in tsv format to avoid keeping the test data in the train/validation set.
-  Default value: `None`.
-  
+
+
 
 ### Output tree
 
-The command will generate a new tsv file `train_subset_name.tsv` stored in the same directory as the `DATA_TSV` file and containing the keys (`participants_id`, `session_id`,`group`, `subgroup`, `age`, `sex`).
+The command will generate a new folder `k-fold` stored in the same directory as the `DATA_TSV` file and containing the different split folders. Each of these files contains the keys (`participants_id`, `session_id`).
 For each key, it explicits which set it belongs to for each split according to the following structure (example for a 2-fold validation):
-
-| participant_id | session_id | split_index | split_type | group | subgroup | age | sex |
-| -- | -- | -- | -- | -- | -- | -- | -- | 
-| sub-CLNC0001  | ses-M00 | 0 | train | CN | s | 78.5 | F |
-| sub-CLNC0001  | ses-M00 | 1  | validation | CN | s | 78.5 | F |
-| sub-CLNC0002  | ses-M00 | 0 | train | MCI | p | 85 | F |
-| sub-CLNC0002  | ses-M00 | 1  | validation | MCI | p | 85 | F |
-| sub-CLNC0002  | ses-M06 | 0 | train | AD | s | 85.5 | F |
-| sub-CLNC0002  | ses-M06 | 1  | N/A | AD | s | 85.5 | F |
-| sub-CLNC0003  | ses-M00 | 0 | validation | CN | s | 79.5 | M |
-| sub-CLNC0003  | ses-M00 | 1 | train | CN | s | 79.5 | M |
+```
+└── 2_fold
+        ├── split_0
+        │   ├── train_baseline.tsv
+        │   ├── train.tsv
+        │   └── validation_baseline.tsv
+        └── split_1
+            ├── train_baseline.tsv
+            ├── train.tsv
+            └── validation_baseline.tsv
+    
+```
 
 
 ## `prepare-experiment`
@@ -235,16 +233,63 @@ Options:
     - If it is a k-fold split: it is the number of folds in the k-folds split.
     - If =0, there is no training set and the whole dataset is considered as a validation set.
 
+!!!tip
+    Even if the split is performed on age and sex, these columns do not need to be part of the columns. If they are not present, the pipeline will go back to the labels.tsv to find them.
+
+## `get-progression`
+
+### Description
+
+This tool adds a new column `progression` to the TSV file given. It corresponds to the progression of the Alzheimer's disease. The diagnosis must be one of those : CN (cognitively norma), MCI (mild cognitive impairment) or AD (alzheimer's disease).
+
+The progression label corresponds to the following description:
+- **s** (stable): diagnosis remains identical during the `time_horizon` period following the current visit,
+- **p** (progressive): diagnosis progresses to the following state during the `time_horizon` period following the current visit (eg. MCI --> AD),
+- **r** (regressive): diagnosis regresses to the previous state during the `time_horizon` period following the current visit (eg. MCI --> CN),
+- **uk** (unknown): there are not enough sessions to assess the reliability of the label but no changes were spotted,
+- **us** (unstable): otherwise (multiple conversions / regressions).
+- 
+### Running the task
+
+```bash
+clinicadl tsvtools get-progression [OPTIONS] DATA_TSV
+```
+where `DATA_TSV` (str) is the TSV file containing the data 
+(output of `clinicadl tsvtool getlabels|split|kfold`).
+
+Options:
+  - `--time_horizon` (int) is the time horizon in months that is used to assess the stability of the MCI subjects.
+  Default value: `36`.
+
+!!!tip
+    The diagnosis column do not need to be part of the columns, the pipeline will go back to the labels.tsv to calculate the progression.
+    
+## `get-metadata`
+
+### Description
+
+This tool add extra columns to the tsv file given. 
+For example, the output of `clinicadl tsvtools split/kfold` returns a TSV file with only two columns `participant_id` and `session_id` and with this command, it is possible to retrieve the age, the diagnosis, the sex or other variables of interest in other tsv files.
+
+### Running the task
+
+```bash
+clinicadl tsvtools get-metadata [OPTIONS] DATA_TSV
+```
+where:
+
+  - `DATA_TSV` (Path) is a folder containing one TSV file per label (output of `clinicadl tsvtool getlabels|split|kfold`).
+
+Options:
+
+  - `--variables_of_interest` (List[str]) is a list of columns present in `MERGED_TSV` that will be included in the outputs.
+
 
 ## `analysis`
 
 ### Description
 
-This tool writes a TSV file that summarizes the demographics and clinical distributions of the
-asked labels.
-Continuous variables are described with statistics (mean, standard deviation, minimum and maximum),
-whereas categorical values are grouped by categories.
-The variables of interest are: age, sex, mini-mental state examination (MMSE) and global clinical dementia rating (CDR).
+This tool writes a TSV file that summarizes the demographics and clinical distributions of the asked labels. Continuous variables are described with statistics (mean, standard deviation, minimum and maximum), whereas categorical values are grouped by categories. The variables of interest are: age, sex, mini-mental state examination (MMSE) and global clinical dementia rating (CDR).
 
 ### Running the task
 
@@ -260,10 +305,8 @@ where:
 Options:
 
   - `--diagnoses` (List[str]) is the list of the labels that will be extracted.
-   These labels must be chosen from {AD,CN,MCI,sMCI,pMCI}. Default will only process AD and CN labels.
+   These labels must be chosen from {AD,CN,MCI}. Default will only process AD and CN labels.
    
-   
-   
-   
-![clinicadl](https://user-images.githubusercontent.com/57992134/195829346-e7bdaff5-3251-43b2-bf49-752f710d6f0c.jpg)
-   
+
+
+
