@@ -39,7 +39,7 @@ and the output of the present command, both in a [CAPS hierarchy](https://aramis
 
 Options:
 
-- `--subjects_sessions_tsv` (Path) is the path to a TSV file containing the subjects/sessions list to check (filename included).
+- `--participants_tsv` (Path) is the path to a TSV file containing the subjects/sessions list to check (filename included).
 Default will process all sessions available in `caps_directory`.
 - `--threshold` (float) is the threshold applied to the output probability when deciding if the image passed or failed. 
 Default value: `0.5`.
