@@ -117,7 +117,6 @@ def compare_folders(outdir: PathLike, refdir: PathLike, tmp_path: PathLike) -> b
     file_ref = PurePath(tmp_path) / "file_ref.txt"
     tree(outdir, file_out)
     tree(refdir, file_ref)
-
     if not cmp(file_out, file_ref):
         with open(file_out, "r") as fin:
             out_message = fin.read()

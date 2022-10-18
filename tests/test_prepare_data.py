@@ -29,11 +29,21 @@ def test_name(request):
 
 def test_prepare_data(cmdopt, tmp_path, test_name):
 
-    base_dir = Path(cmdopt["input"])
-    input_dir = base_dir / "prepare_data" / "in"
-    ref_dir = base_dir / "prepare_data" / "ref"
-    tmp_out_dir = tmp_path / "prepare_data" / "out"
-    tmp_out_dir.mkdir(parents=True)
+    # base_dir = Path(cmdopt["input"])
+    # input_dir = base_dir / "prepare_data" / "in"
+    # ref_dir = base_dir / "prepare_data" / "ref"
+    # tmp_out_dir = tmp_path / "prepare_data" / "out"
+    # tmp_out_dir.mkdir(parents=True)
+
+    input_dir = Path(
+        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/prepare_data/in"
+    )
+    ref_dir = Path(
+        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/prepare_data/ref"
+    )
+    tmp_out_dir = Path(
+        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/prepare_data/out"
+    )
     clean_folder(tmp_out_dir, recreate=True)
 
     input_caps_directory = input_dir / "caps"
@@ -117,7 +127,6 @@ def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
             raise NotImplementedError(
                 f"Test for modality {modality} was not implemented."
             )
-    print("tests")
     compare_folders(out_dir / f"caps_{mode}", ref_dir / f"caps_{mode}", out_dir)
     clean_folder(out_dir, recreate=True)
 
