@@ -29,24 +29,39 @@ def test_name(request):
 
 def test_prepare_data(cmdopt, tmp_path, test_name):
 
-    base_dir = Path(cmdopt["input"])
-    input_dir = base_dir / "prepare_data" / "in"
-    ref_dir = base_dir / "prepare_data" / "ref"
-    tmp_out_dir = tmp_path / "prepare_data" / "out"
-    tmp_out_dir.mkdir(parents=True)
+    # base_dir = Path(cmdopt["input"])
+    # input_dir = base_dir / "prepare_data" / "in"
+    # ref_dir = base_dir / "prepare_data" / "ref"
+    # tmp_out_dir = tmp_path / "prepare_data" / "out"
+    # tmp_out_dir.mkdir(parents=True)
 
+    input_dir = Path(
+        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/prepare_data/in"
+    )
+    ref_dir = Path(
+        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/prepare_data/ref"
+    )
+    tmp_out_dir = Path(
+        "/network/lustre/iss02/aramis/projects/clinicadl/data/dvc/prepare_data/out"
+    )
     clean_folder(tmp_out_dir, recreate=True)
 
     input_caps_directory = input_dir / "caps"
     if test_name == "image":
+        if os.path.exists(tmp_out_dir / "caps_image"):
+            shutil.rmtree(tmp_out_dir / "caps_image")
         shutil.copytree(input_caps_directory, tmp_out_dir / "caps_image")
         parameters = {"mode": "image"}
 
     elif test_name == "patch":
+        if os.path.exists(tmp_out_dir / "caps_patch"):
+            shutil.rmtree(tmp_out_dir / "caps_patch")
         shutil.copytree(input_caps_directory, tmp_out_dir / "caps_patch")
         parameters = {"mode": "patch", "patch_size": 50, "stride_size": 50}
 
     elif test_name == "slice":
+        if os.path.exists(tmp_out_dir / "caps_slice"):
+            shutil.rmtree(tmp_out_dir / "caps_slice")
         shutil.copytree(input_caps_directory, tmp_out_dir / "caps_slice")
         parameters = {
             "mode": "slice",
@@ -56,6 +71,8 @@ def test_prepare_data(cmdopt, tmp_path, test_name):
         }
 
     elif test_name == "roi":
+        if os.path.exists(tmp_out_dir / "caps_roi"):
+            shutil.rmtree(tmp_out_dir / "caps_roi")
         shutil.copytree(input_caps_directory, tmp_out_dir / "caps_roi")
         parameters = {
             "mode": "roi",

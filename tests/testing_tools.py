@@ -124,7 +124,7 @@ def compare_folders(outdir: PathLike, refdir: PathLike, tmp_path: PathLike) -> b
             ref_message = fin.read()
         raise ValueError(
             "Comparison of out and ref directories shows mismatch :\n "
-            "OUT :\n" + "out_message" + "\n REF :\n" + "ref_message"
+            "OUT :\n" + out_message + "\n REF :\n" + ref_message
         )
     return True
 
