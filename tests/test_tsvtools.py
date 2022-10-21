@@ -19,7 +19,7 @@ Check the absence of data leakage
 
 
 def check_is_subject_unique(labels_path_baseline):
-    print("Check unicity", labels_path_baseline)
+    print("Check subject uniqueness", labels_path_baseline)
 
     flag_unique = True
     check_df = pd.read_csv(labels_path_baseline, sep="\t")
