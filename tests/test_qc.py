@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from tests.testing_tools import clean_folder
+from tests.testing_tools import compare_folders
 
 
 @pytest.fixture(params=["t1-linear", "t1-volume"])
@@ -21,8 +21,6 @@ def test_qc(cmdopt, tmp_path, test_name):
     tmp_out_dir = tmp_path / "qualityCheck" / "out"
     tmp_out_dir.mkdir(parents=True)
 
-    clean_folder(tmp_out_dir, recreate=True)
-
     if test_name == "t1-linear":
         out_tsv = str(tmp_out_dir / "QC.tsv")
         test_input = [
@@ -33,7 +31,7 @@ def test_qc(cmdopt, tmp_path, test_name):
         ]
 
     elif test_name == "t1-volume":
-        out_dir = str(tmp_out_dir / "QC_T1V.tsv")
+        out_dir = str(tmp_out_dir / "QC_T1V")
         test_input = [
             "t1-volume",
             str(input_dir / "caps_T1V"),
@@ -45,9 +43,14 @@ def test_qc(cmdopt, tmp_path, test_name):
             f"Quality check test on {test_name} is not implemented."
         )
 
-    run_test_qc(test_input)
-
-
-def run_test_qc(test_input):
     flag_error = not system(f"clinicadl quality-check " + " ".join(test_input))
     assert flag_error
+
+    if test_name == "t1-linear":
+        out_df = pd.read_csv(out_tsv, sep="\t")
+        ref_df = join(ref_dir, "QC.tsv")
+        ref_df = pd.read_csv(ref_tsv, sep="\t")
+        assert out_df.equals(join(ref_df, "QC.tsv"))
+
+    elif test_name == "t1-volume":
+        assert compare_fodlers(out_dir, str(ref_dir / "QC_T1V"), tmp_out_dir)

@@ -29,8 +29,8 @@ def check_is_subject_unique(labels_path_baseline):
     for subject, subject_df in check_df.groupby(level=0):
         if len(subject_df) > 1:
             print(subject_df)
-            flag_unique = False
-    assert flag_unique
+            flag_is_unique = False
+    assert flag_is_unique
 
 
 def check_is_independant(train_path_baseline, test_path_baseline, subject_flag=True):
@@ -44,9 +44,9 @@ def check_is_independant(train_path_baseline, test_path_baseline, subject_flag=T
 
     for subject, session in train_df.index:
         if (subject, session) in test_df.index:
-            flag_independant = False
+            flag_is_independant = False
 
-    assert flag_independant
+    assert flag_is_independant
 
 
 def run_test_suite(data_tsv, n_splits, subset_name):
