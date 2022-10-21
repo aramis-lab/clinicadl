@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from clinicadl import MapsManager
-from tests.testing_tools import clean_folder
+from tests.testing_tools import compare_folders
 
 
 @pytest.fixture(params=["classification", "regression"])
@@ -21,8 +21,6 @@ def test_interpret(cmdopt, tmp_path, test_name):
     ref_dir = base_dir / "interpret" / "ref"
     tmp_out_dir = tmp_path / "interpret" / "out"
     tmp_out_dir.mkdir(parents=True)
-
-    clean_folder(tmp_out_dir, recreate=True)
 
     labels_dir_str = str(input_dir / "labels_list")
     maps_tmp_out_dir = str(tmp_out_dir / "maps")
@@ -62,10 +60,10 @@ def test_interpret(cmdopt, tmp_path, test_name):
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
 
-    run_interpret(cnn_input, tmp_out_dir)
+    run_interpret(cnn_input, tmp_out_dir, ref_dir)
 
 
-def run_interpret(cnn_input, tmp_out_dir):
+def run_interpret(cnn_input, tmp_out_dir, ref_dir):
     from clinicadl.interpret.gradients import method_dict
 
     maps_path = tmp_out_dir / "maps"
@@ -78,3 +76,5 @@ def run_interpret(cnn_input, tmp_out_dir):
     for method in method_dict.keys():
         maps_manager.interpret("train", f"test-{method}", method)
         interpret_map = maps_manager.get_interpretation("train", f"test-{method}")
+
+    assert compare_folders(maps_path, os.path.join(ref_dir, "maps"), tmp_out_dir)

@@ -83,4 +83,3 @@ def test_generate(cmdopt, tmp_path, test_name):
     assert compare_folders(
         str(output_folder), str(ref_dir / test_name), str(tmp_out_dir)
     )
-    clean_folder(tmp_out_dir, recreate=True)
