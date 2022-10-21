@@ -33,7 +33,7 @@ def check_is_subject_unique(labels_path_baseline):
     assert flag_unique
 
 
-def check_independance(train_path_baseline, test_path_baseline, subject_flag=True):
+def check_is_independant(train_path_baseline, test_path_baseline, subject_flag=True):
     print("Check independence")
 
     flag_independant = True
