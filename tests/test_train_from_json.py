@@ -7,8 +7,6 @@ from pathlib import Path
 
 from .testing_tools import compare_folders_with_hashes, create_hashes_dict, models_equal
 
-# root = "/network/lustre/iss02/aramis/projects/clinicadl/data"
-
 
 def test_json_compatibility(cmdopt, tmp_path):
     base_dir = Path(cmdopt["input"])
@@ -75,5 +73,3 @@ def test_determinism(cmdopt, tmp_path):
         input_hashes,
         ignore_pattern_list=["tensorboard", ".log", "training.tsv", "maps.json"],
     )
-    shutil.rmtree(maps_dir)
-    shutil.rmtree(reproduced_maps_dir)

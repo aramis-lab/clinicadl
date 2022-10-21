@@ -110,6 +110,15 @@ def tree(dir_: PathLike, file_out: PathLike):
 
 
 def compare_folders(outdir: PathLike, refdir: PathLike, tmp_path: PathLike) -> bool:
+    """
+    Compares the file hierarchy of two folders.
+
+        Args:
+            outdir: path to the fisrt fodler.
+            refdir: path to the second folder.
+            tmp_path: path to a temporary folder.
+    """
+
     from filecmp import cmp
     from pathlib import PurePath
 

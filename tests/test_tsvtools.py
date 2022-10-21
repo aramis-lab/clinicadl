@@ -8,7 +8,7 @@ import pandas as pd
 
 from clinicadl.utils.split_manager import KFoldSplit
 from clinicadl.utils.tsvtools_utils import extract_baseline
-from tests.testing_tools import clean_folder
+from tests.testing_tools import compare_folders
 
 """
 Check the absence of data leakage
@@ -58,10 +58,10 @@ def run_test_suite(data_tsv, n_splits, subset_name):
         if not path.exists(train_baseline_tsv):
             check_train = False
 
-        check_subject_unicity(test_baseline_tsv)
+        check_is_subject_unique(test_baseline_tsv)
         if check_train:
-            check_subject_unicity(train_baseline_tsv)
-            check_independance(train_baseline_tsv, test_baseline_tsv)
+            check_is_subject_unique(train_baseline_tsv)
+            check_is_independant(train_baseline_tsv, test_baseline_tsv)
 
     else:
         for split_number in range(n_splits):
@@ -69,22 +69,24 @@ def run_test_suite(data_tsv, n_splits, subset_name):
             for folder, sub_folder, files in os.walk(path.join(data_tsv, "split")):
                 for file in files:
                     if file[-3:] == "tsv":
-                        check_subject_unicity(path.join(folder, file))
+                        check_is_subject_unique(path.join(folder, file))
                 train_baseline_tsv = path.join(folder, "train_baseline.tsv")
                 test_baseline_tsv = path.join(folder, "test_baseline.tsv")
                 if path.exists(train_baseline_tsv):
                     if path.exists(test_baseline_tsv):
-                        check_independance(train_baseline_tsv, test_baseline_tsv)
+                        check_is_independant(train_baseline_tsv, test_baseline_tsv)
 
 
 def test_getlabels(cmdopt, tmp_path):
+    """Checks that getlabels is working and that it is coherent with
+    previous version in reference_path"""
+
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "tsvtools" / "in"
     ref_dir = base_dir / "tsvtools" / "ref"
     tmp_out_dir = tmp_path / "tsvtools" / "out"
     tmp_out_dir.mkdir(parents=True)
 
-    """Checks that getlabels is working and that it is coherent with previous version in reference_path"""
     import shutil
 
     bids_output = path.join(tmp_out_dir, "bids")
@@ -107,20 +109,20 @@ def test_getlabels(cmdopt, tmp_path):
     ref_df = pd.read_csv(path.join(ref_dir, "labels.tsv"), sep="\t")
     assert out_df.equals(ref_df)
 
-    # shutil.rmtree(output_directory)
-
 
 def test_split(cmdopt, tmp_path):
-    base_dir = Path(cmdopt["input"])
-    input_dir = base_dir / "tsvtools" / "in"
-    tmp_out_dir = tmp_path / "tsvtools" / "out"
-    tmp_out_dir.mkdir(parents=True)
-
     """Checks that:
     -  split and kfold are working
     -  the loading functions can find the output
     -  no data leakage is introduced in split and kfold.
     """
+
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "tsvtools" / "in"
+    ref_dir = base_dir / "tsvtools" / "ref"
+    tmp_out_dir = tmp_path / "tsvtools" / "out"
+    tmp_out_dir.mkdir(parents=True)
+
     n_splits = 3
     train_tsv = path.join(tmp_out_dir, "split/train.tsv")
     labels_tsv = path.join(tmp_out_dir, "labels.tsv")
@@ -135,17 +137,20 @@ def test_split(cmdopt, tmp_path):
     assert flag_split
     assert flag_kfold
 
+    compare_folders(
+        os.path.join(tmp_out_dir, "split"), os.path.join(ref_dir, "split"), tmp_out_dir
+    )
     run_test_suite(tmp_out_dir, n_splits, "validation")
 
 
 def test_analysis(cmdopt, tmp_path):
+    """Checks that analysis can be performed"""
+
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "tsvtools" / "in"
     ref_dir = base_dir / "tsvtools" / "ref"
     tmp_out_dir = tmp_path / "tsvtools" / "out"
     tmp_out_dir.mkdir(parents=True)
-
-    """Checks that analysis can be performed"""
 
     merged_tsv = path.join(input_dir, "merge-tsv.tsv")
     labels_tsv = path.join(input_dir, "labels.tsv")
@@ -165,13 +170,14 @@ def test_analysis(cmdopt, tmp_path):
 
 def test_get_progression(cmdopt, tmp_path):
 
+    """Checks that get-progression can be performed"""
+
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "tsvtools" / "in"
     ref_dir = base_dir / "tsvtools" / "ref"
     tmp_out_dir = tmp_path / "tsvtools" / "out"
     tmp_out_dir.mkdir(parents=True)
 
-    """Checks that get-progression can be performed"""
     input_progression_tsv = path.join(input_dir, "labels.tsv")
     progression_tsv = path.join(tmp_out_dir, "progression.tsv")
     ref_progression_tsv = path.join(ref_dir, "progression.tsv")
@@ -188,16 +194,17 @@ def test_get_progression(cmdopt, tmp_path):
 
 
 def test_prepare_experiment(cmdopt, tmp_path):
-    base_dir = Path(cmdopt["input"])
-    input_dir = base_dir / "tsvtools" / "in"
-    tmp_out_dir = tmp_path / "tsvtools" / "out"
-    tmp_out_dir.mkdir(parents=True)
-
     """Checks that:
     -  split and kfold are working
     -  the loading functions can find the output
     -  no data leakage is introduced in split and kfold.
     """
+
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "tsvtools" / "in"
+    ref_dir = base_dir / "tsvtools" / "ref"
+    tmp_out_dir = tmp_path / "tsvtools" / "out"
+    tmp_out_dir.mkdir(parents=True)
 
     labels_tsv = path.join(tmp_out_dir, "labels.tsv")
     shutil.copyfile(path.join(input_dir, "labels.tsv"), labels_tsv)
@@ -210,18 +217,21 @@ def test_prepare_experiment(cmdopt, tmp_path):
 
     assert flag_prepare_experiment
 
+    compare_folders(
+        os.path.join(tmp_out_dir, "split"), os.path.join(ref_dir, "split"), tmp_out_dir
+    )
     run_test_suite(tmp_out_dir, n_valid, "validation")
 
 
 def test_get_metadata(cmdopt, tmp_path):
 
+    """Checks that get-metadata can be performed"""
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "tsvtools" / "in"
     ref_dir = base_dir / "tsvtools" / "ref"
     tmp_out_dir = tmp_path / "tsvtools" / "out"
     tmp_out_dir.mkdir(parents=True)
 
-    """Checks that get-metadata can be performed"""
     input_metadata_tsv = path.join(input_dir, "metadata.tsv")
     metadata_tsv = path.join(tmp_out_dir, "metadata.tsv")
     ref_metadata_tsv = path.join(ref_dir, "metadata.tsv")
