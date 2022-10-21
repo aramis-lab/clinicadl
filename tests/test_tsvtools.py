@@ -18,7 +18,7 @@ Check the absence of data leakage
 """
 
 
-def check_subject_unicity(labels_path_baseline):
+def check_is_subject_unique(labels_path_baseline):
     print("Check unicity", labels_path_baseline)
 
     flag_unique = True
