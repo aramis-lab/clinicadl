@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 
 import pytest
 
-from tests.testing_tools import clean_folder, compare_folders, tree
+from tests.testing_tools import clean_folder, compare_folders
 
 warnings.filterwarnings("ignore")
 
