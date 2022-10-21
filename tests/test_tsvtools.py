@@ -21,7 +21,7 @@ Check the absence of data leakage
 def check_is_subject_unique(labels_path_baseline):
     print("Check subject uniqueness", labels_path_baseline)
 
-    flag_unique = True
+    flag_is_unique = True
     check_df = pd.read_csv(labels_path_baseline, sep="\t")
     check_df.set_index(["participant_id", "session_id"], inplace=True)
     if labels_path_baseline[-12:] != "baseline.tsv":
