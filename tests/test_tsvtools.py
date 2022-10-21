@@ -36,7 +36,7 @@ def check_is_subject_unique(labels_path_baseline):
 def check_is_independant(train_path_baseline, test_path_baseline, subject_flag=True):
     print("Check independence")
 
-    flag_independant = True
+    flag_is_independant = True
     train_df = pd.read_csv(train_path_baseline, sep="\t")
     train_df.set_index(["participant_id", "session_id"], inplace=True)
     test_df = pd.read_csv(test_path_baseline, sep="\t")
