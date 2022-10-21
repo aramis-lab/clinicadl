@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from clinicadl import MapsManager
-from tests.testing_tools import clean_folder
+from tests.testing_tools import clean_folder, compare_folders
 
 
 @pytest.fixture(
@@ -31,8 +31,6 @@ def test_predict(cmdopt, tmp_path, test_name):
     ref_dir = base_dir / "predict" / "ref"
     tmp_out_dir = tmp_path / "predict" / "out"
     tmp_out_dir.mkdir(parents=True)
-
-    clean_folder(tmp_out_dir, recreate=True)
 
     if test_name == "predict_image_classification":
         model_folder = input_dir / "maps_image_cnn"
@@ -61,10 +59,6 @@ def test_predict(cmdopt, tmp_path, test_name):
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
 
-    run_test_predict(model_folder, use_labels, modes, input_dir)
-
-
-def run_test_predict(model_folder, use_labels, modes, input_dir):
     out_dir = str(model_folder / "split-0/best-loss/test-RANDOM")
 
     if exists(out_dir):
@@ -95,3 +89,9 @@ def run_test_predict(model_folder, use_labels, modes, input_dir):
         maps_manager.get_prediction(data_group="test-RANDOM", mode=mode)
         if use_labels:
             maps_manager.get_metrics(data_group="test-RANDOM", mode=mode)
+
+    assert compare_folders(
+        os.path.join(tmp_out_dir, test_name),
+        os.path.join(ref_dir, test_name),
+        tmp_out_dir,
+    )

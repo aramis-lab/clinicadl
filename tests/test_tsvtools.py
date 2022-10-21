@@ -137,7 +137,7 @@ def test_split(cmdopt, tmp_path):
     assert flag_split
     assert flag_kfold
 
-    compare_folders(
+    assert compare_folders(
         os.path.join(tmp_out_dir, "split"), os.path.join(ref_dir, "split"), tmp_out_dir
     )
     run_test_suite(tmp_out_dir, n_splits, "validation")
@@ -217,7 +217,7 @@ def test_prepare_experiment(cmdopt, tmp_path):
 
     assert flag_prepare_experiment
 
-    compare_folders(
+    assert compare_folders(
         os.path.join(tmp_out_dir, "split"), os.path.join(ref_dir, "split"), tmp_out_dir
     )
     run_test_suite(tmp_out_dir, n_valid, "validation")

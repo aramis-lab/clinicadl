@@ -7,7 +7,7 @@ from typing import List
 
 import pytest
 
-from tests.testing_tools import clean_folder, compare_folder_with_files, compare_folders
+from tests.testing_tools import clean_folder, compare_folders
 
 
 @pytest.fixture(params=["random_example", "trivial_example", "shepplogan_example"])
@@ -83,5 +83,4 @@ def test_generate(cmdopt, tmp_path, test_name):
     assert compare_folders(
         str(output_folder), str(ref_dir / test_name), str(tmp_out_dir)
     )
-    # compare_folder_with_files(abspath(output_folder), output_reference)
     clean_folder(tmp_out_dir, recreate=True)
