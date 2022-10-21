@@ -63,7 +63,6 @@ pipeline {
                         --junitxml=./test-reports/test_cli_report.xml \
                         --verbose \
                         --disable-warnings \
-                        --input_data_directory=$INPUT_DATA_DIR \
                         test_cli.py
                       conda deactivate
                       '''
