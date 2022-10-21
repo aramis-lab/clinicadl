@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.testing_tools import clean_folder
+from tests.testing_tools import compare_folders
 
 
 @pytest.fixture(
@@ -27,18 +27,16 @@ def test_random_search(cmdopt, tmp_path, test_name):
     tmp_out_dir = tmp_path / "randomSearch" / "out"
     tmp_out_dir.mkdir(parents=True)
 
-    clean_folder(tmp_out_dir, recreate=True)
-
     if test_name == "rs_roi_cnn":
         toml_path = join(input_dir / "random_search.toml")
         generate_input = ["random-search", str(tmp_out_dir), "job-1"]
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
 
-    run_test_random_search(toml_path, generate_input, tmp_out_dir)
+    run_test_random_search(toml_path, generate_input, tmp_out_dir, ref_dir)
 
 
-def run_test_random_search(toml_path, generate_input, tmp_out_dir):
+def run_test_random_search(toml_path, generate_input, tmp_out_dir, ref_dir):
 
     if os.path.exists(tmp_out_dir):
         shutil.rmtree(tmp_out_dir)
@@ -53,3 +51,7 @@ def run_test_random_search(toml_path, generate_input, tmp_out_dir):
     )
     assert flag_error_generate
     assert performances_flag
+
+    assert compare_folders(
+        str(tmp_out_dir / "job-1"), str(ref_dir / "job-1"), tmp_out_dir
+    )
