@@ -2,7 +2,7 @@
 import json
 import os
 import shutil
-from os.path import exists, join
+from os.path import exists
 from pathlib import Path
 
 import pytest
