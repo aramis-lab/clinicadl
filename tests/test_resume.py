@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from clinicadl import MapsManager
-from tests.testing_tools import clean_folder
+from tests.testing_tools import compare_folders
 
 
 @pytest.fixture(
@@ -28,8 +28,6 @@ def test_resume(cmdopt, tmp_path, test_name):
     ref_dir = base_dir / "resume" / "ref"
     tmp_out_dir = tmp_path / "resume" / "out"
     tmp_out_dir.mkdir(parents=True)
-
-    clean_folder(tmp_out_dir, recreate=True)
 
     shutil.copytree(input_dir / test_name, tmp_out_dir / test_name)
     maps_stopped = str(tmp_out_dir / test_name)

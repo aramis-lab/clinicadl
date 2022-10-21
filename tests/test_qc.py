@@ -48,9 +48,9 @@ def test_qc(cmdopt, tmp_path, test_name):
 
     if test_name == "t1-linear":
         out_df = pd.read_csv(out_tsv, sep="\t")
-        ref_df = join(ref_dir, "QC.tsv")
+        ref_tsv = join(ref_dir, "QC.tsv")
         ref_df = pd.read_csv(ref_tsv, sep="\t")
         assert out_df.equals(join(ref_df, "QC.tsv"))
 
     elif test_name == "t1-volume":
-        assert compare_fodlers(out_dir, str(ref_dir / "QC_T1V"), tmp_out_dir)
+        assert compare_folders(out_dir, str(ref_dir / "QC_T1V"), tmp_out_dir)
