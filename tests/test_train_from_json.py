@@ -27,8 +27,6 @@ def test_json_compatibility(cmdopt, tmp_path):
     )
     assert flag_error
 
-    shutil.rmtree(reproduced_maps_dir)
-
 
 def test_determinism(cmdopt, tmp_path):
 
