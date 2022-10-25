@@ -67,6 +67,23 @@ def cli(
         ignore_demographics=ignore_demographics,
         categorical_split_variable=None,
     )
+    from os.path import exists
+    from pathlib import Path
+
+    parents_path = Path(data_tsv).parents[0]
+    split_numero = 1
+    folder_name = "split"
+
+    while exists(parents_path / folder_name):
+        split_numero += 1
+        folder_name = f"split_{split_numero}"
+    if split_numero > 1:
+        folder_name = f"split_{split_numero-1}"
+    elif split_numero == 1:
+        folder_name = "split"
+
+    results_path = parents_path / folder_name
+    data_tsv = results_path / "train.tsv"
     if validation_type == "split":
         split_diagnoses(
             data_tsv,
@@ -83,7 +100,7 @@ def cli(
 
         kfold_diagnoses(
             data_tsv,
-            n_splits=n_validation,
+            n_splits=int(n_validation),
             subset_name="validation",
             stratification=None,
         )
