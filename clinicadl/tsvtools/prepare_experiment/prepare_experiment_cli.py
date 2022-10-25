@@ -57,7 +57,7 @@ def cli(
     p_age_threshold = 0.80
     p_sex_threshold = 0.80
     ignore_demographics = False
-    flag_not_baseline = True
+    flag_not_baseline = False
     split_diagnoses(
         data_tsv,
         n_test=n_test,
