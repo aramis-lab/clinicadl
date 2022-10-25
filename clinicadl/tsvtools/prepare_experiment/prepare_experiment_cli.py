@@ -57,7 +57,7 @@ def cli(
     p_age_threshold = 0.80
     p_sex_threshold = 0.80
     ignore_demographics = False
-
+    flag_not_baseline = True
     split_diagnoses(
         data_tsv,
         n_test=n_test,
@@ -66,7 +66,7 @@ def cli(
         p_sex_threshold=p_sex_threshold,
         ignore_demographics=ignore_demographics,
         categorical_split_variable=None,
-        not_only_baseline=True,
+        not_only_baseline=flag_not_baseline,
     )
     from os.path import exists
     from pathlib import Path

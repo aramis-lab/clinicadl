@@ -52,6 +52,7 @@ def test_qc(cmdopt, tmp_path, test_name):
         ref_df = pd.read_csv(ref_tsv, sep="\t")
         out_df.reset_index(inplace=True)
         ref_df.reset_index(inplace=True)
+        system(f"diff {out_tsv} {ref_tsv} ")
         assert out_df.equals(ref_df)
 
     elif test_name == "t1-volume":
