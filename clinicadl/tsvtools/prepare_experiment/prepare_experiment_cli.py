@@ -77,9 +77,9 @@ def cli(
     while exists(parents_path / folder_name):
         split_numero += 1
         folder_name = f"split_{split_numero}"
-    if split_numero > 1:
+    if split_numero > 2:
         folder_name = f"split_{split_numero-1}"
-    elif split_numero == 1:
+    else:
         folder_name = "split"
 
     results_path = parents_path / folder_name

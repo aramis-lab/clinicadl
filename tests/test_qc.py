@@ -50,6 +50,8 @@ def test_qc(cmdopt, tmp_path, test_name):
         out_df = pd.read_csv(out_tsv, sep="\t")
         ref_tsv = join(ref_dir, "QC.tsv")
         ref_df = pd.read_csv(ref_tsv, sep="\t")
+        out_df.reset_index(inplace=True)
+        ref_df.reset_index(inplace=True)
         assert out_df.equals(ref_df)
 
     elif test_name == "t1-volume":
