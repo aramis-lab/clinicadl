@@ -66,6 +66,7 @@ def cli(
         p_sex_threshold=p_sex_threshold,
         ignore_demographics=ignore_demographics,
         categorical_split_variable=None,
+        not_only_baseline=True,
     )
     from os.path import exists
     from pathlib import Path

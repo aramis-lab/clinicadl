@@ -75,6 +75,4 @@ def run_interpret(cnn_input, tmp_out_dir, ref_dir):
     maps_manager = MapsManager(maps_path, verbose="debug")
     for method in method_dict.keys():
         maps_manager.interpret("train", f"test-{method}", method)
-        # interpret_map = maps_manager.get_interpretation("train", f"test-{method}")
-
-    assert compare_folders(maps_path, os.path.join(ref_dir, "maps_image"), tmp_out_dir)
+        interpret_map = maps_manager.get_interpretation("train", f"test-{method}")
