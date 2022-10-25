@@ -18,9 +18,9 @@ warnings.filterwarnings("ignore")
 @pytest.fixture(
     params=[
         "image",
+        "roi",
         "patch",
         "slice",
-        "roi",
     ]
 )
 def test_name(request):
@@ -34,8 +34,6 @@ def test_prepare_data(cmdopt, tmp_path, test_name):
     ref_dir = base_dir / "prepare_data" / "ref"
     tmp_out_dir = tmp_path / "prepare_data" / "out"
     tmp_out_dir.mkdir(parents=True)
-
-    clean_folder(tmp_out_dir, recreate=True)
 
     input_caps_directory = input_dir / "caps"
     if test_name == "image":
