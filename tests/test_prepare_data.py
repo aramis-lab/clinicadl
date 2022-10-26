@@ -18,9 +18,9 @@ warnings.filterwarnings("ignore")
 @pytest.fixture(
     params=[
         "slice",
+        "patch",
         "image",
         "roi",
-        "patch",
     ]
 )
 def test_name(request):
