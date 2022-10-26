@@ -13,12 +13,11 @@ from tests.testing_tools import compare_folders
 
 @pytest.fixture(
     params=[
-        "train_slice_cnn",
-        "train_image_cnn",
-        "train_patch_cnn",
-        "train_patch_multicnn",
-        "train_roi_cnn",
-        "train_roi_multicnn",
+        "slice_cnn",
+        "image_cnn",
+        "patch_cnn",
+        "patch_multi_cnn",
+        "roi_cnn",
     ]
 )
 def test_name(request):
@@ -36,7 +35,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
     config_path = join(input_dir, "train_config.toml")
     split = "0"
 
-    if test_name == "train_slice_cnn":
+    if test_name == "slice_cnn":
         mode = "slice"
         test_input = [
             "train",
@@ -48,7 +47,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
             "-c",
             config_path,
         ]
-    elif test_name == "train_image_cnn":
+    elif test_name == "image_cnn":
         mode = "image"
         split = "1"
         test_input = [
@@ -63,7 +62,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
             "-s",
             split,
         ]
-    elif test_name == "train_patch_cnn":
+    elif test_name == "patch_cnn":
         mode = "patch"
         split = "0"
         test_input = [
@@ -78,7 +77,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
             "--split",
             split,
         ]
-    elif test_name == "train_patch_multicnn":
+    elif test_name == "patch_multi_cnn":
         mode = "patch"
         test_input = [
             "train",
@@ -91,19 +90,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
             config_path,
             "--multi_network",
         ]
-    elif test_name == "train_roi_cnn":
-        mode = "roi"
-        test_input = [
-            "train",
-            "classification",
-            join(str(input_dir), "caps_roi"),
-            "t1-linear_crop-True_mode-roi.json",
-            labels_path,
-            str(tmp_out_dir),
-            "-c",
-            config_path,
-        ]
-    elif test_name == "train_roi_multicnn":
+    elif test_name == "roi_cnn":
         mode = "roi"
         test_input = [
             "train",

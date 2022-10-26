@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from clinicadl import MapsManager
-from tests.testing_tools import compare_folders
+from tests.testing_tools import clean_folder, compare_folders
 
 
 @pytest.fixture(params=["classification", "regression"])
@@ -21,7 +21,8 @@ def test_interpret(cmdopt, tmp_path, test_name):
     input_dir = base_dir / "interpret" / "in"
     ref_dir = base_dir / "interpret" / "ref"
     tmp_out_dir = ref_dir  # = tmp_path / "interpret" / "out"
-    tmp_out_dir.mkdir(parents=True)
+    clean_folder(tmp_out_dir)
+    # tmp_out_dir.mkdir(parents=True)
 
     labels_dir_str = str(input_dir / "labels_list")
     maps_tmp_out_dir = str(tmp_out_dir / "maps")
