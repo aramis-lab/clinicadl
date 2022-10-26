@@ -20,7 +20,7 @@ def test_interpret(cmdopt, tmp_path, test_name):
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "interpret" / "in"
     ref_dir = base_dir / "interpret" / "ref"
-    tmp_out_dir = tmp_path / "interpret" / "out"
+    tmp_out_dir = ref_dir  # = tmp_path / "interpret" / "out"
     tmp_out_dir.mkdir(parents=True)
 
     labels_dir_str = str(input_dir / "labels_list")

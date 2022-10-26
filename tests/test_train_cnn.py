@@ -140,7 +140,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
 
     assert compare_folders(
         str(tmp_out_dir / "groups"),
-        str(ref_dir / "groups"),
+        str(ref_dir / ("maps_" + test_name) / "groups"),
         tmp_path,
     )
     assert compare_folders(

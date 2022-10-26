@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 from os.path import join
@@ -145,4 +146,20 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
     assert flag_source
     assert flag_target
 
-    assert compare_folders(tmp_target_dir, ref_dir / ("maps_roi_" + name), tmp_path)
+    with open(tmp_target_dir / "maps.json", "r") as out:
+        json_data_out = json.load(out)
+    with open(ref_dir / ("maps_roi_" + name) / "maps.json", "r") as ref:
+        json_data_ref = json.load(ref)
+
+    assert json_data_out == json_data_ref  # ["mode"] == mode
+
+    assert compare_folders(
+        str(tmp_target_dir / "groups"),
+        str(ref_dir / ("maps_roi_" + test_name) / "groups"),
+        tmp_path,
+    )
+    assert compare_folders(
+        str(tmp_target_dir / "split-0" / "best-loss"),
+        str(ref_dir / ("maps_roi_" + test_name) / "split-0" / "best-loss"),
+        tmp_path,
+    )
