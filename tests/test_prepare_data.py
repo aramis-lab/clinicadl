@@ -136,6 +136,6 @@ def extract_generic(out_dir, mode, tsv_file, parameters):
     DeepLearningPrepareData(
         caps_directory=join(out_dir, f"caps_{mode}"),
         tsv_file=tsv_file,
-        n_proc=2,
+        n_proc=1,
         parameters=parameters,
     )
