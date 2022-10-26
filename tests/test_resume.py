@@ -42,3 +42,6 @@ def test_resume(cmdopt, tmp_path, test_name):
             join(maps_stopped, f"split-{split}", "best-loss", "train")
         ).exists()
         assert performances_flag
+        assert compare_folders(
+            maps_stopped, str(ref_dir / "maps_image_cnn"), tmp_out_dir
+        )

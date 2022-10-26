@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.testing_tools import compare_folders
+
 
 # Everything is tested on roi except for cnn --> multicnn (patch) as multicnn is not implemented for roi.
 @pytest.fixture(
@@ -56,6 +58,7 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
             "--transfer_path",
             str(tmp_out_dir),
         ]
+        name = "aeTOae"
     elif test_name == "transfer_ae_cnn":
         source_task = [
             "train",
@@ -79,6 +82,7 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
             "--transfer_path",
             str(tmp_out_dir),
         ]
+        name = "aeTOcnn"
     elif test_name == "transfer_cnn_cnn":
         source_task = [
             "train",
@@ -102,6 +106,7 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
             "--transfer_path",
             str(tmp_out_dir),
         ]
+        name = "cnnTOcnn"
     elif test_name == "transfer_cnn_multicnn":
         source_task = [
             "train",
@@ -126,6 +131,7 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
             str(tmp_out_dir),
             "--multi_network",
         ]
+        name = "cnnTOmutlicnn"
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
 
@@ -134,12 +140,9 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
     if os.path.exists(tmp_target_dir):
         shutil.rmtree(tmp_target_dir)
 
-    run_test_transfer_learning(source_task, target_task)
-
-
-def run_test_transfer_learning(source_task, target_task):
-
     flag_source = not os.system("clinicadl " + " ".join(source_task))
     flag_target = not os.system("clinicadl " + " ".join(target_task))
     assert flag_source
     assert flag_target
+
+    assert compare_folders(tmp_target_dir, ref_dir / ("maps_" + name), tmp_path)

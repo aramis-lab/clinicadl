@@ -116,21 +116,25 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
 
-    run_test_train_cnn(test_input, split, mode, tmp_out_dir)
-
-
-def run_test_train_cnn(test_input, split, mode, tmp_out_dir):
+    from testing_tools import compare_folders
 
     if os.path.exists(str(tmp_out_dir)):
         shutil.rmtree(str(tmp_out_dir))
+
     flag_error = not os.system("clinicadl " + " ".join(test_input))
     assert flag_error
+
     performances_flag = os.path.exists(
         os.path.join(str(tmp_out_dir), f"split-{split}", "best-loss", "train")
     )
     assert performances_flag
+
     with open(os.path.join(str(tmp_out_dir), "maps.json"), "r") as f:
         json_data = json.load(f)
     assert json_data["mode"] == mode
+
+    assert compare_folders(
+        str(tmp_out_dir), str(ref_dir / ("maps_" + test_name)), tmp_path
+    )
 
     shutil.rmtree(str(tmp_out_dir))

@@ -8,15 +8,15 @@ from pathlib import Path
 
 import pytest
 
-from tests.testing_tools import clean_folder
+from tests.testing_tools import clean_folder, compare_folders
 
 
 @pytest.fixture(
     params=[
-        "train_image_ae",
-        "train_patch_ae",
-        "train_roi_ae",
-        "train_slice_ae",
+        "image_ae",
+        "patch_ae",
+        "roi_ae",
+        "slice_ae",
     ]
 )
 def test_name(request):
@@ -34,7 +34,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
 
     labels_path = str(input_dir / "labels_list")
     config_path = str(input_dir / "train_config.toml")
-    if test_name == "train_image_ae":
+    if test_name == "image_ae":
         mode = "image"
         test_input = [
             "train",
@@ -46,7 +46,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             "-c",
             config_path,
         ]
-    elif test_name == "train_patch_ae":
+    elif test_name == "patch_ae":
         mode = "patch"
         test_input = [
             "train",
@@ -58,7 +58,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             "-c",
             config_path,
         ]
-    elif test_name == "train_roi_ae":
+    elif test_name == "roi_ae":
         mode = "roi"
         test_input = [
             "train",
@@ -70,7 +70,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             "-c",
             config_path,
         ]
-    elif test_name == "train_slice_ae":
+    elif test_name == "slice_ae":
         mode = "slice"
         test_input = [
             "train",
@@ -85,7 +85,6 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
 
-    out_path = tmp_path / "train" / "out"
     if os.path.exists(tmp_out_dir):
         shutil.rmtree(tmp_out_dir)
 
@@ -95,3 +94,6 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     with open(tmp_out_dir / "maps.json", "r") as f:
         json_data = json.load(f)
     assert json_data["mode"] == mode
+    assert compare_folders(
+        str(tmp_out_dir), str(ref_dir / ("maps_" + test_name)), tmp_path
+    )
