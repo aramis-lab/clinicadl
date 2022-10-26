@@ -1,5 +1,6 @@
 # coding: utf8
 
+import json
 import os
 import shutil
 from pathlib import Path
@@ -77,4 +78,9 @@ def run_interpret(cnn_input, tmp_out_dir, ref_dir):
         maps_manager.interpret("train", f"test-{method}", method)
         interpret_map = maps_manager.get_interpretation("train", f"test-{method}")
 
-    assert compare_folders(maps_path, ref_dir / "maps_image", tmp_out_dir)
+    with open(maps_path / "maps.json", "r") as out:
+        json_data_out = json.load(out)
+    with open(ref_dir / "maps_image" / "maps.json", "r") as ref:
+        json_data_ref = json.load(ref)
+
+    assert json_data_out == json_data_ref  # ["mode"] == mode

@@ -91,9 +91,20 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     flag_error = not os.system("clinicadl " + " ".join(test_input))
     assert flag_error
 
-    with open(tmp_out_dir / "maps.json", "r") as f:
-        json_data = json.load(f)
-    assert json_data["mode"] == mode
+    with open(tmp_out_dir / "maps.json", "r") as out:
+        json_data_out = json.load(out)
+    with open(ref_dir / ("maps_" + test_name) / "maps.json", "r") as ref:
+        json_data_ref = json.load(ref)
+
+    assert json_data_out == json_data_ref  # ["mode"] == mode
+
     assert compare_folders(
-        str(tmp_out_dir), str(ref_dir / ("maps_" + test_name)), tmp_path
+        str(tmp_out_dir / "groups"),
+        str(ref_dir / "groups"),
+        tmp_path,
+    )
+    assert compare_folders(
+        str(tmp_out_dir / "split-0" / "best-loss"),
+        str(ref_dir / ("maps_" + test_name) / "split-0" / "best-loss"),
+        tmp_path,
     )

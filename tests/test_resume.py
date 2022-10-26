@@ -1,4 +1,5 @@
 # coding: utf8
+import json
 import os
 import shutil
 from os import system
@@ -42,6 +43,11 @@ def test_resume(cmdopt, tmp_path, test_name):
             join(maps_stopped, f"split-{split}", "best-loss", "train")
         ).exists()
         assert performances_flag
-        assert compare_folders(
-            maps_stopped, str(ref_dir / "maps_image_cnn"), tmp_out_dir
-        )
+
+        with open(os.path.join(str(maps_stopped), "maps.json"), "r") as out:
+            json_data_out = json.load(out)
+        with open(
+            os.path.join(str(ref_dir / ("maps_image_cnn")), "maps.json"), "r"
+        ) as ref:
+            json_data_ref = json.load(ref)
+        assert json_data_ref == json_data_out

@@ -145,4 +145,4 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
     assert flag_source
     assert flag_target
 
-    assert compare_folders(tmp_target_dir, ref_dir / ("maps_" + name), tmp_path)
+    assert compare_folders(tmp_target_dir, ref_dir / ("maps_roi_" + name), tmp_path)
