@@ -35,6 +35,8 @@ def test_prepare_data(cmdopt, tmp_path, test_name):
     tmp_out_dir = tmp_path / "prepare_data" / "out"
     tmp_out_dir.mkdir(parents=True)
 
+    clean_folder(tmp_out_dir, recreate=True)
+
     input_caps_directory = input_dir / "caps"
     if test_name == "image":
         if os.path.exists(tmp_out_dir / "caps_image"):
