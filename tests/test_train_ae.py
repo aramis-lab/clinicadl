@@ -57,6 +57,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             str(tmp_out_dir),
             "-c",
             config_path,
+            "--multi_network",
         ]
     elif test_name == "roi_ae":
         mode = "roi"
@@ -96,6 +97,8 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     with open(ref_dir / ("maps_" + test_name) / "maps.json", "r") as ref:
         json_data_ref = json.load(ref)
 
+    # if test_name == "patch_multi_ae" :
+    #     json_data_out["multi_network"] ="True"
     assert json_data_out == json_data_ref  # ["mode"] == mode
 
     assert compare_folders(
