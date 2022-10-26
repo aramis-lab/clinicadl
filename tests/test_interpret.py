@@ -84,4 +84,14 @@ def run_interpret(cnn_input, tmp_out_dir, ref_dir):
     with open(ref_dir / "maps_image" / "maps.json", "r") as ref:
         json_data_ref = json.load(ref)
 
+    json_data_out[
+        "transfer_path"
+    ] = "/mnt/data/clinicadl_data_ci/data_ci/transferLearning/in/maps_roi_ae"
+    json_data_out["gpu"] = "False"
+    json_data_out[
+        "caps_dirctory"
+    ] = "/mnt/data/clinicadl_data_ci/data_ci/transferLearning/in/caps_roi"
+    json_data_ref[
+        "caps_dirctory"
+    ] = "/mnt/data/clinicadl_data_ci/data_ci/transferLearning/in/caps_roi"
     assert json_data_out == json_data_ref  # ["mode"] == mode
