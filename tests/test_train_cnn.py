@@ -131,7 +131,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
         tmp_path,
     )
     assert compare_folders(
-        str(tmp_out_dir),  # / "split-0" / "best-loss"),
+        str(tmp_out_dir / "split-0" / "best-loss"),
         str(ref_dir / ("maps_" + test_name) / "split-0" / "best-loss"),
         tmp_path,
     )

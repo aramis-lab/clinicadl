@@ -159,11 +159,11 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
 
     assert compare_folders(
         str(tmp_target_dir / "groups"),
-        str(ref_dir / ("maps_roi_" + test_name) / "groups"),
+        str(ref_dir / ("maps_roi_" + name) / "groups"),
         tmp_path,
     )
     assert compare_folders(
         str(tmp_target_dir / "split-0" / "best-loss"),
-        str(ref_dir / ("maps_roi_" + test_name) / "split-0" / "best-loss"),
+        str(ref_dir / ("maps_roi_" + name) / "split-0" / "best-loss"),
         tmp_path,
     )
