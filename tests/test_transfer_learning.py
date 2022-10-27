@@ -151,10 +151,9 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
     with open(ref_dir / ("maps_roi_" + name) / "maps.json", "r") as ref:
         json_data_ref = json.load(ref)
 
-    json_data_ref[
-        "transfer_path"
-    ] = "/local2/ci/tmp/test_transfer_learning_transfe0/transferLearning/out"
-    json_data_ref["gpu"] = True
+    json_data_ref["transfer_path"] = json_data_out["transfer_path"]
+    json_data_ref["gpu"] = json_data_ref["gpu"]
+    json_data_ref["caps_directory"] = json_data_out["caps_directory"]
     assert json_data_out == json_data_ref  # ["mode"] == mode
 
     assert compare_folders(

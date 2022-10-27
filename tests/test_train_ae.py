@@ -35,7 +35,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     labels_path = str(input_dir / "labels_list")
     config_path = str(input_dir / "train_config.toml")
     if test_name == "image_ae":
-        mode = "image"
+        split = [0,1]
         test_input = [
             "train",
             "reconstruction",
@@ -47,7 +47,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             config_path,
         ]
     elif test_name == "patch_multi_ae":
-        mode = "patch"
+        split = [0,1]
         test_input = [
             "train",
             "reconstruction",
@@ -60,7 +60,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             "--multi_network",
         ]
     elif test_name == "roi_ae":
-        mode = "roi"
+        split = [0,0]
         test_input = [
             "train",
             "reconstruction",
@@ -72,7 +72,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             config_path,
         ]
     elif test_name == "slice_ae":
-        mode = "slice"
+        split = [0,0]
         test_input = [
             "train",
             "reconstruction",
@@ -107,7 +107,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
         tmp_path,
     )
     assert compare_folders(
-        str(tmp_out_dir),  # / "split-1" / "best-loss"),
-        str(ref_dir / ("maps_" + test_name)), # / "split-1" / "best-loss"),
+        str(tmp_out_dir / "split-{split[0]}" / "best-loss"),
+        str(ref_dir / ("maps_" + test_name) / "split-{split[1]}" / "best-loss"),
         tmp_path,
     )
