@@ -35,7 +35,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     labels_path = str(input_dir / "labels_list")
     config_path = str(input_dir / "train_config.toml")
     if test_name == "image_ae":
-        split = [0,1]
+        split = [0, 1]
         test_input = [
             "train",
             "reconstruction",
@@ -47,7 +47,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             config_path,
         ]
     elif test_name == "patch_multi_ae":
-        split = [0,1]
+        split = [0, 1]
         test_input = [
             "train",
             "reconstruction",
@@ -60,7 +60,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             "--multi_network",
         ]
     elif test_name == "roi_ae":
-        split = [0,0]
+        split = [0, 0]
         test_input = [
             "train",
             "reconstruction",
@@ -72,7 +72,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             config_path,
         ]
     elif test_name == "slice_ae":
-        split = [0,0]
+        split = [0, 0]
         test_input = [
             "train",
             "reconstruction",
