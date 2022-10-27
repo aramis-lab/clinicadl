@@ -107,7 +107,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
         tmp_path,
     )
     assert compare_folders(
-        str(tmp_out_dir / "split-{split[0]}" / "best-loss"),
-        str(ref_dir / ("maps_" + test_name) / "split-{split[1]}" / "best-loss"),
+        str(tmp_out_dir / f"split-{split[0]}" / "best-loss"),
+        str(ref_dir / ("maps_" + test_name) / f"split-{split[1]}" / "best-loss"),
         tmp_path,
     )
