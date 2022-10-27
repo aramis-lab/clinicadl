@@ -15,7 +15,7 @@ from clinicadl.generate.generate_utils import load_and_check_tsv
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
-from .utils import QCDataset, resnet_qc_18
+from .utils_bis import QCDataset, resnet_qc_18, resnet_qc_152
 
 
 def quality_check(
@@ -38,10 +38,12 @@ def quality_check(
     cache_clinicadl = join(home, ".cache", "clinicadl", "models")
     url_aramis = "https://aramislab.paris.inria.fr/files/data/models/dl/qc/"
     url_r18_2018 ="/Users/camille.brianceau/Desktop/QC/code/models/Deep-QC/model_r18/best_tnr_cpu.pth"
+    url_r18_2022 = "/Users/camille.brianceau/Desktop/QC/code/models/DARQ/model_r18/best_tnr.pth"
+    url_r152_2022 = "/Users/camille.brianceau/Desktop/QC/code/models/DARQ/model_r152/best_tnr.pth"
     logger.info("Downloading quality check model.")
     FILE1 = RemoteFileStructure(
         filename="resnet18.pth.tar",
-        url=url_r18_2018,
+        url=url_r18_2022,
         checksum="a97a781be3820b06424fe891ec405c78b87ad51a27b6b81614dbdb996ce60104",
     )
 
@@ -58,50 +60,51 @@ def quality_check(
     # Load QC model
     logger.debug("Loading quality check model.")
     model = resnet_qc_18()
-    model.load_state_dict(torch.load(model_file))
+    model.load_state_dict(torch.load(url_r18_2022))
     model.eval()
     if gpu:
         logger.debug("Working on GPU.")
-        model.cuda()
+        model = model.cuda()
 
-    # Transform caps_dir in dict
-    caps_dict = CapsDataset.create_caps_dict(caps_dir, multi_cohort=False)
+    with torch.no_grad() :
+        # Transform caps_dir in dict
+        caps_dict = CapsDataset.create_caps_dict(caps_dir, multi_cohort=False)
 
-    # Load DataFrame
-    logger.debug("Loading data to check.")
-    df = load_and_check_tsv(tsv_path, caps_dict, dirname(abspath(output_path)))
+        # Load DataFrame
+        logger.debug("Loading data to check.")
+        df = load_and_check_tsv(tsv_path, caps_dict, dirname(abspath(output_path)))
 
-    dataset = QCDataset(caps_dir, df)
-    dataloader = DataLoader(
-        dataset, num_workers=n_proc, batch_size=batch_size, pin_memory=True
-    )
+        dataset = QCDataset(caps_dir, df)
+        dataloader = DataLoader(
+            dataset, num_workers=n_proc, batch_size=batch_size, pin_memory=True
+        )
 
-    columns = ["participant_id", "session_id", "pass_probability", "pass"]
-    qc_df = pd.DataFrame(columns=columns)
-    softmax = torch.nn.Softmax(dim=1)
-    logger.info(f"Quality check will be performed over {len(dataloader)} images.")
+        columns = ["participant_id", "session_id", "pass_probability", "pass"]
+        qc_df = pd.DataFrame(columns=columns)
+        softmax = torch.nn.Softmax(dim=1)
+        logger.info(f"Quality check will be performed over {len(dataloader)} images.")
 
-    for data in dataloader:
-        logger.debug(f"Processing subject {data['participant_id']}.")
-        inputs = data["image"]
-        if gpu:
-            inputs = inputs.cuda()
-        outputs = softmax.forward(model(inputs))
+        for data in dataloader:
+            logger.debug(f"Processing subject {data['participant_id']}.")
+            inputs = data["image"]
+            if gpu:
+                inputs = inputs.cuda()
+            outputs = softmax.forward(model(inputs))
 
-        for idx, sub in enumerate(data["participant_id"]):
-            pass_probability = outputs[idx, 1].item()
-            row = [
-                [
-                    sub,
-                    data["session_id"][idx],
-                    pass_probability,
-                    pass_probability > threshold,
+            for idx, sub in enumerate(data["participant_id"]):
+                pass_probability = outputs[idx, 1].item()
+                row = [
+                    [
+                        sub,
+                        data["session_id"][idx],
+                        pass_probability,
+                        pass_probability > threshold,
+                    ]
                 ]
-            ]
-            logger.debug(f"Quality score is {pass_probability}.")
-            row_df = pd.DataFrame(row, columns=columns)
-            qc_df = qc_df.append(row_df)
+                logger.debug(f"Quality score is {pass_probability}.")
+                row_df = pd.DataFrame(row, columns=columns)
+                qc_df = qc_df.append(row_df)
 
-    qc_df.sort_values("pass_probability", ascending=False, inplace=True)
-    qc_df.to_csv(output_path, sep="\t", index=False)
-    logger.info(f"Results are stored at {output_path}.")
+        qc_df.sort_values("pass_probability", ascending=False, inplace=True)
+        qc_df.to_csv(output_path, sep="\t", index=False)
+        logger.info(f"Results are stored at {output_path}.")
