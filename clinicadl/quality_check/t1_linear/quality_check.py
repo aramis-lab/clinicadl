@@ -37,10 +37,11 @@ def quality_check(
     home = str(Path.home())
     cache_clinicadl = join(home, ".cache", "clinicadl", "models")
     url_aramis = "https://aramislab.paris.inria.fr/files/data/models/dl/qc/"
+    url_r18_2018 ="/Users/camille.brianceau/Desktop/QC/code/models/Deep-QC/model_r18/best_tnr_cpu.pth"
     logger.info("Downloading quality check model.")
     FILE1 = RemoteFileStructure(
         filename="resnet18.pth.tar",
-        url=url_aramis,
+        url=url_r18_2018,
         checksum="a97a781be3820b06424fe891ec405c78b87ad51a27b6b81614dbdb996ce60104",
     )
 
