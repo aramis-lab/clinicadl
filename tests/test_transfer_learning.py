@@ -152,7 +152,7 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
         json_data_ref = json.load(ref)
 
     json_data_ref["transfer_path"] = json_data_out["transfer_path"]
-    json_data_ref["gpu"] = json_data_ref["gpu"]
+    json_data_ref["gpu"] = json_data_out["gpu"]
     json_data_ref["caps_directory"] = json_data_out["caps_directory"]
     assert json_data_out == json_data_ref  # ["mode"] == mode
 
