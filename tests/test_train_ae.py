@@ -47,7 +47,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             config_path,
         ]
     elif test_name == "patch_multi_ae":
-        split = [0, 1]
+        split = [0, 0]
         test_input = [
             "train",
             "reconstruction",

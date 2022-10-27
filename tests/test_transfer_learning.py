@@ -132,7 +132,7 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
             str(tmp_out_dir),
             "--multi_network",
         ]
-        name = "cnnTOmutlicnn"
+        name = "cnnTOcnn"
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
 
