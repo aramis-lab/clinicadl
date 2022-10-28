@@ -71,8 +71,8 @@ def first_session(subject_df):
 def next_session(subject_df, session_orig):
     session_list = [session for _, session in subject_df.index.values]
     session_list.sort()
-    index = session_list.index(session_orig)
 
+    index = session_list.index(session_orig)
     if index < len(session_list) - 1:
         return session_list[index + 1]
     else:

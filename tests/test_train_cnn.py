@@ -3,121 +3,137 @@
 import json
 import os
 import shutil
+from os.path import join
+from pathlib import Path
 
 import pytest
 
-output_dir = "results"
+from tests.testing_tools import compare_folders
 
 
 @pytest.fixture(
     params=[
-        "train_slice_cnn",
-        "train_image_cnn",
-        "train_patch_cnn",
-        "train_patch_multicnn",
-        "train_roi_cnn",
-        "train_roi_multicnn",
+        "slice_cnn",
+        "image_cnn",
+        "patch_cnn",
+        "patch_multi_cnn",
+        "roi_cnn",
     ]
 )
-def cli_commands(request):
+def test_name(request):
+    return request.param
+
+
+def test_train_cnn(cmdopt, tmp_path, test_name):
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "train" / "in"
+    ref_dir = base_dir / "train" / "ref"
+    tmp_out_dir = tmp_path / "train" / "out"
+    tmp_out_dir.mkdir(parents=True)
+
+    labels_path = join(input_dir, "labels_list")
+    config_path = join(input_dir, "train_config.toml")
     split = "0"
-    if request.param == "train_slice_cnn":
+
+    if test_name == "slice_cnn":
         mode = "slice"
         test_input = [
             "train",
             "classification",
-            "data/dataset/random_example",
-            "extract_slice.json",
-            "data/labels_list",
-            output_dir,
+            join(str(input_dir), "caps_slice"),
+            "t1-linear_crop-True_mode-slice.json",
+            labels_path,
+            str(tmp_out_dir),
             "-c",
-            "data/train_config.toml",
+            config_path,
         ]
-    elif request.param == "train_image_cnn":
+    elif test_name == "image_cnn":
         mode = "image"
         split = "1"
         test_input = [
             "train",
             "regression",
-            "data/dataset/random_example",
-            "extract_image.json",
-            "data/labels_list",
-            output_dir,
+            join(str(input_dir), "caps_image"),
+            "t1-linear_crop-True_mode-image.json",
+            labels_path,
+            str(tmp_out_dir),
             "-c",
-            "data/train_config.toml",
-            "--split",
+            config_path,
+            "-s",
             split,
         ]
-    elif request.param == "train_patch_cnn":
+    elif test_name == "patch_cnn":
         mode = "patch"
-        split = "1"
+        split = "0"
         test_input = [
             "train",
             "classification",
-            "data/dataset/random_example",
-            "extract_patch.json",
-            "data/labels_list",
-            output_dir,
+            join(str(input_dir), "caps_patch"),
+            "t1-linear_crop-True_mode-patch.json",
+            labels_path,
+            str(tmp_out_dir),
             "-c",
-            "data/train_config.toml",
+            config_path,
             "--split",
             split,
         ]
-    elif request.param == "train_patch_multicnn":
+    elif test_name == "patch_multi_cnn":
         mode = "patch"
         test_input = [
             "train",
             "classification",
-            "data/dataset/random_example",
-            "extract_patch.json",
-            "data/labels_list",
-            output_dir,
+            join(str(input_dir), "caps_patch"),
+            "t1-linear_crop-True_mode-patch.json",
+            labels_path,
+            str(tmp_out_dir),
             "-c",
-            "data/train_config.toml",
+            config_path,
             "--multi_network",
         ]
-    elif request.param == "train_roi_cnn":
+    elif test_name == "roi_cnn":
         mode = "roi"
         test_input = [
             "train",
             "classification",
-            "data/dataset/random_example",
-            "extract_roi.json",
-            "data/labels_list",
-            output_dir,
+            join(str(input_dir), "caps_roi"),
+            "t1-linear_crop-True_mode-roi.json",
+            labels_path,
+            str(tmp_out_dir),
             "-c",
-            "data/train_config.toml",
-        ]
-    elif request.param == "train_roi_multicnn":
-        mode = "roi"
-        test_input = [
-            "train",
-            "classification",
-            "data/dataset/random_example",
-            "extract_roi.json",
-            "data/labels_list",
-            output_dir,
-            "-c",
-            "data/train_config.toml",
+            config_path,
         ]
     else:
-        raise NotImplementedError(f"Test {request.param} is not implemented.")
+        raise NotImplementedError(f"Test {test_name} is not implemented.")
 
-    return test_input, split, mode
+    if os.path.exists(str(tmp_out_dir)):
+        shutil.rmtree(str(tmp_out_dir))
 
-
-def test_train(cli_commands):
-    test_input, split, mode = cli_commands
-    if os.path.exists(output_dir):
-        shutil.rmtree(output_dir)
     flag_error = not os.system("clinicadl " + " ".join(test_input))
     assert flag_error
+
     performances_flag = os.path.exists(
-        os.path.join("results", f"split-{split}", "best-loss", "train")
+        os.path.join(str(tmp_out_dir), f"split-{split}", "best-loss", "train")
     )
     assert performances_flag
-    with open(os.path.join("results", "maps.json"), "r") as f:
-        json_data = json.load(f)
-    assert json_data["mode"] == mode
 
-    shutil.rmtree(output_dir)
+    with open(os.path.join(str(tmp_out_dir), "maps.json"), "r") as out:
+        json_data_out = json.load(out)
+    with open(
+        os.path.join(str(ref_dir / ("maps_" + test_name)), "maps.json"), "r"
+    ) as ref:
+        json_data_ref = json.load(ref)
+
+    assert json_data_out == json_data_ref  # ["mode"] == mode
+
+    assert compare_folders(
+        str(tmp_out_dir / "groups"),
+        str(ref_dir / ("maps_" + test_name) / "groups"),
+        tmp_path,
+    )
+    assert compare_folders(
+        str(tmp_out_dir / "split-0" / "best-loss"),
+        str(ref_dir / ("maps_" + test_name) / "split-0" / "best-loss"),
+        tmp_path,
+    )
+
+    shutil.rmtree(str(tmp_out_dir))
