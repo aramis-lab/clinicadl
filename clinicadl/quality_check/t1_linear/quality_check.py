@@ -15,7 +15,7 @@ from clinicadl.generate.generate_utils import load_and_check_tsv
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
-from .utils_bis import QCDataset, resnet_qc_18, resnet_qc_152
+from .utils import QCDataset, resnet_qc_18 # , resnet_qc_152
 
 
 def quality_check(
@@ -43,7 +43,7 @@ def quality_check(
     logger.info("Downloading quality check model.")
     FILE1 = RemoteFileStructure(
         filename="resnet18.pth.tar",
-        url=url_r18_2022,
+        url=url_aramis,
         checksum="a97a781be3820b06424fe891ec405c78b87ad51a27b6b81614dbdb996ce60104",
     )
 
@@ -60,7 +60,7 @@ def quality_check(
     # Load QC model
     logger.debug("Loading quality check model.")
     model = resnet_qc_18()
-    model.load_state_dict(torch.load(url_r18_2022))
+    model.load_state_dict(torch.load(model_file))
     model.eval()
     if gpu:
         logger.debug("Working on GPU.")
