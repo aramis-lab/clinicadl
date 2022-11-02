@@ -15,8 +15,8 @@ from clinicadl.generate.generate_utils import load_and_check_tsv
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
-from .utils import QCDataset, resnet_qc_18 # , resnet_qc_152
-
+from .utils import QCDataset #, resnet_qc_18 # , resnet_qc_152
+from .utils_bis import resnet_qc_18
 
 def quality_check(
     caps_dir: str,
@@ -60,7 +60,7 @@ def quality_check(
     # Load QC model
     logger.debug("Loading quality check model.")
     model = resnet_qc_18()
-    model.load_state_dict(torch.load(model_file))
+    model.load_state_dict(torch.load(url_r18_2022))
     model.eval()
     if gpu:
         logger.debug("Working on GPU.")
