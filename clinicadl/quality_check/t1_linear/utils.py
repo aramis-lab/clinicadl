@@ -7,7 +7,7 @@ from os import path
 import nibabel as nib
 import torch
 import torch.nn as nn
-from clinica.utils.input_files import T1W_LINEAR_CROPPED
+from clinica.utils.input_files import T1W_LINEAR
 from clinica.utils.inputs import clinica_file_reader
 from torch.utils.data import Dataset
 
@@ -191,32 +191,35 @@ class QCDataset(Dataset):
         preprocessing_dict = {
             "preprocessing": "t1-linear",
             "mode": "image",
-            "use_uncropped_image": False,
-            "file_type": T1W_LINEAR_CROPPED,
+            "use_uncropped_image": True,
+            "file_type": T1W_LINEAR,
         }
-        self.tensor_dataset = CapsDatasetImage(
-            img_dir,
-            data_df,
-            preprocessing_dict,
-            label_presence=False,
-            all_transformations=MinMaxNormalization(),
-        )
+        
 
     def __len__(self):
         return len(self.df)
 
     def __getitem__(self, idx):
-        if self.use_extracted_tensors:
-            image = self.tensor_dataset[idx]
-            image = self.pt_transform(image)
-        else:
-            subject = self.df.loc[idx, "participant_id"]
-            session = self.df.loc[idx, "session_id"]
-            image_path = clinica_file_reader(
-                [subject], [session], self.img_dir, T1W_LINEAR_CROPPED
-            )[0]
-            image = nib.load(image_path[0])
-            image = self.nii_transform(image)
+
+        # self.tensor_dataset = CapsDatasetImage(
+        #     img_dir,
+        #     data_df,
+        #     preprocessing_dict,
+        #     label_presence=False,
+        #     all_transformations=MinMaxNormalization(),
+        # )
+
+        # if self.use_extracted_tensors:
+        #     image = self.tensor_dataset[idx]
+        #     image = self.pt_transform(image)
+        # else:
+        subject = self.df.loc[idx, "participant_id"]
+        session = self.df.loc[idx, "session_id"]
+        image_path = clinica_file_reader(
+            [subject], [session], self.img_dir, T1W_LINEAR
+        )[0]
+        image = nib.load(image_path[0])
+        image = self.nii_transform(image)
 
         sample = {"image": image, "participant_id": subject, "session_id": session}
 
