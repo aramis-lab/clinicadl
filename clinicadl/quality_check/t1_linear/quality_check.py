@@ -75,6 +75,7 @@ def quality_check(
         df = load_and_check_tsv(tsv_path, caps_dict, dirname(abspath(output_path)))
 
         dataset = QCDataset(caps_dir, df)
+        print(dataset)
         dataloader = DataLoader(
             dataset, num_workers=n_proc, batch_size=batch_size, pin_memory=True
         )
@@ -85,6 +86,7 @@ def quality_check(
         logger.info(f"Quality check will be performed over {len(dataloader)} images.")
 
         for data in dataloader:
+            #print(data)
             logger.debug(f"Processing subject {data['participant_id']}.")
             inputs = data["image"]
             if gpu:
