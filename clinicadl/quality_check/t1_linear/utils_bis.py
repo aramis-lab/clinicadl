@@ -454,7 +454,7 @@ def wide_resnet_qc_101_2(pretrained: bool = False, progress: bool = True, **kwar
 class QCDataset(Dataset):
     """Dataset of MRI organized in a CAPS folder."""
 
-    def __init__(self, img_dir, data_df, use_extracted_tensors=False):
+    def __init__(self, img_dir, data_df, use_extracted_tensors=True):
         """
         Args:
             img_dir (string): Directory of all the images.

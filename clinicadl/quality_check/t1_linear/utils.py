@@ -7,7 +7,7 @@ from os import path
 import nibabel as nib
 import torch
 import torch.nn as nn
-from clinica.utils.input_files import T1W_LINEAR_CROPPED
+from clinica.utils.input_files import T1W_LINEAR
 from clinica.utils.inputs import clinica_file_reader
 from torch.utils.data import Dataset
 
@@ -166,7 +166,7 @@ def resnet_qc_18(**kwargs):
 class QCDataset(Dataset):
     """Dataset of MRI organized in a CAPS folder."""
 
-    def __init__(self, img_dir, data_df, use_extracted_tensors=False):
+    def __init__(self, img_dir, data_df, use_extracted_tensors=True):
         """
         Args:
             img_dir (string): Directory of all the images.
@@ -191,8 +191,8 @@ class QCDataset(Dataset):
         preprocessing_dict = {
             "preprocessing": "t1-linear",
             "mode": "image",
-            "use_uncropped_image": False,
-            "file_type": T1W_LINEAR_CROPPED,
+            "use_uncropped_image": True,
+            "file_type": T1W_LINEAR,
         }
         self.tensor_dataset = CapsDatasetImage(
             img_dir,
@@ -206,14 +206,17 @@ class QCDataset(Dataset):
         return len(self.df)
 
     def __getitem__(self, idx):
+        subject = self.df.loc[idx, "participant_id"]
+        session = self.df.loc[idx, "session_id"]
+
         if self.use_extracted_tensors:
             image = self.tensor_dataset[idx]
             image = self.pt_transform(image)
+            #print(tensor_data)
         else:
-            subject = self.df.loc[idx, "participant_id"]
-            session = self.df.loc[idx, "session_id"]
+            
             image_path = clinica_file_reader(
-                [subject], [session], self.img_dir, T1W_LINEAR_CROPPED
+                [subject], [session], self.img_dir, T1W_LINEAR
             )[0]
             image = nib.load(image_path[0])
             image = self.nii_transform(image)
@@ -292,7 +295,8 @@ class QCDataset(Dataset):
     def pt_transform(self, image):
         from torch.nn.functional import interpolate, pad
 
-        image = self.normalization(image) - 0.5
+        #print(image)
+        image = self.normalization(image['image']) - 0.5
         image = image[0, :, :, :]
         sz = image.shape
         input_images = [

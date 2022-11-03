@@ -21,6 +21,17 @@ from clinicadl.utils import cli_param
 @cli_param.option.batch_size
 @cli_param.option.n_proc
 @cli_param.option.use_gpu
+@click.option(
+    "--network",
+    default= "darq",
+    type=click.Choice(["darq", "deep_qc", "sq101"]),
+)
+@click.option(
+    "--use_nifti_image",
+    type = bool,
+    default= False,
+    is_flag = True,
+)
 def cli(
     caps_directory,
     output_tsv,
@@ -29,6 +40,8 @@ def cli(
     batch_size,
     n_proc,
     gpu,
+    network,
+    use_nifti_image,
 ):
     """Performs quality check on t1-linear pipeline.
 
@@ -51,4 +64,6 @@ def cli(
         batch_size=batch_size,
         n_proc=n_proc,
         gpu=gpu,
+        network=network,
+        use_tensor = not use_nifti_image
     )

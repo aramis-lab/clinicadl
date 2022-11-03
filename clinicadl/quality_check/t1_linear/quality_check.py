@@ -17,7 +17,7 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 from .utils import QCDataset 
 from .utils import resnet_qc_18 as deep_r18
-#from .utils_bis import squeezenet # , resnet_qc_152
+from .sq101 import squeezenet_qc as darq_sq101
 from .utils_bis import resnet_qc_18 as darq_r18
 
 def quality_check(
@@ -29,6 +29,7 @@ def quality_check(
     n_proc: int = 0,
     gpu: bool = True,
     network: str = "darq",
+    use_tensor: bool = True, 
 ):
 
     logger = getLogger("clinicadl.quality_check")
@@ -56,7 +57,10 @@ def quality_check(
         model_file = "/Users/camille.brianceau/Desktop/QC/code/models/DARQ/model_r18/best_tnr.pth"
         model = darq_r18()
     
-    
+    if network == "sq101" :
+        model_file = "/Users/camille.brianceau/Desktop/QC/code/models/DARQ/model_sq101/DARQ_best_tnr_cpu.pth"
+        model = darq_sq101()
+
     url_r18_2018 ="/Users/camille.brianceau/Desktop/QC/code/models/Deep-QC/model_r18/best_tnr_cpu.pth"
     url_r152_2022 = "/Users/camille.brianceau/Desktop/QC/code/models/DARQ/model_r152/best_tnr.pth"
     logger.info("Downloading quality check model.")
@@ -84,7 +88,7 @@ def quality_check(
         logger.debug("Loading data to check.")
         df = load_and_check_tsv(tsv_path, caps_dict, dirname(abspath(output_path)))
 
-        dataset = QCDataset(caps_dir, df)
+        dataset = QCDataset(caps_dir, df, use_tensor)
         print(dataset)
         dataloader = DataLoader(
             dataset, num_workers=n_proc, batch_size=batch_size, pin_memory=True
