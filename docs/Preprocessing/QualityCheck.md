@@ -22,7 +22,7 @@ Their original code can be found on [GitHub](https://github.com/vfonov/deep-qc).
 
 
 ### Prerequisites
-You need to execute the `clinica run t1-linear` and `clinicadl extract` pipelines 
+You need to execute the `clinica run t1-linear` and `clinicadl prepare-data` pipelines 
 prior to running this task.
 
 ### Running the task
@@ -46,6 +46,7 @@ Default value: `0.5`.
 - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `1`.
 - `--n_proc` (int) is the number of workers used by the DataLoader. Default value: `2`.
 - `--gpu/--no-gpu` (bool) Use GPU for computing optimization. Default behaviour is to try to use a GPU and to raise an error if it is not found.
+- `use_nifti_image`(bool) is a flag allowing the pipeline to run on the nifti images and not on the extracted tensor. 
 
 ### Outputs
 
@@ -107,3 +108,4 @@ This pipeline outputs 4 files:
     This quality check is really conservative and may keep some images that are not of good quality.
     You may want to check the last images kept at each step to assess if their quality is good enough 
     for your application.
+ 

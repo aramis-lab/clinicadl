@@ -166,7 +166,7 @@ def resnet_qc_18(**kwargs):
 class QCDataset(Dataset):
     """Dataset of MRI organized in a CAPS folder."""
 
-    def __init__(self, img_dir, data_df, use_extracted_tensors=True):
+    def __init__(self, img_dir, data_df, use_extracted_tensors=False):
         """
         Args:
             img_dir (string): Directory of all the images.
@@ -209,6 +209,7 @@ class QCDataset(Dataset):
         subject = self.df.loc[idx, "participant_id"]
         session = self.df.loc[idx, "session_id"]
 
+        print(self.use_extracted_tensors)
         if self.use_extracted_tensors:
             image = self.tensor_dataset[idx]
             image = self.pt_transform(image)
@@ -232,6 +233,11 @@ class QCDataset(Dataset):
         from skimage import transform
 
         sample = np.array(image.get_data())
+        print(sample)
+        print("image")
+        print(image)
+        print("image get data")
+        print(image.get_data())
 
         # normalize input
         _min = np.min(sample)
@@ -294,47 +300,113 @@ class QCDataset(Dataset):
 
     def pt_transform(self, image):
         from torch.nn.functional import interpolate, pad
+        import numpy as np
+        import torch
+        from skimage import transform
+        
+        sample = np.array(image['image']) 
 
-        #print(image)
-        image = self.normalization(image['image']) - 0.5
-        image = image[0, :, :, :]
-        sz = image.shape
+        # normalize input
+        _min = np.min(sample)
+        _max = np.max(sample)
+        sample = (sample - _min) * (1.0 / (_max - _min)) - 0.5
+        sz = sample.shape
         input_images = [
-            image[:, :, int(sz[2] / 2)],
-            image[int(sz[0] / 2), :, :],
-            image[:, int(sz[1] / 2), :],
+            sample[:, :, int(sz[2] / 2)],
+            sample[int(sz[0] / 2), :, :],
+            sample[:, int(sz[1] / 2), :],
         ]
 
-        output_images = list()
+        # #print(image)
+        # image = self.normalization(image['image']) - 0.5
+        # image = image[0, :, :, :]
+        # sz = image.shape
+        # input_images = [
+        #     image[:, :, int(sz[2] / 2)],
+        #     image[int(sz[0] / 2), :, :],
+        #     image[:, int(sz[1] / 2), :],
+        # ]
+
+        output_images = [
+            np.zeros(
+                (224, 224),
+            ),
+            np.zeros((224, 224)),
+            np.zeros((224, 224)),
+        ]
 
         # flip, resize and crop
-        for slice in input_images:
+        for i in range(3):
+            # try the dimension of input_image[i]
+            # rotate the slice with 90 degree, I don't know why, but read from
+            # nifti file, the img has been rotated, thus we do not have the same
+            # direction with the pretrained model
 
-            scale = min(256.0 / slice.shape[0], 256.0 / slice.shape[1])
+            if len(input_images[i].shape) == 3:
+                print(input_images[i])
+                print(input)
+                slice = np.reshape(
+                    input_images[i],
+                    (input_images[i].shape[0], input_images[i].shape[1]),
+                )
+            else:
+                slice = input_images[i]
+
+            _scale = min(256.0 / slice.shape[0], 256.0 / slice.shape[1])
             # slice[::-1, :] is to flip the first axis of image
-            slice = interpolate(
-                torch.flip(slice, (0,)).unsqueeze(0).unsqueeze(0), scale_factor=scale
+            slice = transform.rescale(
+                slice[::-1, :], _scale, mode="constant", clip=False
             )
-            slice = slice[0, 0, :, :]
 
-            padding = self.get_padding(slice)
-            slice = pad(slice, padding)
+            sz = slice.shape
+            # pad image
+            dummy = np.zeros(
+                (256, 256),
+            )
+            dummy[
+                int((256 - sz[0]) / 2) : int((256 - sz[0]) / 2) + sz[0],
+                int((256 - sz[1]) / 2) : int((256 - sz[1]) / 2) + sz[1],
+            ] = slice
 
             # rotate and flip the image back to the right direction for each view, if the MRI was read by nibabel
             # it seems that this will rotate the image 90 degree with
             # counter-clockwise direction and then flip it horizontally
-            output_images.append(
-                torch.flip(
-                    torch.rot90(slice[16:240, 16:240], 1, [0, 1]),
-                    [
-                        1,
-                    ],
-                ).clone()
-            )
+            output_images[i] = np.flip(np.rot90(dummy[16:240, 16:240]), axis=1).copy()
 
         return torch.cat(
-            [image.float().unsqueeze_(0) for image in output_images]
+            [torch.from_numpy(i).float().unsqueeze_(0) for i in output_images]
         ).unsqueeze_(0)
+
+
+
+        # # flip, resize and crop
+        # for slice in input_images:
+
+        #     scale = min(256.0 / slice.shape[0], 256.0 / slice.shape[1])
+        #     # slice[::-1, :] is to flip the first axis of image
+        #     slice = interpolate(
+        #         torch.flip(slice, (0,)).unsqueeze(0).unsqueeze(0), scale_factor=scale
+        #     )
+        #     slice = slice[0, 0, :, :]
+
+        #     padding = self.get_padding(slice)
+        #     slice = pad(slice, padding)
+
+        #     # rotate and flip the image back to the right direction for each view, if the MRI was read by nibabel
+        #     # it seems that this will rotate the image 90 degree with
+        #     # counter-clockwise direction and then flip it horizontally
+        #     output_images.append(
+        #         torch.flip(
+        #             torch.rot90(slice[16:240, 16:240], 1, [0, 1]),
+        #             [
+        #                 1,
+        #             ],
+        #         ).clone()
+        #     )
+
+        # return torch.cat(
+        #     [image.float().unsqueeze_(0) for image in output_images]
+        # ).unsqueeze_(0)
 
     @staticmethod
     def get_padding(image):

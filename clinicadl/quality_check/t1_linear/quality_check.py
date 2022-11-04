@@ -54,11 +54,11 @@ def quality_check(
     
     
     if network == "darq" :
-        model_file = "/Users/camille.brianceau/Desktop/QC/code/models/DARQ/model_r18/best_tnr.pth"
+        model_file = "/network/lustre/iss02/aramis/users/camille.brianceau/QC/models2/python_DARQ/cls/model_r18/best_tnr.pth"
         model = darq_r18()
     
     if network == "sq101" :
-        model_file = "/Users/camille.brianceau/Desktop/QC/code/models/DARQ/model_sq101/DARQ_best_tnr_cpu.pth"
+        model_file = "/network/lustre/iss02/aramis/users/camille.brianceau/QC/models2/Deep_QC/model_sq101/best_tnr_cpu.pth"
         model = darq_sq101()
 
     url_r18_2018 ="/Users/camille.brianceau/Desktop/QC/code/models/Deep-QC/model_r18/best_tnr_cpu.pth"
