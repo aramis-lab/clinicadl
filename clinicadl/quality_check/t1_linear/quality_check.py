@@ -54,7 +54,7 @@ def quality_check(
     
     
     if network == "darq" :
-        model_file = "/network/lustre/iss02/aramis/users/camille.brianceau/QC/models2/python_DARQ/cls/model_r18/best_tnr.pth"
+        model_file = "/Users/camille.brianceau/Desktop/QC/code/models/python_DARQ/cls/model_r18/best_tnr.pth"
         model = darq_r18()
     
     if network == "sq101" :

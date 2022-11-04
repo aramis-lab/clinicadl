@@ -166,7 +166,7 @@ def resnet_qc_18(**kwargs):
 class QCDataset(Dataset):
     """Dataset of MRI organized in a CAPS folder."""
 
-    def __init__(self, img_dir, data_df, use_extracted_tensors=False):
+    def __init__(self, img_dir, data_df, use_extracted_tensors=True):
         """
         Args:
             img_dir (string): Directory of all the images.
@@ -174,7 +174,7 @@ class QCDataset(Dataset):
 
         """
         from clinicadl.utils.caps_dataset.data import MinMaxNormalization
-
+        use_extracted_tensors=True
         self.img_dir = img_dir
         self.df = data_df
         self.use_extracted_tensors = use_extracted_tensors
@@ -209,11 +209,9 @@ class QCDataset(Dataset):
         subject = self.df.loc[idx, "participant_id"]
         session = self.df.loc[idx, "session_id"]
 
-        print(self.use_extracted_tensors)
         if self.use_extracted_tensors:
             image = self.tensor_dataset[idx]
-            image = self.pt_transform(image)
-            #print(tensor_data)
+            image = self.pt_transform(image['image'])
         else:
             
             image_path = clinica_file_reader(
@@ -233,11 +231,6 @@ class QCDataset(Dataset):
         from skimage import transform
 
         sample = np.array(image.get_data())
-        print(sample)
-        print("image")
-        print(image)
-        print("image get data")
-        print(image.get_data())
 
         # normalize input
         _min = np.min(sample)
@@ -304,28 +297,27 @@ class QCDataset(Dataset):
         import torch
         from skimage import transform
         
-        sample = np.array(image['image']) 
+        sample = np.array(image)
 
         # normalize input
-        _min = np.min(sample)
-        _max = np.max(sample)
-        sample = (sample - _min) * (1.0 / (_max - _min)) - 0.5
-        sz = sample.shape
-        input_images = [
-            sample[:, :, int(sz[2] / 2)],
-            sample[int(sz[0] / 2), :, :],
-            sample[:, int(sz[1] / 2), :],
-        ]
-
-        # #print(image)
-        # image = self.normalization(image['image']) - 0.5
-        # image = image[0, :, :, :]
-        # sz = image.shape
+        # _min = np.min(sample)
+        # _max = np.max(sample)
+        # sample = (sample - _min) * (1.0 / (_max - _min)) - 0.5
+        # sz = sample.shape
         # input_images = [
-        #     image[:, :, int(sz[2] / 2)],
-        #     image[int(sz[0] / 2), :, :],
-        #     image[:, int(sz[1] / 2), :],
+        #     sample[:, :, int(sz[2] / 2)],
+        #     sample[int(sz[0] / 2), :, :],
+        #     sample[:, int(sz[1] / 2), :],
         # ]
+
+        image = self.normalization(image) - 0.5
+        image = image[0, :, :, :]
+        sz = image.shape
+        input_images = [
+            image[:, :, int(sz[2] / 2)],
+            image[int(sz[0] / 2), :, :],
+            image[:, int(sz[1] / 2), :],
+        ]
 
         output_images = [
             np.zeros(
@@ -343,8 +335,7 @@ class QCDataset(Dataset):
             # direction with the pretrained model
 
             if len(input_images[i].shape) == 3:
-                print(input_images[i])
-                print(input)
+
                 slice = np.reshape(
                     input_images[i],
                     (input_images[i].shape[0], input_images[i].shape[1]),
@@ -354,9 +345,10 @@ class QCDataset(Dataset):
 
             _scale = min(256.0 / slice.shape[0], 256.0 / slice.shape[1])
             # slice[::-1, :] is to flip the first axis of image
-            slice = transform.rescale(
-                slice[::-1, :], _scale, mode="constant", clip=False
+            slice = interpolate(
+                torch.flip(slice, (0,)).unsqueeze(0).unsqueeze(0), scale_factor=_scale
             )
+            slice = slice[0, 0, :, :]
 
             sz = slice.shape
             # pad image
