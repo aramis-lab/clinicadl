@@ -7,6 +7,7 @@ from .get_progression.get_progression_cli import cli as get_progression_cli
 from .kfold.kfold_cli import cli as kfold_cli
 from .prepare_experiment.prepare_experiment_cli import cli as prepare_experiment_cli
 from .split.split_cli import cli as split_cli
+from .adapt.adapt_cli import cli as adapt_cli
 
 
 class RegistrationOrderGroup(click.Group):
@@ -31,6 +32,7 @@ cli.add_command(kfold_cli)
 cli.add_command(prepare_experiment_cli)
 cli.add_command(get_metadata_cli)
 cli.add_command(get_progression_cli)
+cli.add_command(adapt_cli)
 
 if __name__ == "__main__":
     cli()

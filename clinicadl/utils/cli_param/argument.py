@@ -12,7 +12,8 @@ merged_tsv = click.argument("merged_tsv", type=click.Path(exists=True))
 
 # TSV TOOLS
 data_tsv = click.argument("data_tsv", type=click.Path(exists=True))
-
+input_dir = click.argument("input_dir", type=click.Path(exists=True))
+output_dir = click.argument("output_dir", type=click.Path())
 dataset = click.argument("dataset", type=click.Choice(["AIBL", "OASIS"]))
 results_tsv = click.argument("results_tsv", type=click.Path())
 
