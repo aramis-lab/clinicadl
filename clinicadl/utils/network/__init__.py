@@ -10,3 +10,4 @@ from .vae.vanilla_vae import (
     VanillaDenseVAE,
     VanillaSpatialVAE,
 )
+from .vae.pythae_models import pythae_VAE
