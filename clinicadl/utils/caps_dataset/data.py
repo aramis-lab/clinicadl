@@ -31,6 +31,8 @@ from clinicadl.utils.exceptions import (
     ClinicaDLTSVError,
 )
 
+from pythae.data.datasets import DatasetOutput
+
 logger = getLogger("clinicadl")
 
 
@@ -82,7 +84,10 @@ class CapsDataset(Dataset):
             )
 
         self.elem_per_image = self.num_elem_per_image()
-        self.size = self[0]["image"].size()
+        if "image" in self[0].keys():
+            self.size = self[0]["image"].size()
+        else:
+            self.size = self[0].data.size()
 
     @property
     @abc.abstractmethod
@@ -345,6 +350,34 @@ class CapsDatasetImage(CapsDataset):
 
     def num_elem_per_image(self):
         return 1
+
+
+class PythaeCAPS(CapsDatasetImage):
+
+    def __init__(
+        self,
+        caps_directory,
+        data_file,
+        preprocessing_dict,
+        train_transformations,
+        all_transformations,
+        multi_cohort,
+        label,
+    ):
+        super().__init__(
+            caps_directory,
+            data_file,
+            preprocessing_dict,
+            train_transformations=train_transformations,
+            label_presence=False,
+            label=label,
+            all_transformations=all_transformations,
+            multi_cohort=multi_cohort,
+        )
+    
+    def __getitem__(self, index):
+        X = super().__getitem__(index)
+        return DatasetOutput(data=X['image'])
 
 
 class CapsDatasetPatch(CapsDataset):
