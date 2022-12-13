@@ -89,6 +89,7 @@ class MapsManager:
             makedirs(path.join(self.maps_path, "groups"))
             logger.info(f"A new MAPS was created at {maps_path}")
             self._check_args(parameters)
+            print(self.parameters)
             self.write_parameters(self.maps_path, self.parameters)
             self._write_requirements_version()
             self.split_name = "split"  # Used only for retro-compatibility
@@ -536,12 +537,14 @@ class MapsManager:
         """
         from torch.utils.data import DataLoader
 
+        print("enter _train_single function")
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
         )
-
+        print("finish get_transforms")
         split_manager = self._init_split_manager(split_list)
+        print("finish init split manager")
         for split in split_manager.split_iterator():
             logger.info(f"Training split {split}")
             seed_everything(self.seed, self.deterministic, self.compensation)
