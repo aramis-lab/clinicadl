@@ -10,6 +10,7 @@ from clinicadl.utils import cli_param
 @cli_param.argument.output_dir
 @click.option(
     "--labels_list",
+    "-lb",
     type = str,
     multiple = True,
     help="Labels used to create the tsv directory in the old way",
