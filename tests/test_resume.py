@@ -1,35 +1,53 @@
 # coding: utf8
+import json
 import os
-import pathlib
 import shutil
 from os import system
+from os.path import join
+from pathlib import Path
 
 import pytest
 
 from clinicadl import MapsManager
+from tests.testing_tools import compare_folders
 
 
 @pytest.fixture(
     params=[
-        "data/stopped_jobs/stopped_1",
-        "data/stopped_jobs/stopped_2",
-        "data/stopped_jobs/stopped_3",
-        "data/stopped_jobs/stopped_4",
+        "stopped_1",
+        "stopped_2",
+        "stopped_3",
     ]
 )
-def input_directory(request):
+def test_name(request):
     return request.param
 
 
-def test_resume(input_directory):
-    flag_error = not system(f"clinicadl -vv train resume {input_directory}")
+def test_resume(cmdopt, tmp_path, test_name):
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "resume" / "in"
+    ref_dir = base_dir / "resume" / "ref"
+    tmp_out_dir = tmp_path / "resume" / "out"
+    tmp_out_dir.mkdir(parents=True)
+
+    shutil.copytree(input_dir / test_name, tmp_out_dir / test_name)
+    maps_stopped = str(tmp_out_dir / test_name)
+
+    flag_error = not system(f"clinicadl -vv train resume {maps_stopped}")
     assert flag_error
 
-    maps_manager = MapsManager(input_directory)
+    maps_manager = MapsManager(maps_stopped)
     split_manager = maps_manager._init_split_manager()
     for split in split_manager.split_iterator():
-        performances_flag = pathlib.Path(
-            input_directory, f"split-{split}", "best-loss", "train"
+        performances_flag = Path(
+            join(maps_stopped, f"split-{split}", "best-loss", "train")
         ).exists()
         assert performances_flag
-    shutil.rmtree(input_directory)
+
+        with open(os.path.join(str(maps_stopped), "maps.json"), "r") as out:
+            json_data_out = json.load(out)
+        with open(
+            os.path.join(str(ref_dir / ("maps_image_cnn")), "maps.json"), "r"
+        ) as ref:
+            json_data_ref = json.load(ref)
+        assert json_data_ref == json_data_out

@@ -63,21 +63,20 @@ class RegressionManager(TaskManager):
 
         count = np.zeros(n_bins)
         values = df[dataset.label].values.astype(float)
-
         thresholds = [
             min(values) + i * (max(values) - min(values)) / n_bins
             for i in range(n_bins)
         ]
         for idx in df.index:
             label = df.loc[idx, dataset.label]
-            key = max(np.where((label >= thresholds))[0])
+            key = max(np.where((label >= np.array(thresholds))[0]))
             count[key] += 1
 
         weight_per_class = 1 / np.array(count)
         weights = []
 
         for idx, label in enumerate(df[dataset.label].values):
-            key = max(np.where((label >= thresholds))[0])
+            key = max(np.where((label >= np.array(thresholds)))[0])
             weights += [weight_per_class[key]] * dataset.elem_per_image
 
         if sampler_option == "random":
