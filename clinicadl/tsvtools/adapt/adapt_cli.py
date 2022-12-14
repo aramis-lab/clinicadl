@@ -15,13 +15,7 @@ from clinicadl.utils import cli_param
     multiple = True,
     help="Labels used to create the tsv directory in the old way",
 )
-# @click.option(
-#     "--split_type",
-#     "-vt",
-#     help="Type of split wanted for the validation: split or kfold",
-#     default="kfold",
-#     type=click.Choice(["split", "kfold"]),
-# )
+
 def cli(
     input_dir,
     output_dir, 
@@ -29,7 +23,14 @@ def cli(
 ):
 
     from .adapt import adapt
+    import os
+    from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
+    if os.path.exists(output_dir):
+        raise ClinicaDLArgumentError( 
+            f"\nThe directory: {output_dir} already exists.\n"
+            "Please give another path for the new tsv directory."
+        )
 
     adapt(
         old_tsv_dir = input_dir,

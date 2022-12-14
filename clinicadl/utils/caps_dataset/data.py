@@ -1042,9 +1042,9 @@ def load_data_test_single(test_path, diagnoses_list, baseline=True):
     test_df = pd.DataFrame()
 
     if baseline:
-        test_path = path.join(test_path, "test_baseline.tsv")
+        test_path = path.join(test_path, "labels_baseline.tsv")
     else:
-        test_path = path.join(test_path, "test.tsv")
+        test_path = path.join(test_path, "labels.tsv")
 
     test_df = pd.read_csv(test_path, sep="\t")
 
