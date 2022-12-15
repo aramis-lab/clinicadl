@@ -320,7 +320,7 @@ def get_labels(
     if not os.path.exists(missing_mods_directory):
         check_bids_folder(bids_directory)
         compute_missing_mods(bids_directory, missing_mods_directory, "missing_mods")
-
+    print("test")
     logger.info(
         f"output of clinica iotools check-missing-modalities: {missing_mods_directory}"
     )
