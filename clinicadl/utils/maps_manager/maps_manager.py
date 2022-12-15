@@ -88,13 +88,19 @@ class MapsManager:
                 )
             makedirs(path.join(self.maps_path, "groups"))
             logger.info(f"A new MAPS was created at {maps_path}")
+            print("check args")
             self._check_args(parameters)
-            print(self.parameters)
+            print("write parameters")
             self.write_parameters(self.maps_path, self.parameters)
+            print("write requirements version")
             self._write_requirements_version()
+
             self.split_name = "split"  # Used only for retro-compatibility
+            print("write training data")
             self._write_training_data()
+            print("write train val groups")
             self._write_train_val_groups()
+            print("write information")
             self._write_information()
 
     def __getattr__(self, name):
@@ -1416,7 +1422,7 @@ class MapsManager:
             baseline=False,
             multi_cohort=self.multi_cohort,
         )
-        print(train_df)
+        #print(train_df)
         train_df = train_df[["participant_id", "session_id"]]
         if self.transfer_path:
             transfer_train_path = path.join(
