@@ -11,11 +11,44 @@ import pandas as pd
 from clinica.utils.inputs import RemoteFileStructure, fetch_file
 
 
+def distance(mni_mask_np, img_np):
+
+    shape3D = img_np.shape
+
+    if not (img_np.shape == mni_mask_np.shape):
+        print("numpy array hasn't the same size and cannot be compare")
+
+    sum_in_contour = 0
+    sum_out_contour = 0
+    nb_contour = 1605780
+    distance_ = 0
+
+    for i in range(shape3D[0]):
+        for j in range(shape3D[1]):
+            for k in range(shape3D[2]):
+
+                tmp = img_np[i][j][k]
+                tmp_mni = int(mni_mask_np[i][j][k])
+
+                if tmp_mni == 0:
+                    sum_out_contour += tmp
+
+                elif tmp_mni == 1:
+                    if 0.2 < tmp < 0.8:
+                        sum_in_contour += tmp
+
+                diff_ = abs(tmp_mni - tmp)
+
+                distance_ += diff_
+
+    return distance_, sum_in_contour / nb_contour
+
+
 def extract_metrics(caps_dir, output_dir, acq_label, ref_region, threshold):
     if not path.exists(output_dir):
         os.makedirs(output_dir)
 
-    # NEED TO ADD THE PATH TO THE MNI MASK OR TO THE MNI IMAGE 
+    # NEED TO ADD THE PATH TO THE MNI MASK OR TO THE MNI IMAGE
     # Load eyes segmentation
     home = str(Path.home())
     cache_clinicadl = path.join(home, ".cache", "clinicadl", "segmentation")
@@ -39,19 +72,6 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region, threshold):
 
     mni_mask_nii = nib.load(segmentation_file)
     mni_mask_np = mni_mask_nii.get_fdata()
-
-    # # Get the GM template
-    # template_path = path.join(
-    #     caps_dir,
-    #     "groups",
-    #     f"group-{group_label}",
-    #     "t1",
-    #     f"group-{group_label}_template.nii.gz",
-    # )
-    # template_nii = nib.load(template_path)
-    # template_np = template_nii.get_fdata()
-    # template_np = np.sum(template_np, axis=3)
-    # template_segmentation_np = template_np * segmentation_np
 
     # Get the data
     filename = path.join(output_dir, "QC_metrics.tsv")
@@ -82,8 +102,7 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region, threshold):
                 + acq_label
                 + "_rec-uniform_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-"
                 + ref_region
-                + "_pet.nii.gz"
-
+                + "_pet.nii.gz",
             )
 
             if path.exists(image_path):
@@ -92,7 +111,6 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region, threshold):
                 image_np = image_nii.get_fdata()
 
                 distance_, brain_mean_ = distance(mni_mask_np, image_np)
-            
 
                 row = [
                     [
@@ -108,27 +126,3 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region, threshold):
 
     results_df.sort_values("max_intensity", inplace=True, ascending=True)
     results_df.to_csv(filename, sep="\t", index=False)
-
-
-# def nmi(occlusion1, occlusion2):
-#     """Mutual information for joint histogram"""
-#     # Convert bins counts to probability values
-#     hist_inter, _, _ = np.histogram2d(occlusion1.ravel(), occlusion2.ravel())
-#     hist1, _, _ = np.histogram2d(occlusion1.ravel(), occlusion1.ravel())
-#     hist2, _, _ = np.histogram2d(occlusion2.ravel(), occlusion2.ravel())
-
-#     return (
-#         2
-#         * _mutual_information(hist_inter)
-#         / (_mutual_information(hist1) + _mutual_information(hist2))
-#     )
-
-
-# def _mutual_information(hgram):
-#     pxy = hgram / float(np.sum(hgram))
-#     px = np.sum(pxy, axis=1)  # marginal for x over y
-#     py = np.sum(pxy, axis=0)  # marginal for y over x
-#     px_py = px[:, None] * py[None, :]  # Broadcast to multiply marginals
-#     # Now we can do the calculation using the pxy, px_py 2D arrays
-#     nzs = pxy > 0  # Only non-zero pxy values contribute to the sum
-#     return np.sum(pxy[nzs] * np.log(pxy[nzs] / px_py[nzs]))
