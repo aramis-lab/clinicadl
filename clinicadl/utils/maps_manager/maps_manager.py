@@ -1422,7 +1422,7 @@ class MapsManager:
             baseline=False,
             multi_cohort=self.multi_cohort,
         )
-        #print(train_df)
+        # print(train_df)
         train_df = train_df[["participant_id", "session_id"]]
         if self.transfer_path:
             transfer_train_path = path.join(

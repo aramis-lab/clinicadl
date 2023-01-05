@@ -11,32 +11,25 @@ from clinicadl.utils import cli_param
 @click.option(
     "--labels_list",
     "-lb",
-    type = str,
-    multiple = True,
+    type=str,
+    multiple=True,
     help="Labels used to create the tsv directory in the old way",
 )
+def cli(input_dir, output_dir, labels_list=None):
 
-def cli(
-    input_dir,
-    output_dir, 
-    labels_list = None
-):
-
-    from .adapt import adapt
     import os
+
     from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
+    from .adapt import adapt
+
     if os.path.exists(output_dir):
-        raise ClinicaDLArgumentError( 
+        raise ClinicaDLArgumentError(
             f"\nThe directory: {output_dir} already exists.\n"
             "Please give another path for the new tsv directory."
         )
 
-    adapt(
-        old_tsv_dir = input_dir,
-        new_tsv_dir = output_dir,
-        labels_list = labels_list
-    )
+    adapt(old_tsv_dir=input_dir, new_tsv_dir=output_dir, labels_list=labels_list)
 
 
 if __name__ == "__main__":

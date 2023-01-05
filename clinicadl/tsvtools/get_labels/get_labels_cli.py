@@ -43,6 +43,10 @@ from clinicadl.utils import cli_param
     default=False,
     is_flag=True,
 )
+@click.option(
+    "--multi-diagnoses",
+    help="This flag allows to have several columns diagnosis and if so, the diagnoses option become the list of diagnoses names ",
+)
 def cli(
     bids_directory,
     diagnoses,
@@ -54,6 +58,7 @@ def cli(
     missing_mods,
     merged_tsv,
     remove_unique_session,
+    multi_diagnoses,
 ):
     """Get labels in a tsv file.
 
@@ -83,6 +88,7 @@ def cli(
         merged_tsv=merged_tsv,
         caps_directory=caps_directory,
         remove_unique_session=remove_unique_session,
+        multi_diagnoses=multi_diagnoses,
     )
 
 
