@@ -562,14 +562,16 @@ class CapsDatasetRoi(CapsDataset):
         import nibabel as nib
 
         caps_dict = self.create_caps_dict(caps_directory, multi_cohort)
+        print(f"caps_dict : {caps_dict}")
 
         if len(caps_dict) > 1:
             caps_directory = caps_dict[next(iter(caps_dict))]
+            print("len(caps_dict >1)")
             logger.warning(
                 f"The equality of masks is not assessed for multi-cohort training. "
                 f"The masks stored in {caps_directory} will be used."
             )
-
+        print(f"caps_directory : {caps_directory}")
         # Find template name
         if preprocessing_dict["preprocessing"] == "custom":
             template_name = preprocessing_dict["roi_custom_template"]
@@ -606,6 +608,8 @@ class CapsDatasetRoi(CapsDataset):
         for roi in self.roi_list:
             logger.info(f"Find mask for roi {roi}.")
             mask_path, desc = find_mask_path(mask_location, roi, pattern, True)
+            print(f"mask_path : {mask_path}")
+            print(f"mask_location : {mask_location}")
             if mask_path is None:
                 raise FileNotFoundError(desc)
             mask_nii = nib.load(mask_path)
