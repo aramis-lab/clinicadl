@@ -5,44 +5,117 @@ import os
 from os import path
 from pathlib import Path
 
+import cv2
 import nibabel as nib
 import numpy as np
 import pandas as pd
 import torch
 from clinica.utils.inputs import RemoteFileStructure, fetch_file
+from scipy.ndimage import binary_fill_holes
+from skimage.filters import threshold_otsu
 
 
-def distance(mni_mask_np, img_np):
+def thresholdOtsuDisplay(image):
+    thresh = threshold_otsu(image[np.isfinite(image)])
+    binary = image > thresh
+    return binary
 
-    shape3D = img_np.shape
 
-    if not (img_np.shape == mni_mask_np.shape):
+def normalize_homemade(image_np):
+    max_base = image_np.max()
+    min_base = image_np.min()
+    for i in range(len(image_np)):
+        for j in range(len(image_np[i])):
+            for k in range(len(image_np[i][j])):
+
+                image_np[i][j][k] = (image_np[i][j][k] - min_base) / (
+                    max_base - min_base
+                )
+    return image_np
+
+
+def extract_mask(img_path):
+    image_nii = nib.load(img_path)
+    image_np = image_nii.get_fdata()
+
+    image_np = normalize_homemade(image_np)
+
+    kernel = np.ones((3, 3), np.uint8)
+    mask = thresholdOtsuDisplay(image_np)
+
+    mask = cv2.dilate(mask.astype("uint8"), kernel, iterations=4)
+
+    mask = cv2.erode(mask.astype("uint8"), kernel, iterations=5)
+
+    mask = binary_fill_holes(mask)
+
+    return mask
+
+
+def distance(mask_contour, mask_brain, mask_np):
+
+    shape3D = mask_np.shape
+
+    if not (shape3D == mask_brain.shape):
         print("numpy array hasn't the same size and cannot be compare")
 
-    sum_in_contour = 0
-    sum_out_contour = 0
-    nb_contour = 1605780
-    distance_ = 0
+    tn_contour_av = 0
+    tp_contour_av = 0
+    fp_contour_av = 0
+    fn_contour_av = 0
 
-    for i in range(shape3D[0]):
-        for j in range(shape3D[1]):
-            for k in range(shape3D[2]):
+    tn_brain_arr = 0
+    tp_brain_arr = 0
+    fp_brain_arr = 0
+    fn_brain_arr = 0
 
-                tmp = img_np[i][j][k]
-                tmp_mni = int(mni_mask_np[i][j][k])
+    tfp_brain_arr = 0
+    mttp_contour_av = 0
+    nb_contour_av = 373921
+    nb_brain_arr = 616879
 
-                if tmp_mni == 0:
-                    sum_out_contour += tmp
+    xx = int(shape3D[0] / 2)
+    yy = shape3D[1]
+    yy_limit = 103
+    zz = shape3D[2]
 
-                elif tmp_mni == 1:
-                    if 0.2 < tmp < 0.8:
-                        sum_in_contour += tmp
+    for i in range(xx):
+        for j in range(yy):
+            for k in range(zz):
 
-                diff_ = abs(tmp_mni - tmp)
+                tmp = mask_np[i][j][k]
+                tmp_brain = int(mask_brain[i][j][k])
+                tmp_contour = int(mask_contour[i][j][k])
 
-                distance_ += diff_
+                if j <= yy_limit:
+                    if tmp_brain == 0:
+                        if tmp == 0:
+                            tn_brain_arr += 1
+                        if tmp == 1:
+                            fn_brain_arr += 1
 
-    return distance_, sum_in_contour / nb_contour
+                    elif tmp_brain == 1:
+                        if tmp == 0:
+                            tp_brain_arr += 1
+                        elif tmp == 1:
+                            fp_brain_arr += 1
+
+                elif j > yy_limit:
+                    if tmp_contour == 0:
+                        if tmp == 0:
+                            tn_contour_av += 1
+                        elif tmp == 1:
+                            fn_contour_av += 1
+
+                    elif tmp_contour == 1:
+                        if tmp == 0:
+                            fp_contour_av += 1
+                        elif tmp == 1:
+                            tp_contour_av += 1
+
+    tfp_brain_arr = tp_brain_arr / (fp_brain_arr + tp_brain_arr)
+    mttp_contour_av = 1 - (fp_contour_av / (fp_contour_av + tp_contour_av))
+    return tfp_brain_arr, mttp_contour_av
 
 
 def extract_metrics(caps_dir, output_dir, acq_label, ref_region, threshold):
@@ -53,6 +126,9 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region, threshold):
     # Load eyes segmentation
     home = str(Path.home())
     cache_clinicadl = path.join(home, ".cache", "clinicadl", "mask")
+    if not (path.exists(cache_clinicadl)):
+        os.makedirs(cache_clinicadl)
+
     url_aramis = "https://aramislab.paris.inria.fr/files/data/template/"
     FILE1 = RemoteFileStructure(
         filename="mask_contour.nii.gz",
@@ -60,25 +136,32 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region, threshold):
         checksum="56f699c06cafc62ad8bb5b41b188c7c412d684d810a11d6f4cbb441c0ce944ee",
     )
 
-    FILE2 = RemoteFileStructure(
-        filename="mask_brain.nii.gz",
-        url=url_aramis,
-        checksum="56f699c06cafc62ad8bb5b41b188c7c412d684d810a11d6f4cbb441c0ce944ee",
-    )
-
-    if not (path.exists(cache_clinicadl)):
-        os.makedirs(cache_clinicadl)
-
     mask_contour_file = path.join(cache_clinicadl, FILE1.filename)
-
     if not (path.exists(mask_contour_file)):
         try:
             mask_contour_file = fetch_file(FILE1, cache_clinicadl)
         except IOError as err:
             raise IOError("Unable to download required mni file for QC:", err)
 
-    mni_mask_nii = nib.load(mask_contour_file)
-    mni_mask_np = mni_mask_nii.get_fdata()
+    mask_contour_nii = nib.load(mask_contour_file)
+    mask_contour = mask_contour_nii.get_fdata()
+
+    FILE2 = RemoteFileStructure(
+        filename="mask_brain.nii.gz",
+        url=url_aramis,
+        checksum="56f699c06cafc62ad8bb5b41b188c7c412d684d810a11d6f4cbb441c0ce944ee",
+    )
+
+    mask_brain_file = path.join(cache_clinicadl, FILE1.filename)
+
+    if not (path.exists(mask_brain_file)):
+        try:
+            mask_brain_file = fetch_file(FILE1, cache_clinicadl)
+        except IOError as err:
+            raise IOError("Unable to download required mni file for QC:", err)
+
+    mask_brain_nii = nib.load(mask_brain_file)
+    mask_brain = mask_brain_nii.get_fdata()
 
     # Get the data
     filename = path.join(output_dir, "QC_metrics.tsv")
@@ -136,15 +219,17 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region, threshold):
             else:
                 raise FileNotFoundError(f"Clinical data not found ({image_path})")
 
-            ttp_av, tfp_arr = distance(mni_mask_np, image_np)
+            tfp_brain_arr, mttp_contour_av = distance(
+                mask_contour, mask_brain, extract_mask(image_np)
+            )
 
             row = [
                 [
                     subject,
                     session,
                     np.max(image_np),
-                    ttp_av,
-                    tfp_arr,
+                    mttp_contour_av,
+                    tfp_brain_arr,
                 ]
             ]
             row_df = pd.DataFrame(row, columns=columns)
