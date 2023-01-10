@@ -15,23 +15,36 @@ def quality_check(caps_dir, output_directory, acq_label, ref_region, threshold):
 
     logger = getLogger("clinicadl.quality_check")
 
-    extract_metrics(caps_dir=caps_dir, output_dir=output_directory, acq_label=acq_label, ref_region=ref_region)
-    logger.info(f"Quality check metrics extracted at {path.join(output_directory, 'QC_metrics.tsv')}.")
+    extract_metrics(
+        caps_dir=caps_dir,
+        output_dir=output_directory,
+        acq_label=acq_label,
+        ref_region=ref_region,
+    )
+    logger.info(
+        f"Quality check metrics extracted at {path.join(output_directory, 'QC_metrics.tsv')}."
+    )
+
     qc_df = pd.read_csv(path.join(output_directory, "QC_metrics.tsv"), sep="\t")
+    rejection1_df = qc_df[qc_df.ttp_av < threshold]
+    rejection1_df.to_csv(
+        path.join(output_directory, "data_cleaned_step1.tsv"), sep="\t", index=False
+    )
 
-    rejection1_df = qc_df[qc_df.max_intensity > threshold]
-    rejection1_df.to_csv(path.join(output_directory, "data_cleaned.tsv"), sep="\t", index=False)
+    rejection2_df = rejection1_df[rejection1_df.tfp_ar < threshold]
+    rejection2_df.to_csv(
+        path.join(output_directory, "data_cleaned_step2.tsv"), sep="\t", index=False
+    )
 
-    rejection2_df = qc_df[qc_df.max_intensity < threshold]
-    rejection2_df.to_csv(path.join(output_directory, "data_failed.tsv"), sep="\t", index=False)
-
-    logger.info(f"Number of sessions removed based on max intensity: {len(qc_df) - len(rejection1_df)}.")
+    logger.info(
+        f"Number of sessions removed based on max intensity: {len(qc_df) - len(rejection1_df)}."
+    )
     logger.debug(f"{rejection2_df}")
 
     # rejection2_df = rejection1_df[
     #     (rejection1_df.non_zero_percentage < 0.5)
     #     & (rejection1_df.non_zero_percentage > 0.15)]
-        
+
     # rejection2_df.to_csv(
     #     path.join(output_directory, "pass_step-2.tsv"), sep="\t", index=False
     # )
