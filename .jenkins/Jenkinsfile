@@ -20,6 +20,7 @@ pipeline {
             environment {
               CONDA_HOME = "$HOME/miniconda"
               CONDA_ENV = "$WORKSPACE/env"
+              PATH = "$HOME/.local/bin:$PATH"
               TMP_DIR = "$HOME/tmp"
               INPUT_DATA_DIR = "/mnt/data/clinicadl_data_ci/data_ci"
             }
