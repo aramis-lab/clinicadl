@@ -20,7 +20,7 @@ from clinicadl.utils import cli_param
 @click.option(
     "--threshold",
     type=float,
-    default=0.5,
+    default=0.9,
     show_default=True,
     help="The threshold on the output probability to decide if the image "
     "passed or failed.",

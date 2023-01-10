@@ -34,15 +34,14 @@ def normalize_homemade(image_np):
     return image_np
 
 
-def extract_mask(img_path):
-    image_nii = nib.load(img_path)
-    image_np = image_nii.get_fdata()
+def extract_mask(img_np):
 
-    image_np = normalize_homemade(image_np)
+    image_np = normalize_homemade(img_np)
 
     kernel = np.ones((3, 3), np.uint8)
-    mask = thresholdOtsuDisplay(image_np)
 
+    mask = thresholdOtsuDisplay(image_np)
+    # print(mask.astype("uint8"))
     mask = cv2.dilate(mask.astype("uint8"), kernel, iterations=4)
 
     mask = cv2.erode(mask.astype("uint8"), kernel, iterations=5)
@@ -118,49 +117,53 @@ def distance(mask_contour, mask_brain, mask_np):
     return tfp_brain_arr, mttp_contour_av
 
 
-def extract_metrics(caps_dir, output_dir, acq_label, ref_region, threshold):
+def extract_metrics(caps_dir, output_dir, acq_label, ref_region):
     if not path.exists(output_dir):
         os.makedirs(output_dir)
 
     # NEED TO ADD THE PATH TO THE MNI MASK OR TO THE MNI IMAGE
     # Load eyes segmentation
-    home = str(Path.home())
-    cache_clinicadl = path.join(home, ".cache", "clinicadl", "mask")
-    if not (path.exists(cache_clinicadl)):
-        os.makedirs(cache_clinicadl)
+    # home = str(Path.home())
+    # cache_clinicadl = path.join(home, ".cache", "clinicadl", "mask")
+    # if not (path.exists(cache_clinicadl)):
+    #     os.makedirs(cache_clinicadl)
 
-    url_aramis = "https://aramislab.paris.inria.fr/files/data/template/"
-    FILE1 = RemoteFileStructure(
-        filename="mask_contour.nii.gz",
-        url=url_aramis,
-        checksum="56f699c06cafc62ad8bb5b41b188c7c412d684d810a11d6f4cbb441c0ce944ee",
+    # url_aramis = "/Users/camille.brianceau/aramis/QC_tokeep/mask"
+    # FILE1 = RemoteFileStructure(
+    #     filename="contour.nii.gz",
+    #     url=url_aramis,
+    #     checksum="56f699c06cafc62ad8bb5b41b188c7c412d684d810a11d6f4cbb441c0ce944ee",
+    # )
+
+    # mask_contour_file = path.join(cache_clinicadl, FILE1.filename)
+    # if not (path.exists(mask_contour_file)):
+    #     try:
+    #         mask_contour_file = fetch_file(FILE1, cache_clinicadl)
+    #     except IOError as err:
+    #         raise IOError("Unable to download required mni file for QC:", err)
+
+    mask_contour_nii = nib.load(
+        "/Users/camille.brianceau/aramis/QC_tokeep/mask/contour.nii.gz"
     )
-
-    mask_contour_file = path.join(cache_clinicadl, FILE1.filename)
-    if not (path.exists(mask_contour_file)):
-        try:
-            mask_contour_file = fetch_file(FILE1, cache_clinicadl)
-        except IOError as err:
-            raise IOError("Unable to download required mni file for QC:", err)
-
-    mask_contour_nii = nib.load(mask_contour_file)
     mask_contour = mask_contour_nii.get_fdata()
 
-    FILE2 = RemoteFileStructure(
-        filename="mask_brain.nii.gz",
-        url=url_aramis,
-        checksum="56f699c06cafc62ad8bb5b41b188c7c412d684d810a11d6f4cbb441c0ce944ee",
+    # FILE2 = RemoteFileStructure(
+    #     filename="mask_brain.nii.gz",
+    #     url=url_aramis,
+    #     checksum="56f699c06cafc62ad8bb5b41b188c7c412d684d810a11d6f4cbb441c0ce944ee",
+    # )
+
+    # mask_brain_file = path.join(cache_clinicadl, FILE1.filename)
+
+    # if not (path.exists(mask_brain_file)):
+    #     try:
+    #         mask_brain_file = fetch_file(FILE1, cache_clinicadl)
+    #     except IOError as err:
+    #         raise IOError("Unable to download required mni file for QC:", err)
+
+    mask_brain_nii = nib.load(
+        "/Users/camille.brianceau/aramis/QC_tokeep/mask/test_brain_dilate.nii.gz"
     )
-
-    mask_brain_file = path.join(cache_clinicadl, FILE1.filename)
-
-    if not (path.exists(mask_brain_file)):
-        try:
-            mask_brain_file = fetch_file(FILE1, cache_clinicadl)
-        except IOError as err:
-            raise IOError("Unable to download required mni file for QC:", err)
-
-    mask_brain_nii = nib.load(mask_brain_file)
     mask_brain = mask_brain_nii.get_fdata()
 
     # Get the data
@@ -188,7 +191,7 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region, threshold):
                 subject
                 + "_"
                 + session
-                + "trc-"
+                + "_trc-"
                 + acq_label
                 + "_rec-uniform_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-"
                 + ref_region
@@ -212,13 +215,20 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region, threshold):
 
             if path.exists(tensor_path):
                 image_torch = torch.load(tensor_path)
-                image_np = image_torch.numpy()
-            elif path.exists(image_path):
+                image_np_torch = image_torch.numpy()
+                print(tensor_path)
+            if path.exists(image_path):
                 image_nii = nib.load(image_path)
                 image_np = image_nii.get_fdata()
+                print(image_path)
             else:
                 raise FileNotFoundError(f"Clinical data not found ({image_path})")
+            comparison = image_np_torch == image_np
+            equal_arrays = comparison.all()
 
+            print(equal_arrays)
+            print(type(image_np))
+            print(type(image_np_torch))
             tfp_brain_arr, mttp_contour_av = distance(
                 mask_contour, mask_brain, extract_mask(image_np)
             )
