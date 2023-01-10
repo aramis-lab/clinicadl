@@ -62,7 +62,7 @@ def distance(mask_contour, mask_brain, mask_np):
     tp_contour_av = 0
     fp_contour_av = 0
     fn_contour_av = 0
-
+    print("test")
     tn_brain_arr = 0
     tp_brain_arr = 0
     fp_brain_arr = 0
