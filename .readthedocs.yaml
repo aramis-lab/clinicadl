@@ -10,13 +10,14 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3"
+  jobs:
+    post_create_environment:
+      # Install Poetry
+      - pip install poetry
+      # Do not use virtual environments
+      - poetry config virtualenvs.create false
+      # Install docs group of dependencies
+      - poetry install --only docs
 
 mkdocs:
   configuration: mkdocs.yml
-
-python:
-  install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - docs
