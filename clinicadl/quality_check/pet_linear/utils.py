@@ -146,7 +146,7 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region):
         "/Users/camille.brianceau/aramis/QC_tokeep/mask/contour.nii.gz"
     )
     mask_contour = mask_contour_nii.get_fdata()
-
+    print("test 2")
     # FILE2 = RemoteFileStructure(
     #     filename="mask_brain.nii.gz",
     #     url=url_aramis,
