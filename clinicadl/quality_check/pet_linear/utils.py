@@ -68,15 +68,24 @@ def distance(mask_contour, mask_brain, mask_np):
     fp_brain_arr = 0
     fn_brain_arr = 0
 
+    tn_brain_up = 0
+    tp_brain_up = 0
+    fp_brain_up = 0
+    fn_brain_up = 0
+
     tfp_brain_arr = 0
     mttp_contour_av = 0
+    tfp_brain_up = 0
+    # nb = tp + fn
     nb_contour_av = 373921
     nb_brain_arr = 616879
+    nb_brain_up = 333
 
     xx = int(shape3D[0] / 2)
     yy = shape3D[1]
-    yy_limit = 103
+    yy_limit = int(yy / 2)
     zz = shape3D[2]
+    zz_limit = int(zz / 2)
 
     for i in range(xx):
         for j in range(yy):
@@ -85,36 +94,51 @@ def distance(mask_contour, mask_brain, mask_np):
                 tmp = mask_np[i][j][k]
                 tmp_brain = int(mask_brain[i][j][k])
                 tmp_contour = int(mask_contour[i][j][k])
+                if k <= zz_limit:
 
-                if j <= yy_limit:
+                    if j <= yy_limit:
+                        if tmp_brain == 0:
+                            if tmp == 0:
+                                tn_brain_arr += 1
+                            if tmp == 1:
+                                fn_brain_arr += 1
+
+                        elif tmp_brain == 1:
+                            if tmp == 1:
+                                tp_brain_arr += 1
+                            elif tmp == 0:
+                                fp_brain_arr += 1
+
+                    elif j > yy_limit:
+                        if tmp_contour == 0:
+                            if tmp == 0:
+                                tn_contour_av += 1
+                            elif tmp == 1:
+                                fn_contour_av += 1
+
+                        elif tmp_contour == 1:
+                            if tmp == 0:
+                                fp_contour_av += 1
+                            elif tmp == 1:
+                                tp_contour_av += 1
+
+                elif k > zz_limit:
                     if tmp_brain == 0:
                         if tmp == 0:
-                            tn_brain_arr += 1
+                            tn_brain_up += 1
                         if tmp == 1:
-                            fn_brain_arr += 1
+                            fn_brain_up += 1
 
                     elif tmp_brain == 1:
-                        if tmp == 0:
-                            tp_brain_arr += 1
-                        elif tmp == 1:
-                            fp_brain_arr += 1
-
-                elif j > yy_limit:
-                    if tmp_contour == 0:
-                        if tmp == 0:
-                            tn_contour_av += 1
-                        elif tmp == 1:
-                            fn_contour_av += 1
-
-                    elif tmp_contour == 1:
-                        if tmp == 0:
-                            fp_contour_av += 1
-                        elif tmp == 1:
-                            tp_contour_av += 1
+                        if tmp == 1:
+                            tp_brain_up += 1
+                        elif tmp == 0:
+                            fp_brain_up += 1
 
     tfp_brain_arr = tp_brain_arr / (fp_brain_arr + tp_brain_arr)
     mttp_contour_av = 1 - (fp_contour_av / (fp_contour_av + tp_contour_av))
-    return tfp_brain_arr, mttp_contour_av
+    tfp_brain_up = tp_brain_up / (fp_brain_up + tp_brain_up)
+    return tfp_brain_arr, mttp_contour_av, tfp_brain_up
 
 
 def extract_metrics(caps_dir, output_dir, acq_label, ref_region):
@@ -197,39 +221,14 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region):
                 + ref_region
                 + "_pet.nii.gz",
             )
-            tensor_path = path.join(
-                subject_path,
-                session,
-                "deeplearning_prepare_data",
-                "image_based",
-                "pet_linear",
-                subject
-                + "_"
-                + session
-                + "_trc-"
-                + acq_label
-                + "_rec-uniform_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-"
-                + ref_region
-                + "_pet.pt",
-            )
 
-            if path.exists(tensor_path):
-                image_torch = torch.load(tensor_path)
-                image_np_torch = image_torch.numpy()
-                print(tensor_path)
             if path.exists(image_path):
                 image_nii = nib.load(image_path)
                 image_np = image_nii.get_fdata()
-                print(image_path)
             else:
                 raise FileNotFoundError(f"Clinical data not found ({image_path})")
-            comparison = image_np_torch == image_np
-            equal_arrays = comparison.all()
 
-            print(equal_arrays)
-            print(type(image_np))
-            print(type(image_np_torch))
-            tfp_brain_arr, mttp_contour_av = distance(
+            tfp_brain_arr, mttp_contour_av, tfp_brain_up = distance(
                 mask_contour, mask_brain, extract_mask(image_np)
             )
 
@@ -240,6 +239,7 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region):
                     np.max(image_np),
                     mttp_contour_av,
                     tfp_brain_arr,
+                    tfp_brain_up,
                 ]
             ]
             row_df = pd.DataFrame(row, columns=columns)
