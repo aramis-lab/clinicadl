@@ -37,10 +37,10 @@ pandas = "^1.2"
 numpy = "^1.17"
 scikit-learn = "^1.0"
 scikit-image = "^0.19"
+joblib = "^1.2.0"
 click = "^8"
 click-option-group = "^0.5"
 pynvml = "*"
-joblib = "^1.2.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "*"
