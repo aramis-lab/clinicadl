@@ -36,6 +36,11 @@ def quality_check(caps_dir, output_directory, acq_label, ref_region, threshold):
         path.join(output_directory, "data_cleaned_step2.tsv"), sep="\t", index=False
     )
 
+    rejection3_df = rejection2_df[rejection2_df.tfp_up < threshold]
+    rejection3_df.to_csv(
+        path.join(output_directory, "data_cleaned_step2.tsv"), sep="\t", index=False
+    )
+
     logger.info(
         f"Number of sessions removed based on max intensity: {len(qc_df) - len(rejection1_df)}."
     )

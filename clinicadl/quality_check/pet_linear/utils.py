@@ -147,47 +147,42 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region):
 
     # NEED TO ADD THE PATH TO THE MNI MASK OR TO THE MNI IMAGE
     # Load eyes segmentation
-    # home = str(Path.home())
-    # cache_clinicadl = path.join(home, ".cache", "clinicadl", "mask")
-    # if not (path.exists(cache_clinicadl)):
-    #     os.makedirs(cache_clinicadl)
+    home = str(Path.home())
+    cache_clinicadl = path.join(home, ".cache", "clinicadl", "mask")
+    if not (path.exists(cache_clinicadl)):
+        os.makedirs(cache_clinicadl)
 
-    # url_aramis = "/Users/camille.brianceau/aramis/QC_tokeep/mask"
-    # FILE1 = RemoteFileStructure(
-    #     filename="contour.nii.gz",
-    #     url=url_aramis,
-    #     checksum="56f699c06cafc62ad8bb5b41b188c7c412d684d810a11d6f4cbb441c0ce944ee",
-    # )
-
-    # mask_contour_file = path.join(cache_clinicadl, FILE1.filename)
-    # if not (path.exists(mask_contour_file)):
-    #     try:
-    #         mask_contour_file = fetch_file(FILE1, cache_clinicadl)
-    #     except IOError as err:
-    #         raise IOError("Unable to download required mni file for QC:", err)
-
-    mask_contour_nii = nib.load(
-        "/Users/camille.brianceau/aramis/QC_tokeep/mask/contour.nii.gz"
+    url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
+    FILE1 = RemoteFileStructure(
+        filename="qc_pet_mask_contour.nii.gz",
+        url=url_aramis,
+        checksum="0c561ce7de343219e42861b87a359420f9d485da37a8f64d1366ee9bb5460ee6",
     )
+
+    mask_contour_file = path.join(cache_clinicadl, FILE1.filename)
+    if not (path.exists(mask_contour_file)):
+        try:
+            mask_contour_file = fetch_file(FILE1, cache_clinicadl)
+        except IOError as err:
+            raise IOError("Unable to download required mni file for QC:", err)
+
+    mask_contour_nii = nib.load(mask_contour_file)
     mask_contour = mask_contour_nii.get_fdata()
-    print("test 2")
-    # FILE2 = RemoteFileStructure(
-    #     filename="mask_brain.nii.gz",
-    #     url=url_aramis,
-    #     checksum="56f699c06cafc62ad8bb5b41b188c7c412d684d810a11d6f4cbb441c0ce944ee",
-    # )
 
-    # mask_brain_file = path.join(cache_clinicadl, FILE1.filename)
-
-    # if not (path.exists(mask_brain_file)):
-    #     try:
-    #         mask_brain_file = fetch_file(FILE1, cache_clinicadl)
-    #     except IOError as err:
-    #         raise IOError("Unable to download required mni file for QC:", err)
-
-    mask_brain_nii = nib.load(
-        "/Users/camille.brianceau/aramis/QC_tokeep/mask/test_brain_dilate.nii.gz"
+    FILE2 = RemoteFileStructure(
+        filename="qc_pet_mask_brain.nii.gz",
+        url=url_aramis,
+        checksum="e78a542da49755f5c9ba751b4acca725650396999a671831f0acd8fbf4b898e8",
     )
+
+    mask_brain_file = path.join(cache_clinicadl, FILE2.filename)
+    if not (path.exists(mask_brain_file)):
+        try:
+            mask_brain_file = fetch_file(FILE2, cache_clinicadl)
+        except IOError as err:
+            raise IOError("Unable to download required mni file for QC:", err)
+
+    mask_brain_nii = nib.load(mask_brain_file)
     mask_brain = mask_brain_nii.get_fdata()
 
     # Get the data
@@ -196,8 +191,9 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region):
         "participant_id",
         "session_id",
         "max_intensity",
-        "ttp_ar",
-        "tfp_av",
+        "mttp_contour_av",
+        "tfp_brain_arr",
+        "tfp_brain_up",
     ]
     results_df = pd.DataFrame()
 
