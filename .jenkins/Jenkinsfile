@@ -22,7 +22,7 @@ pipeline {
               CONDA_ENV = "$WORKSPACE/env"
               PATH = "$HOME/.local/bin:$PATH"
               TMP_DIR = "$HOME/tmp"
-              INPUT_DATA_DIR = "/mnt/data/clinicadl_data_ci/data_ci"
+              INPUT_DATA_DIR = '/mnt/data/clinicadl_data_ci/data_ci'
             }
             stages {
               stage('Build Env') {
@@ -50,7 +50,7 @@ pipeline {
               }
               stage('CLI tests Linux') {
                 steps {
-                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE'){
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
                     echo 'Testing pipeline instantiation...'
                       sh 'echo "Agent name: ${NODE_NAME}"'
                       sh '''
@@ -72,7 +72,7 @@ pipeline {
               }
               stage('tsvtools tests Linux') {
                 steps {
-                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE'){
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
                     echo 'Testing tsvtool tasks...'
                       sh "echo 'Agent name: ${NODE_NAME}'"
                       sh '''
@@ -101,7 +101,7 @@ pipeline {
               }
               stage('Quality check tests Linux') {
                 steps {
-                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE'){
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
                     echo 'Testing quality check tasks...'
                       sh "echo 'Agent name: ${NODE_NAME}'"
                       sh '''
@@ -130,7 +130,7 @@ pipeline {
               }
               stage('Generate tests Linux') {
                 steps {
-                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE'){
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
                     echo 'Testing generate task...'
                       sh "echo 'Agent name: ${NODE_NAME}'"
                       sh '''
@@ -159,7 +159,7 @@ pipeline {
               }
               stage('Prepare data tests Linux') {
                 steps {
-                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE'){
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
                     echo 'Testing prepare_data task...'
                       sh "echo 'Agent name: ${NODE_NAME}'"
                       sh '''
@@ -188,7 +188,7 @@ pipeline {
               }
               stage('Predict tests Linux') {
                 steps {
-                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE'){
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
                     echo 'Testing predict...'
                     sh "echo 'Agent name: ${NODE_NAME}'"
                     sh '''
@@ -259,8 +259,9 @@ pipeline {
             environment {
               CONDA_HOME = "$HOME/miniconda3"
               CONDA_ENV = "$WORKSPACE/env"
+              PATH = "$HOME/.local/bin:$PATH"
               TMP_DIR = "$HOME/tmp"
-              INPUT_DATA_DIR = "/mnt/data/clinicadl_data_ci/data_ci"
+              INPUT_DATA_DIR = '/mnt/data/clinicadl_data_ci/data_ci'
             }
             stages {
               stage('Build Env') {
@@ -283,12 +284,11 @@ pipeline {
                       clinicadl --help
                       conda deactivate
                       '''
-                  
                 }
               }
               stage('Train tests Linux') {
                 steps {
-                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE'){
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
                     echo 'Testing train task...'
                     sh "echo 'Agent name: ${NODE_NAME}'"
                     sh '''#!/usr/bin/env bash
@@ -318,7 +318,7 @@ pipeline {
               }
               stage('Transfer learning tests Linux') {
                 steps {
-                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE'){
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
                     echo 'Testing transfer learning...'
                     sh "echo 'Agent name: ${NODE_NAME}'"
                     sh '''#!/usr/bin/env bash
@@ -348,7 +348,7 @@ pipeline {
               }
               stage('Resume tests Linux') {
                 steps {
-                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE'){
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
                     echo 'Testing resume...'
                     sh "echo 'Agent name: ${NODE_NAME}'"
                     sh '''#!/usr/bin/env bash
@@ -378,7 +378,7 @@ pipeline {
               }
               stage('Interpretation tests Linux') {
                 steps {
-                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE'){
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
                     echo 'Testing interpret task...'
                     sh "echo 'Agent name: ${NODE_NAME}'"
                     sh '''#!/usr/bin/env bash
@@ -409,7 +409,7 @@ pipeline {
               }
               stage('Random search tests Linux') {
                 steps {
-                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE'){
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
                     echo 'Testing random search...'
                     sh "echo 'Agent name: ${NODE_NAME}'"
                     sh '''#!/usr/bin/env bash
