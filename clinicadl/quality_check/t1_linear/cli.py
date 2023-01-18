@@ -23,14 +23,14 @@ from clinicadl.utils import cli_param
 @cli_param.option.use_gpu
 @click.option(
     "--network",
-    default= "darq",
+    default="darq",
     type=click.Choice(["darq", "deep_qc", "sq101"]),
 )
 @click.option(
     "--use_nifti_image",
-    type = bool,
-    default= False,
-    is_flag = True,
+    type=bool,
+    default=False,
+    is_flag=True,
 )
 def cli(
     caps_directory,
@@ -65,5 +65,5 @@ def cli(
         n_proc=n_proc,
         gpu=gpu,
         network=network,
-        use_tensor = not use_nifti_image
+        use_tensor=not use_nifti_image,
     )

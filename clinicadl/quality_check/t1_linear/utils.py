@@ -174,7 +174,8 @@ class QCDataset(Dataset):
 
         """
         from clinicadl.utils.caps_dataset.data import MinMaxNormalization
-        use_extracted_tensors=True
+
+        use_extracted_tensors = True
         self.img_dir = img_dir
         self.df = data_df
         self.use_extracted_tensors = use_extracted_tensors
@@ -211,9 +212,9 @@ class QCDataset(Dataset):
 
         if self.use_extracted_tensors:
             image = self.tensor_dataset[idx]
-            image = self.pt_transform(image['image'])
+            image = self.pt_transform(image["image"])
         else:
-            
+
             image_path = clinica_file_reader(
                 [subject], [session], self.img_dir, T1W_LINEAR
             )[0]
@@ -292,11 +293,11 @@ class QCDataset(Dataset):
         ).unsqueeze_(0)
 
     def pt_transform(self, image):
-        from torch.nn.functional import interpolate, pad
         import numpy as np
         import torch
         from skimage import transform
-        
+        from torch.nn.functional import interpolate, pad
+
         sample = np.array(image)
 
         # normalize input
@@ -368,8 +369,6 @@ class QCDataset(Dataset):
         return torch.cat(
             [torch.from_numpy(i).float().unsqueeze_(0) for i in output_images]
         ).unsqueeze_(0)
-
-
 
         # # flip, resize and crop
         # for slice in input_images:

@@ -15,10 +15,11 @@ from clinicadl.generate.generate_utils import load_and_check_tsv
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
-from .utils import QCDataset 
-from .utils import resnet_qc_18 as deep_r18
 from .sq101 import squeezenet_qc as darq_sq101
+from .utils import QCDataset
+from .utils import resnet_qc_18 as deep_r18
 from .utils_bis import resnet_qc_18 as darq_r18
+
 
 def quality_check(
     caps_dir: str,
@@ -29,7 +30,7 @@ def quality_check(
     n_proc: int = 0,
     gpu: bool = True,
     network: str = "darq",
-    use_tensor: bool = True, 
+    use_tensor: bool = True,
 ):
 
     logger = getLogger("clinicadl.quality_check")
@@ -40,7 +41,7 @@ def quality_check(
     # Fetch QC model
     home = str(Path.home())
 
-    if network == "deep_qc" :
+    if network == "deep_qc":
         cache_clinicadl = join(home, ".cache", "clinicadl", "models")
         url_aramis = "https://aramislab.paris.inria.fr/files/data/models/dl/qc/"
         FILE1 = RemoteFileStructure(
@@ -51,20 +52,20 @@ def quality_check(
         makedirs(cache_clinicadl, exist_ok=True)
         model_file = join(cache_clinicadl, FILE1.filename)
         model = deep_r18()
-    
-    
-    if network == "darq" :
+
+    if network == "darq":
         model_file = "/Users/camille.brianceau/Desktop/QC/code/models/python_DARQ/cls/model_r18/best_tnr.pth"
         model = darq_r18()
-    
-    if network == "sq101" :
+
+    if network == "sq101":
         model_file = "/network/lustre/iss02/aramis/users/camille.brianceau/QC/models2/Deep_QC/model_sq101/best_tnr_cpu.pth"
         model = darq_sq101()
 
-    url_r18_2018 ="/Users/camille.brianceau/Desktop/QC/code/models/Deep-QC/model_r18/best_tnr_cpu.pth"
-    url_r152_2022 = "/Users/camille.brianceau/Desktop/QC/code/models/DARQ/model_r152/best_tnr.pth"
+    url_r18_2018 = "/Users/camille.brianceau/Desktop/QC/code/models/Deep-QC/model_r18/best_tnr_cpu.pth"
+    url_r152_2022 = (
+        "/Users/camille.brianceau/Desktop/QC/code/models/DARQ/model_r152/best_tnr.pth"
+    )
     logger.info("Downloading quality check model.")
-    
 
     if not (exists(model_file)):
         try:
@@ -80,7 +81,7 @@ def quality_check(
         logger.debug("Working on GPU.")
         model = model.cuda()
 
-    with torch.no_grad() :
+    with torch.no_grad():
         # Transform caps_dir in dict
         caps_dict = CapsDataset.create_caps_dict(caps_dir, multi_cohort=False)
 
@@ -100,7 +101,7 @@ def quality_check(
         logger.info(f"Quality check will be performed over {len(dataloader)} images.")
 
         for data in dataloader:
-            #print(data)
+            # print(data)
             logger.debug(f"Processing subject {data['participant_id']}.")
             inputs = data["image"]
             if gpu:

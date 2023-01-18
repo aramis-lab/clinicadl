@@ -1,47 +1,50 @@
+import math
+
 import torch
 import torch.nn as nn
-import math
-import torch.utils.model_zoo as model_zoo
 import torch.nn.init as init
-
-from torchvision import models
+import torch.utils.model_zoo as model_zoo
 from torch.nn.parameter import Parameter
+from torchvision import models
 
 # based on https://github.com/pytorch/vision/blob/master/torchvision/models/squeezenet.py
 
-class Fire(nn.Module):
 
-    def __init__(self, inplanes, squeeze_planes,
-                 expand1x1_planes, expand3x3_planes):
+class Fire(nn.Module):
+    def __init__(self, inplanes, squeeze_planes, expand1x1_planes, expand3x3_planes):
         super(Fire, self).__init__()
         self.inplanes = inplanes
         self.squeeze = nn.Conv2d(inplanes, squeeze_planes, kernel_size=1)
         self.squeeze_activation = nn.ReLU(inplace=True)
-        self.expand1x1 = nn.Conv2d(squeeze_planes, expand1x1_planes,
-                                   kernel_size=1)
+        self.expand1x1 = nn.Conv2d(squeeze_planes, expand1x1_planes, kernel_size=1)
         self.expand1x1_activation = nn.ReLU(inplace=True)
-        self.expand3x3 = nn.Conv2d(squeeze_planes, expand3x3_planes,
-                                   kernel_size=3, padding=1)
+        self.expand3x3 = nn.Conv2d(
+            squeeze_planes, expand3x3_planes, kernel_size=3, padding=1
+        )
         self.expand3x3_activation = nn.ReLU(inplace=True)
 
     def forward(self, x):
         x = self.squeeze_activation(self.squeeze(x))
-        return torch.cat([
-            self.expand1x1_activation(self.expand1x1(x)),
-            self.expand3x3_activation(self.expand3x3(x))
-        ], 1)
+        return torch.cat(
+            [
+                self.expand1x1_activation(self.expand1x1(x)),
+                self.expand3x3_activation(self.expand3x3(x)),
+            ],
+            1,
+        )
 
 
 class SqueezeNetQC(nn.Module):
-
     def __init__(self, version=1.0, num_classes=2, use_ref=False):
         super(SqueezeNetQC, self).__init__()
         self.use_ref = use_ref
         self.feat = 3
-        
+
         if version not in [1.0, 1.1]:
-            raise ValueError("Unsupported SqueezeNet version {version}:"
-                             "1.0 or 1.1 expected".format(version=version))
+            raise ValueError(
+                "Unsupported SqueezeNet version {version}:"
+                "1.0 or 1.1 expected".format(version=version)
+            )
         self.num_classes = num_classes
         if version == 1.0:
             self.features = nn.Sequential(
@@ -75,14 +78,14 @@ class SqueezeNetQC(nn.Module):
                 Fire(384, 64, 256, 256),
                 Fire(512, 64, 256, 256),
             )
-        
+
         # Final convolution is initialized differently form the rest
-        final_conv = nn.Conv2d(512*self.feat, self.num_classes, kernel_size=1)
+        final_conv = nn.Conv2d(512 * self.feat, self.num_classes, kernel_size=1)
         self.classifier = nn.Sequential(
             nn.Dropout(p=0.5),
             final_conv,
             nn.ReLU(inplace=True),
-            nn.AvgPool2d(13, stride=1)
+            nn.AvgPool2d(13, stride=1),
         )
 
         for m in self.modules():
@@ -90,17 +93,17 @@ class SqueezeNetQC(nn.Module):
                 if m is final_conv:
                     nn.init.normal_(m.weight.data, mean=0.0, std=0.01)
                 else:
-                    nn.init.kaiming_uniform_(m.weight.data,nonlinearity='relu')
+                    nn.init.kaiming_uniform_(m.weight.data, nonlinearity="relu")
                 if m.bias is not None:
                     m.bias.data.zero_()
 
     def forward(self, x):
         # split feats into batches, so each view is passed separately
-        x = x.view(-1, 2 if self.use_ref else 1 ,224,224)
+        x = x.view(-1, 2 if self.use_ref else 1, 224, 224)
         x = self.features(x)
         # reshape input to take into account 3 views
-        x = x.view(-1, 512*self.feat,13,13)
-        
+        x = x.view(-1, 512 * self.feat, 13, 13)
+
         x = self.classifier(x)
         return x.view(x.size(0), self.num_classes)
 
@@ -110,18 +113,18 @@ class SqueezeNetQC(nn.Module):
         # first load all standard items
         own_state = self.state_dict()
         for name, param in std_model.state_dict().items():
-            if name == 'features.0.weight':
+            if name == "features.0.weight":
                 if isinstance(param, Parameter):
                     param = param.data
                 # convert to mono weight
-                # collaps parameters along second dimension, emulating grayscale feature 
-                mono_param=param.sum( 1, keepdim=True )
+                # collaps parameters along second dimension, emulating grayscale feature
+                mono_param = param.sum(1, keepdim=True)
                 if self.use_ref:
-                    own_state[name].copy_( torch.cat((mono_param,mono_param),1) )
+                    own_state[name].copy_(torch.cat((mono_param, mono_param), 1))
                 else:
-                    own_state[name].copy_( mono_param )
+                    own_state[name].copy_(mono_param)
                 pass
-            elif name == 'classifier.1.weight' or name == 'classifier.1.bias':
+            elif name == "classifier.1.weight" or name == "classifier.1.bias":
                 # don't use at all
                 pass
             elif name in own_state:
@@ -130,11 +133,13 @@ class SqueezeNetQC(nn.Module):
                 try:
                     own_state[name].copy_(param)
                 except Exception:
-                    raise RuntimeError('While copying the parameter named {}, '
-                                       'whose dimensions in the model are {} and '
-                                       'whose dimensions in the checkpoint are {}.'
-                                       .format(name, own_state[name].size(), param.size()))
-            
+                    raise RuntimeError(
+                        "While copying the parameter named {}, "
+                        "whose dimensions in the model are {} and "
+                        "whose dimensions in the checkpoint are {}.".format(
+                            name, own_state[name].size(), param.size()
+                        )
+                    )
 
 
 def squeezenet_qc(pretrained=False, **kwargs):
