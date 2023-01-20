@@ -565,7 +565,6 @@ class MapsManager:
                 label=self.label,
                 label_code=self.label_code,
             )
-            print("test for new data")
             logger.debug("Loading validation data...")
             data_valid = return_dataset(
                 self.caps_directory,
