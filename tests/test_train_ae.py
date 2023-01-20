@@ -24,9 +24,7 @@ def test_name(request):
 
 
 def test_train_ae(cmdopt, tmp_path, test_name):
-    base_dir = Path(
-        "/Users/camille.brianceau/aramis/local_data_ci/data_ci"
-    )  # Path(cmdopt["input"])
+    base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "train" / "in"
     ref_dir = base_dir / "train" / "ref"
     tmp_out_dir = base_dir / "train" / "out"
@@ -34,7 +32,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
 
     clean_folder(tmp_out_dir, recreate=True)
 
-    labels_path = str(input_dir / "new_labels_list")
+    labels_path = str(input_dir / "labels_list")
     config_path = str(input_dir / "train_config.toml")
     if test_name == "image_ae":
         split = [0, 0]
