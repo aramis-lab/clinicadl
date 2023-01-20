@@ -577,7 +577,7 @@ class MapsManager:
                 label_code=self.label_code,
             )
             train_sampler = self.task_manager.generate_sampler(data_train, self.sampler)
-
+            print("test_ci")
             logger.debug(
                 f"Getting train and validation loader with batch size {self.batch_size}"
             )
