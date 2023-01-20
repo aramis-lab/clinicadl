@@ -576,7 +576,6 @@ class MapsManager:
                 label=self.label,
                 label_code=self.label_code,
             )
-            print("test train")
             train_sampler = self.task_manager.generate_sampler(data_train, self.sampler)
 
             logger.debug(
