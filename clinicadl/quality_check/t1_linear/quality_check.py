@@ -41,31 +41,37 @@ def quality_check(
     # Fetch QC model
     home = str(Path.home())
 
+    cache_clinicadl = join(home, ".cache", "clinicadl", "models")
+    url_aramis = "https://aramislab.paris.inria.fr/files/data/models/dl/qc/"
+
+    makedirs(cache_clinicadl, exist_ok=True)
+
     if network == "deep_qc":
-        cache_clinicadl = join(home, ".cache", "clinicadl", "models")
-        url_aramis = "https://aramislab.paris.inria.fr/files/data/models/dl/qc/"
         FILE1 = RemoteFileStructure(
             filename="resnet18.pth.tar",
             url=url_aramis,
             checksum="a97a781be3820b06424fe891ec405c78b87ad51a27b6b81614dbdb996ce60104",
         )
-        makedirs(cache_clinicadl, exist_ok=True)
-        model_file = join(cache_clinicadl, FILE1.filename)
         model = deep_r18()
 
     if network == "darq":
-        model_file = "/network/lustre/iss02/aramis/users/camille.brianceau/QC_tokeep/DARQ/models/python_DARQ/cls/model_r18/best_tnr.pth"
+        FILE1 = RemoteFileStructure(
+            filename="resnet_18_darq.pth",
+            url=url_aramis,
+            checksum="a97a781be3820b06424fe891ec405c78b87ad51a27b6b81614dbdb996ce60104",
+        )
         model = darq_r18()
 
     if network == "sq101":
-        model_file = "/Users/camille.brianceau/Desktop/QC/code/models/DARQ/model_r18/best_tnr.pth"
-        # "/network/lustre/iss02/aramis/users/camille.brianceau/QC/models2/Deep_QC/model_sq101/best_tnr_cpu.pth"
+        FILE1 = RemoteFileStructure(
+            filename="sq101_darq.pth",
+            url=url_aramis,
+            checksum="a97a781be3820b06424fe891ec405c78b87ad51a27b6b81614dbdb996ce60104",
+        )
         model = darq_sq101()
 
-    url_r18_2018 = "/Users/camille.brianceau/Desktop/QC/code/models/Deep-QC/model_r18/best_tnr_cpu.pth"
-    url_r152_2022 = (
-        "/Users/camille.brianceau/Desktop/QC/code/models/DARQ/model_r152/best_tnr.pth"
-    )
+    model_file = join(cache_clinicadl, FILE1.filename)
+
     logger.info("Downloading quality check model.")
 
     if not (exists(model_file)):
