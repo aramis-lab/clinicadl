@@ -27,7 +27,7 @@ from clinicadl.utils import cli_param
     type=click.Choice(["darq", "deep_qc", "sq101"]),
 )
 @click.option(
-    "--use_nifti_image",
+    "--use_tensor",
     type=bool,
     default=False,
     is_flag=True,
@@ -41,7 +41,7 @@ def cli(
     n_proc,
     gpu,
     network,
-    use_nifti_image,
+    use_tensor,
 ):
     """Performs quality check on t1-linear pipeline.
 
@@ -65,5 +65,5 @@ def cli(
         n_proc=n_proc,
         gpu=gpu,
         network=network,
-        use_tensor=not use_nifti_image,
+        use_tensor=use_tensor,
     )

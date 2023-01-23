@@ -15,10 +15,10 @@ from clinicadl.generate.generate_utils import load_and_check_tsv
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
-from .sq101 import squeezenet_qc as darq_sq101
 from .utils import QCDataset
-from .utils import resnet_qc_18 as deep_r18
-from .utils_bis import resnet_qc_18 as darq_r18
+from .utils import resnet_darq_qc_18 as darq_r18
+from .utils import resnet_deep_qc_18 as deep_r18
+from .utils import squeezenet_qc as darq_sq101
 
 
 def quality_check(
@@ -30,7 +30,7 @@ def quality_check(
     n_proc: int = 0,
     gpu: bool = True,
     network: str = "darq",
-    use_tensor: bool = True,
+    use_tensor: bool = False,
 ):
 
     logger = getLogger("clinicadl.quality_check")
@@ -54,11 +54,12 @@ def quality_check(
         model = deep_r18()
 
     if network == "darq":
-        model_file = "/Users/camille.brianceau/Desktop/QC/code/models/python_DARQ/cls/model_r18/best_tnr.pth"
+        model_file = "/network/lustre/iss02/aramis/users/camille.brianceau/QC_tokeep/DARQ/models/python_DARQ/cls/model_r18/best_tnr.pth"
         model = darq_r18()
 
     if network == "sq101":
-        model_file = "/network/lustre/iss02/aramis/users/camille.brianceau/QC/models2/Deep_QC/model_sq101/best_tnr_cpu.pth"
+        model_file = "/Users/camille.brianceau/Desktop/QC/code/models/DARQ/model_r18/best_tnr.pth"
+        # "/network/lustre/iss02/aramis/users/camille.brianceau/QC/models2/Deep_QC/model_sq101/best_tnr_cpu.pth"
         model = darq_sq101()
 
     url_r18_2018 = "/Users/camille.brianceau/Desktop/QC/code/models/Deep-QC/model_r18/best_tnr_cpu.pth"
@@ -90,7 +91,6 @@ def quality_check(
         df = load_and_check_tsv(tsv_path, caps_dict, dirname(abspath(output_path)))
 
         dataset = QCDataset(caps_dir, df, use_tensor)
-        print(dataset)
         dataloader = DataLoader(
             dataset, num_workers=n_proc, batch_size=batch_size, pin_memory=True
         )
@@ -101,7 +101,6 @@ def quality_check(
         logger.info(f"Quality check will be performed over {len(dataloader)} images.")
 
         for data in dataloader:
-            # print(data)
             logger.debug(f"Processing subject {data['participant_id']}.")
             inputs = data["image"]
             if gpu:
