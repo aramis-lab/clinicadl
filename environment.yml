@@ -3,6 +3,4 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - python=3.8
-  - poetry
-  
+  - python=3.9

@@ -232,7 +232,6 @@ class MapsManager:
                 diagnoses if len(diagnoses) != 0 else self.diagnoses,
                 multi_cohort=multi_cohort,
             )
-
         criterion = self.task_manager.get_criterion(self.loss)
         self._check_data_group(
             data_group,
@@ -242,11 +241,9 @@ class MapsManager:
             overwrite,
             label=label,
         )
-
         for split in split_list:
             logger.info(f"Prediction of split {split}")
             group_df, group_parameters = self.get_group_info(data_group, split)
-
             # Find label code if not given
             if label is not None and label != self.label and label_code == "default":
                 self.task_manager.generate_label_code(group_df, label)
@@ -1579,7 +1576,6 @@ class MapsManager:
                 columns = ["participant_id", "session_id", "cohort"]
                 if self.label is not None:
                     columns.append(self.label)
-
                 df.to_csv(path.join(group_path, "data.tsv"), sep="\t", columns=columns)
                 self.write_parameters(
                     group_path,

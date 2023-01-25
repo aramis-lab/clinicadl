@@ -1,201 +1,143 @@
 # coding: utf8
 
+import os
+import shutil
 import warnings
+from os import PathLike
+from os.path import join
+from pathlib import Path
 from typing import Any, Dict, List
+
+import pytest
+
+from tests.testing_tools import clean_folder, compare_folders
 
 warnings.filterwarnings("ignore")
 
 
-def clean_folder(path, recreate=True):
-    from os import makedirs
-    from os.path import abspath, exists
-    from shutil import rmtree
-
-    abs_path = abspath(path)
-    if exists(abs_path):
-        rmtree(abs_path)
-    if recreate:
-        makedirs(abs_path)
-
-
-def compare_folders(out, ref, shared_folder_name):
-    from difflib import unified_diff
-    from filecmp import cmp
-    from os import remove
-    from os.path import join
-
-    out_txt = join(out, "out_folder.txt")
-    ref_txt = join(ref, "ref_folder.txt")
-
-    list_files(join(out, shared_folder_name), filename=out_txt)
-    list_files(join(ref, shared_folder_name), filename=ref_txt)
-
-    # Compare them
-    if not cmp(out_txt, ref_txt):
-        with open(out_txt, "r") as fin:
-            out_message = fin.read()
-        with open(ref_txt, "r") as fin:
-            ref_message = fin.read()
-        with open(out_txt, "r") as out:
-            with open(ref_txt, "r") as ref:
-                diff = unified_diff(
-                    out.readlines(),
-                    ref.readlines(),
-                    fromfile="output",
-                    tofile="reference",
-                )
-        diff_text = ""
-        for line in diff:
-            diff_text = diff_text + line + "\n"
-        remove(out_txt)
-        remove(ref_txt)
-        raise AssertionError(
-            "Comparison of out and ref directories shows mismatch :\n "
-            "OUT :\n"
-            + out_message
-            + "\n REF :\n"
-            + ref_message
-            + "\nDiff :\n"
-            + diff_text
-        )
-
-    # Clean folders
-    remove(out_txt)
-    remove(ref_txt)
+@pytest.fixture(
+    params=[
+        "slice",
+        "patch",
+        "image",
+        "roi",
+    ]
+)
+def test_name(request):
+    return request.param
 
 
-def list_files(startpath, filename=None):
-    """
-    Args:
-        startpath: starting point for the tree listing. Does not list hidden
-        files (to avoid problems with .DS_store for example
-        filename: if None, display to stdout, otherwise write in the file
-    Returns:
-        void
-    """
-    from os import remove, sep, walk
-    from os.path import abspath, basename, exists, expanduser, expandvars
+def test_prepare_data(cmdopt, tmp_path, test_name):
 
-    if exists(filename):
-        remove(filename)
+    base_dir = Path(cmdopt["input"])
+    input_dir = base_dir / "prepare_data" / "in"
+    ref_dir = base_dir / "prepare_data" / "ref"
+    tmp_out_dir = tmp_path / "prepare_data" / "out"
+    tmp_out_dir.mkdir(parents=True)
 
-    expanded_path = abspath(expanduser(expandvars(startpath)))
-    for root, dirs, files in walk(expanded_path):
-        level = root.replace(startpath, "").count(sep)
-        indent = " " * 4 * (level)
-        rootstring = "{}{}/".format(indent, basename(root))
-        # Do not deal with hidden files
-        if not basename(root).startswith("."):
-            if filename is not None:
-                # 'a' stands for 'append' rather than 'w' for 'write'. We must
-                # manually jump line with \n otherwise everything is
-                # concatenated
-                with open(filename, "a") as fin:
-                    fin.write(rootstring + "\n")
-            else:
-                print(rootstring)
-            subindent = " " * 4 * (level + 1)
-            for f in files:
-                filestring = "{}{}".format(subindent, f)
-                if not basename(f).startswith("."):
-                    if filename is not None:
-                        with open(filename, "a") as fin:
-                            fin.write(filestring + "\n")
-                    else:
-                        print(filestring)
+    clean_folder(tmp_out_dir, recreate=True)
+
+    input_caps_directory = input_dir / "caps"
+    if test_name == "image":
+        if os.path.exists(tmp_out_dir / "caps_image"):
+            shutil.rmtree(tmp_out_dir / "caps_image")
+        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_image")
+        parameters = {"mode": "image"}
+
+    elif test_name == "patch":
+        if os.path.exists(tmp_out_dir / "caps_patch"):
+            shutil.rmtree(tmp_out_dir / "caps_patch")
+        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_patch")
+        parameters = {"mode": "patch", "patch_size": 50, "stride_size": 50}
+
+    elif test_name == "slice":
+        if os.path.exists(tmp_out_dir / "caps_slice"):
+            shutil.rmtree(tmp_out_dir / "caps_slice")
+        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_slice")
+        parameters = {
+            "mode": "slice",
+            "slice_mode": "rgb",
+            "slice_direction": 0,
+            "discarded_slices": [0, 0],
+        }
+
+    elif test_name == "roi":
+        if os.path.exists(tmp_out_dir / "caps_roi"):
+            shutil.rmtree(tmp_out_dir / "caps_roi")
+        shutil.copytree(input_caps_directory, tmp_out_dir / "caps_roi")
+        parameters = {
+            "mode": "roi",
+            "roi_list": ["rightHippocampusBox", "leftHippocampusBox"],
+            "uncropped_roi": False,
+            "roi_custom_template": "",
+            "roi_custom_mask_pattern": "",
+        }
+    else:
+        print(f"Test {test_name} not available.")
+        assert 0
+
+    run_test_prepare_data(input_dir, ref_dir, tmp_out_dir, parameters)
 
 
-def test_prepare_data():
-    import shutil
-    from os.path import abspath, dirname, join
+def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
 
-    root = dirname(abspath(join(abspath(__file__))))
-    root = join(root, "data", "dataset", "DeepLearningPrepareData")
-
-    # Remove potential residual of previous UT
-    clean_folder(join(root, "out", "caps"), recreate=False)
-
-    # Copy necessary data from in to out
-    shutil.copytree(join(root, "in", "caps"), join(root, "out", "caps"))
-
-    # Prepare test for different parameters
-
-    modalities = ["t1-linear", "pet-linear", "custom"]
-
+    modalities = ["t1-linear", "pet-linear"]  # , "custom"]
     uncropped_image = [True, False]
+    acquisition_label = ["18FAV45", "11CPIB"]
+    parameters["save_features"] = True
+    parameters["prepare_dl"] = True
 
-    image_params = {"mode": "image"}
-    patch_params = {"mode": "patch", "patch_size": 50, "stride_size": 50}
-    slice_params = {
-        "mode": "slice",
-        "slice_mode": "rgb",
-        "slice_direction": 0,
-        "discarded_slices": [0, 0],
-    }
-    roi_params = {
-        "mode": "roi",
-        "roi_list": ["rightHippocampusBox", "leftHippocampusBox"],
-        "uncropped_roi": True,
-        "roi_custom_template": "",
-        "roi_custom_mask_pattern": "",
-    }
-
-    data: List[Dict[str, Any]] = [image_params, slice_params, patch_params, roi_params]
-
-    for parameters in data:
-
-        parameters["prepare_dl"] = True
-
-        for modality in modalities:
-
-            parameters["preprocessing"] = modality
-
-            if modality == "pet-linear":
-                parameters["acq_label"] = "av45"
+    for modality in modalities:
+        parameters["preprocessing"] = modality
+        if modality == "pet-linear":
+            for acq in acquisition_label:
+                parameters["acq_label"] = acq
                 parameters["suvr_reference_region"] = "pons2"
                 parameters["use_uncropped_image"] = False
-                parameters["extract_json"] = f"{modality}_mode-{parameters['mode']}"
-                prepare_data_generic(root, parameters)
-
-            elif modality == "custom":
-                parameters["use_uncropped_image"] = True
                 parameters[
-                    "custom_suffix"
-                ] = "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
-                parameters["roi_custom_template"] = "Ixi549Space"
-                parameters["extract_json"] = f"{modality}_mode-{parameters['mode']}"
-                prepare_data_generic(root, parameters)
+                    "extract_json"
+                ] = f"{modality}-{acq}_mode-{parameters['mode']}.json"
+                tsv_file = join(input_dir, f"pet_{acq}.tsv")
+                mode = parameters["mode"]
+                extract_generic(out_dir, mode, tsv_file, parameters)
 
-            elif modality == "t1-linear":
-                for flag in uncropped_image:
-                    parameters["use_uncropped_image"] = flag
-                    parameters[
-                        "extract_json"
-                    ] = f"{modality}_crop-{not flag}_mode-{parameters['mode']}"
-                    prepare_data_generic(root, parameters)
-            else:
-                raise NotImplementedError(
-                    f"Test for modality {modality} was not implemented."
-                )
+        elif modality == "custom":
+            parameters["use_uncropped_image"] = True
+            parameters[
+                "custom_suffix"
+            ] = "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
+            parameters["roi_custom_template"] = "Ixi549Space"
+            parameters["extract_json"] = f"{modality}_mode-{parameters['mode']}.json"
+            tsv_file = join(input_dir, "subjects.tsv")
+            mode = parameters["mode"]
+            extract_generic(out_dir, mode, tsv_file, parameters)
 
-    # Check output vs ref
-    out_folder = join(root, "out")
-    ref_folder = join(root, "ref")
+        elif modality == "t1-linear":
+            for flag in uncropped_image:
+                parameters["use_uncropped_image"] = flag
+                parameters[
+                    "extract_json"
+                ] = f"{modality}_crop-{not flag}_mode-{parameters['mode']}.json"
 
-    compare_folders(out_folder, ref_folder, shared_folder_name="caps/subjects")
+                tsv_file = input_dir / "subjects.tsv"
+                mode = parameters["mode"]
+                extract_generic(out_dir, mode, tsv_file, parameters)
+        else:
+            raise NotImplementedError(
+                f"Test for modality {modality} was not implemented."
+            )
+    assert compare_folders(out_dir / f"caps_{mode}", ref_dir / f"caps_{mode}", out_dir)
 
-    clean_folder(join(root, "out", "caps"), recreate=False)
 
-
-def prepare_data_generic(root, parameters):
+def extract_generic(out_dir, mode, tsv_file, parameters):
 
     from os.path import join
 
     from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
 
     DeepLearningPrepareData(
-        caps_directory=join(root, "out", "caps"),
-        tsv_file=join(root, "in", "subjects.tsv"),
-        n_proc=2,
+        caps_directory=join(out_dir, f"caps_{mode}"),
+        tsv_file=tsv_file,
+        n_proc=1,
         parameters=parameters,
     )

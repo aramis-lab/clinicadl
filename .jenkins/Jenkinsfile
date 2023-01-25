@@ -20,6 +20,9 @@ pipeline {
             environment {
               CONDA_HOME = "$HOME/miniconda"
               CONDA_ENV = "$WORKSPACE/env"
+              PATH = "$HOME/.local/bin:$PATH"
+              TMP_DIR = "$HOME/tmp"
+              INPUT_DATA_DIR = '/mnt/data/clinicadl_data_ci/data_ci'
             }
             stages {
               stage('Build Env') {
@@ -47,27 +50,29 @@ pipeline {
               }
               stage('CLI tests Linux') {
                 steps {
-                  echo 'Testing pipeline instantiation...'
-                    sh 'echo "Agent name: ${NODE_NAME}"'
-                    sh '''
-                    set +x
-                    echo $WORKSPACE
-                    source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                    conda activate "${CONDA_ENV}"
-                    conda list
-                    cd $WORKSPACE/tests
-                    poetry run pytest \
-                      --junitxml=./test-reports/test_cli_report.xml \
-                      --verbose \
-                      --disable-warnings \
-                      test_cli.py
-                    conda deactivate
-                    '''
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
+                    echo 'Testing pipeline instantiation...'
+                      sh 'echo "Agent name: ${NODE_NAME}"'
+                      sh '''
+                      set +x
+                      echo $WORKSPACE
+                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                      conda activate "${CONDA_ENV}"
+                      conda list
+                      cd $WORKSPACE/tests
+                      poetry run pytest \
+                        --junitxml=./test-reports/test_cli_report.xml \
+                        --verbose \
+                        --disable-warnings \
+                        test_cli.py
+                      conda deactivate
+                      '''
+                  }
                 }
               }
               stage('tsvtools tests Linux') {
                 steps {
-                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE'){
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
                     echo 'Testing tsvtool tasks...'
                       sh "echo 'Agent name: ${NODE_NAME}'"
                       sh '''
@@ -78,117 +83,135 @@ pipeline {
                         --junitxml=./test-reports/test_tsvtool_report.xml \
                         --verbose \
                         --disable-warnings \
-                        test_tsvtool.py
+                        --basetemp=$TMP_DIR \
+                        --input_data_directory=$INPUT_DATA_DIR \
+                        test_tsvtools.py
                       conda deactivate
                       '''
                   }
-                  
                 }
                 post {
                   always {
                     junit 'tests/test-reports/test_tsvtool_report.xml'
                   }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
+                  }
                 }
               }
               stage('Quality check tests Linux') {
                 steps {
-                  echo 'Testing quality check tasks...'
-                    sh "echo 'Agent name: ${NODE_NAME}'"
-                    sh '''
-                    source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                    conda activate "${CONDA_ENV}"
-                    cd $WORKSPACE/tests
-                    mkdir -p ./data/dataset
-                    tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
-                    tar xf /mnt/data/data_CI/dataset/OasisCaps_t1-volume.tar.gz -C ./data/dataset
-                    poetry run pytest \
-                      --junitxml=./test-reports/test_quality_check_report.xml \
-                      --verbose \
-                      --disable-warnings \
-                      test_qc.py
-                    conda deactivate
-                    '''
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
+                    echo 'Testing quality check tasks...'
+                      sh "echo 'Agent name: ${NODE_NAME}'"
+                      sh '''
+                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                      conda activate "${CONDA_ENV}"
+                      cd $WORKSPACE/tests
+                      poetry run pytest \
+                        --junitxml=./test-reports/test_quality_check_report.xml \
+                        --verbose \
+                        --disable-warnings \
+                        --basetemp=$TMP_DIR \
+                        --input_data_directory=$INPUT_DATA_DIR \
+                        test_qc.py
+                      conda deactivate
+                      '''
+                  }
                 }
                 post {
                   always {
                     junit 'tests/test-reports/test_quality_check_report.xml'
                   }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
+                  }
                 }
               }
               stage('Generate tests Linux') {
                 steps {
-                  echo 'Testing generate task...'
-                    sh "echo 'Agent name: ${NODE_NAME}'"
-                    sh '''
-                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                      conda activate "${CONDA_ENV}"
-                      cd $WORKSPACE/tests
-                      mkdir -p ./data/dataset
-                      tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
-                      poetry run pytest \
-                        --junitxml=./test-reports/test_generate_report.xml \
-                        --verbose \
-                        --disable-warnings \
-                        test_generate.py
-                      conda deactivate
-                      '''
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
+                    echo 'Testing generate task...'
+                      sh "echo 'Agent name: ${NODE_NAME}'"
+                      sh '''
+                        source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                        conda activate "${CONDA_ENV}"
+                        cd $WORKSPACE/tests
+                        poetry run pytest \
+                          --junitxml=./test-reports/test_generate_report.xml \
+                          --verbose \
+                          --disable-warnings \
+                          --basetemp=$TMP_DIR \
+                          --input_data_directory=$INPUT_DATA_DIR \
+                          test_generate.py
+                        conda deactivate
+                        '''
+                  }
                 }
                 post {
                   always {
                     junit 'tests/test-reports/test_generate_report.xml'
-                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
+                  }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
               stage('Prepare data tests Linux') {
                 steps {
-                  echo 'Testing extract task...'
-                    sh "echo 'Agent name: ${NODE_NAME}'"
-                    sh '''
-                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                      conda activate "${CONDA_ENV}"
-                      cd $WORKSPACE/tests
-                      mkdir -p ./data/dataset
-                      tar xf /mnt/data/data_CI/dataset/DLPrepareData.tar.gz -C ./data/dataset
-                      poetry run pytest \
-                        --junitxml=./test-reports/test_extract_report.xml \
-                        --verbose \
-                        --disable-warnings \
-                        test_prepare_data.py
-                      conda deactivate
-                      '''
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
+                    echo 'Testing prepare_data task...'
+                      sh "echo 'Agent name: ${NODE_NAME}'"
+                      sh '''
+                        source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                        conda activate "${CONDA_ENV}"
+                        cd $WORKSPACE/tests
+                        poetry run pytest \
+                          --junitxml=./test-reports/test_prepare_data_report.xml \
+                          --verbose \
+                          --disable-warnings \
+                          --basetemp=$TMP_DIR \
+                          --input_data_directory=$INPUT_DATA_DIR \
+                          test_prepare_data.py
+                        conda deactivate
+                        '''
+                  }
                 }
                 post {
                   always {
-                    junit 'tests/test-reports/test_extract_report.xml'
-                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
+                    junit 'tests/test-reports/test_prepare_data_report.xml'
+                  }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
               stage('Predict tests Linux') {
                 steps {
-                  echo 'Testing predict...'
-                  sh "echo 'Agent name: ${NODE_NAME}'"
-                  sh '''
-                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                     conda activate "${CONDA_ENV}"
-                     cd $WORKSPACE/tests
-                     mkdir -p ./data/dataset
-                     tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
-                     tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
-                     ln -s /mnt/data/data_CI/models/models_new data/models
-                     poetry run pytest \
-                        --junitxml=./test-reports/test_predict_report.xml \
-                        --verbose \
-                        --disable-warnings \
-                        test_predict.py
-                     conda deactivate
-                     '''
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
+                    echo 'Testing predict...'
+                    sh "echo 'Agent name: ${NODE_NAME}'"
+                    sh '''
+                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                      conda activate "${CONDA_ENV}"
+                      cd $WORKSPACE/tests
+                      poetry run pytest \
+                          --junitxml=./test-reports/test_predict_report.xml \
+                          --verbose \
+                          --disable-warnings \
+                          --basetemp=$TMP_DIR \
+                          --input_data_directory=$INPUT_DATA_DIR \
+                          test_predict.py
+                      conda deactivate
+                      '''
+                  }
                 }
                 post {
                   always {
                     junit 'tests/test-reports/test_predict_report.xml'
-                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
+                  }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
@@ -204,8 +227,6 @@ pipeline {
             //                       eval "$(conda shell.bash hook)"
             //                       conda activate "${WORKSPACE}/env"
             //                       cd $WORKSPACE/tests
-            //                       mkdir -p ./data/dataset
-            //                       tar xf /mnt/data/data_CI/dataset/OasisCaps2.tar.gz -C ./data/dataset
             //                       pytest \
             //                         --junitxml=./test-reports/test_meta-analysis_report.xml \
             //                         --verbose \
@@ -238,173 +259,182 @@ pipeline {
             environment {
               CONDA_HOME = "$HOME/miniconda3"
               CONDA_ENV = "$WORKSPACE/env"
+              PATH = "$HOME/.local/bin:$PATH"
+              TMP_DIR = "$HOME/tmp"
+              INPUT_DATA_DIR = '/mnt/data/clinicadl_data_ci/data_ci'
             }
             stages {
               stage('Build Env') {
                 steps {
                   echo 'Installing clinicadl sources in Linux...'
-                  echo "My branch name is ${BRANCH_NAME}"
-                  sh "echo 'My branch name is ${BRANCH_NAME}'"
-                  sh 'printenv'
-                  sh "echo 'Agent name: ${NODE_NAME}'"
-                  sh '''#!/usr/bin/env bash
-                    source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                    make env.conda
-                    conda activate "${CONDA_ENV}"
-                    conda info
-                    echo "Install clinicadl using poetry..."
-                    cd $WORKSPACE
-                    make env
-                    # Show clinicadl help message
-                    echo "Display clinicadl help message"
-                    clinicadl --help
-                    conda deactivate
-                    '''
+                    echo "My branch name is ${BRANCH_NAME}"
+                    sh "echo 'My branch name is ${BRANCH_NAME}'"
+                    sh 'printenv'
+                    sh "echo 'Agent name: ${NODE_NAME}'"
+                    sh '''#!/usr/bin/env bash
+                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                      make env.conda
+                      conda activate "${CONDA_ENV}"
+                      conda info
+                      echo "Install clinicadl using poetry..."
+                      cd $WORKSPACE
+                      make env
+                      # Show clinicadl help message
+                      echo "Display clinicadl help message"
+                      clinicadl --help
+                      conda deactivate
+                      '''
                 }
               }
               stage('Train tests Linux') {
                 steps {
-                  echo 'Testing train task...'
-                  sh "echo 'Agent name: ${NODE_NAME}'"
-                  sh '''#!/usr/bin/env bash
-                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                     conda activate "${CONDA_ENV}"
-                     clinicadl --help
-                     cd $WORKSPACE/tests
-                     mkdir -p ./data/dataset
-                     tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
-                     cp -r /mnt/data/data_CI/labels_list ./data/
-                     cp -r /mnt/data/data_CI/reproducibility ./data/
-                     poetry run pytest \
-                        --junitxml=./test-reports/test_train_report.xml \
-                        --verbose \
-                        --disable-warnings \
-                        -k "test_train"
-                     conda deactivate
-                     '''
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
+                    echo 'Testing train task...'
+                    sh "echo 'Agent name: ${NODE_NAME}'"
+                    sh '''#!/usr/bin/env bash
+                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                      conda activate "${CONDA_ENV}"
+                      clinicadl --help
+                      cd $WORKSPACE/tests
+                      poetry run pytest \
+                          --junitxml=./test-reports/test_train_report.xml \
+                          --verbose \
+                          --disable-warnings \
+                          --basetemp=$TMP_DIR \
+                          --input_data_directory=$INPUT_DATA_DIR \
+                          -k "test_train"
+                      conda deactivate
+                      '''
+                  }
                 }
                 post {
                   always {
                     junit 'tests/test-reports/test_train_report.xml'
-                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
-                    sh 'rm -rf $WORKSPACE/tests/data/labels_list'
+                  }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
               stage('Transfer learning tests Linux') {
                 steps {
-                  echo 'Testing transfer learning...'
-                  sh "echo 'Agent name: ${NODE_NAME}'"
-                  sh '''#!/usr/bin/env bash
-                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                     conda activate "${CONDA_ENV}"
-                     clinicadl --help
-                     cd $WORKSPACE/tests
-                     mkdir -p ./data/dataset
-                     tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
-                     cp -r /mnt/data/data_CI/labels_list ./data/
-                     poetry run pytest \
-                        --junitxml=./test-reports/test_transfer_learning_report.xml \
-                        --verbose \
-                        --disable-warnings \
-                        test_transfer_learning.py
-                     conda deactivate
-                     '''
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
+                    echo 'Testing transfer learning...'
+                    sh "echo 'Agent name: ${NODE_NAME}'"
+                    sh '''#!/usr/bin/env bash
+                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                      conda activate "${CONDA_ENV}"
+                      clinicadl --help
+                      cd $WORKSPACE/tests
+                      poetry run pytest \
+                          --junitxml=./test-reports/test_transfer_learning_report.xml \
+                          --verbose \
+                          --disable-warnings \
+                          --basetemp=$TMP_DIR \
+                          --input_data_directory=$INPUT_DATA_DIR \
+                          test_transfer_learning.py
+                      conda deactivate
+                      '''
+                  }
                 }
                 post {
                   always {
                     junit 'tests/test-reports/test_transfer_learning_report.xml'
-                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
-                    sh 'rm -rf $WORKSPACE/tests/data/labels_list'
+                  }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
               stage('Resume tests Linux') {
                 steps {
-                  echo 'Testing resume...'
-                  sh "echo 'Agent name: ${NODE_NAME}'"
-                  sh '''#!/usr/bin/env bash
-                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                     conda activate "${CONDA_ENV}"
-                     clinicadl --help
-                     cd $WORKSPACE/tests
-                     mkdir -p ./data/dataset
-                     tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
-                     tar xf /mnt/data/data_CI/models/stopped_jobs.tar.gz -C ./data
-                     cp -r /mnt/data/data_CI/labels_list ./data/
-                     poetry run pytest \
-                        --junitxml=./test-reports/test_resume_report.xml \
-                        --verbose \
-                        --disable-warnings \
-                        test_resume.py
-                     rm -r data/stopped_jobs
-                     conda deactivate
-                     '''
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
+                    echo 'Testing resume...'
+                    sh "echo 'Agent name: ${NODE_NAME}'"
+                    sh '''#!/usr/bin/env bash
+                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                      conda activate "${CONDA_ENV}"
+                      clinicadl --help
+                      cd $WORKSPACE/tests
+                      poetry run pytest \
+                          --junitxml=./test-reports/test_resume_report.xml \
+                          --verbose \
+                          --disable-warnings \
+                          --basetemp=$TMP_DIR \
+                          --input_data_directory=$INPUT_DATA_DIR \
+                          test_resume.py
+                      conda deactivate
+                      '''
+                  }
                 }
                 post {
                   always {
                     junit 'tests/test-reports/test_resume_report.xml'
-                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
-                    sh 'rm -rf $WORKSPACE/tests/data/labels_list'
-                    sh 'rm -rf $WORKSPACE/tests/data/stopped_jobs'
+                  }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
               stage('Interpretation tests Linux') {
                 steps {
-                  echo 'Testing interpret task...'
-                  sh "echo 'Agent name: ${NODE_NAME}'"
-                  sh '''#!/usr/bin/env bash
-                     set +x
-                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                     conda activate "${CONDA_ENV}"
-                     clinicadl --help
-                     cd $WORKSPACE/tests
-                     mkdir -p ./data/dataset
-                     tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
-                     cp -r /mnt/data/data_CI/labels_list ./data/
-                     poetry run pytest \
-                        --junitxml=./test-reports/test_interpret_report.xml \
-                        --verbose \
-                        --disable-warnings \
-                        test_interpret.py
-                     conda deactivate
-                     '''
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
+                    echo 'Testing interpret task...'
+                    sh "echo 'Agent name: ${NODE_NAME}'"
+                    sh '''#!/usr/bin/env bash
+                      set +x
+                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                      conda activate "${CONDA_ENV}"
+                      clinicadl --help
+                      cd $WORKSPACE/tests
+                      poetry run pytest \
+                          --junitxml=./test-reports/test_interpret_report.xml \
+                          --verbose \
+                          --disable-warnings \
+                          --basetemp=$TMP_DIR \
+                          --input_data_directory=$INPUT_DATA_DIR \
+                          test_interpret.py
+                      conda deactivate
+                      '''
+                  }
                 }
                 post {
                   always {
                     junit 'tests/test-reports/test_interpret_report.xml'
-                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
-                    sh 'rm -rf $WORKSPACE/tests/data/labels_list'
+                  }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }
               stage('Random search tests Linux') {
                 steps {
-                  echo 'Testing random search...'
-                  sh "echo 'Agent name: ${NODE_NAME}'"
-                  sh '''#!/usr/bin/env bash
-                     set +x
-                     source "${CONDA_HOME}/etc/profile.d/conda.sh"
-                     conda activate "${CONDA_ENV}"
-                     clinicadl --help
-                     cd $WORKSPACE/tests
-                     mkdir -p ./data/dataset
-                     tar xf /mnt/data/data_CI/dataset/RandomCaps.tar.gz -C ./data/dataset
-                     cp -r /mnt/data/data_CI/labels_list ./data/
-                     poetry run pytest \
-                        --junitxml=./test-reports/test_random_search_report.xml \
-                        --verbose \
-                        --disable-warnings \
-                        test_random_search.py
-                     conda deactivate
-                     '''
+                  catchError(buildResult: 'FAILURE', stageResult: 'UNSTABLE') {
+                    echo 'Testing random search...'
+                    sh "echo 'Agent name: ${NODE_NAME}'"
+                    sh '''#!/usr/bin/env bash
+                      set +x
+                      source "${CONDA_HOME}/etc/profile.d/conda.sh"
+                      conda activate "${CONDA_ENV}"
+                      clinicadl --help
+                      cd $WORKSPACE/tests
+                      poetry run pytest \
+                          --junitxml=./test-reports/test_random_search_report.xml \
+                          --verbose \
+                          --disable-warnings \
+                          --basetemp=$TMP_DIR \
+                          --input_data_directory=$INPUT_DATA_DIR \
+                          test_random_search.py
+                      conda deactivate
+                      '''
+                  }
                 }
                 post {
                   always {
                     junit 'tests/test-reports/test_random_search_report.xml'
-                    sh 'rm -rf $WORKSPACE/tests/data/dataset'
-                    sh 'rm -rf $WORKSPACE/tests/data/labels_list'
+                  }
+                  success {
+                    sh 'rm -rf ${TMP_DIR}/*'
                   }
                 }
               }

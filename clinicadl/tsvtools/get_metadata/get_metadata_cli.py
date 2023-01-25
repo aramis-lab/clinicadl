@@ -8,6 +8,7 @@ from clinicadl.utils.tsvtools_utils import merged_tsv_reader
 
 
 @click.command(name="get-metadata", no_args_is_help=True)
+@cli_param.argument.data_tsv
 @cli_param.option.variables_of_interest
 def cli(data_tsv, variables_of_interest):
     """Writes additional data in the tsv file.

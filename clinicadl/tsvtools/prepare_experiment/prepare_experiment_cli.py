@@ -57,7 +57,7 @@ def cli(
     p_age_threshold = 0.80
     p_sex_threshold = 0.80
     ignore_demographics = False
-
+    flag_not_baseline = False
     split_diagnoses(
         data_tsv,
         n_test=n_test,
@@ -66,7 +66,25 @@ def cli(
         p_sex_threshold=p_sex_threshold,
         ignore_demographics=ignore_demographics,
         categorical_split_variable=None,
+        not_only_baseline=flag_not_baseline,
     )
+    from os.path import exists
+    from pathlib import Path
+
+    parents_path = Path(data_tsv).parents[0]
+    split_numero = 1
+    folder_name = "split"
+
+    while exists(parents_path / folder_name):
+        split_numero += 1
+        folder_name = f"split_{split_numero}"
+    if split_numero > 2:
+        folder_name = f"split_{split_numero-1}"
+    else:
+        folder_name = "split"
+
+    results_path = parents_path / folder_name
+    data_tsv = results_path / "train.tsv"
     if validation_type == "split":
         split_diagnoses(
             data_tsv,
@@ -83,7 +101,7 @@ def cli(
 
         kfold_diagnoses(
             data_tsv,
-            n_splits=n_validation,
+            n_splits=int(n_validation),
             subset_name="validation",
             stratification=None,
         )
