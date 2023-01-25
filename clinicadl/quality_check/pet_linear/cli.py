@@ -25,12 +25,14 @@ from clinicadl.utils import cli_param
     help="The threshold on the output probability to decide if the image "
     "passed or failed.",
 )
+@cli_param.option.n_proc
 def cli(
     caps_directory,
     output_directory,
     acq_label,
     ref_region,
     threshold,
+    n_proc,
 ):
     """Performs quality check on t1-volume pipeline.
 
@@ -48,4 +50,5 @@ def cli(
         acq_label,
         ref_region,
         threshold,
+        n_proc,
     )

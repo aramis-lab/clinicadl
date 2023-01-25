@@ -11,7 +11,7 @@ import pandas as pd
 from .utils import extract_metrics
 
 
-def quality_check(caps_dir, output_directory, acq_label, ref_region, threshold):
+def quality_check(caps_dir, output_directory, acq_label, ref_region, threshold, n_proc):
 
     logger = getLogger("clinicadl.quality_check")
 
@@ -20,6 +20,7 @@ def quality_check(caps_dir, output_directory, acq_label, ref_region, threshold):
         output_dir=output_directory,
         acq_label=acq_label,
         ref_region=ref_region,
+        n_proc=n_proc,
     )
     logger.info(
         f"Quality check metrics extracted at {path.join(output_directory, 'QC_metrics.tsv')}."

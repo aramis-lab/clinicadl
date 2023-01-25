@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import torch
 from clinica.utils.inputs import RemoteFileStructure, fetch_file
+from joblib import Parallel, delayed
 from scipy.ndimage import binary_fill_holes
 from skimage.filters import threshold_otsu
 
@@ -141,7 +142,7 @@ def distance(mask_contour, mask_brain, mask_np):
     return tfp_brain_arr, mttp_contour_av, tfp_brain_up
 
 
-def extract_metrics(caps_dir, output_dir, acq_label, ref_region):
+def extract_metrics(caps_dir, output_dir, acq_label, ref_region, n_proc):
     if not path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -199,7 +200,8 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region):
 
     subjects = os.listdir(path.join(caps_dir, "subjects"))
     subjects = [subject for subject in subjects if subject[:4:] == "sub-"]
-    for subject in subjects:
+
+    def parallelize_subjects(subject):
         subject_path = path.join(caps_dir, "subjects", subject)
         sessions = os.listdir(subject_path)
         sessions = [session for session in sessions if session[:4:] == "ses-"]
@@ -241,5 +243,8 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region):
             row_df = pd.DataFrame(row, columns=columns)
             results_df = pd.concat([results_df, row_df])
 
+    Parallel(n_jobs=n_proc)(
+        delayed(parallelize_subjects)(subject) for subject in subjects
+    )
     results_df.sort_values("max_intensity", inplace=True, ascending=True)
     results_df.to_csv(filename, sep="\t", index=False)
