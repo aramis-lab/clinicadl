@@ -58,7 +58,7 @@ def quality_check(
         FILE1 = RemoteFileStructure(
             filename="resnet_18_darq.pth",
             url=url_aramis,
-            checksum="a97a781be3820b06424fe891ec405c78b87ad51a27b6b81614dbdb996ce60104",
+            checksum="321928e0532f1be7a8dd7f5d805b747c7147ff52594f77ffed0858ab19c5df03",
         )
         model = darq_r18()
 
@@ -66,7 +66,7 @@ def quality_check(
         FILE1 = RemoteFileStructure(
             filename="sq101_darq.pth",
             url=url_aramis,
-            checksum="a97a781be3820b06424fe891ec405c78b87ad51a27b6b81614dbdb996ce60104",
+            checksum="1f4f3ebd20aaa726d634165a89df12461d9b7c6f2f45931bd29d16cf2616d00f",
         )
         model = darq_sq101()
 
