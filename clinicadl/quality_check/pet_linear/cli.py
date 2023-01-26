@@ -6,7 +6,7 @@ from clinicadl.utils import cli_param
 @click.command(name="pet-linear", no_args_is_help=True)
 @cli_param.argument.caps_directory
 @click.argument(
-    "output_directory",
+    "output_tsv",
     type=str,
 )
 @click.argument(
@@ -29,7 +29,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.n_proc
 def cli(
     caps_directory,
-    output_directory,
+    output_tsv,
     acq_label,
     ref_region,
     participants_tsv,
@@ -40,7 +40,7 @@ def cli(
 
     CAPS_DIRECTORY is the CAPS folder where t1-volume outputs are stored.
 
-    OUTPUT_DIRECTORY is the path to the directory in which TSV files will be written.
+    output_tsv is the path to the directory in which TSV files will be written.
 
     GROUP_LABEL is the group associated to the gray matter DARTEL template in CAPS_DIRECTORY.
     """
@@ -48,7 +48,7 @@ def cli(
 
     pet_linear_qc(
         caps_directory,
-        output_directory,
+        output_tsv,
         acq_label,
         ref_region,
         participants_tsv=participants_tsv,

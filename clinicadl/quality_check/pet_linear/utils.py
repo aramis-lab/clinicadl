@@ -1,27 +1,14 @@
 """
 Produces a tsv file to study all the nii files and perform the quality check.
 """
-import os
-from logging import getLogger
-from os import path
-from os.path import abspath, dirname, exists, join
-from pathlib import Path
+
+
+from copy import copy
 
 import cv2
-import nibabel as nib
 import numpy as np
-import pandas as pd
-import torch
-from clinica.utils.inputs import RemoteFileStructure, fetch_file
-from joblib import Parallel, delayed
 from scipy.ndimage import binary_fill_holes
 from skimage.filters import threshold_otsu
-from torch.utils.data import DataLoader
-
-from clinicadl.generate.generate_utils import load_and_check_tsv
-from clinicadl.quality_check.t1_linear.utils import QCDataset
-from clinicadl.utils.caps_dataset.data import CapsDataset
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 
 def thresholdOtsuDisplay(image):
@@ -60,220 +47,73 @@ def extract_mask(img_np):
     return mask
 
 
-def distance(mask_contour, mask_brain, mask_np):
+def distance(contour_np, brain_np, img_np):
 
-    shape3D = mask_np.shape
+    shape3D = img_np.shape
+    img_seuil_35 = copy(img_np)
+    img_seuil_35[img_seuil_35 < 0.35] = 0
 
-    if not (shape3D == mask_brain.shape):
+    mask_np = extract_mask(img_np)
+
+    if not (shape3D == brain_np.shape):
         print("numpy array hasn't the same size and cannot be compare")
 
-    tn_contour_av = 0
-    tp_contour_av = 0
-    fp_contour_av = 0
-    fn_contour_av = 0
-    print("test")
-    tn_brain_arr = 0
-    tp_brain_arr = 0
-    fp_brain_arr = 0
-    fn_brain_arr = 0
+    sum_in_brain_35 = 0
+    sum_in_contour_35 = 0
 
-    tn_brain_up = 0
-    tp_brain_up = 0
-    fp_brain_up = 0
-    fn_brain_up = 0
+    tn_brain = 0
+    tp_brain = 0
+    fp_brain = 0
+    fn_brain = 0
 
-    tfp_brain_arr = 0
-    mttp_contour_av = 0
-    tfp_brain_up = 0
-    # nb = tp + fn
-    nb_contour_av = 373921
-    nb_brain_arr = 616879
-    nb_brain_up = 333
+    tn_contour = 0
+    tp_contour = 0
+    fp_contour = 0
+    fn_contour = 0
 
-    xx = int(shape3D[0] / 2)
+    xx = int(shape3D[0])
     yy = shape3D[1]
-    yy_limit = int(yy / 2)
     zz = shape3D[2]
-    zz_limit = int(zz / 2)
 
     for i in range(xx):
         for j in range(yy):
             for k in range(zz):
 
-                tmp = mask_np[i][j][k]
-                tmp_brain = int(mask_brain[i][j][k])
-                tmp_contour = int(mask_contour[i][j][k])
-                if k <= zz_limit:
+                tmp_seuil_35 = img_seuil_35[i][j][k]
+                tmp_mask = int(mask_np[i][j][k])
+                tmp_brain = int(brain_np[i][j][k])
+                tmp_contour = int(contour_np[i][j][k])
 
-                    if j <= yy_limit:
-                        if tmp_brain == 0:
-                            if tmp == 0:
-                                tn_brain_arr += 1
-                            if tmp == 1:
-                                fn_brain_arr += 1
+                if tmp_brain == 0:
 
-                        elif tmp_brain == 1:
-                            if tmp == 1:
-                                tp_brain_arr += 1
-                            elif tmp == 0:
-                                fp_brain_arr += 1
+                    if tmp_mask == 0:
+                        tn_brain += 1
+                    if tmp_mask == 1:
+                        fp_brain += 1
 
-                    elif j > yy_limit:
-                        if tmp_contour == 0:
-                            if tmp == 0:
-                                tn_contour_av += 1
-                            elif tmp == 1:
-                                fn_contour_av += 1
+                elif tmp_brain == 1:
+                    sum_in_brain_35 += tmp_seuil_35
 
-                        elif tmp_contour == 1:
-                            if tmp == 0:
-                                fp_contour_av += 1
-                            elif tmp == 1:
-                                tp_contour_av += 1
+                    if tmp_mask == 1:
+                        tp_brain += 1
+                    elif tmp_mask == 0:
+                        fn_brain += 1
 
-                elif k > zz_limit:
-                    if tmp_brain == 0:
-                        if tmp == 0:
-                            tn_brain_up += 1
-                        if tmp == 1:
-                            fn_brain_up += 1
+                if tmp_contour == 0:
 
-                    elif tmp_brain == 1:
-                        if tmp == 1:
-                            tp_brain_up += 1
-                        elif tmp == 0:
-                            fp_brain_up += 1
+                    if tmp_mask == 0:
+                        tn_contour += 1
+                    elif tmp_mask == 1:
+                        fp_contour += 1
 
-    tfp_brain_arr = tp_brain_arr / (fp_brain_arr + tp_brain_arr)
-    mttp_contour_av = 1 - (fp_contour_av / (fp_contour_av + tp_contour_av))
-    tfp_brain_up = tp_brain_up / (fp_brain_up + tp_brain_up)
-    return tfp_brain_arr, mttp_contour_av, tfp_brain_up
+                elif tmp_contour == 1:
+                    sum_in_contour_35 += tmp_seuil_35
 
+                    if tmp_mask == 1:
+                        tp_contour += 1
+                    elif tmp_mask == 0:
+                        fn_contour += 1
 
-def extract_metrics(
-    caps_dir, output_dir, acq_label, ref_region, n_proc, participants_tsv
-):
-    if not path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    # NEED TO ADD THE PATH TO THE MNI MASK OR TO THE MNI IMAGE
-    # Load eyes segmentation
-    home = str(Path.home())
-    cache_clinicadl = path.join(home, ".cache", "clinicadl", "mask")
-    if not (path.exists(cache_clinicadl)):
-        os.makedirs(cache_clinicadl)
-
-    url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
-    FILE1 = RemoteFileStructure(
-        filename="qc_pet_mask_contour.nii.gz",
-        url=url_aramis,
-        checksum="0c561ce7de343219e42861b87a359420f9d485da37a8f64d1366ee9bb5460ee6",
-    )
-
-    mask_contour_file = path.join(cache_clinicadl, FILE1.filename)
-    if not (path.exists(mask_contour_file)):
-        try:
-            mask_contour_file = fetch_file(FILE1, cache_clinicadl)
-        except IOError as err:
-            raise IOError("Unable to download required mni file for QC:", err)
-
-    mask_contour_nii = nib.load(mask_contour_file)
-    mask_contour = mask_contour_nii.get_fdata()
-
-    FILE2 = RemoteFileStructure(
-        filename="qc_pet_mask_brain.nii.gz",
-        url=url_aramis,
-        checksum="e78a542da49755f5c9ba751b4acca725650396999a671831f0acd8fbf4b898e8",
-    )
-
-    mask_brain_file = path.join(cache_clinicadl, FILE2.filename)
-    if not (path.exists(mask_brain_file)):
-        try:
-            mask_brain_file = fetch_file(FILE2, cache_clinicadl)
-        except IOError as err:
-            raise IOError("Unable to download required mni file for QC:", err)
-
-    mask_brain_nii = nib.load(mask_brain_file)
-    mask_brain = mask_brain_nii.get_fdata()
-
-    # Get the data
-    filename = path.join(output_dir, "QC_metrics.tsv")
-    columns = [
-        "participant_id",
-        "session_id",
-        "pass_probability",
-        "mttp_contour_av",
-        "tfp_brain_arr",
-        "tfp_brain_up",
-    ]
-
-    results_df = pd.DataFrame(columns=columns)
-
-    if not participants_tsv is None:
-        participants_df = pd.read_csv(participants_tsv, sep="\t")
-        participants_df.reset_index()
-        participants_df.set_index(["participant_id", "session_id"], inplace=True)
-        subjects = [subject for subject, subject_df in participants_df.groupby(level=0)]
-    else:
-        subjects = os.listdir(path.join(caps_dir, "subjects"))
-        subjects = [subject for subject in subjects if subject[:4:] == "sub-"]
-
-    def parallelize_subjects(subject, results_df):
-        subject_path = path.join(caps_dir, "subjects", subject)
-
-        if not participants_tsv is None:
-            sessions = participants_df.loc[subject]
-            sessions.reset_index(inplace=True)
-            sessions = sessions["session_id"].to_list()
-        else:
-            sessions = os.listdir(subject_path)
-            sessions = [session for session in sessions if session[:4:] == "ses-"]
-
-        for session in sessions:
-            image_path = path.join(
-                subject_path,
-                session,
-                "pet_linear",
-                subject
-                + "_"
-                + session
-                + "_trc-"
-                + acq_label
-                + "_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-"
-                + ref_region
-                + "_pet.nii.gz",
-            )
-
-            if path.exists(image_path):
-                image_nii = nib.load(image_path)
-                image_np = image_nii.get_fdata()
-            else:
-                raise FileNotFoundError(f"Clinical data not found ({image_path})")
-
-            tfp_brain_arr, mttp_contour_av, tfp_brain_up = distance(
-                mask_contour, mask_brain, extract_mask(image_np)
-            )
-
-            row = [
-                [
-                    subject,
-                    session,
-                    np.max(image_np),
-                    mttp_contour_av,
-                    tfp_brain_arr,
-                    tfp_brain_up,
-                ]
-            ]
-            row_df = pd.DataFrame(row, columns=columns)
-            results_df = pd.concat([results_df, row_df], ignore_index=True)
-        return results_df
-
-    results_df = Parallel(n_jobs=n_proc)(
-        delayed(parallelize_subjects)(subject, results_df) for subject in subjects
-    )
-
-    all_df = pd.DataFrame(columns=columns)
-    for subject_df in results_df:
-        all_df = pd.concat([all_df, subject_df])
-    all_df.sort_values("pass_probability", inplace=True, ascending=True)
-    all_df.to_csv(filename, sep="\t", index=False)
+    tfp_brain = tp_brain / (fp_brain + tp_brain)
+    mttp_contour = 1 - (fp_contour / (fp_contour + tp_contour))
+    return tfp_brain, mttp_contour, sum_in_contour_35, sum_in_brain_35
