@@ -11,7 +11,16 @@ import pandas as pd
 from .utils import extract_metrics
 
 
-def quality_check(caps_dir, output_directory, acq_label, ref_region, threshold, n_proc):
+def quality_check(
+    caps_dir: str,
+    output_directory: str,
+    acq_label: str,
+    ref_region: str,
+    participants_tsv: str = None,
+    threshold: float = 0.9,
+    n_proc: int = 0,
+    gpu: bool = False,
+):
 
     logger = getLogger("clinicadl.quality_check")
 
@@ -21,23 +30,24 @@ def quality_check(caps_dir, output_directory, acq_label, ref_region, threshold, 
         acq_label=acq_label,
         ref_region=ref_region,
         n_proc=n_proc,
+        participants_tsv=participants_tsv,
     )
     logger.info(
         f"Quality check metrics extracted at {path.join(output_directory, 'QC_metrics.tsv')}."
     )
 
     qc_df = pd.read_csv(path.join(output_directory, "QC_metrics.tsv"), sep="\t")
-    rejection1_df = qc_df[qc_df.ttp_av < threshold]
+    rejection1_df = qc_df[qc_df.mttp_contour_av < threshold]
     rejection1_df.to_csv(
         path.join(output_directory, "data_cleaned_step1.tsv"), sep="\t", index=False
     )
 
-    rejection2_df = rejection1_df[rejection1_df.tfp_ar < threshold]
+    rejection2_df = rejection1_df[rejection1_df.tfp_brain_arr < threshold]
     rejection2_df.to_csv(
         path.join(output_directory, "data_cleaned_step2.tsv"), sep="\t", index=False
     )
 
-    rejection3_df = rejection2_df[rejection2_df.tfp_up < threshold]
+    rejection3_df = rejection2_df[rejection2_df.tfp_brain_up < threshold]
     rejection3_df.to_csv(
         path.join(output_directory, "data_cleaned_step2.tsv"), sep="\t", index=False
     )

@@ -17,6 +17,7 @@ from clinicadl.utils import cli_param
     "ref_region",
     type=str,
 )
+@cli_param.option.participant_list
 @click.option(
     "--threshold",
     type=float,
@@ -31,6 +32,7 @@ def cli(
     output_directory,
     acq_label,
     ref_region,
+    participants_tsv,
     threshold,
     n_proc,
 ):
@@ -49,6 +51,7 @@ def cli(
         output_directory,
         acq_label,
         ref_region,
-        threshold,
-        n_proc,
+        participants_tsv=participants_tsv,
+        threshold=threshold,
+        n_proc=n_proc,
     )

@@ -2,7 +2,9 @@
 Produces a tsv file to study all the nii files and perform the quality check.
 """
 import os
+from logging import getLogger
 from os import path
+from os.path import abspath, dirname, exists, join
 from pathlib import Path
 
 import cv2
@@ -14,6 +16,12 @@ from clinica.utils.inputs import RemoteFileStructure, fetch_file
 from joblib import Parallel, delayed
 from scipy.ndimage import binary_fill_holes
 from skimage.filters import threshold_otsu
+from torch.utils.data import DataLoader
+
+from clinicadl.generate.generate_utils import load_and_check_tsv
+from clinicadl.quality_check.t1_linear.utils import QCDataset
+from clinicadl.utils.caps_dataset.data import CapsDataset
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 
 def thresholdOtsuDisplay(image):
@@ -142,7 +150,9 @@ def distance(mask_contour, mask_brain, mask_np):
     return tfp_brain_arr, mttp_contour_av, tfp_brain_up
 
 
-def extract_metrics(caps_dir, output_dir, acq_label, ref_region, n_proc):
+def extract_metrics(
+    caps_dir, output_dir, acq_label, ref_region, n_proc, participants_tsv
+):
     if not path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -191,20 +201,34 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region, n_proc):
     columns = [
         "participant_id",
         "session_id",
-        "max_intensity",
+        "pass_probability",
         "mttp_contour_av",
         "tfp_brain_arr",
         "tfp_brain_up",
     ]
-    results_df = pd.DataFrame()
 
-    subjects = os.listdir(path.join(caps_dir, "subjects"))
-    subjects = [subject for subject in subjects if subject[:4:] == "sub-"]
+    results_df = pd.DataFrame(columns=columns)
 
-    def parallelize_subjects(subject):
+    if not participants_tsv is None:
+        participants_df = pd.read_csv(participants_tsv, sep="\t")
+        participants_df.reset_index()
+        participants_df.set_index(["participant_id", "session_id"], inplace=True)
+        subjects = [subject for subject, subject_df in participants_df.groupby(level=0)]
+    else:
+        subjects = os.listdir(path.join(caps_dir, "subjects"))
+        subjects = [subject for subject in subjects if subject[:4:] == "sub-"]
+
+    def parallelize_subjects(subject, results_df):
         subject_path = path.join(caps_dir, "subjects", subject)
-        sessions = os.listdir(subject_path)
-        sessions = [session for session in sessions if session[:4:] == "ses-"]
+
+        if not participants_tsv is None:
+            sessions = participants_df.loc[subject]
+            sessions.reset_index(inplace=True)
+            sessions = sessions["session_id"].to_list()
+        else:
+            sessions = os.listdir(subject_path)
+            sessions = [session for session in sessions if session[:4:] == "ses-"]
+
         for session in sessions:
             image_path = path.join(
                 subject_path,
@@ -215,7 +239,7 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region, n_proc):
                 + session
                 + "_trc-"
                 + acq_label
-                + "_rec-uniform_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-"
+                + "_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-"
                 + ref_region
                 + "_pet.nii.gz",
             )
@@ -241,10 +265,15 @@ def extract_metrics(caps_dir, output_dir, acq_label, ref_region, n_proc):
                 ]
             ]
             row_df = pd.DataFrame(row, columns=columns)
-            results_df = pd.concat([results_df, row_df])
+            results_df = pd.concat([results_df, row_df], ignore_index=True)
+        return results_df
 
-    Parallel(n_jobs=n_proc)(
-        delayed(parallelize_subjects)(subject) for subject in subjects
+    results_df = Parallel(n_jobs=n_proc)(
+        delayed(parallelize_subjects)(subject, results_df) for subject in subjects
     )
-    results_df.sort_values("max_intensity", inplace=True, ascending=True)
-    results_df.to_csv(filename, sep="\t", index=False)
+
+    all_df = pd.DataFrame(columns=columns)
+    for subject_df in results_df:
+        all_df = pd.concat([all_df, subject_df])
+    all_df.sort_values("pass_probability", inplace=True, ascending=True)
+    all_df.to_csv(filename, sep="\t", index=False)
