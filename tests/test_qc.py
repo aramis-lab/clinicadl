@@ -38,6 +38,17 @@ def test_qc(cmdopt, tmp_path, test_name):
             out_dir,
             "Ixi549Space",
         ]
+
+    elif test_name == "pet-linear":
+        out_dir = str(tmp_out_dir / "QC_pet.tsv")
+        test_input = [
+            "pet-linear",
+            str(input_dir / "caps"),
+            out_dir,
+            "ffdg",
+            "cerebellumPons2",
+            "--threshold",
+        ]
     else:
         raise NotImplementedError(
             f"Quality check test on {test_name} is not implemented."
@@ -59,3 +70,14 @@ def test_qc(cmdopt, tmp_path, test_name):
 
     elif test_name == "t1-volume":
         assert compare_folders(out_dir, str(ref_dir / "QC_T1V"), tmp_out_dir)
+
+    elif test_name == "pet-linear":
+        out_df = pd.read_csv(out_tsv, sep="\t")
+        ref_tsv = join(ref_dir, "QC_pet.tsv")
+        ref_df = pd.read_csv(ref_tsv, sep="\t")
+        out_df.reset_index(inplace=True)
+        ref_df.reset_index(inplace=True)
+        out_df["pass_probability"] = round(out_df["pass_probability"], 2)
+        ref_df["pass_probability"] = round(ref_df["pass_probability"], 2)
+        system(f"diff {out_tsv} {ref_tsv} ")
+        assert out_df.equals(ref_df)
