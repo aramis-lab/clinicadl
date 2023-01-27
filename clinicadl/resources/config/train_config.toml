@@ -34,6 +34,86 @@ loss = "MSELoss"
 selection_metrics = ["loss"]
 loss = "MSELoss"
 
+[Pythae]
+# Beta VAE
+beta=5
+# Linear Normalizing Flow VAE
+flows=['Planar', 'Radial', 'Planar']
+# Inverse Autoregressive Flows
+n_made_blocks=2
+n_hidden_in_made=3
+hidden_size=128
+# Disentangled Beta VAE
+#beta=5
+C=30.0
+warmup_epoch=25
+# Factor VAE
+gamma=10
+# Beta TC VAE
+#beta=2.
+alpha=1
+#gamma=1
+# MS SSIM VAE
+#beta=1e-2
+window_size=3
+# Info VAE
+kernel_choice='imq'
+#alpha=-2
+lbd=10
+kernel_bandwidth=1
+# Wasserstein Autoencoder
+#kernel_choice='imq'
+reg_weight=100
+#kernel_bandwidth=2
+# Hyperspherical VAE
+# Poincare VAE
+reconstruction_loss="bce"
+prior_distribution="riemannian_normal"
+posterior_distribution="wrapped_normal"
+curvature=0.7
+# Adversarial AE
+adversarial_loss_scale=0.9
+# VAE GAN
+#adversarial_loss_scale=0.8
+reconstruction_layer=3
+margin=0.4
+equilibrium= 0.68
+# VQ VAE
+commitment_loss_factor=0.25
+quantization_loss_factor=1.0
+num_embeddings=128
+use_ema=true
+decay=0.99
+# Hamiltonian VAE
+n_lf=1
+eps_lf=0.001
+beta_zero=0.3
+# Riemannian Hamiltonian VAE
+#n_lf=1
+#eps_lf=0.001
+#beta_zero=0.3
+temperature=1.5
+regularization=0.001
+# Importance Weighted Autoencoder
+number_samples=3
+# Multiply Importance Weighted Autoencoder
+number_gradient_estimates=4
+#number_samples=4
+# Partially Importance Weighted Autoencoder
+#number_gradient_estimates=4
+#number_samples=4
+# Combination Importance Weighted Autoencoder
+#beta=0.05
+#number_samples=4
+# VAMP Autoencoder
+number_components=50
+# Regularized AE with L2 decoder param
+embedding_weight=1e-2
+#reg_weight=1e-4
+# Regularized AE with gradient penalty
+#embedding_weight=1e-2
+#reg_weight=1e-4
+
 [Computational]
 gpu = true
 n_proc = 2
