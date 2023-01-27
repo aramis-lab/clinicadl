@@ -13,7 +13,7 @@ from clinicadl.utils.network.network import Network
 
 
 # TODO: add function to check that the output size of the network corresponds to what is expected to
-#  perform the task
+# perform the task
 class TaskManager:
     def __init__(self, mode: str, n_classes: int = None):
         self.mode = mode
@@ -200,15 +200,18 @@ class TaskManager:
                     for loss_component in loss_dict.keys():
                         total_loss[loss_component] = 0
                     for loss_component in total_loss.keys():
-                        total_loss[loss_component] += loss_dict[loss_component].item()
+                        total_loss[loss_component] += loss_dict[loss_component].mean().item()
                 else:
                     outputs, loss_dict = model.compute_outputs_and_loss(
                         data, criterion, use_labels=use_labels
                     )
                     for loss_component in total_loss.keys():
-                        total_loss[loss_component] += loss_dict[loss_component].item()
+                        total_loss[loss_component] += loss_dict[loss_component].mean().item()
 
                 # Generate detailed DataFrame
+                print("len(data['participant_id']) (and idx range):", len(data["participant_id"]))
+                print("len(outputs):", len(outputs))
+                print("len(data):", len(data))
                 for idx in range(len(data["participant_id"])):
                     row = self.generate_test_row(idx, data, outputs)
                     row_df = pd.DataFrame(row, columns=self.columns)

@@ -216,7 +216,6 @@ class MapsManager:
             split_list = self._find_splits()
         logger.debug(f"List of splits {split_list}")
 
-        print(self.size_reduction)
         _, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
@@ -280,6 +279,7 @@ class MapsManager:
                         if label_code == "default"
                         else label_code,
                         cnn_index=network,
+                        for_pythae=True,
                     )
                     test_loader = DataLoader(
                         data_test,
@@ -299,34 +299,17 @@ class MapsManager:
                         gpu=gpu,
                         network=network,
                     )
-                    if save_tensor:
-                        logger.debug("Saving tensors")
-                        self._compute_output_tensors(
-                            data_test,
-                            data_group,
-                            split,
-                            selection_metrics,
-                            gpu=gpu,
-                            network=network,
-                        )
-                    if save_nifti:
-                        self._compute_output_nifti(
-                            data_test,
-                            data_group,
-                            split,
-                            selection_metrics,
-                            gpu=gpu,
-                            network=network,
-                        )
-                    if save_latent_tensor:
-                        self._compute_latent_tensors(
-                            data_test,
-                            data_group,
-                            split,
-                            selection_metrics,
-                            gpu=gpu,
-                            network=network,
-                        )
+                    if save_tensor or save_nifti or save_latent_tensor:
+                        self._save_model_output(
+                        data_test,
+                        data_group,
+                        split,
+                        selection_metrics,
+                        save_reconstruction_tensor=save_tensor,
+                        save_reconstruction_nifti=save_nifti,
+                        save_latent_tensor=save_latent_tensor,
+                        gpu=gpu,
+                    )
             else:
                 data_test = return_dataset(
                     group_parameters["caps_directory"],
@@ -339,6 +322,7 @@ class MapsManager:
                     label_code=self.label_code
                     if label_code == "default"
                     else label_code,
+                    for_pythae=True,
                 )
 
                 test_loader = DataLoader(
@@ -358,29 +342,15 @@ class MapsManager:
                     use_labels=use_labels,
                     gpu=gpu,
                 )
-                if save_tensor:
-                    logger.debug("Saving tensors")
-                    self._compute_output_tensors(
+                if save_tensor or save_nifti or save_latent_tensor:
+                    self._save_model_output(
                         data_test,
                         data_group,
                         split,
                         selection_metrics,
-                        gpu=gpu,
-                    )
-                if save_nifti:
-                    self._compute_output_nifti(
-                        data_test,
-                        data_group,
-                        split,
-                        selection_metrics,
-                        gpu=gpu,
-                    )
-                if save_latent_tensor:
-                    self._compute_latent_tensors(
-                        data_test,
-                        data_group,
-                        split,
-                        selection_metrics,
+                        save_reconstruction_tensor=save_tensor,
+                        save_reconstruction_nifti=save_nifti,
+                        save_latent_tensor=save_latent_tensor,
                         gpu=gpu,
                     )
 
@@ -933,7 +903,7 @@ class MapsManager:
         )
 
         if self.task_manager.save_outputs:
-            self._compute_output_tensors(
+            self._save_model_output(
                 train_loader.dataset,
                 "train",
                 split,
@@ -941,7 +911,7 @@ class MapsManager:
                 nb_images=1,
                 network=network,
             )
-            self._compute_output_tensors(
+            self._save_model_output(
                 train_loader.dataset,
                 "validation",
                 split,
@@ -1059,7 +1029,10 @@ class MapsManager:
             nb_imgs = len(dataset)
             for i in range(nb_imgs):
                 data = dataset[i]
-                image = data["image"]
+                try:
+                    image = data["image"]
+                except:
+                    image = data["data"]
                 output = (
                     model.predict(image.unsqueeze(0).to(model.device))
                     .squeeze(0)
@@ -1077,12 +1050,15 @@ class MapsManager:
                 nib.save(input_nii, path.join(nifti_path, input_filename))
                 nib.save(output_nii, path.join(nifti_path, output_filename))
 
-    def _compute_output_tensors(
+    def _save_model_output(
         self,
         dataset,
         data_group,
         split,
         selection_metrics,
+        save_reconstruction_tensor=True,
+        save_reconstruction_nifti=False,
+        save_latent_tensor=False,
         nb_images=None,
         gpu=None,
         network=None,
@@ -1109,14 +1085,35 @@ class MapsManager:
                 network=network,
             )
 
-            tensor_path = path.join(
-                self.maps_path,
-                f"{self.split_name}-{split}",
-                f"best-{selection_metric}",
-                data_group,
-                "tensors",
-            )
-            makedirs(tensor_path, exist_ok=True)
+            if save_reconstruction_tensor:
+                tensor_path = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    data_group,
+                    "tensors",
+                )
+                makedirs(tensor_path, exist_ok=True)
+
+            if save_reconstruction_nifti:
+                nifti_path = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    data_group,
+                    "nifti_images",
+                )
+                makedirs(nifti_path, exist_ok=True)
+
+            if save_latent_tensor:
+                latent_tensor_path = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    data_group,
+                    "latent_tensors",
+                )
+                makedirs(latent_tensor_path, exist_ok=True)
 
             if nb_images is None:  # Compute outputs for the whole data set
                 nb_modes = len(dataset)
@@ -1125,82 +1122,43 @@ class MapsManager:
 
             for i in range(nb_modes):
                 data = dataset[i]
-                image = data["image"]
-                output = (
-                    model.predict(image.unsqueeze(0).to(model.device)).squeeze(0).cpu()
-                )
+                image = data["data"]
+                data["data"] = data["data"].unsqueeze(0)
+                output = model.predict(data)
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
                 mode_id = data[f"{self.mode}_id"]
-                input_filename = (
-                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
-                )
-                output_filename = (
-                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
-                )
-                torch.save(image, path.join(tensor_path, input_filename))
-                torch.save(output, path.join(tensor_path, output_filename))
-                logger.debug(f"File saved at {[input_filename, output_filename]}")
 
-    def _compute_latent_tensors(
-        self,
-        dataset,
-        data_group,
-        split,
-        selection_metrics,
-        nb_images=None,
-        gpu=None,
-        network=None,
-    ):
-        """
-        Compute the output tensors and saves them in the MAPS.
+                if save_reconstruction_tensor:
+                    reconstruction = output["recon_x"].squeeze(0).cpu()
+                    input_filename = (
+                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
+                    )
+                    output_filename = (
+                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
+                    )
+                    torch.save(image, path.join(tensor_path, input_filename))
+                    torch.save(reconstruction, path.join(tensor_path, output_filename))
+                    logger.debug(f"File saved at {[input_filename, output_filename]}")
 
-        Args:
-            dataset (clinicadl.utils.caps_dataset.data.CapsDataset): wrapper of the data set.
-            data_group (str): name of the data group used for the task.
-            split (int): split number.
-            selection_metrics (list[str]): metrics used for model selection.
-            nb_images (int): number of full images to write. Default computes the outputs of the whole data set.
-            gpu (bool): If given, a new value for the device of the model will be computed.
-            network (int): Index of the network tested (only used in multi-network setting).
-        """
-        for selection_metric in selection_metrics:
-            # load the best trained model during the training
-            model, _ = self._init_model(
-                transfer_path=self.maps_path,
-                split=split,
-                transfer_selection=selection_metric,
-                gpu=gpu,
-                network=network,
-            )
+                if save_reconstruction_nifti:
+                    # Convert tensor to nifti image with appropriate affine
+                    reconstruction = output["recon_x"].squeeze(0).cpu()
+                    input_nii = nib.Nifti1Image(image[0].numpy(), eye(4))
+                    output_nii = nib.Nifti1Image(reconstruction[0].numpy(), eye(4))
+                    # Create file name according to participant and session id
+                    input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
+                    output_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
+                    nib.save(input_nii, path.join(nifti_path, input_filename))
+                    nib.save(output_nii, path.join(nifti_path, output_filename))
 
-            tensor_path = path.join(
-                self.maps_path,
-                f"{self.split_name}-{split}",
-                f"best-{selection_metric}",
-                data_group,
-                "latent_tensors",
-            )
-            makedirs(tensor_path, exist_ok=True)
+                if save_latent_tensor:
+                    latent = output["z"].squeeze(0).cpu()
+                    output_filename = (
+                        f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
+                    )
+                    torch.save(latent, path.join(latent_tensor_path, output_filename))
 
-            if nb_images is None:  # Compute outputs for the whole data set
-                nb_modes = len(dataset)
-            else:
-                nb_modes = nb_images * dataset.elem_per_image
-
-            for i in range(nb_modes):
-                data = dataset[i]
-                image = data["image"]
-                logger.debug(f"Image for latent representation {image}")
-                _, latent, _ = model.forward(image.unsqueeze(0).to(model.device))
-                latent = latent.squeeze(0).cpu()
-                participant_id = data["participant_id"]
-                session_id = data["session_id"]
-                mode_id = data[f"{self.mode}_id"]
-                output_filename = (
-                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
-                )
-                torch.save(latent, path.join(tensor_path, output_filename))
 
     def _ensemble_prediction(
         self,
@@ -1915,7 +1873,12 @@ class MapsManager:
             )
             transfer_class = getattr(network_package, transfer_maps.architecture)
             logger.debug(f"Transfer from {transfer_class}")
-            model.transfer_weights(transfer_state["model"], transfer_class)
+            if 'model' in transfer_state.keys():
+                model.transfer_weights(transfer_state["model"], transfer_class)
+            elif 'model_state_dict' in transfer_state.keys():
+                model.transfer_weights(transfer_state["model_state_dict"], transfer_class)
+            else:
+                raise KeyError("Unknow key in model state dictionnary.")
 
         return model, current_epoch
 
@@ -2102,6 +2065,13 @@ class MapsManager:
                 f"{self.split_name}-{split}",
                 f"best-{selection_metric}",
                 "model.pth.tar",
+            )
+            if not path.exists(model_path):
+                model_path = path.join(
+                self.maps_path,
+                f"{self.split_name}-{split}",
+                f"best-{selection_metric}",
+                "model.pt",
             )
 
         logger.info(

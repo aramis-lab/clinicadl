@@ -28,7 +28,10 @@ class ReconstructionManager(TaskManager):
         return True
 
     def generate_test_row(self, idx, data, outputs):
-        y = data["image"][idx]
+        try:
+            y = data["image"][idx]
+        except:
+            y = data["data"][idx]
         y_pred = outputs[idx].cpu()
         metrics = self.metrics_module.apply(y, y_pred)
         row = [
