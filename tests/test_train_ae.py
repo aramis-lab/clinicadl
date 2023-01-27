@@ -47,7 +47,6 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             config_path,
             "--split",
             "1",
-            "--no-gpu",
         ]
     elif test_name == "patch_multi_ae":
         split = [0, 0]
@@ -61,7 +60,6 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             "-c",
             config_path,
             "--multi_network",
-            "--no-gpu",
         ]
     elif test_name == "roi_ae":
         split = [0, 0]
@@ -74,7 +72,6 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             str(tmp_out_dir),
             "-c",
             config_path,
-            "--no-gpu",
         ]
     elif test_name == "slice_ae":
         split = [0, 0]
@@ -87,7 +84,6 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             str(tmp_out_dir),
             "-c",
             config_path,
-            "--no-gpu",
         ]
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
@@ -103,9 +99,9 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     with open(ref_dir / ("maps_" + test_name) / "maps.json", "r") as ref:
         json_data_ref = json.load(ref)
 
-    # if test_name == "patch_multi_ae" :
-    #     json_data_out["multi_network"] ="True"
-    # assert json_data_out == json_data_ref  # ["mode"] == mode
+    if test_name == "patch_multi_ae":
+        json_data_out["multi_network"] = "True"
+    assert json_data_out == json_data_ref  # ["mode"] == mode
 
     assert compare_folders(
         str(tmp_out_dir / "groups"),
