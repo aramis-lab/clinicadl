@@ -361,8 +361,6 @@ class PythaeCAPS(CapsDatasetImage):
         preprocessing_dict,
         train_transformations,
         all_transformations,
-        multi_cohort,
-        label,
     ):
         super().__init__(
             caps_directory,
@@ -370,14 +368,18 @@ class PythaeCAPS(CapsDatasetImage):
             preprocessing_dict,
             train_transformations=train_transformations,
             label_presence=False,
-            label=label,
             all_transformations=all_transformations,
-            multi_cohort=multi_cohort,
         )
     
     def __getitem__(self, index):
         X = super().__getitem__(index)
-        return DatasetOutput(data=X['image'])
+        return DatasetOutput(
+            data=X['image'],
+            participant_id=X['participant_id'],
+            session_id=X['session_id'],
+            image_id=X['image_id'],
+            image_path=X['image_path'],
+        )
 
 
 class CapsDatasetPatch(CapsDataset):
@@ -766,6 +768,7 @@ def return_dataset(
     cnn_index: int = None,
     label_presence: bool = True,
     multi_cohort: bool = False,
+    for_pythae: bool = False,
 ) -> CapsDataset:
     """
     Return appropriate Dataset according to given options.
@@ -790,61 +793,71 @@ def return_dataset(
             f"Multi-CNN is not implemented for {preprocessing_dict['mode']} mode."
         )
 
-    if preprocessing_dict["mode"] == "image":
-        return CapsDatasetImage(
+    if for_pythae:
+        return PythaeCAPS(
             input_dir,
             data_df,
             preprocessing_dict,
             train_transformations=train_transformations,
             all_transformations=all_transformations,
-            label_presence=label_presence,
-            label=label,
-            label_code=label_code,
-            multi_cohort=multi_cohort,
         )
-    elif preprocessing_dict["mode"] == "patch":
-        return CapsDatasetPatch(
-            input_dir,
-            data_df,
-            preprocessing_dict,
-            train_transformations=train_transformations,
-            all_transformations=all_transformations,
-            patch_index=cnn_index,
-            label_presence=label_presence,
-            label=label,
-            label_code=label_code,
-            multi_cohort=multi_cohort,
-        )
-    elif preprocessing_dict["mode"] == "roi":
-        return CapsDatasetRoi(
-            input_dir,
-            data_df,
-            preprocessing_dict,
-            train_transformations=train_transformations,
-            all_transformations=all_transformations,
-            roi_index=cnn_index,
-            label_presence=label_presence,
-            label=label,
-            label_code=label_code,
-            multi_cohort=multi_cohort,
-        )
-    elif preprocessing_dict["mode"] == "slice":
-        return CapsDatasetSlice(
-            input_dir,
-            data_df,
-            preprocessing_dict,
-            train_transformations=train_transformations,
-            all_transformations=all_transformations,
-            slice_index=cnn_index,
-            label_presence=label_presence,
-            label=label,
-            label_code=label_code,
-            multi_cohort=multi_cohort,
-        )
+
     else:
-        raise NotImplementedError(
-            f"Mode {preprocessing_dict['mode']} is not implemented."
-        )
+        if preprocessing_dict["mode"] == "image":
+            return CapsDatasetImage(
+                input_dir,
+                data_df,
+                preprocessing_dict,
+                train_transformations=train_transformations,
+                all_transformations=all_transformations,
+                label_presence=label_presence,
+                label=label,
+                label_code=label_code,
+                multi_cohort=multi_cohort,
+            )
+        elif preprocessing_dict["mode"] == "patch":
+            return CapsDatasetPatch(
+                input_dir,
+                data_df,
+                preprocessing_dict,
+                train_transformations=train_transformations,
+                all_transformations=all_transformations,
+                patch_index=cnn_index,
+                label_presence=label_presence,
+                label=label,
+                label_code=label_code,
+                multi_cohort=multi_cohort,
+            )
+        elif preprocessing_dict["mode"] == "roi":
+            return CapsDatasetRoi(
+                input_dir,
+                data_df,
+                preprocessing_dict,
+                train_transformations=train_transformations,
+                all_transformations=all_transformations,
+                roi_index=cnn_index,
+                label_presence=label_presence,
+                label=label,
+                label_code=label_code,
+                multi_cohort=multi_cohort,
+            )
+        elif preprocessing_dict["mode"] == "slice":
+            return CapsDatasetSlice(
+                input_dir,
+                data_df,
+                preprocessing_dict,
+                train_transformations=train_transformations,
+                all_transformations=all_transformations,
+                slice_index=cnn_index,
+                label_presence=label_presence,
+                label=label,
+                label_code=label_code,
+                multi_cohort=multi_cohort,
+            )
+        else:
+            raise NotImplementedError(
+                f"Mode {preprocessing_dict['mode']} is not implemented."
+            )
 
 
 ##################################
