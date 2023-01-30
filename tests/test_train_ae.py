@@ -100,7 +100,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
         json_data_ref = json.load(ref)
 
     if test_name == "patch_multi_ae":
-        json_data_out["multi_network"] = "True"
+        json_data_out["multi_network"] = True
     assert json_data_out == json_data_ref  # ["mode"] == mode
 
     assert compare_folders(
