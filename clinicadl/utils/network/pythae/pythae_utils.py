@@ -1,8 +1,10 @@
 import abc
 from collections import OrderedDict
 
-from pythae.models.nn import BaseEncoder, BaseDecoder
+import torch
 from pythae.models.base.base_utils import ModelOutput
+from pythae.models.nn import BaseDecoder, BaseEncoder
+from torch import nn
 
 from clinicadl.utils.network.network import Network
 from clinicadl.utils.network.vae.vae_layers import (
@@ -11,9 +13,6 @@ from clinicadl.utils.network.vae.vae_layers import (
     Flatten,
     Unflatten3D,
 )
-
-import torch
-from torch import nn
 
 
 class BasePythae(Network):
@@ -29,7 +28,7 @@ class BasePythae(Network):
     ):
         super(BasePythae, self).__init__(gpu=gpu)
 
-        #self.model = None
+        # self.model = None
 
         self.input_size = input_size
         self.latent_space_size = latent_space_size
@@ -56,15 +55,13 @@ class BasePythae(Network):
 
     @property
     def layers(self):
-        return torch.nn.Sequential(
-            self.model.encoder, self.model.decoder
-        )
+        return torch.nn.Sequential(self.model.encoder, self.model.decoder)
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=False):
-        #x = input_dict["image"].to(self.device)
+        # x = input_dict["image"].to(self.device)
         model_outputs = self.forward(input_dict)
         loss_dict = {
-            "loss": model_outputs.loss, 
+            "loss": model_outputs.loss,
         }
         for key in model_outputs.keys():
             if "loss" in key:
@@ -73,7 +70,7 @@ class BasePythae(Network):
 
     # Network specific
     def predict(self, x):
-        return self.forward(x)
+        return self.model.predict(x)
 
     def forward(self, x):
         return self.model.forward(x)
@@ -100,7 +97,7 @@ class BasePythae(Network):
 
 
 def build_encoder_decoder(
-    input_size = (1, 80, 96, 80),
+    input_size=(1, 80, 96, 80),
     latent_space_size=128,
     feature_size=0,
     n_conv=3,
@@ -148,9 +145,7 @@ def build_encoder_decoder(
         feature_space = n_pix
     else:
         feature_space = feature_size
-        encoder_layers.append(
-            nn.Sequential(nn.Linear(n_pix, feature_space), nn.ReLU())
-        )
+        encoder_layers.append(nn.Sequential(nn.Linear(n_pix, feature_space), nn.ReLU()))
     encoder = nn.Sequential(*encoder_layers)
 
     # LATENT SPACE
@@ -214,35 +209,37 @@ def build_encoder_decoder(
 
 
 class Encoder_VAE(BaseEncoder):
-    def __init__(self, encoder_layers, mu_layer, logvar_layer): # Args is a ModelConfig instance
+    def __init__(
+        self, encoder_layers, mu_layer, logvar_layer
+    ):  # Args is a ModelConfig instance
         BaseEncoder.__init__(self)
 
         self.layers = encoder_layers
         self.mu_layer = mu_layer
         self.logvar_layer = logvar_layer
 
-    def forward(self, x:torch.Tensor) -> ModelOutput:
+    def forward(self, x: torch.Tensor) -> ModelOutput:
         h = self.layers(x)
         mu, logVar = self.mu_layer(h), self.logvar_layer(h)
         output = ModelOutput(
-            embedding=mu, # Set the output from the encoder in a ModelOutput instance
-            log_covariance=logVar
+            embedding=mu,  # Set the output from the encoder in a ModelOutput instance
+            log_covariance=logVar,
         )
         return output
 
 
 class Encoder_AE(BaseEncoder):
-    def __init__(self, encoder_layers, mu_layer): # Args is a ModelConfig instance
+    def __init__(self, encoder_layers, mu_layer):  # Args is a ModelConfig instance
         BaseEncoder.__init__(self)
 
         self.layers = encoder_layers
         self.mu_layer = mu_layer
 
-    def forward(self, x:torch.Tensor) -> ModelOutput:
+    def forward(self, x: torch.Tensor) -> ModelOutput:
         h = self.layers(x)
         embedding = self.mu_layer(h)
         output = ModelOutput(
-            embedding=embedding, # Set the output from the encoder in a ModelOutput instance
+            embedding=embedding,  # Set the output from the encoder in a ModelOutput instance
         )
         return output
 
@@ -253,9 +250,9 @@ class Decoder(BaseDecoder):
 
         self.layers = decoder_layers
 
-    def forward(self, x:torch.Tensor) -> ModelOutput:
+    def forward(self, x: torch.Tensor) -> ModelOutput:
         out = self.layers(x)
         output = ModelOutput(
-            reconstruction=out # Set the output from the decoder in a ModelOutput instance
+            reconstruction=out  # Set the output from the decoder in a ModelOutput instance
         )
         return output
