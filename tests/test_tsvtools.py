@@ -28,7 +28,6 @@ def check_is_subject_unique(labels_path_baseline):
         check_df = extract_baseline(check_df, set_index=False)
     for subject, subject_df in check_df.groupby(level=0):
         if len(subject_df) > 1:
-            print(subject_df)
             flag_is_unique = False
     assert flag_is_unique
 

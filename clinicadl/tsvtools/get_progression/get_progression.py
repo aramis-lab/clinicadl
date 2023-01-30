@@ -73,7 +73,6 @@ def get_progression(
 
     stability_dict = {"CN": 0, "MCI": 1, "AD": 2, "Dementia": 2}
     nb_subjects = 0
-    # print(bids_df.columns.values)
     # if "group" is in bids_df.columns.values :
     #     diagnosis_str = "group"
     # elif "diagnosis" is in bids_df.columns.values :
@@ -99,7 +98,6 @@ def get_progression(
                 horizon_session = "ses-M0" + str(horizon_session_nb)
             else:
                 horizon_session = "ses-M" + str(horizon_session_nb)
-            # print(session, '-->', horizon_session)exit
 
             # CASE 1 : if the  session after 'horizon_time' months is a session the subject has done
             if horizon_session in session_list:

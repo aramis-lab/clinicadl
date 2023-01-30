@@ -88,19 +88,13 @@ class MapsManager:
                 )
             makedirs(path.join(self.maps_path, "groups"))
             logger.info(f"A new MAPS was created at {maps_path}")
-            print("check args")
             self._check_args(parameters)
-            print("write parameters")
             self.write_parameters(self.maps_path, self.parameters)
-            print("write requirements version")
             self._write_requirements_version()
 
             self.split_name = "split"  # Used only for retro-compatibility
-            print("write training data")
             self._write_training_data()
-            print("write train val groups")
             self._write_train_val_groups()
-            print("write information")
             self._write_information()
 
     def __getattr__(self, name):
@@ -540,14 +534,11 @@ class MapsManager:
         """
         from torch.utils.data import DataLoader
 
-        print("enter _train_single function")
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
         )
-        print("finish get_transforms")
         split_manager = self._init_split_manager(split_list)
-        print("finish init split manager")
         for split in split_manager.split_iterator():
             logger.info(f"Training split {split}")
             seed_everything(self.seed, self.deterministic, self.compensation)
@@ -577,7 +568,6 @@ class MapsManager:
                 label_code=self.label_code,
             )
             train_sampler = self.task_manager.generate_sampler(data_train, self.sampler)
-            print("test train json")
             logger.debug(
                 f"Getting train and validation loader with batch size {self.batch_size}"
             )
@@ -1414,14 +1404,12 @@ class MapsManager:
         logger.debug("Writing training data...")
         from clinicadl.utils.caps_dataset.data import load_data_test
 
-        print(self.tsv_path)
         train_df = load_data_test(
             self.tsv_path,
             self.diagnoses,
             baseline=False,
             multi_cohort=self.multi_cohort,
         )
-        # print(train_df)
         train_df = train_df[["participant_id", "session_id"]]
         if self.transfer_path:
             transfer_train_path = path.join(
@@ -1911,7 +1899,6 @@ class MapsManager:
         log_path = path.join(log_dir, "description.log")
         with open(log_path, "r") as f:
             content = f.read()
-            print(content)
 
     def get_group_info(
         self, data_group: str, split: int = None

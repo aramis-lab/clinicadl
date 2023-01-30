@@ -69,8 +69,6 @@ class CapsDataset(Dataset):
         if not hasattr(self, "mode"):
             raise AttributeError("Child class of CapsDataset must set mode attribute.")
 
-        print(self.label)
-        print(data_df)
         self.df = data_df
 
         mandatory_col = {"participant_id", "session_id", "cohort"}
@@ -83,7 +81,6 @@ class CapsDataset(Dataset):
                 f"the data file is not in the correct format."
                 f"Columns should include {mandatory_col}"
             )
-        print(data_df)
         self.elem_per_image = self.num_elem_per_image()
         self.size = self[0]["image"].size()
 
@@ -562,16 +559,13 @@ class CapsDatasetRoi(CapsDataset):
         import nibabel as nib
 
         caps_dict = self.create_caps_dict(caps_directory, multi_cohort)
-        print(f"caps_dict : {caps_dict}")
 
         if len(caps_dict) > 1:
             caps_directory = caps_dict[next(iter(caps_dict))]
-            print("len(caps_dict >1)")
             logger.warning(
                 f"The equality of masks is not assessed for multi-cohort training. "
                 f"The masks stored in {caps_directory} will be used."
             )
-        print(f"caps_directory : {caps_directory}")
         # Find template name
         if preprocessing_dict["preprocessing"] == "custom":
             template_name = preprocessing_dict["roi_custom_template"]
@@ -608,8 +602,6 @@ class CapsDatasetRoi(CapsDataset):
         for roi in self.roi_list:
             logger.info(f"Find mask for roi {roi}.")
             mask_path, desc = find_mask_path(mask_location, roi, pattern, True)
-            print(f"mask_path : {mask_path}")
-            print(f"mask_location : {mask_location}")
             if mask_path is None:
                 raise FileNotFoundError(desc)
             mask_nii = nib.load(mask_path)
@@ -762,7 +754,6 @@ def return_dataset(
             f"Multi-CNN is not implemented for {preprocessing_dict['mode']} mode."
         )
     if preprocessing_dict["mode"] == "image":
-        print(data_df)
         return CapsDatasetImage(
             input_dir,
             data_df,
@@ -1019,7 +1010,6 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
                 raise ClinicaDLConfigurationError(
                     "To use multi-cohort framework, please add 'multi_cohort=true' in your configuration file or '--multi_cohort' flag to the command line."
                 )
-        print(test_path)
         test_df = load_data_test_single(test_path, diagnoses_list, baseline=baseline)
         test_df["cohort"] = "single"
 

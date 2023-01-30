@@ -288,14 +288,12 @@ def mci_stability(bids_df: pd.DataFrame, horizon_time: int = 36) -> pd.DataFrame
                 session_nb = int(session[5::])
                 horizon_session_nb = session_nb + horizon_time
                 horizon_session = "ses-M" + str(horizon_session_nb)
-                # print(session, '-->', horizon_session)
 
                 if horizon_session_nb in session_list:
                     horizon_diagnosis = subject_df.loc[
                         (subject, horizon_session), "diagnosis"
                     ]
                     update_diagnosis = stability_dict[horizon_diagnosis] + "MCI"
-                    # print(horizon_diagnosis, update_diagnosis)
                     bids_copy_df.loc[(subject, session), "diagnosis"] = update_diagnosis
                 else:
                     if after_end_screening(horizon_session_nb, session_list):
@@ -309,7 +307,6 @@ def mci_stability(bids_df: pd.DataFrame, horizon_time: int = 36) -> pd.DataFrame
                             update_diagnosis = stability_dict[last_diagnosis] + "MCI"
                         else:
                             update_diagnosis = "uMCI"
-                        # print(update_diagnosis)
                         bids_copy_df.loc[
                             (subject, session), "diagnosis"
                         ] = update_diagnosis
@@ -321,8 +318,6 @@ def mci_stability(bids_df: pd.DataFrame, horizon_time: int = 36) -> pd.DataFrame
                         post_session = neighbour_session(
                             horizon_session_nb, session_list, +1
                         )
-                        # print('prev_session', prev_session)
-                        # print('post_session', post_session)
                         prev_diagnosis = subject_df.loc[
                             (subject, prev_session), "diagnosis"
                         ]
@@ -336,7 +331,6 @@ def mci_stability(bids_df: pd.DataFrame, horizon_time: int = 36) -> pd.DataFrame
                                 update_diagnosis = "uMCI"
                             else:
                                 update_diagnosis = "sMCI"
-                        # print(update_diagnosis)
                         bids_copy_df.loc[
                             (subject, session), "diagnosis"
                         ] = update_diagnosis

@@ -124,8 +124,6 @@ class SplitManager:
 
         valid_path = path.join(valid_path, "validation_baseline.tsv")
 
-        print(train_path)
-        print(valid_path)
         train_df = pd.read_csv(train_path, sep="\t")
         valid_df = pd.read_csv(valid_path, sep="\t")
 
@@ -136,7 +134,6 @@ class SplitManager:
             or "sex" not in list_columns
         ):
             parents_path = path.abspath(Path(train_path).parents[0])
-            print(parents_path)
             while not path.exists(path.join(parents_path, "labels.tsv")):
                 parents_path = Path(parents_path).parents[0]
             labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
@@ -153,7 +150,6 @@ class SplitManager:
             or "sex" not in list_columns
         ):
             parents_path = path.abspath(Path(valid_path).parents[0])
-            print(parents_path)
             while not path.exists(path.join(parents_path, "labels.tsv")):
                 parents_path = Path(parents_path).parents[0]
             labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
