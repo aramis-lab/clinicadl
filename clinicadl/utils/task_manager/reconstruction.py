@@ -44,10 +44,10 @@ class ReconstructionManager(TaskManager):
         return [row]
 
     def compute_metrics(self, results_df):
-        metrics = dict()
-        for metric in self.evaluation_metrics:
-            metrics[metric] = results_df[metric].mean()
-        return metrics
+    #     metrics = dict()
+    #     for metric in self.evaluation_metrics:
+    #         metrics[metric] = results_df[metric].mean()
+        return results_df.describe()
 
     @staticmethod
     def output_size(input_size, df, label):

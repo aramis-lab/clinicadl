@@ -974,9 +974,9 @@ class MapsManager:
             if use_labels:
                 if network is not None:
                     metrics[f"{self.mode}_id"] = network
-                logger.info(
-                    f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
-                )
+                # logger.info(
+                #     f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
+                # )
 
             # Replace here
             self._mode_level_to_tsv(
@@ -1153,7 +1153,7 @@ class MapsManager:
                     nib.save(output_nii, path.join(nifti_path, output_filename))
 
                 if save_latent_tensor:
-                    latent = output["z"].squeeze(0).cpu()
+                    latent = output["embedding"].squeeze(0).cpu()
                     output_filename = (
                         f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
                     )
@@ -1689,14 +1689,17 @@ class MapsManager:
             performance_dir, f"{data_group}_{self.mode}_level_metrics.tsv"
         )
         if metrics is not None:
-            if not path.exists(metrics_path):
-                pd.DataFrame(metrics, index=[0]).to_csv(
-                    metrics_path, index=False, sep="\t"
-                )
-            else:
-                pd.DataFrame(metrics, index=[0]).to_csv(
-                    metrics_path, index=False, sep="\t", mode="a", header=False
-                )
+            # if not path.exists(metrics_path):
+            #     pd.DataFrame(metrics, index=[0]).to_csv(
+            #         metrics_path, index=False, sep="\t"
+            #     )
+            # else:
+            #     pd.DataFrame(metrics, index=[0]).to_csv(
+            #         metrics_path, index=False, sep="\t", mode="a", header=False
+            #     )
+            metrics.to_csv(
+                metrics_path, sep="\t"
+            )
 
     def _ensemble_to_tsv(
         self,

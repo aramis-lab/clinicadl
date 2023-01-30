@@ -189,43 +189,26 @@ class TaskManager:
         dataloader.dataset.eval()
 
         results_df = pd.DataFrame(columns=self.columns)
-        total_loss = {}
         with torch.no_grad():
-            for i, data in enumerate(dataloader):
-                # initialize the loss list to save the loss components
-                if i == 0:
-                    outputs, loss_dict = model.compute_outputs_and_loss(
-                        data, criterion, use_labels=use_labels
-                    )
-                    for loss_component in loss_dict.keys():
-                        total_loss[loss_component] = 0
-                    for loss_component in total_loss.keys():
-                        total_loss[loss_component] += loss_dict[loss_component].mean().item()
-                else:
-                    outputs, loss_dict = model.compute_outputs_and_loss(
-                        data, criterion, use_labels=use_labels
-                    )
-                    for loss_component in total_loss.keys():
-                        total_loss[loss_component] += loss_dict[loss_component].mean().item()
+            for data in dataloader:
+                outputs = model.predict(data)["recon_x"]
 
                 # Generate detailed DataFrame
-                print("len(data['participant_id']) (and idx range):", len(data["participant_id"]))
-                print("len(outputs):", len(outputs))
-                print("len(data):", len(data))
                 for idx in range(len(data["participant_id"])):
                     row = self.generate_test_row(idx, data, outputs)
                     row_df = pd.DataFrame(row, columns=self.columns)
                     results_df = pd.concat([results_df, row_df])
 
-                del outputs, loss_dict
+                del outputs
             results_df.reset_index(inplace=True, drop=True)
+            results_df[self.evaluation_metrics] = results_df[
+                self.evaluation_metrics
+            ].apply(pd.to_numeric, axis=1)
 
         if not use_labels:
-            metrics_dict = None
+            metrics_df = None
         else:
-            metrics_dict = self.compute_metrics(results_df)
-            for loss_component in total_loss.keys():
-                metrics_dict[loss_component] = total_loss[loss_component]
+            metrics_df = self.compute_metrics(results_df)
         torch.cuda.empty_cache()
 
-        return results_df, metrics_dict
+        return results_df, metrics_df

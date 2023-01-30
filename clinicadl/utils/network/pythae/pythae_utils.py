@@ -73,7 +73,7 @@ class BasePythae(Network):
 
     # Network specific
     def predict(self, x):
-        return self.forward(x)
+        return self.model.predict(x)
 
     def forward(self, x):
         return self.model.forward(x)
