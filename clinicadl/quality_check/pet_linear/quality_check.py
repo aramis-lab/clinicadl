@@ -116,7 +116,7 @@ def quality_check(
                 + session
                 + "_trc-"
                 + acq_label
-                + "_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-"
+                + "_rec-uniform_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-"
                 + ref_region
                 + "_pet.nii.gz",
             )
