@@ -670,7 +670,7 @@ class QCDataset(Dataset):
         preprocessing_dict = {
             "preprocessing": "t1-linear",
             "mode": "image",
-            "use_uncropped_image": False,
+            "use_uncropped_image": True,
             "file_type": T1W_LINEAR,
         }
         self.tensor_dataset = CapsDatasetImage(
