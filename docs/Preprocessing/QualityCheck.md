@@ -117,6 +117,9 @@ This process involved combining two masks to produce the contour mask. To ensure
 
 We conducted a manual quality check of a few image sets among which 69 images were mis-registrated. After normalizing and thresholding the FDG PET image to remove noise, we calculated the sum of pixels in the contour. For theses images, the number was very high and using thise metric, the pipeline found 80% of the images.
 
+!!!note
+    t1-linear pipeline need to run prior to pet-linear pipeline so if an image do not pass the t1-linear quality check, we can assum that it will not pass the pet-linear problem. 
+    For a better results, we encourage you to run quality-check pet linear on the list of subjects that has passed the t1-linear quality check.
 
 You can find [here](https://github.com/camillebrianceau/QC) all the process to create the mask and the differents experiments that have been made to chose the best metric.
 
