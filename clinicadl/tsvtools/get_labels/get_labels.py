@@ -34,7 +34,7 @@ from clinicadl.utils.tsvtools_utils import (
 logger = getLogger("clinicadl")
 
 
-def infer_or_drop_diagnosis(bids_df: pd.DataFrame, diag_list=None) -> pd.DataFrame:
+def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
     """
     Deduce the diagnosis when missing from previous and following sessions of the subject. If not identical, the session
     is dropped. Sessions with no diagnosis are also dropped when there are the last sessions of the follow-up.
@@ -52,57 +52,56 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame, diag_list=None) -> pd.DataFra
     bids_copy_df = copy(bids_df)
     found_diag_interpol = 0
     nb_drop = 0
-    if diag_list is None:
-        diag_list = ["diagnosis"]
 
-    for diag in diag_list:
-        for subject, subject_df in bids_df.groupby(level=0):
-            session_list = []
-            for _, session in subject_df.index.values:
-                x = session[5::]
-                if not x.isdigit():
-                    subject_df.drop((subject, session), axis=0, inplace=True)
-                    bids_copy_df.drop((subject, session), axis=0, inplace=True)
+    for subject, subject_df in bids_df.groupby(level=0):
+        session_list = []
+        for _, session in subject_df.index.values:
+            x = session[5::]
+            if not x.isdigit():
+                subject_df.drop((subject, session), axis=0, inplace=True)
+                bids_copy_df.drop((subject, session), axis=0, inplace=True)
+                nb_drop += 1
+
+        session_list = [session for _, session in subject_df.index.values]
+
+        for _, session in subject_df.index.values:
+            diagnosis = subject_df.loc[(subject, session), "diagnosis"]
+            session_nb = session
+
+            if isinstance(diagnosis, float):
+                if session == last_session(session_list):
+                    bids_copy_df.drop(index=(_, session), axis=0, inplace=True)
                     nb_drop += 1
-
-            session_list = [session for _, session in subject_df.index.values]
-
-            for _, session in subject_df.index.values:
-                diagnosis = subject_df.loc[(subject, session), diag]
-                session_nb = session
-
-                if isinstance(diagnosis, float):
-                    if session == last_session(session_list):
-                        bids_copy_df.drop(index=(_, session), axis=0, inplace=True)
-                        nb_drop += 1
+                else:
+                    prev_session = neighbour_session(session_nb, session_list, -1)
+                    prev_diagnosis = bids_df.loc[(subject, prev_session), "diagnosis"]
+                    while isinstance(
+                        prev_diagnosis, float
+                    ) and prev_session != first_session(subject_df):
+                        prev_session = neighbour_session(prev_session, session_list, -1)
+                        prev_diagnosis = bids_df.loc[
+                            (subject, prev_session), "diagnosis"
+                        ]
+                    post_session = neighbour_session(session_nb, session_list, +1)
+                    post_diagnosis = bids_df.loc[(subject, post_session), "diagnosis"]
+                    while isinstance(
+                        post_diagnosis, float
+                    ) and post_session != last_session(session_list):
+                        post_session = neighbour_session(post_session, session_list, +1)
+                        post_diagnosis = bids_df.loc[
+                            (subject, post_session), "diagnosis"
+                        ]
+                    if prev_diagnosis == post_diagnosis:
+                        found_diag_interpol += 1
+                        bids_copy_df.loc[
+                            (subject, session), "diagnosis"
+                        ] = prev_diagnosis
                     else:
-                        prev_session = neighbour_session(session_nb, session_list, -1)
-                        prev_diagnosis = bids_df.loc[(subject, prev_session), diag]
-                        while isinstance(
-                            prev_diagnosis, float
-                        ) and prev_session != first_session(subject_df):
-                            prev_session = neighbour_session(
-                                prev_session, session_list, -1
-                            )
-                            prev_diagnosis = bids_df.loc[(subject, prev_session), diag]
-                        post_session = neighbour_session(session_nb, session_list, +1)
-                        post_diagnosis = bids_df.loc[(subject, post_session), diag]
-                        while isinstance(
-                            post_diagnosis, float
-                        ) and post_session != last_session(session_list):
-                            post_session = neighbour_session(
-                                post_session, session_list, +1
-                            )
-                            post_diagnosis = bids_df.loc[(subject, post_session), diag]
-                        if prev_diagnosis == post_diagnosis:
-                            found_diag_interpol += 1
-                            bids_copy_df.loc[(subject, session), diag] = prev_diagnosis
-                        else:
-                            bids_copy_df.drop((subject, session), inplace=True)
-                            nb_drop += 1
+                        bids_copy_df.drop((subject, session), inplace=True)
+                        nb_drop += 1
 
-        logger.info(f"Inferred diagnosis for {diag}: {found_diag_interpol}")
-        logger.info(f"Dropped subjects for {diag} (inferred diagnosis): {nb_drop}")
+    logger.info(f"Inferred diagnosis: {found_diag_interpol}")
+    logger.info(f"Dropped subjects (inferred diagnosis): {nb_drop}")
 
     return bids_copy_df
 
@@ -247,11 +246,9 @@ def get_labels(
     restriction_path: str = None,
     variables_of_interest: List[str] = None,
     remove_smc: bool = True,
-    caps_directory: str = None,
     merged_tsv: str = None,
     missing_mods: str = None,
     remove_unique_session: bool = False,
-    multi_diagnoses: bool = False,
 ):
     """
     Writes one TSV file based on merged_tsv and missing_mods.
@@ -295,11 +292,9 @@ def get_labels(
             "restriction_path": restriction_path,
             "variables_of_interest": variables_of_interest,
             "remove_smc": remove_smc,
-            "caps": caps_directory,
             "missing_mods": missing_mods,
             "merged_tsv": merged_tsv,
             "remove_unique_session": remove_unique_session,
-            "multi_diagnoses": multi_diagnoses,
         },
         filename="labels.json",
     )
@@ -324,9 +319,9 @@ def get_labels(
         check_bids_folder(bids_directory)
         compute_missing_mods(bids_directory, missing_mods_directory, "missing_mods")
 
-        logger.info(
-            f"output of clinica iotools check-missing-modalities: {missing_mods_directory}"
-        )
+    logger.info(
+        f"output of clinica iotools check-missing-modalities: {missing_mods_directory}"
+    )
 
     # Generating the output of `clinica iotools merge-tsv `
     merged_tsv_path = os.path.join(results_directory, "merge.tsv")
@@ -338,7 +333,7 @@ def get_labels(
         create_merge_file(
             bids_directory,
             os.path.join(results_directory, "merge.tsv"),
-            caps_dir=caps_directory,
+            caps_dir=None,
             pipelines=None,
             ignore_scan_files=None,
             ignore_sessions_files=None,
@@ -350,35 +345,27 @@ def get_labels(
             tracers_selection=False,
         )
 
-        logger.info(f"output of clinica iotools merge-tsv: {merged_tsv_path}")
+    logger.info(f"output of clinica iotools merge-tsv: {merged_tsv_path}")
 
     # Reading files
     bids_df = merged_tsv_reader(merged_tsv_path)
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
     variables_list = []
 
+    if "dx1" in bids_df.columns:
+        bids_df.rename(columns={"dx1": "diagnosis"}, inplace=True)
+
     try:
         variables_list.append(find_label(bids_df.columns.values, "age"))
         variables_list.append(find_label(bids_df.columns.values, "sex"))
+        variables_list.append(find_label(bids_df.columns.values, "diagnosis"))
     except ValueError:
-        logger.warning("The age or sex values were not found in the dataset.")
-
-    if not multi_diagnoses:
-        if "dx1" in bids_df.columns:
-            bids_df.rename(columns={"dx1": "diagnosis"}, inplace=True)
-        diagnoses_list = ["diagnosis"]
-    elif multi_diagnoses:
-        diagnoses_list = diagnoses
-
-    for diagnosis in diagnoses_list:
-        try:
-            variables_list.append(find_label(bids_df.columns.values, diagnosis))
-        except ValueError:
-            logger.warning(f"The {diagnosis} values were not found in the dataset.")
+        logger.warning(
+            "The age, sex or diagnosis values were not found in the dataset."
+        )
 
     # Cleaning NaN diagnosis
-    if not multi_diagnoses:
-        bids_df = cleaning_nan_diagnoses(bids_df)
+    bids_df = cleaning_nan_diagnoses(bids_df)
 
     # Checking the variables of interest
     if variables_of_interest is not None:
@@ -418,26 +405,26 @@ def get_labels(
 
     # Adding the field baseline_diagnosis
     bids_copy_df = copy(bids_df)
-
-    for diagnosis in diagnoses_list:
-        bids_copy_df[f"baseline_{diagnosis}"] = pd.Series(
-            np.zeros(len(bids_df)), index=bids_df.index
-        )
-        for subject, subject_df in bids_df.groupby(level=0):
-            baseline_diagnosis = subject_df.loc[
-                (subject, first_session(subject_df)), diagnosis
-            ]
-            bids_copy_df.loc[subject, f"baseline_{diagnosis}"] = baseline_diagnosis
+    bids_copy_df["baseline_diagnosis"] = pd.Series(
+        np.zeros(len(bids_df)), index=bids_df.index
+    )
+    for subject, subject_df in bids_df.groupby(level=0):
+        baseline_diagnosis = subject_df.loc[
+            (subject, first_session(subject_df)), "diagnosis"
+        ]
+        bids_copy_df.loc[subject, "baseline_diagnosis"] = baseline_diagnosis
 
     bids_df = copy(bids_copy_df)
+    variables_list.append("baseline_diagnosis")
 
     bids_df = bids_df[variables_list]
     if remove_unique_session:
         bids_df = remove_unique_session(bids_df)
 
-    output_df = infer_or_drop_diagnosis(bids_df, diagnoses_list)
-    if not multi_diagnoses:
-        output_df = diagnosis_removal(output_df, diagnoses)
+    variables_list.remove("baseline_diagnosis")
+    output_df = bids_df[variables_list]
+    output_df = infer_or_drop_diagnosis(output_df)
+    output_df = diagnosis_removal(output_df, diagnoses)
     output_df = mod_selection(output_df, missing_mods_dict, modality)
     output_df = apply_restriction(output_df, restriction_path)
 
