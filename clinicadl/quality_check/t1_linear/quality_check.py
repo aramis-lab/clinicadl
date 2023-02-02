@@ -31,6 +31,7 @@ def quality_check(
     gpu: bool = True,
     network: str = "darq",
     use_tensor: bool = False,
+    use_uncropped_image: bool = True,
 ):
 
     logger = getLogger("clinicadl.quality_check")
@@ -96,7 +97,7 @@ def quality_check(
         logger.debug("Loading data to check.")
         df = load_and_check_tsv(tsv_path, caps_dict, dirname(abspath(output_path)))
 
-        dataset = QCDataset(caps_dir, df, use_tensor)
+        dataset = QCDataset(caps_dir, df, use_tensor, use_uncropped_image)
         dataloader = DataLoader(
             dataset, num_workers=n_proc, batch_size=batch_size, pin_memory=True
         )

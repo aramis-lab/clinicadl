@@ -8,7 +8,7 @@ from typing import Any, Callable, List, Optional, Type, Union
 import nibabel as nib
 import torch
 import torch.nn as nn
-from clinica.utils.input_files import T1W_LINEAR
+from clinica.utils.input_files import T1W_LINEAR, T1W_LINEAR_CROPPED
 from clinica.utils.inputs import clinica_file_reader
 from torch import Tensor
 from torch.nn.parameter import Parameter
@@ -644,7 +644,9 @@ def squeezenet_qc(pretrained=False, **kwargs):
 class QCDataset(Dataset):
     """Dataset of MRI organized in a CAPS folder."""
 
-    def __init__(self, img_dir, data_df, use_extracted_tensors=True):
+    def __init__(
+        self, img_dir, data_df, use_extracted_tensors=False, use_uncropped_image=True
+    ):
         """
         Args:
             img_dir (string): Directory of all the images.
@@ -653,10 +655,10 @@ class QCDataset(Dataset):
         """
         from clinicadl.utils.caps_dataset.data import MinMaxNormalization
 
-        use_extracted_tensors = True
         self.img_dir = img_dir
         self.df = data_df
         self.use_extracted_tensors = use_extracted_tensors
+        self.use_uncropped_image = use_uncropped_image
 
         if ("session_id" not in list(self.df.columns.values)) or (
             "participant_id" not in list(self.df.columns.values)
@@ -667,11 +669,13 @@ class QCDataset(Dataset):
             )
 
         self.normalization = MinMaxNormalization()
+
         preprocessing_dict = {
             "preprocessing": "t1-linear",
             "mode": "image",
-            "use_uncropped_image": True,
-            "file_type": T1W_LINEAR,
+            "use_uncropped_image": use_uncropped_image,
+            "file_type": T1W_LINEAR if use_uncropped_image else T1W_LINEAR_CROPPED,
+            "use_tensor": use_extracted_tensors,
         }
         self.tensor_dataset = CapsDatasetImage(
             img_dir,
@@ -694,7 +698,10 @@ class QCDataset(Dataset):
         else:
 
             image_path = clinica_file_reader(
-                [subject], [session], self.img_dir, T1W_LINEAR
+                [subject],
+                [session],
+                self.img_dir,
+                T1W_LINEAR if self.use_uncropped_image else T1W_LINEAR_CROPPED,
             )[0]
             image = nib.load(image_path[0])
             image = self.nii_transform(image)

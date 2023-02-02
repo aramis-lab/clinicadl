@@ -32,6 +32,7 @@ from clinicadl.utils import cli_param
     default=False,
     is_flag=True,
 )
+@cli_param.option.use_uncropped_image
 def cli(
     caps_directory,
     output_tsv,
@@ -42,6 +43,7 @@ def cli(
     gpu,
     network,
     use_tensor,
+    use_uncropped_image,
 ):
     """Performs quality check on t1-linear pipeline.
 
@@ -66,4 +68,5 @@ def cli(
         gpu=gpu,
         network=network,
         use_tensor=use_tensor,
+        use_uncropped_image=use_uncropped_image,
     )

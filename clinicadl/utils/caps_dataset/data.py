@@ -6,6 +6,7 @@ from os import path
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+import nibabel as nib
 import numpy as np
 import pandas as pd
 import torch
@@ -83,7 +84,7 @@ class CapsDataset(Dataset):
                 f"Columns should include {mandatory_col}"
             )
         self.elem_per_image = self.num_elem_per_image()
-        self.size = self[0]["image"].size()
+        self.size = self[0]["image"][0].size
 
     @property
     @abc.abstractmethod
@@ -153,20 +154,40 @@ class CapsDataset(Dataset):
         # Try to find .nii.gz file
         try:
             file_type = self.preprocessing_dict["file_type"]
-            image_path_list, _ = clinica_file_reader(
-                [participant], [session], self.caps_dict[cohort], file_type
-            )
-            image_filename = path.basename(image_path_list[0]).replace(".nii.gz", ".pt")
-            folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
-            image_dir = path.join(
-                self.caps_dict[cohort],
-                "subjects",
-                participant,
-                session,
-                "deeplearning_prepare_data",
-                "image_based",
-                folder,
-            )
+
+            if self.preprocessing_dict["use_tensor"]:
+                file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
+
+                image_path_list, _ = clinica_file_reader(
+                    [participant], [session], self.caps_dict[cohort], file_type
+                )
+                # image_path = image_path_list[0]
+                image_filename = path.basename(image_path_list[0])
+                folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
+                image_dir = path.join(
+                    self.caps_dict[cohort],
+                    "subjects",
+                    participant,
+                    session,
+                    "deeplearning_prepare_data",
+                    "image_based",
+                    folder,
+                )
+            else:
+
+                image_path_list, _ = clinica_file_reader(
+                    [participant], [session], self.caps_dict[cohort], file_type
+                )
+                image_filename = path.basename(image_path_list[0])
+                folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
+                image_dir = path.join(
+                    self.caps_dict[cohort],
+                    "subjects",
+                    participant,
+                    session,
+                    folder,
+                )
+
             image_path = path.join(image_dir, image_filename)
         # Try to find .pt file
         except ClinicaCAPSError:
@@ -323,7 +344,15 @@ class CapsDatasetImage(CapsDataset):
         participant, session, cohort, _, label = self._get_meta_data(idx)
 
         image_path = self._get_image_path(participant, session, cohort)
-        image = torch.load(image_path)
+
+        if image_path.endswith("nii") or image_path.endswith("nii.gz"):
+            image = nib.load(image_path).get_fdata()
+        elif image_path.endswith("pt"):
+            image = torch.load(image_path)
+        else:
+            raise ClinicaDLArgumentError(
+                f"ClinicaDL wasn't able to load data at {image_path}"
+            )
 
         if self.transformations:
             image = self.transformations(image)
