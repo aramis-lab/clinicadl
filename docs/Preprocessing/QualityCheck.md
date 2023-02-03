@@ -20,8 +20,7 @@ Their original code can be found on [GitHub](https://github.com/vfonov/deep-qc) 
 
 
 ### Prerequisites
-You need to execute the `clinica run t1-linear` (and `clinicadl extract` pipelines 
-prior to running this task.) --> not anymore
+You need to execute the `clinica run t1-linear` 
 
 ### Running the task
 The task can be run with the following command line:
@@ -44,7 +43,6 @@ Default value: `0.5`.
 - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `1`.
 - `--n_proc` (int) is the number of workers used by the DataLoader. Default value: `2`.
 - `--gpu/--no-gpu` (bool) Use GPU for computing optimization. Default behaviour is to try to use a GPU and to raise an error if it is not found.
-- `--network` (str) is the name of the network you want to use (to choose between sq101, darq resnet18, deepQC resnet18)
 
 
 ### Outputs
@@ -121,7 +119,7 @@ We conducted a manual quality check of a few image sets among which 69 images we
     t1-linear pipeline need to run prior to pet-linear pipeline so if an image do not pass the t1-linear quality check, we can assum that it will not pass the pet-linear problem. 
     For a better results, we encourage you to run quality-check pet linear on the list of subjects that has passed the t1-linear quality check.
 
-You can find [here](https://github.com/camillebrianceau/QC) all the process to create the mask and the differents experiments that have been made to chose the best metric.
+You can find in [this repository](https://github.com/aramis-lab/QC) !!!!!!!(to change) all the process to create the mask and the differents experiments that have been made to chose the best metric.
 
 (http://www.bic.mni.mcgill.ca/~vfonov/icbm/2009/mni_icbm152_nlin_sym_09c_nifti.zip)
 
