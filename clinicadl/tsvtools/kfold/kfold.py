@@ -54,7 +54,7 @@ def write_splits(
     baseline_df = extract_baseline(diagnosis_df)
 
     if split_label is None:
-        diagnoses_list = list(baseline_df.diagnosis)
+        diagnoses_list = list(baseline_df["diagnosis"])
         unique = list(set(diagnoses_list))
         y = np.array([unique.index(x) for x in diagnoses_list])
     else:
@@ -103,6 +103,7 @@ def split_diagnoses(
     n_splits: int = 5,
     subset_name: str = None,
     stratification: str = None,
+    merged_tsv: str = None,
 ):
     """
     Performs a k-fold split for each label independently on the subject level.
@@ -123,6 +124,8 @@ def split_diagnoses(
         Name of the subset that is complementary to train.
     stratification: str
         Name of variable used to stratify k-fold.
+    merged_tsv: str
+        Path to the merged.tsv file, output of clinica iotools merge-tsv.
     """
 
     parents_path = Path(data_tsv).parents[0]
@@ -148,27 +151,23 @@ def split_diagnoses(
     # Read files
     from os.path import join
 
-    diagnosis_df_path = Path(data_tsv).name
+    # diagnosis_df_path = Path(data_tsv).name
     diagnosis_df = pd.read_csv(data_tsv, sep="\t")
     list_columns = diagnosis_df.columns.values
-
+    print(list_columns)
     if (
         "diagnosis" not in list_columns
-        or "age" not in list_columns
+        or ("age" not in list_columns and "age_bl" not in list_columns)
         or "sex" not in list_columns
     ):
-        parents_path = path.abspath(parents_path)
-        while not os.path.exists(path.join(parents_path, "labels.tsv")):
-            parents_path = Path(parents_path).parents[0]
-
-        labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+        labels_df = pd.read_csv(merged_tsv, sep="\t")
         diagnosis_df = pd.merge(
             diagnosis_df,
             labels_df,
             how="inner",
             on=["participant_id", "session_id"],
         )
-
+    print(list_columns)
     write_splits(diagnosis_df, stratification, n_splits, subset_name, results_directory)
 
     logger.info(f"K-fold split is done.")

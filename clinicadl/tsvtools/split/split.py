@@ -286,7 +286,7 @@ def split_diagnoses(
         if n_test > 0:
             if (
                 "diagnosis" not in list_columns
-                or "age" not in list_columns
+                or ("age" not in list_columns and "age_bl" not in list_columns)
                 or "sex" not in list_columns
             ):
                 parents_path = path.abspath(parents_path)

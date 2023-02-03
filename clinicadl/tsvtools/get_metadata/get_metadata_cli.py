@@ -10,7 +10,13 @@ from clinicadl.utils.tsvtools_utils import merged_tsv_reader
 @click.command(name="get-metadata", no_args_is_help=True)
 @cli_param.argument.data_tsv
 @cli_param.option.variables_of_interest
-def cli(data_tsv, variables_of_interest):
+@click.option(
+    "--merged-tsv",
+    help="Path to the merged.tsv file.",
+    type=str,
+    default=None,
+)
+def cli(data_tsv, variables_of_interest, merged_tsv):
     """Writes additional data in the tsv file.
 
     DATA_TSV is the path to the tsv file with colmuns including ["participants_id", "session_id"]
@@ -25,10 +31,7 @@ def cli(data_tsv, variables_of_interest):
     if len(variables_of_interest) == 0:
         variables_of_interest = None
 
-    results_directory = Path(data_tsv).parents[0]
-    labels_tsv = results_directory / "labels.tsv"
-
-    metadata_df = merged_tsv_reader(labels_tsv)
+    metadata_df = merged_tsv_reader(merged_tsv)
     output_df = merged_tsv_reader(data_tsv)
 
     result_df = get_metadata(metadata_df, output_df, variables_of_interest)
