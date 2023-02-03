@@ -130,6 +130,9 @@ def test_split(cmdopt, tmp_path):
     flag_split = not os.system(
         f"clinicadl -vvv tsvtools split {labels_tsv} --subset_name test"
     )
+    flag_getmetadata = not os.system(
+        f"clinicadl -vvv tsvtools get-metadata {train_tsv} -voi age -voi sex -voi diagnosis --merged-tsv {labels_tsv}"
+    )
     flag_kfold = not os.system(
         f"clinicadl -vvv tsvtools kfold {train_tsv} --n_splits {n_splits} --subset_name validation"
     )

@@ -160,13 +160,18 @@ def split_diagnoses(
         or ("age" not in list_columns and "age_bl" not in list_columns)
         or "sex" not in list_columns
     ):
-        labels_df = pd.read_csv(merged_tsv, sep="\t")
-        diagnosis_df = pd.merge(
-            diagnosis_df,
-            labels_df,
-            how="inner",
-            on=["participant_id", "session_id"],
-        )
+        if merged_tsv is None:
+            raise ClinicaDLArgumentError(
+                "Your tsv file doesn't contain one of these columns : age, sex, diagnosis. \n Please run the command clinicadl get-metadata to get the missing columns before running this pipeline again."
+            )
+        else:
+            labels_df = pd.read_csv(merged_tsv, sep="\t")
+            diagnosis_df = pd.merge(
+                diagnosis_df,
+                labels_df,
+                how="inner",
+                on=["participant_id", "session_id"],
+            )
     print(list_columns)
     write_splits(diagnosis_df, stratification, n_splits, subset_name, results_directory)
 
