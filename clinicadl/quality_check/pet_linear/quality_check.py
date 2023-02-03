@@ -51,7 +51,7 @@ def quality_check(
         try:
             mask_contour_file = fetch_file(FILE1, cache_clinicadl)
         except IOError as err:
-            raise IOError("Unable to download required mni file for QC:", err)
+            raise IOError("Unable to download required MNI file for QC: ", err)
 
     mask_contour_nii = nib.load(mask_contour_file)
     mask_contour = mask_contour_nii.get_fdata()
