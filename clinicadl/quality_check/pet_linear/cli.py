@@ -12,12 +12,10 @@ from clinicadl.utils import cli_param
 @click.argument(
     "acq_label",
     type=str,
-    help="is the label given to the PET acquisition, specifying the tracer used (trc-<acq_label>).",
 )
 @click.argument(
     "suvr_reference_region",
     type=str,
-    help="is the reference region used to perform intensity normalization {pons|cerebellumPons|pons2|cerebellumPons2}.",
 )
 @cli_param.option.participant_list
 @click.option(
