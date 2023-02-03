@@ -25,14 +25,15 @@ from clinicadl.utils import cli_param
     "--network",
     default="darq",
     type=click.Choice(["darq", "deep_qc", "sq101"]),
+    help="is the architecture chosen for the network (to chose between darq, sq101 and deep_qc",
 )
 @click.option(
     "--use_tensor",
     type=bool,
     default=False,
     is_flag=True,
+    help="Flag allowing the pipeline to run on the extracted tensors and not on the nifti images",
 )
-@cli_param.option.use_uncropped_image
 def cli(
     caps_directory,
     output_tsv,
@@ -43,7 +44,7 @@ def cli(
     gpu,
     network,
     use_tensor,
-    use_uncropped_image,
+    use_uncropped_image=True,
 ):
     """Performs quality check on t1-linear pipeline.
 
