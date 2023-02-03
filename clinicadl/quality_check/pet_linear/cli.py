@@ -25,8 +25,7 @@ from clinicadl.utils import cli_param
     type=float,
     default=0.5,
     show_default=True,
-    help="The threshold on the output probability to decide if the image "
-    "passed or failed.",
+    help="The threshold on the output probability to decide if the image passed or failed.",
 )
 @cli_param.option.n_proc
 def cli(
