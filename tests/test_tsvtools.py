@@ -131,7 +131,7 @@ def test_split(cmdopt, tmp_path):
         f"clinicadl -vvv tsvtools split {labels_tsv} --subset_name test"
     )
     flag_getmetadata = not os.system(
-        f"clinicadl -vvv tsvtools get-metadata {train_tsv} -voi age -voi sex -voi diagnosis --merged-tsv {labels_tsv}"
+        f"clinicadl -vvv tsvtools get-metadata {train_tsv} {labels_tsv} -voi age -voi sex -voi diagnosis"
     )
     flag_kfold = not os.system(
         f"clinicadl -vvv tsvtools kfold {train_tsv} --n_splits {n_splits} --subset_name validation"
@@ -237,6 +237,8 @@ def test_get_metadata(cmdopt, tmp_path):
 
     input_metadata_tsv = path.join(input_dir, "metadata.tsv")
     metadata_tsv = path.join(tmp_out_dir, "metadata.tsv")
+    input_merged_tsv = path.join(input_dir, "merge-tsv.tsv")
+    merged_tsv = path.join(tmp_out_dir, "merge-tsv.tsv")
     ref_metadata_tsv = path.join(ref_dir, "metadata.tsv")
     shutil.copyfile(input_metadata_tsv, metadata_tsv)
     shutil.copyfile(
@@ -244,7 +246,7 @@ def test_get_metadata(cmdopt, tmp_path):
     )
 
     flag_get_metadata = not os.system(
-        f"clinicadl tsvtools get-metadata {metadata_tsv}  "
+        f"clinicadl tsvtools get-metadata {metadata_tsv} {merged_tsv}"
     )
     assert flag_get_metadata
 
