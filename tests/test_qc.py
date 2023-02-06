@@ -18,7 +18,7 @@ def test_qc(cmdopt, tmp_path, test_name):
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "qualityCheck" / "in"
     ref_dir = base_dir / "qualityCheck" / "ref"
-    tmp_out_dir = tmp_path / "qualityCheck" / "out"
+    tmp_out_dir = tmp_path / "qualityCheck" / "outt"
     tmp_out_dir.mkdir(parents=True)
 
     if test_name == "t1-linear":
