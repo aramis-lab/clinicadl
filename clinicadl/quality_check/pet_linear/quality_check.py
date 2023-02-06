@@ -63,6 +63,7 @@ def quality_check(
         "participant_id",
         "session_id",
         "pass_probability",
+        "pass",
     ]
 
     results_df = pd.DataFrame(columns=columns)
@@ -115,6 +116,7 @@ def quality_check(
                     subject,
                     session,
                     sum_contour_35,
+                    sum_contour_35 < threshold,
                 ]
             ]
             row_df = pd.DataFrame(row, columns=columns)
@@ -132,6 +134,7 @@ def quality_check(
     all_df["pass_probability"] = 1 - (
         (col_tmp - col_tmp.min()) / (col_tmp.max() - col_tmp.min())
     )
+    all_df["pass"] = all_df["pass_probability"] < threshold
     all_df.sort_values("pass_probability", inplace=True, ascending=True)
     all_df.to_csv(output_tsv, sep="\t", index=False)
 
