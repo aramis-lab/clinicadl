@@ -16,10 +16,10 @@ from clinicadl.generate.generate_utils import load_and_check_tsv
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
+from .models import resnet_darq_qc_18 as darq_r18
+from .models import resnet_deep_qc_18 as deep_r18
+from .models import squeezenet_qc as darq_sq101
 from .utils import QCDataset
-from .utils import resnet_darq_qc_18 as darq_r18
-from .utils import resnet_deep_qc_18 as deep_r18
-from .utils import squeezenet_qc as darq_sq101
 
 
 def quality_check(
