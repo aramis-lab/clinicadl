@@ -9,7 +9,7 @@ import pytest
 from tests.testing_tools import compare_folders
 
 
-@pytest.fixture(params=["t1-linear", "t1-volume"])
+@pytest.fixture(params=["t1-linear", "t1-volume", pet - linear])
 def test_name(request):
     return request.param
 

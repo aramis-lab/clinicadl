@@ -13,7 +13,7 @@ import pandas as pd
 from clinica.utils.inputs import RemoteFileStructure, fetch_file
 from joblib import Parallel, delayed
 
-from .utils import distance, extract_mask
+from .utils import distance
 
 
 def quality_check(
@@ -47,6 +47,7 @@ def quality_check(
     )
 
     mask_contour_file = path.join(cache_clinicadl, FILE1.filename)
+
     if not (path.exists(mask_contour_file)):
         try:
             mask_contour_file = fetch_file(FILE1, cache_clinicadl)
@@ -56,23 +57,6 @@ def quality_check(
     mask_contour_nii = nib.load(mask_contour_file)
     mask_contour = mask_contour_nii.get_fdata()
     mask_contour.astype(int)
-
-    FILE2 = RemoteFileStructure(
-        filename="qc_pet_mask_brain.nii.gz",
-        url=url_aramis,
-        checksum="e78a542da49755f5c9ba751b4acca725650396999a671831f0acd8fbf4b898e8",
-    )
-
-    mask_brain_file = path.join(cache_clinicadl, FILE2.filename)
-    if not (path.exists(mask_brain_file)):
-        try:
-            mask_brain_file = fetch_file(FILE2, cache_clinicadl)
-        except IOError as err:
-            raise IOError("Unable to download required mni file for QC:", err)
-
-    mask_brain_nii = nib.load(mask_brain_file)
-    mask_brain = mask_brain_nii.get_fdata()
-    mask_brain.astype(int)
 
     # Get the data
     columns = [
@@ -124,7 +108,7 @@ def quality_check(
             else:
                 raise FileNotFoundError(f"Clinical data not found ({image_path})")
 
-            sum_contour_35 = distance(mask_contour, mask_brain, image_np)
+            sum_contour_35 = distance(mask_contour, image_np)
 
             row = [
                 [
@@ -144,6 +128,10 @@ def quality_check(
     all_df = pd.DataFrame(columns=columns)
     for subject_df in results_df:
         all_df = pd.concat([all_df, subject_df])
+    col_tmp = all_df["pass_probability"]
+    all_df["pass_probability"] = 1 - (
+        (col_tmp - col_tmp.min()) / (col_tmp.max() - col_tmp.min())
+    )
     all_df.sort_values("pass_probability", inplace=True, ascending=True)
     all_df.to_csv(output_tsv, sep="\t", index=False)
 

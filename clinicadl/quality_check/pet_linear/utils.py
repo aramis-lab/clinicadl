@@ -5,10 +5,7 @@ Produces a tsv file to study all the nii files and perform the quality check.
 
 from copy import copy
 
-import cv2
 import numpy as np
-from scipy.ndimage import binary_fill_holes
-from skimage.filters import threshold_otsu
 
 
 def normalize_homemade(image_np):
