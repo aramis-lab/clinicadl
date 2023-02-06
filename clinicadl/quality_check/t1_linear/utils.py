@@ -15,7 +15,7 @@ from torch.nn.parameter import Parameter
 from torch.utils.data import Dataset
 from torchvision import models
 
-from clinicadl.utils.caps_dataset.data import CapsDatasetImage
+from clinicadl.prepare_data.prepare_data_utils import compute_folder_and_file_type
 
 
 def conv3x3(
@@ -670,20 +670,13 @@ class QCDataset(Dataset):
 
         self.normalization = MinMaxNormalization()
 
-        preprocessing_dict = {
+        self.preprocessing_dict = {
             "preprocessing": "t1-linear",
             "mode": "image",
             "use_uncropped_image": use_uncropped_image,
             "file_type": T1W_LINEAR if use_uncropped_image else T1W_LINEAR_CROPPED,
             "use_tensor": use_extracted_tensors,
         }
-        self.tensor_dataset = CapsDatasetImage(
-            img_dir,
-            data_df,
-            preprocessing_dict,
-            label_presence=False,
-            all_transformations=MinMaxNormalization(),
-        )
 
     def __len__(self):
         return len(self.df)
@@ -693,8 +686,29 @@ class QCDataset(Dataset):
         session = self.df.loc[idx, "session_id"]
 
         if self.use_extracted_tensors:
-            image = self.tensor_dataset[idx]
-            image = self.pt_transform(image["image"])
+            file_type = self.preprocessing_dict["file_type"]
+            file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
+            image_path_list = clinica_file_reader(
+                [subject],
+                [session],
+                self.img_dir,
+                file_type,
+            )
+            image_filename = path.basename(image_path_list[0][0])
+            folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
+            image_dir = path.join(
+                self.img_dir,
+                "subjects",
+                subject,
+                session,
+                "deeplearning_prepare_data",
+                "image_based",
+                folder,
+            )
+
+            image_path = path.join(image_dir, image_filename)
+            image = torch.load(image_path)
+            image = self.pt_transform(image)
         else:
 
             image_path = clinica_file_reader(

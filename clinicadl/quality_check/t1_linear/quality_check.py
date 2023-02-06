@@ -10,6 +10,7 @@ import pandas as pd
 import torch
 from clinica.utils.inputs import RemoteFileStructure, fetch_file
 from torch.utils.data import DataLoader
+from torchvision.models import ResNet18_Weights, resnet18
 
 from clinicadl.generate.generate_utils import load_and_check_tsv
 from clinicadl.utils.caps_dataset.data import CapsDataset
@@ -61,6 +62,8 @@ def quality_check(
             url=url_aramis,
             checksum="321928e0532f1be7a8dd7f5d805b747c7147ff52594f77ffed0858ab19c5df03",
         )
+
+        # model = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
         model = darq_r18()
 
     if network == "sq101":
