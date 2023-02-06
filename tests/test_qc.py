@@ -45,7 +45,7 @@ def test_qc(cmdopt, tmp_path, test_name):
             "pet-linear",
             str(input_dir / "caps"),
             out_dir,
-            "ffdg",
+            "18FFDG",
             "cerebellumPons2",
             "--threshold",
             "0.5",
