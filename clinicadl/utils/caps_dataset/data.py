@@ -18,13 +18,13 @@ from clinicadl.prepare_data.prepare_data_utils import (
     TEMPLATE_DICT,
     compute_discarded_slices,
     compute_folder_and_file_type,
+    extract_patch_path,
+    extract_patch_tensor,
+    extract_roi_path,
+    extract_roi_tensor,
+    extract_slice_path,
+    extract_slice_tensor,
     find_mask_path,
-    prepare_data_patch_path,
-    prepare_data_patch_tensor,
-    prepare_data_roi_path,
-    prepare_data_roi_tensor,
-    prepare_data_slice_path,
-    prepare_data_slice_tensor,
 )
 from clinicadl.utils.exceptions import (
     ClinicaDLArgumentError,
@@ -407,14 +407,14 @@ class CapsDatasetPatch(CapsDataset):
             patch_dir = path.dirname(image_path).replace(
                 "image_based", f"{self.mode}_based"
             )
-            patch_filename = prepare_data_patch_path(
+            patch_filename = extract_patch_path(
                 image_path, self.patch_size, self.stride_size, patch_idx
             )
             patch_tensor = torch.load(path.join(patch_dir, patch_filename))
 
         else:
             image = torch.load(image_path)
-            patch_tensor = prepare_data_patch_tensor(
+            patch_tensor = extract_patch_tensor(
                 image, self.patch_size, self.stride_size, patch_idx
             )
 
@@ -521,15 +521,13 @@ class CapsDatasetRoi(CapsDataset):
             roi_dir = path.dirname(image_path).replace(
                 "image_based", f"{self.mode}_based"
             )
-            roi_filename = prepare_data_roi_path(
-                image_path, mask_path, self.uncropped_roi
-            )
+            roi_filename = extract_roi_path(image_path, mask_path, self.uncropped_roi)
             roi_tensor = torch.load(path.join(roi_dir, roi_filename))
 
         else:
             image = torch.load(image_path)
             mask_array = self.mask_arrays[roi_idx]
-            roi_tensor = prepare_data_roi_tensor(image, mask_array, self.uncropped_roi)
+            roi_tensor = extract_roi_tensor(image, mask_array, self.uncropped_roi)
 
         if self.transformations:
             roi_tensor = self.transformations(roi_tensor)
@@ -679,7 +677,7 @@ class CapsDatasetSlice(CapsDataset):
             slice_dir = path.dirname(image_path).replace(
                 "image_based", f"{self.mode}_based"
             )
-            slice_filename = prepare_data_slice_path(
+            slice_filename = extract_slice_path(
                 image_path, self.slice_direction, self.slice_mode, slice_idx
             )
             slice_tensor = torch.load(path.join(slice_dir, slice_filename))
@@ -687,7 +685,7 @@ class CapsDatasetSlice(CapsDataset):
         else:
             image_path = self._get_image_path(participant, session, cohort)
             image = torch.load(image_path)
-            slice_tensor = prepare_data_slice_tensor(
+            slice_tensor = extract_slice_tensor(
                 image, self.slice_direction, self.slice_mode, slice_idx
             )
 
