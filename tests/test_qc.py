@@ -48,7 +48,7 @@ def test_qc(cmdopt, tmp_path, test_name):
             "ffdg",
             "cerebellumPons2",
             "--threshold",
-            0.5,
+            "0.5",
         ]
     else:
         raise NotImplementedError(
