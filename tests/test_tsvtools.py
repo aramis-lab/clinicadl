@@ -137,6 +137,7 @@ def test_split(cmdopt, tmp_path):
         f"clinicadl -vvv tsvtools kfold {train_tsv} --n_splits {n_splits} --subset_name validation"
     )
     assert flag_split
+    assert flag_getmetadata
     assert flag_kfold
 
     assert compare_folders(

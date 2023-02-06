@@ -282,51 +282,50 @@ def split_diagnoses(
             # long_test_df = long_test_df[["participant_id", "session_id"]]
             df_to_tsv(name, results_path, long_test_df)
 
-    else:
-        if n_test > 0:
-            if (
-                "diagnosis" not in list_columns
-                or ("age" not in list_columns and "age_bl" not in list_columns)
-                or "sex" not in list_columns
-            ):
-                parents_path = path.abspath(parents_path)
-                while not os.path.exists(path.join(parents_path, "labels.tsv")):
-                    parents_path = Path(parents_path).parents[0]
+    elif n_test > 0:
+        if (
+            "diagnosis" not in list_columns
+            or ("age" not in list_columns and "age_bl" not in list_columns)
+            or "sex" not in list_columns
+        ):
+            parents_path = path.abspath(parents_path)
+            while not os.path.exists(path.join(parents_path, "labels.tsv")):
+                parents_path = Path(parents_path).parents[0]
 
-                labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
-                diagnosis_df = pd.merge(
-                    diagnosis_df,
-                    labels_df,
-                    how="inner",
-                    on=["participant_id", "session_id"],
-                )
-
-            train_df, test_df = create_split(
+            labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+            diagnosis_df = pd.merge(
                 diagnosis_df,
-                split_label=categorical_split_variable,
-                n_test=n_test,
-                p_age_threshold=p_age_threshold,
-                p_sex_threshold=p_sex_threshold,
-                ignore_demographics=ignore_demographics,
+                labels_df,
+                how="inner",
+                on=["participant_id", "session_id"],
             )
 
-            # train_df= train_df[["participant_id", "session_id"]]
-            # test_df= test_df[["participant_id", "session_id"]]
+        train_df, test_df = create_split(
+            diagnosis_df,
+            split_label=categorical_split_variable,
+            n_test=n_test,
+            p_age_threshold=p_age_threshold,
+            p_sex_threshold=p_sex_threshold,
+            ignore_demographics=ignore_demographics,
+        )
 
-            name = f"{subset_name}_baseline.tsv"
-            df_to_tsv(name, results_path, test_df, baseline=True)
+        # train_df= train_df[["participant_id", "session_id"]]
+        # test_df= test_df[["participant_id", "session_id"]]
 
-            if not_only_baseline:
-                name = f"{subset_name}.tsv"
-                long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
-                # long_test_df = long_test_df[["participant_id", "session_id"]]
-                df_to_tsv(name, results_path, long_test_df)
+        name = f"{subset_name}_baseline.tsv"
+        df_to_tsv(name, results_path, test_df, baseline=True)
 
-        else:
-            train_df = extract_baseline(diagnosis_df)
-            # train_df = train_df[["participant_id", "session_id"]]
-            if not_only_baseline:
-                long_train_df = diagnosis_df
+        if not_only_baseline:
+            name = f"{subset_name}.tsv"
+            long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
+            # long_test_df = long_test_df[["participant_id", "session_id"]]
+            df_to_tsv(name, results_path, long_test_df)
+
+    else:
+        train_df = extract_baseline(diagnosis_df)
+        # train_df = train_df[["participant_id", "session_id"]]
+        if not_only_baseline:
+            long_train_df = diagnosis_df
 
     name = "train_baseline.tsv"
     df_to_tsv(name, str(results_path), train_df, baseline=True)

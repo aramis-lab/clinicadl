@@ -160,22 +160,6 @@ class SplitManager:
                 on=["participant_id", "session_id"],
             )
 
-        # for diagnosis in cohort_diagnoses:
-        #     if self.baseline:
-        #         train_diagnosis_path = path.join(
-        #             train_path, diagnosis + "_baseline.tsv"
-        #         )
-        #     else:
-        #         train_diagnosis_path = path.join(train_path, diagnosis + ".tsv")
-
-        #     valid_diagnosis_path = path.join(valid_path, diagnosis + "_baseline.tsv")
-
-        #     train_diagnosis_df = pd.read_csv(train_diagnosis_path, sep="\t")
-        #     valid_diagnosis_df = pd.read_csv(valid_diagnosis_path, sep="\t")
-
-        #     train_df = pd.concat([train_df, train_diagnosis_df])
-        #     valid_df = pd.concat([valid_df, valid_diagnosis_df])
-
         train_df.reset_index(inplace=True, drop=True)
         valid_df.reset_index(inplace=True, drop=True)
 

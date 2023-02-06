@@ -11,5 +11,5 @@ def train(
     erase_existing: bool = True,
 ):
 
-    maps_manager = MapsManager(maps_dir, train_dict, verbose="debug")
+    maps_manager = MapsManager(maps_dir, train_dict, verbose=None)
     maps_manager.train(split_list=split_list, overwrite=erase_existing)

@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.exceptions import ClinicaDLTSVError
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.tsvtools_utils import (
     df_to_tsv,
@@ -154,14 +154,13 @@ def split_diagnoses(
     # diagnosis_df_path = Path(data_tsv).name
     diagnosis_df = pd.read_csv(data_tsv, sep="\t")
     list_columns = diagnosis_df.columns.values
-    print(list_columns)
     if (
         "diagnosis" not in list_columns
         or ("age" not in list_columns and "age_bl" not in list_columns)
         or "sex" not in list_columns
     ):
         if merged_tsv is None:
-            raise ClinicaDLArgumentError(
+            raise ClinicaDLTSVError(
                 "Your tsv file doesn't contain one of these columns : age, sex, diagnosis. \n Please run the command clinicadl get-metadata to get the missing columns before running this pipeline again."
             )
         else:
@@ -172,7 +171,6 @@ def split_diagnoses(
                 how="inner",
                 on=["participant_id", "session_id"],
             )
-    print(list_columns)
     write_splits(diagnosis_df, stratification, n_splits, subset_name, results_directory)
 
     logger.info(f"K-fold split is done.")
