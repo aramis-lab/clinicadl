@@ -78,10 +78,7 @@ def quality_check(
     columns = [
         "participant_id",
         "session_id",
-        "tfp_brain",
-        "mttp_contour",
-        "sum_contour_35",
-        "sum_brain_35",
+        "pass_probability",
     ]
 
     results_df = pd.DataFrame(columns=columns)
@@ -127,18 +124,13 @@ def quality_check(
             else:
                 raise FileNotFoundError(f"Clinical data not found ({image_path})")
 
-            tfp_brain, mttp_contour, sum_contour_35, sum_brain_35 = distance(
-                mask_contour, mask_brain, image_np
-            )
+            sum_contour_35 = distance(mask_contour, mask_brain, image_np)
 
             row = [
                 [
                     subject,
                     session,
-                    tfp_brain,
-                    mttp_contour,
                     sum_contour_35,
-                    sum_brain_35,
                 ]
             ]
             row_df = pd.DataFrame(row, columns=columns)
@@ -152,7 +144,7 @@ def quality_check(
     all_df = pd.DataFrame(columns=columns)
     for subject_df in results_df:
         all_df = pd.concat([all_df, subject_df])
-    all_df.sort_values("sum_contour_35", inplace=True, ascending=True)
+    all_df.sort_values("pass_probability", inplace=True, ascending=True)
     all_df.to_csv(output_tsv, sep="\t", index=False)
 
     logger.info(
