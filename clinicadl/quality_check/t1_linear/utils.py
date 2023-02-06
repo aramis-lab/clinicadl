@@ -736,6 +736,7 @@ class QCDataset(Dataset):
         _min = np.min(sample)
         _max = np.max(sample)
         sample = (sample - _min) * (1.0 / (_max - _min)) - 0.5
+
         sz = sample.shape
         input_images = [
             sample[:, :, int(sz[2] / 2)],
@@ -796,19 +797,6 @@ class QCDataset(Dataset):
         from skimage import transform
         from torch.nn.functional import interpolate, pad
 
-        sample = np.array(image)
-
-        # normalize input
-        # _min = np.min(sample)
-        # _max = np.max(sample)
-        # sample = (sample - _min) * (1.0 / (_max - _min)) - 0.5
-        # sz = sample.shape
-        # input_images = [
-        #     sample[:, :, int(sz[2] / 2)],
-        #     sample[int(sz[0] / 2), :, :],
-        #     sample[:, int(sz[1] / 2), :],
-        # ]
-
         image = self.normalization(image) - 0.5
         image = image[0, :, :, :]
         sz = image.shape
@@ -867,35 +855,6 @@ class QCDataset(Dataset):
         return torch.cat(
             [torch.from_numpy(i).float().unsqueeze_(0) for i in output_images]
         ).unsqueeze_(0)
-
-        # # flip, resize and crop
-        # for slice in input_images:
-
-        #     scale = min(256.0 / slice.shape[0], 256.0 / slice.shape[1])
-        #     # slice[::-1, :] is to flip the first axis of image
-        #     slice = interpolate(
-        #         torch.flip(slice, (0,)).unsqueeze(0).unsqueeze(0), scale_factor=scale
-        #     )
-        #     slice = slice[0, 0, :, :]
-
-        #     padding = self.get_padding(slice)
-        #     slice = pad(slice, padding)
-
-        #     # rotate and flip the image back to the right direction for each view, if the MRI was read by nibabel
-        #     # it seems that this will rotate the image 90 degree with
-        #     # counter-clockwise direction and then flip it horizontally
-        #     output_images.append(
-        #         torch.flip(
-        #             torch.rot90(slice[16:240, 16:240], 1, [0, 1]),
-        #             [
-        #                 1,
-        #             ],
-        #         ).clone()
-        #     )
-
-        # return torch.cat(
-        #     [image.float().unsqueeze_(0) for image in output_images]
-        # ).unsqueeze_(0)
 
     @staticmethod
     def get_padding(image):
