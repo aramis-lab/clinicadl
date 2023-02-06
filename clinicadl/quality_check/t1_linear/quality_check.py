@@ -105,7 +105,7 @@ def quality_check(
             dataset, num_workers=n_proc, batch_size=batch_size, pin_memory=True
         )
 
-        columns = ["participant_id", "session_id", "pass_probability"]
+        columns = ["participant_id", "session_id", "pass_probability", "pass"]
         qc_df = pd.DataFrame(columns=columns)
         softmax = torch.nn.Softmax(dim=1)
         logger.info(f"Quality check will be performed over {len(dataloader)} images.")
@@ -124,6 +124,7 @@ def quality_check(
                         sub,
                         data["session_id"][idx],
                         pass_probability,
+                        pass_probability > threshold,
                     ]
                 ]
                 logger.debug(f"Quality score is {pass_probability}.")
