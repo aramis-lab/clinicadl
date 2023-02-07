@@ -43,7 +43,7 @@ def test_qc(cmdopt, tmp_path, test_name):
         out_dir = str(tmp_out_dir / "QC_pet.tsv")
         test_input = [
             "pet-linear",
-            str(input_dir / "caps"),
+            str(input_dir / "caps_pet"),
             out_dir,
             "18FFDG",
             "cerebellumPons2",
