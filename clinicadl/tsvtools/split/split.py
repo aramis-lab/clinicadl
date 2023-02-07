@@ -10,7 +10,7 @@ import pandas as pd
 from scipy.stats import ks_2samp, ttest_ind
 from sklearn.model_selection import StratifiedShuffleSplit
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.tsvtools_utils import (
     category_conversion,
@@ -286,16 +286,25 @@ def split_diagnoses(
             or "sex" not in list_columns
         ):
             parents_path = path.abspath(parents_path)
-            while not os.path.exists(path.join(parents_path, "labels.tsv")):
+            n = 0
+            while not os.path.exists(path.join(parents_path, "labels.tsv")) and n <= 4:
                 parents_path = Path(parents_path).parents[0]
-
-            labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
-            diagnosis_df = pd.merge(
-                diagnosis_df,
-                labels_df,
-                how="inner",
-                on=["participant_id", "session_id"],
-            )
+                n += 1
+            try:
+                labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+                diagnosis_df = pd.merge(
+                    diagnosis_df,
+                    labels_df,
+                    how="inner",
+                    on=["participant_id", "session_id"],
+                )
+            except ClinicaDLTSVError:
+                raise ClinicaDLTSVError(
+                    f"The column 'age', 'sex' or 'diagnosis' is missing and the pipeline was not able to find "
+                    "the output of clinicadl get-labels to get it."
+                    "Please run clinicadl get-metadata to get these columns or add the the flag --ignore_demographics "
+                    "to split without trying to balance age or sex distributions."
+                )
 
         train_df, test_df = create_split(
             diagnosis_df,
