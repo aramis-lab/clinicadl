@@ -40,11 +40,11 @@ def test_qc(cmdopt, tmp_path, test_name):
         ]
 
     elif test_name == "pet-linear":
-        out_dir = str(tmp_out_dir / "QC_pet.tsv")
+        out_tsv = str(tmp_out_dir / "QC_pet.tsv")
         test_input = [
             "pet-linear",
             str(input_dir / "caps_pet"),
-            out_dir,
+            out_tsv,
             "18FFDG",
             "cerebellumPons2",
             "--threshold",
