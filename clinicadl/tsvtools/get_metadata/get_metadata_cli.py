@@ -11,7 +11,7 @@ from clinicadl.utils.tsvtools_utils import merged_tsv_reader
 @cli_param.argument.data_tsv
 @cli_param.argument.merged_tsv
 @cli_param.option.variables_of_interest
-def cli(data_tsv, variables_of_interest, merged_tsv):
+def cli(data_tsv, merged_tsv, variables_of_interest):
     """Writes additional data in the tsv file.
 
     DATA_TSV is the path to the tsv file with colmuns including ["participants_id", "session_id"]

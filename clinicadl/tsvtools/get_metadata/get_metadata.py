@@ -43,6 +43,9 @@ def get_metadata(
 
     else:
 
+        print(metadata_df.columns.values)
+        print(set(metadata_df.columns.values))
+        print(set(variables_of_interest).issubset(set(metadata_df.columns.values)))
         if not set(variables_of_interest).issubset(set(metadata_df.columns.values)):
             raise ClinicaDLArgumentError(
                 f"The variables asked by the user {variables_of_interest} do not "
