@@ -11,6 +11,16 @@ logger = getLogger("clinicadl")
 
 
 def concat_files(file_path, df_baseline, df_all):
+    """
+    Read a file and concatenates it to the right dataframe (baseline or note).
+    ----------
+    file_path: str (path)
+        Path to the TSV file (with "participant_id" and "session_id" in the columns).
+    df_baseline: DataFrame
+        Dataframe with only baseline sessions.
+    df_all: DataFrame
+        Dataframe with all sessions.
+    """
     label_df = pd.read_csv(file_path, sep="\t")
     if file_path.endswith("baseline.tsv"):
         df_baseline = pd.concat([df_baseline, label_df])
@@ -20,7 +30,20 @@ def concat_files(file_path, df_baseline, df_all):
 
 
 def adapt(old_tsv_dir: str, new_tsv_dir: str, subset_name="labels", labels_list="AD"):
+    """
+    Produces a new split/kfold directories that fit with clinicaDL 1.2.0.
+    Parameters
+    ----------
+    old_tsv_dir: str (path)
+        Path to the old directory.
+    new_tsv_dir: str (path)
+        Path to the fnew directory.
+    subset_name: str
+        Name of the output file of `clinicadl get-labels`.
+    labels_list: list of str
+        list of labels (in the old way, each labels had its own TSV file).
 
+    """
     if not os.path.exists(old_tsv_dir):
         raise ClinicaDLArgumentError(
             f"the directory: {old_tsv_dir} doesn't exists"

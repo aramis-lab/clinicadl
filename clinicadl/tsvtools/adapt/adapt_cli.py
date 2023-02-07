@@ -16,6 +16,13 @@ from clinicadl.utils import cli_param
     help="Labels used to create the tsv directory in the old way",
 )
 def cli(input_dir, output_dir, labels_list=None):
+    """Converts split and kfold directories created with clinicaDL 1.1.1 and earlier version
+    to the last version.
+
+    INPUT_DIR is the output of th split/kfold directory of the old version.
+
+    Results are stored in OUTPUT_DIRECTORY.
+    """
 
     import os
 
