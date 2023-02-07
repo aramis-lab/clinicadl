@@ -237,14 +237,14 @@ def test_get_metadata(cmdopt, tmp_path):
 
     input_metadata_tsv = path.join(input_dir, "metadata.tsv")
     metadata_tsv = path.join(tmp_out_dir, "metadata.tsv")
-    input_merged_tsv = path.join(input_dir, "merge-tsv.tsv")
-    merged_tsv = path.join(tmp_out_dir, "merge-tsv.tsv")
+    input_labels_tsv = path.join(input_dir, "labels.tsv")
+    labels_tsv = path.join(tmp_out_dir, "labels.tsv")
     ref_metadata_tsv = path.join(ref_dir, "metadata.tsv")
     shutil.copyfile(input_metadata_tsv, metadata_tsv)
-    shutil.copyfile(input_merged_tsv, merged_tsv)
+    shutil.copyfile(input_labels_tsv, labels_tsv)
 
     flag_get_metadata = not os.system(
-        f"clinicadl tsvtools get-metadata {metadata_tsv} {merged_tsv} -voi diagnoses -voi sex -voi age"
+        f"clinicadl tsvtools get-metadata {labels_tsv} {metadata_tsv} -voi diagnoses -voi sex -voi age"
     )
     assert flag_get_metadata
 
