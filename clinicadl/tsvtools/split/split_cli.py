@@ -52,8 +52,9 @@ from clinicadl.utils import cli_param
 )
 @click.option(
     "--multi-diagnoses",
-    help="If given, use all columns to balance the split",
+    help="If given, all columns are used to balance the split, not only age and sex",
     default=False,
+    is_flag=True,
     type=bool,
 )
 def cli(
