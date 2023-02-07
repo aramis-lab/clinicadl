@@ -31,7 +31,11 @@ def cli(data_tsv, variables_of_interest, merged_tsv):
     metadata_df = merged_tsv_reader(merged_tsv)
     output_df = merged_tsv_reader(data_tsv)
 
-    result_df = get_metadata(metadata_df, output_df, variables_of_interest)
+    result_df = get_metadata(
+        metadata_df=metadata_df,
+        in_out_df=output_df,
+        variables_of_interest=variables_of_interest,
+    )
 
     result_df.to_csv(data_tsv, sep="\t")
 

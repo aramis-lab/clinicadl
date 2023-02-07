@@ -244,7 +244,7 @@ def test_get_metadata(cmdopt, tmp_path):
     shutil.copyfile(input_labels_tsv, labels_tsv)
 
     flag_get_metadata = not os.system(
-        f"clinicadl tsvtools get-metadata {labels_tsv} {metadata_tsv} -voi diagnoses -voi sex -voi age"
+        f"clinicadl tsvtools get-metadata {metadata_tsv} {labels_tsv} -voi diagnoses -voi sex -voi age"
     )
     assert flag_get_metadata
 
