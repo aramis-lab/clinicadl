@@ -1,8 +1,6 @@
 # coding: utf8
 
 import os
-import shutil
-from copy import copy
 from logging import getLogger
 from os import makedirs, path
 from pathlib import Path
@@ -21,7 +19,6 @@ from clinicadl.utils.tsvtools_utils import (
     df_to_tsv,
     extract_baseline,
     find_label,
-    remove_sub_labels,
     remove_unicity,
     retrieve_longitudinal,
 )

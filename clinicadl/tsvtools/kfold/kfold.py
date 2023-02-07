@@ -1,12 +1,9 @@
 # coding: utf8
 
 import os
-import shutil
-from copy import copy
 from logging import getLogger
 from os import makedirs, path
 from pathlib import Path
-from typing import List
 
 import numpy as np
 import pandas as pd
@@ -14,12 +11,7 @@ from sklearn.model_selection import StratifiedKFold
 
 from clinicadl.utils.exceptions import ClinicaDLTSVError
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
-from clinicadl.utils.tsvtools_utils import (
-    df_to_tsv,
-    extract_baseline,
-    remove_sub_labels,
-    retrieve_longitudinal,
-)
+from clinicadl.utils.tsvtools_utils import extract_baseline, retrieve_longitudinal
 
 sex_dict = {"M": 0, "F": 1}
 logger = getLogger("clinicadl")

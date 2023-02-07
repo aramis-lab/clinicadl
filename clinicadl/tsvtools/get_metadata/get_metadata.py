@@ -3,7 +3,7 @@ from logging import getLogger
 import numpy as np
 import pandas as pd
 
-from clinicadl.utils.tsvtools_utils import merged_tsv_reader
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
 logger = getLogger("clinicadl")
 

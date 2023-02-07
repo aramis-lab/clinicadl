@@ -3,19 +3,12 @@ from copy import copy
 from logging import getLogger
 from os import path
 from pathlib import Path
-from typing import Dict, List
 
-import numpy as np
 import pandas as pd
 
 from clinicadl.tsvtools.get_labels import infer_or_drop_diagnosis
-from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
-from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.tsvtools_utils import (
     after_end_screening,
-    cleaning_nan_diagnoses,
-    find_label,
-    first_session,
     last_session,
     merged_tsv_reader,
     neighbour_session,

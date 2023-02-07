@@ -10,7 +10,6 @@ NB: Other preprocessing may be needed on the merged file obtained: for example t
 in the OASIS dataset is not done in this script. Moreover a quality check may be needed at the end of preprocessing
 pipelines, leading to the removal of some subjects.
 """
-import os
 from copy import copy
 from logging import getLogger
 from os import path
@@ -22,7 +21,6 @@ import pandas as pd
 from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.tsvtools_utils import (
-    after_end_screening,
     cleaning_nan_diagnoses,
     find_label,
     first_session,
