@@ -5,7 +5,7 @@ bids_directory = click.argument("bids_directory", type=click.Path(exists=True))
 caps_directory = click.argument("caps_directory", type=click.Path(exists=True))
 input_maps = click.argument("input_maps_directory", type=click.Path(exists=True))
 output_maps = click.argument("output_maps_directory", type=click.Path())
-results_tsv = click.argument("output_tsv", type=str)
+results_tsv = click.argument("results_tsv", type=str)
 
 # ANALYSIS
 merged_tsv = click.argument("merged_tsv", type=click.Path(exists=True))
