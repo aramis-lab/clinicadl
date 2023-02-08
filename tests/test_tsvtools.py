@@ -249,5 +249,7 @@ def test_get_metadata(cmdopt, tmp_path):
     assert flag_get_metadata
 
     ref_df = pd.read_csv(ref_metadata_tsv, sep="\t")
+    ref_df.sort_values(by=["participant_id", "session_id"])
     out_df = pd.read_csv(metadata_tsv, sep="\t")
+    out_df.sort_values(by=["participant_id", "session_id"])
     assert out_df.equals(ref_df)
