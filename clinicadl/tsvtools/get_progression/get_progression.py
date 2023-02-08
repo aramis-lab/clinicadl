@@ -175,3 +175,4 @@ def get_progression(
     logger.info(f"Unstable subjects: {nb_subjects}")
 
     bids_copy_df.to_csv(data_tsv, sep="\t")
+    logger.info(f"Results are stored at: {data_tsv}")

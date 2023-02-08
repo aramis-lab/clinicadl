@@ -13,6 +13,8 @@ logger = getLogger("clinicadl")
 
 
 def merged_tsv_reader(merged_tsv_path):
+    if not path.exists(merged_tsv_path):
+        raise ClinicaDLTSVError(f"{merged_tsv_path} file was not found. ")
     bids_df = pd.read_csv(merged_tsv_path, sep="\t")
 
     for i in bids_df.index:

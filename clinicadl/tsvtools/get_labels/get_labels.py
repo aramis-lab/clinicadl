@@ -137,7 +137,7 @@ def mod_selection(
             except KeyError:
                 bids_copy_df.drop((subject, session), inplace=True)
                 nb_subjects += 1
-    logger.info(f"Dropped subjects (mod selection): {nb_subjects}")
+    logger.info(f"Dropped sessions (mod selection): {nb_subjects}")
     return bids_copy_df
 
 
@@ -429,3 +429,5 @@ def get_labels(
     output_df.reset_index()
     output_df.sort_values(by=["participant_id", "session_id"], inplace=True)
     output_df.to_csv(output_tsv, sep="\t")
+
+    logger.info(f"results are stored at {output_tsv}")
