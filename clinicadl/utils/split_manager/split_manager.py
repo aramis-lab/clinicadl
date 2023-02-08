@@ -33,7 +33,6 @@ class SplitManager:
         self.baseline = baseline
         self.split_list = split_list
 
-
     @abc.abstractmethod
     def max_length(self) -> int:
         """Maximum number of splits"""
@@ -78,7 +77,7 @@ class SplitManager:
                 )
                 if bool(set(cohort_diagnoses) & set(self.diagnoses)):
                     target_diagnoses = list(set(cohort_diagnoses) & set(self.diagnoses))
-                    
+
                     cohort_train_df, cohort_valid_df = self.concatenate_diagnoses(
                         item, cohort_path=cohort_path, cohort_diagnoses=target_diagnoses
                     )
@@ -132,36 +131,51 @@ class SplitManager:
         list_columns = train_df.columns.values
 
         if (
-            "diagnosis" not in list_columns
+            "diagnosis"
+            not in list_columns
             # or "age" not in list_columns
             # or "sex" not in list_columns
         ):
             parents_path = path.abspath(Path(train_path).parents[0])
-            while not path.exists(path.join(parents_path, "labels.tsv")):
+            while (not path.exists(path.join(parents_path, "labels.tsv"))) and (
+                path.exists(path.join(parents_path, "kfold.json"))
+                or path.exists(path.join(parents_path, "split.json"))
+            ):
                 parents_path = Path(parents_path).parents[0]
-            labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
-            train_df = pd.merge(
-                train_df,
-                labels_df,
-                how="inner",
-                on=["participant_id", "session_id"],
-            )
+            try:
+                labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+                train_df = pd.merge(
+                    train_df,
+                    labels_df,
+                    how="inner",
+                    on=["participant_id", "session_id"],
+                )
+            except:
+                pass
+
         list_columns = valid_df.columns.values
         if (
-            "diagnosis" not in list_columns
+            "diagnosis"
+            not in list_columns
             # or "age" not in list_columns
             # or "sex" not in list_columns
         ):
             parents_path = path.abspath(Path(valid_path).parents[0])
-            while not path.exists(path.join(parents_path, "labels.tsv")):
+            while (not path.exists(path.join(parents_path, "labels.tsv"))) and (
+                path.exists(path.join(parents_path, "kfold.json"))
+                or path.exists(path.join(parents_path, "split.json"))
+            ):
                 parents_path = Path(parents_path).parents[0]
-            labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
-            valid_df = pd.merge(
-                valid_df,
-                labels_df,
-                how="inner",
-                on=["participant_id", "session_id"],
-            )
+            try:
+                labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+                valid_df = pd.merge(
+                    valid_df,
+                    labels_df,
+                    how="inner",
+                    on=["participant_id", "session_id"],
+                )
+            except:
+                pass
 
         train_df.reset_index(inplace=True, drop=True)
         valid_df.reset_index(inplace=True, drop=True)
