@@ -1419,7 +1419,6 @@ class MapsManager:
             transfer_train_df = transfer_train_df[["participant_id", "session_id"]]
             train_df = pd.concat([train_df, transfer_train_df])
             train_df.drop_duplicates(inplace=True)
-
         train_df.to_csv(
             path.join(self.maps_path, "groups", "train+validation.tsv"),
             sep="\t",
@@ -1837,7 +1836,6 @@ class MapsManager:
 
     def _init_split_manager(self, split_list=None):
         from clinicadl.utils import split_manager
-
         split_class = getattr(split_manager, self.validation)
         args = list(
             split_class.__init__.__code__.co_varnames[

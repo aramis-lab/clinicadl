@@ -33,6 +33,7 @@ class SplitManager:
         self.baseline = baseline
         self.split_list = split_list
 
+
     @abc.abstractmethod
     def max_length(self) -> int:
         """Maximum number of splits"""
@@ -77,6 +78,7 @@ class SplitManager:
                 )
                 if bool(set(cohort_diagnoses) & set(self.diagnoses)):
                     target_diagnoses = list(set(cohort_diagnoses) & set(self.diagnoses))
+                    
                     cohort_train_df, cohort_valid_df = self.concatenate_diagnoses(
                         item, cohort_path=cohort_path, cohort_diagnoses=target_diagnoses
                     )
@@ -128,10 +130,11 @@ class SplitManager:
         valid_df = pd.read_csv(valid_path, sep="\t")
 
         list_columns = train_df.columns.values
+
         if (
             "diagnosis" not in list_columns
-            or "age" not in list_columns
-            or "sex" not in list_columns
+            # or "age" not in list_columns
+            # or "sex" not in list_columns
         ):
             parents_path = path.abspath(Path(train_path).parents[0])
             while not path.exists(path.join(parents_path, "labels.tsv")):
@@ -146,8 +149,8 @@ class SplitManager:
         list_columns = valid_df.columns.values
         if (
             "diagnosis" not in list_columns
-            or "age" not in list_columns
-            or "sex" not in list_columns
+            # or "age" not in list_columns
+            # or "sex" not in list_columns
         ):
             parents_path = path.abspath(Path(valid_path).parents[0])
             while not path.exists(path.join(parents_path, "labels.tsv")):
