@@ -228,7 +228,7 @@ def test_prepare_experiment(cmdopt, tmp_path):
 
 def test_get_metadata(cmdopt, tmp_path):
 
-    """Checks that clinicadl get-metadata can be performed"""
+    """Checks that get-metadata can be performed"""
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "tsvtools" / "in"
     ref_dir = base_dir / "tsvtools" / "ref"
