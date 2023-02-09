@@ -25,6 +25,22 @@ class SplitManager:
         multi_cohort=False,
         split_list=None,
     ):
+        """
+
+        Parameters
+        ----------
+        caps_director: str (path)
+            Path to the caps directory
+        tsv_path: str
+            Path to the tsv that is going to be split
+        diagonoses: List[str]
+            List of diagnosis
+        baseline: bool
+            if True, split only on baseline sessions
+        multi-cohort: bool
+        split_list: List[str]
+
+        """
         self._check_tsv_path(tsv_path, multi_cohort)
         self.tsv_path = tsv_path
         self.caps_dict = self._create_caps_dict(caps_directory, multi_cohort)
