@@ -201,7 +201,7 @@ def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
 
         for key in diagnosis_dict[diagnosis]:
             if np.isnan(diagnosis_dict[diagnosis][key]).any():
-                logger.warn(
+                logger.warning(
                     f"NaN values were found for {key} values associated to diagnosis {diagnosis}"
                 )
 

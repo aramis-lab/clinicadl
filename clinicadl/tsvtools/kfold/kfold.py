@@ -66,9 +66,9 @@ def write_splits(
         train_df.reset_index(inplace=True, drop=True)
         test_df.reset_index(inplace=True, drop=True)
 
-        train_df = train_df[["participant_id", "session_id"]]
-        test_df = test_df[["participant_id", "session_id"]]
-        long_train_df = long_train_df[["participant_id", "session_id"]]
+        # train_df = train_df[["participant_id", "session_id"]]
+        # test_df = test_df[["participant_id", "session_id"]]
+        # long_train_df = long_train_df[["participant_id", "session_id"]]
 
         os.makedirs(path.join(results_directory, f"split-{i}"))
 
@@ -165,7 +165,7 @@ def split_diagnoses(
                     how="inner",
                     on=["participant_id", "session_id"],
                 )
-            except ClinicaDLTSVError:
+            except:
                 raise ClinicaDLTSVError(
                     f"Your tsv file doesn't contain one of these columns : age, sex, diagnosis "
                     "and the pipeline wasn't able to find the output of clinicadl get-labels to get it."
@@ -173,8 +173,6 @@ def split_diagnoses(
                     "or add the the flag --ignore_demographics to split without trying to balance age or sex distributions."
                     "or add the option --merged-tsv to give the path the output of clinica merge-tsv"
                 )
-
-            raise ClinicaDLTSVError(" \n .")
         else:
             labels_df = pd.read_csv(merged_tsv, sep="\t")
             diagnosis_df = pd.merge(

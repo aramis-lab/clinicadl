@@ -293,5 +293,5 @@ def df_to_tsv(name: str, results_path: str, df, baseline: bool = False) -> None:
         df.drop_duplicates(
             subset=["participant_id", "session_id"], keep="first", inplace=True
         )
-    df = df[["participant_id", "session_id"]]
+    # df = df[["participant_id", "session_id"]]
     df.to_csv(path.join(results_path, name), sep="\t", index=False)

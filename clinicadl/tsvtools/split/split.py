@@ -298,7 +298,7 @@ def split_diagnoses(
                     how="inner",
                     on=["participant_id", "session_id"],
                 )
-            except ClinicaDLTSVError:
+            except:
                 raise ClinicaDLTSVError(
                     f"The column 'age', 'sex' or 'diagnosis' is missing and the pipeline was not able to find "
                     "the output of clinicadl get-labels to get it."
