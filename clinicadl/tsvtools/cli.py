@@ -3,6 +3,7 @@ import click
 from .adapt.adapt_cli import cli as adapt_cli
 from .analysis.analysis_cli import cli as analysis_cli
 from .get_labels.get_labels_cli import cli as get_labels_cli
+from .get_labels.old_get_labels_cli import cli as old_get_labels_cli
 from .get_metadata.get_metadata_cli import cli as get_metadata_cli
 from .get_progression.get_progression_cli import cli as get_progression_cli
 from .kfold.kfold_cli import cli as kfold_cli
@@ -26,6 +27,7 @@ def cli() -> None:
 
 
 cli.add_command(get_labels_cli)
+cli.add_command(old_get_labels_cli)
 cli.add_command(analysis_cli)
 cli.add_command(split_cli)
 cli.add_command(kfold_cli)
