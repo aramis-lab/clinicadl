@@ -70,12 +70,10 @@ def cli(
 
     from .get_labels import get_labels
 
-    warnings.simplefilter("once")
     warnings.warn(
-        "'tsvtools getlabels' command is deprecated, now use 'tsvtools get-labels' instead.",
-        DeprecationWarning,
+        "The 'tsvtools getlabels' command is deprecated and will be removed from clinicaDL in a future version. Use 'tsvtools get-labels' instead.",
+        FutureWarning,
     )
-    # warnings.simplefilter('default')
 
     if len(variables_of_interest) == 0:
         variables_of_interest = None

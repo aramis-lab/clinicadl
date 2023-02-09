@@ -128,7 +128,10 @@ def mod_selection(
     nb_subjects = 0
     if mod is not None:
         for subject, session in bids_df.index.values:
-            session_mod = session[:5] + session[6:8]
+            if len(session) == 8 and (not int(session[5]) == 1):
+                session_mod = session[:5] + session[6:8]
+            else:
+                session_mod = session
             try:
                 mod_present = missing_mods_dict[session_mod].loc[subject, mod]
                 if not mod_present:
@@ -346,7 +349,9 @@ def get_labels(
     logger.info(f"output of clinica iotools merge-tsv: {merged_tsv_path}")
 
     # Reading files
-    bids_df = merged_tsv_reader(merged_tsv_path)
+    if not path.exists(merged_tsv_path):
+        raise ClinicaDLTSVError(f"{merged_tsv_path} file was not found. ")
+    bids_df = pd.read_csv(merged_tsv_path, sep="\t")
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
     variables_list = []
 

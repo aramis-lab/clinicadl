@@ -3,6 +3,7 @@
 import abc
 from logging import getLogger
 from os import path
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -1034,9 +1035,25 @@ def load_data_test_single(test_path, diagnoses_list, baseline=True):
     test_df = pd.DataFrame()
 
     if baseline:
-        test_path = path.join(test_path, "labels_baseline.tsv")
+        if not path.exists(path.join(Path(test_path).parents[0], "train_baseline.tsv")):
+            if not path.join(Path(test_path).parents[0], "labels_baseline.tsv"):
+                raise ClinicaDLTSVError(
+                    f"There is no train_baseline.tsv nor labels_baseline.tsv in your folder {Path(test_path).parents[0]} "
+                )
+            else:
+                test_path = path.join(Path(test_path).parents[0], "labels_baseline.tsv")
+        else:
+            test_path = path.join(Path(test_path).parents[0], "train_baseline.tsv")
     else:
-        test_path = path.join(test_path, "labels.tsv")
+        if not path.exists(path.join(Path(test_path).parents[0], "train.tsv")):
+            if not path.join(Path(test_path).parents[0], "labels.tsv"):
+                raise ClinicaDLTSVError(
+                    f"There is no train.tsv or labels.tsv in your folder {Path(test_path).parents[0]} "
+                )
+            else:
+                test_path = path.join(Path(test_path).parents[0], "labels.tsv")
+        else:
+            test_path = path.join(Path(test_path).parents[0], "train.tsv")
 
     test_df = pd.read_csv(test_path, sep="\t")
 

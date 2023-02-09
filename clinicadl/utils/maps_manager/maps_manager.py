@@ -92,6 +92,7 @@ class MapsManager:
                     f"Please remove it or choose another location."
                 )
             makedirs(path.join(self.maps_path, "groups"))
+
             logger.info(f"A new MAPS was created at {maps_path}")
             self._check_args(parameters)
             self.write_parameters(self.maps_path, self.parameters)
@@ -1162,7 +1163,6 @@ class MapsManager:
                     f"The values of mandatory arguments {mandatory_arguments} should be set. "
                     f"No value was given for {arg}."
                 )
-
         parameters = add_default_values(parameters)
         self.parameters = parameters
         if self.parameters["gpu"]:
