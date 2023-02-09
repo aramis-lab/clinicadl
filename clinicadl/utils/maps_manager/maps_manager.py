@@ -50,10 +50,15 @@ class MapsManager:
         verbose: str = "info",
     ):
         """
-        Args:
-            maps_path: path of the MAPS
-            parameters: parameters of the training step. If given a new MAPS is created.
-            verbose: Logging level ("debug", "info", "warning")
+
+        Parameters
+        ----------
+        maps_path: str (path)
+            path of the MAPS
+        parameters: Dict[str, Any]
+            parameters of the training step. If given a new MAPS is created.
+        verbose: str
+            Logging level ("debug", "info", "warning")
         """
         self.maps_path = path.abspath(maps_path)
         if verbose is not None:
@@ -1836,6 +1841,7 @@ class MapsManager:
 
     def _init_split_manager(self, split_list=None):
         from clinicadl.utils import split_manager
+
         split_class = getattr(split_manager, self.validation)
         args = list(
             split_class.__init__.__code__.co_varnames[
