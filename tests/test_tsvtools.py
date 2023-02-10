@@ -48,7 +48,7 @@ def check_is_independant(train_path_baseline, test_path_baseline, subject_flag=T
     assert flag_is_independant
 
 
-def run_test_suite(data_tsv, n_splits, subset_name):
+def run_test_suite(data_tsv, n_splits):
     check_train = True
 
     if n_splits == 0:
@@ -143,7 +143,7 @@ def test_split(cmdopt, tmp_path):
     assert compare_folders(
         os.path.join(tmp_out_dir, "split"), os.path.join(ref_dir, "split"), tmp_out_dir
     )
-    run_test_suite(tmp_out_dir, n_splits, "validation")
+    run_test_suite(tmp_out_dir, n_splits)
 
 
 def test_analysis(cmdopt, tmp_path):
@@ -223,7 +223,7 @@ def test_prepare_experiment(cmdopt, tmp_path):
     assert compare_folders(
         os.path.join(tmp_out_dir, "split"), os.path.join(ref_dir, "split"), tmp_out_dir
     )
-    run_test_suite(tmp_out_dir, n_valid, "validation")
+    run_test_suite(tmp_out_dir, n_valid)
 
 
 def test_get_metadata(cmdopt, tmp_path):
