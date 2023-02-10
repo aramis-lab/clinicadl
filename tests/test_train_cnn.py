@@ -123,6 +123,8 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
     ) as ref:
         json_data_ref = json.load(ref)
 
+    print(json_data_out)
+    print(json_data_ref)
     assert json_data_out == json_data_ref  # ["mode"] == mode
 
     assert compare_folders(
