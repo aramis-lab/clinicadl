@@ -44,7 +44,9 @@ def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
     if not path.exists(data_tsv):
         raise ClinicaDLTSVError(f"{data_tsv} file was not found. ")
 
-    merged_df = merged_tsv_reader(merged_tsv)
+    if not path.exists(merged_tsv):
+        raise ClinicaDLTSVError(f"{merged_tsv} file was not found. ")
+    merged_df = pd.read_csv(merged_tsv, sep="\t")
     merged_df.set_index(["participant_id", "session_id"], inplace=True)
     merged_df = cleaning_nan_diagnoses(merged_df)
 

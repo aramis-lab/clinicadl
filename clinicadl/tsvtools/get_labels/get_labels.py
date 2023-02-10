@@ -325,7 +325,7 @@ def get_labels(
     )
 
     # Generating the output of `clinica iotools merge-tsv `
-    merged_tsv_path = os.path.join(results_directory, "merge.tsv")
+    merged_tsv_path = os.path.join(results_directory, "merged.tsv")
     if merged_tsv is not None:
         merged_tsv_path = merged_tsv
     elif not os.path.exists(merged_tsv_path):
@@ -333,7 +333,7 @@ def get_labels(
         check_bids_folder(bids_directory)
         create_merge_file(
             bids_directory,
-            os.path.join(results_directory, "merge.tsv"),
+            os.path.join(results_directory, "merged.tsv"),
             caps_dir=None,
             pipelines=None,
             ignore_scan_files=None,
