@@ -47,7 +47,7 @@ def test_determinism(cmdopt, tmp_path):
         "classification",
         path.join(str(input_dir), "caps_roi"),
         "t1-linear_mode-roi.json",
-        path.join(str(input_dir), "labels_list"),
+        path.join(str(input_dir), "labels_list", "2_fold"),
         str(maps_dir),
         "-c",
         path.join(str(input_dir), "reproducibility_config.toml"),

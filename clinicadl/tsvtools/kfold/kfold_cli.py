@@ -20,11 +20,18 @@ from clinicadl.utils import cli_param
     type=str,
     default=None,
 )
+@click.option(
+    "--merged-tsv",
+    help="Path to the merged.tsv file.",
+    type=str,
+    default=None,
+)
 def cli(
     data_tsv,
     n_splits,
     subset_name,
     stratification,
+    merged_tsv,
 ):
     """Performs a k-fold split to prepare training.
 
@@ -39,6 +46,7 @@ def cli(
         n_splits=n_splits,
         subset_name=subset_name,
         stratification=stratification,
+        merged_tsv=merged_tsv,
     )
 
 
