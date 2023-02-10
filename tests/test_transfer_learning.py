@@ -34,7 +34,7 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
     caps_patch_path = join(input_dir, "caps_patch")
     extract_roi_str = "t1-linear_mode-roi.json"
     extract_patch_str = "t1-linear_mode-patch.json"
-    labels_path = join(input_dir, "labels_list")
+    labels_path = join(input_dir, "labels_list", "2_fold")
     config_path = join(input_dir, "train_config.toml")
     if test_name == "transfer_ae_ae":
         source_task = [

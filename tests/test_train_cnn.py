@@ -31,7 +31,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
     tmp_out_dir = tmp_path / "train" / "out"
     tmp_out_dir.mkdir(parents=True)
 
-    labels_path = join(input_dir, "labels_list")
+    labels_path = join(input_dir, "labels_list", "2_fold")
     config_path = join(input_dir, "train_config.toml")
     split = "0"
 
