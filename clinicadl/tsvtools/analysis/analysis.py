@@ -2,13 +2,13 @@
 
 import os
 from copy import copy
+from logging import getLogger
 from os import path
-from warnings import warn
 
 import numpy as np
 import pandas as pd
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 from clinicadl.utils.tsvtools_utils import (
     add_demographics,
     cleaning_nan_diagnoses,
@@ -17,6 +17,8 @@ from clinicadl.utils.tsvtools_utils import (
     merged_tsv_reader,
     next_session,
 )
+
+logger = getLogger("clinicadl")
 
 
 def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
@@ -31,7 +33,7 @@ def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
     merged_tsv: str (path)
         Path to the file obtained by the command clinica iotools merge-tsv.
     data_tsv: str (path)
-        Path to the folder containing data extracted by clinicadl tsvtool getlabels.
+        Path to the folder containing data extracted by clinicadl tsvtool get-labels.
     results_tsv: str (path)
         Path to the output tsv file (filename included).
     diagnoses: list of str
@@ -39,9 +41,15 @@ def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
 
     """
 
-    merged_df = merged_tsv_reader(merged_tsv)
+    if not path.exists(data_tsv):
+        raise ClinicaDLTSVError(f"{data_tsv} file was not found. ")
+
+    if not path.exists(merged_tsv):
+        raise ClinicaDLTSVError(f"{merged_tsv} file was not found. ")
+    merged_df = pd.read_csv(merged_tsv, sep="\t")
     merged_df.set_index(["participant_id", "session_id"], inplace=True)
     merged_df = cleaning_nan_diagnoses(merged_df)
+
     parent_directory = path.abspath(path.join(results_tsv, os.pardir))
     os.makedirs(parent_directory, exist_ok=True)
 
@@ -79,11 +87,7 @@ def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
 
     # Need all values for mean and variance (age, MMSE and scans)
     diagnosis_dict = dict.fromkeys(diagnoses)
-    if not path.exists(data_tsv):
-        print(
-            f"getlabels.tsv file with all sessions was not found. "
-            # f"Loads baseline version instead."
-        )
+
     for diagnosis in diagnoses:
         diagnosis_dict[diagnosis] = {"age": [], "MMSE": [], "scans": []}
         getlabels_df = pd.read_csv(data_tsv, sep="\t")
@@ -199,10 +203,11 @@ def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
 
         for key in diagnosis_dict[diagnosis]:
             if np.isnan(diagnosis_dict[diagnosis][key]).any():
-                warn(
+                logger.warning(
                     f"NaN values were found for {key} values associated to diagnosis {diagnosis}"
                 )
 
     results_df.index.name = "group"
 
     results_df.to_csv(results_tsv, sep="\t")
+    logger.info(f"Result is stored at {results_tsv}")

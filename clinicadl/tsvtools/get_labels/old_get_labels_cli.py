@@ -5,7 +5,7 @@ import click
 from clinicadl.utils import cli_param
 
 
-@click.command(name="get-labels", no_args_is_help=True)
+@click.command(name="getlabels", no_args_is_help=True)
 @cli_param.argument.bids_directory
 @cli_param.option.diagnoses
 @cli_param.option.modality
@@ -56,6 +56,7 @@ def cli(
     """Get labels in a tsv file.
 
     This command executes the two following commands:
+
         - `clinica iotools merge-tsv`
         - `clinica iotools check-missing-modalities`
 
@@ -65,7 +66,14 @@ def cli(
 
     Outputs are stored in OUTPUT_TSV.
     """
+    import warnings
+
     from .get_labels import get_labels
+
+    warnings.warn(
+        "The 'tsvtools getlabels' command is deprecated and will be removed from clinicaDL in a future version. Use 'tsvtools get-labels' instead.",
+        FutureWarning,
+    )
 
     if len(variables_of_interest) == 0:
         variables_of_interest = None
