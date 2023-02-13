@@ -488,7 +488,7 @@ class CapsDatasetRoi(CapsDataset):
         self.uncropped_roi = preprocessing_dict["uncropped_roi"]
         self.prepare_dl = preprocessing_dict["prepare_dl"]
         self.mask_paths, self.mask_arrays = self._get_mask_paths_and_tensors(
-            caps_directory, preprocessing_dict
+            caps_directory, multi_cohort, preprocessing_dict
         )
         super().__init__(
             caps_directory,
@@ -554,7 +554,10 @@ class CapsDatasetRoi(CapsDataset):
             return len(self.roi_list)
 
     def _get_mask_paths_and_tensors(
-        self, caps_directory: str, multi_cohort:bool, preprocessing_dict: Dict[str, Any]
+        self,
+        caps_directory: str,
+        multi_cohort: bool,
+        preprocessing_dict: Dict[str, Any],
     ) -> Tuple[List[str], List]:
         """Loads the masks necessary to regions extraction"""
         import nibabel as nib
