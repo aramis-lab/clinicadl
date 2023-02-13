@@ -76,6 +76,7 @@ class CapsDataset(Dataset):
             mandatory_col.add(self.label)
 
         if not mandatory_col.issubset(set(self.df.columns.values)):
+
             raise Exception(
                 f"the data file is not in the correct format."
                 f"Columns should include {mandatory_col}"
