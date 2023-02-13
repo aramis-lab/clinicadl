@@ -107,6 +107,7 @@ def quality_check(
 
         columns = ["participant_id", "session_id", "pass_probability", "pass"]
         qc_df = pd.DataFrame(columns=columns)
+        qc_df["pass"] = qc_df["pass"].astype(bool)
         softmax = torch.nn.Softmax(dim=1)
         logger.info(f"Quality check will be performed over {len(dataloader)} images.")
 
