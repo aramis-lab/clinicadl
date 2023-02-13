@@ -13,6 +13,8 @@ logger = getLogger("clinicadl")
 
 
 def merged_tsv_reader(merged_tsv_path):
+    if not path.exists(merged_tsv_path):
+        raise ClinicaDLTSVError(f"{merged_tsv_path} file was not found. ")
     bids_df = pd.read_csv(merged_tsv_path, sep="\t")
 
     for i in bids_df.index:
@@ -291,5 +293,5 @@ def df_to_tsv(name: str, results_path: str, df, baseline: bool = False) -> None:
         df.drop_duplicates(
             subset=["participant_id", "session_id"], keep="first", inplace=True
         )
-    df = df[["participant_id", "session_id"]]
+    # df = df[["participant_id", "session_id"]]
     df.to_csv(path.join(results_path, name), sep="\t", index=False)

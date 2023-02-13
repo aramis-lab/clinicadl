@@ -1,15 +1,17 @@
 from logging import getLogger
+from os import path
 
 import numpy as np
 import pandas as pd
 
+from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 from clinicadl.utils.tsvtools_utils import merged_tsv_reader
 
 logger = getLogger("clinicadl")
 
 
 def get_metadata(
-    metadata_df: pd.DataFrame, output_df: pd.DataFrame, variables_of_interest=None
+    data_tsv: str, merged_tsv: str, variables_of_interest=None
 ) -> pd.DataFrame:
     """
     Get the meta data in metadata_df to write them in output_df.
@@ -17,18 +19,21 @@ def get_metadata(
 
     Parameters
     ----------
-    data_df: DataFrame
+    data_tsv: str (Path)
         Columns must include ['participant_id', 'session_id']
+    merged_tsv: str (Path)
+        output of `clinica merge-tsv`
     variables_of_interest: list of str
         List of columns that will be added in the output DataFrame.
 
     Returns
     -------
-    results_df: DataFrame
-        Input data_df with variables of interest columns added.
     """
 
-    variables_in = output_df.columns.tolist()
+    metadata_df = merged_tsv_reader(merged_tsv)
+    in_out_df = merged_tsv_reader(data_tsv)
+
+    variables_in = in_out_df.columns.tolist()
     variables_metadata = metadata_df.columns.tolist()
 
     variables_intersection = list(
@@ -38,7 +43,7 @@ def get_metadata(
     if variables_of_interest is None:
 
         variables_list = np.unique(variables_in)
-        result_df = pd.merge(metadata_df, output_df, on=variables_intersection)
+        result_df = pd.merge(metadata_df, in_out_df, on=variables_intersection)
         result_df.set_index(["participant_id", "session_id"], inplace=True)
 
     else:
@@ -51,11 +56,10 @@ def get_metadata(
         else:
             variables_of_interest = list(variables_of_interest)
             variables_list = np.unique(variables_of_interest + variables_in)
-            result_df = pd.merge(metadata_df, output_df, on=variables_intersection)
+            result_df = pd.merge(metadata_df, in_out_df, on=variables_intersection)
             result_df = result_df[variables_list]
             result_df.set_index(["participant_id", "session_id"], inplace=True)
-    return result_df
 
+    result_df.to_csv(data_tsv, sep="\t")
 
-# input : tsv file wanted
-# output : tsv file with more metadata
+    logger.info(f"metadata were added in: {data_tsv}")

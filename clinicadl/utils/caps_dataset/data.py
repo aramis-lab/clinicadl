@@ -3,6 +3,7 @@
 import abc
 from logging import getLogger
 from os import path
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -76,11 +77,11 @@ class CapsDataset(Dataset):
             mandatory_col.add(self.label)
 
         if not mandatory_col.issubset(set(self.df.columns.values)):
+
             raise Exception(
                 f"the data file is not in the correct format."
                 f"Columns should include {mandatory_col}"
             )
-
         self.elem_per_image = self.num_elem_per_image()
         self.size = self[0]["image"].size()
 
@@ -567,7 +568,6 @@ class CapsDatasetRoi(CapsDataset):
                 f"The equality of masks is not assessed for multi-cohort training. "
                 f"The masks stored in {caps_directory} will be used."
             )
-
         # Find template name
         if preprocessing_dict["preprocessing"] == "custom":
             template_name = preprocessing_dict["roi_custom_template"]
@@ -1062,15 +1062,28 @@ def load_data_test_single(test_path, diagnoses_list, baseline=True):
 
     test_df = pd.DataFrame()
 
-    for diagnosis in diagnoses_list:
-
-        if baseline:
-            test_diagnosis_path = path.join(test_path, diagnosis + "_baseline.tsv")
+    if baseline:
+        if not path.exists(path.join(Path(test_path).parents[0], "train_baseline.tsv")):
+            if not path.join(Path(test_path).parents[0], "labels_baseline.tsv"):
+                raise ClinicaDLTSVError(
+                    f"There is no train_baseline.tsv nor labels_baseline.tsv in your folder {Path(test_path).parents[0]} "
+                )
+            else:
+                test_path = path.join(Path(test_path).parents[0], "labels_baseline.tsv")
         else:
-            test_diagnosis_path = path.join(test_path, diagnosis + ".tsv")
+            test_path = path.join(Path(test_path).parents[0], "train_baseline.tsv")
+    else:
+        if not path.exists(path.join(Path(test_path).parents[0], "train.tsv")):
+            if not path.join(Path(test_path).parents[0], "labels.tsv"):
+                raise ClinicaDLTSVError(
+                    f"There is no train.tsv or labels.tsv in your folder {Path(test_path).parents[0]} "
+                )
+            else:
+                test_path = path.join(Path(test_path).parents[0], "labels.tsv")
+        else:
+            test_path = path.join(Path(test_path).parents[0], "train.tsv")
 
-        test_diagnosis_df = pd.read_csv(test_diagnosis_path, sep="\t")
-        test_df = pd.concat([test_df, test_diagnosis_df])
+    test_df = pd.read_csv(test_path, sep="\t")
 
     test_df.reset_index(inplace=True, drop=True)
 

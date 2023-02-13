@@ -23,7 +23,7 @@ def test_interpret(cmdopt, tmp_path, test_name):
     tmp_out_dir = tmp_path / "interpret" / "out"
     tmp_out_dir.mkdir(parents=True)
 
-    labels_dir_str = str(input_dir / "labels_list")
+    labels_dir_str = str(input_dir / "labels_list" / "2_fold")
     maps_tmp_out_dir = str(tmp_out_dir / "maps")
     if test_name == "classification":
         cnn_input = [

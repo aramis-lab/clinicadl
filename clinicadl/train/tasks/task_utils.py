@@ -67,7 +67,6 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
             isinstance(kwargs[option], tuple) and len(kwargs[option]) != 0
         ):
             train_dict[option] = kwargs[option]
-
     if not train_dict["multi_cohort"]:
         preprocessing_json = os.path.join(
             train_dict["caps_directory"],

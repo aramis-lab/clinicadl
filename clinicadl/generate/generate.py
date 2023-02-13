@@ -281,12 +281,11 @@ def generate_trivial_dataset(
         trivial_image_nii.to_filename(
             join(trivial_image_nii_dir, trivial_image_nii_filename)
         )
-        print(join(trivial_image_nii_dir, trivial_image_nii_filename))
 
         # Append row to output tsv
         row = [f"sub-TRIV{i}", session_id, diagnosis_list[label], 60, "F"]
         row_df = pd.DataFrame([row], columns=columns)
-        output_df = output_df.append(row_df)
+        output_df = pd.concat([output_df, row_df])
 
     output_df.to_csv(join(output_dir, "data.tsv"), sep="\t", index=False)
 

@@ -50,10 +50,15 @@ class MapsManager:
         verbose: str = "info",
     ):
         """
-        Args:
-            maps_path: path of the MAPS
-            parameters: parameters of the training step. If given a new MAPS is created.
-            verbose: Logging level ("debug", "info", "warning")
+
+        Parameters
+        ----------
+        maps_path: str (path)
+            path of the MAPS
+        parameters: Dict[str, Any]
+            parameters of the training step. If given a new MAPS is created.
+        verbose: str
+            Logging level ("debug", "info", "warning")
         """
         self.maps_path = path.abspath(maps_path)
         if verbose is not None:
@@ -87,10 +92,12 @@ class MapsManager:
                     f"Please remove it or choose another location."
                 )
             makedirs(path.join(self.maps_path, "groups"))
+
             logger.info(f"A new MAPS was created at {maps_path}")
             self._check_args(parameters)
             self.write_parameters(self.maps_path, self.parameters)
             self._write_requirements_version()
+
             self.split_name = "split"  # Used only for retro-compatibility
             self._write_training_data()
             self._write_train_val_groups()
@@ -565,7 +572,6 @@ class MapsManager:
             size_reduction=self.size_reduction,
             size_reduction_factor=self.size_reduction_factor,
         )
-
         split_manager = self._init_split_manager(split_list)
         for split in split_manager.split_iterator():
             logger.info(f"Training split {split}")
@@ -595,9 +601,7 @@ class MapsManager:
                 label=self.label,
                 label_code=self.label_code,
             )
-
             train_sampler = self.task_manager.generate_sampler(data_train, self.sampler)
-
             logger.debug(
                 f"Getting train and validation loader with batch size {self.batch_size}"
             )
@@ -1251,7 +1255,6 @@ class MapsManager:
                     f"The values of mandatory arguments {mandatory_arguments} should be set. "
                     f"No value was given for {arg}."
                 )
-
         parameters = add_default_values(parameters)
         self.parameters = parameters
         if self.parameters["gpu"]:
@@ -1517,7 +1520,6 @@ class MapsManager:
             transfer_train_df = transfer_train_df[["participant_id", "session_id"]]
             train_df = pd.concat([train_df, transfer_train_df])
             train_df.drop_duplicates(inplace=True)
-
         train_df.to_csv(
             path.join(self.maps_path, "groups", "train+validation.tsv"),
             sep="\t",
@@ -1997,7 +1999,6 @@ class MapsManager:
         log_path = path.join(log_dir, "description.log")
         with open(log_path, "r") as f:
             content = f.read()
-            print(content)
 
     def get_group_info(
         self, data_group: str, split: int = None

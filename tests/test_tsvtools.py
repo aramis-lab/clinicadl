@@ -28,7 +28,6 @@ def check_is_subject_unique(labels_path_baseline):
         check_df = extract_baseline(check_df, set_index=False)
     for subject, subject_df in check_df.groupby(level=0):
         if len(subject_df) > 1:
-            print(subject_df)
             flag_is_unique = False
     assert flag_is_unique
 
@@ -49,7 +48,7 @@ def check_is_independant(train_path_baseline, test_path_baseline, subject_flag=T
     assert flag_is_independant
 
 
-def run_test_suite(data_tsv, n_splits, subset_name):
+def run_test_suite(data_tsv, n_splits):
     check_train = True
 
     if n_splits == 0:
@@ -131,16 +130,20 @@ def test_split(cmdopt, tmp_path):
     flag_split = not os.system(
         f"clinicadl -vvv tsvtools split {labels_tsv} --subset_name test"
     )
+    flag_getmetadata = not os.system(
+        f"clinicadl -vvv tsvtools get-metadata {train_tsv} {labels_tsv} -voi age -voi sex -voi diagnosis"
+    )
     flag_kfold = not os.system(
         f"clinicadl -vvv tsvtools kfold {train_tsv} --n_splits {n_splits} --subset_name validation"
     )
     assert flag_split
+    assert flag_getmetadata
     assert flag_kfold
 
     assert compare_folders(
         os.path.join(tmp_out_dir, "split"), os.path.join(ref_dir, "split"), tmp_out_dir
     )
-    run_test_suite(tmp_out_dir, n_splits, "validation")
+    run_test_suite(tmp_out_dir, n_splits)
 
 
 def test_analysis(cmdopt, tmp_path):
@@ -220,7 +223,7 @@ def test_prepare_experiment(cmdopt, tmp_path):
     assert compare_folders(
         os.path.join(tmp_out_dir, "split"), os.path.join(ref_dir, "split"), tmp_out_dir
     )
-    run_test_suite(tmp_out_dir, n_valid, "validation")
+    run_test_suite(tmp_out_dir, n_valid)
 
 
 def test_get_metadata(cmdopt, tmp_path):
@@ -234,14 +237,14 @@ def test_get_metadata(cmdopt, tmp_path):
 
     input_metadata_tsv = path.join(input_dir, "metadata.tsv")
     metadata_tsv = path.join(tmp_out_dir, "metadata.tsv")
+    input_labels_tsv = path.join(input_dir, "labels.tsv")
+    labels_tsv = path.join(tmp_out_dir, "labels.tsv")
     ref_metadata_tsv = path.join(ref_dir, "metadata.tsv")
     shutil.copyfile(input_metadata_tsv, metadata_tsv)
-    shutil.copyfile(
-        path.join(input_dir, "labels.tsv"), path.join(tmp_out_dir, "labels.tsv")
-    )
+    shutil.copyfile(input_labels_tsv, labels_tsv)
 
     flag_get_metadata = not os.system(
-        f"clinicadl tsvtools get-metadata {metadata_tsv}  "
+        f"clinicadl tsvtools get-metadata {metadata_tsv} {labels_tsv} -voi diagnosis -voi sex -voi age"
     )
     assert flag_get_metadata
 

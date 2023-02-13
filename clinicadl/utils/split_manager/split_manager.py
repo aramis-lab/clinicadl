@@ -1,6 +1,7 @@
 import abc
 from logging import getLogger
 from os import path
+from pathlib import Path
 
 import pandas as pd
 from clinica.utils.inputs import check_caps_folder
@@ -24,6 +25,22 @@ class SplitManager:
         multi_cohort=False,
         split_list=None,
     ):
+        """
+
+        Parameters
+        ----------
+        caps_director: str (path)
+            Path to the caps directory
+        tsv_path: str
+            Path to the tsv that is going to be split
+        diagonoses: List[str]
+            List of diagnosis
+        baseline: bool
+            if True, split only on baseline sessions
+        multi-cohort: bool
+        split_list: List[str]
+
+        """
         self._check_tsv_path(tsv_path, multi_cohort)
         self.tsv_path = tsv_path
         self.caps_dict = self._create_caps_dict(caps_directory, multi_cohort)
@@ -76,6 +93,7 @@ class SplitManager:
                 )
                 if bool(set(cohort_diagnoses) & set(self.diagnoses)):
                     target_diagnoses = list(set(cohort_diagnoses) & set(self.diagnoses))
+
                     cohort_train_df, cohort_valid_df = self.concatenate_diagnoses(
                         item, cohort_path=cohort_path, cohort_diagnoses=target_diagnoses
                     )
@@ -107,8 +125,6 @@ class SplitManager:
     def concatenate_diagnoses(self, split, cohort_path=None, cohort_diagnoses=None):
         """Concatenated the diagnoses needed to form the train and validation sets."""
 
-        train_df, valid_df = pd.DataFrame(), pd.DataFrame()
-
         train_path, valid_path = self._get_tsv_paths(
             split=split,
             cohort_path=cohort_path if cohort_path is not None else self.tsv_path,
@@ -118,21 +134,64 @@ class SplitManager:
         if cohort_diagnoses is None:
             cohort_diagnoses = self.diagnoses
 
-        for diagnosis in cohort_diagnoses:
-            if self.baseline:
-                train_diagnosis_path = path.join(
-                    train_path, diagnosis + "_baseline.tsv"
+        if self.baseline:
+            train_path = path.join(train_path, "train_baseline.tsv")
+        else:
+            train_path = path.join(train_path, "train.tsv")
+
+        valid_path = path.join(valid_path, "validation_baseline.tsv")
+
+        train_df = pd.read_csv(train_path, sep="\t")
+        valid_df = pd.read_csv(valid_path, sep="\t")
+
+        list_columns = train_df.columns.values
+
+        if (
+            "diagnosis"
+            not in list_columns
+            # or "age" not in list_columns
+            # or "sex" not in list_columns
+        ):
+            parents_path = path.abspath(Path(train_path).parents[0])
+            while (not path.exists(path.join(parents_path, "labels.tsv"))) and (
+                path.exists(path.join(parents_path, "kfold.json"))
+                or path.exists(path.join(parents_path, "split.json"))
+            ):
+                parents_path = Path(parents_path).parents[0]
+            try:
+                labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+                train_df = pd.merge(
+                    train_df,
+                    labels_df,
+                    how="inner",
+                    on=["participant_id", "session_id"],
                 )
-            else:
-                train_diagnosis_path = path.join(train_path, diagnosis + ".tsv")
+            except:
+                pass
 
-            valid_diagnosis_path = path.join(valid_path, diagnosis + "_baseline.tsv")
-
-            train_diagnosis_df = pd.read_csv(train_diagnosis_path, sep="\t")
-            valid_diagnosis_df = pd.read_csv(valid_diagnosis_path, sep="\t")
-
-            train_df = pd.concat([train_df, train_diagnosis_df])
-            valid_df = pd.concat([valid_df, valid_diagnosis_df])
+        list_columns = valid_df.columns.values
+        if (
+            "diagnosis"
+            not in list_columns
+            # or "age" not in list_columns
+            # or "sex" not in list_columns
+        ):
+            parents_path = path.abspath(Path(valid_path).parents[0])
+            while (not path.exists(path.join(parents_path, "labels.tsv"))) and (
+                path.exists(path.join(parents_path, "kfold.json"))
+                or path.exists(path.join(parents_path, "split.json"))
+            ):
+                parents_path = Path(parents_path).parents[0]
+            try:
+                labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+                valid_df = pd.merge(
+                    valid_df,
+                    labels_df,
+                    how="inner",
+                    on=["participant_id", "session_id"],
+                )
+            except:
+                pass
 
         train_df.reset_index(inplace=True, drop=True)
         valid_df.reset_index(inplace=True, drop=True)

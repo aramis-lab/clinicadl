@@ -13,9 +13,9 @@ def cli(merged_tsv, data_tsv, results_tsv, diagnoses):
 
     MERGED_TSV is the output of `clinica iotools merge-tsv`.
 
-    DATA_TSV is the output of `clinicadl tsvtools getlabels`.
+    DATA_TSV is the output of `clinicadl tsvtools get-labels`.
 
-    Results are stored in RESULTS_DIRECTORY.
+    Results are stored in RESULTS_TSV.
     """
     from .analysis import demographics_analysis
 
