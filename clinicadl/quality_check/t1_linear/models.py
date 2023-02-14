@@ -1,3 +1,5 @@
+## From https://github.com/vfonov/DARQ and https://github.com/vfonov/Deep-QC
+
 from typing import Any, Callable, List, Optional, Type, Union
 
 import torch
