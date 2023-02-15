@@ -8,6 +8,7 @@ import pandas as pd
 import torch
 from clinica.utils.inputs import RemoteFileStructure, fetch_file
 from torch.utils.data import DataLoader
+from torchvision.models import ResNet18_Weights, resnet18
 
 from clinicadl.generate.generate_utils import load_and_check_tsv
 from clinicadl.utils.caps_dataset.data import CapsDataset

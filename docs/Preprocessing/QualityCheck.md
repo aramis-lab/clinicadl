@@ -49,7 +49,10 @@ Default value: `0.5`.
 - `--gpu/--no_gpu` (bool) Use GPU for computing optimization. Default behaviour is to try to use a GPU and to raise an error if it is not found.
 - `--use_tensor` (bool) is a flag allowing the pipeline to run on the extracted tensors and not on the nifti images. 
 - `--network` (str) is the architecture chosen for the network (to chose between `darq`, `sq101` and `deep_qc`)
+<<<<<<< HEAD
 
+=======
+>>>>>>> d6143bc1 (Cb qc darq (#373))
 
 ### Outputs
 
@@ -166,5 +169,3 @@ An example of TSV file is:
 | sub-CLNC03         | ses-M00        | 0.7292165160179138     | True      |
 | sub-CLNC04         | ses-M00        | 0.1549495905637741     | False     |
 | ...                |  ...           |  ...                   |  ...      |
-=======
- 
