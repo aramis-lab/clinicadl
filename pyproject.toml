@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "clinicadl"
-version = "1.1.1"
+version = "1.2.0"
 description = "Framework for the reproducible processing of neuroimaging data with deep learning methods"
 license = "MIT"
 authors = ["ARAMIS Lab"]
@@ -28,7 +28,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
-clinica = "^0.7.0"
+clinica = "^0.7.3"
 torch = "^1.8.0"
 torchvision = "*"
 tensorboard = "*"
