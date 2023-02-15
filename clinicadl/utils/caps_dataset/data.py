@@ -32,7 +32,7 @@ from clinicadl.utils.exceptions import (
     ClinicaDLTSVError,
 )
 
-logger = getLogger("clinicadl.datasets")
+logger = getLogger("clinicadl")
 
 
 #################################
@@ -153,10 +153,11 @@ class CapsDataset(Dataset):
         # Try to find .nii.gz file
         try:
             file_type = self.preprocessing_dict["file_type"]
-            image_path_list, _ = clinica_file_reader(
+            results = clinica_file_reader(
                 [participant], [session], self.caps_dict[cohort], file_type
             )
-            image_filename = path.basename(image_path_list[0]).replace(".nii.gz", ".pt")
+            filepath = results[0]
+            image_filename = path.basename(filepath[0]).replace(".nii.gz", ".pt")
             folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
             image_dir = path.join(
                 self.caps_dict[cohort],
@@ -172,10 +173,11 @@ class CapsDataset(Dataset):
         except ClinicaCAPSError:
             file_type = self.preprocessing_dict["file_type"]
             file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
-            image_path_list, _ = clinica_file_reader(
+            results = clinica_file_reader(
                 [participant], [session], self.caps_dict[cohort], file_type
             )
-            image_path = image_path_list[0]
+            filepath = results[0]
+            image_path = filepath[0]
 
         return image_path
 
@@ -196,6 +198,7 @@ class CapsDataset(Dataset):
         participant = self.df.loc[image_idx, "participant_id"]
         session = self.df.loc[image_idx, "session_id"]
         cohort = self.df.loc[image_idx, "cohort"]
+
         if self.elem_index is None:
             elem_idx = idx % self.elem_per_image
         else:
@@ -229,10 +232,10 @@ class CapsDataset(Dataset):
             image = torch.load(image_path)
         except IndexError:
             file_type = self.preprocessing_dict["file_type"]
-            image_path_list, _ = clinica_file_reader(
+            results = clinica_file_reader(
                 [participant_id], [session_id], self.caps_dict[cohort], file_type
             )
-            image_nii = nib.load(image_path_list[0])
+            image_nii = nib.load(results[0])
             image_np = image_nii.get_fdata()
             image = ToTensor()(image_np)
 
@@ -292,7 +295,7 @@ class CapsDatasetImage(CapsDataset):
         Args:
             caps_directory: Directory of all the images.
             data_file: Path to the tsv file or DataFrame containing the subject/session list.
-            preprocessing_dict: preprocessing dict contained in the JSON file of extract.
+            preprocessing_dict: preprocessing dict contained in the JSON file of prepare_data.
             train_transformations: Optional transform to be applied only on training mode.
             label_presence: If True the diagnosis will be extracted from the given DataFrame.
             label: Name of the column in data_df containing the label.
@@ -364,7 +367,7 @@ class CapsDatasetPatch(CapsDataset):
         Args:
             caps_directory: Directory of all the images.
             data_file: Path to the tsv file or DataFrame containing the subject/session list.
-            preprocessing_dict: preprocessing dict contained in the JSON file of extract.
+            preprocessing_dict: preprocessing dict contained in the JSON file of prepare_data.
             train_transformations: Optional transform to be applied only on training mode.
             patch_index: If a value is given the same patch location will be extracted for each image.
                 else the dataset will load all the patches possible for one image.
@@ -468,7 +471,7 @@ class CapsDatasetRoi(CapsDataset):
         Args:
             caps_directory: Directory of all the images.
             data_file: Path to the tsv file or DataFrame containing the subject/session list.
-            preprocessing_dict: preprocessing dict contained in the JSON file of extract.
+            preprocessing_dict: preprocessing dict contained in the JSON file of prepare_data.
             roi_index: If a value is given the same region will be extracted for each image.
                 else the dataset will load all the regions possible for one image.
             train_transformations: Optional transform to be applied only on training mode.
@@ -630,7 +633,7 @@ class CapsDatasetSlice(CapsDataset):
         Args:
             caps_directory: Directory of all the images.
             data_file: Path to the tsv file or DataFrame containing the subject/session list.
-            preprocessing_dict: preprocessing dict contained in the JSON file of extract.
+            preprocessing_dict: preprocessing dict contained in the JSON file of prepare_data.
             slice_index: If a value is given the same slice will be extracted for each image.
                 else the dataset will load all the slices possible for one image.
             train_transformations: Optional transform to be applied only on training mode.
@@ -737,7 +740,7 @@ def return_dataset(
     Args:
         input_dir: path to a directory containing a CAPS structure.
         data_df: List subjects, sessions and diagnoses.
-        preprocessing_dict: preprocessing dict contained in the JSON file of extract.
+        preprocessing_dict: preprocessing dict contained in the JSON file of prepare_data.
         train_transformations: Optional transform to be applied during training only.
         all_transformations: Optional transform to be applied during training and evaluation.
         label: Name of the column in data_df containing the label.
@@ -754,6 +757,7 @@ def return_dataset(
         raise NotImplementedError(
             f"Multi-CNN is not implemented for {preprocessing_dict['mode']} mode."
         )
+
     if preprocessing_dict["mode"] == "image":
         return CapsDatasetImage(
             input_dir,
