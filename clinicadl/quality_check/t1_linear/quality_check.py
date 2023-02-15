@@ -34,6 +34,31 @@ def quality_check(
     use_tensor: bool = False,
     use_uncropped_image: bool = True,
 ):
+    """
+    Performs t1-linear quality-check
+
+    Parameters
+    -----------
+    caps_dir: str (Path)
+        Path to the input caps directory
+    output_path: str (Path)
+        Path to the output TSV file.
+    tsv_path: str (Path)
+        Path to the participant.tsv if the option was added.
+    threshold: float
+        Threshold that indicates whether the image passes the quality check.
+    batch_size: int
+    n_proc: int
+    gpu: int
+    network: str
+        Architecture of the pretrained network pretrained network that learned to classify images that are adequately registered.
+        To chose between "darq" and "deep-qc"
+    use_tensor: bool
+        To use tensor instead of nifti images
+    use_uncropped_image: bool
+        To use uncropped images instead of the cropped ones.
+
+    """
 
     logger = getLogger("clinicadl.quality_check")
 
