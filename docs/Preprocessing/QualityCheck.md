@@ -22,7 +22,7 @@ Their original code can be found on [GitHub](https://github.com/vfonov/deep-qc).
 
 
 ### Prerequisites
-You need to execute the `clinica run t1-linear` and `clinicadl extract` pipelines 
+You need to execute the `clinica run t1-linear` and `clinicadl prepare-data` pipelines 
 prior to running this task.
 
 ### Running the task
@@ -45,7 +45,9 @@ Default will process all sessions available in `caps_directory`.
 Default value: `0.5`.
 - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `1`.
 - `--n_proc` (int) is the number of workers used by the DataLoader. Default value: `2`.
-- `--gpu/--no-gpu` (bool) Use GPU for computing optimization. Default behaviour is to try to use a GPU and to raise an error if it is not found.
+- `--gpu/--no_gpu` (bool) Use GPU for computing optimization. Default behaviour is to try to use a GPU and to raise an error if it is not found.
+- `--use_tensor` (bool) is a flag allowing the pipeline to run on the extracted tensors and not on the nifti images. 
+- `--network` (str) is the architecture chosen for the network (to chose between `darq`, `sq101` and `deep_qc`)
 
 ### Outputs
 
@@ -53,13 +55,13 @@ The output of the quality check is a TSV file in which all the sessions (identif
 are associated with a `pass_probability` value and a True/False `pass` value depending on the chosen threshold. 
 An example of TSV file is:
 
-| **participant_id** | **session_id** | **pass_probability**   | **pass**  |
-|--------------------|----------------|------------------------|-----------|
-| sub-CLNC01         | ses-M00        | 0.9936990737915039     | True      |
-| sub-CLNC02         | ses-M00        | 0.9772214889526367     | True      |
-| sub-CLNC03         | ses-M00        | 0.7292165160179138     | True      |
-| sub-CLNC04         | ses-M00        | 0.1549495905637741     | False     |
-| ...                |  ...           |  ...                   |  ...      |
+| **participant_id** | **session_id** | **pass_probability**   |
+|--------------------|----------------|------------------------|
+| sub-CLNC01         | ses-M00        | 0.9936990737915039     |
+| sub-CLNC02         | ses-M00        | 0.9772214889526367     |
+| sub-CLNC03         | ses-M00        | 0.7292165160179138     |
+| sub-CLNC04         | ses-M00        | 0.1549495905637741     |
+| ...                |  ...           |  ...                   |
 
 ## `quality-check t1-volume` - Evaluate `t1-volume` registration and gray matter segmentation
 
@@ -107,3 +109,4 @@ This pipeline outputs 4 files:
     This quality check is really conservative and may keep some images that are not of good quality.
     You may want to check the last images kept at each step to assess if their quality is good enough 
     for your application.
+ 
