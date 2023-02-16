@@ -90,6 +90,7 @@ def test_getlabels(cmdopt, tmp_path):
 
     bids_output = path.join(tmp_out_dir, "bids")
     bids_directory = path.join(input_dir, "bids")
+    restrict_tsv = path.join(input_dir, "restrict.tsv")
     if path.exists(tmp_out_dir):
         shutil.rmtree(tmp_out_dir)
         os.makedirs(tmp_out_dir)
@@ -100,7 +101,8 @@ def test_getlabels(cmdopt, tmp_path):
     flag_getlabels = not os.system(
         f"clinicadl -vvv tsvtools get-labels {bids_output} "
         f"-d AD -d MCI -d CN -d Dementia "
-        f"--merged_tsv {merged_tsv} --missing_mods {missing_mods_directory}"
+        f"--merged_tsv {merged_tsv} --missing_mods {missing_mods_directory} "
+        f"--restriction_tsv {restrict_tsv}"
     )
     assert flag_getlabels
 
@@ -122,13 +124,13 @@ def test_split(cmdopt, tmp_path):
     tmp_out_dir = tmp_path / "tsvtools" / "out"
     tmp_out_dir.mkdir(parents=True)
 
-    n_splits = 3
+    n_splits = 2
     train_tsv = path.join(tmp_out_dir, "split/train.tsv")
     labels_tsv = path.join(tmp_out_dir, "labels.tsv")
     shutil.copyfile(path.join(input_dir, "labels.tsv"), labels_tsv)
 
     flag_split = not os.system(
-        f"clinicadl -vvv tsvtools split {labels_tsv} --subset_name test"
+        f"clinicadl -vvv tsvtools split {labels_tsv} --subset_name test --n_test 10"
     )
     flag_getmetadata = not os.system(
         f"clinicadl -vvv tsvtools get-metadata {train_tsv} {labels_tsv} -voi age -voi sex -voi diagnosis"
@@ -213,7 +215,7 @@ def test_prepare_experiment(cmdopt, tmp_path):
     shutil.copyfile(path.join(input_dir, "labels.tsv"), labels_tsv)
 
     validation_type = "kfold"
-    n_valid = 3
+    n_valid = 2
     flag_prepare_experiment = not os.system(
         f"clinicadl -vvv tsvtools prepare-experiment {labels_tsv} --validation_type {validation_type} --n_validation {n_valid}"
     )
