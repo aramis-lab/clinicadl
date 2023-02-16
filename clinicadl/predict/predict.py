@@ -27,7 +27,6 @@ def predict(
     """
     This function loads a MAPS and predicts the global metrics and individual values
     for all the models selected using a metric in selection_metrics.
-
     Args:
         maps_dir: path to the MAPS.
         data_group: name of the data group tested.

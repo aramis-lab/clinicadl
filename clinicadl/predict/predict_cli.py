@@ -102,9 +102,7 @@ def cli(
     save_latent_tensor,
 ):
     """Infer the outputs of a trained model on a test set.
-
     INPUT_MAPS_DIRECTORY is the MAPS folder from where the model used for prediction will be loaded.
-
     DATA_GROUP is the name of the subjects and sessions list used for the interpretation.
     """
     from clinicadl.utils.cmdline_utils import check_gpu
