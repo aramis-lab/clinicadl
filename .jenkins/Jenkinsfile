@@ -450,43 +450,6 @@ pipeline {
           }
         }
       }
-      stage('Deploy') {
-        when { buildingTag() }
-        agent {
-          label 'cpu'
-        }
-        environment {
-          PATH = "$HOME/miniconda3/bin:$HOME/miniconda/bin:$PATH"
-        }
-        steps {
-          echo 'Create ClinicaDL package and upload to Pypi...'
-          sh "echo 'Agent name: ${NODE_NAME}'"
-          withCredentials(
-            [
-              usernamePassword(
-                credentialsId: 'jenkins-pass-for-pypi-aramis',
-                usernameVariable: 'USERNAME',
-                passwordVariable: 'PASSWORD'
-              )
-            ]
-          ) {
-            sh '''
-              eval "$(conda shell.bash hook)"
-              conda create -p "${WORKSPACE}/env" python=3.8 poetry
-              conda activate "${WORKSPACE}/env"
-              poetry publish --build -u "${USERNAME}" -p "${PASSWORD}"
-            '''
-          }
-        }
-        post {
-          success {
-            mattermostSend(
-              color: '#00B300',
-              message: "ClinicaDL package version ${env.TAG_NAME} has been published!!!:  ${env.JOB_NAME} #${env.BUILD_NUMBER} (<${env.BUILD_URL}|Link to build>)"
-            )
-          }
-        }
-      }
     }
 // post {
 //   failure {
