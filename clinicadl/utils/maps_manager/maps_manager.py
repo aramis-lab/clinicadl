@@ -81,6 +81,8 @@ class MapsManager:
 
         # Initiate MAPS
         else:
+            self._check_args(parameters)
+
             if (
                 path.exists(maps_path) and not path.isdir(maps_path)  # Non-folder file
             ) or (
@@ -94,7 +96,7 @@ class MapsManager:
             makedirs(path.join(self.maps_path, "groups"))
 
             logger.info(f"A new MAPS was created at {maps_path}")
-            self._check_args(parameters)
+
             self.write_parameters(self.maps_path, self.parameters)
             self._write_requirements_version()
 
