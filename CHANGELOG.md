@@ -40,7 +40,7 @@ greater than 3.8.
 sub-command (before `save_tensor` was also subcommand`).
 - Update some paper references in the documentation.
 - Add a description for the available models.
-- Add the flag `--model_layers` to the `clinicadl train list_models` subcommad
+- Add the flag `--model_layers` to the `clinicadl train list_models` subcommand
 to visualize the model layers.
 
 ### Fixed
@@ -106,7 +106,7 @@ Print help if no argument is given.
 ### Fixed
 
 Fix label code generation
-Remove all occurences of a group in a MAPS when choosing the `overwriting` option.
+Remove all occurrences of a group in a MAPS when choosing the `overwriting` option.
 Fix `resume` when the training.tsv file is empty.
 
 ## ClinicaDL 1.0.3 (release bugfix)
@@ -130,7 +130,7 @@ Fix `resume` when the training.tsv file is empty.
 
 - Use the GPU option on the command line interface.
 - Fix the train task when invoking the CLI.
-- Remplace the `predict` arguments passed through the CLI.
+- Replace the `predict` arguments passed through the CLI.
 - Fix issue when using multiple cohorts.
 
 ## ClinicaDL 1.0.1
@@ -157,12 +157,12 @@ introduction of [Click](https://click.palletsprojects.com/en/8.0.x/) library.
 Major changes in several pipelines interfaces have been implemented. For
 instance the preprocessing pipeline has been split. Train pipeline has also
 been refactored to reduce the number of options. The goal is to make ClinicaDL
-more easy to use, to maintain, and adapt the command line to the MAPS.
+easier to use, to maintain, and adapt the command line to the MAPS.
 
 ClinicaDL aim for more reproducibility: some configuration files are saved in
 the MAPS to reproduce experiments in the same condition (with same
-environnement and same parameters). In addition we added some options to fix
-the random processes seed and use Pytorch latest enhancement for a
+environment and same parameters). In addition, we added some options to fix
+the random processes seed and use Pytorch's latest enhancement for a
 deterministic behavior.
 
 Other improvement and small fix have also been implemented.
