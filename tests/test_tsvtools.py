@@ -6,7 +6,6 @@ from pathlib import Path
 
 import pandas as pd
 
-from clinicadl.utils.split_manager import KFoldSplit
 from clinicadl.utils.tsvtools_utils import extract_baseline
 from tests.testing_tools import compare_folders
 
@@ -26,7 +25,7 @@ def check_is_subject_unique(labels_path_baseline):
     check_df.set_index(["participant_id", "session_id"], inplace=True)
     if labels_path_baseline[-12:] != "baseline.tsv":
         check_df = extract_baseline(check_df, set_index=False)
-    for subject, subject_df in check_df.groupby(level=0):
+    for _, subject_df in check_df.groupby(level=0):
         if len(subject_df) > 1:
             flag_is_unique = False
     assert flag_is_unique
@@ -65,7 +64,7 @@ def run_test_suite(data_tsv, n_splits):
     else:
         for split_number in range(n_splits):
 
-            for folder, sub_folder, files in os.walk(path.join(data_tsv, "split")):
+            for folder, _, files in os.walk(path.join(data_tsv, "split")):
                 for file in files:
                     if file[-3:] == "tsv":
                         check_is_subject_unique(path.join(folder, file))
