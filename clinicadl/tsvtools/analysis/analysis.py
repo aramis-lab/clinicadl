@@ -18,7 +18,7 @@ from clinicadl.utils.tsvtools_utils import (
     next_session,
 )
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.tsvtools.analysis")
 
 
 def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
@@ -118,6 +118,8 @@ def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
                 demographics_subject_df = merged_df.loc[subject]
 
                 # Extract features
+                logger.debug(f"extract features for subject {subject}")
+
                 results_df.loc[diagnosis, "n_subjects"] += 1
                 results_df.loc[diagnosis, "n_scans"] += len(subject_df)
                 diagnosis_dict[diagnosis]["age"].append(
@@ -170,6 +172,9 @@ def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
                 f"There is no subject with diagnosis {diagnosis}"
             )
     for diagnosis in diagnoses:
+
+        logger.debug(f"compute stats for diagnosis {diagnosis}")
+
         results_df.loc[diagnosis, "mean_age"] = np.nanmean(
             diagnosis_dict[diagnosis]["age"]
         )

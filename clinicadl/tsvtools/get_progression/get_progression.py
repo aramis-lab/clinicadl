@@ -14,7 +14,7 @@ from clinicadl.utils.tsvtools_utils import (
     neighbour_session,
 )
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.tsvtools.get_progression")
 
 
 def get_progression(
@@ -42,7 +42,7 @@ def get_progression(
     bids_df = merged_tsv_reader(data_tsv)
 
     if "diagnosis" not in bids_df.columns:
-
+        logger.debug("Looking for the 'diagnosis' column in others files")
         parents_path = path.abspath(data_tsv)
         while not os.path.exists(path.join(parents_path, "labels.tsv")):
             parents_path = Path(parents_path).parents[0]
@@ -80,6 +80,7 @@ def get_progression(
     for subject, subject_df in bids_df.groupby(level=0):
         session_list = [session for _, session in subject_df.index.values]
         session_list.sort()
+        logger.debug(f"Getting progression for subject {subject}")
         for _, session in subject_df.index.values:
             diagnosis = subject_df.loc[(subject, session), "diagnosis"]
             diagnosis_dict = stability_dict[diagnosis]

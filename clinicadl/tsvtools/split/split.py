@@ -24,7 +24,7 @@ from clinicadl.utils.tsvtools_utils import (
 )
 
 sex_dict = {"M": 0, "F": 1}
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.tsvtools.split")
 
 
 def KStests(train_df, test_df, threshold=0.5):

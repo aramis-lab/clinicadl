@@ -10,7 +10,6 @@ import pandas as pd
 import torch
 from clinica.utils.inputs import RemoteFileStructure, fetch_file
 from torch.utils.data import DataLoader
-from torchvision.models import ResNet18_Weights, resnet18
 
 from clinicadl.generate.generate_utils import load_and_check_tsv
 from clinicadl.utils.caps_dataset.data import CapsDataset
@@ -20,6 +19,8 @@ from .models import resnet_darq_qc_18 as darq_r18
 from .models import resnet_deep_qc_18 as deep_r18
 from .models import squeezenet_qc as darq_sq101
 from .utils import QCDataset
+
+logger = getLogger("clinicadl.quality-check")
 
 
 def quality_check(
