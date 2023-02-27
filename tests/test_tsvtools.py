@@ -123,13 +123,14 @@ def test_split(cmdopt, tmp_path):
     tmp_out_dir = tmp_path / "tsvtools" / "out"
     tmp_out_dir.mkdir(parents=True)
 
+    n_test = 10
     n_splits = 2
     train_tsv = path.join(tmp_out_dir, "split/train.tsv")
     labels_tsv = path.join(tmp_out_dir, "labels.tsv")
     shutil.copyfile(path.join(input_dir, "labels.tsv"), labels_tsv)
 
     flag_split = not os.system(
-        f"clinicadl -vvv tsvtools split {labels_tsv} --subset_name test --n_test 10"
+        f"clinicadl -vvv tsvtools split {labels_tsv} --subset_name test --n_test {n_test}"
     )
     flag_getmetadata = not os.system(
         f"clinicadl -vvv tsvtools get-metadata {train_tsv} {labels_tsv} -voi age -voi sex -voi diagnosis"
@@ -215,8 +216,9 @@ def test_prepare_experiment(cmdopt, tmp_path):
 
     validation_type = "kfold"
     n_valid = 2
+    n_test = 10
     flag_prepare_experiment = not os.system(
-        f"clinicadl -vvv tsvtools prepare-experiment {labels_tsv} --validation_type {validation_type} --n_validation {n_valid}"
+        f"clinicadl -vvv tsvtools prepare-experiment {labels_tsv} --n_test {n_test} --validation_type {validation_type} --n_validation {n_valid}"
     )
 
     assert flag_prepare_experiment
@@ -236,7 +238,7 @@ def test_get_metadata(cmdopt, tmp_path):
     tmp_out_dir = tmp_path / "tsvtools" / "out"
     tmp_out_dir.mkdir(parents=True)
 
-    input_metadata_tsv = path.join(input_dir, "metadata.tsv")
+    input_metadata_tsv = path.join(input_dir, "restrict.tsv")
     metadata_tsv = path.join(tmp_out_dir, "metadata.tsv")
     input_labels_tsv = path.join(input_dir, "labels.tsv")
     labels_tsv = path.join(tmp_out_dir, "labels.tsv")
