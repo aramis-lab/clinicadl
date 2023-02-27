@@ -50,6 +50,13 @@ from clinicadl.utils import cli_param
     is_flag=True,
     type=bool,
 )
+@click.option(
+    "--multi-diagnoses",
+    help="If given, all columns are used to balance the split, not only age and sex",
+    default=False,
+    is_flag=True,
+    type=bool,
+)
 def cli(
     data_tsv,
     subset_name,
@@ -59,6 +66,7 @@ def cli(
     ignore_demographics,
     categorical_split_variable,
     not_only_keep_baseline,
+    multi_diagnoses,
 ):
     """Performs a single split to prepare training.
 
@@ -77,6 +85,7 @@ def cli(
         ignore_demographics=ignore_demographics,
         categorical_split_variable=categorical_split_variable,
         not_only_baseline=not_only_keep_baseline,
+        multi_diagnoses=multi_diagnoses,
     )
 
 

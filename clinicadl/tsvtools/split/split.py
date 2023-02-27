@@ -1,18 +1,16 @@
 # coding: utf8
 
 import os
-import shutil
-from copy import copy
 from logging import getLogger
 from os import makedirs, path
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from scipy.stats import ttest_ind
+from scipy.stats import ks_2samp, ttest_ind
 from sklearn.model_selection import StratifiedShuffleSplit
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.tsvtools_utils import (
     category_conversion,
@@ -21,13 +19,41 @@ from clinicadl.utils.tsvtools_utils import (
     df_to_tsv,
     extract_baseline,
     find_label,
-    remove_sub_labels,
     remove_unicity,
     retrieve_longitudinal,
 )
 
 sex_dict = {"M": 0, "F": 1}
 logger = getLogger("clinicadl")
+
+
+def KStests(train_df, test_df, threshold=0.5):
+    pmin = 1
+    column = ""
+    for col in train_df.columns:
+        if col == "session_id":
+            continue
+        _, pval = ks_2samp(train_df[col], test_df[col])
+        if pval < pmin:
+            pmin = pval
+            column = col
+    return (pmin, column)
+
+
+def shuffle_choice(df, n_shuffle=10):
+    p_min_max, n_col_min = 0, df.columns.size
+
+    for i in range(n_shuffle):
+        train_df = df.sample(frac=0.75)
+        test_df = df.drop(train_df.index)
+
+        p, col = KStests(train_df, test_df)
+
+        if p > p_min_max:
+            p_min_max = p
+            best_train_df, best_test_df = train_df, test_df
+
+    return (best_train_df, best_test_df, p_min_max)
 
 
 def create_split(
@@ -164,6 +190,7 @@ def split_diagnoses(
     ignore_demographics=False,
     verbose=0,
     not_only_baseline=True,
+    multi_diagnoses=False,
 ):
     """
     Performs a single split for each label independently on the subject level.
@@ -221,6 +248,7 @@ def split_diagnoses(
             "p_sex_threshold": p_sex_threshold,
             "categorical_split_variable": categorical_split_variable,
             "ignore_demographics": ignore_demographics,
+            "mullti_diagnoses": multi_diagnoses,
         },
         filename="split.json",
     )
@@ -236,24 +264,47 @@ def split_diagnoses(
     diagnosis_df_path = Path(data_tsv).name
     diagnosis_df = pd.read_csv(data_tsv, sep="\t")
     list_columns = diagnosis_df.columns.values
+    if multi_diagnoses:
+        train, test, p_min = shuffle_choice(diagnosis_df, n_shuffle=5000)
 
-    if n_test > 0:
+        train_df = extract_baseline(train)
+        test_df = extract_baseline(test)
+
+        name = f"{subset_name}_baseline.tsv"
+        df_to_tsv(name, results_path, test_df, baseline=True)
+
+        if not_only_baseline:
+            long_test_df = retrieve_longitudinal(test_df, diagnosis_df)
+            name = f"{subset_name}.tsv"
+            # long_test_df = long_test_df[["participant_id", "session_id"]]
+            df_to_tsv(name, results_path, long_test_df)
+
+    elif n_test > 0:
         if (
             "diagnosis" not in list_columns
-            or "age" not in list_columns
+            or ("age" not in list_columns and "age_bl" not in list_columns)
             or "sex" not in list_columns
         ):
             parents_path = path.abspath(parents_path)
-            while not os.path.exists(path.join(parents_path, "labels.tsv")):
+            n = 0
+            while not os.path.exists(path.join(parents_path, "labels.tsv")) and n <= 4:
                 parents_path = Path(parents_path).parents[0]
-
-            labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
-            diagnosis_df = pd.merge(
-                diagnosis_df,
-                labels_df,
-                how="inner",
-                on=["participant_id", "session_id"],
-            )
+                n += 1
+            try:
+                labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+                diagnosis_df = pd.merge(
+                    diagnosis_df,
+                    labels_df,
+                    how="inner",
+                    on=["participant_id", "session_id"],
+                )
+            except:
+                raise ClinicaDLTSVError(
+                    f"The column 'age', 'sex' or 'diagnosis' is missing and the pipeline was not able to find "
+                    "the output of clinicadl get-labels to get it."
+                    "Please run clinicadl get-metadata to get these columns or add the the flag --ignore_demographics "
+                    "to split without trying to balance age or sex distributions."
+                )
 
         train_df, test_df = create_split(
             diagnosis_df,
