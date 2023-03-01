@@ -29,7 +29,7 @@ from clinicadl.utils.tsvtools_utils import (
     neighbour_session,
 )
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.tsvtools.get_labels")
 
 
 def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
@@ -368,6 +368,7 @@ def get_labels(
         )
 
     # Cleaning NaN diagnosis
+    logger.debug("Cleaning NaN diagnosis")
     bids_df = cleaning_nan_diagnoses(bids_df)
 
     # Checking the variables of interest

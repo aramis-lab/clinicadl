@@ -7,7 +7,7 @@ import pandas as pd
 from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 from clinicadl.utils.tsvtools_utils import merged_tsv_reader
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.tsvtools.get_metadata")
 
 
 def get_metadata(
@@ -42,7 +42,10 @@ def get_metadata(
 
     if variables_of_interest is None:
 
-        variables_list = np.unique(variables_in)
+        variables_list = np.unique(variables_metadata)
+        logger.debug(
+            f"Adding the following columns to the input tsv file: {variables_list}"
+        )
         result_df = pd.merge(metadata_df, in_out_df, on=variables_intersection)
         result_df.set_index(["participant_id", "session_id"], inplace=True)
 
@@ -56,6 +59,9 @@ def get_metadata(
         else:
             variables_of_interest = list(variables_of_interest)
             variables_list = np.unique(variables_of_interest + variables_in)
+            logger.debug(
+                f"Adding the following columns to the input tsv file: {variables_list}"
+            )
             result_df = pd.merge(metadata_df, in_out_df, on=variables_intersection)
             result_df = result_df[variables_list]
             result_df.set_index(["participant_id", "session_id"], inplace=True)

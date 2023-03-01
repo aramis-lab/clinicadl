@@ -6,7 +6,7 @@ import pandas as pd
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.tsvtools.adapt")
 
 
 def concat_files(file_path, df_baseline, df_all):
