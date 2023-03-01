@@ -16,7 +16,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
 
     from .prepare_data_utils import check_mask_list, compute_folder_and_file_type
 
-    logger = getLogger("clinicadl.extract")
+    logger = getLogger("clinicadl.prepare_data")
 
     # Get subject and session list
     check_caps_folder(caps_directory)
