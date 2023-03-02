@@ -302,7 +302,6 @@ def get_labels(
             "missing_mods": missing_mods,
             "merged_tsv": merged_tsv,
             "remove_unique_session": remove_unique_session,
-            "output_directory": results_directory,
         },
         filename="labels.json",
     )
