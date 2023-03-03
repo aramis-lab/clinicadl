@@ -25,7 +25,6 @@ from clinicadl.utils.tsvtools_utils import (
     find_label,
     first_session,
     last_session,
-    merged_tsv_reader,
     neighbour_session,
 )
 
