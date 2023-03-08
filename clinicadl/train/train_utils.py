@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 from typing import Any, Dict
 
 import toml
@@ -22,12 +22,9 @@ def build_train_dict(config_file: str, task: str) -> Dict[str, Any]:
     """
     if config_file is None:
         # read default values
-        clinicadl_root_dir = os.path.abspath(os.path.join(__file__, "../.."))
-        config_path = os.path.join(
-            clinicadl_root_dir,
-            "resources",
-            "config",
-            "train_config.toml",
+        clinicadl_root_dir = (Path(__file__) / "../..").resolve()
+        config_path = (
+            Path(clinicadl_root_dir) / "resources" / "config" / "train_config.toml"
         )
         config_dict = toml.load(config_path)
         config_dict = remove_unused_tasks(config_dict, task)
@@ -44,12 +41,9 @@ def build_train_dict(config_file: str, task: str) -> Dict[str, Any]:
             del user_dict["Random_Search"]
 
         # read default values
-        clinicadl_root_dir = os.path.abspath(os.path.join(__file__, "../.."))
-        config_path = os.path.join(
-            clinicadl_root_dir,
-            "resources",
-            "config",
-            "train_config.toml",
+        clinicadl_root_dir = (Path(__file__) / "../..").resolve()
+        config_path = (
+            Path(clinicadl_root_dir) / "resources" / "config" / "train_config.toml"
         )
         config_dict = toml.load(config_path)
         # Check that TOML file has the same format as the one in clinicadl/resources/config/train_config.toml
