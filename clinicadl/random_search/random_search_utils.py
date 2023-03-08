@@ -1,5 +1,5 @@
 import random
-from os import path
+from pathlib import Path
 from typing import Any, Dict, Tuple
 
 import toml
@@ -11,7 +11,7 @@ from clinicadl.utils.preprocessing import read_preprocessing
 
 def get_space_dict(launch_directory: str) -> Dict[str, Any]:
     """Transforms the TOML dictionary in one dimension dictionary."""
-    toml_path = path.join(launch_directory, "random_search.toml")
+    toml_path = Path(launch_directory) / "random_search.toml"
     toml_options = toml.load(toml_path)
 
     if "Random_Search" not in toml_options:
@@ -57,10 +57,10 @@ def get_space_dict(launch_directory: str) -> Dict[str, Any]:
     train_default = build_train_dict(toml_path, space_dict["network_task"])
 
     # Mode and preprocessing
-    preprocessing_json = path.join(
-        space_dict["caps_directory"],
-        "tensor_extraction",
-        space_dict.pop("preprocessing_json"),
+    preprocessing_json = (
+        Path(space_dict["caps_directory"])
+        / "tensor_extraction"
+        / space_dict.pop("preprocessing_json")
     )
 
     preprocessing_dict = read_preprocessing(preprocessing_json)
