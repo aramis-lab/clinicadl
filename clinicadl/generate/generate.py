@@ -88,7 +88,7 @@ def generate_random_dataset(
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
 
     # Create subjects dir
-    (Path(output_dir) / "subjects").mkdir()
+    (Path(output_dir) / "subjects").mkdir(parents=True, exist_ok=True)
 
     # Retrieve image of first subject
     participant_id = data_df.loc[0, "participant_id"]
@@ -133,7 +133,7 @@ def generate_random_dataset(
         )
 
         noisy_image_nii_filename = f"{participant_id}_ses-M00_{filename_pattern}"
-        Path(noisy_image_nii_path).mkdir()
+        Path(noisy_image_nii_path).mkdir(parents=True, exist_ok=True)
         nib.save(noisy_image_nii, Path(noisy_image_nii_path) / noisy_image_nii_filename)
 
     write_missing_mods(output_dir, output_df)
@@ -209,7 +209,7 @@ def generate_trivial_dataset(
         url=url_aramis,
         checksum="89427970921674792481bffd2de095c8fbf49509d615e7e09e4bc6f0e0564471",
     )
-    Path(cache_clinicadl).mkdir()
+    Path(cache_clinicadl).mkdir(parents=True, exist_ok=True)
 
     if n_subjects > len(data_df):
         raise IndexError(
@@ -241,7 +241,7 @@ def generate_trivial_dataset(
             mask_path = Path(cache_clinicadl) / "AAL2"
 
     # Create subjects dir
-    (Path(output_dir) / "subjects").mkdir()
+    (Path(output_dir) / "subjects").mkdir(parents=True, exist_ok=True)
 
     # Output tsv file
     columns = ["participant_id", "session_id", "diagnosis", "age_bl", "sex"]
@@ -275,7 +275,7 @@ def generate_trivial_dataset(
 
         trivial_image_nii_filename = f"sub-TRIV{i}_{session_id}_{filename_pattern}"
 
-        Path(trivial_image_nii_dir).mkdir()
+        Path(trivial_image_nii_dir).mkdir(parents=True, exist_ok=True)
 
         atlas_to_mask = nib.load(Path(mask_path) / f"mask-{label + 1}.nii").get_data()
 
@@ -344,7 +344,7 @@ def generate_shepplogan_dataset(
             row_df = pd.DataFrame(
                 [[participant_id, session_id, label, subtype]], columns=columns
             )
-            data_df = data_df.append(row_df)
+            data_df = pd.concat([data_df, row_df])
 
             # Image generation
             slice_path = (
@@ -359,7 +359,7 @@ def generate_shepplogan_dataset(
             )
 
             slice_dir = slice_path.parent
-            slice_dir.mkdir()
+            slice_dir.mkdir(parents=True, exist_ok=True)
 
             slice_np = generate_shepplogan_phantom(
                 img_size, label=subtype, smoothing=smoothing
@@ -376,7 +376,7 @@ def generate_shepplogan_dataset(
                 / f"{participant_id}_{session_id}_space-SheppLogan_phantom.nii.gz"
             )
             image_dir = image_path.parent
-            image_dir.mkdir()
+            image_dir.mkdir(parents=True, exist_ok=True)
             with open(image_path, "w") as f:
                 f.write("0")
 

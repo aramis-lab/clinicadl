@@ -43,7 +43,7 @@ def write_missing_mods(output_dir: str, output_df: pd.DataFrame):
     from pathlib import Path
 
     missing_path = Path(output_dir) / "missing_mods"
-    missing_path.mkdir()
+    missing_path.mkdir(parents=True, exist_ok=True)
 
     sessions = output_df.session_id.unique()
     for session in sessions:
