@@ -228,7 +228,7 @@ Options:
   - `--validation_type` (str) is the name of the split wanted for the validation. It can only be `split`or `kfold`.
   Default value: `split`.
   - `--n_validation`(float) gives the number of subjects that will be put in the validation set:
-    - For `split`, it is the number of subjects top put in validation set if it is a SingleSplit.
+    - For `split`, it is the number of subjects to put in validation set if it is a SingleSplit.
     - For `kfold`, it is the number of folds in the k-folds split.
     - If = 0, there is no training set and the whole dataset is considered as a validation set.
 
