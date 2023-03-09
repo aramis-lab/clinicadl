@@ -91,7 +91,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     if os.path.exists(tmp_out_dir):
         shutil.rmtree(tmp_out_dir)
 
-    flag_error = not os.system("clinicadl " + " ".join(test_input))
+    flag_error = not os.system("clinicadl -v " + " ".join(test_input))
     assert flag_error
 
     with open(tmp_out_dir / "maps.json", "r") as out:
