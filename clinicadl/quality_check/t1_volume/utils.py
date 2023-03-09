@@ -67,7 +67,7 @@ def extract_metrics(caps_dir, output_dir, group_label):
     for subject in subjects:
         subject_path = Path(caps_dir) / "subjects" / subject
         sessions = list(subject_path.iterdir())
-        sessions = [session for session in sessions if session[:4:] == "ses-"]
+        sessions = [session for session in sessions if str(session)[:4:] == "ses-"]
         for session in sessions:
             image_path = (
                 Path(subject_path)

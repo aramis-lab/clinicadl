@@ -1226,9 +1226,8 @@ class MapsManager:
 
     def _check_split_wording(self):
         """Finds if MAPS structure uses 'fold-X' or 'split-X' folders."""
-        from glob import glob
 
-        if len(glob(self.maps_path / "fold-*")) > 0:
+        if len(self.maps_path.glob("fold-*")) > 0:
             return "fold"
         else:
             return "split"

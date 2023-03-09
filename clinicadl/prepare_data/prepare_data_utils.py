@@ -354,10 +354,10 @@ def find_mask_path(
     if mask_pattern is None:
         mask_pattern = ""
 
-    candidates_pattern = Path(masks_location) / f"*{mask_pattern}*_roi-{roi}_mask.nii*"
+    candidates_pattern = f"*{mask_pattern}*_roi-{roi}_mask.nii*"
 
     desc = f"The mask should follow the pattern {candidates_pattern}. "
-    candidates = Path(masks_location).glob(f"*{mask_pattern}*_roi-{roi}_mask.nii*")
+    candidates = [str(e) for e in Path(masks_location).glob(candidates_pattern)]
     if cropping is None:
         pass
     elif cropping:

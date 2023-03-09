@@ -403,7 +403,7 @@ class CapsDatasetPatch(CapsDataset):
         image_path = self._get_image_path(participant, session, cohort)
 
         if self.prepare_dl:
-            patch_dir = (Path(image_path).parent).replace(
+            patch_dir = (Path(image_path).parent).name.replace(
                 "image_based", f"{self.mode}_based"
             )
             patch_filename = extract_patch_path(
