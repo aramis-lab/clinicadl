@@ -16,7 +16,7 @@ def write_preprocessing(preprocessing_dict: Dict[str, Any], caps_directory: str)
 
     with json_path.open(mode="w") as json_file:
         print(json_file)
-        json.dump(preprocessing_dict, json_file, indent=2)
+        json.dump(preprocessing_dict, json_file)
     return json_path
 
 
