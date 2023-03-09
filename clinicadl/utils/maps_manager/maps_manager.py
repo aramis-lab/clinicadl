@@ -1270,9 +1270,9 @@ class MapsManager:
 
         print(split_path)
         return [
-            str(metric).split("-")[1]
+            metric.name.split("-")[1]
             for metric in list(split_path.iterdir())
-            if str(metric)[:5:] == "best-"
+            if metric.name[:5:] == "best-"
         ]
 
     def _check_selection_metric(self, split, selection_metric=None):
