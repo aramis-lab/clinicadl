@@ -53,7 +53,7 @@ def read_json(json_path: str) -> Dict[str, Any]:
     Returns:
         dictionary of training parameters.
     """
-    with json_path.open(mode="r") as f:
+    with Path(json_path).open(mode="r") as f:
         parameters = json.load(f)
 
     # Types of retro-compatibility

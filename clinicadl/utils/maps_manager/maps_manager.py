@@ -956,6 +956,8 @@ class MapsManager:
                 / f"best-{selection_metric}"
                 / data_group
             )
+            print("log_dir")
+            print(log_dir)
             self.write_description_log(
                 log_dir,
                 data_group,
@@ -964,6 +966,7 @@ class MapsManager:
             )
 
             # load the best trained model during the training
+            print(f"selection metrics : {selection_metric}")
             model, _ = self._init_model(
                 transfer_path=self.maps_path,
                 split=split,
@@ -1268,8 +1271,10 @@ class MapsManager:
         import os
 
         for folder, subs, files in os.walk(split_path):
+            print("leve1")
             print(subs + "/" + files)
             for folder2, subs2, files2 in os.walk(subs):
+                print("level2")
                 print(subs2 + "/" + files2)
 
         print(split_path)
@@ -1282,7 +1287,9 @@ class MapsManager:
     def _check_selection_metric(self, split, selection_metric=None):
         """Check that a given selection metric is available for a given split."""
         print(split)
+        print(f"just before crashselection metrics : {selection_metric}")
         available_metrics = self._find_selection_metrics(split)
+        print(f"available metrcis :{available_metrics}")
         if selection_metric is None:
             if len(available_metrics) > 1:
                 raise ClinicaDLArgumentError(
@@ -1823,6 +1830,7 @@ class MapsManager:
         elif transfer_path:
             logger.debug(f"Transfer weights from MAPS at {transfer_path}")
             transfer_maps = MapsManager(transfer_path)
+            print(f"selection metrics : {transfer_selection}")
             transfer_state = transfer_maps.get_state_dict(
                 split,
                 selection_metric=transfer_selection,
@@ -2001,7 +2009,9 @@ class MapsManager:
         Returns:
             (Dict): dictionary of results (weights, epoch number, metrics values)
         """
+        print(f"selection metrics : {selection_metric}")
         selection_metric = self._check_selection_metric(split, selection_metric)
+        print(f"selection metrics : {selection_metric}")
         if self.multi_network:
             if network is None:
                 raise ClinicaDLArgumentError(
