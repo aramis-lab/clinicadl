@@ -1248,7 +1248,17 @@ class MapsManager:
                 f"Training of split {split} was not performed."
                 f"Please execute maps_manager.train(split_list=[{split}])"
             )
+        print("_find_selection_metrics")
+        print(
+            [
+                str(metric).split("-")[1]
+                for metric in list(split_path.iterdir())
+                if str(metric)[:5:] == "best-"
+            ]
+        )
+        print("split path")
 
+        print(split_path)
         return [
             str(metric).split("-")[1]
             for metric in list(split_path.iterdir())
@@ -1257,6 +1267,7 @@ class MapsManager:
 
     def _check_selection_metric(self, split, selection_metric=None):
         """Check that a given selection metric is available for a given split."""
+        print(split)
         available_metrics = self._find_selection_metrics(split)
         if selection_metric is None:
             if len(available_metrics) > 1:
