@@ -409,7 +409,7 @@ class CapsDatasetPatch(CapsDataset):
             patch_filename = extract_patch_path(
                 image_path, self.patch_size, self.stride_size, patch_idx
             )
-            patch_tensor = torch.load(Path(patch_dir) / patch_filename)
+            patch_tensor = torch.load(Path(patch_dir).resolve() / patch_filename)
 
         else:
             image = torch.load(image_path)

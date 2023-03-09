@@ -60,7 +60,7 @@ def extract_metrics(caps_dir, output_dir, group_label):
         "non_zero_percentage",
         "frontal_similarity",
     ]
-    results_df = pd.DataFrame()
+    results_df = pd.DataFrame(columns=columns)
 
     subjects = list((Path(caps_dir) / "subjects").iterdir())
     subjects = [subject for subject in subjects if str(subject)[:4:] == "sub-"]
@@ -82,7 +82,7 @@ def extract_metrics(caps_dir, output_dir, group_label):
                 + "_T1w_segm-graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
             )
 
-            if Path(image_path).is_file():
+            if image_path.is_file():
                 # GM analysis
                 image_nii = nib.load(image_path)
                 image_np = image_nii.get_fdata()

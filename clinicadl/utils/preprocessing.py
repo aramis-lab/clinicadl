@@ -14,7 +14,7 @@ def write_preprocessing(preprocessing_dict: Dict[str, Any], caps_directory: str)
             f"Please choose another name for your preprocessing file."
         )
 
-    with open(json_path, "w") as json_file:
+    with json_path.open(mode="w") as json_file:
         json.dump(preprocessing_dict, json_file, indent=2)
     return json_path
 
@@ -22,11 +22,12 @@ def write_preprocessing(preprocessing_dict: Dict[str, Any], caps_directory: str)
 def read_preprocessing(json_path: str) -> Dict[str, Any]:
     if not json_path.name.endswith(".json"):
         json_path += ".json"
+        json_path = Path(json_path)
 
     if not json_path.is_file():
         raise FileNotFoundError(errno.ENOENT, json_path)
     try:
-        with open(json_path, "r") as f:
+        with json_path.open("r") as f:
             preprocessing_dict = json.load(f)
     except IOError:
         raise IOError(f"Cannot open json preprocessing file {json_path}")
