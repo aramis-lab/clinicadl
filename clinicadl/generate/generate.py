@@ -377,7 +377,7 @@ def generate_shepplogan_dataset(
             )
             image_dir = image_path.parent
             image_dir.mkdir(parents=True, exist_ok=True)
-            with open(image_path, "w") as f:
+            with image_path.open("w") as f:
                 f.write("0")
 
     # Save data

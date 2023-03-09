@@ -103,7 +103,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
     if os.path.exists(str(tmp_out_dir)):
         shutil.rmtree(str(tmp_out_dir))
 
-    flag_error = not os.system("clinicadl " + " ".join(test_input))
+    flag_error = not os.system("clinicadl -vv " + " ".join(test_input))
     assert flag_error
 
     performances_flag = os.path.exists(

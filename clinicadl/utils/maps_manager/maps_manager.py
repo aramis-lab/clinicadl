@@ -143,8 +143,6 @@ class MapsManager:
         if self.multi_network:
             self._train_multi(split_list, resume=False)
         else:
-            print("fgliubfmozeribg")
-            print(split_list)
             self._train_single(split_list, resume=False)
 
     def resume(self, split_list: List[int] = None):
@@ -679,9 +677,6 @@ class MapsManager:
                 train_sampler = self.task_manager.generate_sampler(
                     data_train, self.sampler
                 )
-
-                print(train_loader)
-                print(train_sampler)
                 train_loader = DataLoader(
                     data_train,
                     batch_size=self.batch_size,

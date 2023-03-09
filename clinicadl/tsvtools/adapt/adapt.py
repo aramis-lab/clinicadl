@@ -73,7 +73,7 @@ def adapt(old_tsv_dir: str, new_tsv_dir: str, subset_name="labels", labels_list=
 
     if "split.json" in files_list:
         new_split_dir = Path(new_tsv_dir) / "split"
-        with open(Path(old_tsv_dir) / "split.json", "r") as f:
+        with (Path(old_tsv_dir) / "split.json").open(mode="r") as f:
             parameters_split = json.load(f)
         subset_name = parameters_split["subset_name"]
         adapt(
@@ -85,7 +85,7 @@ def adapt(old_tsv_dir: str, new_tsv_dir: str, subset_name="labels", labels_list=
         adapt(Path(old_tsv_dir) / "train", new_split_dir, "train", labels_list)
 
     if "kfold.json" in files_list:
-        with open(Path(old_tsv_dir) / "kfold.json", "r") as f:
+        with (Path(old_tsv_dir) / "kfold.json").open(mode="r") as f:
             parameters_kfold = json.load(f)
 
         subset_name = parameters_kfold["subset_name"]
