@@ -43,7 +43,7 @@ class LogWriter:
         self.beginning_epoch = beginning_epoch
         if not resume:
             results_df = pd.DataFrame(columns=self.columns)
-            with open(tsv_path, "w") as f:
+            with tsv_path.open(mode="w") as f:
                 results_df.to_csv(f, index=False, sep="\t")
             self.beginning_time = time()
         else:
@@ -107,7 +107,7 @@ class LogWriter:
 
         row = [general_row + train_row + valid_row]
         row_df = pd.DataFrame(row, columns=self.columns)
-        with open(tsv_path, "a") as f:
+        with tsv_path.open(mode="a") as f:
             row_df.to_csv(f, header=False, index=False, sep="\t")
 
         # Write tensorboard logs

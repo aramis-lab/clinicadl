@@ -1387,7 +1387,7 @@ class MapsManager:
         json_path = Path(json_path) / "maps.json"
         if verbose:
             logger.info(f"Path of json file: {json_path}")
-        with open(json_path, "w") as f:
+        with json_path.open(mode="w") as f:
             f.write(json_data)
 
     def _write_requirements_version(self):
@@ -1397,7 +1397,7 @@ class MapsManager:
             env_variables = subprocess.check_output("pip freeze", shell=True).decode(
                 "utf-8"
             )
-            with open(self.maps_path / "environment.txt", "w") as file:
+            with (self.maps_path / "environment.txt").open(mode="w") as file:
                 file.write(env_variables)
         except subprocess.CalledProcessError:
             logger.warning(
@@ -1555,7 +1555,7 @@ class MapsManager:
 
         file_name = "information.log"
 
-        with open(self.maps_path / file_name, "w") as f:
+        with (self.maps_path / file_name).open(mode="w") as f:
             f.write(f"- Date :\t{datetime.now().strftime('%d %b %Y, %H:%M:%S')}\n\n")
             f.write(f"- Path :\t{self.maps_path}\n\n")
             # f.write("- Job ID :\t{}\n".format(os.getenv('SLURM_JOBID')))
@@ -1586,7 +1586,7 @@ class MapsManager:
         """
         Path(log_dir).mkdir(parents=True, exist_ok=True)
         log_path = Path(log_dir) / "description.log"
-        with open(log_path, "w") as f:
+        with log_path.open(mode="w") as f:
             f.write(f"Prediction {data_group} group - {datetime.now()}\n")
             f.write(f"Data loaded from CAPS directories: {caps_dict}\n")
             f.write(f"Number of participants: {df.participant_id.nunique()}\n")
@@ -1897,7 +1897,7 @@ class MapsManager:
             / data_group,
         )
         log_path = log_dir / "description.log"
-        with open(log_path, "r") as f:
+        with log_path.open(mode="r") as f:
             content = f.read()
 
     def get_group_info(
@@ -1929,7 +1929,7 @@ class MapsManager:
 
         df = pd.read_csv(group_path / "data.tsv", sep="\t")
         json_path = group_path / "maps.json"
-        with open(json_path, "r") as f:
+        with json_path.open(mode="r") as f:
             parameters = json.load(f)
 
         return df, parameters

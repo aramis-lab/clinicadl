@@ -18,7 +18,7 @@ def write_requirements_version(output_path):
         env_variables = subprocess.check_output("pip freeze", shell=True).decode(
             "utf-8"
         )
-        with open(Path(output_path) / "environment.txt", "w") as file:
+        with (Path(output_path) / "environment.txt").open(mode="w") as file:
             file.write(env_variables)
     except subprocess.CalledProcessError:
         warn(
@@ -98,7 +98,7 @@ def read_json(options=None, json_path=None, test=False, read_computational=False
     if json_path is None:
         json_path = Path(options["model_path"]) / "commandline.json"
 
-    with open(json_path, "r") as f:
+    with json_path.open(mode="r") as f:
         json_data = json.load(f)
 
     for key, item in json_data.items():
