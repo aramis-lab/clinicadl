@@ -63,7 +63,7 @@ def extract_metrics(caps_dir, output_dir, group_label):
     results_df = pd.DataFrame()
 
     subjects = list((Path(caps_dir) / "subjects").iterdir())
-    subjects = [subject for subject in subjects if subject[:4:] == "sub-"]
+    subjects = [subject for subject in subjects if str(subject)[:4:] == "sub-"]
     for subject in subjects:
         subject_path = Path(caps_dir) / "subjects" / subject
         sessions = list(subject_path.iterdir())

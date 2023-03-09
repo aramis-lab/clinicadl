@@ -349,7 +349,6 @@ def find_mask_path(
         path of the mask or None if nothing was found.
         a human-friendly description of the pattern looked for.
     """
-    from glob import glob
 
     # Check that pattern begins and ends with _ to avoid mixing keys
     if mask_pattern is None:
@@ -358,7 +357,7 @@ def find_mask_path(
     candidates_pattern = Path(masks_location) / f"*{mask_pattern}*_roi-{roi}_mask.nii*"
 
     desc = f"The mask should follow the pattern {candidates_pattern}. "
-    candidates = candidates_pattern.glob()
+    candidates = Path(masks_location).glob(f"*{mask_pattern}*_roi-{roi}_mask.nii*")
     if cropping is None:
         pass
     elif cropping:
