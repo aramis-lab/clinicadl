@@ -1236,7 +1236,7 @@ class MapsManager:
         """Find which splits were trained in the MAPS."""
         return [
             int(split.split("-")[1])
-            for split in list(self.maps_path.iter_dir())
+            for split in list(self.maps_path.iterdir())
             if split.startswith(f"{self.split_name}-")
         ]
 
@@ -1251,8 +1251,8 @@ class MapsManager:
 
         return [
             metric.split("-")[1]
-            for metric in list(split_path.iter_dir())
-            if metric[:5:] == "best-"
+            for metric in list(split_path.iterdir())
+            if str(metric)[:5:] == "best-"
         ]
 
     def _check_selection_metric(self, split, selection_metric=None):
