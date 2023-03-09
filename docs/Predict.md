@@ -1,7 +1,7 @@
 # `predict` - Inference using pretrained models
 
 This functionality performs individual prediction and metrics computation on a set of data using models trained with
-[`clinicadl train`](./Train/Introduction.md) or [`clinicadl random-search generate`](./RandomSearch.md)
+[`clinicadl train`](./Train/Introduction.md) or [`clinicadl random-search`](./RandomSearch.md)
 tasks. It can also use any pretrained models if they are structured like a [MAPS](./Introduction.md).
 
 !!! warning "unbiased image-level results"
@@ -53,11 +53,11 @@ This can be useful for the `reconstruction` task, for which the user may want to
     - `--save_nifti` (flag) to the reconstruction output in the MAPS in NIfTI format.
 - **Other options**
     - `--caps_directory` (Path) is the input folder containing the neuroimaging data
-      (tensor version of images, output of [`clinicadl extract`
+      (tensor version of images, output of [`clinicadl prepare-data`
       pipeline](Preprocessing/Extract.md)) in a
       [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
     - `--participants_tsv` (Path) is a path to a TSV file with subjects/sessions to process (filename
-      included), OR the path to the test folder of a split directory obtained with `clinicadl tsvtool split`.
+      included), OR the path to the test folder of a split directory obtained with `clinicadl tsvtools split`.
     - `--use_labels/--no_labels` (bool) is a flag to add if the dataset does not contain ground truth labels. 
       Default behaviour will look for ground truth labels and raise an error if not found.
     - `--selection_metrics` (List[str]) is a list of metrics to find the best models to evaluate.

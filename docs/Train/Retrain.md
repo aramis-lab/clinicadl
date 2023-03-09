@@ -26,7 +26,8 @@ This task can be run with the following command line:
 clinicadl train from_json [OPTIONS] CONFIG_JSON OUTPUT_MAPS_DIRECTORY
 
 ```
-where 
+where: 
+
 - `CONFIG_JSON` (Path) is the JSON file used to build the model.
 - `OUTPUT_MAPS_DIRECTORY` (Path) is the MAPS of the new model that will be trained.
 
