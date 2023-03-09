@@ -1265,10 +1265,8 @@ class MapsManager:
 
         for folder, subs, files in os.walk(split_path):
             print("leve1")
-            print(subs + "/" + files)
-            for folder2, subs2, files2 in os.walk(subs):
-                print("level2")
-                print(subs2 + "/" + files2)
+            print(subs)
+            print(files)
 
         print(split_path)
         return [
