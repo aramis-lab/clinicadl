@@ -1,8 +1,6 @@
 # coding: utf8
 
-import os
 from logging import getLogger
-from os import makedirs, path
 from pathlib import Path
 
 import numpy as np
@@ -233,11 +231,11 @@ def split_diagnoses(
     split_numero = 1
     folder_name = f"split"
 
-    while os.path.exists(parents_path / folder_name):
+    while (parents_path / folder_name).is_dir():
         split_numero += 1
         folder_name = f"split_{split_numero}"
     results_path = parents_path / folder_name
-    makedirs(results_path)
+    results_path.mkdir(parents=True)
 
     commandline_to_json(
         {
@@ -285,13 +283,13 @@ def split_diagnoses(
             or ("age" not in list_columns and "age_bl" not in list_columns)
             or "sex" not in list_columns
         ):
-            parents_path = path.abspath(parents_path)
+            parents_path = Path(parents_path).resolve()
             n = 0
-            while not os.path.exists(path.join(parents_path, "labels.tsv")) and n <= 4:
+            while not (Path(parents_path) / "labels.tsv").is_file() and n <= 4:
                 parents_path = Path(parents_path).parents[0]
                 n += 1
             try:
-                labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+                labels_df = pd.read_csv(Path(parents_path) / "labels.tsv", sep="\t")
                 diagnosis_df = pd.merge(
                     diagnosis_df,
                     labels_df,
