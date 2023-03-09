@@ -44,7 +44,7 @@ def extract_metrics(caps_dir, output_dir, group_label):
         / "groups"
         / f"group-{group_label}"
         / "t1"
-        / f"group-{group_label}_template.nii.gz",
+        / f"group-{group_label}_template.nii.gz"
     )
     template_nii = nib.load(template_path)
     template_np = template_nii.get_fdata()
