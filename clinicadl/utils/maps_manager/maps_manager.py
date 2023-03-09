@@ -1018,7 +1018,7 @@ class MapsManager:
                 / f"{self.split_name}-{split}"
                 / f"best-{selection_metric}"
                 / data_group
-                / "nifti_images",
+                / "nifti_images"
             )
             nifti_path.mkdir(parents=True, exist_ok=True)
 
@@ -1718,7 +1718,7 @@ class MapsManager:
             self.maps_path
             / f"{self.split_name}-{split}"
             / f"best-{selection}"
-            / data_group,
+            / data_group
         )
         sub_df.to_csv(
             performance_dir / f"{data_group}_image_level_prediction.tsv",
@@ -1890,7 +1890,7 @@ class MapsManager:
             self.maps_path
             / f"{self.split_name}-{split}"
             / f"best-{selection_metric}"
-            / data_group,
+            / data_group
         )
         log_path = log_dir / "description.log"
         with log_path.open(mode="r") as f:
@@ -2064,7 +2064,7 @@ class MapsManager:
             self.maps_path
             / f"{self.split_name}-{split}"
             / f"best-{selection_metric}"
-            / data_group,
+            / data_group
         )
         if not prediction_dir.is_dir():
             raise MAPSError(
