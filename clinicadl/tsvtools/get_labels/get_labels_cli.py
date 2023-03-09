@@ -40,6 +40,12 @@ from clinicadl.utils import cli_param
     default=False,
     is_flag=True,
 )
+@click.option(
+    "--output_dir",
+    help="Path to the directory where labels.tsv will be stored. ",
+    type=str,
+    default=None,
+)
 def cli(
     bids_directory,
     diagnoses,
@@ -50,6 +56,7 @@ def cli(
     missing_mods,
     merged_tsv,
     remove_unique_session,
+    output_dir,
 ):
     """Get labels in a tsv file.
 
@@ -78,6 +85,7 @@ def cli(
         missing_mods=missing_mods,
         merged_tsv=merged_tsv,
         remove_unique_session=remove_unique_session,
+        output_dir=output_dir,
     )
 
 
