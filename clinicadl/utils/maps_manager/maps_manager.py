@@ -769,7 +769,15 @@ class MapsManager:
 
             model.zero_grad()
             evaluation_flag, step_flag = True, True
+            print(train_loader)
+            print(len(train_loader))
+            batch = iter(train_loader)
+            images, labels = batch.next()
 
+            print(images.shape)
+            # torch.Size([num_samples, in_channels, H, W])
+
+            print(labels.shape)
             for i, data in enumerate(train_loader):
 
                 _, loss_dict = model.compute_outputs_and_loss(data, criterion)
