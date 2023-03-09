@@ -1250,7 +1250,7 @@ class MapsManager:
             )
 
         return [
-            metric.split("-")[1]
+            str(metric).split("-")[1]
             for metric in list(split_path.iterdir())
             if str(metric)[:5:] == "best-"
         ]
