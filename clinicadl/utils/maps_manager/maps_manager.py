@@ -143,6 +143,8 @@ class MapsManager:
         if self.multi_network:
             self._train_multi(split_list, resume=False)
         else:
+            print("fgliubfmozeribg")
+            print(split_list)
             self._train_single(split_list, resume=False)
 
     def resume(self, split_list: List[int] = None):
@@ -678,6 +680,8 @@ class MapsManager:
                     data_train, self.sampler
                 )
 
+                print(train_loader)
+                print(train_sampler)
                 train_loader = DataLoader(
                     data_train,
                     batch_size=self.batch_size,
@@ -1242,6 +1246,7 @@ class MapsManager:
 
     def _find_selection_metrics(self, split):
         """Find which selection metrics are available in MAPS for a given split."""
+
         split_path = self.maps_path / f"{self.split_name}-{split}"
         if not split_path.is_dir():
             raise MAPSError(

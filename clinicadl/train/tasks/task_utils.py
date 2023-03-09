@@ -105,4 +105,6 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
     ):
         preprocessing_dict["roi_background_value"] = 0
 
+    print(kwargs["output_maps_directory"])
+    print(train_dict)
     train(kwargs["output_maps_directory"], train_dict, train_dict.pop("split"))
