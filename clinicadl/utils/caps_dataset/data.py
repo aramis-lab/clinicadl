@@ -2,7 +2,6 @@
 
 import abc
 from logging import getLogger
-from os import path
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -157,18 +156,18 @@ class CapsDataset(Dataset):
                 [participant], [session], self.caps_dict[cohort], file_type
             )
             filepath = results[0]
-            image_filename = path.basename(filepath[0]).replace(".nii.gz", ".pt")
+            image_filename = Path(filepath[0]).name.replace(".nii.gz", ".pt")
             folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
-            image_dir = path.join(
-                self.caps_dict[cohort],
-                "subjects",
-                participant,
-                session,
-                "deeplearning_prepare_data",
-                "image_based",
-                folder,
+            image_dir = (
+                Path(self.caps_dict[cohort])
+                / "subjects"
+                / participant
+                / session
+                / "deeplearning_prepare_data"
+                / "image_based"
+                / folder
             )
-            image_path = path.join(image_dir, image_filename)
+            image_path = image_dir / image_filename
         # Try to find .pt file
         except ClinicaCAPSError:
             file_type = self.preprocessing_dict["file_type"]
@@ -404,13 +403,13 @@ class CapsDatasetPatch(CapsDataset):
         image_path = self._get_image_path(participant, session, cohort)
 
         if self.prepare_dl:
-            patch_dir = path.dirname(image_path).replace(
+            patch_dir = (Path(image_path).parent).replace(
                 "image_based", f"{self.mode}_based"
             )
             patch_filename = extract_patch_path(
                 image_path, self.patch_size, self.stride_size, patch_idx
             )
-            patch_tensor = torch.load(path.join(patch_dir, patch_filename))
+            patch_tensor = torch.load(Path(patch_dir) / patch_filename)
 
         else:
             image = torch.load(image_path)
@@ -518,11 +517,11 @@ class CapsDatasetRoi(CapsDataset):
 
         if self.prepare_dl:
             mask_path = self.mask_paths[roi_idx]
-            roi_dir = path.dirname(image_path).replace(
+            roi_dir = str(Path(image_path).parent).replace(
                 "image_based", f"{self.mode}_based"
             )
             roi_filename = extract_roi_path(image_path, mask_path, self.uncropped_roi)
-            roi_tensor = torch.load(path.join(roi_dir, roi_filename))
+            roi_tensor = torch.load(Path(roi_dir) / roi_filename)
 
         else:
             image = torch.load(image_path)
@@ -600,7 +599,7 @@ class CapsDatasetRoi(CapsDataset):
                 f"is not defined."
             )
 
-        mask_location = path.join(caps_directory, "masks", f"tpl-{template_name}")
+        mask_location = Path(caps_directory) / "masks" / f"tpl-{template_name}"
 
         mask_paths, mask_arrays = list(), list()
         for roi in self.roi_list:
@@ -677,13 +676,13 @@ class CapsDatasetSlice(CapsDataset):
         image_path = self._get_image_path(participant, session, cohort)
 
         if self.prepare_dl:
-            slice_dir = path.dirname(image_path).replace(
+            slice_dir = str(Path(image_path).parent).replace(
                 "image_based", f"{self.mode}_based"
             )
             slice_filename = extract_slice_path(
                 image_path, self.slice_direction, self.slice_mode, slice_idx
             )
-            slice_tensor = torch.load(path.join(slice_dir, slice_filename))
+            slice_tensor = torch.load(Path(slice_dir) / slice_filename)
 
         else:
             image_path = self._get_image_path(participant, session, cohort)
@@ -1039,25 +1038,25 @@ def load_data_test_single(test_path, diagnoses_list, baseline=True):
     test_df = pd.DataFrame()
 
     if baseline:
-        if not path.exists(path.join(Path(test_path).parents[0], "train_baseline.tsv")):
-            if not path.join(Path(test_path).parents[0], "labels_baseline.tsv"):
+        if not (Path(test_path).parent / "train_baseline.tsv").is_file():
+            if not (Path(test_path).parent / "labels_baseline.tsv").is_file():
                 raise ClinicaDLTSVError(
                     f"There is no train_baseline.tsv nor labels_baseline.tsv in your folder {Path(test_path).parents[0]} "
                 )
             else:
-                test_path = path.join(Path(test_path).parents[0], "labels_baseline.tsv")
+                test_path = Path(test_path).parent / "labels_baseline.tsv"
         else:
-            test_path = path.join(Path(test_path).parents[0], "train_baseline.tsv")
+            test_path = Path(test_path).parent / "train_baseline.tsv"
     else:
-        if not path.exists(path.join(Path(test_path).parents[0], "train.tsv")):
-            if not path.join(Path(test_path).parents[0], "labels.tsv"):
+        if not (Path(test_path).parent / "train.tsv").is_file():
+            if not (Path(test_path).parent / "labels.tsv").is_file():
                 raise ClinicaDLTSVError(
-                    f"There is no train.tsv or labels.tsv in your folder {Path(test_path).parents[0]} "
+                    f"There is no train.tsv or labels.tsv in your folder {Path(test_path).parent} "
                 )
             else:
-                test_path = path.join(Path(test_path).parents[0], "labels.tsv")
+                test_path = Path(test_path).parent / "labels.tsv"
         else:
-            test_path = path.join(Path(test_path).parents[0], "train.tsv")
+            test_path = Path(test_path).parent / "train.tsv"
 
     test_df = pd.read_csv(test_path, sep="\t")
 
