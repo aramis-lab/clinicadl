@@ -58,7 +58,7 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
     else:
         commandline_arg_dict = copy(vars(commandline))
     output_dir = commandline_arg_dict["output_dir"]
-    os.makedirs(output_dir, exist_ok=True)
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     # remove these entries from the commandline log file
     remove_list = ["func", "output_dir", "launch_dir", "name", "verbose", "logname"]
