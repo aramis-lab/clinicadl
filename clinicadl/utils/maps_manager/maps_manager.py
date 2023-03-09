@@ -772,7 +772,7 @@ class MapsManager:
             print(train_loader)
             print(len(train_loader))
             batch = iter(train_loader)
-            images, labels = batch.next()
+            images, labels = next(batch)
 
             print(images.shape)
             # torch.Size([num_samples, in_channels, H, W])
