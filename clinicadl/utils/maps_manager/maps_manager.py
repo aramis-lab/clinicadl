@@ -1257,6 +1257,12 @@ class MapsManager:
             ]
         )
         print("split path")
+        import os
+
+        for folder, subs, files in os.walk(split_path):
+            print(subs + "/" + files)
+            for folder2, subs2, files2 in os.walk(subs):
+                print(subs2 + "/" + files2)
 
         print(split_path)
         return [
