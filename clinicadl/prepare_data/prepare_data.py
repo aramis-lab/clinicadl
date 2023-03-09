@@ -140,7 +140,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
                     parameters["preprocessing"]
                 ]
 
-            parameters["masks_location"] = (
+            parameters["masks_location"] = str(
                 Path(caps_directory) / "masks" / f"tpl-{parameters['roi_template']}"
             )
 
