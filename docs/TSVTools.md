@@ -73,7 +73,7 @@ Options:
     - If run before, the output has to be store with the name `merged.tsv`in the `RESULTS_DIRECTORY` or the path has to be given with this option. It avoids to re-run the `merge-tsv`command which can be very long (more than 30min).
   - `--missing_mods` (Path) is a path to a TSV file containing the results of `clinica iotools missing-modalities` command. 
     - If not run before, this command will be run in the task and the output directory will be save in the `RESULTS_DIRECTORY` given with the name `missing_mods`. 
-    - If run before, the output directory has to be store with the name `missing_mods` in the `RESULTS_DIRECTORY` or the path has to be given with this option. It avoids to re-run the `clinica iotools check-missing-modalities` command which can be very long (more than 30min).
+    - If run before, the output directory has to be store with the name `missing_mods` in the `RESULTS_DIRECTORY` or the path has to be given with this option. It avoids to re-run the `clinica iotools check-missing-modalities` command which can be very long (more than 30min, depending on the hardware).
   - `--remove-unique-session` (bool) if given, participants having only one session will be removed.
   Default setting keeps these participants.
   
