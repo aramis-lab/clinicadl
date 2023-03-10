@@ -769,7 +769,11 @@ class MapsManager:
 
             model.zero_grad()
             evaluation_flag, step_flag = True, True
+            print(train_loader.dataset)
+            print(train_loader.batch_size)
+            print(train_loader.collate_fn)
 
+            print(train_loader.__len__())
             for i, data in enumerate(train_loader):
 
                 _, loss_dict = model.compute_outputs_and_loss(data, criterion)
@@ -1893,8 +1897,10 @@ class MapsManager:
             / data_group
         )
         log_path = log_dir / "description.log"
-        with log_path.open(mode="r") as f:
+        with Path(log_path).open(mode="r") as f:
             content = f.read()
+            print("prin description log")
+            print(content)
 
     def get_group_info(
         self, data_group: str, split: int = None

@@ -305,6 +305,7 @@ class CapsDatasetImage(CapsDataset):
         """
 
         self.mode = "image"
+        self.prepare_dl = preprocessing_dict["prepare_dl"]
         super().__init__(
             caps_directory,
             data_file,
@@ -325,6 +326,7 @@ class CapsDatasetImage(CapsDataset):
         participant, session, cohort, _, label = self._get_meta_data(idx)
 
         image_path = self._get_image_path(participant, session, cohort)
+        print(f"image path :{image_path}")
         image = torch.load(image_path)
 
         if self.transformations:
