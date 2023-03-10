@@ -45,8 +45,6 @@ def test_train_ae(cmdopt, tmp_path, test_name):
             str(tmp_out_dir),
             "-c",
             config_path,
-            "--split",
-            "1",
         ]
     elif test_name == "patch_multi_ae":
         split = [0, 0]

@@ -57,8 +57,6 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
             str(tmp_out_dir),
             "-c",
             config_path,
-            "-s",
-            split,
         ]
     elif test_name == "patch_cnn":
         split = "0"
