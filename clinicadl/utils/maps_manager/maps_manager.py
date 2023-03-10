@@ -2012,7 +2012,7 @@ class MapsManager:
         return torch.load(model_path, map_location=map_location)
 
     def get_prediction(
-        self, data_group, split=0, selection_metric=None, mode="image", verbose=True
+        self, data_group, split=0, selection_metric=None, mode="image", verbose=False
     ):
         """
         Get the individual predictions for each participant corresponding to one group
