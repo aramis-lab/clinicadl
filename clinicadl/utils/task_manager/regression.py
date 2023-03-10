@@ -139,7 +139,7 @@ class RegressionManager(TaskManager):
             )
             row = [[subject, session, 0, label, prediction]]
             row_df = pd.DataFrame(row, columns=self.columns)
-            df_final = df_final.append(row_df)
+            df_final = pd.concat([df_final, row_df])
 
         if use_labels:
             results = self.compute_metrics(df_final)

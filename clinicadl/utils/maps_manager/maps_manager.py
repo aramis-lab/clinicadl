@@ -2023,6 +2023,8 @@ class MapsManager:
             identifies the image in the BIDS / CAPS.
         """
         selection_metric = self._check_selection_metric(split, selection_metric)
+        print("tesst0")
+        print(selection_metric)
         if verbose:
             self._print_description_log(data_group, split, selection_metric)
         prediction_dir = (

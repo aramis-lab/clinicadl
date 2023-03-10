@@ -74,23 +74,23 @@ def get_space_dict(launch_directory: str) -> Dict[str, Any]:
 
 def sampling_fn(value, sampling_type: str):
     if isinstance(value, (tuple, list)):
-        if sampling_type is "fixed":
+        if sampling_type == "fixed":
             return value
-        elif sampling_type is "choice":
+        elif sampling_type == "choice":
             return random.choice(value)
-        elif sampling_type is "exponent":
+        elif sampling_type == "exponent":
             exponent = random.uniform(*value)
             return 10**-exponent
-        elif sampling_type is "randint":
+        elif sampling_type == "randint":
             return random.randint(*value)
-        elif sampling_type is "uniform":
+        elif sampling_type == "uniform":
             return random.uniform(*value)
         else:
             raise NotImplementedError(
                 f"Sampling type {sampling_type} is not implemented"
             )
     else:
-        if sampling_type is "exponent":
+        if sampling_type == "exponent":
             return 10**-value
         else:
             return value
