@@ -7,6 +7,7 @@ import tarfile
 from logging import getLogger
 from os import makedirs
 from os.path import basename, dirname, exists, join
+from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 import nibabel as nib
@@ -14,6 +15,7 @@ import numpy as np
 import pandas as pd
 import torch
 from clinica.utils.inputs import RemoteFileStructure, clinica_file_reader, fetch_file
+from nilearn.image import resample_to_img
 
 from clinicadl.prepare_data.prepare_data_utils import compute_extract_json
 from clinicadl.utils.caps_dataset.data import CapsDataset
@@ -24,6 +26,7 @@ from clinicadl.utils.tsvtools_utils import extract_baseline
 from .generate_utils import (
     find_file_type,
     generate_shepplogan_phantom,
+    hypo_synthesis,
     im_loss_roi_gaussian_distribution,
     load_and_check_tsv,
     write_missing_mods,
@@ -89,7 +92,7 @@ def generate_random_dataset(
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
 
     # Create subjects dir
-    makedirs(join(output_dir, "subjects"), exist_ok=True)
+    (Path(output_dir) / "subjects").mkdir(parents=True, exist_ok=True)
 
     # Retrieve image of first subject
     participant_id = data_df.loc[0, "participant_id"]
@@ -410,13 +413,12 @@ def generate_hypometabolic_dataset(
     n_subjects: int,
     tsv_path: Optional[str] = None,
     preprocessing: str = "pet-linear",
-    mask_path: Optional[str] = None,
     pathology: str = "alzheimer",
     pathology_percent: float = 60,
     multi_cohort: bool = False,
     uncropped_image: bool = False,
-    acq_label: str = "fdg",
-    suvr_reference_region: str = "pons",
+    acq_label: str = "18FFDG",
+    suvr_reference_region: str = "cerebellumPons2",
 ):
     """
     Generates a fully separable dataset.
@@ -472,9 +474,10 @@ def generate_hypometabolic_dataset(
             f"than the number of subjects in the baseline dataset of size {len(data_df)}"
         )
 
+    mask_path = None
     if mask_path is None:
 
-        home = str(Path.home())
+        home = Path.home()
         cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks_hypo"
         url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
         FILE1 = RemoteFileStructure(
@@ -482,7 +485,7 @@ def generate_hypometabolic_dataset(
             url=url_aramis,
             checksum="89427970921674792481bffd2de095c8fbf49509d615e7e09e4bc6f0e0564471",
         )
-        makedirs(cache_clinicadl, exist_ok=True)
+        cache_clinicadl.mkdir(parents=True, exist_ok=True)
 
         if not (cache_clinicadl / f"mask_hypo_{pathology}.nii").is_file():
             logger.info(f"Downloading {pathology} masks...")
@@ -500,7 +503,8 @@ def generate_hypometabolic_dataset(
             mask_nii = nib.load(mask_path)
 
     # Create subjects dir
-    makedirs(join(output_dir, "subjects"), exist_ok=True)
+
+    (Path(output_dir) / "subjects").mkdir(parents=True, exist_ok=True)
 
     # Set sigma value depending on percentage
     if pathology_percent >= 70:
@@ -520,42 +524,54 @@ def generate_hypometabolic_dataset(
         preprocessing, uncropped_image, acq_label, suvr_reference_region
     )
 
-    for i in range(2 * n_subjects):
-        data_idx = i // 2
-        label = i % 2
+    for i in range(n_subjects):
+        data_idx = i
+        label = i
 
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
         cohort = data_df.loc[data_idx, "cohort"]
+        print(participant_id)
+        print(session_id)
+        print(caps_dict[cohort])
+        print(file_type)
         image_paths = clinica_file_reader(
             [participant_id], [session_id], caps_dict[cohort], file_type
         )[0]
         image_nii = nib.load(image_paths[0])
-        image = image_nii.get_data()
+        image = image_nii.get_fdata()
+
+        mask_nii = resample_to_img(mask_nii, image_nii, interpolation="nearest")
+        mask = mask_nii.get_fdata()
 
         input_filename = basename(image_paths[0])
         filename_pattern = "_".join(input_filename.split("_")[2::])
 
-        trivial_image_nii_dir = join(
-            output_dir, "subjects", f"sub-TRIV{i}", session_id, preprocessing
+        hypo_image_nii_dir = (
+            Path(output_dir)
+            / "subjects"
+            / f"sub-HYPO{i}_{pathology}-{pathology_percent}"
+            / session_id
+            / preprocessing
         )
-        trivial_image_nii_filename = f"sub-TRIV{i}_{session_id}_{filename_pattern}"
+        hypo_image_nii_filename = f"sub-HYPO{i}_{pathology}-{pathology_percent}_{session_id}_{filename_pattern}"
 
-        makedirs(trivial_image_nii_dir, exist_ok=True)
-
-        atlas_to_mask = nib.load(join(mask_path, f"mask-{label + 1}.nii")).get_data()
+        hypo_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
         # Create atrophied image
-        trivial_image = im_loss_roi_gaussian_distribution(
-            image, atlas_to_mask, atrophy_percent
-        )
-        trivial_image_nii = nib.Nifti1Image(trivial_image, affine=image_nii.affine)
-        trivial_image_nii.to_filename(
-            join(trivial_image_nii_dir, trivial_image_nii_filename)
-        )
+        hypo_image = hypo_synthesis(image, mask, pathology_percent, sigma)
+
+        hypo_image_nii = nib.Nifti1Image(hypo_image, affine=image_nii.affine)
+        hypo_image_nii.to_filename(hypo_image_nii_dir / hypo_image_nii_filename)
 
         # Append row to output tsv
-        row = [f"sub-TRIV{i}", session_id, diagnosis_list[label], 60, "F"]
+        row = [
+            f"sub-HYP0{i}_{pathology}-{pathology_percent}",
+            session_id,
+            diagnosis_list[label],
+            60,
+            "F",
+        ]
         row_df = pd.DataFrame([row], columns=columns)
         output_df = pd.concat([output_df, row_df])
 
@@ -563,4 +579,4 @@ def generate_hypometabolic_dataset(
 
     write_missing_mods(output_dir, output_df)
 
-    logger.info(f"Trivial dataset was generated at {output_dir}")
+    logger.info(f"hypometabolic dataset was generated at {output_dir}")

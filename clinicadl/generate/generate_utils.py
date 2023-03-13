@@ -319,3 +319,12 @@ def generate_shepplogan_phantom(
     img.clip(0, 1)
 
     return img
+
+
+def hypo_synthesis(image, mask, percentage, sigma):
+
+    inverse_mask = 1 - mask
+    inverse_mask[inverse_mask == 0] = 1 - percentage / 100
+    gaussian_mask = gaussian_filter(inverse_mask, sigma=sigma)
+    out_image = image * gaussian_mask
+    return out_image
