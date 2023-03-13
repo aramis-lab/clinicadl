@@ -402,3 +402,165 @@ def generate_shepplogan_dataset(
     write_missing_mods(output_dir, data_df)
 
     logger.info(f"Shepplogan dataset was generated at {output_dir}")
+
+
+def generate_hypometabolic_dataset(
+    caps_directory: str,
+    output_dir: str,
+    n_subjects: int,
+    tsv_path: Optional[str] = None,
+    preprocessing: str = "pet-linear",
+    mask_path: Optional[str] = None,
+    pathology: str = "alzheimer",
+    pathology_percent: float = 60,
+    multi_cohort: bool = False,
+    uncropped_image: bool = False,
+    acq_label: str = "fdg",
+    suvr_reference_region: str = "pons",
+):
+    """
+    Generates a fully separable dataset.
+
+    Generates a dataset, based on the images of the CAPS directory, where a
+    half of the image is processed using a mask to occlude a specific region.
+    This procedure creates a dataset fully separable (images with half-right
+    processed and image with half-left processed)
+
+    Args:
+        caps_directory: path to the CAPS directory.
+        output_dir: folder containing the synthetic dataset in CAPS format.
+        n_subjects: number of subjects in each class of the synthetic dataset.
+        tsv_path: path to tsv file of list of subjects/sessions.
+        preprocessing: preprocessing performed. Must be in ['linear', 'extensive'].
+        mask_path: path to the extracted masks to generate the two labels.
+        atrophy_percent: percentage of atrophy applied.
+        multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
+        uncropped_image: If True the uncropped image of `t1-linear` or `pet-linear` will be used.
+        acq_label: name of the tracer when using `pet-linear` preprocessing.
+        suvr_reference_region: name of the reference region when using `pet-linear` preprocessing.
+
+    Returns:
+        Folder structure where images are stored in CAPS format.
+
+    Raises:
+        IndexError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
+    """
+    from pathlib import Path
+
+    from clinicadl.utils.exceptions import DownloadError
+
+    commandline_to_json(
+        {
+            "output_dir": output_dir,
+            "caps_dir": caps_directory,
+            "preprocessing": preprocessing,
+            "n_subjects": n_subjects,
+            "pathology": pathology,
+            "pathology_percent": pathology_percent,
+        }
+    )
+
+    # Transform caps_directory in dict
+    caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=multi_cohort)
+    # Read DataFrame
+    data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
+    data_df = extract_baseline(data_df)
+
+    if n_subjects > len(data_df):
+        raise IndexError(
+            f"The number of subjects {n_subjects} cannot be higher "
+            f"than the number of subjects in the baseline dataset of size {len(data_df)}"
+        )
+
+    if mask_path is None:
+
+        home = str(Path.home())
+        cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks_hypo"
+        url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
+        FILE1 = RemoteFileStructure(
+            filename=f"mask_hypo_{pathology}.nii",
+            url=url_aramis,
+            checksum="89427970921674792481bffd2de095c8fbf49509d615e7e09e4bc6f0e0564471",
+        )
+        makedirs(cache_clinicadl, exist_ok=True)
+
+        if not (cache_clinicadl / f"mask_hypo_{pathology}.nii").is_file():
+            logger.info(f"Downloading {pathology} masks...")
+            try:
+                mask_path = fetch_file(FILE1, cache_clinicadl)
+                mask_nii = nib.load(mask_path)
+            except:
+                DownloadError(
+                    """Unable to download masks, please download them
+                    manually at https://aramislab.paris.inria.fr/files/data/masks/
+                    and provide a valid path."""
+                )
+        else:
+            mask_path = cache_clinicadl / f"mask_hypo_{pathology}.nii"
+            mask_nii = nib.load(mask_path)
+
+    # Create subjects dir
+    makedirs(join(output_dir, "subjects"), exist_ok=True)
+
+    # Set sigma value depending on percentage
+    if pathology_percent >= 70:
+        sigma = 9
+    elif pathology_percent >= 50:
+        sigma = 6
+    else:
+        sigma = 5
+
+    # Output tsv file
+    columns = ["participant_id", "session_id", "diagnosis", "age_bl", "sex"]
+    output_df = pd.DataFrame(columns=columns)
+    diagnosis_list = ["AD", "CN"]
+
+    # Find appropriate preprocessing file type
+    file_type = find_file_type(
+        preprocessing, uncropped_image, acq_label, suvr_reference_region
+    )
+
+    for i in range(2 * n_subjects):
+        data_idx = i // 2
+        label = i % 2
+
+        participant_id = data_df.loc[data_idx, "participant_id"]
+        session_id = data_df.loc[data_idx, "session_id"]
+        cohort = data_df.loc[data_idx, "cohort"]
+        image_paths = clinica_file_reader(
+            [participant_id], [session_id], caps_dict[cohort], file_type
+        )[0]
+        image_nii = nib.load(image_paths[0])
+        image = image_nii.get_data()
+
+        input_filename = basename(image_paths[0])
+        filename_pattern = "_".join(input_filename.split("_")[2::])
+
+        trivial_image_nii_dir = join(
+            output_dir, "subjects", f"sub-TRIV{i}", session_id, preprocessing
+        )
+        trivial_image_nii_filename = f"sub-TRIV{i}_{session_id}_{filename_pattern}"
+
+        makedirs(trivial_image_nii_dir, exist_ok=True)
+
+        atlas_to_mask = nib.load(join(mask_path, f"mask-{label + 1}.nii")).get_data()
+
+        # Create atrophied image
+        trivial_image = im_loss_roi_gaussian_distribution(
+            image, atlas_to_mask, atrophy_percent
+        )
+        trivial_image_nii = nib.Nifti1Image(trivial_image, affine=image_nii.affine)
+        trivial_image_nii.to_filename(
+            join(trivial_image_nii_dir, trivial_image_nii_filename)
+        )
+
+        # Append row to output tsv
+        row = [f"sub-TRIV{i}", session_id, diagnosis_list[label], 60, "F"]
+        row_df = pd.DataFrame([row], columns=columns)
+        output_df = pd.concat([output_df, row_df])
+
+    output_df.to_csv(join(output_dir, "data.tsv"), sep="\t", index=False)
+
+    write_missing_mods(output_dir, output_df)
+
+    logger.info(f"Trivial dataset was generated at {output_dir}")
