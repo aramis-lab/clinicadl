@@ -255,14 +255,16 @@ class MapsManager:
             else:
                 split_selection_metrics = selection_metrics
             for selection in split_selection_metrics:
-                tsv_pattern = (
+                tsv_dir = (
                     self.maps_path
                     / f"{self.split_name}-{split}"
                     / f"best-{selection}"
                     / data_group
-                    / f"{data_group}*.tsv"
                 )
-                for tsv_file in glob(tsv_pattern):
+
+                tsv_pattern = f"{data_group}*.tsv"
+
+                for tsv_file in tsv_dir.glob(tsv_pattern):
                     Path(tsv_file).unlink()
 
             if self.multi_network:

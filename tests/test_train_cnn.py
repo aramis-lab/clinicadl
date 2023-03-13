@@ -47,7 +47,6 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
             config_path,
         ]
     elif test_name == "image_cnn":
-        split = "1"
         test_input = [
             "train",
             "regression",
@@ -59,7 +58,6 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
             config_path,
         ]
     elif test_name == "patch_cnn":
-        split = "0"
         test_input = [
             "train",
             "classification",
