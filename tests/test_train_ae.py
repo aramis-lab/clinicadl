@@ -35,7 +35,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     labels_path = str(input_dir / "labels_list" / "2_fold")
     config_path = str(input_dir / "train_config.toml")
     if test_name == "image_ae":
-        split = [0, 0]
+        split = [0, 1]
         test_input = [
             "train",
             "reconstruction",
