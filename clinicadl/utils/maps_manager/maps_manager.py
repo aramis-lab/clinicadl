@@ -513,15 +513,13 @@ class MapsManager:
                         cum_maps[mode_id] += map_pt[i]
                         if save_individual:
                             single_path = (
-                                Path(results_path)
+                                results_path
                                 / f"{data['participant_id'][i]}_{data['session_id'][i]}_{self.mode}-{data[f'{self.mode}_id'][i]}_map.pt"
                             )
                             torch.save(map_pt[i], single_path)
                 for i, mode_map in enumerate(cum_maps):
                     mode_map /= len(data_test)
-                    torch.save(
-                        mode_map, Path(results_path) / f"mean_{self.mode}-{i}_map.pt"
-                    )
+                    torch.save(mode_map, results_path / f"mean_{self.mode}-{i}_map.pt")
 
     ###################################
     # High-level functions templates  #
@@ -1233,9 +1231,9 @@ class MapsManager:
     def _find_splits(self):
         """Find which splits were trained in the MAPS."""
         return [
-            int(str(split).split("-")[1])
+            int(split.name.split("-")[1])
             for split in list(self.maps_path.iterdir())
-            if str(split).startswith(f"{self.split_name}-")
+            if split.name.startswith(f"{self.split_name}-")
         ]
 
     def _find_selection_metrics(self, split):
