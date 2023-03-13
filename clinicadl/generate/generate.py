@@ -19,6 +19,7 @@ from nilearn.image import resample_to_img
 
 from clinicadl.prepare_data.prepare_data_utils import compute_extract_json
 from clinicadl.utils.caps_dataset.data import CapsDataset
+from clinicadl.utils.exceptions import ClinicaDLArgumentError
 from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
 from clinicadl.utils.preprocessing import write_preprocessing
 from clinicadl.utils.tsvtools_utils import extract_baseline
@@ -462,6 +463,12 @@ def generate_hypometabolic_dataset(
         }
     )
 
+    dementias = ["ad", "bvftd", "lvppa", "nfvppa", "pca", "svppa"]
+    if pathology not in dementias:
+        raise ClinicaDLArgumentError(
+            f"The pathology {pathology} is not in the list of dementias that can be generate,"
+            "Please chose a dementia in the following list : ad, bvftd, lvppa, nfvppa, pca and svppa"
+        )
     # Transform caps_directory in dict
     caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=multi_cohort)
     # Read DataFrame
