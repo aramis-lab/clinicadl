@@ -36,6 +36,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
     split = "0"
 
     if test_name == "slice_cnn":
+        split_ref = "0"
         test_input = [
             "train",
             "classification",
@@ -47,6 +48,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
             config_path,
         ]
     elif test_name == "image_cnn":
+        split_ref = "1"
         test_input = [
             "train",
             "regression",
@@ -58,6 +60,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
             config_path,
         ]
     elif test_name == "patch_cnn":
+        split_ref = "0"
         test_input = [
             "train",
             "classification",
@@ -71,6 +74,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
             split,
         ]
     elif test_name == "patch_multi_cnn":
+        split_ref = "0"
         test_input = [
             "train",
             "classification",
@@ -83,6 +87,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
             "--multi_network",
         ]
     elif test_name == "roi_cnn":
+        split_ref = "0"
         test_input = [
             "train",
             "classification",
@@ -123,7 +128,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
     )
     assert compare_folders(
         str(tmp_out_dir / "split-0" / "best-loss"),
-        str(ref_dir / ("maps_" + test_name) / "split-0" / "best-loss"),
+        str(ref_dir / ("maps_" + test_name) / f"split-{split_ref}" / "best-loss"),
         tmp_path,
     )
 
