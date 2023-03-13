@@ -167,7 +167,7 @@ class CapsDataset(Dataset):
                 / "image_based"
                 / folder
             )
-            image_path = image_dir / image_filename
+            image_path = str(image_dir / image_filename)
         # Try to find .pt file
         except ClinicaCAPSError:
             file_type = self.preprocessing_dict["file_type"]
@@ -202,7 +202,6 @@ class CapsDataset(Dataset):
             elem_idx = idx % self.elem_per_image
         else:
             elem_idx = self.elem_index
-
         if self.label_presence and self.label is not None:
             target = self.df.loc[image_idx, self.label]
             label = self.label_fn(target)
@@ -326,7 +325,6 @@ class CapsDatasetImage(CapsDataset):
         participant, session, cohort, _, label = self._get_meta_data(idx)
 
         image_path = self._get_image_path(participant, session, cohort)
-        print(f"image path :{image_path}")
         image = torch.load(image_path)
 
         if self.transformations:
