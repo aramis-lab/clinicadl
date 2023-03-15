@@ -4,6 +4,7 @@
 This file generates data for trivial or intractable (random) data for binary classification.
 """
 import tarfile
+from logging import getLogger
 from os import makedirs
 from os.path import basename, dirname, exists, join
 from typing import Dict, Optional, Tuple
@@ -27,6 +28,8 @@ from .generate_utils import (
     load_and_check_tsv,
     write_missing_mods,
 )
+
+logger = getLogger("clinicadl.generate")
 
 
 def generate_random_dataset(
@@ -134,6 +137,8 @@ def generate_random_dataset(
         nib.save(noisy_image_nii, join(noisy_image_nii_path, noisy_image_nii_filename))
 
     write_missing_mods(output_dir, output_df)
+
+    logger.info(f"Random dataset was generated at {output_dir}")
 
 
 def generate_trivial_dataset(
@@ -291,6 +296,8 @@ def generate_trivial_dataset(
 
     write_missing_mods(output_dir, output_df)
 
+    logger.info(f"Trivial dataset was generated at {output_dir}")
+
 
 def generate_shepplogan_dataset(
     output_dir: str,
@@ -393,3 +400,5 @@ def generate_shepplogan_dataset(
     }
     write_preprocessing(preprocessing_dict, output_dir)
     write_missing_mods(output_dir, data_df)
+
+    logger.info(f"Shepplogan dataset was generated at {output_dir}")

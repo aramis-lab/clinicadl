@@ -25,11 +25,10 @@ from clinicadl.utils.tsvtools_utils import (
     find_label,
     first_session,
     last_session,
-    merged_tsv_reader,
     neighbour_session,
 )
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.tsvtools.get_labels")
 
 
 def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
@@ -250,6 +249,7 @@ def get_labels(
     merged_tsv: str = None,
     missing_mods: str = None,
     remove_unique_session: bool = False,
+    output_dir: str = None,
 ):
     """
     Writes one TSV file based on merged_tsv and missing_mods.
@@ -277,11 +277,16 @@ def get_labels(
         Path to the output directory of clinica iotools check-missing-modalities if already exists
     remove_unique_session: bool
         If True, subjects with only one session are removed.
+    output_dir: str (path)
+        Path to the directory where the output labels.tsv will be stored.
     """
 
     from pathlib import Path
 
-    results_directory = Path(bids_directory).parents[0]
+    if output_dir == None:
+        results_directory = Path(bids_directory).parents[0]
+    else:
+        results_directory = output_dir
     output_tsv = results_directory / "labels.tsv"
 
     commandline_to_json(
@@ -368,6 +373,7 @@ def get_labels(
         )
 
     # Cleaning NaN diagnosis
+    logger.debug("Cleaning NaN diagnosis")
     bids_df = cleaning_nan_diagnoses(bids_df)
 
     # Checking the variables of interest

@@ -14,7 +14,7 @@ from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.tsvtools_utils import extract_baseline, retrieve_longitudinal
 
 sex_dict = {"M": 0, "F": 1}
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.tsvtools.kfold")
 
 
 def write_splits(
@@ -151,6 +151,7 @@ def split_diagnoses(
         or ("age" not in list_columns and "age_bl" not in list_columns)
         or "sex" not in list_columns
     ):
+        logger.debug("Looking for the missing columns in others files.")
         if merged_tsv is None:
             parents_path = path.abspath(parents_path)
             n = 0

@@ -45,7 +45,7 @@ Default will download masks based on AAL2 in `clinicadl/resources/masks`.
 ### Outputs
 
 The command generates 3D images of same size as the input images formatted as NIfTI files.
-Then the [`extract`](./Extract.md) command must be run to use the synthetic data with ClinicaDL.
+Then the [`prepare-data`](./Extract.md) command must be run to use the synthetic data with ClinicaDL.
 Results are stored in the same folder hierarchy as the input folder.
 
 
@@ -59,7 +59,7 @@ Then the images are randomly distributed between the two labels.
 ![Schemes of random data](../images/generate_random.png)
 
 ### Prerequisites
-You need to execute the `clinica run` and `clinicadl extract` pipelines prior to running this task.
+You need to execute the `clinica run` and `clinicadl prepare-data` pipelines prior to running this task.
 
 !!! note
     The `random` option can synthesize as many images as wanted with only one input image.
@@ -138,5 +138,4 @@ Options:
 - `--smoothing` / `--no-smoothing` adds random smoothing to generated data. Default
 will not smooth data.
 
-### Outputs
 
