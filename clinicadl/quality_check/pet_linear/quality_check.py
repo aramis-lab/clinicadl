@@ -50,7 +50,7 @@ def quality_check(
 
     logger = getLogger("clinicadl.quality_check")
 
-    if path.exists(output_tsv):
+    if Path(output_tsv).is_file():
         raise NameError("this file already exists please chose another name")
 
     # load the contour mask
@@ -68,7 +68,7 @@ def quality_check(
 
     mask_contour_file = cache_clinicadl / FILE1.filename
 
-    if not (path.exists(mask_contour_file)):
+    if not (mask_contour_file).is_file():
         try:
             mask_contour_file = fetch_file(FILE1, cache_clinicadl)
         except IOError as err:
