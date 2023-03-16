@@ -115,26 +115,24 @@ This pipeline outputs 4 files:
 
 ## `quality-check pet-linear` - Evaluate `pet-linear` registration
 
-This quality check procedure utilizes a metric that is associated with images that have been mis-registrated. To do so, we compare the output of `clinica run pet-linear` pipeline with a contour mask used as the reference of registration. 
 
-This process involved combining two masks to produce the contour mask. To ensure accurate results, we utilized the CBM 2009c Nonlinear Symmetric brain mask and head mask to create a contour mask that aligns with the MNI reference. 
+This quality check procedure uses a metric that identifies images that have been misregistered by comparing the output of the `clinica run pet-linear` pipeline with a contour mask used as the reference for registration. The contour mask is created by combining the CBM 2009c Nonlinear Symmetric brain mask and head mask (that you can find (here)[http://www.bic.mni.mcgill.ca/~vfonov/icbm/2009/mni_icbm152_nlin_sym_09c_nifti.zip]), which aligns with the MNI reference.
 
-We conducted a manual quality check of a few image sets among which 69 images were mis-registrated. After normalizing and thresholding the FDG PET image to remove noise, we calculated the sum of pixels in the contour. For theses images, the number was very high and using thise metric, the pipeline found 80% of the images.
+To determine if an image is well-registered, we compare the contour mask with the PET image. We first normalize the image and set a threshold of 0.35. We then calculate the sum of pixels within the contour mask, and if this value is too high, we can assume the image is not well-registered.
+
+We manually checked a few image sets, among which 69 images were misregistered. For these images, the sum of pixels within the contour mask was high, and using this metric, the pipeline detected 80% of the problematic images.
 
 !!!note
-    t1-linear pipeline need to run prior to pet-linear pipeline so if an image do not pass the t1-linear quality check, we can assum that it will not pass the pet-linear problem. 
-    For a better results, we encourage you to run quality-check pet linear on the list of subjects that has passed the t1-linear quality check.
+    It is important to note that the t1-linear pipeline must be run prior to the pet-linear pipeline, as an image that does not pass the t1-linear quality check will not pass the pet-linear check either. For best results, we recommend running the quality-check pet-linear on the list of subjects that have passed the t1-linear quality check..
 
-You can find in [this repository](https://github.com/aramis-lab/QC) !!!!!!!(to change) all the process to create the mask and the differents experiments that have been made to chose the best metric.
-
-(http://www.bic.mni.mcgill.ca/~vfonov/icbm/2009/mni_icbm152_nlin_sym_09c_nifti.zip)
+You can find the process for creating the mask and the different experiments that were conducted to choose the best metric in [this repository](https://github.com/aramis-lab/QC).
 
 !!!warning
-    This quality check is really conservative and may keep some images that are not of good quality.
-    You may want to check the last images kept at each step to assess if their quality is good enough 
-    for your application.
-    This quality check procedure is specific to the `pet-linear` pipeline and should not be applied 
-    to other preprocessing procedures as the results may not be reliable.
+    Please note that this quality check is conservative and may keep some images that are not of good quality. 
+    We advise you to check the quality of the last images kept at each step to assess if their quality is good 
+    enough for your application. Finally, this quality check procedure is specific to the `pet-linear` pipeline 
+    and should not be applied to other preprocessing procedures, as the results may not be reliable.
+
 
 
 
@@ -145,7 +143,6 @@ You need to execute the `clinica run pet-linear` pipeline prior to running this 
 ### Running the task
 The task can be run with the following command line:
 
-TO CHANGE !!!
 ```
 clinicadl quality-check pet-linear [OPTIONS] CAPS_DIRECTORY OUTPUT_TSV ACQ_LABEL
                        {pons|cerebellumPons|pons2|cerebellumPons2}
