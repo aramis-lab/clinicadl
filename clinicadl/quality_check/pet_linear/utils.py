@@ -9,7 +9,20 @@ import numpy as np
 
 
 def normalize_homemade(image_np):
-    "normalize a numpy image"
+    """
+    Normalize a numpy image.
+
+    Parameters
+    ----------
+    image_np: numpy array
+        Image to normalize
+
+    Returns
+    -------
+    image_np: numpy array
+        The normalized image.
+    """
+
     max_base = image_np.max()
     min_base = image_np.min()
     for idx, x in np.ndenumerate(image_np):
@@ -17,11 +30,23 @@ def normalize_homemade(image_np):
     return image_np
 
 
-def distance(contour_np, img_np):
-    "return the sum of the pixels in the contour shape"
+def distance(contour_np, image_np):
+    """
+    Return the sum of the pixels in the contour shape for image_np with a threshold of 0.35
 
-    shape3D = img_np.shape
-    img_threshold_35 = copy(img_np)
+    Parameters
+    ----------
+    contour_np: numpy array
+    image_np: numpy array
+
+    Returns
+    -------
+    sum_in_contour_35: float
+
+    """
+
+    shape3D = image_np.shape
+    img_threshold_35 = copy(image_np)
     img_threshold_35[img_threshold_35 < 0.35] = 0
 
     if not (shape3D == contour_np.shape):
@@ -29,7 +54,7 @@ def distance(contour_np, img_np):
 
     sum_in_contour_35 = 0
 
-    for idx, _ in np.ndenumerate(img_np):
+    for idx, _ in np.ndenumerate(image_np):
         tmp_threshold_35 = img_threshold_35[idx]
         tmp_contour = int(contour_np[idx])
 

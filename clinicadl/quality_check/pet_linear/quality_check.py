@@ -3,9 +3,8 @@ Automatically reject images incorrectly preprocessed pet-linear (Unified Segment
 
 
 """
-import os
+
 from logging import getLogger
-from os import path
 from pathlib import Path
 
 import nibabel as nib
@@ -22,22 +21,43 @@ def quality_check(
     acq_label: str,
     ref_region: str,
     participants_tsv: str = None,
-    threshold: float = 0.9,
+    threshold: float = 0.8,
     n_proc: int = 0,
     gpu: bool = False,
 ):
+    """
+    Performs quality check on pet-linear pipeline.
+
+    Parameters
+    ----------
+
+    caps_directory: str (Path)
+        The CAPS folder where pet-linear outputs are stored.
+    output_tsv: str (Path)
+        The path to TSV output file.
+    acq_label: str
+        The label given to the PET acquisition, specifying the tracer used (trc-<acq_label>).
+    ref_region: str
+        The reference region used to perform intensity normalization {pons|cerebellumPons|pons2|cerebellumPons2}.
+    participants_tsv: str (Path)
+        Path to a TSV file including a list of participants/sessions on which the quality-check will be performed.
+    threshold: float
+        The threshold on the output probability to decide if the image passed or failed.
+        Default is 0.8
+    n_proc: int
+        Number of cores used during the task.
+    """
 
     logger = getLogger("clinicadl.quality_check")
 
     if path.exists(output_tsv):
         raise NameError("this file already exists please chose another name")
 
-    # NEED TO ADD THE PATH TO THE MNI MASK OR TO THE MNI IMAGE
-    # Load eyes segmentation
-    home = str(Path.home())
-    cache_clinicadl = path.join(home, ".cache", "clinicadl", "mask")
-    if not (path.exists(cache_clinicadl)):
-        os.makedirs(cache_clinicadl)
+    # load the contour mask
+    home = Path.home()
+    cache_clinicadl = home / ".cache" / "clinicadl" / "mask"
+    if not cache_clinicadl.is_dir():
+        cache_clinicadl.mkdir(parents=True)
 
     url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
     FILE1 = RemoteFileStructure(
@@ -46,7 +66,7 @@ def quality_check(
         checksum="0c561ce7de343219e42861b87a359420f9d485da37a8f64d1366ee9bb5460ee6",
     )
 
-    mask_contour_file = path.join(cache_clinicadl, FILE1.filename)
+    mask_contour_file = cache_clinicadl / FILE1.filename
 
     if not (path.exists(mask_contour_file)):
         try:
@@ -74,36 +94,40 @@ def quality_check(
         participants_df.set_index(["participant_id", "session_id"], inplace=True)
         subjects = [subject for subject, subject_df in participants_df.groupby(level=0)]
     else:
-        subjects = os.listdir(path.join(caps_dir, "subjects"))
-        subjects = [subject for subject in subjects if subject[:4:] == "sub-"]
+        subjects = list((Path(caps_dir) / "subjects").iterdir())
+        subjects = [subject.name for subject in subjects if subject.name[:4:] == "sub-"]
 
     def parallelize_subjects(subject, results_df):
-        subject_path = path.join(caps_dir, "subjects", subject)
+        subject_path = Path(caps_dir) / "subjects" / subject
 
         if not participants_tsv is None:
             sessions = participants_df.loc[subject]
             sessions.reset_index(inplace=True)
             sessions = sessions["session_id"].to_list()
         else:
-            sessions = os.listdir(subject_path)
-            sessions = [session for session in sessions if session[:4:] == "ses-"]
+            sessions = list(subject_path.iterdir())
+            sessions = [
+                session.name for session in sessions if session.name[:4:] == "ses-"
+            ]
 
         for session in sessions:
-            image_path = path.join(
-                subject_path,
-                session,
-                "pet_linear",
-                subject
-                + "_"
-                + session
-                + "_trc-"
-                + acq_label
-                + "_rec-uniform_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-"
-                + ref_region
-                + "_pet.nii.gz",
+            image_path = (
+                subject_path
+                / session
+                / "pet_linear"
+                / (
+                    subject
+                    + "_"
+                    + session
+                    + "_trc-"
+                    + acq_label
+                    + "_rec-uniform_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-"
+                    + ref_region
+                    + "_pet.nii.gz"
+                )
             )
 
-            if path.exists(image_path):
+            if image_path.is_file():
                 image_nii = nib.load(image_path)
                 image_np = image_nii.get_fdata()
             else:
@@ -139,5 +163,5 @@ def quality_check(
     all_df.to_csv(output_tsv, sep="\t", index=False)
 
     logger.info(
-        f"Quality check metrics extracted at {path.join(output_tsv, 'QC_metrics.tsv')}."
+        f"Quality check metrics extracted at {Path(output_tsv) / 'QC_metrics.tsv'}."
     )
