@@ -9,6 +9,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.preprocessing
 @cli_param.option.participant_list
 @cli_param.option.n_subjects
+@cli_param.option.n_proc
 @click.option(
     "--mean",
     type=float,
@@ -30,6 +31,7 @@ def cli(
     preprocessing,
     participants_tsv,
     n_subjects,
+    n_proc,
     mean,
     sigma,
     use_uncropped_image,
@@ -50,6 +52,7 @@ def cli(
         tsv_path=participants_tsv,
         output_dir=generated_caps_directory,
         n_subjects=n_subjects,
+        n_proc=n_proc,
         mean=mean,
         sigma=sigma,
         uncropped_image=use_uncropped_image,

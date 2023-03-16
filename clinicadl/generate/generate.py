@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 import torch
 from clinica.utils.inputs import RemoteFileStructure, clinica_file_reader, fetch_file
+from joblib import Parallel, delayed
 
 from clinicadl.prepare_data.prepare_data_utils import compute_extract_json
 from clinicadl.utils.caps_dataset.data import CapsDataset
@@ -36,6 +37,7 @@ def generate_random_dataset(
     caps_directory: str,
     output_dir: str,
     n_subjects: int,
+    n_proc: int,
     tsv_path: Optional[str] = None,
     mean: float = 0,
     sigma: float = 0.5,
@@ -78,6 +80,7 @@ def generate_random_dataset(
             "caps_dir": caps_directory,
             "preprocessing": preprocessing,
             "n_subjects": n_subjects,
+            "n_proc": n_proc,
             "mean": mean,
             "sigma": sigma,
         }
@@ -122,7 +125,9 @@ def generate_random_dataset(
 
     input_filename = basename(image_paths[0])
     filename_pattern = "_".join(input_filename.split("_")[2::])
-    for i in range(2 * n_subjects):
+
+    def create_random_image(i):
+        # for i in range(2 * n_subjects):
         gauss = np.random.normal(mean, sigma, image.shape)
         participant_id = f"sub-RAND{i}"
         noisy_image = image + gauss
@@ -136,8 +141,11 @@ def generate_random_dataset(
         makedirs(noisy_image_nii_path, exist_ok=True)
         nib.save(noisy_image_nii, join(noisy_image_nii_path, noisy_image_nii_filename))
 
-    write_missing_mods(output_dir, output_df)
+    Parallel(n_jobs=n_proc)(
+        delayed(create_random_image)(i) for i in range(2 * n_subjects)
+    )
 
+    write_missing_mods(output_dir, output_df)
     logger.info(f"Random dataset was generated at {output_dir}")
 
 
@@ -145,6 +153,7 @@ def generate_trivial_dataset(
     caps_directory: str,
     output_dir: str,
     n_subjects: int,
+    n_proc: int,
     tsv_path: Optional[str] = None,
     preprocessing: str = "t1-linear",
     mask_path: Optional[str] = None,
@@ -191,6 +200,7 @@ def generate_trivial_dataset(
             "caps_dir": caps_directory,
             "preprocessing": preprocessing,
             "n_subjects": n_subjects,
+            "n_proc": n_proc,
             "atrophy_percent": atrophy_percent,
         }
     )
@@ -253,7 +263,8 @@ def generate_trivial_dataset(
         preprocessing, uncropped_image, acq_label, suvr_reference_region
     )
 
-    for i in range(2 * n_subjects):
+    def create_trivial_image(i, output_df):
+        # for i in range(2 * n_subjects):
         data_idx = i // 2
         label = i % 2
 
@@ -292,16 +303,23 @@ def generate_trivial_dataset(
         row_df = pd.DataFrame([row], columns=columns)
         output_df = pd.concat([output_df, row_df])
 
+        return output_df
+
+    results_df = Parallel(n_jobs=n_proc)(
+        delayed(create_trivial_image)(i, output_df) for i in range(2 * n_subjects)
+    )
+    for result in results_df:
+        output_df = pd.concat([result, output_df])
+
     output_df.to_csv(join(output_dir, "data.tsv"), sep="\t", index=False)
-
     write_missing_mods(output_dir, output_df)
-
     logger.info(f"Trivial dataset was generated at {output_dir}")
 
 
 def generate_shepplogan_dataset(
     output_dir: str,
     img_size: int,
+    n_proc: int,
     labels_distribution: Dict[str, Tuple[float, float, float]],
     extract_json: str = None,
     samples: int = 100,
@@ -334,7 +352,9 @@ def generate_shepplogan_dataset(
     data_df = pd.DataFrame(columns=columns)
 
     for i, label in enumerate(labels_distribution.keys()):
-        for j in range(samples):
+
+        def create_shepplogan_image(j, data_df):
+            # for j in range(samples):
             participant_id = f"sub-CLNC{i}{j:04d}"
             session_id = "ses-M00"
             subtype = np.random.choice(
@@ -343,7 +363,7 @@ def generate_shepplogan_dataset(
             row_df = pd.DataFrame(
                 [[participant_id, session_id, label, subtype]], columns=columns
             )
-            data_df = data_df.append(row_df)
+            data_df = pd.concat([data_df, row_df])
 
             # Image generation
             slice_path = join(
@@ -377,6 +397,13 @@ def generate_shepplogan_dataset(
             makedirs(image_dir, exist_ok=True)
             with open(image_path, "w") as f:
                 f.write("0")
+            return data_df
+
+        results_df = Parallel(n_jobs=n_proc)(
+            delayed(create_shepplogan_image)(j, data_df) for j in range(samples)
+        )
+        for result in results_df:
+            data_df = pd.concat([result, data_df])
 
     # Save data
     data_df.to_csv(join(output_dir, "data.tsv"), sep="\t", index=False)
