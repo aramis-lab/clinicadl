@@ -8,6 +8,7 @@ from clinicadl.utils import cli_param
 @cli_param.argument.generated_caps
 @cli_param.option.participant_list
 @cli_param.option.n_subjects
+@cli_param.option.n_proc
 @click.option(
     "--pathology",
     "-p",
@@ -30,6 +31,7 @@ def cli(
     generated_caps_directory,
     participants_tsv,
     n_subjects,
+    n_proc,
     pathology,
     pathology_percent,
     use_uncropped_image,
@@ -50,6 +52,7 @@ def cli(
         preprocessing="pet-linear",
         output_dir=generated_caps_directory,
         n_subjects=n_subjects,
+        n_proc=n_proc,
         pathology=pathology,
         pathology_percent=pathology_percent,
         uncropped_image=use_uncropped_image,

@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 import torch
 from clinica.utils.inputs import RemoteFileStructure, clinica_file_reader, fetch_file
+from joblib import Parallel, delayed
 from nilearn.image import resample_to_img
 
 from clinicadl.prepare_data.prepare_data_utils import compute_extract_json
@@ -412,6 +413,7 @@ def generate_hypometabolic_dataset(
     caps_directory: str,
     output_dir: str,
     n_subjects: int,
+    n_proc: int,
     tsv_path: Optional[str] = None,
     preprocessing: str = "pet-linear",
     pathology: str = "alzheimer",
@@ -458,6 +460,7 @@ def generate_hypometabolic_dataset(
             "caps_dir": caps_directory,
             "preprocessing": preprocessing,
             "n_subjects": n_subjects,
+            "n_proc": n_proc,
             "pathology": pathology,
             "pathology_percent": pathology_percent,
         }
@@ -486,16 +489,17 @@ def generate_hypometabolic_dataset(
 
         home = Path.home()
         cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks_hypo"
-        url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
+        url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/hypo/"
         FILE1 = RemoteFileStructure(
             filename=f"mask_hypo_{pathology}.nii",
             url=url_aramis,
-            checksum="89427970921674792481bffd2de095c8fbf49509d615e7e09e4bc6f0e0564471",
+            checksum="drgjeryt",
         )
         cache_clinicadl.mkdir(parents=True, exist_ok=True)
 
         if not (cache_clinicadl / f"mask_hypo_{pathology}.nii").is_file():
             logger.info(f"Downloading {pathology} masks...")
+            # mask_path = fetch_file(FILE1, cache_clinicadl)
             try:
                 mask_path = fetch_file(FILE1, cache_clinicadl)
                 mask_nii = nib.load(mask_path)
@@ -531,25 +535,24 @@ def generate_hypometabolic_dataset(
         preprocessing, uncropped_image, acq_label, suvr_reference_region
     )
 
-    for i in range(n_subjects):
+    def generate_hypometabolic_image(i, output_df):
+        # for i in range(n_subjects):
         data_idx = i
         label = i
 
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
         cohort = data_df.loc[data_idx, "cohort"]
-        print(participant_id)
-        print(session_id)
-        print(caps_dict[cohort])
-        print(file_type)
         image_paths = clinica_file_reader(
             [participant_id], [session_id], caps_dict[cohort], file_type
         )[0]
         image_nii = nib.load(image_paths[0])
         image = image_nii.get_fdata()
 
-        mask_nii = resample_to_img(mask_nii, image_nii, interpolation="nearest")
-        mask = mask_nii.get_fdata()
+        mask_resample_nii = resample_to_img(
+            mask_nii, image_nii, interpolation="nearest"
+        )
+        mask = mask_resample_nii.get_fdata()
 
         input_filename = basename(image_paths[0])
         filename_pattern = "_".join(input_filename.split("_")[2::])
@@ -581,6 +584,13 @@ def generate_hypometabolic_dataset(
         ]
         row_df = pd.DataFrame([row], columns=columns)
         output_df = pd.concat([output_df, row_df])
+        return output_df
+
+    results_list = Parallel(n_jobs=n_proc)(
+        delayed(generate_hypometabolic_image)(i, output_df) for i in range(n_subjects)
+    )
+    for result_df in results_list:
+        output_df = pd.concat([result_df, output_df])
 
     output_df.to_csv(join(output_dir, "data.tsv"), sep="\t", index=False)
 
