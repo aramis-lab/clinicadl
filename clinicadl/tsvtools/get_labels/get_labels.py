@@ -281,6 +281,8 @@ def get_labels(
         Path to the directory where the output labels.tsv will be stored.
     """
 
+    from clinica.utils.inputs import check_bids_folder
+
     if output_dir == None:
         results_directory = Path(bids_directory).parents[0]
     else:
@@ -304,12 +306,6 @@ def get_labels(
         filename="labels.json",
     )
 
-    from clinica.iotools.utils.data_handling import (
-        compute_missing_mods,
-        create_merge_file,
-    )
-    from clinica.utils.inputs import check_bids_folder
-
     # Create the results directory
     results_directory.mkdir(parents=True, exist_ok=True)
 
@@ -319,6 +315,8 @@ def get_labels(
         missing_mods_directory = missing_mods
 
     if not Path(missing_mods_directory).is_dir():
+        from clinica.iotools.utils.data_handling import compute_missing_mods
+
         check_bids_folder(bids_directory)
         compute_missing_mods(bids_directory, missing_mods_directory, "missing_mods")
 
@@ -331,6 +329,8 @@ def get_labels(
     if merged_tsv is not None:
         merged_tsv_path = merged_tsv
     elif not Path(merged_tsv_path).is_file():
+        from clinica.iotools.utils.data_handling import create_merge_file
+
         logger.info("create merge tsv")
         check_bids_folder(bids_directory)
         create_merge_file(
