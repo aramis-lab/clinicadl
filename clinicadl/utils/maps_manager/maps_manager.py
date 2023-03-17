@@ -6,6 +6,7 @@ from datetime import datetime
 from glob import glob
 from logging import getLogger
 from os import listdir, makedirs, path
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
@@ -488,14 +489,12 @@ class MapsManager:
                 label_code=self.label_code,
                 label=self.label,
             )
-            print(data_test)
             test_loader = DataLoader(
                 data_test,
                 batch_size=batch_size if batch_size is not None else self.batch_size,
                 shuffle=False,
                 num_workers=n_proc if n_proc is not None else self.n_proc,
             )
-            print(test_loader)
 
             if selection_metrics is None:
                 selection_metrics = self._find_selection_metrics(split)
@@ -533,7 +532,6 @@ class MapsManager:
                 for data in test_loader:
                     images = data["image"].to(model.device)
 
-                    # map_pt: np.array
                     map_pt = interpreter.generate_gradients(
                         images, target_node, level=level
                     )
@@ -551,11 +549,11 @@ class MapsManager:
                                 import nibabel as nib
                                 from numpy import eye
 
-                                single_nifti_path = path.join(
-                                    results_path,
-                                    f"{data['participant_id'][i]}_{data['session_id'][i]}_"
-                                    f"{self.mode}-{data[f'{self.mode}_id'][i]}_map.nii.gz",
+                                single_nifti_path = (
+                                    Path(results_path)
+                                    / f"{data['participant_id'][i]}_{data['session_id'][i]}_{self.mode}-{data[f'{self.mode}_id'][i]}_map.nii.gz"
                                 )
+
                                 output_nii = nib.Nifti1Image(map_pt[i].numpy(), eye(4))
                                 nib.save(output_nii, single_nifti_path)
 
@@ -572,7 +570,7 @@ class MapsManager:
                         output_nii = nib.Nifti1Image(mode_map, eye(4))
                         nib.save(
                             output_nii,
-                            path.join(results_path, f"mean_{self.mode}-{i}_map.nii.gz"),
+                            Path(results_path) / f"mean_{self.mode}-{i}_map.nii.gz",
                         )
 
     ###################################

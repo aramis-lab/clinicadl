@@ -80,13 +80,7 @@ from clinicadl.utils import cli_param
     default=False,
     help="Overwrite the name if it already exists.",
 )
-@click.option(
-    "--save_nifti",
-    type=bool,
-    default=False,
-    is_flag=True,
-    help="Save the output map(s) in the MAPS in NIfTI format.",
-)
+@cli_param.option.save_nifti
 def cli(
     input_maps_directory,
     data_group,
