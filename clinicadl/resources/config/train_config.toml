@@ -38,7 +38,7 @@ gpu = true
 n_proc = 2
 batch_size = 8
 evaluation_steps = 0
-profiler = False
+profiler = false
 
 [Reproducibility]
 seed = 0

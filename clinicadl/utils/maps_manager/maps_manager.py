@@ -731,6 +731,7 @@ class MapsManager:
             )
             from datetime import datetime
             from pathlib import Path
+
             time = str(datetime.now().time())[:8]
             filename = [Path("profiler") / f"clinica_dl_{time}"]
             # When ClinicaDL will be updated with Distributed Data Parallelism,
@@ -743,10 +744,11 @@ class MapsManager:
                 profile_memory=True,
                 record_shapes=False,
                 with_stack=False,
-                with_flops=False
+                with_flops=False,
             )
         else:
             from contextlib import nullcontext
+
             profiler = nullcontext()
             profiler.step = lambda *args, **kwargs: None
         return profiler
