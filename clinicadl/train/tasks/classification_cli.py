@@ -17,6 +17,7 @@ from .task_utils import task_launcher
 @train_option.n_proc
 @train_option.batch_size
 @train_option.evaluation_steps
+@train_option.profiler
 # Reproducibility
 @train_option.seed
 @train_option.deterministic

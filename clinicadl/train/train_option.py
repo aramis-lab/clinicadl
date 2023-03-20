@@ -44,6 +44,12 @@ evaluation_steps = cli_param.option_group.computational_group.option(
     help="Fix the number of iterations to perform before computing an evaluation. Default will only "
     "perform one evaluation at the end of each epoch.",
 )
+profiler = cli_param.option_group.computational_group.option(
+    "--profiler/--no-profiler",
+    type=bool,
+    default=None,
+    help="Use `--profiler` to enable Pytorch profiler for the first few steps."
+)
 # Reproducibility
 seed = cli_param.option_group.reproducibility_group.option(
     "--seed",
