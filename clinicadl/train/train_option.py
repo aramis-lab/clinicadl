@@ -44,6 +44,12 @@ evaluation_steps = cli_param.option_group.computational_group.option(
     help="Fix the number of iterations to perform before computing an evaluation. Default will only "
     "perform one evaluation at the end of each epoch.",
 )
+amp = cli_param.option_group.computational_group.option(
+    "--amp/--no-amp",
+    type=bool,
+    default=None,
+    help="Enables automatic mixed precision during training and inference."
+)
 # Reproducibility
 seed = cli_param.option_group.reproducibility_group.option(
     "--seed",
