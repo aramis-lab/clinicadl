@@ -721,6 +721,36 @@ class MapsManager:
 
             self._erase_tmp(split)
 
+    def _init_profiler(self):
+        if self.profiler:
+            from torch.profiler import (
+                profile,
+                tensorboard_trace_handler,
+                ProfilerActivity,
+                schedule,
+            )
+            from datetime import datetime
+            from pathlib import Path
+            time = str(datetime.now().time())[:8]
+            filename = [Path("profiler") / f"clinica_dl_{time}"]
+            # When ClinicaDL will be updated with Distributed Data Parallelism,
+            # the next line will be handy, to make sure all processes write in the same file
+            # dist.broadcast_object_list(filename, src=0)
+            profiler = profile(
+                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+                schedule=schedule(wait=2, warmup=2, active=30, repeat=1),
+                on_trace_ready=tensorboard_trace_handler(filename[0]),
+                profile_memory=True,
+                record_shapes=False,
+                with_stack=False,
+                with_flops=False
+            )
+        else:
+            from contextlib import nullcontext
+            profiler = nullcontext()
+            profiler.step = lambda *args, **kwargs: None
+        return profiler
+
     def _train(
         self,
         train_loader,
@@ -771,58 +801,63 @@ class MapsManager:
 
         retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
 
+        profiler = self._init_profiler()
+
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
 
             model.zero_grad()
             evaluation_flag, step_flag = True, True
 
-            for i, data in enumerate(train_loader):
+            with profiler:
+                for i, data in enumerate(train_loader):
 
-                _, loss_dict = model.compute_outputs_and_loss(data, criterion)
-                logger.debug(f"Train loss dictionnary {loss_dict}")
-                loss = loss_dict["loss"]
-                loss.backward()
+                    _, loss_dict = model.compute_outputs_and_loss(data, criterion)
+                    logger.debug(f"Train loss dictionnary {loss_dict}")
+                    loss = loss_dict["loss"]
+                    loss.backward()
 
-                if (i + 1) % self.accumulation_steps == 0:
-                    step_flag = False
-                    optimizer.step()
-                    optimizer.zero_grad()
+                    if (i + 1) % self.accumulation_steps == 0:
+                        step_flag = False
+                        optimizer.step()
+                        optimizer.zero_grad()
 
-                    del loss
+                        del loss
 
-                    # Evaluate the model only when no gradients are accumulated
-                    if (
-                        self.evaluation_steps != 0
-                        and (i + 1) % self.evaluation_steps == 0
-                    ):
-                        evaluation_flag = False
+                        # Evaluate the model only when no gradients are accumulated
+                        if (
+                            self.evaluation_steps != 0
+                            and (i + 1) % self.evaluation_steps == 0
+                        ):
+                            evaluation_flag = False
 
-                        _, metrics_train = self.task_manager.test(
-                            model, train_loader, criterion
-                        )
-                        _, metrics_valid = self.task_manager.test(
-                            model, valid_loader, criterion
-                        )
+                            _, metrics_train = self.task_manager.test(
+                                model, train_loader, criterion
+                            )
+                            _, metrics_valid = self.task_manager.test(
+                                model, valid_loader, criterion
+                            )
 
-                        model.train()
-                        train_loader.dataset.train()
+                            model.train()
+                            train_loader.dataset.train()
 
-                        log_writer.step(
-                            epoch,
-                            i,
-                            metrics_train,
-                            metrics_valid,
-                            len(train_loader),
-                        )
-                        logger.info(
-                            f"{self.mode} level training loss is {metrics_train['loss']} "
-                            f"at the end of iteration {i}"
-                        )
-                        logger.info(
-                            f"{self.mode} level validation loss is {metrics_valid['loss']} "
-                            f"at the end of iteration {i}"
-                        )
+                            log_writer.step(
+                                epoch,
+                                i,
+                                metrics_train,
+                                metrics_valid,
+                                len(train_loader),
+                            )
+                            logger.info(
+                                f"{self.mode} level training loss is {metrics_train['loss']} "
+                                f"at the end of iteration {i}"
+                            )
+                            logger.info(
+                                f"{self.mode} level validation loss is {metrics_valid['loss']} "
+                                f"at the end of iteration {i}"
+                            )
+
+                    profiler.step()
 
             # If no step has been performed, raise Exception
             if step_flag:
