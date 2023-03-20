@@ -14,6 +14,15 @@ class StdLevelFilter(logging.Filter):
         return self.err
 
 
+class Rank0Filter(logging.Filter):  # only log if it's rank 0 to avoid mess
+    def __init__(self, rank: int = 0):
+        super().__init__()
+        self.rank = rank
+
+    def filter(self, record):
+        return self.rank == 0
+
+
 # Create formatter for console
 class ConsoleFormatter(logging.Formatter):
 
