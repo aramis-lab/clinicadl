@@ -853,8 +853,12 @@ class MapsManager:
             model.zero_grad(set_to_none=True)
             logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
-            _, metrics_train = self.task_manager.test(model, train_loader, criterion, amp=self.amp)
-            _, metrics_valid = self.task_manager.test(model, valid_loader, criterion, amp=self.amp)
+            _, metrics_train = self.task_manager.test(
+                model, train_loader, criterion, amp=self.amp
+            )
+            _, metrics_valid = self.task_manager.test(
+                model, valid_loader, criterion, amp=self.amp
+            )
 
             model.train()
             train_loader.dataset.train()

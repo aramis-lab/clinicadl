@@ -173,7 +173,7 @@ class TaskManager:
         dataloader: DataLoader,
         criterion: _Loss,
         use_labels: bool = True,
-        amp: bool = False
+        amp: bool = False,
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
         """
         Computes the predictions and evaluation metrics.
