@@ -777,7 +777,7 @@ class MapsManager:
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
 
-            model.zero_grad()
+            model.zero_grad(set_to_none=True)
             evaluation_flag, step_flag = True, True
 
             for i, data in enumerate(train_loader):
@@ -792,7 +792,7 @@ class MapsManager:
                     step_flag = False
                     scaler.step(optimizer)
                     scaler.update()
-                    optimizer.zero_grad()
+                    optimizer.zero_grad(set_to_none=True)
 
                     del loss
 
@@ -847,10 +847,10 @@ class MapsManager:
             if (i + 1) % self.accumulation_steps != 0:
                 scaler.step(optimizer)
                 scaler.update()
-                optimizer.zero_grad()
+                optimizer.zero_grad(set_to_none=True)
 
             # Always test the results and save them once at the end of the epoch
-            model.zero_grad()
+            model.zero_grad(set_to_none=True)
             logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
             _, metrics_train = self.task_manager.test(model, train_loader, criterion, amp=self.amp)
