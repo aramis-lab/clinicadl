@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
 import torch
+import torch.distributed as dist
 from torch import Tensor
 from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader, Sampler
@@ -132,7 +133,11 @@ class TaskManager:
     @staticmethod
     @abstractmethod
     def generate_sampler(
-        dataset: CapsDataset, sampler_option: str = "random", n_bins: int = 5
+        dataset: CapsDataset,
+        sampler_option: str = "random",
+        n_bins: int = 5,
+        world_size: Optional[int] = None,
+        rank: Optional[int] = None,
     ) -> Sampler:
         """
         Returns sampler according to the wanted options.
@@ -195,7 +200,7 @@ class TaskManager:
                 outputs, loss_dict = model.compute_outputs_and_loss(
                     data, criterion, use_labels=use_labels
                 )
-                total_loss += loss_dict["loss"].item()
+                total_loss += loss_dict["loss"]
 
                 # Generate detailed DataFrame
                 for idx in range(len(data["participant_id"])):
@@ -204,13 +209,21 @@ class TaskManager:
                     results_df = pd.concat([results_df, row_df])
 
                 del outputs, loss_dict
-            results_df.reset_index(inplace=True, drop=True)
+        dataframes = [None] * dist.get_world_size()
+        dist.gather_object(
+            results_df, dataframes if dist.get_rank() == 0 else None, dst=0
+        )
+        if dist.get_rank() == 0:
+            results_df = pd.concat(dataframes)
+        del dataframes
+        results_df.reset_index(inplace=True, drop=True)
 
         if not use_labels:
             metrics_dict = None
         else:
             metrics_dict = self.compute_metrics(results_df)
-            metrics_dict["loss"] = total_loss
+            dist.reduce(total_loss, dst=0)
+            metrics_dict["loss"] = total_loss.item()
         torch.cuda.empty_cache()
 
         return results_df, metrics_dict
