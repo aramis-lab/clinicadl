@@ -28,9 +28,9 @@ from clinicadl.utils.tsvtools_utils import extract_baseline
 from .generate_utils import (
     find_file_type,
     generate_shepplogan_phantom,
-    hypo_synthesis,
     im_loss_roi_gaussian_distribution,
     load_and_check_tsv,
+    mask_processing,
     write_missing_mods,
 )
 
@@ -416,39 +416,52 @@ def generate_hypometabolic_dataset(
     n_proc: int,
     tsv_path: Optional[str] = None,
     preprocessing: str = "pet-linear",
-    pathology: str = "alzheimer",
-    pathology_percent: float = 60,
-    multi_cohort: bool = False,
+    dementia: str = "ad",
+    dementia_percent: float = 30,
+    sigma: int = 5,
     uncropped_image: bool = False,
     acq_label: str = "18FFDG",
     suvr_reference_region: str = "cerebellumPons2",
 ):
     """
-    Generates a fully separable dataset.
+    Generates a dataset, based on the images of the CAPS directory, where all
+    the images are processed using a mask to generate a specific dementia.
 
-    Generates a dataset, based on the images of the CAPS directory, where a
-    half of the image is processed using a mask to occlude a specific region.
-    This procedure creates a dataset fully separable (images with half-right
-    processed and image with half-left processed)
+    Parameters
+    ----------
+    caps_directory: str (Path)
+        Path to the CAPS directory.
+    output_dir: str (Path)
+        Folder containing the synthetic dataset in CAPS format.
+    n_subjects: int
+        Number of subjects in each class of the synthetic dataset.
+    n_proc: int
+        Number of cores used during the task.
+    tsv_path: str (Path)
+        Path to tsv file of list of subjects/sessions.
+    preprocessing: str
+        Preprocessing performed. For now it must be 'pet-linear'.
+    dementia: str (Path)
+        Name of the dementia to generate.
+    dementia_percent: float
+        Percentage of dementia applied.
+    sigma: int
+        ????
+    uncropped_image: bool
+        If True the uncropped image of `t1-linear` or `pet-linear` will be used.
+    acq_label: str
+        Name of the tracer when using `pet-linear` preprocessing.
+    suvr_reference_region: str
+        Name of the reference region when using `pet-linear` preprocessing.
 
-    Args:
-        caps_directory: path to the CAPS directory.
-        output_dir: folder containing the synthetic dataset in CAPS format.
-        n_subjects: number of subjects in each class of the synthetic dataset.
-        tsv_path: path to tsv file of list of subjects/sessions.
-        preprocessing: preprocessing performed. Must be in ['linear', 'extensive'].
-        mask_path: path to the extracted masks to generate the two labels.
-        atrophy_percent: percentage of atrophy applied.
-        multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
-        uncropped_image: If True the uncropped image of `t1-linear` or `pet-linear` will be used.
-        acq_label: name of the tracer when using `pet-linear` preprocessing.
-        suvr_reference_region: name of the reference region when using `pet-linear` preprocessing.
+    Returns
+    -------
+    Folder structure where images are stored in CAPS format.
 
-    Returns:
-        Folder structure where images are stored in CAPS format.
 
-    Raises:
-        IndexError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
+    Raises
+    ------
+    IndexError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
     """
     from pathlib import Path
 
@@ -461,19 +474,13 @@ def generate_hypometabolic_dataset(
             "preprocessing": preprocessing,
             "n_subjects": n_subjects,
             "n_proc": n_proc,
-            "pathology": pathology,
-            "pathology_percent": pathology_percent,
+            "dementia": dementia,
+            "dementia_percent": dementia_percent,
         }
     )
 
-    dementias = ["ad", "bvftd", "lvppa", "nfvppa", "pca", "svppa"]
-    if pathology not in dementias:
-        raise ClinicaDLArgumentError(
-            f"The pathology {pathology} is not in the list of dementias that can be generate,"
-            "Please chose a dementia in the following list : ad, bvftd, lvppa, nfvppa, pca and svppa"
-        )
     # Transform caps_directory in dict
-    caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=multi_cohort)
+    caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=False)
     # Read DataFrame
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
     data_df = extract_baseline(data_df)
@@ -482,6 +489,7 @@ def generate_hypometabolic_dataset(
         raise IndexError(
             f"The number of subjects {n_subjects} cannot be higher "
             f"than the number of subjects in the baseline dataset of size {len(data_df)}"
+            f"Please add the '--n_subjects' option and re-run the command."
         )
 
     mask_path = None
@@ -491,14 +499,14 @@ def generate_hypometabolic_dataset(
         cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks_hypo"
         url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/hypo/"
         FILE1 = RemoteFileStructure(
-            filename=f"mask_hypo_{pathology}.nii",
+            filename=f"mask_hypo_{dementia}.nii",
             url=url_aramis,
             checksum="drgjeryt",
         )
         cache_clinicadl.mkdir(parents=True, exist_ok=True)
 
-        if not (cache_clinicadl / f"mask_hypo_{pathology}.nii").is_file():
-            logger.info(f"Downloading {pathology} masks...")
+        if not (cache_clinicadl / f"mask_hypo_{dementia}.nii").is_file():
+            logger.info(f"Downloading {dementia} masks...")
             # mask_path = fetch_file(FILE1, cache_clinicadl)
             try:
                 mask_path = fetch_file(FILE1, cache_clinicadl)
@@ -510,77 +518,58 @@ def generate_hypometabolic_dataset(
                     and provide a valid path."""
                 )
         else:
-            mask_path = cache_clinicadl / f"mask_hypo_{pathology}.nii"
+            mask_path = cache_clinicadl / f"mask_hypo_{dementia}.nii"
             mask_nii = nib.load(mask_path)
-
-    # Create subjects dir
-
-    (Path(output_dir) / "subjects").mkdir(parents=True, exist_ok=True)
-
-    # Set sigma value depending on percentage
-    if pathology_percent >= 70:
-        sigma = 9
-    elif pathology_percent >= 50:
-        sigma = 6
-    else:
-        sigma = 5
-
-    # Output tsv file
-    columns = ["participant_id", "session_id", "diagnosis", "age_bl", "sex"]
-    output_df = pd.DataFrame(columns=columns)
-    diagnosis_list = ["AD", "CN"]
 
     # Find appropriate preprocessing file type
     file_type = find_file_type(
         preprocessing, uncropped_image, acq_label, suvr_reference_region
     )
 
+    # Output tsv file
+    columns = ["participant_id", "session_id", "dementia", "percentage"]
+    output_df = pd.DataFrame(columns=columns)
+    participants = [data_df.loc[i, "participant_id"] for i in range(n_subjects)]
+    sessions = [data_df.loc[i, "session_id"] for i in range(n_subjects)]
+    cohort = caps_directory
+
+    images_paths = clinica_file_reader(participants, sessions, cohort, file_type)[0]
+
+    image_nii = nib.load(images_paths[0])
+
+    mask_resample_nii = resample_to_img(mask_nii, image_nii, interpolation="nearest")
+    mask = mask_resample_nii.get_fdata()
+    mask = mask_processing(mask, dementia_percent, sigma)
+
+    # Create subjects dir
+    (Path(output_dir) / "subjects").mkdir(parents=True, exist_ok=True)
+
     def generate_hypometabolic_image(i, output_df):
         # for i in range(n_subjects):
-        data_idx = i
-        label = i
-
-        participant_id = data_df.loc[data_idx, "participant_id"]
-        session_id = data_df.loc[data_idx, "session_id"]
-        cohort = data_df.loc[data_idx, "cohort"]
-        image_paths = clinica_file_reader(
-            [participant_id], [session_id], caps_dict[cohort], file_type
-        )[0]
-        image_nii = nib.load(image_paths[0])
+        image_path = images_paths[i]
+        image_nii = nib.load(image_path)
         image = image_nii.get_fdata()
 
-        mask_resample_nii = resample_to_img(
-            mask_nii, image_nii, interpolation="nearest"
-        )
-        mask = mask_resample_nii.get_fdata()
-
-        input_filename = basename(image_paths[0])
+        input_filename = basename(image_path)
         filename_pattern = "_".join(input_filename.split("_")[2::])
 
         hypo_image_nii_dir = (
-            Path(output_dir)
-            / "subjects"
-            / f"sub-HYPO{i}_{pathology}-{pathology_percent}"
-            / session_id
-            / preprocessing
+            Path(output_dir) / "subjects" / f"sub-HYPO{i}" / sessions[i] / preprocessing
         )
-        hypo_image_nii_filename = f"sub-HYPO{i}_{pathology}-{pathology_percent}_{session_id}_{filename_pattern}"
-
+        hypo_image_nii_filename = f"sub-HYPO{i}_{dementia}-{dementia_percent}_{sessions[i]}_{filename_pattern}"
         hypo_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
         # Create atrophied image
-        hypo_image = hypo_synthesis(image, mask, pathology_percent, sigma)
-
+        hypo_image = image * mask
         hypo_image_nii = nib.Nifti1Image(hypo_image, affine=image_nii.affine)
         hypo_image_nii.to_filename(hypo_image_nii_dir / hypo_image_nii_filename)
 
         # Append row to output tsv
         row = [
-            f"sub-HYP0{i}_{pathology}-{pathology_percent}",
-            session_id,
-            diagnosis_list[label],
-            60,
-            "F",
+            f"sub-HYP0{i}_{dementia}-{dementia_percent}",
+            sessions[i],
+            dementia,
+            dementia_percent,
         ]
         row_df = pd.DataFrame([row], columns=columns)
         output_df = pd.concat([output_df, row_df])

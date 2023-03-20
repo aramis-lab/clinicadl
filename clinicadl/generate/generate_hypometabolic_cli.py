@@ -10,18 +10,25 @@ from clinicadl.utils import cli_param
 @cli_param.option.n_subjects
 @cli_param.option.n_proc
 @click.option(
-    "--pathology",
-    "-p",
-    type=str,
+    "--dementia",
+    "-d",
+    type=click.Choice(["ad", "bvftd", "lvppa", "nfvppa", "pca", "svppa"]),
     default="ad",
     help="Path to the extracted masks to generate the two labels. "
     "Default will try to download masks and store them at '~/.cache/clinicadl'.",
 )
 @click.option(
-    "--pathology_percent",
+    "--dementia_percent",
+    "-dp",
     type=float,
-    default=60.0,
-    help="Percentage of pathology applied.",
+    default=30.0,
+    help="Percentage of dementia applied.",
+)
+@click.option(
+    "--sigma",
+    type=int,
+    default=5,
+    help="sigma ?",
 )
 @cli_param.option.use_uncropped_image
 @cli_param.option.acq_label
@@ -32,8 +39,9 @@ def cli(
     participants_tsv,
     n_subjects,
     n_proc,
-    pathology,
-    pathology_percent,
+    sigma,
+    dementia,
+    dementia_percent,
     use_uncropped_image,
     acq_label,
     suvr_reference_region,
@@ -53,8 +61,9 @@ def cli(
         output_dir=generated_caps_directory,
         n_subjects=n_subjects,
         n_proc=n_proc,
-        pathology=pathology,
-        pathology_percent=pathology_percent,
+        dementia=dementia,
+        dementia_percent=dementia_percent,
+        sigma=sigma,
         uncropped_image=use_uncropped_image,
         acq_label="18FFDG",
         suvr_reference_region="cerebellumPons2",
