@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader
+from torch.cuda.amp import GradScaler, autocast
 
 from clinicadl.utils.caps_dataset.data import (
     get_transforms,
@@ -771,6 +772,8 @@ class MapsManager:
 
         retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
 
+        scaler = GradScaler(enabled=self.amp)
+
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
 
@@ -779,14 +782,16 @@ class MapsManager:
 
             for i, data in enumerate(train_loader):
 
-                _, loss_dict = model.compute_outputs_and_loss(data, criterion)
+                with autocast(enabled=self.amp):
+                    _, loss_dict = model.compute_outputs_and_loss(data, criterion)
                 logger.debug(f"Train loss dictionnary {loss_dict}")
                 loss = loss_dict["loss"]
-                loss.backward()
+                scaler.scale(loss).backward()
 
                 if (i + 1) % self.accumulation_steps == 0:
                     step_flag = False
-                    optimizer.step()
+                    scaler.step(optimizer)
+                    scaler.update()
                     optimizer.zero_grad()
 
                     del loss
@@ -799,10 +804,10 @@ class MapsManager:
                         evaluation_flag = False
 
                         _, metrics_train = self.task_manager.test(
-                            model, train_loader, criterion
+                            model, train_loader, criterion, amp=self.amp
                         )
                         _, metrics_valid = self.task_manager.test(
-                            model, valid_loader, criterion
+                            model, valid_loader, criterion, amp=self.amp
                         )
 
                         model.train()
@@ -840,15 +845,16 @@ class MapsManager:
 
             # Update weights one last time if gradients were computed without update
             if (i + 1) % self.accumulation_steps != 0:
-                optimizer.step()
+                scaler.step(optimizer)
+                scaler.update()
                 optimizer.zero_grad()
 
             # Always test the results and save them once at the end of the epoch
             model.zero_grad()
             logger.debug(f"Last checkpoint at the end of the epoch {epoch}")
 
-            _, metrics_train = self.task_manager.test(model, train_loader, criterion)
-            _, metrics_valid = self.task_manager.test(model, valid_loader, criterion)
+            _, metrics_train = self.task_manager.test(model, train_loader, criterion, amp=self.amp)
+            _, metrics_valid = self.task_manager.test(model, valid_loader, criterion, amp=self.amp)
 
             model.train()
             train_loader.dataset.train()
@@ -972,7 +978,7 @@ class MapsManager:
             )
 
             prediction_df, metrics = self.task_manager.test(
-                model, dataloader, criterion, use_labels=use_labels
+                model, dataloader, criterion, use_labels=use_labels, amp=self.amp
             )
             if use_labels:
                 if network is not None:
