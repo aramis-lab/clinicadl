@@ -10,8 +10,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
-from torch.utils.data import DataLoader
 from torch.cuda.amp import GradScaler, autocast
+from torch.utils.data import DataLoader
 
 from clinicadl.utils.caps_dataset.data import (
     get_transforms,

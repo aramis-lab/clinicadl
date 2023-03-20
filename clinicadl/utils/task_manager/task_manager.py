@@ -4,9 +4,9 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 import pandas as pd
 import torch
 from torch import Tensor
+from torch.cuda.amp import autocast
 from torch.nn.modules.loss import _Loss
 from torch.utils.data import DataLoader, Sampler
-from torch.cuda.amp import autocast
 
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.metric_module import MetricModule
