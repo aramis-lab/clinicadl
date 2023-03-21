@@ -5,6 +5,8 @@ from torch import nn
 from torchvision.models.resnet import BasicBlock
 
 from clinicadl.utils.network.cnn.resnet import ResNetDesigner, model_urls
+from clinicadl.utils.network.cnn.resnet3D import ResNetDesigner3D
+from clinicadl.utils.network.cnn.SECNN import SECNNDesigner3D
 from clinicadl.utils.network.network_utils import PadMaxPool2d, PadMaxPool3d
 from clinicadl.utils.network.sub_network import CNN
 
@@ -287,3 +289,43 @@ class Stride_Conv5_FC3(CNN):
     @staticmethod
     def get_task():
         return ["classification", "regression"]
+
+
+class ResNet3D(CNN):
+    def __init__(
+        self, input_size=[1, 169, 208, 179], gpu=False, output_size=2, dropout=0.5
+    ):
+        model = ResNetDesigner3D()
+
+        convolutions = nn.Sequential(
+            model.layer0, model.layer1, model.layer2, model.layer3, model.layer4
+        )
+
+        fc = model.fc
+
+        super().__init__(
+            convolutions=convolutions,
+            fc=fc,
+            n_classes=output_size,
+            gpu=gpu,
+        )
+
+
+class SE_CNN(CNN):
+    def __init__(
+        self, input_size=[1, 169, 208, 179], gpu=True, output_size=2, dropout=0.5
+    ):
+        model = SECNNDesigner3D()
+
+        convolutions = nn.Sequential(
+            model.layer0, model.layer1, model.layer2, model.layer3, model.layer4
+        )
+
+        fc = model.fc
+
+        super().__init__(
+            convolutions=convolutions,
+            fc=fc,
+            n_classes=output_size,
+            gpu=gpu,
+        )
