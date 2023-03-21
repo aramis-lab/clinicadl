@@ -1,7 +1,5 @@
 import torch.nn as nn
 import torch
-import torch.nn.functional as F
-from clinicadl.utils.network.network_utils import PadMaxPool3d
 
 
 class Flatten(nn.Module):
