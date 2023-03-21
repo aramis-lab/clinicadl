@@ -71,7 +71,6 @@ def compute_folder_and_file_type(
         pet_linear_nii,
     )
 
-
     if parameters["preprocessing"] == "t1-linear":
         mod_subfolder = "t1_linear"
         if parameters["use_uncropped_image"]:
