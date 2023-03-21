@@ -7,7 +7,6 @@ from clinica.utils.pet import LIST_SUVR_REFERENCE_REGIONS
 diagnoses = click.option(
     "--diagnoses",
     "-d",
-    type=click.Choice(["AD", "CN", "MCI", "sMCI", "pMCI", "BV"]),
     multiple=True,
     default=("AD", "CN"),
     help="Labels selected for the demographic analysis used in the context of Alzheimer's Disease classification.",
@@ -33,7 +32,29 @@ subset_name = click.option(
     default="validation",
     help="Name of the subset that is complementary to train.",
 )
-
+test_tsv = click.option(
+    "--test_tsv",
+    "-tt",
+    help="Name of the test file in tsv format",
+    type=str,
+    default=None,
+)
+caps_directory = click.option(
+    "--caps_directory",
+    "-c",
+    help="input folder of a CAPS compliant dataset",
+    type=str,
+    default=None,
+)
+variables_of_interest = click.option(
+    "--variables_of_interest",
+    "-voi",
+    help="Variables of interest that will be kept in the final lists. "
+    "Will always keep the group (that correspond to the diagnosis in most case), subgroup (that correspond to the progression of the disease in the case of a progressive disease), age and sex needed for the split procedure.",
+    type=str,
+    multiple=True,
+    default=None,
+)
 # GENERATE
 participant_list = click.option(
     "--participants_tsv",
@@ -109,11 +130,11 @@ use_uncropped_image = click.option(
 
 acq_label = click.option(
     "--acq_label",
-    type=click.Choice(["av45", "fdg"]),
+    type=str,
     help=(
         "Acquisition label if MODALITY is `pet-linear`. "
-        "Name of the label given to the PET acquisition, specifying  the tracer used (acq-<acq_label>). "
-        "For instance it can be 'fdg' for fluorodeoxyglucose or 'av45' for florbetapir."
+        "Name of the tracer used for the PET acquisition (trc-<acq_label>). "
+        "For instance it can be '18FFDG' for fluorodeoxyglucose or '18FAV45' for florbetapir."
     ),
 )
 suvr_reference_region = click.option(

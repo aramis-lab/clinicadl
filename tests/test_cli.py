@@ -10,14 +10,14 @@ from clinicadl.cmdline import cli
 # Test for the first level at the command line
 @pytest.fixture(
     params=[
-        "extract",
+        "prepare-data",
         "generate",
         "interpret",
         "predict",
         "quality-check",
         "random-search",
         "train",
-        "tsvtool",
+        "tsvtools",
     ]
 )
 def cli_args_first_lv(request):
@@ -33,7 +33,7 @@ def test_first_lv(cli_args_first_lv):
     assert result.exit_code == 0
 
 
-# Test for extract cli, second level
+# Test for prepare-data cli, second level
 @pytest.fixture(
     params=[
         "image",
@@ -42,7 +42,7 @@ def test_first_lv(cli_args_first_lv):
         "roi",
     ]
 )
-def extract_cli_arg1(request):
+def prepare_data_cli_arg1(request):
     return request.param
 
 
@@ -53,16 +53,16 @@ def extract_cli_arg1(request):
         "custom",
     ]
 )
-def extract_cli_arg2(request):
+def prepare_data_cli_arg2(request):
     return request.param
 
 
-def test_second_lv_extract(extract_cli_arg1, extract_cli_arg2):
+def test_second_lv_prepare_data(prepare_data_cli_arg1, prepare_data_cli_arg2):
     runner = CliRunner()
-    arg1 = extract_cli_arg1
-    arg2 = extract_cli_arg2
-    print(f"Testing input extract cli {arg1} {arg2}")
-    result = runner.invoke(cli, f"extract {arg1} {arg2} -h")
+    arg1 = prepare_data_cli_arg1
+    arg2 = prepare_data_cli_arg2
+    print(f"Testing input prepare_data cli {arg1} {arg2}")
+    result = runner.invoke(cli, f"prepare-data {arg1} {arg2} -h")
     assert result.exit_code == 0
 
 
@@ -179,10 +179,12 @@ def test_second_lv_quality_check(qc_cli_arg1):
 @pytest.fixture(
     params=[
         "analysis",
-        "getlabels",
+        "get-labels",
         "kfold",
-        "restrict",
         "split",
+        "prepare-experiment",
+        "get-progression",
+        "get-metadata",
     ]
 )
 def tsvtool_cli_arg1(request):
@@ -192,6 +194,6 @@ def tsvtool_cli_arg1(request):
 def test_second_lv_tsvtool(tsvtool_cli_arg1):
     runner = CliRunner()
     arg1 = tsvtool_cli_arg1
-    print(f"Testing input tsvtool cli {arg1}")
-    result = runner.invoke(cli, f"tsvtool {arg1} -h")
+    print(f"Testing input tsvtools cli {arg1}")
+    result = runner.invoke(cli, f"tsvtools {arg1} -h")
     assert result.exit_code == 0

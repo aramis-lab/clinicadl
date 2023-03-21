@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "clinicadl"
-version = "1.1.1"
+version = "1.2.0"
 description = "Framework for the reproducible processing of neuroimaging data with deep learning methods"
 license = "MIT"
 authors = ["ARAMIS Lab"]
@@ -28,7 +28,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
-clinica = "^0.7.0"
+clinica = "^0.7.3"
 torch = "^1.8.0"
 torchvision = "*"
 tensorboard = "*"
@@ -37,15 +37,12 @@ pandas = "^1.2"
 numpy = "^1.17"
 scikit-learn = "^1.0"
 scikit-image = "^0.19"
+joblib = "^1.2.0"
 click = "^8"
 click-option-group = "^0.5"
 pynvml = "*"
-# docs
-mkdocs = {version = "^1.1", optional = true}
-mkdocs-material = {version = "*", optional = true}
-pymdown-extensions = {version = "*", optional = true}
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 black = "*"
 isort = "*"
 pre-commit = "*"
@@ -54,12 +51,12 @@ pytest-timeout = "*"
 pytest-xdist = "*"
 pytest-cov = "^3.0.0"
 
-[tool.poetry.extras]
-docs = [
-    "mkdocs",
-    "mkdocs-material",
-    "pymdown-extensions"
-]
+[tool.poetry.group.docs]
+optional = true
+[tool.poetry.group.docs.dependencies]
+mkdocs = "^1.1"
+mkdocs-material = "*"
+pymdown-extensions = "*"
 
 [tool.poetry.scripts]
 clinicadl = "clinicadl.cmdline:cli"

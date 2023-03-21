@@ -8,8 +8,6 @@ from os import path
 
 from clinicadl import MapsManager
 
-logger = getLogger("clinicadl")
-
 
 def replace_arg(options, key_name, value):
     if value is not None:

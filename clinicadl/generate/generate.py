@@ -4,6 +4,7 @@
 This file generates data for trivial or intractable (random) data for binary classification.
 """
 import tarfile
+from logging import getLogger
 from os import makedirs
 from os.path import basename, dirname, exists, join
 from typing import Dict, Optional, Tuple
@@ -14,7 +15,7 @@ import pandas as pd
 import torch
 from clinica.utils.inputs import RemoteFileStructure, clinica_file_reader, fetch_file
 
-from clinicadl.extract.extract_utils import compute_extract_json
+from clinicadl.prepare_data.prepare_data_utils import compute_extract_json
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
 from clinicadl.utils.preprocessing import write_preprocessing
@@ -27,6 +28,8 @@ from .generate_utils import (
     load_and_check_tsv,
     write_missing_mods,
 )
+
+logger = getLogger("clinicadl.generate")
 
 
 def generate_random_dataset(
@@ -135,6 +138,8 @@ def generate_random_dataset(
 
     write_missing_mods(output_dir, output_df)
 
+    logger.info(f"Random dataset was generated at {output_dir}")
+
 
 def generate_trivial_dataset(
     caps_directory: str,
@@ -192,7 +197,6 @@ def generate_trivial_dataset(
 
     # Transform caps_directory in dict
     caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=multi_cohort)
-
     # Read DataFrame
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
     data_df = extract_baseline(data_df)
@@ -282,16 +286,17 @@ def generate_trivial_dataset(
         trivial_image_nii.to_filename(
             join(trivial_image_nii_dir, trivial_image_nii_filename)
         )
-        print(join(trivial_image_nii_dir, trivial_image_nii_filename))
 
         # Append row to output tsv
         row = [f"sub-TRIV{i}", session_id, diagnosis_list[label], 60, "F"]
         row_df = pd.DataFrame([row], columns=columns)
-        output_df = output_df.append(row_df)
+        output_df = pd.concat([output_df, row_df])
 
     output_df.to_csv(join(output_dir, "data.tsv"), sep="\t", index=False)
 
     write_missing_mods(output_dir, output_df)
+
+    logger.info(f"Trivial dataset was generated at {output_dir}")
 
 
 def generate_shepplogan_dataset(
@@ -395,3 +400,5 @@ def generate_shepplogan_dataset(
     }
     write_preprocessing(preprocessing_dict, output_dir)
     write_missing_mods(output_dir, data_df)
+
+    logger.info(f"Shepplogan dataset was generated at {output_dir}")

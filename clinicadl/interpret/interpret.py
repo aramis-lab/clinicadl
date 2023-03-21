@@ -7,6 +7,7 @@ def interpret(
     maps_dir: str,
     data_group: str,
     name: str,
+    method: str,
     caps_directory: str,
     tsv_path: str,
     selection_metrics: List[str],
@@ -20,6 +21,7 @@ def interpret(
     verbose=0,
     overwrite: bool = False,
     overwrite_name: bool = False,
+    level: int = None,
 ):
     """
     This function loads a MAPS and interprets all the models selected using a metric in selection_metrics.
@@ -27,6 +29,8 @@ def interpret(
     Args:
         maps_dir: path to the MAPS.
         data_group: name of the data group interpreted.
+        name: name of the attribution map extracted.
+        method: method used for extraction (ex: gradients, grad-cam...).
         caps_directory: path to the CAPS folder. For more information please refer to
             [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
         tsv_path: path to a TSV file containing the list of participants and sessions to interpret.
@@ -41,6 +45,7 @@ def interpret(
         verbose: level of verbosity (0: warning, 1: info, 2: debug).
         overwrite: If True former definition of data group is erased.
         overwrite_name: If True former interpretability map with the same name is erased.
+        level: layer number in the convolutional part after which the feature map is chosen.
     """
     verbose_list = ["warning", "info", "debug"]
     if verbose > 2:
@@ -53,6 +58,7 @@ def interpret(
     maps_manager.interpret(
         data_group=data_group,
         name=name,
+        method=method,
         caps_directory=caps_directory,
         tsv_path=tsv_path,
         selection_metrics=selection_metrics,
@@ -65,4 +71,5 @@ def interpret(
         gpu=gpu,
         overwrite=overwrite,
         overwrite_name=overwrite_name,
+        level=level,
     )

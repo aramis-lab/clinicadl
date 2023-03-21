@@ -91,7 +91,7 @@ nav:
     - Resume training: Train/Resume.md
     - Implementation details: Train/Details.md
   - Inference using trained models: Predict.md
-  - Interpretation with gradient maps: Interpret.md
+  - Interpret with attribution maps: Interpret.md
   - Advanced user guide:
       - Customize your training: Contribute/Custom.md
       - Test your modifications: Contribute/Test.md

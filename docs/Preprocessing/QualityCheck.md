@@ -10,8 +10,8 @@ pipeline.
 The quality check procedure relies on a pretrained network that learned to classify images 
 that are adequately registered to a template from others for which the registration failed. 
 It reproduces the quality check procedure performed in [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)]. 
-It is an adaptation of [[Fonov et al., 2018](https://www.biorxiv.org/content/10.1101/303487v1)], using their pretrained models. 
-Their original code can be found on [GitHub](https://github.com/vfonov/deep-qc).
+It is an adaptation of [[Fonov et al., 2022](https://doi.org/10.1016/j.neuroimage.2022.119266)], using their pretrained models. 
+Their original code can be found on [GitHub](https://github.com/vfonov/darq).
 
 !!! warning
     This quality check procedure is specific to the `t1-linear` pipeline and should not be applied 
@@ -22,7 +22,7 @@ Their original code can be found on [GitHub](https://github.com/vfonov/deep-qc).
 
 
 ### Prerequisites
-You need to execute the `clinica run t1-linear` and `clinicadl extract` pipelines 
+You need to execute the `clinica run t1-linear` and `clinicadl prepare-data` pipelines 
 prior to running this task.
 
 ### Running the task
@@ -39,13 +39,15 @@ and the output of the present command, both in a [CAPS hierarchy](https://aramis
 
 Options:
 
-- `--subjects_sessions_tsv` (Path) is the path to a TSV file containing the subjects/sessions list to check (filename included).
+- `--participants_tsv` (Path) is the path to a TSV file containing the subjects/sessions list to check (filename included).
 Default will process all sessions available in `caps_directory`.
 - `--threshold` (float) is the threshold applied to the output probability when deciding if the image passed or failed. 
 Default value: `0.5`.
 - `--batch_size` (int) is the size of the batch used in the DataLoader. Default value: `1`.
 - `--n_proc` (int) is the number of workers used by the DataLoader. Default value: `2`.
-- `--gpu/--no-gpu` (bool) Use GPU for computing optimization. Default behaviour is to try to use a GPU and to raise an error if it is not found.
+- `--gpu/--no_gpu` (bool) Use GPU for computing optimization. Default behaviour is to try to use a GPU and to raise an error if it is not found.
+- `--use_tensor` (bool) is a flag allowing the pipeline to run on the extracted tensors and not on the nifti images. 
+- `--network` (str) is the architecture chosen for the network (to chose between `darq`, `sq101` and `deep_qc`)
 
 ### Outputs
 
@@ -53,13 +55,13 @@ The output of the quality check is a TSV file in which all the sessions (identif
 are associated with a `pass_probability` value and a True/False `pass` value depending on the chosen threshold. 
 An example of TSV file is:
 
-| **participant_id** | **session_id** | **pass_probability**   | **pass**  |
-|--------------------|----------------|------------------------|-----------|
-| sub-CLNC01         | ses-M00        | 0.9936990737915039     | True      |
-| sub-CLNC02         | ses-M00        | 0.9772214889526367     | True      |
-| sub-CLNC03         | ses-M00        | 0.7292165160179138     | True      |
-| sub-CLNC04         | ses-M00        | 0.1549495905637741     | False     |
-| ...                |  ...           |  ...                   |  ...      |
+| **participant_id** | **session_id** | **pass_probability**   |
+|--------------------|----------------|------------------------|
+| sub-CLNC01         | ses-M00        | 0.9936990737915039     |
+| sub-CLNC02         | ses-M00        | 0.9772214889526367     |
+| sub-CLNC03         | ses-M00        | 0.7292165160179138     |
+| sub-CLNC04         | ses-M00        | 0.1549495905637741     |
+| ...                |  ...           |  ...                   |
 
 ## `quality-check t1-volume` - Evaluate `t1-volume` registration and gray matter segmentation
 
@@ -107,3 +109,4 @@ This pipeline outputs 4 files:
     This quality check is really conservative and may keep some images that are not of good quality.
     You may want to check the last images kept at each step to assess if their quality is good enough 
     for your application.
+ 
