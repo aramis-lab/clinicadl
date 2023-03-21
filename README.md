@@ -18,7 +18,9 @@
   <a href='https://clinicadl.readthedocs.io/en/latest/?badge=latest'>
     <img src='https://readthedocs.org/projects/clinicadl/badge/?version=latest' alt='Documentation Status' />
   </a>
-
+  <a href='https://pepy.tech/project/clinicadl'>
+    <img src='https://static.pepy.tech/badge/clinicadl/month' alt='Downloads' />
+  </a>
 </p>
 
 <p align="center">

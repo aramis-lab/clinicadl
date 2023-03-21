@@ -17,10 +17,6 @@ build:
 clean.doc:
 	@$(RM) -rf site
 
-.PHONY: config.testpypi
-config.testpypi:
-	@$(POETRY) config repositories.testpypi https://test.pypi.org/legacy
-
 ## doc			: Build the documentation.
 .PHONY: doc
 doc: clean.doc env.doc
@@ -65,15 +61,3 @@ lint.black: env.dev
 .PHONY: lint.isort
 lint.isort: env.dev
 	@$(POETRY) run isort --check --diff $(PACKAGES)
-
-## publish		: Publish the package to pypi.
-.PHONY: publish
-publish: publish.pypi
-
-.PHONY: publish.pypi
-publish.pypi: build
-	@$(POETRY) publish
-
-.PHONY: publish.testpypi
-publish.testpypi: build config.testpypi
-	@$(POETRY) publish --repository testpypi

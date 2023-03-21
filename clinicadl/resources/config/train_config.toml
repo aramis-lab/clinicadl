@@ -20,6 +20,7 @@ KL_weight = 1
 [Classification]
 selection_metrics = ["loss"]
 label = "diagnosis"
+label_code = {}
 selection_threshold = 0.0 # Will only be used if num_networks != 1
 loss = "CrossEntropyLoss"
 

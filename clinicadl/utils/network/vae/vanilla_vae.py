@@ -150,7 +150,7 @@ class Vanilla3DVAE(BaseVAE):
     """
     This network is a 3D convolutional variational autoencoder with a spacial latent space.
 
-    rreference: Diederik P Kingma et al., Auto-Encoding Variational Bayes.
+    reference: Diederik P Kingma et al., Auto-Encoding Variational Bayes.
     https://arxiv.org/abs/1312.6114
     """
 

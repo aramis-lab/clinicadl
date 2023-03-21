@@ -25,7 +25,8 @@ from clinicadl.utils.exceptions import (
     ClinicaDLDataLeakageError,
     MAPSError,
 )
-from clinicadl.utils.maps_manager.logwriter import LogWriter, setup_logging
+from clinicadl.utils.logger import setup_logging
+from clinicadl.utils.maps_manager.logwriter import LogWriter
 from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
     read_json,
@@ -34,7 +35,7 @@ from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.network.network import Network
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.maps_manager")
 
 
 level_list: List[str] = ["warning", "info", "debug"]
@@ -49,10 +50,15 @@ class MapsManager:
         verbose: str = "info",
     ):
         """
-        Args:
-            maps_path: path of the MAPS
-            parameters: parameters of the training step. If given a new MAPS is created.
-            verbose: Logging level ("debug", "info", "warning")
+
+        Parameters
+        ----------
+        maps_path: str (path)
+            path of the MAPS
+        parameters: Dict[str, Any]
+            parameters of the training step. If given a new MAPS is created.
+        verbose: str
+            Logging level ("debug", "info", "warning")
         """
         self.maps_path = path.abspath(maps_path)
         if verbose is not None:
@@ -75,6 +81,8 @@ class MapsManager:
 
         # Initiate MAPS
         else:
+            self._check_args(parameters)
+
             if (
                 path.exists(maps_path) and not path.isdir(maps_path)  # Non-folder file
             ) or (
@@ -86,10 +94,12 @@ class MapsManager:
                     f"Please remove it or choose another location."
                 )
             makedirs(path.join(self.maps_path, "groups"))
+
             logger.info(f"A new MAPS was created at {maps_path}")
-            self._check_args(parameters)
+
             self.write_parameters(self.maps_path, self.parameters)
             self._write_requirements_version()
+
             self.split_name = "split"  # Used only for retro-compatibility
             self._write_training_data()
             self._write_train_val_groups()
@@ -227,7 +237,6 @@ class MapsManager:
                 diagnoses if len(diagnoses) != 0 else self.diagnoses,
                 multi_cohort=multi_cohort,
             )
-
         criterion = self.task_manager.get_criterion(self.loss)
         self._check_data_group(
             data_group,
@@ -237,11 +246,9 @@ class MapsManager:
             overwrite,
             label=label,
         )
-
         for split in split_list:
             logger.info(f"Prediction of split {split}")
             group_df, group_parameters = self.get_group_info(data_group, split)
-
             # Find label code if not given
             if label is not None and label != self.label and label_code == "default":
                 self.task_manager.generate_label_code(group_df, label)
@@ -366,6 +373,7 @@ class MapsManager:
         self,
         data_group,
         name,
+        method,
         caps_directory=None,
         tsv_path=None,
         split_list=None,
@@ -379,14 +387,15 @@ class MapsManager:
         gpu=None,
         overwrite=False,
         overwrite_name=False,
+        level=None,
     ):
         """
         Performs the interpretation task on a subset of caps_directory defined in a TSV file.
         The mean interpretation is always saved, to save the individual interpretations set save_individual to True.
-
         Args:
             data_group (str): name of the data group interpreted.
             name (str): name of the interpretation procedure.
+            method (str): method used for extraction (ex: gradients, grad-cam...).
             caps_directory (str): path to the CAPS folder. For more information please refer to
                 [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
                 Default will load the value of an existing data group.
@@ -405,11 +414,18 @@ class MapsManager:
             gpu (bool): If given, a new value for the device of the model will be computed.
             overwrite (bool): If True erase the occurrences of data_group.
             overwrite_name (bool): If True erase the occurrences of name.
+            level (int): layer number in the convolutional part after which the feature map is chosen.
         """
 
         from torch.utils.data import DataLoader
 
-        from clinicadl.interpret.gradients import VanillaBackProp
+        from clinicadl.interpret.gradients import method_dict
+
+        if method not in method_dict.keys():
+            raise NotImplementedError(
+                f"Interpretation method {method} is not implemented. "
+                f"Please choose in {method_dict.keys()}"
+            )
 
         if split_list is None:
             split_list = self._find_splits()
@@ -487,23 +503,25 @@ class MapsManager:
                     gpu=gpu,
                 )
 
-                interpreter = VanillaBackProp(model)
+                interpreter = method_dict[method](model)
 
                 cum_maps = [0] * data_test.elem_per_image
                 for data in test_loader:
                     images = data["image"].to(model.device)
 
-                    map_pt = interpreter.generate_gradients(images, target_node)
+                    map_pt = interpreter.generate_gradients(
+                        images, target_node, level=level
+                    )
                     for i in range(len(data["participant_id"])):
                         mode_id = data[f"{self.mode}_id"][i]
                         cum_maps[mode_id] += map_pt[i]
                         if save_individual:
                             single_path = path.join(
                                 results_path,
-                                f"participant-{data['participant_id'][i]}_session-{data['session_id'][i]}_"
+                                f"{data['participant_id'][i]}_{data['session_id'][i]}_"
                                 f"{self.mode}-{data[f'{self.mode}_id'][i]}_map.pt",
                             )
-                            torch.save(map_pt, single_path)
+                            torch.save(map_pt[i], single_path)
                 for i, mode_map in enumerate(cum_maps):
                     mode_map /= len(data_test)
                     torch.save(
@@ -528,7 +546,6 @@ class MapsManager:
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
         )
-
         split_manager = self._init_split_manager(split_list)
         for split in split_manager.split_iterator():
             logger.info(f"Training split {split}")
@@ -558,9 +575,7 @@ class MapsManager:
                 label=self.label,
                 label_code=self.label_code,
             )
-
             train_sampler = self.task_manager.generate_sampler(data_train, self.sampler)
-
             logger.debug(
                 f"Getting train and validation loader with batch size {self.batch_size}"
             )
@@ -1150,7 +1165,6 @@ class MapsManager:
                     f"The values of mandatory arguments {mandatory_arguments} should be set. "
                     f"No value was given for {arg}."
                 )
-
         parameters = add_default_values(parameters)
         self.parameters = parameters
         if self.parameters["gpu"]:
@@ -1169,21 +1183,26 @@ class MapsManager:
             self.parameters["architecture"] = self.task_manager.get_default_network()
         if "selection_threshold" not in self.parameters:
             self.parameters["selection_threshold"] = None
-        label_code = self.task_manager.generate_label_code(train_df, self.label)
+        if (
+            "label_code" not in self.parameters
+            or len(self.parameters["label_code"]) == 0
+        ):  # Allows to set custom label code in TOML
+            self.parameters["label_code"] = self.task_manager.generate_label_code(
+                train_df, self.label
+            )
         full_dataset = return_dataset(
             self.caps_directory,
             train_df,
             self.preprocessing_dict,
             multi_cohort=self.multi_cohort,
             label=self.label,
-            label_code=label_code,
+            label_code=self.parameters["label_code"],
             train_transformations=None,
             all_transformations=transformations,
         )
         self.parameters.update(
             {
                 "num_networks": full_dataset.elem_per_image,
-                "label_code": label_code,
                 "output_size": self.task_manager.output_size(
                     full_dataset.size, full_dataset.df, self.label
                 ),
@@ -1407,7 +1426,6 @@ class MapsManager:
             transfer_train_df = transfer_train_df[["participant_id", "session_id"]]
             train_df = pd.concat([train_df, transfer_train_df])
             train_df.drop_duplicates(inplace=True)
-
         train_df.to_csv(
             path.join(self.maps_path, "groups", "train+validation.tsv"),
             sep="\t",
@@ -1466,7 +1484,6 @@ class MapsManager:
                 columns = ["participant_id", "session_id", "cohort"]
                 if self.label is not None:
                     columns.append(self.label)
-
                 df.to_csv(path.join(group_path, "data.tsv"), sep="\t", columns=columns)
                 self.write_parameters(
                     group_path,
@@ -1888,7 +1905,6 @@ class MapsManager:
         log_path = path.join(log_dir, "description.log")
         with open(log_path, "r") as f:
             content = f.read()
-            print(content)
 
     def get_group_info(
         self, data_group: str, split: int = None
@@ -1941,6 +1957,19 @@ class MapsManager:
         return self._init_model(
             self.maps_path, selection_metric, split, network=network
         )[0]
+
+    def get_best_epoch(
+        self, split: int = 0, selection_metric: str = None, network: int = None
+    ) -> int:
+        selection_metric = self._check_selection_metric(split, selection_metric)
+        if self.multi_network:
+            if network is None:
+                raise ClinicaDLArgumentError(
+                    "Please precise the network number that must be loaded."
+                )
+        return self.get_state_dict(split=split, selection_metric=selection_metric)[
+            "epoch"
+        ]
 
     def get_state_dict(
         self, split=0, selection_metric=None, network=None, map_location=None

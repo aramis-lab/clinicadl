@@ -71,18 +71,21 @@ def compute_folder_and_file_type(
         pet_linear_nii,
     )
 
+
     if parameters["preprocessing"] == "t1-linear":
         mod_subfolder = "t1_linear"
         if parameters["use_uncropped_image"]:
             file_type = T1W_LINEAR
         else:
             file_type = T1W_LINEAR_CROPPED
+
     elif parameters["preprocessing"] == "flair-linear":
         mod_subfolder = "flair_linear"
         if parameters["use_uncropped_image"]:
             file_type = FLAIR_T2W_LINEAR
         else:
             file_type = FLAIR_T2W_LINEAR_CROPPED
+
     elif parameters["preprocessing"] == "pet-linear":
         mod_subfolder = "pet_linear"
         file_type = pet_linear_nii(
