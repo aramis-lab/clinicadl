@@ -64,11 +64,11 @@ def compute_folder_and_file_type(
     parameters: Dict[str, Any]
 ) -> Tuple[str, Dict[str, str]]:
     from clinica.utils.input_files import (
+        FLAIR_T2W_LINEAR,
+        FLAIR_T2W_LINEAR_CROPPED,
         T1W_LINEAR,
         T1W_LINEAR_CROPPED,
         pet_linear_nii,
-        FLAIR_T2W_LINEAR,
-        FLAIR_T2W_LINEAR_CROPPED,
     )
 
     if parameters["preprocessing"] == "t1-linear":
