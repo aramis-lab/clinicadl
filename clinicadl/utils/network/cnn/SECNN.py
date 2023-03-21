@@ -1,5 +1,5 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
 
 
 class Flatten(nn.Module):
@@ -20,8 +20,14 @@ class SE_Blocks(nn.Module):
 
     def forward(self, input_tensor):
         """
-        :param input_tensor: X, shape = (batch_size, num_channels, D, H, W)
-        :return: output tensor
+        Parameters
+        ----------
+        input_tensor: pt tensor
+            X, shape = (batch_size, num_channels, D, H, W)
+
+        Returns
+        -------
+        output_tensor: pt tensor
         """
         batch_size, num_channels, D, H, W = input_tensor.size()
         # Average along each channel

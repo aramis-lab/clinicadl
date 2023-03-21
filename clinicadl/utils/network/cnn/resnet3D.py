@@ -1,5 +1,5 @@
-import torch.nn as nn
 import torch
+import torch.nn as nn
 
 
 class Flatten(nn.Module):
@@ -52,7 +52,7 @@ class ResNetDesigner3D(nn.Module):
 
         assert (
             len(input_size) == 4
-        ), "input must be in 3d with the corresponding number of channels"
+        ), "Input must be in 3D with the corresponding number of channels."
 
         self.layer0 = self._make_block(1, input_size[0])
         self.layer1 = self._make_block(2)

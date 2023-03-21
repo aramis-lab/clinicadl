@@ -290,6 +290,16 @@ class Stride_Conv5_FC3(CNN):
 
 
 class ResNet3D(CNN):
+    """
+    ResNet3D is a neural network based on residual block.
+    It uses skip connections or shortcuts to jump over some layers.
+    It is an image classification pre-trained model.
+    This model takes 3D tensors as input.
+
+    Reference: Kaiming He et al., Deep Residual Learning for Image Recognition.
+    https://arxiv.org/abs/1512.03385?context=cs
+    """
+
     def __init__(
         self, input_size=[1, 169, 208, 179], gpu=False, output_size=2, dropout=0.5
     ):
