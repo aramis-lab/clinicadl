@@ -2,9 +2,9 @@
 Automatic relaunch of jobs that were stopped before the end of training.
 Unfinished splits are detected as they do not contain a "performances" sub-folder
 """
-import os
+
 from logging import getLogger
-from os import path
+from pathlib import Path
 
 from clinicadl import MapsManager
 
@@ -24,8 +24,8 @@ def automatic_resume(model_path, user_split_list=None, verbose=0):
     stopped_splits = [
         split
         for split in existing_split_list
-        if "tmp"
-        in os.listdir(path.join(model_path, f"{maps_manager.split_name}-{split}"))
+        if (Path(model_path) / f"{maps_manager.split_name}-{split}" / "tmp")
+        in list((Path(model_path) / f"{maps_manager.split_name}-{split}").iterdir())
     ]
 
     # Find finished split
@@ -34,10 +34,10 @@ def automatic_resume(model_path, user_split_list=None, verbose=0):
         if split not in stopped_splits:
             performance_dir_list = [
                 performance_dir
-                for performance_dir in os.listdir(
-                    path.join(model_path, f"{maps_manager.split_name}-{split}")
+                for performance_dir in list(
+                    (Path(model_path) / f"{maps_manager.split_name}-{split}").iterdir()
                 )
-                if "best-" in performance_dir
+                if "best-" in performance_dir.name
             ]
             if len(performance_dir_list) > 0:
                 finished_splits.append(split)
