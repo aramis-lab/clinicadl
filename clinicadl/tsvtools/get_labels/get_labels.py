@@ -283,11 +283,11 @@ def get_labels(
 
     from pathlib import Path
 
-    if output_dir == None:
+    if not Path(output_dir).suffix == "tsv":
         results_directory = Path(bids_directory).parents[0]
+        output_tsv = results_directory / "labels.tsv"
     else:
-        results_directory = output_dir
-    output_tsv = results_directory / "labels.tsv"
+        output_tsv = output_dir
 
     commandline_to_json(
         {
