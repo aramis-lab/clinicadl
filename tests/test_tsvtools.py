@@ -90,6 +90,7 @@ def test_getlabels(cmdopt, tmp_path):
     bids_output = path.join(tmp_out_dir, "bids")
     bids_directory = path.join(input_dir, "bids")
     restrict_tsv = path.join(input_dir, "restrict.tsv")
+    output_tsv = path.join(tmp_out_dir, "labels.tsv")
     if path.exists(tmp_out_dir):
         shutil.rmtree(tmp_out_dir)
         os.makedirs(tmp_out_dir)
@@ -98,7 +99,7 @@ def test_getlabels(cmdopt, tmp_path):
     missing_mods_directory = path.join(input_dir, "missing_mods")
 
     flag_getlabels = not os.system(
-        f"clinicadl -vvv tsvtools get-labels {bids_output} "
+        f"clinicadl -vvv tsvtools get-labels {bids_output} {output_tsv} "
         f"-d AD -d MCI -d CN -d Dementia "
         f"--merged_tsv {merged_tsv} --missing_mods {missing_mods_directory} "
         f"--restriction_tsv {restrict_tsv}"

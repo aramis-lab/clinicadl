@@ -58,7 +58,7 @@ Optional arguments:
       Default will predict the results for best model based on the loss only.
 - **Data management**
     - `--participants_tsv` (Path) is a path to a directory containing one TSV file per diagnosis
-    (see output tree of [getlabels](./TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease)). 
+    (see output tree of [get-labels](./TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease)). 
     Default will use the same participants as those used during the training task.
     - `--caps_directory` (Path) is the path to a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
     Default will use the same CAPS as during the training task.

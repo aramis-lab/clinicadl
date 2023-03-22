@@ -10,8 +10,8 @@ pipeline.
 The quality check procedure relies on a pretrained network that learned to classify images 
 that are adequately registered to a template from others for which the registration failed. 
 It reproduces the quality check procedure performed in [[Wen et al., 2020](https://doi.org/10.1016/j.media.2020.101694)]. 
-It is an adaptation of [[Fonov et al., 2018](https://www.biorxiv.org/content/10.1101/303487v1)], using their pretrained models. 
-Their original code can be found on [GitHub](https://github.com/vfonov/deep-qc).
+It is an adaptation of [[Fonov et al., 2022](https://doi.org/10.1016/j.neuroimage.2022.119266)], using their pretrained models. 
+Their original code can be found on [GitHub](https://github.com/vfonov/darq).
 
 !!! warning
     This quality check procedure is specific to the `t1-linear` pipeline and should not be applied 

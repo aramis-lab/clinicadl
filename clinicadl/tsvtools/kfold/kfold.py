@@ -1,8 +1,6 @@
 # coding: utf8
 
-import os
 from logging import getLogger
-from os import makedirs, path
 from pathlib import Path
 
 import numpy as np
@@ -70,21 +68,21 @@ def write_splits(
         # test_df = test_df[["participant_id", "session_id"]]
         # long_train_df = long_train_df[["participant_id", "session_id"]]
 
-        os.makedirs(path.join(results_directory, f"split-{i}"))
+        (Path(results_directory) / f"split-{i}").mkdir(parents=True)
 
         train_df.to_csv(
-            path.join(results_directory, f"split-{i}", "train_baseline.tsv"),
+            Path(results_directory) / f"split-{i}" / "train_baseline.tsv",
             sep="\t",
             index=False,
         )
         test_df.to_csv(
-            path.join(results_directory, f"split-{i}", f"{subset_name}_baseline.tsv"),
+            Path(results_directory) / f"split-{i}" / f"{subset_name}_baseline.tsv",
             sep="\t",
             index=False,
         )
 
         long_train_df.to_csv(
-            path.join(results_directory, f"split-{i}", "train.tsv"),
+            Path(results_directory) / f"split-{i}" / "train.tsv",
             sep="\t",
             index=False,
         )
@@ -120,15 +118,15 @@ def split_diagnoses(
         Path to the merged.tsv file, output of clinica iotools merge-tsv.
     """
 
-    parents_path = Path(data_tsv).parents[0]
+    parents_path = Path(data_tsv).parent
     split_numero = 1
     folder_name = f"{n_splits}_fold"
 
-    while os.path.exists(parents_path / folder_name):
+    while (parents_path / folder_name).is_dir():
         split_numero += 1
         folder_name = f"{n_splits}_fold_{split_numero}"
     results_directory = parents_path / folder_name
-    makedirs(results_directory)
+    results_directory.mkdir(parents=True)
 
     commandline_to_json(
         {
@@ -140,9 +138,6 @@ def split_diagnoses(
         filename="kfold.json",
     )
 
-    # Read files
-    from os.path import join
-
     # diagnosis_df_path = Path(data_tsv).name
     diagnosis_df = pd.read_csv(data_tsv, sep="\t")
     list_columns = diagnosis_df.columns.values
@@ -153,13 +148,13 @@ def split_diagnoses(
     ):
         logger.debug("Looking for the missing columns in others files.")
         if merged_tsv is None:
-            parents_path = path.abspath(parents_path)
+            parents_path = Path(parents_path).resolve()
             n = 0
-            while not os.path.exists(path.join(parents_path, "labels.tsv")) and n <= 4:
-                parents_path = Path(parents_path).parents[0]
+            while not (Path(parents_path) / "labels.tsv").is_file() and n <= 4:
+                parents_path = Path(parents_path).parent
                 n += 1
             try:
-                labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+                labels_df = pd.read_csv(Path(parents_path) / "labels.tsv", sep="\t")
                 diagnosis_df = pd.merge(
                     diagnosis_df,
                     labels_df,

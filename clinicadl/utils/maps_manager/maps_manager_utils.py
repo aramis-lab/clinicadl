@@ -1,5 +1,5 @@
 import json
-import os
+from pathlib import Path
 from typing import Any, Dict
 
 import toml
@@ -19,12 +19,9 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
     """
     task = user_dict["network_task"]
     # read default values
-    clinicadl_root_dir = os.path.abspath(os.path.join(__file__, "../../.."))
-    config_path = os.path.join(
-        clinicadl_root_dir,
-        "resources",
-        "config",
-        "train_config.toml",
+    clinicadl_root_dir = (Path(__file__) / "../../..").resolve()
+    config_path = (
+        Path(clinicadl_root_dir) / "resources" / "config" / "train_config.toml"
     )
     config_dict = toml.load(config_path)
 
@@ -56,7 +53,7 @@ def read_json(json_path: str) -> Dict[str, Any]:
     Returns:
         dictionary of training parameters.
     """
-    with open(json_path, "r") as f:
+    with Path(json_path).open(mode="r") as f:
         parameters = json.load(f)
 
     # Types of retro-compatibility
