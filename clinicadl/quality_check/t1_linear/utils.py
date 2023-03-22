@@ -2,7 +2,7 @@
 Copied from https://github.com/vfonov/darq
 """
 
-from os import path
+from pathlib import Path
 
 import nibabel as nib
 import torch
@@ -66,19 +66,19 @@ class QCDataset(Dataset):
                 self.img_dir,
                 file_type,
             )
-            image_filename = path.basename(image_path_list[0][0])
+            image_filename = Path(image_path_list[0][0]).name
             folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
-            image_dir = path.join(
-                self.img_dir,
-                "subjects",
-                subject,
-                session,
-                "deeplearning_prepare_data",
-                "image_based",
-                folder,
+            image_dir = (
+                Path(self.img_dir)
+                / "subjects"
+                / subject
+                / session
+                / "deeplearning_prepare_data"
+                / "image_based"
+                / folder
             )
 
-            image_path = path.join(image_dir, image_filename)
+            image_path = image_dir / image_filename
             image = torch.load(image_path)
             image = self.pt_transform(image)
         else:

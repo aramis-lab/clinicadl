@@ -2,8 +2,7 @@ from logging import getLogger
 
 
 def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
-    import os
-    from os import path
+    from pathlib import Path
 
     from clinica.utils.inputs import check_caps_folder, clinica_file_reader
     from clinica.utils.nipype import container_from_filename
@@ -55,16 +54,16 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
     def write_output_imgs(output_mode, container, subfolder):
         # Write the extracted tensor on a .pt file
         for filename, tensor in output_mode:
-            output_file_dir = path.join(
-                caps_directory,
-                container,
-                "deeplearning_prepare_data",
-                subfolder,
-                mod_subfolder,
+            output_file_dir = (
+                Path(caps_directory)
+                / container
+                / "deeplearning_prepare_data"
+                / subfolder
+                / mod_subfolder
             )
-            if not path.exists(output_file_dir):
-                os.makedirs(output_file_dir)
-            output_file = path.join(output_file_dir, filename)
+            if not output_file_dir.is_dir():
+                output_file_dir.mkdir(parents=True, exist_ok=True)
+            output_file = output_file_dir / filename
             save_tensor(tensor, output_file)
             logger.debug(f"    Output tensor saved at {output_file}")
 
@@ -142,9 +141,10 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
                     parameters["preprocessing"]
                 ]
 
-            parameters["masks_location"] = path.join(
-                caps_directory, "masks", f"tpl-{parameters['roi_template']}"
+            parameters["masks_location"] = str(
+                Path(caps_directory) / "masks" / f"tpl-{parameters['roi_template']}"
             )
+
             if len(parameters["roi_list"]) == 0:
                 raise ClinicaDLArgumentError(
                     "A list of regions of interest must be given."
