@@ -1,6 +1,5 @@
 import abc
 from logging import getLogger
-from os import path
 from pathlib import Path
 
 import pandas as pd
@@ -135,11 +134,11 @@ class SplitManager:
             cohort_diagnoses = self.diagnoses
 
         if self.baseline:
-            train_path = path.join(train_path, "train_baseline.tsv")
+            train_path = Path(train_path) / "train_baseline.tsv"
         else:
-            train_path = path.join(train_path, "train.tsv")
+            train_path = Path(train_path) / "train.tsv"
 
-        valid_path = path.join(valid_path, "validation_baseline.tsv")
+        valid_path = Path(valid_path) / "validation_baseline.tsv"
 
         train_df = pd.read_csv(train_path, sep="\t")
         valid_df = pd.read_csv(valid_path, sep="\t")
@@ -152,14 +151,15 @@ class SplitManager:
             # or "age" not in list_columns
             # or "sex" not in list_columns
         ):
-            parents_path = path.abspath(Path(train_path).parents[0])
-            while (not path.exists(path.join(parents_path, "labels.tsv"))) and (
-                path.exists(path.join(parents_path, "kfold.json"))
-                or path.exists(path.join(parents_path, "split.json"))
+            parents_path = Path(train_path).resolve().parent
+            while (
+                not (parents_path / "labels.tsv").is_file()
+                and ((parents_path / "kfold.json").is_file())
+                or (parents_path / "split.json").is_file()
             ):
-                parents_path = Path(parents_path).parents[0]
+                parents_path = Path(parents_path).parent
             try:
-                labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+                labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
                 train_df = pd.merge(
                     train_df,
                     labels_df,
@@ -176,14 +176,15 @@ class SplitManager:
             # or "age" not in list_columns
             # or "sex" not in list_columns
         ):
-            parents_path = path.abspath(Path(valid_path).parents[0])
-            while (not path.exists(path.join(parents_path, "labels.tsv"))) and (
-                path.exists(path.join(parents_path, "kfold.json"))
-                or path.exists(path.join(parents_path, "split.json"))
+            parents_path = Path(valid_path).resolve().parent
+            while (
+                not (parents_path / "labels.tsv").is_file()
+                and ((parents_path / "kfold.json").is_file())
+                or (parents_path / "split.json").is_file()
             ):
-                parents_path = Path(parents_path).parents[0]
+                parents_path = Path(parents_path).parent
             try:
-                labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+                labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
                 valid_df = pd.merge(
                     valid_df,
                     labels_df,

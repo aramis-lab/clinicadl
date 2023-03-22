@@ -5,7 +5,7 @@ Automatically reject images incorrectly preprocessed by t1-volume (Unified Segme
 3) frontal similarity of T1 volume with the template < 0.40
 """
 from logging import getLogger
-from os import path
+from pathlib import Path
 
 import pandas as pd
 
@@ -20,13 +20,13 @@ def quality_check(caps_dir, output_directory, group_label):
         caps_dir=caps_dir, output_dir=output_directory, group_label=group_label
     )
     logger.info(
-        f"Quality check metrics extracted at {path.join(output_directory, 'QC_metrics.tsv')}."
+        f"Quality check metrics extracted at {Path(output_directory) / 'QC_metrics.tsv'}."
     )
-    qc_df = pd.read_csv(path.join(output_directory, "QC_metrics.tsv"), sep="\t")
+    qc_df = pd.read_csv(Path(output_directory) / "QC_metrics.tsv", sep="\t")
 
     rejection1_df = qc_df[qc_df.max_intensity > 0.95]
     rejection1_df.to_csv(
-        path.join(output_directory, "pass_step-1.tsv"), sep="\t", index=False
+        Path(output_directory) / "pass_step-1.tsv", sep="\t", index=False
     )
     logger.info(
         f"Number of sessions removed based on max intensity: {len(qc_df) - len(rejection1_df)}."
@@ -38,7 +38,7 @@ def quality_check(caps_dir, output_directory, group_label):
         & (rejection1_df.non_zero_percentage > 0.15)
     ]
     rejection2_df.to_csv(
-        path.join(output_directory, "pass_step-2.tsv"), sep="\t", index=False
+        Path(output_directory) / "pass_step-2.tsv", sep="\t", index=False
     )
     logger.info(
         f"Number of sessions removed based on non-zero voxels: {len(rejection1_df) - len(rejection2_df)}."
@@ -47,7 +47,7 @@ def quality_check(caps_dir, output_directory, group_label):
 
     rejection3_df = rejection2_df[rejection2_df.frontal_similarity > 0.10]
     rejection3_df.to_csv(
-        path.join(output_directory, "pass_step-3.tsv"), sep="\t", index=False
+        Path(output_directory) / "pass_step-3.tsv", sep="\t", index=False
     )
     logger.info(
         f"Number of sessions removed based on frontal similarity with DARTEL "

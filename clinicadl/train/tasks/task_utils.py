@@ -1,5 +1,5 @@
-import os
 from logging import getLogger
+from pathlib import Path
 from typing import List
 
 from clinicadl.utils.caps_dataset.data import CapsDataset
@@ -68,10 +68,10 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         ):
             train_dict[option] = kwargs[option]
     if not train_dict["multi_cohort"]:
-        preprocessing_json = os.path.join(
-            train_dict["caps_directory"],
-            "tensor_extraction",
-            kwargs["preprocessing_json"],
+        preprocessing_json = (
+            Path(train_dict["caps_directory"])
+            / "tensor_extraction"
+            / kwargs["preprocessing_json"]
         )
     else:
         caps_dict = CapsDataset.create_caps_dict(
@@ -79,14 +79,10 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         )
         json_found = False
         for caps_name, caps_path in caps_dict.items():
-            if os.path.exists(
-                os.path.join(
-                    caps_path, "tensor_extraction", kwargs["preprocessing_json"]
-                )
-            ):
-                preprocessing_json = os.path.join(
-                    caps_path, "tensor_extraction", kwargs["preprocessing_json"]
-                )
+            preprocessing_json = (
+                Path(caps_path) / "tensor_extraction" / kwargs["preprocessing_json"]
+            )
+            if preprocessing_json.is_file():
                 logger.info(
                     f"Preprocessing JSON {preprocessing_json} found in CAPS {caps_name}."
                 )
@@ -109,4 +105,6 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
     ):
         preprocessing_dict["roi_background_value"] = 0
 
+    print(kwargs["output_maps_directory"])
+    print(train_dict)
     train(kwargs["output_maps_directory"], train_dict, train_dict.pop("split"))
