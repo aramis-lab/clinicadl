@@ -28,6 +28,7 @@ def write_requirements_version(output_path: Path):
 
 def check_and_clean(directory_path: Path):
     import shutil
+    from pathlib import Path
 
     if directory_path.is_dir():
         shutil.rmtree(directory_path)
@@ -50,6 +51,7 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
 
     import json
     from copy import copy
+    from pathlib import Path
 
     if isinstance(commandline, dict):
         commandline_arg_dict = copy(commandline)

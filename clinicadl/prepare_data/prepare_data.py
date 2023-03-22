@@ -58,12 +58,9 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
             output_file_dir = (
                 caps_directory
                 / container
-                / "deeplearning_prepare_data"
                 / subfolder
-                / mod_subfolder
             )
-            if not output_file_dir.is_dir():
-                output_file_dir.mkdir(parents=True, exist_ok=True)
+            output_file_dir.mkdir(parents=True, exist_ok=True)
             output_file = output_file_dir / filename
             save_tensor(tensor, output_file)
             logger.debug(f"Output tensor saved at {output_file}")
