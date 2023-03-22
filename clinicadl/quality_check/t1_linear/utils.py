@@ -78,7 +78,7 @@ class QCDataset(Dataset):
                 / folder
             )
 
-            image_path = Path(image_dir) / image_filename
+            image_path = image_dir / image_filename
             image = torch.load(image_path)
             image = self.pt_transform(image)
         else:

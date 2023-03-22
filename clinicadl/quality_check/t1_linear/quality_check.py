@@ -67,10 +67,10 @@ def quality_check(
     # Fetch QC model
     home = str(Path.home())
 
-    cache_clinicadl = Path(home) / ".cache" / "clinicadl" / "models"
+    cache_clinicadl = home / ".cache" / "clinicadl" / "models"
     url_aramis = "https://aramislab.paris.inria.fr/files/data/models/dl/qc/"
 
-    Path(cache_clinicadl).mkdir(parents=True, exist_ok=True)
+    cache_clinicadl.mkdir(parents=True, exist_ok=True)
 
     if network == "deep_qc":
         FILE1 = RemoteFileStructure(
@@ -98,11 +98,11 @@ def quality_check(
         )
         model = darq_sq101()
 
-    model_file = Path(cache_clinicadl) / FILE1.filename
+    model_file = cache_clinicadl / FILE1.filename
 
     logger.info("Downloading quality check model.")
 
-    if not (Path(model_file).is_file()):
+    if not (model_file.is_file()):
         try:
             model_file = fetch_file(FILE1, cache_clinicadl)
         except IOError as err:

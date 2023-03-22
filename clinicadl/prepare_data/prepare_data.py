@@ -60,7 +60,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
                 / subfolder
                 / mod_subfolder
             )
-            if not Path(output_file_dir).is_dir():
+            if not output_file_dir.is_dir():
                 output_file_dir.mkdir(parents=True, exist_ok=True)
             output_file = output_file_dir / filename
             save_tensor(tensor, output_file)

@@ -202,14 +202,14 @@ def generate_trivial_dataset(
     data_df = extract_baseline(data_df)
 
     home = str(Path.home())
-    cache_clinicadl = Path(home) / ".cache" / "clinicadl" / "ressources" / "masks"
+    cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks"
     url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
     FILE1 = RemoteFileStructure(
         filename="AAL2.tar.gz",
         url=url_aramis,
         checksum="89427970921674792481bffd2de095c8fbf49509d615e7e09e4bc6f0e0564471",
     )
-    Path(cache_clinicadl).mkdir(parents=True, exist_ok=True)
+    cache_clinicadl.mkdir(parents=True, exist_ok=True)
 
     if n_subjects > len(data_df):
         raise IndexError(
@@ -218,7 +218,7 @@ def generate_trivial_dataset(
         )
 
     if mask_path is None:
-        if not (Path(cache_clinicadl) / "AAL2").is_dir():
+        if not (cache_clinicadl / "AAL2").is_dir():
             print("Downloading AAL2 masks...")
             try:
                 mask_path_tar = fetch_file(FILE1, cache_clinicadl)
@@ -227,7 +227,7 @@ def generate_trivial_dataset(
                 try:
                     tar_file.extractall(cache_clinicadl)
                     tar_file.close()
-                    mask_path = Path(cache_clinicadl) / "AAL2"
+                    mask_path = cache_clinicadl / "AAL2"
                 except RuntimeError:
                     print("Unable to extract downloaded files.")
             except IOError as err:
@@ -238,7 +238,7 @@ def generate_trivial_dataset(
                     and provide a valid path."""
                 )
         else:
-            mask_path = Path(cache_clinicadl) / "AAL2"
+            mask_path = cache_clinicadl / "AAL2"
 
     # Create subjects dir
     (Path(output_dir) / "subjects").mkdir(parents=True, exist_ok=True)
@@ -275,7 +275,7 @@ def generate_trivial_dataset(
 
         trivial_image_nii_filename = f"sub-TRIV{i}_{session_id}_{filename_pattern}"
 
-        Path(trivial_image_nii_dir).mkdir(parents=True, exist_ok=True)
+        trivial_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
         atlas_to_mask = nib.load(Path(mask_path) / f"mask-{label + 1}.nii").get_data()
 
@@ -285,7 +285,7 @@ def generate_trivial_dataset(
         )
         trivial_image_nii = nib.Nifti1Image(trivial_image, affine=image_nii.affine)
         trivial_image_nii.to_filename(
-            Path(trivial_image_nii_dir) / trivial_image_nii_filename
+            trivial_image_nii_dir / trivial_image_nii_filename
         )
 
         # Append row to output tsv
