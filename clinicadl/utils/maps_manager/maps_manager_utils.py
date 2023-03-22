@@ -20,9 +20,7 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
     task = user_dict["network_task"]
     # read default values
     clinicadl_root_dir = (Path(__file__) / "../../..").resolve()
-    config_path = (
-        Path(clinicadl_root_dir) / "resources" / "config" / "train_config.toml"
-    )
+    config_path = clinicadl_root_dir / "resources" / "config" / "train_config.toml"
     config_dict = toml.load(config_path)
 
     # task dependent
@@ -43,7 +41,7 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
     return user_dict
 
 
-def read_json(json_path: str) -> Dict[str, Any]:
+def read_json(json_path: Path) -> Dict[str, Any]:
     """
     Ensures retro-compatibility between the different versions of ClinicaDL.
 
@@ -53,7 +51,7 @@ def read_json(json_path: str) -> Dict[str, Any]:
     Returns:
         dictionary of training parameters.
     """
-    with Path(json_path).open(mode="r") as f:
+    with json_path.open(mode="r") as f:
         parameters = json.load(f)
 
     # Types of retro-compatibility

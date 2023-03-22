@@ -32,10 +32,10 @@ logger = getLogger("clinicadl.generate")
 
 
 def generate_random_dataset(
-    caps_directory: str,
-    output_dir: str,
+    caps_directory: Path,
+    output_dir: Path,
     n_subjects: int,
-    tsv_path: Optional[str] = None,
+    tsv_path: Optional[Path] = None,
     mean: float = 0,
     sigma: float = 0.5,
     preprocessing: str = "t1-linear",
@@ -88,7 +88,7 @@ def generate_random_dataset(
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
 
     # Create subjects dir
-    (Path(output_dir) / "subjects").mkdir(parents=True, exist_ok=True)
+    (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
 
     # Retrieve image of first subject
     participant_id = data_df.loc[0, "participant_id"]
@@ -100,10 +100,12 @@ def generate_random_dataset(
         preprocessing, uncropped_image, acq_label, suvr_reference_region
     )
 
-    image_paths = clinica_file_reader(
-        [participant_id], [session_id], caps_dict[cohort], file_type
-    )[0]
-    image_nii = nib.load(image_paths[0])
+    image_path = Path(
+        clinica_file_reader(
+            [participant_id], [session_id], caps_dict[cohort], file_type
+        )[0][0]
+    )
+    image_nii = nib.load(image_path)
     image = image_nii.get_data()
 
     # Create output tsv file
@@ -117,9 +119,9 @@ def generate_random_dataset(
     )
     output_df["age_bl"] = 60
     output_df["sex"] = "F"
-    output_df.to_csv(Path(output_dir) / "data.tsv", sep="\t", index=False)
+    output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
 
-    input_filename = Path(image_paths[0]).name
+    input_filename = image_path.name
     filename_pattern = "_".join(input_filename.split("_")[2::])
     for i in range(2 * n_subjects):
         gauss = np.random.normal(mean, sigma, image.shape)
@@ -129,12 +131,12 @@ def generate_random_dataset(
             noisy_image, header=image_nii.header, affine=image_nii.affine
         )
         noisy_image_nii_path = (
-            Path(output_dir) / "subjects" / participant_id / "ses-M00" / "t1_linear"
+            output_dir / "subjects" / participant_id / "ses-M00" / "t1_linear"
         )
 
         noisy_image_nii_filename = f"{participant_id}_ses-M00_{filename_pattern}"
-        Path(noisy_image_nii_path).mkdir(parents=True, exist_ok=True)
-        nib.save(noisy_image_nii, Path(noisy_image_nii_path) / noisy_image_nii_filename)
+        noisy_image_nii_path.mkdir(parents=True, exist_ok=True)
+        nib.save(noisy_image_nii, noisy_image_nii_path / noisy_image_nii_filename)
 
     write_missing_mods(output_dir, output_df)
 
@@ -142,12 +144,12 @@ def generate_random_dataset(
 
 
 def generate_trivial_dataset(
-    caps_directory: str,
-    output_dir: str,
+    caps_directory: Path,
+    output_dir: Path,
     n_subjects: int,
-    tsv_path: Optional[str] = None,
+    tsv_path: Optional[Path] = None,
     preprocessing: str = "t1-linear",
-    mask_path: Optional[str] = None,
+    mask_path: Optional[Path] = None,
     atrophy_percent: float = 60,
     multi_cohort: bool = False,
     uncropped_image: bool = False,
@@ -181,7 +183,6 @@ def generate_trivial_dataset(
     Raises:
         IndexError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
     """
-    from pathlib import Path
 
     from clinicadl.utils.exceptions import DownloadError
 
@@ -241,7 +242,7 @@ def generate_trivial_dataset(
             mask_path = cache_clinicadl / "AAL2"
 
     # Create subjects dir
-    (Path(output_dir) / "subjects").mkdir(parents=True, exist_ok=True)
+    (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
 
     # Output tsv file
     columns = ["participant_id", "session_id", "diagnosis", "age_bl", "sex"]
@@ -260,24 +261,26 @@ def generate_trivial_dataset(
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
         cohort = data_df.loc[data_idx, "cohort"]
-        image_paths = clinica_file_reader(
-            [participant_id], [session_id], caps_dict[cohort], file_type
-        )[0]
-        image_nii = nib.load(image_paths[0])
+        image_path = Path(
+            clinica_file_reader(
+                [participant_id], [session_id], caps_dict[cohort], file_type
+            )[0][0]
+        )
+        image_nii = nib.load(image_path)
         image = image_nii.get_data()
 
-        input_filename = Path(image_paths[0]).name
+        input_filename = image_path.name
         filename_pattern = "_".join(input_filename.split("_")[2::])
 
         trivial_image_nii_dir = (
-            Path(output_dir) / "subjects" / f"sub-TRIV{i}" / session_id / preprocessing
+            output_dir / "subjects" / f"sub-TRIV{i}" / session_id / preprocessing
         )
 
         trivial_image_nii_filename = f"sub-TRIV{i}_{session_id}_{filename_pattern}"
 
         trivial_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
-        atlas_to_mask = nib.load(Path(mask_path) / f"mask-{label + 1}.nii").get_data()
+        atlas_to_mask = nib.load(mask_path / f"mask-{label + 1}.nii").get_data()
 
         # Create atrophied image
         trivial_image = im_loss_roi_gaussian_distribution(
@@ -293,7 +296,7 @@ def generate_trivial_dataset(
         row_df = pd.DataFrame([row], columns=columns)
         output_df = pd.concat([output_df, row_df])
 
-    output_df.to_csv(Path(output_dir) / "data.tsv", sep="\t", index=False)
+    output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
 
     write_missing_mods(output_dir, output_df)
 
@@ -301,7 +304,7 @@ def generate_trivial_dataset(
 
 
 def generate_shepplogan_dataset(
-    output_dir: str,
+    output_dir: Path,
     img_size: int,
     labels_distribution: Dict[str, Tuple[float, float, float]],
     extract_json: str = None,
@@ -321,7 +324,7 @@ def generate_shepplogan_dataset(
         smoothing: if True, an additional random smoothing is performed on top of all operations on each image.
     """
 
-    check_and_clean(Path(output_dir) / "subjects")
+    check_and_clean(output_dir / "subjects")
     commandline_to_json(
         {
             "output_dir": output_dir,
@@ -348,7 +351,7 @@ def generate_shepplogan_dataset(
 
             # Image generation
             slice_path = (
-                Path(output_dir)
+                output_dir
                 / "subjects"
                 / participant_id
                 / session_id
@@ -368,7 +371,7 @@ def generate_shepplogan_dataset(
             torch.save(slice_tensor, slice_path)
 
             image_path = (
-                Path(output_dir)
+                output_dir
                 / "subjects"
                 / participant_id
                 / session_id
@@ -381,7 +384,7 @@ def generate_shepplogan_dataset(
                 f.write("0")
 
     # Save data
-    data_df.to_csv(Path(output_dir) / "data.tsv", sep="\t", index=False)
+    data_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
 
     # Save preprocessing JSON file
     preprocessing_dict = {

@@ -1,5 +1,4 @@
 from logging import getLogger
-from pathlib import Path
 from typing import List
 
 from clinicadl.utils.caps_dataset.data import CapsDataset
@@ -69,7 +68,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
             train_dict[option] = kwargs[option]
     if not train_dict["multi_cohort"]:
         preprocessing_json = (
-            Path(train_dict["caps_directory"])
+            train_dict["caps_directory"]
             / "tensor_extraction"
             / kwargs["preprocessing_json"]
         )
@@ -80,7 +79,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         json_found = False
         for caps_name, caps_path in caps_dict.items():
             preprocessing_json = (
-                Path(caps_path) / "tensor_extraction" / kwargs["preprocessing_json"]
+                caps_path / "tensor_extraction" / kwargs["preprocessing_json"]
             )
             if preprocessing_json.is_file():
                 logger.info(

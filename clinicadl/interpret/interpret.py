@@ -1,15 +1,16 @@
+from pathlib import Path
 from typing import List
 
 from clinicadl import MapsManager
 
 
 def interpret(
-    maps_dir: str,
+    maps_dir: Path,
     data_group: str,
     name: str,
     method: str,
-    caps_directory: str,
-    tsv_path: str,
+    caps_directory: Path,
+    tsv_path: Path,
     selection_metrics: List[str],
     diagnoses: List[str],
     multi_cohort: bool,

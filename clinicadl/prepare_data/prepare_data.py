@@ -1,7 +1,7 @@
 from logging import getLogger
 
 
-def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
+def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parameters):
     from pathlib import Path
 
     from clinica.utils.inputs import check_caps_folder, clinica_file_reader
@@ -54,7 +54,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
         # Write the extracted tensor on a .pt file
         for filename, tensor in output_mode:
             output_file_dir = (
-                Path(caps_directory)
+                caps_directory
                 / container
                 / "deeplearning_prepare_data"
                 / subfolder
@@ -141,7 +141,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
                 ]
 
             parameters["masks_location"] = str(
-                Path(caps_directory) / "masks" / f"tpl-{parameters['roi_template']}"
+                caps_directory / "masks" / f"tpl-{parameters['roi_template']}"
             )
 
             if len(parameters["roi_list"]) == 0:

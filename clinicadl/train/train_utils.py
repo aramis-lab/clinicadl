@@ -10,7 +10,7 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
 )
 
 
-def build_train_dict(config_file: str, task: str) -> Dict[str, Any]:
+def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
     """
     Read the configuration file given by the user.
     If it is a TOML file, ensures that the format corresponds to the one in resources.
@@ -35,7 +35,7 @@ def build_train_dict(config_file: str, task: str) -> Dict[str, Any]:
             for key in config_dict[config_section]:
                 train_dict[key] = config_dict[config_section][key]
 
-    elif Path(config_file).suffix == ".toml":
+    elif config_file.suffix == ".toml":
         user_dict = toml.load(config_file)
         if "Random_Search" in user_dict:
             del user_dict["Random_Search"]

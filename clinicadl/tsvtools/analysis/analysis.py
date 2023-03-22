@@ -20,7 +20,9 @@ from clinicadl.utils.tsvtools_utils import (
 logger = getLogger("clinicadl.tsvtools.analysis")
 
 
-def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
+def demographics_analysis(
+    merged_tsv: Path, data_tsv: Path, results_tsv: Path, diagnoses
+):
     """
     Produces a tsv file with rows corresponding to the labels defined by the diagnoses list,
     and the columns being demographic statistics.
@@ -40,16 +42,16 @@ def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
 
     """
 
-    if not Path(data_tsv).is_file():
+    if not data_tsv.is_file():
         raise ClinicaDLTSVError(f"{data_tsv} file was not found. ")
 
-    if not Path(merged_tsv).is_file():
+    if not merged_tsv.is_file():
         raise ClinicaDLTSVError(f"{merged_tsv} file was not found. ")
     merged_df = pd.read_csv(merged_tsv, sep="\t")
     merged_df.set_index(["participant_id", "session_id"], inplace=True)
     merged_df = cleaning_nan_diagnoses(merged_df)
 
-    parent_directory = Path(results_tsv).resolve().parent
+    parent_directory = results_tsv.resolve().parent
     parent_directory.mkdir(parents=True, exist_ok=True)
 
     fields_dict = {

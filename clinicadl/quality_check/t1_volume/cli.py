@@ -7,7 +7,8 @@ from clinicadl.utils import cli_param
 @cli_param.argument.caps_directory
 @click.argument(
     "output_directory",
-    type=str,
+    type=click.Path(exists=True),
+    help="Path to the directory in which TSV files will be written",
 )
 @click.argument(
     "group_label",

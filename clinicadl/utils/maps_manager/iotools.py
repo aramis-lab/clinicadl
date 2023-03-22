@@ -1,5 +1,6 @@
 # coding: utf8
 import logging
+from pathlib import Path
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
@@ -9,16 +10,15 @@ LOG_LEVELS = [logging.WARNING, logging.INFO, logging.DEBUG]
 computational_list = ["gpu", "batch_size", "n_proc", "evaluation_steps"]
 
 
-def write_requirements_version(output_path):
+def write_requirements_version(output_path: Path):
     import subprocess
-    from pathlib import Path
     from warnings import warn
 
     try:
         env_variables = subprocess.check_output("pip freeze", shell=True).decode(
             "utf-8"
         )
-        with (Path(output_path) / "environment.txt").open(mode="w") as file:
+        with (output_path / "environment.txt").open(mode="w") as file:
             file.write(env_variables)
     except subprocess.CalledProcessError:
         warn(
@@ -26,13 +26,12 @@ def write_requirements_version(output_path):
         )
 
 
-def check_and_clean(d):
+def check_and_clean(d: Path):
     import shutil
-    from pathlib import Path
 
-    if Path(d).is_dir():
+    if d.is_dir():
         shutil.rmtree(d)
-    Path(d).mkdir(parents=True)
+    d.mkdir(parents=True)
 
 
 def commandline_to_json(commandline, logger=None, filename="commandline.json"):
@@ -51,14 +50,13 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
 
     import json
     from copy import copy
-    from pathlib import Path
 
     if isinstance(commandline, dict):
         commandline_arg_dict = copy(commandline)
     else:
         commandline_arg_dict = copy(vars(commandline))
     output_dir = commandline_arg_dict["output_dir"]
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # remove these entries from the commandline log file
     remove_list = ["func", "output_dir", "launch_dir", "name", "verbose", "logname"]
@@ -68,13 +66,15 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
 
     # save to json file
     json = json.dumps(commandline_arg_dict, skipkeys=True, indent=4)
-    logger.info(f"Path of json file: {Path(output_dir) / 'commandline.json'}")
-    f = open(Path(output_dir) / filename, "w")
+    logger.info(f"Path of json file: {output_dir / 'commandline.json'}")
+    f = open(output_dir / filename, "w")
     f.write(json)
     f.close()
 
 
-def read_json(options=None, json_path=None, test=False, read_computational=False):
+def read_json(
+    options=None, json_path: Path = None, test=False, read_computational=False
+):
     """
     Read a json file to update options dictionary.
     Ensures retro-compatibility with previous namings in clinicadl.
@@ -88,7 +88,6 @@ def read_json(options=None, json_path=None, test=False, read_computational=False
         options (dict) options of the model updated
     """
     import json
-    from pathlib import Path
 
     if options is None:
         options = {}
@@ -96,7 +95,7 @@ def read_json(options=None, json_path=None, test=False, read_computational=False
     evaluation_parameters = ["diagnosis_path", "input_dir", "diagnoses"]
     prep_compatibility_dict = {"mni": "t1-extensive", "linear": "t1-linear"}
     if json_path is None:
-        json_path = Path(options["model_path"]) / "commandline.json"
+        json_path = options["model_path"] / "commandline.json"
 
     with json_path.open(mode="r") as f:
         json_data = json.load(f)

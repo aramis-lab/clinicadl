@@ -4,7 +4,8 @@ import click
 @click.command("random-search", no_args_is_help=True)
 @click.argument(
     "launch_directory",
-    type=str,
+    type=click.Path(exists=True),
+    help="Path to the directory where results of random search will be saved",
 )
 @click.argument("name", type=str)
 def cli(

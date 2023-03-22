@@ -36,14 +36,14 @@ test_tsv = click.option(
     "--test_tsv",
     "-tt",
     help="Name of the test file in tsv format",
-    type=str,
+    type=click.Path(exists=True),
     default=None,
 )
 caps_directory = click.option(
     "--caps_directory",
     "-c",
     help="input folder of a CAPS compliant dataset",
-    type=str,
+    type=click.Path(exists=True),
     default=None,
 )
 variables_of_interest = click.option(

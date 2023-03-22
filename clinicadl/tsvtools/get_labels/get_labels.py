@@ -205,7 +205,7 @@ def diagnosis_removal(bids_df: pd.DataFrame, diagnosis_list: List[str]) -> pd.Da
     return output_df
 
 
-def apply_restriction(bids_df: pd.DataFrame, restriction_path: str) -> pd.DataFrame:
+def apply_restriction(bids_df: pd.DataFrame, restriction_path: Path) -> pd.DataFrame:
     """
     Application of a restriction (for example after the removal of some subjects after a preprocessing pipeline)
 
@@ -240,16 +240,16 @@ def apply_restriction(bids_df: pd.DataFrame, restriction_path: str) -> pd.DataFr
 
 
 def get_labels(
-    bids_directory: str,
+    bids_directory: Path,
     diagnoses: List[str],
     modality: str = "t1w",
-    restriction_path: str = None,
+    restriction_path: Path = None,
     variables_of_interest: List[str] = None,
     remove_smc: bool = True,
-    merged_tsv: str = None,
-    missing_mods: str = None,
+    merged_tsv: Path = None,
+    missing_mods: Path = None,
     remove_unique_session: bool = False,
-    output_dir: str = None,
+    output_dir: Path = None,
 ):
     """
     Writes one TSV file based on merged_tsv and missing_mods.
@@ -283,11 +283,11 @@ def get_labels(
 
     from clinica.utils.inputs import check_bids_folder
 
-    if not Path(output_dir).suffix == "tsv":
-        results_directory = Path(bids_directory).parents[0]
+    if not output_dir.suffix == "tsv":
+        results_directory = bids_directory.parents[0]
         output_tsv = results_directory / "labels.tsv"
     else:
-        results_directory = Path(output_dir)
+        results_directory = output_dir
 
     output_tsv = results_directory / "labels.tsv"
 
@@ -311,11 +311,11 @@ def get_labels(
     results_directory.mkdir(parents=True, exist_ok=True)
 
     # Generating the output of `clinica iotools check-missing-modalities``
-    missing_mods_directory = Path(results_directory) / "missing_mods"
+    missing_mods_directory = results_directory / "missing_mods"
     if missing_mods is not None:
         missing_mods_directory = missing_mods
 
-    if not Path(missing_mods_directory).is_dir():
+    if not missing_mods_directory.is_dir():
         from clinica.iotools.utils.data_handling import compute_missing_mods
 
         check_bids_folder(bids_directory)
@@ -329,14 +329,14 @@ def get_labels(
     merged_tsv_path = results_directory / "merged.tsv"
     if merged_tsv is not None:
         merged_tsv_path = merged_tsv
-    elif not Path(merged_tsv_path).is_file():
+    elif not merged_tsv_path.is_file():
         from clinica.iotools.utils.data_handling import create_merge_file
 
         logger.info("create merge tsv")
         check_bids_folder(bids_directory)
         create_merge_file(
             bids_directory,
-            Path(results_directory) / "merged.tsv",
+            results_directory / "merged.tsv",
             caps_dir=None,
             pipelines=None,
             ignore_scan_files=None,
@@ -352,7 +352,7 @@ def get_labels(
     logger.info(f"output of clinica iotools merge-tsv: {merged_tsv_path}")
 
     # Reading files
-    if not Path(merged_tsv_path).is_file():
+    if not merged_tsv_path.is_file():
         raise ClinicaDLTSVError(f"{merged_tsv_path} file was not found. ")
     bids_df = pd.read_csv(merged_tsv_path, sep="\t")
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
@@ -385,18 +385,18 @@ def get_labels(
             )
 
     # Loading missing modalities files
-    list_files = list(Path(missing_mods_directory).iterdir())
+    list_files = list(missing_mods_directory.iterdir())
     missing_mods_dict = {}
 
     for file in list_files:
-        fileext = Path(file).suffix
-        filename = Path(file).stem
+        fileext = file.suffix
+        filename = file.stem
         if fileext == ".tsv":
             session = filename.split("_")[-1]
-            missing_mods_df = pd.read_csv(Path(missing_mods_directory) / file, sep="\t")
+            missing_mods_df = pd.read_csv(missing_mods_directory / file, sep="\t")
             if len(missing_mods_df) == 0:
                 raise ClinicaDLTSVError(
-                    f"Given TSV file at {Path(missing_mods_directory) /file} loads an empty DataFrame."
+                    f"Given TSV file at {missing_mods_directory /file} loads an empty DataFrame."
                 )
 
             missing_mods_df.set_index("participant_id", drop=True, inplace=True)

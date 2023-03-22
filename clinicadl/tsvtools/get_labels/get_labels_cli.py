@@ -12,7 +12,7 @@ from clinicadl.utils import cli_param
 @click.option(
     "--restriction_tsv",
     help="Path to a TSV file containing the sessions that can be included.",
-    type=str,
+    type=click.Path(exists=True),
     default=None,
 )
 @click.option(
@@ -25,13 +25,13 @@ from clinicadl.utils import cli_param
 @click.option(
     "--merged_tsv",
     help="Path to a TSV file containing the results of clinica iotools merge-tsv command if different of results_directory/merged.tsv",
-    type=str,
+    type=click.Path(exists=True),
     default=None,
 )
 @click.option(
     "--missing_mods",
     help="Path to a directory containing the results of clinica iotools missing-modalities command if different of results_directory/missing_mods/",
-    type=str,
+    type=click.Path(exists=True),
     default=None,
 )
 @click.option(

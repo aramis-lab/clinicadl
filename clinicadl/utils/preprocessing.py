@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Any, Dict
 
 
-def write_preprocessing(preprocessing_dict: Dict[str, Any], caps_directory: str):
-    extract_dir = Path(caps_directory) / "tensor_extraction"
+def write_preprocessing(preprocessing_dict: Dict[str, Any], caps_directory: Path):
+    extract_dir = caps_directory / "tensor_extraction"
     extract_dir.mkdir(parents=True, exist_ok=True)
     json_path = extract_dir / preprocessing_dict["extract_json"]
     if json_path.is_file():
@@ -20,10 +20,10 @@ def write_preprocessing(preprocessing_dict: Dict[str, Any], caps_directory: str)
     return json_path
 
 
-def read_preprocessing(json_path: str) -> Dict[str, Any]:
+def read_preprocessing(json_path: Path) -> Dict[str, Any]:
     if not json_path.name.endswith(".json"):
         json_path += ".json"
-        json_path = Path(json_path)
+        json_path = json_path
 
     if not json_path.is_file():
         raise FileNotFoundError(errno.ENOENT, json_path)

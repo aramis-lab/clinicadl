@@ -44,7 +44,7 @@ level_list: List[str] = ["warning", "info", "debug"]
 class MapsManager:
     def __init__(
         self,
-        maps_path: str,
+        maps_path: Path,
         parameters: Dict[str, Any] = None,
         verbose: str = "info",
     ):
@@ -59,7 +59,6 @@ class MapsManager:
         verbose: str
             Logging level ("debug", "info", "warning")
         """
-        maps_path = Path(maps_path)
         self.maps_path = maps_path.resolve()
         if verbose is not None:
             if verbose not in level_list:
@@ -128,7 +127,7 @@ class MapsManager:
         split_manager = self._init_split_manager(split_list)
         for split in split_manager.split_iterator():
             split_path = self.maps_path / f"{self.split_name}-{split}"
-            if Path(split_path).is_dir():
+            if split_path.is_dir():
                 if overwrite:
                     shutil.rmtree(split_path)
                 else:
@@ -265,7 +264,7 @@ class MapsManager:
                 tsv_pattern = f"{data_group}*.tsv"
 
                 for tsv_file in tsv_dir.glob(tsv_pattern):
-                    Path(tsv_file).unlink()
+                    tsv_file.unlink()
 
             if self.multi_network:
                 for network in range(self.num_networks):
@@ -372,8 +371,8 @@ class MapsManager:
         data_group,
         name,
         method,
-        caps_directory=None,
-        tsv_path=None,
+        caps_directory: Path = None,
+        tsv_path: Path = None,
         split_list=None,
         selection_metrics=None,
         multi_cohort=False,
@@ -1039,8 +1038,8 @@ class MapsManager:
                 session_id = data["session_id"]
                 input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
                 output_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
-                nib.save(input_nii, Path(nifti_path) / input_filename)
-                nib.save(output_nii, Path(nifti_path) / output_filename)
+                nib.save(input_nii, nifti_path / input_filename)
+                nib.save(output_nii, nifti_path / output_filename)
 
     def _compute_output_tensors(
         self,
@@ -1103,8 +1102,8 @@ class MapsManager:
                 output_filename = (
                     f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
                 )
-                torch.save(image, Path(tensor_path) / input_filename)
-                torch.save(output, Path(tensor_path) / output_filename)
+                torch.save(image, tensor_path / input_filename)
+                torch.save(output, tensor_path / output_filename)
 
     def _ensemble_prediction(
         self,
@@ -1325,7 +1324,7 @@ class MapsManager:
                 when caps_directory or df are given but data group already exists
                 when caps_directory or df are not given and data group does not exist
         """
-        group_dir = Path(self.maps_path) / "groups" / data_group
+        group_dir = self.maps_path / "groups" / data_group
         logger.debug(f"Group path {group_dir}")
         if group_dir.is_dir():  # Data group already exists
             if overwrite:
@@ -1371,14 +1370,14 @@ class MapsManager:
     # File writers                #
     ###############################
     @staticmethod
-    def write_parameters(json_path, parameters, verbose=True):
+    def write_parameters(json_path: Path, parameters, verbose=True):
         """Write JSON files of parameters."""
         logger.debug("Writing parameters...")
-        Path(json_path).mkdir(parents=True, exist_ok=True)
+        json_path.mkdir(parents=True, exist_ok=True)
 
         # save to json file
         json_data = json.dumps(parameters, skipkeys=True, indent=4)
-        json_path = Path(json_path) / "maps.json"
+        json_path = json_path / "maps.json"
         if verbose:
             logger.info(f"Path of json file: {json_path}")
         with json_path.open(mode="w") as f:
@@ -1411,9 +1410,7 @@ class MapsManager:
         )
         train_df = train_df[["participant_id", "session_id"]]
         if self.transfer_path:
-            transfer_train_path = (
-                Path(self.transfer_path) / "groups" / "train+validation.tsv"
-            )
+            transfer_train_path = self.transfer_path / "groups" / "train+validation.tsv"
             transfer_train_df = pd.read_csv(transfer_train_path, sep="\t")
             transfer_train_df = transfer_train_df[["participant_id", "session_id"]]
             train_df = pd.concat([train_df, transfer_train_df])
@@ -1423,7 +1420,12 @@ class MapsManager:
         )
 
     def _write_data_group(
-        self, data_group, df, caps_directory=None, multi_cohort=None, label=None
+        self,
+        data_group,
+        df,
+        caps_directory: Path = None,
+        multi_cohort: bool = None,
+        label=None,
     ):
         """
         Check that a data_group is not already written and writes the characteristics of the data group
@@ -1444,7 +1446,7 @@ class MapsManager:
         if label is not None and label in df.columns.values:
             columns += [label]
 
-        df.to_csv(Path(group_path) / "data.tsv", sep="\t", columns=columns, index=False)
+        df.to_csv(group_path / "data.tsv", sep="\t", columns=columns, index=False)
         self.write_parameters(
             group_path,
             {
@@ -1564,7 +1566,7 @@ class MapsManager:
 
     @staticmethod
     def write_description_log(
-        log_dir,
+        log_dir: Path,
         data_group,
         caps_dict,
         df,
@@ -1578,8 +1580,8 @@ class MapsManager:
             caps_dict (dict[str, str]): Dictionary of the CAPS folders used for the task
             df (pd.DataFrame): DataFrame of the meta-data used for the task.
         """
-        Path(log_dir).mkdir(parents=True, exist_ok=True)
-        log_path = Path(log_dir) / "description.log"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_path = log_dir / "description.log"
         with log_path.open(mode="w") as f:
             f.write(f"Prediction {data_group} group - {datetime.now()}\n")
             f.write(f"Data loaded from CAPS directories: {caps_dict}\n")
@@ -1742,7 +1744,7 @@ class MapsManager:
     ###############################
     def _init_model(
         self,
-        transfer_path=None,
+        transfer_path: Path = None,
         transfer_selection=None,
         split=None,
         resume=False,
@@ -1892,7 +1894,7 @@ class MapsManager:
             / data_group
         )
         log_path = log_dir / "description.log"
-        with Path(log_path).open(mode="r") as f:
+        with log_path.open(mode="r") as f:
             content = f.read()
 
     def get_group_info(

@@ -121,7 +121,9 @@ class SplitManager:
             "validation": valid_df,
         }
 
-    def concatenate_diagnoses(self, split, cohort_path=None, cohort_diagnoses=None):
+    def concatenate_diagnoses(
+        self, split, cohort_path: Path = None, cohort_diagnoses=None
+    ):
         """Concatenated the diagnoses needed to form the train and validation sets."""
 
         train_path, valid_path = self._get_tsv_paths(
@@ -134,11 +136,11 @@ class SplitManager:
             cohort_diagnoses = self.diagnoses
 
         if self.baseline:
-            train_path = Path(train_path) / "train_baseline.tsv"
+            train_path = train_path / "train_baseline.tsv"
         else:
-            train_path = Path(train_path) / "train.tsv"
+            train_path = train_path / "train.tsv"
 
-        valid_path = Path(valid_path) / "validation_baseline.tsv"
+        valid_path = valid_path / "validation_baseline.tsv"
 
         train_df = pd.read_csv(train_path, sep="\t")
         valid_df = pd.read_csv(valid_path, sep="\t")
@@ -151,13 +153,13 @@ class SplitManager:
             # or "age" not in list_columns
             # or "sex" not in list_columns
         ):
-            parents_path = Path(train_path).resolve().parent
+            parents_path = train_path.resolve().parent
             while (
                 not (parents_path / "labels.tsv").is_file()
                 and ((parents_path / "kfold.json").is_file())
                 or (parents_path / "split.json").is_file()
             ):
-                parents_path = Path(parents_path).parent
+                parents_path = parents_path.parent
             try:
                 labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
                 train_df = pd.merge(
@@ -176,13 +178,13 @@ class SplitManager:
             # or "age" not in list_columns
             # or "sex" not in list_columns
         ):
-            parents_path = Path(valid_path).resolve().parent
+            parents_path = valid_path.resolve().parent
             while (
                 not (parents_path / "labels.tsv").is_file()
                 and ((parents_path / "kfold.json").is_file())
                 or (parents_path / "split.json").is_file()
             ):
-                parents_path = Path(parents_path).parent
+                parents_path = parents_path.parent
             try:
                 labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
                 valid_df = pd.merge(
