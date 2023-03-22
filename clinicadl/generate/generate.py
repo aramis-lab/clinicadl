@@ -201,7 +201,7 @@ def generate_trivial_dataset(
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
     data_df = extract_baseline(data_df)
 
-    home = str(Path.home())
+    home = Path.home()
     cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks"
     url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
     FILE1 = RemoteFileStructure(

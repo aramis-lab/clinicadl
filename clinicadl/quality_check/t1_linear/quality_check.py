@@ -65,7 +65,7 @@ def quality_check(
         raise ClinicaDLArgumentError(f"Output path {output_path} must be a TSV file.")
 
     # Fetch QC model
-    home = str(Path.home())
+    home = Path.home()
 
     cache_clinicadl = home / ".cache" / "clinicadl" / "models"
     url_aramis = "https://aramislab.paris.inria.fr/files/data/models/dl/qc/"
