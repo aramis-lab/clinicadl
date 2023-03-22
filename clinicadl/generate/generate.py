@@ -304,7 +304,6 @@ def generate_trivial_dataset(
         row_df = pd.DataFrame([row], columns=columns)
         output_df = pd.concat([output_df, row_df])
 
-
         return output_df
 
     results_df = Parallel(n_jobs=n_proc)(
@@ -381,7 +380,6 @@ def generate_shepplogan_dataset(
 
             slice_dir = slice_path.parent
             slice_dir.mkdir(parents=True, exist_ok=True)
-
             slice_np = generate_shepplogan_phantom(
                 img_size, label=subtype, smoothing=smoothing
             )
