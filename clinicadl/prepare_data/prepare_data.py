@@ -1,8 +1,8 @@
 from logging import getLogger
+from pathlib import Path
 
 
 def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parameters):
-    from pathlib import Path
 
     from clinica.utils.inputs import check_caps_folder, clinica_file_reader
     from clinica.utils.nipype import container_from_filename
