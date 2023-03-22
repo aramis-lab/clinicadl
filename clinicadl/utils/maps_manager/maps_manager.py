@@ -546,7 +546,7 @@ class MapsManager:
                                 from numpy import eye
 
                                 single_nifti_path = (
-                                    Path(results_path)
+                                    results_path
                                     / f"{data['participant_id'][i]}_{data['session_id'][i]}_{self.mode}-{data[f'{self.mode}_id'][i]}_map.nii.gz"
                                 )
 
@@ -558,7 +558,7 @@ class MapsManager:
 
                     torch.save(
                         mode_map,
-                        results_path / f"mean_{self.mode}-{i}_map.pt,
+                        results_path / f"mean_{self.mode}-{i}_map.pt",
                     )
                     if save_nifti:
                         import nibabel as nib
@@ -569,7 +569,6 @@ class MapsManager:
                             output_nii,
                             results_path / f"mean_{self.mode}-{i}_map.nii.gz",
                         )
-
 
     ###################################
     # High-level functions templates  #
