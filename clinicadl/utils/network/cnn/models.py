@@ -318,8 +318,24 @@ class ResNet3D(CNN):
             gpu=gpu,
         )
 
+    @staticmethod
+    def get_input_size():
+        return "1@169x207x179"
+
+    @staticmethod
+    def get_dimension():
+        return "3D"
+
+    @staticmethod
+    def get_task():
+        return ["classification", "regression"]
+
 
 class SE_CNN(CNN):
+    """
+    test
+    """
+
     def __init__(
         self, input_size=[1, 169, 208, 179], gpu=True, output_size=2, dropout=0.5
     ):
@@ -337,3 +353,15 @@ class SE_CNN(CNN):
             n_classes=output_size,
             gpu=gpu,
         )
+
+    @staticmethod
+    def get_input_size():
+        return "1@169x207x179"
+
+    @staticmethod
+    def get_dimension():
+        return "3D"
+
+    @staticmethod
+    def get_task():
+        return ["classification"]
