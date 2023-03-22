@@ -1,5 +1,5 @@
 import random
-from os import path
+from pathlib import Path
 from typing import Any, Dict, Tuple
 
 import toml
@@ -11,7 +11,7 @@ from clinicadl.utils.preprocessing import read_preprocessing
 
 def get_space_dict(launch_directory: str) -> Dict[str, Any]:
     """Transforms the TOML dictionary in one dimension dictionary."""
-    toml_path = path.join(launch_directory, "random_search.toml")
+    toml_path = Path(launch_directory) / "random_search.toml"
     toml_options = toml.load(toml_path)
 
     if "Random_Search" not in toml_options:
@@ -57,10 +57,10 @@ def get_space_dict(launch_directory: str) -> Dict[str, Any]:
     train_default = build_train_dict(toml_path, space_dict["network_task"])
 
     # Mode and preprocessing
-    preprocessing_json = path.join(
-        space_dict["caps_directory"],
-        "tensor_extraction",
-        space_dict.pop("preprocessing_json"),
+    preprocessing_json = (
+        Path(space_dict["caps_directory"])
+        / "tensor_extraction"
+        / space_dict.pop("preprocessing_json")
     )
 
     preprocessing_dict = read_preprocessing(preprocessing_json)
@@ -74,23 +74,23 @@ def get_space_dict(launch_directory: str) -> Dict[str, Any]:
 
 def sampling_fn(value, sampling_type: str):
     if isinstance(value, (tuple, list)):
-        if sampling_type is "fixed":
+        if sampling_type == "fixed":
             return value
-        elif sampling_type is "choice":
+        elif sampling_type == "choice":
             return random.choice(value)
-        elif sampling_type is "exponent":
+        elif sampling_type == "exponent":
             exponent = random.uniform(*value)
             return 10**-exponent
-        elif sampling_type is "randint":
+        elif sampling_type == "randint":
             return random.randint(*value)
-        elif sampling_type is "uniform":
+        elif sampling_type == "uniform":
             return random.uniform(*value)
         else:
             raise NotImplementedError(
                 f"Sampling type {sampling_type} is not implemented"
             )
     else:
-        if sampling_type is "exponent":
+        if sampling_type == "exponent":
             return 10**-value
         else:
             return value

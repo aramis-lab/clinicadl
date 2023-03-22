@@ -2,7 +2,7 @@
 
 from copy import copy
 from logging import getLogger
-from os import path
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,7 @@ logger = getLogger("clinicadl")
 
 
 def merged_tsv_reader(merged_tsv_path):
-    if not path.exists(merged_tsv_path):
+    if not Path(merged_tsv_path).is_file():
         raise ClinicaDLTSVError(f"{merged_tsv_path} file was not found. ")
     bids_df = pd.read_csv(merged_tsv_path, sep="\t")
 
@@ -193,7 +193,7 @@ def remove_sub_labels(diagnosis_df, sub_labels, diagnosis_df_paths, results_path
 
     for label in sub_labels:
         if f"{label}.tsv" in diagnosis_df_paths:
-            sub_diag_df = pd.read_csv(path.join(results_path, f"{label}.tsv"), sep="\t")
+            sub_diag_df = pd.read_csv(Path(results_path) / f"{label}.tsv", sep="\t")
             sub_diag_baseline_df = extract_baseline(sub_diag_df, label)
             for idx in sub_diag_baseline_df.index.values:
                 subject = sub_diag_baseline_df.loc[idx, "participant_id"]
@@ -294,4 +294,4 @@ def df_to_tsv(name: str, results_path: str, df, baseline: bool = False) -> None:
             subset=["participant_id", "session_id"], keep="first", inplace=True
         )
     # df = df[["participant_id", "session_id"]]
-    df.to_csv(path.join(results_path, name), sep="\t", index=False)
+    df.to_csv(Path(results_path) / name, sep="\t", index=False)

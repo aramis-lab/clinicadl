@@ -1,5 +1,3 @@
-from os import path
-
 from clinicadl.utils.split_manager.split_manager import SplitManager
 
 
@@ -31,7 +29,7 @@ class SingleSplit(SplitManager):
         return range(1)
 
     def _get_tsv_paths(self, cohort_path, split):
-        train_path = path.join(cohort_path)
-        valid_path = path.join(cohort_path)
+        train_path = cohort_path
+        valid_path = cohort_path
 
         return train_path, valid_path
