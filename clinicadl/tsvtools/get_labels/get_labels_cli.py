@@ -5,6 +5,7 @@ from clinicadl.utils import cli_param
 
 @click.command(name="get-labels", no_args_is_help=True)
 @cli_param.argument.bids_directory
+@cli_param.argument.results_tsv
 @cli_param.option.diagnoses
 @cli_param.option.modality
 @cli_param.option.variables_of_interest
@@ -40,14 +41,9 @@ from clinicadl.utils import cli_param
     default=False,
     is_flag=True,
 )
-@click.option(
-    "--output_dir",
-    help="Path to the directory where labels.tsv will be stored. ",
-    type=str,
-    default=None,
-)
 def cli(
     bids_directory,
+    results_tsv,
     diagnoses,
     modality,
     restriction_tsv,
@@ -56,7 +52,6 @@ def cli(
     missing_mods,
     merged_tsv,
     remove_unique_session,
-    output_dir,
 ):
     """Get labels in a tsv file.
 
@@ -65,6 +60,7 @@ def cli(
         - `clinica iotools check-missing-modalities`
 
     BIDS_DIRECTORY is the path to the BIDS directory.
+    RESULTS_TSV is the path (including the name of the file) where the results will be save
 
     Defaults diagnoses are CN and AD.
 
@@ -85,7 +81,7 @@ def cli(
         missing_mods=missing_mods,
         merged_tsv=merged_tsv,
         remove_unique_session=remove_unique_session,
-        output_dir=output_dir,
+        output_dir=results_tsv,
     )
 
 

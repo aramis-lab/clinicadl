@@ -1,4 +1,4 @@
-# `tsvtool` - Prepare your metadata
+# `tsvtools` - Prepare your metadata
 
 This collection of tools aims at handling metadata of BIDS-formatted datasets.
 These tools perform three main tasks:
@@ -16,7 +16,7 @@ These tools perform three main tasks:
     More information on the subject can be found [online](https://towardsdatascience.com/train-validation-and-test-sets-72cb40cba9e7).
 
 
-## `getlabels` - Extract labels specific to Alzheimer's disease
+## `get-labels` - Extract labels
 
 ### Description
 
@@ -30,25 +30,23 @@ The labels correspond to the following description and are stored in the column 
 These labels are specific to the Alzheimer's disease context and can only be extracted from cohorts used in [(Wen et al., 2020)](https://www.sciencedirect.com/science/article/abs/pii/S1361841520300591).
 
 
-
 However, users can define other label lists manually and give them in inputs of other functions of `tsvtools`. These TSV files will have to include the following columns: `participant_id`, `session_id`, and the name of the value used for the label (for example `diagnosis`).
 Other functions of `tsvtools` may also try to have similar distributions according to the age and the sex of the participants. To benefit from this feature, the user must also include these two columns in their TSV files.
 
-#### Example of TSV produced by `getlabels`:
+#### Example of TSV produced by `get-labels`:
 
 | participant_id | session_id | diagnosis | age | sex | ... |
-| -- | -- | -- | -- | -- | -- | -- |
+| -------------- | ---------- | --------- | --- | --- | --- |
 | sub-CLNC0001  | ses-M00 | MCI | 72 | M | ... |
 | sub-CLNC0001  | ses-M12 | MCI | 65 | F | ... |
 | sub-CLNC0001  | ses-M36 | AD | 66 | F | ... |
-| sub-CLNC0002  | ses-M00 | AD | 89 | F | ... |
-
+| sub-CLNC0002  | ses-M00 | CN | 89 | F | ... |
 
 
 ### Running the task
 
 ```bash
-clinicadl tsvtools getlabels [OPTIONS] BIDS_DIRECTORY OUTPUT_TSV
+clinicadl tsvtools get-labels [OPTIONS] BIDS_DIRECTORY OUTPUT_TSV
 ```
 where:
 
@@ -68,22 +66,25 @@ Options:
   - `--variables_of_interest` (List[str]) is a list of columns present in `MERGED_TSV` that will be included
   in the outputs.
   - `--keep_smc` (bool) if given the SMC participants are kept in the `CN.tsv` file.
-  Default setting remove these participants.
+  Default setting removes these participants.
   - `--caps_directory` (Path) is a folder containing a CAPS compliant dataset
   - `--merged_tsv` (Path) is a path to a TSV file containing the results of `clinica iotools merge-tsv` command. 
     - If not run before, this command will be run in the task and the output will be save in the `RESULTS_DIRECTORY` given with the name `merged.tsv`. 
     - If run before, the output has to be store with the name `merged.tsv`in the `RESULTS_DIRECTORY` or the path has to be given with this option. It avoids to re-run the `merge-tsv`command which can be very long (more than 30min).
   - `--missing_mods` (Path) is a path to a TSV file containing the results of `clinica iotools missing-modalities` command. 
     - If not run before, this command will be run in the task and the output directory will be save in the `RESULTS_DIRECTORY` given with the name `missing_mods`. 
-    - If run before, the output directory has to be store with the name `missing_mods`in the `RESULTS_DIRECTORY` or the path has to be given with this option. It avoids to re-run the `missing-modalities`command which can be very long (more than 30min).
-- `--remove-unique-session` (bool) 
+    - If run before, the output directory has to be store with the name `missing_mods` in the `RESULTS_DIRECTORY` or the path has to be given with this option. It avoids to re-run the `clinica iotools check-missing-modalities` command which can be very long (more than 30min, depending on the hardware).
+  - `--remove-unique-session` (bool) if given, participants having only one session will be removed.
+  Default setting keeps these participants.
   
 
 #### Example of how to run the task :
 
 ```bash
-clinicadl tsvtools get-labels Data/BIDS --merged-tsv merged.tsv --diagnosis AD --diagnosis MCI --time_horizon 12 
+clinicadl tsvtools get-labels Data/BIDS --merged-tsv merged.tsv --diagnosis AD --diagnosis MCI 
 ```
+
+This commandline will create a new TSV file (`Data/labels.tsv`) with a list of `AD` and `MCI` participants from `Data/Bids`. This command will run `clinica iotools check-missing-modalities` but used the given `merged.tsv` file.
 
 ### Output tree
 
@@ -115,20 +116,18 @@ clinicadl tsvtools split [OPTIONS] DATA_TSV
 where:
 
   - `DATA_TSV` (Path) is the TSV file with the data that are going to be split 
-  (output of `clinicadl tsvtools getlabels|split|kfold`).
+  (output of `clinicadl tsvtools get-labels|split|kfold`).
 
 Options:
 
-  - `--subset_name` (str) is the name of the subset that is complementary to train.
- Default value: `validation`.
-  - `--n_test` (float) gives the number of subjects that will be put in the set complementary to train:
+  - `--subset_name` (str) is the name of the subset that is complementary to train. Default value: `validation`.
+  - `--n_test` (float) gives the number of subjects that will be put in the set complementary to train. Default value: `100`.
 
     - If > 1, corresponds to the number of subjects to put in set with name `subset_name`.
     - If < 1, proportion of subjects to put in set with name `subset_name`.
     - If = 0, no training set is created and the whole dataset is considered as one set
         with name `subset_name`.
-
-    Default value: `100`.
+    
   - `--p_age_threshold` (float) is the threshold on the p-value used for the T-test on age distributions.
   Default value: `0.80`.
   - `--p_sex_threshold` (float) is the threshold on the p-value used for the chi2 test on sex distributions.
@@ -139,7 +138,7 @@ Options:
   Default value: `None`
 
 !!!tip
-    Even if the split is performed on age and sex, these columns do not need to be part of the columns. If they are not present, the pipeline will go back to the labels.tsv to find them.
+    Even if the split is performed on age and sex, these columns do not need to be part of the columns. If they are not present, the pipeline will try to go back to the labels.tsv to find them.
     
 ### Output tree
 
@@ -205,7 +204,7 @@ For each key, it explicits which set it belongs to for each split according to t
 
 ### Description
 
-This tool performs a single split to prepare testing data and then can perform either k-fold or single split to prepare validation data. It is an easy way to quicly prepare data with basic options.
+This tool performs a single split to prepare testing data and then can perform either k-fold or single split to prepare validation data. It is an easy way to quickly prepare data with basic options.
 
 ### Running the task
 
@@ -214,7 +213,7 @@ clinicadl tsvtools prepare-experiment [OPTIONS] DATA_TSV
 ```
 where:
 
-  - `DATA_TSV` (Path) is a TSV file output of `clinicadl tsvtool getlabels|split|kfold`.
+  - `DATA_TSV` (Path) is a TSV file output of `clinicadl tsvtool get-labels|split|kfold`.
 
 Options:
 
@@ -229,9 +228,9 @@ Options:
   - `--validation_type` (str) is the name of the split wanted for the validation. It can only be `split`or `kfold`.
   Default value: `split`.
   - `--n_validation`(float) gives the number of subjects that will be put in the validation set:
-    - If it is a SingleSplit: it is the number of subjects top put in validation set if it is a SingleSplit.
-    - If it is a k-fold split: it is the number of folds in the k-folds split.
-    - If =0, there is no training set and the whole dataset is considered as a validation set.
+    - For `split`, it is the number of subjects to put in validation set if it is a SingleSplit.
+    - For `kfold`, it is the number of folds in the k-folds split.
+    - If = 0, there is no training set and the whole dataset is considered as a validation set.
 
 !!!tip
     Even if the split is performed on age and sex, these columns do not need to be part of the columns. If they are not present, the pipeline will go back to the labels.tsv to find them.
@@ -240,7 +239,7 @@ Options:
 
 ### Description
 
-This tool adds a new column `progression` to the TSV file given. It corresponds to the progression of the Alzheimer's disease. The diagnosis must be one of those : CN (cognitively norma), MCI (mild cognitive impairment) or AD (alzheimer's disease).
+This tool adds a new column `progression` to the TSV file given. It corresponds to the progression of the Alzheimer's disease. The diagnosis must be one of those : `CN` (cognitively norma), `MCI` (mild cognitive impairment) or `AD` (alzheimer's disease).
 
 The progression label corresponds to the following description:
 - **s** (stable): diagnosis remains identical during the `time_horizon` period following the current visit,
@@ -274,16 +273,18 @@ For example, the output of `clinicadl tsvtools split/kfold` returns a TSV file w
 ### Running the task
 
 ```bash
-clinicadl tsvtools get-metadata [OPTIONS] DATA_TSV
+clinicadl tsvtools get-metadata [OPTIONS] DATA_TSV MERGED_TSV
 ```
 where:
 
-  - `DATA_TSV` (Path) is a folder containing one TSV file per label (output of `clinicadl tsvtool getlabels|split|kfold`).
+  - `DATA_TSV` (Path) is a folder containing one TSV file per label (output of `clinicadl tsvtool get-labels|split|kfold`).
+  - `MERGED_TSV` (Path) is a path to a TSV file containing the results of `clinica iotools merge-tsv` command.
 
 Options:
 
   - `--variables_of_interest` (List[str]) is a list of columns present in `MERGED_TSV` that will be included in the outputs.
 
+If no `variables_of_interest`is given, all columns present in `MERGED_TSV` will be included.
 
 ## `analysis`
 
@@ -309,6 +310,8 @@ Options:
    
 
 ## Summary
+
+This summary is a little help to better understand how to pre-process data before training a network, using [Clinica](https://aramislab.paris.inria.fr/clinica/docs/public/latest/) and ClinicaDL.
 
 ![tsvtools](https://user-images.githubusercontent.com/57992134/196130331-b93f123c-d607-45be-b3ad-a6e41cf0efce.png)
 
