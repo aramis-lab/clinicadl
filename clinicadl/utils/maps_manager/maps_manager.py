@@ -410,33 +410,55 @@ class MapsManager:
         overwrite=False,
         overwrite_name=False,
         level=None,
+        save_nifti=False,
     ):
         """
         Performs the interpretation task on a subset of caps_directory defined in a TSV file.
         The mean interpretation is always saved, to save the individual interpretations set save_individual to True.
-        Args:
-            data_group (str): name of the data group interpreted.
-            name (str): name of the interpretation procedure.
-            method (str): method used for extraction (ex: gradients, grad-cam...).
-            caps_directory (str): path to the CAPS folder. For more information please refer to
-                [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
-                Default will load the value of an existing data group.
-            tsv_path (str): path to a TSV file containing the list of participants and sessions to test.
-                Default will load the DataFrame of an existing data group.
-            split_list (list[int]): list of splits to interpret. Default perform interpretation on all splits available.
-            selection_metrics (list[str]): list of selection metrics to interpret.
-                Default performs the interpretation on all selection metrics available.
-            multi_cohort (bool): If True considers that tsv_path is the path to a multi-cohort TSV.
-            diagnoses (list[str]): List of diagnoses to load if tsv_path is a split_directory.
-                Default uses the same as in training step.
-            target_node (int): Node from which the interpretation is computed.
-            save_individual (bool): If True saves the individual map of each participant / session couple.
-            batch_size (int): If given, sets the value of batch_size, else use the same as in training step.
-            n_proc (int): If given, sets the value of num_workers, else use the same as in training step.
-            gpu (bool): If given, a new value for the device of the model will be computed.
-            overwrite (bool): If True erase the occurrences of data_group.
-            overwrite_name (bool): If True erase the occurrences of name.
-            level (int): layer number in the convolutional part after which the feature map is chosen.
+
+        Parameters
+        ----------
+        data_group: str
+            Name of the data group interpreted.
+        name: str
+            Name of the interpretation procedure.
+        method: str
+            Method used for extraction (ex: gradients, grad-cam...).
+        caps_directory: str (Path)
+            Path to the CAPS folder. For more information please refer to
+            [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
+            Default will load the value of an existing data group.
+        tsv_path: str (Path)
+            Path to a TSV file containing the list of participants and sessions to test.
+            Default will load the DataFrame of an existing data group.
+        split_list: list of int
+            List of splits to interpret. Default perform interpretation on all splits available.
+        selection_metrics: list of str
+            List of selection metrics to interpret.
+            Default performs the interpretation on all selection metrics available.
+        multi_cohort: bool
+            If True considers that tsv_path is the path to a multi-cohort TSV.
+        diagnoses: list of str
+            List of diagnoses to load if tsv_path is a split_directory.
+            Default uses the same as in training step.
+        target_node: int
+            Node from which the interpretation is computed.
+        save_individual: bool
+            If True saves the individual map of each participant / session couple.
+        batch_size: int
+            If given, sets the value of batch_size, else use the same as in training step.
+        n_proc: int
+            If given, sets the value of num_workers, else use the same as in training step.
+        gpu: bool
+            If given, a new value for the device of the model will be computed.
+        overwrite: bool
+            If True erase the occurrences of data_group.
+        overwrite_name: bool
+            If True erase the occurrences of name.
+        level: int
+            Layer number in the convolutional part after which the feature map is chosen.
+        save_nifi : bool
+            If True, save the interpretation map in nifti format.
         """
 
         from torch.utils.data import DataLoader
@@ -545,9 +567,34 @@ class MapsManager:
                                 / f"{data['participant_id'][i]}_{data['session_id'][i]}_{self.mode}-{data[f'{self.mode}_id'][i]}_map.pt"
                             )
                             torch.save(map_pt[i], single_path)
+                            if save_nifti:
+                                import nibabel as nib
+                                from numpy import eye
+
+                                single_nifti_path = (
+                                    results_path
+                                    / f"{data['participant_id'][i]}_{data['session_id'][i]}_{self.mode}-{data[f'{self.mode}_id'][i]}_map.nii.gz"
+                                )
+
+                                output_nii = nib.Nifti1Image(map_pt[i].numpy(), eye(4))
+                                nib.save(output_nii, single_nifti_path)
+
                 for i, mode_map in enumerate(cum_maps):
                     mode_map /= len(data_test)
-                    torch.save(mode_map, results_path / f"mean_{self.mode}-{i}_map.pt")
+
+                    torch.save(
+                        mode_map,
+                        results_path / f"mean_{self.mode}-{i}_map.pt",
+                    )
+                    if save_nifti:
+                        import nibabel as nib
+                        from numpy import eye
+
+                        output_nii = nib.Nifti1Image(mode_map, eye(4))
+                        nib.save(
+                            output_nii,
+                            results_path / f"mean_{self.mode}-{i}_map.nii.gz",
+                        )
 
     ###################################
     # High-level functions templates  #

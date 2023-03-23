@@ -80,6 +80,7 @@ from clinicadl.utils import cli_param
     default=False,
     help="Overwrite the name if it already exists.",
 )
+@cli_param.option.save_nifti
 def cli(
     input_maps_directory,
     data_group,
@@ -98,6 +99,7 @@ def cli(
     gpu,
     overwrite,
     overwrite_name,
+    save_nifti,
 ):
     """Interpretation of trained models using saliency map method.
 
@@ -134,5 +136,6 @@ def cli(
         overwrite=overwrite,
         overwrite_name=overwrite_name,
         level=level_grad_cam,
+        save_nifti=save_nifti,
         # verbose=verbose,
     )

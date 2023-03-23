@@ -170,6 +170,16 @@ overwrite = click.option(
     help="Will overwrite data group if existing. Please give caps_directory and participants_tsv to"
     " define new data group.",
 )
+
+# Predict and interpret
+
+save_nifti = click.option(
+    "--save_nifti",
+    type=bool,
+    default=False,
+    is_flag=True,
+    help="Save the output map(s) in the MAPS in NIfTI format.",
+)
 split = click.option(
     "--split",
     "-s",
