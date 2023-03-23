@@ -723,14 +723,15 @@ class MapsManager:
 
     def _init_profiler(self):
         if self.profiler:
-            from torch.profiler import (
-                profile,
-                tensorboard_trace_handler,
-                ProfilerActivity,
-                schedule,
-            )
             from datetime import datetime
             from pathlib import Path
+
+            from torch.profiler import (
+                ProfilerActivity,
+                profile,
+                schedule,
+                tensorboard_trace_handler,
+            )
 
             time = str(datetime.now().time())[:8]
             filename = [Path("profiler") / f"clinica_dl_{time}"]
