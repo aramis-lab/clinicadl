@@ -1,8 +1,7 @@
 """
 Produces a tsv file to analyze the performance of one launch of the random search.
 """
-import os
-from os import path
+from pathlib import Path
 
 import pandas as pd
 
@@ -20,11 +19,11 @@ def meta_maps_analysis(launch_dir, evaluation_metric="loss"):
         launch_dir (str): Path to the directory containing several MAPS.
         evaluation_metric (str): Name of the metric used for validation evaluation.
     """
-
+    launch_dir = Path(launch_dir)
     jobs_list = [
         job
-        for job in os.listdir(launch_dir)
-        if path.exists(path.join(launch_dir, job, "maps.json"))
+        for job in list(launch_dir.iter_dir())
+        if (launch_dir / job / "maps.json").is_file()
     ]
 
     selection_set = set()  # Set of all selection metrics seen
@@ -33,7 +32,7 @@ def meta_maps_analysis(launch_dir, evaluation_metric="loss"):
     performances_dict = dict()
     for job in jobs_list:
         performances_dict[job] = dict()
-        maps_manager = MapsManager(path.join(launch_dir, job))
+        maps_manager = MapsManager(launch_dir / job)
         split_list = maps_manager._find_splits()
         split_set = split_set | set(split_list)
         for split in split_set:
@@ -60,4 +59,4 @@ def meta_maps_analysis(launch_dir, evaluation_metric="loss"):
         for job in jobs_list:
             for split in split_set:
                 df.loc[job, f"split-{split}"] = performances_dict[job][split][metric]
-        df.to_csv(path.join(launch_dir, filename), sep="\t")
+        df.to_csv(launch_dir / filename, sep="\t")
