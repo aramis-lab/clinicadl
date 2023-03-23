@@ -66,13 +66,6 @@ from clinicadl.utils import cli_param
 )
 @cli_param.option.save_nifti
 @click.option(
-    "--save_nifti",
-    type=bool,
-    default=False,
-    is_flag=True,
-    help="Save the reconstruction output in the MAPS in NIfTI format.",
-)
-@click.option(
     "--save_latent_tensor",
     type=bool,
     default=False,
