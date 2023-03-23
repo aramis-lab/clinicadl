@@ -70,8 +70,7 @@ class RegressionManager(TaskManager):
         for idx in df.index:
             label = df.loc[idx, dataset.label]
             key = max(np.where((label >= np.array(thresholds))[0]))
-            count[key] += 1
-
+            count[[key]] += 1
         weight_per_class = 1 / np.array(count)
         weights = []
 
@@ -139,7 +138,7 @@ class RegressionManager(TaskManager):
             )
             row = [[subject, session, 0, label, prediction]]
             row_df = pd.DataFrame(row, columns=self.columns)
-            df_final = df_final.append(row_df)
+            df_final = pd.concat([df_final, row_df])
 
         if use_labels:
             results = self.compute_metrics(df_final)

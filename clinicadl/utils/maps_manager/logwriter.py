@@ -1,4 +1,4 @@
-from os import makedirs, path
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -34,20 +34,20 @@ class LogWriter:
         self.evaluation_metrics = evaluation_metrics
         self.maps_path = maps_path
 
-        self.file_dir = path.join(self.maps_path, f"split-{split}", "training_logs")
+        self.file_dir = Path(self.maps_path) / f"split-{split}" / "training_logs"
         if network is not None:
-            self.file_dir = path.join(self.file_dir, f"network-{network}")
-        makedirs(self.file_dir, exist_ok=True)
-        tsv_path = path.join(self.file_dir, "training.tsv")
+            self.file_dir = Path(self.file_dir) / f"network-{network}"
+        Path(self.file_dir).mkdir(parents=True, exist_ok=True)
+        tsv_path = Path(self.file_dir) / "training.tsv"
 
         self.beginning_epoch = beginning_epoch
         if not resume:
             results_df = pd.DataFrame(columns=self.columns)
-            with open(tsv_path, "w") as f:
+            with tsv_path.open(mode="w") as f:
                 results_df.to_csv(f, index=False, sep="\t")
             self.beginning_time = time()
         else:
-            if not path.exists(tsv_path):
+            if not Path(tsv_path).is_file():
                 raise FileNotFoundError(
                     f"The training.tsv file of the split {split} in the MAPS "
                     f"{self.maps_path} does not exist."
@@ -61,11 +61,9 @@ class LogWriter:
                 self.beginning_time = time() + truncated_tsv.iloc[-1, 0]
             truncated_tsv.to_csv(tsv_path, index=True, sep="\t")
 
-        self.writer_train = SummaryWriter(
-            path.join(self.file_dir, "tensorboard", "train")
-        )
+        self.writer_train = SummaryWriter(Path(self.file_dir) / "tensorboard" / "train")
         self.writer_valid = SummaryWriter(
-            path.join(self.file_dir, "tensorboard", "validation")
+            Path(self.file_dir) / "tensorboard" / "validation"
         )
 
     def step(self, epoch, i, metrics_train, metrics_valid, len_epoch):
@@ -82,7 +80,7 @@ class LogWriter:
         from time import time
 
         # Write TSV file
-        tsv_path = path.join(self.file_dir, "training.tsv")
+        tsv_path = Path(self.file_dir) / "training.tsv"
 
         t_current = time() - self.beginning_time
         general_row = [epoch, i, t_current]
@@ -109,7 +107,7 @@ class LogWriter:
 
         row = [general_row + train_row + valid_row]
         row_df = pd.DataFrame(row, columns=self.columns)
-        with open(tsv_path, "a") as f:
+        with tsv_path.open(mode="a") as f:
             row_df.to_csv(f, header=False, index=False, sep="\t")
 
         # Write tensorboard logs

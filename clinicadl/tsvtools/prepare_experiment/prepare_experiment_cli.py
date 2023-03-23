@@ -69,14 +69,14 @@ def cli(
         categorical_split_variable=None,
         not_only_baseline=flag_not_baseline,
     )
-    from os.path import exists
+
     from pathlib import Path
 
     parents_path = Path(data_tsv).parents[0]
     split_numero = 1
     folder_name = "split"
 
-    while exists(parents_path / folder_name):
+    while (parents_path / folder_name).is_dir():
         split_numero += 1
         folder_name = f"split_{split_numero}"
     if split_numero > 2:
