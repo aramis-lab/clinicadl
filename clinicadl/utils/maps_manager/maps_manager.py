@@ -1063,6 +1063,7 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
+            model = DDP(model, device_ids=[self.ddp.local_rank])
 
             prediction_df, metrics = self.task_manager.test(
                 model, dataloader, criterion, use_labels=use_labels
