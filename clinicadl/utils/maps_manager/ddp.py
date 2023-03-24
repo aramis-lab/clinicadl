@@ -63,6 +63,10 @@ class ClusterResolver(ABC):
 
 
 class MonoTaskResolver(ClusterResolver):
+    def __init__(self):
+        super().__init__()
+        self.reference_port = 21355
+
     @property
     def rank(self) -> int:
         return 0
@@ -85,7 +89,7 @@ class MonoTaskResolver(ClusterResolver):
 
     @property
     def master_port(self) -> int:
-        return 12345
+        return self.reference_port + int(os.environ["CUDA_VISIBLE_DEVICES"].split(",")[0])
 
 
 class SlurmClusterResolver(ClusterResolver):
