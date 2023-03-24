@@ -1081,7 +1081,7 @@ class MapsManager:
                     metrics,
                     split,
                     selection_metric,
-                    data_group=data_group
+                    data_group=data_group,
                 )
 
     def _compute_output_nifti(
