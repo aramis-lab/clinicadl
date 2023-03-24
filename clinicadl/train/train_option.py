@@ -50,6 +50,12 @@ ddp = cli_param.option_group.computational_group.option(
     default=None,
     help="Enables distributed data parallelism with Pytorch's API.",
 )
+resolver = cli_param.option_group.computational_group.option(
+    "--resolver", "--cluster-resolver",
+    type=str,
+    default=None,
+    help="Name of the resolver to use DDP"
+)
 # Reproducibility
 seed = cli_param.option_group.reproducibility_group.option(
     "--seed",
