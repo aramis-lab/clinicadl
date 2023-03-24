@@ -187,8 +187,14 @@ def change_str_to_path(
         updated TOML dictionary.
     """
     path_list = ["transfer_path", "caps_directory", "tsv_directory", "maps_path"]
-    for cle, valeur in toml_dict.items():
-        if cle in path_list:
-            toml_dict[cle] = Path(valeur)
+    for key, value in toml_dict.items():
+        if (
+            key.endswith("tsv")
+            or key.endswith("dir")
+            or key.endswith("directory")
+            or key.endswith("path")
+            or key.endswith("json")
+        ):
+            toml_dict[key] = Path(value)
 
     return toml_dict

@@ -30,6 +30,7 @@ def get_space_dict(launch_directory: Path) -> Dict[str, Any]:
             or key.endswith("dir")
             or key.endswith("directory")
             or key.endswith("path")
+            or key.endswith("json")
         ):
             space_dict[key] = Path(value)
 
