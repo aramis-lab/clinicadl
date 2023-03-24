@@ -1,6 +1,6 @@
 # coding: utf8
 import logging
-from pathlib import Path
+from pathlib import Path, PosixPath
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
@@ -64,8 +64,13 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
         if variable in commandline_arg_dict:
             del commandline_arg_dict[variable]
 
+    # change path to str for json.dumps
+    for key, value in commandline_arg_dict.items():
+        if isinstance(value, PosixPath):
+            commandline_arg_dict[key] = str(value)
+
     # save to json file
-    json = json.dumps(commandline_arg_dict, skipkeys=True, indent=4)
+    json = json.dumps(commandline_arg_dict, skipkeys=True, ensure_ascii=False, indent=4)
     logger.info(f"Path of json file: {output_dir / 'commandline.json'}")
     f = open(output_dir / filename, "w")
     f.write(json)

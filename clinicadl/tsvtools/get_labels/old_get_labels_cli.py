@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 
 from clinicadl.utils import cli_param
@@ -24,13 +26,13 @@ from clinicadl.utils import cli_param
 @click.option(
     "--merged_tsv",
     help="Path to a TSV file containing the results of clinica iotools merge-tsv command if different of results_directory/merged.tsv",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, path_type=Path),
     default=None,
 )
 @click.option(
     "--missing_mods",
     help="Path to a directory containing the results of clinica iotools missing-modalities command if different of results_directory/missing_mods/",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, path_type=Path),
     default=None,
 )
 @click.option(

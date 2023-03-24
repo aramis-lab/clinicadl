@@ -70,9 +70,7 @@ def cli(
         not_only_baseline=flag_not_baseline,
     )
 
-    from pathlib import Path
-
-    parents_path = Path(data_tsv).parents[0]
+    parents_path = data_tsv.parents[0]
     split_numero = 1
     folder_name = "split"
 
