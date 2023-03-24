@@ -50,6 +50,12 @@ ddp = cli_param.option_group.computational_group.option(
     default=None,
     help="Enables distributed data parallelism with Pytorch's API.",
 )
+zero = cli_param.option_group.computational_group.option(
+    "--zero/--no-zero",
+    type=bool,
+    default=None,
+    help="Enables Zero Redundancy Optimizer with Pytorch to save memory at the cost of communications.",
+)
 resolver = cli_param.option_group.computational_group.option(
     "--resolver", "--cluster-resolver",
     type=str,

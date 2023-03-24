@@ -1912,11 +1912,23 @@ class MapsManager:
 
     def _init_optimizer(self, model, split=None, resume=False):
         """Initialize the optimizer and use checkpoint weights if resume is True."""
-        optimizer = getattr(torch.optim, self.optimizer)(
-            filter(lambda x: x.requires_grad, model.parameters()),
+        optimizer_cls = getattr(torch.optim, self.optimizer)
+        parameters = filter(lambda x: x.requires_grad, model.parameters())
+        optimizer_kwargs = dict(
             lr=self.learning_rate,
             weight_decay=self.weight_decay,
         )
+
+        if not self.zero:
+            optimizer = optimizer_cls(parameters, **optimizer_kwargs)
+        else:
+            from torch.distributed.optim import ZeroRedundancyOptimizer
+
+            optimizer = ZeroRedundancyOptimizer(
+                parameters,
+                optimizer_class=optimizer_cls,
+                **optimizer_kwargs
+            )
 
         if resume:
             checkpoint_path = (

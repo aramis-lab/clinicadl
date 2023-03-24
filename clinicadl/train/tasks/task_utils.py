@@ -61,6 +61,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "split",
         "compensation",
         "transfer_path",
+        "zero",
     ]
     all_options_list = standard_options_list + task_options_list
 
