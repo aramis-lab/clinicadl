@@ -42,8 +42,8 @@ where:
 !!! warning "data group consistency"
     For ClinicaDL, a data group is linked to a list of participants / sessions and a CAPS directory.
     When performing a prediction, interpretation or tensor serialization the user must give a data group.
-    If this data group does not exist, the user MUST give a `caps_path` and a `tsv_path`.
-    If this data group already exists, the user MUST not give any `caps_path` or `tsv_path`, or set overwrite to True.
+    If this data group does not exist, the user MUST give a `caps_directory` and a `participants_tsv`.
+    If this data group already exists, the user MUST not give any `caps_directory` or `participants_tsv`, or set overwrite to True.
 
 
 Optional arguments:
@@ -70,6 +70,7 @@ Optional arguments:
 - **Other options**
     - `--target_node` (int) is the node the gradients explain. By default, it will target the first output node.
     - `--save_individual` (bool) is an option to save individual saliency maps in addition to the mean saliency map.
+    - `--save_nifti` (bool) is an option to save the interpretation map in nifti format.
     - `--level_grad_cam` (int) is the layer considered to compute the Grad-CAM map. Default will use the last
     layer of the `convolutions` parameter of the targeted `CNN`. The minimum value `1` will backpropagate the results
     until the feature map located after the first layer.
