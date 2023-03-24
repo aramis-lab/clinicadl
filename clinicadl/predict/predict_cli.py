@@ -62,13 +62,7 @@ from clinicadl.utils import cli_param
     is_flag=True,
     help="Save the reconstruction output in the MAPS in Pytorch tensor format.",
 )
-@click.option(
-    "--save_nifti",
-    type=bool,
-    default=False,
-    is_flag=True,
-    help="Save the reconstruction output in the MAPS in NIfTI format.",
-)
+@cli_param.option.save_nifti
 @cli_param.option.use_gpu
 @cli_param.option.n_proc
 @cli_param.option.batch_size
