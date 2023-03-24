@@ -1,5 +1,5 @@
 # coding: utf8
-from os import path
+from pathlib import Path
 from time import time
 from typing import Any, Dict, List, Tuple, Union
 
@@ -193,7 +193,7 @@ def extract_slice_path(
             f"Slice direction {slice_direction} should be in {direction_dict.keys()} corresponding to {direction_dict}."
         )
 
-    input_img_filename = path.basename(img_path)
+    input_img_filename = Path(img_path).name
     txt_idx = input_img_filename.rfind("_")
     it_filename_prefix = input_img_filename[0:txt_idx]
     it_filename_suffix = input_img_filename[txt_idx:]
@@ -277,7 +277,7 @@ def extract_patch_tensor(
 def extract_patch_path(
     img_path: str, patch_size: int, stride_size: int, patch_index: int
 ) -> str:
-    input_img_filename = path.basename(img_path)
+    input_img_filename = Path(img_path).name
     txt_idx = input_img_filename.rfind("_")
     it_filename_prefix = input_img_filename[0:txt_idx]
     it_filename_suffix = input_img_filename[txt_idx:]
@@ -298,9 +298,6 @@ def extract_images(input_img: str) -> List[Tuple[str, torch.Tensor]]:
     Returns:
         filename (str): single tensor file  saved on the disk. Same location than input file.
     """
-
-    import os
-
     import nibabel as nib
     import torch
 
@@ -308,7 +305,7 @@ def extract_images(input_img: str) -> List[Tuple[str, torch.Tensor]]:
     image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
     # make sure the tensor type is torch.float32
     output_file = (
-        os.path.basename(input_img).replace(".nii.gz", ".pt"),
+        Path(input_img).name.replace(".nii.gz", ".pt"),
         image_tensor.clone(),
     )
 
@@ -352,18 +349,15 @@ def find_mask_path(
         path of the mask or None if nothing was found.
         a human-friendly description of the pattern looked for.
     """
-    from glob import glob
-    from os import path
 
     # Check that pattern begins and ends with _ to avoid mixing keys
     if mask_pattern is None:
         mask_pattern = ""
 
-    candidates_pattern = path.join(
-        masks_location, f"*{mask_pattern}*_roi-{roi}_mask.nii*"
-    )
+    candidates_pattern = f"*{mask_pattern}*_roi-{roi}_mask.nii*"
+
     desc = f"The mask should follow the pattern {candidates_pattern}. "
-    candidates = glob(candidates_pattern)
+    candidates = [str(e) for e in Path(masks_location).glob(candidates_pattern)]
     if cropping is None:
         pass
     elif cropping:
@@ -388,9 +382,8 @@ def compute_output_pattern(mask_path, crop_output):
     Returns:
         the output pattern
     """
-    from os import path
 
-    mask_filename = path.basename(mask_path)
+    mask_filename = Path(mask_path).name
     template_id = mask_filename.split("_")[0].split("-")[1]
     mask_descriptors = mask_filename.split("_")[1:-2:]
     roi_id = mask_filename.split("_")[-2].split("-")[1]
@@ -489,7 +482,7 @@ def extract_roi_tensor(
 
 
 def extract_roi_path(img_path: str, mask_path: str, uncrop_output: bool) -> str:
-    input_img_filename = path.basename(img_path)
+    input_img_filename = Path(img_path).name
 
     sub_ses_prefix = "_".join(input_img_filename.split("_")[0:3:])
     if not sub_ses_prefix.endswith("_T1w"):

@@ -140,8 +140,8 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
     if os.path.exists(tmp_target_dir):
         shutil.rmtree(tmp_target_dir)
 
-    flag_source = not os.system("clinicadl " + " ".join(source_task))
-    flag_target = not os.system("clinicadl " + " ".join(target_task))
+    flag_source = not os.system("clinicadl -vvv " + " ".join(source_task))
+    flag_target = not os.system("clinicadl -vvv  " + " ".join(target_task))
     assert flag_source
     assert flag_target
 

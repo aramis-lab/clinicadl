@@ -2,8 +2,6 @@
 This file contains all methods needed to perform the quality check procedure after t1-linear preprocessing.
 """
 from logging import getLogger
-from os import makedirs
-from os.path import abspath, dirname, exists, join
 from pathlib import Path
 
 import pandas as pd
@@ -67,12 +65,12 @@ def quality_check(
         raise ClinicaDLArgumentError(f"Output path {output_path} must be a TSV file.")
 
     # Fetch QC model
-    home = str(Path.home())
+    home = Path.home()
 
-    cache_clinicadl = join(home, ".cache", "clinicadl", "models")
+    cache_clinicadl = home / ".cache" / "clinicadl" / "models"
     url_aramis = "https://aramislab.paris.inria.fr/files/data/models/dl/qc/"
 
-    makedirs(cache_clinicadl, exist_ok=True)
+    cache_clinicadl.mkdir(parents=True, exist_ok=True)
 
     if network == "deep_qc":
         FILE1 = RemoteFileStructure(
@@ -100,11 +98,11 @@ def quality_check(
         )
         model = darq_sq101()
 
-    model_file = join(cache_clinicadl, FILE1.filename)
+    model_file = cache_clinicadl / FILE1.filename
 
     logger.info("Downloading quality check model.")
 
-    if not (exists(model_file)):
+    if not (model_file.is_file()):
         try:
             model_file = fetch_file(FILE1, cache_clinicadl)
         except IOError as err:
@@ -124,7 +122,7 @@ def quality_check(
 
         # Load DataFrame
         logger.debug("Loading data to check.")
-        df = load_and_check_tsv(tsv_path, caps_dict, dirname(abspath(output_path)))
+        df = load_and_check_tsv(tsv_path, caps_dict, Path(output_path).resolve().parent)
 
         dataset = QCDataset(caps_dir, df, use_tensor, use_uncropped_image)
         dataloader = DataLoader(
