@@ -291,10 +291,10 @@ class Stride_Conv5_FC3(CNN):
 
 class ResNet3D(CNN):
     """
-    ResNet3D is a neural network based on residual block.
-    It uses skip connections or shortcuts to jump over some layers.
-    It is an image classification pre-trained model.
-    This model takes 3D tensors as input.
+    ResNet3D is a 3D neural network composed of 5 residual blocks. Each residual block
+    is compose of 3D convolutions followed by a batch normalization and an activation function.
+    It uses skip connections or shortcuts to jump over some layers. It's a 3D version of the
+    original implementation of Kaiming He et al.
 
     Reference: Kaiming He et al., Deep Residual Learning for Image Recognition.
     https://arxiv.org/abs/1512.03385?context=cs
@@ -333,7 +333,17 @@ class ResNet3D(CNN):
 
 class SE_CNN(CNN):
     """
-    test
+    SE-CNN is a combination of a ResNet-101 with Squeeze and Excitation blocks which was successfully
+    tested on brain tumour classification by Ghosal et al. 2019. SE blocks are composed of a squeeze
+    and an excitation step. The squeeze operation is obtained through an average pooling layer and
+    provides a global understanding of each channel.
+
+    The excitation part consists of a two-layer feed-forward network that outputs a vector of n values
+    corresponding to the weights of each channel of the feature maps.
+
+    Reference: Ghosal et al. Brain Tumor Classification Using ResNet-101 Based Squeeze and Excitation Deep Neural Network
+    https://ieeexplore.ieee.org/document/8882973
+
     """
 
     def __init__(
