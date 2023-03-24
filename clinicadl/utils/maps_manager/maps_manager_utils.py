@@ -25,6 +25,7 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
 
     # task dependent
     config_dict = remove_unused_tasks(config_dict, task)
+    config_dict = change_str_to_path(config_dict)
 
     # Check that TOML file has the same format as the one in resources
     for section_name in config_dict:

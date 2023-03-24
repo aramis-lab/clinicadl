@@ -9,7 +9,7 @@ from clinicadl.utils import cli_param
 @cli_param.argument.caps_directory
 @click.argument(
     "output_tsv",
-    type=click.Path(exists=True, path_type=Path),
+    type=click.Path(path_type=Path),
 )
 @cli_param.option.participant_list
 @click.option(

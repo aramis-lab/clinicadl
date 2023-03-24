@@ -78,7 +78,9 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
             logger.debug(f"    Image extracted.")
             write_output_imgs(output_mode, container, subfolder)
 
-        Parallel(n_jobs=n_proc)(delayed(prepare_image)(file) for file in input_files)
+        Parallel(n_jobs=n_proc)(
+            delayed(prepare_image)(Path(file)) for file in input_files
+        )
 
     elif parameters["prepare_dl"] and parameters["mode"] == "slice":
 
@@ -97,7 +99,9 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
             logger.debug(f"    {len(output_mode)} slices extracted.")
             write_output_imgs(output_mode, container, subfolder)
 
-        Parallel(n_jobs=n_proc)(delayed(prepare_slice)(file) for file in input_files)
+        Parallel(n_jobs=n_proc)(
+            delayed(prepare_slice)(Path(file)) for file in input_files
+        )
 
     elif parameters["prepare_dl"] and parameters["mode"] == "patch":
 
@@ -115,7 +119,9 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
             logger.debug(f"    {len(output_mode)} patches extracted.")
             write_output_imgs(output_mode, container, subfolder)
 
-        Parallel(n_jobs=n_proc)(delayed(prepare_patch)(file) for file in input_files)
+        Parallel(n_jobs=n_proc)(
+            delayed(prepare_patch)(Path(file)) for file in input_files
+        )
 
     elif parameters["prepare_dl"] and parameters["mode"] == "roi":
 
@@ -170,7 +176,9 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
             logger.debug(f"    ROI extracted.")
             write_output_imgs(output_mode, container, subfolder)
 
-        Parallel(n_jobs=n_proc)(delayed(prepare_roi)(file) for file in input_files)
+        Parallel(n_jobs=n_proc)(
+            delayed(prepare_roi)(Path(file)) for file in input_files
+        )
 
     else:
         raise NotImplementedError(

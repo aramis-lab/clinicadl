@@ -112,7 +112,7 @@ def compute_discarded_slices(discarded_slices: Union[int, tuple]) -> Tuple[int, 
 
 
 def extract_slices(
-    nii_path: str,
+    nii_path: Path,
     slice_direction: int = 0,
     slice_mode: str = "single",
     discarded_slices: Union[int, tuple] = 0,
@@ -208,7 +208,7 @@ def extract_slice_path(
 # PATCH    #
 ############
 def extract_patches(
-    nii_path: str,
+    nii_path: Path,
     patch_size: int,
     stride_size: int,
 ) -> List[Tuple[str, torch.Tensor]]:

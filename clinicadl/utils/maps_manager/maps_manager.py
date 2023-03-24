@@ -1371,9 +1371,15 @@ class MapsManager:
     ###############################
     @staticmethod
     def write_parameters(json_path: Path, parameters, verbose=True):
+        from pathlib import PosixPath
+
         """Write JSON files of parameters."""
         logger.debug("Writing parameters...")
         json_path.mkdir(parents=True, exist_ok=True)
+
+        for key, value in parameters.items():
+            if isinstance(value, PosixPath):
+                parameters[key] = str(value)
 
         # save to json file
         json_data = json.dumps(parameters, skipkeys=True, indent=4)
@@ -1928,6 +1934,15 @@ class MapsManager:
         json_path = group_path / "maps.json"
         with json_path.open(mode="r") as f:
             parameters = json.load(f)
+            for key, value in parameters.items():
+                if (
+                    key.endswith("tsv")
+                    or key.endswith("path")
+                    or key.endswith("dir")
+                    or key.endswith("directory")
+                ):
+                    parameters[key] = Path(value)
+            print(parameters)
 
         return df, parameters
 

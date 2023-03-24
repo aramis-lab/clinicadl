@@ -114,10 +114,11 @@ class CapsDataset(Dataset):
     @staticmethod
     def create_caps_dict(caps_directory: Path, multi_cohort: bool) -> Dict[str, Path]:
 
+        print(caps_directory)
         from clinica.utils.inputs import check_caps_folder
 
         if multi_cohort:
-            if not caps_directory.endswith(".tsv"):
+            if not caps_directory.name.endswith(".tsv"):
                 raise ClinicaDLArgumentError(
                     "If multi_cohort is True, the CAPS_DIRECTORY argument should be a path to a TSV file."
                 )
@@ -564,6 +565,7 @@ class CapsDatasetRoi(CapsDataset):
         caps_dict = self.create_caps_dict(caps_directory, multi_cohort)
 
         if len(caps_dict) > 1:
+            print(caps_dict)
             caps_directory = caps_dict[next(iter(caps_dict))]
             logger.warning(
                 f"The equality of masks is not assessed for multi-cohort training. "
@@ -608,7 +610,7 @@ class CapsDatasetRoi(CapsDataset):
             if mask_path is None:
                 raise FileNotFoundError(desc)
             mask_nii = nib.load(mask_path)
-            mask_paths.append(mask_path)
+            mask_paths.append(Path(mask_path))
             mask_arrays.append(mask_nii.get_fdata())
 
         return mask_paths, mask_arrays
