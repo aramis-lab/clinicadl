@@ -14,6 +14,8 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         task_options_list: list of options specific to the task.
         kwargs: other arguments and options for network training.
     """
+    from pathlib import Path
+
     from clinicadl.train.train import train
     from clinicadl.train.train_utils import build_train_dict
 
@@ -21,13 +23,13 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
 
     config_file_name = None
     if kwargs["config_file"]:
-        config_file_name = kwargs["config_file"].name
+        config_file_name = Path(kwargs["config_file"])
     train_dict = build_train_dict(config_file_name, network_task)
 
     # Add arguments
     train_dict["network_task"] = network_task
-    train_dict["caps_directory"] = kwargs["caps_directory"]
-    train_dict["tsv_path"] = kwargs["tsv_directory"]
+    train_dict["caps_directory"] = Path(kwargs["caps_directory"])
+    train_dict["tsv_path"] = Path(kwargs["tsv_directory"])
 
     # Change value in train dict depending on user provided options
     standard_options_list = [
@@ -104,6 +106,4 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
     ):
         preprocessing_dict["roi_background_value"] = 0
 
-    print(kwargs["output_maps_directory"])
-    print(train_dict)
-    train(kwargs["output_maps_directory"], train_dict, train_dict.pop("split"))
+    train(Path(kwargs["output_maps_directory"]), train_dict, train_dict.pop("split"))

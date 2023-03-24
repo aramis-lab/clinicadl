@@ -171,3 +171,23 @@ def remove_unused_tasks(
             del toml_dict[other_task.capitalize()]
 
     return toml_dict
+
+
+def change_str_to_path(
+    toml_dict: Dict[str, Dict[str, Any]]
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Remove options depending on other tasks than task
+
+    Args:
+        toml_dict: dictionary of options as written in a TOML file.
+
+    Returns:
+        updated TOML dictionary.
+    """
+    path_list = ["transfer_path", "caps_directory", "tsv_directory", "maps_path"]
+    for cle, valeur in toml_dict.items():
+        if cle in path_list:
+            toml_dict[cle] = Path(valeur)
+
+    return toml_dict

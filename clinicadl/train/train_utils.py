@@ -5,6 +5,7 @@ import toml
 
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.maps_manager.maps_manager_utils import (
+    change_str_to_path,
     read_json,
     remove_unused_tasks,
 )
@@ -28,7 +29,7 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
         )
         config_dict = toml.load(config_path)
         config_dict = remove_unused_tasks(config_dict, task)
-
+        config_dict = change_str_to_path(config_dict)
         train_dict = dict()
         # Fill train_dict from TOML files arguments
         for config_section in config_dict:
