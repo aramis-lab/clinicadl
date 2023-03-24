@@ -89,7 +89,9 @@ class MonoTaskResolver(ClusterResolver):
 
     @property
     def master_port(self) -> int:
-        return self.reference_port + int(os.environ["CUDA_VISIBLE_DEVICES"].split(",")[0])
+        return self.reference_port + int(
+            os.environ["CUDA_VISIBLE_DEVICES"].split(",")[0]
+        )
 
 
 class SlurmClusterResolver(ClusterResolver):

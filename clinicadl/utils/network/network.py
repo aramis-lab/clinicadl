@@ -101,4 +101,6 @@ class Network(nn.Module):
         if criterion is None:
             return self._forward(input_dict)
         else:
-            return self.compute_outputs_and_loss(input_dict, criterion, use_labels=use_labels)
+            return self.compute_outputs_and_loss(
+                input_dict, criterion, use_labels=use_labels
+            )

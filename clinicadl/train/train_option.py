@@ -60,7 +60,7 @@ resolver = cli_param.option_group.computational_group.option(
     "--resolver", "--cluster-resolver",
     type=str,
     default=None,
-    help="Name of the resolver to use DDP"
+    help="Name of the cluster resolver to use Distributed Data Parallelism.",
 )
 # Reproducibility
 seed = cli_param.option_group.reproducibility_group.option(

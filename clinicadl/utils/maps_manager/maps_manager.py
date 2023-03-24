@@ -96,7 +96,7 @@ class MapsManager:
                 ddp=self.parameters["ddp"],
                 resolver=self.parameters["resolver"],
                 gpu=self.parameters["gpu"],
-                logger=logger
+                logger=logger,
             )
             self.task_manager = self._init_task_manager(n_classes=self.output_size)
             self.split_name = (
@@ -110,7 +110,7 @@ class MapsManager:
                 ddp=parameters["ddp"],
                 resolver=parameters["resolver"],
                 gpu=parameters["gpu"],
-                logger=logger
+                logger=logger,
             )
             self.split_name = "split"  # Used only for retro-compatibility
             if self.ddp.master:
@@ -648,7 +648,10 @@ class MapsManager:
                 label_code=self.label_code,
             )
             train_sampler = self.task_manager.generate_sampler(
-                data_train, self.sampler, world_size=self.ddp.world_size, rank=self.ddp.rank
+                data_train,
+                self.sampler,
+                world_size=self.ddp.world_size,
+                rank=self.ddp.rank,
             )
             logger.debug(
                 f"Getting train and validation loader with batch size {self.batch_size}"
@@ -662,7 +665,10 @@ class MapsManager:
             )
             logger.debug(f"Train loader size is {len(train_loader)}")
             valid_sampler = DistributedSampler(
-                data_valid, num_replicas=self.ddp.world_size, ranj=self.ddp.rank, shuffle=False
+                data_valid,
+                num_replicas=self.ddp.world_size,
+                rank=self.ddp.rank,
+                shuffle=False,
             )
             valid_loader = DataLoader(
                 data_valid,
@@ -935,7 +941,9 @@ class MapsManager:
             train_loader.dataset.train()
 
             if self.ddp.master:
-                log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
+                log_writer.step(
+                    epoch, i, metrics_train, metrics_valid, len(train_loader)
+                )
             logger.info(
                 f"{self.mode} level training loss is {metrics_train['loss']} "
                 f"at the end of iteration {i}"
@@ -1069,7 +1077,11 @@ class MapsManager:
             if self.ddp.master:
                 # Replace here
                 self._mode_level_to_tsv(
-                    prediction_df, metrics, split, selection_metric, data_group=data_group
+                    prediction_df,
+                    metrics,
+                    split,
+                    selection_metric,
+                    data_group=data_group
                 )
 
     def _compute_output_nifti(
@@ -1925,9 +1937,7 @@ class MapsManager:
             from torch.distributed.optim import ZeroRedundancyOptimizer
 
             optimizer = ZeroRedundancyOptimizer(
-                parameters,
-                optimizer_class=optimizer_cls,
-                **optimizer_kwargs
+                parameters, optimizer_class=optimizer_cls, **optimizer_kwargs
             )
 
         if resume:
