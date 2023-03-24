@@ -54,7 +54,7 @@ def get_parameters_dict(
 def compute_extract_json(extract_json: str) -> str:
     if extract_json is None:
         return f"extract_{int(time())}.json"
-    elif not extract_json.endswith(".json"):
+    elif not extract_json.suffix == ".json":
         return f"{extract_json}.json"
     else:
         return extract_json

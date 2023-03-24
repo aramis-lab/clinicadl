@@ -229,7 +229,7 @@ class SplitManager:
     @staticmethod
     def _create_caps_dict(caps_directory, multi_cohort):
         if multi_cohort:
-            if not caps_directory.endswith(".tsv"):
+            if not caps_directory.is_file():
                 raise ClinicaDLArgumentError(
                     "If multi_cohort is given, the CAPS_DIRECTORY argument should be a path to a TSV file."
                 )
@@ -251,7 +251,7 @@ class SplitManager:
     @staticmethod
     def _check_tsv_path(tsv_path, multi_cohort):
         if multi_cohort:
-            if not tsv_path.endswith(".tsv"):
+            if not tsv_path.isfile():
                 raise ClinicaDLArgumentError(
                     "If multi_cohort is given, the TSV_DIRECTORY argument should be a path to a TSV file."
                 )
@@ -259,7 +259,7 @@ class SplitManager:
                 tsv_df = pd.read_csv(tsv_path, sep="\t")
                 SplitManager._check_multi_cohort_tsv(tsv_df, "labels")
         else:
-            if tsv_path.endswith(".tsv"):
+            if tsv_path.is_file(".tsv"):
                 raise ClinicaDLConfigurationError(
                     f"You gave the path to a TSV file in tsv_path {tsv_path}. "
                     f"To use multi-cohort framework, please add 'multi_cohort=true' to the configuration file or the --multi_cohort flag."

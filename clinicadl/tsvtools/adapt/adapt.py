@@ -24,9 +24,9 @@ def concat_files(file_path: Path, df_baseline, df_all):
     """
 
     label_df = pd.read_csv(file_path, sep="\t")
-    if file_path.endswith("baseline.tsv"):
+    if file_path.name.endswith("baseline.tsv"):
         df_baseline = pd.concat([df_baseline, label_df])
-    elif file_path.endswith(".tsv"):
+    elif file_path.name.endswith(".tsv"):
         df_all = pd.concat([df_all, label_df])
     return df_all, df_baseline
 

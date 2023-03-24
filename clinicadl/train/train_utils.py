@@ -73,7 +73,7 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
             for key in config_dict[config_section]:
                 train_dict[key] = config_dict[config_section][key]
 
-    elif config_file.endswith(".json"):
+    elif config_file.suffix == ".json":
         train_dict = read_json(config_file)
 
     else:

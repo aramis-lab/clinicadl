@@ -61,7 +61,7 @@ def quality_check(
 
     logger = getLogger("clinicadl.quality_check")
 
-    if not output_path.endswith(".tsv"):
+    if not output_path.suffix == ".tsv":
         raise ClinicaDLArgumentError(f"Output path {output_path} must be a TSV file.")
 
     # Fetch QC model
