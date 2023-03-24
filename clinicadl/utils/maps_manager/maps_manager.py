@@ -9,6 +9,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel
+from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data import DataLoader
 
 from clinicadl.utils.caps_dataset.data import (
@@ -30,6 +33,7 @@ from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
     read_json,
 )
+from clinicadl.utils.maps_manager.ddp import get_ddp_manager
 from clinicadl.utils.metric_module import RetainBest
 from clinicadl.utils.network.network import Network
 from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
@@ -39,6 +43,20 @@ logger = getLogger("clinicadl.maps_manager")
 
 level_list: List[str] = ["warning", "info", "debug"]
 # TODO save weights on CPU for better compatibility
+
+
+class DDP(DistributedDataParallel):
+    def _forward(self, *args, **kwargs):
+        return self.module._forward(*args, **kwargs)
+
+    def predict(self, *args, **kwargs):
+        return self.module.predict(*args, **kwargs)
+
+    def transfer_weights(self, *args, **kwargs):
+        return self.module.transfer_weights(*args, **kwargs)
+
+    def state_dict(self):
+        return self.module.state_dict()
 
 
 class MapsManager:
@@ -74,6 +92,12 @@ class MapsManager:
                     f"To initiate a new MAPS please give a train_dict."
                 )
             self.parameters = self.get_parameters()
+            self.ddp = get_ddp_manager(
+                ddp=self.parameters["ddp"],
+                resolver=self.parameters["resolver"],
+                gpu=self.parameters["gpu"],
+                logger=logger
+            )
             self.task_manager = self._init_task_manager(n_classes=self.output_size)
             self.split_name = (
                 self._check_split_wording()
@@ -82,26 +106,32 @@ class MapsManager:
         # Initiate MAPS
         else:
             self._check_args(parameters)
-
-            if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
-                maps_path.is_dir() and list(maps_path.iterdir())  # Non empty folder
-            ):
-                raise MAPSError(
-                    f"You are trying to create a new MAPS at {maps_path} but "
-                    f"this already corresponds to a file or a non-empty folder. \n"
-                    f"Please remove it or choose another location."
-                )
-            (maps_path / "groups").mkdir(parents=True)
-
-            logger.info(f"A new MAPS was created at {maps_path}")
-
-            self.write_parameters(self.maps_path, self.parameters)
-            self._write_requirements_version()
-
+            self.ddp = get_ddp_manager(
+                ddp=parameters["ddp"],
+                resolver=parameters["resolver"],
+                gpu=parameters["gpu"],
+                logger=logger
+            )
             self.split_name = "split"  # Used only for retro-compatibility
-            self._write_training_data()
-            self._write_train_val_groups()
-            self._write_information()
+            if self.ddp.master:
+                if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
+                    maps_path.is_dir() and list(maps_path.iterdir())  # Non empty folder
+                ):
+                    raise MAPSError(
+                        f"You are trying to create a new MAPS at {maps_path} but "
+                        f"this already corresponds to a file or a non-empty folder. \n"
+                        f"Please remove it or choose another location."
+                    )
+                (maps_path / "groups").mkdir(parents=True)
+
+                logger.info(f"A new MAPS was created at {maps_path}")
+
+                self.write_parameters(self.maps_path, self.parameters)
+                self._write_requirements_version()
+
+                self._write_training_data()
+                self._write_train_val_groups()
+                self._write_information()
 
     def __getattr__(self, name):
         """Allow to directly get the values in parameters attribute"""
@@ -130,7 +160,8 @@ class MapsManager:
             split_path = self.maps_path / f"{self.split_name}-{split}"
             if Path(split_path).is_dir():
                 if overwrite:
-                    shutil.rmtree(split_path)
+                    if self.ddp.master:
+                        shutil.rmtree(split_path)
                 else:
                     existing_splits.append(split)
 
@@ -616,7 +647,9 @@ class MapsManager:
                 label=self.label,
                 label_code=self.label_code,
             )
-            train_sampler = self.task_manager.generate_sampler(data_train, self.sampler)
+            train_sampler = self.task_manager.generate_sampler(
+                data_train, self.sampler, world_size=self.ddp.world_size, rank=self.ddp.rank
+            )
             logger.debug(
                 f"Getting train and validation loader with batch size {self.batch_size}"
             )
@@ -628,11 +661,15 @@ class MapsManager:
                 worker_init_fn=pl_worker_init_function,
             )
             logger.debug(f"Train loader size is {len(train_loader)}")
+            valid_sampler = DistributedSampler(
+                data_valid, num_replicas=self.ddp.world_size, ranj=self.ddp.rank, shuffle=False
+            )
             valid_loader = DataLoader(
                 data_valid,
                 batch_size=self.batch_size,
                 shuffle=False,
                 num_workers=self.n_proc,
+                sampler=valid_sampler,
             )
             logger.debug(f"Validation loader size is {len(valid_loader)}")
 
@@ -654,7 +691,8 @@ class MapsManager:
                 self.selection_metrics,
             )
 
-            self._erase_tmp(split)
+            if self.ddp.master:
+                self._erase_tmp(split)
 
     def _train_multi(self, split_list: List[int] = None, resume: bool = False):
         """
@@ -786,6 +824,8 @@ class MapsManager:
             transfer_path=self.transfer_path,
             transfer_selection=self.transfer_selection_metric,
         )
+        model = DDP(model, device_ids=[self.ddp.local_rank])
+
         criterion = self.task_manager.get_criterion(self.loss)
         logger.debug(f"Criterion for {self.network_task} is {criterion}")
         optimizer = self._init_optimizer(model, split=split, resume=resume)
@@ -799,21 +839,22 @@ class MapsManager:
         )
         metrics_valid = {"loss": None}
 
-        log_writer = LogWriter(
-            self.maps_path,
-            self.task_manager.evaluation_metrics + ["loss"],
-            split,
-            resume=resume,
-            beginning_epoch=beginning_epoch,
-            network=network,
-        )
+        if self.ddp.master:
+            log_writer = LogWriter(
+                self.maps_path,
+                self.task_manager.evaluation_metrics + ["loss"],
+                split,
+                resume=resume,
+                beginning_epoch=beginning_epoch,
+                network=network,
+            )
+            retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
         epoch = log_writer.beginning_epoch
-
-        retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
 
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
 
+            train_loader.sampler.set_epoch(epoch)
             model.zero_grad()
             evaluation_flag, step_flag = True, True
             for i, data in enumerate(train_loader):
@@ -847,13 +888,14 @@ class MapsManager:
                         model.train()
                         train_loader.dataset.train()
 
-                        log_writer.step(
-                            epoch,
-                            i,
-                            metrics_train,
-                            metrics_valid,
-                            len(train_loader),
-                        )
+                        if self.ddp.master:
+                            log_writer.step(
+                                epoch,
+                                i,
+                                metrics_train,
+                                metrics_valid,
+                                len(train_loader),
+                            )
                         logger.info(
                             f"{self.mode} level training loss is {metrics_train['loss']} "
                             f"at the end of iteration {i}"
@@ -892,7 +934,8 @@ class MapsManager:
             model.train()
             train_loader.dataset.train()
 
-            log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
+            if self.ddp.master:
+                log_writer.step(epoch, i, metrics_train, metrics_valid, len(train_loader))
             logger.info(
                 f"{self.mode} level training loss is {metrics_train['loss']} "
                 f"at the end of iteration {i}"
@@ -902,31 +945,33 @@ class MapsManager:
                 f"at the end of iteration {i}"
             )
 
-            # Save checkpoints and best models
-            best_dict = retain_best.step(metrics_valid)
-            self._write_weights(
-                {
-                    "model": model.state_dict(),
-                    "epoch": epoch,
-                    "name": self.architecture,
-                },
-                best_dict,
-                split,
-                network=network,
-            )
-            self._write_weights(
-                {
-                    "optimizer": optimizer.state_dict(),
-                    "epoch": epoch,
-                    "name": self.optimizer,
-                },
-                None,
-                split,
-                filename="optimizer.pth.tar",
-            )
+            if self.ddp.master:
+                # Save checkpoints and best models
+                best_dict = retain_best.step(metrics_valid)
+                self._write_weights(
+                    {
+                        "model": model.state_dict(),
+                        "epoch": epoch,
+                        "name": self.architecture,
+                    },
+                    best_dict,
+                    split,
+                    network=network,
+                )
+                self._write_weights(
+                    {
+                        "optimizer": optimizer.state_dict(),
+                        "epoch": epoch,
+                        "name": self.optimizer,
+                    },
+                    None,
+                    split,
+                    filename="optimizer.pth.tar",
+                )
 
             epoch += 1
 
+        del model
         self._test_loader(
             train_loader,
             criterion,
@@ -988,18 +1033,19 @@ class MapsManager:
         """
         for selection_metric in selection_metrics:
 
-            log_dir = (
-                self.maps_path
-                / f"{self.split_name}-{split}"
-                / f"best-{selection_metric}"
-                / data_group
-            )
-            self.write_description_log(
-                log_dir,
-                data_group,
-                dataloader.dataset.caps_dict,
-                dataloader.dataset.df,
-            )
+            if self.ddp.master:
+                log_dir = (
+                    self.maps_path
+                    / f"{self.split_name}-{split}"
+                    / f"best-{selection_metric}"
+                    / data_group
+                )
+                self.write_description_log(
+                    log_dir,
+                    data_group,
+                    dataloader.dataset.caps_dict,
+                    dataloader.dataset.df,
+                )
 
             # load the best trained model during the training
             model, _ = self._init_model(
@@ -1020,10 +1066,11 @@ class MapsManager:
                     f"{self.mode} level {data_group} loss is {metrics['loss']} for model selected on {selection_metric}"
                 )
 
-            # Replace here
-            self._mode_level_to_tsv(
-                prediction_df, metrics, split, selection_metric, data_group=data_group
-            )
+            if self.ddp.master:
+                # Replace here
+                self._mode_level_to_tsv(
+                    prediction_df, metrics, split, selection_metric, data_group=data_group
+                )
 
     def _compute_output_nifti(
         self,
@@ -1058,6 +1105,7 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
+            model = DDP(model, device_ids=[self.ddp.local_rank])
 
             nifti_path = (
                 self.maps_path
@@ -1066,10 +1114,12 @@ class MapsManager:
                 / data_group
                 / "nifti_images"
             )
-            nifti_path.mkdir(parents=True, exist_ok=True)
+            if self.ddp.master:
+                nifti_path.mkdir(parents=True, exist_ok=True)
+            dist.barrier()
 
             nb_imgs = len(dataset)
-            for i in range(nb_imgs):
+            for i in range(self.ddp.rank, nb_imgs, self.ddp.world_size):
                 data = dataset[i]
                 image = data["image"]
                 output = (
@@ -1120,6 +1170,7 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
+            model = DDP(model, device_ids=[self.ddp.local_rank])
 
             tensor_path = (
                 self.maps_path
@@ -1128,14 +1179,16 @@ class MapsManager:
                 / data_group
                 / "tensors"
             )
-            tensor_path.mkdir(parents=True, exist_ok=True)
+            if self.ddp.master:
+                tensor_path.mkdir(parents=True, exist_ok=True)
+            dist.barrier()
 
             if nb_images is None:  # Compute outputs for the whole data set
                 nb_modes = len(dataset)
             else:
                 nb_modes = nb_images * dataset.elem_per_image
 
-            for i in range(nb_modes):
+            for i in range(self.ddp.rank, nb_modes, self.ddp.world_size):
                 data = dataset[i]
                 image = data["image"]
                 output = (
