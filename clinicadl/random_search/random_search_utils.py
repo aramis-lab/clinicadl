@@ -24,6 +24,15 @@ def get_space_dict(launch_directory: Path) -> Dict[str, Any]:
     for key in toml_options["Random_Search"]:
         space_dict[key] = toml_options["Random_Search"][key]
 
+    for key, value in space_dict.items():
+        if (
+            key.endswith("tsv")
+            or key.endswith("dir")
+            or key.endswith("directory")
+            or key.endswith("path")
+        ):
+            space_dict[key] = Path(value)
+
     # Check presence of mandatory arguments
     mandatory_arguments = [
         "network_task",
