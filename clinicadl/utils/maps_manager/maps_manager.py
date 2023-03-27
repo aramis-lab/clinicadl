@@ -28,6 +28,7 @@ from clinicadl.utils.logger import setup_logging
 from clinicadl.utils.maps_manager.logwriter import LogWriter
 from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
+    change_str_to_path,
     read_json,
 )
 from clinicadl.utils.metric_module import RetainBest
@@ -72,7 +73,8 @@ class MapsManager:
                     f"MAPS was not found at {maps_path}."
                     f"To initiate a new MAPS please give a train_dict."
                 )
-            self.parameters = self.get_parameters()
+            test_parameters = self.get_parameters()
+            self.parameters = change_str_to_path(test_parameters)
             self.task_manager = self._init_task_manager(n_classes=self.output_size)
             self.split_name = (
                 self._check_split_wording()
@@ -1864,6 +1866,7 @@ class MapsManager:
         kwargs = {"split_list": split_list}
         for arg in args:
             kwargs[arg] = self.parameters[arg]
+        print(kwargs)
         return split_class(**kwargs)
 
     def _init_task_manager(self, df=None, n_classes=None):
