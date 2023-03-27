@@ -305,7 +305,7 @@ def extract_images(input_img: Path) -> List[Tuple[str, torch.Tensor]]:
     image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
     # make sure the tensor type is torch.float32
     output_file = (
-        input_img.name.replace(".nii.gz", ".pt"),
+        Path(input_img.name.replace(".nii.gz", ".pt")),
         image_tensor.clone(),
     )
 
@@ -319,6 +319,7 @@ def check_mask_list(masks_location: Path, roi_list, mask_pattern, cropping):
     import nibabel as nib
     import numpy as np
 
+    print(masks_location)
     for roi in roi_list:
         roi_path, desc = find_mask_path(masks_location, roi, mask_pattern, cropping)
         if roi_path is None:
@@ -370,7 +371,7 @@ def find_mask_path(
     if len(candidates) == 0:
         return None, desc
     else:
-        return min(candidates, key=len), desc
+        return Path(min(candidates, key=len)), desc
 
 
 def compute_output_pattern(mask_path: Path, crop_output):

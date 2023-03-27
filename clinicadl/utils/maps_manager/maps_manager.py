@@ -81,6 +81,7 @@ class MapsManager:
         # Initiate MAPS
         else:
             self._check_args(parameters)
+            parameters["tsv_path"] = Path(parameters["tsv_path"])
 
             if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
                 maps_path.is_dir() and list(maps_path.iterdir())  # Non empty folder
@@ -95,6 +96,7 @@ class MapsManager:
             logger.info(f"A new MAPS was created at {maps_path}")
 
             self.write_parameters(self.maps_path, self.parameters)
+
             self._write_requirements_version()
 
             self.split_name = "split"  # Used only for retro-compatibility
@@ -176,8 +178,8 @@ class MapsManager:
     def predict(
         self,
         data_group: str,
-        caps_directory: str = None,
-        tsv_path: str = None,
+        caps_directory: Path = None,
+        tsv_path: Path = None,
         split_list: List[int] = None,
         selection_metrics: List[str] = None,
         multi_cohort: bool = False,
@@ -961,7 +963,6 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
-
             prediction_df, metrics = self.task_manager.test(
                 model, dataloader, criterion, use_labels=use_labels
             )
@@ -1149,7 +1150,6 @@ class MapsManager:
             "mode",
             "network_task",
         ]
-
         for arg in mandatory_arguments:
             if arg not in parameters:
                 raise ClinicaDLArgumentError(
@@ -1389,6 +1389,16 @@ class MapsManager:
         with json_path.open(mode="w") as f:
             f.write(json_data)
 
+        for key, value in parameters.items():
+            if (
+                key.endswith("tsv")
+                or key.endswith("dir")
+                or key.endswith("directory")
+                or key.endswith("path")
+                or key.endswith("json")
+            ):
+                parameters[key] = Path(value)
+
     def _write_requirements_version(self):
         """Writes the environment.txt file."""
         logger.debug("Writing requirement version...")
@@ -1416,7 +1426,9 @@ class MapsManager:
         )
         train_df = train_df[["participant_id", "session_id"]]
         if self.transfer_path:
-            transfer_train_path = self.transfer_path / "groups" / "train+validation.tsv"
+            transfer_train_path = (
+                self.transfer_path.resolve() / "groups" / "train+validation.tsv"
+            )
             transfer_train_df = pd.read_csv(transfer_train_path, sep="\t")
             transfer_train_df = transfer_train_df[["participant_id", "session_id"]]
             train_df = pd.concat([train_df, transfer_train_df])
@@ -1942,7 +1954,6 @@ class MapsManager:
                     or key.endswith("directory")
                 ):
                     parameters[key] = Path(value)
-            print(parameters)
 
         return df, parameters
 

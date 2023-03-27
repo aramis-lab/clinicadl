@@ -29,6 +29,7 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
 
     # Check that TOML file has the same format as the one in resources
     for section_name in config_dict:
+        config_dict[section_name] = change_str_to_path(config_dict[section_name])
         for key in config_dict[section_name]:
             if key not in user_dict:  # Add value if not present in user_dict
                 user_dict[key] = config_dict[section_name][key]
@@ -196,5 +197,45 @@ def change_str_to_path(
             or key.endswith("json")
         ):
             toml_dict[key] = Path(value)
+
+    return toml_dict
+
+
+def change_path_to_str(
+    toml_dict: Dict[Path, Dict[Path, Any]]
+) -> Dict[str, Dict[str, Any]]:
+    """
+    Remove options depending on other tasks than task
+
+    Args:
+        toml_dict: dictionary of options as written in a TOML file.
+
+    Returns:
+        updated TOML dictionary.
+    """
+    path_list = ["transfer_path", "caps_directory", "tsv_directory", "maps_path"]
+    for key, value in toml_dict.items():
+        if type(value) == Dict:
+            for key2, value2 in value.items():
+                if (
+                    key2.endswith("tsv")
+                    or key2.endswith("dir")
+                    or key2.endswith("directory")
+                    or key2.endswith("path")
+                    or key2.endswith("json")
+                    or key2.endswith("location")
+                ):
+                    toml_dict[value][key2] = str(value2)
+        else:
+            if (
+                key.endswith("tsv")
+                or key.endswith("dir")
+                or key.endswith("directory")
+                or key.endswith("path")
+                or key.endswith("json")
+                or key.endswith("location")
+            ):
+
+                toml_dict[key] = str(value)
 
     return toml_dict

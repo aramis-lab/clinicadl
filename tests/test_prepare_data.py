@@ -136,7 +136,7 @@ def extract_generic(out_dir, mode, tsv_file, parameters):
     from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
 
     DeepLearningPrepareData(
-        caps_directory=join(out_dir, f"caps_{mode}"),
+        caps_directory=out_dir / f"caps_{mode}",
         tsv_file=tsv_file,
         n_proc=1,
         parameters=parameters,

@@ -114,7 +114,6 @@ class CapsDataset(Dataset):
     @staticmethod
     def create_caps_dict(caps_directory: Path, multi_cohort: bool) -> Dict[str, Path]:
 
-        print(caps_directory)
         from clinica.utils.inputs import check_caps_folder
 
         if multi_cohort:
@@ -340,7 +339,7 @@ class CapsDatasetImage(CapsDataset):
             "participant_id": participant,
             "session_id": session,
             "image_id": 0,
-            "image_path": image_path,
+            "image_path": str(image_path),
         }
 
         return sample
@@ -565,7 +564,6 @@ class CapsDatasetRoi(CapsDataset):
         caps_dict = self.create_caps_dict(caps_directory, multi_cohort)
 
         if len(caps_dict) > 1:
-            print(caps_dict)
             caps_directory = caps_dict[next(iter(caps_dict))]
             logger.warning(
                 f"The equality of masks is not assessed for multi-cohort training. "
@@ -753,7 +751,6 @@ def return_dataset(
     Returns:
          the corresponding dataset.
     """
-
     if cnn_index is not None and preprocessing_dict["mode"] == "image":
         raise NotImplementedError(
             f"Multi-CNN is not implemented for {preprocessing_dict['mode']} mode."

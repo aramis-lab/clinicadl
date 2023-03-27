@@ -48,7 +48,9 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     parameters["file_type"] = file_type
 
     # Input file:
-    input_files = clinica_file_reader(subjects, sessions, caps_directory, file_type)[0]
+    input_files = clinica_file_reader(
+        subjects, sessions, str(caps_directory), file_type
+    )[0]
 
     def write_output_imgs(output_mode, container, subfolder):
         # Write the extracted tensor on a .pt file
@@ -63,7 +65,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
             if not output_file_dir.is_dir():
                 output_file_dir.mkdir(parents=True, exist_ok=True)
             output_file = output_file_dir / filename
-            save_tensor(tensor, output_file)
+            save_tensor(tensor, str(output_file))
             logger.debug(f"    Output tensor saved at {output_file}")
 
     if parameters["mode"] == "image" or not parameters["prepare_dl"]:
@@ -71,12 +73,11 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
         def prepare_image(file):
             from .prepare_data_utils import extract_images
 
-            file = Path(file)
-            logger.debug(f"  Processing of {file}.")
+            logger.debug(f"Processing of {file}.")
             container = container_from_filename(file)
             subfolder = "image_based"
-            output_mode = extract_images(file)
-            logger.debug(f"    Image extracted.")
+            output_mode = extract_images(Path(file))
+            logger.debug(f"Image extracted.")
             write_output_imgs(output_mode, container, subfolder)
 
         Parallel(n_jobs=n_proc)(delayed(prepare_image)(file) for file in input_files)
@@ -86,12 +87,11 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
         def prepare_slice(file):
             from .prepare_data_utils import extract_slices
 
-            file = Path(file)
             logger.debug(f"  Processing of {file}.")
             container = container_from_filename(file)
             subfolder = "slice_based"
             output_mode = extract_slices(
-                file,
+                Path(file),
                 slice_direction=parameters["slice_direction"],
                 slice_mode=parameters["slice_mode"],
                 discarded_slices=parameters["discarded_slices"],
@@ -106,12 +106,11 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
         def prepare_patch(file):
             from .prepare_data_utils import extract_patches
 
-            file = Path(file)
             logger.debug(f"  Processing of {file}.")
             container = container_from_filename(file)
             subfolder = "patch_based"
             output_mode = extract_patches(
-                file,
+                Path(file),
                 patch_size=parameters["patch_size"],
                 stride_size=parameters["stride_size"],
             )
@@ -125,8 +124,8 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
         def prepare_roi(file):
             from .prepare_data_utils import extract_roi
 
-            file = Path(file)
             logger.debug(f"  Processing of {file}.")
+            print(file)
             container = container_from_filename(file)
             subfolder = "roi_based"
             if parameters["preprocessing"] == "custom":
@@ -144,7 +143,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
                     parameters["preprocessing"]
                 ]
 
-            parameters["masks_location"] = str(
+            parameters["masks_location"] = (
                 caps_directory / "masks" / f"tpl-{parameters['roi_template']}"
             )
 
@@ -161,8 +160,9 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
                     if parameters["use_uncropped_image"] is None
                     else not parameters["use_uncropped_image"],
                 )
+
             output_mode = extract_roi(
-                file,
+                Path(file),
                 masks_location=parameters["masks_location"],
                 mask_pattern=parameters["roi_mask_pattern"],
                 cropped_input=None

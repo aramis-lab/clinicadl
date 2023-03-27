@@ -17,8 +17,8 @@ logger = getLogger("clinicadl.split_manager")
 class SplitManager:
     def __init__(
         self,
-        caps_directory,
-        tsv_path,
+        caps_directory: Path,
+        tsv_path: Path,
         diagnoses,
         baseline=False,
         multi_cohort=False,
@@ -227,7 +227,7 @@ class SplitManager:
             )
 
     @staticmethod
-    def _create_caps_dict(caps_directory, multi_cohort):
+    def _create_caps_dict(caps_directory: Path, multi_cohort):
         if multi_cohort:
             if not caps_directory.is_file():
                 raise ClinicaDLArgumentError(
@@ -251,7 +251,7 @@ class SplitManager:
     @staticmethod
     def _check_tsv_path(tsv_path, multi_cohort):
         if multi_cohort:
-            if not tsv_path.isfile():
+            if not tsv_path.is_file():
                 raise ClinicaDLArgumentError(
                     "If multi_cohort is given, the TSV_DIRECTORY argument should be a path to a TSV file."
                 )

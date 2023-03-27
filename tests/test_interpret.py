@@ -40,6 +40,7 @@ def test_interpret(cmdopt, tmp_path, test_name):
             "2",
             "--split",
             "0",
+            "--no-gpu",
         ]
 
     elif test_name == "regression":
@@ -57,6 +58,7 @@ def test_interpret(cmdopt, tmp_path, test_name):
             "2",
             "--split",
             "0",
+            "--no-gpu",
         ]
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")

@@ -3,6 +3,8 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
+from clinicadl.utils.maps_manager.maps_manager_utils import change_path_to_str
+
 
 def write_preprocessing(preprocessing_dict: Dict[str, Any], caps_directory: Path):
     extract_dir = caps_directory / "tensor_extraction"
@@ -13,10 +15,11 @@ def write_preprocessing(preprocessing_dict: Dict[str, Any], caps_directory: Path
             f"JSON file at {json_path} already exists. "
             f"Please choose another name for your preprocessing file."
         )
-
+    print(preprocessing_dict)
+    preprocessing_dict_bis = change_path_to_str(preprocessing_dict)
+    print(preprocessing_dict_bis)
     with json_path.open(mode="w") as json_file:
-        print(json_file)
-        json.dump(preprocessing_dict, json_file)
+        json.dump(preprocessing_dict_bis, json_file)
     return json_path
 
 
