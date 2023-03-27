@@ -199,7 +199,10 @@ def change_str_to_path(
                     or key2.endswith("json")
                     or key2.endswith("location")
                 ):
-                    toml_dict[value][key2] = Path(value2)
+                    if value2 == "":
+                        toml_dict[value][key2] = False
+                    else:
+                        toml_dict[value][key2] = Path(value2)
         else:
             if (
                 key.endswith("tsv")
@@ -210,7 +213,10 @@ def change_str_to_path(
                 or key.endswith("location")
             ):
 
-                toml_dict[key] = Path(value)
+                if value == "":
+                    toml_dict[key] = False
+                else:
+                    toml_dict[key] = Path(value)
     return toml_dict
 
 
