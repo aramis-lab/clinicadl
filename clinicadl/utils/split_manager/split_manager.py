@@ -42,7 +42,6 @@ class SplitManager:
         """
         self._check_tsv_path(tsv_path, multi_cohort)
         self.tsv_path = tsv_path
-        print(caps_directory)
         self.caps_dict = self._create_caps_dict(caps_directory, multi_cohort)
         self.multi_cohort = multi_cohort
         self.diagnoses = diagnoses

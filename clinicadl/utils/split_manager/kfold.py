@@ -14,7 +14,6 @@ class KFoldSplit(SplitManager):
         multi_cohort=False,
         split_list=None,
     ):
-        print(tsv_path)
         super().__init__(
             caps_directory, tsv_path, diagnoses, baseline, multi_cohort, split_list
         )

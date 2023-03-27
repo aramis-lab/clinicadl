@@ -319,7 +319,6 @@ def check_mask_list(masks_location: Path, roi_list, mask_pattern, cropping):
     import nibabel as nib
     import numpy as np
 
-    print(masks_location)
     for roi in roi_list:
         roi_path, desc = find_mask_path(masks_location, roi, mask_pattern, cropping)
         if roi_path is None:

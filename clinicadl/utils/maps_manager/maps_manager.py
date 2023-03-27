@@ -1161,7 +1161,6 @@ class MapsManager:
                 )
         parameters = add_default_values(parameters)
         self.parameters = change_str_to_path(parameters)
-        print(parameters)
         if self.parameters["gpu"]:
             check_gpu()
 
@@ -1937,15 +1936,7 @@ class MapsManager:
         json_path = group_path / "maps.json"
         with json_path.open(mode="r") as f:
             parameters = json.load(f)
-            for key, value in parameters.items():
-                if (
-                    key.endswith("tsv")
-                    or key.endswith("path")
-                    or key.endswith("dir")
-                    or key.endswith("directory")
-                ):
-                    parameters[key] = Path(value)
-
+        parameters = change_str_to_path(parameters)
         return df, parameters
 
     def get_parameters(self):

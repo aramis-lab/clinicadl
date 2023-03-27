@@ -125,7 +125,6 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
             from .prepare_data_utils import extract_roi
 
             logger.debug(f"  Processing of {file}.")
-            print(file)
             container = container_from_filename(file)
             subfolder = "roi_based"
             if parameters["preprocessing"] == "custom":

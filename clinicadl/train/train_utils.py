@@ -82,8 +82,6 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
         raise ClinicaDLConfigurationError(
             f"config_file {config_file} should be a TOML or a JSON file."
         )
-    print("oezirbgmz")
-    print(train_dict)
     return train_dict
 
 
