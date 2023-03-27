@@ -460,19 +460,19 @@ def generate_hypometabolic_dataset(
 
     Parameters
     ----------
-    caps_directory: str (Path)
+    caps_directory: Path
         Path to the CAPS directory.
-    output_dir: str (Path)
+    output_dir: Path
         Folder containing the synthetic dataset in CAPS format.
     n_subjects: int
         Number of subjects in each class of the synthetic dataset.
     n_proc: int
         Number of cores used during the task.
-    tsv_path: str (Path)
+    tsv_path: Path
         Path to tsv file of list of subjects/sessions.
     preprocessing: str
         Preprocessing performed. For now it must be 'pet-linear'.
-    dementia: str (Path)
+    dementia: str
         Name of the dementia to generate.
     dementia_percent: float
         Percentage of dementia applied.
