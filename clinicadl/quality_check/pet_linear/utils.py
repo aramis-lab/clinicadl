@@ -2,10 +2,11 @@
 Produces a tsv file to study all the nii files and perform the quality check.
 """
 
-
 from copy import copy
 
 import numpy as np
+
+from clinicadl.utils.caps_dataset.data import MinMaxNormalization
 
 
 def normalize_homemade(image_np):
@@ -23,10 +24,8 @@ def normalize_homemade(image_np):
         The normalized image.
     """
 
-    max_base = image_np.max()
-    min_base = image_np.min()
     for idx, x in np.ndenumerate(image_np):
-        image_np[idx] = (image_np[idx] - min_base) / (max_base - min_base)
+        image_np[idx] = MinMaxNormalization(image_np[idx])
     return image_np
 
 
