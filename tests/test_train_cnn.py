@@ -33,7 +33,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
 
     labels_path = input_dir / "labels_list" / "2_fold"
     config_path = input_dir / "train_config.toml"
-    split = 0
+    split = "0"
 
     if test_name == "slice_cnn":
         split_ref = 0
