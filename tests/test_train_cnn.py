@@ -33,10 +33,10 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
 
     labels_path = input_dir / "labels_list" / "2_fold"
     config_path = input_dir / "train_config.toml"
-    split = "0"
+    split = 0
 
     if test_name == "slice_cnn":
-        split_ref = "0"
+        split_ref = 0
         test_input = [
             "train",
             "classification",
@@ -48,7 +48,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
             str(config_path),
         ]
     elif test_name == "image_cnn":
-        split_ref = "1"
+        split_ref = 1
         test_input = [
             "train",
             "regression",
@@ -60,7 +60,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
             str(config_path),
         ]
     elif test_name == "patch_cnn":
-        split_ref = "0"
+        split_ref = 0
         test_input = [
             "train",
             "classification",
@@ -74,7 +74,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
             split,
         ]
     elif test_name == "patch_multi_cnn":
-        split_ref = "0"
+        split_ref = 0
         test_input = [
             "train",
             "classification",
@@ -87,7 +87,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
             "--multi_network",
         ]
     elif test_name == "roi_cnn":
-        split_ref = "0"
+        split_ref = 0
         test_input = [
             "train",
             "classification",
@@ -130,4 +130,4 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
         tmp_path,
     )
 
-    shutil.rmtree(str(tmp_out_dir))
+    shutil.rmtree(tmp_out_dir)
