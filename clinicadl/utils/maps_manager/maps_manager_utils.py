@@ -25,9 +25,8 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
 
     # task dependent
     config_dict = remove_unused_tasks(config_dict, task)
-    # config_dict = change_str_to_path(config_dict)
-    config_dict["Transfer_learning"]["transfer_path"] = None
-    print(config_dict)
+    # config_dict["Transfer_learning"]["transfer_path"] = None
+    # print(config_dict)
     # Check that TOML file has the same format as the one in resources
     for section_name in config_dict:
         for key in config_dict[section_name]:
@@ -212,7 +211,6 @@ def change_str_to_path(
                 or key.endswith("json")
                 or key.endswith("location")
             ):
-
                 if value == "":
                     toml_dict[key] = False
                 else:
@@ -221,7 +219,7 @@ def change_str_to_path(
 
 
 def change_path_to_str(
-    toml_dict: Dict[Path, Dict[Path, Any]]
+    toml_dict: Dict[str, Dict[str, Any]]
 ) -> Dict[str, Dict[str, Any]]:
     """
     Remove options depending on other tasks than task
@@ -244,7 +242,10 @@ def change_path_to_str(
                     or key2.endswith("json")
                     or key2.endswith("location")
                 ):
-                    toml_dict[value][key2] = str(value2)
+                    if value2 == False:
+                        toml_dict[value][key2] = ""
+                    else:
+                        toml_dict[value][key2] = str(value2)
         else:
             if (
                 key.endswith("tsv")
@@ -254,7 +255,9 @@ def change_path_to_str(
                 or key.endswith("json")
                 or key.endswith("location")
             ):
-
-                toml_dict[key] = str(value)
+                if value == False:
+                    toml_dict[key] = ""
+                else:
+                    toml_dict[key] = str(value)
 
     return toml_dict

@@ -51,6 +51,7 @@ def test_determinism(cmdopt, tmp_path):
         str(maps_dir),
         "-c",
         path.join(str(input_dir), "reproducibility_config.toml"),
+        "--no-gpu",
     ]
     # Run first experiment
     flag_error = not system("clinicadl " + " ".join(test_input))

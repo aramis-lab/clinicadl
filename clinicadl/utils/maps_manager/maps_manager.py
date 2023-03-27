@@ -84,8 +84,6 @@ class MapsManager:
         # Initiate MAPS
         else:
             self._check_args(parameters)
-            print("after check args")
-            print(parameters)
             parameters["tsv_path"] = Path(parameters["tsv_path"])
 
             if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
@@ -1162,8 +1160,7 @@ class MapsManager:
                     f"No value was given for {arg}."
                 )
         parameters = add_default_values(parameters)
-        self.parameters = parameters
-        print("check args start")
+        self.parameters = change_str_to_path(parameters)
         print(parameters)
         if self.parameters["gpu"]:
             check_gpu()
@@ -1422,7 +1419,6 @@ class MapsManager:
         )
         train_df = train_df[["participant_id", "session_id"]]
         if self.transfer_path:
-            print(self.transfer_path)
             transfer_train_path = self.transfer_path / "groups" / "train+validation.tsv"
             transfer_train_df = pd.read_csv(transfer_train_path, sep="\t")
             transfer_train_df = transfer_train_df[["participant_id", "session_id"]]
@@ -1859,7 +1855,6 @@ class MapsManager:
         kwargs = {"split_list": split_list}
         for arg in args:
             kwargs[arg] = self.parameters[arg]
-        print(kwargs)
         return split_class(**kwargs)
 
     def _init_task_manager(self, df=None, n_classes=None):
