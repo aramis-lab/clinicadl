@@ -31,7 +31,7 @@ def test_resume(cmdopt, tmp_path, test_name):
     tmp_out_dir.mkdir(parents=True)
 
     shutil.copytree(input_dir / test_name, tmp_out_dir / test_name)
-    maps_stopped = str(tmp_out_dir / test_name)
+    maps_stopped = tmp_out_dir / test_name
 
     flag_error = not system(f"clinicadl -vv train resume {maps_stopped}")
     assert flag_error
