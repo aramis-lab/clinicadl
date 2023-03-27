@@ -51,24 +51,35 @@ def generate_random_dataset(
     subject of the tsv file (other subjects/sessions different from the first
     one are ignored. Degree of noise can be parameterized.
 
-    Args:
-        caps_directory: Path to the (input) CAPS directory.
-        output_dir: folder containing the synthetic dataset in (output)
-            CAPS format.
-        n_subjects: number of subjects in each class of the
-            synthetic dataset
-        tsv_path: path to tsv file of list of subjects/sessions.
-        mean: mean of the gaussian noise
-        sigma: standard deviation of the gaussian noise
-        preprocessing: preprocessing performed. Must be in ['t1-linear', 't1-extensive'].
-        multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
-        uncropped_image: If True the uncropped image of `t1-linear` or `pet-linear` will be used.
-        acq_label: name of the tracer when using `pet-linear` preprocessing.
-        suvr_reference_region: name of the reference region when using `pet-linear` preprocessing.
+    Parameters
+    ----------
+    caps_directory: Path
+        Path to the (input) CAPS directory.
+    output_dir: Path
+        Folder containing the synthetic dataset in CAPS format.
+    n_subjects: int
+        Number of subjects in each class of the synthetic dataset
+    tsv_path: Path
+        Path to tsv file of list of subjects/sessions.
+    mean: float
+        Mean of the gaussian noise
+    sigma: float
+        Standard deviation of the gaussian noise
+    preprocessing: str
+        Preprocessing performed. Must be in ['t1-linear', 't1-extensive'].
+    multi_cohort: bool
+        If True caps_directory is the path to a TSV file linking cohort names and paths.
+    uncropped_image: bool
+        If True the uncropped image of `t1-linear` or `pet-linear` will be used.
+    acq_label: str
+        name of the tracer when using `pet-linear` preprocessing.
+    suvr_reference_region: str
+        name of the reference region when using `pet-linear` preprocessing.
 
-    Returns:
-        A folder written on the output_dir location (in CAPS format), also a
-        tsv file describing this output
+    Returns
+    -------
+    A folder written on the output_dir location (in CAPS format), also a
+    tsv file describing this output
 
     """
     commandline_to_json(
@@ -164,23 +175,37 @@ def generate_trivial_dataset(
     This procedure creates a dataset fully separable (images with half-right
     processed and image with half-left processed)
 
-    Args:
-        caps_directory: path to the CAPS directory.
-        output_dir: folder containing the synthetic dataset in CAPS format.
-        n_subjects: number of subjects in each class of the synthetic dataset.
-        tsv_path: path to tsv file of list of subjects/sessions.
-        preprocessing: preprocessing performed. Must be in ['linear', 'extensive'].
-        mask_path: path to the extracted masks to generate the two labels.
-        atrophy_percent: percentage of atrophy applied.
-        multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
-        uncropped_image: If True the uncropped image of `t1-linear` or `pet-linear` will be used.
-        acq_label: name of the tracer when using `pet-linear` preprocessing.
-        suvr_reference_region: name of the reference region when using `pet-linear` preprocessing.
+    Parameters
+    ----------
+    caps_directory: Path
+        Path to the CAPS directory.
+    output_dir: Path
+        Folder containing the synthetic dataset in CAPS format.
+    n_subjects: int
+        Number of subjects in each class of the synthetic dataset.
+    tsv_path: Path
+        Path to tsv file of list of subjects/sessions.
+    preprocessing: str
+        Preprocessing performed. Must be in ['linear', 'extensive'].
+    mask_path: Path
+        Path to the extracted masks to generate the two labels.
+    atrophy_percent: float
+        Percentage of atrophy applied.
+    multi_cohort: bool
+        If True caps_directory is the path to a TSV file linking cohort names and paths.
+    uncropped_image: bool
+        If True the uncropped image of `t1-linear` or `pet-linear` will be used.
+    acq_label: str
+        Name of the tracer when using `pet-linear` preprocessing.
+    suvr_reference_region: str
+        Name of the reference region when using `pet-linear` preprocessing.
 
-    Returns:
+    Returns
+    -------
         Folder structure where images are stored in CAPS format.
 
-    Raises:
+    Raises
+    ------
         IndexError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
     """
 

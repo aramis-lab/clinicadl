@@ -67,7 +67,7 @@ def run_test_suite(data_tsv, n_splits):
             for folder, _, files in os.walk(data_tsv / "split"):
                 for file in files:
                     if file[-3:] == "tsv":
-                        check_is_subject_unique(folder, file)
+                        check_is_subject_unique(folder / file)
                 train_baseline_tsv = folder / "train_baseline.tsv"
                 test_baseline_tsv = folder / "test_baseline.tsv"
                 if train_baseline_tsv.exists():
