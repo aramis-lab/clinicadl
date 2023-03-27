@@ -49,7 +49,6 @@ def check_is_independant(train_path_baseline, test_path_baseline, subject_flag=T
 
 def run_test_suite(data_tsv, n_splits):
     check_train = True
-
     if n_splits == 0:
         train_baseline_tsv = data_tsv / "train_baseline.tsv"
         test_baseline_tsv = data_tsv / "test_baseline.tsv"
@@ -65,6 +64,7 @@ def run_test_suite(data_tsv, n_splits):
         for split_number in range(n_splits):
 
             for folder, _, files in os.walk(data_tsv / "split"):
+                folder = Path(folder)
                 for file in files:
                     if file[-3:] == "tsv":
                         check_is_subject_unique(folder / file)
