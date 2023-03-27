@@ -17,13 +17,13 @@ Check the absence of data leakage
 """
 
 
-def check_is_subject_unique(labels_path_baseline):
+def check_is_subject_unique(labels_path_baseline: Path):
     print("Check subject uniqueness", labels_path_baseline)
 
     flag_is_unique = True
     check_df = pd.read_csv(labels_path_baseline, sep="\t")
     check_df.set_index(["participant_id", "session_id"], inplace=True)
-    if labels_path_baseline[-12:] != "baseline.tsv":
+    if labels_path_baseline.name[-12:] != "baseline.tsv":
         check_df = extract_baseline(check_df, set_index=False)
     for _, subject_df in check_df.groupby(level=0):
         if len(subject_df) > 1:
@@ -31,7 +31,9 @@ def check_is_subject_unique(labels_path_baseline):
     assert flag_is_unique
 
 
-def check_is_independant(train_path_baseline, test_path_baseline, subject_flag=True):
+def check_is_independant(
+    train_path_baseline: Path, test_path_baseline: Path, subject_flag=True
+):
     print("Check independence")
 
     flag_is_independant = True
@@ -65,6 +67,7 @@ def run_test_suite(data_tsv, n_splits):
 
             for folder, _, files in os.walk(data_tsv / "split"):
                 folder = Path(folder)
+
                 for file in files:
                     if file[-3:] == "tsv":
                         check_is_subject_unique(folder / file)

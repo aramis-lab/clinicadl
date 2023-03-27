@@ -114,7 +114,7 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
 
     with open(tmp_out_dir / "maps.json", "r") as out:
         json_data_out = json.load(out)
-    with open(ref_dir / ("maps_" + test_name), "maps.json", "r") as ref:
+    with open(ref_dir / ("maps_" + test_name) / "maps.json", "r") as ref:
         json_data_ref = json.load(ref)
 
     assert json_data_out == json_data_ref  # ["mode"] == mode
