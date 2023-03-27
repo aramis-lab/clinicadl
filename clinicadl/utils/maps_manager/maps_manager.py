@@ -1428,9 +1428,8 @@ class MapsManager:
         )
         train_df = train_df[["participant_id", "session_id"]]
         if self.transfer_path:
-            transfer_train_path = (
-                self.transfer_path.resolve() / "groups" / "train+validation.tsv"
-            )
+            print(self.transfer_path)
+            transfer_train_path = self.transfer_path / "groups" / "train+validation.tsv"
             transfer_train_df = pd.read_csv(transfer_train_path, sep="\t")
             transfer_train_df = transfer_train_df[["participant_id", "session_id"]]
             train_df = pd.concat([train_df, transfer_train_df])
