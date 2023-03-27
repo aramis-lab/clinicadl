@@ -66,7 +66,7 @@ def test_predict(cmdopt, tmp_path, test_name):
 
     # Correction of JSON file for ROI
     if "roi" in modes:
-        json_path = str(model_folder / "maps.json")
+        json_path = model_folder / "maps.json"
         with open(json_path, "r") as f:
             parameters = json.load(f)
         parameters["roi_list"] = ["leftHippocampusBox", "rightHippocampusBox"]

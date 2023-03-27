@@ -75,11 +75,9 @@ def test_generate(cmdopt, tmp_path, test_name):
     assert flag_error
 
     if test_name == "shepplogan_example":
-        file = os.listdir(os.path.join(output_folder, "tensor_extraction"))
-        old_name = os.path.join(output_folder, "tensor_extraction", file[0])
-        new_name = os.path.join(output_folder, "tensor_extraction", "extract_test.json")
-        os.rename(old_name, new_name)
+        file = list((output_folder, "tensor_extraction").iterdir())
+        old_name = output_folder / "tensor_extraction" / file[0]
+        new_name = output_folder / "tensor_extraction" / "extract_test.json"
+        old_name.rename(new_name)
 
-    assert compare_folders(
-        str(output_folder), str(ref_dir / test_name), str(tmp_out_dir)
-    )
+    assert compare_folders(output_folder, ref_dir / test_name, tmp_out_dir)

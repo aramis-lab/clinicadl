@@ -88,7 +88,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
 
-    if os.path.exists(tmp_out_dir):
+    if tmp_out_dir.is_dir():
         shutil.rmtree(tmp_out_dir)
 
     flag_error = not os.system("clinicadl " + " ".join(test_input))
@@ -104,12 +104,12 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     assert json_data_out == json_data_ref  # ["mode"] == mode
 
     assert compare_folders(
-        str(tmp_out_dir / "groups"),
-        str(ref_dir / ("maps_" + test_name) / "groups"),
+        tmp_out_dir / "groups",
+        ref_dir / ("maps_" + test_name) / "groups",
         tmp_path,
     )
     assert compare_folders(
-        str(tmp_out_dir / f"split-{split[0]}" / "best-loss"),
-        str(ref_dir / ("maps_" + test_name) / f"split-{split[1]}" / "best-loss"),
+        tmp_out_dir / f"split-{split[0]}" / "best-loss",
+        ref_dir / ("maps_" + test_name) / f"split-{split[1]}" / "best-loss",
         tmp_path,
     )
