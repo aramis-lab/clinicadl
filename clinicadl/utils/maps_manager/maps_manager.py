@@ -28,6 +28,7 @@ from clinicadl.utils.logger import setup_logging
 from clinicadl.utils.maps_manager.logwriter import LogWriter
 from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
+    change_path_to_str,
     change_str_to_path,
     read_json,
 )
@@ -83,6 +84,8 @@ class MapsManager:
         # Initiate MAPS
         else:
             self._check_args(parameters)
+            print("after check args")
+            print(parameters)
             parameters["tsv_path"] = Path(parameters["tsv_path"])
 
             if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
@@ -1160,6 +1163,8 @@ class MapsManager:
                 )
         parameters = add_default_values(parameters)
         self.parameters = parameters
+        print("check args start")
+        print(parameters)
         if self.parameters["gpu"]:
             check_gpu()
 
@@ -1379,9 +1384,7 @@ class MapsManager:
         logger.debug("Writing parameters...")
         json_path.mkdir(parents=True, exist_ok=True)
 
-        for key, value in parameters.items():
-            if isinstance(value, PosixPath):
-                parameters[key] = str(value)
+        parameters = change_path_to_str(parameters)
 
         # save to json file
         json_data = json.dumps(parameters, skipkeys=True, indent=4)
@@ -1390,16 +1393,7 @@ class MapsManager:
             logger.info(f"Path of json file: {json_path}")
         with json_path.open(mode="w") as f:
             f.write(json_data)
-
-        for key, value in parameters.items():
-            if (
-                key.endswith("tsv")
-                or key.endswith("dir")
-                or key.endswith("directory")
-                or key.endswith("path")
-                or key.endswith("json")
-            ):
-                parameters[key] = Path(value)
+        parameters = change_str_to_path(parameters)
 
     def _write_requirements_version(self):
         """Writes the environment.txt file."""

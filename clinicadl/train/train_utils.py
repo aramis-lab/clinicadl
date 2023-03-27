@@ -29,13 +29,10 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
         )
         config_dict = toml.load(config_path)
         config_dict = remove_unused_tasks(config_dict, task)
-
+        config_dict = change_str_to_path(config_dict)
         train_dict = dict()
         # Fill train_dict from TOML files arguments
         for config_section in config_dict:
-            config_dict[config_section] = change_str_to_path(
-                config_dict[config_section]
-            )
             for key in config_dict[config_section]:
                 train_dict[key] = config_dict[config_section][key]
 
@@ -52,6 +49,7 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
         config_dict = toml.load(config_path)
         # Check that TOML file has the same format as the one in clinicadl/resources/config/train_config.toml
         if user_dict is not None:
+            user_dict = change_str_to_path(user_dict)
             for section_name in user_dict:
                 if section_name not in config_dict:
                     raise ClinicaDLConfigurationError(
@@ -59,9 +57,6 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
                         f"Please see the documentation to see the list of option in TOML configuration file."
                     )
                 for key in user_dict[section_name]:
-                    user_dict[section_name] = change_str_to_path(
-                        user_dict[section_name]
-                    )
                     if key not in config_dict[section_name]:
                         raise ClinicaDLConfigurationError(
                             f"{key} option in {section_name} is not valid in TOML configuration file. "
@@ -76,9 +71,6 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
 
         # Fill train_dict from TOML files arguments
         for config_section in config_dict:
-            config_dict[config_section] = change_str_to_path(
-                config_dict[config_section]
-            )
             for key in config_dict[config_section]:
                 train_dict[key] = config_dict[config_section][key]
 
@@ -90,7 +82,8 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
         raise ClinicaDLConfigurationError(
             f"config_file {config_file} should be a TOML or a JSON file."
         )
-
+    print("oezirbgmz")
+    print(train_dict)
     return train_dict
 
 

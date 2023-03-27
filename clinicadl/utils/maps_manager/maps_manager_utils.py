@@ -25,11 +25,11 @@ def add_default_values(user_dict: Dict[str, Any]) -> Dict[str, Any]:
 
     # task dependent
     config_dict = remove_unused_tasks(config_dict, task)
-    config_dict = change_str_to_path(config_dict)
-
+    # config_dict = change_str_to_path(config_dict)
+    config_dict["Transfer_learning"]["transfer_path"] = None
+    print(config_dict)
     # Check that TOML file has the same format as the one in resources
     for section_name in config_dict:
-        config_dict[section_name] = change_str_to_path(config_dict[section_name])
         for key in config_dict[section_name]:
             if key not in user_dict:  # Add value if not present in user_dict
                 user_dict[key] = config_dict[section_name][key]
@@ -189,15 +189,28 @@ def change_str_to_path(
     """
     path_list = ["transfer_path", "caps_directory", "tsv_directory", "maps_path"]
     for key, value in toml_dict.items():
-        if (
-            key.endswith("tsv")
-            or key.endswith("dir")
-            or key.endswith("directory")
-            or key.endswith("path")
-            or key.endswith("json")
-        ):
-            toml_dict[key] = Path(value)
+        if type(value) == Dict:
+            for key2, value2 in value.items():
+                if (
+                    key2.endswith("tsv")
+                    or key2.endswith("dir")
+                    or key2.endswith("directory")
+                    or key2.endswith("path")
+                    or key2.endswith("json")
+                    or key2.endswith("location")
+                ):
+                    toml_dict[value][key2] = Path(value2)
+        else:
+            if (
+                key.endswith("tsv")
+                or key.endswith("dir")
+                or key.endswith("directory")
+                or key.endswith("path")
+                or key.endswith("json")
+                or key.endswith("location")
+            ):
 
+                toml_dict[key] = Path(value)
     return toml_dict
 
 
