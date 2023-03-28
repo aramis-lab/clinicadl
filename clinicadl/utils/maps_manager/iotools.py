@@ -26,12 +26,12 @@ def write_requirements_version(output_path: Path):
         )
 
 
-def check_and_clean(d: Path):
+def check_and_clean(directory_path: Path):
     import shutil
 
-    if d.is_dir():
-        shutil.rmtree(d)
-    d.mkdir(parents=True)
+    if directory_path.is_dir():
+        shutil.rmtree(directory_path)
+    directory_path.mkdir(parents=True)
 
 
 def commandline_to_json(commandline, logger=None, filename="commandline.json"):
