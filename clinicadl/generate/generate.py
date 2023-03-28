@@ -441,18 +441,16 @@ def generate_shepplogan_dataset(
 
 
 def generate_hypometabolic_dataset(
-    caps_directory: str,
-    output_dir: str,
+    caps_directory: Path,
+    output_dir: Path,
     n_subjects: int,
     n_proc: int,
-    tsv_path: Optional[str] = None,
+    tsv_path: Optional[Path] = None,
     preprocessing: str = "pet-linear",
     dementia: str = "ad",
     dementia_percent: float = 30,
     sigma: int = 5,
     uncropped_image: bool = False,
-    acq_label: str = "18FFDG",
-    suvr_reference_region: str = "cerebellumPons2",
 ):
     """
     Generates a dataset, based on the images of the CAPS directory, where all
@@ -480,10 +478,6 @@ def generate_hypometabolic_dataset(
         ????
     uncropped_image: bool
         If True the uncropped image of `t1-linear` or `pet-linear` will be used.
-    acq_label: str
-        Name of the tracer when using `pet-linear` preprocessing.
-    suvr_reference_region: str
-        Name of the reference region when using `pet-linear` preprocessing.
 
     Returns
     -------
@@ -554,7 +548,7 @@ def generate_hypometabolic_dataset(
 
     # Find appropriate preprocessing file type
     file_type = find_file_type(
-        preprocessing, uncropped_image, acq_label, suvr_reference_region
+        preprocessing, uncropped_image, "18FFDG", "cerebellumPons2"
     )
 
     # Output tsv file
@@ -573,19 +567,19 @@ def generate_hypometabolic_dataset(
     mask = mask_processing(mask, dementia_percent, sigma)
 
     # Create subjects dir
-    (Path(output_dir) / "subjects").mkdir(parents=True, exist_ok=True)
+    (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
 
     def generate_hypometabolic_image(i, output_df):
         # for i in range(n_subjects):
-        image_path = images_paths[i]
+        image_path = Path(images_paths[i])
         image_nii = nib.load(image_path)
         image = image_nii.get_fdata()
 
-        input_filename = basename(image_path)
+        input_filename = image_path.name
         filename_pattern = "_".join(input_filename.split("_")[2::])
 
         hypo_image_nii_dir = (
-            Path(output_dir) / "subjects" / f"sub-HYPO{i}" / sessions[i] / preprocessing
+            output_dir / "subjects" / f"sub-HYPO{i}" / sessions[i] / preprocessing
         )
         hypo_image_nii_filename = f"sub-HYPO{i}_{dementia}-{dementia_percent}_{sessions[i]}_{filename_pattern}"
         hypo_image_nii_dir.mkdir(parents=True, exist_ok=True)
@@ -612,8 +606,8 @@ def generate_hypometabolic_dataset(
     for result_df in results_list:
         output_df = pd.concat([result_df, output_df])
 
-    output_df.to_csv(join(output_dir, "data.tsv"), sep="\t", index=False)
+    output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
 
     write_missing_mods(output_dir, output_df)
 
-    logger.info(f"hypometabolic dataset was generated at {output_dir}")
+    logger.info(f"Hypometabolic dataset was generated at {output_dir}")

@@ -31,8 +31,6 @@ from clinicadl.utils import cli_param
     help="sigma ?",
 )
 @cli_param.option.use_uncropped_image
-@cli_param.option.acq_label
-@cli_param.option.suvr_reference_region
 def cli(
     caps_directory,
     generated_caps_directory,
@@ -43,8 +41,6 @@ def cli(
     dementia,
     dementia_percent,
     use_uncropped_image,
-    acq_label,
-    suvr_reference_region,
 ):
     """Generation of trivial dataset with addition of synthetic brain atrophy.
 
@@ -65,8 +61,6 @@ def cli(
         dementia_percent=dementia_percent,
         sigma=sigma,
         uncropped_image=use_uncropped_image,
-        acq_label="18FFDG",
-        suvr_reference_region="cerebellumPons2",
     )
 
 
