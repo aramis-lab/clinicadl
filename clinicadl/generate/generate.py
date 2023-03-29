@@ -447,14 +447,14 @@ def generate_hypometabolic_dataset(
     n_proc: int,
     tsv_path: Optional[Path] = None,
     preprocessing: str = "pet-linear",
-    dementia: str = "ad",
-    dementia_percent: float = 30,
+    pathology: str = "ad",
+    anomaly_degree: float = 30,
     sigma: int = 5,
     uncropped_image: bool = False,
 ):
     """
     Generates a dataset, based on the images of the CAPS directory, where all
-    the images are processed using a mask to generate a specific dementia.
+    the images are processed using a mask to generate a specific pathology.
 
     Parameters
     ----------
@@ -470,10 +470,10 @@ def generate_hypometabolic_dataset(
         Path to tsv file of list of subjects/sessions.
     preprocessing: str
         Preprocessing performed. For now it must be 'pet-linear'.
-    dementia: str
-        Name of the dementia to generate.
-    dementia_percent: float
-        Percentage of dementia applied.
+    pathology: str
+        Name of the pathology to generate.
+    anomaly_degree: float
+        Percentage of pathology applied.
     sigma: int
         ????
     uncropped_image: bool
@@ -499,8 +499,8 @@ def generate_hypometabolic_dataset(
             "preprocessing": preprocessing,
             "n_subjects": n_subjects,
             "n_proc": n_proc,
-            "dementia": dementia,
-            "dementia_percent": dementia_percent,
+            "pathology": pathology,
+            "anomaly_degree": anomaly_degree,
         }
     )
 
@@ -524,14 +524,14 @@ def generate_hypometabolic_dataset(
         cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks_hypo"
         url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/hypo/"
         FILE1 = RemoteFileStructure(
-            filename=f"mask_hypo_{dementia}.nii",
+            filename=f"mask_hypo_{pathology}.nii",
             url=url_aramis,
             checksum="drgjeryt",
         )
         cache_clinicadl.mkdir(parents=True, exist_ok=True)
 
-        if not (cache_clinicadl / f"mask_hypo_{dementia}.nii").is_file():
-            logger.info(f"Downloading {dementia} masks...")
+        if not (cache_clinicadl / f"mask_hypo_{pathology}.nii").is_file():
+            logger.info(f"Downloading {pathology} masks...")
             # mask_path = fetch_file(FILE1, cache_clinicadl)
             try:
                 mask_path = fetch_file(FILE1, cache_clinicadl)
@@ -543,7 +543,7 @@ def generate_hypometabolic_dataset(
                     and provide a valid path."""
                 )
         else:
-            mask_path = cache_clinicadl / f"mask_hypo_{dementia}.nii"
+            mask_path = cache_clinicadl / f"mask_hypo_{pathology}.nii"
             mask_nii = nib.load(mask_path)
 
     # Find appropriate preprocessing file type
@@ -552,7 +552,7 @@ def generate_hypometabolic_dataset(
     )
 
     # Output tsv file
-    columns = ["participant_id", "session_id", "dementia", "percentage"]
+    columns = ["participant_id", "session_id", "pathology", "percentage"]
     output_df = pd.DataFrame(columns=columns)
     participants = [data_df.loc[i, "participant_id"] for i in range(n_subjects)]
     sessions = [data_df.loc[i, "session_id"] for i in range(n_subjects)]
@@ -564,7 +564,7 @@ def generate_hypometabolic_dataset(
 
     mask_resample_nii = resample_to_img(mask_nii, image_nii, interpolation="nearest")
     mask = mask_resample_nii.get_fdata()
-    mask = mask_processing(mask, dementia_percent, sigma)
+    mask = mask_processing(mask, anomaly_degree, sigma)
 
     # Create subjects dir
     (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
@@ -581,7 +581,9 @@ def generate_hypometabolic_dataset(
         hypo_image_nii_dir = (
             output_dir / "subjects" / f"sub-HYPO{i}" / sessions[i] / preprocessing
         )
-        hypo_image_nii_filename = f"sub-HYPO{i}_{dementia}-{dementia_percent}_{sessions[i]}_{filename_pattern}"
+        hypo_image_nii_filename = (
+            f"sub-HYPO{i}_{pathology}-{anomaly_degree}_{sessions[i]}_{filename_pattern}"
+        )
         hypo_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
         # Create atrophied image
@@ -591,10 +593,10 @@ def generate_hypometabolic_dataset(
 
         # Append row to output tsv
         row = [
-            f"sub-HYP0{i}_{dementia}-{dementia_percent}",
+            f"sub-HYP0{i}_{pathology}-{anomaly_degree}",
             sessions[i],
-            dementia,
-            dementia_percent,
+            pathology,
+            anomaly_degree,
         ]
         row_df = pd.DataFrame([row], columns=columns)
         output_df = pd.concat([output_df, row_df])
@@ -610,4 +612,6 @@ def generate_hypometabolic_dataset(
 
     write_missing_mods(output_dir, output_df)
 
-    logger.info(f"Hypometabolic dataset was generated at {output_dir}")
+    logger.info(
+        f"Hypometabolic dataset was generated, with {anomaly_degree} % of dementia {pathology} at {output_dir}."
+    )

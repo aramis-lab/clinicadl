@@ -10,19 +10,19 @@ from clinicadl.utils import cli_param
 @cli_param.option.n_subjects
 @cli_param.option.n_proc
 @click.option(
-    "--dementia",
-    "-d",
+    "--pathology",
+    "-p",
     type=click.Choice(["ad", "bvftd", "lvppa", "nfvppa", "pca", "svppa"]),
     default="ad",
     help="Path to the extracted masks to generate the two labels. "
     "Default will try to download masks and store them at '~/.cache/clinicadl'.",
 )
 @click.option(
-    "--dementia_percent",
-    "-dp",
+    "--anomaly_degree",
+    "-ad",
     type=float,
     default=30.0,
-    help="Percentage of dementia applied.",
+    help="Degrees of hypo-metabolism applied (in percent)",
 )
 @click.option(
     "--sigma",
@@ -38,8 +38,8 @@ def cli(
     n_subjects,
     n_proc,
     sigma,
-    dementia,
-    dementia_percent,
+    pathology,
+    anomaly_degree,
     use_uncropped_image,
 ):
     """Generation of trivial dataset with addition of synthetic brain atrophy.
@@ -57,8 +57,8 @@ def cli(
         output_dir=generated_caps_directory,
         n_subjects=n_subjects,
         n_proc=n_proc,
-        dementia=dementia,
-        dementia_percent=dementia_percent,
+        pathology=pathology,
+        anomaly_degree=anomaly_degree,
         sigma=sigma,
         uncropped_image=use_uncropped_image,
     )
