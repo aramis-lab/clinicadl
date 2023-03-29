@@ -56,7 +56,7 @@ def test_generate(cmdopt, tmp_path, test_name):
             "2",
             "--pathology",
             "ad",
-            "--pathology_intensity" "50",
+            "--anomaly_degree" "50",
             "--sigma",
             "5",
         ]
