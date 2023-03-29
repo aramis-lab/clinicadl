@@ -176,16 +176,16 @@ def change_str_to_path(
     toml_dict: Dict[str, Dict[str, Any]]
 ) -> Dict[str, Dict[str, Any]]:
     """
-    It changes
+    For all paths in the dictionnary, it changes the type from str to pathlib.Path.
 
     Paramaters
     ----------
     toml_dict: Dict[str, Dict[str, Any]]
-        Dictionary of options as written in a TOML file, with
+        Dictionary of options as written in a TOML file, with type(path)=str
 
     Returns
     -------
-        updated TOML dictionary.
+        Updated TOML dictionary with type(path)=pathlib.Path
     """
     for key, value in toml_dict.items():
         if type(value) == Dict:
@@ -222,26 +222,17 @@ def change_path_to_str(
     toml_dict: Dict[str, Dict[str, Any]]
 ) -> Dict[str, Dict[str, Any]]:
     """
-    Change
-    Args:
-        toml_dict: dictionary of options as written in a TOML file.
+    For all paths in the dictionnary, it changes the type from pathlib.Path to str.
 
-    Returns:
-        updated TOML dictionary.
+    Paramaters
+    ----------
+    toml_dict: Dict[str, Dict[str, Any]]
+        Dictionary of options as written in a TOML file, with type(path)=pathlib.Path
+
+    Returns
+    -------
+        Updated TOML dictionary with type(path)=str
     """
-    # for key, value in toml_dict.items():
-    #     if type(value) == Dict:
-    #         for key2, value2 in value.items():
-    #             if type(value2) == Path:
-    #                 toml_dict[value][key2] = str(value2)
-    #             elif value2 == False and key2 == "masks_location":
-    #                 toml_dict[value][key2] = ""
-    #     elif type(value) == Path:
-    #         toml_dict[key] = str(value)
-    #     elif value == False and key == "masks_location":
-    #         toml_dict[key] = ""
-    # return toml_dict
-
     for key, value in toml_dict.items():
         if type(value) == Dict:
             for key2, value2 in value.items():

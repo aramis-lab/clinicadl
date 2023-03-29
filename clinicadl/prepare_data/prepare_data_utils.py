@@ -305,7 +305,7 @@ def extract_images(input_img: Path) -> List[Tuple[str, torch.Tensor]]:
     image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
     # make sure the tensor type is torch.float32
     output_file = (
-        Path(input_img.name.replace(".nii.gz", ".pt")),
+        input_img.with_suffix("").with_suffix(".pt"),
         image_tensor.clone(),
     )
 
