@@ -17,8 +17,6 @@ def cli(merged_tsv, data_tsv, results_tsv, diagnoses):
 
     Results are stored in RESULTS_TSV.
     """
-    from pathlib import Path
-
     from .analysis import demographics_analysis
 
     demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses)

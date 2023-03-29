@@ -65,8 +65,8 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
             if not output_file_dir.is_dir():
                 output_file_dir.mkdir(parents=True, exist_ok=True)
             output_file = output_file_dir / filename
-            save_tensor(tensor, str(output_file))
-            logger.debug(f"    Output tensor saved at {output_file}")
+            save_tensor(tensor, output_file)
+            logger.debug(f"Output tensor saved at {output_file}")
 
     if parameters["mode"] == "image" or not parameters["prepare_dl"]:
 

@@ -117,7 +117,7 @@ class CapsDataset(Dataset):
         from clinica.utils.inputs import check_caps_folder
 
         if multi_cohort:
-            if not caps_directory.name.endswith(".tsv"):
+            if not caps_directory.suffix == ".tsv":
                 raise ClinicaDLArgumentError(
                     "If multi_cohort is True, the CAPS_DIRECTORY argument should be a path to a TSV file."
                 )
@@ -339,7 +339,7 @@ class CapsDatasetImage(CapsDataset):
             "participant_id": participant,
             "session_id": session,
             "image_id": 0,
-            "image_path": str(image_path),
+            "image_path": image_path,
         }
 
         return sample
@@ -973,7 +973,7 @@ def load_data_test(test_path: Path, diagnoses_list, baseline=True, multi_cohort=
     # TODO: computes baseline sessions on-the-fly to manager TSV file case
 
     if multi_cohort:
-        if not test_path.name.endswith(".tsv"):
+        if not test_path.suffix == ".tsv":
             raise ClinicaDLArgumentError(
                 "If multi_cohort is given, the TSV_DIRECTORY argument should be a path to a TSV file."
             )
@@ -1006,7 +1006,7 @@ def load_data_test(test_path: Path, diagnoses_list, baseline=True, multi_cohort=
                 )
             test_df.reset_index(inplace=True, drop=True)
     else:
-        if test_path.name.endswith(".tsv"):
+        if test_path.suffix == ".tsv":
             tsv_df = pd.read_csv(test_path, sep="\t")
             multi_col = {"cohort", "path"}
             if multi_col.issubset(tsv_df.columns.values):
@@ -1021,7 +1021,7 @@ def load_data_test(test_path: Path, diagnoses_list, baseline=True, multi_cohort=
 
 def load_data_test_single(test_path: Path, diagnoses_list, baseline=True):
 
-    if test_path.name.endswith(".tsv"):
+    if test_path.suffix == ".tsv":
         test_df = pd.read_csv(test_path, sep="\t")
         if "diagnosis" not in test_df.columns.values:
             raise ClinicaDLTSVError(

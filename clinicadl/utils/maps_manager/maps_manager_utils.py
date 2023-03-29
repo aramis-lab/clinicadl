@@ -139,7 +139,7 @@ def read_json(json_path: Path) -> Dict[str, Any]:
         _, file_type = compute_folder_and_file_type(parameters["preprocessing_dict"])
         parameters["preprocessing_dict"]["file_type"] = file_type
 
-    return parameters
+    return change_str_to_path(parameters)
 
 
 def remove_unused_tasks(
@@ -169,22 +169,24 @@ def remove_unused_tasks(
         if other_task.capitalize() in toml_dict:
             del toml_dict[other_task.capitalize()]
 
-    return toml_dict
+    return change_str_to_path(toml_dict)
 
 
 def change_str_to_path(
     toml_dict: Dict[str, Dict[str, Any]]
 ) -> Dict[str, Dict[str, Any]]:
     """
-    Remove options depending on other tasks than task
+    It changes
 
-    Args:
-        toml_dict: dictionary of options as written in a TOML file.
+    Paramaters
+    ----------
+    toml_dict: Dict[str, Dict[str, Any]]
+        Dictionary of options as written in a TOML file, with
 
-    Returns:
+    Returns
+    -------
         updated TOML dictionary.
     """
-    path_list = ["transfer_path", "caps_directory", "tsv_directory", "maps_path"]
     for key, value in toml_dict.items():
         if type(value) == Dict:
             for key2, value2 in value.items():
@@ -220,42 +222,22 @@ def change_path_to_str(
     toml_dict: Dict[str, Dict[str, Any]]
 ) -> Dict[str, Dict[str, Any]]:
     """
-    Remove options depending on other tasks than task
-
+    Change
     Args:
         toml_dict: dictionary of options as written in a TOML file.
 
     Returns:
         updated TOML dictionary.
     """
-    path_list = ["transfer_path", "caps_directory", "tsv_directory", "maps_path"]
     for key, value in toml_dict.items():
         if type(value) == Dict:
             for key2, value2 in value.items():
-                if (
-                    key2.endswith("tsv")
-                    or key2.endswith("dir")
-                    or key2.endswith("directory")
-                    or key2.endswith("path")
-                    or key2.endswith("json")
-                    or key2.endswith("location")
-                ):
-                    if value2 == False:
-                        toml_dict[value][key2] = ""
-                    else:
-                        toml_dict[value][key2] = str(value2)
-        else:
-            if (
-                key.endswith("tsv")
-                or key.endswith("dir")
-                or key.endswith("directory")
-                or key.endswith("path")
-                or key.endswith("json")
-                or key.endswith("location")
-            ):
-                if value == False:
-                    toml_dict[key] = ""
-                else:
-                    toml_dict[key] = str(value)
-
+                if type(value2) == Path:
+                    toml_dict[value][key2] = str(value2)
+                elif value2 == False and key2 == "masks_location":
+                    toml_dict[value][key2] = ""
+        elif type(value) == Path:
+            toml_dict[key] = str(value)
+        elif value == False and key == "masks_location":
+            toml_dict[key] = ""
     return toml_dict

@@ -64,11 +64,10 @@ class QCDataset(Dataset):
         if self.use_extracted_tensors:
             file_type = self.preprocessing_dict["file_type"]
             file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
-            image_path = Path(
-                clinica_file_reader([subject], [session], self.img_dir, file_type,)[
-                    0
-                ][0]
-            )
+            image_output = clinica_file_reader(
+                [subject], [session], self.img_dir, file_type
+            )[0]
+            image_path = Path(image_output[0])
             image_filename = image_path.name
             folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
             image_dir = (
