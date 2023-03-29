@@ -229,15 +229,45 @@ def change_path_to_str(
     Returns:
         updated TOML dictionary.
     """
+    # for key, value in toml_dict.items():
+    #     if type(value) == Dict:
+    #         for key2, value2 in value.items():
+    #             if type(value2) == Path:
+    #                 toml_dict[value][key2] = str(value2)
+    #             elif value2 == False and key2 == "masks_location":
+    #                 toml_dict[value][key2] = ""
+    #     elif type(value) == Path:
+    #         toml_dict[key] = str(value)
+    #     elif value == False and key == "masks_location":
+    #         toml_dict[key] = ""
+    # return toml_dict
+
     for key, value in toml_dict.items():
         if type(value) == Dict:
             for key2, value2 in value.items():
-                if type(value2) == Path:
-                    toml_dict[value][key2] = str(value2)
-                elif value2 == False and key2 == "masks_location":
-                    toml_dict[value][key2] = ""
-        elif type(value) == Path:
-            toml_dict[key] = str(value)
-        elif value == False and key == "masks_location":
-            toml_dict[key] = ""
+                if (
+                    key2.endswith("tsv")
+                    or key2.endswith("dir")
+                    or key2.endswith("directory")
+                    or key2.endswith("path")
+                    or key2.endswith("json")
+                    or key2.endswith("location")
+                ):
+                    if value2 == "":
+                        toml_dict[value][key2] = False
+                    else:
+                        toml_dict[value][key2] = str(value2)
+        else:
+            if (
+                key.endswith("tsv")
+                or key.endswith("dir")
+                or key.endswith("directory")
+                or key.endswith("path")
+                or key.endswith("json")
+                or key.endswith("location")
+            ):
+                if value == "":
+                    toml_dict[key] = False
+                else:
+                    toml_dict[key] = str(value)
     return toml_dict
