@@ -1,5 +1,4 @@
 from logging import getLogger
-from pathlib import Path
 from typing import List
 
 from clinicadl.utils.caps_dataset.data import CapsDataset

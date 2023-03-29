@@ -61,7 +61,6 @@ class MapsManager:
         verbose: str
             Logging level ("debug", "info", "warning")
         """
-
         self.maps_path = maps_path.resolve()
 
         if verbose not in level_list:

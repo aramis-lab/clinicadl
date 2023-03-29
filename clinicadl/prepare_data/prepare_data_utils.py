@@ -377,7 +377,8 @@ def find_mask_path(
     candidates_pattern = f"*{mask_pattern}*_roi-{roi}_mask.nii*"
 
     desc = f"The mask should follow the pattern {candidates_pattern}. "
-    candidates = [e for e in masks_location.glob(candidates_pattern)]
+    candidates = [e.as_posix() for e in masks_location.glob(candidates_pattern)]
+    #  candidates = [e. for e in masks_location.glob(candidates_pattern)] ??
     if cropping is None:
         # pass
         candidates2 = candidates
