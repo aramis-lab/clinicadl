@@ -24,13 +24,11 @@ def cli(old_tsv_dir, new_tsv_dir, labels_list=None):
     Results are stored in NEW_TSV_DIR.
     """
 
-    import os
-
     from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
     from .adapt import adapt
 
-    if os.path.exists(new_tsv_dir):
+    if new_tsv_dir.is_dir():
         raise ClinicaDLArgumentError(
             f"\nThe directory: {new_tsv_dir} already exists.\n"
             "Please give another path for the new tsv directory."

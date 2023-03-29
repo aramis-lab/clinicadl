@@ -13,7 +13,7 @@ output_maps = cli_param.argument.output_maps
 config_file = click.option(
     "--config_file",
     "-c",
-    type=click.File(),
+    type=click.Path(exists=True),
     help="Path to the TOML or JSON file containing the values of the options needed for training.",
 )
 # Computational

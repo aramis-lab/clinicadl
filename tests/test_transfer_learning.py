@@ -30,32 +30,30 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
     tmp_target_dir = tmp_path / "transferLearning" / "target"
     tmp_out_dir.mkdir(parents=True)
 
-    caps_roi_path = join(input_dir, "caps_roi")
-    caps_patch_path = join(input_dir, "caps_patch")
+    caps_roi_path = input_dir / "caps_roi"
     extract_roi_str = "t1-linear_mode-roi.json"
-    extract_patch_str = "t1-linear_mode-patch.json"
-    labels_path = join(input_dir, "labels_list", "2_fold")
-    config_path = join(input_dir, "train_config.toml")
+    labels_path = input_dir / "labels_list" / "2_fold"
+    config_path = input_dir / "train_config.toml"
     if test_name == "transfer_ae_ae":
         source_task = [
             "train",
             "reconstruction",
-            caps_roi_path,
+            str(caps_roi_path),
             extract_roi_str,
-            labels_path,
+            str(labels_path),
             str(tmp_out_dir),
             "-c",
-            config_path,
+            str(config_path),
         ]
         target_task = [
             "train",
             "reconstruction",
-            caps_roi_path,
+            str(caps_roi_path),
             extract_roi_str,
-            labels_path,
+            str(labels_path),
             str(tmp_target_dir),
             "-c",
-            config_path,
+            str(config_path),
             "--transfer_path",
             str(tmp_out_dir),
         ]
@@ -64,22 +62,22 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
         source_task = [
             "train",
             "reconstruction",
-            caps_roi_path,
+            str(caps_roi_path),
             extract_roi_str,
-            labels_path,
+            str(labels_path),
             str(tmp_out_dir),
             "-c",
-            config_path,
+            str(config_path),
         ]
         target_task = [
             "train",
             "classification",
-            caps_roi_path,
+            str(caps_roi_path),
             extract_roi_str,
-            labels_path,
+            str(labels_path),
             str(tmp_target_dir),
             "-c",
-            config_path,
+            str(config_path),
             "--transfer_path",
             str(tmp_out_dir),
         ]
@@ -88,22 +86,22 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
         source_task = [
             "train",
             "classification",
-            caps_roi_path,
+            str(caps_roi_path),
             extract_roi_str,
-            labels_path,
+            str(labels_path),
             str(tmp_out_dir),
             "-c",
-            config_path,
+            str(config_path),
         ]
         target_task = [
             "train",
             "classification",
-            caps_roi_path,
+            str(caps_roi_path),
             extract_roi_str,
-            labels_path,
+            str(labels_path),
             str(tmp_target_dir),
             "-c",
-            config_path,
+            str(config_path),
             "--transfer_path",
             str(tmp_out_dir),
         ]
@@ -112,22 +110,22 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
         source_task = [
             "train",
             "classification",
-            caps_roi_path,
+            str(caps_roi_path),
             extract_roi_str,
-            labels_path,
+            str(labels_path),
             str(tmp_out_dir),
             "-c",
-            config_path,
+            str(config_path),
         ]
         target_task = [
             "train",
             "classification",
-            caps_roi_path,
+            str(caps_roi_path),
             extract_roi_str,
-            labels_path,
+            str(labels_path),
             str(tmp_target_dir),
             "-c",
-            config_path,
+            str(config_path),
             "--transfer_path",
             str(tmp_out_dir),
         ]
@@ -135,9 +133,9 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
 
-    if os.path.exists(tmp_out_dir):
+    if tmp_out_dir.exists():
         shutil.rmtree(tmp_out_dir)
-    if os.path.exists(tmp_target_dir):
+    if tmp_target_dir.exists():
         shutil.rmtree(tmp_target_dir)
 
     flag_source = not os.system("clinicadl -vvv " + " ".join(source_task))
@@ -156,12 +154,12 @@ def test_transfer_learning(cmdopt, tmp_path, test_name):
     assert json_data_out == json_data_ref  # ["mode"] == mode
 
     assert compare_folders(
-        str(tmp_target_dir / "groups"),
-        str(ref_dir / ("maps_roi_" + name) / "groups"),
+        tmp_target_dir / "groups",
+        ref_dir / ("maps_roi_" + name) / "groups",
         tmp_path,
     )
     assert compare_folders(
-        str(tmp_target_dir / "split-0" / "best-loss"),
-        str(ref_dir / ("maps_roi_" + name) / "split-0" / "best-loss"),
+        tmp_target_dir / "split-0" / "best-loss",
+        ref_dir / ("maps_roi_" + name) / "split-0" / "best-loss",
         tmp_path,
     )

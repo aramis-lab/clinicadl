@@ -1,5 +1,7 @@
 """Common CLI options used by Clinica pipelines."""
 
+from pathlib import Path
+
 import click
 from clinica.utils.pet import LIST_SUVR_REFERENCE_REGIONS
 
@@ -36,14 +38,14 @@ test_tsv = click.option(
     "--test_tsv",
     "-tt",
     help="Name of the test file in tsv format",
-    type=str,
+    type=click.Path(exists=True, path_type=Path),
     default=None,
 )
 caps_directory = click.option(
     "--caps_directory",
     "-c",
     help="input folder of a CAPS compliant dataset",
-    type=str,
+    type=click.Path(exists=True, path_type=Path),
     default=None,
 )
 variables_of_interest = click.option(
@@ -58,7 +60,7 @@ variables_of_interest = click.option(
 # GENERATE
 participant_list = click.option(
     "--participants_tsv",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, path_type=Path),
     help="Path to a TSV file including a list of participants/sessions.",
 )
 n_subjects = click.option(
@@ -108,7 +110,7 @@ save_features = click.option(
 subjects_sessions_tsv = click.option(
     "-tsv",
     "--subjects_sessions_tsv",
-    type=click.Path(exists=True, resolve_path=True),
+    type=click.Path(exists=True, resolve_path=True, path_type=Path),
     help="TSV file containing a list of subjects with their sessions.",
 )
 extract_json = click.option(

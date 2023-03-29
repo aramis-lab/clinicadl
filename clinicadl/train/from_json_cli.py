@@ -1,4 +1,5 @@
 from logging import getLogger
+from pathlib import Path
 
 import click
 
@@ -8,7 +9,7 @@ from clinicadl.utils import cli_param
 @click.command(name="from_json", no_args_is_help=True)
 @click.argument(
     "config_json",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, path_type=Path),
 )
 @cli_param.argument.output_maps
 @click.option(

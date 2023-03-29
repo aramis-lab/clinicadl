@@ -22,9 +22,9 @@ logger = getLogger("clinicadl.quality-check")
 
 
 def quality_check(
-    caps_dir: str,
-    output_path: str,
-    tsv_path: str = None,
+    caps_dir: Path,
+    output_path: Path,
+    tsv_path: Path = None,
     threshold: float = 0.5,
     batch_size: int = 1,
     n_proc: int = 0,
@@ -61,7 +61,7 @@ def quality_check(
 
     logger = getLogger("clinicadl.quality_check")
 
-    if not output_path.endswith(".tsv"):
+    if not output_path.suffix == ".tsv":
         raise ClinicaDLArgumentError(f"Output path {output_path} must be a TSV file.")
 
     # Fetch QC model
@@ -122,7 +122,7 @@ def quality_check(
 
         # Load DataFrame
         logger.debug("Loading data to check.")
-        df = load_and_check_tsv(tsv_path, caps_dict, Path(output_path).resolve().parent)
+        df = load_and_check_tsv(tsv_path, caps_dict, output_path.resolve().parent)
 
         dataset = QCDataset(caps_dir, df, use_tensor, use_uncropped_image)
         dataloader = DataLoader(

@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Optional
 
 import click
@@ -19,10 +20,10 @@ from .prepare_data_utils import get_parameters_dict
 @cli_param.option.suvr_reference_region
 @cli_param.option.custom_suffix
 def image_cli(
-    caps_directory: str,
+    caps_directory: Path,
     modality: str,
     n_proc: int,
-    subjects_sessions_tsv: Optional[str] = None,
+    subjects_sessions_tsv: Optional[Path] = None,
     extract_json: str = None,
     use_uncropped_image: bool = False,
     acq_label: Optional[str] = None,
@@ -79,11 +80,11 @@ def image_cli(
 @cli_param.option.suvr_reference_region
 @cli_param.option.custom_suffix
 def patch_cli(
-    caps_directory: str,
+    caps_directory: Path,
     modality: str,
     n_proc: int,
     save_features: bool = False,
-    subjects_sessions_tsv: Optional[str] = None,
+    subjects_sessions_tsv: Optional[Path] = None,
     extract_json: str = None,
     use_uncropped_image: bool = False,
     patch_size: int = 50,
@@ -160,11 +161,11 @@ def patch_cli(
 @cli_param.option.suvr_reference_region
 @cli_param.option.custom_suffix
 def slice_cli(
-    caps_directory: str,
+    caps_directory: Path,
     modality: str,
     n_proc: int,
     save_features: bool = False,
-    subjects_sessions_tsv: Optional[str] = None,
+    subjects_sessions_tsv: Optional[Path] = None,
     extract_json: str = None,
     use_uncropped_image: bool = False,
     slice_direction: int = 0,
@@ -246,11 +247,11 @@ def slice_cli(
 @cli_param.option.suvr_reference_region
 @cli_param.option.custom_suffix
 def roi_cli(
-    caps_directory: str,
+    caps_directory: Path,
     modality: str,
     n_proc: int,
     save_features: bool = False,
-    subjects_sessions_tsv: Optional[str] = None,
+    subjects_sessions_tsv: Optional[Path] = None,
     extract_json: str = None,
     use_uncropped_image: bool = False,
     roi_list: list = [],
