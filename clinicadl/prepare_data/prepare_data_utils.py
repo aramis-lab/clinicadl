@@ -298,17 +298,14 @@ def extract_images(input_img: Path) -> List[Tuple[str, torch.Tensor]]:
     Returns:
         filename (str): single tensor file  saved on the disk. Same location than input file.
     """
-    from copy import copy
-
     import nibabel as nib
     import torch
 
     image_array = nib.load(input_img).get_fdata(dtype="float32")
     image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
     # make sure the tensor type is torch.float32
-    output_image = copy(input_img)
     output_file = (
-        output_image.with_suffix("").with_suffix(".pt"),
+        Path(input_img.name.replace(".nii.gz", ".pt")),
         image_tensor.clone(),
     )
 
@@ -360,7 +357,7 @@ def find_mask_path(
     candidates_pattern = f"*{mask_pattern}*_roi-{roi}_mask.nii*"
 
     desc = f"The mask should follow the pattern {candidates_pattern}. "
-    candidates = [str(e) for e in masks_location.glob(candidates_pattern)]
+    candidates = [e.as_posix() for e in masks_location.glob(candidates_pattern)]
     if cropping is None:
         pass
     elif cropping:

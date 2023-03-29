@@ -247,7 +247,7 @@ def change_path_to_str(
                     if value2 == False:
                         toml_dict[value][key2] = ""
                     else:
-                        toml_dict[value][key2] = str(value2)
+                        toml_dict[value][key2] = value2.as_posix()
         else:
             if (
                 key.endswith("tsv")
@@ -260,5 +260,5 @@ def change_path_to_str(
                 if value == False:
                     toml_dict[key] = ""
                 else:
-                    toml_dict[key] = str(value)
+                    toml_dict[key] = value.as_posix()
     return toml_dict

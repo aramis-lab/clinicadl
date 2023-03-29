@@ -67,7 +67,7 @@ def commandline_to_json(commandline, logger=None, filename="commandline.json"):
     # change path to str for json.dumps
     for key, value in commandline_arg_dict.items():
         if isinstance(value, PosixPath):
-            commandline_arg_dict[key] = str(value)
+            commandline_arg_dict[key] = value.as_posix()
 
     # save to json file
     json = json.dumps(commandline_arg_dict, skipkeys=True, ensure_ascii=False, indent=4)

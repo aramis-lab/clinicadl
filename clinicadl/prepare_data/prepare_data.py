@@ -49,7 +49,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
 
     # Input file:
     input_files = clinica_file_reader(
-        subjects, sessions, str(caps_directory), file_type
+        subjects, sessions, caps_directory.as_posix(), file_type
     )[0]
 
     def write_output_imgs(output_mode, container, subfolder):

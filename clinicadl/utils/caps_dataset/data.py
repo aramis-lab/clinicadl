@@ -339,7 +339,7 @@ class CapsDatasetImage(CapsDataset):
             "participant_id": participant,
             "session_id": session,
             "image_id": 0,
-            "image_path": str(image_path),
+            "image_path": image_path.as_posix(),
         }
 
         return sample
@@ -403,7 +403,7 @@ class CapsDatasetPatch(CapsDataset):
         image_path = self._get_image_path(participant, session, cohort)
 
         if self.prepare_dl:
-            patch_dir = str(image_path.parent).replace(
+            patch_dir = image_path.parent.as_posix().replace(
                 "image_based", f"{self.mode}_based"
             )
             patch_filename = extract_patch_path(
@@ -517,7 +517,7 @@ class CapsDatasetRoi(CapsDataset):
 
         if self.prepare_dl:
             mask_path = self.mask_paths[roi_idx]
-            roi_dir = str(image_path.parent).replace(
+            roi_dir = image_path.parent.as_posix().replace(
                 "image_based", f"{self.mode}_based"
             )
             roi_filename = extract_roi_path(image_path, mask_path, self.uncropped_roi)
@@ -676,7 +676,7 @@ class CapsDatasetSlice(CapsDataset):
         image_path = self._get_image_path(participant, session, cohort)
 
         if self.prepare_dl:
-            slice_dir = str(image_path.parent).replace(
+            slice_dir = image_path.parent.as_posix().replace(
                 "image_based", f"{self.mode}_based"
             )
             slice_filename = extract_slice_path(
