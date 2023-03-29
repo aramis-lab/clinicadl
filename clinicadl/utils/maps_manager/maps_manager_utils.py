@@ -139,7 +139,7 @@ def read_json(json_path: Path) -> Dict[str, Any]:
         _, file_type = compute_folder_and_file_type(parameters["preprocessing_dict"])
         parameters["preprocessing_dict"]["file_type"] = file_type
 
-    return change_str_to_path(parameters)
+    return parameters
 
 
 def remove_unused_tasks(
@@ -169,7 +169,7 @@ def remove_unused_tasks(
         if other_task.capitalize() in toml_dict:
             del toml_dict[other_task.capitalize()]
 
-    return change_str_to_path(toml_dict)
+    return toml_dict
 
 
 def change_str_to_path(

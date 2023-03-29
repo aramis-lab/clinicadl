@@ -75,7 +75,7 @@ class MapsManager:
                     f"To initiate a new MAPS please give a train_dict."
                 )
             test_parameters = self.get_parameters()
-            # self.parameters = change_str_to_path(test_parameters)
+            self.parameters = change_str_to_path(test_parameters)
             self.task_manager = self._init_task_manager(n_classes=self.output_size)
             self.split_name = (
                 self._check_split_wording()
@@ -1161,7 +1161,7 @@ class MapsManager:
                     f"No value was given for {arg}."
                 )
         self.parameters = add_default_values(parameters)
-        # self.parameters = change_str_to_path(parameters)
+        self.parameters = change_str_to_path(parameters)
         if self.parameters["gpu"]:
             check_gpu()
 

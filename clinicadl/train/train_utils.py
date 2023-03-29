@@ -29,7 +29,7 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
         )
         config_dict = toml.load(config_path)
         config_dict = remove_unused_tasks(config_dict, task)
-        # config_dict = change_str_to_path(config_dict)
+        config_dict = change_str_to_path(config_dict)
         train_dict = dict()
         # Fill train_dict from TOML files arguments
         for config_section in config_dict:
@@ -76,7 +76,7 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
 
     elif config_file.suffix == ".json":
         train_dict = read_json(config_file)
-        # train_dict = change_str_to_path(train_dict)
+        train_dict = change_str_to_path(train_dict)
 
     else:
         raise ClinicaDLConfigurationError(
