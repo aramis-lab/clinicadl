@@ -243,10 +243,10 @@ def change_path_to_str(
                     or key2.endswith("path")
                     or key2.endswith("json")
                     or key2.endswith("location")
-                ) and isinstance(key2, Path):
+                ):
                     if value2 == False:
                         toml_dict[value][key2] = ""
-                    else:
+                    elif isinstance(value2, Path):
                         toml_dict[value][key2] = value2.as_posix()
         else:
             if (
@@ -256,9 +256,9 @@ def change_path_to_str(
                 or key.endswith("path")
                 or key.endswith("json")
                 or key.endswith("location")
-            ) and isinstance(key, Path):
+            ):
                 if value == False:
                     toml_dict[key] = ""
-                else:
+                elif isinstance(value, Path):
                     toml_dict[key] = value.as_posix()
     return toml_dict
