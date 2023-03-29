@@ -253,8 +253,8 @@ def change_path_to_str(
                     or key2.endswith("json")
                     or key2.endswith("location")
                 ):
-                    if value2 == "":
-                        toml_dict[value][key2] = False
+                    if value2 == False:
+                        toml_dict[value][key2] = ""
                     else:
                         toml_dict[value][key2] = str(value2)
         else:
@@ -266,8 +266,8 @@ def change_path_to_str(
                 or key.endswith("json")
                 or key.endswith("location")
             ):
-                if value == "":
-                    toml_dict[key] = False
+                if value == False:
+                    toml_dict[key] = ""
                 else:
                     toml_dict[key] = str(value)
     return toml_dict
