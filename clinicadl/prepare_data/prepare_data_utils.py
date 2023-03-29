@@ -54,7 +54,7 @@ def get_parameters_dict(
 def compute_extract_json(extract_json: str) -> str:
     if extract_json is None:
         return f"extract_{int(time())}.json"
-    elif not extract_json.endswith(".json"):
+    elif not extract_json.suffix == ".json":
         return f"{extract_json}.json"
     else:
         return extract_json
@@ -112,7 +112,7 @@ def compute_discarded_slices(discarded_slices: Union[int, tuple]) -> Tuple[int, 
 
 
 def extract_slices(
-    nii_path: str,
+    nii_path: Path,
     slice_direction: int = 0,
     slice_mode: str = "single",
     discarded_slices: Union[int, tuple] = 0,
@@ -184,7 +184,7 @@ def extract_slice_tensor(
 
 
 def extract_slice_path(
-    img_path: str, slice_direction: int, slice_mode: str, slice_index: int
+    img_path: Path, slice_direction: int, slice_mode: str, slice_index: int
 ) -> str:
 
     direction_dict = {0: "sag", 1: "cor", 2: "axi"}
@@ -193,7 +193,7 @@ def extract_slice_path(
             f"Slice direction {slice_direction} should be in {direction_dict.keys()} corresponding to {direction_dict}."
         )
 
-    input_img_filename = Path(img_path).name
+    input_img_filename = img_path.name
     txt_idx = input_img_filename.rfind("_")
     it_filename_prefix = input_img_filename[0:txt_idx]
     it_filename_suffix = input_img_filename[txt_idx:]
@@ -208,7 +208,7 @@ def extract_slice_path(
 # PATCH    #
 ############
 def extract_patches(
-    nii_path: str,
+    nii_path: Path,
     patch_size: int,
     stride_size: int,
 ) -> List[Tuple[str, torch.Tensor]]:
@@ -275,9 +275,9 @@ def extract_patch_tensor(
 
 
 def extract_patch_path(
-    img_path: str, patch_size: int, stride_size: int, patch_index: int
+    img_path: Path, patch_size: int, stride_size: int, patch_index: int
 ) -> str:
-    input_img_filename = Path(img_path).name
+    input_img_filename = img_path.name
     txt_idx = input_img_filename.rfind("_")
     it_filename_prefix = input_img_filename[0:txt_idx]
     it_filename_suffix = input_img_filename[txt_idx:]
@@ -289,7 +289,7 @@ def extract_patch_path(
 ############
 # IMAGE    #
 ############
-def extract_images(input_img: str) -> List[Tuple[str, torch.Tensor]]:
+def extract_images(input_img: Path) -> List[Tuple[str, torch.Tensor]]:
     """Extract the images
     This function convert nifti image to tensor (.pt) version of the image.
     Tensor version is saved at the same location than input_img.
@@ -305,7 +305,7 @@ def extract_images(input_img: str) -> List[Tuple[str, torch.Tensor]]:
     image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
     # make sure the tensor type is torch.float32
     output_file = (
-        Path(input_img).name.replace(".nii.gz", ".pt"),
+        Path(input_img.name.replace(".nii.gz", ".pt")),
         image_tensor.clone(),
     )
 
@@ -315,7 +315,7 @@ def extract_images(input_img: str) -> List[Tuple[str, torch.Tensor]]:
 ############
 # ROI    #
 ############
-def check_mask_list(masks_location, roi_list, mask_pattern, cropping):
+def check_mask_list(masks_location: Path, roi_list, mask_pattern, cropping):
     import nibabel as nib
     import numpy as np
 
@@ -334,7 +334,7 @@ def check_mask_list(masks_location, roi_list, mask_pattern, cropping):
 
 
 def find_mask_path(
-    masks_location: str, roi: str, mask_pattern: str, cropping: bool
+    masks_location: Path, roi: str, mask_pattern: str, cropping: bool
 ) -> Tuple[str, str]:
     """
     Finds masks corresponding to the pattern asked and containing the adequate cropping description
@@ -357,7 +357,7 @@ def find_mask_path(
     candidates_pattern = f"*{mask_pattern}*_roi-{roi}_mask.nii*"
 
     desc = f"The mask should follow the pattern {candidates_pattern}. "
-    candidates = [str(e) for e in Path(masks_location).glob(candidates_pattern)]
+    candidates = [e.as_posix() for e in masks_location.glob(candidates_pattern)]
     if cropping is None:
         pass
     elif cropping:
@@ -370,10 +370,10 @@ def find_mask_path(
     if len(candidates) == 0:
         return None, desc
     else:
-        return min(candidates, key=len), desc
+        return Path(min(candidates, key=len)), desc
 
 
-def compute_output_pattern(mask_path, crop_output):
+def compute_output_pattern(mask_path: Path, crop_output):
     """
     Computes the output pattern of the region cropped (without the source file prefix)
     Args:
@@ -383,7 +383,7 @@ def compute_output_pattern(mask_path, crop_output):
         the output pattern
     """
 
-    mask_filename = Path(mask_path).name
+    mask_filename = mask_path.name
     template_id = mask_filename.split("_")[0].split("-")[1]
     mask_descriptors = mask_filename.split("_")[1:-2:]
     roi_id = mask_filename.split("_")[-2].split("-")[1]
@@ -409,8 +409,8 @@ def compute_output_pattern(mask_path, crop_output):
 
 
 def extract_roi(
-    nii_path: str,
-    masks_location: str,
+    nii_path: Path,
+    masks_location: Path,
     mask_pattern: str,
     cropped_input: bool,
     roi_names: List[str],
@@ -481,8 +481,8 @@ def extract_roi_tensor(
     return roi_tensor.float().clone()
 
 
-def extract_roi_path(img_path: str, mask_path: str, uncrop_output: bool) -> str:
-    input_img_filename = Path(img_path).name
+def extract_roi_path(img_path: Path, mask_path: Path, uncrop_output: bool) -> str:
+    input_img_filename = img_path.name
 
     sub_ses_prefix = "_".join(input_img_filename.split("_")[0:3:])
     if not sub_ses_prefix.endswith("_T1w"):

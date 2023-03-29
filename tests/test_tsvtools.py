@@ -17,13 +17,13 @@ Check the absence of data leakage
 """
 
 
-def check_is_subject_unique(labels_path_baseline):
+def check_is_subject_unique(labels_path_baseline: Path):
     print("Check subject uniqueness", labels_path_baseline)
 
     flag_is_unique = True
     check_df = pd.read_csv(labels_path_baseline, sep="\t")
     check_df.set_index(["participant_id", "session_id"], inplace=True)
-    if labels_path_baseline[-12:] != "baseline.tsv":
+    if labels_path_baseline.name[-12:] != "baseline.tsv":
         check_df = extract_baseline(check_df, set_index=False)
     for _, subject_df in check_df.groupby(level=0):
         if len(subject_df) > 1:
@@ -31,7 +31,9 @@ def check_is_subject_unique(labels_path_baseline):
     assert flag_is_unique
 
 
-def check_is_independant(train_path_baseline, test_path_baseline, subject_flag=True):
+def check_is_independant(
+    train_path_baseline: Path, test_path_baseline: Path, subject_flag=True
+):
     print("Check independence")
 
     flag_is_independant = True
@@ -49,11 +51,10 @@ def check_is_independant(train_path_baseline, test_path_baseline, subject_flag=T
 
 def run_test_suite(data_tsv, n_splits):
     check_train = True
-
     if n_splits == 0:
-        train_baseline_tsv = path.join(data_tsv, "train_baseline.tsv")
-        test_baseline_tsv = path.join(data_tsv, "test_baseline.tsv")
-        if not path.exists(train_baseline_tsv):
+        train_baseline_tsv = data_tsv / "train_baseline.tsv"
+        test_baseline_tsv = data_tsv / "test_baseline.tsv"
+        if not train_baseline_tsv.exists():
             check_train = False
 
         check_is_subject_unique(test_baseline_tsv)
@@ -64,14 +65,16 @@ def run_test_suite(data_tsv, n_splits):
     else:
         for split_number in range(n_splits):
 
-            for folder, _, files in os.walk(path.join(data_tsv, "split")):
+            for folder, _, files in os.walk(data_tsv / "split"):
+                folder = Path(folder)
+
                 for file in files:
                     if file[-3:] == "tsv":
-                        check_is_subject_unique(path.join(folder, file))
-                train_baseline_tsv = path.join(folder, "train_baseline.tsv")
-                test_baseline_tsv = path.join(folder, "test_baseline.tsv")
-                if path.exists(train_baseline_tsv):
-                    if path.exists(test_baseline_tsv):
+                        check_is_subject_unique(folder / file)
+                train_baseline_tsv = folder / "train_baseline.tsv"
+                test_baseline_tsv = folder / "test_baseline.tsv"
+                if train_baseline_tsv.exists():
+                    if test_baseline_tsv.exists():
                         check_is_independant(train_baseline_tsv, test_baseline_tsv)
 
 
@@ -87,27 +90,27 @@ def test_getlabels(cmdopt, tmp_path):
 
     import shutil
 
-    bids_output = path.join(tmp_out_dir, "bids")
-    bids_directory = path.join(input_dir, "bids")
-    restrict_tsv = path.join(input_dir, "restrict.tsv")
-    output_tsv = path.join(tmp_out_dir, "labels.tsv")
-    if path.exists(tmp_out_dir):
+    bids_output = tmp_out_dir / "bids"
+    bids_directory = input_dir / "bids"
+    restrict_tsv = input_dir / "restrict.tsv"
+    output_tsv = tmp_out_dir / "labels.tsv"
+    if tmp_out_dir.exists():
         shutil.rmtree(tmp_out_dir)
-        os.makedirs(tmp_out_dir)
+        tmp_out_dir.mkdir(parents=True)
     shutil.copytree(bids_directory, bids_output)
-    merged_tsv = path.join(input_dir, "merge-tsv.tsv")
-    missing_mods_directory = path.join(input_dir, "missing_mods")
+    merged_tsv = input_dir / "merge-tsv.tsv"
+    missing_mods_directory = input_dir / "missing_mods"
 
     flag_getlabels = not os.system(
-        f"clinicadl -vvv tsvtools get-labels {bids_output} {output_tsv} "
+        f"clinicadl -vvv tsvtools get-labels {str(bids_output)} {str(output_tsv)} "
         f"-d AD -d MCI -d CN -d Dementia "
-        f"--merged_tsv {merged_tsv} --missing_mods {missing_mods_directory} "
-        f"--restriction_tsv {restrict_tsv}"
+        f"--merged_tsv {str(merged_tsv)} --missing_mods {str(missing_mods_directory)} "
+        f"--restriction_tsv {str(restrict_tsv)}"
     )
     assert flag_getlabels
 
-    out_df = pd.read_csv(path.join(tmp_out_dir, "labels.tsv"), sep="\t")
-    ref_df = pd.read_csv(path.join(ref_dir, "labels.tsv"), sep="\t")
+    out_df = pd.read_csv(tmp_out_dir / "labels.tsv", sep="\t")
+    ref_df = pd.read_csv(ref_dir / "labels.tsv", sep="\t")
     assert out_df.equals(ref_df)
 
 
@@ -126,26 +129,24 @@ def test_split(cmdopt, tmp_path):
 
     n_test = 10
     n_splits = 2
-    train_tsv = path.join(tmp_out_dir, "split/train.tsv")
-    labels_tsv = path.join(tmp_out_dir, "labels.tsv")
-    shutil.copyfile(path.join(input_dir, "labels.tsv"), labels_tsv)
+    train_tsv = tmp_out_dir / "split/train.tsv"
+    labels_tsv = tmp_out_dir / "labels.tsv"
+    shutil.copyfile(input_dir / "labels.tsv", labels_tsv)
 
     flag_split = not os.system(
-        f"clinicadl -vvv tsvtools split {labels_tsv} --subset_name test --n_test {n_test}"
+        f"clinicadl -vvv tsvtools split {str(labels_tsv)} --subset_name test --n_test {n_test}"
     )
     flag_getmetadata = not os.system(
-        f"clinicadl -vvv tsvtools get-metadata {train_tsv} {labels_tsv} -voi age -voi sex -voi diagnosis"
+        f"clinicadl -vvv tsvtools get-metadata {str(train_tsv)} {str(labels_tsv)} -voi age -voi sex -voi diagnosis"
     )
     flag_kfold = not os.system(
-        f"clinicadl -vvv tsvtools kfold {train_tsv} --n_splits {n_splits} --subset_name validation"
+        f"clinicadl -vvv tsvtools kfold {str(train_tsv)} --n_splits {n_splits} --subset_name validation"
     )
     assert flag_split
     assert flag_getmetadata
     assert flag_kfold
 
-    assert compare_folders(
-        os.path.join(tmp_out_dir, "split"), os.path.join(ref_dir, "split"), tmp_out_dir
-    )
+    assert compare_folders(tmp_out_dir / "split", ref_dir / "split", tmp_out_dir)
     run_test_suite(tmp_out_dir, n_splits)
 
 
@@ -158,13 +159,13 @@ def test_analysis(cmdopt, tmp_path):
     tmp_out_dir = tmp_path / "tsvtools" / "out"
     tmp_out_dir.mkdir(parents=True)
 
-    merged_tsv = path.join(input_dir, "merge-tsv.tsv")
-    labels_tsv = path.join(input_dir, "labels.tsv")
-    output_tsv = path.join(tmp_out_dir, "analysis.tsv")
-    ref_analysis_tsv = path.join(ref_dir, "analysis.tsv")
+    merged_tsv = input_dir / "merge-tsv.tsv"
+    labels_tsv = input_dir / "labels.tsv"
+    output_tsv = tmp_out_dir / "analysis.tsv"
+    ref_analysis_tsv = ref_dir / "analysis.tsv"
 
     flag_analysis = not os.system(
-        f"clinicadl tsvtools analysis {merged_tsv} {labels_tsv} {output_tsv} "
+        f"clinicadl tsvtools analysis {str(merged_tsv)} {str(labels_tsv)} {str(output_tsv)} "
         f"--diagnoses CN --diagnoses MCI --diagnoses Dementia"
     )
 
@@ -184,13 +185,13 @@ def test_get_progression(cmdopt, tmp_path):
     tmp_out_dir = tmp_path / "tsvtools" / "out"
     tmp_out_dir.mkdir(parents=True)
 
-    input_progression_tsv = path.join(input_dir, "labels.tsv")
-    progression_tsv = path.join(tmp_out_dir, "progression.tsv")
-    ref_progression_tsv = path.join(ref_dir, "progression.tsv")
+    input_progression_tsv = input_dir / "labels.tsv"
+    progression_tsv = tmp_out_dir / "progression.tsv"
+    ref_progression_tsv = ref_dir / "progression.tsv"
     shutil.copyfile(input_progression_tsv, progression_tsv)
 
     flag_get_progression = not os.system(
-        f"clinicadl tsvtools get-progression {progression_tsv}  "
+        f"clinicadl tsvtools get-progression {str(progression_tsv)}  "
     )
     assert flag_get_progression
 
@@ -212,21 +213,19 @@ def test_prepare_experiment(cmdopt, tmp_path):
     tmp_out_dir = tmp_path / "tsvtools" / "out"
     tmp_out_dir.mkdir(parents=True)
 
-    labels_tsv = path.join(tmp_out_dir, "labels.tsv")
-    shutil.copyfile(path.join(input_dir, "labels.tsv"), labels_tsv)
+    labels_tsv = tmp_out_dir / "labels.tsv"
+    shutil.copyfile(input_dir / "labels.tsv", labels_tsv)
 
     validation_type = "kfold"
     n_valid = 2
     n_test = 10
     flag_prepare_experiment = not os.system(
-        f"clinicadl -vvv tsvtools prepare-experiment {labels_tsv} --n_test {n_test} --validation_type {validation_type} --n_validation {n_valid}"
+        f"clinicadl -vvv tsvtools prepare-experiment {str(labels_tsv)} --n_test {n_test} --validation_type {validation_type} --n_validation {n_valid}"
     )
 
     assert flag_prepare_experiment
 
-    assert compare_folders(
-        os.path.join(tmp_out_dir, "split"), os.path.join(ref_dir, "split"), tmp_out_dir
-    )
+    assert compare_folders(tmp_out_dir / "split", ref_dir / "split", tmp_out_dir)
     run_test_suite(tmp_out_dir, n_valid)
 
 
@@ -239,16 +238,16 @@ def test_get_metadata(cmdopt, tmp_path):
     tmp_out_dir = tmp_path / "tsvtools" / "out"
     tmp_out_dir.mkdir(parents=True)
 
-    input_metadata_tsv = path.join(input_dir, "restrict.tsv")
-    metadata_tsv = path.join(tmp_out_dir, "metadata.tsv")
-    input_labels_tsv = path.join(input_dir, "labels.tsv")
-    labels_tsv = path.join(tmp_out_dir, "labels.tsv")
-    ref_metadata_tsv = path.join(ref_dir, "metadata.tsv")
+    input_metadata_tsv = input_dir / "restrict.tsv"
+    metadata_tsv = tmp_out_dir / "metadata.tsv"
+    input_labels_tsv = input_dir / "labels.tsv"
+    labels_tsv = tmp_out_dir / "labels.tsv"
+    ref_metadata_tsv = ref_dir / "metadata.tsv"
     shutil.copyfile(input_metadata_tsv, metadata_tsv)
     shutil.copyfile(input_labels_tsv, labels_tsv)
 
     flag_get_metadata = not os.system(
-        f"clinicadl tsvtools get-metadata {metadata_tsv} {labels_tsv} -voi diagnosis -voi sex -voi age"
+        f"clinicadl tsvtools get-metadata {str(metadata_tsv)} {str(labels_tsv)} -voi diagnosis -voi sex -voi age"
     )
     assert flag_get_metadata
 

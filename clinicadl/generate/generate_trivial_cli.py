@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 
 from clinicadl.utils import cli_param
@@ -11,7 +13,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.n_subjects
 @click.option(
     "--mask_path",
-    type=str,
+    type=click.Path(exists=True, path_type=Path),
     default=None,
     help="Path to the extracted masks to generate the two labels. "
     "Default will try to download masks and store them at '~/.cache/clinicadl'.",

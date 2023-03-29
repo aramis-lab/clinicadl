@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 
 from clinicadl.utils import cli_param
@@ -8,14 +10,14 @@ from clinicadl.utils import cli_param
 @cli_param.argument.data_group
 @click.option(
     "--caps_directory",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, path_type=Path),
     default=None,
     help="Data using CAPS structure, if different from the one used during network training.",
 )
 @click.option(
     "--participants_tsv",
     default=None,
-    type=click.Path(),
+    type=click.Path(exists=True, path_type=Path),
     help="""Path to the file with subjects/sessions to process, if different from the one used during network training.
     If it includes the filename will load the TSV file directly.
     Else will load the baseline TSV files of wanted diagnoses produced by `tsvtool split`.""",

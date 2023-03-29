@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 
 from clinicadl.utils import cli_param
@@ -31,14 +33,14 @@ from clinicadl.utils import cli_param
 # Data
 @click.option(
     "--participants_tsv",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, path_type=Path),
     default=None,
     help="Path to a TSV file with participants/sessions to process, "
     "if different from the one used during network training.",
 )
 @click.option(
     "--caps_directory",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, path_type=Path),
     default=None,
     help="Input CAPS directory, if different from the one used during network training.",
 )

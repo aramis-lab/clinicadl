@@ -38,7 +38,7 @@ class KFoldSplit(SplitManager):
         else:
             return self.split_list
 
-    def _get_tsv_paths(self, cohort_path, split):
-        train_path = Path(cohort_path) / f"split-{split}"
-        valid_path = Path(cohort_path) / f"split-{split}"
+    def _get_tsv_paths(self, cohort_path: Path, split):
+        train_path = cohort_path / f"split-{split}"
+        valid_path = cohort_path / f"split-{split}"
         return train_path, valid_path
