@@ -1,6 +1,8 @@
 # coding: utf8
 
 import random
+from copy import copy
+from pathlib import Path
 from typing import Dict
 
 import numpy as np
@@ -38,11 +40,9 @@ def find_file_type(
     return file_type
 
 
-def write_missing_mods(output_dir: str, output_df: pd.DataFrame):
-    from copy import copy
-    from pathlib import Path
+def write_missing_mods(output_dir: Path, output_df: pd.DataFrame):
 
-    missing_path = Path(output_dir) / "missing_mods"
+    missing_path = output_dir / "missing_mods"
     missing_path.mkdir(parents=True, exist_ok=True)
 
     sessions = output_df.session_id.unique()
@@ -56,9 +56,8 @@ def write_missing_mods(output_dir: str, output_df: pd.DataFrame):
 
 
 def load_and_check_tsv(
-    tsv_path: str, caps_dict: Dict[str, str], output_path: str
+    tsv_path: Path, caps_dict: Dict[str, Path], output_path: Path
 ) -> pd.DataFrame:
-    from pathlib import Path
 
     from clinica.iotools.utils.data_handling import create_subs_sess_list
 
@@ -91,7 +90,7 @@ def load_and_check_tsv(
                 caps_path, output_path, is_bids_dir=False, use_session_tsv=False
             )
             cohort_df = pd.read_csv(
-                Path(output_path) / "subjects_sessions_list.tsv", sep="\t"
+                output_path / "subjects_sessions_list.tsv", sep="\t"
             )
             cohort_df["cohort"] = cohort
             df = pd.concat([df, cohort_df])

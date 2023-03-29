@@ -66,7 +66,7 @@ def test_predict(cmdopt, tmp_path, test_name):
 
     # Correction of JSON file for ROI
     if "roi" in modes:
-        json_path = str(model_folder / "maps.json")
+        json_path = model_folder / "maps.json"
         with open(json_path, "r") as f:
             parameters = json.load(f)
         parameters["roi_list"] = ["leftHippocampusBox", "rightHippocampusBox"]
@@ -74,11 +74,11 @@ def test_predict(cmdopt, tmp_path, test_name):
         with open(json_path, "w") as f:
             f.write(json_data)
 
-    maps_manager = MapsManager(str(model_folder), verbose="debug")
+    maps_manager = MapsManager(model_folder, verbose="debug")
     maps_manager.predict(
         data_group="test-RANDOM",
-        caps_directory=str(input_dir / "caps_random"),
-        tsv_path=str(input_dir / "caps_random/data.tsv"),
+        caps_directory=input_dir / "caps_random",
+        tsv_path=input_dir / "caps_random/data.tsv",
         gpu=False,
         use_labels=use_labels,
         overwrite=True,
@@ -91,7 +91,7 @@ def test_predict(cmdopt, tmp_path, test_name):
             maps_manager.get_metrics(data_group="test-RANDOM", mode=mode)
 
     assert compare_folders(
-        os.path.join(tmp_out_dir, test_name),
-        os.path.join(ref_dir, test_name),
+        tmp_out_dir / test_name,
+        ref_dir / test_name,
         tmp_out_dir,
     )
