@@ -76,7 +76,7 @@ def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
 
     elif config_file.suffix == ".json":
         train_dict = read_json(config_file)
-        train_dict = change_str_to_path(train_dict)
+        # train_dict = change_str_to_path(train_dict)
 
     else:
         raise ClinicaDLConfigurationError(
