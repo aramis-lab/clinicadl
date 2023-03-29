@@ -1,6 +1,8 @@
 # coding: utf8
 
 import random
+from copy import copy
+from pathlib import Path
 from typing import Dict
 
 import numpy as np
@@ -38,13 +40,10 @@ def find_file_type(
     return file_type
 
 
-def write_missing_mods(output_dir: str, output_df: pd.DataFrame):
-    from copy import copy
-    from os import makedirs
-    from os.path import join
+def write_missing_mods(output_dir: Path, output_df: pd.DataFrame):
 
-    missing_path = join(output_dir, "missing_mods")
-    makedirs(missing_path, exist_ok=True)
+    missing_path = output_dir / "missing_mods"
+    missing_path.mkdir(parents=True, exist_ok=True)
 
     sessions = output_df.session_id.unique()
     for session in sessions:
@@ -52,14 +51,13 @@ def write_missing_mods(output_dir: str, output_df: pd.DataFrame):
         out_df = copy(session_df[["participant_id"]])
         out_df["synthetic"] = [1] * len(out_df)
         out_df.to_csv(
-            join(missing_path, f"missing_mods_{session}.tsv"), sep="\t", index=False
+            missing_path / f"missing_mods_{session}.tsv", sep="\t", index=False
         )
 
 
 def load_and_check_tsv(
-    tsv_path: str, caps_dict: Dict[str, str], output_path: str
+    tsv_path: Path, caps_dict: Dict[str, Path], output_path: Path
 ) -> pd.DataFrame:
-    from os.path import join
 
     from clinica.iotools.utils.data_handling import create_subs_sess_list
 
@@ -92,7 +90,7 @@ def load_and_check_tsv(
                 caps_path, output_path, is_bids_dir=False, use_session_tsv=False
             )
             cohort_df = pd.read_csv(
-                join(output_path, "subjects_sessions_list.tsv"), sep="\t"
+                output_path / "subjects_sessions_list.tsv", sep="\t"
             )
             cohort_df["cohort"] = cohort
             df = pd.concat([df, cohort_df])

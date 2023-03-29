@@ -2,7 +2,7 @@
 Copied from https://github.com/vfonov/darq
 """
 
-from os import path
+from pathlib import Path
 
 import nibabel as nib
 import torch
@@ -17,7 +17,11 @@ class QCDataset(Dataset):
     """Dataset of MRI organized in a CAPS folder."""
 
     def __init__(
-        self, img_dir, data_df, use_extracted_tensors=False, use_uncropped_image=True
+        self,
+        img_dir: Path,
+        data_df,
+        use_extracted_tensors=False,
+        use_uncropped_image=True,
     ):
         """
         Args:
@@ -60,25 +64,23 @@ class QCDataset(Dataset):
         if self.use_extracted_tensors:
             file_type = self.preprocessing_dict["file_type"]
             file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
-            image_path_list = clinica_file_reader(
-                [subject],
-                [session],
-                self.img_dir,
-                file_type,
-            )
-            image_filename = path.basename(image_path_list[0][0])
+            image_output = clinica_file_reader(
+                [subject], [session], self.img_dir, file_type
+            )[0]
+            image_path = Path(image_output[0])
+            image_filename = image_path.name
             folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
-            image_dir = path.join(
-                self.img_dir,
-                "subjects",
-                subject,
-                session,
-                "deeplearning_prepare_data",
-                "image_based",
-                folder,
+            image_dir = (
+                self.img_dir
+                / "subjects"
+                / subject
+                / session
+                / "deeplearning_prepare_data"
+                / "image_based"
+                / folder
             )
 
-            image_path = path.join(image_dir, image_filename)
+            image_path = image_dir / image_filename
             image = torch.load(image_path)
             image = self.pt_transform(image)
         else:

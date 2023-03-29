@@ -1,10 +1,12 @@
+from pathlib import Path
+
 import click
 
 
 @click.command("random-search", no_args_is_help=True)
 @click.argument(
     "launch_directory",
-    type=str,
+    type=click.Path(exists=True, path_type=Path),
 )
 @click.argument("name", type=str)
 def cli(

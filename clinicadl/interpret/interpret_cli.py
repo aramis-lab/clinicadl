@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 
 from clinicadl.utils import cli_param
@@ -31,14 +33,14 @@ from clinicadl.utils import cli_param
 # Data
 @click.option(
     "--participants_tsv",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, path_type=Path),
     default=None,
     help="Path to a TSV file with participants/sessions to process, "
     "if different from the one used during network training.",
 )
 @click.option(
     "--caps_directory",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, path_type=Path),
     default=None,
     help="Input CAPS directory, if different from the one used during network training.",
 )
@@ -80,6 +82,7 @@ from clinicadl.utils import cli_param
     default=False,
     help="Overwrite the name if it already exists.",
 )
+@cli_param.option.save_nifti
 def cli(
     input_maps_directory,
     data_group,
@@ -98,6 +101,7 @@ def cli(
     gpu,
     overwrite,
     overwrite_name,
+    save_nifti,
 ):
     """Interpretation of trained models using saliency map method.
 
@@ -134,5 +138,6 @@ def cli(
         overwrite=overwrite,
         overwrite_name=overwrite_name,
         level=level_grad_cam,
+        save_nifti=save_nifti,
         # verbose=verbose,
     )

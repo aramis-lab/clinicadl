@@ -5,8 +5,7 @@ This file generates data for trivial or intractable (random) data for binary cla
 """
 import tarfile
 from logging import getLogger
-from os import makedirs
-from os.path import basename, dirname, exists, join
+
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
@@ -38,10 +37,10 @@ logger = getLogger("clinicadl.generate")
 
 
 def generate_random_dataset(
-    caps_directory: str,
-    output_dir: str,
+    caps_directory: Path,
+    output_dir: Path,
     n_subjects: int,
-    tsv_path: Optional[str] = None,
+    tsv_path: Optional[Path] = None,
     mean: float = 0,
     sigma: float = 0.5,
     preprocessing: str = "t1-linear",
@@ -57,24 +56,35 @@ def generate_random_dataset(
     subject of the tsv file (other subjects/sessions different from the first
     one are ignored. Degree of noise can be parameterized.
 
-    Args:
-        caps_directory: Path to the (input) CAPS directory.
-        output_dir: folder containing the synthetic dataset in (output)
-            CAPS format.
-        n_subjects: number of subjects in each class of the
-            synthetic dataset
-        tsv_path: path to tsv file of list of subjects/sessions.
-        mean: mean of the gaussian noise
-        sigma: standard deviation of the gaussian noise
-        preprocessing: preprocessing performed. Must be in ['t1-linear', 't1-extensive'].
-        multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
-        uncropped_image: If True the uncropped image of `t1-linear` or `pet-linear` will be used.
-        acq_label: name of the tracer when using `pet-linear` preprocessing.
-        suvr_reference_region: name of the reference region when using `pet-linear` preprocessing.
+    Parameters
+    ----------
+    caps_directory: Path
+        Path to the (input) CAPS directory.
+    output_dir: Path
+        Folder containing the synthetic dataset in CAPS format.
+    n_subjects: int
+        Number of subjects in each class of the synthetic dataset
+    tsv_path: Path
+        Path to tsv file of list of subjects/sessions.
+    mean: float
+        Mean of the gaussian noise
+    sigma: float
+        Standard deviation of the gaussian noise
+    preprocessing: str
+        Preprocessing performed. Must be in ['t1-linear', 't1-extensive'].
+    multi_cohort: bool
+        If True caps_directory is the path to a TSV file linking cohort names and paths.
+    uncropped_image: bool
+        If True the uncropped image of `t1-linear` or `pet-linear` will be used.
+    acq_label: str
+        name of the tracer when using `pet-linear` preprocessing.
+    suvr_reference_region: str
+        name of the reference region when using `pet-linear` preprocessing.
 
-    Returns:
-        A folder written on the output_dir location (in CAPS format), also a
-        tsv file describing this output
+    Returns
+    -------
+    A folder written on the output_dir location (in CAPS format), also a
+    tsv file describing this output
 
     """
     commandline_to_json(
@@ -94,7 +104,8 @@ def generate_random_dataset(
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
 
     # Create subjects dir
-    (Path(output_dir) / "subjects").mkdir(parents=True, exist_ok=True)
+    (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
+
 
     # Retrieve image of first subject
     participant_id = data_df.loc[0, "participant_id"]
@@ -106,10 +117,12 @@ def generate_random_dataset(
         preprocessing, uncropped_image, acq_label, suvr_reference_region
     )
 
-    image_paths = clinica_file_reader(
-        [participant_id], [session_id], caps_dict[cohort], file_type
-    )[0]
-    image_nii = nib.load(image_paths[0])
+    image_path = Path(
+        clinica_file_reader(
+            [participant_id], [session_id], caps_dict[cohort], file_type
+        )[0][0]
+    )
+    image_nii = nib.load(image_path)
     image = image_nii.get_data()
 
     # Create output tsv file
@@ -123,9 +136,9 @@ def generate_random_dataset(
     )
     output_df["age_bl"] = 60
     output_df["sex"] = "F"
-    output_df.to_csv(join(output_dir, "data.tsv"), sep="\t", index=False)
+    output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
 
-    input_filename = basename(image_paths[0])
+    input_filename = image_path.name
     filename_pattern = "_".join(input_filename.split("_")[2::])
     for i in range(2 * n_subjects):
         gauss = np.random.normal(mean, sigma, image.shape)
@@ -134,12 +147,13 @@ def generate_random_dataset(
         noisy_image_nii = nib.Nifti1Image(
             noisy_image, header=image_nii.header, affine=image_nii.affine
         )
-        noisy_image_nii_path = join(
-            output_dir, "subjects", participant_id, "ses-M00", "t1_linear"
+        noisy_image_nii_path = (
+            output_dir / "subjects" / participant_id / "ses-M00" / "t1_linear"
         )
+
         noisy_image_nii_filename = f"{participant_id}_ses-M00_{filename_pattern}"
-        makedirs(noisy_image_nii_path, exist_ok=True)
-        nib.save(noisy_image_nii, join(noisy_image_nii_path, noisy_image_nii_filename))
+        noisy_image_nii_path.mkdir(parents=True, exist_ok=True)
+        nib.save(noisy_image_nii, noisy_image_nii_path / noisy_image_nii_filename)
 
     write_missing_mods(output_dir, output_df)
 
@@ -147,12 +161,12 @@ def generate_random_dataset(
 
 
 def generate_trivial_dataset(
-    caps_directory: str,
-    output_dir: str,
+    caps_directory: Path,
+    output_dir: Path,
     n_subjects: int,
-    tsv_path: Optional[str] = None,
+    tsv_path: Optional[Path] = None,
     preprocessing: str = "t1-linear",
-    mask_path: Optional[str] = None,
+    mask_path: Optional[Path] = None,
     atrophy_percent: float = 60,
     multi_cohort: bool = False,
     uncropped_image: bool = False,
@@ -167,26 +181,39 @@ def generate_trivial_dataset(
     This procedure creates a dataset fully separable (images with half-right
     processed and image with half-left processed)
 
-    Args:
-        caps_directory: path to the CAPS directory.
-        output_dir: folder containing the synthetic dataset in CAPS format.
-        n_subjects: number of subjects in each class of the synthetic dataset.
-        tsv_path: path to tsv file of list of subjects/sessions.
-        preprocessing: preprocessing performed. Must be in ['linear', 'extensive'].
-        mask_path: path to the extracted masks to generate the two labels.
-        atrophy_percent: percentage of atrophy applied.
-        multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
-        uncropped_image: If True the uncropped image of `t1-linear` or `pet-linear` will be used.
-        acq_label: name of the tracer when using `pet-linear` preprocessing.
-        suvr_reference_region: name of the reference region when using `pet-linear` preprocessing.
+    Parameters
+    ----------
+    caps_directory: Path
+        Path to the CAPS directory.
+    output_dir: Path
+        Folder containing the synthetic dataset in CAPS format.
+    n_subjects: int
+        Number of subjects in each class of the synthetic dataset.
+    tsv_path: Path
+        Path to tsv file of list of subjects/sessions.
+    preprocessing: str
+        Preprocessing performed. Must be in ['linear', 'extensive'].
+    mask_path: Path
+        Path to the extracted masks to generate the two labels.
+    atrophy_percent: float
+        Percentage of atrophy applied.
+    multi_cohort: bool
+        If True caps_directory is the path to a TSV file linking cohort names and paths.
+    uncropped_image: bool
+        If True the uncropped image of `t1-linear` or `pet-linear` will be used.
+    acq_label: str
+        Name of the tracer when using `pet-linear` preprocessing.
+    suvr_reference_region: str
+        Name of the reference region when using `pet-linear` preprocessing.
 
-    Returns:
+    Returns
+    -------
         Folder structure where images are stored in CAPS format.
 
-    Raises:
+    Raises
+    ------
         IndexError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
     """
-    from pathlib import Path
 
     from clinicadl.utils.exceptions import DownloadError
 
@@ -206,15 +233,15 @@ def generate_trivial_dataset(
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
     data_df = extract_baseline(data_df)
 
-    home = str(Path.home())
-    cache_clinicadl = join(home, ".cache", "clinicadl", "ressources", "masks")
+    home = Path.home()
+    cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks"
     url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
     FILE1 = RemoteFileStructure(
         filename="AAL2.tar.gz",
         url=url_aramis,
         checksum="89427970921674792481bffd2de095c8fbf49509d615e7e09e4bc6f0e0564471",
     )
-    makedirs(cache_clinicadl, exist_ok=True)
+    cache_clinicadl.mkdir(parents=True, exist_ok=True)
 
     if n_subjects > len(data_df):
         raise IndexError(
@@ -223,7 +250,7 @@ def generate_trivial_dataset(
         )
 
     if mask_path is None:
-        if not exists(join(cache_clinicadl, "AAL2")):
+        if not (cache_clinicadl / "AAL2").is_dir():
             print("Downloading AAL2 masks...")
             try:
                 mask_path_tar = fetch_file(FILE1, cache_clinicadl)
@@ -232,7 +259,7 @@ def generate_trivial_dataset(
                 try:
                     tar_file.extractall(cache_clinicadl)
                     tar_file.close()
-                    mask_path = join(cache_clinicadl, "AAL2")
+                    mask_path = cache_clinicadl / "AAL2"
                 except RuntimeError:
                     print("Unable to extract downloaded files.")
             except IOError as err:
@@ -243,10 +270,10 @@ def generate_trivial_dataset(
                     and provide a valid path."""
                 )
         else:
-            mask_path = join(cache_clinicadl, "AAL2")
+            mask_path = cache_clinicadl / "AAL2"
 
     # Create subjects dir
-    makedirs(join(output_dir, "subjects"), exist_ok=True)
+    (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
 
     # Output tsv file
     columns = ["participant_id", "session_id", "diagnosis", "age_bl", "sex"]
@@ -265,23 +292,26 @@ def generate_trivial_dataset(
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
         cohort = data_df.loc[data_idx, "cohort"]
-        image_paths = clinica_file_reader(
-            [participant_id], [session_id], caps_dict[cohort], file_type
-        )[0]
-        image_nii = nib.load(image_paths[0])
+        image_path = Path(
+            clinica_file_reader(
+                [participant_id], [session_id], caps_dict[cohort], file_type
+            )[0][0]
+        )
+        image_nii = nib.load(image_path)
         image = image_nii.get_data()
 
-        input_filename = basename(image_paths[0])
+        input_filename = image_path.name
         filename_pattern = "_".join(input_filename.split("_")[2::])
 
-        trivial_image_nii_dir = join(
-            output_dir, "subjects", f"sub-TRIV{i}", session_id, preprocessing
+        trivial_image_nii_dir = (
+            output_dir / "subjects" / f"sub-TRIV{i}" / session_id / preprocessing
         )
+
         trivial_image_nii_filename = f"sub-TRIV{i}_{session_id}_{filename_pattern}"
 
-        makedirs(trivial_image_nii_dir, exist_ok=True)
+        trivial_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
-        atlas_to_mask = nib.load(join(mask_path, f"mask-{label + 1}.nii")).get_data()
+        atlas_to_mask = nib.load(mask_path / f"mask-{label + 1}.nii").get_data()
 
         # Create atrophied image
         trivial_image = im_loss_roi_gaussian_distribution(
@@ -289,7 +319,7 @@ def generate_trivial_dataset(
         )
         trivial_image_nii = nib.Nifti1Image(trivial_image, affine=image_nii.affine)
         trivial_image_nii.to_filename(
-            join(trivial_image_nii_dir, trivial_image_nii_filename)
+            trivial_image_nii_dir / trivial_image_nii_filename
         )
 
         # Append row to output tsv
@@ -297,7 +327,7 @@ def generate_trivial_dataset(
         row_df = pd.DataFrame([row], columns=columns)
         output_df = pd.concat([output_df, row_df])
 
-    output_df.to_csv(join(output_dir, "data.tsv"), sep="\t", index=False)
+    output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
 
     write_missing_mods(output_dir, output_df)
 
@@ -305,7 +335,7 @@ def generate_trivial_dataset(
 
 
 def generate_shepplogan_dataset(
-    output_dir: str,
+    output_dir: Path,
     img_size: int,
     labels_distribution: Dict[str, Tuple[float, float, float]],
     extract_json: str = None,
@@ -325,7 +355,7 @@ def generate_shepplogan_dataset(
         smoothing: if True, an additional random smoothing is performed on top of all operations on each image.
     """
 
-    check_and_clean(join(output_dir, "subjects"))
+    check_and_clean(output_dir / "subjects")
     commandline_to_json(
         {
             "output_dir": output_dir,
@@ -348,21 +378,22 @@ def generate_shepplogan_dataset(
             row_df = pd.DataFrame(
                 [[participant_id, session_id, label, subtype]], columns=columns
             )
-            data_df = data_df.append(row_df)
+            data_df = pd.concat([data_df, row_df])
 
             # Image generation
-            slice_path = join(
-                output_dir,
-                "subjects",
-                participant_id,
-                session_id,
-                "deeplearning_prepare_data",
-                "slice_based",
-                "custom",
-                f"{participant_id}_{session_id}_space-SheppLogan_axis-axi_channel-single_slice-0_phantom.pt",
+            slice_path = (
+                output_dir
+                / "subjects"
+                / participant_id
+                / session_id
+                / "deeplearning_prepare_data"
+                / "slice_based"
+                / "custom"
+                / f"{participant_id}_{session_id}_space-SheppLogan_axis-axi_channel-single_slice-0_phantom.pt"
             )
-            slice_dir = dirname(slice_path)
-            makedirs(slice_dir, exist_ok=True)
+
+            slice_dir = slice_path.parent
+            slice_dir.mkdir(parents=True, exist_ok=True)
 
             slice_np = generate_shepplogan_phantom(
                 img_size, label=subtype, smoothing=smoothing
@@ -370,21 +401,21 @@ def generate_shepplogan_dataset(
             slice_tensor = torch.from_numpy(slice_np).float().unsqueeze(0)
             torch.save(slice_tensor, slice_path)
 
-            image_path = join(
-                output_dir,
-                "subjects",
-                participant_id,
-                session_id,
-                "shepplogan",
-                f"{participant_id}_{session_id}_space-SheppLogan_phantom.nii.gz",
+            image_path = (
+                output_dir
+                / "subjects"
+                / participant_id
+                / session_id
+                / "shepplogan"
+                / f"{participant_id}_{session_id}_space-SheppLogan_phantom.nii.gz"
             )
-            image_dir = dirname(image_path)
-            makedirs(image_dir, exist_ok=True)
-            with open(image_path, "w") as f:
+            image_dir = image_path.parent
+            image_dir.mkdir(parents=True, exist_ok=True)
+            with image_path.open("w") as f:
                 f.write("0")
 
     # Save data
-    data_df.to_csv(join(output_dir, "data.tsv"), sep="\t", index=False)
+    data_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
 
     # Save preprocessing JSON file
     preprocessing_dict = {

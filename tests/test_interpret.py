@@ -68,7 +68,7 @@ def run_interpret(cnn_input, tmp_out_dir, ref_dir):
     from clinicadl.interpret.gradients import method_dict
 
     maps_path = tmp_out_dir / "maps"
-    if os.path.exists(maps_path):
+    if maps_path.is_dir():
         shutil.rmtree(maps_path)
 
     train_error = not os.system("clinicadl " + " ".join(cnn_input))
