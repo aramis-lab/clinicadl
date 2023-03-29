@@ -8,6 +8,7 @@ from logging import getLogger
 from pathlib import Path
 
 import nibabel as nib
+import numpy as np
 import pandas as pd
 from clinica.utils.inputs import RemoteFileStructure, fetch_file
 from joblib import Parallel, delayed
@@ -16,11 +17,11 @@ from .utils import distance
 
 
 def quality_check(
-    caps_dir: str,
-    output_tsv: str,
+    caps_dir: Path,
+    output_tsv: Path,
     acq_label: str,
     ref_region: str,
-    participants_tsv: str = None,
+    participants_tsv: Path = None,
     threshold: float = 0.8,
     n_proc: int = 0,
     gpu: bool = False,
@@ -78,6 +79,11 @@ def quality_check(
     mask_contour = mask_contour_nii.get_fdata()
     mask_contour.astype(int)
 
+    inside = 0  # 1605780
+    for idx, x in np.ndenumerate(mask_contour):
+        if mask_contour[idx] == 1:
+            inside += 1
+
     # Get the data
     columns = [
         "participant_id",
@@ -133,14 +139,14 @@ def quality_check(
             else:
                 raise FileNotFoundError(f"Clinical data not found ({image_path})")
 
-            sum_contour_35 = distance(mask_contour, image_np)
+            sum_contour = distance(mask_contour, image_np)
 
             row = [
                 [
                     subject,
                     session,
-                    sum_contour_35,
-                    sum_contour_35 < threshold,
+                    sum_contour,
+                    sum_contour < threshold,
                 ]
             ]
             row_df = pd.DataFrame(row, columns=columns)
@@ -155,11 +161,9 @@ def quality_check(
     for subject_df in results_df:
         all_df = pd.concat([all_df, subject_df])
     col_tmp = all_df["pass_probability"]
-    all_df["pass_probability"] = 1 - (
-        (col_tmp - col_tmp.min()) / (col_tmp.max() - col_tmp.min())
-    )
-    all_df["pass"] = all_df["pass_probability"] < threshold
-    all_df.sort_values("pass_probability", inplace=True, ascending=True)
+    all_df["pass_probability"] = 1 - (col_tmp / inside)
+    all_df["pass"] = all_df["pass_probability"] > threshold
+    all_df.sort_values("pass_probability", inplace=True)
     all_df.to_csv(output_tsv, sep="\t", index=False)
 
     logger.info(
