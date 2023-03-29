@@ -259,7 +259,7 @@ class SplitManager:
                 tsv_df = pd.read_csv(tsv_path, sep="\t")
                 SplitManager._check_multi_cohort_tsv(tsv_df, "labels")
         else:
-            if tsv_path.name.endswith(".tsv"):
+            if tsv_path.suffix == ".tsv":
                 raise ClinicaDLConfigurationError(
                     f"You gave the path to a TSV file in tsv_path {tsv_path}. "
                     f"To use multi-cohort framework, please add 'multi_cohort=true' to the configuration file or the --multi_cohort flag."

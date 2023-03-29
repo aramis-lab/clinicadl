@@ -298,14 +298,17 @@ def extract_images(input_img: Path) -> List[Tuple[str, torch.Tensor]]:
     Returns:
         filename (str): single tensor file  saved on the disk. Same location than input file.
     """
+    from copy import copy
+
     import nibabel as nib
     import torch
 
     image_array = nib.load(input_img).get_fdata(dtype="float32")
     image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
     # make sure the tensor type is torch.float32
+    output_image = copy(input_img)
     output_file = (
-        input_img.with_suffix("").with_suffix(".pt"),
+        output_image.with_suffix("").with_suffix(".pt"),
         image_tensor.clone(),
     )
 

@@ -1,0 +1,85 @@
+14a15,19
+>                         + pet_linear
+>                             + sub-OAS30010_ses-M000_trc-18FAV45_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-pons2_pet.pt
+>                         + t1_linear
+>                             + sub-OAS30010_ses-M000_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt
+>                             + sub-OAS30010_ses-M000_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+17d21
+<                     + sub-OAS30010_ses-M000_trc-18FAV45_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-pons2_pet.pt
+21d24
+<                     + sub-OAS30010_ses-M000_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt
+23d25
+<                     + sub-OAS30010_ses-M000_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+28a31,35
+>                         + pet_linear
+>                             + sub-OAS30011_ses-M000_trc-11CPIB_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-pons2_pet.pt
+>                         + t1_linear
+>                             + sub-OAS30011_ses-M000_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt
+>                             + sub-OAS30011_ses-M000_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+31d37
+<                     + sub-OAS30011_ses-M000_trc-11CPIB_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-pons2_pet.pt
+35d40
+<                     + sub-OAS30011_ses-M000_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt
+37d41
+<                     + sub-OAS30011_ses-M000_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+41a46,50
+>                         + pet_linear
+>                             + sub-OAS30011_ses-M054_trc-18FAV45_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-pons2_pet.pt
+>                         + t1_linear
+>                             + sub-OAS30011_ses-M054_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt
+>                             + sub-OAS30011_ses-M054_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+44d52
+<                     + sub-OAS30011_ses-M054_trc-18FAV45_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-pons2_pet.pt
+48d55
+<                     + sub-OAS30011_ses-M054_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt
+50d56
+<                     + sub-OAS30011_ses-M054_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+55a62,64
+>                         + t1_linear
+>                             + sub-OAS30012_ses-M006_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt
+>                             + sub-OAS30012_ses-M006_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+58d66
+<                     + sub-OAS30012_ses-M006_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt
+60d67
+<                     + sub-OAS30012_ses-M006_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+64a72,74
+>                         + t1_linear
+>                             + sub-OAS30012_ses-M018_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt
+>                             + sub-OAS30012_ses-M018_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+67d76
+<                     + sub-OAS30012_ses-M018_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt
+69d77
+<                     + sub-OAS30012_ses-M018_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+74a83,87
+>                         + pet_linear
+>                             + sub-OAS30013_ses-M006_trc-18FAV45_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-pons2_pet.pt
+>                         + t1_linear
+>                             + sub-OAS30013_ses-M006_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt
+>                             + sub-OAS30013_ses-M006_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+77d89
+<                     + sub-OAS30013_ses-M006_trc-18FAV45_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-pons2_pet.pt
+81d92
+<                     + sub-OAS30013_ses-M006_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt
+83d93
+<                     + sub-OAS30013_ses-M006_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+88a99,101
+>                         + t1_linear
+>                             + sub-OAS30014_ses-M006_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt
+>                             + sub-OAS30014_ses-M006_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+91d103
+<                     + sub-OAS30014_ses-M006_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt
+93d104
+<                     + sub-OAS30014_ses-M006_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+97a109,111
+>                         + t1_linear
+>                             + sub-OAS30014_ses-M036_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt
+>                             + sub-OAS30014_ses-M036_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+100d113
+<                     + sub-OAS30014_ses-M036_T1w_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_T1w.pt
+102d114
+<                     + sub-OAS30014_ses-M036_T1w_space-MNI152NLin2009cSym_res-1x1x1_T1w.pt
+108c120
+<         + t1-linear_crop-True_mode-image.json
+\ No newline at end of file
+---
+>         + t1-linear_crop-True_mode-image.json
