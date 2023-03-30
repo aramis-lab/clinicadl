@@ -139,3 +139,31 @@ Options:
 will not smooth data.
 
 
+
+
+## `hypo-metabolic` - 
+
+
+
+### Prerequisites
+
+
+
+### Running the task
+
+The task can be run with the following command line:
+```
+clinicadl generate hypometabolic [OPTIONS] CAPS_DIRECTORY GENERATED_CAPS_DIRECTORY
+```
+where:
+- `CAPS_DIRECTORY` (str) is the input folder containing the neuroimaging data in a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
+-  `GENERATED_CAPS_DIRECTORY` (str) is the folder where the synthetic CAPS is stored.
+
+Options:
+
+- `pathology`
+- `pathology_percent`
+- `--participants_tsv` (str) is the path to a tsv file containing the subjects/sessions list for data generation.
+- `--n_subjects` (int) number of subjects per label in the synthetic dataset. Default: `300`.
+
+
