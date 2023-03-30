@@ -75,3 +75,4 @@ weight_decay = 1e-4
 patience = 0
 tolerance = 0.0
 accumulation_steps = 1
+profiler = false
