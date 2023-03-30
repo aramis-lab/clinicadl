@@ -129,7 +129,7 @@ def get_model_list(architecture=None, input_size=None, model_layers=False):
         elif dimension == "2D or 3D":
             shape_str = "C@HxW or C@DxHxW,"
 
-        shape_str = "\n\tThe input must be in the shape ".expandtabs(4) + shape_str
+        shape_str = f"\n\tThe input must be in the shape {shape_str}".expandtabs(4)
         input_size_str = f" for example input_size can be {input_size}."
 
         task_str = f"\n\tThis model can be used for {' or '.join(model_class.get_task())}.\n".expandtabs(
