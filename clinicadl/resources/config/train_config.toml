@@ -38,7 +38,6 @@ gpu = true
 n_proc = 2
 batch_size = 8
 evaluation_steps = 0
-profiler = false
 
 [Reproducibility]
 seed = 0
@@ -73,3 +72,4 @@ weight_decay = 1e-4
 patience = 0
 tolerance = 0.0
 accumulation_steps = 1
+profiler = false

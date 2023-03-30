@@ -17,7 +17,6 @@ from .task_utils import task_launcher
 @train_option.n_proc
 @train_option.batch_size
 @train_option.evaluation_steps
-@train_option.profiler
 # Reproducibility
 @train_option.seed
 @train_option.deterministic
@@ -44,6 +43,7 @@ from .task_utils import task_launcher
 @train_option.patience
 @train_option.tolerance
 @train_option.accumulation_steps
+@train_option.profiler
 # transfer learning
 @train_option.transfer_path
 @train_option.transfer_selection_metric

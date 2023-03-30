@@ -44,12 +44,6 @@ evaluation_steps = cli_param.option_group.computational_group.option(
     help="Fix the number of iterations to perform before computing an evaluation. Default will only "
     "perform one evaluation at the end of each epoch.",
 )
-profiler = cli_param.option_group.computational_group.option(
-    "--profiler/--no-profiler",
-    type=bool,
-    default=None,
-    help="Use `--profiler` to enable Pytorch profiler for the first few steps.",
-)
 # Reproducibility
 seed = cli_param.option_group.reproducibility_group.option(
     "--seed",
@@ -262,6 +256,12 @@ accumulation_steps = cli_param.option_group.optimization_group.option(
     # default=1,
     help="Accumulates gradients during the given number of iterations before performing the weight update "
     "in order to virtually increase the size of the batch.",
+)
+profiler = cli_param.option_group.optimization_group.option(
+    "--profiler/--no-profiler",
+    type=bool,
+    default=None,
+    help="Use `--profiler` to enable Pytorch profiler for the first few steps.",
 )
 # transfer learning
 transfer_path = cli_param.option_group.transfer_learning_group.option(
