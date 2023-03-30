@@ -511,14 +511,21 @@ def generate_hypometabolic_dataset(
             f"than the number of subjects in the baseline dataset of size {len(data_df)}"
             f"Please add the '--n_subjects' option and re-run the command."
         )
-
+    checksum_dir = {
+        "ad": "2100d514a3fabab49fe30702700085a09cdad449bdf1aa04b8f804e238e4dfc2",
+        "bvftd": "5a0ad28dff649c84761aa64f6e99da882141a56caa46675b8bf538a09fce4f81",
+        "lvppa": "1099f5051c79d5b4fdae25226d97b0e92f958006f6545f498d4b600f3f8a422e",
+        "nfvppa": "9512a4d4dc0003003c4c7526bf2d0ddbee65f1c79357f5819898453ef7271033",
+        "pca": "ace36356b57f4db73e17c421a7cfd7ae056a1b258b8126534cf65d8d0be9527a",
+        "svppa": "44f2e00bf2d2d09b532cb53e3ba61d6087b4114768cc8ae3330ea84c4b7e0e6a",
+    }
     home = Path.home()
     cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks_hypo"
     url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/hypo/"
     FILE1 = RemoteFileStructure(
         filename=f"mask_hypo_{pathology}.nii",
         url=url_aramis,
-        checksum="2100d514a3fabab49fe30702700085a09cdad449bdf1aa04b8f804e238e4dfc2",
+        checksum=checksum_dir[pathology],
     )
     cache_clinicadl.mkdir(parents=True, exist_ok=True)
     if not (cache_clinicadl / f"mask_hypo_{pathology}.nii").is_file():
@@ -565,14 +572,17 @@ def generate_hypometabolic_dataset(
         image_path = Path(images_paths[i])
         image_nii = nib.load(image_path)
         image = image_nii.get_fdata()
-
-        input_filename = image_path.name
-        filename_pattern = "_".join(input_filename.split("_")[2::])
-
+        if image_path.suffix == ".gz":
+            input_filename = Path(image_path.stem).stem
+        else:
+            input_filename = image_path.stem
+        input_filename = input_filename.strip("pet")
         hypo_image_nii_dir = (
             output_dir / "subjects" / participants[i] / sessions[i] / preprocessing
         )
-        hypo_image_nii_filename = f"{participants[i]}_desc-hypo-{pathology}-{anomaly_degree}_{sessions[i]}_{filename_pattern}"
+        hypo_image_nii_filename = (
+            f"{input_filename}pat-{pathology}_deg-{int(anomaly_degree)}_pet.nii.gz"
+        )
         hypo_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
         # Create atrophied image
