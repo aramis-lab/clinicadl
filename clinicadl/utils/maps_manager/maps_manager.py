@@ -1933,7 +1933,7 @@ class MapsManager:
                 tensorboard_trace_handler,
             )
 
-            time = str(datetime.now().time())[:8]
+            time = datetime.now().strftime("%H:%M:%S")
             filename = [Path("profiler") / f"clinica_dl_{time}"]
             # When ClinicaDL will be updated with Distributed Data Parallelism,
             # the next line will be handy, to make sure all processes write in the same file
