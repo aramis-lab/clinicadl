@@ -761,39 +761,6 @@ class MapsManager:
 
             self._erase_tmp(split)
 
-    def _init_profiler(self):
-        if self.profiler:
-            from datetime import datetime
-            from pathlib import Path
-
-            from torch.profiler import (
-                ProfilerActivity,
-                profile,
-                schedule,
-                tensorboard_trace_handler,
-            )
-
-            time = str(datetime.now().time())[:8]
-            filename = [Path("profiler") / f"clinica_dl_{time}"]
-            # When ClinicaDL will be updated with Distributed Data Parallelism,
-            # the next line will be handy, to make sure all processes write in the same file
-            # dist.broadcast_object_list(filename, src=0)
-            profiler = profile(
-                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
-                schedule=schedule(wait=2, warmup=2, active=30, repeat=1),
-                on_trace_ready=tensorboard_trace_handler(filename[0]),
-                profile_memory=True,
-                record_shapes=False,
-                with_stack=False,
-                with_flops=False,
-            )
-        else:
-            from contextlib import nullcontext
-
-            profiler = nullcontext()
-            profiler.step = lambda *args, **kwargs: None
-        return profiler
-
     def _train(
         self,
         train_loader,
@@ -1953,6 +1920,39 @@ class MapsManager:
                 f"Task {self.network_task} is not implemented in ClinicaDL. "
                 f"Please choose between classification, regression and reconstruction."
             )
+
+    def _init_profiler(self):
+        if self.profiler:
+            from datetime import datetime
+            from pathlib import Path
+
+            from torch.profiler import (
+                ProfilerActivity,
+                profile,
+                schedule,
+                tensorboard_trace_handler,
+            )
+
+            time = str(datetime.now().time())[:8]
+            filename = [Path("profiler") / f"clinica_dl_{time}"]
+            # When ClinicaDL will be updated with Distributed Data Parallelism,
+            # the next line will be handy, to make sure all processes write in the same file
+            # dist.broadcast_object_list(filename, src=0)
+            profiler = profile(
+                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+                schedule=schedule(wait=2, warmup=2, active=30, repeat=1),
+                on_trace_ready=tensorboard_trace_handler(filename[0]),
+                profile_memory=True,
+                record_shapes=False,
+                with_stack=False,
+                with_flops=False,
+            )
+        else:
+            from contextlib import nullcontext
+
+            profiler = nullcontext()
+            profiler.step = lambda *args, **kwargs: None
+        return profiler
 
     ###############################
     # Getters                     #
