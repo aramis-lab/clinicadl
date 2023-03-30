@@ -31,7 +31,7 @@ def test_resume(cmdopt, tmp_path, test_name):
     tmp_out_dir.mkdir(parents=True)
 
     shutil.copytree(input_dir / test_name, tmp_out_dir / test_name)
-    maps_stopped = str(tmp_out_dir / test_name)
+    maps_stopped = tmp_out_dir / test_name
 
     flag_error = not system(f"clinicadl -vv train resume {maps_stopped}")
     assert flag_error
@@ -39,15 +39,13 @@ def test_resume(cmdopt, tmp_path, test_name):
     maps_manager = MapsManager(maps_stopped)
     split_manager = maps_manager._init_split_manager()
     for split in split_manager.split_iterator():
-        performances_flag = Path(
-            join(maps_stopped, f"split-{split}", "best-loss", "train")
+        performances_flag = (
+            maps_stopped / f"split-{split}" / "best-loss" / "train"
         ).exists()
         assert performances_flag
 
-        with open(os.path.join(str(maps_stopped), "maps.json"), "r") as out:
+        with open(maps_stopped / "maps.json", "r") as out:
             json_data_out = json.load(out)
-        with open(
-            os.path.join(str(ref_dir / ("maps_image_cnn")), "maps.json"), "r"
-        ) as ref:
+        with open(ref_dir / "maps_image_cnn" / "maps.json", "r") as ref:
             json_data_ref = json.load(ref)
         assert json_data_ref == json_data_out

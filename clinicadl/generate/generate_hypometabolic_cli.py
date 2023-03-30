@@ -1,43 +1,45 @@
-from pathlib import Path
-
 import click
 
 from clinicadl.utils import cli_param
 
 
-@click.command(name="trivial", no_args_is_help=True)
+@click.command(name="hypometabolic", no_args_is_help=True)
 @cli_param.argument.caps_directory
 @cli_param.argument.generated_caps
-@cli_param.option.preprocessing
 @cli_param.option.participant_list
 @cli_param.option.n_subjects
+@cli_param.option.n_proc
 @click.option(
-    "--mask_path",
-    type=click.Path(exists=True, path_type=Path),
-    default=None,
-    help="Path to the extracted masks to generate the two labels. "
-    "Default will try to download masks and store them at '~/.cache/clinicadl'.",
+    "--pathology",
+    "-p",
+    type=click.Choice(["ad", "bvftd", "lvppa", "nfvppa", "pca", "svppa"]),
+    default="ad",
+    help="Pathology applied. To chose in the following list: [ad, bvftd, lvppa, nfvppa, pca, svppa]",
 )
 @click.option(
-    "--atrophy_percent",
+    "--anomaly_degree",
+    "-anod",
     type=float,
-    default=60.0,
-    help="Percentage of atrophy applied.",
+    default=30.0,
+    help="Degrees of hypo-metabolism applied (in percent)",
+)
+@click.option(
+    "--sigma",
+    type=int,
+    default=5,
+    help="It is the parameter of the gaussian filter used for smoothing.",
 )
 @cli_param.option.use_uncropped_image
-@cli_param.option.acq_label
-@cli_param.option.suvr_reference_region
 def cli(
     caps_directory,
     generated_caps_directory,
-    preprocessing,
     participants_tsv,
     n_subjects,
-    mask_path,
-    atrophy_percent,
+    n_proc,
+    sigma,
+    pathology,
+    anomaly_degree,
     use_uncropped_image,
-    acq_label,
-    suvr_reference_region,
 ):
     """Generation of trivial dataset with addition of synthetic brain atrophy.
 
@@ -45,19 +47,19 @@ def cli(
 
     GENERATED_CAPS_DIRECTORY is a CAPS folder where the trivial dataset will be saved.
     """
-    from .generate import generate_trivial_dataset
+    from .generate import generate_hypometabolic_dataset
 
-    generate_trivial_dataset(
+    generate_hypometabolic_dataset(
         caps_directory=caps_directory,
         tsv_path=participants_tsv,
-        preprocessing=preprocessing,
+        preprocessing="pet-linear",
         output_dir=generated_caps_directory,
         n_subjects=n_subjects,
-        mask_path=mask_path,
-        atrophy_percent=atrophy_percent,
+        n_proc=n_proc,
+        pathology=pathology,
+        anomaly_degree=anomaly_degree,
+        sigma=sigma,
         uncropped_image=use_uncropped_image,
-        acq_label=acq_label,
-        suvr_reference_region=suvr_reference_region,
     )
 
 

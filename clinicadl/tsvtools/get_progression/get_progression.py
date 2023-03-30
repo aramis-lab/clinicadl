@@ -1,7 +1,5 @@
-import os
 from copy import copy
 from logging import getLogger
-from os import path
 from pathlib import Path
 
 import pandas as pd
@@ -18,7 +16,7 @@ logger = getLogger("clinicadl.tsvtools.get_progression")
 
 
 def get_progression(
-    data_tsv: str,
+    data_tsv: Path,
     horizon_time: int = 36,
     stability_dict: dict = None,
 ):
@@ -43,10 +41,10 @@ def get_progression(
 
     if "diagnosis" not in bids_df.columns:
         logger.debug("Looking for the 'diagnosis' column in others files")
-        parents_path = path.abspath(data_tsv)
-        while not os.path.exists(path.join(parents_path, "labels.tsv")):
-            parents_path = Path(parents_path).parents[0]
-            labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+        parents_path = (data_tsv.resolve()).parent
+        while not (parents_path / "labels.tsv").is_file():
+            parents_path = parents_path.parent
+            labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
             bids_df = pd.merge(
                 bids_df,
                 labels_df,
