@@ -77,6 +77,7 @@ def compute_folder_and_file_type(
             file_type = T1W_LINEAR
         else:
             file_type = T1W_LINEAR_CROPPED
+
     elif parameters["preprocessing"] == "flair-linear":
         mod_subfolder = "flair_linear"
         if parameters["use_uncropped_image"]:
