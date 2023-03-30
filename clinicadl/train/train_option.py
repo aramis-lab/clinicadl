@@ -257,6 +257,13 @@ accumulation_steps = cli_param.option_group.optimization_group.option(
     help="Accumulates gradients during the given number of iterations before performing the weight update "
     "in order to virtually increase the size of the batch.",
 )
+profiler = cli_param.option_group.optimization_group.option(
+    "--profiler/--no-profiler",
+    type=bool,
+    default=None,
+    help="Use `--profiler` to enable Pytorch profiler for the first 30 steps after a short warmup. "
+    "It will make an execution trace and some statistics about the CPU and GPU usage.",
+)
 # transfer learning
 transfer_path = cli_param.option_group.transfer_learning_group.option(
     "-tp",
