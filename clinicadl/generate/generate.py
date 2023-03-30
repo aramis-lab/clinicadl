@@ -518,7 +518,7 @@ def generate_hypometabolic_dataset(
     FILE1 = RemoteFileStructure(
         filename=f"mask_hypo_{pathology}.nii",
         url=url_aramis,
-        checksum="drgjeryt",
+        checksum="2100d514a3fabab49fe30702700085a09cdad449bdf1aa04b8f804e238e4dfc2",
     )
     cache_clinicadl.mkdir(parents=True, exist_ok=True)
     if not (cache_clinicadl / f"mask_hypo_{pathology}.nii").is_file():
@@ -532,6 +532,7 @@ def generate_hypometabolic_dataset(
                 manually at https://aramislab.paris.inria.fr/files/data/masks/
                 and provide a valid path."""
             )
+
     else:
         mask_path = cache_clinicadl / f"mask_hypo_{pathology}.nii"
 
