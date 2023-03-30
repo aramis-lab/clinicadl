@@ -261,7 +261,8 @@ profiler = cli_param.option_group.optimization_group.option(
     "--profiler/--no-profiler",
     type=bool,
     default=None,
-    help="Use `--profiler` to enable Pytorch profiler for the first few steps.",
+    help="Use `--profiler` to enable Pytorch profiler for the first 30 steps after a short warmup. "
+    "It will make an execution trace and some statistics about the CPU and GPU usage.",
 )
 # transfer learning
 transfer_path = cli_param.option_group.transfer_learning_group.option(
