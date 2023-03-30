@@ -84,7 +84,6 @@ def compute_folder_and_file_type(
             file_type = FLAIR_T2W_LINEAR
         else:
             file_type = FLAIR_T2W_LINEAR_CROPPED
-            
     elif parameters["preprocessing"] == "pet-linear":
         mod_subfolder = "pet_linear"
         file_type = pet_linear_nii(
