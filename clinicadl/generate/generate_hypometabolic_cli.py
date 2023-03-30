@@ -14,12 +14,11 @@ from clinicadl.utils import cli_param
     "-p",
     type=click.Choice(["ad", "bvftd", "lvppa", "nfvppa", "pca", "svppa"]),
     default="ad",
-    help="Path to the extracted masks to generate the two labels. "
-    "Default will try to download masks and store them at '~/.cache/clinicadl'.",
+    help="Pathology applied. To chose in the following list: [ad, bvftd, lvppa, nfvppa, pca, svppa]",
 )
 @click.option(
     "--anomaly_degree",
-    "-ad",
+    "-anod",
     type=float,
     default=30.0,
     help="Degrees of hypo-metabolism applied (in percent)",
@@ -28,7 +27,7 @@ from clinicadl.utils import cli_param
     "--sigma",
     type=int,
     default=5,
-    help="sigma ?",
+    help="It is the parameter of the gaussian filter used for smoothing.",
 )
 @cli_param.option.use_uncropped_image
 def cli(

@@ -5,7 +5,6 @@ This file generates data for trivial or intractable (random) data for binary cla
 """
 import tarfile
 from logging import getLogger
-
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
@@ -19,7 +18,7 @@ from nilearn.image import resample_to_img
 
 from clinicadl.prepare_data.prepare_data_utils import compute_extract_json
 from clinicadl.utils.caps_dataset.data import CapsDataset
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.exceptions import DownloadError
 from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
 from clinicadl.utils.preprocessing import write_preprocessing
 from clinicadl.utils.tsvtools_utils import extract_baseline
@@ -105,7 +104,6 @@ def generate_random_dataset(
 
     # Create subjects dir
     (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
-
 
     # Retrieve image of first subject
     participant_id = data_df.loc[0, "participant_id"]
@@ -475,7 +473,7 @@ def generate_hypometabolic_dataset(
     anomaly_degree: float
         Percentage of pathology applied.
     sigma: int
-        ????
+        It is the parameter of the gaussian filter used for smoothing.
     uncropped_image: bool
         If True the uncropped image of `t1-linear` or `pet-linear` will be used.
 
@@ -488,9 +486,6 @@ def generate_hypometabolic_dataset(
     ------
     IndexError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
     """
-    from pathlib import Path
-
-    from clinicadl.utils.exceptions import DownloadError
 
     commandline_to_json(
         {
@@ -517,34 +512,30 @@ def generate_hypometabolic_dataset(
             f"Please add the '--n_subjects' option and re-run the command."
         )
 
-    mask_path = None
-    if mask_path is None:
+    home = Path.home()
+    cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks_hypo"
+    url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/hypo/"
+    FILE1 = RemoteFileStructure(
+        filename=f"mask_hypo_{pathology}.nii",
+        url=url_aramis,
+        checksum="drgjeryt",
+    )
+    cache_clinicadl.mkdir(parents=True, exist_ok=True)
+    if not (cache_clinicadl / f"mask_hypo_{pathology}.nii").is_file():
+        logger.info(f"Downloading {pathology} masks...")
+        # mask_path = fetch_file(FILE1, cache_clinicadl)
+        try:
+            mask_path = fetch_file(FILE1, cache_clinicadl)
+        except:
+            DownloadError(
+                """Unable to download masks, please download them
+                manually at https://aramislab.paris.inria.fr/files/data/masks/
+                and provide a valid path."""
+            )
+    else:
+        mask_path = cache_clinicadl / f"mask_hypo_{pathology}.nii"
 
-        home = Path.home()
-        cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks_hypo"
-        url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/hypo/"
-        FILE1 = RemoteFileStructure(
-            filename=f"mask_hypo_{pathology}.nii",
-            url=url_aramis,
-            checksum="drgjeryt",
-        )
-        cache_clinicadl.mkdir(parents=True, exist_ok=True)
-
-        if not (cache_clinicadl / f"mask_hypo_{pathology}.nii").is_file():
-            logger.info(f"Downloading {pathology} masks...")
-            # mask_path = fetch_file(FILE1, cache_clinicadl)
-            try:
-                mask_path = fetch_file(FILE1, cache_clinicadl)
-                mask_nii = nib.load(mask_path)
-            except:
-                DownloadError(
-                    """Unable to download masks, please download them
-                    manually at https://aramislab.paris.inria.fr/files/data/masks/
-                    and provide a valid path."""
-                )
-        else:
-            mask_path = cache_clinicadl / f"mask_hypo_{pathology}.nii"
-            mask_nii = nib.load(mask_path)
+    mask_nii = nib.load(mask_path)
 
     # Find appropriate preprocessing file type
     file_type = find_file_type(
@@ -559,18 +550,17 @@ def generate_hypometabolic_dataset(
     cohort = caps_directory
 
     images_paths = clinica_file_reader(participants, sessions, cohort, file_type)[0]
-
     image_nii = nib.load(images_paths[0])
 
     mask_resample_nii = resample_to_img(mask_nii, image_nii, interpolation="nearest")
     mask = mask_resample_nii.get_fdata()
+
     mask = mask_processing(mask, anomaly_degree, sigma)
 
     # Create subjects dir
     (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
 
     def generate_hypometabolic_image(i, output_df):
-        # for i in range(n_subjects):
         image_path = Path(images_paths[i])
         image_nii = nib.load(image_path)
         image = image_nii.get_fdata()
@@ -579,11 +569,9 @@ def generate_hypometabolic_dataset(
         filename_pattern = "_".join(input_filename.split("_")[2::])
 
         hypo_image_nii_dir = (
-            output_dir / "subjects" / f"sub-HYPO{i}" / sessions[i] / preprocessing
+            output_dir / "subjects" / participants[i] / sessions[i] / preprocessing
         )
-        hypo_image_nii_filename = (
-            f"sub-HYPO{i}_{pathology}-{anomaly_degree}_{sessions[i]}_{filename_pattern}"
-        )
+        hypo_image_nii_filename = f"{participants[i]}_desc-hypo-{pathology}-{anomaly_degree}_{sessions[i]}_{filename_pattern}"
         hypo_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
         # Create atrophied image
@@ -593,7 +581,7 @@ def generate_hypometabolic_dataset(
 
         # Append row to output tsv
         row = [
-            f"sub-HYP0{i}_{pathology}-{anomaly_degree}",
+            participants[i],
             sessions[i],
             pathology,
             anomaly_degree,

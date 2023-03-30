@@ -31,6 +31,7 @@ def test_generate(cmdopt, tmp_path, test_name):
 
     clean_folder(tmp_out_dir, recreate=True)
 
+    data_caps_pet = str(input_dir / "caps_pet")
     data_caps_folder = str(input_dir / "caps")
 
     if test_name == "trivial_example":
@@ -50,13 +51,14 @@ def test_generate(cmdopt, tmp_path, test_name):
         test_input = [
             "generate",
             "hypometabolic",
-            data_caps_folder,
+            data_caps_pet,
             output_folder,
             "--n_subjects",
             "2",
             "--pathology",
             "ad",
-            "--anomaly_degree" "50",
+            "--anomaly_degree",
+            "50",
             "--sigma",
             "5",
         ]
