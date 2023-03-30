@@ -331,7 +331,7 @@ class ResNet3D(CNN):
         return ["classification", "regression"]
 
 
-class SE_CNN(CNN):
+class SqueezeExcitationCNN(CNN):
     """
     SE-CNN is a combination of a ResNet-101 with Squeeze and Excitation blocks which was successfully
     tested on brain tumour classification by Ghosal et al. 2019. SE blocks are composed of a squeeze
