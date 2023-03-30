@@ -1923,9 +1923,6 @@ class MapsManager:
 
     def _init_profiler(self):
         if self.profiler:
-            from datetime import datetime
-            from pathlib import Path
-
             from torch.profiler import (
                 ProfilerActivity,
                 profile,
@@ -1934,7 +1931,7 @@ class MapsManager:
             )
 
             time = datetime.now().strftime("%H:%M:%S")
-            filename = [Path("profiler") / f"clinicadl_{time}"]
+            filename = [self.maps_path / "profiler" / f"clinicadl_{time}"]
             # When ClinicaDL will be updated with Distributed Data Parallelism,
             # the next line will be handy, to make sure all processes write in the same file
             # dist.broadcast_object_list(filename, src=0)
