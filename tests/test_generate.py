@@ -10,7 +10,14 @@ import pytest
 from tests.testing_tools import clean_folder, compare_folders
 
 
-@pytest.fixture(params=["random_example", "trivial_example", "shepplogan_example"])
+@pytest.fixture(
+    params=[
+        "random_example",
+        "trivial_example",
+        "shepplogan_example",
+        "hypometabolic_example",
+    ]
+)
 def test_name(request):
     return request.param
 
@@ -24,6 +31,7 @@ def test_generate(cmdopt, tmp_path, test_name):
 
     clean_folder(tmp_out_dir, recreate=True)
 
+    data_caps_pet = str(input_dir / "caps_pet")
     data_caps_folder = str(input_dir / "caps")
 
     if test_name == "trivial_example":
@@ -37,6 +45,22 @@ def test_generate(cmdopt, tmp_path, test_name):
             "4",
             "--preprocessing",
             "t1-linear",
+        ]
+    elif test_name == "hypometabolic_example":
+        output_folder = str(tmp_out_dir / test_name)
+        test_input = [
+            "generate",
+            "hypometabolic",
+            data_caps_pet,
+            output_folder,
+            "--n_subjects",
+            "2",
+            "--pathology",
+            "ad",
+            "--anomaly_degree",
+            "50",
+            "--sigma",
+            "5",
         ]
 
     elif test_name == "random_example":
