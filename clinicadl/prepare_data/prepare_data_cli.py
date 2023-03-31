@@ -16,7 +16,7 @@ from .prepare_data_utils import get_parameters_dict
 @cli_param.option.subjects_sessions_tsv
 @cli_param.option.extract_json
 @cli_param.option.use_uncropped_image
-@cli_param.option.acq_label
+@cli_param.option.tracer
 @cli_param.option.suvr_reference_region
 @cli_param.option.custom_suffix
 def image_cli(
@@ -26,7 +26,7 @@ def image_cli(
     subjects_sessions_tsv: Optional[Path] = None,
     extract_json: str = None,
     use_uncropped_image: bool = False,
-    acq_label: Optional[str] = None,
+    tracer: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,
     custom_suffix: str = "",
 ):
@@ -43,7 +43,7 @@ def image_cli(
         extract_json,
         use_uncropped_image,
         custom_suffix,
-        acq_label,
+        tracer,
         suvr_reference_region,
     )
     DeepLearningPrepareData(
@@ -76,7 +76,7 @@ def image_cli(
     show_default=True,
     help="Stride size.",
 )
-@cli_param.option.acq_label
+@cli_param.option.tracer
 @cli_param.option.suvr_reference_region
 @cli_param.option.custom_suffix
 def patch_cli(
@@ -89,7 +89,7 @@ def patch_cli(
     use_uncropped_image: bool = False,
     patch_size: int = 50,
     stride_size: int = 50,
-    acq_label: Optional[str] = None,
+    tracer: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,
     custom_suffix: str = "",
 ):
@@ -106,7 +106,7 @@ def patch_cli(
         extract_json,
         use_uncropped_image,
         custom_suffix,
-        acq_label,
+        tracer,
         suvr_reference_region,
     )
     parameters["patch_size"] = patch_size
@@ -157,7 +157,7 @@ def patch_cli(
         the end of the MRI volume.  If only one argument is given, it will be
         used for both sides.""",
 )
-@cli_param.option.acq_label
+@cli_param.option.tracer
 @cli_param.option.suvr_reference_region
 @cli_param.option.custom_suffix
 def slice_cli(
@@ -171,7 +171,7 @@ def slice_cli(
     slice_direction: int = 0,
     slice_mode: str = "rgb",
     discarded_slices: int = 0,
-    acq_label: Optional[str] = None,
+    tracer: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,
     custom_suffix: str = "",
 ):
@@ -188,7 +188,7 @@ def slice_cli(
         extract_json,
         use_uncropped_image,
         custom_suffix,
-        acq_label,
+        tracer,
         suvr_reference_region,
     )
     parameters["slice_direction"] = slice_direction
@@ -243,7 +243,7 @@ def slice_cli(
             If given will select only the masks containing the string given.
             The mask with the shortest name is taken.""",
 )
-@cli_param.option.acq_label
+@cli_param.option.tracer
 @cli_param.option.suvr_reference_region
 @cli_param.option.custom_suffix
 def roi_cli(
@@ -258,7 +258,7 @@ def roi_cli(
     roi_uncrop_output: bool = False,
     roi_custom_template: str = "",
     roi_custom_mask_pattern: str = "",
-    acq_label: Optional[str] = None,
+    tracer: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,
     custom_suffix: str = "",
 ):
@@ -275,7 +275,7 @@ def roi_cli(
         extract_json,
         use_uncropped_image,
         custom_suffix,
-        acq_label,
+        tracer,
         suvr_reference_region,
     )
     parameters["roi_list"] = roi_list

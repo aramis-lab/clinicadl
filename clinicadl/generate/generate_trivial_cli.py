@@ -25,7 +25,7 @@ from clinicadl.utils import cli_param
     help="Percentage of atrophy applied.",
 )
 @cli_param.option.use_uncropped_image
-@cli_param.option.acq_label
+@cli_param.option.tracer
 @cli_param.option.suvr_reference_region
 def cli(
     caps_directory,
@@ -36,7 +36,7 @@ def cli(
     mask_path,
     atrophy_percent,
     use_uncropped_image,
-    acq_label,
+    tracer,
     suvr_reference_region,
 ):
     """Generation of trivial dataset with addition of synthetic brain atrophy.
@@ -56,7 +56,7 @@ def cli(
         mask_path=mask_path,
         atrophy_percent=atrophy_percent,
         uncropped_image=use_uncropped_image,
-        acq_label=acq_label,
+        tracer=tracer,
         suvr_reference_region=suvr_reference_region,
     )
 
