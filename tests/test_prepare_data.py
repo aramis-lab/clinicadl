@@ -81,13 +81,14 @@ def test_prepare_data(cmdopt, tmp_path, test_name):
 
 def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
 
-    modalities = ["t1-linear", "pet-linear"]  # , "custom"]
+    modalities = ["t1-linear", "pet-linear", "flair-linear"]
     uncropped_image = [True, False]
     acquisition_label = ["18FAV45", "11CPIB"]
     parameters["save_features"] = True
     parameters["prepare_dl"] = True
 
     for modality in modalities:
+        print(modality)
         parameters["preprocessing"] = modality
         if modality == "pet-linear":
             for acq in acquisition_label:
@@ -113,6 +114,17 @@ def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
             extract_generic(out_dir, mode, tsv_file, parameters)
 
         elif modality == "t1-linear":
+            for flag in uncropped_image:
+                parameters["use_uncropped_image"] = flag
+                parameters[
+                    "extract_json"
+                ] = f"{modality}_crop-{not flag}_mode-{parameters['mode']}.json"
+
+                tsv_file = input_dir / "subjects.tsv"
+                mode = parameters["mode"]
+                extract_generic(out_dir, mode, tsv_file, parameters)
+
+        elif modality == "flair-linear":
             for flag in uncropped_image:
                 parameters["use_uncropped_image"] = flag
                 parameters[

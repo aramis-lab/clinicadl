@@ -26,7 +26,7 @@ which have the same arguments:
   hierarchy](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/)
   containing the images corresponding to the `MODALITY` asked.
 - `MODALITY` (str) is the name of the preprocessing performed on the original images. It
-  can be `t1-linear` or `pet-linear`. You can choose `custom` if you want to get a
+  can be `t1-linear`, `flair-linear` or `pet-linear`. You can choose `custom` if you want to get a
   tensor from a custom filename.
 
 Each sub-command has its own set of options. There are three generic options:
@@ -204,6 +204,12 @@ plane using three identical channels (`rgb`) or one channel (`single`).
 
 - `--use_uncropped_image`: by default the features are extracted from 
   the cropped image (see the documentation of the [`t1-linear` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Linear/)). 
+  You can deactivate this behaviour with the `--use_uncropped_image` flag.
+
+### `flair-linear`
+
+- `--use_uncropped_image`: by default the features are extracted from 
+  the cropped image (see the documentation of the [`flair-linear` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/FLAIR_Linear/)). 
   You can deactivate this behaviour with the `--use_uncropped_image` flag.
 
 ### `pet-linear`
