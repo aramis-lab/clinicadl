@@ -10,7 +10,7 @@ from clinicadl.utils import cli_param
     type=click.Path(),
 )
 @click.argument(
-    "acq_label",
+    "tracer",
     type=str,
 )
 @click.argument(
@@ -30,7 +30,7 @@ from clinicadl.utils import cli_param
 def cli(
     caps_directory,
     output_tsv,
-    acq_label,
+    tracer,
     suvr_reference_region,
     use_uncropped_image,
     participants_tsv,
@@ -43,7 +43,7 @@ def cli(
 
     OUTPUT_TSV is the path to TSV output file.
 
-    ACQ_LABEL is the label given to the PET acquisition, specifying the tracer used (trc-<acq_label>).
+    ACQ_LABEL is the label given to the PET acquisition, specifying the tracer used (trc-<tracer>).
 
     SUVR_REFERENCE_REGION is the reference region used to perform intensity normalization {pons|cerebellumPons|pons2|cerebellumPons2}.
     """
@@ -52,7 +52,7 @@ def cli(
     pet_linear_qc(
         caps_directory,
         output_tsv,
-        acq_label,
+        tracer,
         suvr_reference_region,
         use_uncropped_image=use_uncropped_image,
         participants_tsv=participants_tsv,

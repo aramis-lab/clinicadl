@@ -21,7 +21,7 @@ from .utils import get_metric
 def quality_check(
     caps_dir: Path,
     output_tsv: Path,
-    acq_label: str,
+    tracer: str,
     ref_region: str,
     use_uncropped_image: bool,
     participants_tsv: Path = None,
@@ -39,8 +39,8 @@ def quality_check(
         The CAPS folder where pet-linear outputs are stored.
     output_tsv: str (Path)
         The path to TSV output file.
-    acq_label: str
-        The label given to the PET acquisition, specifying the tracer used (trc-<acq_label>).
+    tracer: str
+        The label given to the PET acquisition, specifying the tracer used (trc-<tracer>).
     ref_region: str
         The reference region used to perform intensity normalization {pons|cerebellumPons|pons2|cerebellumPons2}.
     use_uncropped_image: bool
@@ -97,7 +97,7 @@ def quality_check(
         caps_dir, participants_tsv, False, False, None
     )
     file_type = pet_linear_nii(
-        acq_label,
+        tracer,
         ref_region,
         use_uncropped_image,
     )
