@@ -60,17 +60,16 @@ def quality_check(
     if not cache_clinicadl.is_dir():
         cache_clinicadl.mkdir(parents=True)
 
-    url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
-    FILE1 = RemoteFileStructure(
-        filename="qc_pet_mask_contour.nii.gz",
-        url=url_aramis,
-        checksum="0c561ce7de343219e42861b87a359420f9d485da37a8f64d1366ee9bb5460ee6",
-    )
-
-    mask_contour_file = cache_clinicadl / FILE1.filename
+    mask_contour_file = cache_clinicadl / "qc_pet_mask_contour.nii.gz"
 
     if not (mask_contour_file).is_file():
         try:
+            url_aramis = "https://aramislab.paris.inria.fr/files/data/masks/"
+            FILE1 = RemoteFileStructure(
+                filename="qc_pet_mask_contour.nii.gz",
+                url=url_aramis,
+                checksum="0c561ce7de343219e42861b87a359420f9d485da37a8f64d1366ee9bb5460ee6",
+            )
             mask_contour_file = fetch_file(FILE1, cache_clinicadl)
         except IOError as err:
             raise IOError("Unable to download required MNI file for QC: ", err)
@@ -79,12 +78,8 @@ def quality_check(
     mask_contour = mask_contour_nii.get_fdata()
     mask_contour.astype(int)
 
-    inside = 0  # 1605780
-    for idx, x in np.ndenumerate(mask_contour):
-        if mask_contour[idx] == 1:
-            inside += 1
+    nb_one_inside = np.sum(mask_contour)  # 1605780
 
-    # Get the data
     columns = [
         "participant_id",
         "session_id",
@@ -98,15 +93,15 @@ def quality_check(
         participants_df = pd.read_csv(participants_tsv, sep="\t")
         participants_df.reset_index()
         participants_df.set_index(["participant_id", "session_id"], inplace=True)
-        subjects = [subject for subject, subject_df in participants_df.groupby(level=0)]
+        subjects = [subject for subject, _ in participants_df.groupby(level=0)]
     else:
-        subjects = list((Path(caps_dir) / "subjects").iterdir())
+        subjects = list((caps_dir / "subjects").iterdir())
         subjects = [subject.name for subject in subjects if subject.name[:4:] == "sub-"]
 
     def parallelize_subjects(subject, results_df):
-        subject_path = Path(caps_dir) / "subjects" / subject
+        subject_path = caps_dir / "subjects" / subject
 
-        if not participants_tsv is None:
+        if participants_tsv is not None:
             sessions = participants_df.loc[subject]
             sessions.reset_index(inplace=True)
             sessions = sessions["session_id"].to_list()
@@ -121,16 +116,7 @@ def quality_check(
                 subject_path
                 / session
                 / "pet_linear"
-                / (
-                    subject
-                    + "_"
-                    + session
-                    + "_trc-"
-                    + acq_label
-                    + "_rec-uniform_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-"
-                    + ref_region
-                    + "_pet.nii.gz"
-                )
+                / f"{subject}_{session}_trc-{acq_label}_rec-uniform_pet_space-MNI152NLin2009cSym_desc-Crop_res-1x1x1_suvr-{ref_region}_pet.nii.gz"
             )
 
             if image_path.is_file():
@@ -139,7 +125,7 @@ def quality_check(
             else:
                 raise FileNotFoundError(f"Clinical data not found ({image_path})")
 
-            sum_contour = distance(mask_contour, image_np)
+            sum_contour = distance(mask_contour, image_np, nb_one_inside)
 
             row = [
                 [
@@ -160,8 +146,8 @@ def quality_check(
     all_df = pd.DataFrame(columns=columns)
     for subject_df in results_df:
         all_df = pd.concat([all_df, subject_df])
-    col_tmp = all_df["pass_probability"]
-    all_df["pass_probability"] = 1 - (col_tmp / inside)
+    # col_tmp = all_df["pass_probability"]
+    # all_df["pass_probability"] = 1 - (col_tmp / inside)
     all_df["pass"] = all_df["pass_probability"] > threshold
     all_df.sort_values("pass_probability", inplace=True)
     all_df.to_csv(output_tsv, sep="\t", index=False)

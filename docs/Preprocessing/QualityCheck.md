@@ -121,8 +121,6 @@ This quality check procedure uses a metric that identifies images that have been
 To determine if an image is well-registered, we compare the contour mask with the PET image. We first normalize the image and set a threshold of 0.35. We then calculate the sum of pixels within the contour mask, and if this value is too high, we can assume the image is not well-registered.
 
 
-We manually checked a few image sets, among which 69 images were misregistered. For these images, the sum of pixels within the contour mask was high, and using this metric, the pipeline detected 80% of the problematic images.
-
 !!!note
     It is important to note that the t1-linear pipeline must be run prior to the pet-linear pipeline, as an image that does not pass the t1-linear quality check will not pass the pet-linear check either. For best results, we recommend running the `quality-check pet-linear` on the list of subjects that have passed the t1-linear quality check.
 

@@ -23,7 +23,7 @@ from clinicadl.utils import cli_param
 @click.option(
     "--threshold",
     type=float,
-    default=0.5,
+    default=0.9,
     show_default=True,
     help="The threshold on the output probability to decide if the image passed or failed.",
 )
@@ -49,6 +49,7 @@ def cli(
     """
     from .quality_check import quality_check as pet_linear_qc
 
+    print(caps_directory)
     pet_linear_qc(
         caps_directory,
         output_tsv,

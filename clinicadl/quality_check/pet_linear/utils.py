@@ -9,7 +9,7 @@ import numpy as np
 from clinicadl.utils.caps_dataset.data import MinMaxNormalization
 
 
-def distance(contour_np, image_np):
+def distance(contour_np, image_np, inside):
     """
     Return the sum of the pixels in the contour shape for image_np with a threshold of 0.35
 
@@ -26,8 +26,7 @@ def distance(contour_np, image_np):
 
     shape3D = image_np.shape
     img_copy = copy(image_np)
-    norm = MinMaxNormalization()
-    img_norm_thresh = norm(img_copy)
+    img_norm_thresh = MinMaxNormalization()(img_copy)
     img_norm_thresh[img_norm_thresh < 0.35] = 0
 
     if not (shape3D == contour_np.shape):
@@ -42,4 +41,4 @@ def distance(contour_np, image_np):
         if tmp_contour == 1:
             sum_in_contour += tmp_norm_tresh
 
-    return sum_in_contour
+    return 1 - (sum_in_contour / inside)
