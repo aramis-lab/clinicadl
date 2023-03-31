@@ -9,7 +9,7 @@ import numpy as np
 from clinicadl.utils.caps_dataset.data import MinMaxNormalization
 
 
-def distance(contour_np, image_np, inside):
+def get_metric(contour_np, image_np, inside):
     """
     Return the sum of the pixels in the contour shape for image_np with a threshold of 0.35
 

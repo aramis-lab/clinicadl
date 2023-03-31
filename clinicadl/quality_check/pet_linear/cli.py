@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import click
 
 from clinicadl.utils import cli_param
@@ -19,6 +17,7 @@ from clinicadl.utils import cli_param
     "suvr_reference_region",
     type=str,
 )
+@cli_param.option.use_uncropped_image
 @cli_param.option.participant_list
 @click.option(
     "--threshold",
@@ -33,6 +32,7 @@ def cli(
     output_tsv,
     acq_label,
     suvr_reference_region,
+    use_uncropped_image,
     participants_tsv,
     threshold,
     n_proc,
@@ -49,12 +49,12 @@ def cli(
     """
     from .quality_check import quality_check as pet_linear_qc
 
-    print(caps_directory)
     pet_linear_qc(
         caps_directory,
         output_tsv,
         acq_label,
         suvr_reference_region,
+        use_uncropped_image=use_uncropped_image,
         participants_tsv=participants_tsv,
         threshold=threshold,
         n_proc=n_proc,
