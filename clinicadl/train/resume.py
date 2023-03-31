@@ -14,7 +14,7 @@ def replace_arg(options, key_name, value):
         setattr(options, key_name, value)
 
 
-def automatic_resume(model_path, user_split_list=None, verbose=0):
+def automatic_resume(model_path: Path, user_split_list=None, verbose=0):
     logger = getLogger("clinicadl")
 
     verbose_list = ["warning", "info", "debug"]
@@ -24,8 +24,8 @@ def automatic_resume(model_path, user_split_list=None, verbose=0):
     stopped_splits = [
         split
         for split in existing_split_list
-        if (Path(model_path) / f"{maps_manager.split_name}-{split}" / "tmp")
-        in list((Path(model_path) / f"{maps_manager.split_name}-{split}").iterdir())
+        if (model_path / f"{maps_manager.split_name}-{split}" / "tmp")
+        in list((model_path / f"{maps_manager.split_name}-{split}").iterdir())
     ]
 
     # Find finished split
@@ -35,7 +35,7 @@ def automatic_resume(model_path, user_split_list=None, verbose=0):
             performance_dir_list = [
                 performance_dir
                 for performance_dir in list(
-                    (Path(model_path) / f"{maps_manager.split_name}-{split}").iterdir()
+                    (model_path / f"{maps_manager.split_name}-{split}").iterdir()
                 )
                 if "best-" in performance_dir.name
             ]

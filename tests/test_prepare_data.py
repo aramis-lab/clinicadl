@@ -39,19 +39,19 @@ def test_prepare_data(cmdopt, tmp_path, test_name):
 
     input_caps_directory = input_dir / "caps"
     if test_name == "image":
-        if os.path.exists(tmp_out_dir / "caps_image"):
+        if (tmp_out_dir / "caps_image").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_image")
         shutil.copytree(input_caps_directory, tmp_out_dir / "caps_image")
         parameters = {"mode": "image"}
 
     elif test_name == "patch":
-        if os.path.exists(tmp_out_dir / "caps_patch"):
+        if (tmp_out_dir / "caps_patch").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_patch")
         shutil.copytree(input_caps_directory, tmp_out_dir / "caps_patch")
         parameters = {"mode": "patch", "patch_size": 50, "stride_size": 50}
 
     elif test_name == "slice":
-        if os.path.exists(tmp_out_dir / "caps_slice"):
+        if (tmp_out_dir / "caps_slice").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_slice")
         shutil.copytree(input_caps_directory, tmp_out_dir / "caps_slice")
         parameters = {
@@ -62,7 +62,7 @@ def test_prepare_data(cmdopt, tmp_path, test_name):
         }
 
     elif test_name == "roi":
-        if os.path.exists(tmp_out_dir / "caps_roi"):
+        if (tmp_out_dir / "caps_roi").is_dir():
             shutil.rmtree(tmp_out_dir / "caps_roi")
         shutil.copytree(input_caps_directory, tmp_out_dir / "caps_roi")
         parameters = {
@@ -108,7 +108,7 @@ def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
             ] = "graymatter_space-Ixi549Space_modulated-off_probability.nii.gz"
             parameters["roi_custom_template"] = "Ixi549Space"
             parameters["extract_json"] = f"{modality}_mode-{parameters['mode']}.json"
-            tsv_file = join(input_dir, "subjects.tsv")
+            tsv_file = input_dir / "subjects.tsv"
             mode = parameters["mode"]
             extract_generic(out_dir, mode, tsv_file, parameters)
 
@@ -131,12 +131,10 @@ def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
 
 def extract_generic(out_dir, mode, tsv_file, parameters):
 
-    from os.path import join
-
     from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
 
     DeepLearningPrepareData(
-        caps_directory=join(out_dir, f"caps_{mode}"),
+        caps_directory=out_dir / f"caps_{mode}",
         tsv_file=tsv_file,
         n_proc=1,
         parameters=parameters,

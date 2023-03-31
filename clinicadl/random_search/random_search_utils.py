@@ -6,12 +6,13 @@ import toml
 
 from clinicadl.train.train_utils import build_train_dict
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
+from clinicadl.utils.maps_manager.maps_manager_utils import change_str_to_path
 from clinicadl.utils.preprocessing import read_preprocessing
 
 
-def get_space_dict(launch_directory: str) -> Dict[str, Any]:
+def get_space_dict(launch_directory: Path) -> Dict[str, Any]:
     """Transforms the TOML dictionary in one dimension dictionary."""
-    toml_path = Path(launch_directory) / "random_search.toml"
+    toml_path = launch_directory / "random_search.toml"
     toml_options = toml.load(toml_path)
 
     if "Random_Search" not in toml_options:
@@ -24,6 +25,7 @@ def get_space_dict(launch_directory: str) -> Dict[str, Any]:
     for key in toml_options["Random_Search"]:
         space_dict[key] = toml_options["Random_Search"][key]
 
+    space_dict = change_str_to_path(space_dict)
     # Check presence of mandatory arguments
     mandatory_arguments = [
         "network_task",
@@ -58,7 +60,7 @@ def get_space_dict(launch_directory: str) -> Dict[str, Any]:
 
     # Mode and preprocessing
     preprocessing_json = (
-        Path(space_dict["caps_directory"])
+        space_dict["caps_directory"]
         / "tensor_extraction"
         / space_dict.pop("preprocessing_json")
     )

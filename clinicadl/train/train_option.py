@@ -13,7 +13,7 @@ output_maps = cli_param.argument.output_maps
 config_file = click.option(
     "--config_file",
     "-c",
-    type=click.File(),
+    type=click.Path(exists=True),
     help="Path to the TOML or JSON file containing the values of the options needed for training.",
 )
 # Computational
@@ -256,6 +256,13 @@ accumulation_steps = cli_param.option_group.optimization_group.option(
     # default=1,
     help="Accumulates gradients during the given number of iterations before performing the weight update "
     "in order to virtually increase the size of the batch.",
+)
+profiler = cli_param.option_group.optimization_group.option(
+    "--profiler/--no-profiler",
+    type=bool,
+    default=None,
+    help="Use `--profiler` to enable Pytorch profiler for the first 30 steps after a short warmup. "
+    "It will make an execution trace and some statistics about the CPU and GPU usage.",
 )
 # transfer learning
 transfer_path = cli_param.option_group.transfer_learning_group.option(

@@ -1,4 +1,5 @@
 from logging import getLogger
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -10,7 +11,7 @@ logger = getLogger("clinicadl.tsvtools.get_metadata")
 
 
 def get_metadata(
-    data_tsv: str, merged_tsv: str, variables_of_interest=None
+    data_tsv: Path, merged_tsv: Path, variables_of_interest=None
 ) -> pd.DataFrame:
     """
     Get the meta data in metadata_df to write them in output_df.

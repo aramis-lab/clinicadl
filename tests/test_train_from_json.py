@@ -16,14 +16,14 @@ def test_json_compatibility(cmdopt, tmp_path):
     tmp_out_dir.mkdir(parents=True)
 
     split = "0"
-    config_json = os.path.join(input_dir, "maps_roi_cnn/maps.json")
-    reproduced_maps_dir = os.path.join(tmp_out_dir, "maps_reproduced")
+    config_json = input_dir / "maps_roi_cnn/maps.json"
+    reproduced_maps_dir = tmp_out_dir / "maps_reproduced"
 
-    if Path(reproduced_maps_dir).exists():
+    if reproduced_maps_dir.exists():
         shutil.rmtree(reproduced_maps_dir)
 
     flag_error = not system(
-        f"clinicadl train from_json {config_json} {reproduced_maps_dir} -s {split}"
+        f"clinicadl train from_json {str(config_json)} {str(reproduced_maps_dir)} -s {split}"
     )
     assert flag_error
 
@@ -36,38 +36,39 @@ def test_determinism(cmdopt, tmp_path):
     tmp_out_dir = tmp_path / "train_from_json" / "out"
     tmp_out_dir.mkdir(parents=True)
 
-    maps_dir = path.join(tmp_out_dir, "maps_roi_cnn")
-    reproduced_maps_dir = path.join(tmp_out_dir, "reproduced_MAPS")
-    if Path(maps_dir).exists():
+    maps_dir = tmp_out_dir / "maps_roi_cnn"
+    reproduced_maps_dir = tmp_out_dir / "reproduced_MAPS"
+    if maps_dir.exists():
         shutil.rmtree(maps_dir)
-    if Path(reproduced_maps_dir).exists():
+    if reproduced_maps_dir.exists():
         shutil.rmtree(reproduced_maps_dir)
     test_input = [
         "train",
         "classification",
-        path.join(str(input_dir), "caps_roi"),
+        str(input_dir / "caps_roi"),
         "t1-linear_mode-roi.json",
-        path.join(str(input_dir), "labels_list", "2_fold"),
+        str(input_dir / "labels_list" / "2_fold"),
         str(maps_dir),
         "-c",
-        path.join(str(input_dir), "reproducibility_config.toml"),
+        str(input_dir / "reproducibility_config.toml"),
+        "--no-gpu",
     ]
     # Run first experiment
     flag_error = not system("clinicadl " + " ".join(test_input))
     assert flag_error
     input_hashes = create_hashes_dict(
-        Path(maps_dir),
+        maps_dir,
         ignore_pattern_list=["tensorboard", ".log", "training.tsv", "maps.json"],
     )
 
     # Reproduce experiment
-    config_json = tmp_out_dir.joinpath("maps_roi_cnn/maps.json")
+    config_json = tmp_out_dir / "maps_roi_cnn/maps.json"
     flag_error = not system(
-        f"clinicadl train from_json {config_json} {reproduced_maps_dir} -s 0"
+        f"clinicadl train from_json {str(config_json)} {str(reproduced_maps_dir)} -s 0"
     )
     assert flag_error
     compare_folders_with_hashes(
-        Path(reproduced_maps_dir),
+        reproduced_maps_dir,
         input_hashes,
         ignore_pattern_list=["tensorboard", ".log", "training.tsv", "maps.json"],
     )

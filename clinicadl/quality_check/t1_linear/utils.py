@@ -17,7 +17,11 @@ class QCDataset(Dataset):
     """Dataset of MRI organized in a CAPS folder."""
 
     def __init__(
-        self, img_dir, data_df, use_extracted_tensors=False, use_uncropped_image=True
+        self,
+        img_dir: Path,
+        data_df,
+        use_extracted_tensors=False,
+        use_uncropped_image=True,
     ):
         """
         Args:
@@ -60,16 +64,14 @@ class QCDataset(Dataset):
         if self.use_extracted_tensors:
             file_type = self.preprocessing_dict["file_type"]
             file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
-            image_path_list = clinica_file_reader(
-                [subject],
-                [session],
-                self.img_dir,
-                file_type,
-            )
-            image_filename = Path(image_path_list[0][0]).name
+            image_output = clinica_file_reader(
+                [subject], [session], self.img_dir, file_type
+            )[0]
+            image_path = Path(image_output[0])
+            image_filename = image_path.name
             folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
             image_dir = (
-                Path(self.img_dir)
+                self.img_dir
                 / "subjects"
                 / subject
                 / session

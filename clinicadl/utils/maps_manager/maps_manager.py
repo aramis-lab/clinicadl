@@ -28,6 +28,8 @@ from clinicadl.utils.logger import setup_logging
 from clinicadl.utils.maps_manager.logwriter import LogWriter
 from clinicadl.utils.maps_manager.maps_manager_utils import (
     add_default_values,
+    change_path_to_str,
+    change_str_to_path,
     read_json,
 )
 from clinicadl.utils.metric_module import RetainBest
@@ -44,7 +46,7 @@ level_list: List[str] = ["warning", "info", "debug"]
 class MapsManager:
     def __init__(
         self,
-        maps_path: str,
+        maps_path: Path,
         parameters: Dict[str, Any] = None,
         verbose: str = "info",
     ):
@@ -59,7 +61,6 @@ class MapsManager:
         verbose: str
             Logging level ("debug", "info", "warning")
         """
-        maps_path = Path(maps_path)
         self.maps_path = maps_path.resolve()
         if verbose is not None:
             if verbose not in level_list:
@@ -73,7 +74,8 @@ class MapsManager:
                     f"MAPS was not found at {maps_path}."
                     f"To initiate a new MAPS please give a train_dict."
                 )
-            self.parameters = self.get_parameters()
+            test_parameters = self.get_parameters()
+            self.parameters = change_str_to_path(test_parameters)
             self.task_manager = self._init_task_manager(n_classes=self.output_size)
             self.split_name = (
                 self._check_split_wording()
@@ -82,6 +84,8 @@ class MapsManager:
         # Initiate MAPS
         else:
             self._check_args(parameters)
+            print(parameters)
+            parameters["tsv_path"] = Path(parameters["tsv_path"])
 
             if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
                 maps_path.is_dir() and list(maps_path.iterdir())  # Non empty folder
@@ -96,6 +100,7 @@ class MapsManager:
             logger.info(f"A new MAPS was created at {maps_path}")
 
             self.write_parameters(self.maps_path, self.parameters)
+
             self._write_requirements_version()
 
             self.split_name = "split"  # Used only for retro-compatibility
@@ -128,7 +133,7 @@ class MapsManager:
         split_manager = self._init_split_manager(split_list)
         for split in split_manager.split_iterator():
             split_path = self.maps_path / f"{self.split_name}-{split}"
-            if Path(split_path).is_dir():
+            if split_path.is_dir():
                 if overwrite:
                     shutil.rmtree(split_path)
                 else:
@@ -177,8 +182,8 @@ class MapsManager:
     def predict(
         self,
         data_group: str,
-        caps_directory: str = None,
-        tsv_path: str = None,
+        caps_directory: Path = None,
+        tsv_path: Path = None,
         split_list: List[int] = None,
         selection_metrics: List[str] = None,
         multi_cohort: bool = False,
@@ -265,7 +270,7 @@ class MapsManager:
                 tsv_pattern = f"{data_group}*.tsv"
 
                 for tsv_file in tsv_dir.glob(tsv_pattern):
-                    Path(tsv_file).unlink()
+                    tsv_file.unlink()
 
             if self.multi_network:
                 for network in range(self.num_networks):
@@ -372,8 +377,8 @@ class MapsManager:
         data_group,
         name,
         method,
-        caps_directory=None,
-        tsv_path=None,
+        caps_directory: Path = None,
+        tsv_path: Path = None,
         split_list=None,
         selection_metrics=None,
         multi_cohort=False,
@@ -386,33 +391,55 @@ class MapsManager:
         overwrite=False,
         overwrite_name=False,
         level=None,
+        save_nifti=False,
     ):
         """
         Performs the interpretation task on a subset of caps_directory defined in a TSV file.
         The mean interpretation is always saved, to save the individual interpretations set save_individual to True.
-        Args:
-            data_group (str): name of the data group interpreted.
-            name (str): name of the interpretation procedure.
-            method (str): method used for extraction (ex: gradients, grad-cam...).
-            caps_directory (str): path to the CAPS folder. For more information please refer to
-                [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
-                Default will load the value of an existing data group.
-            tsv_path (str): path to a TSV file containing the list of participants and sessions to test.
-                Default will load the DataFrame of an existing data group.
-            split_list (list[int]): list of splits to interpret. Default perform interpretation on all splits available.
-            selection_metrics (list[str]): list of selection metrics to interpret.
-                Default performs the interpretation on all selection metrics available.
-            multi_cohort (bool): If True considers that tsv_path is the path to a multi-cohort TSV.
-            diagnoses (list[str]): List of diagnoses to load if tsv_path is a split_directory.
-                Default uses the same as in training step.
-            target_node (int): Node from which the interpretation is computed.
-            save_individual (bool): If True saves the individual map of each participant / session couple.
-            batch_size (int): If given, sets the value of batch_size, else use the same as in training step.
-            n_proc (int): If given, sets the value of num_workers, else use the same as in training step.
-            gpu (bool): If given, a new value for the device of the model will be computed.
-            overwrite (bool): If True erase the occurrences of data_group.
-            overwrite_name (bool): If True erase the occurrences of name.
-            level (int): layer number in the convolutional part after which the feature map is chosen.
+
+        Parameters
+        ----------
+        data_group: str
+            Name of the data group interpreted.
+        name: str
+            Name of the interpretation procedure.
+        method: str
+            Method used for extraction (ex: gradients, grad-cam...).
+        caps_directory: str (Path)
+            Path to the CAPS folder. For more information please refer to
+            [clinica documentation](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/).
+            Default will load the value of an existing data group.
+        tsv_path: str (Path)
+            Path to a TSV file containing the list of participants and sessions to test.
+            Default will load the DataFrame of an existing data group.
+        split_list: list of int
+            List of splits to interpret. Default perform interpretation on all splits available.
+        selection_metrics: list of str
+            List of selection metrics to interpret.
+            Default performs the interpretation on all selection metrics available.
+        multi_cohort: bool
+            If True considers that tsv_path is the path to a multi-cohort TSV.
+        diagnoses: list of str
+            List of diagnoses to load if tsv_path is a split_directory.
+            Default uses the same as in training step.
+        target_node: int
+            Node from which the interpretation is computed.
+        save_individual: bool
+            If True saves the individual map of each participant / session couple.
+        batch_size: int
+            If given, sets the value of batch_size, else use the same as in training step.
+        n_proc: int
+            If given, sets the value of num_workers, else use the same as in training step.
+        gpu: bool
+            If given, a new value for the device of the model will be computed.
+        overwrite: bool
+            If True erase the occurrences of data_group.
+        overwrite_name: bool
+            If True erase the occurrences of name.
+        level: int
+            Layer number in the convolutional part after which the feature map is chosen.
+        save_nifi : bool
+            If True, save the interpretation map in nifti format.
         """
 
         from torch.utils.data import DataLoader
@@ -519,9 +546,34 @@ class MapsManager:
                                 / f"{data['participant_id'][i]}_{data['session_id'][i]}_{self.mode}-{data[f'{self.mode}_id'][i]}_map.pt"
                             )
                             torch.save(map_pt[i], single_path)
+                            if save_nifti:
+                                import nibabel as nib
+                                from numpy import eye
+
+                                single_nifti_path = (
+                                    results_path
+                                    / f"{data['participant_id'][i]}_{data['session_id'][i]}_{self.mode}-{data[f'{self.mode}_id'][i]}_map.nii.gz"
+                                )
+
+                                output_nii = nib.Nifti1Image(map_pt[i].numpy(), eye(4))
+                                nib.save(output_nii, single_nifti_path)
+
                 for i, mode_map in enumerate(cum_maps):
                     mode_map /= len(data_test)
-                    torch.save(mode_map, results_path / f"mean_{self.mode}-{i}_map.pt")
+
+                    torch.save(
+                        mode_map,
+                        results_path / f"mean_{self.mode}-{i}_map.pt",
+                    )
+                    if save_nifti:
+                        import nibabel as nib
+                        from numpy import eye
+
+                        output_nii = nib.Nifti1Image(mode_map, eye(4))
+                        nib.save(
+                            output_nii,
+                            results_path / f"mean_{self.mode}-{i}_map.nii.gz",
+                        )
 
     ###################################
     # High-level functions templates  #
@@ -764,57 +816,63 @@ class MapsManager:
 
         retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
 
+        profiler = self._init_profiler()
+
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
 
             model.zero_grad()
             evaluation_flag, step_flag = True, True
-            for i, data in enumerate(train_loader):
 
-                _, loss_dict = model.compute_outputs_and_loss(data, criterion)
-                logger.debug(f"Train loss dictionnary {loss_dict}")
-                loss = loss_dict["loss"]
-                loss.backward()
+            with profiler:
+                for i, data in enumerate(train_loader):
 
-                if (i + 1) % self.accumulation_steps == 0:
-                    step_flag = False
-                    optimizer.step()
-                    optimizer.zero_grad()
+                    _, loss_dict = model.compute_outputs_and_loss(data, criterion)
+                    logger.debug(f"Train loss dictionnary {loss_dict}")
+                    loss = loss_dict["loss"]
+                    loss.backward()
 
-                    del loss
+                    if (i + 1) % self.accumulation_steps == 0:
+                        step_flag = False
+                        optimizer.step()
+                        optimizer.zero_grad()
 
-                    # Evaluate the model only when no gradients are accumulated
-                    if (
-                        self.evaluation_steps != 0
-                        and (i + 1) % self.evaluation_steps == 0
-                    ):
-                        evaluation_flag = False
+                        del loss
 
-                        _, metrics_train = self.task_manager.test(
-                            model, train_loader, criterion
-                        )
-                        _, metrics_valid = self.task_manager.test(
-                            model, valid_loader, criterion
-                        )
+                        # Evaluate the model only when no gradients are accumulated
+                        if (
+                            self.evaluation_steps != 0
+                            and (i + 1) % self.evaluation_steps == 0
+                        ):
+                            evaluation_flag = False
 
-                        model.train()
-                        train_loader.dataset.train()
+                            _, metrics_train = self.task_manager.test(
+                                model, train_loader, criterion
+                            )
+                            _, metrics_valid = self.task_manager.test(
+                                model, valid_loader, criterion
+                            )
 
-                        log_writer.step(
-                            epoch,
-                            i,
-                            metrics_train,
-                            metrics_valid,
-                            len(train_loader),
-                        )
-                        logger.info(
-                            f"{self.mode} level training loss is {metrics_train['loss']} "
-                            f"at the end of iteration {i}"
-                        )
-                        logger.info(
-                            f"{self.mode} level validation loss is {metrics_valid['loss']} "
-                            f"at the end of iteration {i}"
-                        )
+                            model.train()
+                            train_loader.dataset.train()
+
+                            log_writer.step(
+                                epoch,
+                                i,
+                                metrics_train,
+                                metrics_valid,
+                                len(train_loader),
+                            )
+                            logger.info(
+                                f"{self.mode} level training loss is {metrics_train['loss']} "
+                                f"at the end of iteration {i}"
+                            )
+                            logger.info(
+                                f"{self.mode} level validation loss is {metrics_valid['loss']} "
+                                f"at the end of iteration {i}"
+                            )
+
+                    profiler.step()
 
             # If no step has been performed, raise Exception
             if step_flag:
@@ -962,7 +1020,6 @@ class MapsManager:
                 gpu=gpu,
                 network=network,
             )
-
             prediction_df, metrics = self.task_manager.test(
                 model, dataloader, criterion, use_labels=use_labels
             )
@@ -1039,8 +1096,8 @@ class MapsManager:
                 session_id = data["session_id"]
                 input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
                 output_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
-                nib.save(input_nii, Path(nifti_path) / input_filename)
-                nib.save(output_nii, Path(nifti_path) / output_filename)
+                nib.save(input_nii, nifti_path / input_filename)
+                nib.save(output_nii, nifti_path / output_filename)
 
     def _compute_output_tensors(
         self,
@@ -1103,8 +1160,8 @@ class MapsManager:
                 output_filename = (
                     f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
                 )
-                torch.save(image, Path(tensor_path) / input_filename)
-                torch.save(output, Path(tensor_path) / output_filename)
+                torch.save(image, tensor_path / input_filename)
+                torch.save(output, tensor_path / output_filename)
 
     def _ensemble_prediction(
         self,
@@ -1150,15 +1207,14 @@ class MapsManager:
             "mode",
             "network_task",
         ]
-
         for arg in mandatory_arguments:
             if arg not in parameters:
                 raise ClinicaDLArgumentError(
                     f"The values of mandatory arguments {mandatory_arguments} should be set. "
                     f"No value was given for {arg}."
                 )
-        parameters = add_default_values(parameters)
-        self.parameters = parameters
+        self.parameters = add_default_values(parameters)
+        self.parameters = change_str_to_path(parameters)
         if self.parameters["gpu"]:
             check_gpu()
 
@@ -1325,7 +1381,7 @@ class MapsManager:
                 when caps_directory or df are given but data group already exists
                 when caps_directory or df are not given and data group does not exist
         """
-        group_dir = Path(self.maps_path) / "groups" / data_group
+        group_dir = self.maps_path / "groups" / data_group
         logger.debug(f"Group path {group_dir}")
         if group_dir.is_dir():  # Data group already exists
             if overwrite:
@@ -1371,18 +1427,24 @@ class MapsManager:
     # File writers                #
     ###############################
     @staticmethod
-    def write_parameters(json_path, parameters, verbose=True):
+    def write_parameters(json_path: Path, parameters, verbose=True):
+        from pathlib import PosixPath
+
         """Write JSON files of parameters."""
         logger.debug("Writing parameters...")
-        Path(json_path).mkdir(parents=True, exist_ok=True)
+        json_path.mkdir(parents=True, exist_ok=True)
 
+        parameters = change_path_to_str(parameters)
+        print("just before error")
+        print(parameters)
         # save to json file
         json_data = json.dumps(parameters, skipkeys=True, indent=4)
-        json_path = Path(json_path) / "maps.json"
+        json_path = json_path / "maps.json"
         if verbose:
             logger.info(f"Path of json file: {json_path}")
         with json_path.open(mode="w") as f:
             f.write(json_data)
+        parameters = change_str_to_path(parameters)
 
     def _write_requirements_version(self):
         """Writes the environment.txt file."""
@@ -1411,9 +1473,7 @@ class MapsManager:
         )
         train_df = train_df[["participant_id", "session_id"]]
         if self.transfer_path:
-            transfer_train_path = (
-                Path(self.transfer_path) / "groups" / "train+validation.tsv"
-            )
+            transfer_train_path = self.transfer_path / "groups" / "train+validation.tsv"
             transfer_train_df = pd.read_csv(transfer_train_path, sep="\t")
             transfer_train_df = transfer_train_df[["participant_id", "session_id"]]
             train_df = pd.concat([train_df, transfer_train_df])
@@ -1423,7 +1483,12 @@ class MapsManager:
         )
 
     def _write_data_group(
-        self, data_group, df, caps_directory=None, multi_cohort=None, label=None
+        self,
+        data_group,
+        df,
+        caps_directory: Path = None,
+        multi_cohort: bool = None,
+        label=None,
     ):
         """
         Check that a data_group is not already written and writes the characteristics of the data group
@@ -1444,7 +1509,7 @@ class MapsManager:
         if label is not None and label in df.columns.values:
             columns += [label]
 
-        df.to_csv(Path(group_path) / "data.tsv", sep="\t", columns=columns, index=False)
+        df.to_csv(group_path / "data.tsv", sep="\t", columns=columns, index=False)
         self.write_parameters(
             group_path,
             {
@@ -1564,7 +1629,7 @@ class MapsManager:
 
     @staticmethod
     def write_description_log(
-        log_dir,
+        log_dir: Path,
         data_group,
         caps_dict,
         df,
@@ -1578,8 +1643,8 @@ class MapsManager:
             caps_dict (dict[str, str]): Dictionary of the CAPS folders used for the task
             df (pd.DataFrame): DataFrame of the meta-data used for the task.
         """
-        Path(log_dir).mkdir(parents=True, exist_ok=True)
-        log_path = Path(log_dir) / "description.log"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_path = log_dir / "description.log"
         with log_path.open(mode="w") as f:
             f.write(f"Prediction {data_group} group - {datetime.now()}\n")
             f.write(f"Data loaded from CAPS directories: {caps_dict}\n")
@@ -1742,7 +1807,7 @@ class MapsManager:
     ###############################
     def _init_model(
         self,
-        transfer_path=None,
+        transfer_path: Path = None,
         transfer_selection=None,
         split=None,
         resume=False,
@@ -1868,6 +1933,36 @@ class MapsManager:
                 f"Please choose between classification, regression and reconstruction."
             )
 
+    def _init_profiler(self):
+        if self.profiler:
+            from torch.profiler import (
+                ProfilerActivity,
+                profile,
+                schedule,
+                tensorboard_trace_handler,
+            )
+
+            time = datetime.now().strftime("%H:%M:%S")
+            filename = [self.maps_path / "profiler" / f"clinicadl_{time}"]
+            # When ClinicaDL will be updated with Distributed Data Parallelism,
+            # the next line will be handy, to make sure all processes write in the same file
+            # dist.broadcast_object_list(filename, src=0)
+            profiler = profile(
+                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+                schedule=schedule(wait=2, warmup=2, active=30, repeat=1),
+                on_trace_ready=tensorboard_trace_handler(filename[0]),
+                profile_memory=True,
+                record_shapes=False,
+                with_stack=False,
+                with_flops=False,
+            )
+        else:
+            from contextlib import nullcontext
+
+            profiler = nullcontext()
+            profiler.step = lambda *args, **kwargs: None
+        return profiler
+
     ###############################
     # Getters                     #
     ###############################
@@ -1892,7 +1987,7 @@ class MapsManager:
             / data_group
         )
         log_path = log_dir / "description.log"
-        with Path(log_path).open(mode="r") as f:
+        with log_path.open(mode="r") as f:
             content = f.read()
 
     def get_group_info(
@@ -1926,7 +2021,7 @@ class MapsManager:
         json_path = group_path / "maps.json"
         with json_path.open(mode="r") as f:
             parameters = json.load(f)
-
+        parameters = change_str_to_path(parameters)
         return df, parameters
 
     def get_parameters(self):
