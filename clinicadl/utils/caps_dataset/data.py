@@ -12,6 +12,7 @@ import torch
 import torchvision.transforms as transforms
 from clinica.utils.exceptions import ClinicaCAPSError
 from torch.utils.data import Dataset
+import torchio as tio
 
 from clinicadl.prepare_data.prepare_data_utils import (
     PATTERN_DICT,
@@ -888,6 +889,26 @@ class GaussianSmoothing(object):
         return sample
 
 
+class RandomMotion(object):
+    """Applies a Random Motion"""
+
+    def __init__(self, translation=(2, 4), rotation=(2, 4), num_transforms=2):
+        self.rotation = rotation
+        self.translation = translation
+        self.num_transforms = num_transforms
+
+    def __call__(self, image):
+
+        motion = tio.RandomMotion(
+            degrees=self.rotation,
+            translation=self.translation,
+            num_transforms=self.num_transforms,
+        )
+        image = motion(image)
+
+        return image
+
+
 class ToTensor(object):
     """Convert image type to Tensor and diagnosis to diagnosis code"""
 
@@ -939,6 +960,7 @@ def get_transforms(
         "Erasing": transforms.RandomErasing(),
         "CropPad": RandomCropPad(10),
         "Smoothing": RandomSmoothing(),
+        "Motion": RandomMotion((2, 4), (2, 4), 2),
         "None": None,
     }
     if data_augmentation:
