@@ -91,7 +91,7 @@ def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
         parameters["preprocessing"] = modality
         if modality == "pet-linear":
             for acq in acquisition_label:
-                parameters["acq_label"] = acq
+                parameters["tracer"] = acq
                 parameters["suvr_reference_region"] = "pons2"
                 parameters["use_uncropped_image"] = False
                 parameters[

@@ -45,7 +45,7 @@ def generate_random_dataset(
     preprocessing: str = "t1-linear",
     multi_cohort: bool = False,
     uncropped_image: bool = False,
-    acq_label: Optional[str] = None,
+    tracer: Optional[str] = None,
     suvr_reference_region: Optional[str] = None,
 ):
     """
@@ -75,7 +75,7 @@ def generate_random_dataset(
         If True caps_directory is the path to a TSV file linking cohort names and paths.
     uncropped_image: bool
         If True the uncropped image of `t1-linear` or `pet-linear` will be used.
-    acq_label: str
+    tracer: str
         name of the tracer when using `pet-linear` preprocessing.
     suvr_reference_region: str
         name of the reference region when using `pet-linear` preprocessing.
@@ -112,7 +112,7 @@ def generate_random_dataset(
 
     # Find appropriate preprocessing file type
     file_type = find_file_type(
-        preprocessing, uncropped_image, acq_label, suvr_reference_region
+        preprocessing, uncropped_image, tracer, suvr_reference_region
     )
 
     image_path = Path(
@@ -168,7 +168,7 @@ def generate_trivial_dataset(
     atrophy_percent: float = 60,
     multi_cohort: bool = False,
     uncropped_image: bool = False,
-    acq_label: str = "fdg",
+    tracer: str = "fdg",
     suvr_reference_region: str = "pons",
 ):
     """
@@ -199,7 +199,7 @@ def generate_trivial_dataset(
         If True caps_directory is the path to a TSV file linking cohort names and paths.
     uncropped_image: bool
         If True the uncropped image of `t1-linear` or `pet-linear` will be used.
-    acq_label: str
+    tracer: str
         Name of the tracer when using `pet-linear` preprocessing.
     suvr_reference_region: str
         Name of the reference region when using `pet-linear` preprocessing.
@@ -280,7 +280,7 @@ def generate_trivial_dataset(
 
     # Find appropriate preprocessing file type
     file_type = find_file_type(
-        preprocessing, uncropped_image, acq_label, suvr_reference_region
+        preprocessing, uncropped_image, tracer, suvr_reference_region
     )
 
     for i in range(2 * n_subjects):

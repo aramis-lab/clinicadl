@@ -17,7 +17,7 @@ from clinicadl.utils.exceptions import ClinicaDLArgumentError
 def find_file_type(
     preprocessing: str,
     uncropped_image: bool,
-    acq_label: str,
+    tracer: str,
     suvr_reference_region: str,
 ) -> Dict[str, str]:
     if preprocessing == "t1-linear":
@@ -26,12 +26,12 @@ def find_file_type(
         else:
             file_type = T1W_LINEAR_CROPPED
     elif preprocessing == "pet-linear":
-        if acq_label is None or suvr_reference_region is None:
+        if tracer is None or suvr_reference_region is None:
             raise ClinicaDLArgumentError(
-                "acq_label and suvr_reference_region must be defined "
+                "tracer and suvr_reference_region must be defined "
                 "when using `pet-linear` preprocessing."
             )
-        file_type = pet_linear_nii(acq_label, suvr_reference_region, uncropped_image)
+        file_type = pet_linear_nii(tracer, suvr_reference_region, uncropped_image)
     else:
         raise NotImplementedError(
             f"Generation of synthetic data is not implemented for preprocessing {preprocessing}"

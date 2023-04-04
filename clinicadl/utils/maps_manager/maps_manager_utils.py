@@ -99,7 +99,7 @@ def read_json(json_path: Path) -> Dict[str, Any]:
             "preprocessing",
             "use_uncropped_image",
             "prepare_dl" "custom_suffix",
-            "acq_label",
+            "tracer",
             "suvr_reference_region",
             "patch_size",
             "stride_size",

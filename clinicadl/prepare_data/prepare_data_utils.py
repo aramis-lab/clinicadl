@@ -14,7 +14,7 @@ def get_parameters_dict(
     extract_json: str,
     use_uncropped_image: bool,
     custom_suffix: str,
-    acq_label: str,
+    tracer: str,
     suvr_reference_region: str,
 ) -> Dict[str, Any]:
     """
@@ -27,7 +27,7 @@ def get_parameters_dict(
         use_uncropped_image: If True the cropped version of the image is used
             (specific to t1-linear and pet-linear).
         custom_suffix: string used to identify images when modality is custom.
-        acq_label: name of the tracer (specific to PET pipelines).
+        tracer: name of the tracer (specific to PET pipelines).
         suvr_reference_region: name of the reference region for normalization
             specific to PET pipelines)
     Returns:
@@ -43,7 +43,7 @@ def get_parameters_dict(
     if modality == "custom":
         parameters["custom_suffix"] = custom_suffix
     if modality == "pet-linear":
-        parameters["acq_label"] = acq_label
+        parameters["tracer"] = tracer
         parameters["suvr_reference_region"] = suvr_reference_region
 
     parameters["extract_json"] = compute_extract_json(extract_json)
@@ -87,7 +87,7 @@ def compute_folder_and_file_type(
     elif parameters["preprocessing"] == "pet-linear":
         mod_subfolder = "pet_linear"
         file_type = pet_linear_nii(
-            parameters["acq_label"],
+            parameters["tracer"],
             parameters["suvr_reference_region"],
             parameters["use_uncropped_image"],
         )
