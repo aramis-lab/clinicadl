@@ -142,7 +142,6 @@ def generate_random_dataset(
     filename_pattern = "_".join(input_filename.split("_")[2::])
 
     def create_random_image(i):
-        # for i in range(2 * n_subjects):
         gauss = np.random.normal(mean, sigma, image.shape)
         participant_id = f"sub-RAND{i}"
         noisy_image = image + gauss
@@ -293,7 +292,6 @@ def generate_trivial_dataset(
     )
 
     def create_trivial_image(i, output_df):
-        # for i in range(2 * n_subjects):
         data_idx = i // 2
         label = i % 2
 
