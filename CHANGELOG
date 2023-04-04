@@ -18,7 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Add `--save_nifti` option for `interpret`command.
 * Add `--output_dir` argument for `tsvtools get-labels` command
 
-
 ### Changed
 
 ** Core: **
