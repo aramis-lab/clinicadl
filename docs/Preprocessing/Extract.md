@@ -211,8 +211,8 @@ plane using three identical channels (`rgb`) or one channel (`single`).
 - `--use_uncropped_image`: by default the features are extracted from 
   the cropped image (see the documentation of the [`pet-linear` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/PET_Linear/)). 
   You can deactivate this behaviour with the `--use_uncropped_image` flag.
-- `--acq_label`: the label given to the PET acquisition, specifying the tracer used 
-  (`acq-<acq_label>`). It can be for instance 'fdg' for <sup>18</sup>F-fluorodeoxyglucose 
+- `--tracer`: the label given to the PET acquisition, specifying the tracer used 
+  (`acq-<tracer>`). It can be for instance 'fdg' for <sup>18</sup>F-fluorodeoxyglucose 
   or 'av45' for <sup>18</sup>F-florbetapir.
 - `--suvr_reference_region`: the reference region used to perform intensity normalization 
   (i.e. dividing each voxel of the image by the average uptake in this region) resulting 
