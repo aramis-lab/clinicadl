@@ -150,7 +150,7 @@ where:
 
 - `CAPS_DIRECTORY` (Path) is the folder containing the results of the [`pet-linear` pipeline](https://aramislab.paris.inria.fr/clinica/docs/public/latest/Pipelines/T1_Volume/) 
 - `OUTPUT_TSV` (Path) is the output TSV file in which you find for each subject, the `pass_probability` of being well-registrated.
-- `TRACER` is the label given to the PET acquisition, specifying the tracer used (trc-<acq_label>). It can be for instance `18FFDG` for 18F-fluorodeoxyglucose or `18FAV45` for 18F-florbetapir.
+- `TRACER` is the label given to the PET acquisition, specifying the tracer used (trc-<tracer>). It can be for instance `18FFDG` for 18F-fluorodeoxyglucose or `18FAV45` for 18F-florbetapir.
 - The reference region is used to perform intensity normalization (i.e. dividing each voxel of the image by the average uptake in this region) resulting in a standardized uptake value ratio (SUVR) map. It can be `cerebellumPons` or`cerebellumPons2` (used for amyloid tracers) and `pons` or `pons2` (used for FDG). See PET introduction for more details about masks versions.
 
 
