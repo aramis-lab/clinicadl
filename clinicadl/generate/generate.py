@@ -16,7 +16,6 @@ from clinica.utils.inputs import RemoteFileStructure, clinica_file_reader, fetch
 from joblib import Parallel, delayed
 from nilearn.image import resample_to_img
 
-
 from clinicadl.prepare_data.prepare_data_utils import compute_extract_json
 from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.exceptions import DownloadError
@@ -344,7 +343,7 @@ def generate_trivial_dataset(
     for result in results_df:
         output_df = pd.concat([result, output_df])
 
-    output_df.to_csv(join(output_dir, "data.tsv"), sep="\t", index=False)
+    output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
     write_missing_mods(output_dir, output_df)
     logger.info(f"Trivial dataset was generated at {output_dir}")
 
