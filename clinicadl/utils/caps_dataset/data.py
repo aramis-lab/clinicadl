@@ -972,13 +972,13 @@ class RandomBlur(object):
 class RandomSwap(object):
     """Applies a Random Swap"""
 
-    def __init__(self, std):
+    def __init__(self, patch_size, num_iterations):
         self.patch_size = patch_size
         self.num_iterations = num_iterations
 
     def __call__(self, image):
 
-        swap = tio.RandomBlur(
+        swap = tio.RandomSwap(
             patch_size=self.patch_size, num_iterations=self.num_iterations
         )
         image = swap(image)
