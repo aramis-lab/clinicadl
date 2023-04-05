@@ -73,7 +73,7 @@ Options shared for all values of `NETWORK_TASK` are organized in groups:
     Default: `--longitudinal`.
     - `--normalize/--unnormalize` (bool) is a flag to disable min-max normalization that is performed by default. Default: `--normalize`.
     - `--data_augmentation` (List[str]) is the list of data augmentation transforms applied to the training data.
-    Must be chosen in [`None`, `Noise`, `Erasing`, `CropPad`, `Smoothing`]. Default: no data augmentation.
+    Must be chosen in [`None`, `Noise`, `Erasing`, `CropPad`, `Smoothing`, `Motion`, `Ghosting`, `Spike`, `BiasField`, `RandomBlur`, `RandomSwap`]. Default: no data augmentation.
     - `--sampler` (str) is the sampler used on the training set. It must be chosen in [`random`, `weighted`]. 
     `weighted` will give a stronger weight to underrepresented classes. Default: `random`.
     - `--multi_cohort` (bool) is a flag indicated that [multi-cohort training](Details.md#multi-cohort) is performed.
