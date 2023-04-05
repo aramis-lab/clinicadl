@@ -1042,7 +1042,7 @@ def get_transforms(
         "Spike": RandomSpike(1, (1, 3)),
         "BiasField": RandomBiasField(0.5),
         "RandomBlur": RandomBlur((0, 2)),
-        "RandomSwap"; RandomSwap(15,100),
+        "RandomSwap": RandomSwap(15, 100),
         "None": None,
     }
     if data_augmentation:
