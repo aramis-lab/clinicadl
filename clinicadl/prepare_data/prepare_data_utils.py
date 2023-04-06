@@ -370,20 +370,21 @@ def find_mask_path(
     candidates_pattern = f"*{mask_pattern}*_roi-{roi}_mask.nii*"
 
     desc = f"The mask should follow the pattern {candidates_pattern}. "
-    candidates = [e.as_posix() for e in masks_location.glob(candidates_pattern)]
+    candidates = [e for e in masks_location.glob(candidates_pattern)]
     if cropping is None:
-        pass
+        # pass
+        candidates2 = candidates
     elif cropping:
-        candidates = [mask for mask in candidates if "_desc-Crop_" in mask]
+        candidates2 = [mask for mask in candidates if "_desc-Crop_" in mask.name]
         desc += f"and contain '_desc-Crop_' string."
     else:
-        candidates = [mask for mask in candidates if "_desc-Crop_" not in mask]
+        candidates2 = [mask for mask in candidates if "_desc-Crop_" not in mask.name]
         desc += f"and not contain '_desc-Crop_' string."
 
-    if len(candidates) == 0:
+    if len(candidates2) == 0:
         return None, desc
     else:
-        return Path(min(candidates, key=len)), desc
+        return min(candidates2), desc
 
 
 def compute_output_pattern(mask_path: Path, crop_output):
@@ -510,9 +511,11 @@ def extract_roi_path(img_path: Path, mask_path: Path, uncrop_output: bool) -> st
 TEMPLATE_DICT = {
     "t1-linear": "MNI152NLin2009cSym",
     "pet-linear": "MNI152NLin2009cSym",
+    "flair-linear": "MNI152NLin2009cSym",
 }
 
 PATTERN_DICT = {
     "t1-linear": "res-1x1x1",
     "pet-linear": "res-1x1x1",
+    "flair-linear": "res-1x1x1",
 }
