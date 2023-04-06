@@ -130,9 +130,9 @@ def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
                     "extract_json"
                 ] = f"{modality}_crop-{not flag}_mode-{parameters['mode']}.json"
 
-                tsv_file = input_dir / "subjects.tsv"
+                # tsv_file = input_dir / "subjects.tsv"
                 mode = parameters["mode"]
-                extract_generic(out_dir, mode, tsv_file, parameters)
+                extract_generic(out_dir, mode, None, parameters)
 
         elif modality == "flair-linear":
             parameters["save_features"] = False
@@ -143,9 +143,9 @@ def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
                     "extract_json"
                 ] = f"{modality}_crop-{not flag}_mode-{parameters['mode']}.json"
 
-                tsv_file = input_dir / "subjects_flair.tsv"
+                # tsv_file = input_dir / "subjects_flair.tsv"
                 mode = f"{parameters['mode']}_flair"
-                extract_generic(out_dir, mode, tsv_file, parameters)
+                extract_generic(out_dir, mode, None, parameters)
         else:
             raise NotImplementedError(
                 f"Test for modality {modality} was not implemented."
