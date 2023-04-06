@@ -1,7 +1,6 @@
 """
 Automatically reject images incorrectly preprocessed pet-linear (Unified Segmentation) with ? criterion
 
-
 """
 
 from logging import getLogger

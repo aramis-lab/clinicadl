@@ -113,6 +113,7 @@ subjects_sessions_tsv = click.option(
     type=click.Path(exists=True, resolve_path=True, path_type=Path),
     help="TSV file containing a list of subjects with their sessions.",
 )
+
 extract_json = click.option(
     "-ej",
     "--extract_json",

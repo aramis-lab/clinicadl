@@ -2,6 +2,7 @@
 Produces a tsv file to study all the nii files and perform the quality check.
 """
 
+
 from copy import copy
 
 import numpy as np
