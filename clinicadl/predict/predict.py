@@ -23,6 +23,7 @@ def predict(
     save_tensor: bool = False,
     save_nifti: bool = False,
     save_latent_tensor: bool = False,
+    monte_carlo: int = None,
 ):
     """
     This function loads a MAPS and predicts the global metrics and individual values
@@ -51,11 +52,18 @@ def predict(
     # Check if task is reconstruction for "save_tensor" and "save_nifti"
     if save_tensor and maps_manager.network_task != "reconstruction":
         raise ClinicaDLArgumentError(
-            "Cannot save tensors if the network task is not reconstruction. Please remove --save_tensor option."
+            "Cannot save tensors if the network task is not reconstruction."
+            " Please remove --save_tensor option."
         )
     if save_nifti and maps_manager.network_task != "reconstruction":
         raise ClinicaDLArgumentError(
-            "Cannot save nifti if the network task is not reconstruction. Please remove --save_nifti option."
+            "Cannot save nifti if the network task is not reconstruction."
+            " Please remove --save_nifti option."
+        )
+    if monte_carlo and maps_manager.network_task != "reconstruction":
+        raise ClinicaDLArgumentError(
+            "Cannot use Monte Carlo if the network task is not reconstruction."
+            " Please remove --monte_carlo option."
         )
     maps_manager.predict(
         data_group,
@@ -74,4 +82,5 @@ def predict(
         save_tensor=save_tensor,
         save_nifti=save_nifti,
         save_latent_tensor=save_latent_tensor,
+        monte_carlo=monte_carlo,
     )

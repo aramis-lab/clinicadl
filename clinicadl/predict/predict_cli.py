@@ -10,7 +10,10 @@ from clinicadl.utils import cli_param
     "--caps_directory",
     type=click.Path(exists=True),
     default=None,
-    help="Data using CAPS structure, if different from the one used during network training.",
+    help=(
+        "Data using CAPS structure, if different from the one used during"
+        " network training."
+    ),
 )
 @click.option(
     "--participants_tsv",
@@ -23,7 +26,10 @@ from clinicadl.utils import cli_param
 @click.option(
     "--use_labels/--no_labels",
     default=True,
-    help="Set this option to --no_labels if your dataset does not contain ground truth labels.",
+    help=(
+        "Set this option to --no_labels if your dataset does not contain"
+        " ground truth labels."
+    ),
 )
 @click.option(
     "--selection_metrics",
@@ -46,21 +52,29 @@ from clinicadl.utils import cli_param
     "-d",
     type=str,
     multiple=True,
-    help="List of diagnoses used for inference. Is used only if PARTICIPANTS_TSV leads to a folder.",
+    help=(
+        "List of diagnoses used for inference. Is used only if"
+        " PARTICIPANTS_TSV leads to a folder."
+    ),
 )
 @click.option(
     "--label",
     type=str,
     default=None,
-    help="Target label used for training (if NETWORK_TASK in [`regression`, `classification`]). "
-    "Default will reuse the same label as during the training task.",
+    help=(
+        "Target label used for training (if NETWORK_TASK in [`regression`,"
+        " `classification`]). Default will reuse the same label as during the"
+        " training task."
+    ),
 )
 @click.option(
     "--save_tensor",
     type=bool,
     default=False,
     is_flag=True,
-    help="Save the reconstruction output in the MAPS in Pytorch tensor format.",
+    help=(
+        "Save the reconstruction output in the MAPS in Pytorch tensor format."
+    ),
 )
 @click.option(
     "--save_nifti",
@@ -75,6 +89,13 @@ from clinicadl.utils import cli_param
     default=False,
     is_flag=True,
     help="""Save the latent representation of the image.""",
+)
+@click.option(
+    "--monte_carlo",
+    type=int,
+    default=None,
+    is_flag=True,
+    help="""Save multiple outputs for a single input.""",
 )
 @cli_param.option.split
 @cli_param.option.selection_metrics
@@ -100,6 +121,7 @@ def cli(
     save_tensor,
     save_nifti,
     save_latent_tensor,
+    monte_carlo,
 ):
     """Infer the outputs of a trained model on a test set.
     INPUT_MAPS_DIRECTORY is the MAPS folder from where the model used for prediction will be loaded.
@@ -130,4 +152,5 @@ def cli(
         save_tensor=save_tensor,
         save_nifti=save_nifti,
         save_latent_tensor=save_latent_tensor,
+        monte_carlo=monte_carlo,
     )

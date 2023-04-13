@@ -17,7 +17,9 @@ from clinicadl.utils.network.network import Network
 class TaskManager:
     def __init__(self, mode: str, n_classes: int = None):
         self.mode = mode
-        self.metrics_module = MetricModule(self.evaluation_metrics, n_classes=n_classes)
+        self.metrics_module = MetricModule(
+            self.evaluation_metrics, n_classes=n_classes
+        )
 
     @property
     @abstractmethod
@@ -100,7 +102,9 @@ class TaskManager:
 
     @staticmethod
     @abstractmethod
-    def generate_label_code(df: pd.DataFrame, label: str) -> Optional[Dict[str, int]]:
+    def generate_label_code(
+        df: pd.DataFrame, label: str
+    ) -> Optional[Dict[str, int]]:
         """
         Generates a label code that links the output node number to label value.
 
@@ -171,6 +175,8 @@ class TaskManager:
         model: Network,
         dataloader: DataLoader,
         criterion: _Loss,
+        monte_carlo: int = None,
+        seed=None,
         use_labels: bool = True,
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
         """
@@ -191,15 +197,29 @@ class TaskManager:
         results_df = pd.DataFrame(columns=self.columns)
         with torch.no_grad():
             for data in dataloader:
-                outputs = model.predict(data)["recon_x"]
+                if monte_carlo is None:
+                    outputs = model.predict(data)["recon_x"]
 
-                # Generate detailed DataFrame
-                for idx in range(len(data["participant_id"])):
-                    row = self.generate_test_row(idx, data, outputs)
-                    row_df = pd.DataFrame(row, columns=self.columns)
-                    results_df = pd.concat([results_df, row_df])
+                    # Generate detailed DataFrame
+                    for idx in range(len(data["participant_id"])):
+                        row = self.generate_test_row(idx, data, outputs)
+                        row_df = pd.DataFrame(row, columns=self.columns)
+                        results_df = pd.concat([results_df, row_df])
 
-                del outputs
+                    del outputs
+
+                else:
+                    outputs = model.predict(data)["recon_x"]
+
+                    # Generate detailed DataFrame
+                    for idx in range(len(data["participant_id"])):
+                        for i in range(monte_carlo):
+                            row = self.generate_test_row(idx, data, outputs[i])
+                            row_df = pd.DataFrame(row, columns=self.columns)
+                            results_df = pd.concat([results_df, row_df])
+
+                    del outputs
+
             results_df.reset_index(inplace=True, drop=True)
             results_df[self.evaluation_metrics] = results_df[
                 self.evaluation_metrics
