@@ -22,7 +22,6 @@ logger = getLogger("clinicadl.metric")
 
 class MetricModule:
     def __init__(self, metrics, n_classes=2):
-
         self.n_classes = n_classes
 
         # Check if wanted metrics are implemented
@@ -37,7 +36,7 @@ class MetricModule:
                 self.metrics[metric] = getattr(MetricModule, f"{metric.lower()}_fn")
             else:
                 raise NotImplementedError(
-                    f"The metric {metric} is not implemented in the module"
+                    f"The metric {metric} is not implemented in the module."
                 )
 
     def apply(self, y, y_pred):

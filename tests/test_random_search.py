@@ -11,6 +11,7 @@ import pytest
 from tests.testing_tools import compare_folders
 
 
+# random searxh for ROI with CNN
 @pytest.fixture(
     params=[
         "rs_roi_cnn",
@@ -37,7 +38,6 @@ def test_random_search(cmdopt, tmp_path, test_name):
 
 
 def run_test_random_search(toml_path, generate_input, tmp_out_dir, ref_dir):
-
     if os.path.exists(tmp_out_dir):
         shutil.rmtree(tmp_out_dir)
 

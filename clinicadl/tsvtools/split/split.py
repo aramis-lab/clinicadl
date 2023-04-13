@@ -63,9 +63,8 @@ def create_split(
     supplementary_train_df=None,
     ignore_demographics=False,
 ):
-
     """
-    Split data at the subject-level in training and test set with equivalent age, sex and split_label distributions
+    Split data at the subject-level in training and test set with equivalent age, sex and split_label distributions.
 
     Parameters
     ----------
@@ -133,10 +132,8 @@ def create_split(
         n_try = 0
 
         while flag_selection:
-
             splits = StratifiedShuffleSplit(n_splits=1, test_size=n_test)
             for train_index, test_index in splits.split(category, category):
-
                 # Find the value for different demographics (age & sex)
                 if len(set(age)) != 1:
                     age_test = [float(age[idx]) for idx in test_index]

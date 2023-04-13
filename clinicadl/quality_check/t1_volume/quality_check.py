@@ -13,7 +13,6 @@ from .utils import extract_metrics
 
 
 def quality_check(caps_dir: Path, output_directory: Path, group_label):
-
     logger = getLogger("clinicadl.quality_check")
 
     extract_metrics(
@@ -27,7 +26,7 @@ def quality_check(caps_dir: Path, output_directory: Path, group_label):
     rejection1_df = qc_df[qc_df.max_intensity > 0.95]
     rejection1_df.to_csv(output_directory / "pass_step-1.tsv", sep="\t", index=False)
     logger.info(
-        f"Number of sessions removed based on max intensity: {len(qc_df) - len(rejection1_df)}."
+        f"Number of sessions removed, based on max intensity: {len(qc_df) - len(rejection1_df)}."
     )
     logger.debug(f"{rejection1_df}")
 

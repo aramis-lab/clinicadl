@@ -28,7 +28,7 @@ def find_file_type(
     elif preprocessing == "pet-linear":
         if tracer is None or suvr_reference_region is None:
             raise ClinicaDLArgumentError(
-                "tracer and suvr_reference_region must be defined "
+                "`tracer` and `suvr_reference_region` must be defined "
                 "when using `pet-linear` preprocessing."
             )
         file_type = pet_linear_nii(tracer, suvr_reference_region, uncropped_image)
@@ -41,7 +41,6 @@ def find_file_type(
 
 
 def write_missing_mods(output_dir: Path, output_df: pd.DataFrame):
-
     missing_path = output_dir / "missing_mods"
     missing_path.mkdir(parents=True, exist_ok=True)
 
@@ -58,7 +57,6 @@ def write_missing_mods(output_dir: Path, output_df: pd.DataFrame):
 def load_and_check_tsv(
     tsv_path: Path, caps_dict: Dict[str, Path], output_path: Path
 ) -> pd.DataFrame:
-
     from clinica.iotools.utils.data_handling import create_subs_sess_list
 
     from clinicadl.utils.caps_dataset.data import check_multi_cohort_tsv
@@ -320,7 +318,6 @@ def generate_shepplogan_phantom(
 
 
 def mask_processing(mask, percentage, sigma):
-
     inverse_mask = 1 - mask
     inverse_mask[inverse_mask == 0] = 1 - percentage / 100
     gaussian_mask = gaussian_filter(inverse_mask, sigma=sigma)

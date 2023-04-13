@@ -39,12 +39,12 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
     Parameters
     ----------
     bids_df: DataFrame
-        Columns including ['participant_id', 'session_id', 'diagnosis']
+        Columns including ['participant_id', 'session_id', 'diagnosis'].
 
     Returns
     -------
     bids_copy_df: DataFrame
-        Cleaned copy of the input bids_df
+        Cleaned copy of the input bids_df.
     """
     bids_copy_df = copy(bids_df)
     found_diag_interpol = 0
@@ -161,7 +161,6 @@ def remove_unique_session(bids_df: pd.DataFrame) -> pd.DataFrame:
     nb_unique = 0
 
     for subject, subject_df in bids_df.groupby(level=0):
-
         session_list = [session for _, session in subject_df.index.values]
         session_list.sort()
         nb_session = len(session_list)
@@ -195,7 +194,7 @@ def diagnosis_removal(bids_df: pd.DataFrame, diagnosis_list: List[str]) -> pd.Da
     output_df = copy(bids_df)
     nb_subjects = 0
     for subject, subject_df in bids_df.groupby(level=0):
-        for (_, session) in subject_df.index.values:
+        for _, session in subject_df.index.values:
             group = subject_df.loc[(subject, session), "diagnosis"]
             if group not in diagnosis_list:
                 output_df.drop((subject, session), inplace=True)
