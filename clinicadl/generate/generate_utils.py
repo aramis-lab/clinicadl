@@ -41,7 +41,6 @@ def find_file_type(
 
 
 def write_missing_mods(output_dir: Path, output_df: pd.DataFrame):
-
     missing_path = output_dir / "missing_mods"
     missing_path.mkdir(parents=True, exist_ok=True)
 
