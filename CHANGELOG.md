@@ -51,10 +51,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix `quality-check t1-linear` 
 
 
-<<<<<<< HEAD:CHANGELOG
->>>>>>> Stashed changes:CHANGELOG.md
-=======
->>>>>>> dev:CHANGELOG.md
 ## ClinicaDL 1.1.1
 
 ### Changed
