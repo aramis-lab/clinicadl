@@ -89,7 +89,6 @@ def test_prepare_data(cmdopt, tmp_path, test_name):
 
 
 def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
-
     modalities = ["t1-linear", "pet-linear", "flair-linear"]
     uncropped_image = [True, False]
     acquisition_label = ["18FAV45", "11CPIB"]
@@ -153,7 +152,6 @@ def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
 
 
 def extract_generic(out_dir, mode, tsv_file, parameters):
-
     from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
 
     DeepLearningPrepareData(

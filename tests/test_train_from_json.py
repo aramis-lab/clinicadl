@@ -29,7 +29,6 @@ def test_json_compatibility(cmdopt, tmp_path):
 
 
 def test_determinism(cmdopt, tmp_path):
-
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "train_from_json" / "in"
     ref_dir = base_dir / "train_from_json" / "ref"
