@@ -13,7 +13,6 @@ from .utils import extract_metrics
 
 
 def quality_check(caps_dir: Path, output_directory: Path, group_label):
-
     logger = getLogger("clinicadl.quality_check")
 
     extract_metrics(

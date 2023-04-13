@@ -207,7 +207,6 @@ def extract_slice_tensor(
 def extract_slice_path(
     img_path: Path, slice_direction: int, slice_mode: str, slice_index: int
 ) -> str:
-
     direction_dict = {0: "sag", 1: "cor", 2: "axi"}
     if slice_direction not in direction_dict:
         raise KeyError(
@@ -479,7 +478,6 @@ def extract_roi_tensor(
     mask_np,
     uncrop_output: bool,
 ) -> torch.Tensor:
-
     if len(mask_np.shape) == 3:
         mask_np = np.expand_dims(mask_np, axis=0)
     elif len(mask_np.shape) == 4:

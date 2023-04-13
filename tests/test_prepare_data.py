@@ -28,7 +28,6 @@ def test_name(request):
 
 
 def test_prepare_data(cmdopt, tmp_path, test_name):
-
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "prepare_data" / "in"
     ref_dir = base_dir / "prepare_data" / "ref"

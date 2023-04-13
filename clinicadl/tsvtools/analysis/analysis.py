@@ -173,7 +173,6 @@ def demographics_analysis(
                 f"There is no subject with diagnosis {diagnosis}"
             )
     for diagnosis in diagnoses:
-
         logger.debug(f"compute stats for diagnosis {diagnosis}")
 
         results_df.loc[diagnosis, "mean_age"] = np.nanmean(

@@ -20,7 +20,6 @@ def get_progression(
     horizon_time: int = 36,
     stability_dict: dict = None,
 ):
-
     """
     A method to get the progression for each sessions, depending on their stability on the time horizon
     Outputs are written in data_tsv
