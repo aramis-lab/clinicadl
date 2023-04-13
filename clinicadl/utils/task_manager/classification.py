@@ -122,8 +122,8 @@ class ClassificationManager(TaskManager):
         ref: S. Raschka. Python Machine Learning., 2015
 
         Args:
-            performance_df (pd.DataFrame): results that need to be assembled.
-            validation_df (pd.DataFrame): results on the validation set used to compute the performance
+            performance_df (pd.DataFrame): Results that need to be assembled.
+            validation_df (pd.DataFrame): Results on the validation set used to compute the performance
                 of each separate part of the image.
             selection_threshold (float): with soft-voting method, allows to exclude some parts of the image
                 if their associated performance is too low.

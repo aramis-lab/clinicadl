@@ -55,9 +55,9 @@ class MapsManager:
         Parameters
         ----------
         maps_path: str (path)
-            path of the MAPS
+            Path of the MAPS
         parameters: Dict[str, Any]
-            parameters of the training step. If given a new MAPS is created.
+            Parameters of the training step. If given a new MAPS is created.
         verbose: str
             Logging level ("debug", "info", "warning")
         """

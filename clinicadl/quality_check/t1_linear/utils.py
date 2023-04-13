@@ -40,7 +40,7 @@ class QCDataset(Dataset):
             "participant_id" not in list(self.df.columns.values)
         ):
             raise Exception(
-                "the data file is not in the correct format."
+                "The data file is not in the correct format."
                 "Columns should include ['participant_id', 'session_id']"
             )
 

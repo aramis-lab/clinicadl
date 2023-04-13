@@ -80,7 +80,7 @@ def run_test_suite(data_tsv, n_splits):
 
 def test_getlabels(cmdopt, tmp_path):
     """Checks that getlabels is working and that it is coherent with
-    previous version in reference_path"""
+    previous version in reference_path."""
 
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "tsvtools" / "in"
@@ -151,7 +151,7 @@ def test_split(cmdopt, tmp_path):
 
 
 def test_analysis(cmdopt, tmp_path):
-    """Checks that analysis can be performed"""
+    """Checks that analysis can be performed."""
 
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "tsvtools" / "in"

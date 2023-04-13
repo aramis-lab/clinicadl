@@ -52,7 +52,7 @@ def test_qc(cmdopt, tmp_path, test_name):
         ]
     else:
         raise NotImplementedError(
-            f"Quality check test on {test_name} is not implemented, test."
+            f"Quality check test on {test_name} is not implemented."
         )
 
     flag_error = not system(f"clinicadl quality-check " + " ".join(test_input))

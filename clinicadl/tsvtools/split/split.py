@@ -65,7 +65,7 @@ def create_split(
 ):
 
     """
-    Split data at the subject-level in training and test set with equivalent age, sex and split_label distributions
+    Split data at the subject-level in training and test set with equivalent age, sex and split_label distributions.
 
     Parameters
     ----------

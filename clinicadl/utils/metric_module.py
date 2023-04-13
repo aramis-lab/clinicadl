@@ -37,7 +37,7 @@ class MetricModule:
                 self.metrics[metric] = getattr(MetricModule, f"{metric.lower()}_fn")
             else:
                 raise NotImplementedError(
-                    f"The metric {metric} is not implemented in the module"
+                    f"The metric {metric} is not implemented in the module."
                 )
 
     def apply(self, y, y_pred):

@@ -7,7 +7,7 @@ from torch import nn
 
 
 class Network(nn.Module):
-    """Abstract Template for all networks used in ClinicaDL"""
+    """Abstract Template for all networks used in ClinicaDL."""
 
     def __init__(self, gpu=True):
         super(Network, self).__init__()

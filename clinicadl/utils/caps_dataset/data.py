@@ -67,7 +67,7 @@ class CapsDataset(Dataset):
                 "Child class of CapsDataset must set elem_index attribute."
             )
         if not hasattr(self, "mode"):
-            raise AttributeError("Child class of CapsDataset must set mode attribute.")
+            raise AttributeError("Child class of CapsDataset, must set mode attribute.")
 
         self.df = data_df
 

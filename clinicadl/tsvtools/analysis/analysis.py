@@ -27,7 +27,7 @@ def demographics_analysis(
     Produces a tsv file with rows corresponding to the labels defined by the diagnoses list,
     and the columns being demographic statistics.
 
-    Writes one tsv file at results_tsv containing the demographic analysis of the tsv files in data_tsv.
+    Writes one tsv file at results_tsv, containing the demographic analysis of the tsv files in data_tsv.
 
     Parameters
     ----------

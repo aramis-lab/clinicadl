@@ -39,12 +39,12 @@ def infer_or_drop_diagnosis(bids_df: pd.DataFrame) -> pd.DataFrame:
     Parameters
     ----------
     bids_df: DataFrame
-        Columns including ['participant_id', 'session_id', 'diagnosis']
+        Columns including ['participant_id', 'session_id', 'diagnosis'].
 
     Returns
     -------
     bids_copy_df: DataFrame
-        Cleaned copy of the input bids_df
+        Cleaned copy of the input bids_df.
     """
     bids_copy_df = copy(bids_df)
     found_diag_interpol = 0

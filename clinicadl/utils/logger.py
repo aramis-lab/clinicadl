@@ -31,9 +31,11 @@ class ConsoleFormatter(logging.Formatter):
 def setup_logging(verbose: bool = False) -> None:
     """
     Setup ClinicaDL's logging facilities.
-    Args:
-        verbose: The desired level of verbosity for logging.
-            (False (default): INFO, True: DEBUG)
+    Parameters
+    ----------
+    verbose: bool
+        The desired level of verbosity for logging.
+        (False (default): INFO, True: DEBUG)
     """
     logging_level = "DEBUG" if verbose else "INFO"
 

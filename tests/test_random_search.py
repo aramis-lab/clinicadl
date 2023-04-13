@@ -11,6 +11,7 @@ import pytest
 from tests.testing_tools import compare_folders
 
 
+# random searxh for ROI with CNN
 @pytest.fixture(
     params=[
         "rs_roi_cnn",

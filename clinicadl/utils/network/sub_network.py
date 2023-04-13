@@ -113,7 +113,7 @@ class CNN(Network):
             self.convolutions.load_state_dict(convolutions_dict)
         else:
             raise ClinicaDLNetworksError(
-                f"Cannot transfer weights from {transfer_class} to CNN."
+                f"Can not transfer weights from {transfer_class} to CNN."
             )
 
     def forward(self, x):

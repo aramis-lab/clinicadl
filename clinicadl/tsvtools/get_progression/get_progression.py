@@ -22,7 +22,7 @@ def get_progression(
 ):
 
     """
-    A method to get the progression for each sessions depending on their stability on the time horizon
+    A method to get the progression for each sessions, depending on their stability on the time horizon
     Outputs are written in data_tsv
 
     Parameters
