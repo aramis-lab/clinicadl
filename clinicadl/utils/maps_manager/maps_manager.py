@@ -1289,6 +1289,7 @@ class MapsManager:
                         output_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent{i}.pt"
                         torch.save(
                             latent, path.join(latent_tensor_path, output_filename)
+                        )
 
 
     def _ensemble_prediction(

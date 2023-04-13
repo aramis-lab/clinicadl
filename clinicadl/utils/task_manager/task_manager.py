@@ -209,12 +209,15 @@ class TaskManager:
                     del outputs
 
                 else:
-                    outputs = model.predict(data)["recon_x"]
+                    outputs = model.predict(data, monte_carlo=monte_carlo, seed=seed)
+                    print(f"len(outputs)={len(outputs)}")
+                    print(f"outputs={outputs}")
 
                     # Generate detailed DataFrame
                     for idx in range(len(data["participant_id"])):
                         for i in range(monte_carlo):
-                            row = self.generate_test_row(idx, data, outputs[i])
+                            print(f"outputs[i]['recon_x'].shape={outputs[i]['recon_x'].shape}")
+                            row = self.generate_test_row(idx, data, outputs[i]["recon_x"])
                             row_df = pd.DataFrame(row, columns=self.columns)
                             results_df = pd.concat([results_df, row_df])
 

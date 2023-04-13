@@ -94,7 +94,6 @@ from clinicadl.utils import cli_param
     "--monte_carlo",
     type=int,
     default=None,
-    is_flag=True,
     help="""Save multiple outputs for a single input.""",
 )
 @cli_param.option.split
