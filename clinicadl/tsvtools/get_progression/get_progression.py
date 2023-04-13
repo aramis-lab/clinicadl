@@ -1,31 +1,22 @@
-import os
 from copy import copy
 from logging import getLogger
-from os import path
 from pathlib import Path
-from typing import Dict, List
 
-import numpy as np
 import pandas as pd
 
 from clinicadl.tsvtools.get_labels import infer_or_drop_diagnosis
-from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
-from clinicadl.utils.maps_manager.iotools import commandline_to_json
 from clinicadl.utils.tsvtools_utils import (
     after_end_screening,
-    cleaning_nan_diagnoses,
-    find_label,
-    first_session,
     last_session,
     merged_tsv_reader,
     neighbour_session,
 )
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.tsvtools.get_progression")
 
 
 def get_progression(
-    data_tsv: str,
+    data_tsv: Path,
     horizon_time: int = 36,
     stability_dict: dict = None,
 ):
@@ -49,11 +40,11 @@ def get_progression(
     bids_df = merged_tsv_reader(data_tsv)
 
     if "diagnosis" not in bids_df.columns:
-
-        parents_path = path.abspath(data_tsv)
-        while not os.path.exists(path.join(parents_path, "labels.tsv")):
-            parents_path = Path(parents_path).parents[0]
-            labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+        logger.debug("Looking for the 'diagnosis' column in others files")
+        parents_path = (data_tsv.resolve()).parent
+        while not (parents_path / "labels.tsv").is_file():
+            parents_path = parents_path.parent
+            labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
             bids_df = pd.merge(
                 bids_df,
                 labels_df,
@@ -73,7 +64,6 @@ def get_progression(
 
     stability_dict = {"CN": 0, "MCI": 1, "AD": 2, "Dementia": 2}
     nb_subjects = 0
-    # print(bids_df.columns.values)
     # if "group" is in bids_df.columns.values :
     #     diagnosis_str = "group"
     # elif "diagnosis" is in bids_df.columns.values :
@@ -88,6 +78,7 @@ def get_progression(
     for subject, subject_df in bids_df.groupby(level=0):
         session_list = [session for _, session in subject_df.index.values]
         session_list.sort()
+        logger.debug(f"Getting progression for subject {subject}")
         for _, session in subject_df.index.values:
             diagnosis = subject_df.loc[(subject, session), "diagnosis"]
             diagnosis_dict = stability_dict[diagnosis]
@@ -99,7 +90,6 @@ def get_progression(
                 horizon_session = "ses-M0" + str(horizon_session_nb)
             else:
                 horizon_session = "ses-M" + str(horizon_session_nb)
-            # print(session, '-->', horizon_session)exit
 
             # CASE 1 : if the  session after 'horizon_time' months is a session the subject has done
             if horizon_session in session_list:
@@ -184,3 +174,4 @@ def get_progression(
     logger.info(f"Unstable subjects: {nb_subjects}")
 
     bids_copy_df.to_csv(data_tsv, sep="\t")
+    logger.info(f"Results are stored at: {data_tsv}")

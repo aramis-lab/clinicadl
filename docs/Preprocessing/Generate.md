@@ -45,7 +45,7 @@ Default will download masks based on AAL2 in `clinicadl/resources/masks`.
 ### Outputs
 
 The command generates 3D images of same size as the input images formatted as NIfTI files.
-Then the [`extract`](./Extract.md) command must be run to use the synthetic data with ClinicaDL.
+Then the [`prepare-data`](./Extract.md) command must be run to use the synthetic data with ClinicaDL.
 Results are stored in the same folder hierarchy as the input folder.
 
 
@@ -59,7 +59,7 @@ Then the images are randomly distributed between the two labels.
 ![Schemes of random data](../images/generate_random.png)
 
 ### Prerequisites
-You need to execute the `clinica run` and `clinicadl extract` pipelines prior to running this task.
+You need to execute the `clinica run` and `clinicadl prepare-data` pipelines prior to running this task.
 
 !!! note
     The `random` option can synthesize as many images as wanted with only one input image.
@@ -138,5 +138,32 @@ Options:
 - `--smoothing` / `--no-smoothing` adds random smoothing to generated data. Default
 will not smooth data.
 
-### Outputs
+
+
+
+## `hypo-metabolic` - 
+
+
+
+### Prerequisites
+
+
+
+### Running the task
+
+The task can be run with the following command line:
+```
+clinicadl generate hypometabolic [OPTIONS] CAPS_DIRECTORY GENERATED_CAPS_DIRECTORY
+```
+where:
+- `CAPS_DIRECTORY` (str) is the input folder containing the neuroimaging data in a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
+-  `GENERATED_CAPS_DIRECTORY` (str) is the folder where the synthetic CAPS is stored.
+
+Options:
+
+- `pathology`
+- `pathology_percent`
+- `--participants_tsv` (str) is the path to a tsv file containing the subjects/sessions list for data generation.
+- `--n_subjects` (int) number of subjects per label in the synthetic dataset. Default: `300`.
+
 

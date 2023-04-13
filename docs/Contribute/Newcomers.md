@@ -9,9 +9,22 @@ Then clone your fork from GitHub:
 git clone https://github.com/<your_name>/clinicadl.git
 ```
 
-Change to ClinicaDL directory:
+Once you cloned the repository in your personal folder on the lustre, move in it and install 
+the latest version of poetry using pipx:
 ```{.sourceCode .bash}
 cd clinicadl
+pipx install poetry
+```
+
+To install pipx on macOS:
+```{.sourceCode .bash}
+brew install pipx
+pipx ensurepath
+```
+Otherwise, install via pip (requires pip 19.0 or later):
+```{.sourceCode .bash}
+python3 -m pip install --user pipx
+python3 -m pipx ensurepath
 ```
 
 We suggest creating a custom Conda environment for your fork, so you can

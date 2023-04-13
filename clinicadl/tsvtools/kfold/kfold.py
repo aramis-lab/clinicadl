@@ -1,28 +1,18 @@
 # coding: utf8
 
-import os
-import shutil
-from copy import copy
 from logging import getLogger
-from os import makedirs, path
 from pathlib import Path
-from typing import List
 
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.exceptions import ClinicaDLTSVError
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
-from clinicadl.utils.tsvtools_utils import (
-    df_to_tsv,
-    extract_baseline,
-    remove_sub_labels,
-    retrieve_longitudinal,
-)
+from clinicadl.utils.tsvtools_utils import extract_baseline, retrieve_longitudinal
 
 sex_dict = {"M": 0, "F": 1}
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.tsvtools.kfold")
 
 
 def write_splits(
@@ -30,7 +20,7 @@ def write_splits(
     split_label: str,
     n_splits: int,
     subset_name: str,
-    results_directory: str,
+    results_directory: Path,
 ):
     """
     Split data at the subject-level in training and test to have equivalent distributions in split_label.
@@ -54,7 +44,7 @@ def write_splits(
     baseline_df = extract_baseline(diagnosis_df)
 
     if split_label is None:
-        diagnoses_list = list(baseline_df.diagnosis)
+        diagnoses_list = list(baseline_df["diagnosis"])
         unique = list(set(diagnoses_list))
         y = np.array([unique.index(x) for x in diagnoses_list])
     else:
@@ -74,35 +64,36 @@ def write_splits(
         train_df.reset_index(inplace=True, drop=True)
         test_df.reset_index(inplace=True, drop=True)
 
-        train_df = train_df[["participant_id", "session_id"]]
-        test_df = test_df[["participant_id", "session_id"]]
-        long_train_df = long_train_df[["participant_id", "session_id"]]
+        # train_df = train_df[["participant_id", "session_id"]]
+        # test_df = test_df[["participant_id", "session_id"]]
+        # long_train_df = long_train_df[["participant_id", "session_id"]]
 
-        os.makedirs(path.join(results_directory, f"split-{i}"))
+        (results_directory / f"split-{i}").mkdir(parents=True)
 
         train_df.to_csv(
-            path.join(results_directory, f"split-{i}", "train_baseline.tsv"),
+            results_directory / f"split-{i}" / "train_baseline.tsv",
             sep="\t",
             index=False,
         )
         test_df.to_csv(
-            path.join(results_directory, f"split-{i}", f"{subset_name}_baseline.tsv"),
+            results_directory / f"split-{i}" / f"{subset_name}_baseline.tsv",
             sep="\t",
             index=False,
         )
 
         long_train_df.to_csv(
-            path.join(results_directory, f"split-{i}", "train.tsv"),
+            results_directory / f"split-{i}" / "train.tsv",
             sep="\t",
             index=False,
         )
 
 
 def split_diagnoses(
-    data_tsv: str,
+    data_tsv: Path,
     n_splits: int = 5,
     subset_name: str = None,
     stratification: str = None,
+    merged_tsv: Path = None,
 ):
     """
     Performs a k-fold split for each label independently on the subject level.
@@ -123,17 +114,19 @@ def split_diagnoses(
         Name of the subset that is complementary to train.
     stratification: str
         Name of variable used to stratify k-fold.
+    merged_tsv: str
+        Path to the merged.tsv file, output of clinica iotools merge-tsv.
     """
 
-    parents_path = Path(data_tsv).parents[0]
+    parents_path = data_tsv.parent
     split_numero = 1
     folder_name = f"{n_splits}_fold"
 
-    while os.path.exists(parents_path / folder_name):
+    while (parents_path / folder_name).is_dir():
         split_numero += 1
         folder_name = f"{n_splits}_fold_{split_numero}"
     results_directory = parents_path / folder_name
-    makedirs(results_directory)
+    results_directory.mkdir(parents=True)
 
     commandline_to_json(
         {
@@ -145,30 +138,44 @@ def split_diagnoses(
         filename="kfold.json",
     )
 
-    # Read files
-    from os.path import join
-
-    diagnosis_df_path = Path(data_tsv).name
     diagnosis_df = pd.read_csv(data_tsv, sep="\t")
     list_columns = diagnosis_df.columns.values
-
     if (
         "diagnosis" not in list_columns
-        or "age" not in list_columns
+        or ("age" not in list_columns and "age_bl" not in list_columns)
         or "sex" not in list_columns
     ):
-        parents_path = path.abspath(parents_path)
-        while not os.path.exists(path.join(parents_path, "labels.tsv")):
-            parents_path = Path(parents_path).parents[0]
-
-        labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
-        diagnosis_df = pd.merge(
-            diagnosis_df,
-            labels_df,
-            how="inner",
-            on=["participant_id", "session_id"],
-        )
-
+        logger.debug("Looking for the missing columns in others files.")
+        if merged_tsv is None:
+            parents_path = parents_path.resolve()
+            n = 0
+            while not (parents_path / "labels.tsv").is_file() and n <= 4:
+                parents_path = parents_path.parent
+                n += 1
+            try:
+                labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
+                diagnosis_df = pd.merge(
+                    diagnosis_df,
+                    labels_df,
+                    how="inner",
+                    on=["participant_id", "session_id"],
+                )
+            except:
+                raise ClinicaDLTSVError(
+                    f"Your tsv file doesn't contain one of these columns : age, sex, diagnosis "
+                    "and the pipeline wasn't able to find the output of clinicadl get-labels to get it."
+                    "Before running this pipeline again, please run the command clinicadl get-metadata to get the missing columns"
+                    "or add the the flag --ignore_demographics to split without trying to balance age or sex distributions."
+                    "or add the option --merged-tsv to give the path the output of clinica merge-tsv"
+                )
+        else:
+            labels_df = pd.read_csv(merged_tsv, sep="\t")
+            diagnosis_df = pd.merge(
+                diagnosis_df,
+                labels_df,
+                how="inner",
+                on=["participant_id", "session_id"],
+            )
     write_splits(diagnosis_df, stratification, n_splits, subset_name, results_directory)
 
     logger.info(f"K-fold split is done.")

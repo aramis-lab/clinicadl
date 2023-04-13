@@ -1,4 +1,5 @@
 import click
+import pandas as pd
 
 from clinicadl.utils import cli_param
 
@@ -68,14 +69,12 @@ def cli(
         categorical_split_variable=None,
         not_only_baseline=flag_not_baseline,
     )
-    from os.path import exists
-    from pathlib import Path
 
-    parents_path = Path(data_tsv).parents[0]
+    parents_path = data_tsv.parents[0]
     split_numero = 1
     folder_name = "split"
 
-    while exists(parents_path / folder_name):
+    while (parents_path / folder_name).is_dir():
         split_numero += 1
         folder_name = f"split_{split_numero}"
     if split_numero > 2:
@@ -84,10 +83,27 @@ def cli(
         folder_name = "split"
 
     results_path = parents_path / folder_name
-    data_tsv = results_path / "train.tsv"
+    train_tsv = results_path / "train.tsv"
+
+    train_df = pd.read_csv(train_tsv, sep="\t")
+    list_columns = train_df.columns.values
+    if (
+        "diagnosis" not in list_columns
+        or ("age" not in list_columns and "age_bl" not in list_columns)
+        or "sex" not in list_columns
+    ):
+        data_df = pd.read_csv(data_tsv, sep="\t")
+        train_df = pd.merge(
+            train_df,
+            data_df,
+            how="inner",
+            on=["participant_id", "session_id"],
+        )
+        train_df.to_csv(train_tsv, sep="\t")
+
     if validation_type == "split":
         split_diagnoses(
-            data_tsv,
+            train_tsv,
             n_test=n_validation,
             subset_name="validation",
             p_age_threshold=p_age_threshold,
@@ -100,7 +116,7 @@ def cli(
         from clinicadl.tsvtools.kfold import split_diagnoses as kfold_diagnoses
 
         kfold_diagnoses(
-            data_tsv,
+            train_tsv,
             n_splits=int(n_validation),
             subset_name="validation",
             stratification=None,

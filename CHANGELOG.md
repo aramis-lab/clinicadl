@@ -5,53 +5,6 @@ Main changes to this code/ project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-
-## ClinicaDL 1.3.0
-
-### New 
-
-* Add new command `quality-check pet-linear`.
-* Add new command `generate hypometabolic`.
-* Add new network architecture: `Resnet3D` and `SqueezeExcitationCNN`.
-* Add `flair-linear` modality for `prepare-data` command.
-* Add pytorch profiler.
-* Add `--save_nifti` option for `interpret`command.
-* Add `--output_dir` argument for `tsvtools get-labels` command
-
-### Changed
-
-** Core: **
-
-* Transition from os to pathlib.
-* Update data CI.
-* Improve maps_manager.
-* Change `--acq_label` option for `--tracer`.
-* Update tutorial.
-  
-
-## ClinicaDL 1.2.0
-
-### Changed
-
-** Core: **
-
-* Add ClinicaDL installation with pipx.
-* Improve logging.
-* Add method argument to the interpret command to choose between the new Grad-CAM method and the gradient method.
-* Change `extract` command to `prepare-data`.
-* Change output of `get-labels`, `split` and `kfold` commands to one TSV per split instead of one per label.
-* Change `tsvtool` command to `tsvtools`.
-* Change `tsvtools getlabels` command to `tsvtools get-labels` and remove the progression column in the TSV output.
-* Add new commands: `tsvtools get-progression`, `tsvtools get-metadata`, `tsvtools prepare-experiment` (split + kfold), and `tsvtools adapt`.
-* Update data CI.
-* Add a new model for quality check 
-
-### Fixed
-
-- Fix `quality-check t1-linear` 
-
-
->>>>>>> Stashed changes:CHANGELOG.md
 ## ClinicaDL 1.1.1
 
 ### Changed

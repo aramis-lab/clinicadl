@@ -1,16 +1,17 @@
-import os
+from pathlib import Path
 from typing import Any, Dict
 
 import toml
 
 from clinicadl.utils.exceptions import ClinicaDLConfigurationError
 from clinicadl.utils.maps_manager.maps_manager_utils import (
+    change_str_to_path,
     read_json,
     remove_unused_tasks,
 )
 
 
-def build_train_dict(config_file: str, task: str) -> Dict[str, Any]:
+def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:
     """
     Read the configuration file given by the user.
     If it is a TOML file, ensures that the format corresponds to the one in resources.
@@ -22,38 +23,33 @@ def build_train_dict(config_file: str, task: str) -> Dict[str, Any]:
     """
     if config_file is None:
         # read default values
-        clinicadl_root_dir = os.path.abspath(os.path.join(__file__, "../.."))
-        config_path = os.path.join(
-            clinicadl_root_dir,
-            "resources",
-            "config",
-            "train_config.toml",
+        clinicadl_root_dir = (Path(__file__) / "../..").resolve()
+        config_path = (
+            Path(clinicadl_root_dir) / "resources" / "config" / "train_config.toml"
         )
         config_dict = toml.load(config_path)
         config_dict = remove_unused_tasks(config_dict, task)
-
+        config_dict = change_str_to_path(config_dict)
         train_dict = dict()
         # Fill train_dict from TOML files arguments
         for config_section in config_dict:
             for key in config_dict[config_section]:
                 train_dict[key] = config_dict[config_section][key]
 
-    elif config_file.endswith(".toml"):
+    elif config_file.suffix == ".toml":
         user_dict = toml.load(config_file)
         if "Random_Search" in user_dict:
             del user_dict["Random_Search"]
 
         # read default values
-        clinicadl_root_dir = os.path.abspath(os.path.join(__file__, "../.."))
-        config_path = os.path.join(
-            clinicadl_root_dir,
-            "resources",
-            "config",
-            "train_config.toml",
+        clinicadl_root_dir = (Path(__file__) / "../..").resolve()
+        config_path = (
+            Path(clinicadl_root_dir) / "resources" / "config" / "train_config.toml"
         )
         config_dict = toml.load(config_path)
         # Check that TOML file has the same format as the one in clinicadl/resources/config/train_config.toml
         if user_dict is not None:
+            user_dict = change_str_to_path(user_dict)
             for section_name in user_dict:
                 if section_name not in config_dict:
                     raise ClinicaDLConfigurationError(
@@ -78,14 +74,14 @@ def build_train_dict(config_file: str, task: str) -> Dict[str, Any]:
             for key in config_dict[config_section]:
                 train_dict[key] = config_dict[config_section][key]
 
-    elif config_file.endswith(".json"):
+    elif config_file.suffix == ".json":
         train_dict = read_json(config_file)
+        train_dict = change_str_to_path(train_dict)
 
     else:
         raise ClinicaDLConfigurationError(
             f"config_file {config_file} should be a TOML or a JSON file."
         )
-
     return train_dict
 
 
@@ -133,7 +129,7 @@ def get_model_list(architecture=None, input_size=None, model_layers=False):
         elif dimension == "2D or 3D":
             shape_str = "C@HxW or C@DxHxW,"
 
-        shape_str = "\n\tThe input must be in the shape ".expandtabs(4) + shape_str
+        shape_str = f"\n\tThe input must be in the shape {shape_str}".expandtabs(4)
         input_size_str = f" for example input_size can be {input_size}."
 
         task_str = f"\n\tThis model can be used for {' or '.join(model_class.get_task())}.\n".expandtabs(

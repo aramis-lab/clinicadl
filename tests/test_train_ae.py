@@ -27,15 +27,15 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "train" / "in"
     ref_dir = base_dir / "train" / "ref"
-    tmp_out_dir = tmp_path / "train" / "out"
-    tmp_out_dir.mkdir(parents=True)
+    tmp_out_dir = base_dir / "train" / "out"
+    # tmp_out_dir.mkdir(parents=True)
 
     clean_folder(tmp_out_dir, recreate=True)
 
-    labels_path = str(input_dir / "labels_list")
+    labels_path = str(input_dir / "labels_list" / "2_fold")
     config_path = str(input_dir / "train_config.toml")
     if test_name == "image_ae":
-        split = [1, 1]
+        split = [0, 0]
         test_input = [
             "train",
             "reconstruction",
@@ -88,7 +88,7 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
 
-    if os.path.exists(tmp_out_dir):
+    if tmp_out_dir.is_dir():
         shutil.rmtree(tmp_out_dir)
 
     flag_error = not os.system("clinicadl " + " ".join(test_input))
@@ -99,17 +99,17 @@ def test_train_ae(cmdopt, tmp_path, test_name):
     with open(ref_dir / ("maps_" + test_name) / "maps.json", "r") as ref:
         json_data_ref = json.load(ref)
 
-    # if test_name == "patch_multi_ae" :
-    #     json_data_out["multi_network"] ="True"
+    if test_name == "patch_multi_ae":
+        json_data_out["multi_network"] = True
     assert json_data_out == json_data_ref  # ["mode"] == mode
 
     assert compare_folders(
-        str(tmp_out_dir / "groups"),
-        str(ref_dir / ("maps_" + test_name) / "groups"),
+        tmp_out_dir / "groups",
+        ref_dir / ("maps_" + test_name) / "groups",
         tmp_path,
     )
     assert compare_folders(
-        str(tmp_out_dir / f"split-{split[0]}" / "best-loss"),
-        str(ref_dir / ("maps_" + test_name) / f"split-{split[1]}" / "best-loss"),
+        tmp_out_dir / f"split-{split[0]}" / "best-loss",
+        ref_dir / ("maps_" + test_name) / f"split-{split[1]}" / "best-loss",
         tmp_path,
     )

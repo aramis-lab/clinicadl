@@ -42,8 +42,8 @@ where:
 !!! warning "data group consistency"
     For ClinicaDL, a data group is linked to a list of participants / sessions and a CAPS directory.
     When performing a prediction, interpretation or tensor serialization the user must give a data group.
-    If this data group does not exist, the user MUST give a `caps_path` and a `tsv_path`.
-    If this data group already exists, the user MUST not give any `caps_path` or `tsv_path`, or set overwrite to True.
+    If this data group does not exist, the user MUST give a `caps_directory` and a `participants_tsv`.
+    If this data group already exists, the user MUST not give any `caps_directory` or `participants_tsv`, or set overwrite to True.
 
 
 Optional arguments:
@@ -58,7 +58,7 @@ Optional arguments:
       Default will predict the results for best model based on the loss only.
 - **Data management**
     - `--participants_tsv` (Path) is a path to a directory containing one TSV file per diagnosis
-    (see output tree of [getlabels](./TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease)). 
+    (see output tree of [get-labels](./TSVTools.md#getlabels---extract-labels-specific-to-alzheimers-disease)). 
     Default will use the same participants as those used during the training task.
     - `--caps_directory` (Path) is the path to a [CAPS](https://aramislab.paris.inria.fr/clinica/docs/public/latest/CAPS/Introduction/) hierarchy.
     Default will use the same CAPS as during the training task.
@@ -70,6 +70,7 @@ Optional arguments:
 - **Other options**
     - `--target_node` (int) is the node the gradients explain. By default, it will target the first output node.
     - `--save_individual` (bool) is an option to save individual saliency maps in addition to the mean saliency map.
+    - `--save_nifti` (bool) is an option to save the interpretation map in nifti format.
     - `--level_grad_cam` (int) is the layer considered to compute the Grad-CAM map. Default will use the last
     layer of the `convolutions` parameter of the targeted `CNN`. The minimum value `1` will backpropagate the results
     until the feature map located after the first layer.

@@ -1,7 +1,7 @@
 # `resume` - Resume a prematurely stopped job
 
 This functionality allows to resume a prematurely stopped job trained with
-[`clinicadl train`](Introduction.md) of [`clinicadl random-search generate`](../RandomSearch.md) tasks.
+[`clinicadl train`](Introduction.md) of [`clinicadl random-search`](../RandomSearch.md) tasks.
 The files that are used by this function are the following:
 
 - `maps.json` describes the training parameters used to create the

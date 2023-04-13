@@ -23,7 +23,7 @@ def test_interpret(cmdopt, tmp_path, test_name):
     tmp_out_dir = tmp_path / "interpret" / "out"
     tmp_out_dir.mkdir(parents=True)
 
-    labels_dir_str = str(input_dir / "labels_list")
+    labels_dir_str = str(input_dir / "labels_list" / "2_fold")
     maps_tmp_out_dir = str(tmp_out_dir / "maps")
     if test_name == "classification":
         cnn_input = [
@@ -68,7 +68,7 @@ def run_interpret(cnn_input, tmp_out_dir, ref_dir):
     from clinicadl.interpret.gradients import method_dict
 
     maps_path = tmp_out_dir / "maps"
-    if os.path.exists(maps_path):
+    if maps_path.is_dir():
         shutil.rmtree(maps_path)
 
     train_error = not os.system("clinicadl " + " ".join(cnn_input))

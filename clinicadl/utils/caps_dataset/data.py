@@ -2,7 +2,7 @@
 
 import abc
 from logging import getLogger
-from os import path
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -31,7 +31,7 @@ from clinicadl.utils.exceptions import (
     ClinicaDLTSVError,
 )
 
-logger = getLogger("clinicadl.datasets")
+logger = getLogger("clinicadl")
 
 
 #################################
@@ -42,7 +42,7 @@ class CapsDataset(Dataset):
 
     def __init__(
         self,
-        caps_directory: str,
+        caps_directory: Path,
         data_df: pd.DataFrame,
         preprocessing_dict: Dict[str, Any],
         transformations: Optional[Callable],
@@ -76,11 +76,11 @@ class CapsDataset(Dataset):
             mandatory_col.add(self.label)
 
         if not mandatory_col.issubset(set(self.df.columns.values)):
+
             raise Exception(
                 f"the data file is not in the correct format."
                 f"Columns should include {mandatory_col}"
             )
-
         self.elem_per_image = self.num_elem_per_image()
         self.size = self[0]["image"].size()
 
@@ -112,12 +112,12 @@ class CapsDataset(Dataset):
         return len(self.df) * self.elem_per_image
 
     @staticmethod
-    def create_caps_dict(caps_directory: str, multi_cohort: bool) -> Dict[str, str]:
+    def create_caps_dict(caps_directory: Path, multi_cohort: bool) -> Dict[str, Path]:
 
         from clinica.utils.inputs import check_caps_folder
 
         if multi_cohort:
-            if not caps_directory.endswith(".tsv"):
+            if not caps_directory.suffix == ".tsv":
                 raise ClinicaDLArgumentError(
                     "If multi_cohort is True, the CAPS_DIRECTORY argument should be a path to a TSV file."
                 )
@@ -152,29 +152,31 @@ class CapsDataset(Dataset):
         # Try to find .nii.gz file
         try:
             file_type = self.preprocessing_dict["file_type"]
-            image_path_list, _ = clinica_file_reader(
+            results = clinica_file_reader(
                 [participant], [session], self.caps_dict[cohort], file_type
             )
-            image_filename = path.basename(image_path_list[0]).replace(".nii.gz", ".pt")
+            filepath = Path(results[0][0])
+            image_filename = filepath.name.replace(".nii.gz", ".pt")
             folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
-            image_dir = path.join(
-                self.caps_dict[cohort],
-                "subjects",
-                participant,
-                session,
-                "deeplearning_prepare_data",
-                "image_based",
-                folder,
+            image_dir = (
+                self.caps_dict[cohort]
+                / "subjects"
+                / participant
+                / session
+                / "deeplearning_prepare_data"
+                / "image_based"
+                / folder
             )
-            image_path = path.join(image_dir, image_filename)
+            image_path = image_dir / image_filename
         # Try to find .pt file
         except ClinicaCAPSError:
             file_type = self.preprocessing_dict["file_type"]
             file_type["pattern"] = file_type["pattern"].replace(".nii.gz", ".pt")
-            image_path_list, _ = clinica_file_reader(
+            results = clinica_file_reader(
                 [participant], [session], self.caps_dict[cohort], file_type
             )
-            image_path = image_path_list[0]
+            filepath = results[0]
+            image_path = filepath[0]
 
         return image_path
 
@@ -195,11 +197,11 @@ class CapsDataset(Dataset):
         participant = self.df.loc[image_idx, "participant_id"]
         session = self.df.loc[image_idx, "session_id"]
         cohort = self.df.loc[image_idx, "cohort"]
+
         if self.elem_index is None:
             elem_idx = idx % self.elem_per_image
         else:
             elem_idx = self.elem_index
-
         if self.label_presence and self.label is not None:
             target = self.df.loc[image_idx, self.label]
             label = self.label_fn(target)
@@ -228,10 +230,10 @@ class CapsDataset(Dataset):
             image = torch.load(image_path)
         except IndexError:
             file_type = self.preprocessing_dict["file_type"]
-            image_path_list, _ = clinica_file_reader(
+            results = clinica_file_reader(
                 [participant_id], [session_id], self.caps_dict[cohort], file_type
             )
-            image_nii = nib.load(image_path_list[0])
+            image_nii = nib.load(results[0])
             image_np = image_nii.get_fdata()
             image = ToTensor()(image_np)
 
@@ -277,7 +279,7 @@ class CapsDatasetImage(CapsDataset):
 
     def __init__(
         self,
-        caps_directory: str,
+        caps_directory: Path,
         data_file: pd.DataFrame,
         preprocessing_dict: Dict[str, Any],
         train_transformations: Optional[Callable] = None,
@@ -291,7 +293,7 @@ class CapsDatasetImage(CapsDataset):
         Args:
             caps_directory: Directory of all the images.
             data_file: Path to the tsv file or DataFrame containing the subject/session list.
-            preprocessing_dict: preprocessing dict contained in the JSON file of extract.
+            preprocessing_dict: preprocessing dict contained in the JSON file of prepare_data.
             train_transformations: Optional transform to be applied only on training mode.
             label_presence: If True the diagnosis will be extracted from the given DataFrame.
             label: Name of the column in data_df containing the label.
@@ -302,6 +304,7 @@ class CapsDatasetImage(CapsDataset):
         """
 
         self.mode = "image"
+        self.prepare_dl = preprocessing_dict["prepare_dl"]
         super().__init__(
             caps_directory,
             data_file,
@@ -336,7 +339,7 @@ class CapsDatasetImage(CapsDataset):
             "participant_id": participant,
             "session_id": session,
             "image_id": 0,
-            "image_path": image_path,
+            "image_path": image_path.as_posix(),
         }
 
         return sample
@@ -348,7 +351,7 @@ class CapsDatasetImage(CapsDataset):
 class CapsDatasetPatch(CapsDataset):
     def __init__(
         self,
-        caps_directory: str,
+        caps_directory: Path,
         data_file: pd.DataFrame,
         preprocessing_dict: Dict[str, Any],
         train_transformations: Optional[Callable] = None,
@@ -363,7 +366,7 @@ class CapsDatasetPatch(CapsDataset):
         Args:
             caps_directory: Directory of all the images.
             data_file: Path to the tsv file or DataFrame containing the subject/session list.
-            preprocessing_dict: preprocessing dict contained in the JSON file of extract.
+            preprocessing_dict: preprocessing dict contained in the JSON file of prepare_data.
             train_transformations: Optional transform to be applied only on training mode.
             patch_index: If a value is given the same patch location will be extracted for each image.
                 else the dataset will load all the patches possible for one image.
@@ -400,13 +403,13 @@ class CapsDatasetPatch(CapsDataset):
         image_path = self._get_image_path(participant, session, cohort)
 
         if self.prepare_dl:
-            patch_dir = path.dirname(image_path).replace(
+            patch_dir = image_path.parent.as_posix().replace(
                 "image_based", f"{self.mode}_based"
             )
             patch_filename = extract_patch_path(
                 image_path, self.patch_size, self.stride_size, patch_idx
             )
-            patch_tensor = torch.load(path.join(patch_dir, patch_filename))
+            patch_tensor = torch.load(Path(patch_dir).resolve() / patch_filename)
 
         else:
             image = torch.load(image_path)
@@ -452,7 +455,7 @@ class CapsDatasetPatch(CapsDataset):
 class CapsDatasetRoi(CapsDataset):
     def __init__(
         self,
-        caps_directory: str,
+        caps_directory: Path,
         data_file: pd.DataFrame,
         preprocessing_dict: Dict[str, Any],
         roi_index: Optional[int] = None,
@@ -467,7 +470,7 @@ class CapsDatasetRoi(CapsDataset):
         Args:
             caps_directory: Directory of all the images.
             data_file: Path to the tsv file or DataFrame containing the subject/session list.
-            preprocessing_dict: preprocessing dict contained in the JSON file of extract.
+            preprocessing_dict: preprocessing dict contained in the JSON file of prepare_data.
             roi_index: If a value is given the same region will be extracted for each image.
                 else the dataset will load all the regions possible for one image.
             train_transformations: Optional transform to be applied only on training mode.
@@ -514,11 +517,11 @@ class CapsDatasetRoi(CapsDataset):
 
         if self.prepare_dl:
             mask_path = self.mask_paths[roi_idx]
-            roi_dir = path.dirname(image_path).replace(
+            roi_dir = image_path.parent.as_posix().replace(
                 "image_based", f"{self.mode}_based"
             )
             roi_filename = extract_roi_path(image_path, mask_path, self.uncropped_roi)
-            roi_tensor = torch.load(path.join(roi_dir, roi_filename))
+            roi_tensor = torch.load(Path(roi_dir) / roi_filename)
 
         else:
             image = torch.load(image_path)
@@ -551,7 +554,7 @@ class CapsDatasetRoi(CapsDataset):
 
     def _get_mask_paths_and_tensors(
         self,
-        caps_directory: str,
+        caps_directory: Path,
         multi_cohort: bool,
         preprocessing_dict: Dict[str, Any],
     ) -> Tuple[List[str], List]:
@@ -566,7 +569,6 @@ class CapsDatasetRoi(CapsDataset):
                 f"The equality of masks is not assessed for multi-cohort training. "
                 f"The masks stored in {caps_directory} will be used."
             )
-
         # Find template name
         if preprocessing_dict["preprocessing"] == "custom":
             template_name = preprocessing_dict["roi_custom_template"]
@@ -597,7 +599,7 @@ class CapsDatasetRoi(CapsDataset):
                 f"is not defined."
             )
 
-        mask_location = path.join(caps_directory, "masks", f"tpl-{template_name}")
+        mask_location = caps_directory / "masks" / f"tpl-{template_name}"
 
         mask_paths, mask_arrays = list(), list()
         for roi in self.roi_list:
@@ -606,7 +608,7 @@ class CapsDatasetRoi(CapsDataset):
             if mask_path is None:
                 raise FileNotFoundError(desc)
             mask_nii = nib.load(mask_path)
-            mask_paths.append(mask_path)
+            mask_paths.append(Path(mask_path))
             mask_arrays.append(mask_nii.get_fdata())
 
         return mask_paths, mask_arrays
@@ -615,7 +617,7 @@ class CapsDatasetRoi(CapsDataset):
 class CapsDatasetSlice(CapsDataset):
     def __init__(
         self,
-        caps_directory: str,
+        caps_directory: Path,
         data_file: pd.DataFrame,
         preprocessing_dict: Dict[str, Any],
         slice_index: Optional[int] = None,
@@ -630,7 +632,7 @@ class CapsDatasetSlice(CapsDataset):
         Args:
             caps_directory: Directory of all the images.
             data_file: Path to the tsv file or DataFrame containing the subject/session list.
-            preprocessing_dict: preprocessing dict contained in the JSON file of extract.
+            preprocessing_dict: preprocessing dict contained in the JSON file of prepare_data.
             slice_index: If a value is given the same slice will be extracted for each image.
                 else the dataset will load all the slices possible for one image.
             train_transformations: Optional transform to be applied only on training mode.
@@ -674,13 +676,13 @@ class CapsDatasetSlice(CapsDataset):
         image_path = self._get_image_path(participant, session, cohort)
 
         if self.prepare_dl:
-            slice_dir = path.dirname(image_path).replace(
+            slice_dir = image_path.parent.as_posix().replace(
                 "image_based", f"{self.mode}_based"
             )
             slice_filename = extract_slice_path(
                 image_path, self.slice_direction, self.slice_mode, slice_idx
             )
-            slice_tensor = torch.load(path.join(slice_dir, slice_filename))
+            slice_tensor = torch.load(Path(slice_dir) / slice_filename)
 
         else:
             image_path = self._get_image_path(participant, session, cohort)
@@ -721,7 +723,7 @@ class CapsDatasetSlice(CapsDataset):
 
 
 def return_dataset(
-    input_dir: str,
+    input_dir: Path,
     data_df: pd.DataFrame,
     preprocessing_dict: Dict[str, Any],
     all_transformations: Optional[Callable],
@@ -737,7 +739,7 @@ def return_dataset(
     Args:
         input_dir: path to a directory containing a CAPS structure.
         data_df: List subjects, sessions and diagnoses.
-        preprocessing_dict: preprocessing dict contained in the JSON file of extract.
+        preprocessing_dict: preprocessing dict contained in the JSON file of prepare_data.
         train_transformations: Optional transform to be applied during training only.
         all_transformations: Optional transform to be applied during training and evaluation.
         label: Name of the column in data_df containing the label.
@@ -749,11 +751,11 @@ def return_dataset(
     Returns:
          the corresponding dataset.
     """
-
     if cnn_index is not None and preprocessing_dict["mode"] == "image":
         raise NotImplementedError(
             f"Multi-CNN is not implemented for {preprocessing_dict['mode']} mode."
         )
+
     if preprocessing_dict["mode"] == "image":
         return CapsDatasetImage(
             input_dir,
@@ -958,7 +960,7 @@ def get_transforms(
 ################################
 # TSV files loaders
 ################################
-def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False):
+def load_data_test(test_path: Path, diagnoses_list, baseline=True, multi_cohort=False):
     """
     Load data not managed by split_manager.
 
@@ -971,7 +973,7 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
     # TODO: computes baseline sessions on-the-fly to manager TSV file case
 
     if multi_cohort:
-        if not test_path.endswith(".tsv"):
+        if not test_path.suffix == ".tsv":
             raise ClinicaDLArgumentError(
                 "If multi_cohort is given, the TSV_DIRECTORY argument should be a path to a TSV file."
             )
@@ -1004,7 +1006,7 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
                 )
             test_df.reset_index(inplace=True, drop=True)
     else:
-        if test_path.endswith(".tsv"):
+        if test_path.suffix == ".tsv":
             tsv_df = pd.read_csv(test_path, sep="\t")
             multi_col = {"cohort", "path"}
             if multi_col.issubset(tsv_df.columns.values):
@@ -1017,9 +1019,9 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
     return test_df
 
 
-def load_data_test_single(test_path, diagnoses_list, baseline=True):
+def load_data_test_single(test_path: Path, diagnoses_list, baseline=True):
 
-    if test_path.endswith(".tsv"):
+    if test_path.suffix == ".tsv":
         test_df = pd.read_csv(test_path, sep="\t")
         if "diagnosis" not in test_df.columns.values:
             raise ClinicaDLTSVError(
@@ -1034,15 +1036,28 @@ def load_data_test_single(test_path, diagnoses_list, baseline=True):
 
     test_df = pd.DataFrame()
 
-    for diagnosis in diagnoses_list:
-
-        if baseline:
-            test_diagnosis_path = path.join(test_path, diagnosis + "_baseline.tsv")
+    if baseline:
+        if not (test_path.parent / "train_baseline.tsv").is_file():
+            if not (test_path.parent / "labels_baseline.tsv").is_file():
+                raise ClinicaDLTSVError(
+                    f"There is no train_baseline.tsv nor labels_baseline.tsv in your folder {test_path.parents[0]} "
+                )
+            else:
+                test_path = test_path.parent / "labels_baseline.tsv"
         else:
-            test_diagnosis_path = path.join(test_path, diagnosis + ".tsv")
+            test_path = test_path.parent / "train_baseline.tsv"
+    else:
+        if not (test_path.parent / "train.tsv").is_file():
+            if not (test_path.parent / "labels.tsv").is_file():
+                raise ClinicaDLTSVError(
+                    f"There is no train.tsv or labels.tsv in your folder {test_path.parent} "
+                )
+            else:
+                test_path = test_path.parent / "labels.tsv"
+        else:
+            test_path = test_path.parent / "train.tsv"
 
-        test_diagnosis_df = pd.read_csv(test_diagnosis_path, sep="\t")
-        test_df = pd.concat([test_df, test_diagnosis_df])
+    test_df = pd.read_csv(test_path, sep="\t")
 
     test_df.reset_index(inplace=True, drop=True)
 

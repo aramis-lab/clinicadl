@@ -1,5 +1,5 @@
 # coding: utf8
-from os import path
+from pathlib import Path
 from time import time
 from typing import Any, Dict, List, Tuple, Union
 
@@ -14,7 +14,7 @@ def get_parameters_dict(
     extract_json: str,
     use_uncropped_image: bool,
     custom_suffix: str,
-    acq_label: str,
+    tracer: str,
     suvr_reference_region: str,
 ) -> Dict[str, Any]:
     """
@@ -27,7 +27,7 @@ def get_parameters_dict(
         use_uncropped_image: If True the cropped version of the image is used
             (specific to t1-linear and pet-linear).
         custom_suffix: string used to identify images when modality is custom.
-        acq_label: name of the tracer (specific to PET pipelines).
+        tracer: name of the tracer (specific to PET pipelines).
         suvr_reference_region: name of the reference region for normalization
             specific to PET pipelines)
     Returns:
@@ -43,7 +43,7 @@ def get_parameters_dict(
     if modality == "custom":
         parameters["custom_suffix"] = custom_suffix
     if modality == "pet-linear":
-        parameters["acq_label"] = acq_label
+        parameters["tracer"] = tracer
         parameters["suvr_reference_region"] = suvr_reference_region
 
     parameters["extract_json"] = compute_extract_json(extract_json)
@@ -54,7 +54,7 @@ def get_parameters_dict(
 def compute_extract_json(extract_json: str) -> str:
     if extract_json is None:
         return f"extract_{int(time())}.json"
-    elif not extract_json.endswith(".json"):
+    elif not extract_json.suffix == ".json":
         return f"{extract_json}.json"
     else:
         return extract_json
@@ -63,7 +63,13 @@ def compute_extract_json(extract_json: str) -> str:
 def compute_folder_and_file_type(
     parameters: Dict[str, Any]
 ) -> Tuple[str, Dict[str, str]]:
-    from clinica.utils.input_files import T1W_LINEAR, T1W_LINEAR_CROPPED, pet_linear_nii
+    from clinica.utils.input_files import (
+        FLAIR_T2W_LINEAR,
+        FLAIR_T2W_LINEAR_CROPPED,
+        T1W_LINEAR,
+        T1W_LINEAR_CROPPED,
+        pet_linear_nii,
+    )
 
     if parameters["preprocessing"] == "t1-linear":
         mod_subfolder = "t1_linear"
@@ -71,10 +77,17 @@ def compute_folder_and_file_type(
             file_type = T1W_LINEAR
         else:
             file_type = T1W_LINEAR_CROPPED
+
+    elif parameters["preprocessing"] == "flair-linear":
+        mod_subfolder = "flair_linear"
+        if parameters["use_uncropped_image"]:
+            file_type = FLAIR_T2W_LINEAR
+        else:
+            file_type = FLAIR_T2W_LINEAR_CROPPED
     elif parameters["preprocessing"] == "pet-linear":
         mod_subfolder = "pet_linear"
         file_type = pet_linear_nii(
-            parameters["acq_label"],
+            parameters["tracer"],
             parameters["suvr_reference_region"],
             parameters["use_uncropped_image"],
         )
@@ -112,7 +125,7 @@ def compute_discarded_slices(discarded_slices: Union[int, tuple]) -> Tuple[int, 
 
 
 def extract_slices(
-    nii_path: str,
+    nii_path: Path,
     slice_direction: int = 0,
     slice_mode: str = "single",
     discarded_slices: Union[int, tuple] = 0,
@@ -184,7 +197,7 @@ def extract_slice_tensor(
 
 
 def extract_slice_path(
-    img_path: str, slice_direction: int, slice_mode: str, slice_index: int
+    img_path: Path, slice_direction: int, slice_mode: str, slice_index: int
 ) -> str:
 
     direction_dict = {0: "sag", 1: "cor", 2: "axi"}
@@ -193,7 +206,7 @@ def extract_slice_path(
             f"Slice direction {slice_direction} should be in {direction_dict.keys()} corresponding to {direction_dict}."
         )
 
-    input_img_filename = path.basename(img_path)
+    input_img_filename = img_path.name
     txt_idx = input_img_filename.rfind("_")
     it_filename_prefix = input_img_filename[0:txt_idx]
     it_filename_suffix = input_img_filename[txt_idx:]
@@ -208,7 +221,7 @@ def extract_slice_path(
 # PATCH    #
 ############
 def extract_patches(
-    nii_path: str,
+    nii_path: Path,
     patch_size: int,
     stride_size: int,
 ) -> List[Tuple[str, torch.Tensor]]:
@@ -275,9 +288,9 @@ def extract_patch_tensor(
 
 
 def extract_patch_path(
-    img_path: str, patch_size: int, stride_size: int, patch_index: int
+    img_path: Path, patch_size: int, stride_size: int, patch_index: int
 ) -> str:
-    input_img_filename = path.basename(img_path)
+    input_img_filename = img_path.name
     txt_idx = input_img_filename.rfind("_")
     it_filename_prefix = input_img_filename[0:txt_idx]
     it_filename_suffix = input_img_filename[txt_idx:]
@@ -289,7 +302,7 @@ def extract_patch_path(
 ############
 # IMAGE    #
 ############
-def extract_images(input_img: str) -> List[Tuple[str, torch.Tensor]]:
+def extract_images(input_img: Path) -> List[Tuple[str, torch.Tensor]]:
     """Extract the images
     This function convert nifti image to tensor (.pt) version of the image.
     Tensor version is saved at the same location than input_img.
@@ -298,9 +311,6 @@ def extract_images(input_img: str) -> List[Tuple[str, torch.Tensor]]:
     Returns:
         filename (str): single tensor file  saved on the disk. Same location than input file.
     """
-
-    import os
-
     import nibabel as nib
     import torch
 
@@ -308,7 +318,7 @@ def extract_images(input_img: str) -> List[Tuple[str, torch.Tensor]]:
     image_tensor = torch.from_numpy(image_array).unsqueeze(0).float()
     # make sure the tensor type is torch.float32
     output_file = (
-        os.path.basename(input_img).replace(".nii.gz", ".pt"),
+        Path(input_img.name.replace(".nii.gz", ".pt")),
         image_tensor.clone(),
     )
 
@@ -318,7 +328,7 @@ def extract_images(input_img: str) -> List[Tuple[str, torch.Tensor]]:
 ############
 # ROI    #
 ############
-def check_mask_list(masks_location, roi_list, mask_pattern, cropping):
+def check_mask_list(masks_location: Path, roi_list, mask_pattern, cropping):
     import nibabel as nib
     import numpy as np
 
@@ -337,7 +347,7 @@ def check_mask_list(masks_location, roi_list, mask_pattern, cropping):
 
 
 def find_mask_path(
-    masks_location: str, roi: str, mask_pattern: str, cropping: bool
+    masks_location: Path, roi: str, mask_pattern: str, cropping: bool
 ) -> Tuple[str, str]:
     """
     Finds masks corresponding to the pattern asked and containing the adequate cropping description
@@ -352,34 +362,32 @@ def find_mask_path(
         path of the mask or None if nothing was found.
         a human-friendly description of the pattern looked for.
     """
-    from glob import glob
-    from os import path
 
     # Check that pattern begins and ends with _ to avoid mixing keys
     if mask_pattern is None:
         mask_pattern = ""
 
-    candidates_pattern = path.join(
-        masks_location, f"*{mask_pattern}*_roi-{roi}_mask.nii*"
-    )
+    candidates_pattern = f"*{mask_pattern}*_roi-{roi}_mask.nii*"
+
     desc = f"The mask should follow the pattern {candidates_pattern}. "
-    candidates = glob(candidates_pattern)
+    candidates = [e for e in masks_location.glob(candidates_pattern)]
     if cropping is None:
-        pass
+        # pass
+        candidates2 = candidates
     elif cropping:
-        candidates = [mask for mask in candidates if "_desc-Crop_" in mask]
+        candidates2 = [mask for mask in candidates if "_desc-Crop_" in mask.name]
         desc += f"and contain '_desc-Crop_' string."
     else:
-        candidates = [mask for mask in candidates if "_desc-Crop_" not in mask]
+        candidates2 = [mask for mask in candidates if "_desc-Crop_" not in mask.name]
         desc += f"and not contain '_desc-Crop_' string."
 
-    if len(candidates) == 0:
+    if len(candidates2) == 0:
         return None, desc
     else:
-        return min(candidates, key=len), desc
+        return min(candidates2), desc
 
 
-def compute_output_pattern(mask_path, crop_output):
+def compute_output_pattern(mask_path: Path, crop_output):
     """
     Computes the output pattern of the region cropped (without the source file prefix)
     Args:
@@ -388,9 +396,8 @@ def compute_output_pattern(mask_path, crop_output):
     Returns:
         the output pattern
     """
-    from os import path
 
-    mask_filename = path.basename(mask_path)
+    mask_filename = mask_path.name
     template_id = mask_filename.split("_")[0].split("-")[1]
     mask_descriptors = mask_filename.split("_")[1:-2:]
     roi_id = mask_filename.split("_")[-2].split("-")[1]
@@ -416,8 +423,8 @@ def compute_output_pattern(mask_path, crop_output):
 
 
 def extract_roi(
-    nii_path: str,
-    masks_location: str,
+    nii_path: Path,
+    masks_location: Path,
     mask_pattern: str,
     cropped_input: bool,
     roi_names: List[str],
@@ -488,8 +495,8 @@ def extract_roi_tensor(
     return roi_tensor.float().clone()
 
 
-def extract_roi_path(img_path: str, mask_path: str, uncrop_output: bool) -> str:
-    input_img_filename = path.basename(img_path)
+def extract_roi_path(img_path: Path, mask_path: Path, uncrop_output: bool) -> str:
+    input_img_filename = img_path.name
 
     sub_ses_prefix = "_".join(input_img_filename.split("_")[0:3:])
     if not sub_ses_prefix.endswith("_T1w"):
@@ -504,9 +511,11 @@ def extract_roi_path(img_path: str, mask_path: str, uncrop_output: bool) -> str:
 TEMPLATE_DICT = {
     "t1-linear": "MNI152NLin2009cSym",
     "pet-linear": "MNI152NLin2009cSym",
+    "flair-linear": "MNI152NLin2009cSym",
 }
 
 PATTERN_DICT = {
     "t1-linear": "res-1x1x1",
     "pet-linear": "res-1x1x1",
+    "flair-linear": "res-1x1x1",
 }

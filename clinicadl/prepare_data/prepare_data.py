@@ -1,9 +1,8 @@
 from logging import getLogger
+from pathlib import Path
 
 
-def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
-    import os
-    from os import path
+def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parameters):
 
     from clinica.utils.inputs import check_caps_folder, clinica_file_reader
     from clinica.utils.nipype import container_from_filename
@@ -16,7 +15,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
 
     from .prepare_data_utils import check_mask_list, compute_folder_and_file_type
 
-    logger = getLogger("clinicadl.extract")
+    logger = getLogger("clinicadl.prepare_data")
 
     # Get subject and session list
     check_caps_folder(caps_directory)
@@ -49,34 +48,36 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
     parameters["file_type"] = file_type
 
     # Input file:
-    input_files = clinica_file_reader(subjects, sessions, caps_directory, file_type)[0]
+    input_files = clinica_file_reader(
+        subjects, sessions, caps_directory.as_posix(), file_type
+    )[0]
 
     def write_output_imgs(output_mode, container, subfolder):
         # Write the extracted tensor on a .pt file
         for filename, tensor in output_mode:
-            output_file_dir = path.join(
-                caps_directory,
-                container,
-                "deeplearning_prepare_data",
-                subfolder,
-                mod_subfolder,
+            output_file_dir = (
+                caps_directory
+                / container
+                / "deeplearning_prepare_data"
+                / subfolder
+                / mod_subfolder
             )
-            if not path.exists(output_file_dir):
-                os.makedirs(output_file_dir)
-            output_file = path.join(output_file_dir, filename)
+            if not output_file_dir.is_dir():
+                output_file_dir.mkdir(parents=True, exist_ok=True)
+            output_file = output_file_dir / filename
             save_tensor(tensor, output_file)
-            logger.debug(f"    Output tensor saved at {output_file}")
+            logger.debug(f"Output tensor saved at {output_file}")
 
     if parameters["mode"] == "image" or not parameters["prepare_dl"]:
 
         def prepare_image(file):
             from .prepare_data_utils import extract_images
 
-            logger.debug(f"  Processing of {file}.")
+            logger.debug(f"Processing of {file}.")
             container = container_from_filename(file)
             subfolder = "image_based"
-            output_mode = extract_images(file)
-            logger.debug(f"    Image extracted.")
+            output_mode = extract_images(Path(file))
+            logger.debug(f"Image extracted.")
             write_output_imgs(output_mode, container, subfolder)
 
         Parallel(n_jobs=n_proc)(delayed(prepare_image)(file) for file in input_files)
@@ -90,7 +91,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
             container = container_from_filename(file)
             subfolder = "slice_based"
             output_mode = extract_slices(
-                file,
+                Path(file),
                 slice_direction=parameters["slice_direction"],
                 slice_mode=parameters["slice_mode"],
                 discarded_slices=parameters["discarded_slices"],
@@ -109,7 +110,7 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
             container = container_from_filename(file)
             subfolder = "patch_based"
             output_mode = extract_patches(
-                file,
+                Path(file),
                 patch_size=parameters["patch_size"],
                 stride_size=parameters["stride_size"],
             )
@@ -141,9 +142,10 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
                     parameters["preprocessing"]
                 ]
 
-            parameters["masks_location"] = path.join(
-                caps_directory, "masks", f"tpl-{parameters['roi_template']}"
+            parameters["masks_location"] = (
+                caps_directory / "masks" / f"tpl-{parameters['roi_template']}"
             )
+
             if len(parameters["roi_list"]) == 0:
                 raise ClinicaDLArgumentError(
                     "A list of regions of interest must be given."
@@ -157,8 +159,9 @@ def DeepLearningPrepareData(caps_directory, tsv_file, n_proc, parameters):
                     if parameters["use_uncropped_image"] is None
                     else not parameters["use_uncropped_image"],
                 )
+
             output_mode = extract_roi(
-                file,
+                Path(file),
                 masks_location=parameters["masks_location"],
                 mask_pattern=parameters["roi_mask_pattern"],
                 cropped_input=None

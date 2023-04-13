@@ -53,12 +53,12 @@ def run_test_random_search(toml_path, generate_input, tmp_out_dir, ref_dir):
     assert performances_flag
 
     assert compare_folders(
-        str(tmp_out_dir / "job-1" / "groups"),
-        str(ref_dir / "job-1" / "groups"),
+        tmp_out_dir / "job-1" / "groups",
+        ref_dir / "job-1" / "groups",
         tmp_out_dir,
     )
     assert compare_folders(
-        str(tmp_out_dir / "job-1" / "split-0" / "best-loss"),
-        str(ref_dir / "job-1" / "split-0" / "best-loss"),
+        tmp_out_dir / "job-1" / "split-0" / "best-loss",
+        ref_dir / "job-1" / "split-0" / "best-loss",
         tmp_out_dir,
     )

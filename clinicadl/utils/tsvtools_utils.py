@@ -2,7 +2,7 @@
 
 from copy import copy
 from logging import getLogger
-from os import path
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -12,7 +12,9 @@ from clinicadl.utils.exceptions import ClinicaDLTSVError
 logger = getLogger("clinicadl")
 
 
-def merged_tsv_reader(merged_tsv_path):
+def merged_tsv_reader(merged_tsv_path: Path):
+    if not merged_tsv_path.is_file():
+        raise ClinicaDLTSVError(f"{merged_tsv_path} file was not found. ")
     bids_df = pd.read_csv(merged_tsv_path, sep="\t")
 
     for i in bids_df.index:
@@ -180,7 +182,9 @@ def retrieve_longitudinal(df, diagnosis_df):
     return final_df
 
 
-def remove_sub_labels(diagnosis_df, sub_labels, diagnosis_df_paths, results_path):
+def remove_sub_labels(
+    diagnosis_df, sub_labels, diagnosis_df_paths: list[Path], results_path: Path
+):
     supplementary_diagnoses = []
 
     logger.debug("Before subjects removal")
@@ -190,8 +194,8 @@ def remove_sub_labels(diagnosis_df, sub_labels, diagnosis_df_paths, results_path
     logger.debug(f"{len(sub_df)} subjects, {len(diagnosis_df)} scans")
 
     for label in sub_labels:
-        if f"{label}.tsv" in diagnosis_df_paths:
-            sub_diag_df = pd.read_csv(path.join(results_path, f"{label}.tsv"), sep="\t")
+        if Path(f"{label}.tsv") in diagnosis_df_paths:
+            sub_diag_df = pd.read_csv(results_path / f"{label}.tsv", sep="\t")
             sub_diag_baseline_df = extract_baseline(sub_diag_df, label)
             for idx in sub_diag_baseline_df.index.values:
                 subject = sub_diag_baseline_df.loc[idx, "participant_id"]
@@ -267,7 +271,7 @@ def cleaning_nan_diagnoses(bids_df: pd.DataFrame) -> pd.DataFrame:
     return bids_copy_df
 
 
-def df_to_tsv(name: str, results_path: str, df, baseline: bool = False) -> None:
+def df_to_tsv(name: str, results_path: Path, df, baseline: bool = False) -> None:
     """
     Write Dataframe into a TSV file and drop duplicates
 
@@ -291,5 +295,5 @@ def df_to_tsv(name: str, results_path: str, df, baseline: bool = False) -> None:
         df.drop_duplicates(
             subset=["participant_id", "session_id"], keep="first", inplace=True
         )
-    df = df[["participant_id", "session_id"]]
-    df.to_csv(path.join(results_path, name), sep="\t", index=False)
+    # df = df[["participant_id", "session_id"]]
+    df.to_csv(results_path / name, sep="\t", index=False)

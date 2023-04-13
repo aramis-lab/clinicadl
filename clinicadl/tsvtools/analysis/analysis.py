@@ -1,14 +1,13 @@
 # coding: utf-8
 
-import os
 from copy import copy
-from os import path
-from warnings import warn
+from logging import getLogger
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 from clinicadl.utils.tsvtools_utils import (
     add_demographics,
     cleaning_nan_diagnoses,
@@ -18,8 +17,12 @@ from clinicadl.utils.tsvtools_utils import (
     next_session,
 )
 
+logger = getLogger("clinicadl.tsvtools.analysis")
 
-def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
+
+def demographics_analysis(
+    merged_tsv: Path, data_tsv: Path, results_tsv: Path, diagnoses
+):
     """
     Produces a tsv file with rows corresponding to the labels defined by the diagnoses list,
     and the columns being demographic statistics.
@@ -31,7 +34,7 @@ def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
     merged_tsv: str (path)
         Path to the file obtained by the command clinica iotools merge-tsv.
     data_tsv: str (path)
-        Path to the folder containing data extracted by clinicadl tsvtool getlabels.
+        Path to the folder containing data extracted by clinicadl tsvtool get-labels.
     results_tsv: str (path)
         Path to the output tsv file (filename included).
     diagnoses: list of str
@@ -39,11 +42,17 @@ def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
 
     """
 
-    merged_df = merged_tsv_reader(merged_tsv)
+    if not data_tsv.is_file():
+        raise ClinicaDLTSVError(f"{data_tsv} file was not found. ")
+
+    if not merged_tsv.is_file():
+        raise ClinicaDLTSVError(f"{merged_tsv} file was not found. ")
+    merged_df = pd.read_csv(merged_tsv, sep="\t")
     merged_df.set_index(["participant_id", "session_id"], inplace=True)
     merged_df = cleaning_nan_diagnoses(merged_df)
-    parent_directory = path.abspath(path.join(results_tsv, os.pardir))
-    os.makedirs(parent_directory, exist_ok=True)
+
+    parent_directory = results_tsv.resolve().parent
+    parent_directory.mkdir(parents=True, exist_ok=True)
 
     fields_dict = {
         "age": find_label(merged_df.columns.values, "age"),
@@ -79,11 +88,7 @@ def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
 
     # Need all values for mean and variance (age, MMSE and scans)
     diagnosis_dict = dict.fromkeys(diagnoses)
-    if not path.exists(data_tsv):
-        print(
-            f"getlabels.tsv file with all sessions was not found. "
-            # f"Loads baseline version instead."
-        )
+
     for diagnosis in diagnoses:
         diagnosis_dict[diagnosis] = {"age": [], "MMSE": [], "scans": []}
         getlabels_df = pd.read_csv(data_tsv, sep="\t")
@@ -114,6 +119,8 @@ def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
                 demographics_subject_df = merged_df.loc[subject]
 
                 # Extract features
+                logger.debug(f"extract features for subject {subject}")
+
                 results_df.loc[diagnosis, "n_subjects"] += 1
                 results_df.loc[diagnosis, "n_scans"] += len(subject_df)
                 diagnosis_dict[diagnosis]["age"].append(
@@ -166,6 +173,9 @@ def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
                 f"There is no subject with diagnosis {diagnosis}"
             )
     for diagnosis in diagnoses:
+
+        logger.debug(f"compute stats for diagnosis {diagnosis}")
+
         results_df.loc[diagnosis, "mean_age"] = np.nanmean(
             diagnosis_dict[diagnosis]["age"]
         )
@@ -199,10 +209,11 @@ def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
 
         for key in diagnosis_dict[diagnosis]:
             if np.isnan(diagnosis_dict[diagnosis][key]).any():
-                warn(
+                logger.warning(
                     f"NaN values were found for {key} values associated to diagnosis {diagnosis}"
                 )
 
     results_df.index.name = "group"
 
     results_df.to_csv(results_tsv, sep="\t")
+    logger.info(f"Result is stored at {results_tsv}")

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 
 from clinicadl.utils import cli_param
@@ -7,7 +9,7 @@ from clinicadl.utils import cli_param
 @cli_param.argument.caps_directory
 @click.argument(
     "output_tsv",
-    type=str,
+    type=click.Path(path_type=Path),
 )
 @cli_param.option.participant_list
 @click.option(
@@ -21,6 +23,19 @@ from clinicadl.utils import cli_param
 @cli_param.option.batch_size
 @cli_param.option.n_proc
 @cli_param.option.use_gpu
+@click.option(
+    "--network",
+    default="darq",
+    type=click.Choice(["darq", "deep_qc", "sq101"]),
+    help="is the architecture chosen for the network (to chose between darq, sq101 and deep_qc",
+)
+@click.option(
+    "--use_tensor",
+    type=bool,
+    default=False,
+    is_flag=True,
+    help="Flag allowing the pipeline to run on the extracted tensors and not on the nifti images",
+)
 def cli(
     caps_directory,
     output_tsv,
@@ -29,6 +44,9 @@ def cli(
     batch_size,
     n_proc,
     gpu,
+    network,
+    use_tensor,
+    use_uncropped_image=True,
 ):
     """Performs quality check on t1-linear pipeline.
 
@@ -51,4 +69,7 @@ def cli(
         batch_size=batch_size,
         n_proc=n_proc,
         gpu=gpu,
+        network=network,
+        use_tensor=use_tensor,
+        use_uncropped_image=use_uncropped_image,
     )
