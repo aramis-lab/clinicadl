@@ -67,7 +67,7 @@ class CapsDataset(Dataset):
                 "Child class of CapsDataset must set elem_index attribute."
             )
         if not hasattr(self, "mode"):
-            raise AttributeError("Child class of CapsDataset must set mode attribute.")
+            raise AttributeError("Child class of CapsDataset, must set mode attribute.")
 
         self.df = data_df
 
@@ -76,7 +76,6 @@ class CapsDataset(Dataset):
             mandatory_col.add(self.label)
 
         if not mandatory_col.issubset(set(self.df.columns.values)):
-
             raise Exception(
                 f"the data file is not in the correct format."
                 f"Columns should include {mandatory_col}"
@@ -113,7 +112,6 @@ class CapsDataset(Dataset):
 
     @staticmethod
     def create_caps_dict(caps_directory: Path, multi_cohort: bool) -> Dict[str, Path]:
-
         from clinica.utils.inputs import check_caps_folder
 
         if multi_cohort:
@@ -1047,7 +1045,6 @@ def load_data_test(test_path: Path, diagnoses_list, baseline=True, multi_cohort=
 
 
 def load_data_test_single(test_path: Path, diagnoses_list, baseline=True):
-
     if test_path.suffix == ".tsv":
         test_df = pd.read_csv(test_path, sep="\t")
         if "diagnosis" not in test_df.columns.values:

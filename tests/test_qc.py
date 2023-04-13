@@ -52,14 +52,13 @@ def test_qc(cmdopt, tmp_path, test_name):
         ]
     else:
         raise NotImplementedError(
-            f"Quality check test on {test_name} is not implemented, test."
+            f"Quality check test on {test_name} is not implemented  ."
         )
 
     flag_error = not system(f"clinicadl quality-check " + " ".join(test_input))
     assert flag_error
 
     if test_name == "t1-linear":
-
         ref_tsv = join(ref_dir, "QC.tsv")
         ref_df = pd.read_csv(ref_tsv, sep="\t")
         ref_df.reset_index(inplace=True)

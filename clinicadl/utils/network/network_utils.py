@@ -14,6 +14,7 @@ class Reshape(nn.Module):
         return input.view(*self.size)
 
 
+# pre-commit comment
 class PadMaxPool3d(nn.Module):
     def __init__(self, kernel_size, stride, return_indices=False, return_pad=False):
         super(PadMaxPool3d, self).__init__()

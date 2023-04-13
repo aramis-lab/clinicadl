@@ -18,18 +18,26 @@ def get_parameters_dict(
     suvr_reference_region: str,
 ) -> Dict[str, Any]:
     """
-    Args:
-        modality: preprocessing procedure performed with Clinica.
-        extract_method: mode of extraction (image, slice, patch, roi).
-        save_features: If True modes are extracted, else images are extracted
-            and the extraction of modes is done on-the-fly during training.
-        extract_json: Name of the JSON file created to sum up the arguments of tensor extraction.
-        use_uncropped_image: If True the cropped version of the image is used
-            (specific to t1-linear and pet-linear).
-        custom_suffix: string used to identify images when modality is custom.
-        tracer: name of the tracer (specific to PET pipelines).
-        suvr_reference_region: name of the reference region for normalization
-            specific to PET pipelines)
+    Parameters
+    ----------
+    modality: str
+        Preprocessing procedure performed with Clinica.
+    extract_method: str
+        Mode of extraction (image, slice, patch, roi).
+    save_features: bool
+        If True modes are extracted, else images are extracted
+        and the extraction of modes is done on-the-fly during training.
+    extract_json: str
+        Name of the JSON file created to sum up the arguments of tensor extraction.
+    use_uncropped_image: bool
+        If True the cropped version of the image is used
+        (specific to t1-linear and pet-linear).
+    custom_suffix: str
+        String used to identify images when modality is custom.
+    tracer: str
+        Name of the tracer (specific to PET pipelines).
+    suvr_reference_region: str
+        Name of the reference region for normalization specific to PET pipelines)
     Returns:
         The dictionary of parameters specific to the preprocessing
     """
@@ -199,7 +207,6 @@ def extract_slice_tensor(
 def extract_slice_path(
     img_path: Path, slice_direction: int, slice_mode: str, slice_index: int
 ) -> str:
-
     direction_dict = {0: "sag", 1: "cor", 2: "axi"}
     if slice_direction not in direction_dict:
         raise KeyError(
@@ -471,7 +478,6 @@ def extract_roi_tensor(
     mask_np,
     uncrop_output: bool,
 ) -> torch.Tensor:
-
     if len(mask_np.shape) == 3:
         mask_np = np.expand_dims(mask_np, axis=0)
     elif len(mask_np.shape) == 4:

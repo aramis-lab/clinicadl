@@ -22,7 +22,7 @@ def get_metadata(
     data_tsv: str (Path)
         Columns must include ['participant_id', 'session_id']
     merged_tsv: str (Path)
-        output of `clinica merge-tsv`
+        Output of `clinica merge-tsv`
     variables_of_interest: list of str
         List of columns that will be added in the output DataFrame.
 
@@ -41,7 +41,6 @@ def get_metadata(
     )
 
     if variables_of_interest is None:
-
         variables_list = np.unique(variables_metadata)
         logger.debug(
             f"Adding the following columns to the input tsv file: {variables_list}"
@@ -50,7 +49,6 @@ def get_metadata(
         result_df.set_index(["participant_id", "session_id"], inplace=True)
 
     else:
-
         if not set(variables_of_interest).issubset(set(metadata_df.columns.values)):
             raise ClinicaDLArgumentError(
                 f"The variables asked by the user {variables_of_interest} do not "

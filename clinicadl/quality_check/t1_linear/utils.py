@@ -40,7 +40,7 @@ class QCDataset(Dataset):
             "participant_id" not in list(self.df.columns.values)
         ):
             raise Exception(
-                "the data file is not in the correct format."
+                "The data file is not in the correct format."
                 "Columns should include ['participant_id', 'session_id']"
             )
 
@@ -84,7 +84,6 @@ class QCDataset(Dataset):
             image = torch.load(image_path)
             image = self.pt_transform(image)
         else:
-
             image_path = clinica_file_reader(
                 [subject],
                 [session],
@@ -196,7 +195,6 @@ class QCDataset(Dataset):
             # direction with the pretrained model
 
             if len(input_images[i].shape) == 3:
-
                 slice = np.reshape(
                     input_images[i],
                     (input_images[i].shape[0], input_images[i].shape[1]),

@@ -28,7 +28,6 @@ def test_name(request):
 
 
 def test_prepare_data(cmdopt, tmp_path, test_name):
-
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "prepare_data" / "in"
     ref_dir = base_dir / "prepare_data" / "ref"
@@ -89,7 +88,6 @@ def test_prepare_data(cmdopt, tmp_path, test_name):
 
 
 def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
-
     modalities = ["t1-linear", "pet-linear", "flair-linear"]
     uncropped_image = [True, False]
     acquisition_label = ["18FAV45", "11CPIB"]
@@ -143,7 +141,6 @@ def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
                     "extract_json"
                 ] = f"{modality}_crop-{not flag}_mode-{parameters['mode']}.json"
 
-                # tsv_file = input_dir / "subjects_flair.tsv"
                 mode = f"{parameters['mode']}_flair"
                 extract_generic(out_dir, mode, None, parameters)
         else:
@@ -154,7 +151,6 @@ def run_test_prepare_data(input_dir, ref_dir, out_dir, parameters):
 
 
 def extract_generic(out_dir, mode, tsv_file, parameters):
-
     from clinicadl.prepare_data.prepare_data import DeepLearningPrepareData
 
     DeepLearningPrepareData(

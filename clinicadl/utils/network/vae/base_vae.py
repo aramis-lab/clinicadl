@@ -39,13 +39,13 @@ class BaseVAE(Network):
         output, _, _ = self.forward(x)
         return output
 
+    # Forward
     def forward(self, x):
         mu, logVar = self.encode(x)
         z = self.reparameterize(mu, logVar)
         return self.decode(z), mu, logVar
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=False):
-
         images = input_dict["image"].to(self.device)
         recon_images, mu, logVar = self.forward(images)
 

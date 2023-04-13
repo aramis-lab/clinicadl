@@ -3,7 +3,6 @@ from pathlib import Path
 
 
 def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parameters):
-
     from clinica.utils.inputs import check_caps_folder, clinica_file_reader
     from clinica.utils.nipype import container_from_filename
     from clinica.utils.participant import get_subject_session_list
@@ -19,7 +18,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
 
     # Get subject and session list
     check_caps_folder(caps_directory)
-    logger.debug(f"CAPS directory : {caps_directory}.")
+    logger.debug(f"CAPS directory: {caps_directory}.")
     is_bids_dir = False
     sessions, subjects = get_subject_session_list(
         caps_directory, tsv_file, is_bids_dir, False, None

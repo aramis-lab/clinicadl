@@ -55,9 +55,9 @@ class MapsManager:
         Parameters
         ----------
         maps_path: str (path)
-            path of the MAPS
+            Path of the MAPS
         parameters: Dict[str, Any]
-            parameters of the training step. If given a new MAPS is created.
+            Parameters of the training step. If given a new MAPS is created.
         verbose: str
             Logging level ("debug", "info", "warning")
         """
@@ -857,7 +857,6 @@ class MapsManager:
 
             with profiler:
                 for i, data in enumerate(train_loader):
-
                     _, loss_dict = model.compute_outputs_and_loss(data, criterion)
                     logger.debug(f"Train loss dictionnary {loss_dict}")
                     loss = loss_dict["loss"]
@@ -1029,7 +1028,6 @@ class MapsManager:
             network (int): Index of the network tested (only used in multi-network setting).
         """
         for selection_metric in selection_metrics:
-
             log_dir = (
                 self.maps_path
                 / f"{self.split_name}-{split}"
