@@ -46,7 +46,6 @@ class BaseVAE(Network):
         return self.decode(z), mu, logvar
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=False):
-
         images = input_dict["image"].to(self.device)
         recon_images, mu, log_var = self.forward(images)
 

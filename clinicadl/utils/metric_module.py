@@ -22,7 +22,6 @@ logger = getLogger("clinicadl.metric")
 
 class MetricModule:
     def __init__(self, metrics, n_classes=2):
-
         self.n_classes = n_classes
 
         # Check if wanted metrics are implemented
