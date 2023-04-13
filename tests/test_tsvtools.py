@@ -64,7 +64,6 @@ def run_test_suite(data_tsv, n_splits):
 
     else:
         for split_number in range(n_splits):
-
             for folder, _, files in os.walk(data_tsv / "split"):
                 folder = Path(folder)
 
@@ -176,7 +175,6 @@ def test_analysis(cmdopt, tmp_path):
 
 
 def test_get_progression(cmdopt, tmp_path):
-
     """Checks that get-progression can be performed"""
 
     base_dir = Path(cmdopt["input"])
@@ -230,7 +228,6 @@ def test_prepare_experiment(cmdopt, tmp_path):
 
 
 def test_get_metadata(cmdopt, tmp_path):
-
     """Checks that get-metadata can be performed"""
     base_dir = Path(cmdopt["input"])
     input_dir = base_dir / "tsvtools" / "in"
