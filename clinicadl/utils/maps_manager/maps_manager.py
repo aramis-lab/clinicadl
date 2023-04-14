@@ -327,7 +327,12 @@ class MapsManager:
                         monte_carlo=monte_carlo,
                         seed=self.parameters["seed"],
                     )
-                    if save_tensor or save_nifti or save_latent_tensor or monte_carlo:
+                    if (
+                        save_tensor
+                        or save_nifti
+                        or save_latent_tensor
+                        or monte_carlo
+                    ):
                         self._save_model_output(
                             data_test,
                             data_group,
@@ -337,6 +342,7 @@ class MapsManager:
                             save_reconstruction_nifti=save_nifti,
                             save_latent_tensor=save_latent_tensor,
                             monte_carlo=monte_carlo,
+                            seed=self.parameters["seed"],
                             gpu=gpu,
                         )
             else:
@@ -373,7 +379,12 @@ class MapsManager:
                     monte_carlo=monte_carlo,
                     seed=self.parameters["seed"],
                 )
-                if save_tensor or save_nifti or save_latent_tensor or monte_carlo:
+                if (
+                    save_tensor
+                    or save_nifti
+                    or save_latent_tensor
+                    or monte_carlo
+                ):
                     self._save_model_output(
                         data_test,
                         data_group,
@@ -383,6 +394,7 @@ class MapsManager:
                         save_reconstruction_nifti=save_nifti,
                         save_latent_tensor=save_latent_tensor,
                         monte_carlo=monte_carlo,
+                        seed=self.parameters["seed"],
                         gpu=gpu,
                     )
 
@@ -545,10 +557,8 @@ class MapsManager:
                         if save_individual:
                             single_path = path.join(
                                 results_path,
-                                (
-                                    f"{data['participant_id'][i]}_{data['session_id'][i]}_"
-                                    f"{self.mode}-{data[f'{self.mode}_id'][i]}_map.pt"
-                                ),
+                                f"{data['participant_id'][i]}_{data['session_id'][i]}_"
+                                f"{self.mode}-{data[f'{self.mode}_id'][i]}_map.pt",
                             )
                             torch.save(map_pt[i], single_path)
                 for i, mode_map in enumerate(cum_maps):
@@ -1133,6 +1143,7 @@ class MapsManager:
         save_reconstruction_nifti=False,
         save_latent_tensor=False,
         monte_carlo=None,
+        seed=None,
         nb_images=None,
         gpu=None,
         network=None,
@@ -1196,7 +1207,7 @@ class MapsManager:
 
             for i in range(nb_modes):
 
-                if monte_carlo is None: 
+                if monte_carlo is None:
                     data = dataset[i]
                     image = data["data"]
                     data["data"] = data["data"].unsqueeze(0)
@@ -1209,12 +1220,16 @@ class MapsManager:
                         reconstruction = output["recon_x"].squeeze(0).cpu()
                         input_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
                         output_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output.pt"
-                        torch.save(image, path.join(tensor_path, input_filename))
                         torch.save(
-                            reconstruction, path.join(tensor_path, output_filename)
+                            image, path.join(tensor_path, input_filename)
+                        )
+                        torch.save(
+                            reconstruction,
+                            path.join(tensor_path, output_filename),
                         )
                         logger.debug(
-                            f"File saved at {[input_filename, output_filename]}"
+                            "File saved at"
+                            f" {[input_filename, output_filename]}"
                         )
 
                     if save_reconstruction_nifti:
@@ -1228,10 +1243,10 @@ class MapsManager:
                         input_filename = (
                             f"{participant_id}_{session_id}_image_input.nii.gz"
                         )
-                        output_filename = (
-                            f"{participant_id}_{session_id}_image_output.nii.gz"
+                        output_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
+                        nib.save(
+                            input_nii, path.join(nifti_path, input_filename)
                         )
-                        nib.save(input_nii, path.join(nifti_path, input_filename))
                         nib.save(
                             output_nii, path.join(nifti_path, output_filename)
                         )
@@ -1240,10 +1255,11 @@ class MapsManager:
                         latent = output["embedding"].squeeze(0).cpu()
                         output_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
                         torch.save(
-                            latent, path.join(latent_tensor_path, output_filename)
+                            latent,
+                            path.join(latent_tensor_path, output_filename),
                         )
 
-                else: 
+                else:
                     data = dataset[i]
                     image = data["data"]
                     data["data"] = data["data"].unsqueeze(0)
@@ -1251,20 +1267,26 @@ class MapsManager:
                     session_id = data["session_id"]
                     mode_id = data[f"{self.mode}_id"]
 
-                    outputs = model.predict(data)
+                    outputs = model.predict(
+                        data, monte_carlo=monte_carlo, seed=seed
+                    )
 
                     for i in range(monte_carlo):
-                        output = outputs[i] 
+                        output = outputs[i]
 
                         reconstruction = output["recon_x"].squeeze(0).cpu()
                         input_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
                         output_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output-{i}.pt"
-                        torch.save(image, path.join(tensor_path, input_filename))
                         torch.save(
-                            reconstruction, path.join(tensor_path, output_filename)
+                            image, path.join(tensor_path, input_filename)
+                        )
+                        torch.save(
+                            reconstruction,
+                            path.join(tensor_path, output_filename),
                         )
                         logger.debug(
-                            f"File saved at {[input_filename, output_filename]}"
+                            "File saved at"
+                            f" {[input_filename, output_filename]}"
                         )
 
                         # Convert tensor to nifti image with appropriate affine
@@ -1277,10 +1299,10 @@ class MapsManager:
                         input_filename = (
                             f"{participant_id}_{session_id}_image_input.nii.gz"
                         )
-                        output_filename = (
-                            f"{participant_id}_{session_id}_image_output-{i}.nii.gz"
+                        output_filename = f"{participant_id}_{session_id}_image_output-{i}.nii.gz"
+                        nib.save(
+                            input_nii, path.join(nifti_path, input_filename)
                         )
-                        nib.save(input_nii, path.join(nifti_path, input_filename))
                         nib.save(
                             output_nii, path.join(nifti_path, output_filename)
                         )
@@ -1288,9 +1310,9 @@ class MapsManager:
                         latent = output["embedding"].squeeze(0).cpu()
                         output_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent{i}.pt"
                         torch.save(
-                            latent, path.join(latent_tensor_path, output_filename)
+                            latent,
+                            path.join(latent_tensor_path, output_filename),
                         )
-
 
     def _ensemble_prediction(
         self,
