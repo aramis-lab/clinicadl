@@ -188,7 +188,7 @@ class MapsManager:
                 output_dir=model_dir,
                 num_epochs=self.epochs,
                 learning_rate=self.learning_rate,
-                batch_size=self.bath_size,
+                batch_size=self.batch_size,
             )            
             # Create Pythae Training Pipeline
             pipeline = TrainingPipeline(
