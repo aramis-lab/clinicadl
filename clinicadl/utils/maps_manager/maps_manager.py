@@ -195,11 +195,11 @@ class MapsManager:
                 split=split,
                 gpu=True,
             )
-            model = clinicadl_model.modepl
+            model = clinicadl_model.model
             config = clinicadl_model.get_trainer_config(
                 output_dir=model_dir,
-                num_epochs=self.epohs,
-                learning_rate=self.earning_rate,
+                num_epochs=self.epochs,
+                learning_rate=self.learning_rate,
                 batch_size=self.bath_size,
             )
             # Create Pythae Training Pipeline
