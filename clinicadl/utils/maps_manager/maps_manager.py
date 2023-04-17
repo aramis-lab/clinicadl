@@ -1160,6 +1160,9 @@ class MapsManager:
             gpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network tested (only used in multi-network setting).
         """
+        import nibabel as nib
+        from numpy import eye
+
         for selection_metric in selection_metrics:
             # load the best trained model during the training
             model, _ = self._init_model(
@@ -1293,7 +1296,7 @@ class MapsManager:
                         reconstruction = output["recon_x"].squeeze(0).cpu()
                         input_nii = nib.Nifti1Image(image[0].numpy(), eye(4))
                         output_nii = nib.Nifti1Image(
-                            reconstruction[0].numpy(), eye(4)
+                            reconstruction[0].detach().numpy(), eye(4)
                         )
                         # Create file name according to participant and session id
                         input_filename = (
