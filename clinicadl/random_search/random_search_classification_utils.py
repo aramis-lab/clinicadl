@@ -10,7 +10,7 @@ from clinicadl.utils.maps_manager.maps_manager_utils import change_str_to_path
 from clinicadl.utils.preprocessing import read_preprocessing
 
 
-def get_space_dict(launch_directory: Path) -> Dict[str, Any]:
+def get_classification_space_dict(launch_directory: str) -> Dict[str, Any]:
     """Transforms the TOML dictionary in one dimension dictionary."""
     toml_path = launch_directory / "random_search.toml"
     toml_options = toml.load(toml_path)
@@ -98,7 +98,7 @@ def sampling_fn(value, sampling_type: str):
             return value
 
 
-def random_sampling(rs_options: Dict[str, Any]) -> Dict[str, Any]:
+def classification_random_sampling(rs_options: Dict[str, Any]) -> Dict[str, Any]:
     """
     Samples all the hyperparameters of the model.
     Args:

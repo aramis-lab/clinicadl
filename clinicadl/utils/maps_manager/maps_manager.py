@@ -148,6 +148,72 @@ class MapsManager:
         else:
             self._train_single(split_list, resume=False)
 
+    def train_pythae(self, split_list: List[int] = None):
+        """
+        Train using Pythae procedure
+        only works for single splits
+        """
+        from pythae.pipelines import TrainingPipeline
+
+        from clinicadl.utils.caps_dataset.data import PythaeCAPS
+
+        train_transforms, all_transforms = get_transforms(
+            normalize=self.normalize,
+            data_augmentation=self.data_augmentation,
+            size_reduction=self.size_reduction,
+            size_reduction_factor=self.size_reduction_factor,
+        )
+
+        split_manager = self._init_split_manager(split_list)
+        for split in split_manager.split_iterator():
+            logger.info(f"Training split {split}")
+
+            model_dir = path.join(self.maps_path, f"split-{split}", "best-loss")
+            if not path.exists(model_dir):
+                os.makedirs(model_dir)
+
+            seed_everything(self.seed, self.deterministic, self.compensation)
+
+            split_df_dict = split_manager[split]
+            train_dataset = PythaeCAPS(
+                self.caps_directory,
+                split_df_dict["train"],
+                self.preprocessing_dict,
+                train_transformations=train_transforms,
+                all_transformations=all_transforms,
+            )
+            eval_dataset = PythaeCAPS(
+                self.caps_directory,
+                split_df_dict["validation"],
+                self.preprocessing_dict,
+                train_transformations=train_transforms,
+                all_transformations=all_transforms,
+            )
+
+            # Import the model
+            clinicadl_model, _ = self._init_model(
+                split=split,
+                gpu=True,
+            )
+            model = clinicadl_model.modepl
+            config = clinicadl_model.get_trainer_config(
+                output_dir=model_dir,
+                num_epochs=self.epohs,
+                learning_rate=self.earning_rate,
+                batch_size=self.bath_size,
+            )
+            # Create Pythae Training Pipeline
+            pipeline = TrainingPipeline(training_config=config, model=model)
+
+            # Launch training
+            pipeline(
+                train_data=train_dataset,  # must be torch.Tensor or np.array
+                eval_data=eval_dataset,  # must be torch.Tensor or np.array
+            )
+            # Move saved model to the correct path in the MAPS
+            src = path.join(model_dir, "*_training_*/final_model/model.pt")
+            os.system(f"mv {src} {model_dir}")
+
     def resume(self, split_list: List[int] = None):
         """
         Resumes the training task for a defined list of splits.
