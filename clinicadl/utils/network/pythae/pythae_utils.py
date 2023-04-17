@@ -115,21 +115,17 @@ def build_encoder_decoder(
     last_layer_channels=32,
     last_layer_conv=False,
 ):
-    # automatically compute padding
-    decoder_output_padding = []
 
     input_c = input_size[0]
     input_d = input_size[1]
     input_h = input_size[2]
     input_w = input_size[3]
-    d, h, w = input_d, input_h, input_w
 
     # ENCODER
     encoder_layers = []
     # Input Layer
     encoder_layers.append(EncoderLayer3D(input_c, first_layer_channels))
-    decoder_output_padding.append([d % 2, h % 2, w % 2])
-    d, h, w = d // 2, h // 2, w // 2
+    
     # Conv Layers
     for i in range(n_conv_encoder - 1):
         encoder_layers.append(
@@ -138,10 +134,8 @@ def build_encoder_decoder(
             )
         )
         # Construct output paddings
-        decoder_output_padding.append([d % 2, h % 2, w % 2])
-        d, h, w = d // 2, h // 2, w // 2
     # Compute size of the feature space
-    n_pix = (
+    n_pix_encoder = (
         first_layer_channels
         * 2 ** (n_conv_encoder - 1)
         * (input_d // (2**n_conv_encoder))
@@ -152,11 +146,11 @@ def build_encoder_decoder(
     encoder_layers.append(Flatten())
     # Intermediate feature space
     if feature_size == 0:
-        feature_space = n_pix
+        feature_space = n_pix_encoder
     else:
         feature_space = feature_size
         encoder_layers.append(
-            nn.Sequential(nn.Linear(n_pix, feature_space), nn.ReLU())
+            nn.Sequential(nn.Linear(n_pix_encoder, feature_space), nn.ReLU())
         )
     encoder = nn.Sequential(*encoder_layers)
 
@@ -165,12 +159,30 @@ def build_encoder_decoder(
     var_layer = nn.Linear(feature_space, latent_space_size)
 
     # DECODER
+
+    # automatically compute padding
+    d, h, w = input_d, input_h, input_w
+    decoder_output_padding = []
+    decoder_output_padding.append([d % 2, h % 2, w % 2])
+    d, h, w = d // 2, h // 2, w // 2
+    for i in range(n_conv_decoder - 1):
+        decoder_output_padding.append([d % 2, h % 2, w % 2])
+        d, h, w = d // 2, h // 2, w // 2
+
+    n_pix_decoder = (
+        last_layer_channels
+        * 2 ** (n_conv_decoder - 1)
+        * (input_d // (2**n_conv_decoder))
+        * (input_h // (2**n_conv_decoder))
+        * (input_w // (2**n_conv_decoder))
+    )
+
     decoder_layers = []
     # Intermediate feature space
     if feature_size == 0:
         decoder_layers.append(
             nn.Sequential(
-                nn.Linear(latent_space_size, n_pix),
+                nn.Linear(latent_space_size, n_pix_decoder),
                 nn.ReLU(),
             )
         )
@@ -179,7 +191,7 @@ def build_encoder_decoder(
             nn.Sequential(
                 nn.Linear(latent_space_size, feature_size),
                 nn.ReLU(),
-                nn.Linear(feature_size, n_pix),
+                nn.Linear(feature_size, n_pix_decoder),
                 nn.ReLU(),
             )
         )
