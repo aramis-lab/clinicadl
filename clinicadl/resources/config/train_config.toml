@@ -10,10 +10,13 @@ multi_network = false
 dropout = 0.0 # between 0 and 1
 # architecture.n_layers = 4
 # VAE
-latent_space_size = 128
+first_layer_channels = 32
+n_conv_encoder = 4
 feature_size = 0
-n_conv = 4
-io_layer_channels = 8
+latent_space_size = 128
+n_conv_decoder = 4
+last_layer_channels = 32
+last_layer_conv = false
 recons_weight = 1
 kl_weight = 1
 normalization = "batch"
