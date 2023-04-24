@@ -2,6 +2,7 @@ from abc import abstractmethod
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import pandas as pd
+import numpy as np
 import torch
 from torch import Tensor
 from torch.nn.modules.loss import _Loss
@@ -17,13 +18,11 @@ from clinicadl.utils.network.network import Network
 class TaskManager:
     def __init__(self, mode: str, n_classes: int = None):
         self.mode = mode
-        self.metrics_module = MetricModule(
-            self.evaluation_metrics, n_classes=n_classes
-        )
+        self.metrics_module = MetricModule(self.evaluation_metrics, n_classes=n_classes)
 
     @property
     @abstractmethod
-    def columns(self):
+    def columns(self, **kwargs):
         """
         List of the columns' names in the TSV file containing the predictions.
         """
@@ -102,9 +101,7 @@ class TaskManager:
 
     @staticmethod
     @abstractmethod
-    def generate_label_code(
-        df: pd.DataFrame, label: str
-    ) -> Optional[Dict[str, int]]:
+    def generate_label_code(df: pd.DataFrame, label: str) -> Optional[Dict[str, int]]:
         """
         Generates a label code that links the output node number to label value.
 
@@ -175,7 +172,7 @@ class TaskManager:
         model: Network,
         dataloader: DataLoader,
         criterion: _Loss,
-        monte_carlo: int = None,
+        monte_carlo: int = 0,
         seed=None,
         use_labels: bool = True,
     ) -> Tuple[pd.DataFrame, Dict[str, float]]:
@@ -195,28 +192,51 @@ class TaskManager:
         dataloader.dataset.eval()
 
         results_df = pd.DataFrame(columns=self.columns)
+        mc_results_df = pd.DataFrame(columns=self.columns, monte_carlo=monte_carlo)
+
         with torch.no_grad():
             for data in dataloader:
-                if monte_carlo is None:
-                    outputs = model.predict(data)["recon_x"]
+                outputs = model.predict(data)["recon_x"]
 
-                    # Generate detailed DataFrame
-                    for idx in range(len(data["participant_id"])):
-                        row = self.generate_test_row(idx, data, outputs)
-                        row_df = pd.DataFrame(row, columns=self.columns)
-                        results_df = pd.concat([results_df, row_df])
+                # Generate detailed DataFrame
+                # for idx in range(len(data["participant_id"])):
+                #     row = self.generate_test_row(idx, data, outputs)
+                #     row_df = pd.DataFrame(row, columns=self.columns)
+                #     results_df = pd.concat([results_df, row_df])
 
-                    del outputs
+                # Generate detailed DatFrame avoiding for loops
+                idx_range = pd.RangeIndex(len(data["participant_id"]))
+                rows = [self.generate_test_row(idx, data, outputs) for idx in idx_range]
+                row_df = pd.DataFrame(rows, columns=self.columns)
+                results_df = pd.concat([row_df])
 
-                else:
+                del outputs
+
+                if monte_carlo:
                     outputs = model.predict(data, monte_carlo=monte_carlo, seed=seed)
 
-                    # Generate detailed DataFrame
-                    for idx in range(len(data["participant_id"])):
-                        for i in range(monte_carlo):
-                            row = self.generate_test_row(idx, data, outputs[i]["recon_x"])
-                            row_df = pd.DataFrame(row, columns=self.columns)
-                            results_df = pd.concat([results_df, row_df])
+                    # # Generate detailed DataFrame
+                    # for idx in range(len(data["participant_id"])):
+                    #     for i in range(monte_carlo):
+                    #         row = self.generate_test_row_monte_carlo(
+                    #             idx, i, data, outputs[i]["recon_x"]
+                    #         )
+                    #         row_df = pd.DataFrame(row, columns=self.columns)
+                    #         mc_results_df = pd.concat([results_df, row_df])
+
+                    recon_x = np.concatenate([output["recon_x"] for output in outputs])
+
+                    idx_range = pd.RangeIndex(len(data["participant_id"]))
+                    mc_range = pd.RangeIndex(monte_carlo)
+                    rows = [
+                        self.generate_test_row_monte_carlo(
+                            idx, i, data, recon_x[i * len(idx_range) + idx]
+                        )
+                        for i in mc_range
+                        for idx in idx_range
+                    ]
+                    row_df = pd.DataFrame(rows, columns=self.columns)
+                    mc_results_df = pd.concat([row_df])
 
                     del outputs
 
@@ -225,10 +245,16 @@ class TaskManager:
                 self.evaluation_metrics
             ].apply(pd.to_numeric, axis=1)
 
+            if monte_carlo:
+                mc_results_df.reset_index(inplace=True, drop=True)
+                mc_results_df[self.evaluation_metrics] = mc_results_df[
+                    self.evaluation_metrics
+                ].apply(pd.to_numeric, axis=1)
+
         if not use_labels:
             metrics_df = None
         else:
             metrics_df = self.compute_metrics(results_df)
         torch.cuda.empty_cache()
 
-        return results_df, metrics_df
+        return results_df, metrics_df, mc_results_df

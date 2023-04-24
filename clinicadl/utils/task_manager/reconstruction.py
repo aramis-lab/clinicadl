@@ -13,8 +13,10 @@ class ReconstructionManager(TaskManager):
         super().__init__(mode)
 
     @property
-    def columns(self):
+    def columns(self, monte_carlo=0):
         columns = ["participant_id", "session_id", f"{self.mode}_id"]
+        if monte_carlo:
+            columns.append("monte_carlo_idx")
         for metric in self.evaluation_metrics:
             columns.append(metric)
         return columns
@@ -43,10 +45,27 @@ class ReconstructionManager(TaskManager):
             row.append(metrics[metric])
         return [row]
 
+    def generate_test_row_monte_carlo(self, idx, mc_idx, data, outputs):
+        try:
+            y = data["image"][idx]
+        except:
+            y = data["data"][idx]
+        y_pred = outputs[idx].cpu()
+        metrics = self.metrics_module.apply(y, y_pred)
+        row = [
+            data["participant_id"][idx],
+            data["session_id"][idx],
+            data[f"{self.mode}_id"][idx].item(),
+        ]
+        row.append(mc_idx)
+        for metric in self.evaluation_metrics:
+            row.append(metrics[metric])
+        return [row]
+
     def compute_metrics(self, results_df):
-    #     metrics = dict()
-    #     for metric in self.evaluation_metrics:
-    #         metrics[metric] = results_df[metric].mean()
+        #     metrics = dict()
+        #     for metric in self.evaluation_metrics:
+        #         metrics[metric] = results_df[metric].mean()
         return results_df.describe()
 
     @staticmethod
@@ -67,7 +86,8 @@ class ReconstructionManager(TaskManager):
             return sampler.RandomSampler(weights)
         else:
             raise NotImplementedError(
-                f"The option {sampler_option} for sampler on reconstruction task is not implemented"
+                f"The option {sampler_option} for sampler on reconstruction task is not"
+                " implemented"
             )
 
     def ensemble_prediction(
