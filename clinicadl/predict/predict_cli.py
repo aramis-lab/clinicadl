@@ -72,9 +72,7 @@ from clinicadl.utils import cli_param
     type=bool,
     default=False,
     is_flag=True,
-    help=(
-        "Save the reconstruction output in the MAPS in Pytorch tensor format."
-    ),
+    help="Save the reconstruction output in the MAPS in Pytorch tensor format.",
 )
 @click.option(
     "--save_nifti",
@@ -93,7 +91,7 @@ from clinicadl.utils import cli_param
 @click.option(
     "--monte_carlo",
     type=int,
-    default=None,
+    default=0,
     help="""Save multiple outputs for a single input.""",
 )
 @cli_param.option.split
