@@ -282,18 +282,15 @@ def get_labels(
 
     from clinica.utils.inputs import check_bids_folder
 
-    if not output_dir.suffix == "tsv":
-        results_directory = bids_directory.parents[0]
-        output_tsv = results_directory / "labels.tsv"
-    else:
-        results_directory = output_dir
+    if not output_dir.is_dir():
+        output_dir.mkdir(parents=True, exist_ok=True)
 
-    output_tsv = results_directory / "labels.tsv"
+    output_tsv = output_dir / "labels.tsv"
 
     commandline_to_json(
         {
             "bids_directory": bids_directory,
-            "output_dir": results_directory,
+            "output_dir": output_dir,
             "diagnoses": diagnoses,
             "modality": modality,
             "restriction_path": restriction_path,
@@ -306,11 +303,8 @@ def get_labels(
         filename="labels.json",
     )
 
-    # Create the results directory
-    results_directory.mkdir(parents=True, exist_ok=True)
-
     # Generating the output of `clinica iotools check-missing-modalities``
-    missing_mods_directory = results_directory / "missing_mods"
+    missing_mods_directory = output_dir / "missing_mods"
     if missing_mods is not None:
         missing_mods_directory = missing_mods
 
@@ -325,7 +319,7 @@ def get_labels(
     )
 
     # Generating the output of `clinica iotools merge-tsv `
-    merged_tsv_path = results_directory / "merged.tsv"
+    merged_tsv_path = output_dir / "merged.tsv"
     if merged_tsv is not None:
         merged_tsv_path = merged_tsv
     elif not merged_tsv_path.is_file():
@@ -335,7 +329,7 @@ def get_labels(
         check_bids_folder(bids_directory)
         create_merge_file(
             bids_directory,
-            results_directory / "merged.tsv",
+            output_dir / "merged.tsv",
             caps_dir=None,
             pipelines=None,
             ignore_scan_files=None,
@@ -437,4 +431,4 @@ def get_labels(
     output_df.sort_values(by=["participant_id", "session_id"], inplace=True)
     output_df.to_csv(output_tsv, sep="\t")
 
-    logger.info(f"results are stored at {output_tsv}")
+    logger.info(f"results are stored in {output_dir}")
