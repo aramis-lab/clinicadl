@@ -1069,7 +1069,7 @@ class MapsManager:
                 )
                 # Convert tensor to nifti image with appropriate affine
                 input_nii = nib.Nifti1Image(image[0].detach().cpu().numpy(), eye(4))
-                output_nii = nib.Nifti1Image(output[0].numpy(), eye(4))
+                output_nii = nib.Nifti1Image(output[0].detach().numpy(), eye(4))
                 # Create file name according to participant and session id
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
@@ -1180,8 +1180,10 @@ class MapsManager:
                 if save_reconstruction_nifti:
                     # Convert tensor to nifti image with appropriate affine
                     reconstruction = output["recon_x"].squeeze(0).cpu()
-                    input_nii = nib.Nifti1Image(image[0].numpy(), eye(4))
-                    output_nii = nib.Nifti1Image(reconstruction[0].numpy(), eye(4))
+                    input_nii = nib.Nifti1Image(image[0].detach().numpy(), eye(4))
+                    output_nii = nib.Nifti1Image(
+                        reconstruction[0].detach().numpy(), eye(4)
+                    )
                     # Create file name according to participant and session id
                     input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
                     output_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
@@ -1223,7 +1225,7 @@ class MapsManager:
 
                         # Convert tensor to nifti image with appropriate affine
                         reconstruction = output["recon_x"].squeeze(0).cpu()
-                        input_nii = nib.Nifti1Image(image[0].numpy(), eye(4))
+                        input_nii = nib.Nifti1Image(image[0].detach().numpy(), eye(4))
                         output_nii = nib.Nifti1Image(
                             reconstruction[0].detach().numpy(), eye(4)
                         )
@@ -1812,7 +1814,7 @@ class MapsManager:
                 performance_dir, f"{data_group}_{self.mode}_level_prediction_mc.tsv"
             )
             if not path.exists(mc_performance_path):
-                results_df.to_csv(mc_performance_path, index=False, sep="\t")
+                mc_results_df.to_csv(mc_performance_path, index=False, sep="\t")
             else:
                 mc_results_df.to_csv(
                     mc_performance_path, index=False, sep="\t", mode="a", header=False
