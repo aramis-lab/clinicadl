@@ -191,52 +191,34 @@ class TaskManager:
         model.eval()
         dataloader.dataset.eval()
 
-        results_df = pd.DataFrame(columns=self.columns)
-        mc_results_df = pd.DataFrame(columns=self.columns, monte_carlo=monte_carlo)
+        results_df = pd.DataFrame(columns=self.columns())
+        mc_results_df = pd.DataFrame(columns=self.columns(monte_carlo=monte_carlo))
 
         with torch.no_grad():
             for data in dataloader:
                 outputs = model.predict(data)["recon_x"]
 
                 # Generate detailed DataFrame
-                # for idx in range(len(data["participant_id"])):
-                #     row = self.generate_test_row(idx, data, outputs)
-                #     row_df = pd.DataFrame(row, columns=self.columns)
-                #     results_df = pd.concat([results_df, row_df])
-
-                # Generate detailed DatFrame avoiding for loops
-                idx_range = pd.RangeIndex(len(data["participant_id"]))
-                rows = [self.generate_test_row(idx, data, outputs) for idx in idx_range]
-                row_df = pd.DataFrame(rows, columns=self.columns)
-                results_df = pd.concat([row_df])
+                for idx in range(len(data["participant_id"])):
+                    row = self.generate_test_row(idx, data, outputs)
+                    row_df = pd.DataFrame(row, columns=self.columns())
+                    results_df = pd.concat([results_df, row_df])
 
                 del outputs
 
                 if monte_carlo:
                     outputs = model.predict(data, monte_carlo=monte_carlo, seed=seed)
 
-                    # # Generate detailed DataFrame
-                    # for idx in range(len(data["participant_id"])):
-                    #     for i in range(monte_carlo):
-                    #         row = self.generate_test_row_monte_carlo(
-                    #             idx, i, data, outputs[i]["recon_x"]
-                    #         )
-                    #         row_df = pd.DataFrame(row, columns=self.columns)
-                    #         mc_results_df = pd.concat([results_df, row_df])
-
-                    recon_x = np.concatenate([output["recon_x"] for output in outputs])
-
-                    idx_range = pd.RangeIndex(len(data["participant_id"]))
-                    mc_range = pd.RangeIndex(monte_carlo)
-                    rows = [
-                        self.generate_test_row_monte_carlo(
-                            idx, i, data, recon_x[i * len(idx_range) + idx]
-                        )
-                        for i in mc_range
-                        for idx in idx_range
-                    ]
-                    row_df = pd.DataFrame(rows, columns=self.columns)
-                    mc_results_df = pd.concat([row_df])
+                    # Generate detailed DataFrame
+                    for idx in range(len(data["participant_id"])):
+                        for i in range(monte_carlo):
+                            row = self.generate_test_row_monte_carlo(
+                                idx, i, data, outputs[i]["recon_x"]
+                            )
+                            row_df = pd.DataFrame(
+                                row, columns=self.columns(monte_carlo=monte_carlo)
+                            )
+                            mc_results_df = pd.concat([mc_results_df, row_df])
 
                     del outputs
 
