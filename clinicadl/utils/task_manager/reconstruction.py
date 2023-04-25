@@ -12,7 +12,6 @@ class ReconstructionManager(TaskManager):
     ):
         super().__init__(mode)
 
-    @property
     def columns(self, monte_carlo=0):
         columns = ["participant_id", "session_id", f"{self.mode}_id"]
         if monte_carlo:
