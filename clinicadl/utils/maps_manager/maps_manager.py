@@ -313,19 +313,6 @@ class MapsManager:
                         save_reconstruction_nifti=save_nifti,
                         save_latent_tensor=save_latent_tensor,
                     )
-                    if save_tensor or save_nifti or save_latent_tensor or monte_carlo:
-                        self._save_model_output(
-                            data_test,
-                            data_group,
-                            split,
-                            selection_metrics,
-                            save_reconstruction_tensor=save_tensor,
-                            save_reconstruction_nifti=save_nifti,
-                            save_latent_tensor=save_latent_tensor,
-                            monte_carlo=monte_carlo,
-                            seed=self.parameters["seed"],
-                            gpu=gpu,
-                        )
             else:
                 data_test = return_dataset(
                     group_parameters["caps_directory"],
@@ -353,22 +340,13 @@ class MapsManager:
                     split_selection_metrics,
                     use_labels=use_labels,
                     gpu=gpu,
+                    network=network,
                     monte_carlo=monte_carlo,
                     seed=self.parameters["seed"],
+                    save_reconstruction_tensor=save_tensor,
+                    save_reconstruction_nifti=save_nifti,
+                    save_latent_tensor=save_latent_tensor,
                 )
-                if save_tensor or save_nifti or save_latent_tensor or monte_carlo:
-                    self._save_model_output(
-                        data_test,
-                        data_group,
-                        split,
-                        selection_metrics,
-                        save_reconstruction_tensor=save_tensor,
-                        save_reconstruction_nifti=save_nifti,
-                        save_latent_tensor=save_latent_tensor,
-                        monte_carlo=monte_carlo,
-                        seed=self.parameters["seed"],
-                        gpu=gpu,
-                    )
 
             self._ensemble_prediction(data_group, split, selection_metrics, use_labels)
 
@@ -941,7 +919,6 @@ class MapsManager:
 
     def _test_loader(
         self,
-        dataset,
         dataloader,
         criterion,
         data_group,
@@ -996,9 +973,9 @@ class MapsManager:
                 model,
                 dataloader,
                 criterion,
-                # data_group,
-                # split,
-                # selection_metric,
+                data_group,
+                split,
+                selection_metric,
                 use_labels=use_labels,
                 monte_carlo=monte_carlo,
                 seed=seed,
