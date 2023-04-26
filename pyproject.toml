@@ -41,6 +41,7 @@ joblib = "^1.2.0"
 click = "^8"
 click-option-group = "^0.5"
 pynvml = "*"
+torchio = "^0.18.90"
 
 [tool.poetry.group.dev.dependencies]
 black = "*"
