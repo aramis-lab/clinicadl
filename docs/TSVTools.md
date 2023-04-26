@@ -242,12 +242,52 @@ Options:
 This tool adds a new column `progression` to the TSV file given. It corresponds to the progression of the Alzheimer's disease. The diagnosis must be one of those : `CN` (cognitively norma), `MCI` (mild cognitive impairment) or `AD` (alzheimer's disease).
 
 The progression label corresponds to the following description:
+
 - **s** (stable): diagnosis remains identical during the `time_horizon` period following the current visit,
 - **p** (progressive): diagnosis progresses to the following state during the `time_horizon` period following the current visit (eg. MCI --> AD),
 - **r** (regressive): diagnosis regresses to the previous state during the `time_horizon` period following the current visit (eg. MCI --> CN),
 - **uk** (unknown): there are not enough sessions to assess the reliability of the label but no changes were spotted,
 - **us** (unstable): otherwise (multiple conversions / regressions).
-- 
+
+This pipeline provides the progression of Alzheimer's disease based on the list of sessions provided. If any of the sessions are missing from the input file, the computed disease progression may be inaccurate.
+
+````{admonition} Example
+:class: dropdown, tip
+For example, consider the following list:
+
+| participant_id | session_id | diagnosis | ... |
+| -------------- | ---------- | --------- | --- |
+| sub-ADNI135S6586  | ses-M00 | MCI | ... |
+| sub-ADNI135S6586  | ses-M12 | CN | ... |
+| sub-ADNI135S6586  | ses-M36 | MCI | ... |
+| sub-ADNI135S6586  | ses-M48 | MCI | ... |
+| sub-ADNI135S6586  | ses-M60 | CN | ... |
+| sub-ADNI135S6586  | ses-M72 | AD | ... |
+
+The participant is unstable, but if, for some reasons, you dropped some sessions, you can end up with the following list:
+
+| participant_id | session_id | diagnosis | ... |
+| -------------- | ---------- | --------- | --- |
+| sub-ADNI135S6586  | ses-M00 | MCI | ... |
+| sub-ADNI135S6586  | ses-M36 | MCI | ... |
+| sub-ADNI135S6586  | ses-M48 | MCI | ... |
+| sub-ADNI135S6586  | ses-M72 | AD | ... |
+
+Then, if you try to get the progression, the command will return the following list:
+
+| participant_id | session_id | diagnosis | progression |
+| -------------- | ---------- | --------- | --- |
+| sub-ADNI135S6586  | ses-M00 | MCI | p |
+| sub-ADNI135S6586  | ses-M36 | MCI | p |
+| sub-ADNI135S6586  | ses-M48 | MCI | p |
+| sub-ADNI135S6586  | ses-M72 | AD | s |
+
+What is wrong because the participant is unstable.
+
+````
+
+
+
 ### Running the task
 
 ```bash
