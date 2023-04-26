@@ -6,12 +6,15 @@ This file generates data for trivial or intractable (random) data for binary cla
 import tarfile
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, List
+from os import makedirs
+from os.path import basename, dirname, exists, join
 
 import nibabel as nib
 import numpy as np
 import pandas as pd
 import torch
+import torchio as tio
 from clinica.utils.inputs import RemoteFileStructure, clinica_file_reader, fetch_file
 from joblib import Parallel, delayed
 from nilearn.image import resample_to_img
@@ -614,3 +617,115 @@ def generate_hypometabolic_dataset(
     logger.info(
         f"Hypometabolic dataset was generated, with {anomaly_degree} % of dementia {pathology} at {output_dir}."
     )
+
+
+def generate_motion_dataset(
+    caps_directory: str,
+    output_dir: str,
+    tsv_path: Optional[str] = None,
+    preprocessing: str = "t1-linear",
+    multi_cohort: bool = False,
+    uncropped_image: bool = False,
+    acq_label: str = "fdg",
+    suvr_reference_region: str = "pons",
+    translation: List = [2, 4],
+    rotation: List = [2, 4],
+    num_transforms: int = 2,
+):
+    """
+    Generates a fully separable dataset.
+    Generates a dataset, based on the images of the CAPS directory, where a
+    half of the image is corrupted with motion artefacts using the image-based simulation of torchio.
+    Args:
+        caps_directory: path to the CAPS directory.
+        output_dir: folder containing the synthetic dataset in CAPS format.
+        n_subjects: number of subjects in each class of the synthetic dataset.
+        tsv_path: path to tsv file of list of subjects/sessions.
+        preprocessing: preprocessing performed. Must be in ['linear', 'extensive'].
+        multi_cohort: If True caps_directory is the path to a TSV file linking cohort names and paths.
+        uncropped_image: If True the uncropped image of `t1-linear` or `pet-linear` will be used.
+        acq_label: name of the tracer when using `pet-linear` preprocessing.
+        suvr_reference_region: name of the reference region when using `pet-linear` preprocessing.
+    Returns:
+        Folder structure where images are stored in CAPS format.
+    Raises:
+        IndexError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
+    """
+    from pathlib import Path
+
+    from clinicadl.utils.exceptions import DownloadError
+
+    commandline_to_json(
+        {
+            "output_dir": output_dir,
+            "caps_dir": caps_directory,
+            "preprocessing": preprocessing,
+        }
+    )
+
+    # Transform caps_directory in dict
+    caps_dict = CapsDataset.create_caps_dict(caps_directory, multi_cohort=multi_cohort)
+    # Read DataFrame
+    data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
+    data_df = extract_baseline(data_df)
+
+    home = str(Path.home())
+    cache_clinicadl = join(home, ".cache", "clinicadl", "ressources", "masks")
+
+    makedirs(cache_clinicadl, exist_ok=True)
+
+    # Create subjects dir
+    makedirs(join(output_dir, "subjects"), exist_ok=True)
+
+    # Output tsv file
+    columns = ["participant_id", "session_id", "diagnosis"]
+    output_df = pd.DataFrame(columns=columns)
+
+    # Find appropriate preprocessing file type
+    file_type = find_file_type(
+        preprocessing, uncropped_image, acq_label, suvr_reference_region
+    )
+
+    for data_idx in range(len(data_df)):
+
+        participant_id = data_df.loc[data_idx, "participant_id"]
+        session_id = data_df.loc[data_idx, "session_id"]
+        cohort = data_df.loc[data_idx, "cohort"]
+        image_paths = clinica_file_reader(
+            [participant_id], [session_id], caps_dict[cohort], file_type
+        )[0]
+
+        input_filename = basename(image_paths[0])
+        filename_pattern = "_".join(input_filename.split("_")[2::])
+
+        trivial_image_nii_dir = join(
+            output_dir,
+            "subjects",
+            f"{participant_id}-RM{data_idx}",
+            session_id,
+            preprocessing,
+        )
+        trivial_image_nii_filename = (
+            f"{participant_id}-RM{data_idx}_{session_id}_{filename_pattern}"
+        )
+
+        makedirs(trivial_image_nii_dir, exist_ok=True)
+
+        motion = tio.RandomMotion(
+            degrees=(rotation[0], rotation[1]),
+            translation=(translation[0], translation[1]),
+            num_transforms=num_transforms,
+        )
+
+        trivial_image = motion(tio.ScalarImage(image_paths[0]))
+        trivial_image.save(join(trivial_image_nii_dir, trivial_image_nii_filename))
+        print(join(trivial_image_nii_dir, trivial_image_nii_filename))
+
+        # Append row to output tsv
+        row = [f"{participant_id}_RM{data_idx}", session_id, "motion"]
+        row_df = pd.DataFrame([row], columns=columns)
+        output_df = output_df.append(row_df)
+
+    output_df.to_csv(join(output_dir, "data.tsv"), sep="\t", index=False)
+
+    write_missing_mods(output_dir, output_df)
