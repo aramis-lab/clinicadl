@@ -292,9 +292,10 @@ class MapsManager:
                     )
                     test_loader = DataLoader(
                         data_test,
-                        batch_size=batch_size
-                        if batch_size is not None
-                        else self.batch_size,
+                        # batch_size=batch_size
+                        # if batch_size is not None
+                        # else self.batch_size,
+                        batch_size=1,
                         shuffle=False,
                         num_workers=n_proc if n_proc is not None else self.n_proc,
                     )
@@ -328,7 +329,10 @@ class MapsManager:
 
                 test_loader = DataLoader(
                     data_test,
-                    batch_size=batch_size if batch_size is not None else self.batch_size,
+                    # batch_size=batch_size
+                    # if batch_size is not None
+                    # else self.batch_size,
+                    batch_size=1,
                     shuffle=False,
                     num_workers=n_proc if n_proc is not None else self.n_proc,
                 )
@@ -340,7 +344,6 @@ class MapsManager:
                     split_selection_metrics,
                     use_labels=use_labels,
                     gpu=gpu,
-                    network=network,
                     monte_carlo=monte_carlo,
                     seed=self.parameters["seed"],
                     save_reconstruction_tensor=save_tensor,
@@ -969,6 +972,42 @@ class MapsManager:
                 network=network,
             )
 
+            if save_reconstruction_tensor:
+                tensor_path = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    data_group,
+                    "tensors",
+                )
+                makedirs(tensor_path, exist_ok=True)
+            else:
+                tensor_path = None
+
+            if save_reconstruction_nifti:
+                nifti_path = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    data_group,
+                    "nifti_images",
+                )
+                makedirs(nifti_path, exist_ok=True)
+            else:
+                nifti_path = None
+
+            if save_latent_tensor:
+                latent_tensor_path = path.join(
+                    self.maps_path,
+                    f"{self.split_name}-{split}",
+                    f"best-{selection_metric}",
+                    data_group,
+                    "latent_tensors",
+                )
+                makedirs(latent_tensor_path, exist_ok=True)
+            else:
+                latent_tensor_path = None
+
             prediction_df, metrics, mc_prediction_df = self.task_manager.test(
                 model,
                 dataloader,
@@ -982,6 +1021,9 @@ class MapsManager:
                 save_reconstruction_tensor=save_reconstruction_tensor,
                 save_reconstruction_nifti=save_reconstruction_nifti,
                 save_latent_tensor=save_latent_tensor,
+                tensor_path=tensor_path,
+                nifti_path=nifti_path,
+                latent_tensor_path=latent_tensor_path,
             )
             if use_labels:
                 if network is not None:

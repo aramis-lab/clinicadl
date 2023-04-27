@@ -187,6 +187,9 @@ class TaskManager:
         save_reconstruction_tensor=True,
         save_reconstruction_nifti=False,
         save_latent_tensor=False,
+        tensor_path=None,
+        nifti_path=None,
+        latent_tensor_path=None,
         gpu=None,
         network=None,
     ) -> Tuple[pd.DataFrame, Dict[str, float], pd.DataFrame]:
@@ -207,36 +210,7 @@ class TaskManager:
 
         results_df = pd.DataFrame(columns=self.columns())
         mc_results_df = pd.DataFrame(columns=self.columns(monte_carlo=monte_carlo))
-
-        if save_reconstruction_tensor:
-            tensor_path = path.join(
-                self.maps_path,
-                f"{self.split_name}-{split}",
-                f"best-{selection_metric}",
-                data_group,
-                "tensors",
-            )
-            makedirs(tensor_path, exist_ok=True)
-
-        if save_reconstruction_nifti:
-            nifti_path = path.join(
-                self.maps_path,
-                f"{self.split_name}-{split}",
-                f"best-{selection_metric}",
-                data_group,
-                "nifti_images",
-            )
-            makedirs(nifti_path, exist_ok=True)
-
-        if save_latent_tensor:
-            latent_tensor_path = path.join(
-                self.maps_path,
-                f"{self.split_name}-{split}",
-                f"best-{selection_metric}",
-                data_group,
-                "latent_tensors",
-            )
-            makedirs(latent_tensor_path, exist_ok=True)
+        total_loss = 0
 
         if nb_images is None:
             nb_modes = len(dataloader.dataset)
@@ -245,13 +219,14 @@ class TaskManager:
 
         with torch.no_grad():
             for data in dataloader:
+                output = model.predict(data)
+                
                 image = data["data"]
                 data["data"] = data["data"].unsqueeze(0)
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
                 mode_id = data[f"{self.mode}_id"]
 
-                output = model.predict(data)["recon_x"]
 
                 # Save tensor
                 if save_reconstruction_tensor:
@@ -271,11 +246,11 @@ class TaskManager:
 
                 # Save nifti image
                 if save_reconstruction_nifti:
-                    # Convert tensor to nifti image with appropriate affine
                     reconstruction = output["recon_x"].squeeze(0).cpu()
+                    # Convert tensor to nifti image with appropriate affine
                     input_nii = nib.Nifti1Image(image[0].detach().numpy(), np.eye(4))
                     output_nii = nib.Nifti1Image(
-                        reconstruction[0].detach().numpy(), np.eye(4)
+                        reconstruction[0].detach().numpy(), np.eye(4),
                     )
                     # Create file name according to participant and session id
                     input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
@@ -296,7 +271,9 @@ class TaskManager:
 
                 # Generate detailed DataFrame
                 for idx in range(len(data["participant_id"])):
-                    row = self.generate_test_row(idx, data, outputs)
+                    print(f"data['data'].shape={data['data'].shape}")
+                    print(f"output[recon_x].shape={output['recon_x'].shape}")
+                    row = self.generate_test_row(idx, data, output["recon_x"])
                     row_df = pd.DataFrame(row, columns=self.columns())
                     results_df = pd.concat([results_df, row_df])
 
@@ -307,39 +284,40 @@ class TaskManager:
 
                     for i in range(monte_carlo):
                         output = outputs[i]
+                        
+                        if save_reconstruction_tensor: 
+                            reconstruction = output["recon_x"].squeeze(0).cpu()
+                            input_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
+                            output_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output-mc{i}.pt"
+                            torch.save(image, path.join(tensor_path, input_filename))
+                            torch.save(
+                                reconstruction,
+                                path.join(tensor_path, output_filename),
+                            )
+                            logger.debug(f"File saved at {[input_filename, output_filename]}")
 
-                        reconstruction = output["recon_x"].squeeze(0).cpu()
-                        input_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_input.pt"
-                        output_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_output-mc{i}.pt"
-                        torch.save(image, path.join(tensor_path, input_filename))
-                        torch.save(
-                            reconstruction,
-                            path.join(tensor_path, output_filename),
-                        )
-                        logger.debug(f"File saved at {[input_filename, output_filename]}")
+                        if save_reconstruction_nifti: 
+                            input_nii = nib.Nifti1Image(image[0].detach().numpy(), np.eye(4))
+                            output_nii = nib.Nifti1Image(
+                                reconstruction[0].detach().numpy(), np.eye(4),
+                            )
+                            # Create file name according to participant and session id
+                            input_filename = (
+                                f"{participant_id}_{session_id}_image_input.nii.gz"
+                            )
+                            output_filename = (
+                                f"{participant_id}_{session_id}_image_output-mc{i}.nii.gz"
+                            )
+                            nib.save(input_nii, path.join(nifti_path, input_filename))
+                            nib.save(output_nii, path.join(nifti_path, output_filename))
 
-                        # Convert tensor to nifti image with appropriate affine
-                        reconstruction = output["recon_x"].squeeze(0).cpu()
-                        input_nii = nib.Nifti1Image(image[0].detach().numpy(), eye(4))
-                        output_nii = nib.Nifti1Image(
-                            reconstruction[0].detach().numpy(), eye(4)
-                        )
-                        # Create file name according to participant and session id
-                        input_filename = (
-                            f"{participant_id}_{session_id}_image_input.nii.gz"
-                        )
-                        output_filename = (
-                            f"{participant_id}_{session_id}_image_output-mc{i}.nii.gz"
-                        )
-                        nib.save(input_nii, path.join(nifti_path, input_filename))
-                        nib.save(output_nii, path.join(nifti_path, output_filename))
-
-                        latent = output["embedding"].squeeze(0).cpu()
-                        output_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent-mc{i}.pt"
-                        torch.save(
-                            latent,
-                            path.join(latent_tensor_path, output_filename),
-                        )
+                        if save_latent_tensor:
+                            latent = output["embedding"].squeeze(0).cpu()
+                            output_filename = f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent-mc{i}.pt"
+                            torch.save(
+                                latent,
+                                path.join(latent_tensor_path, output_filename),
+                            )
 
                         row = self.generate_test_row_monte_carlo(
                             idx, i, data, outputs[i]["recon_x"]
