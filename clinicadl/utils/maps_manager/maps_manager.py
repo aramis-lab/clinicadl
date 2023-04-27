@@ -211,6 +211,7 @@ class MapsManager:
                 Default uses the same as in training step.
             use_labels: If True, the labels must exist in test meta-data and metrics are computed.
             batch_size: If given, sets the value of batch_size, else use the same as in training step.
+                In this version, the batch_size parameter is not used, and the batch size is directly set to 1.
             n_proc: If given, sets the value of num_workers, else use the same as in training step.
             gpu: If given, a new value for the device of the model will be computed.
             overwrite: If True erase the occurrences of data_group.
@@ -323,7 +324,9 @@ class MapsManager:
                     multi_cohort=group_parameters["multi_cohort"],
                     label_presence=use_labels,
                     label=self.label if label is None else label,
-                    label_code=self.label_code if label_code == "default" else label_code,
+                    label_code=self.label_code
+                    if label_code == "default"
+                    else label_code,
                     for_pythae=True,
                 )
 
@@ -948,6 +951,11 @@ class MapsManager:
             use_labels (bool): If True, the labels must exist in test meta-data and metrics are computed.
             gpu (bool): If given, a new value for the device of the model will be computed.
             network (int): Index of the network tested (only used in multi-network setting).
+            monte_calro (int): Number of Monte-Carlo samples in the latent space.
+            seed (int): Random seed used for the Monte-Carlo sampling.
+            save_tensor: If True, saves the output tensor for each input in the test set.
+            save_nifti: If True, saves the output tensor for each input in the test set as a NIfTI file.
+            save_latent_tensor: If True, saves the latent tensor for each input in the test set.
         """
         for selection_metric in selection_metrics:
             log_dir = path.join(
@@ -972,6 +980,7 @@ class MapsManager:
                 network=network,
             )
 
+            tensor_path = None
             if save_reconstruction_tensor:
                 tensor_path = path.join(
                     self.maps_path,
@@ -981,9 +990,8 @@ class MapsManager:
                     "tensors",
                 )
                 makedirs(tensor_path, exist_ok=True)
-            else:
-                tensor_path = None
 
+            nifti_path = None
             if save_reconstruction_nifti:
                 nifti_path = path.join(
                     self.maps_path,
@@ -993,9 +1001,8 @@ class MapsManager:
                     "nifti_images",
                 )
                 makedirs(nifti_path, exist_ok=True)
-            else:
-                nifti_path = None
 
+            latent_tensor_path = None
             if save_latent_tensor:
                 latent_tensor_path = path.join(
                     self.maps_path,
@@ -1005,8 +1012,6 @@ class MapsManager:
                     "latent_tensors",
                 )
                 makedirs(latent_tensor_path, exist_ok=True)
-            else:
-                latent_tensor_path = None
 
             prediction_df, metrics, mc_prediction_df = self.task_manager.test(
                 model,
@@ -1218,7 +1223,9 @@ class MapsManager:
                     )
                     # Create file name according to participant and session id
                     input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
-                    output_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
+                    output_filename = (
+                        f"{participant_id}_{session_id}_image_output.nii.gz"
+                    )
                     nib.save(input_nii, path.join(nifti_path, input_filename))
                     nib.save(output_nii, path.join(nifti_path, output_filename))
 
@@ -1253,7 +1260,9 @@ class MapsManager:
                             reconstruction,
                             path.join(tensor_path, output_filename),
                         )
-                        logger.debug(f"File saved at {[input_filename, output_filename]}")
+                        logger.debug(
+                            f"File saved at {[input_filename, output_filename]}"
+                        )
 
                         # Convert tensor to nifti image with appropriate affine
                         reconstruction = output["recon_x"].squeeze(0).cpu()
@@ -1354,7 +1363,8 @@ class MapsManager:
         if "selection_threshold" not in self.parameters:
             self.parameters["selection_threshold"] = None
         if (
-            "label_code" not in self.parameters or len(self.parameters["label_code"]) == 0
+            "label_code" not in self.parameters
+            or len(self.parameters["label_code"]) == 0
         ):  # Allows to set custom label code in TOML
             self.parameters["label_code"] = self.task_manager.generate_label_code(
                 train_df, self.label
@@ -2031,7 +2041,9 @@ class MapsManager:
             if "model" in transfer_state.keys():
                 model.transfer_weights(transfer_state["model"], transfer_class)
             elif "model_state_dict" in transfer_state.keys():
-                model.transfer_weights(transfer_state["model_state_dict"], transfer_class)
+                model.transfer_weights(
+                    transfer_state["model_state_dict"], transfer_class
+                )
             else:
                 raise KeyError("Unknow key in model state dictionnary.")
 
@@ -2172,9 +2184,9 @@ class MapsManager:
                 raise ClinicaDLArgumentError(
                     "Please precise the network number that must be loaded."
                 )
-        return self._init_model(self.maps_path, selection_metric, split, network=network)[
-            0
-        ]
+        return self._init_model(
+            self.maps_path, selection_metric, split, network=network
+        )[0]
 
     def get_best_epoch(
         self, split: int = 0, selection_metric: str = None, network: int = None
@@ -2365,7 +2377,9 @@ class MapsManager:
                 f"interpretation {name} was found."
             )
         if participant_id is None and session_id is None:
-            map_pt = torch.load(path.join(map_dir, f"mean_{self.mode}-{mode_id}_map.pt"))
+            map_pt = torch.load(
+                path.join(map_dir, f"mean_{self.mode}-{mode_id}_map.pt")
+            )
         elif participant_id is None or session_id is None:
             raise ValueError(
                 f"To load the mean interpretation map, "
