@@ -217,9 +217,9 @@ class TaskManager:
                 
                 image = data["data"]
                 # data["data"] = data["data"].unsqueeze(0)
-                participant_id = data["participant_id"]
-                session_id = data["session_id"]
-                mode_id = data[f"{self.mode}_id"]
+                participant_id = data["participant_id"][0]
+                session_id = data["session_id"][0]
+                mode_id = data[f"{self.mode}_id"][0]
 
 
                 # Save tensor
