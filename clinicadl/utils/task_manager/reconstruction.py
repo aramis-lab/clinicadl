@@ -34,7 +34,6 @@ class ReconstructionManager(TaskManager):
         except:
             y = data["data"][idx]
         y_pred = outputs[idx].cpu()
-        print(f"y.shape={y.shape}, y_pred.shape={y_pred.shape}")
         metrics = self.metrics_module.apply(y, y_pred)
         row = [
             data["participant_id"][idx],

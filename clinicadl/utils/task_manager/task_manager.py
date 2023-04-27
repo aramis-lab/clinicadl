@@ -180,7 +180,6 @@ class TaskManager:
         data_group,
         split,
         selection_metric,
-        nb_images=None,
         monte_carlo: int = 0,
         seed=None,
         use_labels: bool = True,
@@ -212,17 +211,12 @@ class TaskManager:
         mc_results_df = pd.DataFrame(columns=self.columns(monte_carlo=monte_carlo))
         total_loss = 0
 
-        if nb_images is None:
-            nb_modes = len(dataloader.dataset)
-        else:
-            nb_modes = nb_images * dataloader.dataset.elem_per_image
-
         with torch.no_grad():
             for data in dataloader:
                 output = model.predict(data)
                 
                 image = data["data"]
-                data["data"] = data["data"].unsqueeze(0)
+                # data["data"] = data["data"].unsqueeze(0)
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
                 mode_id = data[f"{self.mode}_id"]
@@ -271,13 +265,11 @@ class TaskManager:
 
                 # Generate detailed DataFrame
                 for idx in range(len(data["participant_id"])):
-                    print(f"data['data'].shape={data['data'].shape}")
-                    print(f"output[recon_x].shape={output['recon_x'].shape}")
                     row = self.generate_test_row(idx, data, output["recon_x"])
                     row_df = pd.DataFrame(row, columns=self.columns())
                     results_df = pd.concat([results_df, row_df])
 
-                del outputs
+                del output
 
                 if monte_carlo:
                     outputs = model.predict(data, monte_carlo=monte_carlo, seed=seed)

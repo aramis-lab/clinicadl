@@ -1843,7 +1843,7 @@ class MapsManager:
 
         if monte_carlo:
             mc_performance_path = path.join(
-                performance_dir, f"{data_group}_{self.mode}_level_prediction_mc.tsv"
+                performance_dir, f"{data_group}_{self.mode}_level_prediction-mc.tsv"
             )
             if not path.exists(mc_performance_path):
                 mc_results_df.to_csv(mc_performance_path, index=False, sep="\t")
