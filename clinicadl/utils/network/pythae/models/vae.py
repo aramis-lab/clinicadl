@@ -47,4 +47,5 @@ class pythae_VAE(BasePythae):
             num_epochs=num_epochs,
             learning_rate=learning_rate,
             batch_size=batch_size,
+            amp=True,
         )
