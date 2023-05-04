@@ -47,5 +47,6 @@ class pythae_PoincareVAE(BasePythae):
             output_dir=output_dir,
             num_epochs=num_epochs,
             learning_rate=learning_rate,
-            batch_size=batch_size
+            per_device_train_batch_size=batch_size,
+            per_device_eval_batch_size=batch_size,
         )
