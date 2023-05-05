@@ -66,6 +66,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.use_gpu
 @cli_param.option.n_proc
 @cli_param.option.batch_size
+@cli_param.option.amp
 @cli_param.option.overwrite
 def cli(
     input_maps_directory,

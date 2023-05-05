@@ -95,6 +95,12 @@ batch_size = click.option(
     show_default=True,
     help="Batch size for data loading.",
 )
+amp = click.option(
+    "--amp/--no-amp",
+    type=bool,
+    default=None,
+    help="Enables automatic mixed precision during training and inference.",
+)
 
 # Extract
 save_features = click.option(
