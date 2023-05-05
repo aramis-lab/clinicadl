@@ -531,7 +531,7 @@ class MapsManager:
                     images = data["image"].to(model.device)
 
                     map_pt = interpreter.generate_gradients(
-                        images, target_node, level=level
+                        images, target_node, level=level, amp=self.amp
                     )
                     for i in range(len(data["participant_id"])):
                         mode_id = data[f"{self.mode}_id"][i]
@@ -1035,6 +1035,7 @@ class MapsManager:
                 prediction_df, metrics, split, selection_metric, data_group=data_group
             )
 
+    @torch.no_grad()
     def _compute_output_nifti(
         self,
         dataset,
@@ -1082,12 +1083,10 @@ class MapsManager:
             for i in range(nb_imgs):
                 data = dataset[i]
                 image = data["image"]
-                output = (
-                    model.predict(image.unsqueeze(0).to(model.device))
-                    .squeeze(0)
-                    .detach()
-                    .cpu()
-                )
+                x = image.unsqueeze(0).to(model.device)
+                with autocast(enabled=self.amp):
+                    output = model.predict(x)
+                output = output.squeeze(0).detach().cpu().float()
                 # Convert tensor to nifti image with appropriate affine
                 input_nii = nib.Nifti1Image(image[0].detach().cpu().numpy(), eye(4))
                 output_nii = nib.Nifti1Image(output[0].numpy(), eye(4))
@@ -1099,6 +1098,7 @@ class MapsManager:
                 nib.save(input_nii, Path(nifti_path) / input_filename)
                 nib.save(output_nii, Path(nifti_path) / output_filename)
 
+    @torch.no_grad()
     def _compute_output_tensors(
         self,
         dataset,
@@ -1148,9 +1148,10 @@ class MapsManager:
             for i in range(nb_modes):
                 data = dataset[i]
                 image = data["image"]
-                output = (
-                    model.predict(image.unsqueeze(0).to(model.device)).squeeze(0).cpu()
-                )
+                x = image.unsqueeze(0).to(model.device)
+                with autocast(enabled=self.amp):
+                    output = model.predict(x)
+                output = output.squeeze(0).cpu().float()
                 participant_id = data["participant_id"]
                 session_id = data["session_id"]
                 mode_id = data[f"{self.mode}_id"]
