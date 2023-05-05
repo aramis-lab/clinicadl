@@ -31,105 +31,103 @@ def test_train_cnn(cmdopt, tmp_path, test_name):
     tmp_out_dir = tmp_path / "train" / "out"
     tmp_out_dir.mkdir(parents=True)
 
-    labels_path = join(input_dir, "labels_list", "2_fold")
-    config_path = join(input_dir, "train_config.toml")
+    labels_path = input_dir / "labels_list" / "2_fold"
+    config_path = input_dir / "train_config.toml"
     split = "0"
 
     if test_name == "slice_cnn":
-        split_ref = "0"
+        split_ref = 0
         test_input = [
             "train",
             "classification",
-            join(str(input_dir), "caps_slice"),
+            str(input_dir / "caps_slice"),
             "t1-linear_crop-True_mode-slice.json",
-            labels_path,
+            str(labels_path),
             str(tmp_out_dir),
             "-c",
-            config_path,
+            str(config_path),
         ]
     elif test_name == "image_cnn":
-        split_ref = "1"
+        split_ref = 1
         test_input = [
             "train",
             "regression",
-            join(str(input_dir), "caps_image"),
+            str(input_dir / "caps_image"),
             "t1-linear_crop-True_mode-image.json",
-            labels_path,
+            str(labels_path),
             str(tmp_out_dir),
             "-c",
-            config_path,
+            str(config_path),
         ]
     elif test_name == "patch_cnn":
-        split_ref = "0"
+        split_ref = 0
         test_input = [
             "train",
             "classification",
-            join(str(input_dir), "caps_patch"),
+            str(input_dir / "caps_patch"),
             "t1-linear_crop-True_mode-patch.json",
-            labels_path,
+            str(labels_path),
             str(tmp_out_dir),
             "-c",
-            config_path,
+            str(config_path),
             "--split",
             split,
         ]
     elif test_name == "patch_multi_cnn":
-        split_ref = "0"
+        split_ref = 0
         test_input = [
             "train",
             "classification",
-            join(str(input_dir), "caps_patch"),
+            str(input_dir / "caps_patch"),
             "t1-linear_crop-True_mode-patch.json",
-            labels_path,
+            str(labels_path),
             str(tmp_out_dir),
             "-c",
-            config_path,
+            str(config_path),
             "--multi_network",
         ]
     elif test_name == "roi_cnn":
-        split_ref = "0"
+        split_ref = 0
         test_input = [
             "train",
             "classification",
-            join(str(input_dir), "caps_roi"),
+            str(input_dir / "caps_roi"),
             "t1-linear_crop-True_mode-roi.json",
-            labels_path,
+            str(labels_path),
             str(tmp_out_dir),
             "-c",
-            config_path,
+            str(config_path),
         ]
     else:
         raise NotImplementedError(f"Test {test_name} is not implemented.")
 
-    if os.path.exists(str(tmp_out_dir)):
-        shutil.rmtree(str(tmp_out_dir))
+    if tmp_out_dir.is_dir():
+        shutil.rmtree(tmp_out_dir)
 
     flag_error = not os.system("clinicadl " + " ".join(test_input))
     assert flag_error
 
-    performances_flag = os.path.exists(
-        os.path.join(str(tmp_out_dir), f"split-{split}", "best-loss", "train")
-    )
+    performances_flag = (
+        tmp_out_dir / f"split-{split}" / "best-loss" / "train"
+    ).exists()
     assert performances_flag
 
-    with open(os.path.join(str(tmp_out_dir), "maps.json"), "r") as out:
+    with open(tmp_out_dir / "maps.json", "r") as out:
         json_data_out = json.load(out)
-    with open(
-        os.path.join(str(ref_dir / ("maps_" + test_name)), "maps.json"), "r"
-    ) as ref:
+    with open(ref_dir / ("maps_" + test_name) / "maps.json", "r") as ref:
         json_data_ref = json.load(ref)
 
     assert json_data_out == json_data_ref  # ["mode"] == mode
 
     assert compare_folders(
-        str(tmp_out_dir / "groups"),
-        str(ref_dir / ("maps_" + test_name) / "groups"),
+        tmp_out_dir / "groups",
+        ref_dir / ("maps_" + test_name) / "groups",
         tmp_path,
     )
     assert compare_folders(
-        str(tmp_out_dir / "split-0" / "best-loss"),
-        str(ref_dir / ("maps_" + test_name) / f"split-{split_ref}" / "best-loss"),
+        tmp_out_dir / "split-0" / "best-loss",
+        ref_dir / ("maps_" + test_name) / f"split-{split_ref}" / "best-loss",
         tmp_path,
     )
 
-    shutil.rmtree(str(tmp_out_dir))
+    shutil.rmtree(tmp_out_dir)

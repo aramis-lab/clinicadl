@@ -63,9 +63,8 @@ def create_split(
     supplementary_train_df=None,
     ignore_demographics=False,
 ):
-
     """
-    Split data at the subject-level in training and test set with equivalent age, sex and split_label distributions
+    Split data at the subject-level in training and test set with equivalent age, sex and split_label distributions.
 
     Parameters
     ----------
@@ -133,10 +132,8 @@ def create_split(
         n_try = 0
 
         while flag_selection:
-
             splits = StratifiedShuffleSplit(n_splits=1, test_size=n_test)
             for train_index, test_index in splits.split(category, category):
-
                 # Find the value for different demographics (age & sex)
                 if len(set(age)) != 1:
                     age_test = [float(age[idx]) for idx in test_index]
@@ -179,7 +176,7 @@ def create_split(
 
 
 def split_diagnoses(
-    data_tsv,
+    data_tsv: Path,
     n_test=100,
     subset_name="test",
     p_age_threshold=0.80,
@@ -227,7 +224,7 @@ def split_diagnoses(
         - data_tsv/<subset_name>/<label>_baseline.tsv
     """
 
-    parents_path = Path(data_tsv).parents[0]
+    parents_path = data_tsv.parents[0]
     split_numero = 1
     folder_name = f"split"
 
@@ -259,7 +256,7 @@ def split_diagnoses(
         categorical_split_variable.append("diagnosis")
 
     # Read files
-    diagnosis_df_path = Path(data_tsv).name
+    diagnosis_df_path = data_tsv.name
     diagnosis_df = pd.read_csv(data_tsv, sep="\t")
     list_columns = diagnosis_df.columns.values
     if multi_diagnoses:
@@ -283,13 +280,13 @@ def split_diagnoses(
             or ("age" not in list_columns and "age_bl" not in list_columns)
             or "sex" not in list_columns
         ):
-            parents_path = Path(parents_path).resolve()
+            parents_path = parents_path.resolve()
             n = 0
-            while not (Path(parents_path) / "labels.tsv").is_file() and n <= 4:
-                parents_path = Path(parents_path).parents[0]
+            while not (parents_path / "labels.tsv").is_file() and n <= 4:
+                parents_path = parents_path.parents[0]
                 n += 1
             try:
-                labels_df = pd.read_csv(Path(parents_path) / "labels.tsv", sep="\t")
+                labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
                 diagnosis_df = pd.merge(
                     diagnosis_df,
                     labels_df,
@@ -332,9 +329,9 @@ def split_diagnoses(
             long_train_df = diagnosis_df
 
     name = "train_baseline.tsv"
-    df_to_tsv(name, str(results_path), train_df, baseline=True)
+    df_to_tsv(name, results_path, train_df, baseline=True)
 
     long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
     # long_train_df = long_train_df[["participant_id", "session_id"]]
     name = "train.tsv"
-    df_to_tsv(name, str(results_path), long_train_df)
+    df_to_tsv(name, results_path, long_train_df)

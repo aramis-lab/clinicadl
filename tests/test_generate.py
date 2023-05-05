@@ -10,7 +10,14 @@ import pytest
 from tests.testing_tools import clean_folder, compare_folders
 
 
-@pytest.fixture(params=["random_example", "trivial_example", "shepplogan_example"])
+@pytest.fixture(
+    params=[
+        "random_example",
+        "trivial_example",
+        "shepplogan_example",
+        "hypometabolic_example",
+    ]
+)
 def test_name(request):
     return request.param
 
@@ -24,28 +31,45 @@ def test_generate(cmdopt, tmp_path, test_name):
 
     clean_folder(tmp_out_dir, recreate=True)
 
+    data_caps_pet = str(input_dir / "caps_pet")
     data_caps_folder = str(input_dir / "caps")
 
     if test_name == "trivial_example":
-        output_folder = str(tmp_out_dir / test_name)
+        output_folder = tmp_out_dir / test_name
         test_input = [
             "generate",
             "trivial",
             data_caps_folder,
-            output_folder,
+            str(output_folder),
             "--n_subjects",
             "4",
             "--preprocessing",
             "t1-linear",
         ]
+    elif test_name == "hypometabolic_example":
+        output_folder = str(tmp_out_dir / test_name)
+        test_input = [
+            "generate",
+            "hypometabolic",
+            data_caps_pet,
+            output_folder,
+            "--n_subjects",
+            "2",
+            "--pathology",
+            "ad",
+            "--anomaly_degree",
+            "50",
+            "--sigma",
+            "5",
+        ]
 
     elif test_name == "random_example":
-        output_folder = str(tmp_out_dir / test_name)
+        output_folder = tmp_out_dir / test_name
         test_input = [
             "generate",
             "random",
             data_caps_folder,
-            output_folder,
+            str(output_folder),
             "--n_subjects",
             "4",
             "--mean",
@@ -58,11 +82,11 @@ def test_generate(cmdopt, tmp_path, test_name):
 
     elif test_name == "shepplogan_example":
         n_subjects = 10
-        output_folder = str(tmp_out_dir / test_name)
+        output_folder = tmp_out_dir / test_name
         test_input = [
             "generate",
             "shepplogan",
-            output_folder,
+            str(output_folder),
             "--n_subjects",
             f"{n_subjects}",
         ]
@@ -75,11 +99,9 @@ def test_generate(cmdopt, tmp_path, test_name):
     assert flag_error
 
     if test_name == "shepplogan_example":
-        file = os.listdir(os.path.join(output_folder, "tensor_extraction"))
-        old_name = os.path.join(output_folder, "tensor_extraction", file[0])
-        new_name = os.path.join(output_folder, "tensor_extraction", "extract_test.json")
-        os.rename(old_name, new_name)
+        file = list((output_folder / "tensor_extraction").iterdir())
+        old_name = output_folder / "tensor_extraction" / file[0]
+        new_name = output_folder / "tensor_extraction" / "extract_test.json"
+        old_name.rename(new_name)
 
-    assert compare_folders(
-        str(output_folder), str(ref_dir / test_name), str(tmp_out_dir)
-    )
+    assert compare_folders(output_folder, ref_dir / test_name, tmp_out_dir)

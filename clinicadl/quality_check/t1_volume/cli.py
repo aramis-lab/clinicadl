@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 
 from clinicadl.utils import cli_param
@@ -7,7 +9,7 @@ from clinicadl.utils import cli_param
 @cli_param.argument.caps_directory
 @click.argument(
     "output_directory",
-    type=str,
+    type=click.Path(path_type=Path),
 )
 @click.argument(
     "group_label",

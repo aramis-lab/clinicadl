@@ -10,9 +10,9 @@ import pandas as pd
 from clinica.utils.inputs import RemoteFileStructure, fetch_file
 
 
-def extract_metrics(caps_dir, output_dir, group_label):
-    if not Path(output_dir).is_dir():
-        Path(output_dir).mkdir(parents=True)
+def extract_metrics(caps_dir: Path, output_dir: Path, group_label):
+    if not output_dir.is_dir():
+        output_dir.mkdir(parents=True)
 
     # Load eyes segmentation
     home = Path.home()
@@ -40,7 +40,7 @@ def extract_metrics(caps_dir, output_dir, group_label):
 
     # Get the GM template
     template_path = (
-        Path(caps_dir)
+        caps_dir
         / "groups"
         / f"group-{group_label}"
         / "t1"
@@ -52,7 +52,7 @@ def extract_metrics(caps_dir, output_dir, group_label):
     template_segmentation_np = template_np * segmentation_np
 
     # Get the data
-    filename = Path(output_dir) / "QC_metrics.tsv"
+    filename = output_dir / "QC_metrics.tsv"
     columns = [
         "participant_id",
         "session_id",
@@ -62,15 +62,15 @@ def extract_metrics(caps_dir, output_dir, group_label):
     ]
     results_df = pd.DataFrame(columns=columns)
 
-    subjects = list((Path(caps_dir) / "subjects").iterdir())
+    subjects = list((caps_dir / "subjects").iterdir())
     subjects = [subject for subject in subjects if str(subject)[:4:] == "sub-"]
     for subject in subjects:
-        subject_path = Path(caps_dir) / "subjects" / subject
+        subject_path = caps_dir / "subjects" / subject
         sessions = list(subject_path.iterdir())
         sessions = [session for session in sessions if str(session)[:4:] == "ses-"]
         for session in sessions:
             image_path = (
-                Path(subject_path)
+                subject_path
                 / session
                 / "t1"
                 / "spm"
