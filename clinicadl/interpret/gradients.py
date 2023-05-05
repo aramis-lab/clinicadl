@@ -49,7 +49,9 @@ class GradCam:
         if not isinstance(model, CNN):
             raise ValueError("Grad-CAM was only implemented for CNN models.")
 
-    def generate_gradients(self, input_batch, target_class, level=None, amp=False, **kwargs):
+    def generate_gradients(
+        self, input_batch, target_class, level=None, amp=False, **kwargs
+    ):
         """
         Generate the gradients map corresponding to the input_tensor.
         Args:
