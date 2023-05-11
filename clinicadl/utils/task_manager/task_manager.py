@@ -15,6 +15,8 @@ from clinicadl.utils.caps_dataset.data import CapsDataset
 from clinicadl.utils.metric_module import MetricModule
 from clinicadl.utils.network.network import Network
 
+from datetime import datetime
+
 logger = getLogger("clinicadl")
 
 
@@ -214,6 +216,8 @@ class TaskManager:
         results_df = pd.DataFrame(columns=self.columns())
         mc_results_df = pd.DataFrame(columns=self.columns(monte_carlo=monte_carlo))
 
+        profiler = self._init_profiler(profiler)
+
         with torch.no_grad():
 
             with profiler:
@@ -349,3 +353,36 @@ class TaskManager:
         torch.cuda.empty_cache()
 
         return results_df, metrics_df, mc_results_df
+
+    def _init_profiler(self, profiler):
+        if profiler:
+            from torch.profiler import (
+                ProfilerActivity,
+                profile,
+                schedule,
+                tensorboard_trace_handler,
+            )
+
+            time = datetime.now().strftime("%H:%M:%S")
+            filename = [
+                path.join(
+                    "/gpfsscratch/rech/krk/uqo89gi/models/MAPS_VAE",
+                    "profiler",
+                    f"clinicadl_{time}",
+                )
+            ]
+            profiler = profile(
+                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+                schedule=schedule(wait=2, warmup=2, active=30, repeat=1),
+                on_trace_ready=tensorboard_trace_handler(filename[0]),
+                profile_memory=True,
+                record_shapes=False,
+                with_stack=False,
+                with_flops=False,
+            )
+        else:
+            from contextlib import nullcontext
+
+            profiler = nullcontext()
+            profiler.step = lambda *args, **kwargs: None
+        return profiler

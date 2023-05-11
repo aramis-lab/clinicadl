@@ -24,6 +24,7 @@ def predict(
     save_nifti: bool = False,
     save_latent_tensor: bool = False,
     monte_carlo: int = 0,
+    profiler: bool = False,
 ):
     """
     This function loads a MAPS and predicts the global metrics and individual values
@@ -83,4 +84,5 @@ def predict(
         save_nifti=save_nifti,
         save_latent_tensor=save_latent_tensor,
         monte_carlo=monte_carlo,
+        profiler=profiler,
     )

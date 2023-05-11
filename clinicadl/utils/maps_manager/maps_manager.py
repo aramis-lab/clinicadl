@@ -192,6 +192,7 @@ class MapsManager:
         save_nifti: bool = False,
         save_latent_tensor: bool = False,
         monte_carlo: int = 0,
+        profiler: bool = False,
     ):
         """
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -314,6 +315,7 @@ class MapsManager:
                         save_reconstruction_tensor=save_tensor,
                         save_reconstruction_nifti=save_nifti,
                         save_latent_tensor=save_latent_tensor,
+                        profiler=profiler,
                     )
             else:
                 data_test = return_dataset(
@@ -350,6 +352,7 @@ class MapsManager:
                     save_reconstruction_tensor=save_tensor,
                     save_reconstruction_nifti=save_nifti,
                     save_latent_tensor=save_latent_tensor,
+                    profiler=profiler,
                 )
 
             self._ensemble_prediction(data_group, split, selection_metrics, use_labels)
@@ -941,6 +944,7 @@ class MapsManager:
         save_reconstruction_tensor=True,
         save_reconstruction_nifti=False,
         save_latent_tensor=False,
+        profiler=False,
     ):
         """
         Launches the testing task on a dataset wrapped by a DataLoader and writes prediction TSV files.
@@ -1015,8 +1019,6 @@ class MapsManager:
                     "latent_tensors",
                 )
                 makedirs(latent_tensor_path, exist_ok=True)
-
-            profiler = self._init_profiler()
 
             prediction_df, metrics, mc_prediction_df = self.task_manager.test(
                 model,
@@ -2114,7 +2116,7 @@ class MapsManager:
             )
 
             time = datetime.now().strftime("%H:%M:%S")
-            filename = [self.maps_path / "profiler" / f"clinicadl_{time}"]
+            filename = [path.join(self.maps_path, "profiler", f"clinicadl_{time}")]
             profiler = profile(
                 activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
                 schedule=schedule(wait=2, warmup=2, active=30, repeat=1),
