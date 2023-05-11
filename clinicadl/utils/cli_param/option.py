@@ -76,7 +76,7 @@ n_proc = click.option(
 batch_size = click.option(
     "--batch_size",
     type=int,
-    default=8,
+    default=2,
     show_default=True,
     help="Batch size for data loading.",
 )
@@ -120,7 +120,7 @@ use_uncropped_image = click.option(
 
 acq_label = click.option(
     "--acq_label",
-    type=str,
+    type=click.Choice(["av45", "fdg"]),
     help=(
         "Acquisition label if MODALITY is `pet-linear`. Name of the tracer used for the"
         " PET acquisition (trc-<acq_label>). For instance it can be '18FFDG' for"
@@ -150,8 +150,6 @@ custom_suffix = click.option(
         "`segm-whitematter_probability.nii.gz`"
     ),
 )
-
-# PREDICT & INTERPRET
 # Data group
 overwrite = click.option(
     "--overwrite",
@@ -160,34 +158,6 @@ overwrite = click.option(
     is_flag=True,
     help=(
         "Will overwrite data group if existing. Please give caps_directory and"
-        " participants_tsv to define new data group."
-    ),
-)
-split = click.option(
-    "--split",
-    "-s",
-    type=int,
-    multiple=True,
-    help=(
-        "Make inference on the list of given splits. By default, inference is done on all"
-        " the splits."
-    ),
-)
-selection_metrics = click.option(
-    "--selection_metrics",
-    "-sm",
-    multiple=True,
-    help="""Make inference on the list of given metrics used for selection. By default, inference is done on all the metrics.""",
-)
-
-# Optimisation
-profiler = click.option(
-    "--profiler/--no-profiler",
-    type=bool,
-    default=None,
-    help=(
-        "Use `--profiler` to enable Pytorch profiler for the first 30 steps after a short"
-        " warmup. It will make an execution trace and some statistics about the CPU and"
-        " GPU usage."
+        " partcipants_tsv to define new data group."
     ),
 )

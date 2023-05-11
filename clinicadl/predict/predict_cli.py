@@ -11,8 +11,8 @@ from clinicadl.utils import cli_param
     type=click.Path(exists=True),
     default=None,
     help=(
-        "Data using CAPS structure, if different from the one used during"
-        " network training."
+        "Data using CAPS structure, if different from the one used during network"
+        " training."
     ),
 )
 @click.option(
@@ -27,8 +27,8 @@ from clinicadl.utils import cli_param
     "--use_labels/--no_labels",
     default=True,
     help=(
-        "Set this option to --no_labels if your dataset does not contain"
-        " ground truth labels."
+        "Set this option to --no_labels if your dataset does not contain ground truth"
+        " labels."
     ),
 )
 @click.option(
@@ -53,8 +53,8 @@ from clinicadl.utils import cli_param
     type=str,
     multiple=True,
     help=(
-        "List of diagnoses used for inference. Is used only if"
-        " PARTICIPANTS_TSV leads to a folder."
+        "List of diagnoses used for inference. Is used only if PARTICIPANTS_TSV leads to"
+        " a folder."
     ),
 )
 @click.option(
@@ -63,8 +63,8 @@ from clinicadl.utils import cli_param
     default=None,
     help=(
         "Target label used for training (if NETWORK_TASK in [`regression`,"
-        " `classification`]). Default will reuse the same label as during the"
-        " training task."
+        " `classification`]). Default will reuse the same label as during the training"
+        " task."
     ),
 )
 @click.option(
@@ -81,32 +81,15 @@ from clinicadl.utils import cli_param
     is_flag=True,
     help="Save the reconstruction output in the MAPS in NIfTI format.",
 )
-@click.option(
-    "--save_latent_tensor",
-    type=bool,
-    default=False,
-    is_flag=True,
-    help="""Save the latent representation of the image.""",
-)
-@click.option(
-    "--monte_carlo",
-    type=int,
-    default=0,
-    help="""Save multiple outputs for a single input.""",
-)
-@cli_param.option.split
-@cli_param.option.selection_metrics
 @cli_param.option.use_gpu
 @cli_param.option.n_proc
 @cli_param.option.batch_size
 @cli_param.option.overwrite
-@cli_param.option.profiler
 def cli(
     input_maps_directory,
     data_group,
     caps_directory,
     participants_tsv,
-    split,
     gpu,
     n_proc,
     batch_size,
@@ -120,10 +103,11 @@ def cli(
     save_nifti,
     save_latent_tensor,
     monte_carlo,
-    profiler,
 ):
     """Infer the outputs of a trained model on a test set.
+
     INPUT_MAPS_DIRECTORY is the MAPS folder from where the model used for prediction will be loaded.
+
     DATA_GROUP is the name of the subjects and sessions list used for the interpretation.
     """
     from clinicadl.utils.cmdline_utils import check_gpu
@@ -143,7 +127,6 @@ def cli(
         gpu=gpu,
         n_proc=n_proc,
         batch_size=batch_size,
-        split_list=split,
         selection_metrics=selection_metrics,
         diagnoses=diagnoses,
         multi_cohort=multi_cohort,
@@ -152,5 +135,4 @@ def cli(
         save_nifti=save_nifti,
         save_latent_tensor=save_latent_tensor,
         monte_carlo=monte_carlo,
-        profiler=profiler,
     )
