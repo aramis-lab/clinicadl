@@ -1016,6 +1016,8 @@ class MapsManager:
                 )
                 makedirs(latent_tensor_path, exist_ok=True)
 
+            profiler = self._init_profiler()
+
             prediction_df, metrics, mc_prediction_df = self.task_manager.test(
                 model,
                 dataloader,
@@ -1029,6 +1031,7 @@ class MapsManager:
                 tensor_path=tensor_path,
                 nifti_path=nifti_path,
                 latent_tensor_path=latent_tensor_path,
+                profiler=profiler,
             )
             if use_labels:
                 if network is not None:

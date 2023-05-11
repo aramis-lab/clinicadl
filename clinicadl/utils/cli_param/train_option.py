@@ -14,7 +14,10 @@ config_file = click.option(
     "--config_file",
     "-c",
     type=click.File(),
-    help="Path to the TOML or JSON file containing the values of the options needed for training.",
+    help=(
+        "Path to the TOML or JSON file containing the values of the options needed for"
+        " training."
+    ),
 )
 # Computational
 gpu = cli_param.option_group.computational_group.option(
@@ -41,14 +44,18 @@ evaluation_steps = cli_param.option_group.computational_group.option(
     "-esteps",
     type=int,
     # default=0,
-    help="Fix the number of iterations to perform before computing an evaluation. Default will only "
-    "perform one evaluation at the end of each epoch.",
+    help=(
+        "Fix the number of iterations to perform before computing an evaluation. Default"
+        " will only perform one evaluation at the end of each epoch."
+    ),
 )
 # Reproducibility
 seed = cli_param.option_group.reproducibility_group.option(
     "--seed",
-    help="Value to set the seed for all random operations."
-    "Default will sample a random value for the seed.",
+    help=(
+        "Value to set the seed for all random operations."
+        "Default will sample a random value for the seed."
+    ),
     # default=None,
     type=int,
 )
@@ -56,8 +63,10 @@ deterministic = cli_param.option_group.reproducibility_group.option(
     "--deterministic/--nondeterministic",
     type=bool,
     default=None,
-    help="Forces Pytorch to be deterministic even when using a GPU. "
-    "Will raise a RuntimeError if a non-deterministic function is encountered.",
+    help=(
+        "Forces Pytorch to be deterministic even when using a GPU. "
+        "Will raise a RuntimeError if a non-deterministic function is encountered."
+    ),
 )
 compensation = cli_param.option_group.reproducibility_group.option(
     "--compensation",
@@ -71,7 +80,11 @@ architecture = cli_param.option_group.model_group.option(
     "--architecture",
     type=str,
     # default=0,
-    help="Architecture of the chosen model to train. A set of model is available in ClinicaDL, default architecture depends on the NETWORK_TASK (see the documentation for more information).",
+    help=(
+        "Architecture of the chosen model to train. A set of model is available in"
+        " ClinicaDL, default architecture depends on the NETWORK_TASK (see the"
+        " documentation for more information)."
+    ),
 )
 multi_network = cli_param.option_group.model_group.option(
     "--multi_network/--single_network",
@@ -139,7 +152,10 @@ multi_cohort = cli_param.option_group.data_group.option(
     "--multi_cohort/--single_cohort",
     type=bool,
     default=None,
-    help="Performs multi-cohort training. In this case, caps_dir and tsv_path must be paths to TSV files.",
+    help=(
+        "Performs multi-cohort training. In this case, caps_dir and tsv_path must be"
+        " paths to TSV files."
+    ),
 )
 diagnoses = cli_param.option_group.data_group.option(
     "--diagnoses",
@@ -181,8 +197,10 @@ n_splits = cli_param.option_group.cross_validation.option(
     "--n_splits",
     type=int,
     # default=0,
-    help="If a value is given for k will load data of a k-fold CV. "
-    "Default value (0) will load a single split.",
+    help=(
+        "If a value is given for k will load data of a k-fold CV. "
+        "Default value (0) will load a single split."
+    ),
 )
 split = cli_param.option_group.cross_validation.option(
     "--split",
@@ -254,8 +272,20 @@ accumulation_steps = cli_param.option_group.optimization_group.option(
     "-asteps",
     type=int,
     # default=1,
-    help="Accumulates gradients during the given number of iterations before performing the weight update "
-    "in order to virtually increase the size of the batch.",
+    help=(
+        "Accumulates gradients during the given number of iterations before performing"
+        " the weight update in order to virtually increase the size of the batch."
+    ),
+)
+profiler = cli_param.option_group.optimization_group.option(
+    "--profiler/--no-profiler",
+    type=bool,
+    default=None,
+    help=(
+        "Use `--profiler` to enable Pytorch profiler for the first 30 steps after a short"
+        " warmup. It will make an execution trace and some statistics about the CPU and"
+        " GPU usage."
+    ),
 )
 # transfer learning
 transfer_path = cli_param.option_group.transfer_learning_group.option(
@@ -270,5 +300,8 @@ transfer_selection_metric = cli_param.option_group.transfer_learning_group.optio
     "--transfer_selection_metric",
     type=str,
     # default="loss",
-    help="Metric used to select the model for transfer learning in the MAPS defined by transfer_path.",
+    help=(
+        "Metric used to select the model for transfer learning in the MAPS defined by"
+        " transfer_path."
+    ),
 )
