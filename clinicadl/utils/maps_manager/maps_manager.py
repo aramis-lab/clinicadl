@@ -324,9 +324,7 @@ class MapsManager:
                     multi_cohort=group_parameters["multi_cohort"],
                     label_presence=use_labels,
                     label=self.label if label is None else label,
-                    label_code=self.label_code
-                    if label_code == "default"
-                    else label_code,
+                    label_code=self.label_code if label_code == "default" else label_code,
                     for_pythae=True,
                 )
 
@@ -769,59 +767,64 @@ class MapsManager:
 
         retain_best = RetainBest(selection_metrics=list(self.selection_metrics))
 
+        profiler = self._init_profiler()
+
         while epoch < self.epochs and not early_stopping.step(metrics_valid["loss"]):
             logger.info(f"Beginning epoch {epoch}.")
 
             model.zero_grad()
             evaluation_flag, step_flag = True, True
 
-            for i, data in enumerate(train_loader):
-                _, loss_dict = model.compute_outputs_and_loss(data, criterion)
-                logger.debug(f"Train loss dictionnary {loss_dict}")
-                loss = loss_dict["loss"]
-                loss.backward()
+            with profiler:
+                for i, data in enumerate(train_loader):
+                    _, loss_dict = model.compute_outputs_and_loss(data, criterion)
+                    logger.debug(f"Train loss dictionnary {loss_dict}")
+                    loss = loss_dict["loss"]
+                    loss.backward()
 
-                if (i + 1) % self.accumulation_steps == 0:
-                    step_flag = False
-                    optimizer.step()
-                    optimizer.zero_grad()
+                    if (i + 1) % self.accumulation_steps == 0:
+                        step_flag = False
+                        optimizer.step()
+                        optimizer.zero_grad()
 
-                    del loss
+                        del loss
 
-                    # Evaluate the model only when no gradients are accumulated
-                    if (
-                        self.evaluation_steps != 0
-                        and (i + 1) % self.evaluation_steps == 0
-                    ):
-                        evaluation_flag = False
+                        # Evaluate the model only when no gradients are accumulated
+                        if (
+                            self.evaluation_steps != 0
+                            and (i + 1) % self.evaluation_steps == 0
+                        ):
+                            evaluation_flag = False
 
-                        _, metrics_train = self.task_manager.test(
-                            model, train_loader, criterion
-                        )
-                        _, metrics_valid = self.task_manager.test(
-                            model, valid_loader, criterion
-                        )
+                            _, metrics_train = self.task_manager.test(
+                                model, train_loader, criterion
+                            )
+                            _, metrics_valid = self.task_manager.test(
+                                model, valid_loader, criterion
+                            )
 
-                        model.train()
-                        train_loader.dataset.train()
+                            model.train()
+                            train_loader.dataset.train()
 
-                        log_writer.step(
-                            epoch,
-                            i,
-                            metrics_train,
-                            metrics_valid,
-                            len(train_loader),
-                        )
-                        logger.info(
-                            f"{self.mode} level training loss is"
-                            f" {metrics_train['loss']} at the end of"
-                            f" iteration {i}"
-                        )
-                        logger.info(
-                            f"{self.mode} level validation loss is"
-                            f" {metrics_valid['loss']} at the end of"
-                            f" iteration {i}"
-                        )
+                            log_writer.step(
+                                epoch,
+                                i,
+                                metrics_train,
+                                metrics_valid,
+                                len(train_loader),
+                            )
+                            logger.info(
+                                f"{self.mode} level training loss is"
+                                f" {metrics_train['loss']} at the end of"
+                                f" iteration {i}"
+                            )
+                            logger.info(
+                                f"{self.mode} level validation loss is"
+                                f" {metrics_valid['loss']} at the end of"
+                                f" iteration {i}"
+                            )
+
+                            profiler.step()
 
             # If no step has been performed, raise Exception
             if step_flag:
@@ -1017,9 +1020,6 @@ class MapsManager:
                 model,
                 dataloader,
                 criterion,
-                data_group,
-                split,
-                selection_metric,
                 use_labels=use_labels,
                 monte_carlo=monte_carlo,
                 seed=seed,
@@ -1223,9 +1223,7 @@ class MapsManager:
                     )
                     # Create file name according to participant and session id
                     input_filename = f"{participant_id}_{session_id}_image_input.nii.gz"
-                    output_filename = (
-                        f"{participant_id}_{session_id}_image_output.nii.gz"
-                    )
+                    output_filename = f"{participant_id}_{session_id}_image_output.nii.gz"
                     nib.save(input_nii, path.join(nifti_path, input_filename))
                     nib.save(output_nii, path.join(nifti_path, output_filename))
 
@@ -1260,9 +1258,7 @@ class MapsManager:
                             reconstruction,
                             path.join(tensor_path, output_filename),
                         )
-                        logger.debug(
-                            f"File saved at {[input_filename, output_filename]}"
-                        )
+                        logger.debug(f"File saved at {[input_filename, output_filename]}")
 
                         # Convert tensor to nifti image with appropriate affine
                         reconstruction = output["recon_x"].squeeze(0).cpu()
@@ -1363,8 +1359,7 @@ class MapsManager:
         if "selection_threshold" not in self.parameters:
             self.parameters["selection_threshold"] = None
         if (
-            "label_code" not in self.parameters
-            or len(self.parameters["label_code"]) == 0
+            "label_code" not in self.parameters or len(self.parameters["label_code"]) == 0
         ):  # Allows to set custom label code in TOML
             self.parameters["label_code"] = self.task_manager.generate_label_code(
                 train_df, self.label
@@ -2041,9 +2036,7 @@ class MapsManager:
             if "model" in transfer_state.keys():
                 model.transfer_weights(transfer_state["model"], transfer_class)
             elif "model_state_dict" in transfer_state.keys():
-                model.transfer_weights(
-                    transfer_state["model_state_dict"], transfer_class
-                )
+                model.transfer_weights(transfer_state["model_state_dict"], transfer_class)
             else:
                 raise KeyError("Unknow key in model state dictionnary.")
 
@@ -2107,6 +2100,33 @@ class MapsManager:
                 " Please choose between classification, regression and"
                 " reconstruction."
             )
+
+    def _init_profiler(self):
+        if self.profiler:
+            from torch.profiler import (
+                ProfilerActivity,
+                profile,
+                schedule,
+                tensorboard_trace_handler,
+            )
+
+            time = datetime.now().strftime("%H:%M:%S")
+            filename = [self.maps_path / "profiler" / f"clinicadl_{time}"]
+            profiler = profile(
+                activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+                schedule=schedule(wait=2, warmup=2, active=30, repeat=1),
+                on_trace_ready=tensorboard_trace_handler(filename[0]),
+                profile_memory=True,
+                record_shapes=False,
+                with_stack=False,
+                with_flops=False,
+            )
+        else:
+            from contextlib import nullcontext
+
+            profiler = nullcontext()
+            profiler.step = lambda *args, **kwargs: None
+        return profiler
 
     ###############################
     # Getters                     #
@@ -2184,9 +2204,9 @@ class MapsManager:
                 raise ClinicaDLArgumentError(
                     "Please precise the network number that must be loaded."
                 )
-        return self._init_model(
-            self.maps_path, selection_metric, split, network=network
-        )[0]
+        return self._init_model(self.maps_path, selection_metric, split, network=network)[
+            0
+        ]
 
     def get_best_epoch(
         self, split: int = 0, selection_metric: str = None, network: int = None
@@ -2377,9 +2397,7 @@ class MapsManager:
                 f"interpretation {name} was found."
             )
         if participant_id is None and session_id is None:
-            map_pt = torch.load(
-                path.join(map_dir, f"mean_{self.mode}-{mode_id}_map.pt")
-            )
+            map_pt = torch.load(path.join(map_dir, f"mean_{self.mode}-{mode_id}_map.pt"))
         elif participant_id is None or session_id is None:
             raise ValueError(
                 f"To load the mean interpretation map, "

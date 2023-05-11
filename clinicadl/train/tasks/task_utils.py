@@ -51,6 +51,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "normalize",
         "optimizer",
         "patience",
+        "profiler",
         "tolerance",
         "transfer_selection_metric",
         "weight_decay",
@@ -81,9 +82,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         json_found = False
         for caps_name, caps_path in caps_dict.items():
             if os.path.exists(
-                os.path.join(
-                    caps_path, "tensor_extraction", kwargs["preprocessing_json"]
-                )
+                os.path.join(caps_path, "tensor_extraction", kwargs["preprocessing_json"])
             ):
                 preprocessing_json = os.path.join(
                     caps_path, "tensor_extraction", kwargs["preprocessing_json"]
@@ -94,8 +93,8 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
                 json_found = True
         if not json_found:
             raise ValueError(
-                f"Preprocessing JSON {kwargs['preprocessing_json']} was not found for any CAPS "
-                f"in {caps_dict}."
+                f"Preprocessing JSON {kwargs['preprocessing_json']} was not found for any"
+                f" CAPS in {caps_dict}."
             )
 
     # Mode and preprocessing
