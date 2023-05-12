@@ -380,13 +380,12 @@ def get_labels(
     # Loading missing modalities files
     list_files = list(missing_mods_directory.iterdir())
     missing_mods_dict = {}
-
     for file in list_files:
         fileext = file.suffix
         filename = file.stem
         if fileext == ".tsv":
             session = filename.split("_")[-1]
-            missing_mods_df = pd.read_csv(missing_mods_directory / file, sep="\t")
+            missing_mods_df = pd.read_csv(file, sep="\t")
             if len(missing_mods_df) == 0:
                 raise ClinicaDLTSVError(
                     f"Given TSV file at {missing_mods_directory /file} loads an empty DataFrame."
