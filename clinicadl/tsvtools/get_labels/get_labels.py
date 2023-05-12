@@ -392,10 +392,10 @@ def get_labels(
         filename = file.stem
         if fileext == ".tsv":
             session = filename.split("_")[-1]
-            missing_mods_df = pd.read_csv(missing_mods_directory / file, sep="\t")
+            missing_mods_df = pd.read_csv(file, sep="\t")
             if len(missing_mods_df) == 0:
                 raise ClinicaDLTSVError(
-                    f"Given TSV file at {missing_mods_directory /file} loads an empty DataFrame."
+                    f"Given TSV file at {file} loads an empty DataFrame."
                 )
 
             missing_mods_df.set_index("participant_id", drop=True, inplace=True)
