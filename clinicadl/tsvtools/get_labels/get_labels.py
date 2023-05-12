@@ -282,9 +282,8 @@ def get_labels(
 
     from clinica.utils.inputs import check_bids_folder
 
-    if not output_dir.suffix == "tsv":
+    if output_dir is None:
         results_directory = bids_directory.parents[0]
-        output_tsv = results_directory / "labels.tsv"
     else:
         results_directory = output_dir
 
