@@ -337,7 +337,7 @@ def get_labels(
         check_bids_folder(bids_directory)
         create_merge_file(
             bids_directory,
-            results_directory / "merged.tsv",
+            merged_tsv,
             caps_dir=caps_directory,
             pipelines=None,
             ignore_scan_files=None,
