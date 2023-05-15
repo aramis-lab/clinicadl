@@ -282,18 +282,15 @@ def get_labels(
 
     from clinica.utils.inputs import check_bids_folder
 
-    if not output_dir.suffix == "tsv":
-        results_directory = bids_directory.parents[0]
-        output_tsv = results_directory / "labels.tsv"
-    else:
-        results_directory = output_dir
+    if not output_dir.is_dir():
+        output_dir.mkdir(parents=True, exist_ok=True)
 
-    output_tsv = results_directory / "labels.tsv"
+    output_tsv = output_dir / "labels.tsv"
 
     commandline_to_json(
         {
             "bids_directory": bids_directory,
-            "output_dir": results_directory,
+            "output_dir": output_dir,
             "diagnoses": diagnoses,
             "modality": modality,
             "restriction_path": restriction_path,
@@ -306,11 +303,8 @@ def get_labels(
         filename="labels.json",
     )
 
-    # Create the results directory
-    results_directory.mkdir(parents=True, exist_ok=True)
-
     # Generating the output of `clinica iotools check-missing-modalities``
-    missing_mods_directory = results_directory / "missing_mods"
+    missing_mods_directory = output_dir / "missing_mods"
     if missing_mods is not None:
         missing_mods_directory = missing_mods
 
@@ -325,17 +319,16 @@ def get_labels(
     )
 
     # Generating the output of `clinica iotools merge-tsv `
-    merged_tsv_path = results_directory / "merged.tsv"
-    if merged_tsv is not None:
-        merged_tsv_path = merged_tsv
-    elif not merged_tsv_path.is_file():
+    if merged_tsv is None:
+        merged_tsv = output_dir / "merged.tsv"
+    elif not merged_tsv.is_file():
         from clinica.iotools.utils.data_handling import create_merge_file
 
         logger.info("create merge tsv")
         check_bids_folder(bids_directory)
         create_merge_file(
             bids_directory,
-            results_directory / "merged.tsv",
+            output_dir / "merged.tsv",
             caps_dir=None,
             pipelines=None,
             ignore_scan_files=None,
@@ -348,12 +341,12 @@ def get_labels(
             tracers_selection=False,
         )
 
-    logger.info(f"output of clinica iotools merge-tsv: {merged_tsv_path}")
+    logger.info(f"output of clinica iotools merge-tsv: {merged_tsv}")
 
     # Reading files
-    if not merged_tsv_path.is_file():
-        raise ClinicaDLTSVError(f"{merged_tsv_path} file was not found. ")
-    bids_df = pd.read_csv(merged_tsv_path, sep="\t")
+    if not merged_tsv.is_file():
+        raise ClinicaDLTSVError(f"{merged_tsv} file was not found. ")
+    bids_df = pd.read_csv(merged_tsv, sep="\t")
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
     variables_list = []
 
@@ -386,13 +379,12 @@ def get_labels(
     # Loading missing modalities files
     list_files = list(missing_mods_directory.iterdir())
     missing_mods_dict = {}
-
     for file in list_files:
         fileext = file.suffix
         filename = file.stem
         if fileext == ".tsv":
             session = filename.split("_")[-1]
-            missing_mods_df = pd.read_csv(missing_mods_directory / file, sep="\t")
+            missing_mods_df = pd.read_csv(file, sep="\t")
             if len(missing_mods_df) == 0:
                 raise ClinicaDLTSVError(
                     f"Given TSV file at {missing_mods_directory /file} loads an empty DataFrame."
@@ -437,4 +429,4 @@ def get_labels(
     output_df.sort_values(by=["participant_id", "session_id"], inplace=True)
     output_df.to_csv(output_tsv, sep="\t")
 
-    logger.info(f"results are stored at {output_tsv}")
+    logger.info(f"Results are stored in {output_dir}.")
