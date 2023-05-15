@@ -5,7 +5,21 @@ Main changes to this code/ project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## ClinicaDL 1.3.1
 
+### Fixed
+
+* Fix TypeError when running ClinicaDL.
+* Fix `--extract_json` option bug in `clinicadl prepare-data`.
+* Fix `clinicadl tsvtools get-labels` error finding `clinica iotools missing-modalities` output. 
+
+### Changed
+
+* Changed `clinicadl tsvtools get-labels` output directory.
+
+### New 
+
+* Add `--caps_directory` option in `clinicadl tsvtools get-labels`.
 ## ClinicaDL 1.3.0
 
 ### New 
