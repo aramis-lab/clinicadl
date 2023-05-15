@@ -92,7 +92,7 @@ def test_getlabels(cmdopt, tmp_path):
     bids_output = tmp_out_dir / "bids"
     bids_directory = input_dir / "bids"
     restrict_tsv = input_dir / "restrict.tsv"
-    output_tsv = tmp_out_dir / "labels.tsv"
+    output_tsv = tmp_out_dir
     if tmp_out_dir.exists():
         shutil.rmtree(tmp_out_dir)
         tmp_out_dir.mkdir(parents=True)
