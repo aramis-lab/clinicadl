@@ -127,12 +127,8 @@ def mod_selection(
     nb_subjects = 0
     if mod is not None:
         for subject, session in bids_df.index.values:
-            if len(session) == 8 and (not int(session[5]) == 1):
-                session_mod = session[:5] + session[6:8]
-            else:
-                session_mod = session
             try:
-                mod_present = missing_mods_dict[session_mod].loc[subject, mod]
+                mod_present = missing_mods_dict[session].loc[subject, mod]
                 if not mod_present:
                     bids_copy_df.drop((subject, session), inplace=True)
                     nb_subjects += 1
@@ -389,7 +385,7 @@ def get_labels(
             missing_mods_df = pd.read_csv(file, sep="\t")
             if len(missing_mods_df) == 0:
                 raise ClinicaDLTSVError(
-                    f"Given TSV file at {missing_mods_directory /file} loads an empty DataFrame."
+                    f"Given TSV file at {file} loads an empty DataFrame."
                 )
 
             missing_mods_df.set_index("participant_id", drop=True, inplace=True)

@@ -22,6 +22,7 @@ old_tsv_dir = click.argument(
     "old_tsv_dir", type=click.Path(exists=True, path_type=Path)
 )
 new_tsv_dir = click.argument("new_tsv_dir", type=click.Path(path_type=Path))
+output_directory = click.argument("output_directory", type=click.Path(path_type=Path))
 dataset = click.argument("dataset", type=click.Choice(["AIBL", "OASIS"]))
 
 # GENERATE
