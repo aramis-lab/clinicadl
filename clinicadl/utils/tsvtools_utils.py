@@ -183,7 +183,7 @@ def retrieve_longitudinal(df, diagnosis_df):
 
 
 def remove_sub_labels(
-    diagnosis_df, sub_labels, diagnosis_df_paths: list[Path], results_path: Path
+    diagnosis_df, sub_labels, diagnosis_df_paths: list, results_path: Path
 ):
     supplementary_diagnoses = []
 
