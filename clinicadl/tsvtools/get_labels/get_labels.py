@@ -249,6 +249,7 @@ def get_labels(
     missing_mods: Path = None,
     remove_unique_session: bool = False,
     output_dir: Path = None,
+    caps_directory: Path = None,
 ):
     """
     Writes one TSV file based on merged_tsv and missing_mods.
@@ -299,6 +300,7 @@ def get_labels(
             "missing_mods": missing_mods,
             "merged_tsv": merged_tsv,
             "remove_unique_session": remove_unique_session,
+            "caps_directory": caps_directory,
         },
         filename="labels.json",
     )
@@ -328,8 +330,8 @@ def get_labels(
         check_bids_folder(bids_directory)
         create_merge_file(
             bids_directory,
-            output_dir / "merged.tsv",
-            caps_dir=None,
+            merged_tsv,
+            caps_dir=caps_directory,
             pipelines=None,
             ignore_scan_files=None,
             ignore_sessions_files=None,
