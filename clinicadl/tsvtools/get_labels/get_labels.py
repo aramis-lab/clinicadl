@@ -319,10 +319,9 @@ def get_labels(
     )
 
     # Generating the output of `clinica iotools merge-tsv `
-    merged_tsv_path = output_dir / "merged.tsv"
-    if merged_tsv is not None:
-        merged_tsv_path = merged_tsv
-    elif not merged_tsv_path.is_file():
+    if merged_tsv is None:
+        merged_tsv = output_dir / "merged.tsv"
+    elif not merged_tsv.is_file():
         from clinica.iotools.utils.data_handling import create_merge_file
 
         logger.info("create merge tsv")
@@ -342,12 +341,12 @@ def get_labels(
             tracers_selection=False,
         )
 
-    logger.info(f"output of clinica iotools merge-tsv: {merged_tsv_path}")
+    logger.info(f"output of clinica iotools merge-tsv: {merged_tsv}")
 
     # Reading files
-    if not merged_tsv_path.is_file():
-        raise ClinicaDLTSVError(f"{merged_tsv_path} file was not found. ")
-    bids_df = pd.read_csv(merged_tsv_path, sep="\t")
+    if not merged_tsv.is_file():
+        raise ClinicaDLTSVError(f"{merged_tsv} file was not found. ")
+    bids_df = pd.read_csv(merged_tsv, sep="\t")
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
     variables_list = []
 
@@ -430,4 +429,4 @@ def get_labels(
     output_df.sort_values(by=["participant_id", "session_id"], inplace=True)
     output_df.to_csv(output_tsv, sep="\t")
 
-    logger.info(f"results are stored in {output_dir}")
+    logger.info(f"Results are stored in {output_dir}.")
