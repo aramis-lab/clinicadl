@@ -1433,8 +1433,6 @@ class MapsManager:
         json_path.mkdir(parents=True, exist_ok=True)
 
         parameters = change_path_to_str(parameters)
-        print("just before error")
-        print(parameters)
         # save to json file
         json_data = json.dumps(parameters, skipkeys=True, indent=4)
         json_path = json_path / "maps.json"
