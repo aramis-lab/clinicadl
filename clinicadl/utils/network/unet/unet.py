@@ -108,7 +108,6 @@ class GeneratorUNet(Network):
         return self.forward(x)
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=True):
-
         images = input_dict["image"].to(self.device)
         recon_images = self.forward(images)
 

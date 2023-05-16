@@ -64,6 +64,7 @@ class AE_Conv4_FC3(AutoEncoder):
     def get_task():
         return ["reconstruction"]
 
+
 class CAE_half(AutoEncoder):
     """
     3D Autoencoder derived from CVAE

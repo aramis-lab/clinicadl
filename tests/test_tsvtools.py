@@ -145,7 +145,6 @@ def test_split(cmdopt, tmp_path):
     assert flag_getmetadata
     assert flag_kfold
 
-
     assert compare_folders(tmp_out_dir / "split", ref_dir / "split", tmp_out_dir)
 
     run_test_suite(tmp_out_dir, n_splits)
