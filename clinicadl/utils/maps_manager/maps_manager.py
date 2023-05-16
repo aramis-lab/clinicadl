@@ -84,7 +84,6 @@ class MapsManager:
         # Initiate MAPS
         else:
             self._check_args(parameters)
-            print(parameters)
             parameters["tsv_path"] = Path(parameters["tsv_path"])
 
             if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
