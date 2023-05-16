@@ -62,10 +62,10 @@ class MapsManager:
             Logging level ("debug", "info", "warning")
         """
         self.maps_path = maps_path.resolve()
-
-        if verbose not in level_list:
-            raise ValueError(f"verbose value {verbose} must be in {level_list}.")
-        setup_logging(level_list.index(verbose))
+        if verbose is not None:
+            if verbose not in level_list:
+                raise ValueError(f"verbose value {verbose} must be in {level_list}.")
+            setup_logging(level_list.index(verbose))
 
         # Existing MAPS
         if parameters is None:
@@ -227,7 +227,6 @@ class MapsManager:
             split_list = self._find_splits()
         logger.debug(f"List of splits {split_list}")
 
-        print(self.size_reduction)
         _, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,

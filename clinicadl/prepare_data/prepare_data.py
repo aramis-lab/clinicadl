@@ -56,9 +56,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
         # Write the extracted tensor on a .pt file
         for filename, tensor in output_mode:
             output_file_dir = (
-                caps_directory
-                / container
-                / subfolder
+                caps_directory / container / subfolder / "deep_learning_prepare_data"
             )
             output_file_dir.mkdir(parents=True, exist_ok=True)
             output_file = output_file_dir / filename
