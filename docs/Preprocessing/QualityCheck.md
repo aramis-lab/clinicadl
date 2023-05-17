@@ -49,10 +49,7 @@ Default value: `0.5`.
 - `--gpu/--no_gpu` (bool) Use GPU for computing optimization. Default behaviour is to try to use a GPU and to raise an error if it is not found.
 - `--use_tensor` (bool) is a flag allowing the pipeline to run on the extracted tensors and not on the nifti images. 
 - `--network` (str) is the architecture chosen for the network (to chose between `darq`, `sq101` and `deep_qc`)
-<<<<<<< HEAD
 
-=======
->>>>>>> d6143bc1 (Cb qc darq (#373))
 
 ### Outputs
 
