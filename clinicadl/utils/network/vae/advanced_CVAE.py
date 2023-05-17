@@ -14,12 +14,12 @@ class CVAE_3D_final_conv(Network):
     """
 
     def __init__(
-        self, size_reduction_factor, latent_space_size, gpu, recons_weight, KL_weight
+        self, size_reduction_factor, latent_space_size, gpu, recons_weight, kl_weight
     ):
         super(CVAE_3D_final_conv, self).__init__(gpu=gpu)
         nn.Module.__init__(self)
         self.alpha = recons_weight
-        self.beta = KL_weight
+        self.beta = kl_weight
         self.n_conv = 3
         self.latent_space_size = latent_space_size
         if size_reduction_factor == 2:

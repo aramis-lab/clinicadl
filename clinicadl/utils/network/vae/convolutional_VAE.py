@@ -133,13 +133,13 @@ class CVAE_3D_half(Network):
         latent_space_size,
         gpu,
         recons_weight,
-        KL_weight,
+        kl_weight,
         # normalization,
     ):
         super(CVAE_3D_half, self).__init__(gpu=gpu)
         nn.Module.__init__(self)
         self.alpha = recons_weight
-        self.beta = KL_weight
+        self.beta = kl_weight
         self.n_conv = 3
         self.latent_space_size = latent_space_size
         if size_reduction_factor == 2:
