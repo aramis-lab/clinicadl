@@ -37,6 +37,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "architecture",
         "baseline",
         "batch_size",
+        "compensation",
         "data_augmentation",
         "deterministic",
         "diagnoses",
@@ -49,18 +50,18 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "multi_network",
         "n_proc",
         "n_splits",
+        "nb_unfreezed_layer",
         "normalize",
         "optimizer",
         "patience",
         "profiler",
         "tolerance",
+        "transfer_path",
         "transfer_selection_metric",
         "weight_decay",
         "sampler",
         "seed",
         "split",
-        "compensation",
-        "transfer_path",
     ]
     all_options_list = standard_options_list + task_options_list
 

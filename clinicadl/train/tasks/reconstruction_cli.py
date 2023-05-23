@@ -47,6 +47,7 @@ from .task_utils import task_launcher
 # transfer learning
 @train_option.transfer_path
 @train_option.transfer_selection_metric
+@train_option.nb_unfreezed_layer
 # Task-related
 @train_option.selection_metrics
 @train_option.reconstruction_loss
