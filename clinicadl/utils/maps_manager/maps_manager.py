@@ -825,7 +825,7 @@ class MapsManager:
             resume=resume,
             transfer_path=self.transfer_path,
             transfer_selection=self.transfer_selection_metric,
-            nb_unfrozen_layer=self.nb_unfrozen_layer,
+            nb_unfreezed_layer=self.nb_unfreezed_layer,
         )
         criterion = self.task_manager.get_criterion(self.loss)
         logger.info(f"Criterion for {self.network_task} is {criterion}")
