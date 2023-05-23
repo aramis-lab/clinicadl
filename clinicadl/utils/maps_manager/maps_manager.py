@@ -790,7 +790,7 @@ class MapsManager:
             resume=resume,
             transfer_path=self.transfer_path,
             transfer_selection=self.transfer_selection_metric,
-            nb_unfreezed_layer=self.nb_unfreezed_layer,
+            nb_unfrozen_layer=self.nb_unfrozen_layer,
         )
         criterion = self.task_manager.get_criterion(self.loss)
         logger.debug(f"Criterion for {self.network_task} is {criterion}")
@@ -1808,7 +1808,7 @@ class MapsManager:
         self,
         transfer_path: Path = None,
         transfer_selection=None,
-        nb_unfreezed_layer=0,
+        nb_unfrozen_layer=0,
         split=None,
         resume=False,
         gpu=None,
@@ -1880,7 +1880,7 @@ class MapsManager:
             for param, _ in zip(list_param, list_name):
                 param.requires_grad = False
 
-            for i in range(nb_unfreezed_layer * 2):  # Freeze of the last FC layers
+            for i in range(nb_unfrozen_layer * 2):  # Freeze of the last FC layers
                 param = list_param[len(list_param) - i - 1]
                 name = list_name[len(list_name) - i - 1]
                 param.requires_grad = True

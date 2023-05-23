@@ -50,7 +50,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "multi_network",
         "n_proc",
         "n_splits",
-        "nb_unfreezed_layer",
+        "nb_unfrozen_layer",
         "normalize",
         "optimizer",
         "patience",
