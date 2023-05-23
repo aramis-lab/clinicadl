@@ -227,12 +227,12 @@ class MetricModule:
         Returns:
             (float) SSIM
         """
-        # from clinicadl.utils.pytorch_ssim import ssim3D
+        from clinicadl.utils.pytorch_ssim import ssim, ssim3D
 
-        # return ssim3D(y, y_pred)
-        from skimage.metrics import structural_similarity
-
-        return structural_similarity(y, y_pred)
+        if len(y) == 3:
+            return ssim(y, y_pred)
+        else:
+            return ssim3D(y, y_pred)
 
     @staticmethod
     def psnr_fn(y, y_pred):
