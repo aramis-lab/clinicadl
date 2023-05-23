@@ -50,7 +50,6 @@ from .task_utils import task_launcher
 @train_option.transfer_path
 @train_option.transfer_selection_metric
 @train_option.nb_unfrozen_layer
-
 # Task-related
 @train_option.label
 @train_option.selection_metrics
