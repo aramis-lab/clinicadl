@@ -68,5 +68,4 @@ def setup_logging(verbose: bool = False) -> None:
         file_handler.setLevel(logging.DEBUG)
         file_handler.setFormatter(debug_file_formatter)
         logger.addHandler(file_handler)
-        print(Path.cwd())
         logger.warning(f"Debug log will be saved at {Path.cwd() / debug_file_name}")
