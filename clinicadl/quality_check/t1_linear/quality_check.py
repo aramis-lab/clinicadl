@@ -87,7 +87,6 @@ def quality_check(
             checksum="321928e0532f1be7a8dd7f5d805b747c7147ff52594f77ffed0858ab19c5df03",
         )
 
-        # model = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
         model = darq_r18()
 
     if network == "sq101":

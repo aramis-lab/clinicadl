@@ -1,6 +1,7 @@
 import click
 
-from .. import train_option
+from clinicadl.utils.cli_param import train_option
+
 from .task_utils import task_launcher
 
 

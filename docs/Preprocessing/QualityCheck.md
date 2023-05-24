@@ -166,5 +166,3 @@ An example of TSV file is:
 | sub-CLNC03         | ses-M00        | 0.7292165160179138     | True      |
 | sub-CLNC04         | ses-M00        | 0.1549495905637741     | False     |
 | ...                |  ...           |  ...                   |  ...      |
-=======
- 

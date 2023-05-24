@@ -54,6 +54,35 @@ def shuffle_choice(df, n_shuffle=10):
     return (best_train_df, best_test_df, p_min_max)
 
 
+def KStests(train_df, test_df, threshold=0.5):
+    pmin = 1
+    column = ""
+    for col in train_df.columns:
+        if col == "session_id":
+            continue
+        _, pval = ks_2samp(train_df[col], test_df[col])
+        if pval < pmin:
+            pmin = pval
+            column = col
+    return (pmin, column)
+
+
+def shuffle_choice(df, n_shuffle=10):
+    p_min_max, n_col_min = 0, df.columns.size
+
+    for i in range(n_shuffle):
+        train_df = df.sample(frac=0.75)
+        test_df = df.drop(train_df.index)
+
+        p, col = KStests(train_df, test_df)
+
+        if p > p_min_max:
+            p_min_max = p
+            best_train_df, best_test_df = train_df, test_df
+
+    return (best_train_df, best_test_df, p_min_max)
+
+
 def create_split(
     diagnosis_df,
     split_label,
