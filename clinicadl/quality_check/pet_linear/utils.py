@@ -30,7 +30,7 @@ def get_metric(contour_np, image_np, inside):
     img_norm_thresh[img_norm_thresh < 0.35] = 0
 
     if not (shape3D == contour_np.shape):
-        print("numpy array hasn't the same size and cannot be compare")
+        raise ValueError(f"The images must be of shape: {shape3D}")
 
     sum_in_contour = 0
 

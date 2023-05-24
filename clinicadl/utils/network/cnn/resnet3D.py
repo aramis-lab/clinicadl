@@ -68,7 +68,6 @@ class ResNetDesigner3D(nn.Module):
         out = self.layer4(out)
 
         d, h, w = self._maxpool_output_size(input_size[1::], nb_layers=5)
-        print(d, h, w)
         self.fc = nn.Sequential(
             Flatten(),
             nn.Linear(128 * d * h * w, 256),  # t1 image
