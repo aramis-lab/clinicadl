@@ -196,6 +196,9 @@ class SplitManager:
             except:
                 pass
 
+        train_df = train_df[train_df.diagnosis.isin(cohort_diagnoses)]
+        valid_df = valid_df[valid_df.diagnosis.isin(cohort_diagnoses)]
+
         train_df.reset_index(inplace=True, drop=True)
         valid_df.reset_index(inplace=True, drop=True)
 
