@@ -229,7 +229,7 @@ class MetricModule:
         """
         from clinicadl.utils.pytorch_ssim import ssim, ssim3D
 
-        if len(y) == 3:
+        if len(y) == 4:
             return ssim(y, y_pred)
         else:
             return ssim3D(y, y_pred)
