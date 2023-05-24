@@ -134,7 +134,7 @@ class CapsDataset(Dataset):
 
         return caps_dict
 
-    def _get_image_path(self, participant: str, session: str, cohort: str) -> str:
+    def _get_image_path(self, participant: str, session: str, cohort: str) -> Path:
         """
         Gets the path to the tensor image (*.pt)
 
@@ -176,7 +176,7 @@ class CapsDataset(Dataset):
                 [participant], [session], self.caps_dict[cohort], file_type
             )
             filepath = results[0]
-            image_path = filepath[0]
+            image_path = Path(filepath[0])
 
         return image_path
 
