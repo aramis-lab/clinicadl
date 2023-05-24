@@ -14,6 +14,7 @@ metric_optimum = {
     "BA": "max",
     "PSNR": "max",
     "SSIM": "max",
+    "LNCC": "max",
     "loss": "min",
 }
 
@@ -226,9 +227,12 @@ class MetricModule:
         Returns:
             (float) SSIM
         """
-        from skimage.metrics import structural_similarity
+        from clinicadl.utils.pytorch_ssim import ssim, ssim3D
 
-        return structural_similarity(y, y_pred)
+        if len(y) == 3:
+            return ssim(y, y_pred)
+        else:
+            return ssim3D(y, y_pred)
 
     @staticmethod
     def psnr_fn(y, y_pred):
@@ -242,6 +246,35 @@ class MetricModule:
         from skimage.metrics import peak_signal_noise_ratio
 
         return peak_signal_noise_ratio(y, y_pred)
+
+    @staticmethod
+    def lncc_fn(y, y_pred):
+        """
+        Args:
+            y (List): list of labels
+            y_pred (List): list of predictions
+        Returns:
+            (float) LNCC
+        """
+        from scipy.ndimage import gaussian_filter
+
+        sigma = 2
+
+        mean1 = gaussian_filter(y, sigma)
+        mean2 = gaussian_filter(y_pred, sigma)
+
+        mean12 = gaussian_filter(
+            y * y_pred, sigma
+        )  # the * operator is term by term product
+        mean11 = gaussian_filter(y * y, sigma)
+        mean22 = gaussian_filter(y_pred * y_pred, sigma)
+
+        covar12 = mean12 - (mean1 * mean2)
+        var1 = np.sqrt(mean11 - (mean1 * mean1))
+        var2 = np.sqrt(mean22 - (mean2 * mean2))
+
+        lcc_matrix = np.maximum(covar12 / (var1 * var2), 0)
+        return np.mean(lcc_matrix)
 
 
 class RetainBest:

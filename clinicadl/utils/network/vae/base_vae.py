@@ -14,12 +14,12 @@ class BaseVAE(Network):
         gpu=True,
         is_3D=False,
         recons_weight=1,
-        KL_weight=1,
+        kl_weight=1,
     ):
         super(BaseVAE, self).__init__(gpu=gpu)
 
         self.lambda1 = recons_weight
-        self.lambda2 = KL_weight
+        self.lambda2 = kl_weight
         self.latent_size = latent_size
         self.is_3D = is_3D
 
@@ -41,27 +41,29 @@ class BaseVAE(Network):
 
     # Forward
     def forward(self, x):
-        mu, logvar = self.encode(x)
-        z = self.reparameterize(mu, logvar)
-        return self.decode(z), mu, logvar
+        mu, logVar = self.encode(x)
+        z = self.reparameterize(mu, logVar)
+        return self.decode(z), mu, logVar
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=False):
         images = input_dict["image"].to(self.device)
-        recon_images, mu, log_var = self.forward(images)
+        recon_images, mu, logVar = self.forward(images)
 
-        recon_loss = criterion(recon_images, images)
-        if self.is_3D:
-            kl_loss = -0.5 * torch.mean(
-                torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1)
+        losses = criterion(images, recon_images, mu, logVar)
+        reconstruction_loss, kl_loss = losses[0], losses[1]
+        total_loss = self.lambda1 * reconstruction_loss + self.lambda2 * kl_loss
+        # In the case there is a regularization term
+        if len(losses) > 2:
+            regularization = losses[2]
+            total_loss = (
+                self.lambda1 * reconstruction_loss
+                + self.lambda2 * kl_loss
+                + regularization
             )
-        else:
-            kl_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
-
-        loss = self.lambda1 * recon_loss + self.lambda2 * kl_loss / self.latent_size
 
         loss_dict = {
-            "loss": loss,
-            "recon_loss": recon_loss,
+            "loss": total_loss,
+            "recon_loss": reconstruction_loss,
             "kl_loss": kl_loss,
         }
 
@@ -70,14 +72,14 @@ class BaseVAE(Network):
     # VAE specific
     def encode(self, x):
         h = self.encoder(x)
-        mu, logvar = self.mu_layer(h), self.var_layer(h)
-        return mu, logvar
+        mu, logVar = self.mu_layer(h), self.var_layer(h)
+        return mu, logVar
 
     def decode(self, z):
         z = self.decoder(z)
         return z
 
-    def reparameterize(self, mu, logvar):
-        std = torch.exp(0.5 * logvar)
+    def reparameterize(self, mu, logVar):
+        std = torch.exp(0.5 * logVar)
         eps = torch.randn_like(std)
         return eps.mul(std).add_(mu)

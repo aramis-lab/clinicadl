@@ -15,13 +15,15 @@ def predict(
     label: str = None,
     gpu: bool = True,
     n_proc: int = 0,
-    batch_size: int = 1,
+    batch_size: int = 8,
+    split_list: List[int] = None,
     selection_metrics: List[str] = None,
     diagnoses: List[str] = None,
     multi_cohort: bool = False,
     overwrite: bool = False,
     save_tensor: bool = False,
     save_nifti: bool = False,
+    save_latent_tensor: bool = False,
 ):
     """
     This function loads a MAPS and predicts the global metrics and individual values
@@ -61,6 +63,7 @@ def predict(
         data_group,
         caps_directory=caps_directory,
         tsv_path=tsv_path,
+        split_list=split_list,
         selection_metrics=selection_metrics,
         multi_cohort=multi_cohort,
         diagnoses=diagnoses,
@@ -72,4 +75,5 @@ def predict(
         overwrite=overwrite,
         save_tensor=save_tensor,
         save_nifti=save_nifti,
+        save_latent_tensor=save_latent_tensor,
     )

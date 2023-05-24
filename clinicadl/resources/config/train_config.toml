@@ -15,7 +15,8 @@ feature_size = 1024
 n_conv = 4
 io_layer_channels = 8
 recons_weight = 1
-KL_weight = 1
+kl_weight = 1
+normalization = "batch"
 
 [Classification]
 selection_metrics = ["loss"]
@@ -59,6 +60,8 @@ baseline = false
 normalize = true
 data_augmentation = false
 sampler = "random"
+size_reduction=false
+size_reduction_factor=2
 
 [Cross_validation]
 n_splits = 0
@@ -73,3 +76,4 @@ patience = 0
 tolerance = 0.0
 accumulation_steps = 1
 profiler = false
+

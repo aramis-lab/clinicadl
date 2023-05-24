@@ -146,6 +146,7 @@ def test_split(cmdopt, tmp_path):
     assert flag_kfold
 
     assert compare_folders(tmp_out_dir / "split", ref_dir / "split", tmp_out_dir)
+
     run_test_suite(tmp_out_dir, n_splits)
 
 
@@ -224,6 +225,7 @@ def test_prepare_experiment(cmdopt, tmp_path):
     assert flag_prepare_experiment
 
     assert compare_folders(tmp_out_dir / "split", ref_dir / "split", tmp_out_dir)
+
     run_test_suite(tmp_out_dir, n_valid)
 
 
@@ -240,6 +242,7 @@ def test_get_metadata(cmdopt, tmp_path):
     input_labels_tsv = input_dir / "labels.tsv"
     labels_tsv = tmp_out_dir / "labels.tsv"
     ref_metadata_tsv = ref_dir / "metadata.tsv"
+
     shutil.copyfile(input_metadata_tsv, metadata_tsv)
     shutil.copyfile(input_labels_tsv, labels_tsv)
 

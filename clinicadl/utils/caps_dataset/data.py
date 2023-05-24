@@ -153,8 +153,10 @@ class CapsDataset(Dataset):
             results = clinica_file_reader(
                 [participant], [session], self.caps_dict[cohort], file_type
             )
+            logger.debug(f"clinica_file_reader output: {results}")
             filepath = Path(results[0][0])
             image_filename = filepath.name.replace(".nii.gz", ".pt")
+
             folder, _ = compute_folder_and_file_type(self.preprocessing_dict)
             image_dir = (
                 self.caps_dict[cohort]
@@ -917,8 +919,32 @@ class NanRemoval(object):
             return image
 
 
+class SizeReduction(object):
+    """Reshape the input tensor to be of size [80, 96, 80]"""
+
+    def __init__(self, size_reduction_factor=2) -> None:
+        self.size_reduction_factor = size_reduction_factor
+
+    def __call__(self, image):
+        if self.size_reduction_factor == 2:
+            return image[:, 4:164:2, 8:200:2, 8:168:2]
+        elif self.size_reduction_factor == 3:
+            return image[:, 0:168:3, 8:200:3, 4:172:3]
+        elif self.size_reduction_factor == 4:
+            return image[:, 4:164:4, 8:200:4, 8:168:4]
+        elif self.size_reduction_factor == 5:
+            return image[:, 4:164:5, 0:200:5, 8:168:5]
+        else:
+            raise ClinicaDLConfigurationError(
+                "size_reduction_factor must be 2, 3, 4 or 5."
+            )
+
+
 def get_transforms(
-    normalize: bool = True, data_augmentation: List[str] = None
+    normalize: bool = True,
+    data_augmentation: List[str] = None,
+    size_reduction: bool = False,
+    size_reduction_factor: int = 2,
 ) -> Tuple[transforms.Compose, transforms.Compose]:
     """
     Outputs the transformations that will be applied to the dataset
@@ -937,17 +963,20 @@ def get_transforms(
         "Smoothing": RandomSmoothing(),
         "None": None,
     }
-    if data_augmentation:
-        augmentation_list = [
-            augmentation_dict[augmentation] for augmentation in data_augmentation
-        ]
-    else:
-        augmentation_list = []
 
+    augmentation_list = []
+    transformations_list = []
+
+    if data_augmentation:
+        augmentation_list.extend(
+            [augmentation_dict[augmentation] for augmentation in data_augmentation]
+        )
+
+    transformations_list.append(NanRemoval())
     if normalize:
-        transformations_list = [NanRemoval(), MinMaxNormalization()]
-    else:
-        transformations_list = [NanRemoval()]
+        transformations_list.append(MinMaxNormalization())
+    if size_reduction:
+        transformations_list.append(SizeReduction(size_reduction_factor))
 
     all_transformations = transforms.Compose(transformations_list)
     train_transformations = transforms.Compose(augmentation_list)
