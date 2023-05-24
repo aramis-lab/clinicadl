@@ -1,4 +1,3 @@
-import abc
 from collections import OrderedDict
 from logging import getLogger
 
@@ -14,7 +13,7 @@ from clinicadl.utils.network.network_utils import (
     PadMaxPool3d,
 )
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.networks")
 
 
 class AutoEncoder(Network):
@@ -81,7 +80,6 @@ class AutoEncoder(Network):
         return code, x
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=True):
-
         images = input_dict["image"].to(self.device)
         train_output = self.predict(images)
         loss = criterion(train_output, images)
@@ -114,7 +112,7 @@ class CNN(Network):
             self.convolutions.load_state_dict(convolutions_dict)
         else:
             raise ClinicaDLNetworksError(
-                f"Cannot transfer weights from {transfer_class} to CNN."
+                f"Can not transfer weights from {transfer_class} to CNN."
             )
 
     def forward(self, x):
@@ -125,7 +123,6 @@ class CNN(Network):
         return self.forward(x)
 
     def compute_outputs_and_loss(self, input_dict, criterion, use_labels=True):
-
         images, labels = input_dict["image"].to(self.device), input_dict["label"].to(
             self.device
         )

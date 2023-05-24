@@ -1,4 +1,3 @@
-import os
 from logging import getLogger
 from typing import List
 
@@ -15,53 +14,22 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         task_options_list: list of options specific to the task.
         kwargs: other arguments and options for network training.
     """
+    from pathlib import Path
+
     from clinicadl.train.train import train
     from clinicadl.train.train_utils import build_train_dict
 
-    logger = getLogger("clinicadl")
-
-    if not kwargs["multi_cohort"]:
-        preprocessing_json = os.path.join(
-            kwargs["caps_directory"], "tensor_extraction", kwargs["preprocessing_json"]
-        )
-    else:
-        caps_dict = CapsDataset.create_caps_dict(
-            kwargs["caps_directory"], kwargs["multi_cohort"]
-        )
-        json_found = False
-        for caps_name, caps_path in caps_dict.items():
-            if os.path.exists(
-                os.path.join(
-                    caps_path, "tensor_extraction", kwargs["preprocessing_json"]
-                )
-            ):
-                preprocessing_json = os.path.join(
-                    caps_path, "tensor_extraction", kwargs["preprocessing_json"]
-                )
-                logger.info(
-                    f"Preprocessing JSON {preprocessing_json} found in CAPS {caps_name}."
-                )
-                json_found = True
-        if not json_found:
-            raise ValueError(
-                f"Preprocessing JSON {kwargs['preprocessing_json']} was not found for any CAPS "
-                f"in {caps_dict}."
-            )
+    logger = getLogger("clinicadl.task_manager")
 
     config_file_name = None
     if kwargs["config_file"]:
-        config_file_name = kwargs["config_file"].name
+        config_file_name = Path(kwargs["config_file"])
     train_dict = build_train_dict(config_file_name, network_task)
-
-    # Mode and preprocessing
-    preprocessing_dict = read_preprocessing(preprocessing_json)
-    train_dict["preprocessing_dict"] = preprocessing_dict
-    train_dict["mode"] = preprocessing_dict["mode"]
 
     # Add arguments
     train_dict["network_task"] = network_task
-    train_dict["caps_directory"] = kwargs["caps_directory"]
-    train_dict["tsv_path"] = kwargs["tsv_directory"]
+    train_dict["caps_directory"] = Path(kwargs["caps_directory"])
+    train_dict["tsv_path"] = Path(kwargs["tsv_directory"])
 
     # Change value in train dict depending on user provided options
     standard_options_list = [
@@ -84,6 +52,7 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
         "normalize",
         "optimizer",
         "patience",
+        "profiler",
         "tolerance",
         "transfer_selection_metric",
         "weight_decay",
@@ -100,5 +69,42 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
             isinstance(kwargs[option], tuple) and len(kwargs[option]) != 0
         ):
             train_dict[option] = kwargs[option]
+    if not train_dict["multi_cohort"]:
+        preprocessing_json = (
+            train_dict["caps_directory"]
+            / "tensor_extraction"
+            / kwargs["preprocessing_json"]
+        )
+    else:
+        caps_dict = CapsDataset.create_caps_dict(
+            train_dict["caps_directory"], train_dict["multi_cohort"]
+        )
+        json_found = False
+        for caps_name, caps_path in caps_dict.items():
+            preprocessing_json = (
+                caps_path / "tensor_extraction" / kwargs["preprocessing_json"]
+            )
+            if preprocessing_json.is_file():
+                logger.info(
+                    f"Preprocessing JSON {preprocessing_json} found in CAPS {caps_name}."
+                )
+                json_found = True
+        if not json_found:
+            raise ValueError(
+                f"Preprocessing JSON {kwargs['preprocessing_json']} was not found for any CAPS "
+                f"in {caps_dict}."
+            )
 
-    train(kwargs["output_maps_directory"], train_dict, train_dict.pop("split"))
+    # Mode and preprocessing
+    preprocessing_dict = read_preprocessing(preprocessing_json)
+    train_dict["preprocessing_dict"] = preprocessing_dict
+    train_dict["mode"] = preprocessing_dict["mode"]
+
+    # Add default values if missing
+    if (
+        preprocessing_dict["mode"] == "roi"
+        and "roi_background_value" not in preprocessing_dict
+    ):
+        preprocessing_dict["roi_background_value"] = 0
+
+    train(Path(kwargs["output_maps_directory"]), train_dict, train_dict.pop("split"))

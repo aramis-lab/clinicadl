@@ -9,7 +9,7 @@ from torch.utils.data import sampler
 
 from clinicadl.utils.exceptions import ClinicaDLArgumentError
 
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.task_manager")
 
 from clinicadl.utils.task_manager.task_manager import TaskManager
 
@@ -46,7 +46,6 @@ class ClassificationManager(TaskManager):
         return False
 
     def generate_test_row(self, idx, data, outputs):
-
         prediction = torch.argmax(outputs[idx].data).item()
         normalized_output = softmax(outputs[idx], dim=0)
         return [
@@ -80,8 +79,11 @@ class ClassificationManager(TaskManager):
     @staticmethod
     def generate_sampler(dataset, sampler_option="random", n_bins=5):
         df = dataset.df
-        n_labels = df[dataset.label].nunique()
-        count = np.zeros(n_labels)
+        labels = df[dataset.label].unique()
+        codes = set()
+        for label in labels:
+            codes.add(dataset.label_code[label])
+        count = np.zeros(len(codes))
 
         for idx in df.index:
             label = df.loc[idx, dataset.label]
@@ -119,8 +121,8 @@ class ClassificationManager(TaskManager):
         ref: S. Raschka. Python Machine Learning., 2015
 
         Args:
-            performance_df (pd.DataFrame): results that need to be assembled.
-            validation_df (pd.DataFrame): results on the validation set used to compute the performance
+            performance_df (pd.DataFrame): Results that need to be assembled.
+            validation_df (pd.DataFrame): Results on the validation set used to compute the performance
                 of each separate part of the image.
             selection_threshold (float): with soft-voting method, allows to exclude some parts of the image
                 if their associated performance is too low.
@@ -178,7 +180,7 @@ class ClassificationManager(TaskManager):
             prediction = proba_list.index(max(proba_list))
             row = [[subject, session, 0, label, prediction] + proba_list]
             row_df = pd.DataFrame(row, columns=self.columns)
-            df_final = df_final.append(row_df)
+            df_final = pd.concat([df_final, row_df])
 
         if use_labels:
             results = self.compute_metrics(df_final)

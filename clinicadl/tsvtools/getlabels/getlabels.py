@@ -288,14 +288,12 @@ def mci_stability(bids_df: pd.DataFrame, horizon_time: int = 36) -> pd.DataFrame
                 session_nb = int(session[5::])
                 horizon_session_nb = session_nb + horizon_time
                 horizon_session = "ses-M" + str(horizon_session_nb)
-                # print(session, '-->', horizon_session)
 
                 if horizon_session_nb in session_list:
                     horizon_diagnosis = subject_df.loc[
                         (subject, horizon_session), "diagnosis"
                     ]
                     update_diagnosis = stability_dict[horizon_diagnosis] + "MCI"
-                    # print(horizon_diagnosis, update_diagnosis)
                     bids_copy_df.loc[(subject, session), "diagnosis"] = update_diagnosis
                 else:
                     if after_end_screening(horizon_session_nb, session_list):
@@ -309,7 +307,6 @@ def mci_stability(bids_df: pd.DataFrame, horizon_time: int = 36) -> pd.DataFrame
                             update_diagnosis = stability_dict[last_diagnosis] + "MCI"
                         else:
                             update_diagnosis = "uMCI"
-                        # print(update_diagnosis)
                         bids_copy_df.loc[
                             (subject, session), "diagnosis"
                         ] = update_diagnosis
@@ -321,8 +318,6 @@ def mci_stability(bids_df: pd.DataFrame, horizon_time: int = 36) -> pd.DataFrame
                         post_session = neighbour_session(
                             horizon_session_nb, session_list, +1
                         )
-                        # print('prev_session', prev_session)
-                        # print('post_session', post_session)
                         prev_diagnosis = subject_df.loc[
                             (subject, prev_session), "diagnosis"
                         ]
@@ -336,7 +331,6 @@ def mci_stability(bids_df: pd.DataFrame, horizon_time: int = 36) -> pd.DataFrame
                                 update_diagnosis = "uMCI"
                             else:
                                 update_diagnosis = "sMCI"
-                        # print(update_diagnosis)
                         bids_copy_df.loc[
                             (subject, session), "diagnosis"
                         ] = update_diagnosis
@@ -442,6 +436,11 @@ def get_labels(
     bids_df = pd.read_csv(merged_tsv, sep="\t")
     bids_df.set_index(["participant_id", "session_id"], inplace=True)
     variables_list = ["diagnosis"]
+
+    # Dealing with OASIS3 dataset
+    if "dx1" in bids_df.columns:
+        bids_df.rename(columns={"dx1": "diagnosis"}, inplace=True)
+
     try:
         variables_list.append(find_label(bids_df.columns.values, "age"))
         variables_list.append(find_label(bids_df.columns.values, "sex"))
@@ -488,7 +487,9 @@ def get_labels(
         np.zeros(len(bids_df)), index=bids_df.index
     )
     for subject, subject_df in bids_df.groupby(level=0):
-        baseline_diagnosis = subject_df.loc[(subject, "ses-M00"), "diagnosis"]
+        baseline_diagnosis = subject_df.loc[
+            (subject, first_session(subject_df)), "diagnosis"
+        ]
         bids_copy_df.loc[subject, "baseline_diagnosis"] = baseline_diagnosis
 
     bids_df = copy(bids_copy_df)

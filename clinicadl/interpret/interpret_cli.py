@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import click
 
 from clinicadl.utils import cli_param
@@ -10,6 +12,16 @@ from clinicadl.utils import cli_param
     "name",
     type=str,
 )
+@click.argument(
+    "method",
+    type=click.Choice(["gradients", "grad-cam"]),
+)
+@click.option(
+    "--level_grad_cam",
+    type=click.IntRange(min=1),
+    default=None,
+    help="level of the feature map (after the layer corresponding to the number) chosen for grad-cam.",
+)
 # Model
 @click.option(
     "--selection_metrics",
@@ -21,14 +33,14 @@ from clinicadl.utils import cli_param
 # Data
 @click.option(
     "--participants_tsv",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, path_type=Path),
     default=None,
     help="Path to a TSV file with participants/sessions to process, "
     "if different from the one used during network training.",
 )
 @click.option(
     "--caps_directory",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, path_type=Path),
     default=None,
     help="Input CAPS directory, if different from the one used during network training.",
 )
@@ -52,17 +64,11 @@ from clinicadl.utils import cli_param
     type=int,
     help="Which target node the gradients explain. Default takes the first output node.",
 )
-# @click.option(
-#     "--baseline",
-#     type=bool,
-#     default=False,
-#     is_flag=True,
-#     help="If provided, only the baseline sessions are used for interpretation.",
-# )
 @click.option(
     "--save_individual",
-    type=str,
-    default=None,
+    type=bool,
+    default=False,
+    is_flag=True,
     help="Save individual saliency maps in addition to the mean saliency map.",
 )
 @cli_param.option.n_proc
@@ -76,12 +82,15 @@ from clinicadl.utils import cli_param
     default=False,
     help="Overwrite the name if it already exists.",
 )
+@cli_param.option.save_nifti
 def cli(
     input_maps_directory,
     data_group,
     name,
+    method,
     caps_directory,
     participants_tsv,
+    level_grad_cam,
     selection_metrics,
     multi_cohort,
     diagnoses,
@@ -92,6 +101,7 @@ def cli(
     gpu,
     overwrite,
     overwrite_name,
+    save_nifti,
 ):
     """Interpretation of trained models using saliency map method.
 
@@ -100,6 +110,8 @@ def cli(
     DATA_GROUP is the name of the subjects and sessions list used for the interpretation.
 
     NAME is the name of the saliency map task.
+
+    METHOD is the method used to extract an attribution map.
     """
     from clinicadl.utils.cmdline_utils import check_gpu
 
@@ -112,6 +124,7 @@ def cli(
         maps_dir=input_maps_directory,
         data_group=data_group,
         name=name,
+        method=method,
         caps_directory=caps_directory,
         tsv_path=participants_tsv,
         selection_metrics=selection_metrics,
@@ -124,5 +137,7 @@ def cli(
         gpu=gpu,
         overwrite=overwrite,
         overwrite_name=overwrite_name,
+        level=level_grad_cam,
+        save_nifti=save_nifti,
         # verbose=verbose,
     )

@@ -1,25 +1,34 @@
 """Common CLI arguments used by ClinicaDL pipelines."""
+from pathlib import Path
+
 import click
 
-caps_directory = click.argument("caps_directory", type=click.Path(exists=True))
-input_maps = click.argument("input_maps_directory", type=click.Path(exists=True))
-output_maps = click.argument("output_maps_directory", type=click.Path())
+bids_directory = click.argument(
+    "bids_directory", type=click.Path(exists=True, path_type=Path)
+)
+caps_directory = click.argument("caps_directory", type=click.Path(path_type=Path))
+input_maps = click.argument(
+    "input_maps_directory", type=click.Path(exists=True, path_type=Path)
+)
+output_maps = click.argument("output_maps_directory", type=click.Path(path_type=Path))
+results_tsv = click.argument("results_tsv", type=click.Path(path_type=Path))
+
+# ANALYSIS
+merged_tsv = click.argument("merged_tsv", type=click.Path(exists=True, path_type=Path))
 
 # TSV TOOLS
-merged_tsv = click.argument("merged_tsv", type=click.Path(exists=True))
-
-formatted_data_directory = click.argument(
-    "formatted_data_directory", type=click.Path(exists=True)
+data_tsv = click.argument("data_tsv", type=click.Path(exists=True, path_type=Path))
+old_tsv_dir = click.argument(
+    "old_tsv_dir", type=click.Path(exists=True, path_type=Path)
 )
-missing_mods_directory = click.argument(
-    "missing_mods_directory", type=click.Path(exists=True)
-)
-
+new_tsv_dir = click.argument("new_tsv_dir", type=click.Path(path_type=Path))
+output_directory = click.argument("output_directory", type=click.Path(path_type=Path))
 dataset = click.argument("dataset", type=click.Choice(["AIBL", "OASIS"]))
-results_directory = click.argument("results_directory", type=click.Path())
 
 # GENERATE
-generated_caps = click.argument("generated_caps_directory", type=click.Path())
+generated_caps = click.argument(
+    "generated_caps_directory", type=click.Path(path_type=Path)
+)
 
 # PREDICT
 data_group = click.argument("data_group", type=str)
@@ -30,5 +39,5 @@ preprocessing_json = click.argument("preprocessing_json", type=str)
 # EXTRACT
 modality = click.argument(
     "modality",
-    type=click.Choice(["t1-linear", "pet-linear", "custom"]),
+    type=click.Choice(["t1-linear", "pet-linear", "flair-linear", "custom"]),
 )

@@ -1,53 +1,50 @@
 # coding: utf8
 
-import os
-import shutil
 from logging import getLogger
-from os import path
-from typing import List
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from clinicadl.utils.exceptions import ClinicaDLTSVError
 from clinicadl.utils.maps_manager.iotools import commandline_to_json
-from clinicadl.utils.tsvtools_utils import (
-    extract_baseline,
-    remove_sub_labels,
-    retrieve_longitudinal,
-)
+from clinicadl.utils.tsvtools_utils import extract_baseline, retrieve_longitudinal
 
 sex_dict = {"M": 0, "F": 1}
-logger = getLogger("clinicadl")
+logger = getLogger("clinicadl.tsvtools.kfold")
 
 
 def write_splits(
-    diagnosis: str,
     diagnosis_df: pd.DataFrame,
     split_label: str,
     n_splits: int,
-    train_path: str,
-    test_path: str,
-    supplementary_diagnoses: List[str] = None,
-) -> None:
+    subset_name: str,
+    results_directory: Path,
+):
     """
     Split data at the subject-level in training and test to have equivalent distributions in split_label.
     Writes test and train Dataframes.
 
-    Args:
-        diagnosis: diagnosis on which the split is done
-        diagnosis_df: DataFrame with columns including ['participant_id', 'session_id', 'diagnosis']
-        split_label: label on which the split is done (categorical variables)
-        n_splits: Number of splits in the k-fold cross-validation.
-        train_path: Path to the training data.
-        test_path: Path to the test data.
-        supplementary_diagnoses: List of supplementary diagnoses to add to the data.
+    Parameters
+    ----------
+    diagnosis_df: Dataframe
+        Columns must include ['participant_id', 'session_id', 'diagnosis']
+    split_label: str
+        Label on which the split is done (categorical variables)
+    n_splits: int
+        Number of splits in the k-fold cross-validation.
+    subset_name: str
+        Name of the subset split.
+    results_directory: str (path)
+        Path to the results directory.
+
     """
 
     baseline_df = extract_baseline(diagnosis_df)
+
     if split_label is None:
-        diagnoses_list = list(baseline_df.diagnosis)
+        diagnoses_list = list(baseline_df["diagnosis"])
         unique = list(set(diagnoses_list))
         y = np.array([unique.index(x) for x in diagnoses_list])
     else:
@@ -55,165 +52,130 @@ def write_splits(
         unique = list(set(stratification_list))
         y = np.array([unique.index(x) for x in stratification_list])
 
-    splits = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=2)
+    splits = StratifiedKFold(n_splits=int(n_splits), shuffle=True, random_state=2)
 
-    print(f"Label {diagnosis}")
     for i, indices in enumerate(splits.split(np.zeros(len(y)), y)):
-        print(f"Split {i}")
         train_index, test_index = indices
 
         test_df = baseline_df.iloc[test_index]
         train_df = baseline_df.iloc[train_index]
+        long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
 
-        if supplementary_diagnoses is not None:
-            for supplementary_diagnosis in supplementary_diagnoses:
-                sup_train_df = pd.read_csv(
-                    path.join(
-                        train_path,
-                        f"split-{i}",
-                        f"{supplementary_diagnosis}_baseline.tsv",
-                    ),
-                    sep="\t",
-                )
-                train_df = pd.concat([train_df, sup_train_df])
-                sup_test_df = pd.read_csv(
-                    path.join(
-                        test_path,
-                        f"split-{i}",
-                        f"{supplementary_diagnosis}_baseline.tsv",
-                    ),
-                    sep="\t",
-                )
-                test_df = pd.concat([test_df, sup_test_df])
+        train_df.reset_index(inplace=True, drop=True)
+        test_df.reset_index(inplace=True, drop=True)
 
-            train_df.reset_index(inplace=True, drop=True)
-            test_df.reset_index(inplace=True, drop=True)
+        # train_df = train_df[["participant_id", "session_id"]]
+        # test_df = test_df[["participant_id", "session_id"]]
+        # long_train_df = long_train_df[["participant_id", "session_id"]]
+
+        (results_directory / f"split-{i}").mkdir(parents=True)
 
         train_df.to_csv(
-            path.join(train_path, f"split-{i}", f"{diagnosis}_baseline.tsv"),
+            results_directory / f"split-{i}" / "train_baseline.tsv",
             sep="\t",
             index=False,
         )
         test_df.to_csv(
-            path.join(test_path, f"split-{i}", f"{diagnosis}_baseline.tsv"),
+            results_directory / f"split-{i}" / f"{subset_name}_baseline.tsv",
             sep="\t",
             index=False,
         )
 
-        long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
         long_train_df.to_csv(
-            path.join(train_path, f"split-{i}", f"{diagnosis}.tsv"),
+            results_directory / f"split-{i}" / "train.tsv",
             sep="\t",
             index=False,
         )
 
 
 def split_diagnoses(
-    formatted_data_path: str,
+    data_tsv: Path,
     n_splits: int = 5,
-    subset_name: str = "validation",
-    MCI_sub_categories: bool = True,
+    subset_name: str = None,
     stratification: str = None,
+    merged_tsv: Path = None,
 ):
     """
     Performs a k-fold split for each label independently on the subject level.
-    The train folder will contain two lists per fold per diagnosis (baseline and longitudinal),
-    whereas the test folder will only include the list of baseline sessions for each spli.
+    The output (the tsv file) will have two new columns :
+        - split, with the number of the split the subject is in.
+        - datagroup, with the name of the group (train or subset_name) the subject is in.
 
-    Writes three files per split per <label>.tsv file present in formatted_data_path:
-            - formatted_data_path/train_splits-<n_splits>/split-<split>/<label>.tsv
-            - formatted_data_path/train_splits-<n_splits>/split-<split>/<label>_baseline.tsv
-            - formatted_data_path/<subset_name>_splits-<n_splits>/split-<split>/<label>_baseline.tsv
+    The train group will contain baseline and longitudinal sessions,
+    whereas the test group will only include the baseline sessions for each split.
 
-    Args:
-        formatted_data_path: Path to the folder containing data extracted by clinicadl tsvtool getlabels.
-        n_splits: Number of splits in the k-fold cross-validation.
-        subset_name: Name of the subset that is complementary to train.
-        MCI_sub_categories: If True, manages MCI sub-categories to avoid data leakage.
-        stratification: Name of variable used to stratify k-fold.
+    Parameters
+    ----------
+    data_tsv: str (path)
+        Path to the tsv file extracted by clinicadl tsvtool getlabels.
+    n_splits: int
+        Number of splits in the k-fold cross-validation.
+    subset_name: str
+        Name of the subset that is complementary to train.
+    stratification: str
+        Name of variable used to stratify k-fold.
+    merged_tsv: str
+        Path to the merged.tsv file, output of clinica iotools merge-tsv.
     """
+
+    parents_path = data_tsv.parent
+    split_numero = 1
+    folder_name = f"{n_splits}_fold"
+
+    while (parents_path / folder_name).is_dir():
+        split_numero += 1
+        folder_name = f"{n_splits}_fold_{split_numero}"
+    results_directory = parents_path / folder_name
+    results_directory.mkdir(parents=True)
+
     commandline_to_json(
         {
-            "output_dir": formatted_data_path,
+            "output_dir": results_directory,
             "n_splits": n_splits,
             "subset_name": subset_name,
-            "MCI_sub_categories": MCI_sub_categories,
             "stratification": stratification,
         },
         filename="kfold.json",
     )
 
-    # Read files
-    results_path = formatted_data_path
-
-    train_path = path.join(results_path, f"train_splits-{n_splits}")
-    if path.exists(train_path):
-        shutil.rmtree(train_path)
-    os.makedirs(train_path)
-    for i in range(n_splits):
-        os.mkdir(path.join(train_path, f"split-{i}"))
-
-    test_path = path.join(results_path, f"{subset_name}_splits-{n_splits}")
-    if path.exists(test_path):
-        shutil.rmtree(test_path)
-    os.makedirs(test_path)
-    for i in range(n_splits):
-        os.mkdir(path.join(test_path, f"split-{i}"))
-
-    diagnosis_df_paths = os.listdir(results_path)
-    diagnosis_df_paths = [
-        x
-        for x in diagnosis_df_paths
-        if (x.endswith(".tsv") and not x.endswith("_baseline.tsv"))
-    ]
-
-    MCI_special_treatment = False
-
-    if "MCI.tsv" in diagnosis_df_paths:
-        if MCI_sub_categories:
-            diagnosis_df_paths.remove("MCI.tsv")
-            MCI_special_treatment = True
-        elif "sMCI.tsv" in diagnosis_df_paths or "pMCI.tsv" in diagnosis_df_paths:
-            logger.warning(
-                "MCI special treatment was deactivated though MCI subgroups were found. "
-                "Be aware that it may cause data leakage in transfer learning tasks."
+    diagnosis_df = pd.read_csv(data_tsv, sep="\t")
+    list_columns = diagnosis_df.columns.values
+    if (
+        "diagnosis" not in list_columns
+        or ("age" not in list_columns and "age_bl" not in list_columns)
+        or "sex" not in list_columns
+    ):
+        logger.debug("Looking for the missing columns in others files.")
+        if merged_tsv is None:
+            parents_path = parents_path.resolve()
+            n = 0
+            while not (parents_path / "labels.tsv").is_file() and n <= 4:
+                parents_path = parents_path.parent
+                n += 1
+            try:
+                labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
+                diagnosis_df = pd.merge(
+                    diagnosis_df,
+                    labels_df,
+                    how="inner",
+                    on=["participant_id", "session_id"],
+                )
+            except:
+                raise ClinicaDLTSVError(
+                    f"Your tsv file doesn't contain one of these columns : age, sex, diagnosis "
+                    "and the pipeline wasn't able to find the output of clinicadl get-labels to get it."
+                    "Before running this pipeline again, please run the command clinicadl get-metadata to get the missing columns"
+                    "or add the the flag --ignore_demographics to split without trying to balance age or sex distributions."
+                    "or add the option --merged-tsv to give the path the output of clinica merge-tsv"
+                )
+        else:
+            labels_df = pd.read_csv(merged_tsv, sep="\t")
+            diagnosis_df = pd.merge(
+                diagnosis_df,
+                labels_df,
+                how="inner",
+                on=["participant_id", "session_id"],
             )
+    write_splits(diagnosis_df, stratification, n_splits, subset_name, results_directory)
 
-    # The baseline session must be kept before or we are taking all the sessions to mix them
-    for diagnosis_df_path in diagnosis_df_paths:
-        diagnosis = diagnosis_df_path.split(".")[0]
-
-        diagnosis_df = pd.read_csv(path.join(results_path, diagnosis_df_path), sep="\t")
-        write_splits(
-            diagnosis, diagnosis_df, stratification, n_splits, train_path, test_path
-        )
-
-        logger.info(f"K-fold split for diagnosis {diagnosis} is done.")
-
-    if MCI_special_treatment:
-
-        # Extraction of MCI subjects without intersection with the sMCI / pMCI train
-        diagnosis_df = pd.read_csv(path.join(results_path, "MCI.tsv"), sep="\t")
-        MCI_df = diagnosis_df.set_index(["participant_id", "session_id"])
-        MCI_df, supplementary_diagnoses = remove_sub_labels(
-            MCI_df, ["sMCI", "pMCI"], diagnosis_df_paths, results_path
-        )
-
-        if len(supplementary_diagnoses) == 0:
-            raise ClinicaDLArgumentError(
-                "The MCI_sub_categories flag is not needed as there are no intersections with "
-                "MCI subcategories."
-            )
-
-        MCI_df.reset_index(drop=False, inplace=True)
-        logger.debug(MCI_df)
-        write_splits(
-            "MCI",
-            MCI_df,
-            stratification,
-            n_splits,
-            train_path,
-            test_path,
-            supplementary_diagnoses=supplementary_diagnoses,
-        )
-        logger.info("K-fold split for diagnosis MCI is done.")
+    logger.info(f"K-fold split is done.")
