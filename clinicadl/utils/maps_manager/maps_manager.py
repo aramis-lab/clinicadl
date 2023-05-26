@@ -2,7 +2,6 @@ import json
 import shutil
 import subprocess
 from datetime import datetime
-from glob import glob
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -1222,7 +1221,7 @@ class MapsManager:
                 network=network,
             )
 
-            tensor_path = Path(
+            tensor_path = (
                 self.maps_path
                 / f"{self.split_name}-{split}"
                 / f"best-{selection_metric}"
