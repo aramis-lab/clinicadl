@@ -2,7 +2,6 @@ import json
 import shutil
 import subprocess
 from datetime import datetime
-from glob import glob
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -1223,14 +1222,14 @@ class MapsManager:
                 network=network,
             )
 
-            tensor_path = path.join(
-                self.maps_path,
-                f"{self.split_name}-{split}",
-                f"best-{selection_metric}",
-                data_group,
-                "latent_tensors",
+            tensor_path = (
+                self.maps_path
+                / f"{self.split_name}-{split}"
+                / f"best-{selection_metric}"
+                / data_group
+                / "latent_tensors"
             )
-            makedirs(tensor_path, exist_ok=True)
+            tensor_path.mkdir(parents=True, exist_ok=True)
 
             if nb_images is None:  # Compute outputs for the whole data set
                 nb_modes = len(dataset)
@@ -1249,7 +1248,7 @@ class MapsManager:
                 output_filename = (
                     f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
                 )
-                torch.save(latent, path.join(tensor_path, output_filename))
+                torch.save(latent, tensor_path / output_filename)
 
     def _ensemble_prediction(
         self,
