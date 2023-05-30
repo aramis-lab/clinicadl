@@ -612,7 +612,11 @@ def generate_hypometabolic_dataset(
             input_filename = image_path.stem
         input_filename = input_filename.strip("pet")
         hypo_image_nii_dir = (
-            output_dir / "subjects" / participants[i] / sessions[i] / preprocessing
+            output_dir
+            / "subjects"
+            / participants[subject_id]
+            / sessions[subject_id]
+            / preprocessing
         )
         hypo_image_nii_filename = (
             f"{input_filename}pat-{pathology}_deg-{int(anomaly_degree)}_pet.nii.gz"
