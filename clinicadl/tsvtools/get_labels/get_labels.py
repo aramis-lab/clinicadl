@@ -319,7 +319,11 @@ def get_labels(
     # Generating the output of `clinica iotools merge-tsv `
     if merged_tsv is None:
         merged_tsv = output_dir / "merged.tsv"
-    elif not merged_tsv.is_file():
+        if merged_tsv.is_file():
+            logger.warning(
+                f"A merged_tsv file already exists at {merged_tsv}. It will be used to run the command."
+            )
+
         from clinica.iotools.utils.data_handling import create_merge_file
 
         logger.info("create merge tsv")
