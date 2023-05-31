@@ -29,7 +29,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
 clinica = "^0.7.4"
-torch = "^1.8.0"
+torch = "^2.0.0"
 torchvision = "*"
 tensorboard = "*"
 toml = "*"
