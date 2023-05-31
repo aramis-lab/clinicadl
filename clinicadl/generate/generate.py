@@ -39,6 +39,7 @@ def generate_random_dataset(
     caps_directory: Path,
     output_dir: Path,
     n_subjects: int,
+    n_proc: int,
     tsv_path: Optional[Path] = None,
     mean: float = 0,
     sigma: float = 0.5,
@@ -92,6 +93,7 @@ def generate_random_dataset(
             "caps_dir": caps_directory,
             "preprocessing": preprocessing,
             "n_subjects": n_subjects,
+            "n_proc": n_proc,
             "mean": mean,
             "sigma": sigma,
         }
@@ -138,9 +140,10 @@ def generate_random_dataset(
 
     input_filename = image_path.name
     filename_pattern = "_".join(input_filename.split("_")[2::])
-    for i in range(2 * n_subjects):
+
+    def create_random_image(subject_id):
         gauss = np.random.normal(mean, sigma, image.shape)
-        participant_id = f"sub-RAND{i}"
+        participant_id = f"sub-RAND{subject_id}"
         noisy_image = image + gauss
         noisy_image_nii = nib.Nifti1Image(
             noisy_image, header=image_nii.header, affine=image_nii.affine
@@ -153,8 +156,11 @@ def generate_random_dataset(
         noisy_image_nii_path.mkdir(parents=True, exist_ok=True)
         nib.save(noisy_image_nii, noisy_image_nii_path / noisy_image_nii_filename)
 
-    write_missing_mods(output_dir, output_df)
+    Parallel(n_jobs=n_proc)(
+        delayed(create_random_image)(subject_id) for subject_id in range(2 * n_subjects)
+    )
 
+    write_missing_mods(output_dir, output_df)
     logger.info(f"Random dataset was generated at {output_dir}")
 
 
@@ -162,6 +168,7 @@ def generate_trivial_dataset(
     caps_directory: Path,
     output_dir: Path,
     n_subjects: int,
+    n_proc: int,
     tsv_path: Optional[Path] = None,
     preprocessing: str = "t1-linear",
     mask_path: Optional[Path] = None,
@@ -221,6 +228,7 @@ def generate_trivial_dataset(
             "caps_dir": caps_directory,
             "preprocessing": preprocessing,
             "n_subjects": n_subjects,
+            "n_proc": n_proc,
             "atrophy_percent": atrophy_percent,
         }
     )
@@ -283,9 +291,9 @@ def generate_trivial_dataset(
         preprocessing, uncropped_image, tracer, suvr_reference_region
     )
 
-    for i in range(2 * n_subjects):
-        data_idx = i // 2
-        label = i % 2
+    def create_trivial_image(subject_id, output_df):
+        data_idx = subject_id // 2
+        label = subject_id % 2
 
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
@@ -302,10 +310,16 @@ def generate_trivial_dataset(
         filename_pattern = "_".join(input_filename.split("_")[2::])
 
         trivial_image_nii_dir = (
-            output_dir / "subjects" / f"sub-TRIV{i}" / session_id / preprocessing
+            output_dir
+            / "subjects"
+            / f"sub-TRIV{subject_id}"
+            / session_id
+            / preprocessing
         )
 
-        trivial_image_nii_filename = f"sub-TRIV{i}_{session_id}_{filename_pattern}"
+        trivial_image_nii_filename = (
+            f"sub-TRIV{subject_id}_{session_id}_{filename_pattern}"
+        )
 
         trivial_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
@@ -321,20 +335,29 @@ def generate_trivial_dataset(
         )
 
         # Append row to output tsv
-        row = [f"sub-TRIV{i}", session_id, diagnosis_list[label], 60, "F"]
+        row = [f"sub-TRIV{subject_id}", session_id, diagnosis_list[label], 60, "F"]
         row_df = pd.DataFrame([row], columns=columns)
         output_df = pd.concat([output_df, row_df])
 
+        return output_df
+
+    results_df = Parallel(n_jobs=n_proc)(
+        delayed(create_trivial_image)(subject_id, output_df)
+        for subject_id in range(2 * n_subjects)
+    )
+    output_df = pd.DataFrame()
+    for result in results_df:
+        output_df = pd.concat([result, output_df])
+
     output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
-
     write_missing_mods(output_dir, output_df)
-
     logger.info(f"Trivial dataset was generated at {output_dir}")
 
 
 def generate_shepplogan_dataset(
     output_dir: Path,
     img_size: int,
+    n_proc: int,
     labels_distribution: Dict[str, Tuple[float, float, float]],
     extract_json: str = None,
     samples: int = 100,
@@ -366,9 +389,11 @@ def generate_shepplogan_dataset(
     columns = ["participant_id", "session_id", "diagnosis", "subtype"]
     data_df = pd.DataFrame(columns=columns)
 
-    for i, label in enumerate(labels_distribution.keys()):
-        for j in range(samples):
-            participant_id = f"sub-CLNC{i}{j:04d}"
+    for label_id, label in enumerate(labels_distribution.keys()):
+
+        def create_shepplogan_image(subject_id, data_df):
+            # for j in range(samples):
+            participant_id = f"sub-CLNC{label_id}{subject_id:04d}"
             session_id = "ses-M00"
             subtype = np.random.choice(
                 np.arange(len(labels_distribution[label])), p=labels_distribution[label]
@@ -392,7 +417,6 @@ def generate_shepplogan_dataset(
 
             slice_dir = slice_path.parent
             slice_dir.mkdir(parents=True, exist_ok=True)
-
             slice_np = generate_shepplogan_phantom(
                 img_size, label=subtype, smoothing=smoothing
             )
@@ -411,6 +435,16 @@ def generate_shepplogan_dataset(
             image_dir.mkdir(parents=True, exist_ok=True)
             with image_path.open("w") as f:
                 f.write("0")
+            return data_df
+
+        results_df = Parallel(n_jobs=n_proc)(
+            delayed(create_shepplogan_image)(subject_id, data_df)
+            for subject_id in range(samples)
+        )
+
+        data_df = pd.DataFrame()
+        for result in results_df:
+            data_df = pd.concat([result, data_df])
 
     # Save data
     data_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
@@ -568,8 +602,8 @@ def generate_hypometabolic_dataset(
     # Create subjects dir
     (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
 
-    def generate_hypometabolic_image(i, output_df):
-        image_path = Path(images_paths[i])
+    def generate_hypometabolic_image(subject_id, output_df):
+        image_path = Path(images_paths[subject_id])
         image_nii = nib.load(image_path)
         image = image_nii.get_fdata()
         if image_path.suffix == ".gz":
@@ -578,7 +612,11 @@ def generate_hypometabolic_dataset(
             input_filename = image_path.stem
         input_filename = input_filename.strip("pet")
         hypo_image_nii_dir = (
-            output_dir / "subjects" / participants[i] / sessions[i] / preprocessing
+            output_dir
+            / "subjects"
+            / participants[subject_id]
+            / sessions[subject_id]
+            / preprocessing
         )
         hypo_image_nii_filename = (
             f"{input_filename}pat-{pathology}_deg-{int(anomaly_degree)}_pet.nii.gz"
@@ -592,8 +630,8 @@ def generate_hypometabolic_dataset(
 
         # Append row to output tsv
         row = [
-            participants[i],
-            sessions[i],
+            participants[subject_id],
+            sessions[subject_id],
             pathology,
             anomaly_degree,
         ]
@@ -602,8 +640,11 @@ def generate_hypometabolic_dataset(
         return output_df
 
     results_list = Parallel(n_jobs=n_proc)(
-        delayed(generate_hypometabolic_image)(i, output_df) for i in range(n_subjects)
+        delayed(generate_hypometabolic_image)(subject_id, output_df)
+        for subject_id in range(n_subjects)
     )
+
+    output_df = pd.DataFrame()
     for result_df in results_list:
         output_df = pd.concat([result_df, output_df])
 
