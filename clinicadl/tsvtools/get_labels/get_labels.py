@@ -307,6 +307,7 @@ def get_labels(
         missing_mods_directory = missing_mods
 
     if not missing_mods_directory.is_dir():
+
         from clinica.iotools.utils.data_handling import compute_missing_mods
 
         check_bids_folder(bids_directory)
