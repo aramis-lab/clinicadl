@@ -326,7 +326,8 @@ def get_labels(
         else:
             from clinica.iotools.utils.data_handling import create_merge_file
 
-            logger.info("create merge tsv")
+            logger.info("Running Clinica merge TSV pipeline.")
+
             check_bids_folder(bids_directory)
             create_merge_file(
                 bids_directory,
