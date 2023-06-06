@@ -778,7 +778,6 @@ class MapsManager:
             evaluation_flag, step_flag = True, True
 
             for i, data in enumerate(train_loader):
-
                 _, loss_dict = model.compute_outputs_and_loss(data, criterion)
                 logger.debug(f"Train loss dictionnary {loss_dict}")
                 loss = loss_dict["loss"]
@@ -948,7 +947,6 @@ class MapsManager:
             network (int): Index of the network tested (only used in multi-network setting).
         """
         for selection_metric in selection_metrics:
-
             log_dir = path.join(
                 self.maps_path,
                 f"{self.split_name}-{split}",

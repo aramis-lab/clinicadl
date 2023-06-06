@@ -46,7 +46,6 @@ class ClassificationManager(TaskManager):
         return False
 
     def generate_test_row(self, idx, data, outputs):
-
         prediction = torch.argmax(outputs[idx].data).item()
         normalized_output = softmax(outputs[idx], dim=0)
         return [

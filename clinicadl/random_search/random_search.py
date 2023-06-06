@@ -11,7 +11,6 @@ from clinicadl.train import train
 
 
 def launch_search(launch_directory, job_name):
-
     if not path.exists(path.join(launch_directory, "random_search.toml")):
         raise FileNotFoundError(
             f"TOML file 'random_search.toml' must be written in directory {launch_directory}."

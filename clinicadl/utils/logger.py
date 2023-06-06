@@ -16,7 +16,6 @@ class StdLevelFilter(logging.Filter):
 
 # Create formatter for console
 class ConsoleFormatter(logging.Formatter):
-
     FORMATS = {
         logging.INFO: "%(asctime)s - %(message)s",
         logging.WARNING: "%(asctime)s - %(levelname)s: %(message)s",

@@ -9,10 +9,10 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 import torch
+import torchio as tio
 import torchvision.transforms as transforms
 from clinica.utils.exceptions import ClinicaCAPSError
 from torch.utils.data import Dataset
-import torchio as tio
 
 from clinicadl.prepare_data.prepare_data_utils import (
     PATTERN_DICT,
@@ -78,7 +78,6 @@ class CapsDataset(Dataset):
             mandatory_col.add(self.label)
 
         if not mandatory_col.issubset(set(self.df.columns.values)):
-
             raise Exception(
                 f"the data file is not in the correct format."
                 f"Columns should include {mandatory_col}"
@@ -115,7 +114,6 @@ class CapsDataset(Dataset):
 
     @staticmethod
     def create_caps_dict(caps_directory: str, multi_cohort: bool) -> Dict[str, str]:
-
         from clinica.utils.inputs import check_caps_folder
 
         if multi_cohort:
@@ -898,7 +896,6 @@ class RandomMotion(object):
         self.num_transforms = num_transforms
 
     def __call__(self, image):
-
         motion = tio.RandomMotion(
             degrees=self.rotation,
             translation=self.translation,
@@ -916,7 +913,6 @@ class RandomGhosting(object):
         self.num_ghosts = num_ghosts
 
     def __call__(self, image):
-
         ghost = tio.RandomGhosting(num_ghosts=self.num_ghosts)
         image = ghost(image)
 
@@ -931,7 +927,6 @@ class RandomSpike(object):
         self.intensity = intensity
 
     def __call__(self, image):
-
         spike = tio.RandomSpike(
             num_spikes=self.num_spikes,
             intensity=self.intensity,
@@ -948,7 +943,6 @@ class RandomBiasField(object):
         self.coefficients = coefficients
 
     def __call__(self, image):
-
         bias_field = tio.RandomBiasField(coefficients=self.coefficients)
         image = bias_field(image)
 
@@ -962,7 +956,6 @@ class RandomBlur(object):
         self.std = std
 
     def __call__(self, image):
-
         blur = tio.RandomBlur(std=self.std)
         image = blur(image)
 
@@ -977,7 +970,6 @@ class RandomSwap(object):
         self.num_iterations = num_iterations
 
     def __call__(self, image):
-
         swap = tio.RandomSwap(
             patch_size=self.patch_size, num_iterations=self.num_iterations
         )
@@ -1126,7 +1118,6 @@ def load_data_test(test_path, diagnoses_list, baseline=True, multi_cohort=False)
 
 
 def load_data_test_single(test_path, diagnoses_list, baseline=True):
-
     if test_path.endswith(".tsv"):
         test_df = pd.read_csv(test_path, sep="\t")
         if "diagnosis" not in test_df.columns.values:
