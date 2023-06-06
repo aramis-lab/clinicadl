@@ -2,8 +2,6 @@
 This file contains all methods needed to perform the quality check procedure after t1-linear preprocessing.
 """
 from logging import getLogger
-from os import makedirs
-from os.path import abspath, dirname, exists, join
 from pathlib import Path
 
 import pandas as pd
@@ -24,9 +22,9 @@ logger = getLogger("clinicadl.quality-check")
 
 
 def quality_check(
-    caps_dir: str,
-    output_path: str,
-    tsv_path: str = None,
+    caps_dir: Path,
+    output_path: Path,
+    tsv_path: Path = None,
     threshold: float = 0.5,
     batch_size: int = 1,
     n_proc: int = 0,
@@ -63,16 +61,16 @@ def quality_check(
 
     logger = getLogger("clinicadl.quality_check")
 
-    if not output_path.endswith(".tsv"):
+    if not output_path.suffix == ".tsv":
         raise ClinicaDLArgumentError(f"Output path {output_path} must be a TSV file.")
 
     # Fetch QC model
-    home = str(Path.home())
+    home = Path.home()
 
-    cache_clinicadl = join(home, ".cache", "clinicadl", "models")
+    cache_clinicadl = home / ".cache" / "clinicadl" / "models"
     url_aramis = "https://aramislab.paris.inria.fr/files/data/models/dl/qc/"
 
-    makedirs(cache_clinicadl, exist_ok=True)
+    cache_clinicadl.mkdir(parents=True, exist_ok=True)
 
     if network == "deep_qc":
         FILE1 = RemoteFileStructure(
@@ -89,7 +87,6 @@ def quality_check(
             checksum="321928e0532f1be7a8dd7f5d805b747c7147ff52594f77ffed0858ab19c5df03",
         )
 
-        # model = resnet18(weights=ResNet18_Weights.IMAGENET1K_V1)
         model = darq_r18()
 
     if network == "sq101":
@@ -100,11 +97,11 @@ def quality_check(
         )
         model = darq_sq101()
 
-    model_file = join(cache_clinicadl, FILE1.filename)
+    model_file = cache_clinicadl / FILE1.filename
 
     logger.info("Downloading quality check model.")
 
-    if not (exists(model_file)):
+    if not (model_file.is_file()):
         try:
             model_file = fetch_file(FILE1, cache_clinicadl)
         except IOError as err:
@@ -124,7 +121,7 @@ def quality_check(
 
         # Load DataFrame
         logger.debug("Loading data to check.")
-        df = load_and_check_tsv(tsv_path, caps_dict, dirname(abspath(output_path)))
+        df = load_and_check_tsv(tsv_path, caps_dict, output_path.resolve().parent)
 
         dataset = QCDataset(caps_dir, df, use_tensor, use_uncropped_image)
         dataloader = DataLoader(

@@ -1,8 +1,6 @@
 # coding: utf8
 
-import os
 from logging import getLogger
-from os import makedirs, path
 from pathlib import Path
 
 import numpy as np
@@ -56,6 +54,35 @@ def shuffle_choice(df, n_shuffle=10):
     return (best_train_df, best_test_df, p_min_max)
 
 
+def KStests(train_df, test_df, threshold=0.5):
+    pmin = 1
+    column = ""
+    for col in train_df.columns:
+        if col == "session_id":
+            continue
+        _, pval = ks_2samp(train_df[col], test_df[col])
+        if pval < pmin:
+            pmin = pval
+            column = col
+    return (pmin, column)
+
+
+def shuffle_choice(df, n_shuffle=10):
+    p_min_max, n_col_min = 0, df.columns.size
+
+    for i in range(n_shuffle):
+        train_df = df.sample(frac=0.75)
+        test_df = df.drop(train_df.index)
+
+        p, col = KStests(train_df, test_df)
+
+        if p > p_min_max:
+            p_min_max = p
+            best_train_df, best_test_df = train_df, test_df
+
+    return (best_train_df, best_test_df, p_min_max)
+
+
 def create_split(
     diagnosis_df,
     split_label,
@@ -66,7 +93,7 @@ def create_split(
     ignore_demographics=False,
 ):
     """
-    Split data at the subject-level in training and test set with equivalent age, sex and split_label distributions
+    Split data at the subject-level in training and test set with equivalent age, sex and split_label distributions.
 
     Parameters
     ----------
@@ -178,7 +205,7 @@ def create_split(
 
 
 def split_diagnoses(
-    data_tsv,
+    data_tsv: Path,
     n_test=100,
     subset_name="test",
     p_age_threshold=0.80,
@@ -226,15 +253,15 @@ def split_diagnoses(
         - data_tsv/<subset_name>/<label>_baseline.tsv
     """
 
-    parents_path = Path(data_tsv).parents[0]
+    parents_path = data_tsv.parents[0]
     split_numero = 1
     folder_name = f"split"
 
-    while os.path.exists(parents_path / folder_name):
+    while (parents_path / folder_name).is_dir():
         split_numero += 1
         folder_name = f"split_{split_numero}"
     results_path = parents_path / folder_name
-    makedirs(results_path)
+    results_path.mkdir(parents=True)
 
     commandline_to_json(
         {
@@ -258,7 +285,7 @@ def split_diagnoses(
         categorical_split_variable.append("diagnosis")
 
     # Read files
-    diagnosis_df_path = Path(data_tsv).name
+    diagnosis_df_path = data_tsv.name
     diagnosis_df = pd.read_csv(data_tsv, sep="\t")
     list_columns = diagnosis_df.columns.values
     if multi_diagnoses:
@@ -282,13 +309,13 @@ def split_diagnoses(
             or ("age" not in list_columns and "age_bl" not in list_columns)
             or "sex" not in list_columns
         ):
-            parents_path = path.abspath(parents_path)
+            parents_path = parents_path.resolve()
             n = 0
-            while not os.path.exists(path.join(parents_path, "labels.tsv")) and n <= 4:
-                parents_path = Path(parents_path).parents[0]
+            while not (parents_path / "labels.tsv").is_file() and n <= 4:
+                parents_path = parents_path.parents[0]
                 n += 1
             try:
-                labels_df = pd.read_csv(path.join(parents_path, "labels.tsv"), sep="\t")
+                labels_df = pd.read_csv(parents_path / "labels.tsv", sep="\t")
                 diagnosis_df = pd.merge(
                     diagnosis_df,
                     labels_df,
@@ -331,9 +358,9 @@ def split_diagnoses(
             long_train_df = diagnosis_df
 
     name = "train_baseline.tsv"
-    df_to_tsv(name, str(results_path), train_df, baseline=True)
+    df_to_tsv(name, results_path, train_df, baseline=True)
 
     long_train_df = retrieve_longitudinal(train_df, diagnosis_df)
     # long_train_df = long_train_df[["participant_id", "session_id"]]
     name = "train.tsv"
-    df_to_tsv(name, str(results_path), long_train_df)
+    df_to_tsv(name, results_path, long_train_df)

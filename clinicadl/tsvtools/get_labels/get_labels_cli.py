@@ -1,4 +1,4 @@
-from typing import List
+from pathlib import Path
 
 import click
 
@@ -7,13 +7,15 @@ from clinicadl.utils import cli_param
 
 @click.command(name="get-labels", no_args_is_help=True)
 @cli_param.argument.bids_directory
+@cli_param.argument.output_directory
 @cli_param.option.diagnoses
 @cli_param.option.modality
 @cli_param.option.variables_of_interest
+@cli_param.option.caps_directory
 @click.option(
     "--restriction_tsv",
     help="Path to a TSV file containing the sessions that can be included.",
-    type=str,
+    type=click.Path(exists=True, path_type=Path),
     default=None,
 )
 @click.option(
@@ -26,13 +28,13 @@ from clinicadl.utils import cli_param
 @click.option(
     "--merged_tsv",
     help="Path to a TSV file containing the results of clinica iotools merge-tsv command if different of results_directory/merged.tsv",
-    type=str,
+    type=click.Path(exists=True, path_type=Path),
     default=None,
 )
 @click.option(
     "--missing_mods",
     help="Path to a directory containing the results of clinica iotools missing-modalities command if different of results_directory/missing_mods/",
-    type=str,
+    type=click.Path(exists=True, path_type=Path),
     default=None,
 )
 @click.option(
@@ -42,14 +44,9 @@ from clinicadl.utils import cli_param
     default=False,
     is_flag=True,
 )
-@click.option(
-    "--output_dir",
-    help="Path to the directory where labels.tsv will be stored. ",
-    type=str,
-    default=None,
-)
 def cli(
     bids_directory,
+    output_directory,
     diagnoses,
     modality,
     restriction_tsv,
@@ -58,7 +55,7 @@ def cli(
     missing_mods,
     merged_tsv,
     remove_unique_session,
-    output_dir,
+    caps_directory,
 ):
     """Get labels in a tsv file.
 
@@ -67,6 +64,7 @@ def cli(
         - `clinica iotools check-missing-modalities`
 
     BIDS_DIRECTORY is the path to the BIDS directory.
+    TSV_DIR is the path of the directory in which the results will be saved.
 
     Defaults diagnoses are CN and AD.
 
@@ -87,7 +85,8 @@ def cli(
         missing_mods=missing_mods,
         merged_tsv=merged_tsv,
         remove_unique_session=remove_unique_session,
-        output_dir=output_dir,
+        output_dir=output_directory,
+        caps_directory=caps_directory,
     )
 
 

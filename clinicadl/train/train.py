@@ -1,11 +1,12 @@
 # coding: utf8
+from pathlib import Path
 from typing import Any, Dict, List
 
 from clinicadl import MapsManager
 
 
 def train(
-    maps_dir: str,
+    maps_dir: Path,
     train_dict: Dict[str, Any],
     split_list: List[int],
     erase_existing: bool = True,

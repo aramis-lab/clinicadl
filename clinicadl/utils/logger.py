@@ -1,6 +1,6 @@
 import logging
 import sys
-from os import getcwd, path
+from pathlib import Path
 
 
 class StdLevelFilter(logging.Filter):
@@ -30,9 +30,11 @@ class ConsoleFormatter(logging.Formatter):
 def setup_logging(verbose: bool = False) -> None:
     """
     Setup ClinicaDL's logging facilities.
-    Args:
-        verbose: The desired level of verbosity for logging.
-            (False (default): INFO, True: DEBUG)
+    Parameters
+    ----------
+    verbose: bool
+        The desired level of verbosity for logging.
+        (False (default): INFO, True: DEBUG)
     """
     logging_level = "DEBUG" if verbose else "INFO"
 
@@ -66,7 +68,4 @@ def setup_logging(verbose: bool = False) -> None:
         file_handler.setLevel(logging.DEBUG)
         file_handler.setFormatter(debug_file_formatter)
         logger.addHandler(file_handler)
-        print(getcwd())
-        logger.warning(
-            f"Debug log will be saved at {path.join(getcwd(), debug_file_name)}"
-        )
+        logger.warning(f"Debug log will be saved at {Path.cwd() / debug_file_name}")

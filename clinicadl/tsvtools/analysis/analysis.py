@@ -1,9 +1,8 @@
 # coding: utf-8
 
-import os
 from copy import copy
 from logging import getLogger
-from os import path
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -21,12 +20,14 @@ from clinicadl.utils.tsvtools_utils import (
 logger = getLogger("clinicadl.tsvtools.analysis")
 
 
-def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
+def demographics_analysis(
+    merged_tsv: Path, data_tsv: Path, results_tsv: Path, diagnoses
+):
     """
     Produces a tsv file with rows corresponding to the labels defined by the diagnoses list,
     and the columns being demographic statistics.
 
-    Writes one tsv file at results_tsv containing the demographic analysis of the tsv files in data_tsv.
+    Writes one tsv file at results_tsv, containing the demographic analysis of the tsv files in data_tsv.
 
     Parameters
     ----------
@@ -41,17 +42,17 @@ def demographics_analysis(merged_tsv, data_tsv, results_tsv, diagnoses):
 
     """
 
-    if not path.exists(data_tsv):
+    if not data_tsv.is_file():
         raise ClinicaDLTSVError(f"{data_tsv} file was not found. ")
 
-    if not path.exists(merged_tsv):
+    if not merged_tsv.is_file():
         raise ClinicaDLTSVError(f"{merged_tsv} file was not found. ")
     merged_df = pd.read_csv(merged_tsv, sep="\t")
     merged_df.set_index(["participant_id", "session_id"], inplace=True)
     merged_df = cleaning_nan_diagnoses(merged_df)
 
-    parent_directory = path.abspath(path.join(results_tsv, os.pardir))
-    os.makedirs(parent_directory, exist_ok=True)
+    parent_directory = results_tsv.resolve().parent
+    parent_directory.mkdir(parents=True, exist_ok=True)
 
     fields_dict = {
         "age": find_label(merged_df.columns.values, "age"),
