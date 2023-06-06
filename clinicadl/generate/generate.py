@@ -5,10 +5,9 @@ This file generates data for trivial or intractable (random) data for binary cla
 """
 import tarfile
 from logging import getLogger
+from os.path import join
 from pathlib import Path
-from typing import Dict, Optional, Tuple, List
-from os import makedirs
-from os.path import basename, dirname, exists, join
+from typing import Dict, List, Optional, Tuple
 
 import nibabel as nib
 import numpy as np
@@ -620,8 +619,8 @@ def generate_hypometabolic_dataset(
 
 
 def generate_motion_dataset(
-    caps_directory: str,
-    output_dir: str,
+    caps_directory: Path,
+    output_dir: Path,
     tsv_path: Optional[str] = None,
     preprocessing: str = "t1-linear",
     multi_cohort: bool = False,
@@ -651,9 +650,6 @@ def generate_motion_dataset(
     Raises:
         IndexError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
     """
-    from pathlib import Path
-
-    from clinicadl.utils.exceptions import DownloadError
 
     commandline_to_json(
         {
@@ -669,13 +665,13 @@ def generate_motion_dataset(
     data_df = load_and_check_tsv(tsv_path, caps_dict, output_dir)
     data_df = extract_baseline(data_df)
 
-    home = str(Path.home())
-    cache_clinicadl = join(home, ".cache", "clinicadl", "ressources", "masks")
+    home = Path.home()
+    cache_clinicadl = home / ".cache" / "clinicadl" / "ressources" / "masks"
 
-    makedirs(cache_clinicadl, exist_ok=True)
+    cache_clinicadl.mkdir(parents=True, exist_ok=True)
 
     # Create subjects dir
-    makedirs(join(output_dir, "subjects"), exist_ok=True)
+    (output_dir / "subjects").mkdir(parents=True, exist_ok=True)
 
     # Output tsv file
     columns = ["participant_id", "session_id", "diagnosis"]
@@ -691,25 +687,26 @@ def generate_motion_dataset(
         participant_id = data_df.loc[data_idx, "participant_id"]
         session_id = data_df.loc[data_idx, "session_id"]
         cohort = data_df.loc[data_idx, "cohort"]
-        image_paths = clinica_file_reader(
-            [participant_id], [session_id], caps_dict[cohort], file_type
-        )[0]
-
-        input_filename = basename(image_paths[0])
+        image_path = Path(
+            clinica_file_reader(
+                [participant_id], [session_id], caps_dict[cohort], file_type
+            )[0][0]
+        )
+        input_filename = image_path.name
         filename_pattern = "_".join(input_filename.split("_")[2::])
 
-        trivial_image_nii_dir = join(
-            output_dir,
-            "subjects",
-            f"{participant_id}-RM{data_idx}",
-            session_id,
-            preprocessing,
+        trivial_image_nii_dir = (
+            output_dir
+            / "subjects"
+            / f"{participant_id}-RM{data_idx}"
+            / session_id
+            / preprocessing
         )
         trivial_image_nii_filename = (
             f"{participant_id}-RM{data_idx}_{session_id}_{filename_pattern}"
         )
 
-        makedirs(trivial_image_nii_dir, exist_ok=True)
+        trivial_image_nii_dir.mkdir(parents=True, exist_ok=True)
 
         motion = tio.RandomMotion(
             degrees=(rotation[0], rotation[1]),
@@ -717,15 +714,18 @@ def generate_motion_dataset(
             num_transforms=num_transforms,
         )
 
-        trivial_image = motion(tio.ScalarImage(image_paths[0]))
-        trivial_image.save(join(trivial_image_nii_dir, trivial_image_nii_filename))
-        print(join(trivial_image_nii_dir, trivial_image_nii_filename))
+        trivial_image = motion(tio.ScalarImage(image_path))
+        trivial_image.save(trivial_image_nii_dir / trivial_image_nii_filename)
 
         # Append row to output tsv
         row = [f"{participant_id}_RM{data_idx}", session_id, "motion"]
         row_df = pd.DataFrame([row], columns=columns)
         output_df = output_df.append(row_df)
 
-    output_df.to_csv(join(output_dir, "data.tsv"), sep="\t", index=False)
+    output_df.to_csv(output_dir / "data.tsv", sep="\t", index=False)
 
     write_missing_mods(output_dir, output_df)
+
+    logger.info(
+        f"Images corrupted with motion artefacts were generated at {trivial_image_nii_dir}"
+    )
