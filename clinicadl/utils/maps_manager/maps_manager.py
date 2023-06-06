@@ -2,7 +2,6 @@ import json
 import shutil
 import subprocess
 from datetime import datetime
-from glob import glob
 from logging import getLogger
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -84,7 +83,6 @@ class MapsManager:
         # Initiate MAPS
         else:
             self._check_args(parameters)
-            print(parameters)
             parameters["tsv_path"] = Path(parameters["tsv_path"])
 
             if (maps_path.is_dir() and maps_path.is_file()) or (  # Non-folder file
@@ -197,6 +195,7 @@ class MapsManager:
         label_code: Optional[Dict[str, int]] = "default",
         save_tensor: bool = False,
         save_nifti: bool = False,
+        save_latent_tensor: bool = False,
     ):
         """
         Performs the prediction task on a subset of caps_directory defined in a TSV file.
@@ -229,6 +228,8 @@ class MapsManager:
         _, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
+            size_reduction=self.size_reduction,
+            size_reduction_factor=self.size_reduction_factor,
         )
 
         group_df = None
@@ -306,6 +307,7 @@ class MapsManager:
                         network=network,
                     )
                     if save_tensor:
+                        logger.debug("Saving tensors")
                         self._compute_output_tensors(
                             data_test,
                             data_group,
@@ -316,6 +318,15 @@ class MapsManager:
                         )
                     if save_nifti:
                         self._compute_output_nifti(
+                            data_test,
+                            data_group,
+                            split,
+                            selection_metrics,
+                            gpu=gpu,
+                            network=network,
+                        )
+                    if save_latent_tensor:
+                        self._compute_latent_tensors(
                             data_test,
                             data_group,
                             split,
@@ -355,6 +366,7 @@ class MapsManager:
                     gpu=gpu,
                 )
                 if save_tensor:
+                    logger.debug("Saving tensors")
                     self._compute_output_tensors(
                         data_test,
                         data_group,
@@ -370,6 +382,15 @@ class MapsManager:
                         selection_metrics,
                         gpu=gpu,
                     )
+                if save_latent_tensor:
+                    self._compute_latent_tensors(
+                        data_test,
+                        data_group,
+                        split,
+                        selection_metrics,
+                        gpu=gpu,
+                    )
+
             self._ensemble_prediction(data_group, split, selection_metrics, use_labels)
 
     def interpret(
@@ -464,6 +485,8 @@ class MapsManager:
         _, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
+            size_reduction=self.size_reduction,
+            size_reduction_factor=self.size_reduction_factor,
         )
 
         group_df = None
@@ -591,6 +614,8 @@ class MapsManager:
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
+            size_reduction=self.size_reduction,
+            size_reduction_factor=self.size_reduction_factor,
         )
         split_manager = self._init_split_manager(split_list)
         for split in split_manager.split_iterator():
@@ -674,6 +699,8 @@ class MapsManager:
         train_transforms, all_transforms = get_transforms(
             normalize=self.normalize,
             data_augmentation=self.data_augmentation,
+            size_reduction=self.size_reduction,
+            size_reduction_factor=self.size_reduction_factor,
         )
 
         split_manager = self._init_split_manager(split_list)
@@ -792,7 +819,7 @@ class MapsManager:
             transfer_selection=self.transfer_selection_metric,
         )
         criterion = self.task_manager.get_criterion(self.loss)
-        logger.debug(f"Criterion for {self.network_task} is {criterion}")
+        logger.info(f"Criterion for {self.network_task} is {criterion}")
         optimizer = self._init_optimizer(model, split=split, resume=resume)
         logger.debug(f"Optimizer used for training is optimizer")
 
@@ -1160,6 +1187,67 @@ class MapsManager:
                 )
                 torch.save(image, tensor_path / input_filename)
                 torch.save(output, tensor_path / output_filename)
+                logger.debug(f"File saved at {[input_filename, output_filename]}")
+
+    def _compute_latent_tensors(
+        self,
+        dataset,
+        data_group,
+        split,
+        selection_metrics,
+        nb_images=None,
+        gpu=None,
+        network=None,
+    ):
+        """
+        Compute the output tensors and saves them in the MAPS.
+
+        Args:
+            dataset (clinicadl.utils.caps_dataset.data.CapsDataset): wrapper of the data set.
+            data_group (str): name of the data group used for the task.
+            split (int): split number.
+            selection_metrics (list[str]): metrics used for model selection.
+            nb_images (int): number of full images to write. Default computes the outputs of the whole data set.
+            gpu (bool): If given, a new value for the device of the model will be computed.
+            network (int): Index of the network tested (only used in multi-network setting).
+        """
+        for selection_metric in selection_metrics:
+            # load the best trained model during the training
+            model, _ = self._init_model(
+                transfer_path=self.maps_path,
+                split=split,
+                transfer_selection=selection_metric,
+                gpu=gpu,
+                network=network,
+            )
+
+            tensor_path = (
+                self.maps_path
+                / f"{self.split_name}-{split}"
+                / f"best-{selection_metric}"
+                / data_group
+                / "latent_tensors"
+            )
+            tensor_path.mkdir(parents=True, exist_ok=True)
+
+            if nb_images is None:  # Compute outputs for the whole data set
+                nb_modes = len(dataset)
+            else:
+                nb_modes = nb_images * dataset.elem_per_image
+
+            for i in range(nb_modes):
+                data = dataset[i]
+                image = data["image"]
+                logger.debug(f"Image for latent representation {image}")
+                _, latent, _ = model.forward(image.unsqueeze(0).to(model.device))
+                latent = latent.squeeze(0).cpu()
+                participant_id = data["participant_id"]
+                session_id = data["session_id"]
+                mode_id = data[f"{self.mode}_id"]
+                output_filename = (
+                    f"{participant_id}_{session_id}_{self.mode}-{mode_id}_latent.pt"
+                )
+                torch.save(latent, tensor_path / output_filename)
 
     def _ensemble_prediction(
         self,
@@ -1216,7 +1304,11 @@ class MapsManager:
         if self.parameters["gpu"]:
             check_gpu()
 
-        _, transformations = get_transforms(self.normalize)
+        _, transformations = get_transforms(
+            normalize=self.normalize,
+            size_reduction=self.size_reduction,
+            size_reduction_factor=self.size_reduction_factor,
+        )
 
         split_manager = self._init_split_manager(None)
         train_df = split_manager[0]["train"]
@@ -1433,8 +1525,6 @@ class MapsManager:
         json_path.mkdir(parents=True, exist_ok=True)
 
         parameters = change_path_to_str(parameters)
-        print("just before error")
-        print(parameters)
         # save to json file
         json_data = json.dumps(parameters, skipkeys=True, indent=4)
         json_path = json_path / "maps.json"

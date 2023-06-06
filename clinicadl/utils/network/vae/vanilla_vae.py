@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 from clinicadl.utils.network.vae.base_vae import BaseVAE
-from clinicadl.utils.network.vae.vae_utils import (
+from clinicadl.utils.network.vae.vae_layers import (
     DecoderLayer3D,
     EncoderLayer3D,
     Flatten,
@@ -23,10 +23,10 @@ class VanillaDenseVAE(BaseVAE):
     def __init__(
         self,
         input_size,
-        latent_space_size=128,
-        feature_size=1024,
-        recons_weight=1,
-        KL_weight=1,
+        latent_space_size,
+        feature_size,
+        recons_weight,
+        kl_weight,
         gpu=True,
     ):
         n_conv = 4
@@ -59,7 +59,7 @@ class VanillaDenseVAE(BaseVAE):
             latent_space_size,
             gpu=gpu,
             recons_weight=recons_weight,
-            KL_weight=KL_weight,
+            kl_weight=kl_weight,
             is_3D=False,
         )
 
@@ -87,10 +87,10 @@ class VanillaSpatialVAE(BaseVAE):
     def __init__(
         self,
         input_size,
-        latent_space_size=128,
-        feature_size=1024,
-        recons_weight=1,
-        KL_weight=1,
+        latent_space_size,
+        feature_size,
+        recons_weight,
+        kl_weight,
         gpu=True,
     ):
         feature_channels = 64
@@ -129,7 +129,7 @@ class VanillaSpatialVAE(BaseVAE):
             latent_space_size,
             gpu=gpu,
             recons_weight=recons_weight,
-            KL_weight=KL_weight,
+            kl_weight=kl_weight,
             is_3D=False,
         )
 
@@ -146,7 +146,7 @@ class VanillaSpatialVAE(BaseVAE):
         return ["reconstruction"]
 
 
-class Vanilla3DVAE(BaseVAE):
+class Vanilla3DspacialVAE(BaseVAE):
     """
     This network is a 3D convolutional variational autoencoder with a spacial latent space.
 
@@ -157,10 +157,10 @@ class Vanilla3DVAE(BaseVAE):
     def __init__(
         self,
         input_size,
-        latent_space_size=256,
-        feature_size=1024,
-        recons_weight=1,
-        KL_weight=1,
+        latent_space_size,
+        feature_size,
+        recons_weight,
+        kl_weight,
         gpu=True,
     ):
         n_conv = 4
@@ -242,7 +242,7 @@ class Vanilla3DVAE(BaseVAE):
                 DecoderLayer3D(
                     last_layer_channels * 2 ** (i),
                     last_layer_channels * 2 ** (i - 1),
-                    output_padding=decoder_output_padding[-i],
+                    output_padding=decoder_output_padding[i],
                 )
             )
         decoder_layers.append(
@@ -261,7 +261,7 @@ class Vanilla3DVAE(BaseVAE):
         )
         decoder = nn.Sequential(*decoder_layers)
 
-        super(Vanilla3DVAE, self).__init__(
+        super(Vanilla3DspacialVAE, self).__init__(
             encoder,
             decoder,
             mu_layer,
@@ -269,7 +269,7 @@ class Vanilla3DVAE(BaseVAE):
             latent_space_size,
             gpu=gpu,
             recons_weight=recons_weight,
-            KL_weight=KL_weight,
+            kl_weight=kl_weight,
             is_3D=False,
         )
 
@@ -296,28 +296,33 @@ class Vanilla3DdenseVAE(BaseVAE):
 
     def __init__(
         self,
-        input_size,
+        size_reduction_factor,
         latent_space_size=256,
         feature_size=1024,
         n_conv=4,
         io_layer_channels=8,
         recons_weight=1,
-        KL_weight=1,
+        kl_weight=1,
         gpu=True,
     ):
         first_layer_channels = io_layer_channels
         last_layer_channels = io_layer_channels
         # automatically compute padding
-        decoder_output_padding = [
-            # [1, 0, 0],
-            # [0, 0, 0],
-            # [0, 0, 1],
-        ]
+        decoder_output_padding = []
 
-        input_c = input_size[0]
-        input_d = input_size[1]
-        input_h = input_size[2]
-        input_w = input_size[3]
+        if size_reduction_factor == 2:
+            self.input_size = [1, 80, 96, 80]
+        elif size_reduction_factor == 3:
+            self.input_size = [1, 56, 64, 56]
+        elif size_reduction_factor == 4:
+            self.input_size = [1, 40, 48, 40]
+        elif size_reduction_factor == 5:
+            self.input_size = [1, 32, 40, 32]
+
+        input_c = self.input_size[0]
+        input_d = self.input_size[1]
+        input_h = self.input_size[2]
+        input_w = self.input_size[3]
         d, h, w = input_d, input_h, input_w
 
         # ENCODER
@@ -336,6 +341,7 @@ class Vanilla3DdenseVAE(BaseVAE):
             # Construct output paddings
             decoder_output_padding.append([d % 2, h % 2, w % 2])
             d, h, w = d // 2, h // 2, w // 2
+        # Compute size of the feature space
         n_pix = (
             first_layer_channels
             * 2 ** (n_conv - 1)
@@ -422,17 +428,5 @@ class Vanilla3DdenseVAE(BaseVAE):
             gpu=gpu,
             is_3D=False,
             recons_weight=recons_weight,
-            KL_weight=KL_weight,
+            kl_weight=kl_weight,
         )
-
-    @staticmethod
-    def get_input_size():
-        return "1@128x128x128"
-
-    @staticmethod
-    def get_dimension():
-        return "3D"
-
-    @staticmethod
-    def get_task():
-        return ["reconstruction"]

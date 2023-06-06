@@ -10,6 +10,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.diagnoses
 @cli_param.option.modality
 @cli_param.option.variables_of_interest
+@cli_param.option.caps_directory
 @click.option(
     "--restriction_tsv",
     help="Path to a TSV file containing the sessions that can be included.",
@@ -52,6 +53,7 @@ def cli(
     missing_mods,
     merged_tsv,
     remove_unique_session,
+    caps_directory,
 ):
     """Get labels in a tsv file.
 
@@ -88,6 +90,7 @@ def cli(
         missing_mods=missing_mods,
         merged_tsv=merged_tsv,
         remove_unique_session=remove_unique_session,
+        caps_directory=caps_directory,
     )
 
 

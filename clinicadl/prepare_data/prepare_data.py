@@ -50,6 +50,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     input_files = clinica_file_reader(
         subjects, sessions, caps_directory.as_posix(), file_type
     )[0]
+    logger.debug(f"Selected image file name list: {input_files}.")
 
     def write_output_imgs(output_mode, container, subfolder):
         # Write the extracted tensor on a .pt file
@@ -61,8 +62,7 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
                 / subfolder
                 / mod_subfolder
             )
-            if not output_file_dir.is_dir():
-                output_file_dir.mkdir(parents=True, exist_ok=True)
+            output_file_dir.mkdir(parents=True, exist_ok=True)
             output_file = output_file_dir / filename
             save_tensor(tensor, output_file)
             logger.debug(f"Output tensor saved at {output_file}")

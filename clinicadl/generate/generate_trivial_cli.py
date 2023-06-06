@@ -11,6 +11,7 @@ from clinicadl.utils import cli_param
 @cli_param.option.preprocessing
 @cli_param.option.participant_list
 @cli_param.option.n_subjects
+@cli_param.option.n_proc
 @click.option(
     "--mask_path",
     type=click.Path(exists=True, path_type=Path),
@@ -33,6 +34,7 @@ def cli(
     preprocessing,
     participants_tsv,
     n_subjects,
+    n_proc,
     mask_path,
     atrophy_percent,
     use_uncropped_image,
@@ -53,6 +55,7 @@ def cli(
         preprocessing=preprocessing,
         output_dir=generated_caps_directory,
         n_subjects=n_subjects,
+        n_proc=n_proc,
         mask_path=mask_path,
         atrophy_percent=atrophy_percent,
         uncropped_image=use_uncropped_image,
