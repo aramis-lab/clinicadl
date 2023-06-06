@@ -1,6 +1,6 @@
 import torch
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from src.utils.exceptions import ClinicaDLArgumentError
 
 
 class VanillaBackProp:
@@ -38,7 +38,7 @@ class GradCam:
     """
 
     def __init__(self, model):
-        from clinicadl.utils.network.sub_network import CNN
+        from src.deep_learning.network.sub_network import CNN
 
         self.model = model
         self.model.eval()

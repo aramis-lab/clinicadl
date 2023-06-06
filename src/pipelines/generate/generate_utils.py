@@ -11,7 +11,7 @@ from clinica.utils.input_files import T1W_LINEAR, T1W_LINEAR_CROPPED, pet_linear
 from scipy.ndimage import gaussian_filter
 from skimage.draw import ellipse
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from src.utils.exceptions import ClinicaDLArgumentError
 
 
 def find_file_type(
@@ -59,7 +59,7 @@ def load_and_check_tsv(
 ) -> pd.DataFrame:
     from clinica.iotools.utils.data_handling import create_subs_sess_list
 
-    from clinicadl.utils.caps_dataset.data import check_multi_cohort_tsv
+    from src.utils.caps_dataset.data import check_multi_cohort_tsv
 
     if tsv_path is not None:
         if len(caps_dict) == 1:

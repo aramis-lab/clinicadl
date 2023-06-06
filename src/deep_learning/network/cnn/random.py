@@ -1,8 +1,8 @@
 import numpy as np
 
-from clinicadl.utils.exceptions import ClinicaDLNetworksError
-from clinicadl.utils.network.network_utils import *
-from clinicadl.utils.network.sub_network import CNN
+from src.deep_learning.network.network_utils import *
+from src.deep_learning.network.sub_network import CNN
+from src.utils.exceptions import ClinicaDLNetworksError
 
 
 class RandomArchitecture(CNN):

@@ -16,12 +16,12 @@ from clinica.utils.inputs import RemoteFileStructure, clinica_file_reader, fetch
 from joblib import Parallel, delayed
 from nilearn.image import resample_to_img
 
-from clinicadl.prepare_data.prepare_data_utils import compute_extract_json
-from clinicadl.utils.caps_dataset.data import CapsDataset
-from clinicadl.utils.exceptions import DownloadError
-from clinicadl.utils.maps_manager.iotools import check_and_clean, commandline_to_json
-from clinicadl.utils.preprocessing import write_preprocessing
-from clinicadl.utils.tsvtools_utils import extract_baseline
+from src.dataset.caps_dataset.data import CapsDataset
+from src.maps_manager.iotools import check_and_clean, commandline_to_json
+from src.maps_manager.preprocessing import write_preprocessing
+from src.pipelines.prepare_data.prepare_data_utils import compute_extract_json
+from src.pipelines.tsvtools.tsvtools_utils import extract_baseline
+from src.utils.exceptions import DownloadError
 
 from .generate_utils import (
     find_file_type,
@@ -220,7 +220,7 @@ def generate_trivial_dataset(
         IndexError: if `n_subjects` is higher than the length of the TSV file at `tsv_path`.
     """
 
-    from clinicadl.utils.exceptions import DownloadError
+    from src.utils.exceptions import DownloadError
 
     commandline_to_json(
         {

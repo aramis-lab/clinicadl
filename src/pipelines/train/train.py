@@ -2,7 +2,7 @@
 from pathlib import Path
 from typing import Any, Dict, List
 
-from clinicadl import MapsManager
+from src.maps_manager import MapsManager
 
 
 def train(

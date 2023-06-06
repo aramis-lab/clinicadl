@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from src.utils.exceptions import ClinicaDLArgumentError
 
 
 def VAEGaussianLoss(input, reconstruction, mu, logVar):

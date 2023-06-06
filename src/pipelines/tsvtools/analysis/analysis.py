@@ -7,8 +7,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
-from clinicadl.utils.tsvtools_utils import (
+from src.pipelines.tsvtools.tsvtools_utils import (
     add_demographics,
     cleaning_nan_diagnoses,
     find_label,
@@ -16,6 +15,7 @@ from clinicadl.utils.tsvtools_utils import (
     merged_tsv_reader,
     next_session,
 )
+from src.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 
 logger = getLogger("clinicadl.tsvtools.analysis")
 

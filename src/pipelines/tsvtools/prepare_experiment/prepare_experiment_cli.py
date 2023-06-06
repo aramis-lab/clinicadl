@@ -1,7 +1,7 @@
 import click
 import pandas as pd
 
-from clinicadl.utils import cli_param
+from src.utils import cli_param
 
 
 @click.command(name="prepare-experiment", no_args_is_help=True)
@@ -53,7 +53,7 @@ def cli(
     No variable are used to stratify the k-fold split.
     """
 
-    from clinicadl.tsvtools.split import split_diagnoses
+    from src.tsvtools.split import split_diagnoses
 
     p_age_threshold = 0.80
     p_sex_threshold = 0.80
@@ -113,7 +113,7 @@ def cli(
         )
 
     elif validation_type == "kfold":
-        from clinicadl.tsvtools.kfold import split_diagnoses as kfold_diagnoses
+        from src.tsvtools.kfold import split_diagnoses as kfold_diagnoses
 
         kfold_diagnoses(
             train_tsv,

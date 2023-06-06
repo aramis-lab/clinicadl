@@ -3,7 +3,7 @@ from pathlib import Path
 
 import click
 
-from clinicadl.utils import cli_param
+from src.utils import cli_param
 
 
 @click.command(name="from_json", no_args_is_help=True)
@@ -33,7 +33,7 @@ def cli(
 
     OUTPUT_MAPS_DIRECTORY is the path to the MAPS folder where outputs and results will be saved.
     """
-    from clinicadl.utils.maps_manager.maps_manager_utils import read_json
+    from src.utils.maps_manager.maps_manager_utils import read_json
 
     from .train import train
 

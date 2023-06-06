@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import List
 
-from clinicadl import MapsManager
+from src.maps_manager import MapsManager
 
 
 def interpret(

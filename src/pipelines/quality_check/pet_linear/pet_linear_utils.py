@@ -6,7 +6,7 @@ from copy import copy
 
 import numpy as np
 
-from clinicadl.utils.caps_dataset.data import MinMaxNormalization
+from src.dataset.caps_dataset.data import MinMaxNormalization
 
 
 def get_metric(contour_np, image_np, inside):

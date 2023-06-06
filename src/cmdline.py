@@ -2,15 +2,15 @@
 
 import click
 
-from clinicadl.generate.generate_cli import cli as generate_cli
-from clinicadl.interpret.interpret_cli import cli as interpret_cli
-from clinicadl.predict.predict_cli import cli as predict_cli
-from clinicadl.prepare_data.prepare_data_cli import cli as prepare_data_cli
-from clinicadl.quality_check.qc_cli import cli as qc_cli
-from clinicadl.random_search.random_search_cli import cli as random_search_cli
-from clinicadl.train.train_cli import cli as train_cli
-from clinicadl.tsvtools.cli import cli as tsvtools_cli
-from clinicadl.utils.logger import setup_logging
+from src.pipelines.generate.generate_cli import cli as generate_cli
+from src.pipelines.interpret.interpret_cli import cli as interpret_cli
+from src.pipelines.predict.predict_cli import cli as predict_cli
+from src.pipelines.prepare_data.prepare_data_cli import cli as prepare_data_cli
+from src.pipelines.quality_check.qc_cli import cli as qc_cli
+from src.pipelines.random_search.random_search_cli import cli as random_search_cli
+from src.pipelines.train.train_cli import cli as train_cli
+from src.pipelines.tsvtools.cli import cli as tsvtools_cli
+from src.utils.logger import setup_logging
 
 CONTEXT_SETTINGS = dict(
     # Extend content width to avoid shortening of pipeline help.

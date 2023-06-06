@@ -1,7 +1,7 @@
 import click
 
-from clinicadl.utils import cli_param
-from clinicadl.utils.cli_param import train_option
+from src.utils import cli_param
+from src.utils.cli_param import train_option
 
 
 @click.command(name="resume", no_args_is_help=True)

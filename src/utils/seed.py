@@ -73,7 +73,7 @@ def seed_everything(seed, deterministic=False, compensation="memory") -> None:
         RuntimeError: if a non-deterministic behaviour was encountered.
 
     """
-    from clinicadl.utils.exceptions import ClinicaDLConfigurationError
+    from src.utils.exceptions import ClinicaDLConfigurationError
 
     max_seed_value = np.iinfo(np.uint32).max
     min_seed_value = np.iinfo(np.uint32).min

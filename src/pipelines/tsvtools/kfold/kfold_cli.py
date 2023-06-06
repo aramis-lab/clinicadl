@@ -1,6 +1,6 @@
 import click
 
-from clinicadl.utils import cli_param
+from src.utils import cli_param
 
 
 @click.command(name="kfold", no_args_is_help=True)

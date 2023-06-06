@@ -2,7 +2,7 @@ from pathlib import Path
 
 import click
 
-from clinicadl.utils import cli_param
+from src.utils import cli_param
 
 
 @click.command(name="predict", no_args_is_help=True)
@@ -103,7 +103,7 @@ def cli(
 
     DATA_GROUP is the name of the subjects and sessions list used for the interpretation.
     """
-    from clinicadl.utils.cmdline_utils import check_gpu
+    from src.utils.cmdline_utils import check_gpu
 
     if gpu:
         check_gpu()

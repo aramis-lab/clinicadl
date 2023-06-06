@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
-from clinicadl.utils.maps_manager.maps_manager_utils import change_path_to_str
+from src.maps_manager.maps_manager_utils import change_path_to_str
 
 
 def write_preprocessing(preprocessing_dict: Dict[str, Any], caps_directory: Path):

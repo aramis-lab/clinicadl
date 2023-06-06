@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from clinicadl.utils.exceptions import ClinicaDLTSVError
+from src.utils.exceptions import ClinicaDLTSVError
 
 logger = getLogger("clinicadl")
 

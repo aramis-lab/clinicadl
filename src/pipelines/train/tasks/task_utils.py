@@ -1,8 +1,8 @@
 from logging import getLogger
 from typing import List
 
-from clinicadl.utils.caps_dataset.data import CapsDataset
-from clinicadl.utils.preprocessing import read_preprocessing
+from src.dataset.caps_dataset.data import CapsDataset
+from src.maps_manager.preprocessing import read_preprocessing
 
 
 def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
@@ -16,8 +16,8 @@ def task_launcher(network_task: str, task_options_list: List[str], **kwargs):
     """
     from pathlib import Path
 
-    from clinicadl.train.train import train
-    from clinicadl.train.train_utils import build_train_dict
+    from src.pipelines.train.train import train
+    from src.pipelines.train.train_utils import build_train_dict
 
     logger = getLogger("clinicadl.task_manager")
 

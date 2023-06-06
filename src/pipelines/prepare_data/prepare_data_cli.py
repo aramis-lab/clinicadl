@@ -3,10 +3,9 @@ from typing import Optional
 
 import click
 
-from clinicadl.utils import cli_param
-
-from .prepare_data import DeepLearningPrepareData
-from .prepare_data_utils import get_parameters_dict
+from src.pipelines.prepare_data.prepare_data import DeepLearningPrepareData
+from src.pipelines.prepare_data.prepare_data_utils import get_parameters_dict
+from src.utils import cli_param
 
 
 @click.command(name="image", no_args_is_help=True)

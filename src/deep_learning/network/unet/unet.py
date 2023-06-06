@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from clinicadl.utils.network.network import Network
+from src.deep_learning.network.network import Network
 
 
 class UNetDown(nn.Module):

@@ -15,7 +15,7 @@ from clinica.utils.inputs import RemoteFileStructure, clinica_file_reader, fetch
 from clinica.utils.participant import get_subject_session_list
 from joblib import Parallel, delayed
 
-from .utils import get_metric
+from src.pipelines.quality_check.pet_linear.pet_linear_utils import get_metric
 
 
 def quality_check(

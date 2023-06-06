@@ -19,15 +19,15 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
-from clinicadl.utils.maps_manager.iotools import commandline_to_json
-from clinicadl.utils.tsvtools_utils import (
+from src.maps_manager.iotools import commandline_to_json
+from src.pipelines.tsvtools.tsvtools_utils import (
     after_end_screening,
     find_label,
     first_session,
     last_session,
     neighbour_session,
 )
+from src.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 
 logger = getLogger("clinicadl")
 

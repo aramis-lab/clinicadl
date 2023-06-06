@@ -227,7 +227,7 @@ class MetricModule:
         Returns:
             (float) SSIM
         """
-        from clinicadl.utils.pytorch_ssim import ssim, ssim3D
+        from src.metrics.pytorch_ssim import ssim, ssim3D
 
         if len(y) == 3:
             return ssim(y, y_pred)

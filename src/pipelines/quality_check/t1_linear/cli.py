@@ -2,7 +2,7 @@ from pathlib import Path
 
 import click
 
-from clinicadl.utils import cli_param
+from src.utils import cli_param
 
 
 @click.command(name="t1-linear", no_args_is_help=True)
@@ -54,7 +54,7 @@ def cli(
 
     OUTPUT_TSV is the path to the tsv file where results will be saved.
     """
-    from clinicadl.utils.cmdline_utils import check_gpu
+    from src.utils.cmdline_utils import check_gpu
 
     if gpu:
         check_gpu()

@@ -2,8 +2,8 @@
 from pathlib import Path
 from typing import List
 
-from clinicadl import MapsManager
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from src.maps_manager import MapsManager
+from src.utils.exceptions import ClinicaDLArgumentError
 
 
 def predict(

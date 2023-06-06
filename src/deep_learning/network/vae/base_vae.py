@@ -1,6 +1,6 @@
 import torch
 
-from clinicadl.utils.network.network import Network
+from src.deep_learning.network.network import Network
 
 
 class BaseVAE(Network):

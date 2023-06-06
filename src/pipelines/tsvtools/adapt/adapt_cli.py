@@ -2,7 +2,7 @@ from typing import List
 
 import click
 
-from clinicadl.utils import cli_param
+from src.utils import cli_param
 
 
 @click.command(name="adapt", no_args_is_help=True)
@@ -24,7 +24,7 @@ def cli(old_tsv_dir, new_tsv_dir, labels_list=None):
     Results are stored in NEW_TSV_DIR.
     """
 
-    from clinicadl.utils.exceptions import ClinicaDLArgumentError
+    from src.utils.exceptions import ClinicaDLArgumentError
 
     from .adapt import adapt
 

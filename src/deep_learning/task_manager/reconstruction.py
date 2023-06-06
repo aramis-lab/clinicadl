@@ -1,8 +1,8 @@
 from torch import nn
 from torch.utils.data import sampler
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
-from clinicadl.utils.task_manager.task_manager import TaskManager
+from src.deep_learning.task_manager.task_manager import TaskManager
+from src.utils.exceptions import ClinicaDLArgumentError
 
 
 class ReconstructionManager(TaskManager):
@@ -113,15 +113,15 @@ class ReconstructionManager(TaskManager):
                 f"Reconstruction loss must be chosen in {compatible_losses}."
             )
         if criterion == "VAEGaussianLoss":
-            from clinicadl.utils.network.vae.vae_utils import VAEGaussianLoss
+            from src.utils.network.vae.vae_utils import VAEGaussianLoss
 
             return VAEGaussianLoss
         elif criterion == "VAEBernoulliLoss":
-            from clinicadl.utils.network.vae.vae_utils import VAEBernoulliLoss
+            from src.utils.network.vae.vae_utils import VAEBernoulliLoss
 
             return VAEBernoulliLoss
         elif criterion == "VAEContinuousBernoulliLoss":
-            from clinicadl.utils.network.vae.vae_utils import VAEContinuousBernoulliLoss
+            from src.utils.network.vae.vae_utils import VAEContinuousBernoulliLoss
 
             return VAEContinuousBernoulliLoss
         return getattr(nn, criterion)()

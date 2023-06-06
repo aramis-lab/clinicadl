@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 from clinica.utils.inputs import check_caps_folder
 
-from clinicadl.utils.exceptions import (
+from src.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLConfigurationError,
     ClinicaDLTSVError,

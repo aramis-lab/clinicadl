@@ -1,7 +1,7 @@
 import torch.nn.functional as F
 from torch import nn
 
-from clinicadl.utils.network.vae.vae_utils import get_norm2d, get_norm3d
+from src.deep_learning.network.vae.vae_utils import get_norm2d, get_norm3d
 
 
 class EncoderLayer2D(nn.Module):

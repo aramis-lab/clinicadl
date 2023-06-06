@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from clinicadl.tsvtools.get_labels import infer_or_drop_diagnosis
-from clinicadl.utils.tsvtools_utils import (
+from src.pipelines.tsvtools.get_labels import infer_or_drop_diagnosis
+from src.pipelines.tsvtools.tsvtools_utils import (
     after_end_screening,
     last_session,
     merged_tsv_reader,

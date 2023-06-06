@@ -2,7 +2,7 @@ from pathlib import Path
 
 import click
 
-from clinicadl.utils import cli_param
+from src.utils import cli_param
 
 
 @click.command(name="get-labels", no_args_is_help=True)

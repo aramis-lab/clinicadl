@@ -4,14 +4,14 @@ from logging import getLogger
 import torch
 from torch import nn
 
-from clinicadl.utils.exceptions import ClinicaDLNetworksError
-from clinicadl.utils.network.network import Network
-from clinicadl.utils.network.network_utils import (
+from src.deep_learning.network.network import Network
+from src.deep_learning.network.network_utils import (
     CropMaxUnpool2d,
     CropMaxUnpool3d,
     PadMaxPool2d,
     PadMaxPool3d,
 )
+from src.utils.exceptions import ClinicaDLNetworksError
 
 logger = getLogger("clinicadl.networks")
 

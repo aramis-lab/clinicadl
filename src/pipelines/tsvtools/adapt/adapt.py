@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from src.utils.exceptions import ClinicaDLArgumentError
 
 logger = getLogger("clinicadl.tsvtools.adapt")
 

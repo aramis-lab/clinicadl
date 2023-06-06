@@ -3,8 +3,8 @@ import pandas as pd
 from torch import nn
 from torch.utils.data import sampler
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
-from clinicadl.utils.task_manager.task_manager import TaskManager
+from src.deep_learning.task_manager.task_manager import TaskManager
+from src.utils.exceptions import ClinicaDLArgumentError
 
 
 class RegressionManager(TaskManager):

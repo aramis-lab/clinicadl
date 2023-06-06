@@ -1,4 +1,4 @@
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from src.utils.exceptions import ClinicaDLArgumentError
 
 
 def check_gpu():

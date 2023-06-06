@@ -10,7 +10,7 @@ from clinica.utils.input_files import T1W_LINEAR, T1W_LINEAR_CROPPED
 from clinica.utils.inputs import clinica_file_reader
 from torch.utils.data import Dataset
 
-from clinicadl.prepare_data.prepare_data_utils import compute_folder_and_file_type
+from src.pipelines.prepare_data.prepare_data_utils import compute_folder_and_file_type
 
 
 class QCDataset(Dataset):
@@ -29,7 +29,7 @@ class QCDataset(Dataset):
             data_df (DataFrame): Subject and session list.
 
         """
-        from clinicadl.utils.caps_dataset.data import MinMaxNormalization
+        from src.dataset.caps_dataset.data import MinMaxNormalization
 
         self.img_dir = img_dir
         self.df = data_df

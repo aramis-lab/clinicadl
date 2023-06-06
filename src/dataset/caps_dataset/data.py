@@ -12,7 +12,7 @@ import torchvision.transforms as transforms
 from clinica.utils.exceptions import ClinicaCAPSError
 from torch.utils.data import Dataset
 
-from clinicadl.prepare_data.prepare_data_utils import (
+from src.pipelines.prepare_data.prepare_data_utils import (
     PATTERN_DICT,
     TEMPLATE_DICT,
     compute_discarded_slices,
@@ -25,7 +25,7 @@ from clinicadl.prepare_data.prepare_data_utils import (
     extract_slice_tensor,
     find_mask_path,
 )
-from clinicadl.utils.exceptions import (
+from src.utils.exceptions import (
     ClinicaDLArgumentError,
     ClinicaDLConfigurationError,
     ClinicaDLTSVError,

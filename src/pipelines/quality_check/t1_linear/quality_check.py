@@ -9,14 +9,13 @@ import torch
 from clinica.utils.inputs import RemoteFileStructure, fetch_file
 from torch.utils.data import DataLoader
 
-from clinicadl.generate.generate_utils import load_and_check_tsv
-from clinicadl.utils.caps_dataset.data import CapsDataset
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
-
-from .models import resnet_darq_qc_18 as darq_r18
-from .models import resnet_deep_qc_18 as deep_r18
-from .models import squeezenet_qc as darq_sq101
-from .utils import QCDataset
+from src.dataset.caps_dataset.data import CapsDataset
+from src.pipelines.generate.generate_utils import load_and_check_tsv
+from src.pipelines.quality_check.t1_linear.models import resnet_darq_qc_18 as darq_r18
+from src.pipelines.quality_check.t1_linear.models import resnet_deep_qc_18 as deep_r18
+from src.pipelines.quality_check.t1_linear.models import squeezenet_qc as darq_sq101
+from src.pipelines.quality_check.t1_linear.t1_linear_utils import QCDataset
+from src.utils.exceptions import ClinicaDLArgumentError
 
 logger = getLogger("clinicadl.quality-check")
 

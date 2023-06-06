@@ -2,7 +2,7 @@ from typing import List
 
 import click
 
-from clinicadl.utils import cli_param
+from src.utils import cli_param
 
 
 @click.command(name="get-progression", no_args_is_help=True)

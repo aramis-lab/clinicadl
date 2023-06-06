@@ -1,8 +1,8 @@
 import click
 
-from .pet_linear.cli import cli as pet_linear_cli
-from .t1_linear.cli import cli as t1_linear_cli
-from .t1_volume.cli import cli as t1_volume_cli
+from src.pipelines.quality_check.pet_linear.cli import cli as pet_linear_cli
+from src.pipelines.quality_check.t1_linear.cli import cli as t1_linear_cli
+from src.pipelines.quality_check.t1_volume.cli import cli as t1_volume_cli
 
 
 class RegistrationOrderGroup(click.Group):

@@ -10,30 +10,26 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 
-from clinicadl.utils.caps_dataset.data import (
-    get_transforms,
-    load_data_test,
-    return_dataset,
-)
-from clinicadl.utils.cmdline_utils import check_gpu
-from clinicadl.utils.early_stopping import EarlyStopping
-from clinicadl.utils.exceptions import (
-    ClinicaDLArgumentError,
-    ClinicaDLConfigurationError,
-    ClinicaDLDataLeakageError,
-    MAPSError,
-)
-from clinicadl.utils.logger import setup_logging
-from clinicadl.utils.maps_manager.logwriter import LogWriter
-from clinicadl.utils.maps_manager.maps_manager_utils import (
+from src.dataset.caps_dataset.data import get_transforms, load_data_test, return_dataset
+from src.deep_learning.network.network import Network
+from src.maps_manager.logwriter import LogWriter
+from src.maps_manager.maps_manager_utils import (
     add_default_values,
     change_path_to_str,
     change_str_to_path,
     read_json,
 )
-from clinicadl.utils.metric_module import RetainBest
-from clinicadl.utils.network.network import Network
-from clinicadl.utils.seed import get_seed, pl_worker_init_function, seed_everything
+from src.metrics.metric_module import RetainBest
+from src.utils.cmdline_utils import check_gpu
+from src.utils.early_stopping import EarlyStopping
+from src.utils.exceptions import (
+    ClinicaDLArgumentError,
+    ClinicaDLConfigurationError,
+    ClinicaDLDataLeakageError,
+    MAPSError,
+)
+from src.utils.logger import setup_logging
+from src.utils.seed import get_seed, pl_worker_init_function, seed_everything
 
 logger = getLogger("clinicadl.maps_manager")
 
@@ -465,7 +461,7 @@ class MapsManager:
 
         from torch.utils.data import DataLoader
 
-        from clinicadl.interpret.gradients import method_dict
+        from src.pipelines.interpret.gradients import method_dict
 
         if method not in method_dict.keys():
             raise NotImplementedError(
@@ -1551,7 +1547,7 @@ class MapsManager:
     def _write_training_data(self):
         """Writes the TSV file containing the participant and session IDs used for training."""
         logger.debug("Writing training data...")
-        from clinicadl.utils.caps_dataset.data import load_data_test
+        from src.dataset.caps_dataset.data import load_data_test
 
         train_df = load_data_test(
             self.tsv_path,
@@ -1684,7 +1680,7 @@ class MapsManager:
         """
         from datetime import datetime
 
-        import clinicadl.utils.network as network_package
+        import clinicadl.deep_learning.network as network_package
 
         model_class = getattr(network_package, self.architecture)
         args = list(
@@ -1984,7 +1980,7 @@ class MapsManager:
         return optimizer
 
     def _init_split_manager(self, split_list=None):
-        from clinicadl.utils import split_manager
+        from src.utils import split_manager
 
         split_class = getattr(split_manager, self.validation)
         args = list(
@@ -2000,7 +1996,7 @@ class MapsManager:
         return split_class(**kwargs)
 
     def _init_task_manager(self, df=None, n_classes=None):
-        from clinicadl.utils.task_manager import (
+        from src.deep_learning.task_manager import (
             ClassificationManager,
             ReconstructionManager,
             RegressionManager,

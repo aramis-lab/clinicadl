@@ -7,11 +7,11 @@ from torch import nn
 from torch.nn.functional import softmax
 from torch.utils.data import sampler
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from src.utils.exceptions import ClinicaDLArgumentError
 
 logger = getLogger("clinicadl.task_manager")
 
-from clinicadl.utils.task_manager.task_manager import TaskManager
+from src.deep_learning.task_manager.task_manager import TaskManager
 
 
 class ClassificationManager(TaskManager):

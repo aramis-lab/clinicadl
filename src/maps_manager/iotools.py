@@ -2,7 +2,7 @@
 import logging
 from pathlib import Path, PosixPath
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError
+from src.utils.exceptions import ClinicaDLArgumentError
 
 LOG_LEVELS = [logging.WARNING, logging.INFO, logging.DEBUG]
 

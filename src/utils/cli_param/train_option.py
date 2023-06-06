@@ -1,6 +1,6 @@
 import click
 
-from clinicadl.utils import cli_param
+from src.utils import cli_param
 
 caps_directory = cli_param.argument.caps_directory
 preprocessing_json = cli_param.argument.preprocessing_json

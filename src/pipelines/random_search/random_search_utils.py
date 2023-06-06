@@ -4,10 +4,10 @@ from typing import Any, Dict, Tuple
 
 import toml
 
-from clinicadl.train.train_utils import build_train_dict
-from clinicadl.utils.exceptions import ClinicaDLConfigurationError
-from clinicadl.utils.maps_manager.maps_manager_utils import change_str_to_path
-from clinicadl.utils.preprocessing import read_preprocessing
+from src.maps_manager.maps_manager_utils import change_str_to_path
+from src.maps_manager.preprocessing import read_preprocessing
+from src.pipelines.train.train_utils import build_train_dict
+from src.utils.exceptions import ClinicaDLConfigurationError
 
 
 def get_space_dict(launch_directory: Path) -> Dict[str, Any]:

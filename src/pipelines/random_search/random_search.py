@@ -3,8 +3,11 @@ Launch a random network training.
 """
 from pathlib import Path
 
-from clinicadl.random_search.random_search_utils import get_space_dict, random_sampling
-from clinicadl.train import train
+from src.pipelines.random_search.random_search_utils import (
+    get_space_dict,
+    random_sampling,
+)
+from src.pipelines.train.train import train
 
 
 def launch_search(launch_directory: Path, job_name):

@@ -3,12 +3,12 @@ from typing import Any, Dict
 
 import toml
 
-from clinicadl.utils.exceptions import ClinicaDLConfigurationError
-from clinicadl.utils.maps_manager.maps_manager_utils import (
+from src.maps_manager.maps_manager_utils import (
     change_str_to_path,
     read_json,
     remove_unused_tasks,
 )
+from src.utils.exceptions import ClinicaDLConfigurationError
 
 
 def build_train_dict(config_file: Path, task: str) -> Dict[str, Any]:

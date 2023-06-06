@@ -1,8 +1,7 @@
 import click
 
-from clinicadl.utils.cli_param import train_option
-
-from .task_utils import task_launcher
+from src.pipelines.train.tasks.task_utils import task_launcher
+from src.utils.cli_param import train_option
 
 
 @click.command(name="regression", no_args_is_help=True)

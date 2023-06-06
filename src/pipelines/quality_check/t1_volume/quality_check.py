@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from .utils import extract_metrics
+from src.pipelines.quality_check.t1_volume.t1_volume_utils import extract_metrics
 
 
 def quality_check(caps_dir: Path, output_directory: Path, group_label):

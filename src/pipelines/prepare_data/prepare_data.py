@@ -9,10 +9,12 @@ def DeepLearningPrepareData(caps_directory: Path, tsv_file: Path, n_proc, parame
     from joblib import Parallel, delayed
     from torch import save as save_tensor
 
-    from clinicadl.utils.exceptions import ClinicaDLArgumentError
-    from clinicadl.utils.preprocessing import write_preprocessing
-
-    from .prepare_data_utils import check_mask_list, compute_folder_and_file_type
+    from src.maps_manager.preprocessing import write_preprocessing
+    from src.pipelines.prepare_data.prepare_data_utils import (
+        check_mask_list,
+        compute_folder_and_file_type,
+    )
+    from src.utils.exceptions import ClinicaDLArgumentError
 
     logger = getLogger("clinicadl.prepare_data")
 

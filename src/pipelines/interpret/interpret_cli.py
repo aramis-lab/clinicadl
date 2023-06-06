@@ -2,7 +2,7 @@ from pathlib import Path
 
 import click
 
-from clinicadl.utils import cli_param
+from src.utils import cli_param
 
 
 @click.command("interpret", no_args_is_help=True)
@@ -113,7 +113,7 @@ def cli(
 
     METHOD is the method used to extract an attribution map.
     """
-    from clinicadl.utils.cmdline_utils import check_gpu
+    from src.utils.cmdline_utils import check_gpu
 
     if gpu:
         check_gpu()

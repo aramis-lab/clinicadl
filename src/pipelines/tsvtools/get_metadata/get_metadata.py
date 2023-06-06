@@ -4,8 +4,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from clinicadl.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
-from clinicadl.utils.tsvtools_utils import merged_tsv_reader
+from src.pipelines.tsvtools.tsvtools_utils import merged_tsv_reader
+from src.utils.exceptions import ClinicaDLArgumentError, ClinicaDLTSVError
 
 logger = getLogger("clinicadl.tsvtools.get_metadata")
 
